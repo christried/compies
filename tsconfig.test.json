@@ -1,0 +1,11 @@
+{
+  // Node-side tests and tool configs, which none of the generated Nuxt projects cover.
+  "extends": "./.nuxt/tsconfig.server.json",
+  "include": [
+    ".nuxt/types/nitro.d.ts",
+    "test/unit/**/*",
+    "test/integration/**/*",
+    "vitest.config.ts",
+    "drizzle.config.ts"
+  ]
+}
