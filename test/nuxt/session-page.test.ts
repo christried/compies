@@ -169,6 +169,22 @@ describe('the Session poll', () => {
     expect(hostPage.get('[role="toolbar"]').text()).toContain('Einladen')
   })
 
+  it('opens the Slot editor from the Host dock', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    const edit = page.get('[role="toolbar"]').findAll('button').find(button => button.text() === 'Termine bearbeiten')
+    expect(edit).toBeDefined()
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+    await edit!.trigger('click')
+
+    const dialog = document.querySelector('[role="dialog"]')
+    expect(dialog?.textContent).toContain('Termine bearbeiten')
+    expect(dialog?.textContent).toContain('Vorgeschlagene Termine')
+    document.body.innerHTML = ''
+  })
+
   it('shows the set Date for a direct Session and no vote cards', async () => {
     const { slug } = serve(s => view(s, [], {
       session: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z', isHost: true },

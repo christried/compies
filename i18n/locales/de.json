@@ -906,6 +906,18 @@
         "text": "Diese Ecke von COMPIES ist noch Rohbau. Die Terminumfrage funktioniert schon."
       }
     },
+    "slots": {
+      "title": "Termine bearbeiten",
+      "listTitle": "Vorgeschlagene Termine",
+      "empty": "Noch keine Termine. Schlag einen vor, dann kann abgestimmt werden.",
+      "remove": "Termin entfernen",
+      "votesLost": "{n} Stimme geht verloren | {n} Stimmen gehen verloren",
+      "newLabel": "Neuer Termin",
+      "add": "Termin hinzufügen",
+      "addHelp": "Die Zeit gilt für alle (Europe/Berlin). Bis zu {max} Termine.",
+      "incomplete": "Bitte Datum und Uhrzeit ausfüllen.",
+      "locked": "Termine lassen sich nur ändern, solange noch kein Termin festliegt."
+    },
     "ics": {
       "summary": "{session} (COMPIES)",
       "description": "Zur Session: {url}",

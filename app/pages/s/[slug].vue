@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, Check, ChevronRight, Link as LinkIcon } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, Check, ChevronRight, Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
@@ -8,7 +8,7 @@ import type { SessionView } from '~~/shared/session'
 // The Session link (`/s/<slug>`, ADR 0006) in the session shell (screen M3). Members see the poll:
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
-// Host actions are stubs until #13 (Termin festlegen), #15 (Termine bearbeiten) and #16 (Einladen).
+// Host actions are stubs until #13 (Termin festlegen) and #16 (Einladen). Termine bearbeiten opens SlotEditSheet (#15).
 // The Invite link (`/s/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
@@ -91,11 +91,23 @@ function comingSoon() {
   toast({ tone: 'info', text: t('common.comingSoon') })
 }
 
+const editing = ref(false)
+const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
+  id: slot.id,
+  startsAt: slot.startsAt,
+  votes: (data.value?.votes ?? []).filter(vote => vote.slotId === slot.id).length,
+})))
+
 const hostActions = computed(() => [
   { key: 'set', label: t('dock.setDate'), icon: CalendarCheck, primary: true },
-  // #15 adds "Termine bearbeiten" here.
+  { key: 'edit', label: t('mvp.slots.title'), icon: CalendarClock },
   { key: 'invite', label: t('common.invite'), icon: LinkIcon },
 ])
+
+function onHostAction(key: string) {
+  if (key === 'edit') editing.value = true
+  else comingSoon()
+}
 
 // Only a loaded Session is refetched; the invite path never loads one.
 usePollRefresh(() => {
@@ -236,7 +248,15 @@ usePollRefresh(() => {
     <HostDock
       v-if="data?.session.isHost && data.session.phase === 'poll'"
       :actions="hostActions"
-      @action="comingSoon"
+      @action="onHostAction"
+    />
+    <SlotEditSheet
+      v-if="data?.session.isHost && data.session.phase === 'poll'"
+      :open="editing"
+      :slug="slug"
+      :slots="editableSlots"
+      @close="editing = false"
+      @changed="refresh"
     />
   </AppShell>
 </template>
