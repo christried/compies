@@ -1,0 +1,3 @@
+# Separate Session link and Invite link
+
+A Session has two URLs. The Invite link `/s/<slug>-<token>` makes a signed-in User a Member (on the Bench) and redirects to the Session link `/s/<slug>`, which only Members can open. Home cards, the .ics `URL` and bookmarks all use the Session link, so rotating the Invite link (new token, same slug) locks out newcomers without breaking existing Members. The slug is the kebab-cased name plus 4 random characters and is unique; the token is 12 base62 characters, so the router splits on the last `-`. Non-Members, invalid, rotated and deleted links all get the same generic „ungültig“ page, so nobody can probe whether a Session exists. Members of a deleted Session are the exception and see „Session gelöscht“.

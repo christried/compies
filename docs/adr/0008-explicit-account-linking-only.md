@@ -1,0 +1,3 @@
+# Explicit account linking only, placeholder emails for missing ones
+
+Better Auth requires an email on every User, but Twitch returns none for unverified emails and Discord none for phone-only accounts. Such Users get a placeholder `<providerAccountId>@<provider>.placeholder.invalid`. Email is never shown, never used to contact anyone and never used for authorization; identity is the provider account ID (see ADR 0002). Because two people could share a placeholder-like or recycled email, implicit linking by email is disabled (`disableImplicitLinking: true`): a second provider is only linked when a signed-in User explicitly adds it from their profile (`linkSocial`, T2b). Never enable `allowDifferentEmails` or implicit linking without revisiting this.

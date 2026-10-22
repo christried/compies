@@ -1,0 +1,3 @@
+# A staging branch instead of per-PR preview deployments
+
+Discord and Twitch OAuth need fixed redirect URIs, so Vercel's per-PR preview URLs can't sign anyone in. Instead, the long-lived `staging` branch is bound to `staging.compies.christried.me` (Vercel branch domain, own Neon branch), and every branch other than `staging` and `main` skips the Vercel build. Flow: feature branch → PR into `staging` → check on staging → release PR `staging` → `main` → production at `compies.christried.me`. Both PR targets run the same CI (typecheck, lint, Vitest). Committed drizzle-kit SQL migrations run in the Vercel build command, so each migration hits the staging database before production and a failed migration fails the deploy instead of half-shipping it.
