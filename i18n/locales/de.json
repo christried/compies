@@ -814,7 +814,8 @@
       "vote": "Abstimmen",
       "view": "Ansehen",
       "emptyTitle": "Noch keine Einladung.",
-      "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Frag deinen Host, Compibert wartet so lange."
+      "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Frag deinen Host, Compibert wartet so lange.",
+      "noBest": "Noch kein Termin mit Ja oder Wenn nötig."
     },
     "create": {
       "back": "Zurück",

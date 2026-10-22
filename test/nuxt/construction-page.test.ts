@@ -1,14 +1,34 @@
-import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CatchAllPage from '~/pages/[...path].vue'
 import { kitty, signInAs } from './auth'
+
+// The Home list the construction CTA reads (#12). Each test sets the Sessions it returns.
+let homeSessions: unknown[] = []
+registerEndpoint('/api/s', { method: 'GET', handler: () => ({ sessions: homeSessions }) })
 
 async function visit(route: string) {
   return mountSuspended(CatchAllPage, { route })
 }
 
 describe('construction page route guard', () => {
-  beforeEach(() => signInAs(kitty))
+  beforeEach(async () => {
+    signInAs(kitty)
+    homeSessions = []
+    await clearNuxtData('home-sessions')
+  })
+
+  it('links the call to action to the latest open poll when the User has one', async () => {
+    homeSessions = [
+      { slug: 'freitags-zocken-k7q2', name: 'Freitags-Zocken', phase: 'poll' },
+    ]
+    const page = await visit('/archiv')
+
+    await vi.waitFor(() => {
+      const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
+      expect(cta?.attributes('href')).toBe('/s/freitags-zocken-k7q2')
+    })
+  })
 
   it('renders the Archiv state with its own title in the hub shell', async () => {
     const page = await visit('/archiv')
