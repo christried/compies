@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Volume2, VolumeX } from '@lucide/vue'
 
-// Logo (Compibert head), then the hub nav or the session title area, then sound toggle.
-// The avatar menu lands with sign-in, the Einladen button with the invite sheet.
+// Logo (Compibert head), then the hub nav or the session title area, then sound toggle and
+// the avatar menu when signed in. The Einladen button lands with the invite sheet.
 defineProps<{ kind: 'hub' | 'session' | 'bare' }>()
 
 const { t } = useI18n()
 const sound = useSound()
+const user = useAuthUser()
 </script>
 
 <template>
@@ -30,6 +31,7 @@ const sound = useSound()
       <template v-if="kind === 'hub'">
         <HubNav
           layout="header"
+          :is-admin="user?.isAdmin"
           class="max-md:hidden"
         />
         <span class="flex-1" />
@@ -53,6 +55,7 @@ const sound = useSound()
         :pressed="sound.enabled.value"
         @click="sound.toggle"
       />
+      <UserMenu />
     </div>
   </header>
 </template>

@@ -1,7 +1,8 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import HubNav from '~/components/HubNav.vue'
+import { kitty, signInAs } from './auth'
 
 function link(nav: VueWrapper, label: string) {
   const found = nav.findAll('a').find(a => a.text() === label)
@@ -10,6 +11,8 @@ function link(nav: VueWrapper, label: string) {
 }
 
 describe('HubNav', () => {
+  beforeEach(() => signInAs(kitty))
+
   it('marks the item of the current area as the current page', async () => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header' }, route: '/bibliothek' })
 

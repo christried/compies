@@ -1,9 +1,14 @@
 <script setup lang="ts">
 // Layout frame. hub = header + HubNav (bottom tab bar below md); session = header with a
 // title area and no side panel in the MVP; bare = header only (errors, sign-in).
-withDefaults(defineProps<{ kind?: 'hub' | 'session' | 'bare' }>(), { kind: 'hub' })
+withDefaults(defineProps<{
+  kind?: 'hub' | 'session' | 'bare'
+  /** The stage fills the frame edge to edge, without padding or max width (sign-in, setup). */
+  flush?: boolean
+}>(), { kind: 'hub', flush: false })
 
 const { t } = useI18n()
+const user = useAuthUser()
 </script>
 
 <template>
@@ -22,7 +27,8 @@ const { t } = useI18n()
     <main
       id="stage"
       tabindex="-1"
-      class="mx-auto flex w-full max-w-[1100px] flex-1 flex-col px-3.5 pt-3.5 pb-5 md:px-6 md:pt-5"
+      class="flex w-full flex-1 flex-col"
+      :class="!flush && 'mx-auto max-w-[1100px] px-3.5 pt-3.5 pb-5 md:px-6 md:pt-5'"
     >
       <slot />
     </main>
@@ -30,6 +36,7 @@ const { t } = useI18n()
     <HubNav
       v-if="kind === 'hub'"
       layout="tabs"
+      :is-admin="user?.isAdmin"
       class="sticky bottom-0 layer-sticky md:hidden"
     />
   </div>
