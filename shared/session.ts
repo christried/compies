@@ -39,6 +39,8 @@ export interface HomeSession {
   phase: SessionView['session']['phase']
   dateMode: 'poll' | 'direct'
   startsAt: string | null
+  /** When the Session was created; picks the latest open poll for the Construction page (#12). */
+  createdAt: string
   /** The Best slot so far, or null. */
   bestSlot: { id: string, startsAt: string } | null
   /** Members who have a Vote on every votable Slot, out of all Members. */

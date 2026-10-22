@@ -85,6 +85,7 @@ export default defineEventHandler(async (event) => {
     sessions: arrangeHome(cards, now).map(({ startsAt, createdAt, bestSlot, needsVote: _needsVote, ...card }) => ({
       ...card,
       startsAt: startsAt?.toISOString() ?? null,
+      createdAt: createdAt.toISOString(),
       bestSlot: bestSlot ? { id: bestSlot.id, startsAt: bestSlot.startsAt.toISOString() } : null,
     })),
   }

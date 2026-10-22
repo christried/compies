@@ -139,6 +139,7 @@ describe('GET /api/s (Home)', () => {
       phase: 'poll',
       dateMode: 'poll',
       startsAt: null,
+      createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*Z$/),
       bestSlot: { id: poll.slotIdAt('2090-10-31T18:00:00.000Z'), startsAt: '2090-10-31T18:00:00.000Z' },
       progress: { voted: 1, total: 2 },
       viewerVoted: true,
