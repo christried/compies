@@ -1,12 +1,13 @@
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes, sessionMembers, sessions, users } from '../../db/schema'
 import { bestSlotId, hasVoted, isPast } from '../../domain/poll'
 import { useDb } from '../../utils/db'
 import { requireUser } from '../../utils/user'
 
-// The Session link (ADR 0006): only Members can open it. A non-Member, an unknown slug and a
-// deleted Session all get the same 404, so nobody can probe which Sessions exist.
+// The Session link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
+// same 404, so nobody can probe which Sessions exist. A former Member of a deleted Session gets
+// 410 "Session deleted" instead (#10).
 // Members see every Member's Votes (#1 § Data), the computed Best slot (#1 § Domain rules) and how
 // many Members have voted on every votable Slot. The poll UI refetches this every 15 s (ADR 0001).
 export default defineEventHandler(async (event) => {
@@ -18,7 +19,7 @@ export default defineEventHandler(async (event) => {
   const [session] = await db
     .select()
     .from(sessions)
-    .where(and(eq(sessions.slug, slug), isNull(sessions.deletedAt)))
+    .where(eq(sessions.slug, slug))
   if (!session) throw notFound()
 
   const [member] = await db
@@ -26,6 +27,7 @@ export default defineEventHandler(async (event) => {
     .from(sessionMembers)
     .where(and(eq(sessionMembers.sessionId, session.id), eq(sessionMembers.userId, user.id)))
   if (!member) throw notFound()
+  if (session.deletedAt) throw createError({ statusCode: 410, statusMessage: 'Session deleted' })
 
   const now = new Date()
   const slots = await db

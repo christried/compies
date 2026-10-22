@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
 import { pollSlots, pollVotes, sessionMembers, sessions } from '../../../../../db/schema'
 import { parseVoteValue, voteRejection } from '../../../../../domain/poll'
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
   const [session] = await db
     .select()
     .from(sessions)
-    .where(and(eq(sessions.slug, slug), isNull(sessions.deletedAt)))
+    .where(eq(sessions.slug, slug))
   if (!session) throw notFound('Session not found')
 
   const [member] = await db
@@ -39,6 +39,7 @@ export default defineEventHandler(async (event) => {
     .from(sessionMembers)
     .where(and(eq(sessionMembers.sessionId, session.id), eq(sessionMembers.userId, user.id)))
   if (!member) throw notFound('Session not found')
+  if (session.deletedAt) throw createError({ statusCode: 410, statusMessage: 'Session deleted' })
 
   const [slot] = UUID.test(slotId)
     ? await db

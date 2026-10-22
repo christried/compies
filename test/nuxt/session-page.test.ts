@@ -183,7 +183,7 @@ describe('the Session poll', () => {
     expect(page.findAll('[role="radiogroup"]')).toHaveLength(0)
   })
 
-  it('shows the generic not-found page for a Session the User is not a Member of', async () => {
+  it('shows the generic invalid-link page for a Session the User is not a Member of', async () => {
     registerEndpoint(`/api/s/geheim-k7q2`, {
       method: 'GET',
       handler: () => {
@@ -193,6 +193,19 @@ describe('the Session poll', () => {
 
     const page = await mountSuspended(SessionPage, { route: '/s/geheim-k7q2' })
 
-    expect(page.get('h1').text()).toBe('Hier ist nix. Nicht mal ein Dino.')
+    expect(page.get('h1').text()).toBe('Link ungültig')
+  })
+
+  it('shows the deleted-Session page to a former Member', async () => {
+    registerEndpoint(`/api/s/geloescht-k7q2`, {
+      method: 'GET',
+      handler: () => {
+        throw createError({ statusCode: 410, statusMessage: 'Session deleted' })
+      },
+    })
+
+    const page = await mountSuspended(SessionPage, { route: '/s/geloescht-k7q2' })
+
+    expect(page.get('h1').text()).toBe('Session gelöscht')
   })
 })

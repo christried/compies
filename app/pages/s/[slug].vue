@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CalendarCheck, Check, ChevronRight, Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
+import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
 import type { SessionView } from '~~/shared/session'
 
@@ -8,16 +9,18 @@ import type { SessionView } from '~~/shared/session'
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // Host actions are stubs until #13 (Termin festlegen), #15 (Termine bearbeiten) and #16 (Einladen).
-// The Invite link (`/s/<slug>-<token>`) joins with #10.
+// The Invite link (`/s/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
 const { t } = useI18n()
 const { toast } = useToast()
 const slug = computed(() => String(route.params.slug))
-const { data, error, refresh } = await useFetch<SessionView>(() => `/api/s/${slug.value}`)
+const invite = isInviteLinkPath(route.path)
+const { data, error, refresh } = await useFetch<SessionView>(() => `/api/s/${slug.value}`, { immediate: !invite })
 
 const notFound = computed(() => error.value?.statusCode === 404)
-const failed = computed(() => error.value !== null && !notFound.value)
+const deleted = computed(() => error.value?.statusCode === 410)
+const failed = computed(() => error.value !== null && !notFound.value && !deleted.value)
 
 useHead({ title: () => `${data.value?.session.name ?? t('app.name')} | ${t('app.name')}` })
 
@@ -94,11 +97,21 @@ const hostActions = computed(() => [
   { key: 'invite', label: t('common.invite'), icon: LinkIcon },
 ])
 
-usePollRefresh(() => refresh())
+// Only a loaded Session is refetched; the invite path never loads one.
+usePollRefresh(() => {
+  if (data.value) refresh()
+})
 </script>
 
 <template>
-  <AppShell kind="session">
+  <InviteEntry
+    v-if="invite"
+    :invite="slug"
+  />
+  <AppShell
+    v-else
+    kind="session"
+  >
     <template
       v-if="data"
       #title
@@ -187,7 +200,22 @@ usePollRefresh(() => refresh())
 
     <FullScreenState
       v-else-if="notFound"
-      kind="notFound"
+      kind="invalid"
+    >
+      <template #actions>
+        <AppButton
+          to="/"
+          size="lg"
+        >
+          {{ t('errorPage.home') }}
+          <AppIcon :icon="ChevronRight" />
+        </AppButton>
+      </template>
+    </FullScreenState>
+
+    <FullScreenState
+      v-else-if="deleted"
+      kind="deleted"
     >
       <template #actions>
         <AppButton
