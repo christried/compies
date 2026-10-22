@@ -6,7 +6,7 @@ import confirmDate from '../../server/api/s/[slug]/confirm.post'
 import downloadIcs from '../../server/api/s/[slug]/ics.get'
 import putVote from '../../server/api/s/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, sessionMembers, sessions, users } from '../../server/db/schema'
-import { createTestDb, createTestServer } from './harness'
+import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Slots and Dates are in 2090 so the "in the future" rule holds without a fake clock.
@@ -132,6 +132,30 @@ describe('setting the Date and the .ics', () => {
 
       expect(response.status).toBe(409)
       expect(await testDb.db.select().from(pollVotes)).toEqual([])
+    })
+
+    it('lets no Vote land after the Date is set, even one that races the confirm', async () => {
+      const hostCookie = await signInAsHost()
+      const { slug, sessionId, slotIds } = await createPoll(hostCookie)
+      const { cookie: guestCookie } = await signIn(testDb.db, guest)
+      await addMember(sessionId, guestCookie)
+      // The Host sets the Date just as the Guest's Vote is about to be written.
+      let votesWhenSet: unknown[] | undefined
+      const racingDb = createInterleavingDb(testDb.client, /insert into "poll_votes"/i, async () => {
+        expect((await confirm(hostCookie, slug, { startsAt: '2090-10-31T19:00' })).status).toBe(200)
+        votesWhenSet = await testDb.db.select().from(pollVotes)
+      })
+      const racingRequest = createTestServer(racingDb, { 'PUT /api/s/:slug/slots/:slotId/vote': putVote })
+
+      const voted = await racingRequest(`/api/s/${slug}/slots/${slotIds[0]}/vote`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', cookie: guestCookie },
+        body: JSON.stringify({ value: 'yes' }),
+      })
+      await vi.waitFor(() => expect(votesWhenSet).toBeDefined())
+
+      expect([200, 409]).toContain(voted.status)
+      expect(await testDb.db.select().from(pollVotes)).toEqual(votesWhenSet)
     })
 
     it('answers 403 for a Member who is not the Host and leaves the poll alone', async () => {
