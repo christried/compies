@@ -7,6 +7,29 @@ export const SESSION_NAME_MAX = 60
 /** Slots in a Date poll. */
 export const SLOTS_MAX = 8
 
+/** A Session name's length as the rules count it: trimmed, an emoji counts as one. */
+export function sessionNameLength(raw: string): number {
+  return [...raw.trim()].length
+}
+
+export type SlotProblem = 'in_past' | 'duplicate_slot'
+
+/**
+ * The Slot rules (#1 § Domain rules): a Slot lies in the future and is unique per minute in its
+ * Session. One answer per proposed Slot: `in_past`, `duplicate_slot` when an earlier proposed Slot or
+ * an existing one starts at the same time, or null. Existing Slots are only checked for duplicates,
+ * because a Slot that has become past is still a Slot. The server and the forms both use this.
+ */
+export function slotProblems(proposed: Date[], existing: Date[], now: Date): (SlotProblem | null)[] {
+  const taken = new Set(existing.map(slot => slot.getTime()))
+  return proposed.map((slot) => {
+    if (slot <= now) return 'in_past'
+    if (taken.has(slot.getTime())) return 'duplicate_slot'
+    taken.add(slot.getTime())
+    return null
+  })
+}
+
 /** The Phases of a Session (GLOSSARY: Phase). The MVP uses poll and date_set; the rest come with 1.0. */
 export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
 export type Phase = (typeof PHASES)[number]

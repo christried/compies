@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Plus, X } from '@lucide/vue'
-import { berlinLocalNow } from '~/utils/berlin-time'
-import { SESSION_NAME_MAX, SLOTS_MAX } from '~~/shared/session'
+import { apiErrorKey } from '~/utils/api-error'
+import { SESSION_NAME_MAX, SLOTS_MAX, sessionNameLength, slotProblems as slotRuleProblems } from '~~/shared/session'
+import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // Create a Session (screen M2, `?s=create`): a name, then a Date poll with up to 8 Slots or one
 // direct Date. Only Users with the Host permission get the form (ADR 0002); everyone else sees the
@@ -15,7 +16,8 @@ const name = ref('')
 const mode = ref('poll')
 const slots = ref([''])
 const direct = ref('')
-const now = ref(berlinLocalNow())
+/** Berlin wall-clock now, minute precision, as the fields' lower bound (ADR 0003). */
+const now = ref(utcToBerlin(new Date()))
 const attempted = ref(false)
 const saving = ref(false)
 const failure = ref<string | null>(null)
@@ -23,42 +25,39 @@ const created = ref<{ slug: string, inviteUrl: string } | null>(null)
 const doneHeading = useTemplateRef('doneHeading')
 
 const trimmedName = computed(() => name.value.trim())
+const nameTooLong = computed(() => sessionNameLength(name.value) > SESSION_NAME_MAX)
 const nameError = computed(() => {
   if (attempted.value && trimmedName.value === '') return t('error.nameRequired')
-  if ([...trimmedName.value].length > SESSION_NAME_MAX) return t('error.nameTooLong', { max: SESSION_NAME_MAX })
+  if (nameTooLong.value) return t('error.nameTooLong', { max: SESSION_NAME_MAX })
   return undefined
 })
 
-// Each filled Slot is either in the past, a repeat of an earlier one, or fine. Berlin values share a
-// format, so comparing them as text compares the times.
+/** Each Slot row's problem under the server's Slot rules (shared/session.ts); null for an empty row. */
 const slotProblems = computed(() => {
-  const seen = new Set<string>()
-  return slots.value.map((value) => {
-    if (value === '') return null
-    if (value <= now.value) return 'past'
-    if (seen.has(value)) return 'duplicate'
-    seen.add(value)
-    return null
-  })
+  const instants = slots.value.map(value => (value === '' ? null : berlinToUtc(value)))
+  const problems = slotRuleProblems(instants.filter(instant => instant !== null), [], berlinToUtc(now.value))
+  let next = 0
+  return instants.map(instant => (instant === null ? null : problems[next++] ?? null))
 })
 const slotErrors = computed(() => slotProblems.value.map((problem) => {
-  if (problem === 'past') return t('error.slotPast')
-  if (problem === 'duplicate') return t('error.slotDuplicate')
+  if (problem === 'in_past') return t('error.slotPast')
+  if (problem === 'duplicate_slot') return t('error.slotDuplicate')
   return undefined
 }))
-const directError = computed(() => (direct.value !== '' && direct.value <= now.value ? t('error.slotPast') : undefined))
+const directPast = computed(() => direct.value !== '' && slotRuleProblems([berlinToUtc(direct.value)], [], berlinToUtc(now.value))[0] === 'in_past')
+const directError = computed(() => (directPast.value ? t('error.slotPast') : undefined))
 
 /** Why the CTA is blocked, or null when the form can be sent. */
 const blocker = computed<string | null>(() => {
   if (trimmedName.value === '') return t('error.nameRequired')
-  if ([...trimmedName.value].length > SESSION_NAME_MAX) return t('error.nameTooLong', { max: SESSION_NAME_MAX })
+  if (nameTooLong.value) return t('error.nameTooLong', { max: SESSION_NAME_MAX })
   if (mode.value === 'direct') {
     if (direct.value === '') return t('mvp.create.slotEmpty')
-    return directError.value ? t('mvp.create.blockedPast') : null
+    return directPast.value ? t('mvp.create.blockedPast') : null
   }
   if (slots.value.includes('')) return t('mvp.create.slotEmpty')
-  if (slotProblems.value.includes('past')) return t('mvp.create.blockedPast')
-  if (slotProblems.value.includes('duplicate')) return t('error.slotDuplicate')
+  if (slotProblems.value.includes('in_past')) return t('mvp.create.blockedPast')
+  if (slotProblems.value.includes('duplicate_slot')) return t('error.slotDuplicate')
   return null
 })
 
@@ -77,7 +76,7 @@ function removeSlot(index: number) {
 
 async function submit() {
   attempted.value = true
-  now.value = berlinLocalNow()
+  now.value = utcToBerlin(new Date())
   if (blocker.value || saving.value) return
 
   const body = mode.value === 'poll'
@@ -91,7 +90,7 @@ async function submit() {
     doneHeading.value?.focus()
   }
   catch (error) {
-    failure.value = (error as { statusCode?: number }).statusCode === 403 ? t('error.noHostRight') : t('error.saveFailed')
+    failure.value = t(apiErrorKey(error), { max: SLOTS_MAX })
   }
   finally {
     saving.value = false

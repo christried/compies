@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CalendarClock } from '@lucide/vue'
-import { berlinLocalNow } from '~/utils/berlin-time'
+import { utcToBerlin } from '~~/shared/time'
 
 // Reschedule the set Date (02-components § DateConfirmDialog, screen M3 move; #14). The Host picks a
 // new future Berlin time. The Session stays set, and every Member gets the same .ics updated. The
@@ -18,7 +18,7 @@ const { t } = useI18n()
 const value = ref('')
 
 watch(() => props.open, (open) => {
-  if (open) value.value = berlinLocalNow(new Date(props.startsAt))
+  if (open) value.value = utcToBerlin(new Date(props.startsAt))
 }, { immediate: true })
 
 function confirm() {

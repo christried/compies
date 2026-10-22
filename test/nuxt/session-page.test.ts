@@ -377,6 +377,23 @@ describe('setting the Date', () => {
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Der Termin liegt in der Vergangenheit.'))
     expect(dialog()).not.toBeNull()
   })
+
+  it('does not call every 400 a past Slot: a time the server cannot read is a failed save', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
+    registerEndpoint(`/api/s/${slug}/confirm`, {
+      method: 'POST',
+      handler: () => {
+        throw createError({ statusCode: 400, statusMessage: 'invalid_time' })
+      },
+    })
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    await clickButton(dialog(), 'Festlegen')
+
+    await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Konnte nicht speichern. Nochmal versuchen?'))
+    expect(shownToasts().map(toast => toast.text)).not.toContain('Der Termin liegt in der Vergangenheit.')
+  })
 })
 
 describe('rescheduling and reopening the Date', () => {

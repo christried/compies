@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight, LoaderCircle } from '@lucide/vue'
 import type { InvitePreview } from '~/components/SignInCard.vue'
+import { apiFailure } from '~/utils/api-error'
 import { SIGN_IN_PATH } from '~/utils/auth-guard'
 
 // The Invite link `/s/<slug>-<token>` (#10, ADR 0006, screen 07 `App Einstieg ?s=open`). A signed-out
@@ -31,7 +32,7 @@ async function join() {
     await navigateTo(`/s/${slug}`, { replace: true })
   }
   catch (error) {
-    failure.value = (error as { statusCode?: number }).statusCode === 410 ? 'deleted' : 'invalid'
+    failure.value = apiFailure(error).status === 410 ? 'deleted' : 'invalid'
   }
 }
 
