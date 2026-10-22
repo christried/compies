@@ -170,6 +170,24 @@ describe('the Session poll', () => {
     expect(hostPage.get('[role="toolbar"]').text()).toContain('Einladen')
   })
 
+  it('opens the Slot editor from the Host dock', async () => {
+    document.body.innerHTML = ''
+    const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    const edit = page.get('[role="toolbar"]').findAll('button').find(button => button.text() === 'Termine bearbeiten')
+    expect(edit).toBeDefined()
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+    await edit!.trigger('click')
+
+    const dialog = document.querySelector('[role="dialog"]')
+    expect(dialog?.textContent).toContain('Termine bearbeiten')
+    expect(dialog?.textContent).toContain('Vorgeschlagene Termine')
+    page.unmount()
+    document.body.innerHTML = ''
+  })
+
   it('opens the Invite sheet from the Host dock with the Invite link, and only the Host has that action', async () => {
     const inviteUrl = 'http://localhost/s/freitags-zocken-invite-AbCdEfGhIjKl'
     const hostView = serve(s => view(s, sanneAndLarsi, { session: { isHost: true }, inviteUrl }))
@@ -179,6 +197,7 @@ describe('the Session poll', () => {
     await einladen.trigger('click')
 
     await vi.waitFor(() => expect([...document.querySelectorAll('[role="dialog"]')].some(node => node.textContent?.includes(inviteUrl))).toBe(true))
+    page.unmount()
   })
 
   it('shows the set Date for a direct Session and no vote cards', async () => {

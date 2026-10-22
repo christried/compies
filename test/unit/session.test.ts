@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseNewSession } from '../../server/domain/session'
+import { parseAddedSlot, parseNewSession, slotsEditable } from '../../server/domain/session'
+import { berlinToUtc } from '../../server/domain/time'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Times below are Berlin wall-clock values.
 const now = new Date('2026-10-22T10:00:00Z')
@@ -74,5 +75,42 @@ describe('parseNewSession', () => {
   it('rejects two Slots in the same minute', () => {
     expect(parseNewSession(poll({ slots: ['2026-10-30T20:30', '2026-10-30T20:30'] }), now)).toEqual({ ok: false, error: 'duplicate_slot' })
     expect(parseNewSession(poll({ slots: ['2026-10-30T20:30', '2026-10-30T20:31'] }), now).ok).toBe(true)
+  })
+})
+
+describe('parseAddedSlot', () => {
+  const existing = [berlinToUtc('2026-10-30T20:30')]
+
+  it('turns a future Berlin time into a UTC Slot', () => {
+    expect(parseAddedSlot('2026-10-31T20:00', existing, now)).toEqual({ ok: true, startsAt: new Date('2026-10-31T19:00:00Z') })
+  })
+
+  it('applies the create rules: a real time, in the future, unique per minute', () => {
+    expect(parseAddedSlot('2026-10-30 20:30', existing, now)).toEqual({ ok: false, error: 'invalid_time' })
+    expect(parseAddedSlot(undefined, existing, now)).toEqual({ ok: false, error: 'invalid_time' })
+    expect(parseAddedSlot('2026-10-22T12:00', existing, now)).toEqual({ ok: false, error: 'in_past' })
+    expect(parseAddedSlot('2026-10-30T20:30', existing, now)).toEqual({ ok: false, error: 'duplicate_slot' })
+    expect(parseAddedSlot('2026-10-30T20:31', existing, now).ok).toBe(true)
+  })
+
+  it('holds at most 8 Slots per Session', () => {
+    const seven = slotsOnDays(7).map(local => berlinToUtc(local))
+    const eight = slotsOnDays(8).map(local => berlinToUtc(local))
+    expect(parseAddedSlot('2026-12-01T20:00', seven, now).ok).toBe(true)
+    expect(parseAddedSlot('2026-12-01T20:00', eight, now)).toEqual({ ok: false, error: 'slots_max' })
+  })
+
+  it('does not reject a new Slot because an older Slot has become past', () => {
+    const withPast = [berlinToUtc('2026-10-01T18:00'), ...existing]
+    expect(parseAddedSlot('2026-11-01T20:00', withPast, now).ok).toBe(true)
+  })
+})
+
+describe('slotsEditable', () => {
+  it('lets the Host change Slots only in the poll phase', () => {
+    expect(slotsEditable('poll')).toBe(true)
+    for (const phase of ['draft', 'date_set', 'running', 'finished', 'archived']) {
+      expect(slotsEditable(phase)).toBe(false)
+    }
   })
 })
