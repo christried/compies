@@ -1,0 +1,36 @@
+<script setup lang="ts">
+// Layout frame. hub = header + HubNav (bottom tab bar below md); session = header with a
+// title area and no side panel in the MVP; bare = header only (errors, sign-in).
+withDefaults(defineProps<{ kind?: 'hub' | 'session' | 'bare' }>(), { kind: 'hub' })
+
+const { t } = useI18n()
+</script>
+
+<template>
+  <div class="tex-paper flex min-h-dvh flex-col text-ink">
+    <a
+      href="#stage"
+      class="fixed top-2 left-2 layer-toast -translate-y-24 rounded-pill bg-primary px-4 py-2 font-extrabold text-on-primary focus:translate-y-0"
+    >{{ t('app.skipToStage') }}</a>
+
+    <AppHeader :kind="kind">
+      <template #title>
+        <slot name="title" />
+      </template>
+    </AppHeader>
+
+    <main
+      id="stage"
+      tabindex="-1"
+      class="mx-auto flex w-full max-w-[1100px] flex-1 flex-col px-3.5 pt-3.5 pb-5 md:px-6 md:pt-5"
+    >
+      <slot />
+    </main>
+
+    <HubNav
+      v-if="kind === 'hub'"
+      layout="tabs"
+      class="sticky bottom-0 layer-sticky md:hidden"
+    />
+  </div>
+</template>
