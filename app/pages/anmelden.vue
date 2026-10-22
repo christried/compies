@@ -90,5 +90,20 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
         />
       </div>
     </div>
+
+    <footer class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t-(length:--cp-bw) border-line bg-surface px-4 py-3 text-small">
+      <NuxtLink
+        to="/impressum"
+        class="font-bold text-ink"
+      >
+        {{ t('legal.links.impressum') }}
+      </NuxtLink>
+      <NuxtLink
+        to="/datenschutz"
+        class="font-bold text-ink"
+      >
+        {{ t('legal.links.datenschutz') }}
+      </NuxtLink>
+    </footer>
   </AppShell>
 </template>
