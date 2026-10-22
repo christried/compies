@@ -123,8 +123,11 @@ async function confirmDate(slotId: string) {
   }
 }
 
+const inviteOpen = ref(false)
+
 function onHostAction(key: string) {
   if (key === 'set') openConfirm()
+  else if (key === 'invite') inviteOpen.value = true
   else comingSoon()
 }
 
@@ -287,6 +290,15 @@ usePollRefresh(() => {
       :loading="confirming"
       @confirm="confirmDate"
       @cancel="confirmOpen = false"
+    />
+
+    <InviteSheet
+      v-if="data?.inviteUrl"
+      :open="inviteOpen"
+      :slug="slug"
+      :url="data.inviteUrl"
+      @close="inviteOpen = false"
+      @rotated="refresh()"
     />
   </AppShell>
 </template>
