@@ -919,6 +919,14 @@
       "summary": "{session} (COMPIES)",
       "description": "Zur Session: {url}",
       "alarm": "{session} startet in 1 Stunde"
+    },
+    "set": {
+      "confirmTitle": "Termin festlegen?",
+      "pickLabel": "Welcher Termin?",
+      "slotLabel": "{day}, {time} Uhr",
+      "noFutureSlot": "Kein Termin liegt mehr in der Zukunft.",
+      "dateTime": "{date}, {time} Uhr",
+      "ics": "In den Kalender (.ics)"
     }
   },
   "error": {
