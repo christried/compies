@@ -259,6 +259,20 @@ describe('setting the Date and the .ics', () => {
       expect(await response.text()).toContain('DTSTART:20901107T190000Z')
     })
 
+    it('keeps the Session name as typed, even with $ patterns in it', async () => {
+      const cookie = await signInAsHost()
+      const created = await request('/api/s', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ name: 'Pay $& $\' $$ night', dateMode: 'direct', startsAt: '2090-11-07T20:00' }),
+      })
+      const { slug } = await created.json() as { slug: string }
+
+      const body = await (await ics(cookie, slug)).text()
+
+      expect(body).toContain('SUMMARY:Pay $& $\' $$ night (COMPIES)')
+    })
+
     it('answers 404 while no Date is set', async () => {
       const cookie = await signInAsHost()
       const { slug } = await createPoll(cookie)

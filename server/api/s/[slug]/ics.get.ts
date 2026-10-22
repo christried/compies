@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { createError, defineEventHandler, getRequestURL, getRouterParam, setHeader } from 'h3'
 import de from '../../../../i18n/locales/de.json'
 import { sessions } from '../../../db/schema'
-import { buildIcs } from '../../../domain/ics'
+import { buildIcs, fillCopy } from '../../../domain/ics'
 import { useDb } from '../../../utils/db'
 import { isMember, sessionNotFound } from '../../../utils/invite'
 import { requireUser } from '../../../utils/user'
@@ -26,9 +26,9 @@ export default defineEventHandler(async (event) => {
     sequence: session.icsSequence,
     startsAt: session.startsAt,
     now: new Date(),
-    summary: de.mvp.ics.summary.replace('{session}', session.name),
-    description: de.mvp.ics.description.replace('{url}', url),
-    alarm: de.mvp.ics.alarm.replace('{session}', session.name),
+    summary: fillCopy(de.mvp.ics.summary, { session: session.name }),
+    description: fillCopy(de.mvp.ics.description, { url }),
+    alarm: fillCopy(de.mvp.ics.alarm, { session: session.name }),
     url,
   })
 

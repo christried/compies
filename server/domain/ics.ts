@@ -22,6 +22,14 @@ export interface IcsInput {
   url: string
 }
 
+/**
+ * Fills the `{name}` placeholders of a de.json text. The values go in through a function, so `$&`,
+ * `$'` and the like in a Session name stay as typed instead of being read as replacement patterns.
+ */
+export function fillCopy(template: string, values: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (placeholder, key: string) => values[key] ?? placeholder)
+}
+
 const encoder = new TextEncoder()
 
 /** An instant as the UTC form `YYYYMMDDTHHmmssZ`. */
