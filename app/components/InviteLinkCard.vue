@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import { Copy } from '@lucide/vue'
+import { Check, Copy } from '@lucide/vue'
 
-// The Invite link with a copy button (02-components § InviteLinkCard). The confirmation is a
-// toast, which screen readers announce. Rotating the link arrives with the invite sheet (#16).
+// The Invite link with a copy button (02-components § InviteLinkCard, `App Einstieg ?s=invite`). Once
+// copied, the button reads „Kopiert“ with a check (state `copied`, #1 story 30) until the link changes,
+// and a toast announces it to screen readers.
 const props = defineProps<{ url: string }>()
 
 const { t } = useI18n()
 const { toast } = useToast()
+const copied = ref(false)
+
+watch(() => props.url, () => {
+  copied.value = false
+})
 
 async function copy() {
   try {
     await navigator.clipboard.writeText(props.url)
+    copied.value = true
     toast({ tone: 'success', text: t('invite.copied') })
   }
   catch {
@@ -29,9 +36,9 @@ async function copy() {
       @click="copy"
     >
       <template #icon>
-        <AppIcon :icon="Copy" />
+        <AppIcon :icon="copied ? Check : Copy" />
       </template>
-      {{ t('mvp.create.copyLink') }}
+      {{ copied ? t('invite.copiedShort') : t('mvp.create.copyLink') }}
     </AppButton>
   </div>
 </template>

@@ -18,4 +18,16 @@ describe('InviteLinkCard', () => {
     expect(writeText).toHaveBeenCalledWith(url)
     expect(useToast().toasts.value.at(-1)?.text).toBe('Link kopiert')
   })
+
+  it('shows „Kopiert“ on the button once copied, until the link changes (#1 story 30)', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(async () => {}) }, configurable: true })
+    const page = await mountSuspended(InviteLinkCard, { props: { url } })
+    expect(page.get('button').text()).toBe('Link kopieren')
+
+    await page.get('button').trigger('click')
+    await vi.waitFor(() => expect(page.get('button').text()).toBe('Kopiert'))
+
+    await page.setProps({ url: 'http://localhost/s/freitags-zocken-k7q2-ZyXwVuTsRqPo' })
+    expect(page.get('button').text()).toBe('Link kopieren')
+  })
 })
