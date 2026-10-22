@@ -1,5 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm'
-import { createError, defineEventHandler, getRouterParam } from 'h3'
+import { createError, defineEventHandler, getRequestURL, getRouterParam } from 'h3'
 import { pollSlots, pollVotes, sessionMembers, sessions, users } from '../../db/schema'
 import { bestSlotId, hasVoted, isPast } from '../../domain/poll'
 import { useDb } from '../../utils/db'
@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
   if (session.deletedAt) throw createError({ statusCode: 410, statusMessage: 'Session deleted' })
 
   const now = new Date()
+  const isHost = session.hostId === user.id
   const slots = await db
     .select({ id: pollSlots.id, startsAt: pollSlots.startsAt })
     .from(pollSlots)
@@ -58,8 +59,10 @@ export default defineEventHandler(async (event) => {
       phase: session.phase,
       dateMode: session.dateMode,
       startsAt: session.startsAt,
-      isHost: session.hostId === user.id,
+      isHost,
     },
+    // The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on.
+    inviteUrl: isHost ? `${getRequestURL(event).origin}/s/${session.slug}-${session.inviteToken}` : null,
     viewerId: user.id,
     slots: slots.map(slot => ({
       id: slot.id,

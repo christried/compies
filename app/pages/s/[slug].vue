@@ -91,6 +91,13 @@ function comingSoon() {
   toast({ tone: 'info', text: t('common.comingSoon') })
 }
 
+const inviteOpen = ref(false)
+
+function hostAction(key: string) {
+  if (key === 'invite') inviteOpen.value = true
+  else comingSoon()
+}
+
 const hostActions = computed(() => [
   { key: 'set', label: t('dock.setDate'), icon: CalendarCheck, primary: true },
   // #15 adds "Termine bearbeiten" here.
@@ -236,7 +243,16 @@ usePollRefresh(() => {
     <HostDock
       v-if="data?.session.isHost && data.session.phase === 'poll'"
       :actions="hostActions"
-      @action="comingSoon"
+      @action="hostAction"
+    />
+
+    <InviteSheet
+      v-if="data?.inviteUrl"
+      :open="inviteOpen"
+      :slug="slug"
+      :url="data.inviteUrl"
+      @close="inviteOpen = false"
+      @rotated="refresh()"
     />
   </AppShell>
 </template>
