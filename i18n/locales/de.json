@@ -50,7 +50,11 @@
     "dateSet": "Termin steht",
     "game": "Spiel {n} von {total}",
     "pickBan": "Pick & Ban",
-    "ended": "Vorbei"
+    "ended": "Vorbei",
+    "draft": "Entwurf",
+    "running": "Läuft",
+    "finished": "Beendet",
+    "archived": "Archiv"
   },
   "dock": {
     "label": "Host-Steuerung",
@@ -561,7 +565,8 @@
     "openSignedOut": "Du bist zu {session} eingeladen",
     "invalidTitle": "Dieser Link gilt nicht mehr.",
     "deletedTitle": "Diese Session gibt’s nicht mehr.",
-    "joinedToast": "Du bist drin! Du sitzt erstmal auf der Bench."
+    "joinedToast": "Du bist drin! Du sitzt erstmal auf der Bench.",
+    "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand."
   },
   "pushAsk": {
     "title": "Danke fürs Abstimmen! Sollen wir Bescheid sagen?",
@@ -822,7 +827,13 @@
       "doneText": "{n} Terminvorschläge. Schick den Link in euren Discord, wer ihn öffnet, meldet sich an und stimmt ab.",
       "copyLink": "Link kopieren",
       "copied": "Link kopiert",
-      "toPoll": "Zur Umfrage"
+      "toPoll": "Zur Umfrage",
+      "slotLabel": "Termin {n}",
+      "dateInput": "Datum",
+      "timeInput": "Uhrzeit",
+      "slotEmpty": "Bitte alle Termine ausfüllen.",
+      "saving": "Speichert …",
+      "doneDirectText": "Der Termin steht. Schick den Link in euren Discord, wer ihn öffnet, meldet sich an und sieht ihn."
     },
     "poll": {
       "live": "Aktualisiert sich von selbst",

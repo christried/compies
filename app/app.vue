@@ -8,4 +8,5 @@ setLucideProps({ strokeWidth: 2.5 })
 <template>
   <NuxtPwaManifest />
   <NuxtPage />
+  <ToastStack />
 </template>
