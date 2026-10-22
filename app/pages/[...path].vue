@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { LogOut } from '@lucide/vue'
 import { constructionSite } from '~/utils/construction'
+import type { HomeView } from '~~/shared/session'
 
 // MVP route guard: every path without a page of its own lands here (see utils/construction.ts).
 const route = useRoute()
@@ -8,11 +9,18 @@ const site = computed(() => constructionSite(route.path))
 
 const { t } = useI18n()
 const signOut = useSignOut()
+
+// Shares the Home list (same key), so the CTA can point at the User's latest open poll (#12).
+const { data: home } = useFetch<HomeView>('/api/s', { key: 'home-sessions' })
+const latestPollSlug = computed(() => home.value?.sessions.find(session => session.phase === 'poll')?.slug ?? null)
 </script>
 
 <template>
   <AppShell :kind="site.shell">
-    <ConstructionPage :area="site.area">
+    <ConstructionPage
+      :area="site.area"
+      :latest-poll-slug="latestPollSlug"
+    >
       <!-- „Abmelden“ is the only working action on Profil in the MVP. -->
       <template
         v-if="site.area === 'profil'"

@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { House } from '@lucide/vue'
+import { CalendarDays, House } from '@lucide/vue'
 import type { ConstructionArea } from '~/utils/construction'
 
-// Full page for every route that is not built yet (M4). The CTA leads Home until Home
-// can point at the User's latest open poll.
-defineProps<{ area: ConstructionArea }>()
+// Full page for every route that is not built yet (M4). The CTA leads to the User's latest open
+// poll when they have one (`latestPollSlug`), otherwise to Home.
+const props = withDefaults(defineProps<{
+  area: ConstructionArea
+  latestPollSlug?: string | null
+}>(), { latestPollSlug: null })
 
 const { t } = useI18n()
+const cta = computed(() => props.latestPollSlug
+  ? { to: `/s/${props.latestPollSlug}`, label: t('mvp.site.toPoll'), icon: CalendarDays }
+  : { to: '/', label: t('mvp.site.toHome'), icon: House })
 const heading = useTemplateRef('heading')
 const nuxtApp = useNuxtApp()
 
@@ -44,13 +50,13 @@ onMounted(() => {
         </p>
         <div class="mt-1.5 flex flex-wrap gap-2.5 max-md:justify-center">
           <AppButton
-            to="/"
+            :to="cta.to"
             size="lg"
           >
             <template #icon>
-              <AppIcon :icon="House" />
+              <AppIcon :icon="cta.icon" />
             </template>
-            {{ t('mvp.site.toHome') }}
+            {{ cta.label }}
           </AppButton>
           <slot name="secondary" />
         </div>
