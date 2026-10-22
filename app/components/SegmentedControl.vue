@@ -1,0 +1,59 @@
+<script setup lang="ts">
+import type { Component } from 'vue'
+
+// Two to four exclusive options as a radio group (02-components § SegmentedControl). Arrow keys
+// move and select, with the focus following; the selected option is the only tab stop.
+const props = defineProps<{
+  modelValue: string
+  options: { value: string, label: string, icon?: Component }[]
+  /** The group's accessible name. */
+  label: string
+}>()
+
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+
+const group = useTemplateRef('group')
+
+function select(value: string) {
+  emit('update:modelValue', value)
+}
+
+function onKeydown(event: KeyboardEvent, index: number) {
+  const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key]
+  if (step === undefined) return
+  event.preventDefault()
+  const next = (index + step + props.options.length) % props.options.length
+  select(props.options[next]!.value)
+  nextTick(() => (group.value?.querySelectorAll<HTMLElement>('[role="radio"]')[next])?.focus())
+}
+</script>
+
+<template>
+  <div
+    ref="group"
+    role="radiogroup"
+    :aria-label="label"
+    class="grid max-w-[420px] overflow-hidden rounded-pill border-(length:--cp-bw) border-line"
+    :style="{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }"
+  >
+    <button
+      v-for="(option, index) in options"
+      :key="option.value"
+      type="button"
+      role="radio"
+      :aria-checked="option.value === modelValue ? 'true' : 'false'"
+      :tabindex="option.value === modelValue ? 0 : -1"
+      class="hit-44 flex items-center justify-center gap-1.5 px-3 text-small font-bold outline-memphis focus-ring"
+      :class="option.value === modelValue ? 'bg-ink text-paper' : 'bg-surface text-ink'"
+      @click="select(option.value)"
+      @keydown="onKeydown($event, index)"
+    >
+      <AppIcon
+        v-if="option.icon"
+        :icon="option.icon"
+        :size="15"
+      />
+      {{ option.label }}
+    </button>
+  </div>
+</template>
