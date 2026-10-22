@@ -114,8 +114,21 @@ describe('sign-in and the allowlist sync', () => {
     expect(await userRow('kitty@example.com')).toMatchObject({ name: 'Kitty' })
   })
 
-  it('never links a second provider implicitly by email', async () => {
+  it('links a second provider with the same verified email to the existing User', async () => {
+    setAllowlist({ hosts: `twitch:${kittyOnTwitch.id}` })
     await signIn(testDb.db, kitty)
+
+    const { cookie, location } = await signIn(testDb.db, kittyOnTwitch)
+
+    expect(cookie).toContain('better-auth.session_token=')
+    expect(location).toBe('/')
+    expect(await testDb.db.select().from(users)).toHaveLength(1)
+    expect(await testDb.db.select().from(authAccounts)).toHaveLength(2)
+    expect(await userRow('kitty@example.com')).toMatchObject({ canHost: true })
+  })
+
+  it('does not link when the existing User has an unverified email', async () => {
+    await signIn(testDb.db, { ...kitty, emailVerified: false })
 
     const { cookie, location } = await signIn(testDb.db, kittyOnTwitch)
 

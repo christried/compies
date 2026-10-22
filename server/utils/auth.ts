@@ -52,8 +52,10 @@ export function createAuth(db: Db) {
     session: { modelName: 'auth_sessions', cookieCache: { enabled: false } },
     account: {
       modelName: 'auth_accounts',
-      // A second provider is only ever linked explicitly from the profile (ADR 0008).
-      accountLinking: { disableImplicitLinking: true },
+      // Signing in with a second provider joins the existing User when both providers report the
+      // same email as verified (ADR 0009). Never add trustedProviders or allowDifferentEmails:
+      // either would let an unverified email take over someone else's User.
+      accountLinking: { enabled: true },
     },
     verification: { modelName: 'auth_verifications' },
     advanced: { database: { generateId: 'uuid' } },
