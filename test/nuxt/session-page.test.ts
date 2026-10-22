@@ -46,7 +46,7 @@ describe('the Session link', () => {
     expect(page.text()).toContain('Termin steht')
   })
 
-  it('shows the generic not-found page for a Session the User is not a Member of', async () => {
+  it('shows the generic invalid page for a Session the User is not a Member of', async () => {
     registerEndpoint('/api/s/geheim-k7q2', {
       method: 'GET',
       handler: () => {
@@ -56,6 +56,6 @@ describe('the Session link', () => {
 
     const page = await mountSuspended(SessionPage, { route: '/s/geheim-k7q2' })
 
-    expect(page.get('h1').text()).toBe('Hier ist nix. Nicht mal ein Dino.')
+    expect(page.get('h1').text()).toBe('Link ungültig')
   })
 })
