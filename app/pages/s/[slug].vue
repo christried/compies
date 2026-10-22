@@ -382,7 +382,6 @@ usePollRefresh(() => {
       @close="editing = false"
       @changed="refresh"
     />
-    />
 
     <DateRescheduleDialog
       v-if="data?.session.isHost && data.session.startsAt"

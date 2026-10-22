@@ -170,6 +170,14 @@ describe('the Session poll', () => {
     expect(hostPage.get('[role="toolbar"]').text()).toContain('Einladen')
   })
 
+  it('renders no stray markup as text for the Host', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
+
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    expect(page.text()).not.toMatch(/\/>|<\//)
+  })
+
   it('opens the Slot editor from the Host dock', async () => {
     document.body.innerHTML = ''
     const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
