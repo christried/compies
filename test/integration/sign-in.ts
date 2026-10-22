@@ -12,6 +12,8 @@ export interface ProviderProfile {
   id: string
   name: string
   email?: string | null
+  /** Whether the provider vouches for the email; defaults to true when there is one. */
+  emailVerified?: boolean
   image?: string
 }
 
@@ -45,7 +47,7 @@ function stubProvider(profile: ProviderProfile) {
     if (url === 'https://discord.com/api/users/@me') {
       return Response.json({
         id: profile.id, username: profile.name, global_name: profile.name, discriminator: '0',
-        avatar: null, email: profile.email ?? null, verified: !!profile.email,
+        avatar: null, email: profile.email ?? null, verified: profile.emailVerified ?? !!profile.email,
       })
     }
     if (url === 'https://id.twitch.tv/oauth2/token') {
@@ -53,7 +55,7 @@ function stubProvider(profile: ProviderProfile) {
         ...tokens,
         id_token: unsignedJwt({
           sub: profile.id, preferred_username: profile.name, picture: profile.image,
-          email: profile.email ?? null, email_verified: !!profile.email,
+          email: profile.email ?? null, email_verified: profile.emailVerified ?? !!profile.email,
         }),
       })
     }
