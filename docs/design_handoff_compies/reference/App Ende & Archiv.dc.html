@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<dc-import name="AppViewer" flow-taps="{{ true }}" kicker="Phase 4, Teil E" title="Ende &amp; Archiv" scope="{{ scope }}" dark="{{ dark }}" embed="{{ embed }}" fw="{{ fw }}" fh="{{ fh }}" screens="{{ screens }}" states="{{ states }}" roles="{{ roles }}" vps="{{ vps }}" notes="{{ notes }}" cur-name="{{ curName }}" cur-state="{{ curState }}" toggle-theme="{{ toggleTheme }}" hint-size="100%,900px">
+<dc-import name="AppFrame" vp="{{ vp }}" kind="{{ kind }}" nav="archiv" me="{{ me }}" is-host="{{ isHost }}" is-admin="{{ isHost }}" title="Freitags-Zocken" pill="{{ pill }}" panel="{{ panel }}" dock="{{ dock }}" emote="{{ emote }}" hint-size="1280px,800px">
+
+<sc-if value="{{ sCer }}">
+  <dc-import name="AwardCeremony" style="width:100%" size="{{ vp }}" motion="full" can-skip="{{ isHost }}" subtitle="Freitags-Zocken, 7 Spiele" rows="{{ awardRows }}" members="{{ awardMembers }}" hint-size="100%,560px"></dc-import>
+</sc-if>
+
+<sc-if value="{{ sShare }}">
+  <div style="display:flex;flex-direction:column;gap:14px;opacity:.35" aria-hidden="true"><span style="font-family:var(--cp-font-display);font-size:40px;line-height:1">Nacht Eulen gewinnt!</span><span style="height:300px;border-radius:16px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)"></span></div>
+  <div style="position:absolute;inset:0;z-index:50;background:var(--cp-overlay);display:flex;align-items:{{ sheetAlign }};justify-content:center;padding:{{ sheetOuter }}">
+    <div role="dialog" aria-label="Ergebnis teilen" style="width:100%;max-width:{{ shareMax }};max-height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:20px;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ sheetR }};background:var(--cp-surface);box-shadow:var(--cp-shadow-modal)">
+      <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font-family:var(--cp-font-display);font-size:28px;line-height:1">Ergebnis teilen</span><span aria-label="Schließen" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="x" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></div>
+      <div role="radiogroup" aria-label="Format" style="align-self:flex-start;display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ fmts }}" as="f" hint-placeholder-count="2"><span role="radio" aria-checked="{{ f.on }}" style="display:grid;place-items:center;height:38px;padding:0 14px;border-left:{{ f.bl }};background:{{ f.bg }};color:{{ f.fg }};font-weight:700;font-size:13px">{{ f.n }}</span></sc-for></div>
+      <div style="align-self:center;width:{{ imgW }};border:var(--cp-bw) solid var(--cp-line);border-radius:12px;overflow:hidden;box-shadow:var(--cp-shadow-card)"><dc-import name="ShareImage" style="width:100%" format="{{ imgFmt }}" rows="{{ shareRows }}" games="{{ shareGames }}" people="{{ 9 }}" hint-size="100%,200px"></dc-import></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <span style="flex:1 1 180px;display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800"><dc-import name="Icon" icon="download" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Bild herunterladen</span>
+        <span data-next="tap" style="flex:1 1 180px;display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:800"><dc-import name="Icon" icon="{{ copyIcon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import>{{ copyLabel }}</span>
+      </div>
+      <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Der Link zeigt das Bild mit Vorschau (z. B. im Discord) und führt Eingeloggte ins Archiv. Alle anderen sehen nur das Bild.</span>
+    </div>
+  </div>
+  <sc-if value="{{ copied }}"><div role="status" style="position:absolute;left:50%;top:{{ toastT }};transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;padding:10px 16px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-surface);box-shadow:var(--cp-shadow-soft);font-weight:700;font-size:14px;width:max-content;max-width:calc(100% - 24px);box-sizing:border-box;text-wrap:pretty"><dc-import name="Icon" icon="check" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import>Link kopiert. Zeig’s allen.</div></sc-if>
+</sc-if>
+
+<sc-if value="{{ sReplay }}">
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Archiv, Sa 25.10.2026, 7 Spiele</span><span style="font-family:var(--cp-font-display);font-size:{{ h1 }};line-height:1">Battle-Replay</span></div>
+    <dc-import name="BattleReplay" style="width:100%" size="{{ vp }}" motion="full" hint-size="100%,380px"></dc-import>
+    <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border:2px dashed var(--cp-line);border-radius:12px;background:var(--cp-surface)"><dc-import name="Icon" icon="info" size="{{ 18 }}" hint-size="18px,18px"></dc-import><span style="font-size:13px;text-wrap:pretty">Läuft nur hier in der App, ohne Video-Export. Teilen geht über das Ergebnis-Bild.</span></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sList }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap"><span style="flex:1;font-family:var(--cp-font-display);font-size:{{ h1 }};line-height:1">Archiv</span><span style="font-size:13px;color:var(--cp-ink-2)">{{ listCount }}</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div style="position:relative;flex:1 1 220px;display:flex;align-items:center"><span style="position:absolute;left:14px;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="search" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><span style="width:100%;height:46px;box-sizing:border-box;padding:0 14px 0 42px;display:flex;align-items:center;border-radius:12px;border:var(--cp-bw) solid {{ searchBc }};background:var(--cp-surface);color:{{ searchC }}">{{ searchTxt }}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ filters }}" as="f" hint-placeholder-count="3"><span aria-pressed="{{ f.on }}" style="display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:{{ f.bg }};color:{{ f.fg }};font-weight:700;font-size:13px">{{ f.n }}</span></sc-for></div></div>
+    <sc-if value="{{ listFull }}">
+      <div style="display:grid;grid-template-columns:{{ archCols }};gap:12px">
+        <sc-for list="{{ arch }}" as="a" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;gap:10px;padding:14px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:2.5px solid var(--cp-line);border-radius:12px;background-color:var(--cp-team-{{ a.t }});background-image:var(--cp-team-{{ a.t }}-pattern)"><dc-import name="TeamMark" team="{{ a.t }}" size="{{ 28 }}" hint-size="28px,28px"></dc-import><span style="min-width:0;padding:1px 8px;border-radius:8px;background:var(--cp-team-{{ a.t }});color:var(--cp-team-{{ a.t }}-ink);font-family:var(--cp-font-display);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.w }}</span><span style="margin-left:auto;display:grid"><dc-import name="Icon" icon="trophy" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></div>
+          <div style="display:flex;flex-direction:column;line-height:1.3"><b style="font-size:16px">{{ a.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ a.d }}</span></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><sc-if value="{{ a.mine }}"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);font-size:11px;font-weight:800;color:var(--cp-on-primary)"><dc-import name="Icon" icon="medal" size="{{ 12 }}" hint-size="12px,12px"></dc-import>{{ a.mine }}</span></sc-if><sc-if value="{{ a.host }}"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:999px;border:2px solid var(--cp-line);font-size:11px;font-weight:800"><dc-import name="Icon" icon="crown" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Host</span></sc-if><span style="font-size:12px;color:var(--cp-ink-2)">{{ a.fmt }}</span></div>
+        </div></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ listLoad }}">
+      <div aria-busy="true" aria-label="Archiv lädt" style="display:grid;grid-template-columns:{{ archCols }};gap:12px">
+        <sc-for list="{{ skel }}" as="k" hint-placeholder-count="6"><div aria-hidden="true" style="display:flex;flex-direction:column;gap:10px;padding:14px;border:var(--cp-bw) solid var(--cp-line-soft);border-radius:16px;background:var(--cp-surface)">
+          <span style="height:46px;border-radius:12px;background:var(--cp-paper-2);animation:cpPulse 1.4s ease-in-out infinite;animation-delay:{{ k.d }}"></span>
+          <span style="width:{{ k.w }};height:16px;border-radius:6px;background:var(--cp-paper-2);animation:cpPulse 1.4s ease-in-out infinite;animation-delay:{{ k.d }}"></span>
+          <span style="width:45%;height:12px;border-radius:6px;background:var(--cp-paper-2);animation:cpPulse 1.4s ease-in-out infinite;animation-delay:{{ k.d }}"></span>
+          <span style="width:84px;height:24px;border-radius:999px;background:var(--cp-paper-2);animation:cpPulse 1.4s ease-in-out infinite;animation-delay:{{ k.d }}"></span>
+        </div></sc-for>
+      </div>
+      <div role="status" style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><span style="flex:none;width:16px;height:16px;box-sizing:border-box;border-radius:50%;border:2.5px solid var(--cp-ink-3);border-top-color:var(--cp-ink);animation:cpSpin .9s linear infinite"></span>Wir holen eure Abende aus dem Archiv …</div>
+    </sc-if>
+    <sc-if value="{{ listEmpty }}">
+      <div style="display:flex;flex-direction:{{ emptyDir }};align-items:center;gap:20px;padding:24px;border:var(--cp-bw) dashed var(--cp-line);border-radius:20px;background:var(--cp-surface)"><dc-import name="CompibertRig" variant="bust" size="{{ 130 }}" state="{{ emptyState }}" hint-size="130px,130px"></dc-import><div style="display:flex;flex-direction:column;gap:8px;max-width:44ch"><span style="font-family:var(--cp-font-display);font-size:28px;line-height:1">{{ emptyTitle }}</span><span style="color:var(--cp-ink-2);text-wrap:pretty">{{ emptyText }}</span></div></div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sDetail }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:4px"><span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><dc-import name="Icon" icon="chevron-left" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Archiv</span><span style="font-family:var(--cp-font-display);font-size:{{ h1 }};line-height:1">Freitags-Zocken</span><span style="font-size:13px;color:var(--cp-ink-2)">Sa 25.10.2026, 4 Teams à 2, Lucky Wheel, 7 Spiele inkl. Tiebreaker</span></div>
+      <div style="flex:none;display:flex;gap:8px"><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;font-size:14px"><dc-import name="Icon" icon="share-2" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Teilen</span><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700;font-size:14px"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Battle-Replay</span></div></div>
+    <div role="tablist" aria-label="Archiv" style="display:flex;gap:2px;border-bottom:2px solid var(--cp-line-soft);overflow-x:auto;scrollbar-width:none"><sc-for list="{{ dTabs }}" as="t" hint-placeholder-count="4"><span role="tab" aria-selected="{{ t.on }}" style="display:flex;align-items:center;gap:6px;height:46px;padding:0 12px;border-bottom:3px solid {{ t.bar }};margin-bottom:-2px;color:{{ t.c }};font-weight:{{ t.w }};white-space:nowrap"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 16 }}" offset="{{ t.off }}" hint-size="16px,16px"></dc-import>{{ t.n }}</span></sc-for></div>
+    <sc-if value="{{ dOver }}">
+      <div style="display:grid;grid-template-columns:{{ dCols }};gap:16px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border:3px solid var(--cp-line);border-radius:14px;background-color:var(--cp-team-8);background-image:var(--cp-team-8-pattern)"><dc-import name="TeamMark" team="{{ 8 }}" size="{{ 40 }}" hint-size="40px,40px"></dc-import><div style="display:flex;flex-direction:column;padding:4px 10px;border-radius:10px;background:var(--cp-team-8);color:var(--cp-team-8-ink)"><span style="font-size:12px;font-weight:700">Sieger nach Tiebreaker</span><span style="font-family:var(--cp-font-display);font-size:24px;line-height:1">Nacht Eulen</span></div><span style="margin-left:auto;display:flex"><dc-import name="Avatar" who="Olli" size="{{ 36 }}" dot="{{ false }}" hint-size="36px,36px"></dc-import><span style="margin-left:-8px;display:grid"><dc-import name="Avatar" who="Bea" size="{{ 36 }}" dot="{{ false }}" hint-size="36px,36px"></dc-import></span></span></div>
+          <sc-for list="{{ finalRows }}" as="l" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:4px 10px 4px 4px;border-radius:12px;border:2px solid var(--cp-line-soft)"><span style="flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:2px solid var(--cp-line);background:{{ l.rbg }};color:{{ l.rfg }};font-family:var(--cp-font-display);font-size:17px">{{ l.rank }}</span><dc-import name="TeamMark" team="{{ l.t }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import><b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ l.who }}</span><span style="font-family:var(--cp-font-num);font-size:22px">{{ l.pts }}</span></div></sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px"><div style="border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden;box-shadow:var(--cp-shadow-card)"><dc-import name="ShareImage" style="width:100%" format="wide" rows="{{ shareRows }}" games="{{ shareGames }}" people="{{ 9 }}" hint-size="100%,200px"></dc-import></div><span style="font-size:12px;color:var(--cp-ink-2)">Das Ergebnis-Bild, wie es geteilt wird.</span></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ dGames }}">
+      <div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ games }}" as="g" hint-placeholder-count="7"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:2px solid var(--cp-line);border-radius:12px;background:{{ g.bg }}"><span style="flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-paper-2);font-weight:800;font-size:12px">{{ g.no }}</span><div style="flex:1;min-width:140px;display:flex;flex-direction:column;line-height:1.3"><b>{{ g.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ g.how }}</span></div><span style="display:flex;gap:4px;align-items:center"><sc-for list="{{ g.place }}" as="p" hint-placeholder-count="4"><span style="display:flex;align-items:center;gap:3px;font-size:12px;font-weight:700;padding:0 6px 0 2px;height:26px;border-radius:999px;border:1.5px solid var(--cp-line-soft)"><dc-import name="TeamMark" team="{{ p.t }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import>{{ p.p }}</span></sc-for></span><sc-if value="{{ g.score }}"><span style="font-family:var(--cp-font-num);color:var(--cp-ink-2);min-width:60px;text-align:right">{{ g.score }}</span></sc-if><sc-if value="{{ g.corr }}"><span style="padding:0 6px;border-radius:6px;border:1.5px solid var(--cp-line);font-size:10px;font-weight:800">korrigiert</span></sc-if></div></sc-for></div>
+    </sc-if>
+    <sc-if value="{{ dLog }}">
+      <div style="display:grid;grid-template-columns:{{ dCols2 }};gap:16px;align-items:start">
+        <sc-for list="{{ logs }}" as="col" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:8px;padding:14px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)"><b style="display:flex;align-items:center;gap:6px"><dc-import name="Icon" icon="{{ col.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ col.n }}<span style="margin-left:auto;font-size:12px;font-weight:600;color:var(--cp-ink-2)">nur lesen</span></b><sc-for list="{{ col.rows }}" as="r" hint-placeholder-count="5"><sc-if value="{{ r.sec }}"><b style="margin-top:4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-ink-2)">{{ r.sec }}</b></sc-if><sc-if value="{{ r.row }}"><div style="display:flex;gap:10px;align-items:flex-start"><span style="flex:none;font-family:var(--cp-font-mono);font-size:11px;color:var(--cp-ink-2);padding-top:2px;width:38px">{{ r.r }}</span><span style="font-size:13px;line-height:1.4;text-wrap:pretty;font-style:{{ r.fs }};color:{{ r.c }}"><b>{{ r.a }}</b> {{ r.b }}</span></div></sc-if></sc-for></div></sc-for>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+</dc-import>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KEY='compies-app-E';
+const TN={1:'Wilde Gurken',2:'Team Orange',4:'Käse Turbo',8:'Nacht Eulen'};
+const SCR=[
+ {k:'ceremony',no:'19',n:'Siegerehrung',scope:'[1.0]',roles:1,kind:'session',st:[['run','Pokal-Lauf'],['share','Teilen: Querformat'],['square','Teilen: Quadrat'],['copied','Link kopiert']],notes:['6b „Pokal-Lauf“: Plätze von unten nach oben, dann rennt Compibert mit dem Pokal rein, stolpert, der Pokal landet beim Sieger. Danach poppen die Avatare der Siegerpartei auf, Compibert tanzt. Gag-Varianten wechseln. Nur der Host kann überspringen.','Optionaler 3D-Podest ist ausdrücklich nur hier erlaubt (TresJS, lazy). Das Mockup zeigt die 2D-Fassung.','Teilen: Querformat 1200 × 630 (OG/Discord) oder Quadrat 1080 × 1080. Download als PNG oder Link mit Vorschau. Bild wird serverseitig per Satori gebaut.']},
+ {k:'replay',no:'20',n:'Battle-Replay',scope:'[1.0 – letztes Ticket]',roles:0,kind:'hub',st:[['play','Abspielen']],notes:['9a „Wettrennen“: eine Bahn pro Partei, 1,45 s pro Spiel, „FÜHRUNG“-Stempel bei Führungswechsel, Krone im Ziel. Compibert unten rechts reagiert ohne Sprechblase.','Nur in der App (GSAP), kein Server, kein Video. Geht das so nicht, fliegt das Feature. Steuerung: Play/Pause, nächstes Spiel, 2×.','Erreichbar aus der Siegerehrung und aus dem Archiv-Detail.']},
+ {k:'list',no:'21',n:'Archiv',scope:'[1.0]',roles:0,kind:'hub',st:[['full','Liste'],['empty','Leer'],['none','Suche ohne Treffer'],['load','Lädt']],notes:['Sichtbar sind alle Sessions, in denen man mindestens ein Spiel in einer Partei gespielt hat, plus alles für die Plattform-Admin. [Post-1.0] zusätzlich alle Crew-Sessions.','Karten zeigen Sieger in Teamfarbe + Mark, Datum, Format und die eigene Platzierung. Filter: Alle, Gewonnen, Als Host.','Leer: Compibert schläft; Hinweis, dass Sessions nach dem ersten gespielten Spiel hier landen.','Lädt: Skelett-Karten in derselben Form wie die echten (Sieger-Streifen, Name, Datum, Platzierung), leicht versetzt pulsierend, darunter eine Statuszeile. Suche und Filter bleiben bedienbar. Reduzierte Bewegung: kein Pulsieren.']},
+ {k:'detail',no:'22',n:'Archiv-Detail',scope:'[1.0]',roles:0,kind:'hub',st:[['over','Endstand + Bild'],['games','Alle Spiele'],['log','Chat & Aktivität']],notes:['Nur lesen. Endstand mit Siegerpartei groß, alle Spiele mit Platzierungen, Score (kosmetisch) und „korrigiert“-Marker.','Chat und Aktivität des Abends nebeneinander (mobil untereinander), mit Zeitstempeln und Spiel-Abschnitten.','Teilen öffnet dasselbe Sheet wie nach der Siegerehrung; Battle-Replay startet direkt.']}
+];
+const rows=[[8,18],[1,15],[2,11],[4,6]];
+class Component extends DCLogic {
+  state={s:'ceremony',st:{},vp:'desk',role:'host',dark:false,embed:false};
+  componentDidMount(){
+    let g={},l={}; try{g=JSON.parse(localStorage.getItem('compies-app')||'{}');l=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+    const q=new URLSearchParams(location.search), n={...this.state,...g,...l};
+    if(q.get('s')) n.s=q.get('s'); if(q.get('st')) n.st={...n.st,[n.s]:q.get('st')}; if(q.get('vp')) n.vp=q.get('vp'); if(q.get('role')) n.role=q.get('role'); if(q.get('theme')) n.dark=q.get('theme')==='dark'; n.embed=q.get('embed')==='1';
+    if(!SCR.some(x=>x.k===n.s)) n.s='ceremony'; this.setState(n);
+  }
+  save(p){ this.setState(p,()=>{ if(this.state.embed) return; const S=this.state; try{localStorage.setItem('compies-app',JSON.stringify({vp:S.vp,role:S.role,dark:S.dark}));localStorage.setItem(KEY,JSON.stringify({s:S.s,st:S.st}));}catch(e){} }); }
+  renderVals(){
+    const S=this.state, C=SCR.find(x=>x.k===S.s)||SCR[0], st=S.st[C.k]||C.st[0][0], desk=S.vp!=='mob', mob=!desk;
+    const seg=(arr,cur,set)=>arr.map(([k,n],i)=>({n,on:cur===k,bl:i?'2px solid var(--cp-line)':'0',bg:cur===k?'var(--cp-ink)':'transparent',fg:cur===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>set(k)}));
+    const screens=SCR.map(x=>({no:x.no,n:x.n,on:x.k===C.k,bs:x.scope.includes('Ticket')?'dashed':'solid',bg:x.k===C.k?'var(--cp-ink)':'var(--cp-surface)',fg:x.k===C.k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.save({s:x.k})}));
+    const states=C.st.map(([k,n])=>({n,on:k===st,bg:k===st?'var(--cp-primary)':'var(--cp-surface)',fg:k===st?'var(--cp-on-primary)':'var(--cp-ink)',pick:()=>this.save({st:{...S.st,[C.k]:k}})}));
+    const isHost=C.roles?S.role==='host':false;
+    const v={scope:C.scope,dark:S.dark,embed:S.embed,fw:desk?1280:390,fh:desk?800:844,screens,states,notes:C.notes,curName:C.no+' '+C.n,curState:C.st.find(x=>x[0]===st)[1],vps:seg([['desk','Desktop 1280'],['mob','Mobil 390']],S.vp,k=>this.save({vp:k})),roles:C.roles?seg([['host','Host (Sanne)'],['player','Spielerin (Kitty)']],S.role,k=>this.save({role:k})):[],toggleTheme:()=>this.save({dark:!S.dark}),
+      vp:S.vp,desk,mob,kind:C.kind,me:isHost?'Sanne':'Kitty',isHost,pill:'end',panel:'none',dock:[],emote:C.k==='ceremony'&&st==='run',h1:desk?'44px':'34px',
+      sCer:C.k==='ceremony'&&st==='run',sShare:C.k==='ceremony'&&st!=='run',sReplay:C.k==='replay',sList:C.k==='list',sDetail:C.k==='detail',
+      awardRows:rows.map(([t,pts])=>({t,pts,name:TN[t]})),awardMembers:[{who:'Olli'},{who:'Bea'}],
+      shareRows:rows.map(([t,pts])=>({t,pts,name:TN[t]})),shareGames:[['Rocket League',1],['Mario Kart 8',8],['Counter-Strike 2',8],['Overcooked 2',1],['Codenames',2],['Halo Infinite',1],['Gang Beasts',8]].map(([name,w])=>({name,w})),
+      sheetAlign:desk?'center':'flex-end',sheetOuter:desk?'24px':'0',sheetR:desk?'20px':'24px 24px 0 0',shareMax:st==='square'?'520px':'720px',imgFmt:st==='square'?'square':'wide',imgW:st==='square'?(desk?'380px':'100%'):'100%',
+      fmts:[['wide','Querformat'],['square','Quadrat']].map(([k,n],i)=>{const on=(st==='square'?'square':'wide')===k;return {n,on,bl:i?'2px solid var(--cp-line)':'0',bg:on?'var(--cp-ink)':'transparent',fg:on?'var(--cp-paper)':'var(--cp-ink)'};}),
+      copied:st==='copied',copyIcon:st==='copied'?'check':'link',copyLabel:st==='copied'?'Kopiert':'Link kopieren',toastT:desk?'84px':'70px'};
+    if(C.k==='ceremony'&&st!=='run'){ v.panel='none'; }
+    // list
+    const AR=[[8,'Freitags-Zocken','Sa 25.10.2026, 7 Spiele, 9 Leute','Nacht Eulen','2. Platz',true,'4 Teams à 2'],[1,'Halloween-Turnier','Fr 31.10.2025, 6 Spiele','Wilde Gurken','Sieg',false,'4 Teams à 2'],[3,'Mario-Kart-Marathon','Sa 18.10.2025, 8 Spiele','Bea','3. Platz',false,'Jeder gegen jeden'],[4,'Spieleabend #12','Sa 04.10.2025, 5 Spiele','Käse Turbo','4. Platz',true,'2 Teams à 3'],[5,'Brettspiel-Sonntag','So 21.09.2025, 4 Spiele','Grüne Welle','Sieg',false,'3 Teams à 2'],[6,'CS-Abend 2v2','Fr 12.09.2025, 6 Spiele','Blaue Bohnen','2. Platz',true,'2 Teams à 2']];
+    const st2=C.k==='list'?st:'';
+    Object.assign(v,{listCount:st2==='full'?'7 Sessions':'',listFull:st2==='full',listLoad:st2==='load',skel:Array.from({length:desk?6:3},(_,i)=>({d:(i*120)+'ms',w:['70%','55%','62%'][i%3]})),listEmpty:st2==='empty'||st2==='none',archCols:desk?'repeat(3,1fr)':'1fr',emptyDir:desk?'row':'column',
+      searchTxt:st2==='none'?'Halo':'Session suchen',searchC:st2==='none'?'var(--cp-ink)':'var(--cp-ink-2)',searchBc:st2==='none'?'var(--cp-focus)':'var(--cp-line)',
+      filters:[['Alle',true],['Gewonnen',false],['Als Host',false]].map(([n,on])=>({n,on,bg:on?'var(--cp-ink)':'var(--cp-surface)',fg:on?'var(--cp-paper)':'var(--cp-ink)'})),
+      arch:AR.map(([t,n,d,w,mine,host,fmt])=>({t,n,d,w,mine,host,fmt})),
+      emptyState:st2==='none'?'confused':'sleep',emptyTitle:st2==='none'?'Nix gefunden zu „Halo“.':'Hier wird’s bald voll.',emptyText:st2==='none'?'Probier einen anderen Namen oder nimm den Filter raus.':'Sobald du in einer Session mindestens ein Spiel gespielt hast, landet sie hier: Endstand, alle Spiele, Chat und das Ergebnis-Bild.'});
+    // detail
+    const dk=C.k==='detail'?st:'over';
+    v.dTabs=[['over','Endstand','trophy'],['games','Spiele','gamepad-2'],['log','Chat & Aktivität','history']].map(([k,n,icon])=>{const a=k===dk;return {n,icon,on:a,bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':''};});
+    Object.assign(v,{dOver:dk==='over',dGames:dk==='games',dLog:dk==='log',dCols:desk?'minmax(0,1fr) minmax(0,1.1fr)':'1fr',dCols2:desk?'1fr 1fr':'1fr',
+      finalRows:rows.map(([t,pts],i)=>({t,rank:(i+1)+'.',pts:String(pts),name:TN[t],who:{1:'Kitty, Larsi',2:'Tom, Jo',4:'Ben, Ida',8:'Olli, Bea'}[t],rbg:i===0?'var(--cp-primary)':'var(--cp-surface)',rfg:i===0?'var(--cp-on-primary)':'var(--cp-ink)'}))});
+    const GP=[['Rocket League','Glücksrad','3:1',[1,8,2,4]],['Mario Kart 8','Glücksrad, nach 2 Vetos','',[8,1,2,4]],['Counter-Strike 2','Glücksrad','16:12',[8,1,2,4],true],['Overcooked 2','Glücksrad','',[1,2,8,4]],['Codenames','Host gesetzt','',[2,1,4,8]],['Halo Infinite','Glücksrad','',[1,8,4,2]],['Gang Beasts','Tiebreaker, nur 2 Teams','',[8,1]]];
+    v.games=GP.map(([n,how,score,pl,corr],i)=>({no:String(i+1),n,how,score,corr:!!corr,bg:i===6?'var(--cp-surface-2)':'var(--cp-surface)',place:pl.map((t,j)=>({t,p:(j+1)+'.'}))}));
+    const L=(r,a,b,o)=>Object.assign({row:true,sec:'',r,a,b,fs:'normal',c:'var(--cp-ink)'},o||{}), SEC=s=>({row:false,sec:s});
+    v.logs=[{n:'Chat',icon:'message-square',rows:[L('20:01','Sanne','Start um 20:30, holt euch Snacks.'),L('20:02','Kitty','Wer hat Snacks? Ich hab nur Gurken.'),L('20:03','Olli','Vom Host gelöscht',{fs:'italic',c:'var(--cp-ink-2)'}),L('20:55','Larsi','VETO. Ich kann kein Mario Kart mehr sehen.'),L('23:12','Bea','GG! Revanche nächste Woche?')]},
+      {n:'Aktivität',icon:'history',rows:[SEC('Vorher'),L('19:58','','Kitty ist der Session beigetreten'),L('20:00','','Chris ist auf die Tribüne gewechselt'),SEC('Spiel 2'),L('20:54','','Veto von Larsi (Wilde Gurken)'),L('20:54','','Veto von Olli (Nacht Eulen)'),L('20:56','','Glücksrad: Mario Kart 8'),SEC('Spiel 7, Tiebreaker'),L('22:58','','Nacht Eulen gewinnt Spiel 7'),L('23:01','','Session beendet. Sieger: Nacht Eulen')]}];
+    return v;
+  }
+}
+</script>
+</body>
+</html>

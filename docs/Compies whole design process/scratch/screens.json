@@ -1,0 +1,419 @@
+{
+ "App Einstieg.dc.html": [
+  {
+   "k": "splash",
+   "no": "01",
+   "n": "Splash",
+   "st": [
+    "Boot-Animation",
+    "Laden",
+    "Reduzierte Bewegung"
+   ],
+   "notes": [
+    "Boot 3b „Reinsprinten“: Compibert rennt rein, Buchstaben springen hinter ihm hoch, Rutscher mit Staub, Winken. Nur beim ersten Besuch pro 24 h, Tippen überspringt.",
+    "Danach (oder bei jedem weiteren Besuch) nur der kurze Laden-Zustand, solange Auth und Session geprüft werden.",
+    "Reduzierte Bewegung: statisches Logo, 200 ms Einblenden. Kein Ton beim Boot, der Browser würde ihn eh blockieren."
+   ]
+  },
+  {
+   "k": "login",
+   "no": "02",
+   "n": "Anmelden",
+   "st": [
+    "Standard",
+    "Über Einladung",
+    "Weiterleitung",
+    "Abgebrochen"
+   ],
+   "notes": [
+    "Anmelden ist Pflicht für alles. Discord ist primär (gelb), Twitch sekundär. Keine Markenlogos nachgebaut, nur neutrale Icons; im Build die offiziellen Brand-Assets der Anbieter nach deren Richtlinien.",
+    "Kommt man über einen Einladungslink, zeigt die Karte oben, wer einlädt; nach der Anmeldung geht es direkt in die Lobby auf die Bench.",
+    "Abgebrochen: OAuth kam ohne Code zurück. Fehler ohne Schuldzuweisung, Buttons bleiben aktiv."
+   ]
+  },
+  {
+   "k": "setup",
+   "no": "03",
+   "n": "Profil einrichten",
+   "st": [
+    "Discord-Bild",
+    "Bild lädt hoch",
+    "Name fehlt"
+   ],
+   "notes": [
+    "Nur beim ersten Login. Anzeigename ist vorausgefüllt mit dem Discord- bzw. Twitch-Namen, frei wählbar, nicht eindeutig, max. 24 Zeichen.",
+    "Profilbild: Discord-/Twitch-Bild ist Standard, Upload ersetzt es (R2). Upload zeigt Fortschritt im Kreis.",
+    "„Los geht’s“ ist bei leerem Namen aria-disabled mit Grund darunter, nie nur ausgegraut."
+   ]
+  },
+  {
+   "k": "home",
+   "no": "04",
+   "n": "Home",
+   "st": [
+    "Mit Sessions",
+    "Leer",
+    "Lädt",
+    "Fehler"
+   ],
+   "notes": [
+    "Läuft gerade steht immer oben und ist die eine Primäraktion. Darunter Demnächst (Umfrage, Termin steht) und die letzten Archiv-Einträge.",
+    "Host: Karte „Session erstellen“ (Desktop) bzw. Button im Kopf (Mobil). Ohne Host-Recht: Hinweis statt Button, kein toter Button.",
+    "Leer: Compibert schläft. Host bekommt „Erste Session erstellen“, Spieler:innen den Tipp, dass Einladungen hier landen."
+   ]
+  },
+  {
+   "k": "invite",
+   "no": "06",
+   "n": "Einladen",
+   "st": [
+    "Link",
+    "Kopiert",
+    "Erneuern bestätigen",
+    "Erneuert"
+   ],
+   "notes": [
+    "Nur Host. Öffnet aus dem Header („Einladen“) oder dem Host-Dock. Desktop als Modal, Mobil als Bottom-Sheet.",
+    "Erneuern ist destruktiv: Bestätigung mit Halten (1 s), nicht mit Klick. Wer schon in der Session ist, bleibt drin.",
+    "Link-Format im Mockup: compies.app/s/<slug>-<token>. Der Token rotiert, der Slug bleibt lesbar."
+   ]
+  },
+  {
+   "k": "open",
+   "no": "07",
+   "n": "Link öffnen",
+   "st": [
+    "Abgemeldet",
+    "Ungültig / erneuert",
+    "Session gelöscht",
+    "Angemeldet: Bench"
+   ],
+   "notes": [
+    "Abgemeldet: Einladungsseite mit Session-Name und Host, dann Anmelden; danach Bench (siehe 02 „Über Einladung“).",
+    "Ungültig und gelöscht sehen gleich aufgebaut aus, sagen aber klar, was los ist. Kein Hinweis darauf, ob die Session noch existiert, wenn der Link rotiert wurde.",
+    "Angemeldet: man landet direkt auf der Bench, mit Toast und hervorgehobenem eigenen Avatar."
+   ]
+  }
+ ],
+ "App Vorbereitung.dc.html": [
+  {
+   "k": "create",
+   "no": "05",
+   "n": "Session erstellen",
+   "st": [
+    "1 Name",
+    "2 Format: Teams",
+    "2 Format: Jeder gegen jeden",
+    "3 Spiele",
+    "4 Punkte",
+    "4 Eigene Tabelle (Fehler)",
+    "5 Lucky Wheel",
+    "5 Pick & Ban + Info",
+    "5 Loser-Modi noch gesperrt",
+    "6 Spielepool",
+    "7 Tiebreaker",
+    "8 Termin",
+    "Fertig"
+   ],
+   "notes": [
+    "Geführter Stepper in 8 Schritten. Desktop: Schrittliste links (bereits erledigte Schritte anklickbar), Formular Mitte, Info-Sheet rechts bei Format und Auswahlmodus. Mobil: Fortschrittsbalken, Info als Bottom-Sheet über das (?) an jeder Option.",
+    "Info-Sheet zeigt immer die gerade gewählte Option: So läuft’s, Gut für, Achtung (Copy aus Brief §17) plus ein Beispiel-Durchlauf.",
+    "Turnierbaum und Liga sind [Post-1.0]: als „Bald verfügbar“ gesperrt, gestrichelt, per Pfeiltasten übersprungen. Loser’s Pick und Loser’s Advantage sind 1.0, kommen aber später; bis dahin derselbe gesperrte Zustand.",
+    "Team-Grenzen: 2 bis 8 Teams, max. 6 pro Team, max. 24 in Teams. Plus-Button wird bei der Grenze aria-disabled mit Grund als Tooltip.",
+    "Pool-Warnung nur für den Host, blockiert nie. Rechnung: Spiele + alle möglichen Vetos (bzw. Bans bei Pick & Ban).",
+    "Rad verdecken gibt es nur bei Lucky Wheel. Bei Loser’s Advantage ist die Option weg, nicht nur gesperrt (Erklärung im Info-Sheet)."
+   ]
+  },
+  {
+   "k": "poll",
+   "no": "08",
+   "n": "Terminumfrage",
+   "st": [
+    "Abstimmen (Spielerin)",
+    "Abgestimmt (Spielerin)",
+    "Host-Ansicht",
+    "Host: festlegen",
+    "Termin steht + .ics",
+    "Host: verschieben"
+   ],
+   "notes": [
+    "Alle sehen, wer was gewählt hat: Karten pro Termin plus Matrix „Wer kann wann?“. Antworten unterscheiden sich in Form und Farbe: Ja = Haken auf Grün, Wenn nötig = Strich auf Orange, Nein = Kreuz, Offen = gestrichelter Kreis.",
+    "Bester Termin = meiste Ja, dann meiste Wenn nötig, dann der früheste. Nur Vorschlag, bestätigt wird vom Host.",
+    "Festlegen schickt Push an alle, öffnet die Teamwahl und plant die Erinnerung 1 Stunde vorher. Danach: .ics-Download für alle.",
+    "Verschieben: neuer Termin direkt oder neue Umfrage. Alle werden erneut benachrichtigt, Teams bleiben.",
+    "Mobil: Matrix scrollt horizontal; Host-Aktion „Festlegen“ sitzt im Kopf statt im Dock."
+   ]
+  }
+ ],
+ "App Lobby.dc.html": [
+  {
+   "k": "board",
+   "no": "09",
+   "n": "Spielbrett",
+   "st": [
+    "Terminumfrage: Teams gesperrt",
+    "Teamwahl offen + Teamwort",
+    "Ziehen",
+    "Platz verloren",
+    "Teams ungleich",
+    "Verschieben nach … (Tastatur)",
+    "Läuft: Teams gesperrt",
+    "Emote",
+    "Chat als Sheet (mobil)",
+    "Host auf der Tribüne",
+    "Host auf der Bench",
+    "Host im Team"
+   ],
+   "notes": [
+    "Drei Zonen: Team-Slots, Bench (unbegrenzt, auch während der Session), Tribüne (unbegrenzt, nur Emotes in 1.0). Alle bewegen nur sich selbst, der Host alle.",
+    "Ziehen: Avatar hebt ab (lifted), freier Slot wird zum Drop-Ziel (gestrichelt, blau). Mobil per langem Druck. Tastatur und Screenreader: eigenen Avatar fokussieren, Enter öffnet „Verschieben nach …“.",
+    "Letzter freier Slot: der Server entscheidet. Wer verliert, springt mit „boing“ zurück auf die Bench, Toast „X war schneller“.",
+    "Teamname: jedes Mitglied ein Wort (max. 12 Zeichen, ohne Leerzeichen), Reihenfolge = Beitrittsreihenfolge. Vor dem ersten Wort heißt das Team nach seiner Farbe. Ab Start eingefroren (Schloss).",
+    "Host-Dock ist immer gleich, egal ob der Host auf Tribüne, Bench oder im Team sitzt. Im Team spielt der Host ganz normal mit (Veto, Pick, Teamwort).",
+    "Online-Punkt an jedem Avatar; offline = grau + hohler Ring. Mobil: Zonen gestapelt, Teams zweispaltig kompakt."
+   ]
+  },
+  {
+   "k": "host",
+   "no": "10",
+   "n": "Host-Steuerung",
+   "st": [
+    "Dock",
+    "Mehr-Menü",
+    "Session starten",
+    "Leute verschieben",
+    "Rad & Pools bearbeiten",
+    "Nächstes Spiel setzen",
+    "Anzahl Spiele ändern",
+    "Teamname zurücksetzen",
+    "Chat-Nachricht löschen",
+    "Session beenden",
+    "Session löschen"
+   ],
+   "notes": [
+    "Dock: unten mittig auf der Bühne, max. 3 Aktionen + „Mehr“, genau eine primär. Klappt nach 8 s Leerlauf zur Krone ein, Taste H holt es zurück. Mobil: Kronen-Button rechts unten öffnet dasselbe Menü als Bottom-Sheet.",
+    "„Mehr“ listet alles, gruppiert. Was gerade nicht geht, bleibt sichtbar und sagt warum (z. B. „Gerade läuft kein Clip“).",
+    "„Nächstes Spiel setzen“ geht in jedem Modus und ist auch die Notbremse, wenn etwas hakt. Clip überspringen, Ergebnisse eintragen und korrigieren sind in Teil D gezeigt.",
+    "Destruktiv (beenden, löschen, Link erneuern) = Halten statt Klicken. Starten ist nicht destruktiv: normaler Klick mit kurzer Bestätigung, weil die Teams danach gesperrt sind.",
+    "Kein Kick/Bann in 1.0 (offene Frage aus Phase 2), nur Verschieben.",
+    "Pool-Warnung erscheint nur beim Host, im Rad-Editor und als Punkt am „Mehr“-Button."
+   ]
+  }
+ ],
+ "App Spielrunde.dc.html": [
+  {
+   "k": "wheel",
+   "no": "11",
+   "n": "Lucky Wheel",
+   "st": [
+    "Rad sichtbar",
+    "Rad verdeckt",
+    "Dreht (Standbild)",
+    "Stopp (Standbild)",
+    "Verwandlung",
+    "Clip + Veto-Fenster",
+    "Eigenes Veto versiegelt",
+    "Clip zu, 30 s übrig",
+    "Aufdecken: 2 Vetos",
+    "Neu drehen",
+    "Kein Veto: wird gespielt",
+    "Live-Simulation"
+   ],
+   "notes": [
+    "Rad: der Server lost aus und schickt Start, Dauer und Ergebnis. Alle Geräte stoppen im selben Moment. Das Rad ist live: als Host „Drehen“ drücken zeigt Drehen, Bremsen, Stopp (und bei verdeckt die Verwandlung).",
+    "Verdeckt: Spieler:innen sehen erfundene Namen (oder ???), der Host sieht die echten und einen Hinweis darauf.",
+    "Veto-Fenster: 60 s ab Ziehung. 30 s Clip, dann schließt er automatisch. Die Veto-Leiste liegt immer über dem Clip (Layer veto 46 > clip 44), mobil in Daumenhöhe über der Tab-Leiste.",
+    "Veto = 1 s halten, nicht zurücknehmbar. Pro Spiel max. 1 Veto pro Partei: sobald jemand aus dem Team hält, ist der Button für das Team gesperrt, mit Grund.",
+    "Eigenes Team sieht sein Veto sofort („Euer Veto“), alle anderen sehen bis 0:00 nur „?“. Dann werden alle gleichzeitig aufgedeckt, Stempel + Ton. Alle Vetos werden verbraucht, das Spiel fliegt vom Rad, neuer Dreh.",
+    "Dreht / Stopp (Standbild): feste Referenzen für die Entwicklung. Dreht = Bewegungsunschärfe, Zeiger ausgelenkt, Lauflicht. Stopp = gezogenes Feld blinkt; beim verdeckten Rad steht noch der Fantasiename, 0,5 s später folgt die Verwandlung. Der echte Ablauf mit Timing ist im Live-Rad (Host, „Drehen“).",
+    "„Live-Simulation“ ist die interaktive VetoWindow-Komponente aus Phase 2 mit Zeitraffer."
+   ]
+  },
+  {
+   "k": "advantage",
+   "no": "12",
+   "n": "Loser’s Advantage",
+   "st": [
+    "Letzter bannt (dran)",
+    "Alle anderen warten",
+    "Zwei Letzte bannen",
+    "Gebannt: Host dreht"
+   ],
+   "notes": [
+    "Vor jedem Dreh außer dem ersten bannt die Partei auf dem letzten Platz 1 Spiel vom Rad. Keine Zeitbegrenzung, der Host kann jederzeit „Spiel setzen“.",
+    "Im Team darf jedes Mitglied bannen; wer zuerst hält, gewinnt.",
+    "Teilen sich mehrere den letzten Platz, bannt jede dieser Parteien 1 Spiel, nacheinander in Tabellenreihenfolge.",
+    "Das Rad ist in diesem Modus nie verdeckt."
+   ]
+  },
+  {
+   "k": "pickban",
+   "no": "13",
+   "n": "Pick & Ban",
+   "st": [
+    "Münzwurf",
+    "Münze gefallen",
+    "Ban: wir sind dran",
+    "Ban: die anderen",
+    "Pick: wir sind dran",
+    "Pick: die anderen",
+    "Spielreihenfolge"
+   ],
+   "notes": [
+    "Beispiel 2v2: Wilde Gurken gegen Nacht Eulen, je 2 Bans, 6 Spiele. Münzwurf Zeitlupe (1i): Kopf = Compibert-Kopf auf Gelb, Schwanz = Ringelschwanz auf Kobalt.",
+    "Snake-Reihenfolge Bans: A 1, B 2, A 1. Picks beginnt die Partei, die nicht mit dem Bannen angefangen hat: B 1, A 2, B 2, A 1.",
+    "Wer dran ist: Banner in Teamfarbe + Halte-Leiste unten. Alle anderen sehen dasselbe Brett ohne Leiste und „X wählt gerade …“. Keine Uhr.",
+    "Bans und Picks tragen den Stempel mit TeamMark. Pick-Reihenfolge = Spielreihenfolge; der Clip läuft jeweils zu Beginn der Runde."
+   ]
+  },
+  {
+   "k": "loser",
+   "no": "14",
+   "n": "Loser’s Pick",
+   "st": [
+    "Letzter wählt (dran)",
+    "Alle anderen warten",
+    "Veto-Fenster",
+    "Nach Veto: nochmal wählen",
+    "Letzter Platz geteilt: Rad"
+   ],
+   "notes": [
+    "Spiel 1 bestimmt das Rad. Danach wählt die letztplatzierte Partei aus dem Pool, ohne Zeitlimit.",
+    "Nach der Wahl: 60-s-Veto-Fenster mit Clip, genau wie beim Lucky Wheel. Bei Veto fliegt das Spiel aus dem Pool und dieselbe Partei wählt nochmal.",
+    "Geteilter letzter Platz: das Glücksrad entscheidet das Spiel."
+   ]
+  },
+  {
+   "k": "admin",
+   "no": "15",
+   "n": "Admin-Wahl",
+   "st": [
+    "Host wählt",
+    "Spieler:innen warten",
+    "Gesetzt: Clip"
+   ],
+   "notes": [
+    "Der Host wählt direkt aus dem Pool (oder der ganzen Bibliothek). Kein Zufall, keine Vetos.",
+    "Dieselbe Auswahl ist in jedem anderen Modus über „Spiel setzen“ erreichbar."
+   ]
+  },
+  {
+   "k": "result",
+   "no": "16",
+   "n": "Ergebnis eintragen",
+   "st": [
+    "Host: Teams sortieren",
+    "Host: Jeder gegen jeden",
+    "Spieler:innen warten",
+    "Vergangenes Spiel korrigieren"
+   ],
+   "notes": [
+    "Parteien per Drag, Pfeiltasten oder Buttons sortieren. „gleichauf“ zwischen zwei Plätzen legt sie zusammen: 1, 2, 2, 4. Gleichauf bekommt die Punkte des besseren Platzes.",
+    "Score (z. B. 16:12) ist optional und rein kosmetisch; steht im Verlauf und im Archiv.",
+    "Korrigieren: jedes vergangene Spiel, ohne Bestätigungsdialog. Tabelle rechnet mit derselben Animation neu, der Feed loggt es, das Spiel bekommt „korrigiert“."
+   ]
+  },
+  {
+   "k": "board",
+   "no": "17",
+   "n": "Live-Tabelle",
+   "st": [
+    "Nach dem Spiel: Mini-Feier",
+    "Ruhige Ansicht"
+   ],
+   "notes": [
+    "Zeilen gleiten in die neue Reihenfolge (Flip, 620 ms Spring), Punkte zählen hoch, Delta-Pille. Sieger des Spiels: Stempel + Sticker-Konfetti + kurzer Compibert-Jubel.",
+    "Geteilte Ränge zeigen beide „1.“. Verlauf rechts: gespielte Spiele mit Sieger und Score, offene Spiele gestrichelt.",
+    "Reduzierte Bewegung: Zeilen springen ohne Gleiten, kein Konfetti, Stempel blendet ein."
+   ]
+  },
+  {
+   "k": "tie",
+   "no": "18",
+   "n": "Tiebreaker",
+   "st": [
+    "Ankündigung",
+    "Tiebreaker-Rad",
+    "Veto mit Restvetos",
+    "Wieder gleich: nochmal"
+   ],
+   "notes": [
+    "Nur bei Gleichstand auf Platz 1. Eigenes Rad mit dem Tiebreaker-Pool, nur die Punktgleichen spielen; alle anderen schauen zu (ausgegraut, keine Vetos).",
+    "Übrige Vetos zählen weiter, Bans gibt es keine. Endet auch der Tiebreaker gleich, dreht das Rad erneut.",
+    "Host-Ansicht: Host-Leiste mit „Tiebreaker-Rad öffnen“ bzw. „Rad drehen“. Auch der Host sieht Vetos erst bei 0:00."
+   ]
+  }
+ ],
+ "App Post-1.0.dc.html": [
+  {
+   "k": "crews",
+   "no": "32",
+   "n": "Crews",
+   "st": [
+    "Übersicht + Crew-Archiv",
+    "Crew gründen",
+    "Ohne Gründungsrecht",
+    "Mitglieder + Host-Rechte",
+    "Crew-Einladung"
+   ],
+   "notes": [
+    "Crew = Freundeskreis mit eigenen Mitgliedern, Sessions, Archiv und Host-Rechten. Die Crew der Betreiberin ist die erste.",
+    "Gründen ist ein Recht von der Plattform-Admin (später für alle). Der Owner verwaltet Mitglieder und vergibt „Darf hosten“ innerhalb der Crew.",
+    "Crew-Einladungslink ist getrennt vom Session-Link und rotierbar (halten).",
+    "Crew-Archiv: alle Mitglieder sehen alle Sessions der Crew, auch ohne mitgespielt zu haben. Session-Teilnehmer müssen keine Mitglieder sein.",
+    "Datenmodell 1.0 ist schon so gebaut, dass Crews ohne Umbau dazukommen."
+   ]
+  },
+  {
+   "k": "bracket",
+   "no": "33",
+   "n": "Turnierbaum",
+   "st": [
+    "Viertelfinale"
+   ],
+   "notes": [
+    "K.-o.-Format für 4 oder 8 Parteien. Jede Begegnung ist ein Spiel (Auswahl per Modus), Sieger rückt vor.",
+    "Bis 1.0 im Setup als „Bald verfügbar“-Karte gesperrt."
+   ]
+  },
+  {
+   "k": "league",
+   "no": "34",
+   "n": "Liga",
+   "st": [
+    "Tabelle + Spieltag"
+   ],
+   "notes": [
+    "Jeder gegen jeden über mehrere Abende; braucht Crews, weil die Liga über Sessions hinweg lebt.",
+    "Punkte 3 / 1 / 0 (Sieg / Unentschieden / Niederlage) als Vorschlag."
+   ]
+  },
+  {
+   "k": "report",
+   "no": "35",
+   "n": "Ergebnis selbst melden",
+   "st": [
+    "Spieler:in meldet",
+    "Host bestätigt",
+    "Widerspruch"
+   ],
+   "notes": [
+    "Spieler:innen einer beteiligten Partei melden Platzierung und Score; der Host bestätigt mit einem Klick oder korrigiert.",
+    "Widerspruch aus einer anderen Partei landet beim Host, die Tabelle ändert sich erst nach Bestätigung."
+   ]
+  },
+  {
+   "k": "lang",
+   "no": "36",
+   "n": "Sprache",
+   "st": [
+    "Deutsch",
+    "English"
+   ],
+   "notes": [
+    "Alle Texte sind ab 1.0 Übersetzungsschlüssel (docs/de.json). Englisch als zweite Sprache nach 1.0.",
+    "Umschalter in den Einstellungen; Standard nach Browser-Sprache. Die erfundenen Spielnamen fürs verdeckte Rad brauchen eine eigene englische Liste."
+   ]
+  }
+ ]
+}

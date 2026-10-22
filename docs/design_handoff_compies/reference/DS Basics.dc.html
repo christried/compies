@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input,select{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div ref="{{ root }}" data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ dir }}">
+  <dc-import name="DSRail" cur="basics" toc="{{ toc }}" mode="{{ mode }}" motion="{{ motion }}" muted="{{ muted }}" wide="{{ wide }}" setLight="{{ setLight }}" setDark="{{ setDark }}" toggleMotion="{{ toggleMotion }}" toggleMute="{{ toggleMute }}" hint-size="260px,100vh"></dc-import>
+
+  <main style="flex:1;min-width:0;width:100%;box-sizing:border-box;max-width:1240px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:88px">
+
+    <section style="display:flex;flex-direction:column;gap:16px;max-width:860px">
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,88px);line-height:.95;text-wrap:balance">Die Basics.</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.5;text-wrap:pretty">Block 2: the parts every screen is built from. Each component is shown in all its states, has a live version you can poke at, and comes with four notes: what it's for, when not to use it, accessibility, and how it behaves on desktop vs. mobile. Every demo flips with the light/dark switch in the rail.</p>
+    </section>
+
+    <!-- BUTTONS -->
+    <section id="buttons" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Buttons</h2>
+        <span style="color:var(--cp-ink-2)">Four variants and three sizes. Pressing a button sinks it into its own shadow.</span>
+      </div>
+      <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow-x:auto">
+        <div style="min-width:1060px;display:grid;grid-template-columns:96px repeat(7,minmax(0,1fr));gap:0">
+          <span style="padding:12px 14px;border-bottom:2px solid var(--cp-line)"></span>
+          <sc-for list="{{ bStates }}" as="st" hint-placeholder-count="7"><span style="padding:12px 8px;border-bottom:2px solid var(--cp-line);font-size:13px;font-weight:700;text-align:center">{{ st.n }}</span></sc-for>
+          <sc-for list="{{ bRows }}" as="row" hint-placeholder-count="4">
+            <span style="padding:18px 14px;border-bottom:1.5px solid var(--cp-line-soft);font-weight:700;align-self:stretch;display:flex;align-items:center">{{ row.n }}</span>
+            <sc-for list="{{ row.cells }}" as="b" hint-placeholder-count="7">
+              <div style="padding:18px 8px;border-bottom:1.5px solid var(--cp-line-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
+                <span style="display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;box-sizing:border-box;font-weight:700;font-size:14px;white-space:nowrap;background:{{ b.bg }};color:{{ b.fg }};border:{{ b.bd }};box-shadow:{{ b.sh }};transform:{{ b.tf }};outline:{{ b.ol }};outline-offset:3px">
+                  <sc-if value="{{ b.spin }}"><span data-spin="1" style="display:grid"><dc-import name="Icon" icon="loader-circle" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></sc-if>
+                  <sc-if value="{{ b.hasIcon }}"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import></sc-if>
+                  {{ b.label }}
+                </span>
+                <sc-if value="{{ b.err }}"><span style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--cp-error-fg)"><dc-import name="Icon" icon="circle-alert" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Hat nicht geklappt</span></sc-if>
+              </div>
+            </sc-for>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:20px;display:flex;flex-direction:column;gap:18px">
+          <b style="font-size:16px">Sizes</b>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><span style="display:grid;place-items:center;min-height:44px"><span style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px">Kopieren</span></span><span style="font-size:12px;color:var(--cp-ink-2)">sm 36, hit area 44</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700">Weiter</span><span style="font-size:12px;color:var(--cp-ink-2)">md 44, default</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 24px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700;font-size:17px"><dc-import name="Icon" icon="ferris-wheel" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Rad drehen</span><span style="font-size:12px;color:var(--cp-ink-2)">lg 52, moments</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><span aria-label="Einladungslink kopieren" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="copy" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><span style="font-size:12px;color:var(--cp-ink-2)">icon 44</span></div>
+          </div>
+          <div style="height:1.5px;background:var(--cp-line-soft)"></div>
+          <b style="font-size:16px">Live</b>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <button type="button" onClick="{{ fakeSave }}" aria-busy="{{ saving }}" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;min-width:150px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer;transition:transform 80ms cubic-bezier(.2,0,0,1),box-shadow 80ms cubic-bezier(.2,0,0,1)" style-hover="transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--cp-shadow-ink)" style-active="transform:translate(4px,4px);box-shadow:0 0 0 var(--cp-shadow-ink)"><sc-if value="{{ saving }}"><span data-spin="1" style="display:grid"><dc-import name="Icon" icon="loader-circle" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></sc-if><sc-if value="{{ saved }}"><dc-import name="Icon" icon="check" size="{{ 16 }}" hint-size="16px,16px"></dc-import></sc-if>{{ saveLabel }}</button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer;transition:transform 80ms cubic-bezier(.2,0,0,1),box-shadow 80ms cubic-bezier(.2,0,0,1)" style-hover="transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--cp-shadow-ink)" style-active="transform:translate(4px,4px);box-shadow:0 0 0 var(--cp-shadow-ink)"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid transparent;background:transparent;font-weight:700;cursor:pointer" style-hover="background:var(--cp-paper-2)" style-active="background:var(--cp-line-soft)">Abbrechen</button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-hot);color:var(--cp-on-hot);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer;transition:transform 80ms cubic-bezier(.2,0,0,1),box-shadow 80ms cubic-bezier(.2,0,0,1)" style-hover="transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--cp-shadow-ink)" style-active="transform:translate(4px,4px);box-shadow:0 0 0 var(--cp-shadow-ink)"><dc-import name="Icon" icon="trash-2" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Session löschen</button>
+          </div>
+          <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">The first button runs a fake save: the label is replaced but the width is held, and success stays silent (a check for 1.5 s, no toast).</span>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Primary is the one next step on a screen (Rad drehen, Weiter, Session starten). Secondary is for parallel actions, ghost for dismissals and low-stakes actions, danger for irreversible ones.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never put two primaries side by side. Don't use danger for things that can be undone (use ghost + an undo toast). Don't let a label wrap: shorten it ("Nochmal", not "Noch einmal versuchen").</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Use a native &lt;button&gt;. Focus ring appears instantly (3 px, focus colour, 3 px offset). Disabled buttons use <code style="font-family:var(--cp-font-mono)">aria-disabled</code> and stay focusable, with the reason in a tooltip. Loading sets <code style="font-family:var(--cp-font-mono)">aria-busy</code>. Icon-only needs <code style="font-family:var(--cp-font-mono)">aria-label</code>. Hit area is always ≥ 44 px.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop uses md, and sm only in dense tables. On mobile the primary action spans the full width and sticks to the bottom of the screen. Hover lift is off on touch; the press stays.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOLD -->
+    <section id="halten" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Hold to confirm</h2>
+        <span style="color:var(--cp-ink-2)">Used for veto, ban and pick. Hold for one second; let go early and nothing happens. A confirmed hold can't be undone.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><b style="font-size:16px">Live: hold with mouse, touch, or Space</b>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button type="button" role="switch" aria-checked="{{ failNext }}" onClick="{{ toggleFail }}" style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:{{ failBg }};font-size:13px;font-weight:700;cursor:pointer">Server-Fehler simulieren</button>
+              <button type="button" onClick="{{ resetHold }}" style="display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:0;border-radius:999px;background:transparent;font-size:13px;font-weight:700;cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="rotate-ccw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Zurücksetzen</button>
+            </div>
+          </div>
+          <sc-for list="{{ holds }}" as="h" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <button type="button" aria-describedby="hold-hint" aria-disabled="{{ h.locked }}" onPointerDown="{{ h.down }}" onPointerUp="{{ h.up }}" onPointerLeave="{{ h.up }}" onPointerCancel="{{ h.up }}" onKeyDown="{{ h.kd }}" onKeyUp="{{ h.ku }}" onContextMenu="{{ h.noctx }}" style="position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;width:100%;height:56px;padding:0 20px;border-radius:999px;box-sizing:border-box;border:{{ h.bd }};background:{{ h.bg }};color:{{ h.fg }};box-shadow:{{ h.sh }};font-weight:800;font-size:16px;cursor:{{ h.cur }};touch-action:none;user-select:none;-webkit-user-select:none;text-align:left">
+                <span ref="{{ h.ref }}" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--cp-ink);opacity:.2;transform-origin:left;transform:scaleX(0);pointer-events:none"></span>
+                <sc-if value="{{ h.spin }}"><span data-spin="1" style="position:relative;display:grid"><dc-import name="Icon" icon="loader-circle" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span></sc-if>
+                <sc-if value="{{ h.noSpin }}"><span style="position:relative;display:grid"><dc-import name="Icon" icon="{{ h.icon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span></sc-if>
+                <span style="position:relative;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ h.label }}</span>
+                <span style="position:relative;font-size:12px;font-weight:700;opacity:.85">{{ h.aside }}</span>
+              </button>
+              <sc-if value="{{ h.hasMsg }}"><span role="status" style="display:flex;align-items:center;gap:6px;padding-left:20px;font-size:13px;font-weight:700;color:{{ h.msgC }}">{{ h.msg }}</span></sc-if>
+            </div>
+          </sc-for>
+          <span id="hold-hint" style="font-size:13px;color:var(--cp-ink-2)">Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.</span>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;padding:6px 0">
+          <sc-for list="{{ holdStates }}" as="s" hint-placeholder-count="7">
+            <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;padding:10px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+              <span style="font-size:13px;font-weight:700">{{ s.n }}</span>
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                <span style="position:relative;overflow:hidden;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;box-sizing:border-box;border:{{ s.bd }};background:{{ s.bg }};color:{{ s.fg }};box-shadow:{{ s.sh }};font-weight:800;font-size:14px;white-space:nowrap">
+                  <span style="position:absolute;left:0;top:0;bottom:0;width:{{ s.fill }};background:var(--cp-ink);opacity:.2"></span>
+                  <span style="position:relative;display:grid" data-spin="{{ s.spinAttr }}"><dc-import name="Icon" icon="{{ s.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+                  <span style="position:relative;min-width:0;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</span>
+                </span>
+                <sc-if value="{{ s.hasMsg }}"><span style="font-size:12px;font-weight:700;color:{{ s.msgC }}">{{ s.msg }}</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Only the three irreversible game actions: Veto, Ban, Pick. In a team, the first member to finish the hold wins. Everyone else's button switches to the team-locked state at once.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't use it for anything reversible or for settings. Don't shorten the hold below 800 ms or add a confirm dialog on top. Never hide the button behind the clip overlay (z-index veto 46 &gt; clip 44).</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Space or Enter held for 1 s works like a pointer hold; key repeat is ignored. <code style="font-family:var(--cp-font-mono)">aria-describedby</code> explains the hold. Progress is announced at 50 % and on confirm. Profile setting: „Halten durch Doppelklick ersetzen“ (two presses within 1.5 s) for players who can't hold.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: 56 px tall in the veto bar, never full width beyond 420 px. Mobile: full width, pinned to the bottom above the safe area. A long-press doesn't open the context menu, and there's a light haptic tap on confirm if the device supports it.</div>
+      </div>
+    </section>
+
+    <!-- INPUTS -->
+    <section id="eingaben" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Inputs and select</h2>
+        <span style="color:var(--cp-ink-2)">Label above, helper or error below, never placeholder-only. 16 px text so iOS doesn't zoom.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px 20px">
+        <sc-for list="{{ inStates }}" as="s" hint-placeholder-count="7">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:12px;color:var(--cp-ink-2)">{{ s.n }}</span>
+            <span style="font-size:14px;font-weight:700;color:{{ s.lc }}">Spielname</span>
+            <span style="display:flex;align-items:center;gap:8px;height:48px;padding:0 14px;border-radius:12px;box-sizing:border-box;border:{{ s.bd }};background:{{ s.bg }};color:{{ s.fg }};box-shadow:{{ s.sh }};outline:{{ s.ol }};outline-offset:2px;font-size:16px">
+              <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.val }}</span>
+              <sc-if value="{{ s.caret }}"><span style="width:2px;height:20px;background:var(--cp-ink);margin-left:-6px"></span></sc-if>
+              <sc-if value="{{ s.spin }}"><span data-spin="1" style="display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="loader-circle" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if>
+              <sc-if value="{{ s.errIcon }}"><span style="display:grid;color:var(--cp-error-fg)"><dc-import name="Icon" icon="circle-alert" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if>
+            </span>
+            <span style="font-size:13px;color:{{ s.hc }};font-weight:{{ s.hw }}">{{ s.help }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label for="in-game" style="font-size:14px;font-weight:700">Spielname</label>
+            <div style="position:relative;display:flex;align-items:center">
+              <input id="in-game" value="{{ gname }}" onInput="{{ onGame }}" maxlength="40" autocomplete="off" aria-invalid="{{ gInvalid }}" aria-describedby="in-game-help" style="width:100%;height:48px;box-sizing:border-box;padding:0 44px 0 14px;border-radius:12px;border:{{ gBorder }};background:var(--cp-surface);font-size:16px" style-hover="box-shadow:var(--cp-shadow-sm)">
+              <sc-if value="{{ gChecking }}"><span data-spin="1" style="position:absolute;right:14px;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="loader-circle" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if>
+            </div>
+            <span id="in-game-help" aria-live="polite" style="display:flex;justify-content:space-between;gap:8px;font-size:13px;color:{{ gHelpC }};font-weight:{{ gHelpW }}"><span>{{ gHelp }}</span><span style="font-variant-numeric:tabular-nums;color:var(--cp-ink-2);font-weight:500">{{ gLen }}/40</span></span>
+            <span style="font-size:12px;color:var(--cp-ink-2)">Tipp: „CS2“ eingeben</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label for="in-format" style="font-size:14px;font-weight:700">Format</label>
+            <div style="position:relative;display:flex;align-items:center">
+              <select id="in-format" style="appearance:none;-webkit-appearance:none;width:100%;height:48px;box-sizing:border-box;padding:0 44px 0 14px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-size:16px;cursor:pointer" style-hover="box-shadow:var(--cp-shadow-sm)">
+                <option>Jeder gegen jeden</option>
+                <option selected="selected">Teams</option>
+                <option disabled="disabled">Turnierbaum (Bald verfügbar)</option>
+                <option disabled="disabled">Liga (Bald verfügbar)</option>
+              </select>
+              <span style="position:absolute;right:14px;display:grid;pointer-events:none"><dc-import name="Icon" icon="chevron-down" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+            </div>
+            <span style="font-size:13px;color:var(--cp-ink-2)">Native select: the system picker on mobile.</span>
+          </div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Session name, game name, YouTube link, start second, scores. Select for any list of 4+ fixed options (format, number of games); fewer options use radios.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No floating labels, no placeholder as the label, no validation while the user is still typing the first word. Check on pause (500 ms) or on blur. Don't build a custom dropdown when the native one works.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> &lt;label for&gt; always. Errors set <code style="font-family:var(--cp-font-mono)">aria-invalid</code> and are linked with <code style="font-family:var(--cp-font-mono)">aria-describedby</code>; helper text is <code style="font-family:var(--cp-font-mono)">aria-live="polite"</code>. Errors show an icon + text, never only a red border.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Same 48 px height everywhere. Set <code style="font-family:var(--cp-font-mono)">inputmode</code> (numeric for scores and seconds, url for YouTube). On mobile, the field scrolls above the keyboard and the stepper's bottom buttons stay visible.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SELECTION CONTROLS -->
+    <section id="auswahl" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Toggle, checkbox, radio, slider</h2>
+        <span style="color:var(--cp-ink-2)">A toggle acts right away, a checkbox is part of a form, radios pick one of a few, a slider picks a number in a range.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <b style="font-size:16px">Toggle</b>
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <button type="button" role="switch" aria-checked="{{ hide }}" aria-labelledby="tg-l" aria-describedby="tg-d" onClick="{{ toggleHide }}" style="flex:none;position:relative;width:56px;height:32px;padding:0;border-radius:999px;border:2.5px solid var(--cp-line);background:{{ hideTrack }};cursor:pointer;box-sizing:border-box">
+              <span style="position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:{{ hideKnob }};border:2px solid var(--cp-line);box-sizing:border-box;transform:{{ hideX }};transition:transform 140ms cubic-bezier(.2,0,0,1)"></span>
+            </button>
+            <div style="display:flex;flex-direction:column;gap:2px"><span id="tg-l" style="font-weight:700">Rad verdecken</span><span id="tg-d" style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Spieler sehen nur Platzhalter, bis das Rad stoppt.</span></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <span aria-hidden="true" style="flex:none;position:relative;width:56px;height:32px;border-radius:999px;border:2.5px dashed var(--cp-ink-3);background:var(--cp-paper-2);box-sizing:border-box"><span style="position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:var(--cp-paper-2);border:2px solid var(--cp-ink-3);box-sizing:border-box"></span></span>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;color:var(--cp-ink-3)">Rad verdecken</span><span style="font-size:13px;color:var(--cp-ink-2)">Geht nicht mit Loser's Advantage: ihr müsst sehen, was ihr bannt.</span></div>
+          </div>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:12px">
+          <b style="font-size:16px">Checkbox</b>
+          <span id="cb-g" style="font-size:13px;color:var(--cp-ink-2)">In den Tiebreaker-Pool</span>
+          <button type="button" role="checkbox" aria-checked="{{ cbAllAria }}" onClick="{{ toggleAll }}" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0;border:0;background:transparent;cursor:pointer;font-weight:700;text-align:left">
+            <span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:7px;border:2.5px solid var(--cp-line);background:{{ cbAllBg }};color:var(--cp-primary);box-sizing:border-box"><sc-if value="{{ cbAllOn }}"><dc-import name="Icon" icon="check" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import></sc-if><sc-if value="{{ cbAllMix }}"><dc-import name="Icon" icon="minus" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import></sc-if></span>Alle Spiele
+          </button>
+          <div role="group" aria-labelledby="cb-g" style="display:flex;flex-direction:column;padding-left:22px">
+            <sc-for list="{{ cbs }}" as="c" hint-placeholder-count="3">
+              <button type="button" role="checkbox" aria-checked="{{ c.on }}" onClick="{{ c.toggle }}" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0;border:0;background:transparent;cursor:pointer;text-align:left">
+                <span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:7px;border:2.5px solid var(--cp-line);background:{{ c.bg }};color:var(--cp-primary);box-sizing:border-box"><sc-if value="{{ c.on }}"><dc-import name="Icon" icon="check" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import></sc-if></span>{{ c.n }}
+              </button>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:12px;min-height:44px;color:var(--cp-ink-3)"><span style="flex:none;width:26px;height:26px;border-radius:7px;border:2.5px dashed var(--cp-ink-3);box-sizing:border-box"></span>Trackmania<span style="font-size:12px;color:var(--cp-ink-2)">schon im Hauptpool</span></div>
+          </div>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:12px">
+          <b id="rg-l" style="font-size:16px">Radio: Punktetabelle</b>
+          <div role="radiogroup" aria-labelledby="rg-l" onKeyDown="{{ radioKey }}" style="display:flex;flex-direction:column">
+            <sc-for list="{{ radios }}" as="r" hint-placeholder-count="3">
+              <button type="button" role="radio" aria-checked="{{ r.on }}" tabindex="{{ r.ti }}" onClick="{{ r.pick }}" style="display:flex;align-items:center;gap:12px;min-height:48px;padding:0;border:0;background:transparent;cursor:pointer;text-align:left">
+                <span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ r.bg }};box-sizing:border-box"><sc-if value="{{ r.on }}"><span style="width:10px;height:10px;border-radius:50%;background:var(--cp-ink)"></span></sc-if></span>
+                <span style="display:flex;flex-direction:column;gap:1px"><b>{{ r.n }}</b><span style="font-size:13px;color:var(--cp-ink-2)">{{ r.d }}</span></span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between"><b id="sl-l" style="font-size:16px">Slider: Anzahl Spiele</b><span style="font-size:13px;color:var(--cp-ink-2)">1 bis 20</span></div>
+          <div ref="{{ slTrack }}" onPointerDown="{{ slDown }}" onPointerMove="{{ slMove }}" onPointerUp="{{ slUp }}" style="position:relative;height:56px;margin:22px 14px 0;touch-action:none;cursor:pointer">
+            <span style="position:absolute;left:0;right:0;top:23px;height:10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-paper-2);box-sizing:border-box"></span>
+            <span style="position:absolute;left:0;top:23px;height:10px;width:{{ slPct }};border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);box-sizing:border-box"></span>
+            <span role="slider" tabindex="0" aria-labelledby="sl-l" aria-valuemin="1" aria-valuemax="20" aria-valuenow="{{ games }}" aria-valuetext="{{ gamesTxt }}" onKeyDown="{{ slKey }}" style="position:absolute;top:14px;left:{{ slPct }};width:28px;height:28px;margin-left:-14px;border-radius:50%;background:var(--cp-surface);border:3px solid var(--cp-line);box-shadow:var(--cp-shadow-sm);box-sizing:border-box;cursor:grab">
+              <span style="position:absolute;bottom:34px;left:50%;transform:translateX(-50%);padding:3px 9px;border-radius:8px;background:var(--cp-ink);color:var(--cp-paper);font-size:16px;line-height:1.2"><dc-import name="Num" v="{{ gamesStr }}" hint-size="28px,18px"></dc-import></span>
+            </span>
+          </div>
+          <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Drag, click the track, or use arrows (±1), Page Up/Down (±5), Home/End.</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Toggle: settings that apply immediately (Rad verdecken, Ton, Push). Checkbox: multi-select inside a form (pools, slot lists in the date poll). Radio: 2–4 exclusive options with a description. Slider: counts where the range matters (number of games, clip length).</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't put toggles in forms with a Save button. Don't use a slider for exact values over 20 steps (use a number input with ± buttons). A disabled control always says why.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Roles: switch, checkbox (with mixed), radiogroup with roving tabindex + arrow keys, slider with valuetext („8 Spiele“). Whole rows are clickable, at least 44 px tall. The state shows as a shape (knob position, check, dot), never colour alone.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Identical controls. On mobile the slider thumb grows to 32 px and the value bubble sits above the finger. Radios with long descriptions stack into full-width rows.</div>
+      </div>
+    </section>
+
+    <!-- STEPPER -->
+    <section id="stepper" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Stepper</h2>
+        <span style="color:var(--cp-ink-2)">Creating a session takes eight steps. Finished steps can be revisited, future ones open in order.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));overflow:hidden;min-height:440px">
+          <nav aria-label="Session erstellen" style="padding:20px 16px;border-right:2px solid var(--cp-line-soft);background:var(--cp-surface-2)">
+            <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+              <sc-for list="{{ steps }}" as="s" hint-placeholder-count="8">
+                <li style="display:flex;gap:12px;position:relative">
+                  <div style="display:flex;flex-direction:column;align-items:center">
+                    <button type="button" onClick="{{ s.go }}" aria-current="{{ s.ac }}" aria-disabled="{{ s.locked }}" aria-label="{{ s.aria }}" style="flex:none;display:grid;place-items:center;width:34px;height:34px;padding:0;border-radius:50%;border:{{ s.bd }};background:{{ s.bg }};color:{{ s.fg }};font-weight:800;font-size:14px;cursor:{{ s.cur }};box-sizing:border-box">
+                      <sc-if value="{{ s.isDone }}"><dc-import name="Icon" icon="check" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import></sc-if>
+                      <sc-if value="{{ s.isWarn }}"><dc-import name="Icon" icon="triangle-alert" size="{{ 16 }}" hint-size="16px,16px"></dc-import></sc-if>
+                      <sc-if value="{{ s.isNum }}">{{ s.no }}</sc-if>
+                    </button>
+                    <sc-if value="{{ s.notLast }}"><span style="width:2.5px;flex:1;min-height:14px;background:{{ s.line }}"></span></sc-if>
+                  </div>
+                  <div style="display:flex;flex-direction:column;padding:6px 0 14px;min-width:0">
+                    <span style="font-weight:{{ s.w }};color:{{ s.tc }}">{{ s.n }}</span>
+                    <sc-if value="{{ s.hasNote }}"><span style="font-size:12px;color:{{ s.noteC }};font-weight:700">{{ s.note }}</span></sc-if>
+                  </div>
+                </li>
+              </sc-for>
+            </ol>
+          </nav>
+          <div style="padding:28px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-size:13px;color:var(--cp-ink-2)">Schritt {{ stepNo }} von 8</span>
+            <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:32px;line-height:1">{{ stepName }}</h3>
+            <p style="margin:0;max-width:52ch;color:var(--cp-ink-2);text-wrap:pretty">{{ stepHelp }}</p>
+            <div style="flex:1;min-height:120px;border:2px dashed var(--cp-line-soft);border-radius:12px;display:grid;place-items:center;color:var(--cp-ink-2);font-size:13px">Formular für diesen Schritt</div>
+            <div style="display:flex;justify-content:space-between;gap:12px">
+              <button type="button" onClick="{{ stepBack }}" aria-disabled="{{ atFirst }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid transparent;background:transparent;font-weight:700;cursor:pointer;color:{{ backC }}" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="chevron-left" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Zurück</button>
+              <button type="button" onClick="{{ stepNext }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer" style-active="transform:translate(4px,4px);box-shadow:0 0 0 var(--cp-shadow-ink)">{{ nextLabel }}<dc-import name="Icon" icon="chevron-right" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Mobile, 390 px</span>
+          <div style="width:100%;max-width:390px;height:440px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:20px;background:var(--cp-paper);overflow:hidden;display:flex;flex-direction:column">
+            <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px;border-bottom:2px solid var(--cp-line-soft);background:var(--cp-surface)">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700">Schritt {{ stepNo }} von 8</span><span style="display:grid;place-items:center;width:44px;height:44px;margin:-10px -10px -10px 0" aria-label="Abbrechen"><dc-import name="Icon" icon="x" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span></div>
+              <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px"><sc-for list="{{ steps }}" as="s" hint-placeholder-count="8"><span style="height:8px;border-radius:999px;border:1.5px solid var(--cp-line);background:{{ s.seg }}"></span></sc-for></div>
+            </div>
+            <div style="flex:1;padding:18px 16px;display:flex;flex-direction:column;gap:10px">
+              <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">{{ stepName }}</h3>
+              <p style="margin:0;font-size:15px;color:var(--cp-ink-2);text-wrap:pretty">{{ stepHelp }}</p>
+              <div style="flex:1;border:2px dashed var(--cp-line-soft);border-radius:12px"></div>
+            </div>
+            <div style="padding:12px 16px 16px;display:flex;gap:10px;border-top:2px solid var(--cp-line-soft);background:var(--cp-surface)">
+              <span style="display:grid;place-items:center;height:48px;padding:0 16px;font-weight:700">Zurück</span>
+              <span style="flex:1;display:grid;place-items:center;height:48px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700">{{ nextLabel }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Only the guided session setup. Each step saves as a draft as you go; leaving and coming back resumes at the last step. Warnings (pool too small) don't block, they mark the step.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't use it for anything under three steps or for non-linear settings (session settings after creation are a plain form). Never let users jump ahead past an unfinished required step.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> A &lt;nav&gt; with an ordered list; the current step has <code style="font-family:var(--cp-font-mono)">aria-current="step"</code>. Each step's label says its status („Schritt 6, Spielepool, Warnung“). On step change, focus moves to the step heading.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: vertical list on the left, the info side sheet opens on the right for format and selection mode. Mobile: an 8-segment progress bar with „Schritt 3 von 8“, the buttons stick to the bottom, and the info sheet becomes a bottom sheet.</div>
+      </div>
+    </section>
+
+    <!-- OVERLAYS -->
+    <section id="overlays" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Side sheet, modal, bottom sheet, tooltip</h2>
+        <span style="color:var(--cp-ink-2)">Overlays only when the content has to sit on top of the context. Everything else stays inline.</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button type="button" onClick="{{ openSheet }}" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer"><dc-import name="Icon" icon="circle-help" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Was ist Lucky Wheel?</button>
+        <button type="button" onClick="{{ openModal }}" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer"><dc-import name="Icon" icon="refresh-cw" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Link erneuern</button>
+        <span style="position:relative;display:inline-flex" onMouseEnter="{{ tipEnter }}" onMouseLeave="{{ tipLeave }}">
+          <button type="button" aria-label="Einladungslink kopieren" aria-describedby="tip-copy" onFocus="{{ tipFocus }}" onBlur="{{ tipLeave }}" onKeyDown="{{ tipKey }}" onClick="{{ copyLink }}" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);cursor:pointer"><dc-import name="Icon" icon="copy" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+          <sc-if value="{{ tip }}"><span id="tip-copy" role="tooltip" style="position:absolute;bottom:54px;left:50%;transform:translateX(-50%);padding:6px 10px;border-radius:8px;background:var(--cp-ink);color:var(--cp-paper);font-size:13px;font-weight:700;white-space:nowrap;box-shadow:var(--cp-shadow-soft);z-index:5">Einladungslink kopieren</span></sc-if>
+        </span>
+        <span style="font-size:13px;color:var(--cp-ink-2)">Tooltip: hover 800 ms, focus instant, Esc closes.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:start">
+        <div onKeyDown="{{ stageKey }}" style="position:relative;height:540px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden;background:var(--cp-paper)">
+          <div style="padding:22px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-size:13px;color:var(--cp-ink-2)">Schritt 5 von 8</span>
+            <span style="font-family:var(--cp-font-display);font-size:30px;line-height:1">Auswahlmodus</span>
+            <sc-for list="{{ modes }}" as="m" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface)"><span style="width:20px;height:20px;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ m.bg }};box-sizing:border-box"></span><b style="flex:1">{{ m.n }}</b><span style="display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="circle-help" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></div></sc-for>
+          </div>
+          <sc-if value="{{ anyOverlay }}"><div onClick="{{ closeAll }}" style="position:absolute;inset:0;background:var(--cp-overlay)"></div></sc-if>
+          <sc-if value="{{ sheet }}">
+            <div ref="{{ sheetRef }}" role="dialog" aria-modal="true" aria-labelledby="sh-t" style="position:absolute;top:0;right:0;bottom:0;width:min(420px,100%);box-sizing:border-box;background:var(--cp-surface);border-left:var(--cp-bw) solid var(--cp-line);display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;gap:12px;padding:18px 18px 14px;border-bottom:2px solid var(--cp-line-soft)">
+                <h3 id="sh-t" style="margin:0;flex:1;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">Lucky Wheel</h3>
+                <button type="button" onClick="{{ closeAll }}" aria-label="Schließen" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:0;background:transparent;cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="x" size="{{ 20 }}" hint-size="20px,20px"></dc-import></button>
+              </div>
+              <div lang="de" style="flex:1;overflow-y:auto;padding:16px 18px 22px;display:flex;flex-direction:column;gap:14px;hyphens:auto;-webkit-hyphens:auto;font-size:15px;line-height:1.5">
+                <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:19px">So läuft's</b><span style="text-wrap:pretty">Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft.</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:12px;background:var(--cp-paper-2)"><b style="font-size:14px">Beispiel</b>
+                  <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px;text-wrap:pretty"><li>Sanne legt 8 Spiele aufs Rad und dreht.</li><li>Das Rad stoppt auf Rocket League, der Clip läuft.</li><li>Team Blau hält den Veto-Knopf. Nach 60 Sekunden wird aufgedeckt.</li><li>Rocket League fliegt vom Rad, Sanne dreht neu.</li></ol>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:19px">Gut für</b><span>Maximale Spannung und Chaos.</span></div>
+                <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:19px">Achtung</b><span style="text-wrap:pretty">Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon.</span></div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ modal }}">
+            <div style="position:absolute;inset:0;display:grid;place-items:center;padding:16px;pointer-events:none">
+              <div ref="{{ modalRef }}" role="alertdialog" aria-modal="true" aria-labelledby="md-t" aria-describedby="md-d" style="pointer-events:auto;width:min(440px,100%);box-sizing:border-box;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:20px;box-shadow:var(--cp-shadow-modal);padding:22px;display:flex;flex-direction:column;gap:12px">
+                <h3 id="md-t" style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1.05">Einladungslink erneuern?</h3>
+                <p id="md-d" style="margin:0;color:var(--cp-ink-2);text-wrap:pretty">Der alte Link funktioniert danach nicht mehr. Wer schon in der Session ist, bleibt drin.</p>
+                <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;padding-top:6px">
+                  <button type="button" onClick="{{ closeAll }}" style="height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid transparent;background:transparent;font-weight:700;cursor:pointer" style-hover="background:var(--cp-paper-2)">Abbrechen</button>
+                  <button type="button" onClick="{{ renewLink }}" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-hot);color:var(--cp-on-hot);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer" style-active="transform:translate(4px,4px);box-shadow:0 0 0 var(--cp-shadow-ink)"><dc-import name="Icon" icon="refresh-cw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Link erneuern</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+          <div aria-live="polite" style="position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;width:max-content;max-width:calc(100% - 28px)">
+            <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+              <div role="{{ t.role }}" style="display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-soft);font-size:14px;font-weight:700">
+                <span style="display:grid;color:{{ t.ic }}"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+                <span>{{ t.txt }}</span>
+                <sc-if value="{{ t.hasAct }}"><button type="button" onClick="{{ t.act }}" style="height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:13px;cursor:pointer">{{ t.actL }}</button></sc-if>
+                <button type="button" onClick="{{ t.close }}" aria-label="Schließen" style="display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:999px;background:transparent;cursor:pointer"><dc-import name="Icon" icon="x" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Bottom sheet, mobile 390 px</span><button type="button" onClick="{{ toggleBs }}" style="height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:13px;font-weight:700;cursor:pointer">{{ bsLabel }}</button></div>
+          <div style="position:relative;width:100%;max-width:390px;height:540px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:20px;background:var(--cp-paper);overflow:hidden">
+            <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-family:var(--cp-font-display);font-size:26px">Spielbrett</span>
+              <div style="height:120px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"></div>
+              <div style="height:120px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"></div>
+            </div>
+            <sc-if value="{{ bs }}">
+              <div onClick="{{ toggleBs }}" style="position:absolute;inset:0;background:var(--cp-overlay)"></div>
+              <div role="dialog" aria-modal="true" aria-labelledby="bs-t" style="position:absolute;left:0;right:0;bottom:0;max-height:85%;box-sizing:border-box;background:var(--cp-surface);border-top:var(--cp-bw) solid var(--cp-line);border-radius:20px 20px 0 0;padding:10px 16px 20px;display:flex;flex-direction:column;gap:12px">
+                <span aria-hidden="true" style="align-self:center;width:44px;height:5px;border-radius:999px;background:var(--cp-ink-3)"></span>
+                <div style="display:flex;align-items:center;gap:8px"><span style="display:grid;color:var(--cp-ink)"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span><h3 id="bs-t" style="margin:0;flex:1;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Host-Steuerung</h3></div>
+                <span style="display:grid;place-items:center;height:52px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700">Rad drehen</span>
+                <span style="display:grid;place-items:center;height:48px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-weight:700">Nächstes Spiel direkt setzen</span>
+                <span style="display:grid;place-items:center;height:48px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-weight:700">Von der Bench nachziehen</span>
+                <span style="display:grid;place-items:center;height:44px;font-weight:700">Schließen</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Side sheet: explanations next to the thing being explained (info panel in the stepper), 420 px from the right. Modal: irreversible decisions only (link erneuern, Session löschen). Bottom sheet: the mobile form of both, plus host controls and the emote picker. Tooltip: names of icon-only buttons.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No modal for reversible actions (use undo), no modal on top of a modal, no tooltip with information you need to act. Never open an overlay during the wheel spin or the veto window; the host's actions there go through the dock.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Sheets and modals: <code style="font-family:var(--cp-font-mono)">role="dialog"</code> (alertdialog for destructive), <code style="font-family:var(--cp-font-mono)">aria-modal</code>, focus moves in on open and is trapped, Esc closes, focus returns to the trigger. The modal focuses its safe action first. Tooltips are <code style="font-family:var(--cp-font-mono)">role="tooltip"</code>, linked by describedby, and dismissible with Esc.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Under 768 px, side sheets and modals both become bottom sheets (max 85 % height, swipe down or tap the backdrop to close; the grabber is decorative). Tooltips don't exist on touch: icon buttons there get a visible label or live inside a labelled sheet.</div>
+      </div>
+    </section>
+
+    <!-- FEEDBACK -->
+    <section id="feedback" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Toasts, notices, banners</h2>
+        <span style="color:var(--cp-ink-2)">Success is usually silent. Speak up for failures, for effects you can't see, and for things everyone needs to know right now.</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" onClick="{{ copyLink }}" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer"><dc-import name="Icon" icon="copy" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Toast: Link kopiert</button>
+        <button type="button" onClick="{{ failMsg }}" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer"><dc-import name="Icon" icon="send" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Toast: Senden fehlgeschlagen</button>
+        <span style="font-size:13px;color:var(--cp-ink-2);align-self:center">Toasts appear at the top of the overlay stage above.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <b style="font-size:16px">Banners: full width, under the header</b>
+        <div role="status" style="display:flex;align-items:center;gap:12px;padding:12px 18px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-warning);color:var(--cp-on-warning);font-weight:700"><span data-spin="1" style="display:grid"><dc-import name="Icon" icon="loader-circle" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span><span style="flex:1">Verbindung wird wiederhergestellt …</span><span style="font-weight:500;font-size:14px">Du siehst gleich wieder alles live.</span></div>
+        <div role="alert" style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 18px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-error);color:var(--cp-on-error);font-weight:700;flex-wrap:wrap"><dc-import name="Icon" icon="wifi-off" size="{{ 20 }}" hint-size="20px,20px"></dc-import><span style="flex:1">Verbindung verloren. Deine Vetos sind sicher.</span><span style="display:inline-flex;align-items:center;height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)">Neu laden</span></div>
+        <div role="status" style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 18px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-info);color:var(--cp-on-info);font-weight:700;flex-wrap:wrap"><dc-import name="Icon" icon="calendar" size="{{ 20 }}" hint-size="20px,20px"></dc-import><span style="flex:1">Neuer Termin: Samstag, 25.10., 20:15 Uhr</span><span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)"><dc-import name="Icon" icon="download" size="{{ 16 }}" hint-size="16px,16px"></dc-import>.ics laden</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <b style="font-size:16px">Inline notices: inside the content they're about</b>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+          <sc-for list="{{ notices }}" as="n" hint-placeholder-count="4">
+            <div role="{{ n.role }}" style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface)">
+              <span style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px solid var(--cp-line);background:{{ n.fill }};color:{{ n.on }}"><dc-import name="Icon" icon="{{ n.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+              <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+                <sc-if value="{{ n.host }}"><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Nur du siehst das</span></sc-if>
+                <span style="font-size:14px;line-height:1.45;text-wrap:pretty">{{ n.txt }}</span>
+                <sc-if value="{{ n.hasAct }}"><span style="font-size:14px;font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px">{{ n.act }}</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Toast: failures with a retry, and invisible effects (Link kopiert). Banner: room-wide state everyone must know (connection, rescheduled date). Inline notice: a condition tied to one area (uneven teams, pool warning for the host, locked team slots).</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No „Gespeichert!“ toasts for things you can see changed. No coloured left stripe on notices. Game events (Glücksrad, Veto) go to the activity feed, not toasts. Never stack more than three toasts.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Toasts and info banners: <code style="font-family:var(--cp-font-mono)">role="status"</code> (polite). Errors that need action: <code style="font-family:var(--cp-font-mono)">role="alert"</code>. Auto-dismiss only without an action, after at least 4 s, paused on hover and focus. Toasts with an action stay until dismissed.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Toasts: top centre under the header on both, so they never collide with the host dock or the veto bar. Banners push the content down rather than covering it. On mobile, banner side text drops and the action becomes icon + short label.</div>
+      </div>
+    </section>
+
+    <!-- BADGES -->
+    <section id="badges" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Badges</h2>
+        <span style="color:var(--cp-ink-2)">Short, static facts about a person or a feature. Never clickable.</span>
+      </div>
+      <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:22px">
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><span style="display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:13px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Host</span><span style="font-size:13px;color:var(--cp-ink-2)">On the host's avatar and in chat names.</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:13px;font-weight:700"><span style="width:10px;height:10px;border-radius:50%;background:var(--cp-online);border:1.5px solid var(--cp-line)"></span>Online</span><span style="font-size:13px;color:var(--cp-ink-2)">The filled dot is the signal; on avatars it's the dot only.</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink-2);font-size:13px;font-weight:700"><span style="width:10px;height:10px;border-radius:50%;border:2px solid var(--cp-offline);box-sizing:border-box"></span>Offline</span><span style="font-size:13px;color:var(--cp-ink-2)">Hollow ring, so it differs by shape too.</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><span style="display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;border:2px dashed var(--cp-ink-2);color:var(--cp-ink-2);font-size:13px;font-weight:700"><dc-import name="Icon" icon="clock" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Bald verfügbar</span><span style="font-size:13px;color:var(--cp-ink-2)">In the product, on disabled Post-1.0 options.</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:4px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">Post-1.0</span><span style="font-size:13px;color:var(--cp-ink-2)">Mockups and handoff only, never shipped.</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:4px;border:1.5px solid var(--cp-line);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">1.0</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:4px;border:1.5px dashed var(--cp-line);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">1.0, last ticket</span></div><span style="font-size:13px;color:var(--cp-ink-2)">The other scope labels from the brief, same family.</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><span style="display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-hot);color:var(--cp-on-hot);font-size:13px;font-weight:700">Nur Host</span><span style="font-size:13px;color:var(--cp-ink-2)">Marks host-only notices and controls.</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><span style="display:inline-flex;align-items:center;gap:8px;font-weight:700">Aktivität<span style="display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-size:12px;font-variant-numeric:tabular-nums">12</span></span><span style="font-size:13px;color:var(--cp-ink-2)">Counter: unread items, caps at 99+.</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Role (Host), presence (Online/Offline), availability (Bald verfügbar), scope in design files (Post-1.0, 1.0), audience (Nur Host), counts.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't make badges clickable (use a chip button). Don't use team colours for badges. Max two badges per item. Post-1.0 never appears in the shipped UI; there it's „Bald verfügbar“ or nothing.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Badge text is real text, read with its item („Sanne, Host, online“). Presence differs by shape: filled vs. hollow. Counters get an accessible name („12 neue Ereignisse“).</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Same everywhere. On avatars smaller than 40 px, Host shrinks to the crown icon only and Online to the dot.</div>
+      </div>
+    </section>
+
+    <!-- TABS -->
+    <section id="tabs" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Tabs</h2>
+        <span style="color:var(--cp-ink-2)">Two to four views of the same space. The active tab gets a Glut bar and the offset icon.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden">
+          <div role="tablist" aria-label="Seitenleiste" onKeyDown="{{ tabKey }}" style="display:flex;gap:4px;padding:8px 12px 0;border-bottom:2px solid var(--cp-line-soft)">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+              <button type="button" role="tab" id="{{ t.id }}" aria-selected="{{ t.on }}" aria-controls="tab-panel" tabindex="{{ t.ti }}" onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:8px;height:48px;padding:0 14px;border:0;border-bottom:3px solid {{ t.bar }};margin-bottom:-2px;background:transparent;color:{{ t.c }};font-weight:{{ t.w }};cursor:pointer" style-hover="color:var(--cp-ink)">
+                <dc-import name="Icon" icon="{{ t.icon }}" size="{{ 18 }}" offset="{{ t.off }}" hint-size="18px,18px"></dc-import>{{ t.n }}
+                <sc-if value="{{ t.hasCount }}"><span aria-label="12 neue Ereignisse" style="display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-size:12px;font-weight:700">12</span></sc-if>
+              </button>
+            </sc-for>
+          </div>
+          <div id="tab-panel" role="tabpanel" aria-labelledby="{{ tabLabelledBy }}" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:180px">
+            <sc-for list="{{ tabRows }}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;gap:10px;font-size:14px;align-items:baseline"><span style="flex:none;color:var(--cp-ink-2);font-size:12px;font-variant-numeric:tabular-nums">{{ r.t }}</span><span style="text-wrap:pretty"><b>{{ r.who }}</b> {{ r.txt }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;padding:8px 0">
+          <sc-for list="{{ tabStates }}" as="s" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;padding:6px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+              <span style="font-size:13px;font-weight:700">{{ s.n }}</span>
+              <span style="justify-self:start;display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;border-bottom:3px solid {{ s.bar }};background:{{ s.bg }};color:{{ s.c }};font-weight:{{ s.w }};outline:{{ s.ol }};outline-offset:2px;border-radius:{{ s.r }}"><dc-import name="Icon" icon="message-square" size="{{ 18 }}" offset="{{ s.off }}" hint-size="18px,18px"></dc-import>Chat</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Chat and Aktivität in the side panel; archive detail (Ergebnisse, Chat, Replay); profile sections.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't use tabs for steps (use the stepper) or for filters on one list (use chips). No more than four tabs, and never two rows of tabs.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> tablist / tab / tabpanel with roving tabindex. Left/Right arrows move and activate, Home/End jump. The selected tab shows weight, a bar and an icon offset, not colour alone.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: top of the 340 px side panel. Mobile: Chat and Aktivität become two entries in the bottom tab bar, and the tabs inside the drawer stretch to equal widths.</div>
+      </div>
+    </section>
+
+    <!-- EMPTY + LOADING -->
+    <section id="leer" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Empty and loading states</h2>
+        <span style="color:var(--cp-ink-2)">Empty says what will appear here and how to get it there. Loading shows the layout if it's known, and Compibert if it isn't.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:24px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+          <dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 56 }}" hint-size="56px,56px"></dc-import>
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:24px;line-height:1.05">Noch still hier.</b>
+          <span style="color:var(--cp-ink-2);text-wrap:pretty">Schreib die erste Nachricht. Alle in der Lobby lesen mit, auch auf der Tribüne.</span>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:24px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:24px;line-height:1.05">Der Pool ist leer.</b>
+          <span style="color:var(--cp-ink-2);text-wrap:pretty">Füg Spiele aus der Bibliothek hinzu. Passende Vorschläge für 4 Teams à 2 stehen ganz oben.</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;margin-top:6px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Spiele hinzufügen</span>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:24px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:24px;line-height:1.05">Noch kein Abend im Archiv.</b>
+          <span style="color:var(--cp-ink-2);text-wrap:pretty">Hier landet jede Session, in der du mindestens ein Spiel mitgespielt hast, mit Chat, Ergebnissen und Replay.</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px;align-items:stretch">
+        <div role="status" style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center">
+          <div style="position:relative">
+            <dc-import name="Compibert" dir="{{ cbDir }}" variant="full" size="{{ 150 }}" hint-size="150px,126px"></dc-import>
+            <span aria-hidden="true" style="position:absolute;right:-18px;top:-6px;display:flex;gap:5px;padding:8px 11px;border-radius:14px;border:2px solid var(--cp-line);background:var(--cp-surface)"><span data-dot="0" style="width:8px;height:8px;border-radius:50%;background:var(--cp-ink)"></span><span data-dot="1" style="width:8px;height:8px;border-radius:50%;background:var(--cp-ink)"></span><span data-dot="2" style="width:8px;height:8px;border-radius:50%;background:var(--cp-ink)"></span></span>
+          </div>
+          <b style="font-size:16px">Compibert denkt nach …</b>
+          <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">For waits of unknown length: creating the session, drawing on the server.</span>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:22px" aria-busy="true" aria-label="Lädt">
+          <div data-pulse="1" style="display:flex;flex-direction:column;gap:10px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Game card</span><span style="aspect-ratio:16/10;border-radius:12px;background:var(--cp-paper-2)"></span><span style="height:16px;width:70%;border-radius:6px;background:var(--cp-paper-2)"></span><span style="height:12px;width:45%;border-radius:6px;background:var(--cp-paper-2)"></span></div>
+          <div data-pulse="1" style="display:flex;flex-direction:column;gap:14px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Chat rows</span><sc-for list="{{ skel3 }}" as="k" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:flex-start"><span style="flex:none;width:30px;height:30px;border-radius:50%;background:var(--cp-paper-2)"></span><div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="height:10px;width:40%;border-radius:5px;background:var(--cp-paper-2)"></span><span style="height:12px;width:{{ k.w }};border-radius:6px;background:var(--cp-paper-2)"></span></div></div></sc-for></div>
+          <div data-pulse="1" style="display:flex;flex-direction:column;gap:10px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Leaderboard</span><sc-for list="{{ skel3 }}" as="k" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:center;height:40px;padding:0 10px;border-radius:10px;border:2px solid var(--cp-paper-2)"><span style="width:18px;height:18px;border-radius:5px;background:var(--cp-paper-2)"></span><span style="flex:1;height:12px;border-radius:6px;background:var(--cp-paper-2)"></span><span style="width:32px;height:18px;border-radius:5px;background:var(--cp-paper-2)"></span></div></sc-for></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Empty: chat, pools, library search, archive, date poll without slots. Skeleton: known layouts (cards, rows, leaderboard). Compibert thinking: unknown waits &gt; 300 ms. Buttons show their own spinner for their own action.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No made-up stats or fake content in empty states, and no stock illustration: only Compibert. Don't flash a loader: show it after 150 ms, keep it at least 300 ms. Never put a full-screen spinner over the live board.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The loading container has <code style="font-family:var(--cp-font-mono)">aria-busy="true"</code>; the Compibert loader is <code style="font-family:var(--cp-font-mono)">role="status"</code> with real text. Skeleton blocks are <code style="font-family:var(--cp-font-mono)">aria-hidden</code>. Reduced motion: the skeleton pulse and thinking dots stand still.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Same content; on mobile, empty states centre in the available space and the action button goes full width. Compibert scales down to 96 px.</div>
+      </div>
+    </section>
+
+    <footer style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:var(--cp-bw) solid var(--cp-line);font-size:13px;color:var(--cp-ink-2)">
+      <span>COMPIES Design System, Basics</span>
+      <span>Next up: People and teams</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STEPS=[['Name','Wie soll der Abend heißen? Den Namen sehen alle in der Einladung.'],['Format','Jeder gegen jeden oder Teams. Turnierbaum und Liga sind bald verfügbar.'],['Anzahl Spiele','Nach so vielen Spielen ist Schluss. Kannst du später noch ändern.'],['Punktetabelle','Wie viele Punkte gibt es für welchen Platz? Linear, Winner takes all oder eigene Tabelle.'],['Auswahlmodus','Wie wird das nächste Spiel bestimmt? Das Info-Panel erklärt jede Option mit Beispiel.'],['Spielepool','Die Spiele fürs Rad, für Picks und Bans. Vorschläge passend zu Format und Spielerzahl stehen oben.'],['Tiebreaker-Pool','Ein eigener Pool nur für das Entscheidungsspiel bei Gleichstand.'],['Termin','Direkt festlegen oder eine Terminumfrage starten.']];
+const E={snap:'cubic-bezier(.2,0,0,1)',out:'cubic-bezier(.16,1,.3,1)',io:'cubic-bezier(.65,0,.35,1)'};
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,wide:true,saving:false,saved:false,hold:{veto:'idle',ban:'idle',pick:'idle'},failNext:false,gname:'',gcheck:'idle',hide:true,cb:{tetris:true,gang:false,code:true},pts:0,games:8,step:2,sheet:false,modal:false,bs:true,tip:false,toasts:[],tab:0};
+  root=React.createRef(); sheetRef=React.createRef(); modalRef=React.createRef(); slTrack=React.createRef();
+  H={veto:React.createRef(),ban:React.createRef(),pick:React.createRef()}; _ha={};
+  componentDidMount(){
+    let m=null,mo=null,mu=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs);
+    this.setState({mode:m,motion:mo,muted:mu==='1',wide:window.innerWidth>=980});
+    this._anims=[]; this._seen=new WeakSet(); setTimeout(()=>this.loops(),50);
+  }
+  componentWillUnmount(){ window.removeEventListener('resize',this._rs); (this._anims||[]).forEach(a=>a.cancel()); clearTimeout(this._gt); }
+  componentDidUpdate(){
+    const m=this.state.mode; if(m&&m!==this._lm){ this._lm=m; document.body.style.background=m==='dark'?'#17121d':'#fff3df'; }
+    if(this.state.motion!==this._lmo){ this._lmo=this.state.motion; (this._anims||[]).forEach(a=>a.cancel()); this._anims=[]; this._seen=new WeakSet(); }
+    this.loops();
+    if(this.state.modal&&!this._mf){ this._mf=true; const b=this.modalRef.current&&this.modalRef.current.querySelector('button'); b&&b.focus(); } if(!this.state.modal) this._mf=false;
+    if(this.state.sheet&&!this._sf){ this._sf=true; const b=this.sheetRef.current&&this.sheetRef.current.querySelector('button'); b&&b.focus(); } if(!this.state.sheet) this._sf=false;
+  }
+  loops(){
+    const r=this.root.current; if(!r||!this._seen) return; const rm=this.state.motion==='reduced';
+    r.querySelectorAll('[data-spin="1"]').forEach(el=>{ if(this._seen.has(el)) return; this._seen.add(el); if(!rm) this._anims.push(el.animate([{transform:'rotate(0)'},{transform:'rotate(360deg)'}],{duration:900,iterations:Infinity})); });
+    r.querySelectorAll('[data-pulse]').forEach(el=>{ if(this._seen.has(el)) return; this._seen.add(el); if(!rm) this._anims.push(el.animate([{opacity:1},{opacity:.5},{opacity:1}],{duration:1400,iterations:Infinity,easing:E.io})); });
+    r.querySelectorAll('[data-dot]').forEach(el=>{ if(this._seen.has(el)) return; this._seen.add(el); if(!rm) this._anims.push(el.animate([{transform:'translateY(0)',opacity:.35},{transform:'translateY(-4px)',opacity:1},{transform:'translateY(0)',opacity:.35}],{duration:900,iterations:Infinity,delay:+el.dataset.dot*150,easing:E.io})); });
+  }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+  fakeSave=()=>{ if(this.state.saving) return; this.setState({saving:true,saved:false}); setTimeout(()=>{ this.setState({saving:false,saved:true}); setTimeout(()=>this.setState({saved:false}),1500); },1200); };
+  // hold
+  setHold=(k,v)=>this.setState(s=>({hold:Object.assign({},s.hold,{[k]:v})}));
+  holdStart=k=>{ const st=this.state.hold[k]; if(st!=='idle'&&st!=='error') return; const el=this.H[k].current; if(!el) return; this._ha[k]&&this._ha[k].cancel(); const a=el.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:1000,easing:'linear',fill:'forwards'}); this._ha[k]=a; a.onfinish=()=>this.holdDone(k); this.setHold(k,'holding'); };
+  holdEnd=k=>{ if(this.state.hold[k]!=='holding') return; const a=this._ha[k], el=this.H[k].current; if(!a||!el) return; const p=Math.min(1,(a.currentTime||0)/1000); a.onfinish=null; a.cancel(); this._ha[k]=el.animate([{transform:`scaleX(${p})`},{transform:'scaleX(0)'}],{duration:200,fill:'forwards'}); this.setHold(k,'idle'); };
+  holdDone=k=>{ this.setHold(k,'sending'); setTimeout(()=>{ if(this.state.failNext){ this.setState({failNext:false}); const el=this.H[k].current; el&&el.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:200,fill:'forwards'}); this.setHold(k,'error'); } else this.setHold(k,'done'); },700); };
+  resetHold=()=>{ Object.keys(this.H).forEach(k=>{ const el=this.H[k].current; this._ha[k]&&this._ha[k].cancel(); el&&el.animate([{transform:'scaleX(0)'},{transform:'scaleX(0)'}],{duration:1,fill:'forwards'}); }); this.setState({hold:{veto:'idle',ban:'idle',pick:'idle'}}); };
+  // input
+  onGame=e=>{ const v=e.target.value; this.setState({gname:v,gcheck:v.trim()?'checking':'idle'}); clearTimeout(this._gt); this._gt=setTimeout(()=>{ const n=v.toLowerCase().replace(/[^a-z0-9]/g,''); this.setState({gcheck:!n?'idle':(['cs2','cs','csgo','counterstrike','counterstrike2'].includes(n)?'dup':'ok')}); },500); };
+  // slider
+  slSet=x=>{ const t=this.slTrack.current; if(!t) return; const r=t.getBoundingClientRect(); const p=Math.max(0,Math.min(1,(x-r.left)/r.width)); this.setState({games:Math.round(1+p*19)}); };
+  slDown=e=>{ this._sl=true; e.currentTarget.setPointerCapture&&e.currentTarget.setPointerCapture(e.pointerId); this.slSet(e.clientX); };
+  slMove=e=>{ if(this._sl) this.slSet(e.clientX); };
+  slUp=()=>{ this._sl=false; };
+  slKey=e=>{ const g=this.state.games; const m={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:5,PageDown:-5}; let n=null; if(e.key in m) n=g+m[e.key]; if(e.key==='Home') n=1; if(e.key==='End') n=20; if(n!=null){ e.preventDefault(); this.setState({games:Math.max(1,Math.min(20,n))}); } };
+  // toasts
+  toast=(t)=>{ const id=Math.random().toString(36).slice(2); this.setState(s=>({toasts:s.toasts.concat([Object.assign({id},t)]).slice(-3)})); if(t.auto) setTimeout(()=>this.dropToast(id),4000); };
+  dropToast=id=>this.setState(s=>({toasts:s.toasts.filter(x=>x.id!==id)}));
+  copyLink=()=>{ try{ navigator.clipboard&&navigator.clipboard.writeText('https://compies.app/s/freitags-zocken-12'); }catch(e){} this.toast({txt:'Link kopiert',icon:'check',ic:'var(--cp-success-fg)',auto:true,role:'status'}); };
+  failMsg=()=>{ this.toast({txt:'Nachricht nicht gesendet',icon:'circle-alert',ic:'var(--cp-error-fg)',act:'Erneut senden',role:'alert'}); };
+  closeAll=()=>this.setState({sheet:false,modal:false});
+  renderVals(){
+    const S=this.state, mode=S.mode||'light', dark=mode==='dark';
+    const B={primary:{n:'Primary',bg:'var(--cp-primary)',fg:'var(--cp-on-primary)',label:'Rad drehen',icon:'ferris-wheel'},secondary:{n:'Secondary',bg:'var(--cp-surface)',fg:'var(--cp-ink)',label:'Einladen',icon:'link'},ghost:{n:'Ghost',bg:'transparent',fg:'var(--cp-ink)',label:'Abbrechen',icon:''},danger:{n:'Danger',bg:'var(--cp-hot)',fg:'var(--cp-on-hot)',label:'Löschen',icon:'trash-2'}};
+    const ST=['Default','Hover','Focus','Pressed','Disabled','Loading','Error'];
+    const bd='var(--cp-bw) solid var(--cp-line)';
+    const cell=(k,s)=>{ const v=B[k], g=k==='ghost'; const c={bg:v.bg,fg:v.fg,bd:g?'var(--cp-bw) solid transparent':bd,sh:g?'none':'var(--cp-shadow-btn)',tf:'none',ol:'none',label:v.label,icon:v.icon,hasIcon:!!v.icon,spin:false,err:false};
+      if(s==='Hover'){ if(g) c.bg='var(--cp-paper-2)'; else { c.tf='translate(-1px,-1px)'; c.sh='5px 5px 0 var(--cp-shadow-ink)'; } }
+      if(s==='Focus') c.ol='3px solid var(--cp-focus)';
+      if(s==='Pressed'){ if(g) c.bg='var(--cp-line-soft)'; else { c.tf='translate(4px,4px)'; c.sh='none'; } }
+      if(s==='Disabled'){ c.bg=g?'transparent':'var(--cp-paper-2)'; c.fg='var(--cp-ink-3)'; c.bd=g?'var(--cp-bw) solid transparent':'var(--cp-bw) dashed var(--cp-ink-3)'; c.sh='none'; }
+      if(s==='Loading'){ c.spin=true; c.hasIcon=false; c.label='Lädt …'; }
+      if(s==='Error'){ c.err=true; if(!g) c.bd='var(--cp-bw) solid var(--cp-error-fg)'; c.label='Nochmal'; c.icon='rotate-ccw'; c.hasIcon=true; }
+      return c; };
+    const bRows=Object.keys(B).map(k=>({n:B[k].n,cells:ST.map(s=>cell(k,s))}));
+    const HB={veto:{label:'Veto halten',done:'Veto eingelegt',icon:'ban',bg:'var(--cp-hot)',fg:'var(--cp-on-hot)',aside:'3 von 5 übrig'},ban:{label:'Trackmania bannen',done:'Trackmania gebannt',icon:'ban',bg:'var(--cp-surface)',fg:'var(--cp-ink)',aside:'Ban 2 von 2'},pick:{label:'Mario Kart 8 picken',done:'Mario Kart 8 gepickt',icon:'hand',bg:'var(--cp-primary)',fg:'var(--cp-on-primary)',aside:'Pick 1'}};
+    const holds=Object.keys(HB).map(k=>{ const v=HB[k], st=S.hold[k]; const o={ref:this.H[k],bd,bg:v.bg,fg:v.fg,sh:'var(--cp-shadow-btn)',cur:'pointer',label:v.label,icon:v.icon,aside:v.aside,spin:false,noSpin:true,locked:false,hasMsg:false,msg:'',msgC:'var(--cp-ink-2)',
+      down:e=>{ if(e.button>0) return; this.holdStart(k); }, up:()=>this.holdEnd(k), kd:e=>{ if((e.key===' '||e.key==='Enter')){ e.preventDefault(); if(!e.repeat) this.holdStart(k); } }, ku:e=>{ if(e.key===' '||e.key==='Enter') this.holdEnd(k); }, noctx:e=>e.preventDefault()};
+      if(st==='holding'){ o.label='Halten …'; }
+      if(st==='sending'){ o.spin=true; o.noSpin=false; o.label='Wird eingelegt …'; o.cur='progress'; }
+      if(st==='done'){ o.bg='var(--cp-surface-2)'; o.fg='var(--cp-ink)'; o.sh='none'; o.icon='lock'; o.label=v.done; o.aside=''; o.cur='default'; o.locked=true; o.hasMsg=true; o.msg=k==='veto'?'Die anderen sehen es erst beim Aufdecken.':'Steht. Kann nicht zurückgenommen werden.'; }
+      if(st==='error'){ o.bd='var(--cp-bw) solid var(--cp-error-fg)'; o.icon='rotate-ccw'; o.label='Nochmal halten'; o.hasMsg=true; o.msg='Nicht angekommen. Dein Veto zählt noch nicht.'; o.msgC='var(--cp-error-fg)'; }
+      return o; });
+    const hs=(n,o)=>Object.assign({n,bd,bg:'var(--cp-hot)',fg:'var(--cp-on-hot)',sh:'var(--cp-shadow-btn)',fill:'0%',icon:'ban',spinAttr:'0',label:'Veto halten',hasMsg:false,msg:'',msgC:'var(--cp-ink-2)'},o);
+    const holdStates=[hs('Ready',{}),hs('Holding',{fill:'60%',label:'Halten …'}),hs('Sending',{icon:'loader-circle',spinAttr:'1',label:'Wird eingelegt …'}),hs('Confirmed',{bg:'var(--cp-surface-2)',fg:'var(--cp-ink)',sh:'none',icon:'lock',label:'Veto eingelegt',hasMsg:true,msg:'Nur dein Team sieht es bis zum Aufdecken.'}),hs('Team locked',{bg:'var(--cp-paper-2)',fg:'var(--cp-ink-2)',bd:'var(--cp-bw) dashed var(--cp-ink-3)',sh:'none',icon:'lock',label:'Larsi hat schon gevetot'}),hs('None left',{bg:'var(--cp-paper-2)',fg:'var(--cp-ink-3)',bd:'var(--cp-bw) dashed var(--cp-ink-3)',sh:'none',icon:'ban',label:'Keine Vetos mehr'}),hs('Error',{bd:'var(--cp-bw) solid var(--cp-error-fg)',icon:'rotate-ccw',label:'Nochmal halten',hasMsg:true,msg:'Nicht angekommen.',msgC:'var(--cp-error-fg)'})];
+    const ins=(n,o)=>Object.assign({n,lc:'var(--cp-ink)',bd,bg:'var(--cp-surface)',fg:'var(--cp-ink)',sh:'none',ol:'none',val:'',caret:false,spin:false,errIcon:false,help:'Wie in der Bibliothek, z. B. „Rocket League“.',hc:'var(--cp-ink-2)',hw:500},o);
+    const inStates=[ins('Default',{val:'',help:'Wie in der Bibliothek, z. B. „Rocket League“.'}),ins('Hover',{sh:'var(--cp-shadow-sm)'}),ins('Focus',{ol:'3px solid var(--cp-focus)',caret:true}),ins('Filled',{val:'Overcooked 2'}),ins('Checking',{val:'Overcooked',spin:true,help:'Prüfe, ob es das Spiel schon gibt …'}),ins('Error',{val:'CS2',bd:'var(--cp-bw) solid var(--cp-error-fg)',errIcon:true,help:'Gibt es schon als „Counter-Strike 2“.',hc:'var(--cp-error-fg)',hw:700}),ins('Disabled',{lc:'var(--cp-ink-3)',val:'Counter-Strike 2',bg:'var(--cp-paper-2)',fg:'var(--cp-ink-3)',bd:'var(--cp-bw) dashed var(--cp-ink-3)',help:'Nur der Ersteller kann den Namen ändern.'})];
+    const gc=S.gcheck;
+    const cbN=[['tetris','Tetris 99'],['gang','Gang Beasts'],['code','Codenames']];
+    const on=cbN.filter(([k])=>S.cb[k]).length;
+    const cbs=cbN.map(([k,n])=>({n,on:!!S.cb[k],bg:S.cb[k]?'var(--cp-ink)':'var(--cp-surface)',toggle:()=>this.setState(s=>({cb:Object.assign({},s.cb,{[k]:!s.cb[k]})}))}));
+    const RD=[['Linear','Parteien minus Platz, bei 4 Parteien 3 / 2 / 1 / 0'],['Winner takes all','Nur Platz 1 bekommt Punkte'],['Eigene Tabelle','Du legst für jeden Platz die Punkte fest']];
+    const radios=RD.map(([n,d],i)=>({n,d,on:S.pts===i,ti:S.pts===i?'0':'-1',bg:S.pts===i?'var(--cp-primary)':'var(--cp-surface)',pick:()=>this.setState({pts:i})}));
+    const radioKey=e=>{ const m={ArrowDown:1,ArrowRight:1,ArrowUp:-1,ArrowLeft:-1}; if(e.key in m){ e.preventDefault(); const n=(S.pts+m[e.key]+3)%3; this.setState({pts:n}); const btns=e.currentTarget.querySelectorAll('[role=radio]'); btns[n]&&btns[n].focus(); } };
+    const WARN=5;
+    const steps=STEPS.map(([n],i)=>{ const done=i<S.step, cur=i===S.step, warn=i===WARN&&i<S.step; const o={n,no:String(i+1),isDone:done&&!warn,isWarn:warn,isNum:!done,notLast:i<7,locked:i>S.step,ac:cur?'step':undefined,aria:`Schritt ${i+1}, ${n}`+(warn?', Warnung':done?', erledigt':cur?', aktuell':''),cur:i<=S.step?'pointer':'not-allowed',w:cur?800:600,tc:i>S.step?'var(--cp-ink-2)':'var(--cp-ink)',line:done?'var(--cp-line)':'var(--cp-line-soft)',hasNote:warn||cur,note:warn?'Pool reicht knapp':'Du bist hier',noteC:warn?'var(--cp-warning-fg)':'var(--cp-ink-2)',go:()=>{ if(i<=S.step) this.setState({step:i}); },
+      bd:i>S.step?'2.5px dashed var(--cp-ink-3)':'2.5px solid var(--cp-line)',bg:warn?'var(--cp-warning)':done?'var(--cp-ink)':cur?'var(--cp-primary)':'var(--cp-surface)',fg:warn?'var(--cp-on-warning)':done?'var(--cp-primary)':cur?'var(--cp-on-primary)':'var(--cp-ink-2)',seg:warn?'var(--cp-warning)':done?'var(--cp-ink)':cur?'var(--cp-primary)':'transparent'}; return o; });
+    const modes=['Admin-Wahl','Lucky Wheel','Pick & Ban',"Loser's Pick","Lucky Wheel, Loser's Advantage"].map((n,i)=>({n,bg:i===1?'var(--cp-primary)':'var(--cp-surface)'}));
+    const toasts=S.toasts.map(t=>({txt:t.txt,icon:t.icon,ic:t.ic,role:t.role,hasAct:!!t.act,actL:t.act,act:()=>{ this.dropToast(t.id); },close:()=>this.dropToast(t.id)}));
+    const notices=[{icon:'lock',fill:'var(--cp-info)',on:'var(--cp-on-info)',txt:'Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench, Tribüne und Chat.',role:'status'},{icon:'users',fill:'var(--cp-warning)',on:'var(--cp-on-warning)',host:true,txt:'Team Nacht hat 1 von 2. Das Spiel startet erst, wenn alle Teams gleich groß sind.',hasAct:true,act:'Von der Bench nachziehen',role:'status'},{icon:'triangle-alert',fill:'var(--cp-warning)',on:'var(--cp-on-warning)',host:true,txt:'Der Pool reicht nicht mehr sicher für 8 Spiele, wenn alle Vetos fallen. Leg 3 Spiele nach.',hasAct:true,act:'Spiele hinzufügen',role:'status'},{icon:'circle-alert',fill:'var(--cp-error)',on:'var(--cp-on-error)',txt:'Der Clip konnte nicht geladen werden. Das Veto-Fenster läuft trotzdem.',role:'alert'}];
+    const TB=[['Chat','message-square','tab-chat'],['Aktivität','history','tab-act']];
+    const tabs=TB.map(([n,icon,id],i)=>{const a=S.tab===i;return {n,icon,id,on:a,ti:a?'0':'-1',bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',hasCount:i===1&&!a,pick:()=>this.setState({tab:i})};});
+    const tabKey=e=>{ let n=null; if(e.key==='ArrowRight') n=(S.tab+1)%2; if(e.key==='ArrowLeft') n=(S.tab+1)%2; if(e.key==='Home') n=0; if(e.key==='End') n=1; if(n!=null){ e.preventDefault(); this.setState({tab:n}); const b=e.currentTarget.querySelectorAll('[role=tab]'); b[n]&&b[n].focus(); } };
+    const tabRows=S.tab===0?[{t:'20:02',who:'Kitty',txt:'Wer hat Snacks? Ich hab nur Gurken.'},{t:'20:03',who:'Larsi',txt:'Bitte, bitte kein Trackmania heute.'},{t:'20:05',who:'Chris',txt:'Ich bleib auf der Tribüne und buh euch aus.'},{t:'20:06',who:'Sanne',txt:'Start um 20:15. Olli, ab ins Team Nacht!'}]:[{t:'20:41',who:'Glücksrad:',txt:'Counter-Strike 2'},{t:'20:38',who:'Team Rot',txt:'gewinnt Spiel 2'},{t:'20:12',who:'Veto',txt:'von Larsi (Team Orange)'},{t:'20:07',who:'Chris',txt:'ist auf die Tribüne gewechselt'}];
+    const ts=(n,o)=>Object.assign({n,bar:'transparent',bg:'transparent',c:'var(--cp-ink-2)',w:600,ol:'none',off:'',r:'0'},o);
+    const tabStates=[ts('Default',{}),ts('Hover',{c:'var(--cp-ink)',bar:'var(--cp-line-soft)'}),ts('Focus',{ol:'3px solid var(--cp-focus)',r:'8px'}),ts('Selected',{c:'var(--cp-ink)',bar:'var(--cp-hot)',w:800,off:'var(--cp-hot)'}),ts('Disabled',{c:'var(--cp-ink-3)'})];
+    const toc=[['Buttons','#buttons'],['Hold to confirm','#halten'],['Inputs and select','#eingaben'],['Selection controls','#auswahl'],['Stepper','#stepper'],['Overlays','#overlays'],['Feedback','#feedback'],['Badges','#badges'],['Tabs','#tabs'],['Empty and loading','#leer']].map(([n,href])=>({n,href}));
+    const stageKey=e=>{ if(e.key==='Escape') this.closeAll(); };
+    return {root:this.root,mode,motion:S.motion,muted:S.muted,wide:S.wide,dir:S.wide?'row':'column',cbDir:dark?'m3b':'m3a',toc,
+      setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,toggleMute:this.toggleMute,
+      bStates:ST.map(n=>({n})),bRows,fakeSave:this.fakeSave,saving:S.saving,saved:S.saved,saveLabel:S.saving?'Speichert …':S.saved?'Gespeichert':'Speichern',
+      holds,holdStates,failNext:S.failNext,failBg:S.failNext?'var(--cp-error)':'var(--cp-surface)',toggleFail:()=>this.setState(s=>({failNext:!s.failNext})),resetHold:this.resetHold,
+      inStates,gname:S.gname,onGame:this.onGame,gLen:String(S.gname.length),gChecking:gc==='checking',gInvalid:gc==='dup',gBorder:gc==='dup'?'var(--cp-bw) solid var(--cp-error-fg)':'var(--cp-bw) solid var(--cp-line)',
+      gHelp:gc==='dup'?'Gibt es schon als „Counter-Strike 2“. Nimm das bestehende Spiel.':gc==='checking'?'Prüfe, ob es das Spiel schon gibt …':'Wie in der Bibliothek, z. B. „Rocket League“.',gHelpC:gc==='dup'?'var(--cp-error-fg)':'var(--cp-ink-2)',gHelpW:gc==='dup'?700:500,
+      hide:S.hide,toggleHide:()=>this.setState(s=>({hide:!s.hide})),hideTrack:S.hide?'var(--cp-primary)':'var(--cp-paper-2)',hideKnob:S.hide?'var(--cp-ink)':'var(--cp-surface)',hideX:S.hide?'translateX(24px)':'none',
+      cbs,cbAllOn:on===3,cbAllMix:on>0&&on<3,cbAllAria:on===3?'true':on===0?'false':'mixed',cbAllBg:on>0?'var(--cp-ink)':'var(--cp-surface)',toggleAll:()=>{ const v=on<3; this.setState({cb:{tetris:v,gang:v,code:v}}); },
+      radios,radioKey,games:S.games,gamesStr:String(S.games),gamesTxt:S.games+(S.games===1?' Spiel':' Spiele'),slPct:((S.games-1)/19*100).toFixed(2)+'%',slTrack:this.slTrack,slDown:this.slDown,slMove:this.slMove,slUp:this.slUp,slKey:this.slKey,
+      steps,stepNo:String(S.step+1),stepName:STEPS[S.step][0],stepHelp:STEPS[S.step][1],atFirst:S.step===0,backC:S.step===0?'var(--cp-ink-3)':'var(--cp-ink)',nextLabel:S.step===7?'Session erstellen':'Weiter',stepBack:()=>this.setState(s=>({step:Math.max(0,s.step-1)})),stepNext:()=>this.setState(s=>({step:Math.min(7,s.step+1)})),
+      modes,sheet:S.sheet,modal:S.modal,anyOverlay:S.sheet||S.modal,openSheet:()=>this.setState({sheet:true,modal:false}),openModal:()=>this.setState({modal:true,sheet:false}),closeAll:this.closeAll,renewLink:()=>{ this.closeAll(); this.toast({txt:'Neuer Link ist aktiv',icon:'check',ic:'var(--cp-success-fg)',auto:true,role:'status'}); },sheetRef:this.sheetRef,modalRef:this.modalRef,stageKey,
+      tip:S.tip,tipEnter:()=>{ clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({tip:true}),800); },tipLeave:()=>{ clearTimeout(this._tt); this.setState({tip:false}); },tipFocus:()=>{ clearTimeout(this._tt); this.setState({tip:true}); },tipKey:e=>{ if(e.key==='Escape') this.setState({tip:false}); },copyLink:this.copyLink,failMsg:this.failMsg,
+      bs:S.bs,toggleBs:()=>this.setState(s=>({bs:!s.bs})),bsLabel:S.bs?'Schließen':'Öffnen',toasts,notices,
+      tabs,tabKey,tabRows,tabLabelledBy:TB[S.tab][2],tabStates,skel3:[{w:'90%'},{w:'65%'},{w:'80%'}]};
+  }
+}
+</script>
+</body>
+</html>

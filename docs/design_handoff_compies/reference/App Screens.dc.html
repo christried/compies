@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}a:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div lang="de" style="min-height:100vh;box-sizing:border-box;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;padding:40px clamp(16px,4vw,56px) 80px;display:flex;flex-direction:column;gap:28px">
+  <header style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:12px;max-width:760px">
+      <span style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Phase 4: Screens &amp; Flows</span>
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,92px);line-height:.92">Alle Screens.</h1>
+      <p style="margin:0;font-size:17px;line-height:1.5;max-width:62ch;text-wrap:pretty">4 MVP-Screens (gehen zuerst online) und 36 Screens in 8 Teilen, jeweils Desktop und Mobil, hell und dunkel, mit allen Zuständen und Notizen für den Build. Dazu 5 Flows als Klick-Prototypen.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ legend }}" as="l" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:7px;border:2px {{ l.bs }} var(--cp-line);background:{{ l.bg }};color:{{ l.fg }};font-family:var(--cp-font-mono);font-size:11px;font-weight:700">{{ l.k }}</span>{{ l.d }}</span></sc-for></div>
+    </div>
+    <dc-import name="CompibertRig" variant="full" size="{{ 220 }}" state="wave" hint-size="220px,188px"></dc-import>
+  </header>
+
+  <a href="App Flows.dc.html" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 20px;border:3px solid var(--cp-line);border-radius:18px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-card);text-decoration:none">
+    <span style="flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;border:3px solid var(--cp-ink);background:var(--cp-surface)"><dc-import name="Icon" icon="play" size="{{ 24 }}" hint-size="24px,24px"></dc-import></span>
+    <div style="flex:1;min-width:220px;display:flex;flex-direction:column;line-height:1.3"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px">5 Flows durchklicken</b><span style="font-weight:600">Host plant, Spielerin kommt dazu, verdecktes Rad mit 2 Vetos, Pick &amp; Ban 2v2, Gleichstand bis zum Teilen.</span></div>
+    <dc-import name="Icon" icon="chevron-right" size="{{ 28 }}" sw="{{ 3 }}" hint-size="28px,28px"></dc-import>
+  </a>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:16px">
+    <sc-for list="{{ parts }}" as="p" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;gap:12px;padding:18px;border:var(--cp-bw) {{ p.bs }} var(--cp-line);border-radius:18px;background:var(--cp-surface)">
+        <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:var(--cp-font-mono);font-size:12px;font-weight:700;color:var(--cp-ink-2)">{{ p.k }}</span><a href="{{ p.href }}" style="flex:1;font-family:var(--cp-font-display);font-size:28px;line-height:1;text-decoration:none">{{ p.n }}</a><dc-import name="Icon" icon="{{ p.icon }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import></div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ p.screens }}" as="s" hint-placeholder-count="4"><a href="{{ s.href }}" style="display:flex;align-items:center;gap:10px;min-height:40px;padding:2px 8px;border-radius:10px;text-decoration:none"><span style="flex:none;width:24px;font-family:var(--cp-font-mono);font-size:12px;font-weight:700;color:var(--cp-ink-2)">{{ s.no }}</span><span style="flex:1;font-weight:700;font-size:14px">{{ s.n }}</span><sc-if value="{{ s.tag }}"><span style="flex:none;display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:6px;border:2px {{ s.bs }} var(--cp-line);background:{{ s.bg }};color:{{ s.fg }};font-family:var(--cp-font-mono);font-size:10px;font-weight:700">{{ s.tag }}</span></sc-if><span style="flex:none;font-size:12px;color:var(--cp-ink-2)">{{ s.c }}</span></a></sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px">
+    <sc-for list="{{ notes }}" as="n" hint-placeholder-count="3"><div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.5;text-wrap:pretty"><b>{{ n.t }}</b> {{ n.d }}</div></sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const P=[
+ ['0','MVP: Terminfindung zuerst','App MVP Terminfindung.dc.html','calendar',[['M1','Start','home',3,'[MVP]'],['M2','Umfrage anlegen','create',3,'[MVP]'],['M3','Terminumfrage','poll',6,'[MVP]'],['M4','Baustelle','site',4,'[MVP]']]],
+ ['A','Einstieg','App Einstieg.dc.html','log-in',[['01','Splash','splash',3],['02','Anmelden','login',4],['03','Profil einrichten','setup',3],['04','Home','home',4],['06','Einladen','invite',4],['07','Link öffnen','open',4]]],
+ ['B','Session vorbereiten','App Vorbereitung.dc.html','calendar',[['05','Session erstellen + Info-Sheet','create',13],['08','Terminumfrage','poll',6]]],
+ ['C','Lobby & Host-Steuerung','App Lobby.dc.html','layout-grid',[['09','Spielbrett','board',12],['10','Host-Steuerung','host',11]]],
+ ['D','Spielrunde','App Spielrunde.dc.html','ferris-wheel',[['11','Lucky Wheel','wheel',10],['12','Loser’s Advantage','advantage',4],['13','Pick & Ban','pickban',7],['14','Loser’s Pick','loser',5],['15','Admin-Wahl','admin',3],['16','Ergebnis eintragen','result',4],['17','Live-Tabelle','board',2],['18','Tiebreaker','tie',4]]],
+ ['E','Ende & Archiv','App Ende & Archiv.dc.html','trophy',[['19','Siegerehrung + Teilen','ceremony',4],['20','Battle-Replay','replay',1,'[1.0 – letztes Ticket]'],['21','Archiv','list',4],['22','Archiv-Detail','detail',3]]],
+ ['F','Bibliothek, Profil, Admin','App Bibliothek & Profil.dc.html','gamepad-2',[['23','Bibliothek','lib',4],['24','Spiel anlegen','edit',4],['25','Profil & Einstellungen','profile',4],['26','Plattform-Admin','admin',4]]],
+ ['G','Systemzustände','App Systemzustände.dc.html','wifi-off',[['27','Verbindung','conn',3],['28','Push-Erlaubnis','push',4],['29','PWA installieren','pwa',3],['30','Ton aktivieren','sound',2],['31','Fehlerseiten','error',3]]],
+ ['H','Nach 1.0','App Post-1.0.dc.html','sparkles',[['32','Crews','crews',5,'[Post-1.0]'],['33','Turnierbaum','bracket',1,'[Post-1.0]'],['34','Liga','league',1,'[Post-1.0]'],['35','Ergebnis selbst melden','report',3,'[Post-1.0]'],['36','Sprache','lang',2,'[Post-1.0]']]]
+];
+const TAG=t=>t.includes('MVP')?{bs:'solid',bg:'var(--cp-primary)',fg:'var(--cp-on-primary)'}:t.includes('Post')?{bs:'dashed',bg:'var(--cp-surface)',fg:'var(--cp-ink)'}:t.includes('Ticket')?{bs:'solid',bg:'var(--cp-warning)',fg:'var(--cp-on-warning)'}:{bs:'solid',bg:'var(--cp-ink)',fg:'var(--cp-paper)'};
+class Component extends DCLogic {
+  renderVals(){
+    return {
+      legend:[['[MVP]','Geht zuerst online'],['[1.0]','Erstes Release'],['[1.0 – letztes Ticket]','Kommt zuletzt, fliegt sonst'],['[Post-1.0]','Gestaltet, nicht in 1.0']].map(([k,d])=>({k,d,...TAG(k)})),
+      parts:P.map(([k,n,file,icon,scr])=>({k,n,icon,href:file,bs:k==='H'?'dashed':'solid',screens:scr.map(([no,sn,key,c,tag])=>({no,n:sn,href:file+'?s='+key,c:c+(c===1?' Zustand':' Zustände'),tag:tag||'',...TAG(tag||'')}))})),
+      notes:[{t:'Alle Screens,',d:'auch die Post-1.0-Teile, nutzen nur Tokens und Komponenten aus Phase 2 und 3. Neu dazugekommen sind AppFrame (Shell) und AppViewer (Screen-Picker), beide nur fürs Präsentieren.'},{t:'Tasten und Links:',d:'Jeder Screen ist per URL direkt erreichbar (?s=…&st=…&vp=mob&theme=dark), das nutzen auch die Flows.'},{t:'Offen aus Phase 2:',d:'Kick/Bann für den Host, Sichtbarkeit von „korrigiert“ für Spieler:innen, Push bei „Spiel gezogen“. Die Screens zeigen den aktuellen Stand: kein Kick, „korrigiert“ für alle, Push nur für Abwesende.'}]};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<span aria-hidden="true" style="position:relative;display:inline-block;flex:none;width:{{ s }}px;height:{{ s }}px">
+  <span style="position:absolute;inset:0;border-radius:50%;box-sizing:border-box;border:{{ bw }}px solid var(--cp-line);background:{{ tint }};display:grid;place-items:center;font-family:var(--cp-font-sans);font-weight:800;font-size:{{ fs }}px;line-height:1;color:#151515;box-shadow:{{ ring }};filter:{{ filt }};transform:{{ tf }};transition:transform 140ms cubic-bezier(.2,0,0,1),box-shadow 140ms cubic-bezier(.2,0,0,1)">{{ ini }}</span>
+  <sc-if value="{{ hasTeam }}"><span style="position:absolute;left:{{ bo }}px;bottom:{{ bo }}px;display:grid"><dc-import name="TeamMark" team="{{ team }}" size="{{ b }}" hint-size="16px,16px"></dc-import></span></sc-if>
+  <sc-if value="{{ host }}"><span style="position:absolute;right:{{ bo }}px;top:{{ bo }}px;display:grid;place-items:center;width:{{ b }}px;height:{{ b }}px;border-radius:50%;box-sizing:border-box;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ bi }}" sw="{{ 2.5 }}" hint-size="10px,10px"></dc-import></span></sc-if>
+  <sc-if value="{{ showDot }}"><span style="position:absolute;right:{{ dO }}px;bottom:{{ dO }}px;width:{{ d }}px;height:{{ d }}px;border-radius:50%;box-sizing:border-box;border:{{ dB }};background:{{ dBg }}"></span></sc-if>
+</span>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:96,&quot;height&quot;:96},&quot;who&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Kitty&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:48,&quot;tsType&quot;:&quot;number&quot;},&quot;team&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;min&quot;:0,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;},&quot;online&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;host&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;dot&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;lifted&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;tint&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const T=['#f6d3c4','#e3d8f6','#cfe9da','#f6e3a8','#d2e3f3','#f3d0e1','#e9dcc8','#d6ecec'];
+class Component extends DCLogic {
+  renderVals(){
+    const p=this.props, s=p.size??40, who=p.who||'?', team=+(p.team||0), on=p.online!==false;
+    let h=0; for(const c of who) h=(h*31+c.charCodeAt(0))>>>0;
+    const b=Math.max(14,Math.round(s*.4)), d=Math.max(9,Math.round(s*.28));
+    return {s,ini:who.slice(0,1).toUpperCase(),tint:p.tint||T[h%T.length],fs:Math.round(s*.44),bw:s>=40?2.5:2,
+      ring:team?`0 0 0 ${s>=40?3:2}px var(--cp-team-${team}), 0 0 0 ${s>=40?5:4}px var(--cp-line)${p.lifted?', 6px 8px 0 var(--cp-shadow-ink)':''}`:(p.lifted?'6px 8px 0 var(--cp-shadow-ink)':'none'),
+      filt:on?'none':'grayscale(1)',tf:p.lifted?'scale(1.06)':'none',
+      hasTeam:!!team,team,host:!!p.host,b,bi:Math.round(b*.6),bo:team?-Math.round(s*.1)-2:-Math.round(s*.08),
+      showDot:p.dot!==false,d,dO:team?-Math.round(s*.06)-2:-Math.round(s*.02),dB:on?'2px solid var(--cp-line)':'2.5px solid var(--cp-offline)',dBg:on?'var(--cp-online)':'var(--cp-surface)'};
+  }
+}
+</script>
+</body>
+</html>

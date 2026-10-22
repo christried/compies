@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<dc-import name="AppViewer" kicker="MVP: geht zuerst online" title="Terminfindung zuerst" scope="[MVP]" dark="{{ dark }}" embed="{{ embed }}" fw="{{ fw }}" fh="{{ fh }}" screens="{{ screens }}" states="{{ states }}" vps="{{ vps }}" notes="{{ notes }}" cur-name="{{ curName }}" cur-state="{{ curState }}" toggle-theme="{{ toggleTheme }}" hint-size="100%,900px">
+<dc-import name="AppFrame" vp="{{ vp }}" kind="{{ kind }}" nav="{{ nav }}" soon="{{ soon }}" no-create="{{ true }}" me="{{ me }}" is-host="{{ isHost }}" title="{{ sTitle }}" pill="{{ pill }}" panel="none" dock="{{ dock }}" tabs="{{ tabs }}" fab="{{ fab }}" hint-size="1280px,800px">
+
+<sc-if value="{{ sHome }}">
+  <div style="width:100%;max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ hello }}</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ h1 }};line-height:1">{{ homeTitle }}</h1></div>
+      <sc-if value="{{ isHost }}"><span data-next="tap" style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800"><dc-import name="Icon" icon="plus" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Neue Terminumfrage</span></sc-if>
+    </div>
+    <sc-if value="{{ hasPolls }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <b style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Deine Sessions</b>
+        <div style="display:grid;grid-template-columns:{{ cardCols }};gap:14px">
+          <sc-for list="{{ polls }}" as="c" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:12px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:{{ c.sh }}">
+              <div style="display:flex;align-items:flex-start;gap:10px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1.05">{{ c.name }}</b><span style="font-size:13px;color:var(--cp-ink-2)">{{ c.host }}</span></div><span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:11px;font-weight:800;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid var(--cp-line);background:{{ c.dot }}"></span>{{ c.pill }}</span></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--cp-paper-2)"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">{{ c.slotLabel }}</span><b>{{ c.slot }}</b></div></div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="flex:1;min-width:150px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:{{ c.meFg }}"><dc-import name="Icon" icon="{{ c.meIcon }}" size="{{ 15 }}" hint-size="15px,15px"></dc-import>{{ c.me }}</span><span data-next="{{ c.nx }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ c.ctaBg }};color:{{ c.ctaFg }};box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:14px">{{ c.cta }}<dc-import name="Icon" icon="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ homeEmpty }}">
+      <div style="display:flex;flex-direction:{{ emptyDir }};align-items:center;gap:18px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;background:var(--cp-surface)">
+        <dc-import name="CompibertRig" variant="bust" size="{{ 120 }}" state="sleep" hint-size="120px,120px"></dc-import>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;text-align:{{ emptyTA }}"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1.05">Noch keine Einladung.</b><span style="color:var(--cp-ink-2);text-wrap:pretty">Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Frag deinen Host, Compibert wartet so lange.</span></div>
+      </div>
+    </sc-if>
+    <dc-import name="BaustelleZone" compact="{{ mob }}" title="Der Rest ist noch Rohbau." text="Spielbrett, Glücksrad, Live-Tabelle und Siegerehrung bauen wir gerade. Die Terminumfrage funktioniert schon." hint-size="100%,250px"></dc-import>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sCreate }}">
+  <div style="width:100%;max-width:680px;display:flex;flex-direction:column;gap:18px">
+    <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><dc-import name="Icon" icon="chevron-left" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Zurück</span>
+    <sc-if value="{{ cForm }}">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Neue Session</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ h1 }};line-height:1">Erst mal: Wann zocken wir?</h1></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:14px;font-weight:700">Name der Session</label><span style="display:flex;align-items:center;height:56px;padding:0 16px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-size:19px;font-weight:600">Freitags-Zocken</span><div style="display:flex;font-size:13px;color:var(--cp-ink-2)"><span style="flex:1">Sehen alle in der Einladung.</span><span style="font-family:var(--cp-font-mono)">15/40</span></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:14px;font-weight:700">Termin</span>
+        <div role="radiogroup" aria-label="Termin" style="display:grid;grid-template-columns:1fr 1fr;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;overflow:hidden;max-width:420px"><span role="radio" aria-checked="true" style="display:flex;align-items:center;justify-content:center;gap:6px;height:44px;background:var(--cp-ink);color:var(--cp-paper);font-weight:700;font-size:14px"><dc-import name="Icon" icon="calendar" size="{{ 15 }}" hint-size="15px,15px"></dc-import>Terminumfrage</span><span role="radio" aria-checked="false" style="display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-left:2px solid var(--cp-line);font-weight:700;font-size:14px"><dc-import name="Icon" icon="calendar-check" size="{{ 15 }}" hint-size="15px,15px"></dc-import>Direkt festlegen</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <b>Vorschläge für die Umfrage</b>
+        <sc-for list="{{ cSlots }}" as="s" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="flex:1 1 170px;min-width:0;height:48px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;border:{{ s.bd }};background:var(--cp-surface);font-weight:600"><dc-import name="Icon" icon="calendar" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ s.d }}</span><span style="flex:0 0 108px;height:48px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-num)"><dc-import name="Icon" icon="clock" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ s.t }}</span><span aria-label="Vorschlag entfernen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="x" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></div>
+            <sc-if value="{{ s.err }}"><span role="alert" style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--cp-error-fg)"><dc-import name="Icon" icon="circle-alert" size="{{ 14 }}" hint-size="14px,14px"></dc-import>{{ s.err }}</span></sc-if>
+          </div>
+        </sc-for>
+        <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:2.5px dashed var(--cp-line);font-weight:700;font-size:14px"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Termin vorschlagen</span>
+        <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Abgestimmt wird mit Ja, Wenn nötig oder Nein. Bis zu 8 Vorschläge, die Zeit gilt für alle (Europe/Berlin).</span>
+      </div>
+      <dc-import name="BaustelleZone" compact="{{ true }}" sign="{{ false }}" title="Format, Modus und Spiele kommen später." text="Sobald das Update da ist, trägst du sie in dieser Session nach. Umfrage und Stimmen bleiben, wie sie sind." hint-size="100%,230px"></dc-import>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span data-next="tap" style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 22px;border-radius:999px;border:var(--cp-bw) {{ cCtaBs }} var(--cp-line);background:{{ cCtaBg }};color:{{ cCtaFg }};box-shadow:{{ cCtaSh }};font-weight:800">Umfrage starten<dc-import name="Icon" icon="chevron-right" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><sc-if value="{{ cErr }}"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Erst den Termin in der Vergangenheit ändern.</span></sc-if></div>
+    </sc-if>
+    <sc-if value="{{ cDone }}">
+      <div style="display:flex;flex-direction:{{ doneDir }};align-items:center;gap:20px;padding:22px;border:3px solid var(--cp-line);border-radius:20px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <dc-import name="CompibertRig" variant="bust" size="{{ 140 }}" state="wave" hint-size="140px,140px"></dc-import>
+        <div style="flex:1;min-width:0;width:100%;display:flex;flex-direction:column;gap:12px">
+          <span style="font-family:var(--cp-font-display);font-size:34px;line-height:1">Freitags-Zocken steht!</span>
+          <span style="font-weight:600;text-wrap:pretty">4 Terminvorschläge. Schick den Link in euren Discord, wer ihn öffnet, meldet sich an und stimmt ab.</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="flex:1;min-width:200px;height:52px;box-sizing:border-box;display:flex;align-items:center;padding:0 14px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">compies.app/s/freitags-zocken-k7q2</span><span style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800"><dc-import name="Icon" icon="copy" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Link kopieren</span></div>
+          <span data-next="tap" style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;font-weight:800">Zur Umfrage<dc-import name="Icon" icon="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sPoll }}">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ pollKicker }}</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ h1 }};line-height:1">{{ pollTitle }}</h1></div>
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--cp-ink-2)"><span style="width:8px;height:8px;border-radius:50%;background:var(--cp-online);border:1.5px solid var(--cp-line)"></span>Aktualisiert sich von selbst</span>
+    </div>
+    <sc-if value="{{ pollOpen }}">
+      <sc-if value="{{ savedNote }}"><div role="status" style="display:flex;gap:10px;align-items:center;padding:10px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-success);color:var(--cp-on-success)"><dc-import name="Icon" icon="check" size="{{ 14 }}" sw="{{ 3 }}" hint-size="14px,14px"></dc-import></span><span style="font-size:14px;text-wrap:pretty"><b>Gespeichert.</b> Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.</span></div></sc-if>
+      <div style="display:grid;grid-template-columns:{{ slotCols }};gap:12px">
+        <sc-for list="{{ pollSlots }}" as="p" hint-placeholder-count="4">
+          <div style="position:relative;display:flex;flex-direction:column;gap:10px;padding:16px 14px 14px;border:{{ p.bd }};border-radius:14px;background:var(--cp-surface);box-shadow:{{ p.sh }}">
+            <sc-if value="{{ p.best }}"><span style="position:absolute;top:-12px;left:12px;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px;font-weight:800"><dc-import name="Icon" icon="sparkles" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Bester Termin</span></sc-if>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b>{{ p.day }}</b><span style="font-family:var(--cp-font-num);font-size:24px;line-height:1">{{ p.time }}</span></div>
+            <div style="display:flex;height:10px;border-radius:999px;border:1.5px solid var(--cp-line);overflow:hidden;background:var(--cp-paper-2)"><span style="width:{{ p.yW }};background:var(--cp-success)"></span><span style="width:{{ p.mW }};background:var(--cp-warning)"></span></div>
+            <span style="font-size:12px"><b>{{ p.y }} Ja</b>, {{ p.m }} Wenn nötig, {{ p.n }} Nein</span>
+            <div role="radiogroup" aria-label="{{ p.aria }}" style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ p.opts }}" as="o" hint-placeholder-count="3"><span role="radio" aria-checked="{{ o.on }}" data-next="{{ o.nx }}" style="display:flex;align-items:center;justify-content:center;gap:4px;height:44px;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-size:12px;font-weight:700"><dc-import name="Icon" icon="{{ o.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import>{{ o.n }}</span></sc-for></div>
+            <sc-if value="{{ p.hostPick }}"><span data-next="{{ p.hpNx }}" style="display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ p.hpBg }};color:{{ p.hpFg }};box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="calendar-check" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Diesen festlegen</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <b>Wer kann wann?</b>
+        <div style="overflow-x:auto;scrollbar-width:none;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+          <div style="display:grid;grid-template-columns:{{ mxCols }};min-width:{{ mxMin }}">
+            <span style="padding:8px 12px;border-bottom:2px solid var(--cp-line-soft)"></span>
+            <sc-for list="{{ mxHead }}" as="h" hint-placeholder-count="4"><span style="padding:8px 4px;border-bottom:2px solid var(--cp-line-soft);text-align:center;font-size:12px;font-weight:800;line-height:1.2">{{ h }}</span></sc-for>
+            <sc-for list="{{ mxRows }}" as="r" hint-placeholder-count="8">
+              <span style="display:flex;align-items:center;gap:8px;padding:5px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-size:13px;font-weight:{{ r.w }}"><dc-import name="Avatar" who="{{ r.n }}" size="{{ 24 }}" host="{{ r.host }}" dot="{{ false }}" hint-size="24px,24px"></dc-import>{{ r.l }}</span>
+              <sc-for list="{{ r.c }}" as="c" hint-placeholder-count="4"><span style="display:grid;place-items:center;border-bottom:1.5px solid var(--cp-line-soft)"><span title="{{ c.t }}" style="display:grid;place-items:center;width:26px;height:26px;border-radius:{{ c.r }};border:2px {{ c.bs }} var(--cp-line);background:{{ c.bg }};color:{{ c.fg }}"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import></span></span></sc-for>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ pollSet }}">
+      <div style="display:flex;flex-direction:{{ doneDir }};align-items:center;gap:20px;padding:22px;border:3px solid var(--cp-line);border-radius:20px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <div style="flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:130px;height:130px;border-radius:20px;border:3px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);line-height:1;box-shadow:var(--cp-shadow-sm)"><span style="font-weight:800;font-size:14px;text-transform:uppercase">Sa, Okt</span><span style="font-family:var(--cp-font-num);font-size:56px">25</span><span style="font-family:var(--cp-font-num);font-size:18px">20:30</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0">
+          <span style="font-family:var(--cp-font-display);font-size:30px;line-height:1">Samstag, 25. Oktober, 20:30 Uhr</span>
+          <span style="color:var(--cp-ink-2);text-wrap:pretty">Leg ihn dir in den Kalender. Die Datei erinnert dich 1 Stunde vorher. Verschiebt der Host, siehst du es hier und lädst die Datei neu.</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800"><dc-import name="Icon" icon="download" size="{{ 18 }}" hint-size="18px,18px"></dc-import>In den Kalender (.ics)</span><sc-if value="{{ isHost }}"><span style="display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700"><dc-import name="Icon" icon="calendar" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Verschieben</span></sc-if></div>
+        </div>
+      </div>
+    </sc-if>
+    <dc-import name="BaustelleZone" compact="{{ mob }}" title="{{ zoneTitle }}" text="{{ zoneText }}" hint-size="100%,250px"></dc-import>
+  </div>
+  <sc-if value="{{ pollModal }}">
+    <div style="position:absolute;inset:0;z-index:50;background:var(--cp-overlay);display:flex;align-items:{{ sheetAlign }};justify-content:center;padding:{{ sheetOuter }}">
+      <div role="dialog" aria-label="Termin festlegen?" style="width:100%;max-width:480px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ sheetR }};background:var(--cp-surface);box-shadow:var(--cp-shadow-modal)">
+        <div style="display:flex;align-items:center;gap:12px"><span style="flex:none;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="calendar-check" size="{{ 22 }}" hint-size="22px,22px"></dc-import></span><span style="flex:1;font-family:var(--cp-font-display);font-size:28px;line-height:1">Termin festlegen?</span></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:3px solid var(--cp-focus);border-radius:14px"><b style="flex:1">Sa 25.10., 20:30 Uhr</b><span style="font-size:13px">7 Ja, 1 Wenn nötig</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:14px"><span style="display:flex;gap:8px"><dc-import name="Icon" icon="eye" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Alle 9 sehen den Termin sofort hier.</span><span style="display:flex;gap:8px"><dc-import name="Icon" icon="download" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Die Kalenderdatei steht zum Download bereit.</span><span style="display:flex;gap:8px"><dc-import name="Icon" icon="clock" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Sie erinnert 1 Stunde vorher.</span></div>
+        <span data-next="tap" style="display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800">Festlegen</span>
+        <span style="align-self:center;font-weight:700;font-size:14px;padding:6px">Abbrechen</span>
+      </div>
+    </div>
+  </sc-if>
+</sc-if>
+
+<sc-if value="{{ sSite }}">
+  <dc-import name="BaustelleZone" variant="hero" compact="{{ mob }}" chip="{{ siteChip }}" title="{{ siteTitle }}" text="{{ siteText }}" cta="Zur Terminumfrage" cta2="{{ siteCta2 }}" cta2-icon="{{ siteCta2Icon }}" cb-state="{{ siteCb }}" hint-size="100%,640px"></dc-import>
+</sc-if>
+
+</dc-import>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KEY='compies-app-MVP';
+const SCR=[
+ {k:'home',no:'M1',n:'Start',st:[['host','Host mit Umfragen'],['player','Eingeladen, noch nicht abgestimmt'],['empty','Noch keine Einladung']],
+  notes:['MVP home = the real Home (04) with only the poll card working. Same route, same component; later tickets add cards, archive teaser and the PWA hint.','Nav keeps Archiv, Bibliothek, Profil visible with the tape marker; each route renders the Baustelle page (M4). No dead links, no 404.','Cards: one per session the user is in. Pill = phase (Terminumfrage / Termin steht). Own status: „Du hast noch nicht abgestimmt“ uses warning-fg + icon, never colour alone.','„Neue Terminumfrage“ only for users with the host permission (MVP: env allowlist). Without it: no button, no notice.','Empty state: sleeping Compibert (bust), copy explains how to get in (invite link).']},
+ {k:'create',no:'M2',n:'Umfrage anlegen',st:[['form','Formular'],['error','Termin in der Vergangenheit'],['done','Angelegt + Link']],
+  notes:['Replaces the 8-step stepper (05) for the MVP: name + date step only. Creates a real Session row in phase „poll“ (or „date_set“ with „Direkt festlegen“) with nullable format/mode/pool, so the full stepper later edits the same record.','Slots: date + time, 1–8, Europe/Berlin, stored as UTC. Past slot = inline error (role=alert), CTA dashed + aria-disabled with the reason next to it.','Baustelle strip (compact, no sign) says the rest comes later. It is a note (role=note), not a control.','Done: invite link compies.app/s/<slug>-<token>, copy button with toast „Link kopiert“. Rotate (hold 1 s) lives in the host dock „Einladen“ sheet from 06.']},
+ {k:'poll',no:'M3',n:'Terminumfrage',st:[['vote','Abstimmen (Spielerin)'],['voted','Abgestimmt'],['host','Host-Ansicht'],['confirm','Host: festlegen'],['set','Termin steht'],['sethost','Termin steht (Host)']],
+  notes:['Same screen as 08, minus chat panel and push. The side panel is hidden (panel none); the Baustelle strip below stands in for Spielbrett, Chat and Teamwahl.','Votes save on tap (optimistic, roll back on error with toast). Changing is allowed until the host confirms. „Noch offen“ = dashed outline.','Live: no realtime server in the MVP. Refetch every 15 s while the tab is visible and on focus; „Aktualisiert sich von selbst“ says so. Swap to PartyServer events (poll.voted, poll.confirmed) in ticket 6 without changing the UI.','Best slot: most Ja, then most Wenn nötig, then earliest. Suggestion only; the host confirms via card button (desktop), dock „Termin festlegen“ or the crown sheet (mobile).','No push in the MVP. The .ics has a VALARM −PT1H, which replaces the reminder push. Reschedule bumps SEQUENCE and keeps the UID so calendars update in place.']},
+ {k:'site',no:'M4',n:'Baustelle',st:[['archiv','Archiv'],['bibliothek','Bibliothek'],['profil','Profil'],['brett','Spielbrett (Session)']],
+  notes:['One page component for every route that is not built yet. Copy per area via i18n keys mvp.site.<area>.*. Remove the route from the list as tickets land.','Compibert full body, still pose, with the hard hat (assets/baustelle/bauhelm.svg) as an extra rig part on compibert-head (see motion spec). Tape, fence panels, barrier and cone are decorative and aria-hidden.','Profil keeps „Abmelden“ reachable: it is the only working action there in the MVP.','Reduced motion: nothing moves anyway. In full motion only Compibert breathes/blinks; the tape does not scroll (no endless loops on a page people may idle on).']}
+];
+const SITE={
+ archiv:['Das Archiv wird noch gemauert.','Hier landen später alle Abende mit Tabelle, Chat und Siegerbild. Bis dahin zählt: einen Termin finden.','',''],
+ bibliothek:['Die Bibliothek ist noch eingerüstet.','Bald legen Hosts hier Spiele mit Bild und Clip an. Erst mal klären wir, wann überhaupt gezockt wird.','',''],
+ profil:['Profil? Der Bagger ist bestellt.','Name und Bild kommen gerade von Discord oder Twitch. Hochladen und Einstellungen folgen mit dem nächsten Update.','Abmelden','log-out'],
+ brett:['Spielbrett im Rohbau.','Teams, Chat, Glücksrad und Siegerehrung kommen mit den nächsten Updates. Die Terminumfrage läuft schon.','','']
+};
+const PPL=['Sanne','Kitty','Larsi','Olli','Bea','Mia','Tom','Jo','Chris'];
+class Component extends DCLogic {
+  state={s:'home',st:{},vp:'desk',dark:false,embed:false};
+  componentDidMount(){
+    let g={},l={}; try{g=JSON.parse(localStorage.getItem('compies-app')||'{}');l=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+    const q=new URLSearchParams(location.search), n={...this.state,...g,...l};
+    if(q.get('s')) n.s=q.get('s'); if(q.get('st')) n.st={...n.st,[n.s]:q.get('st')}; if(q.get('vp')) n.vp=q.get('vp'); if(q.get('theme')) n.dark=q.get('theme')==='dark'; n.embed=q.get('embed')==='1';
+    if(!SCR.some(x=>x.k===n.s)) n.s='home'; this.setState(n);
+  }
+  save(p){ this.setState(p,()=>{ if(this.state.embed) return; const S=this.state; try{localStorage.setItem('compies-app',JSON.stringify({...JSON.parse(localStorage.getItem('compies-app')||'{}'),vp:S.vp,dark:S.dark}));localStorage.setItem(KEY,JSON.stringify({s:S.s,st:S.st}));}catch(e){} }); }
+  renderVals(){
+    const S=this.state, C=SCR.find(x=>x.k===S.s)||SCR[0], st=S.st[C.k]||C.st[0][0], desk=S.vp!=='mob', mob=!desk;
+    const seg=(arr,cur,set)=>arr.map(([k,n],i)=>({n,on:cur===k,bl:i?'2px solid var(--cp-line)':'0',bg:cur===k?'var(--cp-ink)':'transparent',fg:cur===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>set(k)}));
+    const v={dark:S.dark,embed:S.embed,fw:desk?1280:390,fh:desk?800:844,vp:S.vp,desk,mob,notes:C.notes,curName:C.no+' '+C.n,curState:C.st.find(x=>x[0]===st)[1],
+      screens:SCR.map(x=>({no:x.no,n:x.n,on:x.k===C.k,bs:'solid',bg:x.k===C.k?'var(--cp-ink)':'var(--cp-surface)',fg:x.k===C.k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.save({s:x.k})})),
+      states:C.st.map(([k,n])=>({n,on:k===st,bg:k===st?'var(--cp-primary)':'var(--cp-surface)',fg:k===st?'var(--cp-on-primary)':'var(--cp-ink)',pick:()=>this.save({st:{...S.st,[C.k]:k}})})),
+      vps:seg([['desk','Desktop 1280'],['mob','Mobil 390']],S.vp,k=>this.save({vp:k})),toggleTheme:()=>this.save({dark:!S.dark}),
+      sHome:C.k==='home',sCreate:C.k==='create',sPoll:C.k==='poll',sSite:C.k==='site',h1:desk?'44px':'32px',
+      kind:'hub',nav:'sessions',soon:['archiv','bibliothek','profil'],me:'Sanne',isHost:true,sTitle:'Freitags-Zocken',pill:'poll',dock:[],tabs:true,fab:false,doneDir:desk?'row':'column'};
+    if(C.k==='home'){
+      const host=st==='host';
+      Object.assign(v,{me:host?'Sanne':'Kitty',isHost:host,hello:host?'Hallo Sanne':'Hallo Kitty',homeTitle:st==='empty'?'Noch nix los.':'Wann zocken wir?',hasPolls:st!=='empty',homeEmpty:st==='empty',cardCols:desk?'1fr 1fr':'1fr',emptyDir:desk?'row':'column',emptyTA:desk?'left':'center'});
+      const P=(name,hostN,phase,slotLabel,slot,me,meOk,cta,prim)=>({name,host:'Host: '+hostN,pill:phase==='poll'?'Terminumfrage':'Termin steht',dot:phase==='poll'?'var(--cp-info)':'var(--cp-success)',icon:phase==='poll'?'sparkles':'calendar-check',slotLabel,slot,me,meIcon:meOk?'circle-check':'circle-alert',meFg:meOk?'var(--cp-success-fg)':'var(--cp-warning-fg)',cta,nx:prim?'tap':'',ctaBg:prim?'var(--cp-primary)':'var(--cp-surface)',ctaFg:prim?'var(--cp-on-primary)':'var(--cp-ink)',sh:prim?'var(--cp-shadow-card)':'none'});
+      v.polls=host?[P('Freitags-Zocken','du','poll','Bester Termin bisher','Sa 25.10., 20:30 Uhr','7 von 9 haben abgestimmt',true,'Öffnen',true),P('Die Couch-Olympiade','du','set','Termin','Sa 08.11., 19:00 Uhr','Termin steht, .ics bereit',true,'Ansehen',false)]
+        :[P('Freitags-Zocken','Sanne','poll','Bester Termin bisher','Sa 25.10., 20:30 Uhr','Du hast noch nicht abgestimmt',false,'Abstimmen',true),P('Die Couch-Olympiade','Larsi','set','Termin','Sa 08.11., 19:00 Uhr','Du hast abgestimmt',true,'Ansehen',false)];
+    }
+    if(C.k==='create'){
+      const err=st==='error';
+      Object.assign(v,{cForm:st!=='done',cDone:st==='done',cErr:err,tabs:false,
+        cCtaBs:err?'dashed':'solid',cCtaBg:err?'var(--cp-paper-2)':'var(--cp-primary)',cCtaFg:err?'var(--cp-ink-2)':'var(--cp-on-primary)',cCtaSh:err?'none':'var(--cp-shadow-btn)',
+        cSlots:[['Fr 24.10.2026','20:15',''],['Sa 25.10.2026','19:00',''],[err?'Mo 20.10.2026':'Sa 25.10.2026',err?'18:00':'20:30',err?'Der Termin liegt in der Vergangenheit.':''],['So 26.10.2026','18:00','']].map(([d,t,e])=>({d,t,err:e,bd:e?'3px solid var(--cp-error-fg)':'var(--cp-bw) solid var(--cp-line)'}))});
+    }
+    if(C.k==='poll'){
+      const isH=['host','confirm','sethost'].includes(st), set=st==='set'||st==='sethost';
+      Object.assign(v,{kind:'session',me:isH?'Sanne':'Kitty',isHost:isH,pill:set?'set':'poll',tabs:false,fab:isH,
+        dock:isH?(set?[['Verschieben','calendar'],['Einladen','link']]:[['Termin festlegen','calendar-check','p'],['Einladen','link']]):[],
+        pollKicker:set?'Termin steht':'Terminumfrage läuft, '+(st==='vote'?'7':'8')+' von 9 haben abgestimmt',pollTitle:set?'Es ist offiziell.':'Wann zocken wir?',pollOpen:!set,pollSet:set,savedNote:st==='voted',
+        slotCols:desk?'repeat(4,1fr)':'1fr',pollModal:st==='confirm',sheetAlign:desk?'center':'flex-end',sheetOuter:desk?'24px':'0',sheetR:desk?'20px':'24px 24px 0 0',
+        zoneTitle:set?'Teamwahl kommt mit dem nächsten Update.':'Spielbrett im Rohbau.',zoneText:set?'Bis dahin steht der Termin, und alle wissen Bescheid. Teams, Chat und Glücksrad bauen wir gerade.':'Teams, Chat und Glücksrad kommen mit dem nächsten Update. Bis dahin reicht: abstimmen.'});
+      const VOTES={Sanne:'yyym',Kitty:'nyym',Larsi:'mmyy',Olli:'yny?',Bea:'nmyy',Mia:'??y?',Tom:'yyyn',Jo:'ynmn',Chris:'????'};
+      if(st==='vote') VOTES.Kitty='????';
+      const slotsD=[['Fr 24.10.','20:15'],['Sa 25.10.','19:00'],['Sa 25.10.','20:30'],['So 26.10.','18:00']];
+      const cnt=i=>{let y=0,m=0,n=0;PPL.forEach(p=>{const c=VOTES[p][i];if(c==='y')y++;else if(c==='m')m++;else if(c==='n')n++;});return {y,m,n};};
+      const meK=isH?'Sanne':'Kitty';
+      v.pollSlots=slotsD.map(([day,time],i)=>{const c=cnt(i),best=i===2,my=VOTES[meK][i];return {day,time,best,y:String(c.y),m:String(c.m),n:String(c.n),yW:(c.y/9*100)+'%',mW:(c.m/9*100)+'%',aria:day+' '+time,bd:best?'3px solid var(--cp-focus)':'var(--cp-bw) solid var(--cp-line)',sh:best?'var(--cp-shadow-card)':'none',hostPick:isH&&desk,hpNx:best?'tap':'',hpBg:best?'var(--cp-primary)':'var(--cp-surface)',hpFg:best?'var(--cp-on-primary)':'var(--cp-ink)',
+        opts:[['y','Ja','check'],['m','Nötig','minus'],['n','Nein','x']].map(([k,n,icon],j)=>({n,icon,on:my===k,nx:st==='vote'&&i===2&&k==='y'?'tap':'',bl:j?'2px solid var(--cp-line)':'0',bg:my===k?(k==='y'?'var(--cp-success)':k==='m'?'var(--cp-warning)':'var(--cp-ink)'):'transparent',fg:my===k?(k==='n'?'var(--cp-paper)':'#151515'):'var(--cp-ink-2)'}))};});
+      v.mxHead=slotsD.map(([d,t])=>d+' '+t); v.mxCols=desk?'200px repeat(4,1fr)':'130px repeat(4,72px)'; v.mxMin=desk?'0':'418px';
+      const CELL={y:['check','var(--cp-success)','var(--cp-on-success)','solid','50%','Ja'],m:['minus','var(--cp-warning)','var(--cp-on-warning)','solid','50%','Wenn nötig'],n:['x','var(--cp-surface)','var(--cp-ink)','solid','6px','Nein'],'?':['','transparent','var(--cp-ink)','dashed','50%','Noch offen']};
+      v.mxRows=(desk?PPL:PPL.slice(0,6)).map(p=>({n:p,host:p==='Sanne',l:p===meK?p+' (du)':p,w:p===meK?800:600,c:VOTES[p].split('').map(ch=>{const c=CELL[ch];return {icon:c[0],bg:c[1],fg:c[2],bs:c[3],r:c[4],t:c[5]};})}));
+    }
+    if(C.k==='site'){
+      const a=SITE[st]||SITE.archiv, brett=st==='brett';
+      Object.assign(v,{kind:brett?'session':'hub',nav:st,me:'Kitty',isHost:false,pill:'set',tabs:!brett,
+        siteChip:'Kommt mit dem nächsten Update',siteTitle:a[0],siteText:a[1],siteCta2:a[2],siteCta2Icon:a[3]||'house',siteCb:st==='profil'?'wave':'idle'});
+    }
+    return v;
+  }
+}
+</script>
+</body>
+</html>

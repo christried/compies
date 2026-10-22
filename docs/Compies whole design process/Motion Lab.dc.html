@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Bungee&family=Caveat+Brush&family=Fredoka:wght@400..700&family=Hanken+Grotesk:wght@400..900&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@500;700&family=Nunito:wght@400..800&family=Patrick+Hand&family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"><script src="./themes.js"></script><style>body{margin:0;overflow:hidden}a{color:inherit}a:hover{opacity:.8}</style></helmet>
+<svg width="0" height="0" style="position:absolute"><filter id="cp-wob"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"></feTurbulence><feDisplacementMap in="SourceGraphic" scale="3.2"></feDisplacementMap></filter></svg>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+<div ref="{{ rootRef }}" style="position:relative;width:100vw;height:100vh;min-height:640px;overflow:hidden;background-color:{{ t.c.bg }};background-image:{{ t.c.bgImg }};background-size:{{ t.c.bgSize }};color:{{ t.c.ink }};font-family:{{ t.f.b }};font-weight:{{ t.f.bw }};font-size:{{ t.f.bs }};display:flex;flex-direction:column;user-select:none;-webkit-user-select:none">
+  <canvas ref="{{ cvRef }}" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:{{ cvRender }}"></canvas>
+
+  <div style="position:relative;z-index:3;flex:none;display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:{{ t.s.div }};flex-wrap:wrap">
+    <a href="COMPIES Stilrichtungen.dc.html" style="display:flex;align-items:center;gap:10px;text-decoration:none"><dc-import name="Compibert" dir="{{ t.id }}" variant="head" size="{{ 36 }}" hint-size="36px,36px"></dc-import><span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};font-size:22px;letter-spacing:{{ t.f.ht }};text-transform:uppercase">Compies</span></a>
+    <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">Motion-Sketch · {{ t.no }} {{ t.de }}</span>
+    <div style="flex:1;min-width:20px"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <div onClick="{{ replay }}" style="cursor:pointer;height:36px;padding:0 14px;display:flex;align-items:center;background:{{ t.c.accent }};color:{{ t.c.accentInk }};border-radius:{{ t.s.rBtn }};border:{{ t.s.btnBorder }};box-shadow:{{ t.s.btnShadow }};font-weight:700;font-size:13px">Boot ▶</div>
+      <div onClick="{{ toggleConflict }}" style="cursor:pointer;height:36px;padding:0 14px;display:flex;align-items:center;gap:8px;border:{{ t.s.border }};border-radius:{{ t.s.rBtn }};font-size:13px;font-weight:700;background:{{ conflictBg }}">Konflikt simulieren: {{ conflictLbl }}</div>
+      <div onClick="{{ toggleRM }}" style="cursor:pointer;height:36px;padding:0 14px;display:flex;align-items:center;gap:8px;border:{{ t.s.border }};border-radius:{{ t.s.rBtn }};font-size:13px;font-weight:700;background:{{ rmBg }}">Reduzierte Bewegung: {{ rmLbl }}</div>
+    </div>
+  </div>
+  <div style="position:relative;z-index:3;flex:none;display:flex;gap:6px;padding:10px 20px;flex-wrap:wrap">
+    <sc-for list="{{ dirs }}" as="d" hint-placeholder-count="12"><div onClick="{{ d.pick }}" style="cursor:pointer;flex:none;padding:6px 10px;font-size:12px;font-weight:700;white-space:nowrap;border:{{ t.s.border }};border-radius:{{ t.s.rChip }};background:{{ d.bg }};color:{{ d.fg }}">{{ d.no }} {{ d.de }}</div></sc-for>
+  </div>
+
+  <div style="position:relative;z-index:2;flex:1;min-height:0;display:flex;gap:24px;padding:16px 24px 24px;flex-wrap:wrap;align-content:flex-start;overflow:auto">
+    <div style="flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};text-transform:{{ t.f.hc }};letter-spacing:{{ t.f.ht }};font-size:34px;line-height:1">Zieh dich in ein Team</span><span style="font-size:13px;color:{{ t.c.ink2 }}">Avatare von der Bench greifen und in einen freien Platz werfen.</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+        <sc-for list="{{ teams3 }}" as="tm" hint-placeholder-count="3">
+          <div style="position:relative;background:{{ t.c.panel }};border-radius:{{ t.s.r }};min-width:0">
+            <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ t.s.shadow }};filter:{{ t.s.ff }};pointer-events:none"></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:{{ tm.c }};color:{{ tm.ink }};border-radius:{{ t.s.rTop }};font-family:{{ t.f.th }};font-weight:{{ t.f.thw }};text-transform:{{ t.f.thc }};font-size:{{ t.f.ths }}"><span>{{ tm.g }}</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ tm.name }}</span><span style="font-size:12px">{{ tm.cnt }}</span></div>
+            <div style="display:flex;gap:10px;padding:16px 12px">
+              <sc-for list="{{ tm.slots }}" as="sl" hint-placeholder-count="2">
+                <div data-slot="{{ sl.id }}" style="flex:1;height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:{{ t.s.r }};background:{{ sl.bg }};transition:background .15s">
+                  <sc-if value="{{ sl.has }}">
+                    <div data-pid="{{ sl.p.id }}" onPointerDown="{{ sl.p.down }}" style="position:relative;width:52px;height:52px;border-radius:{{ t.s.rAv }};background:{{ sl.p.bg }};color:{{ sl.p.fg }};border:{{ t.s.avBorder }};box-shadow:0 0 0 3px {{ tm.c }};display:grid;place-items:center;font-weight:700;font-size:15px;cursor:{{ sl.p.cur }};touch-action:none">{{ sl.p.i }}</div>
+                    <span style="font-size:12px">{{ sl.p.n }}</span>
+                  </sc-if>
+                  <sc-if value="{{ sl.free }}">
+                    <div style="width:52px;height:52px;box-sizing:border-box;border-radius:{{ t.s.rAv }};border:{{ sl.eb }};display:grid;place-items:center;color:{{ t.c.ink2 }};font-size:20px;transform:{{ sl.sc }};transition:transform .18s cubic-bezier(.34,1.6,.6,1)">+</div>
+                    <span style="font-size:12px;color:{{ t.c.ink2 }}">Frei</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div data-slot="bench" style="position:relative;background:{{ benchBg }};border-radius:{{ t.s.r }};padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;transition:background .15s">
+        <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ t.s.shadow }};filter:{{ t.s.ff }};pointer-events:none"></div>
+        <span style="font-family:{{ t.f.th }};font-weight:{{ t.f.thw }};text-transform:{{ t.f.thc }};font-size:{{ t.f.ths }}">{{ t.x.lab.bench }}</span>
+        <sc-for list="{{ bench }}" as="p" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div data-pid="{{ p.id }}" onPointerDown="{{ p.down }}" style="position:relative;width:52px;height:52px;border-radius:{{ t.s.rAv }};background:{{ p.bg }};color:{{ p.fg }};border:{{ t.s.avBorder }};display:grid;place-items:center;font-weight:700;font-size:15px;cursor:grab;touch-action:none">{{ p.i }}</div><span style="font-size:12px">{{ p.n }}</span></div></sc-for>
+        <span style="font-size:12px;color:{{ t.c.ink2 }};margin-left:auto">Zurückwerfen geht auch</span>
+      </div>
+      <div style="font-size:12px;color:{{ t.c.ink2 }};max-width:70ch;line-height:1.5">Avatar hebt ab, neigt sich mit der Wurfgeschwindigkeit, freie Plätze ziehen ihn magnetisch an, beim Landen gibt's Squash &amp; Stretch plus Burst im Stil. Mit „Konflikt simulieren“ schnappt dir jemand den Platz weg – dein Avatar federt zurück.</div>
+    </div>
+
+    <div style="flex:0 1 360px;min-width:300px;display:flex;flex-direction:column;gap:16px">
+      <div style="position:relative;padding:18px;background:{{ t.m.panel }};border-radius:{{ t.m.r }};border:{{ t.m.frameBorder }};box-shadow:{{ t.m.frame }};display:flex;flex-direction:column;gap:14px;align-items:center">
+        <div style="position:absolute;inset:0;background-image:{{ t.m.scanImg }};pointer-events:none;border-radius:{{ t.m.r }}"></div>
+        <span style="align-self:flex-start;font-family:{{ t.m.h }};font-weight:{{ t.m.hw }};text-transform:{{ t.m.hc }};font-size:22px">Veto-Fenster</span>
+        <div style="display:flex;align-items:center;gap:18px;align-self:stretch">
+          <div style="position:relative;width:110px;height:110px;flex:none">
+            <svg viewBox="0 0 120 120" width="110" height="110" style="position:absolute;inset:0;transform:rotate(-90deg)"><circle cx="60" cy="60" r="52" style="fill:none;stroke:{{ t.m.ringTrack }};stroke-width:{{ t.m.ringW }}"></circle><circle cx="60" cy="60" r="52" style="fill:none;stroke:{{ t.m.ringColor }};stroke-width:{{ t.m.ringW }};stroke-dasharray:{{ cdDash }};stroke-linecap:{{ t.m.ringCap }};transition:stroke-dasharray 1s linear"></circle></svg>
+            <div style="position:absolute;inset:0;display:grid;place-items:center;font-family:{{ t.m.n }};font-weight:{{ t.m.nw }};font-size:{{ cdSize }};font-variant-numeric:tabular-nums">{{ cd }}</div>
+          </div>
+          <span style="font-size:13px;line-height:1.4;color:{{ t.c.ink2 }}">{{ vetoHint }}</span>
+        </div>
+        <div ref="{{ vetoRef }}" onPointerDown="{{ holdStart }}" onPointerUp="{{ holdEnd }}" onPointerLeave="{{ holdEnd }}" style="position:relative;width:100%;height:76px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;background:{{ vetoBg }};color:{{ t.m.vetoInk }};border-radius:{{ t.m.vetoR }};border:{{ t.m.vetoBorder }};box-shadow:{{ t.m.vetoShadow }};cursor:pointer;touch-action:none">
+          <div ref="{{ fillRef }}" style="position:absolute;left:0;top:0;bottom:0;width:0%;background:{{ t.m.vetoFill }}"></div>
+          <span style="position:relative;font-family:{{ t.m.h }};font-weight:{{ t.m.hw }};text-transform:uppercase;font-size:28px;line-height:1">{{ vetoLbl }}</span>
+          <span style="position:relative;font-size:12px;font-weight:700;opacity:.85">{{ vetoSub }}</span>
+        </div>
+      </div>
+      <div style="position:relative;background:{{ t.c.panel }};border-radius:{{ t.s.r }};padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-height:180px">
+        <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};filter:{{ t.s.ff }};pointer-events:none"></div>
+        <span style="font-weight:700">Aktivität</span>
+        <sc-for list="{{ feed }}" as="f" hint-placeholder-count="3"><div style="display:flex;gap:10px;font-size:13px;line-height:1.35;opacity:{{ f.o }}"><span style="color:{{ t.c.ink2 }};font-variant-numeric:tabular-nums">{{ f.time }}</span><span>{{ f.txt }}</span></div></sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div ref="{{ fxRef }}" style="position:absolute;inset:0;pointer-events:none;z-index:40;overflow:hidden"></div>
+  <div ref="{{ toastRef }}" style="position:absolute;left:50%;bottom:28px;transform:translate(-50%,140%);z-index:45;padding:12px 18px;background:{{ t.c.ink }};color:{{ t.c.bg }};border-radius:{{ t.s.rBtn }};font-weight:700;font-size:14px;white-space:nowrap">{{ toast }}</div>
+
+  <div ref="{{ bootRef }}" onClick="{{ skip }}" style="position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background-color:{{ bootBg }};background-image:{{ t.c.bgImg }};background-size:{{ t.c.bgSize }};color:{{ bootInk }};overflow:hidden;cursor:pointer">
+    <div ref="{{ gridRef }}" style="position:absolute;inset:0;display:flex;justify-content:space-between;opacity:0"><sc-for list="{{ gridLines }}" as="g"><div style="width:1px;height:100%;background:{{ t.c.line }};transform-origin:top"></div></sc-for></div>
+    <div ref="{{ lineRef }}" style="position:absolute;left:0;right:0;top:50%;height:3px;margin-top:-1px;background:#fff;opacity:0"></div>
+    <div ref="{{ stageRef }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:40px">
+      <div ref="{{ headRef }}"><dc-import name="Compibert" dir="{{ t.id }}" variant="full" size="{{ 180 }}" hint-size="180px,152px"></dc-import></div>
+      <div ref="{{ lettersRef }}" style="display:flex;overflow:hidden;padding:6px 4px;font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};letter-spacing:{{ t.f.ht }};text-transform:uppercase;font-size:{{ bootSize }};line-height:1"><sc-for list="{{ letters }}" as="l"><span style="display:inline-block">{{ l }}</span></sc-for></div>
+      <div style="width:260px;height:10px;border:{{ bootBarBorder }};border-radius:{{ t.s.rChip }};overflow:hidden"><div ref="{{ barRef }}" style="width:0%;height:100%;background:{{ t.c.hot }}"></div></div>
+      <span ref="{{ statusRef }}" style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:12px;opacity:.75">Compibert wird geweckt …</span>
+    </div>
+    <span style="position:absolute;bottom:20px;font-size:11px;opacity:.5">Klicken zum Überspringen</span>
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  rootRef=React.createRef(); cvRef=React.createRef(); fxRef=React.createRef(); toastRef=React.createRef(); vetoRef=React.createRef(); fillRef=React.createRef();
+  bootRef=React.createRef(); gridRef=React.createRef(); lineRef=React.createRef(); stageRef=React.createRef(); headRef=React.createRef(); lettersRef=React.createRef(); barRef=React.createRef(); statusRef=React.createRef();
+  state={ dir:null, rm:false, conflict:false, zones:{Kitty:'t0s0',Mo:'t0s1',Nils:'t5s0',Ricarda:'t6s0',Du:'bench',Olli:'bench',Lea:'bench'}, hover:null, cd:60, vetoed:false, toast:'', feed:[{time:'20:06',txt:'Olli ist der Session beigetreten'},{time:'20:05',txt:'Ricarda ist Team Lila beigetreten'}] };
+  componentDidMount(){
+    let d=null; try{ d=new URLSearchParams(location.search).get('dir'); }catch(e){}
+    const go=()=>{ const T=window.COMPIES_THEMES; this.setState({dir:T&&T[d]?d:'swisspixel', rm:matchMedia('(prefers-reduced-motion: reduce)').matches},()=>{ this.initSmoke(); setTimeout(()=>this.playBoot(),60); }); };
+    if(window.COMPIES_THEMES) go(); else { this._h=go; window.addEventListener('compies-themes',go,{once:true}); }
+    this._tick=setInterval(()=>this.tick(),1000);
+    this._mm=e=>{ this.mx=e.clientX; this.my=e.clientY; }; window.addEventListener('pointermove',this._mm);
+  }
+  componentWillUnmount(){ cancelAnimationFrame(this._raf); clearInterval(this._tick); window.removeEventListener('pointermove',this._mm); this._ro&&this._ro.disconnect(); }
+  T(){ return window.COMPIES_THEMES[this.state.dir]; }
+  now(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  log(txt){ this.setState(s=>({feed:[{time:this.now(),txt}].concat(s.feed).slice(0,6)})); }
+  showToast(msg){ this.setState({toast:msg},()=>{ const el=this.toastRef.current; if(!el) return; el.animate([{transform:'translate(-50%,140%)'},{transform:'translate(-50%,0)',offset:.15},{transform:'translate(-50%,0)',offset:.85},{transform:'translate(-50%,140%)'}],{duration:2600,easing:'cubic-bezier(.34,1.4,.6,1)'}); }); }
+  tick(){
+    if(!this.state.dir) return;
+    let cd=this.state.cd-1;
+    if(cd<0){ if(this.state.vetoed){ this.log('Vetos aufgedeckt: Team Blau (du) – Spiel fliegt vom Rad'); this.burstAt(this.vetoRef.current,24); } else this.log('Keine Vetos – Counter-Strike 2 wird gespielt'); cd=60; this.setState({vetoed:false}); if(this.fillRef.current) this.fillRef.current.style.width='0%'; }
+    this.setState({cd});
+  }
+  // ---------- smoke ----------
+  initSmoke(){
+    const cv=this.cvRef.current; if(!cv) return; const t=this.T();
+    const fit=()=>{ const r=cv.getBoundingClientRect(); const px=t.smokeKind==='pixel'?6:1; cv.width=Math.max(1,Math.round(r.width/px)); cv.height=Math.max(1,Math.round(r.height/px)); this.sc=1/px; };
+    fit(); this._ro&&this._ro.disconnect(); this._ro=new ResizeObserver(fit); this._ro.observe(cv);
+    const W=()=>cv.width/this.sc, H=()=>cv.height/this.sc;
+    this.parts=Array.from({length:22},(_,i)=>({x:Math.random()*W(),y:Math.random()*H(),r:90+Math.random()*170,c:i%t.smokeColors.length,vx:0,vy:0,ph:Math.random()*6.28,rot:Math.random()*6.28,shape:i%3}));
+    cancelAnimationFrame(this._raf);
+    const loop=(ts)=>{ this.drawSmoke(ts); if(!this.state.rm) this._raf=requestAnimationFrame(loop); };
+    this._raf=requestAnimationFrame(loop);
+  }
+  drawSmoke(ts){
+    const cv=this.cvRef.current; if(!cv) return; const t=this.T(), x=cv.getContext('2d'), k=t.smokeKind, s=this.sc, dark=t.mode==='dark';
+    const Wd=cv.width/s, Hd=cv.height/s; const r0=cv.getBoundingClientRect(); const mx=(this.mx||-999)-r0.left, my=(this.my||-999)-r0.top;
+    x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,cv.width,cv.height); x.setTransform(s,0,0,s,0,0);
+    x.globalCompositeOperation=dark&&k!=='puff'?'lighter':'source-over';
+    const cols=t.smokeColors, D=window.COMPIES_DATA;
+    for(const p of this.parts){
+      const a=Math.sin(p.x*0.0016+ts*0.00011)+Math.cos(p.y*0.0021-ts*0.00009);
+      p.vx+=Math.cos(a*2)*0.018+0.004; p.vy+=Math.sin(a*2)*0.014;
+      const dx=p.x-mx, dy=p.y-my, dd=Math.hypot(dx,dy); if(dd<240&&dd>1){ const f=(240-dd)/240*0.35; p.vx+=dx/dd*f; p.vy+=dy/dd*f; }
+      p.vx*=0.97; p.vy*=0.97; p.x+=p.vx; p.y+=p.vy; p.rot+=0.002+p.vx*0.002;
+      if(p.x<-p.r) p.x=Wd+p.r; if(p.x>Wd+p.r) p.x=-p.r; if(p.y<-p.r) p.y=Hd+p.r; if(p.y>Hd+p.r) p.y=-p.r;
+      const c=cols[p.c], br=p.r*(1+0.08*Math.sin(ts*0.0006+p.ph));
+      if(k==='puff'){ x.fillStyle=D.rgba(c,.85); [[-.35,.12,.42],[0,-.08,.55],[.36,.14,.38],[0,.2,.5]].forEach(([ox,oy,rr])=>{ x.beginPath(); x.ellipse(p.x+ox*br*.9,p.y+oy*br*.6+Math.sin(ts*0.001+p.ph)*4,rr*br*.55,rr*br*.5,0,0,6.29); x.fill(); }); continue; }
+      const g=x.createRadialGradient(p.x,p.y,0,p.x,p.y,br); const al=k==='pixel'?(dark?.30:.22):dark?(k==='fog'?.10:.08):.12;
+      g.addColorStop(0,D.rgba(c,al)); g.addColorStop(1,D.rgba(c,0)); x.fillStyle=g; x.beginPath(); x.arc(p.x,p.y,br,0,6.29); x.fill();
+      if(k==='chalk'){ x.strokeStyle=D.rgba(c,dark?.16:.22); x.lineWidth=1.4; for(let j=0;j<3;j++){ x.beginPath(); for(let q=0;q<=40;q++){ const an=q/40*6.29, rr=br*(.3+j*.16)+Math.sin(an*5+ts*0.001+j)*6; const px=p.x+Math.cos(an)*rr, py=p.y+Math.sin(an)*rr*.8; q?x.lineTo(px,py):x.moveTo(px,py);} x.stroke(); } }
+      if(k==='shapes'&&p.shape===0){ x.save(); x.translate(p.x,p.y); x.rotate(p.rot); x.globalCompositeOperation='source-over'; x.strokeStyle=D.rgba(c,.55); x.lineWidth=4; x.lineCap='round'; const z=22;
+        if(p.c%3===0){ x.beginPath(); x.moveTo(0,-z); x.lineTo(z,z*.8); x.lineTo(-z,z*.8); x.closePath(); x.stroke(); } else if(p.c%3===1){ x.beginPath(); x.arc(0,0,z*.8,0,6.29); x.stroke(); } else { x.beginPath(); for(let q=0;q<=4;q++){ x.quadraticCurveTo(-40+q*20-10,q%2?-12:12,-40+q*20,0);} x.stroke(); }
+        x.restore(); x.globalCompositeOperation=dark?'lighter':'source-over'; }
+    }
+    if(k==='fog'){ x.globalCompositeOperation=dark?'lighter':'source-over'; for(let j=0;j<2;j++){ const sx=Wd*(.3+.4*j)+Math.sin(ts*0.00025+j*2)*Wd*.25; const g=x.createRadialGradient(sx,-40,0,sx,Hd*.45,Hd*.8); g.addColorStop(0,D.rgba(cols[1],.10)); g.addColorStop(1,D.rgba(cols[1],0)); x.fillStyle=g; x.beginPath(); x.moveTo(sx-30,-10); x.lineTo(sx+Wd*.18,Hd); x.lineTo(sx-Wd*.18,Hd); x.closePath(); x.fill(); } }
+    if(k==='pixel'){ const im=x.getImageData(0,0,cv.width,cv.height), a=im.data, B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5]; for(let y=0;y<cv.height;y++)for(let xx=0;xx<cv.width;xx++){ const i=(y*cv.width+xx)*4, th=(B[(y%4)*4+xx%4]+.5)/16; const v=a[i+3]/255*2.2; const q=Math.floor(v)+((v%1)>th?1:0); a[i+3]=Math.min(2,q)*55; } x.putImageData(im,0,0); }
+  }
+  // ---------- boot ----------
+  playBoot(){
+    const t=this.T(), el=this.bootRef.current; if(!el) return; this._bootAnims&&this._bootAnims.forEach(a=>a.cancel());
+    const A=[]; const an=(n,k,o)=>{ if(!n) return; const a=n.animate(k,Object.assign({fill:'both'},o)); A.push(a); return a; };
+    el.style.display='flex'; el.style.opacity='1'; el.style.transform='none'; el.style.clipPath='none'; el.style.filter='none';
+    const L=[...(this.lettersRef.current?this.lettersRef.current.children:[])], head=this.headRef.current, bar=this.barRef.current, st=this.statusRef.current, stage=this.stageRef.current;
+    [this.gridRef.current,this.lineRef.current].forEach(n=>n&&(n.style.opacity='0'));
+    const msgs=['Compibert wird geweckt …','Würfel werden gezinkt …','Glücksrad wird geölt …','Bereit!'];
+    if(this.state.rm){ an(stage,[{opacity:0},{opacity:1}],{duration:300}); an(bar,[{width:'0%'},{width:'100%'}],{duration:600}); st&&(st.textContent='Bereit!'); this._bootT=setTimeout(()=>this.endBoot('fade'),900); this._bootAnims=A; return; }
+    msgs.forEach((m,i)=>setTimeout(()=>{ if(st) st.textContent=m; },i*520));
+    const b=t.boot; let dur=2300, exit='fade';
+    if(b==='grid'){ const g=this.gridRef.current; g.style.opacity='1'; [...g.children].forEach((ln,i)=>an(ln,[{transform:'scaleY(0)'},{transform:'scaleY(1)'}],{duration:500,delay:i*35,easing:'cubic-bezier(.2,.8,.2,1)'}));
+      L.forEach((s,i)=>an(s,[{transform:'translateY(110%)'},{transform:'translateY(0)'}],{duration:520,delay:400+i*55,easing:'cubic-bezier(.2,.9,.1,1)'}));
+      an(head,[{transform:'translateX(-120vw)'},{transform:'translateX(0)'}],{duration:700,delay:200,easing:'cubic-bezier(.2,.9,.1,1)'}); an(bar,[{width:'0%'},{width:'100%'}],{duration:1800,delay:300,easing:'steps(12)'}); exit='up'; }
+    if(b==='pop'){ L.forEach((s,i)=>an(s,[{transform:'scale(0) rotate(-30deg)'},{transform:`scale(1.35) rotate(${(i%2?8:-8)}deg)`,offset:.6},{transform:'scale(1) rotate(0)'}],{duration:520,delay:500+i*70,easing:'cubic-bezier(.34,1.56,.64,1)'}));
+      an(head,[{transform:'scale(0) rotate(-20deg)'},{transform:'scale(1.2) rotate(6deg)',offset:.6},{transform:'scale(.95)',offset:.8},{transform:'scale(1)'}],{duration:800,easing:'ease-out'}); an(bar,[{width:'0%'},{width:'100%'}],{duration:1700,delay:300,easing:'cubic-bezier(.6,0,.2,1)'});
+      setTimeout(()=>this.burstAt(head,18),700); exit='circle'; }
+    if(b==='draw'){ L.forEach((s,i)=>an(s,[{clipPath:'inset(0 100% 0 0)',transform:'rotate(-4deg)'},{clipPath:'inset(0 0 0 0)',transform:`rotate(${i%2?2:-2}deg)`}],{duration:260,delay:500+i*110,easing:'steps(5)'}));
+      an(head,[{opacity:0,filter:'url(#cp-wob) blur(2px)'},{opacity:1,filter:'url(#cp-wob)'}],{duration:900,easing:'steps(9)'}); an(bar,[{width:'0%'},{width:'100%'}],{duration:1800,delay:300,easing:'steps(18)'}); }
+    if(b==='crt'){ el.style.backgroundColor='#000'; const ln=this.lineRef.current; an(ln,[{opacity:1,transform:'scaleX(0)'},{opacity:1,transform:'scaleX(1)',offset:.5},{opacity:0,transform:'scaleX(1) scaleY(40)'}],{duration:500,easing:'ease-out'});
+      an(stage,[{transform:'scaleY(.01)',filter:'brightness(4)',opacity:0},{transform:'scaleY(.01)',filter:'brightness(4)',opacity:1,offset:.3},{transform:'scaleY(1.05)',filter:'brightness(1.6)',offset:.7},{transform:'scaleY(1)',filter:'brightness(1)',opacity:1}],{duration:700,delay:300,easing:'steps(7)'});
+      L.forEach((s,i)=>an(s,[{opacity:0},{opacity:1}],{duration:1,delay:900+i*110,easing:'steps(1)'})); an(bar,[{width:'0%'},{width:'100%'}],{duration:1500,delay:700,easing:'steps(10)'});
+      an(head,[{transform:'translateY(0)'},{transform:'translateY(-6px)'},{transform:'translateY(0)'}],{duration:300,delay:900,iterations:4,easing:'steps(2)'}); exit='crt'; dur=2500; }
+    if(b==='stage'){ an(el,[{clipPath:'circle(0% at 50% 42%)'},{clipPath:'circle(22% at 50% 42%)',offset:.4},{clipPath:'circle(22% at 50% 42%)',offset:.6},{clipPath:'circle(150% at 50% 42%)'}],{duration:1300,easing:'cubic-bezier(.7,0,.2,1)'});
+      L.forEach((s,i)=>an(s,[{transform:'scale(3)',opacity:0},{transform:'scale(.92)',opacity:1,offset:.7},{transform:'scale(1)',opacity:1}],{duration:380,delay:900+i*60,easing:'cubic-bezier(.2,.9,.1,1)'}));
+      an(stage,[{transform:'translate(0,0)'},{transform:'translate(-6px,4px)'},{transform:'translate(5px,-3px)'},{transform:'translate(0,0)'}],{duration:240,delay:1350});
+      an(head,[{transform:'translateY(60px) scale(.8)',opacity:0},{transform:'translateY(0) scale(1)',opacity:1}],{duration:700,delay:300,easing:'cubic-bezier(.34,1.56,.64,1)'}); an(bar,[{width:'0%'},{width:'100%'}],{duration:1700,delay:300}); exit='up'; }
+    this._bootAnims=A; this._bootT=setTimeout(()=>this.endBoot(exit),dur);
+  }
+  endBoot(exit){
+    const el=this.bootRef.current; if(!el||el.style.display==='none') return; clearTimeout(this._bootT);
+    const k={up:[{transform:'translateY(0)'},{transform:'translateY(-100%)'}],circle:[{clipPath:'circle(150% at 50% 50%)'},{clipPath:'circle(0% at 50% 50%)'}],crt:[{transform:'scale(1,1)',filter:'brightness(1)'},{transform:'scale(1,.004)',filter:'brightness(5)',offset:.6},{transform:'scale(0,.004)',filter:'brightness(5)'}],fade:[{opacity:1},{opacity:0}]}[exit]||[{opacity:1},{opacity:0}];
+    const a=el.animate(k,{duration:this.state.rm?250:520,easing:'cubic-bezier(.7,0,.3,1)',fill:'forwards'});
+    a.onfinish=()=>{ el.style.display='none'; a.cancel(); this._bootAnims&&this._bootAnims.forEach(x=>x.cancel()); el.style.backgroundColor=''; };
+  }
+  // ---------- fx ----------
+  burstAt(node,n=14,color){
+    const fx=this.fxRef.current, root=this.rootRef.current; if(!fx||!node||this.state.rm) return; const t=this.T();
+    const r=node.getBoundingClientRect(), R=root.getBoundingClientRect(); const cx=r.left+r.width/2-R.left, cy=r.top+r.height/2-R.top;
+    const k=t.smokeKind, cols=color?[color,t.c.accent,t.c.ink]:t.teams.map(x=>x.c);
+    for(let i=0;i<n;i++){
+      const d=document.createElement('div'); const c=cols[i%cols.length], ang=Math.PI*2*i/n+Math.random()*.4, dist=60+Math.random()*70, sz=k==='pixel'?8:8+Math.random()*8;
+      let css=`position:absolute;left:${cx}px;top:${cy}px;width:${sz}px;height:${sz}px;margin:-${sz/2}px 0 0 -${sz/2}px;background:${c};`;
+      if(k==='soft'||k==='fog') css+='border-radius:50%;';
+      if(k==='shapes') css+=i%3===0?'clip-path:polygon(50% 0,100% 100%,0 100%);':i%3===1?`border-radius:50%;border:2px solid ${t.c.ink};`:`border:2px solid ${t.c.ink};`;
+      if(k==='chalk') css+=`width:3px;height:${12+Math.random()*8}px;border-radius:2px;filter:url(#cp-wob);`;
+      if(k==='puff') css+=`border-radius:50%;width:${sz+6}px;height:${sz+6}px;`;
+      d.style.cssText=css; fx.appendChild(d);
+      const ex=Math.cos(ang)*dist, ey=Math.sin(ang)*dist, rot=(Math.random()*2-1)*360;
+      const a=d.animate([{transform:`translate(0,0) rotate(${ang}rad) scale(.4)`,opacity:1},{transform:`translate(${ex}px,${ey}px) rotate(${rot}deg) scale(1)`,opacity:1,offset:.6},{transform:`translate(${ex*1.1}px,${ey*1.1+30}px) rotate(${rot*1.3}deg) scale(.2)`,opacity:0}],{duration:750+Math.random()*300,easing:k==='pixel'?'steps(8)':'cubic-bezier(.2,.8,.3,1)'});
+      a.onfinish=()=>d.remove();
+    }
+  }
+  // ---------- drag ----------
+  slotRects(){ const root=this.rootRef.current; return [...root.querySelectorAll('[data-slot]')].map(n=>({id:n.getAttribute('data-slot'),r:n.getBoundingClientRect(),n})); }
+  occupied(id){ return Object.values(this.state.zones).includes(id); }
+  down(pid,e){
+    if(e.button>0) return; const el=e.currentTarget; el.setPointerCapture&&el.setPointerCapture(e.pointerId);
+    this.drag={pid,el,sx:e.clientX,sy:e.clientY,lx:e.clientX,vx:0,rot:0}; el.style.zIndex='30'; el.style.position='relative'; el.style.cursor='grabbing'; el.style.transition='none';
+    const t=this.T(); el.style.boxShadow=t.s.dragShadow;
+    if(!this.state.rm) el.animate([{transform:'scale(1)'},{transform:'scale(1.22,.86)',offset:.4},{transform:'scale(1.15)'}],{duration:220,easing:'ease-out'});
+    const mv=ev=>this.move(ev), up=ev=>{ el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); el.removeEventListener('pointercancel',up); this.up(ev); };
+    el.addEventListener('pointermove',mv); el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up);
+  }
+  move(e){
+    const d=this.drag; if(!d) return; const dx=e.clientX-d.sx, dy=e.clientY-d.sy;
+    d.vx=d.vx*.7+(e.clientX-d.lx)*.3; d.lx=e.clientX; d.rot=this.state.rm?0:Math.max(-22,Math.min(22,d.vx*1.6));
+    let best=null,bd=90; for(const s of this.slotRects()){ if(s.id!=='bench'&&this.occupied(s.id)) continue; const cx=s.r.left+s.r.width/2, cy=s.r.top+s.r.height/2; const dd=s.id==='bench'?(e.clientY>s.r.top&&e.clientY<s.r.bottom&&e.clientX>s.r.left&&e.clientX<s.r.right?0:999):Math.hypot(e.clientX-cx,e.clientY-cy); if(dd<bd){bd=dd;best=s;} }
+    let mx=0,my=0; if(best&&best.id!=='bench'){ const cx=best.r.left+best.r.width/2, cy=best.r.top+best.r.height/2; mx=(cx-e.clientX)*.25; my=(cy-e.clientY)*.25; }
+    d.el.style.transform=`translate(${dx+mx}px,${dy+my}px) rotate(${d.rot}deg) scale(1.15)`; d.tx=dx+mx; d.ty=dy+my;
+    const h=best?best.id:null; if(h!==this.state.hover) this.setState({hover:h});
+  }
+  up(e){
+    const d=this.drag; if(!d) return; this.drag=null; const target=this.state.hover; const el=d.el; const from=this.state.zones[d.pid];
+    const reset=()=>{ el.style.transform=''; el.style.zIndex=''; el.style.boxShadow=''; el.style.cursor=''; };
+    const back=()=>{ const a=el.animate([{transform:el.style.transform},{transform:'translate(0,0) rotate(0) scale(1)'}],{duration:this.state.rm?150:650,easing:'cubic-bezier(.34,1.9,.5,1)'}); reset(); return a; };
+    this.setState({hover:null});
+    if(!target||target===from){ back(); return; }
+    if(target!=='bench'&&this.state.conflict){
+      this.setState(s=>({zones:Object.assign({},s.zones,{Emre:target})}),()=>{ const n=this.rootRef.current.querySelector('[data-pid="Emre"]'); n&&!this.state.rm&&n.animate([{transform:'scale(0)'},{transform:'scale(1.25)',offset:.6},{transform:'scale(1)'}],{duration:350,easing:'cubic-bezier(.34,1.56,.64,1)'}); });
+      const a=back(); a&&!this.state.rm&&el.animate([{transform:'rotate(0)'},{transform:'rotate(-12deg)'},{transform:'rotate(10deg)'},{transform:'rotate(-6deg)'},{transform:'rotate(0)'}],{duration:500,delay:350});
+      this.showToast('Zu spät – Emre war schneller!'); this.log('Emre hat sich den letzten Platz geschnappt'); return;
+    }
+    const before=el.getBoundingClientRect(); reset();
+    this.setState(s=>({zones:Object.assign({},s.zones,{[d.pid]:target})}),()=>{
+      const n=this.rootRef.current.querySelector(`[data-pid="${d.pid}"]`); if(!n) return; const after=n.getBoundingClientRect();
+      const dx=before.left-after.left+(before.width-after.width)/2, dy=before.top-after.top+(before.height-after.height)/2;
+      if(!this.state.rm){ n.animate([{transform:`translate(${dx}px,${dy}px) scale(1.15) rotate(${d.rot}deg)`},{transform:'translate(0,0) scale(1.28,.78)',offset:.55},{transform:'scale(.9,1.1)',offset:.78},{transform:'scale(1.03,.97)',offset:.9},{transform:'none'}],{duration:560,easing:'cubic-bezier(.3,.9,.4,1)'});
+        if(target!=='bench'){ const tm=this.T().teams[+target[1]]; setTimeout(()=>this.burstAt(n,16,tm.c),280); } }
+      const tmn=target==='bench'?null:this.T().teams[+target[1]].n; const who=d.pid==='Du'?'Du bist':d.pid+' ist';
+      this.log(tmn?`${who} Team ${tmn} beigetreten`:`${who} auf die Bench gewechselt`);
+    });
+  }
+  // ---------- veto ----------
+  holdStart(e){
+    if(this.state.vetoed) { this.vetoRef.current&&!this.state.rm&&this.vetoRef.current.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:240}); return; }
+    const t0=performance.now(); this._holding=true;
+    const step=()=>{ if(!this._holding) return; const p=Math.min(1,(performance.now()-t0)/1000); if(this.fillRef.current) this.fillRef.current.style.width=(p*100)+'%';
+      if(this.vetoRef.current&&!this.state.rm) this.vetoRef.current.style.transform=`scale(${1-p*.04}) translate(${(Math.random()-.5)*p*3}px,${(Math.random()-.5)*p*3}px)`;
+      if(p>=1){ this._holding=false; this.vetoRef.current.style.transform=''; this.setState({vetoed:true}); this.log('Veto von dir (Team Blau) – verdeckt bis 0:00');
+        if(!this.state.rm){ this.vetoRef.current.animate([{transform:'scale(.92)'},{transform:'scale(1.08)',offset:.4},{transform:'scale(1)'}],{duration:420,easing:'cubic-bezier(.34,1.56,.64,1)'}); this.burstAt(this.vetoRef.current,20,this.T().m.vetoBg); }
+        return; }
+      this._hr=requestAnimationFrame(step); };
+    this._hr=requestAnimationFrame(step);
+  }
+  holdEnd(){
+    if(!this._holding) return; this._holding=false; cancelAnimationFrame(this._hr);
+    const f=this.fillRef.current, v=this.vetoRef.current; if(v) v.style.transform='';
+    if(f){ const w=f.style.width; f.animate([{width:w},{width:'0%'}],{duration:300,easing:'ease-out'}); f.style.width='0%'; }
+  }
+  renderVals(){
+    const T=window.COMPIES_THEMES; if(!T||!this.state.dir) return {ready:false};
+    const t=T[this.state.dir], D=window.COMPIES_DATA, st=this.state, O=window.COMPIES_ORDER;
+    const INI={Kitty:'KI',Mo:'MO',Nils:'NI',Ricarda:'RI',Du:'DU',Olli:'OL',Lea:'LE',Emre:'EM'};
+    const mk=(n)=>{ const idx=[...n].reduce((a,ch)=>a+ch.charCodeAt(0),0)%t.c.av.length; const free=['Du','Olli','Lea'].includes(n);
+      return {id:n,n:n==='Du'?'Du':n,i:INI[n],bg:n==='Du'?t.c.accent:t.c.av[idx],fg:n==='Du'?t.c.accentInk:t.c.avInk,cur:free?'grab':'default',down:free?(e)=>this.down(n,e):undefined}; };
+    const who=id=>Object.keys(st.zones).find(k=>st.zones[k]===id);
+    const tdef=[[0,['Wilde','Kartoffel']],[5,['Käsekuchen','Kommando']],[6,['Donner']]];
+    const teams3=tdef.map(([k,w])=>{ const tm=t.teams[k]; const slots=[0,1].map(i=>{ const id=`t${k}s${i}`, p=who(id), hov=st.hover===id;
+      return {id,has:!!p,free:!p,p:p?mk(p):null,bg:hov?D.rgba(tm.c,.22):'transparent',eb:hov?`3px solid ${tm.c}`:`2px dashed ${D.rgba(tm.c,.7)}`,sc:hov?'scale(1.18)':'scale(1)'}; });
+      return {name:w.join(' '),c:tm.c,ink:tm.ink,g:tm.g,cnt:slots.filter(s=>s.has).length+'/2',slots}; });
+    const L=2*Math.PI*52;
+    return { ready:true, t, rootRef:this.rootRef, cvRef:this.cvRef, fxRef:this.fxRef, toastRef:this.toastRef, vetoRef:this.vetoRef, fillRef:this.fillRef,
+      bootRef:this.bootRef, gridRef:this.gridRef, lineRef:this.lineRef, stageRef:this.stageRef, headRef:this.headRef, lettersRef:this.lettersRef, barRef:this.barRef, statusRef:this.statusRef,
+      cvRender:t.smokeKind==='pixel'?'pixelated':'auto', teams3, bench:Object.keys(st.zones).filter(k=>st.zones[k]==='bench').map(mk), benchBg:st.hover==='bench'?D.rgba(t.c.hot,.14):t.c.panel,
+      dirs:O.map(id=>({no:T[id].no,de:T[id].de,bg:id===st.dir?t.c.ink:'transparent',fg:id===st.dir?t.c.bg:t.c.ink,pick:()=>{ if(id===st.dir) return; this.setState({dir:id},()=>{ this.initSmoke(); this.playBoot(); try{ history.replaceState(null,'','?dir='+id); }catch(e){} }); }})),
+      replay:()=>this.playBoot(), skip:()=>this.endBoot('fade'),
+      toggleRM:()=>this.setState(s=>({rm:!s.rm}),()=>this.initSmoke()), rmLbl:st.rm?'an':'aus', rmBg:st.rm?D.rgba(t.c.hot,.2):'transparent',
+      toggleConflict:()=>this.setState(s=>({conflict:!s.conflict})), conflictLbl:st.conflict?'an':'aus', conflictBg:st.conflict?D.rgba(t.c.hot,.2):'transparent',
+      cd:st.cd, cdSize:t.m.pixel?'24px':'40px', cdDash:`${(L*st.cd/60).toFixed(1)} ${L.toFixed(1)}`,
+      vetoHint:st.cd>30?`Clip läuft noch ${st.cd-30} s · danach 30 s nur Veto`:'Clip ist zu · nur noch Veto', vetoBg:st.vetoed?t.c.ink2:t.m.vetoBg,
+      vetoLbl:st.vetoed?'Veto drin':'Veto', vetoSub:st.vetoed?'verdeckt bis 0:00':'1 s gedrückt halten',
+      holdStart:e=>this.holdStart(e), holdEnd:()=>this.holdEnd(), toast:st.toast, feed:st.feed.map((f,i)=>Object.assign({o:1-i*.13},f)),
+      bootBg:t.c.bg, bootInk:t.c.ink, bootSize:t.f.hc==='uppercase'&&t.f.h.includes('Silk')?'54px':'84px', bootBarBorder:t.s.border==='none'?`3px solid ${t.c.line}`:t.s.border,
+      letters:'COMPIES'.split(''), gridLines:Array.from({length:13},(_,i)=>i) };
+  }
+}
+</script>
+</body>
+</html>

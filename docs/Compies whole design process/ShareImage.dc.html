@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;display=swap">
+</helmet>
+<div ref="{{ box }}" role="img" aria-label="{{ alt }}" style="width:100%;position:relative">
+<sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+  <div style="position:relative;width:100%;aspect-ratio:1200/630;overflow:hidden">
+    <div style="position:absolute;left:0;top:0;width:1200px;height:630px;transform:scale({{ k }});transform-origin:0 0;box-sizing:border-box;padding:40px 56px;display:flex;flex-direction:column;gap:22px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 2px,transparent 2.4px);background-size:28px 28px;font-family:'Bricolage Grotesque',sans-serif;color:#151515">
+      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:24px">
+        <span style="padding:6px 14px;background:#151515;color:#fff3df;border-radius:999px;font-weight:800;font-size:20px;letter-spacing:.04em;line-height:1.1;text-transform:uppercase;white-space:nowrap">{{ pill }}</span>
+        <span style="display:flex;align-items:center;gap:11px;font-family:'Lilita One',sans-serif;font-size:32px;line-height:1"><dc-import name="CompibertRig" variant="head" size="{{ 44 }}" still="{{ true }}" hint-size="44px,44px"></dc-import>COMPIES</span>
+      </div>
+      <div style="flex:1;min-height:0;display:flex;align-items:center;gap:44px">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+          <span style="font-family:'Lilita One',sans-serif;font-size:{{ nameW }}px;line-height:.9;text-shadow:5px 5px 0 {{ w.c }};text-wrap:balance">{{ w.name }}</span>
+          <span style="margin-top:12px;font-size:28px;font-weight:800;line-height:1.1">gewinnt mit <span style="font-family:'Bungee',sans-serif">{{ w.pts }}</span> Punkten</span>
+          <div style="margin-top:22px;display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ rest }}" as="r" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:13px;height:48px;padding:0 19px;box-sizing:border-box;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515">
+                <span style="flex:none;width:38px;font-family:'Bungee',sans-serif;font-size:24px;line-height:1">{{ r.rank }}</span>
+                <i style="flex:none;width:20px;height:20px;border-radius:6px;border:2.5px solid #151515;background:{{ r.c }}"></i>
+                <span style="flex:1;min-width:0;font-weight:800;font-size:24px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                <span style="flex:none;font-family:'Bungee',sans-serif;font-size:24px;line-height:1">{{ r.pts }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ moreRows }}"><span style="font-weight:800;font-size:18px;color:#5d5650">{{ moreRowsTxt }}</span></sc-if>
+          </div>
+        </div>
+        <div style="position:relative;flex:none;width:330px;height:330px">
+          <img src="assets/share/sunburst.svg" alt="" width="330" height="330" style="position:absolute;inset:0;width:330px;height:330px;display:block">
+          <div style="position:absolute;left:40px;bottom:22px"><dc-import name="CompibertRig" variant="full" size="{{ 250 }}" state="dance" still="{{ true }}" hint-size="250px,213px"></dc-import></div>
+        </div>
+      </div>
+      <div style="flex:none;display:flex;align-items:center;gap:10px;overflow:hidden">
+        <span style="flex:none;font-weight:800;font-size:18px;margin-right:4px;white-space:nowrap">{{ gamesTxt }}</span>
+        <sc-for list="{{ gamesW }}" as="g" hint-placeholder-count="6">
+          <span style="flex:none;display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;box-sizing:border-box;background:#fffdf8;border:2.5px solid #151515;border-radius:999px;font-weight:700;font-size:16px;white-space:nowrap"><i style="width:11px;height:11px;border-radius:50%;border:2px solid #151515;background:{{ g.c }}"></i>{{ g.name }}</span>
+        </sc-for>
+        <sc-if value="{{ moreW }}"><span style="flex:none;font-weight:800;font-size:16px;color:#5d5650;white-space:nowrap">{{ moreWTxt }}</span></sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+<sc-if value="{{ square }}" hint-placeholder-val="{{ false }}">
+  <div style="position:relative;width:100%;aspect-ratio:1/1;overflow:hidden">
+    <div style="position:absolute;left:0;top:0;width:1080px;height:1080px;transform:scale({{ k }});transform-origin:0 0;box-sizing:border-box;padding:60px 64px;display:flex;flex-direction:column;gap:30px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 2px,transparent 2.4px);background-size:28px 28px;font-family:'Bricolage Grotesque',sans-serif;color:#151515">
+      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:24px">
+        <span style="padding:7px 17px;background:#151515;color:#fff3df;border-radius:999px;font-weight:800;font-size:24px;letter-spacing:.04em;line-height:1.1;text-transform:uppercase;white-space:nowrap">{{ pill }}</span>
+        <span style="display:flex;align-items:center;gap:14px;font-family:'Lilita One',sans-serif;font-size:40px;line-height:1"><dc-import name="CompibertRig" variant="head" size="{{ 56 }}" still="{{ true }}" hint-size="56px,56px"></dc-import>COMPIES</span>
+      </div>
+      <div style="flex:none;display:flex;flex-direction:column">
+        <span style="font-family:'Lilita One',sans-serif;font-size:{{ nameS }}px;line-height:.9;text-shadow:7px 7px 0 {{ w.c }};text-wrap:balance">{{ w.name }}</span>
+        <span style="margin-top:16px;font-size:38px;font-weight:800;line-height:1.1">gewinnt mit <span style="font-family:'Bungee',sans-serif">{{ w.pts }}</span> Punkten</span>
+      </div>
+      <div style="flex:1;min-height:0;display:flex;align-items:center;gap:40px">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+          <sc-for list="{{ rest }}" as="r" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:16px;height:62px;padding:0 24px;box-sizing:border-box;background:#fffdf8;border:3.5px solid #151515;border-radius:14px;box-shadow:4.5px 4.5px 0 #151515">
+              <span style="flex:none;width:46px;font-family:'Bungee',sans-serif;font-size:30px;line-height:1">{{ r.rank }}</span>
+              <i style="flex:none;width:26px;height:26px;border-radius:7px;border:3px solid #151515;background:{{ r.c }}"></i>
+              <span style="flex:1;min-width:0;font-weight:800;font-size:30px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+              <span style="flex:none;font-family:'Bungee',sans-serif;font-size:30px;line-height:1">{{ r.pts }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ moreRows }}"><span style="font-weight:800;font-size:24px;color:#5d5650">{{ moreRowsTxt }}</span></sc-if>
+        </div>
+        <div style="position:relative;flex:none;width:340px;height:340px">
+          <img src="assets/share/sunburst.svg" alt="" width="340" height="340" style="position:absolute;inset:0;width:340px;height:340px;display:block">
+          <div style="position:absolute;left:40px;bottom:22px"><dc-import name="CompibertRig" variant="full" size="{{ 260 }}" state="dance" still="{{ true }}" hint-size="260px,221px"></dc-import></div>
+        </div>
+      </div>
+      <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+        <span style="font-weight:800;font-size:24px">{{ gamesTxt }}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <sc-for list="{{ gamesS }}" as="g" hint-placeholder-count="6">
+            <span style="display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;box-sizing:border-box;background:#fffdf8;border:3px solid #151515;border-radius:999px;font-weight:700;font-size:22px;white-space:nowrap"><i style="width:15px;height:15px;border-radius:50%;border:2.5px solid #151515;background:{{ g.c }}"></i>{{ g.name }}</span>
+          </sc-for>
+          <sc-if value="{{ moreS }}"><span style="display:flex;align-items:center;height:46px;font-weight:800;font-size:22px;color:#5d5650">{{ moreSTxt }}</span></sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:720,&quot;height&quot;:378},&quot;format&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;wide&quot;,&quot;square&quot;],&quot;default&quot;:&quot;wide&quot;,&quot;tsType&quot;:&quot;'wide'|'square'&quot;},&quot;session&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Freitags-Zocken&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;date&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Sa 25.10.2026&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;people&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:9,&quot;tsType&quot;:&quot;number&quot;},&quot;rows&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{t:number,name:string,pts:number}[]&quot;},&quot;games&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{name:string,w:number}[]&quot;}}">
+const HEX = { 1: '#e4572e', 2: '#f0a202', 3: '#f3e04a', 4: '#56b4e9', 5: '#009e73', 6: '#0072b2', 7: '#cc79a7', 8: '#3d2d8f' };
+const DEF_ROWS = [{ t: 1, name: 'Wilde Gurken', pts: 17 }, { t: 8, name: 'Nacht Eulen', pts: 15 }, { t: 2, name: 'Team Orange', pts: 9 }, { t: 4, name: 'Käse Turbo', pts: 5 }];
+const DEF_GAMES = [{ name: 'Rocket League', w: 1 }, { name: 'Mario Kart 8', w: 8 }, { name: 'Counter-Strike 2', w: 8 }, { name: 'Overcooked 2', w: 1 }, { name: 'Codenames', w: 2 }, { name: 'Gang Beasts', w: 1 }];
+class Component extends DCLogic {
+  box = React.createRef();
+  state = { cw: 0 };
+  componentDidMount() { this.attach(); }
+  componentDidUpdate() { this.attach(); }
+  attach() {
+    const el = this.box.current;
+    if (!el) { if (!this._t) this._t = setTimeout(() => { this._t = 0; this.attach(); }, 60); return; }
+    const measure = () => { const w = el.clientWidth; if (w && w !== this.state.cw) this.setState({ cw: w }); };
+    if (!this._ro) { this._ro = new ResizeObserver(measure); this._ro.observe(el); }
+    measure();
+  }
+  componentWillUnmount() { clearTimeout(this._t); this._ro && this._ro.disconnect(); }
+  renderVals() {
+    const P = this.props, wide = (P.format || 'wide') !== 'square';
+    const rows = (P.rows && P.rows.length ? P.rows : DEF_ROWS).slice().sort((a, b) => b.pts - a.pts);
+    const games = P.games && P.games.length ? P.games : DEF_GAMES;
+    const w = rows[0], len = w.name.length;
+    const rest = rows.slice(1, 4).map((r, i) => ({ rank: String(i + 2), name: r.name, pts: String(r.pts), c: HEX[r.t] || '#fffdf8' }));
+    const g = games.map(x => ({ name: x.name, c: HEX[x.w] || '#fffdf8' }));
+    const cap = (n, k) => ({ list: g.slice(0, k), more: n > k, txt: '+' + (n - k) + ' weitere' });
+    const gw = cap(g.length, 6), gs = cap(g.length, 9);
+    const people = P.people ? ' · ' + P.people + ' Leute' : '';
+    return {
+      box: this.box, wide, square: !wide,
+      k: this.state.cw ? this.state.cw / (wide ? 1200 : 1080) : (wide ? .6 : .35),
+      pill: (P.session || 'Freitags-Zocken') + ' · ' + (P.date || 'Sa 25.10.2026') + people,
+      w: { name: w.name, pts: String(w.pts), c: HEX[w.t] || '#e4572e' },
+      nameW: len <= 14 ? 96 : len <= 34 ? 84 : 64, nameS: len <= 14 ? 128 : len <= 34 ? 112 : 88,
+      rest, moreRows: rows.length > 4, moreRowsTxt: '+' + (rows.length - 4) + ' weitere Parteien',
+      gamesTxt: games.length + (games.length === 1 ? ' Spiel' : ' Spiele'),
+      gamesW: gw.list, moreW: gw.more, moreWTxt: gw.txt, gamesS: gs.list, moreS: gs.more, moreSTxt: gs.txt,
+      alt: w.name + ' gewinnt ' + (P.session || 'Freitags-Zocken') + ' mit ' + w.pts + ' Punkten.'
+    };
+  }
+}
+</script>
+</body>
+</html>

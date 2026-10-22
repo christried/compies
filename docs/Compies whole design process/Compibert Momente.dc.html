@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="./compibert-options.js"></script>
+<script src="./compibert-decisions.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:#1f5fe0}button{font:inherit;color:inherit}button:focus-visible,a:focus-visible{outline:3px solid #1f5fe0;outline-offset:3px}</style>
+</helmet>
+<div ref="{{ root }}" data-theme="light" lang="de" style="min-height:100vh;background-color:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;color:#151515;font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:15px;line-height:1.5">
+<main style="max-width:1320px;margin:0 auto;padding:40px clamp(16px,3vw,40px) 96px;display:flex;flex-direction:column;gap:72px">
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:900px">
+    <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5d5650">Phase 3, Compibert · <a href="Compibert Rig.dc.html">Rig</a> · <a href="Compibert Decisions.dc.html">Entscheidungen</a></span>
+    <h1 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:clamp(56px,6vw + 20px,112px);line-height:.88">Compibert, im Einsatz.</h1>
+    <p style="margin:0;max-width:62ch;font-size:17px;line-height:1.5;text-wrap:pretty">The five decisions as build specs: <b>3b</b> boot, <b>4a</b> presence, <b>5a</b> poking, <b>6b</b> ceremony, <b>7a</b> emotes. Every demo runs on the production rig and the same GSAP code.</p>
+  </header>
+<section id="boot" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:3px solid #151515;padding-bottom:14px">
+      <h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">01 Boot: Reinsprinten</h2>
+      <span style="color:#5d5650">Decision 3b. Plays on the first visit per 24 h, before the lobby. Any tap or key jumps to the end frame.</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Desktop</span>
+        <div data-scene="3b" data-sid="boot-d" data-auto="1" style="position:relative;width:560px;max-width:100%;height:340px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;color:#151515">
+          <div style="position:absolute;left:0;right:0;top:292px;height:3px;background:#151515"></div>
+          <div style="position:absolute;left:24px;top:214px;display:flex;gap:1px;font-family:'Lilita One',sans-serif;font-size:66px;line-height:1">
+            <span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">C</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ff70c3">O</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #2ec4b6">M</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">P</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ff70c3">I</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #2ec4b6">E</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">S</span>
+          </div>
+          <div data-k="cbw" style="position:absolute;left:378px;top:160px;width:160px;height:136px">
+            <div data-k="sl" style="position:absolute;left:-80px;top:44px;width:76px;height:6px;border-radius:3px;background:#151515"></div><div data-k="sl" style="position:absolute;left:-104px;top:66px;width:96px;height:6px;border-radius:3px;background:#151515"></div><div data-k="sl" style="position:absolute;left:-66px;top:88px;width:56px;height:6px;border-radius:3px;background:#151515"></div>
+            <div data-k="dust" style="position:absolute;left:52px;top:112px;width:22px;height:22px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div><div data-k="dust" style="position:absolute;left:40px;top:116px;width:18px;height:18px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div><div data-k="dust" style="position:absolute;left:30px;top:118px;width:14px;height:14px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div>
+            <div data-rig="F2" data-view="full" data-id="b3b" style="position:absolute;inset:0"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Mobil</span>
+        <div data-scene="3b" data-sid="boot-m" data-auto="1" style="position:relative;width:300px;height:520px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border:3px solid #151515;border-radius:28px;box-shadow:6px 6px 0 #151515;color:#151515">
+          <div style="position:absolute;left:0;right:0;top:440px;height:3px;background:#151515"></div>
+          <div style="position:absolute;left:0;right:0;top:120px;display:flex;justify-content:center;gap:1px;font-family:'Lilita One',sans-serif;font-size:84px;line-height:1">
+            <span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ffd23f">C</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ff70c3">O</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #2ec4b6">M</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ffd23f">P</span>
+          </div>
+          <div style="position:absolute;left:0;right:0;top:206px;display:flex;justify-content:center;gap:1px;font-family:'Lilita One',sans-serif;font-size:84px;line-height:1">
+            <span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ff70c3">I</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #2ec4b6">E</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ffd23f">S</span>
+          </div>
+          <div data-k="cbw" style="position:absolute;left:128px;top:308px;width:160px;height:136px">
+            <div data-k="sl" style="position:absolute;left:-80px;top:44px;width:76px;height:6px;border-radius:3px;background:#151515"></div><div data-k="sl" style="position:absolute;left:-104px;top:66px;width:96px;height:6px;border-radius:3px;background:#151515"></div><div data-k="sl" style="position:absolute;left:-66px;top:88px;width:56px;height:6px;border-radius:3px;background:#151515"></div>
+            <div data-k="dust" style="position:absolute;left:52px;top:112px;width:22px;height:22px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div><div data-k="dust" style="position:absolute;left:40px;top:116px;width:18px;height:18px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div><div data-k="dust" style="position:absolute;left:30px;top:118px;width:14px;height:14px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div>
+            <div data-rig="F2" data-view="full" data-id="b3b" style="position:absolute;inset:0"></div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" data-play="boot-d" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;color:#151515;box-shadow:3px 3px 0 #151515;font-weight:700;cursor:pointer">Desktop abspielen</button><button type="button" data-play="boot-m" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#fffdf8;box-shadow:3px 3px 0 #151515;font-weight:700;cursor:pointer">Mobil abspielen</button></div>
+        <div style="display:flex;flex-direction:column;background:#fffdf8;border:3px solid #151515;border-radius:14px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:70px minmax(0,1fr);gap:4px 14px;padding:14px 16px;font-size:14px;line-height:1.45">
+            <b style="font-family:'JetBrains Mono',monospace;font-size:13px">0.00</b><span>State <b>run</b>, speed lines in (.2 s, stagger .05). Wrapper x −620 → 0, linear, 0.9 s.</span>
+            <b style="font-family:'JetBrains Mono',monospace;font-size:13px">0.0–0.9</b><span>Each letter springs up the moment his snout passes it: y 46 → 0, scaleY .3 → 1, .45 s back.out(3). Two rows on mobile, same rule.</span>
+            <b style="font-family:'JetBrains Mono',monospace;font-size:13px">0.90</b><span>Skid: <b>idle</b>, x 0 → 16 (.16 s power2.out) → 0 (.3 s back.out(3)). Three dust puffs, scale .3 → 1.7, fade .65 s.</span>
+            <b style="font-family:'JetBrains Mono',monospace;font-size:13px">1.40</b><span><b>wave</b> for 2.3 s, then idle. Lobby fades in from 1.8 s under him; he stays as the empty-lobby or wheel guest, or leaves.</span>
+          </div>
+          <div style="padding:12px 16px;border-top:2px solid rgba(21,21,21,.16);font-size:14px;line-height:1.45;color:#5d5650;text-wrap:pretty"><b style="color:#151515">Reduced motion:</b> wordmark and standing Compibert fade in, 200 ms, then wave as a held pose. <b style="color:#151515">Sound:</b> quick steps + a skid squeak, off when muted.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="auftritte" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:3px solid #151515;padding-bottom:14px">
+      <h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">02 Auftritte: Logo + Momente</h2>
+      <span style="color:#5d5650">Decision 4a. In the UI he is the header logo. The body comes in only for the moments below, then leaves. At most one full body on screen.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:24px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div data-scene="4a" data-sid="moments" style="position:relative;width:560px;max-width:100%;height:340px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;color:#151515">
+          <div style="position:absolute;left:0;top:0;right:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#fffdf8;border-bottom:3px solid #151515;z-index:2;box-sizing:border-box"><div data-rig="F2" data-view="head" data-id="p4aLogo" style="width:30px;height:30px"></div><span style="font-family:'Lilita One',sans-serif;font-size:20px">COMPIES</span><span style="margin-left:auto;font-size:12px;font-weight:700;color:#5d5650">Spieleabend · Lobby</span></div>
+          <div style="position:absolute;left:16px;top:84px;width:108px;height:136px;background:#fffdf8;border:3px solid #151515;border-radius:10px;box-shadow:4px 4px 0 #151515;overflow:hidden"><div style="height:28px;background:#009e73;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 8px;font-weight:800;font-size:12px">Kaktus</div></div>
+          <div style="position:absolute;left:136px;top:84px;width:108px;height:136px;background:#fffdf8;border:3px solid #151515;border-radius:10px;box-shadow:4px 4px 0 #151515;overflow:hidden"><div style="height:28px;background:#e4572e;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 8px;font-weight:800;font-size:12px">Raptoren</div></div>
+          <div style="position:absolute;left:264px;top:60px;width:280px;height:264px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:6px 6px 0 #151515;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:18px">
+            <div style="position:relative;width:168px;height:168px;flex:none"><div data-k="wheel" style="width:100%;height:100%;border-radius:50%;border:3px solid #151515;box-sizing:border-box;background:conic-gradient(#ffd23f 0 60deg,#ff70c3 0 120deg,#2ec4b6 0 180deg,#3a86ff 0 240deg,#ff4f4f 0 300deg,#fffdf8 0 360deg)"></div><div style="position:absolute;left:50%;top:-10px;margin-left:-10px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:20px solid #151515"></div><div style="position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#151515"></div></div>
+            <div style="display:flex;align-items:center;gap:10px"><button type="button" data-play="moments" style="height:40px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;box-shadow:3px 3px 0 #151515;font-weight:700;cursor:pointer">Drehen</button><span data-k="res" style="padding:6px 12px;border:2.5px solid #151515;border-radius:999px;background:#2ec4b6;font-weight:800;font-size:13px">Kaktus</span></div>
+          </div>
+          <div data-k="cbw" style="position:absolute;left:146px;top:216px;width:150px;height:128px;z-index:3"><div data-rig="F2" data-view="full" data-id="p4a" style="width:100%;height:100%"></div></div>
+        </div>
+        <span style="font-size:13px;color:#5d5650">Wheel slot: rises from the bottom edge beside the wheel, never over it or the button.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;overflow:hidden">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1fr);gap:10px;padding:10px 16px;border-bottom:2px solid #151515;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase"><span>Moment</span><span>Variante, Ort</span><span>Rein / raus</span><span>Zustand</span></div>
+        <sc-for list="{{ moments }}" as="m" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1fr);gap:10px;padding:9px 16px;border-bottom:1.5px solid rgba(21,21,21,.16);font-size:13.5px;line-height:1.4;align-items:baseline">
+            <b>{{ m.n }}</b><span style="color:#5d5650">{{ m.where }}</span><span style="color:#5d5650">{{ m.io }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">{{ m.st }}</span>
+          </div>
+        </sc-for>
+        <div style="padding:12px 16px;font-size:13.5px;line-height:1.45;color:#5d5650;text-wrap:pretty">Max one full body at a time; a new moment replaces the old one. Never covers primary actions, the wheel or the veto timer. Mobile: wheel and win use the bust (96 px) above the action bar.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="anstupsen" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:3px solid #151515;padding-bottom:14px">
+      <h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">03 Anstupsen</h2>
+      <span style="color:#5d5650">Decision 5a. Works wherever the body or bust is on screen. Local only: nobody else sees your pokes. The header logo is not pokeable (it links home).</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:24px;align-items:start">
+      <div data-scene="5a" style="position:relative;width:560px;max-width:100%;height:300px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;color:#151515;touch-action:none">
+        <div style="position:absolute;left:16px;top:16px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700"><span>Stupser</span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span></div>
+        <span style="position:absolute;right:16px;top:14px;padding:4px 10px;border:2px solid #151515;border-radius:999px;background:#ffd23f;font-size:12px;font-weight:800">Tipp ihn an</span>
+        <div style="position:absolute;left:0;right:0;top:262px;height:3px;background:#151515"></div>
+        <div data-k="bub" style="position:absolute;left:350px;top:70px;padding:8px 12px;background:#fffdf8;border:2.5px solid #151515;border-radius:12px 12px 12px 2px;font-weight:800;font-size:15px;opacity:0">Hey!</div>
+        <div data-k="cbw" style="position:absolute;left:200px;top:138px;width:150px;height:128px;cursor:pointer"><div data-rig="F2" data-view="full" data-id="i5a" style="width:100%;height:100%"></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;overflow:hidden">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) 70px;gap:10px;padding:10px 16px;border-bottom:2px solid #151515;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase"><span>Reaktion</span><span>Was passiert</span><span>Dauer</span></div>
+        <sc-for list="{{ pokes }}" as="p" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) 70px;gap:10px;padding:9px 16px;border-bottom:1.5px solid rgba(21,21,21,.16);font-size:13.5px;line-height:1.4;align-items:baseline"><b>{{ p.n }}</b><span style="color:#5d5650">{{ p.d }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">{{ p.t }}</span></div>
+        </sc-for>
+        <div style="padding:12px 16px;font-size:13.5px;line-height:1.45;color:#5d5650;text-wrap:pretty">Random pick, never the same reaction twice in a row. Hit area: silhouette + 8 px, at least 44 × 44. Not focusable; purely decorative (aria-hidden). Reduced motion: a held pose for 1 s.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="siegerehrung" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:3px solid #151515;padding-bottom:14px">
+      <h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">04 Siegerehrung: Pokal-Lauf</h2>
+      <span style="color:#5d5650">Decision 6b, as the full flow: title, places from the bottom up, then the trophy run reveals the winner. Two gag variants so it doesn’t wear off; picked at random per session.</span>
+    </div>
+    <div class="dv-opt" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <button type="button" data-variant="trip" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;box-shadow:3px 3px 0 #151515;font-weight:700;cursor:pointer;color:#151515">Stolpern (70 %)</button>
+        <button type="button" data-variant="head" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;box-shadow:3px 3px 0 #151515;font-weight:700;cursor:pointer;color:#151515">Volltreffer (30 %)</button>
+        <button type="button" data-play="final" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#fffdf8;box-shadow:3px 3px 0 #151515;font-weight:700;cursor:pointer">Nochmal</button>
+      </div>
+      <div style="overflow-x:auto;overflow-y:hidden;padding:0 8px 8px 0">
+        <div data-scene="6final" data-sid="final" data-auto="1" style="position:relative;width:1000px;height:430px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;color:#151515">
+          <div style="position:absolute;left:0;right:0;top:400px;bottom:0;background:#fbe9cc;border-top:3px solid #151515"></div>
+          <div data-k="banner" style="position:absolute;left:310px;top:22px;width:380px;display:flex;justify-content:center"><span style="padding:8px 26px;background:#ffd23f;border:3px solid #151515;border-radius:14px;box-shadow:5px 5px 0 #151515;font-family:'Lilita One',sans-serif;font-size:48px;line-height:1">Siegerehrung!</span></div>
+          <div data-k="win" style="position:absolute;left:400px;top:170px;width:220px;height:150px;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;overflow:hidden">
+            <div data-k="front" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#fbe9cc"><span style="font-family:'Bungee',sans-serif;font-size:44px;line-height:1">???</span><span style="font-size:13px;font-weight:700;color:#5d5650">Platz 1</span></div>
+            <div data-k="back" style="position:absolute;inset:0;display:flex;flex-direction:column"><div style="height:36px;background:#009e73;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 12px;font-weight:800;font-size:16px">Kaktus</div><div style="flex:1;display:flex;align-items:flex-start;padding:12px 14px;font-family:'Bungee',sans-serif;font-size:30px">24 P.</div></div>
+            <div data-k="stamp" style="position:absolute;right:12px;bottom:12px;padding:2px 10px;border:3px solid #c01f1f;border-radius:6px;color:#c01f1f;background:#fffdf8;font-family:'Bungee',sans-serif;font-size:20px">SIEGER</div>
+          </div>
+          <div style="position:absolute;left:668px;top:170px;width:300px;display:flex;flex-direction:column;gap:12px">
+            <div data-k="row" style="display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;height:54px;padding:0 14px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515"><span style="font-family:'Bungee',sans-serif;font-size:22px">3</span><span style="display:flex;align-items:center;gap:8px;font-weight:800"><i style="width:16px;height:16px;border-radius:4px;border:2px solid #151515;background:#f3e04a"></i>Nachos</span><span style="font-family:'Bungee',sans-serif;font-size:18px">15 P.</span></div>
+            <div data-k="row" style="display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;height:54px;padding:0 14px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515"><span style="font-family:'Bungee',sans-serif;font-size:22px">2</span><span style="display:flex;align-items:center;gap:8px;font-weight:800"><i style="width:16px;height:16px;border-radius:4px;border:2px solid #151515;background:#e4572e"></i>Raptoren</span><span style="font-family:'Bungee',sans-serif;font-size:18px">21 P.</span></div>
+          </div>
+          <div data-k="share" style="position:absolute;right:30px;top:334px;display:flex;gap:10px"><span style="display:inline-flex;align-items:center;height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;box-shadow:3px 3px 0 #151515;font-weight:700">Bild teilen</span><span style="display:inline-flex;align-items:center;height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#fffdf8;box-shadow:3px 3px 0 #151515;font-weight:700">Zur Lobby</span></div>
+          <div data-k="cbw" style="position:absolute;left:0;top:286px;width:140px;height:119px"><div data-rig="F2" data-view="full" data-id="cf" style="width:100%;height:100%"></div></div>
+          <div data-k="tro" data-tx="402" data-ty="-113" style="position:absolute;left:82px;top:227px;width:52px;height:56px;z-index:4"><svg viewBox="0 0 52 56" width="52" height="56" style="display:block;overflow:visible"><path d="M8 12C0 12 0 26 11 27M44 12C52 12 52 26 41 27" style="fill:none;stroke:#151515;stroke-width:3.5;stroke-linecap:round"></path><path d="M8 5H44V17C44 31 36 37 26 37C16 37 8 31 8 17Z" style="fill:#ffd23f;stroke:#151515;stroke-width:3.5;stroke-linejoin:round"></path><rect x="22" y="37" width="8" height="8" style="fill:#ffd23f;stroke:#151515;stroke-width:3"></rect><rect x="13" y="45" width="26" height="9" rx="2" style="fill:#ff70c3;stroke:#151515;stroke-width:3"></rect></svg></div>
+          <div data-k="fx" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:20px">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:#fffdf8;border:3px solid #151515;border-radius:14px"><b style="font-size:16px">Ablauf</b><ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:1.45"><li>Title drops in (0.55 s back.out)</li><li>Places n … 2 slide in from the right, 0.5 s apart</li><li>„???“ card for place 1</li><li>Trophy run, variant gag, trophy lands on the card</li><li>Card flips to the winner, stamp, confetti</li><li>Winner’s avatars pop in under the card, one by one (80 px, 64 mobile; stagger 0.08 s, back.out(2)), starting 0.3 s after the stamp</li><li>He laughs, then dances. Share and „Zur Lobby“ appear</li></ol></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:#fffdf8;border:3px solid #151515;border-radius:14px"><b style="font-size:16px">Sonderfälle</b><ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:1.45"><li>Tie for 1st: one „???“ card per winner; the trophy splits mid-air into two</li><li>More than 6 places: list scrolls, 0.25 s apart</li><li>Host can skip to the end frame at any time (avatars included)</li><li>Free-for-all (one winner): a single 120 px avatar. Teams over 6: 5 avatars + „+N“</li><li>Mobile: card on top, list below, run along the bottom edge</li></ul></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:#fffdf8;border:3px solid #151515;border-radius:14px"><b style="font-size:16px">Ruhig und Ton</b><ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:1.45"><li>Reduced motion: list and winner card fade in, stamp without bounce, Compibert in the cheer pose, no confetti</li><li>Sound: steps, a „bonk“ or trip, fanfare on the stamp, crowd cheer</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="emotes" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:3px solid #151515;padding-bottom:14px">
+      <h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">05 Emotes: Kopf-Sticker</h2>
+      <span style="color:#5d5650">Decision 7a. The head sits in its own <code style="font-family:'JetBrains Mono',monospace">emote</code> crop (viewBox 172 −4 270 270) with room for jumps, head tilts, the roar and the clapping mitts, so nothing clips at the sticker edge.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:24px;align-items:start">
+      <div class="dv-opt" style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div data-scene="7a" style="position:relative;width:560px;max-width:100%;height:300px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;color:#151515">
+          <div data-k="ring" style="position:absolute;left:225px;top:66px;width:110px;height:110px;border-radius:50%;border:3px solid #151515;box-sizing:border-box;opacity:0"></div><div data-k="ring" style="position:absolute;left:225px;top:66px;width:110px;height:110px;border-radius:50%;border:3px solid #ff70c3;box-sizing:border-box;opacity:0"></div>
+          <div data-k="fl" style="position:absolute;left:225px;top:66px;width:110px;height:110px;border-radius:50%;background:#fffdf8;border:3px solid #151515;box-shadow:5px 5px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-id="e7aFl" style="width:100%;height:100%"></div></div>
+          <div style="position:absolute;left:0;right:0;top:196px;display:flex;justify-content:center;gap:80px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#ff70c3;display:grid;place-items:center;font-weight:800">MI</span><span style="font-size:13px;font-weight:700">Mia</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#ffd23f;display:grid;place-items:center;font-weight:800;box-shadow:0 0 0 4px #fff3df,0 0 0 6.5px #151515">DU</span><span style="font-size:13px;font-weight:800">Du</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#2ec4b6;display:grid;place-items:center;font-weight:800">BE</span><span style="font-size:13px;font-weight:700">Ben</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+          <button type="button" data-emote="clap" aria-label="Emote senden: Klatschen" style="width:64px;height:64px;padding:0;border:2.5px solid #151515;border-radius:50%;background:#fffdf8;box-shadow:3px 3px 0 #151515;cursor:pointer;overflow:hidden"><div data-rig="F2" data-view="emote" data-id="e7a_clap" data-state="clap" data-pose="1" style="width:100%;height:100%"></div></button>
+          <button type="button" data-emote="tears" aria-label="Emote senden: Freudentränen" style="width:64px;height:64px;padding:0;border:2.5px solid #151515;border-radius:50%;background:#fffdf8;box-shadow:3px 3px 0 #151515;cursor:pointer;overflow:hidden"><div data-rig="F2" data-view="emote" data-id="e7a_tears" data-state="laugh" data-pose="1" style="width:100%;height:100%"></div></button>
+          <button type="button" data-emote="angry" aria-label="Emote senden: Wütend" style="width:64px;height:64px;padding:0;border:2.5px solid #151515;border-radius:50%;background:#fffdf8;box-shadow:3px 3px 0 #151515;cursor:pointer;overflow:hidden"><div data-rig="F2" data-view="emote" data-id="e7a_angry" data-state="angry" data-pose="1" style="width:100%;height:100%"></div></button>
+          <button type="button" data-emote="roar" aria-label="Emote senden: Brüllen" style="width:64px;height:64px;padding:0;border:2.5px solid #151515;border-radius:50%;background:#fffdf8;box-shadow:3px 3px 0 #151515;cursor:pointer;overflow:hidden"><div data-rig="F2" data-view="emote" data-id="e7a_roar" data-state="roar" data-pose="1" style="width:100%;height:100%"></div></button>
+          <span style="font-size:13px;color:#5d5650">Click to send. 2 s cooldown.</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:18px;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515">
+          
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+              <div style="width:96px;height:96px;border-radius:50%;background:#fffdf8;border:3px solid #151515;box-shadow:4px 4px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-state="clap" data-pose="1" style="width:100%;height:100%"></div></div>
+              <div style="display:flex;align-items:flex-end;gap:8px">
+                <div style="width:56px;height:56px;border-radius:50%;background:#fffdf8;border:2.5px solid #151515;box-shadow:3px 3px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-state="clap" data-pose="1" style="width:100%;height:100%"></div></div>
+              </div>
+              <b style="font-size:14px">Klatschen</b>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650;text-align:center">clap</span>
+            </div>
+          
+
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+              <div style="width:96px;height:96px;border-radius:50%;background:#fffdf8;border:3px solid #151515;box-shadow:4px 4px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-state="laugh" data-pose="1" style="width:100%;height:100%"></div></div>
+              <div style="display:flex;align-items:flex-end;gap:8px">
+                <div style="width:56px;height:56px;border-radius:50%;background:#fffdf8;border:2.5px solid #151515;box-shadow:3px 3px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-state="laugh" data-pose="1" style="width:100%;height:100%"></div></div>
+              </div>
+              <b style="font-size:14px">Freudentränen</b>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650;text-align:center">laugh</span>
+            </div>
+          
+
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+              <div style="width:96px;height:96px;border-radius:50%;background:#fffdf8;border:3px solid #151515;box-shadow:4px 4px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-state="angry" data-pose="1" style="width:100%;height:100%"></div></div>
+              <div style="display:flex;align-items:flex-end;gap:8px">
+                <div style="width:56px;height:56px;border-radius:50%;background:#fffdf8;border:2.5px solid #151515;box-shadow:3px 3px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-state="angry" data-pose="1" style="width:100%;height:100%"></div></div>
+              </div>
+              <b style="font-size:14px">Wütend</b>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650;text-align:center">angry</span>
+            </div>
+          
+
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+              <div style="width:96px;height:96px;border-radius:50%;background:#fffdf8;border:3px solid #151515;box-shadow:4px 4px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-state="roar" data-pose="1" style="width:100%;height:100%"></div></div>
+              <div style="display:flex;align-items:flex-end;gap:8px">
+                <div style="width:56px;height:56px;border-radius:50%;background:#fffdf8;border:2.5px solid #151515;box-shadow:3px 3px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-state="roar" data-pose="1" style="width:100%;height:100%"></div></div>
+              </div>
+              <b style="font-size:14px">Brüllen</b>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650;text-align:center">roar</span>
+            </div>
+          
+        </div>
+        <div style="display:grid;grid-template-columns:90px minmax(0,1fr);gap:6px 14px;padding:16px 18px;background:#fffdf8;border:3px solid #151515;border-radius:14px;font-size:14px;line-height:1.45">
+          <b>Sticker</b><span>Circle, 3 px ink border, surface fill, hard 4–5 px shadow. Dark: cream rim + orange stage shadow. 96 px floating, 56 px in the bar, 32 px in the chat log.</span>
+          <b>Aufsteigen</b><span>From the sender’s avatar: y +80 → 0, scale .3 → 1, .45 s back.out(2). Hold 1.65 s, state animates. Out: y −70, fade, .6 s power1.in. Total 2.7 s.</span>
+          <b>Brüllen</b><span>Two shock rings, scale .4 → 2.2, .7 s, stagger .18.</span>
+          <b>Grenzen</b><span>2 s cooldown per person; max 3 emote sounds per second for the room; more than 4 at once on one avatar stack upward.</span>
+          <b>Ruhig</b><span>Pops in place above the avatar as a held pose, fades after 2 s.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="assets" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:3px solid #151515;padding-bottom:14px">
+      <h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">06 Assets: Münze und Emotes</h2>
+      <span style="color:#5d5650">Static SVG files baked from the rig (key pose frozen, GSAP transforms written as plain <code style="font-family:'JetBrains Mono',monospace">transform</code> attributes). Plain hex fills, no filters, no CSS variables, no bitmaps: safe for <code style="font-family:'JetBrains Mono',monospace">&lt;img&gt;</code>, Satori and push-notification images. Shown at 96, 56 and 32 px.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+      <sc-for list="{{ assetFiles }}" as="a" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:12px;padding:16px;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515">
+          <div style="display:flex;align-items:flex-end;gap:12px;min-height:100px">
+            <img src="{{ a.src }}" alt="{{ a.de }}" width="96" height="96" style="display:block;width:96px;height:96px">
+            <img src="{{ a.src }}" alt="" width="56" height="56" style="display:block;width:56px;height:56px">
+            <img src="{{ a.src }}" alt="" width="32" height="32" style="display:block;width:32px;height:32px">
+          </div>
+          <b style="font-size:14px">{{ a.de }}</b>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650;overflow-wrap:anywhere">{{ a.file }}</span>
+          <span style="font-size:13px;line-height:1.4;color:#3a3530">{{ a.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:16px 18px;background:#fffdf8;border:3px solid #151515;border-radius:14px">
+      <b style="font-size:14px">Münzrand</b>
+      <img src="assets/coin/coin-rim.svg" alt="Münzrand-Streifen" style="display:block;width:100%;max-width:880px;height:28px;border-radius:2px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650">assets/coin/coin-rim.svg · viewBox 0 0 440 14 (440 ≈ 2π·70, one full turn)</span>
+      <span style="font-size:13px;line-height:1.45;color:#3a3530;max-width:90ch">One row = 1 px of coin thickness. Coin3D builds the edge from 13 discs at translateZ −6 … +6 px (ink #151515 at −6, −2, +2, +6; gold #c99a1a between), with the two faces at ±7 px; the 5 px ink face border closes the top and bottom rows. Use the strip as a flat edge (e.g. a side-view coin or a rotating 2D fallback) with <code style="font-family:'JetBrains Mono',monospace">background-repeat: repeat-x</code>; in the 3D coin keep the stacked discs.</span>
+    </div>
+  </section>
+
+  <section id="icons" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:3px solid #151515;padding-bottom:14px">
+      <h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">07 Icons: Sonnenkopf</h2>
+      <span style="color:#5d5650">Decision 1c (<a href="Compibert Icons.dc.html">options</a>). Grinning head on the sunburst. Manifest and Nuxt <code style="font-family:'JetBrains Mono',monospace">app.head</code> tags are in <code style="font-family:'JetBrains Mono',monospace">docs/compibert-handoff.md</code>.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515"><img src="assets/icons/icon-512.png" alt="App-Icon" width="160" height="160" style="display:block;width:160px;height:160px"><b style="font-size:14px">any 512 / 192</b><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650">icon-512.png, icon-192.png</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515"><span style="position:relative;display:block;width:160px;height:160px;border-radius:50%;overflow:hidden"><img src="assets/icons/icon-maskable-512.png" alt="Maskierbares Icon" style="position:absolute;left:-20px;top:-20px;width:200px;height:200px;display:block"></span><b style="font-size:14px">maskable 512 (80 % crop)</b><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650">icon-maskable-512.png</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515"><img src="assets/icons/apple-touch-icon.png" alt="Apple-Touch-Icon" width="160" height="160" style="display:block;width:160px;height:160px;border-radius:36px"><b style="font-size:14px">apple-touch 180</b><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650">apple-touch-icon.png</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515"><div style="display:flex;flex-wrap:wrap;align-items:flex-end;align-content:flex-end;gap:8px;min-height:160px"><img src="assets/icons/favicon.svg" alt="Favicon" width="64" height="64" style="display:block;width:64px;height:64px"><img src="assets/icons/favicon-32.png" alt="" width="32" height="32" style="display:block"><img src="assets/icons/favicon-16.png" alt="" width="16" height="16" style="display:block"><span style="display:grid;place-items:center;width:40px;height:40px;border-radius:8px;background:#17121d"><img src="assets/icons/favicon-16.png" alt="" width="16" height="16" style="display:block"></span></div><b style="font-size:14px">favicon SVG / 32 / 16</b><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650">favicon.svg, favicon-32.png, favicon-16.png</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515"><span style="display:block;width:160px;height:160px;border-radius:50%;background:#ffd23f"><img src="assets/icons/monochrome.svg" alt="Monochromes Icon" width="160" height="160" style="display:block;width:160px;height:160px"></span><b style="font-size:14px">monochrome (themed)</b><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5d5650">monochrome.svg</span></div>
+    </div>
+  </section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  root = React.createRef();
+  rigs = [];
+  scenes = {};
+  componentDidMount() {
+    const go = () => (window.gsap && window.CBO && window.CBD && this.root.current) ? this.boot() : (this._t = setTimeout(go, 60));
+    go();
+  }
+  boot() {
+    if (this.booted) return; this.booted = true;
+    gsap.defaults({ overwrite: 'auto' });
+    const s = document.documentElement.style;
+    Object.entries(CBO.CW.Minze).forEach(([k, v]) => s.setProperty('--cb-' + k, v));
+    s.setProperty('--cb-ink', '#151515');
+    setTimeout(() => this.mountAll(), 0);
+    this._mv = e => { this.mx = e.clientX; this.my = e.clientY; if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = 0; CBO.track(this.rigs, this.mx, this.my); }); };
+    window.addEventListener('pointermove', this._mv);
+  }
+  mountAll() {
+    const root = this.root.current; if (!root) return;
+    const only = new URLSearchParams(location.search).get('only');
+    if (only) root.querySelectorAll('main > section').forEach(s => { if (s.id !== only) s.style.display = 'none'; });
+    const off = el => { const s = el.closest('section'); return s && s.style.display === 'none'; };
+    root.querySelectorAll('[data-rig]').forEach((d, i) => {
+      if (d.dataset.mounted || off(d)) return; d.dataset.mounted = '1';
+      const r = CBO.mount(d, 700 + i); r.reduced = !!d.dataset.pose; this.rigs.push(r);
+      CBO.treat(r, (d.clientWidth < 40 || d.dataset.view === 'emote') ? 'Pur' : d.dataset.dark ? 'Sticker' : 'Harter Schatten');
+      if (d.dataset.state) CBO.toState(r, d.dataset.state);
+    });
+    root.querySelectorAll('[data-scene]').forEach(el => {
+      if (el.dataset.inited || off(el)) return; el.dataset.inited = '1';
+      const R = {}; this.rigs.filter(r => el.contains(r.div)).forEach(r => { if (r.div.dataset.id) R[r.div.dataset.id] = r; });
+      try { const sc = CBD.init(el.dataset.scene, el, R); if (sc) this.scenes[el.dataset.sid || el.dataset.scene] = sc; } catch (e) { console.warn('scene ' + el.dataset.scene + ': ' + (e && e.message)); }
+      if (!this._io) this._io = new IntersectionObserver(es => es.forEach(en => { if (!en.isIntersecting) return; this._io.unobserve(en.target); const sc = this.scenes[en.target.dataset.sid || en.target.dataset.scene]; if (sc && en.target.dataset.auto) setTimeout(() => sc.play(), 300); }), { threshold: .5 });
+      this._io.observe(el);
+    });
+    root.querySelectorAll('[data-play]').forEach(b => { if (b.dataset.bound) return; b.dataset.bound = '1'; b.addEventListener('click', () => { const sc = this.scenes[b.dataset.play]; sc && sc.play(); }); });
+  }
+  componentDidUpdate() { if (this.booted) this.mountAll(); }
+  componentWillUnmount() {
+    clearTimeout(this._t); this._io && this._io.disconnect();
+    this._mv && window.removeEventListener('pointermove', this._mv);
+    this.rigs.forEach(r => CBO.kill(r));
+  }
+  renderVals() {
+    return {
+      root: this.root,
+      moments: [
+        { n: 'Header-Logo', where: 'Head 30 px, header left', io: 'always there', st: 'idle · cheer · confused' },
+        { n: 'Boot', where: 'Full body 160, splash', io: '3b sprint-in (01)', st: 'run → wave' },
+        { n: 'Rad', where: 'Full body 150, bottom edge beside the wheel', io: 'rises .45 s back.out(1.8), sinks .4 s power2.in', st: 'excited → suspense → cheer' },
+        { n: 'Spielsieger', where: 'Bust 96, beside the winner row', io: 'scale .6 → 1 .35 s, fade out', st: 'cheer 1.6 s' },
+        { n: 'Leere Lobby', where: 'Full body 200, centre', io: 'fade .3 s', st: 'sleep, wave on join' },
+        { n: 'Laden > 400 ms', where: 'Bust 72, in place of content', io: 'fade .2 s', st: 'think' },
+        { n: 'Verbindung', where: 'Bust 56 inside the notice', io: 'with the notice', st: 'confused' },
+        { n: 'Siegerehrung', where: 'Full body, full screen', io: 'see 04', st: 'run → laugh → dance' }
+      ],
+      pokes: [
+        { n: 'Lachen', d: 'laugh: head back, shaking, a tear', t: '1.5 s' },
+        { n: 'Hüpfer', d: 'root y −46 and back, squash on landing', t: '.6 s' },
+        { n: 'Winken', d: 'wave', t: '1.5 s' },
+        { n: 'Quetschen', d: 'squash to scaleY .72, elastic back', t: '.6 s' },
+        { n: 'Schulterzucken', d: 'confused: shrug, head tilt, question mark', t: '1.5 s' },
+        { n: 'Wütend (5 in 2 s)', d: 'angry + bubble „Hey! Lass das.“, counter resets', t: '2.6 s' }
+      ],
+      assetFiles: [
+        { de: 'Münze: Kopf', src: 'assets/coin/coin-kopf.svg', file: 'assets/coin/coin-kopf.svg', note: '140 × 140. Yellow disc, 5 px ink border, cream + ink ring, head (idle) clipped to r 52.' },
+        { de: 'Münze: Schwanz', src: 'assets/coin/coin-schwanz.svg', file: 'assets/coin/coin-schwanz.svg', note: '140 × 140. Cobalt disc, same rings, striped tail curling in from the rim.' },
+        { de: 'Klatschen', src: 'assets/emotes/emote-klatschen.svg', file: 'assets/emotes/emote-klatschen.svg', note: 'clap at 0.78 s: mitts together, burst marks, happy eyes.' },
+        { de: 'Freudentränen', src: 'assets/emotes/emote-freudentraenen.svg', file: 'assets/emotes/emote-freudentraenen.svg', note: 'laugh at 0.65 s: head tilted back, tear flying off.' },
+        { de: 'Wütend', src: 'assets/emotes/emote-wuetend.svg', file: 'assets/emotes/emote-wuetend.svg', note: 'angry at 0.45 s: brow down, half lid, frown, anger mark.' },
+        { de: 'Brüllen', src: 'assets/emotes/emote-bruellen.svg', file: 'assets/emotes/emote-bruellen.svg', note: 'roar at 0.85 s: jaw wide open, teeth, brow down.' }
+      ],
+      emotes: [{ de: 'Klatschen', st: 'clap' }, { de: 'Freudentränen', st: 'laugh' }, { de: 'Wütend', st: 'angry' }, { de: 'Brüllen', st: 'roar' }]
+    };
+  }
+}
+</script>
+</body>
+</html>

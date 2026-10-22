@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;max-width:{{ size }}px;margin:0 auto">
+  <div style="position:relative;width:100%;aspect-ratio:1;transform:{{ sk.tilt }};transform-origin:50% 60%">
+    <sc-if value="{{ sk.deco }}">
+      <sc-for list="{{ deco }}" as="d" hint-placeholder-count="0">
+        <span data-deco="1" aria-hidden="true" style="position:absolute;left:{{ d.x }};top:{{ d.y }};width:{{ d.s }}px;height:{{ d.s }}px;margin:{{ d.m }};transform:rotate({{ d.r }}deg);pointer-events:none">
+          <svg viewBox="0 0 40 40" width="100%" height="100%" style="display:block;overflow:visible">
+            <sc-if value="{{ d.circle }}"><circle cx="20" cy="20" r="15" fill="{{ d.c }}" stroke="#151515" stroke-width="3.5"></circle></sc-if>
+            <sc-if value="{{ d.tri }}"><path d="M20 4 37 34H3Z" fill="{{ d.c }}" stroke="#151515" stroke-width="3.5" stroke-linejoin="round"></path></sc-if>
+            <sc-if value="{{ d.squig }}"><path d="M2 24c5-12 9-12 12 0s7 12 12 0 8-12 12 0" fill="none" stroke="{{ d.c }}" stroke-width="7" stroke-linecap="round"></path></sc-if>
+            <sc-if value="{{ d.half }}"><path d="M4 28a16 16 0 0 1 32 0Z" fill="{{ d.c }}" stroke="#151515" stroke-width="3.5" stroke-linejoin="round"></path></sc-if>
+            <sc-if value="{{ d.plus }}"><path d="M15 4h10v11h11v10H25v11H15V25H4V15h11Z" fill="{{ d.c }}" stroke="#151515" stroke-width="3" stroke-linejoin="round"></path></sc-if>
+            <sc-if value="{{ d.ring }}"><circle cx="20" cy="20" r="13" fill="none" stroke="{{ d.c }}" stroke-width="8"></circle></sc-if>
+          </svg>
+        </span>
+      </sc-for>
+    </sc-if>
+    <svg viewBox="0 0 400 400" width="100%" height="100%" role="img" aria-label="{{ aria }}" style="position:relative;display:block;overflow:visible;filter:{{ sk.filter }}">
+      <defs>
+        <pattern id="{{ pid0 }}" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="2.2" fill="#151515" opacity=".2"></circle><circle cx="9" cy="9" r="2.2" fill="#151515" opacity=".2"></circle></pattern>
+        <pattern id="{{ pid1 }}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect x="0" y="0" width="4" height="10" fill="#151515" opacity=".16"></rect></pattern>
+        <pattern id="{{ pid2 }}" width="16" height="10" patternUnits="userSpaceOnUse"><path d="M0 7 4 3 8 7 12 3 16 7" fill="none" stroke="#151515" stroke-width="2" opacity=".2"></path></pattern>
+        <clipPath id="{{ cid }}"><circle cx="200" cy="200" r="178"></circle></clipPath>
+      </defs>
+      <sc-if value="{{ sk.thick }}">
+        <ellipse cx="206" cy="236" rx="196" ry="182" fill="var(--cp-shadow-ink)" opacity=".28"></ellipse>
+        <sc-for list="{{ thickL }}" as="k" hint-placeholder-count="0"><circle cx="200" cy="{{ k.cy }}" r="181" fill="{{ k.f }}" stroke="#151515" stroke-width="2"></circle></sc-for>
+      </sc-if>
+      <sc-if value="{{ sk.offShadow }}"><circle cx="207" cy="208" r="{{ sk.shR }}" fill="var(--cp-shadow-ink)"></circle></sc-if>
+      <sc-if value="{{ sk.band }}">
+        <circle cx="200" cy="200" r="190" fill="none" stroke="{{ sk.bandC }}" stroke-width="22"></circle>
+        <circle cx="200" cy="200" r="201" fill="none" stroke="#151515" stroke-width="3.5"></circle>
+      </sc-if>
+      <g ref="{{ gRef }}" style="transform-box:view-box;transform-origin:200px 200px;transform:rotate({{ rot }}deg);filter:{{ gFilter }}">
+        <sc-for list="{{ slices }}" as="s" hint-placeholder-count="0"><path d="{{ s.d }}" fill="{{ s.fill }}" stroke="#151515" stroke-width="3" stroke-linejoin="round"></path></sc-for>
+        <sc-if value="{{ sk.pattern }}"><sc-for list="{{ slices }}" as="s" hint-placeholder-count="0"><path d="{{ s.d }}" fill="url(#{{ s.pat }})"></path></sc-for></sc-if>
+        <sc-if value="{{ sk.bevel }}"><circle cx="200" cy="200" r="164" fill="none" stroke="#151515" stroke-opacity=".16" stroke-width="32"></circle><circle cx="200" cy="200" r="147" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="2.5"></circle></sc-if>
+        {{ labels }}
+        <sc-if value="{{ sk.pegs }}"><sc-for list="{{ pegs }}" as="p" hint-placeholder-count="0"><circle cx="{{ p.x }}" cy="{{ p.y }}" r="5.5" fill="#fffdf8" stroke="#151515" stroke-width="2.5"></circle></sc-for></sc-if>
+        <sc-if value="{{ hasWin }}"><path d="{{ winD }}" fill="#ffffff" fill-opacity="{{ winOp }}" stroke="#151515" stroke-width="6" stroke-linejoin="round"></path></sc-if>
+      </g>
+      <circle cx="200" cy="200" r="180" fill="none" stroke="#151515" stroke-width="5"></circle>
+      <sc-if value="{{ sk.stickerRim }}"><circle cx="200" cy="200" r="186" fill="none" stroke="#fffdf8" stroke-width="10"></circle><circle cx="200" cy="200" r="192" fill="none" stroke="#151515" stroke-width="3"></circle></sc-if>
+      <sc-if value="{{ sk.glare }}"><g clip-path="url(#{{ cid }})"><ellipse cx="140" cy="96" rx="150" ry="62" fill="#ffffff" opacity=".2" transform="rotate(-28 140 96)"></ellipse></g></sc-if>
+      <sc-if value="{{ sk.hasBulbs }}"><sc-for list="{{ bulbs }}" as="b" hint-placeholder-count="0"><circle cx="{{ b.x }}" cy="{{ b.y }}" r="{{ b.r }}" fill="{{ b.f }}" stroke="#151515" stroke-width="2"></circle></sc-for></sc-if>
+    </svg>
+    <div ref="{{ pRef }}" aria-hidden="true" style="position:absolute;left:50%;top:{{ sk.pTop }};width:44px;height:58px;margin-left:-22px;transform-origin:50% 10px;transform:rotate({{ pRot }});filter:drop-shadow(3px 3px 0 var(--cp-shadow-ink))">
+      <sc-if value="{{ sk.pTri }}"><svg viewBox="0 0 44 58" width="44" height="58" style="display:block;overflow:visible"><sc-if value="{{ sk.stickerRim }}"><path d="M6 6h32L22 50Z" fill="none" stroke="#fffdf8" stroke-width="10" stroke-linejoin="round"></path></sc-if><path d="M6 6h32L22 50Z" fill="var(--cp-hot)" stroke="#151515" stroke-width="3.5" stroke-linejoin="round"></path></svg></sc-if>
+      <sc-if value="{{ sk.pFlap }}"><svg viewBox="0 0 44 58" width="44" height="58" style="display:block;overflow:visible"><path d="M15 10 22 54 29 10Z" fill="{{ sk.flapC }}" stroke="#151515" stroke-width="3.5" stroke-linejoin="round"></path><circle cx="22" cy="10" r="10" fill="{{ sk.flapC }}" stroke="#151515" stroke-width="3.5"></circle><circle cx="22" cy="10" r="3.5" fill="#151515"></circle></svg></sc-if>
+      <sc-if value="{{ sk.pPin }}"><svg viewBox="0 0 44 58" width="44" height="58" style="display:block;overflow:visible"><path d="M18 18h8v38l-4 2-4-2Z" fill="#fffdf8" stroke="#151515" stroke-width="3" stroke-linejoin="round"></path><circle cx="22" cy="14" r="12" fill="var(--cp-hot)" stroke="#151515" stroke-width="3.5"></circle><circle cx="18" cy="10" r="3.5" fill="#ffffff" opacity=".8"></circle></svg></sc-if>
+    </div>
+    <div style="position:absolute;left:50%;top:50%;width:26%;aspect-ratio:1;transform:translate(-50%,-50%);display:grid;place-items:center">
+      <sc-if value="{{ canSpin }}">
+        <button type="button" onClick="{{ spin }}" aria-disabled="{{ busy }}" aria-label="{{ hubAria }}" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;width:100%;height:100%;padding:0;border-radius:50%;box-sizing:border-box;border:{{ hubBd }};background:{{ hubBg }};color:{{ hubFg }};box-shadow:{{ hubSh }};font-family:var(--cp-font-display);font-size:clamp(15px,2.2vw,23px);line-height:1;cursor:{{ hubCur }};overflow:hidden;transition:transform 80ms cubic-bezier(.2,0,0,1),box-shadow 80ms cubic-bezier(.2,0,0,1)" style-active="transform:translate(4px,4px);box-shadow:none">
+          <sc-if value="{{ sk.hubCb }}"><span style="display:grid;margin-top:-6%"><dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 54 }}" hint-size="54px,54px"></dc-import></span><span style="font-size:.7em;margin-top:-2px">{{ hubLabel }}</span></sc-if>
+          <sc-if value="{{ sk.hubText }}">{{ hubLabel }}</sc-if>
+        </button>
+      </sc-if>
+      <sc-if value="{{ noSpin }}"><div style="width:100%;height:100%;border-radius:50%;box-sizing:border-box;border:var(--cp-bw) solid #151515;background:var(--cp-surface);display:grid;place-items:center"><dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 64 }}" hint-size="64px,64px"></dc-import></div></sc-if>
+    </div>
+    <div ref="{{ confRef }}" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:5"></div>
+  </div>
+  <div aria-live="polite" style="width:100%;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;text-align:center">
+    <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ kicker }}</span>
+    <span ref="{{ resRef }}" style="font-family:var(--cp-font-display);font-size:clamp(24px,2.2vw + 12px,36px);line-height:1.05;text-wrap:balance">{{ headline }}</span>
+  </div>
+  <sc-if value="{{ controls }}">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <sc-if value="{{ canBack }}"><button type="button" onClick="{{ putBack }}" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="rotate-ccw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ backLabel }}</button></sc-if>
+      <button type="button" onClick="{{ refill }}" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:0;background:transparent;font-weight:700;font-size:13px;cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="refresh-cw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Rad neu befüllen</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:520px">
+      <sc-if value="{{ hasDrawn }}"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2);align-self:center">Vom Rad:</span></sc-if>
+      <sc-for list="{{ drawn }}" as="d" hint-placeholder-count="0"><span style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;border:2px dashed var(--cp-ink-3);font-size:12px;font-weight:700;color:var(--cp-ink-2)">{{ d.name }}</span></sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:520,&quot;height&quot;:680},&quot;skin&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sticker&quot;,&quot;show&quot;,&quot;bogen&quot;,&quot;arcade&quot;,&quot;kipp&quot;,&quot;party&quot;],&quot;default&quot;:&quot;sticker&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;spinSec&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:3,&quot;max&quot;:10,&quot;step&quot;:1,&quot;unit&quot;:&quot;s&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:440,&quot;tsType&quot;:&quot;number&quot;},&quot;hidden&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;hideStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;fun&quot;,&quot;q&quot;],&quot;default&quot;:&quot;fun&quot;,&quot;tsType&quot;:&quot;'fun' | 'q'&quot;},&quot;canSpin&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;controls&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;muted&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;cbDir&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;m3a&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;games&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;},&quot;freeze&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;spin&quot;,&quot;stop&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;freezeAt&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;},&quot;freezeFake&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onResult&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(name: string) =&gt; void&quot;}}">
+const DEF=['Mario Kart 8','Rocket League','Counter-Strike 2','Overcooked 2','Gang Beasts','Codenames','Trackmania','Tetris 99'];
+const FAKE=['Counter-Strudel','League of Leberkäse','Mario Kartoffel','Rocket Lieg','Super Smash Bratwurst','Tetris Tapas','Fortnight Fortnacht','Street Fighter Stollen','Minecraft Mettbrötchen','Hearthstein','Dota Döner','Overwatschen','Fifa Fiasko','Apex Leberwurst','Valorantsauce','Trackmania Tiramisu','Siedler von Snackan','Mensch ärgere dich doch','Uno Momento','Halo Hallo'];
+const FILL=['var(--cp-primary)','var(--cp-mint)','var(--cp-pop)','var(--cp-cobalt)'];
+const ACC=['#ffd23f','#2ec4b6','#ff70c3','#3a86ff','#ff4f4f'];
+const pt=(a,r)=>{const t=a*Math.PI/180;return [(200+r*Math.sin(t)).toFixed(2),(200-r*Math.cos(t)).toFixed(2)];};
+const mk=list=>{ const f=FAKE.slice().sort(()=>Math.random()-.5); return list.map((name,i)=>({id:'g'+i+'_'+name.length,name,fake:f[i%f.length],w:1})); };
+const B={tilt:'none',filter:'none',deco:false,thick:false,offShadow:true,shR:182,band:false,bandC:'',pattern:false,bevel:false,pegs:false,stickerRim:false,glare:false,hasBulbs:false,bulbN:0,bulbR:0,bulbRad:5,bulbStyle:'',pTop:'-14px',pTri:true,pFlap:false,pPin:false,flapC:'',hubCb:false,hubText:true,hubBg:'var(--cp-primary)',hubFg:'#151515',confetti:false,ease:'cubic-bezier(.15,.75,.12,1)',flick:24,spinMs:5200};
+const SKINS={
+  sticker:{},
+  show:{band:true,bandC:'var(--cp-hot)',hasBulbs:true,bulbN:24,bulbR:190,bulbRad:6,bulbStyle:'show',pegs:true,pTri:false,pFlap:true,flapC:'var(--cp-primary)',pTop:'-24px',offShadow:true,shR:204,hubBg:'var(--cp-hot)',flick:34},
+  bogen:{pattern:true,stickerRim:true,offShadow:false,filter:'drop-shadow(0 6px 10px rgba(40,25,10,.35))',hubCb:true,hubText:false,confetti:true,pTop:'-18px'},
+  arcade:{band:true,bandC:'#151515',hasBulbs:true,bulbN:40,bulbR:190,bulbRad:3.6,bulbStyle:'led',bevel:true,pegs:true,glare:true,pTri:false,pFlap:true,flapC:'#fffdf8',pTop:'-24px',shR:204,ease:'cubic-bezier(.15,.75,.25,1.035)',flick:30},
+  kipp:{tilt:'perspective(1100px) rotateX(24deg)',thick:true,offShadow:false,bevel:true,pegs:true,glare:true,pTri:false,pPin:true,pTop:'-30px',flick:28},
+  party:{pattern:true,deco:true,hasBulbs:true,bulbN:16,bulbR:170,bulbRad:6.5,bulbStyle:'party',confetti:true,hubCb:true,hubText:false,pTop:'-16px'}};
+const DECO=[['circle','-3%','8%',44,0,0],['squig','74%','-4%',62,2,-12],['tri','90%','30%',40,3,14],['half','86%','80%',50,1,-18],['plus','2%','78%',40,4,10],['ring','-6%','46%',36,2,0],['tri','30%','92%',30,0,-30],['squig','-6%','-6%',50,3,20]];
+let UID=0;
+class Component extends DCLogic {
+  state={games:mk(this.props.games||DEF),rot:0,busy:false,result:null,revealed:false,drawn:[],phase:'idle',bp:0};
+  gRef=React.createRef(); pRef=React.createRef(); resRef=React.createRef(); confRef=React.createRef(); uid='w'+(++UID);
+  sk(){ return Object.assign({},B,SKINS[this.props.skin]||{}); }
+  componentDidMount(){ this._c=0; this._iv=setInterval(()=>{ const sk=this.sk(); if(!sk.hasBulbs||this.rm()) return; this._c++; const ph=this.state.phase, c=this._c; const bp=ph==='spin'?c:ph==='stop'?Math.floor(c/2):Math.floor(c/9); if(bp!==this.state.bp) this.setState({bp}); },80); this.decoLoop(); }
+  componentDidUpdate(pp){ if(pp.skin!==this.props.skin||pp.motion!==this.props.motion) this.decoLoop(); }
+  decoLoop(){ (this._da||[]).forEach(a=>a.cancel()); this._da=[]; if(!this.sk().deco||this.rm()) return; setTimeout(()=>{ const r=this.gRef.current&&this.gRef.current.closest('div'); if(!r) return; r.querySelectorAll('[data-deco]').forEach((el,i)=>{ this._da.push(el.animate([{translate:'0 0'},{translate:`0 ${i%2?-6:6}px`},{translate:'0 0'}],{duration:2200+i*230,iterations:Infinity,easing:'cubic-bezier(.65,0,.35,1)'})); }); },50); }
+  componentWillUnmount(){ clearInterval(this._iv); cancelAnimationFrame(this._raf); clearTimeout(this._t1); clearTimeout(this._t2); this._a&&this._a.cancel(); (this._da||[]).forEach(a=>a.cancel()); }
+  rm(){ return this.props.motion==='reduced'; }
+  ac(){ return this._ac||(this._ac=new (window.AudioContext||window.webkitAudioContext)()); }
+  tick(){ if(this.props.muted) return; try{ const C=this.ac(), t=C.currentTime, o=C.createOscillator(), g=C.createGain(); o.type='triangle'; o.frequency.setValueAtTime(1150,t); o.frequency.exponentialRampToValueAtTime(520,t+.035); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.18,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+.045); o.connect(g).connect(C.destination); o.start(t); o.stop(t+.05);}catch(e){} }
+  thud(){ if(this.props.muted) return; try{ const C=this.ac(), t=C.currentTime; [523.25,659.25,783.99].forEach((f,i)=>{ const o=C.createOscillator(), g=C.createGain(); o.type='square'; o.frequency.value=f; g.gain.setValueAtTime(.0001,t+i*.07); g.gain.exponentialRampToValueAtTime(.07,t+i*.07+.01); g.gain.exponentialRampToValueAtTime(.0001,t+i*.07+.18); o.connect(g).connect(C.destination); o.start(t+i*.07); o.stop(t+i*.07+.2); }); }catch(e){} }
+  confetti(){ const host=this.confRef.current; if(!host||this.rm()) return; const shapes=['50%','4px','0']; for(let i=0;i<28;i++){ const el=document.createElement('span'); const s=10+Math.random()*10, c=ACC[i%ACC.length], sh=shapes[i%3];
+      el.style.cssText=`position:absolute;left:${-s/2}px;top:${-s/2}px;width:${s}px;height:${sh==='0'?s*.55:s}px;background:${c};border:2.5px solid #fffdf8;border-radius:${sh};box-shadow:var(--cp-sticker-shadow);box-sizing:border-box`;
+      host.appendChild(el); const a=Math.random()*Math.PI*2, d=140+Math.random()*130, dx=Math.cos(a)*d, dy=Math.sin(a)*d-60, r=(Math.random()-.5)*720;
+      const an=el.animate([{transform:'translate(0,0) rotate(0) scale(.4)',opacity:1},{transform:`translate(${dx}px,${dy}px) rotate(${r/2}deg) scale(1)`,opacity:1,offset:.55},{transform:`translate(${dx*1.1}px,${dy+180}px) rotate(${r}deg) scale(1)`,opacity:0}],{duration:1500+Math.random()*500,easing:'cubic-bezier(.16,1,.3,1)'}); an.onfinish=()=>el.remove(); } }
+  spin=()=>{ const S=this.state, n=S.games.length, sk=this.sk(); if(S.busy||!n||this.props.canSpin===false) return;
+    const i=Math.floor(Math.random()*n), sd=360/n, c=(i+.5)*sd+(Math.random()-.5)*sd*.6, cur=S.rot, rm=this.rm();
+    const F0=-c, m=Math.ceil((cur+(rm?360:1800)-F0)/360), F=F0+360*m, dur=rm?1200:(p0=>p0?Math.max(3,Math.min(10,+p0))*1000:sk.spinMs)(this.props.spinSec);
+    this.setState({busy:true,result:null,revealed:false,phase:'spin'}); this.emit('spin',{dur}); clearTimeout(this._tb); if(!rm) this._tb=setTimeout(()=>this.emit('brake'),dur*.6);
+    const g=this.gRef.current; if(!g) return;
+    this._a=g.animate([{transform:`rotate(${cur}deg)`},{transform:`rotate(${F}deg)`}],{duration:dur,easing:rm?'cubic-bezier(.2,0,0,1)':sk.ease,fill:'forwards'});
+    let last=-1; const loop=()=>{ const tr=getComputedStyle(g).transform; if(tr&&tr!=='none'){ const v=tr.match(/matrix\(([^)]+)\)/); if(v){ const [a,b]=v[1].split(',').map(Number); const ang=(Math.atan2(b,a)*180/Math.PI+360)%360; const idx=Math.floor(((360-ang)%360)/sd); if(idx!==last){ if(last>=0){ this.tick(); if(this.pRef.current) this.pRef.current.animate([{transform:`rotate(-${sk.flick}deg)`},{transform:'rotate(0)'}],{duration:130,easing:'cubic-bezier(.2,0,0,1)'}); } last=idx; } } } this._raf=requestAnimationFrame(loop); };
+    if(!rm) this._raf=requestAnimationFrame(loop);
+    this._a.onfinish=()=>{ cancelAnimationFrame(this._raf); const win=this.state.games[i]; this.setState({rot:F,result:win.id,phase:'stop'},()=>{ this._a&&this._a.cancel(); this._a=null; this.thud(); this.emit('stop',{game:win.name}); if(sk.confetti) this.confetti(); this.props.onResult&&this.props.onResult(win.name);
+      const hid=!!this.props.hidden;
+      const reveal=()=>{ this.setState({revealed:true}); setTimeout(()=>{ const el=this.gRef.current&&this.gRef.current.querySelector(`[data-wl="${win.id}"]`); if(el&&!rm) el.animate([{transform:'scaleY(0)'},{transform:'scaleY(1.25)'},{transform:'scaleY(1)'}],{duration:420,easing:'cubic-bezier(.34,1.56,.64,1)'}); const r=this.resRef.current; if(r&&!rm) r.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.08)',opacity:1},{transform:'scale(1)'}],{duration:420,easing:'cubic-bezier(.34,1.56,.64,1)'}); },0); };
+      if(hid) this._t1=setTimeout(reveal,rm?0:500); else reveal();
+      this._t2=setTimeout(()=>this.removeSlice(win.id),hid?2800:2200); }); };
+  };
+  emit(ph,x){ const f=this.props.onPhase; if(typeof f==='function') try{ f(ph,x||{}); }catch(e){} }
+  removeSlice=id=>{ const rm=this.rm(); const done=()=>{ this.setState(s=>({games:s.games.filter(g=>g.id!==id),drawn:s.drawn.concat(s.games.filter(g=>g.id===id)),busy:false,phase:'idle'})); this.emit('idle'); };
+    if(rm){ done(); return; } this.setState({phase:'remove'}); const t0=performance.now(), D=600; const step=now=>{ const k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,3); this.setState(s=>({games:s.games.map(g=>g.id===id?Object.assign({},g,{w:1-e}):g)})); if(k<1) this._raf=requestAnimationFrame(step); else done(); }; this._raf=requestAnimationFrame(step); };
+  putBack=()=>{ const S=this.state; if(S.busy||!S.drawn.length) return; const g=S.drawn[S.drawn.length-1]; this.setState({games:S.games.concat([Object.assign({},g,{w:1})]),drawn:S.drawn.slice(0,-1),result:null,phase:'idle'}); };
+  refill=()=>{ if(this.state.busy) return; this.setState({games:mk(this.props.games||DEF),drawn:[],result:null,revealed:false,phase:'idle'}); };
+  renderVals(){
+    let S=this.state; const p=this.props, hid=!!p.hidden, q=p.hideStyle==='q', sk=this.sk(), rm=this.rm();
+    const fz=p.freeze==='spin'||p.freeze==='stop'?p.freeze:'';
+    if(fz&&S.games.length){ const n0=S.games.length, sd=360/n0, fi=Math.max(0,Math.min(n0-1,p.freezeAt??0)), c=(fi+.5)*sd; const games=p.freezeFake?S.games.map((g,j)=>j===fi?Object.assign({},g,{fake:p.freezeFake}):g.fake===p.freezeFake?Object.assign({},g,{fake:S.games[fi].fake}):g):S.games; S=Object.assign({},S,{games,busy:true,phase:fz,result:fz==='stop'?games[fi].id:null,revealed:false,rot:fz==='stop'?1440-c:1440-c+sd*1.4}); }
+    const tot=S.games.reduce((a,g)=>a+g.w,0)||1; let a0=0; const n=S.games.length; const pegs=[]; let winD='';
+    const slices=S.games.map((g,i)=>{ const sweep=g.w/tot*360, a1=a0+sweep, mid=a0+sweep/2; const [x0,y0]=pt(a0,180), [x1,y1]=pt(a1,180);
+      const d=n===1&&g.w===1?'M200 20A180 180 0 1 1 199.99 20Z':`M200 200L${x0} ${y0}A180 180 0 ${sweep>180?1:0} 1 ${x1} ${y1}Z`;
+      if(g.w>.05){ const [px,py]=pt(a0,170); pegs.push({x:px,y:py}); }
+      if(S.result===g.id) winD=d; a0=a1;
+      let fi=i%4; if(i===n-1&&n>1&&fi===0) fi=2;
+      const show=!hid||(S.result===g.id&&S.revealed), raw=show?g.name:(q?'???':g.fake), label=raw.length>17?raw.slice(0,16)+'…':raw;
+      const base=n>12?12:n>8?14:16, fs=Math.max(10,Math.min(base,Math.floor((sk.bevel?92:100)/(label.length*.6))));
+      return {id:g.id,d,fill:FILL[fi],pat:`${this.uid}p${i%3}`,tt:`rotate(${(mid-90).toFixed(2)} 200 200) translate(200 200)`,label,fs,op:g.w<.5?g.w*2:1}; });
+    const lx=sk.bevel?142:164;
+    const labels=slices.map(s=>React.createElement('g',{key:s.id,transform:s.tt,opacity:s.op},React.createElement('text',{'data-wl':s.id,x:lx,y:0,textAnchor:'end',dominantBaseline:'central',fill:'#151515',style:{fontFamily:'var(--cp-font-sans)',fontWeight:800,fontSize:s.fs+'px',transformBox:'fill-box',transformOrigin:'center'}},s.label)));
+    const bp=S.bp, ph=S.phase;
+    const bulbs=sk.hasBulbs?Array.from({length:sk.bulbN},(_,i)=>{ const [x,y]=pt(i*360/sk.bulbN,sk.bulbR); const lit=rm?true:ph==='spin'?((i+bp)%4===0):ph==='stop'?(bp%2===0):((i%2)===(bp%2));
+      let f; if(sk.bulbStyle==='show') f=lit?'#fff4c2':'#7a5a12'; else if(sk.bulbStyle==='led') f=lit?(i%2?'#ffd23f':'#ff4f4f'):'#3a3340'; else f=lit?ACC[i%4]:'#fffdf8';
+      return {x,y,r:sk.bulbRad,f}; }):[];
+    const deco=sk.deco?DECO.map(([t,x,y,s,ci,r])=>({x,y,s,r,m:'0',c:ACC[ci],circle:t==='circle',tri:t==='tri',squig:t==='squig',half:t==='half',plus:t==='plus',ring:t==='ring'})):[];
+    const thickL=sk.thick?Array.from({length:12},(_,k)=>({cy:200+(12-k)*1.6,f:k%3===0?'#151515':'#3a3340'})):[];
+    const win=S.games.find(g=>g.id===S.result)||S.drawn.find(g=>g.id===S.result);
+    const canSpin=p.canSpin!==false, busy=S.busy||!n;
+    let kicker='Glücksrad', headline=n?`${n} Spiele auf dem Rad`:'Das Rad ist leer';
+    if(ph==='spin'){ kicker='Das Rad dreht …'; headline='Wo bleibt es stehen?'; }
+    if(win&&ph!=='spin'){ kicker=ph==='stop'||ph==='remove'?'Das Glücksrad sagt':'Zuletzt gezogen'; headline=(hid&&!S.revealed)?(q?'???':win.fake):win.name; }
+    return {gFilter:fz==='spin'&&!rm?'blur(1.2px)':'none',pRot:fz==='spin'?'-24deg':'0deg',labels,sk,deco,thickL,bulbs,pegs,pid0:this.uid+'p0',pid1:this.uid+'p1',pid2:this.uid+'p2',cid:this.uid+'c',hasWin:!!winD&&ph==='stop',winD,winOp:bp%2?'.35':'.15',
+      size:p.size??440,gRef:this.gRef,pRef:this.pRef,resRef:this.resRef,confRef:this.confRef,rot:S.rot,slices,aria:`Glücksrad mit ${n} Spielen`,canSpin,noSpin:!canSpin,busy,spin:this.spin,
+      hubLabel:S.busy?'…':n?'Drehen':'Leer',hubAria:S.busy?'Das Rad dreht':'Rad drehen',hubBg:busy?'var(--cp-paper-2)':sk.hubBg,hubFg:busy?'var(--cp-ink-2)':sk.hubFg,hubBd:'var(--cp-bw) solid #151515',hubSh:busy?'none':'4px 4px 0 var(--cp-shadow-ink)',hubCur:busy?'not-allowed':'pointer',cbDir:p.cbDir||'m3a',
+      kicker,headline,controls:p.controls!==false&&canSpin,canBack:S.drawn.length>0&&!S.busy,backLabel:S.drawn.length?`${S.drawn[S.drawn.length-1].name} zurück aufs Rad`:'',putBack:this.putBack,refill:this.refill,hasDrawn:S.drawn.length>0,drawn:S.drawn.map(g=>({name:g.name}))};
+  }
+}
+</script>
+</body>
+</html>

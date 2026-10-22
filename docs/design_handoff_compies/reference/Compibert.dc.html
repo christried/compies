@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./themes.js"></script></helmet>
+<svg width="0" height="0" style="position:absolute"><filter id="cp-wob"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"></feTurbulence><feDisplacementMap in="SourceGraphic" scale="3.2"></feDisplacementMap></filter></svg>
+<div style="width:{{ w }};height:{{ h }};position:relative;display:block;flex:none">
+<sc-if value="{{ isPixel }}" hint-placeholder-val="{{ false }}"><canvas ref="{{ cv }}" style="width:100%;height:100%;image-rendering:pixelated;display:block"></canvas></sc-if>
+<sc-if value="{{ isVector }}" hint-placeholder-val="{{ false }}">
+<svg viewBox="{{ vb }}" width="100%" height="100%" style="display:block;overflow:{{ ov }}">
+<sc-for list="{{ layers }}" as="L" hint-placeholder-count="0"><g transform="{{ L.tf }}" style="filter:{{ L.f }}"><sc-for list="{{ L.items }}" as="it" hint-placeholder-count="0"><path d="{{ it.d }}" style="fill:{{ it.fill }};stroke:{{ it.stroke }};stroke-width:{{ it.sw }};stroke-linecap:round;stroke-linejoin:round;opacity:{{ it.op }}"></path></sc-for></g></sc-for>
+</svg>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:180},&quot;dir&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;swiss&quot;,&quot;memphis&quot;,&quot;hand&quot;,&quot;pixel&quot;,&quot;picnic&quot;,&quot;kofi&quot;,&quot;swissmemphis&quot;,&quot;swisspixel&quot;,&quot;kofihand&quot;,&quot;picnicpixel&quot;,&quot;memphispixel&quot;,&quot;swisshand&quot;],&quot;default&quot;:&quot;swiss&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;head&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:120,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  cv = React.createRef();
+  componentDidMount(){ if(!window.COMPIES_THEMES){ this._h=()=>{ if(!this._done){ this._done=true; this.forceUpdate(); } }; window.addEventListener('compies-themes',this._h);} this.draw(); }
+  componentDidUpdate(){ this.draw(); }
+  componentWillUnmount(){ this._h && window.removeEventListener('compies-themes',this._h); }
+  info(){
+    const T=window.COMPIES_THEMES; if(!T) return null;
+    const t=T[this.props.dir]||T.swiss; const head=this.props.variant==='head';
+    return {t, head, vb: head?'104 28 84 84':'2 22 190 160'};
+  }
+  draw(){
+    const i=this.info(); if(!i||i.t.mascot.style!=='pixel'||!this.cv.current) return;
+    const key=i.t.id+i.vb; if(this._k===key) return; this._k=key;
+    window.COMPIES_DATA.pixelate(this.cv.current,i.t.mascot,i.vb,i.head?30:64);
+  }
+  renderVals(){
+    const i=this.info(); const size=this.props.size||120;
+    if(!i) return {w:size+'px',h:size+'px',isPixel:false,isVector:false};
+    const px=i.t.mascot.style==='pixel';
+    return { w:size+'px', h:(i.head?size:Math.round(size*160/190))+'px', vb:i.vb, ov:i.head?'hidden':'visible', isPixel:px, isVector:!px,
+      layers: px?[]:window.COMPIES_DATA.mascotLayers(i.t.mascot), cv:this.cv };
+  }
+}
+</script>
+</body>
+</html>

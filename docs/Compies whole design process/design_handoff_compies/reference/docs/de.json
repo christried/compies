@@ -1,0 +1,898 @@
+{
+  "app": {
+    "name": "COMPIES",
+    "loading": "Compibert sucht die Controller …",
+    "skipToStage": "Zur Bühne springen"
+  },
+  "common": {
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "save": "Speichern",
+    "back": "Zurück",
+    "next": "Weiter",
+    "more": "Mehr",
+    "retry": "Erneut versuchen",
+    "reload": "Neu laden",
+    "invite": "Einladen",
+    "sound": "Ton",
+    "soundOn": "Ton an",
+    "soundOff": "Ton aus",
+    "you": "Du",
+    "youSuffix": "(du)",
+    "host": "Host",
+    "hostOnly": "Nur du siehst das",
+    "comingSoon": "Bald verfügbar",
+    "online": "online",
+    "offline": "offline",
+    "lastSeen": "offline, zuletzt {time}",
+    "holdToConfirm": "gedrückt halten",
+    "counter": "{n}/{max}"
+  },
+  "nav": {
+    "sessions": "Sessions",
+    "archive": "Archiv",
+    "library": "Bibliothek",
+    "profile": "Profil",
+    "admin": "Admin",
+    "createSession": "Session erstellen",
+    "tabs": {
+      "board": "Spielbrett",
+      "table": "Tabelle",
+      "chat": "Chat",
+      "activity": "Aktivität",
+      "people": "Leute",
+      "unread": "{label}, {n} ungelesen"
+    }
+  },
+  "phase": {
+    "poll": "Terminumfrage",
+    "dateSet": "Termin steht",
+    "game": "Spiel {n} von {total}",
+    "pickBan": "Pick & Ban",
+    "ended": "Vorbei"
+  },
+  "dock": {
+    "label": "Host-Steuerung",
+    "setDate": "Termin festlegen",
+    "proposeDate": "Termin vorschlagen",
+    "start": "Session starten",
+    "checkTeams": "Teams prüfen",
+    "fillFromBench": "Von der Bench nachziehen",
+    "spin": "Rad drehen",
+    "setGame": "Spiel direkt setzen",
+    "skipClip": "Clip überspringen",
+    "vetoRunning": "Veto-Fenster läuft",
+    "enterResult": "Ergebnis eintragen",
+    "swapGame": "Spiel tauschen",
+    "renewLink": "Link erneuern",
+    "gameCount": "Anzahl Spiele",
+    "spinDuration": "Drehdauer",
+    "endSession": "Session beenden",
+    "shortcut": "Taste H: Host-Steuerung"
+  },
+  "board": {
+    "title": "Spielbrett",
+    "bench": "Bench",
+    "benchSub": "Ersatz, unbegrenzt",
+    "stands": "Tribüne",
+    "standsSub": "Zuschauer, nur Emotes",
+    "benchEmpty": "Niemand auf der Bench.",
+    "standsEmpty": "Die Tribüne ist leer.",
+    "free": "Frei",
+    "dropHere": "Hier rein",
+    "locked": "Gesperrt",
+    "slotsFree": "{n} Platz frei | {n} Plätze frei",
+    "zoneAria": "{name}, {n} von {size}",
+    "moveTo": "Verschieben nach …",
+    "whereTo": "Wohin, {name}?",
+    "moveToTeam": "Nach {team}",
+    "moveToBench": "Auf die Bench",
+    "moveToStands": "Auf die Tribüne",
+    "movedTeam": "{name} ist jetzt in {team}.",
+    "movedBench": "{name} ist jetzt auf der Bench.",
+    "movedStands": "{name} ist jetzt auf der Tribüne.",
+    "dragHint": "Ziehen oder Enter zum Verschieben",
+    "cancelled": "Abgebrochen.",
+    "reason": {
+      "already": "Ist schon hier.",
+      "hostOnly": "Nur der Host kann andere verschieben.",
+      "pollLocked": "Teamwahl öffnet, sobald der Termin steht.",
+      "runningLocked": "Teams sind gesperrt, das Spiel läuft.",
+      "full": "Team ist voll.",
+      "leaveRunning": "Nur der Host kann dich aus dem Team holen.",
+      "lostRace": "{name} war schneller. Der letzte Platz in {team} ist weg."
+    },
+    "notice": {
+      "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench, Tribüne und Chat.",
+      "uneven": "{team} hat {small}, die anderen haben {big}. Das Spiel startet erst, wenn alle Teams gleich groß sind.",
+      "running": "Das Spiel läuft. Zwischen Bench und Tribüne kannst du frei wechseln.",
+      "runningHost": "Spiel läuft: nur du kannst noch tauschen. Name eingefroren.",
+      "runningPlayer": "Gesperrt seit Spielstart. Name eingefroren."
+    },
+    "conflict": "{name} war schneller."
+  },
+  "team": {
+    "defaultName": "Team {color}",
+    "colors": {
+      "1": "Rot",
+      "2": "Orange",
+      "3": "Gelb",
+      "4": "Himmel",
+      "5": "Grün",
+      "6": "Blau",
+      "7": "Pink",
+      "8": "Nacht"
+    },
+    "party": "Partei {n}",
+    "notPlaying": "{team}, spielt nicht mit",
+    "word": {
+      "label": "Dein Wort für den Teamnamen",
+      "help": "Ein Wort, bis zu 12 Zeichen.",
+      "noSpaces": "Nur ein Wort, ohne Leerzeichen.",
+      "frozen": "Eingefroren seit Spielstart.",
+      "noTeam": "Du bist gerade in keinem Team. Dein Wort zählt, sobald du einem beitrittst.",
+      "order": "Reihenfolge:",
+      "reset": "Name zurücksetzen",
+      "resetDone": "Name zurückgesetzt auf {name}."
+    }
+  },
+  "people": {
+    "listAria": "Alle in der Session",
+    "moveMenu": "{name} verschieben"
+  },
+  "profile": {
+    "title": "Profil",
+    "avatar": "Profilbild",
+    "avatarHelp": "Standard ist dein Discord-Bild. JPG oder PNG, wird rund zugeschnitten.",
+    "avatarAlt": "Dein Profilbild",
+    "upload": "Hochladen",
+    "useDiscord": "Discord-Bild nutzen",
+    "displayName": "Anzeigename",
+    "displayNameHelp": "Muss nicht eindeutig sein. Alle in der Lobby sehen ihn.",
+    "displayNameEmpty": "Ohne Namen geht es nicht. Wie sollen dich die anderen nennen?",
+    "accounts": "Verbundene Konten",
+    "connectedAs": "Verbunden als {user}",
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden",
+    "connect": "Verbinden",
+    "disconnect": "Trennen",
+    "lastAccount": "Ein Konto muss verbunden bleiben, sonst kannst du dich nicht mehr anmelden.",
+    "mySessions": "Meine Sessions",
+    "sessionState": {
+      "running": "Läuft",
+      "planned": "Geplant",
+      "poll": "Umfrage",
+      "archived": "Archiv"
+    }
+  },
+  "setup": {
+    "step": "Session erstellen, Schritt {n} von {total}",
+    "mode": {
+      "title": "Auswahlmodus",
+      "admin": {
+        "name": "Admin-Wahl",
+        "desc": "Du bestimmst jedes Spiel selbst."
+      },
+      "wheel": {
+        "name": "Lucky Wheel",
+        "desc": "Das Glücksrad entscheidet, danach 60 s für Vetos."
+      },
+      "pickBan": {
+        "name": "Pick & Ban",
+        "desc": "Erst bannen, dann picken."
+      },
+      "loserPick": {
+        "name": "Loser’s Pick",
+        "desc": "Wer hinten liegt, sucht aus."
+      },
+      "loserAdv": {
+        "name": "Loser’s Advantage",
+        "desc": "Der Letzte bannt vor jedem Dreh."
+      },
+      "plannedNote": "Loser’s Pick und Loser’s Advantage kommen bald. Sie sind schon sichtbar, damit Hosts wissen, was kommt, lassen sich aber noch nicht wählen.",
+      "howItWorks": "So läuft's",
+      "goodFor": "Gut für",
+      "hideWheel": "Rad verdecken",
+      "hideWheelHelp": "Erfundene Namen, bis das Rad stoppt.",
+      "spinDuration": "Drehdauer",
+      "seconds": "{n} s"
+    },
+    "points": {
+      "title": "Punktetabelle",
+      "linear": {
+        "name": "Linear",
+        "desc": "Parteien minus Platz: {example}"
+      },
+      "wta": {
+        "name": "Winner takes all",
+        "desc": "Nur Platz 1 bekommt einen Punkt"
+      },
+      "custom": {
+        "name": "Eigene Tabelle",
+        "desc": "Du legst die Punkte pro Platz fest"
+      },
+      "place": "Platz {n}",
+      "point": "Punkt | Punkte",
+      "more": "Platz {n}: ein Punkt mehr",
+      "less": "Platz {n}: ein Punkt weniger",
+      "tieRule": "Gleichstand im Spiel:",
+      "tieExample": "Zwei Parteien teilen sich Platz 1, beide bekommen {p1} Punkte. Platz 2 fällt weg, die nächste Partei ist Platz 3 und bekommt {p3}."
+    },
+    "info": {
+      "sections": {
+        "how": "So läuft's",
+        "good": "Gut für",
+        "warn": "Achtung",
+        "hideWheel": "Option „Rad verdecken“"
+      },
+      "ffa": {
+        "title": "Jeder gegen jeden",
+        "how": "Jede Person spielt für sich. Nach jedem Spiel bringst du als Host alle in die richtige Reihenfolge, und die Punktetabelle verteilt die Punkte. Wer am Ende die meisten Punkte hat, gewinnt.",
+        "good": "Battle-Royales, Rennspiele, Party- und Brettspiele mit 3 bis 8 Leuten.",
+        "warn": "Bei vielen Spielern lohnt sich eine Punktetabelle, die gute Plätze stärker belohnt."
+      },
+      "teams": {
+        "title": "Teams",
+        "how": "Du legst fest, wie viele Teams es gibt (2 bis 8). Alle Teams müssen gleich groß sein (max. 6 pro Team). Sobald der Termin steht, ziehen sich die Spieler selbst in ein Team. Jedes Mitglied steuert ein Wort zum Teamnamen bei. Mit dem Start sind die Teams gesperrt.",
+        "good": "1v1 bis 6v6, z. B. Counter-Strike 2 im 2v2.",
+        "warn": "Ein Spiel startet nur, wenn alle Teams gleich groß sind. Fehlt jemand, kannst du Leute von der Bench nachziehen."
+      },
+      "admin": {
+        "title": "Admin-Wahl",
+        "how": "Du als Host bestimmst jedes Spiel selbst. Kein Zufall, keine Vetos.",
+        "good": "Abende mit festem Programm.",
+        "warn": "Du kannst übrigens in jedem Modus jederzeit selbst eingreifen und das nächste Spiel setzen."
+      },
+      "wheel": {
+        "title": "Lucky Wheel",
+        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jeder Spieler bringt 1 Veto mit, im Team werden sie zusammengelegt, und jedes Mitglied darf sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
+        "hideWheel": "Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.",
+        "good": "Maximale Spannung und Chaos.",
+        "warn": "Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon."
+      },
+      "pickBan": {
+        "title": "Pick & Ban",
+        "how": "Wie das Map-Veto in Counter-Strike. Ein Münzwurf (Compibert-Kopf oder Compibert-Schwanz) entscheidet, wer anfängt. Jede Partei bekommt so viele Bans, wie sie Mitglieder hat. Gebannt wird abwechselnd: A bannt 1, B bannt 2, A bannt 2 und so weiter, bis alle Bans weg sind. Danach wird nach demselben Muster gepickt. Mit dem Picken beginnt die Partei, die nicht mit dem Bannen angefangen hat. Die Reihenfolge der Picks ist die Spielreihenfolge.",
+        "good": "Taktische Abende, bei denen jede Partei mitbestimmen will.",
+        "warn": "Es läuft keine Uhr. Du sorgst dafür, dass es vorangeht. Der Pool muss mindestens so groß sein wie alle Bans plus die Anzahl Spiele."
+      },
+      "loserPick": {
+        "title": "Loser's Pick",
+        "how": "Das erste Spiel bestimmt das Glücksrad. Danach darf immer die Partei auf dem letzten Platz das nächste Spiel aussuchen. Die anderen können innerhalb von 60 Sekunden ein Veto einlegen, dann muss neu gewählt werden. Teilen sich mehrere den letzten Platz, entscheidet das Glücksrad.",
+        "good": "Aufholjagden. Wer hinten liegt, spielt sein Lieblingsspiel.",
+        "warn": "Vetos funktionieren wie beim Lucky Wheel."
+      },
+      "loserAdv": {
+        "title": "Lucky Wheel – Loser's Advantage",
+        "how": "Wie Lucky Wheel, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.",
+        "good": "Zufall mit einem kleinen Vorteil für die, die hinten liegen.",
+        "warn": "Das Rad kann hier nicht verdeckt werden, sonst wüsste niemand, was er bannt."
+      },
+      "tiebreaker": {
+        "title": "Tiebreaker",
+        "how": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht."
+      }
+    }
+  },
+  "wheel": {
+    "title": "Glücksrad",
+    "count": "{n} Spiele auf dem Rad",
+    "empty": "Das Rad ist leer",
+    "spinning": "Das Rad dreht …",
+    "where": "Wo bleibt es stehen?",
+    "says": "Das Glücksrad sagt",
+    "last": "Zuletzt gezogen",
+    "spin": "Drehen",
+    "spinAria": "Rad drehen",
+    "spinningAria": "Das Rad dreht",
+    "putBack": "{game} zurück aufs Rad",
+    "refill": "Rad neu befüllen",
+    "drawn": "Vom Rad:",
+    "aria": "Glücksrad mit {n} Spielen",
+    "banner": "Spiel {n} von {total}: {host} dreht das Glücksrad.",
+    "tiebreaker": "Tiebreaker",
+    "placeholders": [
+      "Counter-Strudel",
+      "League of Leberkäse",
+      "Mario Kartoffel",
+      "Rocket Lieg",
+      "Super Smash Bratwurst",
+      "Tetris Tapas",
+      "Fortnight Fortnacht",
+      "Street Fighter Stollen",
+      "Minecraft Mettbrötchen",
+      "Hearthstein",
+      "Dota Döner",
+      "Overwatschen",
+      "Fifa Fiasko",
+      "Apex Leberwurst",
+      "Valorantsauce",
+      "Trackmania Tiramisu",
+      "Siedler von Snackan",
+      "Mensch ärgere dich doch",
+      "Uno Momento",
+      "Halo Hallo"
+    ],
+    "placeholderQ": "???"
+  },
+  "veto": {
+    "window": "{seconds} Sekunden für Vetos",
+    "banner": "Das Glücksrad sagt: {game}. {seconds} Sekunden für Vetos.",
+    "hold": "Veto gedrückt halten",
+    "sealed": "Veto abgegeben. Wird nach Ablauf aufgedeckt.",
+    "by": "Veto von {name} ({team})"
+  },
+  "coin": {
+    "throw": "Münze werfen",
+    "flying": "Fliegt …",
+    "ready": "Bereit",
+    "head": "Kopf!",
+    "tail": "Schwanz!",
+    "starts": "{team} fängt an"
+  },
+  "pickBan": {
+    "bans": "{team} bannt, {n} von {total}",
+    "picks": "{team} pickt, {n} von {total}",
+    "ban": "{game} bannen",
+    "pick": "{game} picken"
+  },
+  "result": {
+    "title": "Ergebnis eintragen",
+    "correction": "Korrektur, Spiel {n}",
+    "cancelCorrection": "Korrektur abbrechen",
+    "allPlayed": "Alle Spiele gespielt",
+    "done": "Fertig",
+    "placement": "Platzierung",
+    "tied": "gleichauf",
+    "tiedAria": "Platz {n} gleichauf mit dem Platz darüber",
+    "score": "Score",
+    "scoreLabel": "Score {team} (optional)",
+    "up": "{team} einen Platz hoch",
+    "down": "{team} einen Platz runter",
+    "nowPlace": "{team} jetzt Platz {n}.",
+    "help": "Ziehen am Griff, oder Griff fokussieren und Pfeiltasten nutzen. Gleichauf verbindet zwei Plätze; beide bekommen die Punkte des besseren Platzes. Scores sind Deko und zählen nicht.",
+    "save": "Ergebnis speichern",
+    "saveCorrection": "Korrektur speichern",
+    "saved": "Gespeichert. {teams} gewinnt Spiel {n}. | Gespeichert. {teams} gewinnen Spiel {n}.",
+    "corrected": "Spiel {n} korrigiert. Die Tabelle ist neu berechnet."
+  },
+  "table": {
+    "title": "Tabelle",
+    "after": "Nach Spiel {n} von {total}",
+    "games": "Spiele",
+    "fewer": "Weniger Spiele",
+    "more": "Mehr Spiele",
+    "places": "Plätze: {list}",
+    "points": "{n} Punkte",
+    "winStamp": "Sieg in Spiel {n}!",
+    "wonStamp": "Spiel {n} gewonnen",
+    "takesFirst": "{team} übernimmt Platz 1",
+    "endWinner": "{team} gewinnt die Session. Auf zur Siegerehrung!",
+    "endTie": "Gleichstand auf Platz 1: {teams}. Jetzt kommt der Tiebreaker."
+  },
+  "history": {
+    "title": "Spielverlauf",
+    "correct": "Korrigieren",
+    "corrected": "korrigiert",
+    "empty": "Noch kein Spiel gespielt."
+  },
+  "tiebreaker": {
+    "announce": "Gleichstand auf Platz 1!",
+    "announceText": "Beide haben {points} Punkte. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad.",
+    "onlyTied": "Nur die Punktgleichen spielen.",
+    "onlyTiedText": "Eigenes Rad mit dem Tiebreaker-Pool. Übrige Vetos zählen noch, Bans gibt es nicht.",
+    "again": "Nochmal! Das Rad dreht neu.",
+    "againText": "Endet auch der Tiebreaker gleichauf, wird einfach wieder gedreht, so lange, bis es eine Siegerin gibt."
+  },
+  "chat": {
+    "logAria": "Chatverlauf",
+    "message": "Nachricht",
+    "placeholder": "Nachricht an alle",
+    "send": "Senden",
+    "sending": "wird gesendet …",
+    "failed": "Nicht gesendet. Erneut senden",
+    "deleted": "Vom Host gelöscht",
+    "delete": "Löschen",
+    "deleteAria": "Nachricht von {name} löschen"
+  },
+  "activity": {
+    "logAria": "Aktivität",
+    "beforeStart": "Vor dem Start",
+    "gameHeader": "Spiel {n}, {game}",
+    "join": "{name} ist der Session beigetreten",
+    "move": "{name} ist auf die Tribüne gewechselt",
+    "date": "Termin steht: {date}",
+    "start": "{name} hat die Session gestartet",
+    "wheel": "Glücksrad: {game}",
+    "veto": "Veto von {list}",
+    "ban": "{team} hat {game} gebannt",
+    "win": "{team} gewinnt Spiel {n}",
+    "fix": "{name} hat Spiel {n} korrigiert",
+    "hostSet": "{name} hat {game} gesetzt"
+  },
+  "emote": {
+    "send": "Emote senden: {name}",
+    "sent": "Gesendet. Nächstes Emote in 2 Sekunden.",
+    "clap": "Klatschen",
+    "tears": "Freudentränen",
+    "angry": "Wütend",
+    "roar": "Compibert-Brüller"
+  },
+  "poll": {
+    "title": "Wann zocken wir?",
+    "people": "{n} Leute",
+    "yes": "Ja",
+    "maybe": "Wenn nötig",
+    "maybeShort": "Nötig",
+    "no": "Nein",
+    "open": "Noch offen",
+    "sum": "Summe",
+    "sumText": "{y} Ja, {m} Wenn nötig",
+    "best": "Bester Termin",
+    "confirm": "Termin festlegen: {slot}",
+    "confirmed": "Termin steht",
+    "confirmedBanner": "Termin steht: {slot} Uhr",
+    "confirmedText": "Alle wurden benachrichtigt. Erinnerung 1 Stunde vorher. Die Teamwahl ist jetzt offen.",
+    "ics": ".ics laden",
+    "reschedule": "Verschieben",
+    "propose": "Termin vorschlagen"
+  },
+  "push": {
+    "askTitle": "Sollen wir dir Bescheid geben?",
+    "askText": "Wenn der Termin steht, eine Stunde vorher, und wenn es losgeht. Mehr nicht.",
+    "askYes": "Ja, Benachrichtigungen an",
+    "askLater": "Später",
+    "dateSet": {
+      "title": "Termin steht",
+      "body": "{session}: {date}. Tipp, um ihn in deinen Kalender zu legen."
+    },
+    "dateMoved": {
+      "title": "Termin verschoben",
+      "body": "{session} ist jetzt am {date}. Die Teams bleiben, wie sie sind."
+    },
+    "reminder": {
+      "title": "In einer Stunde geht’s los",
+      "body": "{session} startet um {time}. Snacks holen, Controller laden."
+    },
+    "started": {
+      "title": "Session gestartet",
+      "body": "{host} hat {session} gestartet. Ab ins Spielbrett!"
+    },
+    "drawn": {
+      "title": "Das Glücksrad sagt: {game}",
+      "body": "60 Sekunden für euer Veto. {session}, Spiel {n}."
+    },
+    "result": {
+      "title": "{team} gewinnt Spiel {n}",
+      "body": "Ihr seid jetzt {place}. {session}, Spiel {next} kommt gleich."
+    },
+    "winner": {
+      "title": "{team} gewinnt!",
+      "body": "{session} ist vorbei. Komm zur Siegerehrung."
+    }
+  },
+  "archive": {
+    "meta": "Archiv, {date}, {games} Spiele, {people} Leute",
+    "winner": "Sieger",
+    "allGames": "Alle Spiele",
+    "share": "Bild teilen",
+    "replay": "Battle-Replay"
+  },
+  "admin": {
+    "title": "Admin",
+    "platform": "Plattform",
+    "users": "Nutzer",
+    "library": "Bibliothek",
+    "searchUsers": "Nutzer suchen",
+    "searchGames": "Spiel suchen",
+    "since": "seit {date}",
+    "canHost": "Darf hosten",
+    "by": "von {name}",
+    "edit": "Bearbeiten",
+    "duplicate": "Mögliches Duplikat: „{a}“ von {name} sieht aus wie „{b}“. Zusammenführen oder behalten?"
+  },
+  "connection": {
+    "reconnecting": "Verbindung wird wiederhergestellt …",
+    "reconnectingText": "Alles bleibt, wo es ist. Eingaben warten kurz.",
+    "lost": "Verbindung verloren. Deine Vetos sind sicher.",
+    "lostText": "Du siehst den letzten Stand.",
+    "invalidLink": "Dieser Link ist abgelaufen.",
+    "invalidLinkText": "Der Host hat einen neuen Einladungslink erstellt. Frag nach dem neuen.",
+    "ended": "{session} ist vorbei.",
+    "endedText": "{team} hat gewonnen. Ergebnisse, Chat und Replay liegen im Archiv.",
+    "toArchive": "Zum Archiv",
+    "error": "Hoppla, das hat nicht geklappt.",
+    "errorText": "Lade die Seite neu. Die Session läuft auf dem Server weiter."
+  },
+  "boot": {
+    "skip": "Tippen zum Überspringen"
+  },
+  "auth": {
+    "title": "Anmelden",
+    "discord": "Mit Discord anmelden",
+    "twitch": "Mit Twitch anmelden",
+    "invitedBy": "{host} lädt dich zu {session} ein",
+    "joinAndSignIn": "Anmelden und beitreten",
+    "cancelled": "Anmelden hat nicht geklappt. Versuch’s nochmal."
+  },
+  "onboarding": {
+    "title": "Wie sollen wir dich nennen?",
+    "nameHint": "Muss nicht eindeutig sein. Max. 24 Zeichen.",
+    "nameMissing": "Ohne Namen geht’s nicht.",
+    "avatarFromProvider": "Bild von {provider} nehmen",
+    "avatarUpload": "Eigenes Bild hochladen",
+    "go": "Los geht’s"
+  },
+  "home": {
+    "title": "Deine Sessions",
+    "running": "Läuft gerade",
+    "upcoming": "Demnächst",
+    "recent": "Zuletzt",
+    "create": "Session erstellen",
+    "createFirst": "Erste Session erstellen",
+    "noHostRight": "Sessions erstellen dürfen nur Hosts. Frag die Plattform-Admin, wenn du auch mal ran willst.",
+    "emptyPlayer": "Noch nichts hier. Einladungen landen automatisch auf dieser Seite."
+  },
+  "invite": {
+    "title": "Leute einladen",
+    "copy": "Link kopieren",
+    "copied": "Link kopiert",
+    "rotate": "Link erneuern (halten)",
+    "rotateText": "Der alte Link wird sofort ungültig. Wer schon drin ist, bleibt drin.",
+    "openSignedOut": "Du bist zu {session} eingeladen",
+    "invalidTitle": "Dieser Link gilt nicht mehr.",
+    "deletedTitle": "Diese Session gibt’s nicht mehr.",
+    "joinedToast": "Du bist drin! Du sitzt erstmal auf der Bench."
+  },
+  "pushAsk": {
+    "title": "Danke fürs Abstimmen! Sollen wir Bescheid sagen?",
+    "yes": "Ja, gern",
+    "no": "Lieber nicht",
+    "note": "Nichts, solange du die Session offen hast. Abstellen geht jederzeit im Profil.",
+    "granted": "Abgemacht. Wir melden uns, sobald der Termin steht.",
+    "denied": "Okay, kein Push. Umentscheiden geht im Profil."
+  },
+  "pwa": {
+    "title": "COMPIES als App installieren",
+    "text": "Eigenes Fenster, Icon auf dem Home-Bildschirm und Push auch bei geschlossenem Browser.",
+    "later": "Später",
+    "install": "Installieren",
+    "iosTitle": "Auf den Home-Bildschirm",
+    "iosStep1": "Tippe unten auf „Teilen“",
+    "iosStep2": "Wähle „Zum Home-Bildschirm“",
+    "iosStep3": "Tippe auf „Hinzufügen“",
+    "iosNote": "Auf iPhone und iPad geht Push nur mit installierter App.",
+    "done": "Installiert. Ab jetzt wohnt Compibert auf deinem {where}."
+  },
+  "sound": {
+    "enable": "Ton aktivieren",
+    "blocked": "Dein Browser hat den Ton blockiert. Der Clip läuft trotzdem weiter, damit du nicht hinterherhängst.",
+    "on": "Ton ist an, für den Rest des Abends. Rad, Veto-Aufdecken und Fanfare klingen jetzt auch."
+  },
+  "errorPage": {
+    "notFound": {
+      "title": "Hier ist nix. Nicht mal ein Dino.",
+      "text": "Die Seite gibt’s nicht (mehr). Vielleicht ein Tippfehler im Link?"
+    },
+    "noPermission": {
+      "title": "Da darfst du (noch) nicht rein.",
+      "text": "Das Archiv sehen nur Leute, die in der Session mindestens ein Spiel gespielt haben.",
+      "otherAccount": "Anders anmelden"
+    },
+    "generic": {
+      "title": "Da ist was schiefgelaufen.",
+      "text": "Unser Fehler, nicht deiner. Versuch’s nochmal; wenn es bleibt, schick uns die Fehler-ID.",
+      "code": "Fehler-ID: {id}",
+      "retry": "Nochmal versuchen"
+    },
+    "home": "Zur Startseite"
+  },
+  "library": {
+    "title": "Bibliothek",
+    "search": "Spiele suchen",
+    "filterPlayers": "Spielerzahl",
+    "filterFormat": "Format",
+    "filterMine": "Von mir",
+    "none": "Nichts gefunden. Vielleicht heißt es anders?",
+    "create": "Spiel anlegen",
+    "editOnlyOwner": "Bearbeiten dürfen nur {name} und die Plattform-Admin.",
+    "played": "{n}× gespielt"
+  },
+  "gameEdit": {
+    "name": "Name",
+    "image": "Bild",
+    "youtube": "YouTube-Link",
+    "start": "Startsekunde",
+    "length": "Clip-Länge",
+    "lengthDefault": "30 s",
+    "players": "Empfohlene Spielerzahl",
+    "formats": "Passende Formate",
+    "duplicate": "Gibt’s vielleicht schon: „{name}“.",
+    "useExisting": "Das nehmen",
+    "createAnyway": "Trotzdem anlegen",
+    "badLink": "Das ist kein YouTube-Link, den wir abspielen können.",
+    "save": "Speichern"
+  },
+  "share": {
+    "title": "Teilen",
+    "landscape": "Querformat",
+    "square": "Quadrat",
+    "download": "Bild herunterladen",
+    "copyLink": "Link kopieren",
+    "copied": "Link kopiert"
+  },
+  "replay": {
+    "title": "Battle-Replay",
+    "play": "Abspielen",
+    "pause": "Pause",
+    "next": "Nächstes Spiel",
+    "speed": "2×",
+    "lead": "FÜHRUNG",
+    "refs": [
+      "GG!",
+      "Combo x2!",
+      "Clutch!",
+      "Respawn in 3 …",
+      "Level up!",
+      "Achievement freigeschaltet",
+      "Speedrun!",
+      "Lag?!",
+      "1-Up!",
+      "Boss-Kampf!",
+      "Kritischer Treffer!",
+      "Noob-Falle!",
+      "Comeback-Modus",
+      "Neuer Highscore",
+      "Taktik-Pause",
+      "Daumen am Controller"
+    ]
+  },
+  "archiveList": {
+    "title": "Archiv",
+    "all": "Alle",
+    "won": "Gewonnen",
+    "asHost": "Als Host",
+    "empty": "Noch leer. Sessions landen hier, sobald du ein Spiel mitgespielt hast.",
+    "loading": "Archiv lädt …",
+    "place": "Platz {n}"
+  },
+  "settings": {
+    "theme": "Darstellung",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System",
+    "language": "Sprache"
+  },
+  "connectionG": {
+    "lostTitle": "Wir hören nichts mehr vom Server.",
+    "lostText": "Deine letzte Nachricht ist gespeichert und geht raus, sobald es wieder klappt. Wir versuchen es weiter.",
+    "reload": "Seite neu laden",
+    "nextTry": "Nächster Versuch in {s} s",
+    "back": "Wieder verbunden",
+    "queued": "wartet auf Verbindung"
+  },
+  "post10": {
+    "_scope": "[Post-1.0]",
+    "crews": {
+      "title": "Crews",
+      "subtitle": "Deine Freundeskreise",
+      "create": "Crew gründen",
+      "name": "Name der Crew",
+      "colorAndInitials": "Kürzel und Farbe",
+      "ownerNote": "Du wirst Crew-Owner: du verwaltest Mitglieder, vergibst Host-Rechte und erneuerst den Einladungslink.",
+      "noRight": "Crews gründen darf gerade nur, wer das Recht von der Plattform-Admin bekommen hat. Später wird das für alle geöffnet.",
+      "members": "Mitglieder",
+      "sessions": "Sessions",
+      "invite": "Einladen",
+      "canHost": "Darf hosten",
+      "owner": "Owner",
+      "inviteTitle": "Leute in die Crew holen",
+      "inviteText": "Wer über diesen Link kommt, wird Mitglied und sieht alle Sessions und das Archiv der Crew. Session-Einladungen bleiben davon getrennt.",
+      "rotate": "Erneuern (halten)",
+      "rotateText": "Alter Link wird sofort ungültig. Mitglieder bleiben Mitglieder.",
+      "archive": "Crew-Archiv: {crew}"
+    },
+    "bracket": {
+      "title": "Turnierbaum",
+      "quarter": "Viertelfinale",
+      "semi": "Halbfinale",
+      "final": "Finale",
+      "open": "offen"
+    },
+    "league": {
+      "title": "Liga",
+      "matchday": "Spieltag {n} von {total}"
+    },
+    "report": {
+      "title": "Ergebnis melden",
+      "confirmTitle": "Ergebnis bestätigen",
+      "send": "An {host} schicken",
+      "reportedBy": "{name} hat gemeldet: {team} gewinnt {score}.",
+      "confirm": "Bestätigen",
+      "correct": "Korrigieren",
+      "conflict": "{name} widerspricht: „{text}“",
+      "note": "Erst nach deiner Bestätigung zählt es und die Tabelle bewegt sich."
+    }
+  },
+  "mvp": {
+    "_scope": "[MVP] Terminfindung zuerst. Remove keys as the real screens replace them.",
+    "home": {
+      "hello": "Hallo {name}",
+      "title": "Wann zocken wir?",
+      "titleEmpty": "Noch nix los.",
+      "sessions": "Deine Sessions",
+      "newPoll": "Neue Terminumfrage",
+      "hostLabel": "Host: {name}",
+      "hostYou": "Host: du",
+      "bestSoFar": "Bester Termin bisher",
+      "date": "Termin",
+      "votedCount": "{n} von {total} haben abgestimmt",
+      "notVoted": "Du hast noch nicht abgestimmt",
+      "voted": "Du hast abgestimmt",
+      "setReady": "Termin steht, .ics bereit",
+      "open": "Öffnen",
+      "vote": "Abstimmen",
+      "view": "Ansehen",
+      "emptyTitle": "Noch keine Einladung.",
+      "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Frag deinen Host, Compibert wartet so lange."
+    },
+    "create": {
+      "back": "Zurück",
+      "kicker": "Neue Session",
+      "title": "Erst mal: Wann zocken wir?",
+      "nameLabel": "Name der Session",
+      "nameHelp": "Sehen alle in der Einladung.",
+      "dateLabel": "Termin",
+      "modePoll": "Terminumfrage",
+      "modeDirect": "Direkt festlegen",
+      "slotsTitle": "Vorschläge für die Umfrage",
+      "addSlot": "Termin vorschlagen",
+      "removeSlot": "Vorschlag entfernen",
+      "slotsHelp": "Abgestimmt wird mit Ja, Wenn nötig oder Nein. Bis zu 8 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
+      "submit": "Umfrage starten",
+      "submitDirect": "Session anlegen",
+      "blockedPast": "Erst den Termin in der Vergangenheit ändern.",
+      "laterTitle": "Format, Modus und Spiele kommen später.",
+      "laterText": "Sobald das Update da ist, trägst du sie in dieser Session nach. Umfrage und Stimmen bleiben, wie sie sind.",
+      "doneTitle": "{name} steht!",
+      "doneText": "{n} Terminvorschläge. Schick den Link in euren Discord, wer ihn öffnet, meldet sich an und stimmt ab.",
+      "copyLink": "Link kopieren",
+      "copied": "Link kopiert",
+      "toPoll": "Zur Umfrage"
+    },
+    "poll": {
+      "live": "Aktualisiert sich von selbst",
+      "saved": "Gespeichert.",
+      "savedText": "Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.",
+      "pickThis": "Diesen festlegen",
+      "whoWhen": "Wer kann wann?",
+      "you": "{name} (du)",
+      "confirmSeeAll": "Alle {n} sehen den Termin sofort hier.",
+      "confirmIcs": "Die Kalenderdatei steht zum Download bereit.",
+      "confirmReminder": "Sie erinnert 1 Stunde vorher.",
+      "confirmCta": "Festlegen",
+      "cancel": "Abbrechen",
+      "setText": "Leg ihn dir in den Kalender. Die Datei erinnert dich 1 Stunde vorher. Verschiebt der Host, siehst du es hier und lädst die Datei neu.",
+      "zoneOpenTitle": "Spielbrett im Rohbau.",
+      "zoneOpenText": "Teams, Chat und Glücksrad kommen mit dem nächsten Update. Bis dahin reicht: abstimmen.",
+      "zoneSetTitle": "Teamwahl kommt mit dem nächsten Update.",
+      "zoneSetText": "Bis dahin steht der Termin, und alle wissen Bescheid. Teams, Chat und Glücksrad bauen wir gerade."
+    },
+    "zone": {
+      "chip": "Kommt mit dem nächsten Update",
+      "homeTitle": "Der Rest ist noch Rohbau.",
+      "homeText": "Spielbrett, Glücksrad, Live-Tabelle und Siegerehrung bauen wir gerade. Die Terminumfrage funktioniert schon.",
+      "tapeA": "Baustelle",
+      "tapeB": "Betreten verboten",
+      "signTitle": "Baustelle!",
+      "signText": "Eltern haften für ihre Dinos.",
+      "navMarker": "Baustelle"
+    },
+    "site": {
+      "toPoll": "Zur Terminumfrage",
+      "toHome": "Zur Startseite",
+      "archiv": {
+        "title": "Das Archiv wird noch gemauert.",
+        "text": "Hier landen später alle Abende mit Tabelle, Chat und Siegerbild. Bis dahin zählt: einen Termin finden."
+      },
+      "bibliothek": {
+        "title": "Die Bibliothek ist noch eingerüstet.",
+        "text": "Bald legen Hosts hier Spiele mit Bild und Clip an. Erst mal klären wir, wann überhaupt gezockt wird."
+      },
+      "profil": {
+        "title": "Profil? Der Bagger ist bestellt.",
+        "text": "Name und Bild kommen gerade von Discord oder Twitch. Hochladen und Einstellungen folgen mit dem nächsten Update.",
+        "logout": "Abmelden"
+      },
+      "brett": {
+        "title": "Spielbrett im Rohbau.",
+        "text": "Teams, Chat, Glücksrad und Siegerehrung kommen mit den nächsten Updates. Die Terminumfrage läuft schon."
+      },
+      "admin": {
+        "title": "Der Admin-Bereich hat noch keine Tür.",
+        "text": "Hostrechte vergibst du im MVP über die Umgebungsvariable. Die Nutzerliste kommt mit Ticket 3."
+      },
+      "generic": {
+        "title": "Hier wird noch gebaut.",
+        "text": "Diese Ecke von COMPIES ist noch Rohbau. Die Terminumfrage funktioniert schon."
+      }
+    },
+    "ics": {
+      "summary": "{session} (COMPIES)",
+      "description": "Zur Session: {url}",
+      "alarm": "{session} startet in 1 Stunde"
+    }
+  },
+  "error": {
+    "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
+    "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
+    "voteFailed": "Deine Stimme ist nicht angekommen. Tipp nochmal.",
+    "unauthorized": "Bitte melde dich an, um mitzumachen.",
+    "forbidden": "Das darf nur der Host.",
+    "noHostRight": "Sessions erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",
+    "sessionNotFound": "Diese Session gibt es nicht (mehr).",
+    "linkInvalid": "Dieser Link funktioniert nicht mehr. Frag den Host nach dem neuen.",
+    "rateLimited": "Langsam, langsam. Versuch es in ein paar Sekunden.",
+    "nameRequired": "Gib der Session einen Namen.",
+    "nameTooLong": "Höchstens {max} Zeichen.",
+    "slotPast": "Der Termin liegt in der Vergangenheit.",
+    "slotDuplicate": "Diesen Termin gibt es schon.",
+    "slotsMin": "Mindestens ein Termin.",
+    "slotsMax": "Höchstens {max} Vorschläge.",
+    "teamWordSpace": "Nur ein Wort, ohne Leerzeichen.",
+    "teamWordTooLong": "Höchstens 12 Zeichen.",
+    "slotTaken": "{name} war schneller.",
+    "unevenTeams": "Alle Teams müssen gleich groß sein.",
+    "vetoUsed": "Euer Team hat für dieses Spiel schon ein Veto eingelegt.",
+    "noVetosLeft": "Keine Vetos mehr übrig.",
+    "uploadType": "Nur JPG, PNG oder WebP.",
+    "uploadTooLarge": "Das Bild ist zu groß (max. {max} MB).",
+    "youtubeInvalid": "Das sieht nicht nach einem YouTube-Link aus.",
+    "clipTooShort": "Der Clip muss mindestens 5 Sekunden lang sein.",
+    "duplicateGame": "Gibt's vielleicht schon: {name}",
+    "pointsOrder": "Ein schlechterer Platz kann nicht mehr Punkte bekommen als ein besserer.",
+    "lastAccount": "Das letzte verknüpfte Konto kannst du nicht trennen.",
+    "generic": "Da ist was schiefgelaufen. Fehler-ID: {id}"
+  },
+  "empty": {
+    "home": {
+      "title": "Noch keine Einladung.",
+      "text": "Sobald dir jemand einen Link schickt, landet die Session hier."
+    },
+    "homeHost": {
+      "title": "Noch keine Session.",
+      "text": "Leg los: Name, Termine, Link teilen."
+    },
+    "archive": {
+      "title": "Noch nichts im Archiv.",
+      "text": "Spiel mindestens ein Spiel in einer Session, dann taucht sie hier auf."
+    },
+    "library": {
+      "title": "Die Bibliothek ist leer.",
+      "text": "Leg das erste Spiel an. Alle Hosts profitieren davon."
+    },
+    "search": {
+      "title": "Nix gefunden.",
+      "text": "Anders schreiben, oder das Spiel neu anlegen."
+    },
+    "chat": {
+      "title": "Noch still hier.",
+      "text": "Sag Hallo. Alle in der Session lesen mit."
+    },
+    "activity": {
+      "title": "Noch nichts passiert.",
+      "text": "Beitritte, Spiele und Vetos tauchen hier auf."
+    },
+    "bench": "Niemand auf der Bench.",
+    "stands": "Die Tribüne ist leer.",
+    "pool": {
+      "title": "Pool ist leer.",
+      "text": "Füg Spiele aus der Bibliothek hinzu. Vorschläge passen zu Format und Spielerzahl."
+    },
+    "poll": {
+      "title": "Noch keine Stimmen.",
+      "text": "Teil den Link, dann füllt sich die Tabelle."
+    },
+    "lobbyEmpty": "Alle schlafen. Compibert auch."
+  }
+}

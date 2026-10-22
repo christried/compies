@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div ref="{{ root }}" data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ dir }}">
+  <dc-import name="DSRail" cur="scoring" toc="{{ toc }}" mode="{{ mode }}" motion="{{ motion }}" muted="{{ muted }}" wide="{{ wide }}" setLight="{{ setLight }}" setDark="{{ setDark }}" toggleMotion="{{ toggleMotion }}" toggleMute="{{ toggleMute }}" hint-size="260px,100vh"></dc-import>
+
+  <main style="flex:1;min-width:0;width:100%;box-sizing:border-box;max-width:1240px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:88px">
+
+    <section style="display:flex;flex-direction:column;gap:16px;max-width:860px">
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,88px);line-height:.95;text-wrap:balance">Wer liegt vorn?</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.5;text-wrap:pretty">Block 5, part 1: entering results, the points table, the live leaderboard, game history and the tiebreaker. All live and connected: save a result below and the leaderboard moves, correct an old game and everything recalculates.</p>
+    </section>
+
+    <!-- RESULT ENTRY -->
+    <section id="ergebnis" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Ergebnis eintragen</h2>
+        <span style="color:var(--cp-ink-2)">Host only. Drag the parties into place, link tied places, add a score if you like. Points preview on the right.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Host</span>
+            <div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ entryKicker }}</span><span style="font-family:var(--cp-font-display);font-size:26px">{{ entryGame }}</span></div>
+            <sc-if value="{{ editing }}"><button type="button" onClick="{{ cancelEdit }}" style="margin-left:auto;height:36px;padding:0 12px;border:0;border-radius:999px;background:transparent;font-size:13px;font-weight:700;cursor:pointer" style-hover="background:var(--cp-paper-2)">Korrektur abbrechen</button></sc-if>
+          </div>
+          <ol ref="{{ listRef }}" aria-label="Platzierung" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+              <li style="display:flex;flex-direction:column">
+                <sc-if value="{{ r.notFirst }}">
+                  <div style="display:flex;align-items:center;gap:8px;height:30px;padding-left:58px">
+                    <span style="width:2.5px;height:100%;background:{{ r.tieLine }}"></span>
+                    <button type="button" onClick="{{ r.toggleTie }}" aria-pressed="{{ r.tie }}" aria-label="{{ r.tieAria }}" style="display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;border:2px {{ r.tieBs }} {{ r.tieBc }};background:{{ r.tieBg }};color:{{ r.tieFg }};font-size:12px;font-weight:700;cursor:pointer"><dc-import name="Icon" icon="equal" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import>gleichauf</button>
+                  </div>
+                </sc-if>
+                <div data-re="{{ r.t }}" style="display:flex;align-items:center;gap:10px;min-height:60px;padding:6px 8px 6px 4px;border-radius:14px;border:{{ r.bd }};background:{{ r.bg }};box-shadow:{{ r.sh }};transform:{{ r.tf }};position:relative;z-index:{{ r.z }}">
+                  <button type="button" aria-label="{{ r.gripAria }}" onPointerDown="{{ r.down }}" onKeyDown="{{ r.key }}" style="display:grid;place-items:center;width:36px;height:44px;border:0;border-radius:10px;background:transparent;cursor:grab;touch-action:none;color:var(--cp-ink-2)"><dc-import name="Icon" icon="grip-vertical" size="{{ 20 }}" hint-size="20px,20px"></dc-import></button>
+                  <span style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ r.placeBg }};font-family:var(--cp-font-display);font-size:20px;color:{{ r.placeFg }}">{{ r.place }}</span>
+                  <dc-import name="TeamMark" team="{{ r.t }}" size="{{ 30 }}" hint-size="30px,30px"></dc-import>
+                  <b style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</b>
+                  <label style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)" for="{{ r.sid }}">{{ r.scoreLabel }}</label>
+                  <input id="{{ r.sid }}" value="{{ r.score }}" onInput="{{ r.onScore }}" placeholder="Score" maxlength="7" inputmode="numeric" autocomplete="off" style="flex:none;width:74px;height:40px;box-sizing:border-box;padding:0 10px;border-radius:10px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:16px;text-align:center;font-variant-numeric:tabular-nums">
+                  <span style="flex:none;min-width:44px;text-align:right;font-family:var(--cp-font-num);font-size:22px;color:{{ r.ptsC }}"><dc-import name="Num" v="{{ r.pts }}" say="{{ r.ptsSay }}" hint-size="40px,22px"></dc-import></span>
+                  <div style="flex:none;display:flex;flex-direction:column">
+                    <button type="button" onClick="{{ r.up }}" aria-label="{{ r.upAria }}" aria-disabled="{{ r.isFirst }}" style="display:grid;place-items:center;width:32px;height:24px;border:0;border-radius:8px;background:transparent;color:{{ r.upC }};cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="chevron-up" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button>
+                    <button type="button" onClick="{{ r.dn }}" aria-label="{{ r.dnAria }}" aria-disabled="{{ r.isLast }}" style="display:grid;place-items:center;width:32px;height:24px;border:0;border-radius:8px;background:transparent;color:{{ r.dnC }};cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="chevron-down" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button>
+                  </div>
+                </div>
+              </li>
+            </sc-for>
+          </ol>
+          <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Ziehen am Griff, oder Griff fokussieren und Pfeiltasten nutzen. Gleichauf verbindet zwei Plätze; beide bekommen die Punkte des besseren Platzes. Scores sind Deko und zählen nicht.</span>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button type="button" onClick="{{ save }}" aria-disabled="{{ saveDis }}" style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 22px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ saveBg }};color:var(--cp-on-primary);box-shadow:{{ saveSh }};font-weight:700;font-size:16px;cursor:{{ saveCur }}" style-active="transform:translate(4px,4px);box-shadow:none"><dc-import name="Icon" icon="check" size="{{ 18 }}" sw="{{ 3 }}" hint-size="18px,18px"></dc-import>{{ saveLabel }}</button>
+            <span aria-live="polite" style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ entryMsg }}</span>
+          </div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> After every game, and to correct a past one. The list starts in the current leaderboard order, so the host usually only swaps a few rows. Ties: places 1, 1, 3 (the next place is skipped).</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Scores never affect points, so don't validate them beyond length. Don't auto-save on drag; nothing goes live until „Ergebnis speichern“. No confirm dialog: corrections are possible any time.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Every drag has buttons (up/down) and keys (arrows on the grip). Moves are announced („Nacht Eulen jetzt Platz 1“). „gleichauf“ is a toggle button with <code style="font-family:var(--cp-font-mono)">aria-pressed</code>; tied places also share a connecting line and the same number.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: in the stage after the game, or from the host dock. Mobile: a full-height sheet; the score field drops under the name, and long-press on the row starts the drag.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section id="tabelle" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Live-Tabelle</h2>
+        <span style="color:var(--cp-ink-2)">Party standings only. Rows slide to their new place, points count up, the game's winner gets a small celebration.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:12px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ lbKicker }}</span><span style="font-family:var(--cp-font-display);font-size:26px">Tabelle</span></div>
+            <div role="group" aria-label="Anzahl Spiele" style="margin-left:auto;display:flex;align-items:center;gap:6px">
+              <span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">Spiele</span>
+              <button type="button" onClick="{{ gamesDown }}" aria-label="Weniger Spiele" aria-disabled="{{ gMin }}" style="display:grid;place-items:center;width:36px;height:36px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);cursor:pointer;color:{{ gMinC }}"><dc-import name="Icon" icon="minus" size="{{ 14 }}" hint-size="14px,14px"></dc-import></button>
+              <output aria-live="polite" style="min-width:24px;text-align:center;font-family:var(--cp-font-num);font-size:20px">{{ total }}</output>
+              <button type="button" onClick="{{ gamesUp }}" aria-label="Mehr Spiele" style="display:grid;place-items:center;width:36px;height:36px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);cursor:pointer"><dc-import name="Icon" icon="plus" size="{{ 14 }}" hint-size="14px,14px"></dc-import></button>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px" aria-hidden="true"><sc-for list="{{ progress }}" as="g" hint-placeholder-count="6"><span style="flex:1;height:8px;border-radius:999px;border:1.5px solid var(--cp-line);background:{{ g.bg }}"></span></sc-for></div>
+          <ol aria-label="Tabelle" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ lb }}" as="l" hint-placeholder-count="4">
+              <li data-lb="{{ l.t }}" style="position:relative;display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 14px 8px 8px;border-radius:14px;border:{{ l.bd }};background:{{ l.bg }};box-shadow:{{ l.sh }}">
+                <span style="flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:2.5px solid var(--cp-line);background:{{ l.rankBg }};color:{{ l.rankFg }};font-family:var(--cp-font-display);font-size:22px">{{ l.rank }}</span>
+                <dc-import name="TeamMark" team="{{ l.t }}" size="{{ 32 }}" hint-size="32px,32px"></dc-import>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                  <b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</b>
+                  <div style="display:flex;gap:3px" aria-label="{{ l.histAria }}"><sc-for list="{{ l.hist }}" as="h" hint-placeholder-count="2"><span style="display:grid;place-items:center;min-width:20px;height:20px;padding:0 3px;box-sizing:border-box;border-radius:5px;border:1.5px solid var(--cp-line);background:{{ h.bg }};color:#151515;font-size:11px;font-weight:800">{{ h.p }}</span></sc-for></div>
+                </div>
+                <sc-if value="{{ l.hasDelta }}"><span data-delta="1" style="flex:none;display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-success);color:var(--cp-on-success);font-weight:800;font-size:13px">{{ l.delta }}</span></sc-if>
+                <span style="flex:none;min-width:56px;text-align:right;font-size:34px;line-height:1"><dc-import name="Num" v="{{ l.pts }}" say="{{ l.ptsSay }}" hint-size="50px,34px"></dc-import></span>
+                <sc-if value="{{ l.won }}"><span data-won="1" style="position:absolute;right:-10px;top:-14px;transform:rotate(8deg);padding:2px 10px;border-radius:10px;border:3px solid #151515;background:var(--cp-primary);color:#151515;font-family:var(--cp-font-display);font-size:16px;box-shadow:3px 3px 0 var(--cp-shadow-ink);white-space:nowrap">{{ l.wonTxt }}</span></sc-if>
+              </li>
+            </sc-for>
+          </ol>
+          <sc-if value="{{ hasEnd }}">
+            <div role="status" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:{{ endBg }};color:{{ endFg }}">
+              <dc-import name="Icon" icon="{{ endIcon }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import>
+              <span style="flex:1;font-weight:700;text-wrap:pretty">{{ endTxt }}</span>
+            </div>
+          </sc-if>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Side panel during the session, after every result in the stage, archive and share image. Shared ranks („1.“ twice) when points are equal; the history strip shows each game's place, wins in yellow.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No player standings in team mode, no averages, no Elo. Celebrate the game winner only lightly here (stamp and confetti); the big show belongs to the ceremony.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> An ordered list; changes are announced once („Nacht Eulen übernimmt Platz 1“). Reduced motion: rows swap without sliding, points jump to the new value, no confetti, the stamp stays.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: 340 px side panel, compact rows (48 px, no history strip). Mobile: the „Tabelle“ tab; tapping a row opens that party's game history.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- POINTS TABLE -->
+    <section id="punkte" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Punktetabelle</h2>
+        <span style="color:var(--cp-ink-2)">Step 4 of setup. Here it's connected to the leaderboard above, so you can compare presets; in the app it's fixed once the session starts.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+          <div role="radiogroup" aria-label="Punktetabelle" onKeyDown="{{ presetKey }}" style="display:flex;flex-direction:column">
+            <sc-for list="{{ presets }}" as="r" hint-placeholder-count="3">
+              <button type="button" role="radio" aria-checked="{{ r.on }}" tabindex="{{ r.ti }}" onClick="{{ r.pick }}" style="display:flex;align-items:center;gap:12px;min-height:52px;padding:0;border:0;background:transparent;cursor:pointer;text-align:left">
+                <span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ r.bg }};box-sizing:border-box"><sc-if value="{{ r.on }}"><span style="width:10px;height:10px;border-radius:50%;background:var(--cp-ink)"></span></sc-if></span>
+                <span style="display:flex;flex-direction:column;gap:1px"><b>{{ r.n }}</b><span style="font-size:13px;color:var(--cp-ink-2)">{{ r.d }}</span></span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+            <sc-for list="{{ ptRows }}" as="p" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px;border:2px solid var(--cp-line);border-radius:12px;background:{{ p.bg }}">
+                <span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">Platz {{ p.place }}</span>
+                <span style="font-size:30px;line-height:1"><dc-import name="Num" v="{{ p.v }}" hint-size="30px,30px"></dc-import></span>
+                <sc-if value="{{ p.edit }}">
+                  <div style="display:flex;gap:4px">
+                    <button type="button" onClick="{{ p.dn }}" aria-label="{{ p.dnAria }}" style="display:grid;place-items:center;width:32px;height:32px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);cursor:pointer"><dc-import name="Icon" icon="minus" size="{{ 14 }}" hint-size="14px,14px"></dc-import></button>
+                    <button type="button" onClick="{{ p.up }}" aria-label="{{ p.upAria }}" style="display:grid;place-items:center;width:32px;height:32px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);cursor:pointer"><dc-import name="Icon" icon="plus" size="{{ 14 }}" hint-size="14px,14px"></dc-import></button>
+                  </div>
+                </sc-if>
+                <span style="font-size:11px;color:var(--cp-ink-2)">{{ p.unit }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--cp-paper-2);font-size:13px;line-height:1.45">
+            <span style="flex:none;display:grid;padding-top:1px"><dc-import name="Icon" icon="equal" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+            <span style="text-wrap:pretty"><b>Gleichstand im Spiel:</b> {{ tieExample }}</span>
+          </div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Linear is the default (parties minus place). Winner takes all for short evenings. Custom when many players should be rewarded for good places. The grid always shows as many places as the session has parties.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No negative points, no bonus points. A custom table must not reward a worse place more than a better one: the minus on a place stops at the value below it.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Radio group with descriptions; each stepper button names its place („Platz 2: ein Punkt mehr“). The tie rule is always shown as a worked example, not a formula.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: a 4-column grid, wrapping for up to 8 parties. Mobile: 2 columns, 44 px stepper buttons.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="verlauf" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Spielverlauf</h2>
+        <span style="color:var(--cp-ink-2)">Every played game with its result. The host can correct any of them; the leaderboard recalculates.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ hist }}" as="h" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:{{ h.bd }};border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-paper-2);font-weight:800;font-size:13px">{{ h.no }}</span>
+                <b style="flex:1;min-width:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ h.game }}</b>
+                <sc-if value="{{ h.corrected }}"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">korrigiert</span></sc-if>
+                <button type="button" onClick="{{ h.edit }}" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:13px;font-weight:700;cursor:pointer"><dc-import name="Icon" icon="pencil" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Korrigieren</button>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ h.places }}" as="p" hint-placeholder-count="4">
+                  <span style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 4px;border-radius:999px;border:2px solid var(--cp-line);background:{{ p.bg }};font-size:13px;font-weight:700"><span style="display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--cp-surface);border:1.5px solid var(--cp-line);font-size:11px;font-weight:800">{{ p.place }}</span><dc-import name="TeamMark" team="{{ p.t }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import><span>{{ p.short }}</span><sc-if value="{{ p.hasScore }}"><span style="font-family:var(--cp-font-num);color:var(--cp-ink-2)">{{ p.score }}</span></sc-if></span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noHist }}"><span style="padding:16px;border:2px dashed var(--cp-line-soft);border-radius:12px;color:var(--cp-ink-2)">Noch kein Spiel gespielt.</span></sc-if>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Host panel, archive detail, and the activity feed's „Ergebnis“ entries link here. Corrected games say so, and the feed logs „Sanne hat Spiel 1 korrigiert“.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Players don't see „Korrigieren“. Never silently rewrite history: a correction triggers the same leaderboard animation, so everyone notices.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Each game is a group named „Spiel 2, Mario Kart 8“; places are read in order with ties („Platz 2, gleichauf: Wilde Gurken, Team Orange“).</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Same card on both; on mobile the places wrap into two lines and „Korrigieren“ becomes an icon button with a label.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TIEBREAKER -->
+    <section id="tiebreak" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Tiebreaker</h2>
+        <span style="color:var(--cp-ink-2)">Only for a tie on 1st place after the last game. Own wheel, own pool, only the tied parties play, leftover vetoes still count.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:16px">
+        <sc-for list="{{ tbStates }}" as="s" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:12px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ s.k }}</span>
+            <span style="font-family:var(--cp-font-display);font-size:28px;line-height:1.05;text-wrap:balance">{{ s.h }}</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ s.teams }}" as="t" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px 0 5px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-team-{{ t.n }});color:var(--cp-team-{{ t.n }}-ink);font-weight:700;font-size:14px;opacity:{{ t.op }}"><dc-import name="TeamMark" team="{{ t.n }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import>{{ t.name }}</span></sc-for></div>
+            <span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">{{ s.t }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Announced right after the last result, in the stage, before anything else. The wheel uses the tiebreaker pool and the Show-Rad skin, with a „Tiebreaker“ label on the hub.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No tiebreaker for ties below 1st place. No bans in the tiebreaker. Teams not involved are dimmed but stay visible, so the stands know who they're cheering for.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The announcement is a live region (assertive, once). Dimmed teams also lose their shadow and get „spielt nicht mit“ in their label.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Same flow as a normal game: wheel, clip, veto window, result entry with only the tied parties.</div>
+      </div>
+    </section>
+
+    <footer style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:var(--cp-bw) solid var(--cp-line);font-size:13px;color:var(--cp-ink-2)">
+      <span>COMPIES Design System, Scoring</span>
+      <span>Next up: Communication</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TEAMS={1:'Wilde Gurken',2:'Team Orange',4:'Käse Turbo',8:'Nacht Eulen'};
+const SHORT={1:'Gurken',2:'Orange',4:'Käse',8:'Eulen'};
+const NEXT=['Counter-Strike 2','Overcooked 2','Gang Beasts','Codenames','Trackmania','Tetris 99','GeoGuessr','Halo Infinite'];
+const H0=[{game:'Rocket League',rows:[{t:1,tie:false,score:'3'},{t:8,tie:false,score:'2'},{t:4,tie:false,score:'1'},{t:2,tie:false,score:'0'}]},{game:'Mario Kart 8',rows:[{t:8,tie:false,score:''},{t:1,tie:false,score:''},{t:2,tie:true,score:''},{t:4,tie:false,score:''}]}];
+const ACC=['#ffd23f','#2ec4b6','#ff70c3','#3a86ff','#ff4f4f'];
+const placesOf=rows=>{ const out=[]; rows.forEach((r,i)=>{ out.push(i===0||!r.tie?i+1:out[i-1]); }); return out; };
+const clone=o=>JSON.parse(JSON.stringify(o));
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,wide:true,hist:clone(H0),rows:null,editing:null,preset:'linear',custom:[5,3,1,0],total:6,delta:{},won:null,entryMsg:''};
+  root=React.createRef(); listRef=React.createRef();
+  componentDidMount(){
+    let m=null,mo=null,mu=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs);
+    this.setState({mode:m,motion:mo,muted:mu==='1',wide:window.innerWidth>=980,rows:this.freshRows(this.state.hist)});
+  }
+  componentWillUnmount(){ window.removeEventListener('resize',this._rs); this.unbind(); }
+  rm(){ return this.state.motion==='reduced'; }
+  componentDidUpdate(){
+    const m=this.state.mode; if(m&&m!==this._lm){ this._lm=m; document.body.style.background=m==='dark'?'#17121d':'#fff3df'; }
+    const r=this.root.current; if(!r) return;
+    if(this._flipRe){ const old=this._flipRe; this._flipRe=null; if(!this.rm()) r.querySelectorAll('[data-re]').forEach(el=>{ const o=old[el.dataset.re]; if(o==null) return; const dy=o-el.getBoundingClientRect().top; if(Math.abs(dy)>1) el.animate([{translate:`0 ${dy}px`},{translate:'0 0'}],{duration:180,easing:'cubic-bezier(.2,0,0,1)'}); }); }
+    if(this._flipLb){ const old=this._flipLb; this._flipLb=null; if(!this.rm()){ r.querySelectorAll('[data-lb]').forEach(el=>{ const o=old[el.dataset.lb]; if(o==null) return; const dy=o-el.getBoundingClientRect().top; if(Math.abs(dy)>1) el.animate([{translate:`0 ${dy}px`},{translate:'0 0'}],{duration:620,easing:'cubic-bezier(.34,1.3,.64,1)'}); });
+        r.querySelectorAll('[data-delta]').forEach(el=>el.animate([{transform:'scale(.3)',opacity:0},{transform:'scale(1.15)',opacity:1},{transform:'scale(1)'}],{duration:420,delay:300,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'backwards'}));
+        r.querySelectorAll('[data-won]').forEach(el=>{ el.animate([{transform:'rotate(8deg) scale(2)',opacity:0},{transform:'rotate(8deg) scale(.9)',opacity:1,offset:.7},{transform:'rotate(8deg) scale(1)'}],{duration:480,delay:520,easing:'cubic-bezier(.2,0,0,1)',fill:'backwards'}); const row=el.closest('[data-lb]'); setTimeout(()=>this.confetti(row),560); }); } }
+  }
+  measure(sel,key){ const o={}; const r=this.root.current; r&&r.querySelectorAll(sel).forEach(el=>o[el.dataset[key]]=el.getBoundingClientRect().top); return o; }
+  confetti(row){ if(!row||this.rm()) return; const b=row.getBoundingClientRect(); const host=document.createElement('div'); host.style.cssText=`position:fixed;left:${b.right-60}px;top:${b.top+b.height/2}px;width:0;height:0;pointer-events:none;z-index:90`; document.body.appendChild(host);
+    for(let i=0;i<22;i++){ const el=document.createElement('span'), s=8+Math.random()*9, sh=['50%','3px','0'][i%3]; el.style.cssText=`position:absolute;left:${-s/2}px;top:${-s/2}px;width:${s}px;height:${sh==='0'?s*.55:s}px;background:${ACC[i%5]};border:2.5px solid #fffdf8;border-radius:${sh};box-shadow:var(--cp-sticker-shadow);box-sizing:border-box`; host.appendChild(el);
+      const a=-Math.PI/2+(Math.random()-.5)*2.4, d=70+Math.random()*110, dx=Math.cos(a)*d, dy=Math.sin(a)*d, rr=(Math.random()-.5)*720; el.animate([{transform:'translate(0,0) scale(.4)',opacity:1},{transform:`translate(${dx}px,${dy}px) rotate(${rr/2}deg) scale(1)`,offset:.5},{transform:`translate(${dx*1.2}px,${dy+140}px) rotate(${rr}deg)`,opacity:0}],{duration:1300+Math.random()*400,easing:'cubic-bezier(.16,1,.3,1)'}); }
+    setTimeout(()=>host.remove(),1900);
+    if(!this.state.muted){ try{ const C=this._ac||(this._ac=new (window.AudioContext||window.webkitAudioContext)()), t=C.currentTime; [523.25,659.25,783.99,1046.5].forEach((f,i)=>{ const o=C.createOscillator(), g=C.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(.0001,t+i*.09); g.gain.exponentialRampToValueAtTime(.12,t+i*.09+.01); g.gain.exponentialRampToValueAtTime(.0001,t+i*.09+.3); o.connect(g).connect(C.destination); o.start(t+i*.09); o.stop(t+i*.09+.32); }); }catch(e){} } }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+  table(){ const S=this.state; return S.preset==='linear'?[3,2,1,0]:S.preset==='wta'?[1,0,0,0]:S.custom; }
+  totals(hist){ const T=this.table(), tot={1:0,2:0,4:0,8:0}, histP={1:[],2:[],4:[],8:[]}; hist.forEach(g=>{ const pl=placesOf(g.rows); g.rows.forEach((r,i)=>{ tot[r.t]+=T[pl[i]-1]; histP[r.t].push(pl[i]); }); }); return {tot,histP}; }
+  ranking(hist){ const {tot}=this.totals(hist); return [1,2,4,8].sort((a,b)=>tot[b]-tot[a]||a-b); }
+  freshRows(hist){ return this.ranking(hist).map(t=>({t,tie:false,score:''})); }
+  // reorder
+  moveRow=(from,to,announce)=>{ const rows=this.state.rows.slice(); if(to<0||to>=rows.length||from===to) return; this._flipRe=this.measure('[data-re]','re'); const [x]=rows.splice(from,1); rows.splice(to,0,x); rows.forEach((r,i)=>{ if(i===0) r.tie=false; }); this.setState({rows,entryMsg:announce?`${TEAMS[x.t]} jetzt Platz ${placesOf(rows)[to]}.`:this.state.entryMsg}); };
+  unbind(){ window.removeEventListener('pointermove',this.wm); window.removeEventListener('pointerup',this.wu); window.removeEventListener('pointercancel',this.wu); }
+  down=(t,e)=>{ if(e.button>0) return; e.preventDefault(); this._d={t}; this.setState({dragT:t}); window.addEventListener('pointermove',this.wm); window.addEventListener('pointerup',this.wu); window.addEventListener('pointercancel',this.wu); };
+  wm=e=>{ if(!this._d) return; const r=this.root.current; const els=[...r.querySelectorAll('[data-re]')]; const rows=this.state.rows; const from=rows.findIndex(x=>x.t===this._d.t); let to=from;
+    els.forEach((el,i)=>{ const b=el.getBoundingClientRect(), mid=b.top+b.height/2; if(i<from&&e.clientY<mid) to=Math.min(to,i); if(i>from&&e.clientY>mid) to=Math.max(to,i); }); if(to!==from) this.moveRow(from,to,false); };
+  wu=()=>{ const d=this._d; this._d=null; this.unbind(); if(d){ const rows=this.state.rows, i=rows.findIndex(x=>x.t===d.t); this.setState({dragT:null,entryMsg:`${TEAMS[d.t]} jetzt Platz ${placesOf(rows)[i]}.`}); } };
+  save=()=>{ const S=this.state; const played=S.hist.length; if(S.editing==null&&played>=S.total) return;
+    this._flipLb=this.measure('[data-lb]','lb'); const before=this.totals(S.hist).tot; let hist=S.hist.slice(), no;
+    if(S.editing!=null){ hist[S.editing]=Object.assign({},hist[S.editing],{rows:clone(S.rows),corrected:true}); no=S.editing+1; }
+    else { hist.push({game:NEXT[played-2]||'Spiel '+(played+1),rows:clone(S.rows)}); no=played+1; }
+    const after=this.totals(hist).tot, delta={}; [1,2,4,8].forEach(t=>{ const d=after[t]-before[t]; if(d) delta[t]=d; });
+    const pl=placesOf(S.rows), winners=S.rows.filter((r,i)=>pl[i]===1).map(r=>r.t);
+    this.setState({hist,editing:null,rows:this.freshRows(hist),delta,won:{teams:winners,no,corr:S.editing!=null},entryMsg:S.editing!=null?`Spiel ${no} korrigiert. Die Tabelle ist neu berechnet.`:`Gespeichert. ${winners.map(t=>TEAMS[t]).join(' und ')} ${winners.length>1?'gewinnen':'gewinnt'} Spiel ${no}.`}); };
+  renderVals(){
+    const S=this.state, mode=S.mode||'light', T=this.table(), rows=S.rows||this.freshRows(S.hist), pl=placesOf(rows), played=S.hist.length, done=played>=S.total&&S.editing==null;
+    const re=rows.map((r,i)=>{ const drag=S.dragT===r.t, first=i===0, last=i===rows.length-1, p=pl[i], pts=T[p-1];
+      return {t:r.t,name:TEAMS[r.t],place:String(p),notFirst:!first,isFirst:first,isLast:last,tie:!!r.tie,tieAria:`Platz ${i+1} gleichauf mit dem Platz darüber`,tieBs:r.tie?'solid':'dashed',tieBc:r.tie?'var(--cp-line)':'var(--cp-ink-3)',tieBg:r.tie?'var(--cp-ink)':'transparent',tieFg:r.tie?'var(--cp-paper)':'var(--cp-ink-2)',tieLine:r.tie?'var(--cp-line)':'var(--cp-line-soft)',
+        bd:drag?'3px solid var(--cp-focus)':'var(--cp-bw) solid var(--cp-line)',bg:drag?'var(--cp-surface-2)':'var(--cp-surface)',sh:drag?'var(--cp-shadow-card)':'none',tf:drag?'translate(-2px,-2px) rotate(-1deg)':'none',z:drag?'3':'1',
+        placeBg:p===1?'var(--cp-primary)':'var(--cp-surface)',placeFg:'var(--cp-ink)',pts:'+'+pts,ptsSay:pts+' Punkte',ptsC:pts?'var(--cp-ink)':'var(--cp-ink-3)',sid:'sc-'+r.t,score:r.score,scoreLabel:`Score ${TEAMS[r.t]} (optional)`,
+        gripAria:`${TEAMS[r.t]}, Platz ${p}. Ziehen oder Pfeiltasten zum Verschieben`,upAria:`${TEAMS[r.t]} einen Platz hoch`,dnAria:`${TEAMS[r.t]} einen Platz runter`,upC:first?'var(--cp-ink-3)':'var(--cp-ink)',dnC:last?'var(--cp-ink-3)':'var(--cp-ink)',
+        down:e=>this.down(r.t,e),key:e=>{ if(e.key==='ArrowUp'){ e.preventDefault(); this.moveRow(i,i-1,true); } if(e.key==='ArrowDown'){ e.preventDefault(); this.moveRow(i,i+1,true); } },
+        up:()=>this.moveRow(i,i-1,true),dn:()=>this.moveRow(i,i+1,true),
+        toggleTie:()=>{ const rs=this.state.rows.map((x,j)=>j===i?Object.assign({},x,{tie:!x.tie}):x); this.setState({rows:rs}); },
+        onScore:e=>{ const v=e.target.value.slice(0,7); this.setState(s=>({rows:s.rows.map(x=>x.t===r.t?Object.assign({},x,{score:v}):x)})); }}; });
+    const {tot,histP}=this.totals(S.hist); const order=this.ranking(S.hist);
+    const ranks={}; order.forEach((t,i)=>{ ranks[t]=i===0||tot[t]!==tot[order[i-1]]?i+1:ranks[order[i-1]]; });
+    const lb=order.map(t=>{ const won=S.won&&S.won.teams.includes(t); const d=S.delta[t];
+      return {t,name:TEAMS[t],rank:ranks[t]+'.',pts:String(tot[t]),ptsSay:tot[t]+' Punkte',rankBg:ranks[t]===1?'var(--cp-primary)':'var(--cp-surface)',rankFg:'var(--cp-ink)',bd:ranks[t]===1?'3px solid var(--cp-line)':'var(--cp-bw) solid var(--cp-line)',bg:'var(--cp-surface)',sh:ranks[t]===1?'var(--cp-shadow-card)':'none',
+        hist:histP[t].map(p=>({p:String(p),bg:p===1?'var(--cp-primary)':'var(--cp-paper-2)'})),histAria:'Plätze: '+histP[t].join(', '),hasDelta:!!d,delta:d?'+'+d:'',won:!!won,wonTxt:S.won?(S.won.corr?`Spiel ${S.won.no} gewonnen`:`Sieg in Spiel ${S.won.no}!`):''}; });
+    const top=order.filter(t=>ranks[t]===1);
+    let end=null; if(played>=S.total){ end=top.length>1?{icon:'swords',bg:'var(--cp-hot)',fg:'var(--cp-on-hot)',txt:`Gleichstand auf Platz 1: ${top.map(t=>TEAMS[t]).join(' und ')}. Jetzt kommt der Tiebreaker.`}:{icon:'trophy',bg:'var(--cp-primary)',fg:'var(--cp-on-primary)',txt:`${TEAMS[top[0]]} gewinnt die Session. Auf zur Siegerehrung!`}; }
+    const presets=[['linear','Linear','Parteien minus Platz: 3 / 2 / 1 / 0'],['wta','Winner takes all','Nur Platz 1 bekommt einen Punkt'],['custom','Eigene Tabelle','Du legst die Punkte pro Platz fest']].map(([k,n,d])=>({n,d,on:S.preset===k,ti:S.preset===k?'0':'-1',bg:S.preset===k?'var(--cp-primary)':'var(--cp-surface)',pick:()=>{ this._flipLb=this.measure('[data-lb]','lb'); this.setState({preset:k,delta:{},won:null}); }}));
+    const presetKey=e=>{ const K=['linear','wta','custom'], m={ArrowDown:1,ArrowRight:1,ArrowUp:-1,ArrowLeft:-1}; if(e.key in m){ e.preventDefault(); const n=(K.indexOf(S.preset)+m[e.key]+3)%3; this._flipLb=this.measure('[data-lb]','lb'); this.setState({preset:K[n],delta:{},won:null}); const b=e.currentTarget.querySelectorAll('[role=radio]'); b[n]&&b[n].focus(); } };
+    const ptRows=T.map((v,i)=>({place:String(i+1),v:String(v),unit:v===1?'Punkt':'Punkte',bg:i===0?'var(--cp-primary)':'var(--cp-surface)',edit:S.preset==='custom',dnAria:`Platz ${i+1}: ein Punkt weniger`,upAria:`Platz ${i+1}: ein Punkt mehr`,
+      dn:()=>{ this._flipLb=this.measure('[data-lb]','lb'); this.setState(s=>{ const c=s.custom.slice(), min=i<3?c[i+1]:0; c[i]=Math.max(min,c[i]-1); return {custom:c,delta:{},won:null}; }); },
+      up:()=>{ this._flipLb=this.measure('[data-lb]','lb'); this.setState(s=>{ const c=s.custom.slice(), max=i>0?c[i-1]:99; c[i]=Math.min(max,c[i]+1); return {custom:c,delta:{},won:null}; }); }}));
+    const tieExample=`Zwei Parteien teilen sich Platz 1, beide bekommen ${T[0]} ${T[0]===1?'Punkt':'Punkte'}. Platz 2 fällt weg, die nächste Partei ist Platz 3 und bekommt ${T[2]}.`;
+    const hist=S.hist.map((g,gi)=>{ const p=placesOf(g.rows); return {no:String(gi+1),game:g.game,corrected:!!g.corrected,bd:S.editing===gi?'3px solid var(--cp-focus)':'var(--cp-bw) solid var(--cp-line)',
+      places:g.rows.map((r,i)=>({place:String(p[i]),t:r.t,short:SHORT[r.t],score:r.score,hasScore:!!r.score,bg:p[i]===1?'var(--cp-primary)':'var(--cp-surface)'})),
+      edit:()=>{ this.setState({editing:gi,rows:clone(g.rows),entryMsg:''}); const el=this.root.current&&this.root.current.querySelector('#ergebnis'); if(el) window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-24,behavior:'smooth'}); }}; });
+    const nextGame=NEXT[played-2]||'Spiel '+(played+1);
+    const tbStates=[{k:'Ansage nach dem letzten Spiel',h:'Gleichstand auf Platz 1!',teams:[{n:1,name:TEAMS[1],op:1},{n:8,name:TEAMS[8],op:1}],t:'Beide haben 14 Punkte. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad.'},
+      {k:'Tiebreaker-Rad',h:'Nur die Punktgleichen spielen.',teams:[{n:1,name:TEAMS[1],op:1},{n:8,name:TEAMS[8],op:1},{n:2,name:'Team Orange, spielt nicht mit',op:.45}],t:'Eigenes Rad mit dem Tiebreaker-Pool. Übrige Vetos zählen noch, Bans gibt es nicht.'},
+      {k:'Wieder unentschieden',h:'Nochmal! Das Rad dreht neu.',teams:[{n:1,name:TEAMS[1],op:1},{n:8,name:TEAMS[8],op:1}],t:'Endet auch der Tiebreaker gleichauf, wird einfach wieder gedreht, so lange, bis es eine Siegerin gibt.'}];
+    const toc=[['Ergebnis eintragen','#ergebnis'],['Live-Tabelle','#tabelle'],['Punktetabelle','#punkte'],['Spielverlauf','#verlauf'],['Tiebreaker','#tiebreak']].map(([n,href])=>({n,href}));
+    return {root:this.root,listRef:this.listRef,mode,motion:S.motion,muted:S.muted,wide:S.wide,dir:S.wide?'row':'column',toc,
+      setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,toggleMute:this.toggleMute,
+      rows:re,editing:S.editing!=null,cancelEdit:()=>this.setState({editing:null,rows:this.freshRows(S.hist),entryMsg:''}),
+      entryKicker:S.editing!=null?`Korrektur, Spiel ${S.editing+1}`:done?'Alle Spiele gespielt':`Spiel ${played+1} von ${S.total}`,entryGame:S.editing!=null?S.hist[S.editing].game:done?'Fertig':nextGame,
+      save:this.save,saveDis:done,saveBg:done?'var(--cp-paper-2)':'var(--cp-primary)',saveSh:done?'none':'var(--cp-shadow-btn)',saveCur:done?'not-allowed':'pointer',saveLabel:S.editing!=null?'Korrektur speichern':'Ergebnis speichern',entryMsg:S.entryMsg,
+      lb,lbKicker:`Nach Spiel ${played} von ${S.total}`,total:String(S.total),gMin:S.total<=Math.max(1,played),gMinC:S.total<=Math.max(1,played)?'var(--cp-ink-3)':'var(--cp-ink)',
+      gamesDown:()=>this.setState(s=>({total:Math.max(Math.max(1,s.hist.length),s.total-1)})),gamesUp:()=>this.setState(s=>({total:Math.min(20,s.total+1)})),
+      progress:Array.from({length:S.total},(_,i)=>({bg:i<played?'var(--cp-ink)':'transparent'})),hasEnd:!!end,endIcon:end?end.icon:'trophy',endBg:end?end.bg:'',endFg:end?end.fg:'',endTxt:end?end.txt:'',
+      presets,presetKey,ptRows,tieExample,hist,noHist:!S.hist.length,tbStates};
+  }
+}
+</script>
+</body>
+</html>

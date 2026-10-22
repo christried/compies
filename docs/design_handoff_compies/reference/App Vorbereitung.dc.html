@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<dc-import name="AppViewer" kicker="Phase 4, Teil B" title="Session vorbereiten" scope="[1.0]" dark="{{ dark }}" embed="{{ embed }}" fw="{{ fw }}" fh="{{ fh }}" screens="{{ screens }}" states="{{ states }}" vps="{{ vps }}" notes="{{ notes }}" cur-name="{{ curName }}" cur-state="{{ curState }}" toggle-theme="{{ toggleTheme }}" hint-size="100%,900px">
+<dc-import name="AppFrame" vp="{{ vp }}" kind="{{ kind }}" no-create="{{ sCreate }}" nav="sessions" me="{{ me }}" is-host="{{ isHost }}" is-admin="{{ isHost }}" title="Freitags-Zocken" pill="{{ pill }}" panel="chat" dock="{{ dock }}" tabs="{{ tabs }}" pad="{{ pad }}" no-scroll="{{ noScroll }}" hint-size="1280px,800px">
+
+<sc-if value="{{ sCreate }}">
+  <div style="flex:1;min-height:0;display:flex">
+    <sc-if value="{{ desk }}">
+      <nav aria-label="Schritte" style="flex:none;width:230px;box-sizing:border-box;padding:22px 16px;border-right:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface-2);display:flex;flex-direction:column;gap:4px">
+        <span style="font-family:var(--cp-font-display);font-size:24px;line-height:1;margin:0 6px 12px">Neue Session</span>
+        <sc-for list="{{ stepList }}" as="s" hint-placeholder-count="8"><span aria-current="{{ s.cur }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px;border-radius:12px;border:{{ s.bd }};background:{{ s.bg }};font-weight:{{ s.w }};font-size:14px;color:{{ s.c }}"><span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--cp-line);background:{{ s.dbg }};color:{{ s.dfg }};font-size:12px;font-weight:800">{{ s.mark }}</span>{{ s.n }}</span></sc-for>
+      </nav>
+    </sc-if>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:{{ sbw }};padding:{{ formPad }};box-sizing:border-box;display:flex;flex-direction:column;gap:18px">
+        <sc-if value="{{ mob }}"><div style="display:flex;flex-direction:column;gap:8px"><div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px" aria-hidden="true"><sc-for list="{{ stepList }}" as="s" hint-placeholder-count="8"><span style="height:8px;border-radius:999px;border:1.5px solid var(--cp-line);background:{{ s.bar }}"></span></sc-for></div></div></sc-if>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ stepKicker }}</span><span style="font-family:var(--cp-font-display);font-size:{{ h1 }};line-height:1">{{ stepTitle }}</span></div>
+
+        <sc-if value="{{ stName }}">
+          <div style="display:flex;flex-direction:column;gap:6px;max-width:520px"><label style="font-size:14px;font-weight:700">Name der Session</label><span style="display:flex;align-items:center;height:56px;padding:0 16px;border-radius:12px;border:3px solid var(--cp-focus);background:var(--cp-surface);font-size:19px;font-weight:600">Freitags-Zocken<span style="margin-left:2px;width:2px;height:24px;background:var(--cp-ink);animation:cpPulse 1s steps(1) infinite"></span></span><div style="display:flex;font-size:13px;color:var(--cp-ink-2)"><span style="flex:1">Sehen alle in der Einladung und im Archiv.</span><span style="font-family:var(--cp-font-mono)">15/40</span></div></div>
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Keine Idee?</span><div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ nameIdeas }}" as="n" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:13px"><dc-import name="Icon" icon="wand-sparkles" size="{{ 14 }}" hint-size="14px,14px"></dc-import>{{ n }}</span></sc-for></div></div>
+        </sc-if>
+
+        <sc-if value="{{ stFormat }}">
+          <div role="radiogroup" aria-label="Format" style="display:grid;grid-template-columns:{{ cols2 }};gap:10px">
+            <sc-for list="{{ formats }}" as="m" hint-placeholder-count="4">
+              <div role="radio" aria-checked="{{ m.on }}" aria-disabled="{{ m.pl }}" style="display:flex;align-items:center;gap:12px;min-height:72px;padding:10px 14px;border-radius:14px;box-sizing:border-box;border:{{ m.bd }};background:{{ m.bg }};color:{{ m.fg }};box-shadow:{{ m.sh }}">
+                <span style="flex:none;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;border:2px {{ m.ibs }} {{ m.ibc }};background:{{ m.ibg }}"><dc-import name="Icon" icon="{{ m.icon }}" size="{{ 20 }}" offset="{{ m.off }}" hint-size="20px,20px"></dc-import></span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b style="font-size:15px">{{ m.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ m.d }}</span></span>
+                <sc-if value="{{ m.pl }}"><span style="flex:none;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 7px;border-radius:999px;border:2px dashed var(--cp-ink-2);color:var(--cp-ink-2);font-size:11px;font-weight:700;white-space:nowrap"><dc-import name="Icon" icon="lock" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Bald verfügbar</span></sc-if>
+                <sc-if value="{{ m.infoBtn }}"><span aria-label="Erklärung" style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="circle-help" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+            <sc-for list="{{ fmtSteppers }}" as="x" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:150px;display:flex;flex-direction:column;line-height:1.3"><b>{{ x.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ x.d }}</span></div><div style="display:flex;align-items:center;gap:10px"><span aria-label="weniger" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="minus" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import></span><output style="min-width:44px;text-align:center;font-family:var(--cp-font-num);font-size:28px;line-height:1">{{ x.v }}</output><span aria-label="mehr" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="plus" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import></span></div></div>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:12px;border-top:2px solid var(--cp-line-soft)"><span style="display:flex;gap:4px;flex-wrap:wrap"><sc-for list="{{ fmtMarks }}" as="t" hint-placeholder-count="4"><dc-import name="TeamMark" team="{{ t }}" size="{{ 28 }}" hint-size="28px,28px"></dc-import></sc-for></span><b style="font-size:14px">{{ fmtSum }}</b></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ stGames }}">
+          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding:20px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);max-width:560px">
+            <div style="display:flex;align-items:center;gap:16px"><span style="display:grid;place-items:center;width:56px;height:56px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="minus" size="{{ 20 }}" sw="{{ 3 }}" hint-size="20px,20px"></dc-import></span><output style="min-width:90px;text-align:center;font-family:var(--cp-font-num);font-size:72px;line-height:1">6</output><span style="display:grid;place-items:center;width:56px;height:56px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="plus" size="{{ 20 }}" sw="{{ 3 }}" hint-size="20px,20px"></dc-import></span></div>
+            <div style="display:flex;gap:6px" aria-hidden="true"><sc-for list="{{ gameDots }}" as="g" hint-placeholder-count="6"><span style="width:30px;height:30px;border-radius:8px;border:2.5px solid var(--cp-line);background:{{ g }}"></span></sc-for></div>
+            <span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Nach 6 Spielen ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1. Du kannst die Zahl während der Session noch ändern.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ stPoints }}">
+          <div role="radiogroup" aria-label="Punktetabelle" style="display:grid;grid-template-columns:{{ cols3 }};gap:10px">
+            <sc-for list="{{ presets }}" as="m" hint-placeholder-count="3"><div role="radio" aria-checked="{{ m.on }}" style="display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:14px;border:{{ m.bd }};background:var(--cp-surface);box-shadow:{{ m.sh }}"><b>{{ m.n }}</b><span style="font-family:var(--cp-font-num);font-size:18px">{{ m.v }}</span><span style="font-size:12px;color:var(--cp-ink-2);text-wrap:pretty">{{ m.d }}</span></div></sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);max-width:560px">
+            <b>{{ ptsHead }}</b>
+            <sc-for list="{{ ptsRows }}" as="r" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;min-height:48px"><span style="flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;border:2.5px solid var(--cp-line);background:{{ r.bg }};color:{{ r.fg }};font-family:var(--cp-font-display);font-size:18px">{{ r.p }}</span><span style="flex:1;font-weight:700">{{ r.n }}</span><span style="display:grid;place-items:center;min-width:64px;height:44px;padding:0 10px;box-sizing:border-box;border-radius:10px;border:{{ r.bd }};background:{{ r.fbg }};font-family:var(--cp-font-num);font-size:20px">{{ r.v }}</span></div></sc-for>
+            <sc-if value="{{ ptsErr }}"><span role="alert" style="display:flex;gap:6px;align-items:center;color:var(--cp-error-fg);font-weight:700;font-size:13px"><dc-import name="Icon" icon="circle-alert" size="{{ 15 }}" hint-size="15px,15px"></dc-import>Platz 3 kann nicht mehr Punkte bekommen als Platz 2.</span></sc-if>
+            <span style="font-size:12px;color:var(--cp-ink-2)">Gleichauf: alle bekommen die Punkte des besseren Platzes, der nächste Platz fällt weg (1, 1, 3).</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ stMode }}">
+          <div role="radiogroup" aria-label="Auswahlmodus" style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ modes }}" as="m" hint-placeholder-count="5">
+              <div role="radio" aria-checked="{{ m.on }}" style="display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 14px;border-radius:14px;box-sizing:border-box;border:{{ m.bd }};background:{{ m.bg }};color:{{ m.fg }};box-shadow:{{ m.sh }}">
+                <span style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;border:2px {{ m.ibs }} {{ m.ibc }};background:{{ m.ibg }}"><dc-import name="Icon" icon="{{ m.icon }}" size="{{ 20 }}" offset="{{ m.off }}" hint-size="20px,20px"></dc-import></span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b style="font-size:15px">{{ m.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ m.d }}</span></span>
+                <sc-if value="{{ m.pl }}"><span style="flex:none;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 7px;border-radius:999px;border:2px dashed var(--cp-ink-2);color:var(--cp-ink-2);font-size:11px;font-weight:700;white-space:nowrap"><dc-import name="Icon" icon="lock" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Bald verfügbar</span></sc-if>
+                <sc-if value="{{ m.infoBtn }}"><span aria-label="Erklärung" style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="circle-help" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ wheelOpts }}">
+            <div style="display:flex;flex-direction:column;gap:14px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+              <div style="display:flex;align-items:center;gap:12px"><span style="flex:none;position:relative;width:52px;height:30px;border-radius:999px;border:2.5px solid var(--cp-line);background:var(--cp-primary);box-sizing:border-box;color:var(--cp-on-primary)"><span style="position:absolute;top:3px;left:25px;width:19px;height:19px;border-radius:50%;background:var(--cp-ink)"></span></span><span style="flex:1;display:flex;flex-direction:column;line-height:1.3"><b>Rad verdecken</b><span style="font-size:12px;color:var(--cp-ink-2)">Spieler:innen sehen Platzhalter, bis das Rad stoppt.</span></span></div>
+              <div role="radiogroup" aria-label="Platzhalter" style="display:flex;gap:8px;flex-wrap:wrap;padding-left:64px"><span role="radio" aria-checked="true" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:2.5px solid var(--cp-line);background:var(--cp-ink);color:var(--cp-paper);font-weight:700;font-size:13px">Erfundene Namen: „Mario Kartoffel“</span><span role="radio" aria-checked="false" style="display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);font-weight:700;font-size:13px">???</span></div>
+              <div style="display:flex;align-items:center;gap:12px;padding-top:12px;border-top:2px solid var(--cp-line-soft)"><span style="flex:1;display:flex;flex-direction:column;line-height:1.3"><b>Drehdauer</b><span style="font-size:12px;color:var(--cp-ink-2)">3 bis 10 s. Jederzeit im Host-Dock änderbar.</span></span><span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line)"><dc-import name="Icon" icon="minus" size="{{ 14 }}" sw="{{ 3 }}" hint-size="14px,14px"></dc-import></span><span style="font-family:var(--cp-font-num);font-size:22px">5 s</span><span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line)"><dc-import name="Icon" icon="plus" size="{{ 14 }}" sw="{{ 3 }}" hint-size="14px,14px"></dc-import></span></div>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ stPool }}">
+          <sc-if value="{{ poolWarn }}"><div role="status" style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-warning);color:var(--cp-on-warning)"><dc-import name="Icon" icon="triangle-alert" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><div style="display:flex;flex-direction:column;gap:4px"><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Nur du siehst das</span><span style="font-size:14px;text-wrap:pretty"><b>Wird knapp.</b> 6 Spiele plus bis zu 8 Vetos: Im schlimmsten Fall brauchst du 14 Spiele, im Pool sind 9. Blockiert nichts, nur damit du’s weißt.</span></div></div></sc-if>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div style="position:relative;flex:1;min-width:220px;display:flex;align-items:center"><span style="position:absolute;left:14px;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="search" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><span style="width:100%;height:48px;box-sizing:border-box;padding:0 14px 0 42px;display:flex;align-items:center;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink-2)">Spiel aus der Bibliothek suchen</span></div><span style="display:inline-flex;align-items:center;gap:6px;height:48px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Neues Spiel</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:8px"><dc-import name="Icon" icon="sparkles" size="{{ 16 }}" hint-size="16px,16px"></dc-import><b>{{ sugHead }}</b></div><div style="display:grid;grid-template-columns:{{ cardCols }};gap:10px"><sc-for list="{{ sugCards }}" as="g" hint-placeholder-count="4"><dc-import name="GameCard" dc-props="{{ g }}" hint-size="100%,170px"></dc-import></sc-for></div><span style="font-size:12px;color:var(--cp-ink-2)">Vorschläge passen zu Format und Spielerzahl. Aussortiert wird nichts, du entscheidest.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:8px"><b style="flex:1">{{ poolHead }}</b><span style="font-size:13px;font-weight:700;text-decoration:underline">Alle entfernen</span></div><div style="display:grid;grid-template-columns:{{ rowCols }};gap:8px"><sc-for list="{{ poolRows }}" as="g" hint-placeholder-count="6"><dc-import name="GameCard" dc-props="{{ g }}" hint-size="100%,60px"></dc-import></sc-for></div></div>
+        </sc-if>
+
+        <sc-if value="{{ stDate }}">
+          <div role="radiogroup" aria-label="Termin" style="display:grid;grid-template-columns:{{ cols2 }};gap:10px;max-width:640px"><sc-for list="{{ dateModes }}" as="m" hint-placeholder-count="2"><div role="radio" aria-checked="{{ m.on }}" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:{{ m.bd }};background:var(--cp-surface);box-shadow:{{ m.sh }}"><span style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;border:2px solid var(--cp-line);background:{{ m.ibg }}"><dc-import name="Icon" icon="{{ m.icon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span><span style="display:flex;flex-direction:column;line-height:1.3"><b>{{ m.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ m.d }}</span></span></div></sc-for></div>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:640px">
+            <b>Vorschläge für die Umfrage</b>
+            <sc-for list="{{ slots }}" as="s" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1 1 170px;height:48px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-weight:600"><dc-import name="Icon" icon="calendar" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ s.d }}</span><span style="flex:0 1 120px;height:48px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-num)"><dc-import name="Icon" icon="clock" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ s.t }}</span><span aria-label="Entfernen" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="x" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></div></sc-for>
+            <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:2.5px dashed var(--cp-line);font-weight:700;font-size:14px"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Weiteren Termin vorschlagen</span>
+            <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Abgestimmt wird mit Ja, Wenn nötig oder Nein. Bench, Tribüne und Chat sind schon offen, Teams erst, wenn der Termin steht.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ stDone }}">
+          <div style="display:flex;flex-direction:{{ doneDir }};align-items:center;gap:20px;padding:22px;border:3px solid var(--cp-line);border-radius:20px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-card)">
+            <dc-import name="CompibertRig" variant="full" size="{{ doneCb }}" state="cheer" hint-size="190px,160px"></dc-import>
+            <div style="flex:1;display:flex;flex-direction:column;gap:12px;min-width:0;width:100%">
+              <span style="font-family:var(--cp-font-display);font-size:34px;line-height:1">Freitags-Zocken steht!</span>
+              <span style="font-weight:600">4 Teams à 2, Lucky Wheel (verdeckt), 6 Spiele. Die Terminumfrage läuft ab jetzt.</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="flex:1;min-width:200px;height:52px;box-sizing:border-box;display:flex;align-items:center;padding:0 14px;border-radius:12px;border:var(--cp-bw) solid var(--cp-ink);background:var(--cp-surface);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:14px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">compies.app/s/freitags-zocken-7Kq2mX9</span><span style="display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-ink);background:var(--cp-on-primary);color:var(--cp-primary);font-weight:800"><dc-import name="Icon" icon="copy" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Link kopieren</span></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:{{ cols3 }};gap:10px"><sc-for list="{{ summary }}" as="s" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">{{ s.k }}</span><b>{{ s.v }}</b></div></sc-for></div>
+        </sc-if>
+      </div>
+      <div style="flex:none;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px {{ footX }};border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+        <button type="button" onClick="{{ prev }}" style="display:inline-flex;align-items:center;gap:6px;height:48px;padding:0 14px;border:0;background:transparent;font-weight:700;cursor:pointer;opacity:{{ prevOp }}"><dc-import name="Icon" icon="chevron-left" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Zurück</button>
+        <button type="button" onClick="{{ next }}" style="display:inline-flex;align-items:center;gap:6px;height:52px;padding:0 24px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800;cursor:pointer">{{ nextLabel }}<dc-import name="Icon" icon="chevron-right" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+      </div>
+    </div>
+    <sc-if value="{{ showInfo }}">
+      <sc-if value="{{ mob }}"><div style="position:absolute;inset:0;z-index:40;background:var(--cp-overlay)"></div></sc-if>
+      <aside aria-label="Erklärung" style="position:{{ iPos }};left:0;right:0;bottom:0;height:{{ iH }};width:{{ iW }};flex:none;z-index:45;box-sizing:border-box;border-left:{{ iBl }};border-top:{{ iBt }};border-radius:{{ iR }};background:var(--cp-surface);display:flex;flex-direction:column;box-shadow:{{ iSh }}">
+        <sc-if value="{{ mob }}"><span style="align-self:center;width:44px;height:5px;border-radius:999px;background:var(--cp-line-soft);margin-top:8px"></span></sc-if>
+        <div style="display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:2px solid var(--cp-line-soft)"><dc-import name="Icon" icon="circle-help" size="{{ 18 }}" hint-size="18px,18px"></dc-import><span style="flex:1;font-family:var(--cp-font-display);font-size:22px;line-height:1.1">{{ info.t }}</span><sc-if value="{{ mob }}"><span aria-label="Schließen" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="x" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if></div>
+        <div lang="de" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:{{ sbw }};padding:14px 16px 18px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.5;hyphens:auto">
+          <div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:18px">So läuft’s</b><span style="text-wrap:pretty">{{ info.how }}</span></div>
+          <sc-if value="{{ info.opt }}"><div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:18px">Option „Rad verdecken“</b><span style="text-wrap:pretty">{{ info.opt }}</span></div></sc-if>
+          <sc-if value="{{ info.good }}"><div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:18px">Gut für</b><span style="text-wrap:pretty">{{ info.good }}</span></div></sc-if>
+          <sc-if value="{{ info.warn }}"><div style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface-2)"><b style="display:flex;align-items:center;gap:6px;font-family:var(--cp-font-display);font-weight:400;font-size:18px"><dc-import name="Icon" icon="triangle-alert" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Achtung</b><span style="text-wrap:pretty">{{ info.warn }}</span></div></sc-if>
+          <div style="display:flex;flex-direction:column;gap:8px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:18px">Beispiel</b><sc-for list="{{ info.ex }}" as="e" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:flex-start"><span style="flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-paper-2);font-size:11px;font-weight:800">{{ e.i }}</span><span style="text-wrap:pretty">{{ e.t }}</span></div></sc-for></div>
+        </div>
+      </aside>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sPoll }}">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ pollKicker }}</span><span style="font-family:var(--cp-font-display);font-size:{{ h1 }};line-height:1">{{ pollTitle }}</span></div>
+      <sc-if value="{{ pollMobHost }}"><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700;font-size:14px"><dc-import name="Icon" icon="calendar-check" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Festlegen</span></sc-if>
+    </div>
+    <sc-if value="{{ pollOpen }}">
+      <div style="display:flex;gap:10px;align-items:center;padding:10px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-info);color:var(--cp-on-info)"><dc-import name="Icon" icon="lock" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><span style="font-size:14px;text-wrap:pretty">Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench, Tribüne und Chat.</span></div>
+      <div style="display:grid;grid-template-columns:{{ slotCols }};gap:12px">
+        <sc-for list="{{ pollSlots }}" as="p" hint-placeholder-count="4">
+          <div style="position:relative;display:flex;flex-direction:column;gap:10px;padding:16px 14px 14px;border:{{ p.bd }};border-radius:14px;background:var(--cp-surface);box-shadow:{{ p.sh }}">
+            <sc-if value="{{ p.best }}"><span style="position:absolute;top:-12px;left:12px;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px;font-weight:800"><dc-import name="Icon" icon="sparkles" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Bester Termin</span></sc-if>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b>{{ p.day }}</b><span style="font-family:var(--cp-font-num);font-size:24px;line-height:1">{{ p.time }}</span></div>
+            <div style="display:flex;height:10px;border-radius:999px;border:1.5px solid var(--cp-line);overflow:hidden;background:var(--cp-paper-2)"><span style="width:{{ p.yW }};background:var(--cp-success);color:var(--cp-on-success)"></span><span style="width:{{ p.mW }};background:var(--cp-warning);color:var(--cp-on-warning)"></span></div>
+            <span style="font-size:12px"><b>{{ p.y }} Ja</b>, {{ p.m }} Wenn nötig, {{ p.n }} Nein</span>
+            <div role="radiogroup" aria-label="{{ p.aria }}" style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ p.opts }}" as="o" hint-placeholder-count="3"><span role="radio" aria-checked="{{ o.on }}" style="display:flex;align-items:center;justify-content:center;gap:4px;height:40px;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-size:12px;font-weight:700"><dc-import name="Icon" icon="{{ o.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import>{{ o.n }}</span></sc-for></div>
+            <sc-if value="{{ p.hostPick }}"><span style="display:flex;align-items:center;justify-content:center;gap:6px;height:40px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ p.hpBg }};box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="calendar-check" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Diesen festlegen</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <b>Wer kann wann?</b>
+        <div style="overflow-x:auto;scrollbar-width:none;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+          <div style="display:grid;grid-template-columns:{{ mxCols }};min-width:{{ mxMin }}">
+            <span style="padding:8px 12px;border-bottom:2px solid var(--cp-line-soft)"></span>
+            <sc-for list="{{ mxHead }}" as="h" hint-placeholder-count="4"><span style="padding:8px 4px;border-bottom:2px solid var(--cp-line-soft);text-align:center;font-size:12px;font-weight:800;line-height:1.2">{{ h }}</span></sc-for>
+            <sc-for list="{{ mxRows }}" as="r" hint-placeholder-count="8">
+              <span style="display:flex;align-items:center;gap:8px;padding:5px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-size:13px;font-weight:{{ r.w }}"><dc-import name="Avatar" who="{{ r.n }}" size="{{ 24 }}" dot="{{ false }}" hint-size="24px,24px"></dc-import>{{ r.l }}</span>
+              <sc-for list="{{ r.c }}" as="c" hint-placeholder-count="4"><span style="display:grid;place-items:center;border-bottom:1.5px solid var(--cp-line-soft)"><span title="{{ c.t }}" style="display:grid;place-items:center;width:26px;height:26px;border-radius:{{ c.r }};border:2px {{ c.bs }} var(--cp-line);background:{{ c.bg }};color:{{ c.fg }}"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import></span></span></sc-for>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ pollSet }}">
+      <div style="display:flex;flex-direction:{{ doneDir }};align-items:center;gap:20px;padding:22px;border:3px solid var(--cp-line);border-radius:20px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <div style="flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:130px;height:130px;border-radius:20px;border:3px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);line-height:1;box-shadow:var(--cp-shadow-sm)"><span style="font-weight:800;font-size:14px;text-transform:uppercase">Sa, Okt</span><span style="font-family:var(--cp-font-num);font-size:56px">25</span><span style="font-family:var(--cp-font-num);font-size:18px">20:30</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0">
+          <span style="font-family:var(--cp-font-display);font-size:30px;line-height:1">Samstag, 25. Oktober, 20:30 Uhr</span>
+          <span style="color:var(--cp-ink-2);text-wrap:pretty">Alle haben eine Push-Nachricht bekommen. 1 Stunde vorher erinnern wir nochmal.</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800"><dc-import name="Icon" icon="download" size="{{ 18 }}" hint-size="18px,18px"></dc-import>In den Kalender (.ics)</span><sc-if value="{{ isHost }}"><span style="display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700"><dc-import name="Icon" icon="calendar" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Verschieben</span></sc-if></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;padding:12px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-success);color:var(--cp-on-success)"><dc-import name="Icon" icon="lock-open" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><span style="flex:1;font-size:14px;text-wrap:pretty"><b>Teamwahl ist offen.</b> Zieh dich selbst in ein Team und gib ein Wort für den Teamnamen ab.</span><span style="display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:14px">Zum Spielbrett<dc-import name="Icon" icon="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></div>
+    </sc-if>
+  </div>
+  <sc-if value="{{ pollModal }}">
+    <div style="position:absolute;inset:0;z-index:50;background:var(--cp-overlay);display:flex;align-items:{{ sheetAlign }};justify-content:center;padding:{{ sheetOuter }}">
+      <div role="dialog" aria-label="{{ mTitle }}" style="width:100%;max-width:480px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ sheetR }};background:var(--cp-surface);box-shadow:var(--cp-shadow-modal)">
+        <div style="display:flex;align-items:center;gap:12px"><span style="flex:none;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="{{ mIcon }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import></span><span style="flex:1;font-family:var(--cp-font-display);font-size:28px;line-height:1">{{ mTitle }}</span></div>
+        <sc-if value="{{ mConfirm }}">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:3px solid var(--cp-focus);border-radius:14px"><b style="flex:1">Sa 25.10., 20:30 Uhr</b><span style="font-size:13px">7 Ja, 1 Wenn nötig</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:14px"><span style="display:flex;gap:8px"><dc-import name="Icon" icon="bell-ring" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Alle 9 bekommen eine Push-Nachricht.</span><span style="display:flex;gap:8px"><dc-import name="Icon" icon="lock-open" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Die Teamwahl öffnet sofort.</span><span style="display:flex;gap:8px"><dc-import name="Icon" icon="clock" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Erinnerung 1 Stunde vorher.</span></div>
+        </sc-if>
+        <sc-if value="{{ mMove }}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="flex:1 1 180px;height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;border:3px solid var(--cp-focus);background:var(--cp-surface);font-weight:600"><dc-import name="Icon" icon="calendar" size="{{ 16 }}" hint-size="16px,16px"></dc-import>So 26.10.2026</span><span style="flex:0 1 130px;height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-num)"><dc-import name="Icon" icon="clock" size="{{ 16 }}" hint-size="16px,16px"></dc-import>18:00</span></div>
+          <span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Alle werden benachrichtigt und bekommen eine neue Kalenderdatei. Die Teams bleiben, wie sie sind.</span>
+          <span style="align-self:flex-start;font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:3px">Lieber neue Umfrage starten</span>
+        </sc-if>
+        <span style="display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800">{{ mCta }}</span>
+        <span style="align-self:center;font-weight:700;font-size:14px;padding:6px">Abbrechen</span>
+      </div>
+    </div>
+  </sc-if>
+</sc-if>
+
+</dc-import>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KEY='compies-app-B';
+const STEPS=[['name','Name'],['format','Format'],['games','Anzahl Spiele'],['points','Punktetabelle'],['mode','Auswahlmodus'],['pool','Spielepool'],['tie','Tiebreaker-Pool'],['date','Termin']];
+const SCR=[
+ {k:'create',no:'05',n:'Session erstellen',st:[['name','1 Name'],['format','2 Format: Teams'],['ffa','2 Format: Jeder gegen jeden'],['games','3 Spiele'],['points','4 Punkte'],['custom','4 Eigene Tabelle (Fehler)'],['mode','5 Lucky Wheel'],['pickban','5 Pick & Ban + Info'],['loser','5 Loser-Modi noch gesperrt'],['pool','6 Spielepool'],['tie','7 Tiebreaker'],['date','8 Termin'],['done','Fertig']],notes:['Geführter Stepper in 8 Schritten. Desktop: Schrittliste links (bereits erledigte Schritte anklickbar), Formular Mitte, Info-Sheet rechts bei Format und Auswahlmodus. Mobil: Fortschrittsbalken, Info als Bottom-Sheet über das (?) an jeder Option.','Info-Sheet zeigt immer die gerade gewählte Option: So läuft’s, Gut für, Achtung (Copy aus Brief §17) plus ein Beispiel-Durchlauf.','Turnierbaum und Liga sind [Post-1.0]: als „Bald verfügbar“ gesperrt, gestrichelt, per Pfeiltasten übersprungen. Loser’s Pick und Loser’s Advantage sind 1.0, kommen aber später; bis dahin derselbe gesperrte Zustand.','Team-Grenzen: 2 bis 8 Teams, max. 6 pro Team, max. 24 in Teams. Plus-Button wird bei der Grenze aria-disabled mit Grund als Tooltip.','Pool-Warnung nur für den Host, blockiert nie. Rechnung: Spiele + alle möglichen Vetos (bzw. Bans bei Pick & Ban).','Rad verdecken gibt es nur bei Lucky Wheel. Bei Loser’s Advantage ist die Option weg, nicht nur gesperrt (Erklärung im Info-Sheet).']},
+ {k:'poll',no:'08',n:'Terminumfrage',st:[['vote','Abstimmen (Spielerin)'],['voted','Abgestimmt (Spielerin)'],['host','Host-Ansicht'],['confirm','Host: festlegen'],['set','Termin steht + .ics'],['move','Host: verschieben']],notes:['Alle sehen, wer was gewählt hat: Karten pro Termin plus Matrix „Wer kann wann?“. Antworten unterscheiden sich in Form und Farbe: Ja = Haken auf Grün, Wenn nötig = Strich auf Orange, Nein = Kreuz, Offen = gestrichelter Kreis.','Bester Termin = meiste Ja, dann meiste Wenn nötig, dann der früheste. Nur Vorschlag, bestätigt wird vom Host.','Festlegen schickt Push an alle, öffnet die Teamwahl und plant die Erinnerung 1 Stunde vorher. Danach: .ics-Download für alle.','Verschieben: neuer Termin direkt oder neue Umfrage. Alle werden erneut benachrichtigt, Teams bleiben.','Mobil: Matrix scrollt horizontal; Host-Aktion „Festlegen“ sitzt im Kopf statt im Dock.']}
+];
+const INFO={
+ ffa:{t:'Jeder gegen jeden',how:'Jede Person spielt für sich. Nach jedem Spiel bringst du als Host alle in die richtige Reihenfolge, und die Punktetabelle verteilt die Punkte. Wer am Ende die meisten Punkte hat, gewinnt.',good:'Battle-Royales, Rennspiele, Party- und Brettspiele mit 3 bis 8 Leuten.',warn:'Bei vielen Spielern lohnt sich eine Punktetabelle, die gute Plätze stärker belohnt.',ex:['Fünf Leute, Mario Kart 8.','Nach dem Rennen ziehst du Bea auf 1, Olli auf 2, Kitty auf 3 und so weiter.','Mit „Linear“ gibt’s 4, 3, 2, 1 und 0 Punkte. Nach 6 Spielen gewinnt, wer vorne liegt.']},
+ teams:{t:'Teams',how:'Du legst fest, wie viele Teams es gibt (2 bis 8). Alle Teams müssen gleich groß sein (max. 6 pro Team). Sobald der Termin steht, ziehen sich die Spieler selbst in ein Team. Jedes Mitglied steuert ein Wort zum Teamnamen bei. Mit dem Start sind die Teams gesperrt.',good:'1v1 bis 6v6, z. B. Counter-Strike 2 im 2v2.',warn:'Ein Spiel startet nur, wenn alle Teams gleich groß sind. Fehlt jemand, kannst du Leute von der Bench nachziehen.',ex:['4 Teams à 2. Kitty und Larsi ziehen sich ins rote Team.','Kitty tippt „Wilde“, Larsi „Gurken“: Das Team heißt jetzt Wilde Gurken.','Dem Nacht-Team fehlt einer? Du holst Tom von der Bench, dann kann’s losgehen.']},
+ admin:{t:'Admin-Wahl',how:'Du als Host bestimmst jedes Spiel selbst. Kein Zufall, keine Vetos.',good:'Abende mit festem Programm.',warn:'Du kannst übrigens in jedem Modus jederzeit selbst eingreifen und das nächste Spiel setzen.',ex:['Spiel 1: Du setzt Rocket League.','Spiel 2: Codenames. Der Clip läuft, dann wird gespielt.','Keine Vetos, kein Gemecker. Offiziell jedenfalls.']},
+ wheel:{t:'Lucky Wheel',how:'Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jeder Spieler bringt 1 Veto mit, im Team werden sie zusammengelegt, und jedes Mitglied darf sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.',opt:'Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.',good:'Maximale Spannung und Chaos.',warn:'Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon.',ex:['Das Rad bleibt auf „Mario Kartoffel“ stehen und verwandelt sich: Trackmania.','Clip läuft. Larsi hält Veto gedrückt, Olli auch. Keiner weiß vom anderen.','Nach 60 Sekunden: beide Vetos aufgedeckt, beide verbraucht. Trackmania fliegt, es wird neu gedreht.']},
+ pickban:{t:'Pick & Ban',how:'Wie das Map-Veto in Counter-Strike. Ein Münzwurf (Compibert-Kopf oder Compibert-Schwanz) entscheidet, wer anfängt. Jede Partei bekommt so viele Bans, wie sie Mitglieder hat. Gebannt wird abwechselnd: A bannt 1, B bannt 2, A bannt 2 und so weiter, bis alle Bans weg sind. Danach wird nach demselben Muster gepickt. Mit dem Picken beginnt die Partei, die nicht mit dem Bannen angefangen hat. Die Reihenfolge der Picks ist die Spielreihenfolge.',good:'Taktische Abende, bei denen jede Partei mitbestimmen will.',warn:'Es läuft keine Uhr. Du sorgst dafür, dass es vorangeht. Der Pool muss mindestens so groß sein wie alle Bans plus die Anzahl Spiele.',ex:['2 gegen 2, also 2 Bans pro Team. Die Münze zeigt Kopf: Rot fängt an.','Bans: Rot 1, Blau 2, Rot 1. Alle 4 Bans weg.','Picks: Blau 1, Rot 2, Blau 2 … bis 6 Spiele stehen. So wird auch gespielt.']},
+ loserpick:{t:'Loser’s Pick',how:'Das erste Spiel bestimmt das Glücksrad. Danach darf immer die Partei auf dem letzten Platz das nächste Spiel aussuchen. Die anderen können innerhalb von 60 Sekunden ein Veto einlegen, dann muss neu gewählt werden. Teilen sich mehrere den letzten Platz, entscheidet das Glücksrad.',good:'Aufholjagden. Wer hinten liegt, spielt sein Lieblingsspiel.',warn:'Vetos funktionieren wie beim Lucky Wheel.',ex:['Spiel 1 dreht das Rad: Rocket League.','Käse Turbo wird Letzter und wählt Overcooked 2. Nacht Eulen legt Veto ein.','Käse Turbo wählt nochmal: Codenames. Diesmal kein Veto.']},
+ loseradv:{t:'Lucky Wheel – Loser’s Advantage',how:'Wie Lucky Wheel, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.',good:'Zufall mit einem kleinen Vorteil für die, die hinten liegen.',warn:'Das Rad kann hier nicht verdeckt werden, sonst wüsste niemand, was er bannt.',ex:['Spiel 1: normaler Dreh, kein Ban.','Vor Spiel 2 bannt Käse Turbo als Letzter GeoGuessr vom Rad.','Sanne dreht, danach 60 Sekunden für Vetos wie gewohnt.']},
+ tie:{t:'Tiebreaker',how:'Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht.',good:'',warn:'',ex:['Nach 6 Spielen: Wilde Gurken Bande und Nacht Eulen haben je 15 Punkte.','Das Tiebreaker-Rad dreht: Gang Beasts. Nur diese zwei Teams spielen.','Nacht Eulen gewinnt Spiel 7 und damit die Session.']}
+};
+const G=(title,players,fmt,o)=>Object.assign({title,players,fmt},o||{});
+class Component extends DCLogic {
+  state={s:'create',st:{},vp:'desk',dark:false,embed:false};
+  componentDidMount(){
+    let g={},l={}; try{g=JSON.parse(localStorage.getItem('compies-app')||'{}');l=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+    const q=new URLSearchParams(location.search), n={...this.state,...g,...l};
+    if(q.get('s')) n.s=q.get('s'); if(q.get('st')) n.st={...n.st,[n.s]:q.get('st')}; if(q.get('vp')) n.vp=q.get('vp'); if(q.get('theme')) n.dark=q.get('theme')==='dark'; n.embed=q.get('embed')==='1';
+    if(!SCR.some(x=>x.k===n.s)) n.s='create'; this.setState(n);
+  }
+  save(p){ this.setState(p,()=>{ if(this.state.embed) return; const S=this.state; try{localStorage.setItem('compies-app',JSON.stringify({...JSON.parse(localStorage.getItem('compies-app')||'{}'),vp:S.vp,dark:S.dark}));localStorage.setItem(KEY,JSON.stringify({s:S.s,st:S.st}));}catch(e){} }); }
+  setSt(k,v){ if(this.state.embed&&window.parent!==window){ window.parent.postMessage({cp:'next'},'*'); return; } this.save({st:{...this.state.st,[k]:v}}); }
+  renderVals(){
+    const S=this.state, C=SCR.find(x=>x.k===S.s)||SCR[0], st=S.st[C.k]||C.st[0][0], desk=S.vp!=='mob', mob=!desk;
+    const seg=(arr,cur,set)=>arr.map(([k,n],i)=>({n,on:cur===k,bl:i?'2px solid var(--cp-line)':'0',bg:cur===k?'var(--cp-ink)':'transparent',fg:cur===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>set(k)}));
+    const screens=SCR.map(x=>({no:x.no,n:x.n,on:x.k===C.k,bs:'solid',bg:x.k===C.k?'var(--cp-ink)':'var(--cp-surface)',fg:x.k===C.k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.save({s:x.k})}));
+    const states=C.st.map(([k,n])=>({n,on:k===st,bg:k===st?'var(--cp-primary)':'var(--cp-surface)',fg:k===st?'var(--cp-on-primary)':'var(--cp-ink)',pick:()=>this.save({st:{...S.st,[C.k]:k}})}));
+    const v={dark:S.dark,embed:S.embed,fw:desk?1280:390,fh:desk?800:844,screens,states,notes:C.notes,curName:C.no+' '+C.n,curState:C.st.find(x=>x[0]===st)[1],vps:seg([['desk','Desktop 1280'],['mob','Mobil 390']],S.vp,k=>this.save({vp:k})),toggleTheme:()=>this.save({dark:!S.dark}),
+      vp:S.vp,desk,mob,sCreate:C.k==='create',sPoll:C.k==='poll',h1:desk?'40px':'32px',cols2:desk?'1fr 1fr':'1fr',cols3:desk?'repeat(3,1fr)':'1fr'};
+    if(C.k==='create'){
+      const map={name:0,format:1,ffa:1,games:2,points:3,custom:3,mode:4,pickban:4,loser:4,pool:5,tie:6,date:7,done:8}, si=map[st];
+      const order=C.st.map(x=>x[0]), oi=order.indexOf(st);
+      Object.assign(v,{kind:'hub',me:'Sanne',isHost:true,pill:'draft',dock:[],tabs:false,pad:'0',noScroll:true,formPad:desk?'24px 28px':'14px 14px 18px',footX:desk?'28px':'14px',
+        stepList:STEPS.map(([k,n],i)=>({n,cur:i===si?'step':undefined,mark:i<si?'✓':String(i+1),bd:i===si?'var(--cp-bw) solid var(--cp-line)':'var(--cp-bw) solid transparent',bg:i===si?'var(--cp-surface)':'transparent',w:i===si?800:600,c:i>si?'var(--cp-ink-2)':'var(--cp-ink)',dbg:i<si?'var(--cp-ink)':i===si?'var(--cp-primary)':'var(--cp-surface)',dfg:i<si?'var(--cp-paper)':i===si?'var(--cp-on-primary)':'var(--cp-ink)',bar:i<si?'var(--cp-ink)':i===si?'var(--cp-primary)':'transparent'})),
+        stepKicker:si<8?`Schritt ${si+1} von 8`:'Geschafft',stepTitle:si<8?['Wie soll die Session heißen?','Wer gegen wen?','Wie viele Spiele?','Wer kriegt wie viele Punkte?','Wie wird das nächste Spiel bestimmt?','Welche Spiele kommen in den Pool?','Und falls es knapp wird?','Wann zocken wir?'][si]:'Session erstellt',
+        stName:si===0,stFormat:si===1,stGames:si===2,stPoints:si===3,stMode:si===4,stPool:si===5||si===6,stDate:si===7,stDone:si===8,
+        prev:()=>{ if(oi>0) this.setSt('create',order[oi-1]); },prevOp:oi>0?1:.35,next:()=>{ if(st==='done'){ if(S.embed) this.setSt('create','done'); else this.save({s:'poll'}); } else this.setSt('create',order[Math.min(oi+1,order.length-1)]); },nextLabel:st==='date'?'Session erstellen':st==='done'?'Zur Lobby':'Weiter',
+        nameIdeas:['Turnier der Tränen','Die Couch-Olympiade','Snack & Smack']});
+      const ffa=st==='ffa';
+      const fm=[['ffa','Jeder gegen jeden','user','Jede Person ist eine eigene Partei. 2 bis 8.',0],['teams','Teams','users','2 bis 8 gleich große Teams, max. 6 pro Team.',0],['bracket','Turnierbaum','swords','K.-o.-Runden bis zum Finale.',1],['league','Liga','list-ordered','Jeder gegen jeden in Spieltagen.',1]];
+      v.formats=fm.map(([k,n,icon,d,pl])=>{const on=(ffa?'ffa':'teams')===k;return {n,icon,d,on,pl:!!pl,infoBtn:mob&&!pl,bd:on?'3px solid var(--cp-line)':pl?'var(--cp-bw) dashed var(--cp-ink-3)':'var(--cp-bw) solid var(--cp-line)',bg:pl?'var(--cp-paper-2)':'var(--cp-surface)',fg:pl?'var(--cp-ink-2)':'var(--cp-ink)',sh:on?'var(--cp-shadow-card)':'none',ibg:on?'var(--cp-primary)':pl?'transparent':'var(--cp-paper-2)',ibs:pl?'dashed':'solid',ibc:pl?'var(--cp-ink-3)':'var(--cp-line)',off:on?'var(--cp-hot)':''};});
+      v.fmtSteppers=ffa?[{n:'Parteien',d:'2 bis 8 Leute, jede:r für sich',v:'6'}]:[{n:'Anzahl Teams',d:'2 bis 8',v:'4'},{n:'Spieler pro Team',d:'1 bis 6, alle gleich groß',v:'2'}];
+      v.fmtMarks=ffa?[1,2,3,4,5,6]:[1,2,4,8]; v.fmtSum=ffa?'6 Plätze, jede:r spielt für sich':'4 Teams à 2 = 8 Leute in Teams (max. 24)';
+      v.gameDots=['var(--cp-primary)','var(--cp-mint)','var(--cp-pop)','var(--cp-cobalt)','var(--cp-primary)','var(--cp-mint)'];
+      const cu=st==='custom';
+      v.presets=[['Linear','3 / 2 / 1 / 0','Parteien minus Platz. Fair und einfach.',!cu],['Winner takes all','1 / 0 / 0 / 0','Nur der Sieg zählt.',false],['Eigene Tabelle','5 / 3 / 4 / 0','Du legst jede Zeile fest.',cu]].map(([n,vv,d,on])=>({n,v:vv,d,bd:on?'3px solid var(--cp-line)':'var(--cp-bw) solid var(--cp-line)',sh:on?'var(--cp-shadow-card)':'none',on}));
+      const pv=cu?[5,3,4,0]:[3,2,1,0];
+      v.ptsHead=cu?'Eigene Tabelle':'So sieht’s aus bei 4 Teams'; v.ptsErr=cu;
+      v.ptsRows=pv.map((x,i)=>({p:String(i+1),n:i+1+'. Platz',v:String(x),bg:i===0?'var(--cp-primary)':'var(--cp-surface)',fg:i===0?'var(--cp-on-primary)':'var(--cp-ink)',bd:cu&&i===2?'3px solid var(--cp-error-fg)':cu?'var(--cp-bw) solid var(--cp-line)':'2px solid var(--cp-line-soft)',fbg:cu?'var(--cp-surface)':'var(--cp-paper-2)'}));
+      const mk=st==='pickban'?'pickban':'wheel', lockL=st==='loser';
+      v.modes=[['admin','Admin-Wahl','crown','Du bestimmst jedes Spiel selbst.'],['wheel','Lucky Wheel','ferris-wheel','Das Glücksrad entscheidet, danach 60 s für Vetos.'],['pickban','Pick & Ban','swords','Erst bannen, dann picken. Münzwurf entscheidet.'],['loserpick','Loser’s Pick','hand','Wer hinten liegt, sucht aus.'],['loseradv','Lucky Wheel – Loser’s Advantage','scale','Der Letzte bannt vor jedem Dreh.']].map(([k,n,icon,d])=>{const on=k===mk, pl=lockL&&(k==='loserpick'||k==='loseradv');return {n,icon,d,on,pl,infoBtn:mob&&!pl,bd:on?'3px solid var(--cp-line)':pl?'var(--cp-bw) dashed var(--cp-ink-3)':'var(--cp-bw) solid var(--cp-line)',bg:pl?'var(--cp-paper-2)':'var(--cp-surface)',fg:pl?'var(--cp-ink-2)':'var(--cp-ink)',sh:on?'var(--cp-shadow-card)':'none',ibg:on?'var(--cp-primary)':pl?'transparent':'var(--cp-paper-2)',ibs:pl?'dashed':'solid',ibc:pl?'var(--cp-ink-3)':'var(--cp-line)',off:on?'var(--cp-hot)':''};});
+      v.wheelOpts=mk==='wheel';
+      const tie=st==='tie';
+      v.poolWarn=!tie; v.sugHead=tie?'Kurz und knackig: gut für den Tiebreaker':'Passt zu 4 Teams à 2'; v.poolHead=tie?'Tiebreaker-Pool: 3 Spiele':'Im Pool: 9 Spiele'; v.cardCols=desk?'repeat(4,1fr)':'1fr 1fr'; v.rowCols=desk?'1fr 1fr':'1fr';
+      v.sugCards=(tie?[G('Gang Beasts','2–8','Teams',{suggested:true}),G('GeoGuessr','1–8','Beides',{suggested:true,inPool:true}),G('Tetris 99','1–8','Jeder gegen jeden'),G('Stumble Guys','2–8','Beides',{suggested:true})]:[G('Overcooked 2','2–4','Teams',{suggested:true,inPool:true}),G('Rocket League','2–8','Teams',{suggested:true,inPool:true}),G('Halo Infinite','2–8','Teams',{suggested:true}),G('Gang Beasts','2–8','Teams',{suggested:true})]).map(x=>({...x,layout:'card'}));
+      if(mob) v.sugCards=v.sugCards.slice(0,2);
+      v.poolRows=(tie?[G('GeoGuessr','1–8','Beides'),G('Gang Beasts','2–8','Teams'),G('Uno','2–8','Beides')]:[G('Counter-Strike 2','2–10','Teams'),G('Rocket League','2–8','Teams'),G('Mario Kart 8','1–12','Beides'),G('Overcooked 2','2–4','Teams'),G('Codenames','4–8','Teams'),G('Trackmania','1–8','Beides')]).map(x=>({...x,layout:'row',inPool:true}));
+      v.dateModes=[['Terminumfrage','calendar','Alle stimmen ab, du bestätigst.',true],['Direkt festlegen','calendar-check','Du weißt schon, wann.',false]].map(([n,icon,d,on])=>({n,icon,d,on,bd:on?'3px solid var(--cp-line)':'var(--cp-bw) solid var(--cp-line)',sh:on?'var(--cp-shadow-card)':'none',ibg:on?'var(--cp-primary)':'var(--cp-paper-2)'}));
+      v.slots=[['Fr 24.10.2026','20:15'],['Sa 25.10.2026','19:00'],['Sa 25.10.2026','20:30'],['So 26.10.2026','18:00']].map(([d,t])=>({d,t}));
+      v.doneDir=desk?'row':'column'; v.doneCb=desk?190:150;
+      v.summary=[['Format','4 Teams à 2'],['Spiele','6 + Tiebreaker'],['Punkte','Linear 3 / 2 / 1 / 0'],['Modus','Lucky Wheel, verdeckt, 5 s'],['Pool','9 Spiele, Tiebreaker 3'],['Termin','Umfrage, 4 Vorschläge']].map(([k,vv])=>({k,v:vv}));
+      const ik=si===1?(ffa?'ffa':'teams'):si===4?mk:si===6?'tie':null;
+      const showDeskInfo=desk&&ik, showMobInfo=mob&&(st==='pickban');
+      v.showInfo=!!(showDeskInfo||showMobInfo);
+      const I=INFO[ik]||INFO.wheel; v.info={...I,ex:I.ex.map((t,i)=>({t,i:String(i+1)}))};
+      v.sbw=desk?'thin':'none'; Object.assign(v,desk?{iPos:'static',iH:'auto',iW:'340px',iBl:'var(--cp-bw) solid var(--cp-line)',iBt:'0',iR:'0',iSh:'none'}:{iPos:'absolute',iH:'76%',iW:'auto',iBl:'0',iBt:'var(--cp-bw) solid var(--cp-line)',iR:'24px 24px 0 0',iSh:'var(--cp-shadow-modal)'});
+    } else {
+      const host=['host','confirm','set','move'].includes(st)&&st!=='set'?true:st==='set'?false:false, isH=['host','confirm','move'].includes(st);
+      const open=!['set','move'].includes(st)||st==='move'&&false;
+      Object.assign(v,{kind:'session',me:isH?'Sanne':'Kitty',isHost:isH,pill:st==='set'||st==='move'?'set':'poll',dock:isH&&st!=='move'?[['Termin festlegen','calendar-check','p'],['Einladen','link']]:isH?[['Verschieben','calendar'],['Einladen','link']]:[],tabs:true,pad:undefined,noScroll:false,
+        pollKicker:st==='set'||st==='move'?'Termin steht':'Terminumfrage läuft, 7 von 9 haben abgestimmt',pollTitle:st==='set'||st==='move'?'Es ist offiziell.':'Wann zocken wir?',pollOpen:!(st==='set'||st==='move'),pollSet:st==='set'||st==='move',pollMobHost:mob&&isH&&st==='host',
+        slotCols:desk?'repeat(4,1fr)':'1fr',doneDir:desk?'row':'column',pollModal:st==='confirm'||st==='move',mConfirm:st==='confirm',mMove:st==='move',mTitle:st==='confirm'?'Termin festlegen?':'Termin verschieben',mIcon:st==='confirm'?'calendar-check':'calendar',mCta:st==='confirm'?'Festlegen und alle benachrichtigen':'Verschieben und benachrichtigen',
+        sheetAlign:desk?'center':'flex-end',sheetOuter:desk?'24px':'0',sheetR:desk?'20px':'24px 24px 0 0'});
+      const ppl=['Sanne','Kitty','Larsi','Olli','Bea','Mia','Tom','Jo','Chris'];
+      const VOTES={Sanne:'yyym',Kitty:'nyy?',Larsi:'mmyy',Olli:'yny?',Bea:'nmyy',Mia:'??y?',Tom:'yyyn',Jo:'ynmn',Chris:'????'};
+      if(st==='vote') VOTES.Kitty='????';
+      const slotsD=[['Fr 24.10.','20:15'],['Sa 25.10.','19:00'],['Sa 25.10.','20:30'],['So 26.10.','18:00']];
+      const cnt=i=>{let y=0,m=0,n=0;ppl.forEach(p=>{const c=VOTES[p][i];if(c==='y')y++;else if(c==='m')m++;else if(c==='n')n++;});return {y,m,n};};
+      const meK='Kitty';
+      v.pollSlots=slotsD.map(([day,time],i)=>{const c=cnt(i),best=i===2,my=isH?VOTES.Sanne[i]:VOTES[meK][i];return {day,time,best,y:String(c.y),m:String(c.m),n:String(c.n),yW:(c.y/9*100)+'%',mW:(c.m/9*100)+'%',aria:day+' '+time,bd:best?'3px solid var(--cp-focus)':'var(--cp-bw) solid var(--cp-line)',sh:best?'var(--cp-shadow-card)':'none',hostPick:isH&&desk,hpBg:best?'var(--cp-primary)':'var(--cp-surface)',
+        opts:[['y','Ja','check'],['m','Nötig','minus'],['n','Nein','x']].map(([k,n,icon],j)=>({n,icon,on:my===k,bl:j?'2px solid var(--cp-line)':'0',bg:my===k?(k==='y'?'var(--cp-success)':k==='m'?'var(--cp-warning)':'var(--cp-ink)'):'transparent',fg:my===k?(k==='n'?'var(--cp-paper)':'var(--cp-ink)'):'var(--cp-ink-2)'}))};});
+      v.mxHead=slotsD.map(([d,t])=>d+' '+t); v.mxCols=desk?'200px repeat(4,1fr)':'130px repeat(4,72px)'; v.mxMin=desk?'0':'418px';
+      const CELL={y:['check','var(--cp-success)','var(--cp-on-success)','solid','50%','Ja'],m:['minus','var(--cp-warning)','var(--cp-on-warning)','solid','50%','Wenn nötig'],n:['x','var(--cp-surface)','var(--cp-ink)','solid','6px','Nein'],'?':['','transparent','var(--cp-ink)','dashed','50%','Noch offen']};
+      v.mxRows=(desk?ppl:ppl.slice(0,6)).map(p=>({n:p,l:p===(isH?'Sanne':meK)?p+' (du)':p,w:p===(isH?'Sanne':meK)?800:600,c:VOTES[p].split('').map(ch=>{const c=CELL[ch];return {icon:c[0],bg:c[1],fg:c[2],bs:c[3],r:c[4],t:c[5]};})}));
+    }
+    return v;
+  }
+}
+</script>
+</body>
+</html>

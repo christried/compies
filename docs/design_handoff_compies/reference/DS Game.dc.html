@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input,select{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div ref="{{ root }}" data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ dir }}">
+  <dc-import name="DSRail" cur="game" toc="{{ toc }}" mode="{{ mode }}" motion="{{ motion }}" muted="{{ muted }}" wide="{{ wide }}" setLight="{{ setLight }}" setDark="{{ setDark }}" toggleMotion="{{ toggleMotion }}" toggleMute="{{ toggleMute }}" hint-size="260px,100vh"></dc-import>
+
+  <main style="flex:1;min-width:0;width:100%;box-sizing:border-box;max-width:1240px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:88px">
+
+    <section style="display:flex;flex-direction:column;gap:16px;max-width:860px">
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,88px);line-height:.95;text-wrap:balance">Was spielen wir?</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.5;text-wrap:pretty">Block 4: how the next game gets chosen. Game cards and the pool, the five selection modes, the Glücksrad, the 60-second veto window, the coin flip and Pick &amp; Ban. The wheel, veto window, coin and Pick &amp; Ban demos all work. Sound follows the mute switch in the rail.</p>
+    </section>
+
+    <!-- GAME CARD -->
+    <section id="karte" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Game card</h2>
+        <span style="color:var(--cp-ink-2)">One game from the library. The host's uploaded image fills the cover; without one, initials on an accent colour. Stamps show what happened to it this session.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:20px 16px">
+        <sc-for list="{{ cardStates }}" as="c" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:700">{{ c.k }}</span>
+            <dc-import name="GameCard" dc-props="{{ c.props }}" hint-size="100%,200px"></dc-import>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <b style="font-size:16px">Row: lists, side panel, mobile</b>
+          <sc-for list="{{ rowStates }}" as="c" hint-placeholder-count="4"><dc-import name="GameCard" dc-props="{{ c }}" hint-size="100%,60px"></dc-import></sc-for>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Library, pool picker, Pick &amp; Ban board, Loser's Pick. Card in grids, row in lists and on mobile. „Passt“ marks a suggestion for the session's format and player count.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> One stamp at a time. Never hide a banned or vetoed game: dim it, strike it through, keep it in place so everyone can read the history. No ratings, genres or descriptions on the card.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The card is wrapped in a button when it's selectable, with the state in its name („Rocket League, gebannt von Nacht Eulen“). Dimmed states also change the outline to dashed and strike the name.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: card grid with columns of at least 170 px. Mobile: row layout below 480 px, 60 px tall, with the stamp as a chip on the right.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- POOL -->
+    <section id="pool" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Library and pool picker</h2>
+        <span style="color:var(--cp-ink-2)">Step 6 of session setup. Suggestions for the session come first, but nothing is hidden: the host decides.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px;align-items:start">
+        <div style="grid-column:span 2;min-width:0;display:flex;flex-direction:column;gap:14px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px">
+          <div style="position:relative;display:flex;align-items:center">
+            <span style="position:absolute;left:14px;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="search" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+            <label for="lib-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Bibliothek durchsuchen</label>
+            <input id="lib-q" type="search" value="{{ q }}" onInput="{{ onQ }}" placeholder="Spiel suchen" autocomplete="off" style="width:100%;height:48px;box-sizing:border-box;padding:0 14px 0 42px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-size:16px">
+          </div>
+          <div role="radiogroup" aria-label="Filter" style="display:flex;gap:8px;flex-wrap:wrap">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{ f.on }}" onClick="{{ f.pick }}" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:{{ f.bg }};color:{{ f.fg }};font-weight:700;font-size:13px;cursor:pointer"><sc-if value="{{ f.on }}"><dc-import name="Icon" icon="check" size="{{ 14 }}" sw="{{ 3 }}" hint-size="14px,14px"></dc-import></sc-if>{{ f.n }}<span style="font-variant-numeric:tabular-nums;opacity:.8">{{ f.c }}</span></button></sc-for>
+          </div>
+          <sc-if value="{{ hasSug }}">
+            <div style="display:flex;align-items:center;gap:8px"><dc-import name="Icon" icon="sparkles" size="{{ 16 }}" hint-size="16px,16px"></dc-import><b>Passt zu 4 Teams à 2</b></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+              <sc-for list="{{ sug }}" as="g" hint-placeholder-count="6"><button type="button" aria-pressed="{{ g.in }}" aria-label="{{ g.aria }}" onClick="{{ g.toggle }}" style="display:block;padding:0;border:0;background:transparent;border-radius:14px;cursor:pointer;text-align:left" style-hover="transform:translate(-1px,-1px)"><dc-import name="GameCard" dc-props="{{ g.p }}" hint-size="100%,190px"></dc-import></button></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasRest }}">
+            <b style="padding-top:4px">{{ restTitle }}</b>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+              <sc-for list="{{ rest }}" as="g" hint-placeholder-count="6"><button type="button" aria-pressed="{{ g.in }}" aria-label="{{ g.aria }}" onClick="{{ g.toggle }}" style="display:block;padding:0;border:0;background:transparent;border-radius:14px;cursor:pointer;text-align:left" style-hover="transform:translate(-1px,-1px)"><dc-import name="GameCard" dc-props="{{ g.p }}" hint-size="100%,190px"></dc-import></button></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noHits }}"><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:18px;border:2px dashed var(--cp-line-soft);border-radius:12px"><b>Kein Spiel gefunden.</b><span style="color:var(--cp-ink-2);font-size:14px">Leg es neu an. Die Bibliothek ist global, alle Hosts profitieren davon.</span><span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;margin-top:4px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Neues Spiel anlegen</span></div></sc-if>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;min-width:0">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b style="font-size:16px">Spielepool</b><span style="font-size:13px;font-weight:700;font-variant-numeric:tabular-nums">{{ poolN }} Spiele</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="position:relative;height:14px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-paper-2);overflow:hidden"><span style="position:absolute;left:0;top:0;bottom:0;width:{{ poolPct }};background:{{ poolC }}"></span></div>
+            <span style="font-size:13px;color:var(--cp-ink-2)">{{ poolNeedTxt }}</span>
+          </div>
+          <sc-if value="{{ poolLow }}">
+            <div role="status" style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface)">
+              <span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-warning);color:var(--cp-on-warning)"><dc-import name="Icon" icon="triangle-alert" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span>
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Nur du siehst das</span><span style="font-size:13px;line-height:1.4;text-wrap:pretty">{{ poolWarn }}</span></div>
+            </div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ poolList }}" as="g" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:8px;min-height:40px;padding:0 4px 0 10px;border:2px solid var(--cp-line);border-radius:10px">
+                <span style="flex:1;min-width:0;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.n }}</span>
+                <button type="button" onClick="{{ g.rm }}" aria-label="{{ g.aria }}" style="display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:999px;background:transparent;cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="x" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button>
+              </div>
+            </sc-for>
+            <sc-if value="{{ poolEmpty }}"><span style="padding:12px;border:2px dashed var(--cp-line-soft);border-radius:10px;color:var(--cp-ink-2);font-size:14px">Noch leer. Tipp auf ein Spiel, um es hinzuzufügen.</span></sc-if>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Main pool and tiebreaker pool (same component, separate list). The meter compares the pool with what the mode can burn: games plus every possible veto, ban, and Loser's Advantage ban.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never filter out unsuitable games automatically or block saving. The pool warning is for the host only, never a modal, and never shown to players.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Cards are toggle buttons (<code style="font-family:var(--cp-font-mono)">aria-pressed</code>). Filters are a radio group. The pool count and warning are polite live regions, so adding a game is confirmed without a toast.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: library left, pool tray right, sticky. Mobile: the tray becomes a bar at the bottom („9 Spiele, 5 fehlen“) that opens the list as a bottom sheet.</div>
+      </div>
+    </section>
+
+    <!-- MODE -->
+    <section id="modus" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Selection mode</h2>
+        <span style="color:var(--cp-ink-2)">Step 5 of setup. One mode per session. In every mode the host can set the next game directly. The two Loser modes are part of 1.0 but built last. Until they ship, they use the locked „Bald verfügbar“ state shown here.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div role="radiogroup" aria-label="Auswahlmodus" onKeyDown="{{ modeKey }}" style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ modes }}" as="m" hint-placeholder-count="5">
+              <button type="button" role="radio" aria-checked="{{ m.on }}" aria-disabled="{{ m.planned }}" aria-describedby="{{ m.desc }}" tabindex="{{ m.ti }}" onClick="{{ m.pick }}" style="display:flex;align-items:center;gap:14px;min-height:72px;padding:12px 16px;border-radius:14px;box-sizing:border-box;border:{{ m.bd }};background:{{ m.bg }};box-shadow:{{ m.sh }};transform:{{ m.tf }};color:{{ m.fg }};cursor:{{ m.cur }};text-align:left;transition:transform 120ms cubic-bezier(.2,0,0,1)">
+                <span style="flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:2px {{ m.ibs }} {{ m.ibc }};background:{{ m.ibg }}"><dc-import name="Icon" icon="{{ m.icon }}" size="{{ 22 }}" offset="{{ m.off }}" hint-size="22px,22px"></dc-import></span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><b style="font-size:16px">{{ m.n }}</b><span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ m.d }}</span></span>
+                <sc-if value="{{ m.live }}"><span style="flex:none;display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:999px;border:2px solid var(--cp-line);font-size:12px;font-weight:700;white-space:nowrap">{{ m.v }}</span></sc-if><sc-if value="{{ m.planned }}"><span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:999px;border:2px dashed var(--cp-ink-2);color:var(--cp-ink-2);font-size:12px;font-weight:700;white-space:nowrap"><dc-import name="Icon" icon="lock" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Bald verfügbar</span></sc-if>
+              </button>
+            </sc-for>
+          </div>
+          <p id="planned-note" style="margin:0;display:flex;gap:8px;align-items:flex-start;padding:10px 14px;border-radius:12px;border:2px dashed var(--cp-ink-3);font-size:13px;line-height:1.45;color:var(--cp-ink-2);text-wrap:pretty"><span style="flex:none;display:grid;padding-top:1px"><dc-import name="Icon" icon="lock" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span>Loser’s Pick und Loser’s Advantage kommen bald. Sie sind schon sichtbar, damit Hosts wissen, was kommt, lassen sich aber noch nicht wählen.</p>
+          <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+            <div style="display:flex;align-items:flex-start;gap:14px">
+              <button type="button" role="switch" aria-checked="{{ hidden }}" aria-disabled="{{ hideDis }}" aria-labelledby="hw-l" aria-describedby="hw-d" onClick="{{ toggleHidden }}" style="flex:none;position:relative;width:56px;height:32px;padding:0;border-radius:999px;border:2.5px {{ hideTrackStyle }} {{ hideTrackLine }};background:{{ hideTrack }};cursor:{{ hideCur }};box-sizing:border-box"><span style="position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:{{ hideKnob }};border:2px solid {{ hideTrackLine }};box-sizing:border-box;transform:{{ hideX }};transition:transform 140ms cubic-bezier(.2,0,0,1)"></span></button>
+              <div style="display:flex;flex-direction:column;gap:2px"><span id="hw-l" style="font-weight:700;color:{{ hideLc }}">Rad verdecken</span><span id="hw-d" style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ hideHelp }}</span></div>
+            </div>
+            <sc-if value="{{ hideOpts }}">
+              <div role="radiogroup" aria-label="Platzhalter" style="display:flex;gap:8px;flex-wrap:wrap;padding-left:70px">
+                <sc-for list="{{ hideStyles }}" as="h" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{ h.on }}" onClick="{{ h.pick }}" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:{{ h.bg }};color:{{ h.fg }};font-weight:700;font-size:13px;cursor:pointer">{{ h.n }}</button></sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:2px solid var(--cp-line-soft)"><dc-import name="Icon" icon="circle-help" size="{{ 20 }}" hint-size="20px,20px"></dc-import><span style="font-family:var(--cp-font-display);font-size:26px;line-height:1">{{ info.n }}</span></div>
+          <div lang="de" style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;hyphens:auto;-webkit-hyphens:auto;font-size:15px;line-height:1.5">
+            <sc-for list="{{ info.parts }}" as="p" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:19px">{{ p.h }}</b><span style="text-wrap:pretty">{{ p.t }}</span></div></sc-for>
+          </div>
+          <span style="padding:0 18px 16px;font-size:12px;color:var(--cp-ink-2)">Info side sheet content, shown here inline. Copy from the brief, section 17.</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Radio cards when each option needs a sentence and a tag. The tag answers the most common question up front: does this mode have vetoes?</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't hide „Rad verdecken“ when it doesn't apply; disable it and say why. Don't put the long explanation in the card; that's what the side sheet is for.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Radiogroup with roving tabindex and arrow keys. The selected card differs in outline weight, the dot icon offset and its lift, not just fill.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: cards left, explanation in the 420 px side sheet. Mobile: cards full width; the ? on each card opens the explanation as a bottom sheet.</div>
+      </div>
+    </section>
+
+    <!-- WHEEL -->
+    <section id="rad" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Glücksrad</h2>
+        <span style="color:var(--cp-ink-2)">Drawn on the server, spun on every screen at once. Whatever is drawn leaves the wheel. Fill it from the pool above; „Rad verdecken“ comes from the mode settings.</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:14px 16px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface-2)">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700">Ansicht</span>
+          <div role="group" aria-label="Ansicht" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+            <sc-for list="{{ views }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:40px;padding:0 14px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">{{ r.n }}</button></sc-for>
+          </div>
+        </div>
+        <span style="font-size:13px;color:var(--cp-ink-2)">{{ wheelNote }}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:20px;align-items:start">
+        <div style="display:block;padding:34px 18px 24px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+          <dc-import name="GameWheel" style="width:100%" skin="show" spin-sec="{{ spinSec }}" size="{{ 440 }}" hidden="{{ wheelHidden }}" hide-style="{{ hideStyle }}" can-spin="{{ isHost }}" muted="{{ muted }}" motion="{{ motion }}" cb-dir="{{ cbDir }}" games="{{ wheelGames }}" hint-size="100%,560px"></dc-import>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <sc-if value="{{ isHost }}">
+            <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+              <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Host</span><b>Nächstes Spiel direkt setzen</b></div>
+              <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Geht in jedem Modus, jederzeit. Auch der Ausweg, wenn etwas schiefgeht.</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="position:relative;flex:1;min-width:180px;display:flex;align-items:center">
+                  <label for="ov-g" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Spiel wählen</label>
+                  <select id="ov-g" value="{{ ovG }}" onChange="{{ onOv }}" style="appearance:none;-webkit-appearance:none;width:100%;height:44px;box-sizing:border-box;padding:0 40px 0 12px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-size:15px;cursor:pointer"><sc-for list="{{ ovOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.v }}</option></sc-for></select>
+                  <span style="position:absolute;right:12px;display:grid;pointer-events:none"><dc-import name="Icon" icon="chevron-down" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+                </div>
+                <button type="button" onClick="{{ setOv }}" style="height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer" style-active="transform:translate(4px,4px);box-shadow:none">Setzen</button>
+              </div>
+              <sc-if value="{{ hasOvMsg }}"><span role="status" style="font-size:13px;font-weight:700">{{ ovMsg }}</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+              <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Host</span><b id="sd-l">Drehdauer</b></div>
+              <div role="group" aria-labelledby="sd-l" style="display:flex;align-items:center;gap:10px">
+                <button type="button" onClick="{{ spinDown }}" aria-label="Kürzer" aria-disabled="{{ spinMin }}" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:{{ spinDownSh }};color:{{ spinDownC }};cursor:pointer"><dc-import name="Icon" icon="minus" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+                <output aria-live="polite" style="min-width:70px;text-align:center;font-size:28px;line-height:1"><dc-import name="Num" v="{{ spinStr }}" say="{{ spinSay }}" hint-size="60px,28px"></dc-import></output>
+                <button type="button" onClick="{{ spinUp }}" aria-label="Länger" aria-disabled="{{ spinMax }}" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:{{ spinUpSh }};color:{{ spinUpC }};cursor:pointer"><dc-import name="Icon" icon="plus" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+                <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">3 bis 10 Sekunden. Gilt ab dem nächsten Dreh, für alle gleich.</span>
+              </div>
+            </div>
+          </sc-if>
+          <div style="display:grid;gap:10px">
+            <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Lucky Wheel, the first game in Loser's Pick, ties for last place, and the tiebreaker (its own wheel with the tiebreaker pool). Skin: Show-Rad, with bulbs that blink at rest, chase during the spin and flash on the result. Spin length is a host setting: 3 to 10 s, default 5 s, set in setup and changeable any time; the server sends it with the result so every screen stops together.</div>
+            <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never let the client decide the result or shorten the spin for one person. Slice colours are the four accents, never team colours. No sound loop; the ticks come from the actual rotation.</div>
+            <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The wheel is an image with a count; the result is announced in a live region („Das Glücksrad sagt: Rocket League“). With reduced motion it spins once in 1.2 s with no ticks or pointer flick, then shows the result the same way.</div>
+            <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: up to 440 px in the stage. Mobile: full width minus 32 px. Above 12 slices the labels shrink to 12 px and truncate at 16 characters.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VETO -->
+    <section id="veto" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Veto window</h2>
+        <span style="color:var(--cp-ink-2)">60 seconds from the moment a game is set: 30 s clip, then 30 s to decide. Your team sees its own veto right away; everyone else's is revealed at 0:00, all at once. Demo as Kitty, team Wilde Gurken Bande.</span>
+      </div>
+      <div style="padding:20px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <dc-import name="VetoWindow" game="Mario Kart 8" host="{{ isHost }}" motion="{{ motion }}" hint-size="100%,820px"></dc-import>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Lucky Wheel, Loser's Pick, Loser's Advantage and the tiebreaker. Vetoes are pooled per team (one per member), max one per team per game. The button stays reachable while the clip plays (z-index veto 46 above clip 44).</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never leak other teams' vetoes before 0:00: no counters, no sounds, no activity entries. No undo. Never pause the timer for one person; only the host can skip the clip, and the window keeps running.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The timer is <code style="font-family:var(--cp-font-mono)">role="timer"</code>, silent, and announced at 30 s, 10 s and the reveal. The last 10 seconds turn red and the timer pulses on each second (still in reduced motion: colour only). Autoplay blocked: „Ton aktivieren“ in the clip, never a modal.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: clip in the stage, veto bar under it. Mobile: the clip fills the width at the top, team tiles become a 2×2 grid, and the veto button pins to the bottom above the safe area.</div>
+      </div>
+    </section>
+
+    <!-- COIN -->
+    <section id="muenze" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Münzwurf</h2>
+        <span style="color:var(--cp-ink-2)">Decides who bans first in Pick &amp; Ban. Kopf is Compibert's head, Schwanz his rear end.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:28px 18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center">
+            <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px 0 5px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-team-1);color:var(--cp-team-1-ink);font-weight:700;font-size:14px"><dc-import name="TeamMark" team="{{ 1 }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import>Kopf: Wilde Gurken Bande</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px 0 5px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-team-8);color:var(--cp-team-8-ink);font-weight:700;font-size:14px"><dc-import name="TeamMark" team="{{ 8 }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import>Schwanz: Nacht Eulen</span>
+          </div>
+          <dc-import name="Coin3D" style="width:100%" take="bullet" size="{{ 360 }}" motion="{{ motion }}" cb-dir="{{ cbDir }}" on-result="{{ onCoin }}" hint-size="100%,420px"></dc-import>
+          <span style="font-size:14px;color:var(--cp-ink-2);text-align:center;text-wrap:pretty">{{ coinSub }}</span>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Only the start of Pick &amp; Ban, before the first ban. The host throws; everyone sees the same flip at the same time. The sides are assigned before the throw and stay on screen. Take: Zeitlupe. The coin shoots up, nearly freezes at the apex while the camera orbits it once, then drops, lands flat, and the camera snaps to a top view of the result.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No re-throw button for players. Don't use the coin for anything else (ties for last use the wheel). The tail side needs its own illustration; the placeholder must not ship.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The result is announced as text („Kopf! Wilde Gurken Bande bannt zuerst“). Reduced motion: no toss or spin, the coin cross-fades to the result side.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Centre stage on both: a 360 px stage with a 140 px coin on desktop, full width minus 32 px on mobile. The take runs 3.6 s (rise 0.6 s, orbit at the apex 1.6 s, drop and settle 0.8 s, camera to top view 0.6 s), then the result holds 1.5 s before the ban board takes over.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PICK & BAN -->
+    <section id="pickban" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Pick &amp; Ban</h2>
+        <span style="color:var(--cp-ink-2)">Bans first, then picks, in a snake. Two teams of two: two bans each, then three picks. Pick order is play order. No clock. In the demo you act for whichever team is up.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;padding:20px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" aria-label="Reihenfolge">
+          <sc-for list="{{ pbOrder }}" as="o" hint-placeholder-count="7">
+            <span title="{{ o.title }}" style="display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 10px 0 4px;border-radius:999px;border:{{ o.bd }};background:{{ o.bg }};opacity:{{ o.op }};font-weight:800;font-size:13px"><dc-import name="TeamMark" team="{{ o.n }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import>{{ o.k }}<sc-if value="{{ o.done }}"><dc-import name="Icon" icon="check" size="{{ 14 }}" sw="{{ 3 }}" hint-size="14px,14px"></dc-import></sc-if></span>
+            <sc-if value="{{ o.gap }}"><span style="width:14px;height:2px;background:var(--cp-line);margin:0 4px"></span></sc-if>
+          </sc-for>
+          <button type="button" onClick="{{ pbReset }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:0;border-radius:999px;background:transparent;font-size:13px;font-weight:700;cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="rotate-ccw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Zurücksetzen</button>
+        </div>
+        <div aria-live="polite" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background-color:var(--cp-team-{{ pbTeam }});background-image:var(--cp-team-{{ pbTeam }}-pattern)">
+          <dc-import name="TeamMark" team="{{ pbTeam }}" size="{{ 40 }}" hint-size="40px,40px"></dc-import>
+          <span style="min-width:0;padding:4px 12px;border-radius:10px;background:var(--cp-team-{{ pbTeam }});color:var(--cp-team-{{ pbTeam }}-ink);font-family:var(--cp-font-display);font-size:clamp(20px,1.4vw + 12px,28px);line-height:1.15;text-wrap:balance">{{ pbHead }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+          <sc-for list="{{ pbCards }}" as="g" hint-placeholder-count="9"><button type="button" aria-pressed="{{ g.sel }}" aria-disabled="{{ g.dis }}" aria-label="{{ g.aria }}" onClick="{{ g.pick }}" style="display:block;padding:0;border:0;background:transparent;border-radius:14px;cursor:{{ g.cur }};text-align:left"><dc-import name="GameCard" dc-props="{{ g.p }}" hint-size="100%,190px"></dc-import></button></sc-for>
+        </div>
+        <sc-if value="{{ pbActive }}">
+          <div style="display:flex;flex-direction:column;gap:6px;max-width:520px">
+            <button type="button" aria-describedby="pb-hint" aria-disabled="{{ pbNoSel }}" onPointerDown="{{ pbDown }}" onPointerUp="{{ pbUp }}" onPointerLeave="{{ pbUp }}" onPointerCancel="{{ pbUp }}" onKeyDown="{{ pbKd }}" onKeyUp="{{ pbKu }}" onContextMenu="{{ noCtx }}" style="position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;width:100%;height:56px;padding:0 20px;border-radius:999px;box-sizing:border-box;border:{{ pbBtn.bd }};background:{{ pbBtn.bg }};color:{{ pbBtn.fg }};box-shadow:{{ pbBtn.sh }};font-weight:800;font-size:16px;cursor:{{ pbBtn.cur }};touch-action:none;user-select:none;-webkit-user-select:none;text-align:left">
+              <span ref="{{ pbFill }}" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--cp-ink);opacity:.2;transform-origin:left;transform:scaleX(0);pointer-events:none"></span>
+              <span style="position:relative;display:grid"><dc-import name="Icon" icon="{{ pbBtn.icon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+              <span style="position:relative;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pbBtn.label }}</span>
+            </button>
+            <span id="pb-hint" style="font-size:13px;color:var(--cp-ink-2)">Erst ein Spiel antippen, dann gedrückt halten. Wer im Team zuerst bestätigt, gilt.</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ pbDone }}">
+          <div style="display:flex;flex-direction:column;gap:10px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface-2)">
+            <b style="font-family:var(--cp-font-display);font-weight:400;font-size:24px">Spielreihenfolge steht</b>
+            <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ pbPlay }}" as="p" hint-placeholder-count="3"><li style="display:flex;align-items:center;gap:10px"><span style="display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-weight:800">{{ p.i }}</span><b>{{ p.n }}</b><span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--cp-ink-2)">gepickt von <dc-import name="TeamMark" team="{{ p.t }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import>{{ p.tn }}</span></li></sc-for>
+            </ol>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> The order strip is the source of truth: B for ban, P for pick, team mark, done tick. Two parties: 1, then 2 each. Three or more snake back and forth (A, B, C, C, B, A). The team that didn't start banning starts picking.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No timer, no auto-pick. Don't show the hold button to teams that aren't up; they see whose turn it is. Banned games stay on the board, dimmed, so the reasoning stays visible.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Two steps (select, then hold) so a misclick can't ban. The turn banner is a polite live region („Nacht Eulen bannt, 2 von 2“). The hold works with Space/Enter like the veto.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: strip on top, card grid, hold bar under it. Mobile: the strip scrolls sideways with the current step centred, cards switch to rows, and the hold bar pins to the bottom.</div>
+      </div>
+    </section>
+
+    <!-- TURN BANNERS -->
+    <section id="zug" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Turn banners</h2>
+        <span style="color:var(--cp-ink-2)">One sentence at the top of the stage that says who decides right now. Used by Loser's Pick, Loser's Advantage and host overrides.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ banners }}" as="b" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center">
+            <span style="font-size:13px;font-weight:700">{{ b.k }}</span>
+            <div style="display:flex;align-items:center;gap:14px;min-width:0;padding:12px 16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+              <sc-if value="{{ b.team }}"><dc-import name="TeamMark" team="{{ b.n }}" size="{{ 36 }}" hint-size="36px,36px"></dc-import></sc-if>
+              <sc-if value="{{ b.noTeam }}"><span style="flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ b.ibg }};color:{{ b.ifg }}"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if>
+              <span style="flex:1;min-width:0;font-family:var(--cp-font-display);font-size:clamp(18px,1vw + 12px,24px);line-height:1.15;text-wrap:balance">{{ b.t }}</span>
+              <sc-if value="{{ b.host }}"><span style="flex:none;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Nur du siehst das</span></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Any moment where one party or the host holds the decision. The team mark leads when a team decides; an icon leads otherwise.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> One banner at a time, one sentence, no buttons inside (actions live in the dock or the stage). Never blame („ihr seid Letzte“); say what happens.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Polite live region; the change of turn is announced once. Never only the team colour: the name is always in the sentence.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: top of the stage, under the session header. Mobile: same place, 18 px text, the mark shrinks to 28 px.</div>
+      </div>
+    </section>
+
+    <footer style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:var(--cp-bw) solid var(--cp-line);font-size:13px;color:var(--cp-ink-2)">
+      <span>COMPIES Design System, Game and selection</span>
+      <span>Next up: Scoring and communication</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const LIB=[['Counter-Strike 2',2,10,'T'],['Rocket League',2,8,'T'],['Mario Kart 8',1,12,'B'],['Trackmania',1,16,'F'],['Overcooked 2',2,4,'T'],['Gang Beasts',2,8,'B'],['Tetris 99',1,99,'F'],['Codenames',4,8,'T'],['Super Smash Bros.',2,8,'B'],['Fall Guys',1,32,'F'],['Among Us',4,15,'F'],['Catan',3,4,'F'],['GeoGuessr',1,8,'B'],['Uno',2,10,'F'],['Worms Armageddon',2,6,'B'],['Halo Infinite',2,8,'T']];
+const FMT={T:'Teams',F:'Jeder gegen jeden',B:'Beides'};
+const fits=g=>g[2]>=8&&g[3]!=='F';
+const MODES=[
+ ['admin','Admin-Wahl','crown','Du bestimmst jedes Spiel selbst.','Ohne Vetos',[["So läuft's",'Du als Host bestimmst jedes Spiel selbst. Kein Zufall, keine Vetos.'],['Gut für','Abende mit festem Programm.'],['Achtung','Du kannst übrigens in jedem Modus jederzeit selbst eingreifen und das nächste Spiel setzen.']]],
+ ['lucky','Lucky Wheel','ferris-wheel','Das Glücksrad entscheidet, danach 60 s für Vetos.','Mit Vetos',[["So läuft's",'Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Gibt es ein Veto, wird neu gedreht.'],['Option „Rad verdecken“','Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist.'],['Gut für','Maximale Spannung und Chaos.'],['Achtung','Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon.']]],
+ ['pickban','Pick & Ban','swords','Erst bannen, dann picken, im Schlangenmuster.','Bans statt Vetos',[["So läuft's",'Wie das Map-Veto in Counter-Strike. Ein Münzwurf (Compibert-Kopf oder Compibert-Schwanz) entscheidet, wer anfängt. Jede Partei bekommt so viele Bans, wie sie Mitglieder hat. Gebannt wird abwechselnd, danach wird nach demselben Muster gepickt. Die Reihenfolge der Picks ist die Spielreihenfolge.'],['Gut für','Taktische Abende, bei denen jede Partei mitbestimmen will.'],['Achtung','Es läuft keine Uhr. Du sorgst dafür, dass es vorangeht. Der Pool muss mindestens so groß sein wie alle Bans plus die Anzahl Spiele.']]],
+ ['loser','Loser\u2019s Pick','hand','Wer hinten liegt, sucht das nächste Spiel aus.','Mit Vetos',[["So läuft's",'Das erste Spiel bestimmt das Glücksrad. Danach darf immer die Partei auf dem letzten Platz das nächste Spiel aussuchen. Die anderen können innerhalb von 60 Sekunden ein Veto einlegen, dann muss neu gewählt werden. Teilen sich mehrere den letzten Platz, entscheidet das Glücksrad.'],['Gut für','Aufholjagden. Wer hinten liegt, spielt sein Lieblingsspiel.'],['Achtung','Vetos funktionieren wie beim Lucky Wheel.']]],
+ ['la','Lucky Wheel, Loser\u2019s Advantage','scale','Vor jedem Dreh bannt der Letzte ein Spiel vom Rad.','Mit Vetos',[["So läuft's",'Wie Lucky Wheel, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.'],['Gut für','Zufall mit einem kleinen Vorteil für die, die hinten liegen.'],['Achtung','Das Rad kann hier nicht verdeckt werden, sonst wüsste niemand, was er bannt.']]]];
+const PB=['Rocket League','Mario Kart 8','Counter-Strike 2','Overcooked 2','Gang Beasts','Codenames','Trackmania','GeoGuessr','Halo Infinite'];
+const TNM={1:'Wilde Gurken Bande',8:'Nacht Eulen'};
+const snake=(start)=>{ const o=start===1?8:1, steps=[], rem={1:2,8:2}; let cur=start, first=true; while(rem[1]+rem[8]>0){ const take=Math.min(first?1:2,rem[cur]); for(let i=0;i<take;i++) steps.push({k:'ban',t:cur}); rem[cur]-=take; first=false; cur=cur===1?8:1; }
+  let pc=0; cur=o; first=true; while(pc<3){ const take=Math.min(first?1:2,3-pc); for(let i=0;i<take;i++) steps.push({k:'pick',t:cur}); pc+=take; first=false; cur=cur===1?8:1; } return steps; };
+const GAMES=6, VETOS=8, PLANNED=['loser','la'];
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,wide:true,q:'',filter:'all',pool:['Rocket League','Mario Kart 8','Counter-Strike 2','Overcooked 2','Gang Beasts','Codenames','Trackmania','Halo Infinite','GeoGuessr'],sel:'lucky',spinSec:5,hidden:true,hideStyle:'fun',view:'host',ovG:'Codenames',ovMsg:'',coinRot:0,flipping:false,coin:null,pbStart:1,pbStep:0,pbMap:{},pbSel:null,pbHold:false};
+  root=React.createRef(); coinSpin=React.createRef(); coinToss=React.createRef(); coinShadow=React.createRef(); coinRes=React.createRef(); pbFill=React.createRef();
+  componentDidMount(){
+    let m=null,mo=null,mu=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs);
+    this.setState({mode:m,motion:mo,muted:mu==='1',wide:window.innerWidth>=980});
+  }
+  componentWillUnmount(){ window.removeEventListener('resize',this._rs); }
+  componentDidUpdate(){ const m=this.state.mode; if(m&&m!==this._lm){ this._lm=m; document.body.style.background=m==='dark'?'#17121d':'#fff3df'; } }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+  togglePool=n=>this.setState(s=>({pool:s.pool.includes(n)?s.pool.filter(x=>x!==n):s.pool.concat([n])}));
+  flip=()=>{ if(this.state.flipping) return; const tail=Math.random()<.5, rm=this.state.motion==='reduced', cur=this.state.coinRot%360, F=(rm?0:360*6)+(tail?180:0);
+    const sp=this.coinSpin.current, to=this.coinToss.current, sh=this.coinShadow.current; this.setState({flipping:true,coin:null});
+    const end=()=>{ this.setState({coinRot:F%360,flipping:false,coin:tail?'tail':'head',pbStart:tail?8:1,pbStep:0,pbMap:{},pbSel:null},()=>{ const r=this.coinRes.current; r&&!rm&&r.animate([{transform:'scale(.5)',opacity:0},{transform:'scale(1.1)',opacity:1},{transform:'scale(1)'}],{duration:400,easing:'cubic-bezier(.34,1.56,.64,1)'}); }); };
+    if(rm||!sp){ if(sp) sp.animate([{opacity:1},{opacity:0},{opacity:1}],{duration:400}); setTimeout(end,rm?200:0); return; }
+    const D=1600; const a=sp.animate([{transform:`rotateY(${cur}deg)`},{transform:`rotateY(${F}deg)`}],{duration:D,easing:'cubic-bezier(.3,.1,.2,1)',fill:'forwards'});
+    to&&to.animate([{transform:'translateY(0)'},{transform:'translateY(-150px)',offset:.45,easing:'cubic-bezier(.3,0,.7,1)'},{transform:'translateY(0)',offset:.85},{transform:'translateY(-14px)',offset:.93},{transform:'translateY(0)'}],{duration:D,easing:'cubic-bezier(.3,0,.7,1)'});
+    sh&&sh.animate([{transform:'scale(1)',opacity:.25},{transform:'scale(.45)',opacity:.1,offset:.45},{transform:'scale(1)',opacity:.25,offset:.85},{transform:'scale(1)',opacity:.25}],{duration:D});
+    a.onfinish=()=>{ end(); requestAnimationFrame(()=>a.cancel()); }; };
+  pbSteps(){ return snake(this.state.pbStart); }
+  pbHoldStart=()=>{ const S=this.state, st=this.pbSteps()[S.pbStep]; if(!st||!S.pbSel||S.pbHold) return; const el=this.pbFill.current; if(!el) return; this._pa&&this._pa.cancel(); const a=el.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:1000,easing:'linear',fill:'forwards'}); this._pa=a;
+    a.onfinish=()=>{ const S2=this.state, s2=this.pbSteps()[S2.pbStep]; if(!s2||!S2.pbSel) return; const picks=Object.values(S2.pbMap).filter(v=>v.state==='picked').length;
+      this.setState(s=>({pbMap:Object.assign({},s.pbMap,{[s.pbSel]:{state:s2.k==='ban'?'banned':'picked',team:s2.t,order:picks+1}}),pbStep:s.pbStep+1,pbSel:null,pbHold:false}),()=>{ const f=this.pbFill.current; f&&f.animate([{transform:'scaleX(0)'},{transform:'scaleX(0)'}],{duration:1,fill:'forwards'}); }); };
+    this.setState({pbHold:true}); };
+  pbHoldEnd=()=>{ if(!this.state.pbHold) return; const a=this._pa, el=this.pbFill.current; if(a&&el&&a.playState!=='finished'){ const p=Math.min(1,(a.currentTime||0)/1000); a.onfinish=null; a.cancel(); this._pa=el.animate([{transform:`scaleX(${p})`},{transform:'scaleX(0)'}],{duration:200,fill:'forwards'}); } this.setState({pbHold:false}); };
+  renderVals(){
+    const S=this.state, mode=S.mode||'light', dark=mode==='dark', isHost=S.view==='host';
+    const card=(k,props)=>({k,props:Object.assign({players:'2–8',fmt:'Teams'},props)});
+    const cardStates=[card('Default',{title:'Rocket League'}),card('Selected',{title:'Overcooked 2',players:'2–4',selected:true}),card('Suggested',{title:'Codenames',players:'4–8',suggested:true}),card('In pool',{title:'Mario Kart 8',players:'1–12',fmt:'Beides',inPool:true}),card('Banned',{title:'Trackmania',players:'1–16',fmt:'Jeder gegen jeden',state:'banned',team:8}),card('Picked',{title:'Counter-Strike 2',players:'2–10',state:'picked',team:1,order:2}),card('Vetoed',{title:'Gang Beasts',fmt:'Beides',state:'vetoed'}),card('Drawn',{title:'Halo Infinite',state:'drawn'})];
+    const rowStates=[{title:'Rocket League',layout:'row',suggested:true},{title:'Mario Kart 8',players:'1–12',fmt:'Beides',layout:'row',inPool:true},{title:'Trackmania',players:'1–16',fmt:'Jeder gegen jeden',layout:'row',state:'banned',team:8},{title:'Counter-Strike 2',players:'2–10',layout:'row',state:'picked',team:1,order:1}].map(r=>Object.assign({players:'2–8',fmt:'Teams'},r));
+    // library
+    const nq=S.q.toLowerCase().replace(/[^a-z0-9äöü]/g,'');
+    const hit=g=>!nq||g[0].toLowerCase().replace(/[^a-z0-9äöü]/g,'').includes(nq);
+    const passF=g=>S.filter==='all'||(S.filter==='fit'&&fits(g))||(S.filter==='T'&&g[3]!=='F')||(S.filter==='F'&&g[3]!=='T');
+    const list=LIB.filter(g=>hit(g)&&passF(g));
+    const mkG=g=>{ const inn=S.pool.includes(g[0]); return {in:inn,aria:`${g[0]}${inn?', im Pool':''}`,toggle:()=>this.togglePool(g[0]),p:{title:g[0],players:g[1]===g[2]?String(g[1]):`${g[1]}–${g[2]}`,fmt:FMT[g[3]],suggested:fits(g),inPool:inn,selected:false}}; };
+    const sug=list.filter(fits).map(mkG), rest=list.filter(g=>!fits(g)).map(mkG);
+    const cnt=f=>LIB.filter(g=>hit(g)&&(f==='all'||(f==='fit'&&fits(g))||(f==='T'&&g[3]!=='F')||(f==='F'&&g[3]!=='T'))).length;
+    const filters=[['all','Alle'],['fit','Passt'],['T','Teams'],['F','Jeder gegen jeden']].map(([k,n])=>({n,c:String(cnt(k)),on:S.filter===k,bg:S.filter===k?'var(--cp-ink)':'var(--cp-surface)',fg:S.filter===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.setState({filter:k})}));
+    const need=S.sel==='admin'?GAMES:S.sel==='la'?GAMES+VETOS+GAMES-1:GAMES+VETOS;
+    const pn=S.pool.length, low=pn<need;
+    const needWhy=S.sel==='admin'?'6 Spiele':S.sel==='pickban'?'6 Spiele + 8 Bans':S.sel==='la'?'6 Spiele + 8 Vetos + 5 Bans vom Rad':'6 Spiele + 8 Vetos';
+    // modes
+    const modes=MODES.map(([k,n,icon,d,v],i)=>{ const on=S.sel===k, pl=PLANNED.includes(k); return {n,icon,d,v,on,planned:pl,live:!pl,desc:pl?'planned-note':undefined,ti:on?'0':'-1',bd:on?'3px solid var(--cp-line)':pl?'var(--cp-bw) dashed var(--cp-ink-3)':'var(--cp-bw) solid var(--cp-line)',bg:pl?'var(--cp-paper-2)':'var(--cp-surface)',fg:pl?'var(--cp-ink-2)':'var(--cp-ink)',cur:pl?'not-allowed':'pointer',sh:on?'var(--cp-shadow-card)':'none',tf:on?'translate(-2px,-2px)':'none',ibg:on?'var(--cp-primary)':pl?'transparent':'var(--cp-paper-2)',ibs:pl?'dashed':'solid',ibc:pl?'var(--cp-ink-3)':'var(--cp-line)',off:on?'var(--cp-hot)':'',pick:()=>{ if(!pl) this.setState({sel:k}); }}; });
+    const modeKey=e=>{ const m={ArrowDown:1,ArrowRight:1,ArrowUp:-1,ArrowLeft:-1}; if(e.key in m){ e.preventDefault(); const L=MODES.map((x,i)=>i).filter(i=>!PLANNED.includes(MODES[i][0])); const ci=L.indexOf(MODES.findIndex(x=>x[0]===S.sel)), n=L[(ci+m[e.key]+L.length)%L.length]; this.setState({sel:MODES[n][0]}); const b=e.currentTarget.querySelectorAll('[role=radio]'); b[n]&&b[n].focus(); } };
+    const M=MODES.find(x=>x[0]===S.sel);
+    const hideOK=S.sel==='lucky', hideOn=hideOK&&S.hidden;
+    const hideHelp=hideOK?'Spieler sehen nur Platzhalter, bis das Rad stoppt.':S.sel==='la'?'Geht nicht mit Loser\u2019s Advantage: ihr müsst sehen, was ihr bannt.':'Nur bei Lucky Wheel.';
+    // pick & ban
+    const steps=this.pbSteps(), st=steps[S.pbStep], done=!st;
+    const pbOrder=steps.map((x,i)=>({n:x.t,k:x.k==='ban'?'B':'P',title:`${TNM[x.t]} ${x.k==='ban'?'bannt':'pickt'}`,done:i<S.pbStep,bd:i===S.pbStep?'3px solid var(--cp-focus)':'2px solid var(--cp-line)',bg:i===S.pbStep?'var(--cp-surface)':i<S.pbStep?'var(--cp-paper-2)':'var(--cp-surface)',op:i<S.pbStep?.75:1,gap:i<steps.length-1&&steps[i+1].k!==x.k}));
+    const nthOf=(i)=>{ const x=steps[i]; return steps.slice(0,i+1).filter(y=>y.k===x.k&&y.t===x.t).length; };
+    const totOf=(x)=>steps.filter(y=>y.k===x.k&&y.t===x.t).length;
+    const pbTeam=st?st.t:S.pbStart;
+    const pbHead=done?'Alle Bans und Picks sind durch.':`${TNM[st.t]} ${st.k==='ban'?'bannt':'pickt'}, ${nthOf(S.pbStep)} von ${totOf(st)}`;
+    const pbCards=PB.map(n=>{ const m=S.pbMap[n], sel=S.pbSel===n, dis=!!m||done; return {sel,dis,cur:dis?'default':'pointer',aria:`${n}${m?(m.state==='banned'?', gebannt von '+TNM[m.team]:', Pick '+m.order+' von '+TNM[m.team]):''}`,pick:()=>{ if(dis) return; this.setState(s=>({pbSel:s.pbSel===n?null:n})); },
+      p:{title:n,players:'2–8',fmt:'Teams',state:m?m.state:'default',team:m?m.team:1,order:m?m.order:1,selected:sel}}; });
+    const pbBtn=!S.pbSel?{label:st?(st.k==='ban'?'Erst ein Spiel zum Bannen antippen':'Erst ein Spiel zum Picken antippen'):'',icon:st&&st.k==='ban'?'ban':'hand',bd:'var(--cp-bw) dashed var(--cp-ink-3)',bg:'var(--cp-paper-2)',fg:'var(--cp-ink-2)',sh:'none',cur:'not-allowed'}
+      :{label:S.pbHold?'Halten …':`${S.pbSel} ${st.k==='ban'?'bannen':'picken'}`,icon:st.k==='ban'?'ban':'hand',bd:'var(--cp-bw) solid var(--cp-line)',bg:st.k==='ban'?'var(--cp-hot)':'var(--cp-primary)',fg:st.k==='ban'?'var(--cp-on-hot)':'var(--cp-on-primary)',sh:'var(--cp-shadow-btn)',cur:'pointer'};
+    const pbPlay=Object.entries(S.pbMap).filter(([,v])=>v.state==='picked').sort((a,b)=>a[1].order-b[1].order).map(([n,v])=>({i:String(v.order),n,t:v.team,tn:TNM[v.team]}));
+    const banners=[{k:'Loser\u2019s Pick',team:true,n:8,t:'Nacht Eulen liegt hinten und sucht das nächste Spiel aus.'},{k:'Gleichstand hinten',icon:'ferris-wheel',ibg:'var(--cp-primary)',ifg:'var(--cp-on-primary)',t:'Gleichstand auf dem letzten Platz. Das Glücksrad entscheidet.'},{k:'Loser\u2019s Advantage',team:true,n:4,t:'Käse Turbo bannt ein Spiel vom Rad, bevor Sanne dreht.'},{k:'Host greift ein',icon:'crown',ibg:'var(--cp-primary)',ifg:'var(--cp-on-primary)',t:'Sanne hat übernommen. Als Nächstes kommt Codenames.'},{k:'Spiel geht nicht',icon:'triangle-alert',ibg:'var(--cp-warning)',ifg:'var(--cp-on-warning)',host:true,t:'Clip oder Server streikt? Leg Mario Kart 8 zurück aufs Rad und dreh neu.'}].map(b=>Object.assign({team:false,host:false,icon:'',n:1,ibg:'',ifg:''},b,{noTeam:!b.team}));
+    const toc=[['Game card','#karte'],['Library and pool','#pool'],['Selection mode','#modus'],['Glücksrad','#rad'],['Veto window','#veto'],['Münzwurf','#muenze'],['Pick & Ban','#pickban'],['Turn banners','#zug']].map(([n,href])=>({n,href}));
+    return {root:this.root,mode,motion:S.motion,muted:S.muted,wide:S.wide,dir:S.wide?'row':'column',toc,cbDir:dark?'m3b':'m3a',
+      setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,toggleMute:this.toggleMute,
+      cardStates,rowStates,q:S.q,onQ:e=>this.setState({q:e.target.value}),filters,sug,rest,hasSug:sug.length>0,hasRest:rest.length>0,restTitle:sug.length?'Weitere Spiele':'Spiele',noHits:!list.length,
+      poolN:String(pn),poolPct:Math.min(100,pn/need*100).toFixed(1)+'%',poolC:low?'var(--cp-warning)':'var(--cp-success)',poolNeedTxt:low?`${pn} von ${need} nötig (${needWhy})`:`Reicht: ${pn} von ${need} nötig (${needWhy})`,
+      poolLow:low,poolWarn:`Der Pool reicht nicht sicher für ${GAMES} Spiele, wenn alles rausfliegt, was rausfliegen kann. Leg ${need-pn} Spiele nach. Starten kannst du trotzdem.`,
+      poolList:S.pool.map(n=>({n,aria:`${n} aus dem Pool entfernen`,rm:()=>this.togglePool(n)})),poolEmpty:!pn,
+      modes,modeKey,info:{n:M[1],parts:M[5].map(([h,t])=>({h,t}))},
+      hidden:hideOn,hideDis:!hideOK,toggleHidden:()=>{ if(!hideOK) return; this.setState(s=>({hidden:!s.hidden})); },hideTrack:hideOn?'var(--cp-primary)':'var(--cp-paper-2)',hideKnob:hideOn?'var(--cp-ink)':hideOK?'var(--cp-surface)':'var(--cp-paper-2)',hideX:hideOn?'translateX(24px)':'none',hideTrackStyle:hideOK?'solid':'dashed',hideTrackLine:hideOK?'var(--cp-line)':'var(--cp-ink-3)',hideCur:hideOK?'pointer':'not-allowed',hideLc:hideOK?'var(--cp-ink)':'var(--cp-ink-3)',hideHelp,
+      hideOpts:hideOn,hideStyles:[['fun','Erfundene Namen'],['q','„???“']].map(([k,n])=>({n,on:S.hideStyle===k,bg:S.hideStyle===k?'var(--cp-ink)':'var(--cp-surface)',fg:S.hideStyle===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.setState({hideStyle:k})})),
+      views:[['host','Host (Sanne)'],['player','Spielerin (Kitty)']].map(([k,n],i)=>({n,on:S.view===k,bl:i?'2px solid var(--cp-line)':'0',bg:S.view===k?'var(--cp-ink)':'transparent',fg:S.view===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.setState({view:k})})),
+      isHost,wheelHidden:hideOn&&!isHost,hideStyle:S.hideStyle,wheelGames:S.pool.length?S.pool.slice(0,12):['Mario Kart 8'],
+      wheelNote:isHost?(hideOn?'Als Host siehst du immer die echten Namen. Wechsle zu Kitty, um das verdeckte Rad zu sehen.':'Rad offen. Verdecken kannst du es oben im Auswahlmodus (nur Lucky Wheel).'):(hideOn?'Verdeckt: Kitty sieht Platzhalter, bis das Rad stoppt. Nur der Host kann drehen.':'Nur der Host kann drehen. Kitty sieht dasselbe Rad zur selben Zeit.'),
+      ovOpts:S.pool.map(v=>({v})),ovG:S.pool.includes(S.ovG)?S.ovG:(S.pool[0]||''),onOv:e=>this.setState({ovG:e.target.value}),setOv:()=>this.setState(s=>({ovMsg:`Gesetzt: ${s.pool.includes(s.ovG)?s.ovG:s.pool[0]}. Alle sehen „Sanne hat übernommen“, dann startet der Clip.`})),hasOvMsg:!!S.ovMsg,ovMsg:S.ovMsg,
+      coinShadow:this.coinShadow,coinToss:this.coinToss,coinSpin:this.coinSpin,coinRes:this.coinRes,coinRot:S.coinRot,flip:this.flip,flipping:S.flipping,flipBg:S.flipping?'var(--cp-paper-2)':'var(--cp-primary)',flipSh:S.flipping?'none':'var(--cp-shadow-btn)',
+      coinHead:S.flipping?'…':S.coin==='head'?'Kopf!':S.coin==='tail'?'Schwanz!':'Wer fängt an?',coinSub:S.coin==='head'?'Wilde Gurken Bande bannt zuerst. Die Pick-&-Ban-Demo unten startet entsprechend.':S.coin==='tail'?'Nacht Eulen bannt zuerst. Die Pick-&-Ban-Demo unten startet entsprechend.':'Die Seiten stehen vorher fest.',
+      pbOrder,pbTeam,pbHead,pbCards,pbActive:!done,pbDone:done,pbPlay,pbBtn,pbNoSel:!S.pbSel,pbFill:this.pbFill,pbReset:()=>this.setState({pbStep:0,pbMap:{},pbSel:null}),
+      pbDown:e=>{ if(e.button>0) return; this.pbHoldStart(); },pbUp:()=>this.pbHoldEnd(),pbKd:e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); if(!e.repeat) this.pbHoldStart(); } },pbKu:e=>{ if(e.key===' '||e.key==='Enter') this.pbHoldEnd(); },noCtx:e=>e.preventDefault(),
+      banners,spinSec:S.spinSec,spinStr:S.spinSec+' s',spinSay:S.spinSec+' Sekunden',spinMin:S.spinSec<=3,spinMax:S.spinSec>=10,spinDown:()=>this.setState(s=>({spinSec:Math.max(3,s.spinSec-1)})),spinUp:()=>this.setState(s=>({spinSec:Math.min(10,s.spinSec+1)})),spinDownSh:S.spinSec<=3?'none':'var(--cp-shadow-sm)',spinUpSh:S.spinSec>=10?'none':'var(--cp-shadow-sm)',spinDownC:S.spinSec<=3?'var(--cp-ink-3)':'var(--cp-ink)',spinUpC:S.spinSec>=10?'var(--cp-ink-3)':'var(--cp-ink)',
+      onCoin:tail=>this.setState({coin:tail?'tail':'head',pbStart:tail?8:1,pbStep:0,pbMap:{},pbSel:null})};
+  }
+}
+</script>
+</body>
+</html>

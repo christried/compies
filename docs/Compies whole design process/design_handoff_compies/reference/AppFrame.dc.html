@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="position:relative;width:{{ w }}px;height:{{ h }}px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ r }};overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45">
+
+  <sc-if value="{{ hasHeader }}" hint-placeholder-val="{{ true }}">
+    <header style="flex:none;height:{{ hh }};box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);position:relative;z-index:10">
+      <div style="display:flex;align-items:center;gap:8px"><dc-import name="CompibertRig" variant="head" size="{{ logoS }}" still="{{ true }}" hint-size="32px,32px"></dc-import><sc-if value="{{ wordmark }}"><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></sc-if></div>
+      <sc-if value="{{ isSession }}">
+        <sc-if value="{{ desk }}"><span style="width:2px;height:28px;background:var(--cp-line-soft)"></span></sc-if>
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;row-gap:0"><b style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ title }}</b><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:{{ pillBg }};color:{{ pillFg }};font-size:11px;font-weight:800;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:{{ pillDot }};border:1.5px solid var(--cp-line)"></span>{{ pill }}</span></div>
+        <sc-if value="{{ desk }}"><span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</span></sc-if>
+      </sc-if>
+      <sc-if value="{{ isHub }}">
+        <sc-if value="{{ desk }}"><nav aria-label="Hauptnavigation" style="display:flex;gap:2px;margin-left:14px"><sc-for list="{{ hubNav }}" as="t" hint-placeholder-count="4"><span aria-current="{{ t.cur }}" style="display:flex;align-items:center;gap:6px;height:61px;padding:0 11px;box-sizing:border-box;border-bottom:3px solid {{ t.bar }};color:{{ t.c }};font-weight:{{ t.w }};font-size:14px"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 16 }}" offset="{{ t.off }}" hint-size="16px,16px"></dc-import>{{ t.n }}<sc-if value="{{ t.soon }}"><span title="Baustelle" style="flex:none;width:16px;height:10px;border-radius:2px;border:1.5px solid #151515;background:repeating-linear-gradient(-45deg,#ff4f4f 0 3px,#fffdf8 3px 6px)"></span></sc-if></span></sc-for></nav></sc-if>
+        <span style="flex:1"></span>
+        <sc-if value="{{ deskCreate }}"><span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Session erstellen</span></sc-if>
+      </sc-if>
+      <sc-if value="{{ isBare }}"><span style="flex:1"></span></sc-if>
+      <span aria-label="Ton" style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="{{ soundIcon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+      <sc-if value="{{ hasMe }}"><dc-import name="Avatar" who="{{ me }}" size="{{ 32 }}" host="{{ crown }}" hint-size="32px,32px"></dc-import></sc-if>
+    </header>
+  </sc-if>
+
+  <sc-if value="{{ hasBanner }}"><div role="{{ bannerRole }}" style="flex:none;position:relative;z-index:9;display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:6px 14px;box-sizing:border-box;border-bottom:var(--cp-bw) solid var(--cp-line);background:{{ bannerBg }};color:{{ bannerFg }};font-weight:700;font-size:14px;text-align:center;text-wrap:pretty"><dc-import name="Icon" icon="{{ bannerIcon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import><span>{{ banner }}</span></div></sc-if>
+
+  <div style="flex:1;min-height:0;display:flex">
+    <div style="flex:1;min-width:0;overflow-y:{{ ovf }};scrollbar-width:{{ sbw }};padding:{{ pad }};box-sizing:border-box;display:flex;flex-direction:column">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">{{ children }}</div>
+      <sc-if value="{{ hasBottom }}">
+        <div style="position:sticky;bottom:{{ dockB }};z-index:30;margin-top:16px;display:flex;align-items:center;justify-content:center;gap:12px;pointer-events:none">
+          <sc-if value="{{ deskEmote }}"><div role="toolbar" aria-label="Emotes" style="pointer-events:auto;margin-right:auto;display:flex;gap:6px;padding:6px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)"><sc-for list="{{ emotes }}" as="e" hint-placeholder-count="4"><span aria-label="{{ e.n }}" title="{{ e.n }}" style="position:relative;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;opacity:{{ e.op }}"><img src="{{ e.src }}" alt="" width="40" height="40" style="display:block"></img><sc-if value="{{ e.cd }}"><span style="position:absolute;inset:0;border-radius:50%;border:3px solid var(--cp-line);border-right-color:transparent;border-bottom-color:transparent;transform:rotate(-20deg)"></span></sc-if></span></sc-for></div></sc-if>
+          <sc-if value="{{ deskDock }}"><div role="toolbar" aria-label="Host-Steuerung" style="pointer-events:auto;display:flex;align-items:center;gap:8px;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);white-space:nowrap">
+            <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+            <sc-for list="{{ dockBtns }}" as="b" hint-placeholder-count="2"><span data-next="{{ b.nx }}" style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) {{ b.bs }} {{ b.bc }};background:{{ b.bg }};color:{{ b.fg }};box-shadow:{{ b.sh }};font-weight:700;font-size:14px"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ b.n }}</span></sc-for>
+            <span aria-label="Mehr" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px;border-radius:999px;background:{{ moreBg }};color:{{ moreFg }};font-weight:700;font-size:14px"><dc-import name="Icon" icon="ellipsis" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mehr</span>
+          </div></sc-if>
+          <sc-if value="{{ deskEmote }}"><span style="margin-left:auto;width:1px"></span></sc-if>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ showPanel }}">
+      <aside aria-label="Seitenleiste" style="flex:none;width:340px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);display:flex;flex-direction:column">
+        <div role="tablist" style="flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--cp-line-soft)">
+          <sc-for list="{{ pTabs }}" as="t" hint-placeholder-count="4"><span role="tab" aria-selected="{{ t.on }}" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-bottom:3px solid {{ t.bar }};margin-bottom:-2px;color:{{ t.c }};font-weight:{{ t.w }};font-size:12px"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 18 }}" offset="{{ t.off }}" hint-size="18px,18px"></dc-import>{{ t.n }}<sc-if value="{{ t.hasBadge }}"><span style="position:absolute;top:6px;right:14px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">{{ t.badge }}</span></sc-if></span></sc-for>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <sc-if value="{{ pHead }}"><span style="align-self:center;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--cp-paper-2);font-size:11px;font-weight:800;color:var(--cp-ink-2)">{{ pHead }}</span></sc-if>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+            <sc-if value="{{ r.sec }}"><b style="margin-top:6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-ink-2)">{{ r.sec }}</b></sc-if>
+            <sc-if value="{{ r.mine }}"><div style="align-self:flex-end;max-width:82%;display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="padding:7px 11px;border-radius:12px 12px 2px 12px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:13px;text-wrap:pretty">{{ r.b }}</span><span style="font-size:11px;color:var(--cp-ink-2)">{{ r.r }}</span></div></sc-if>
+            <sc-if value="{{ r.row }}">
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:3px 2px;border-radius:10px;background:{{ r.hov }}">
+                <sc-if value="{{ r.av }}"><dc-import name="Avatar" who="{{ r.who }}" size="{{ 28 }}" team="{{ r.team }}" host="{{ r.host }}" online="{{ r.on }}" dot="{{ r.dot }}" hint-size="28px,28px"></dc-import></sc-if>
+                <sc-if value="{{ r.ic }}"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:{{ r.icBg }};color:{{ r.icFg }}"><dc-import name="Icon" icon="{{ r.icon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></sc-if>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35"><b style="font-size:13px">{{ r.a }}</b><span style="font-size:13px;color:{{ r.bc }};font-style:{{ r.fs }};text-wrap:pretty">{{ r.b }}</span></div>
+                <sc-if value="{{ r.del }}"><span aria-label="Nachricht löschen" style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-error-fg)"><dc-import name="Icon" icon="trash-2" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></sc-if>
+                <span style="flex:none;font-size:11px;color:var(--cp-ink-2);padding-top:2px">{{ r.r }}</span>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+        <sc-if value="{{ pChat }}"><div style="flex:none;display:flex;gap:6px;padding:10px;border-top:2px solid var(--cp-line-soft);background:var(--cp-surface-2)"><span style="flex:1;height:44px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink-2)">Nachricht an alle</span><span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-paper-2)"><dc-import name="Icon" icon="send" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></div></sc-if>
+      </aside>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ mobEmote }}"><div role="toolbar" aria-label="Emotes" style="position:absolute;left:12px;bottom:{{ mobFabB }};z-index:30;display:flex;gap:4px;padding:4px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)"><sc-for list="{{ mEmotes }}" as="e" hint-placeholder-count="4"><span aria-label="{{ e.n }}" style="display:grid;place-items:center;width:44px;height:44px;opacity:{{ e.op }}"><img src="{{ e.src }}" alt="" width="38" height="38" style="display:block"></img></span></sc-for></div></sc-if>
+  <sc-if value="{{ mobFab }}"><span aria-label="Host-Steuerung" data-next="{{ fabNx }}" style="position:absolute;right:14px;bottom:{{ mobFabB }};z-index:30;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn)"><dc-import name="Icon" icon="crown" size="{{ 24 }}" hint-size="24px,24px"></dc-import></span></sc-if>
+  <sc-if value="{{ hasTabs }}">
+    <nav aria-label="Navigation" style="flex:none;position:relative;z-index:35;display:grid;grid-template-columns:repeat({{ mTabN }},1fr);padding:0 4px 18px;border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+      <sc-for list="{{ mTabs }}" as="t" hint-placeholder-count="5"><span aria-current="{{ t.cur }}" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-top:3px solid {{ t.bar }};margin-top:-2px;color:{{ t.c }};font-size:11px;font-weight:{{ t.w }}"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 22 }}" offset="{{ t.off }}" hint-size="22px,22px"></dc-import>{{ t.n }}<sc-if value="{{ t.soon }}"><span title="Baustelle" style="position:absolute;top:8px;left:50%;margin-left:6px;width:16px;height:10px;border-radius:2px;border:1.5px solid #151515;background:repeating-linear-gradient(-45deg,#ff4f4f 0 3px,#fffdf8 3px 6px)"></span></sc-if><sc-if value="{{ t.hasBadge }}"><span style="position:absolute;top:6px;left:50%;margin-left:6px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--cp-surface);background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">{{ t.badge }}</span></sc-if></span></sc-for>
+    </nav>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;vp&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desk&quot;,&quot;mob&quot;],&quot;default&quot;:&quot;desk&quot;,&quot;tsType&quot;:&quot;'desk'|'mob'&quot;},&quot;kind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;bare&quot;,&quot;hub&quot;,&quot;session&quot;],&quot;default&quot;:&quot;session&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;nav&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;sessions&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;me&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Kitty&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;isHost&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;isAdmin&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Freitags-Zocken&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;pill&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;draft&quot;,&quot;poll&quot;,&quot;set&quot;,&quot;live&quot;,&quot;end&quot;,&quot;arch&quot;],&quot;default&quot;:&quot;set&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;pillText&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;panel&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;chat&quot;,&quot;feed&quot;,&quot;table&quot;,&quot;people&quot;,&quot;none&quot;],&quot;default&quot;:&quot;chat&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mtab&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;brett&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;emote&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;banner&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;bannerTone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;warn&quot;,&quot;lost&quot;,&quot;info&quot;,&quot;ok&quot;],&quot;default&quot;:&quot;warn&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;dock&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;[name:string,icon:string,kind?:'p'|'hot'|'dis'][]&quot;},&quot;rows&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object[]&quot;},&quot;children&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;ReactNode&quot;}}">
+const R=o=>Object.assign({sec:'',mine:false,row:true,av:false,ic:false,who:'',team:0,host:false,on:true,dot:false,icon:'',icBg:'var(--cp-surface)',icFg:'var(--cp-ink)',a:'',b:'',bc:'var(--cp-ink-2)',fs:'normal',r:'',del:false,hov:'transparent'},o);
+const SEC=s=>R({sec:s,row:false});
+const PILLS={draft:['Entwurf','var(--cp-surface)','var(--cp-ink-3)'],poll:['Terminumfrage','var(--cp-surface)','var(--cp-info)'],set:['Termin steht','var(--cp-surface)','var(--cp-success)'],live:['Läuft','var(--cp-primary)','var(--cp-hot)'],end:['Beendet','var(--cp-surface)','var(--cp-ink)'],arch:['Archiv','var(--cp-paper-2)','var(--cp-ink-3)']};
+const EM=[['Klatschen','klatschen'],['Freudentränen','freudentraenen'],['Wütend','wuetend'],['Compibert-Brüllen','bruellen']];
+class Component extends DCLogic {
+  renderVals(){
+    const p=this.props, desk=(p.vp??'desk')!=='mob', kind=p.kind??'session', me=p.me??'Kitty', host=!!p.isHost, admin=!!p.isAdmin;
+    const sess=kind==='session', hub=kind==='hub';
+    const btn=([n,icon,k])=>({n,icon,nx:k==='p'?'tap':'',bs:k==='dis'?'dashed':'solid',bc:k==='dis'?'var(--cp-ink-3)':'var(--cp-line)',bg:k==='p'?'var(--cp-primary)':k==='hot'?'var(--cp-hot)':k==='dis'?'var(--cp-paper-2)':'var(--cp-surface)',fg:k==='p'?'var(--cp-on-primary)':k==='hot'?'var(--cp-on-hot)':k==='dis'?'var(--cp-ink-3)':'var(--cp-ink)',sh:k==='p'||k==='hot'?'var(--cp-shadow-btn)':'none'});
+    const dock=p.dock||[];
+    const pk=p.pill||'set', pl=PILLS[pk]||[pk,'var(--cp-primary)','var(--cp-hot)'];
+    const pill=p.pillText||pl[0];
+    const hubItems=[['sessions','Sessions','house']].concat(p.crews?[['crews','Crews','users']]:[]).concat([['archiv','Archiv','archive'],['bibliothek','Bibliothek','gamepad-2'],['profil','Profil','user']]).concat(admin?[['admin','Admin','shield']]:[]);
+    const navCur=p.nav??'sessions', soon=p.soon||[];
+    const hubNav=hubItems.map(([k,n,icon])=>{const a=k===navCur;return {n,icon,soon:soon.includes(k),cur:a?'page':undefined,bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':''};});
+    const panel=p.panel??'chat', pIdx=['chat','feed','table','people'].indexOf(panel);
+    const pTabs=[['Chat','message-square',3],['Aktivität','history',12],['Tabelle','trophy',0],['Leute','users',0]].map(([n,icon,badge],i)=>{const a=pIdx===i;return {n,icon,on:a,bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',hasBadge:!!badge&&!a,badge:String(badge)};});
+    const chat=[R({av:true,who:'Sanne',host:true,a:'Sanne',b:'Start um 20:30, holt euch Snacks.',r:'20:01'}),R({av:true,who:'Kitty',team:1,a:'Kitty',b:'Wer hat Snacks? Ich hab nur Gurken.',r:'20:02'}),R({av:true,who:'Olli',team:8,a:'Olli',b:'Vom Host gelöscht',bc:'var(--cp-ink-3)',fs:'italic',r:'20:03'}),R({av:true,who:'Larsi',team:1,a:'Larsi',b:'Bitte kein Trackmania heute.',r:'20:04',del:host,hov:host?'var(--cp-surface-2)':'transparent'}),R({av:true,who:'Chris',a:'Chris (Tribüne)',b:'Ich buh euch von der Tribüne aus.',r:'20:05'})];
+    chat.push(R({mine:true,row:false,b:host?'Alle da? Dann geht\u2019s gleich los.':'Ich bin bereit!',r:'20:06'}));
+    const feed=[R({ic:true,icon:'user',a:'Kitty ist der Session beigetreten',r:'19:58'}),R({ic:true,icon:'eye',a:'Chris ist auf die Tribüne gewechselt',r:'20:00'}),SEC('Spiel 1'),R({ic:true,icon:'ferris-wheel',icBg:'var(--cp-primary)',icFg:'var(--cp-on-primary)',a:'Glücksrad: Rocket League',r:'20:32'}),R({ic:true,icon:'trophy',icBg:'var(--cp-primary)',icFg:'var(--cp-on-primary)',a:'Wilde Gurken gewinnt Spiel 1',b:'3:1',r:'20:51'}),SEC('Spiel 2'),R({ic:true,icon:'ban',icBg:'var(--cp-hot)',icFg:'var(--cp-on-hot)',a:'Veto von Larsi (Wilde Gurken)',b:'Trackmania fliegt vom Rad',r:'20:54'}),R({ic:true,icon:'ferris-wheel',icBg:'var(--cp-primary)',icFg:'var(--cp-on-primary)',a:'Glücksrad: Mario Kart 8',r:'20:56'})];
+    const table=[[1,'1.','Wilde Gurken','5 Punkte'],[8,'1.','Nacht Eulen','5 Punkte'],[2,'3.','Team Orange','2 Punkte'],[4,'4.','Käse Turbo','1 Punkt']].map(([t,rk,n,b])=>R({ic:true,icon:rk==='1.'?'trophy':'list-ordered',icBg:rk==='1.'?'var(--cp-primary)':'var(--cp-surface)',icFg:rk==='1.'?'var(--cp-on-primary)':'var(--cp-ink)',a:rk+' '+n,b}));
+    const people=[SEC('Teams'),R({av:true,who:'Kitty',team:1,dot:true,a:'Kitty',b:'Wilde Gurken'}),R({av:true,who:'Larsi',team:1,dot:true,a:'Larsi',b:'Wilde Gurken'}),R({av:true,who:'Olli',team:8,dot:true,a:'Olli',b:'Nacht Eulen'}),SEC('Bench'),R({av:true,who:'Mia',dot:true,on:false,a:'Mia',b:'offline seit 20:10'}),R({av:true,who:'Tom',dot:true,a:'Tom',b:'Bench'}),SEC('Tribüne'),R({av:true,who:'Sanne',host:true,dot:true,a:'Sanne',b:'Host'}),R({av:true,who:'Chris',dot:true,a:'Chris',b:'Tribüne'})];
+    const rows=p.rows||[chat,feed,table,people][pIdx]||[];
+    const mList=sess?[['brett','Spielbrett','layout-grid',0],['table','Tabelle','trophy',0],['chat','Chat','message-square',3],['feed','Aktivität','history',12],['people','Leute','users',0]]:[['sessions','Sessions','house',0]].concat(p.crews?[['crews','Crews','users',0]]:[]).concat([['archiv','Archiv','archive',0],['bibliothek','Bibliothek','gamepad-2',0],['profil','Profil','user',0]]).concat(admin&&!p.crews?[['admin','Admin','shield',0]]:[]);
+    const mCur=sess?(p.mtab??'brett'):navCur;
+    const mTabs=mList.map(([k,n,icon,badge])=>{const a=k===mCur;return {n,icon,soon:soon.includes(k),cur:a?'page':undefined,bar:a?'var(--cp-ink)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',hasBadge:!!badge&&!a,badge:String(badge)};});
+    const bt=p.bannerTone||'warn';
+    const BT={warn:['var(--cp-warning)','var(--cp-on-warning)','loader-circle','status'],lost:['var(--cp-hot)','var(--cp-on-hot)','wifi-off','alert'],info:['var(--cp-info)','var(--cp-on-info)','info','status'],ok:['var(--cp-success)','var(--cp-on-success)','circle-check','status']}[bt];
+    const emote=!!p.emote, cd=p.cooldown??-1;
+    const emotes=EM.map(([n,f],i)=>({n,src:'./assets/emotes/emote-'+f+'.svg',cd:cd===i,op:cd>=0&&cd!==i?.45:1}));
+    const hasTabs=!desk&&kind!=='none'&&kind!=='bare'&&p.tabs!==false;
+    const deskDock=desk&&sess&&host&&dock.length>0;
+    return {w:desk?1280:390,h:desk?800:844,r:desk?'18px':'30px',hh:desk?'64px':'56px',logoS:desk?34:30,desk,
+      hasHeader:kind!=='none',isSession:sess,isHub:hub,isBare:kind==='bare',wordmark:desk||kind==='bare'||hub,title:p.title??'Freitags-Zocken',pill,pillBg:pl[1],pillFg:pl[1]==='var(--cp-primary)'?'var(--cp-on-primary)':'var(--cp-ink)',pillDot:pl[2],
+      hubNav,deskCreate:desk&&hub&&host&&!p.noCreate,fabNx:dock.some(d=>d[2]==='p')?'tap':'',soundIcon:p.muted?'volume-x':'volume-2',hasMe:kind!=='bare'&&kind!=='none'&&p.me!=='',me,crown:host&&sess,
+      hasBanner:!!p.banner,banner:p.banner||'',bannerBg:BT[0],bannerFg:BT[1],bannerIcon:p.bannerIcon||BT[2],bannerRole:BT[3],
+      ovf:p.noScroll?'hidden':'auto',sbw:desk?'thin':'none',pad:p.pad??(desk?'20px 24px 20px':(sess&&(emote||(host&&p.fab!==false))?'14px 14px 84px':'14px 14px 20px')),
+      hasBottom:deskDock||(desk&&sess&&emote),deskEmote:desk&&sess&&emote,deskDock,dockBtns:dock.map(btn),mEmotes:p.emoteMini?emotes.slice(3):emotes,moreBg:p.moreOpen?'var(--cp-ink)':'transparent',moreFg:p.moreOpen?'var(--cp-paper)':'var(--cp-ink)',emotes,
+      showPanel:desk&&sess&&panel!=='none',pTabs,rows,pChat:pIdx===0,pHead:pIdx===1?'':'',
+      mobEmote:!desk&&sess&&emote,mobFab:!desk&&sess&&host&&p.fab!==false,mobFabB:((hasTabs?96:24)+(p.lift||0))+'px',dockB:(p.lift||0)+'px',hasTabs,mTabs,mTabN:String(mList.length)};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ dir }}">
+  <dc-import name="DSRail" cur="docs" toc="{{ toc }}" mode="{{ mode }}" motion="{{ motion }}" muted="{{ muted }}" wide="{{ wide }}" setLight="{{ setLight }}" setDark="{{ setDark }}" toggleMotion="{{ toggleMotion }}" toggleMute="{{ toggleMute }}" hint-size="260px,100vh"></dc-import>
+  <main style="flex:1;min-width:0;width:100%;box-sizing:border-box;max-width:1240px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:72px">
+    <section style="display:flex;flex-direction:column;gap:16px;max-width:860px">
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,88px);line-height:.95;text-wrap:balance">Übergabe.</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.5;text-wrap:pretty">Block 6, part 3: everything a developer needs to build COMPIES in Nuxt and Tailwind v4. The same content is in <code style="font-family:var(--cp-font-mono)">docs/handoff.md</code>; this page adds search and links to the live parts.</p>
+    </section>
+
+    <section id="dateien" style="display:flex;flex-direction:column;gap:20px;scroll-margin-top:24px">
+      <h2 style="margin:0;padding-bottom:14px;border-bottom:var(--cp-bw) solid var(--cp-line);font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Dateien</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+        <sc-for list="{{ files }}" as="f" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+            <div style="display:flex;align-items:center;gap:8px"><dc-import name="Icon" icon="{{ f.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import><code style="font-family:var(--cp-font-mono);font-size:13px;font-weight:700;overflow-wrap:anywhere">{{ f.p }}</code></div>
+            <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ f.d }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:12px">
+        <pre style="margin:0;padding:14px 16px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:13px;line-height:1.55;overflow-x:auto">/* assets/css/main.css */
+@import "./compies-theme.css";</pre>
+        <pre style="margin:0;padding:14px 16px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:13px;line-height:1.55;overflow-x:auto">&lt;html lang="de" data-theme="light" data-motion="full"&gt;</pre>
+      </div>
+    </section>
+
+    <section id="regeln" style="display:flex;flex-direction:column;gap:20px;scroll-margin-top:24px">
+      <h2 style="margin:0;padding-bottom:14px;border-bottom:var(--cp-bw) solid var(--cp-line);font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Grundregeln</h2>
+      <ol style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+        <sc-for list="{{ rules }}" as="r" hint-placeholder-count="11">
+          <li style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;background:var(--cp-paper-2)">
+            <span style="flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-num);font-size:13px">{{ r.n }}</span>
+            <span style="font-size:14px;line-height:1.45;text-wrap:pretty"><b>{{ r.h }}</b> {{ r.t }}</span>
+          </li>
+        </sc-for>
+      </ol>
+    </section>
+
+    <section id="komponenten" style="display:flex;flex-direction:column;gap:20px;scroll-margin-top:24px">
+      <h2 style="margin:0;padding-bottom:14px;border-bottom:var(--cp-bw) solid var(--cp-line);font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Komponenten</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div style="position:relative;display:flex;align-items:center;flex:1;min-width:220px;max-width:380px"><span style="position:absolute;left:14px;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="search" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><label for="cq" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Komponente suchen</label><input id="cq" value="{{ q }}" onInput="{{ onQ }}" placeholder="Komponente oder Prop suchen" autocomplete="off" style="width:100%;height:44px;box-sizing:border-box;padding:0 14px 0 42px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-size:15px"></div>
+        <div role="group" aria-label="Gruppe" style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ groups }}" as="g" hint-placeholder-count="6"><button type="button" aria-pressed="{{ g.on }}" onClick="{{ g.pick }}" style="height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:{{ g.bg }};color:{{ g.fg }};font-weight:700;font-size:13px;cursor:pointer">{{ g.n }}</button></sc-for></div>
+        <span aria-live="polite" style="font-size:13px;color:var(--cp-ink-2)">{{ countTxt }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);overflow:hidden">
+        <sc-for list="{{ comps }}" as="c" hint-placeholder-count="10">
+          <div style="display:grid;grid-template-columns:minmax(150px,200px) minmax(0,1fr);gap:6px 20px;padding:14px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <b style="font-family:var(--cp-font-display);font-weight:400;font-size:20px;line-height:1.1">{{ c.n }}</b>
+              <span style="font-size:12px;color:var(--cp-ink-2)">{{ c.g }}</span>
+              <a href="{{ c.href }}" style="align-self:flex-start;font-size:13px;font-weight:700">{{ c.page }}</a>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+              <div style="display:flex;flex-wrap:wrap;gap:5px"><sc-for list="{{ c.props }}" as="p" hint-placeholder-count="3"><code style="padding:2px 7px;border-radius:6px;border:1.5px solid var(--cp-line-soft);background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:12px">{{ p }}</code></sc-for></div>
+              <span style="font-size:14px;line-height:1.45;text-wrap:pretty">{{ c.s }}</span>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ none }}"><span style="padding:16px;color:var(--cp-ink-2)">Nichts gefunden.</span></sc-if>
+      </div>
+    </section>
+
+    <section id="tailwind" style="display:flex;flex-direction:column;gap:20px;scroll-margin-top:24px">
+      <h2 style="margin:0;padding-bottom:14px;border-bottom:var(--cp-bw) solid var(--cp-line);font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Tailwind-Check</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px">
+        <sc-for list="{{ checks }}" as="k" hint-placeholder-count="5">
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)">
+            <span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:{{ k.bg }};color:{{ k.fg }}"><dc-import name="Icon" icon="{{ k.icon }}" size="{{ 14 }}" sw="{{ 3 }}" hint-size="14px,14px"></dc-import></span>
+            <span style="font-size:14px;line-height:1.45;text-wrap:pretty"><b>{{ k.h }}</b> {{ k.t }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section id="offen" style="display:flex;flex-direction:column;gap:20px;scroll-margin-top:24px">
+      <h2 style="margin:0;padding-bottom:14px;border-bottom:var(--cp-bw) solid var(--cp-line);font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Offen und später</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;align-items:start">
+        <sc-for list="{{ later }}" as="l" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:10px;padding:16px;border:var(--cp-bw) {{ l.bs }} var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+            <div style="display:flex;align-items:center;gap:8px"><dc-import name="Icon" icon="{{ l.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b style="font-family:var(--cp-font-display);font-weight:400;font-size:22px">{{ l.h }}</b></div>
+            <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:14px;line-height:1.4">
+              <sc-for list="{{ l.items }}" as="i" hint-placeholder-count="3"><li style="text-wrap:pretty">{{ i }}</li></sc-for>
+            </ul>
+            <code style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">{{ l.src }}</code>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <footer style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:var(--cp-bw) solid var(--cp-line);font-size:13px;color:var(--cp-ink-2)">
+      <span>COMPIES Design System, Handoff</span>
+      <span>Phase 2 complete pending review</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const C=[
+['Core','Button','variant, size, icon, loading, disabled','Default, hover lift, press into shadow, focus, loading keeps the label, disabled is dashed with a reason.','Basics'],
+['Core','HoldButton','label, duration=1000, onConfirm','Fill sweeps while held; release cancels. Space/Enter hold works the same. Used for every destructive or irreversible action.','Basics'],
+['Core','Input','label, help, error, maxlength, counter','Error = red border + text + aria-invalid. Readonly is dashed, not disabled. Counter is a polite live region.','Basics'],
+['Core','Toggle','checked, label, description','On/off with the ink knob; disabled keeps focus and gives a reason.','Basics'],
+['Core','RadioCards','options, value, planned','Selected = thick border + lift. Planned = „Bald verfügbar“, dashed, aria-disabled, skipped by arrow keys.','Game'],
+['Core','Tabs','tabs, icon, badge','Active bar in hot, icon offset, badge caps at 99+.','Basics'],
+['Core','Sheet','title, open, onClose, side','Side on desktop, bottom on mobile. Focus trap, Esc, return focus.','Basics'],
+['Core','Toast','tone, action','Auto-dismiss 5 s except errors, max 3 stacked, layer-toast.','Basics'],
+['Core','Icon','icon, size, sw=2.5, offset','Lucide, 2.5 px round. offset adds the active colour shadow.','Foundations'],
+['Core','CpNum','v, face, say','Bungee with fixed digit slots so nothing jumps; say for screen readers.','Foundations'],
+['People','Avatar','who, size, team, host, online, dot, lifted, src','Rim slots fixed: team bottom-left, crown top-right, presence bottom-right. Offline = greyscale + hollow ring.','People'],
+['People','TeamMark','team 1–8, size','Colour + symbol, always together.','People'],
+['People','TeamNameBuilder','team, myWord, frozen, canReset','One word ≤ 12 chars, spaces stripped with hint, freezes at kick-off, host can reset.','People'],
+['People','Board','teams, bench, stands, teamSize, phase, role','Drag or click/Enter to move. Zone states: open, drop target, full, locked, uneven. Server decides the last slot; loser bounces back.','People'],
+['People','PlayerList','people, role','Rows with move menu; players only get their own row.','People'],
+['Game','GameCard','title, players, fmt, state, team, order, layout, selected, suggested, inPool, cover','States default, banned, picked, vetoed, drawn, disabled; acting team shown by mark.','Game'],
+['Game','GameWheel','games, skin=show, spinSec 3–10, hidden, hideStyle, canSpin, controls, muted, motion, onResult','Show-Rad: bulbs blink, chase, flash. Flapper kicks per pin. Fixed size. Reduced motion: 1.2 s.','Game'],
+['Game','VetoWindow','game, host, motion, seconds=60','Timer, hold-to-veto per party, sealed until reveal, host skip. Always above the clip.','Game'],
+['Game','CoinFlip','take=bullet, result, motion','Zeitlupe: rise, near-freeze while the camera orbits, drop flat, top view.','Game'],
+['Game','PickBan','order, turn, pool','Order strip, turn banner in team colour, hold bar to ban or pick.','Game'],
+['Scoring','ResultEntry','parties, pointsTable, editing','Reorder by drag, arrows or buttons; „gleichauf“ gives 1, 1, 3; scores are decorative.','Scoring'],
+['Scoring','Leaderboard','standings, played, total','Rows slide, points count up, delta pill, winner stamp + confetti, end state ceremony or tiebreaker.','Scoring'],
+['Scoring','PointsTable','preset, custom','Linear, winner takes all, custom (never rewards a worse place more).','Scoring'],
+['Communication','Chat','messages, me, role','Grouped within 2 min, own right in yellow, failed + retry, host delete leaves a marker.','Communication'],
+['Communication','ActivityFeed','events','10 event types, sticky game headers, vetoes only after reveal.','Communication'],
+['Communication','Emotes','emotes, cooldown=2000','Rise above sender, cooldown ring, max 3 sounds per second for the room.','Communication'],
+['Communication','DatePoll','slots, votes, me, role','Ja / Wenn nötig / Nein / offen with shapes; best slot; host confirms.','Communication'],
+['Frame','AppShell','variant','Desktop: header 64, stage, panel 340. Mobile: header 56, 5 tabs.','Frame'],
+['Frame','HostDock','phase, actions','Floating bottom centre, max 3 + Mehr, one primary, collapses after 8 s, H to focus.','Frame'],
+['Frame','ConnectionBanner','state','Reconnecting after 2 s, lost after 15 s, input queued.','Frame'],
+['Frame','FullScreenState','kind','Loading, invalid link, session ended, error.','Frame']];
+const PAGE={Basics:'DS Basics.dc.html',Foundations:'DS Foundations.dc.html',People:'DS People.dc.html',Game:'DS Game.dc.html',Scoring:'DS Scoring.dc.html',Communication:'DS Communication.dc.html',Frame:'DS Frame.dc.html'};
+const RULES=[['No raw values.','Colours, radii, shadows, z-index, durations come from tokens. Missing? Add a token.'],['Colour is never alone.','Teams pair colour + symbol + pattern; states pair colour + icon or line style.'],['Team colours are identity only.','Never for UI states. Text on team colour uses its -ink token; no text on patterns.'],['Ink lines.','Interactive surfaces: 2.5 px ink border and hard offset shadow; press moves into the shadow.'],['One primary per view.','Yellow. Destructive actions use hot and are held, not clicked.'],['Live numbers use CpNum.','Fixed digit slots, plus a hidden full value for screen readers.'],['Motion has a twin.','Physical moments may overshoot, UI never does. Reduced motion fades or cuts.'],['Sound is flavour.','Off when muted; max 3 emote sounds per second.'],['44 px targets.','Focus ring 3 px focus colour, 3 px offset.'],['Disabled is explained.','aria-disabled keeps focus; the reason is real text.'],['The server keeps time.','Spin, veto, reveal and coin send start, duration and result; rejoin lands mid-moment.']];
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,wide:true,q:'',g:'Alle'};
+  componentDidMount(){
+    let m=null,mo=null,mu=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs);
+    this.setState({mode:m,motion:mo,muted:mu==='1',wide:window.innerWidth>=980});
+  }
+  componentWillUnmount(){ window.removeEventListener('resize',this._rs); }
+  componentDidUpdate(){ const m=this.state.mode; if(m&&m!==this._lm){ this._lm=m; document.body.style.background=m==='dark'?'#17121d':'#fff3df'; } }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+  renderVals(){
+    const S=this.state, mode=S.mode||'light', q=S.q.trim().toLowerCase();
+    const list=C.filter(c=>(S.g==='Alle'||c[0]===S.g)&&(!q||(c[1]+' '+c[2]+' '+c[3]).toLowerCase().includes(q)));
+    const comps=list.map(([g,n,p,s,page])=>({g,n,s,page:page+' ansehen',href:PAGE[page],props:p.split(', ')}));
+    const groups=['Alle','Core','People','Game','Scoring','Communication','Frame'].map(n=>({n,on:S.g===n,bg:S.g===n?'var(--cp-ink)':'var(--cp-surface)',fg:S.g===n?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.setState({g:n})}));
+    const files=[['layout-grid','tokens/compies-tokens.css','All --cp-* variables, light/dark and reduced motion. Single source of truth.'],['settings','tokens/compies-theme.css','Tailwind v4 theme: imports Tailwind + tokens, maps everything to utilities.'],['info','docs/handoff.md','This handoff as Markdown: rules, layout, every component with props and states.'],['message-square','docs/de.json','Copy deck: all German UI strings as vue-i18n keys, with plurals and placeholders.'],['pencil','Spec Changes.md','Every Phase 2 decision that changes the brief, plus four open questions.'],['clock','docs/post-1.0.md','„Bald verfügbar“, last ticket, Post-1.0, discarded, deferred to Compibert.']].map(([icon,p,d])=>({icon,p,d}));
+    const ok=(h,t)=>({icon:'check',bg:'var(--cp-success)',fg:'var(--cp-on-success)',h,t}), fix=(h,t)=>({icon:'pencil',bg:'var(--cp-warning)',fg:'var(--cp-on-warning)',h,t});
+    const checks=[ok('All 92 theme references resolve.','Every var() in the theme exists in the token file.'),fix('Breakpoints aligned.','Theme had 768/1024; now sm 600, md 980, lg 1280, xl 1440, matching the Frame spec.'),fix('Literals replaced.','Text sizes, radii, durations and spacing pointed at hard values; they now read the tokens, so one change updates both.'),fix('Added utilities.','layer-* for the z-index stack, h-header, w-panel, size-touch, border-memphis, shadow-sticker, ease-linear.'),ok('Runtime-only tokens stay out.','Gutter, stagger and motion flags are read by components, not exposed as utilities.')];
+    const later=[{icon:'lock',h:'Bald verfügbar',bs:'dashed',items:['Loser’s Pick','Lucky Wheel – Loser’s Advantage'],src:'docs/post-1.0.md'},{icon:'flag',h:'1.0, last ticket',bs:'solid',items:['Battle replay in the archive'],src:'docs/post-1.0.md'},{icon:'sparkles',h:'With Compibert',bs:'solid',items:['Award ceremony','Final Compibert art','Coin faces','The four emotes'],src:'docs/post-1.0.md'},{icon:'circle-help',h:'Open questions',bs:'solid',items:['Team name builder rules OK?','No kick/ban for the host in 1.0?','Who sees „korrigiert“?','Push for „Spiel gezogen“: who gets it?'],src:'Spec Changes.md'}];
+    const toc=[['Dateien','#dateien'],['Grundregeln','#regeln'],['Komponenten','#komponenten'],['Tailwind-Check','#tailwind'],['Offen und später','#offen']].map(([n,href])=>({n,href}));
+    return {mode,motion:S.motion,muted:S.muted,wide:S.wide,dir:S.wide?'row':'column',toc,setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,toggleMute:this.toggleMute,
+      files,rules:RULES.map(([h,t],i)=>({n:String(i+1),h,t})),q:S.q,onQ:e=>this.setState({q:e.target.value}),groups,comps,none:!comps.length,countTxt:comps.length+' von '+C.length,checks,later};
+  }
+}
+</script>
+</body>
+</html>

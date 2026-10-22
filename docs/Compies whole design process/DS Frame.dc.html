@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div ref="{{ root }}" data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ dir }}">
+  <dc-import name="DSRail" cur="frame" toc="{{ toc }}" mode="{{ mode }}" motion="{{ motion }}" muted="{{ muted }}" wide="{{ wide }}" setLight="{{ setLight }}" setDark="{{ setDark }}" toggleMotion="{{ toggleMotion }}" toggleMute="{{ toggleMute }}" hint-size="260px,100vh"></dc-import>
+
+  <main style="flex:1;min-width:0;width:100%;box-sizing:border-box;max-width:1400px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:88px">
+
+    <section style="display:flex;flex-direction:column;gap:16px;max-width:860px">
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,88px);line-height:.95;text-wrap:balance">Der Rahmen.</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.5;text-wrap:pretty">Block 6, part 1: the app shell that holds everything else. Desktop and mobile shells, the host dock, the layer stack, breakpoints, and the app-wide connection and loading states. Both shells are interactive.</p>
+    </section>
+
+    <!-- DESKTOP -->
+    <section id="desktop" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Desktop shell</h2>
+        <span style="color:var(--cp-ink-2)">64 px header, the stage, a 340 px side panel. The host dock floats over the stage like a game HUD. Shown at 1280 × 800; scroll sideways if your window is narrower.</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:14px 16px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface-2)">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700">Du bist</span><div role="group" aria-label="Rolle" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ roles }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:40px;padding:0 14px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">{{ r.n }}</button></sc-for></div></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700">Phase</span><div role="group" aria-label="Phase" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ phases }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:40px;padding:0 14px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">{{ r.n }}</button></sc-for></div></div>
+      </div>
+      <div style="overflow-x:auto;padding-bottom:6px">
+        <div style="position:relative;width:1280px;height:800px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);position:relative;z-index:10">
+            <div style="display:flex;align-items:center;gap:8px"><dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 36 }}" hint-size="36px,36px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+            <span style="width:2px;height:28px;background:var(--cp-line-soft)"></span>
+            <div style="display:flex;align-items:center;gap:10px;min-width:0"><b style="font-size:16px;white-space:nowrap">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:{{ phasePillBg }};font-size:12px;font-weight:800;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ phaseDot }};border:1.5px solid var(--cp-line)"></span>{{ phasePill }}</span></div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+              <span style="display:flex;align-items:center;margin-right:6px"><sc-for list="{{ faces }}" as="f" hint-placeholder-count="4"><span style="margin-left:-8px;display:grid"><dc-import name="Avatar" who="{{ f.n }}" size="{{ 28 }}" dot="{{ false }}" hint-size="28px,28px"></dc-import></span></sc-for><span style="margin-left:6px;font-size:13px;font-weight:700">9 online</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</span>
+              <span aria-label="Ton" style="display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+              <dc-import name="Avatar" who="{{ meName }}" size="{{ 36 }}" host="{{ isHost }}" hint-size="36px,36px"></dc-import>
+            </div>
+          </header>
+          <div style="flex:1;min-height:0;display:flex">
+            <div style="position:relative;flex:1;min-width:0;padding:20px 24px 110px;display:flex;flex-direction:column;gap:16px;overflow:hidden">
+              <sc-if value="{{ lobby }}">
+                <div style="display:flex;align-items:baseline;gap:12px"><span style="font-family:var(--cp-font-display);font-size:34px;line-height:1">Spielbrett</span><span style="font-size:13px;color:var(--cp-ink-2)">Termin steht: Sa 25.10., 20:30 Uhr</span></div>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                  <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
+                    <div style="border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);overflow:hidden">
+                      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background-color:var(--cp-team-{{ t.n }});background-image:var(--cp-team-{{ t.n }}-pattern);border-bottom:2px solid var(--cp-line)"><dc-import name="TeamMark" team="{{ t.n }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import><span style="padding:1px 8px;border-radius:6px;background:var(--cp-team-{{ t.n }});color:var(--cp-team-{{ t.n }}-ink);font-family:var(--cp-font-display);font-size:19px;white-space:nowrap">{{ t.name }}</span><span style="margin-left:auto;padding:0 8px;border-radius:999px;background:var(--cp-surface);border:2px solid var(--cp-line);font-weight:800;font-size:12px">{{ t.count }}</span></div>
+                      <div style="display:flex;gap:14px;padding:12px">
+                        <sc-for list="{{ t.ppl }}" as="p" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:56px"><dc-import name="Avatar" who="{{ p }}" size="{{ 44 }}" team="{{ t.n }}" hint-size="44px,44px"></dc-import><span style="font-size:12px;font-weight:600">{{ p }}</span></div></sc-for>
+                        <sc-for list="{{ t.free }}" as="f" hint-placeholder-count="0"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:56px"><span style="width:44px;height:44px;border-radius:50%;border:2.5px dashed var(--cp-ink-3);box-sizing:border-box"></span><span style="font-size:12px;color:var(--cp-ink-2)">Frei</span></div></sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><dc-import name="Icon" icon="armchair" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b>Bench</b><span style="display:flex;margin-left:8px"><dc-import name="Avatar" who="Mia" size="{{ 32 }}" online="{{ false }}" hint-size="32px,32px"></dc-import></span></div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><dc-import name="Icon" icon="eye" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b>Tribüne</b><span style="display:flex;gap:8px;margin-left:8px"><dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" hint-size="32px,32px"></dc-import><dc-import name="Avatar" who="Chris" size="{{ 32 }}" hint-size="32px,32px"></dc-import></span></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ running }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><span style="display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary)"><dc-import name="Icon" icon="ferris-wheel" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span><span style="font-family:var(--cp-font-display);font-size:22px">Spiel 3 von 6: Sanne dreht das Glücksrad.</span></div>
+                <div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center">
+                  <dc-import name="GameWheel" style="width:100%" skin="show" size="{{ 420 }}" can-spin="{{ isHost }}" controls="{{ false }}" muted="{{ muted }}" motion="{{ motion }}" cb-dir="{{ cbDir }}" hint-size="100%,520px"></dc-import>
+                </div>
+              </sc-if>
+              <sc-if value="{{ isHost }}">
+                <div role="toolbar" aria-label="Host-Steuerung" style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:8px;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);white-space:nowrap">
+                  <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+                  <sc-for list="{{ dockBtns }}" as="b" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid {{ b.bc }};background:{{ b.bg }};color:{{ b.fg }};box-shadow:{{ b.sh }};font-weight:700;font-size:14px"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ b.n }}</span></sc-for>
+                  <span aria-label="Mehr" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%"><dc-import name="Icon" icon="ellipsis" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+                </div>
+              </sc-if>
+            </div>
+            <aside style="flex:none;width:340px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);display:flex;flex-direction:column">
+              <div role="tablist" aria-label="Seitenleiste" style="flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--cp-line-soft)">
+                <sc-for list="{{ pTabs }}" as="t" hint-placeholder-count="4"><button type="button" role="tab" aria-selected="{{ t.on }}" onClick="{{ t.pick }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;height:58px;justify-content:center;border:0;border-bottom:3px solid {{ t.bar }};margin-bottom:-2px;background:transparent;color:{{ t.c }};font-weight:{{ t.w }};font-size:12px;cursor:pointer"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 18 }}" offset="{{ t.off }}" hint-size="18px,18px"></dc-import>{{ t.n }}<sc-if value="{{ t.hasBadge }}"><span style="position:absolute;top:6px;right:14px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">{{ t.badge }}</span></sc-if></button></sc-for>
+              </div>
+              <div style="flex:1;min-height:0;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ panelRows }}" as="r" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 6px;border-radius:10px;border:{{ r.bd }};background:{{ r.bg }}">
+                    <sc-if value="{{ r.av }}"><dc-import name="Avatar" who="{{ r.who }}" size="{{ 28 }}" team="{{ r.team }}" host="{{ r.host }}" dot="{{ false }}" hint-size="28px,28px"></dc-import></sc-if>
+                    <sc-if value="{{ r.mark }}"><dc-import name="TeamMark" team="{{ r.team }}" size="{{ 28 }}" hint-size="28px,28px"></dc-import></sc-if>
+                    <sc-if value="{{ r.ic }}"><span style="display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:{{ r.icBg }}"><dc-import name="Icon" icon="{{ r.icon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></sc-if>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.a }}</b><span style="font-size:13px;color:var(--cp-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.b }}</span></div>
+                    <span style="font-size:{{ r.rs }};font-family:{{ r.rf }};color:var(--cp-ink-2)">{{ r.r }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ panelChat }}"><div style="flex:none;display:flex;gap:6px;padding:10px;border-top:2px solid var(--cp-line-soft);background:var(--cp-surface-2)"><span style="flex:1;height:44px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink-2)">Nachricht an alle</span><span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-paper-2)"><dc-import name="Icon" icon="send" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></div></sc-if>
+            </aside>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Every in-session screen. The header always shows the session name and phase; the stage shows what's happening right now (board, wheel, clip, result); the side panel holds the conversation and the standings.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No second navigation, no left sidebar. The side panel never collapses during the veto window. Nothing scrolls the header away.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Landmarks: <code style="font-family:var(--cp-font-mono)">header</code>, <code style="font-family:var(--cp-font-mono)">main</code> (stage), <code style="font-family:var(--cp-font-mono)">aside</code> (panel), the dock is a labelled toolbar. A skip link jumps to the stage. Panel tabs follow the tabs pattern from Basics.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Layout.</b> Panel tabs: Chat, Aktivität, Tabelle, Leute (four max). Stage max width 1100 px, centred; above 1440 px the whole shell stops growing and centres on the paper.</div>
+      </div>
+    </section>
+
+    <!-- DOCK -->
+    <section id="dock" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Host dock</h2>
+        <span style="color:var(--cp-ink-2)">Floating at the bottom centre of the stage, wherever the host sits (team, bench, stands). Its buttons follow the phase; one primary at a time.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <sc-for list="{{ dockStates }}" as="d" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;align-items:center">
+            <span style="font-size:13px;font-weight:700">{{ d.k }}</span>
+            <div style="overflow-x:auto;padding:4px 8px 10px 4px">
+              <div style="display:inline-flex;align-items:center;gap:8px;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);white-space:nowrap">
+                <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+                <sc-for list="{{ d.btns }}" as="b" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) {{ b.bs }} {{ b.bc }};background:{{ b.bg }};color:{{ b.fg }};box-shadow:{{ b.sh }};font-weight:700;font-size:14px"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ b.n }}</span></sc-for>
+                <sc-if value="{{ d.more }}"><span style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%"><dc-import name="Icon" icon="ellipsis" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span></sc-if>
+              </div>
+              <sc-if value="{{ d.hasNote }}"><div style="margin-top:8px;font-size:13px;color:var(--cp-ink-2)">{{ d.note }}</div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> The host's actions for the current phase, max three buttons plus „Mehr“ (Link erneuern, Anzahl Spiele, Drehdauer, Nächstes Spiel setzen, Session beenden). „Nächstes Spiel setzen“ is in „Mehr“ in every phase.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never cover the veto bar: during the veto window the dock moves up above it (z 30 vs 46). Disabled dock buttons keep their reason in a tooltip and in the button's description.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> <code style="font-family:var(--cp-font-mono)">role="toolbar"</code> with arrow-key navigation. Shortcut: H focuses the dock from anywhere in the session (shown in the „Mehr“ menu).</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: floating pill, 20 px above the stage bottom. Mobile: a 56 px crown button bottom right, above the tab bar, which opens the same actions as a bottom sheet.</div>
+      </div>
+    </section>
+
+    <!-- MOBILE -->
+    <section id="mobile" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Mobile shell</h2>
+        <span style="color:var(--cp-ink-2)">56 px header and a bottom tab bar with five entries. The stage takes over the screen when something happens (wheel, clip, veto); the tab bar stays.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:start">
+        <div style="position:relative;width:390px;max-width:100%;height:780px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:28px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;height:56px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 30 }}" hint-size="30px,30px"></dc-import>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15"><b style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Freitags-Zocken</b><span style="font-size:11px;font-weight:700;color:var(--cp-ink-2)">{{ phasePill }}</span></div>
+            <span style="display:grid;place-items:center;width:44px;height:44px"><dc-import name="Icon" icon="volume-2" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+            <dc-import name="Avatar" who="{{ meName }}" size="{{ 32 }}" host="{{ isHost }}" hint-size="32px,32px"></dc-import>
+          </header>
+          <div style="flex:1;min-height:0;overflow:hidden;padding:14px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-family:var(--cp-font-display);font-size:26px;line-height:1">{{ mTitle }}</span>
+            <sc-if value="{{ mBoard }}">
+              <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><dc-import name="TeamMark" team="{{ t.n }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import><b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</b><span style="display:flex"><sc-for list="{{ t.ppl }}" as="p" hint-placeholder-count="2"><span style="margin-left:-2px;display:grid"><dc-import name="Avatar" who="{{ p }}" size="{{ 30 }}" dot="{{ false }}" hint-size="30px,30px"></dc-import></span></sc-for></span><span style="font-weight:800;font-size:12px">{{ t.count }}</span></div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ mList }}">
+              <sc-for list="{{ mRows }}" as="r" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 6px;border-radius:10px;border:{{ r.bd }};background:{{ r.bg }}">
+                  <sc-if value="{{ r.av }}"><dc-import name="Avatar" who="{{ r.who }}" size="{{ 28 }}" team="{{ r.team }}" host="{{ r.host }}" dot="{{ false }}" hint-size="28px,28px"></dc-import></sc-if>
+                  <sc-if value="{{ r.mark }}"><dc-import name="TeamMark" team="{{ r.team }}" size="{{ 28 }}" hint-size="28px,28px"></dc-import></sc-if>
+                  <sc-if value="{{ r.ic }}"><span style="display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:{{ r.icBg }}"><dc-import name="Icon" icon="{{ r.icon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></sc-if>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.a }}</b><span style="font-size:13px;color:var(--cp-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.b }}</span></div>
+                  <span style="font-size:{{ r.rs }};font-family:{{ r.rf }};color:var(--cp-ink-2)">{{ r.r }}</span>
+                </div>
+              </sc-for>
+            </sc-if>
+          </div>
+          <sc-if value="{{ isHost }}"><button type="button" onClick="{{ toggleSheet }}" aria-label="Host-Steuerung" aria-expanded="{{ sheet }}" style="position:absolute;right:14px;bottom:100px;z-index:30;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);cursor:pointer"><dc-import name="Icon" icon="crown" size="{{ 24 }}" hint-size="24px,24px"></dc-import></button></sc-if>
+          <sc-if value="{{ sheetOpen }}">
+            <div onClick="{{ toggleSheet }}" style="position:absolute;inset:0;z-index:39;background:var(--cp-overlay)"></div>
+            <div role="dialog" aria-label="Host-Steuerung" style="position:absolute;left:0;right:0;bottom:0;z-index:40;box-sizing:border-box;background:var(--cp-surface);border-top:var(--cp-bw) solid var(--cp-line);border-radius:20px 20px 0 0;padding:10px 16px 28px;display:flex;flex-direction:column;gap:10px">
+              <span aria-hidden="true" style="align-self:center;width:44px;height:5px;border-radius:999px;background:var(--cp-ink-3)"></span>
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import><span style="font-family:var(--cp-font-display);font-size:24px">Host-Steuerung</span></div>
+              <sc-for list="{{ dockBtns }}" as="b" hint-placeholder-count="3"><span style="display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:999px;border:var(--cp-bw) solid {{ b.bc }};background:{{ b.bg }};color:{{ b.fg }};box-shadow:{{ b.sh }};font-weight:700"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import>{{ b.n }}</span></sc-for>
+              <span style="display:grid;place-items:center;height:44px;font-weight:700">Mehr …</span>
+            </div>
+          </sc-if>
+          <nav aria-label="Hauptnavigation" style="flex:none;position:relative;z-index:35;display:grid;grid-template-columns:repeat(5,1fr);padding:0 4px 18px;border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <sc-for list="{{ mTabs }}" as="t" hint-placeholder-count="5"><button type="button" onClick="{{ t.pick }}" aria-current="{{ t.cur }}" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:60px;padding:0;border:0;border-top:3px solid {{ t.bar }};margin-top:-2px;background:transparent;color:{{ t.c }};font-size:11px;font-weight:{{ t.w }};cursor:pointer"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 22 }}" offset="{{ t.off }}" hint-size="22px,22px"></dc-import>{{ t.n }}<sc-if value="{{ t.hasBadge }}"><span style="position:absolute;top:6px;left:50%;margin-left:6px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--cp-surface);background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">{{ t.badge }}</span></sc-if></button></sc-for>
+          </nav>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Tabs: Spielbrett, Tabelle, Chat, Aktivität, Leute. „Spielbrett“ turns into the stage when something happens and shows a pulsing dot if you're elsewhere. Unread counts on Chat and Aktivität.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No hamburger menu in a session. Profile, archive and settings live behind your avatar in the header. Never hide the tab bar during the veto window; the veto button sits above it.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The tab bar is a <code style="font-family:var(--cp-font-mono)">nav</code> with <code style="font-family:var(--cp-font-mono)">aria-current="page"</code>. Badges are part of the label („Chat, 3 ungelesen“). Labels never hide; icons alone aren't enough.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Layout.</b> Tab bar 60 px plus the safe area. Host button 56 px, 16 px above the tab bar. Content padding 16 px. The keyboard pushes the composer up; the tab bar hides only while typing.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYERS -->
+    <section id="ebenen" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Layer stack</h2>
+        <span style="color:var(--cp-ink-2)">Ten z-index tokens, nothing in between. Values are read live from the token file.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px;align-items:center">
+        <div aria-hidden="true" style="position:relative;height:520px;perspective:1400px">
+          <sc-for list="{{ layers }}" as="l" hint-placeholder-count="10">
+            <div style="position:absolute;left:50%;top:{{ l.top }};width:260px;height:150px;margin-left:-130px;transform:rotateX(58deg) rotateZ(-38deg);transform-style:preserve-3d;border:3px solid #151515;border-radius:14px;background:{{ l.bg }};box-shadow:6px 6px 0 rgba(21,21,21,.35);display:flex;align-items:flex-end;padding:10px 12px;box-sizing:border-box;opacity:{{ l.op }}"><span style="font-family:var(--cp-font-display);font-size:20px;color:#151515">{{ l.n }}</span></div>
+          </sc-for>
+        </div>
+        <div role="table" aria-label="Ebenen" style="display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);overflow:hidden">
+          <sc-for list="{{ layersList }}" as="l" hint-placeholder-count="10">
+            <div role="row" style="display:grid;grid-template-columns:20px 120px 46px minmax(0,1fr);gap:10px;align-items:center;padding:9px 14px;border-bottom:1.5px solid var(--cp-line-soft)">
+              <span style="width:16px;height:16px;border-radius:4px;border:2px solid #151515;background:{{ l.bg }}"></span>
+              <code role="cell" style="font-family:var(--cp-font-mono);font-size:12px">{{ l.tok }}</code>
+              <b role="cell" style="font-family:var(--cp-font-num);font-size:18px;text-align:right">{{ l.v }}</b>
+              <span role="cell" style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ l.d }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- BREAKPOINTS -->
+    <section id="raster" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Breakpoints and grid</h2>
+        <span style="color:var(--cp-ink-2)">Four ranges. Spacing is a 4 px grid; gutters 16 px mobile, 24 px from tablet up.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px">
+        <sc-for list="{{ bps }}" as="b" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:24px">{{ b.n }}</b><code style="font-family:var(--cp-font-mono);font-size:12px">{{ b.range }}</code></div>
+            <div aria-hidden="true" style="height:130px;display:flex;flex-direction:column;gap:4px;padding:6px;border:2px solid var(--cp-line);border-radius:10px;background:var(--cp-paper-2)">
+              <span style="height:14px;border-radius:4px;background:var(--cp-ink-3)"></span>
+              <div style="flex:1;display:flex;gap:4px">
+                <span style="flex:1;border-radius:4px;background:var(--cp-primary);border:1.5px solid var(--cp-line)"></span>
+                <sc-if value="{{ b.panel }}"><span style="width:{{ b.pw }};border-radius:4px;background:var(--cp-mint);border:1.5px solid var(--cp-line)"></span></sc-if>
+              </div>
+              <sc-if value="{{ b.tabs }}"><span style="height:14px;border-radius:4px;background:var(--cp-ink-3)"></span></sc-if>
+            </div>
+            <span style="font-size:13px;line-height:1.45;color:var(--cp-ink-2);text-wrap:pretty">{{ b.d }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Tokens.</b> <code style="font-family:var(--cp-font-mono)">--cp-header-h</code> 64, <code style="font-family:var(--cp-font-mono)">--cp-panel-w</code> 340, <code style="font-family:var(--cp-font-mono)">--cp-maxw</code> 1440, <code style="font-family:var(--cp-font-mono)">--cp-gutter</code> 24 / 16, <code style="font-family:var(--cp-font-mono)">--cp-touch</code> 44. In Tailwind: <code style="font-family:var(--cp-font-mono)">sm</code> 600, <code style="font-family:var(--cp-font-mono)">md</code> 980, <code style="font-family:var(--cp-font-mono)">lg</code> 1280 (reference), <code style="font-family:var(--cp-font-mono)">xl</code> 1440. Layers: <code style="font-family:var(--cp-font-mono)">layer-dock</code>, <code style="font-family:var(--cp-font-mono)">layer-veto</code> …</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No layout that only works at one width. Content inside the stage and panel uses container queries, not viewport breakpoints, so the same component works in both.</div>
+      </div>
+    </section>
+
+    <!-- APP STATES -->
+    <section id="zustaende" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Connection and loading states</h2>
+        <span style="color:var(--cp-ink-2)">What the whole app does when it's starting, losing the connection, or can't open a session.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+        <sc-for list="{{ appStates }}" as="s" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:700">{{ s.k }}</span>
+            <div style="position:relative;min-height:270px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);display:flex;flex-direction:column">
+              <sc-if value="{{ s.bar }}"><div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:2px solid var(--cp-line);background:{{ s.barBg }};color:{{ s.barFg }};font-size:12px;font-weight:700"><span data-spin="{{ s.spin }}" style="display:grid"><dc-import name="Icon" icon="{{ s.barIcon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><span style="flex:1">{{ s.barTxt }}</span><sc-if value="{{ s.barAct }}"><span style="padding:2px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)">{{ s.barActTxt }}</span></sc-if></div></sc-if>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;text-align:center">
+                <sc-if value="{{ s.cb }}"><dc-import name="Compibert" dir="{{ cbDir }}" variant="{{ s.cbV }}" size="{{ s.cbS }}" hint-size="80px,80px"></dc-import></sc-if>
+                <b style="font-family:var(--cp-font-display);font-weight:400;font-size:22px;line-height:1.1;text-wrap:balance;opacity:{{ s.op }}">{{ s.h }}</b>
+                <span style="font-size:13px;color:var(--cp-ink-2);max-width:30ch;text-wrap:pretty">{{ s.t }}</span>
+                <sc-if value="{{ s.btn }}"><span style="margin-top:4px;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px">{{ s.btnTxt }}</span></sc-if>
+              </div>
+            </div>
+            <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ s.note }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Banners for live-session problems (they push content down, never cover it). Full-screen states only when there's nothing to show: first load, invalid link, session gone, crash.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never blame the user. Never lose input: chat drafts, words and votes are queued while offline and sent on reconnect. Reconnects shorter than 2 s show nothing.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Reconnecting is <code style="font-family:var(--cp-font-mono)">role="status"</code>; lost connection is <code style="font-family:var(--cp-font-mono)">role="alert"</code>. Full-screen states move focus to their heading.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Server-timed moments.</b> If you rejoin mid-spin or mid-veto, you land in the current second of it, not at its start. Missed reveals replay in 1 s from the activity feed.</div>
+      </div>
+    </section>
+
+    <footer style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:var(--cp-bw) solid var(--cp-line);font-size:13px;color:var(--cp-ink-2)">
+      <span>COMPIES Design System, Frame</span>
+      <span>Next up: Smoke test</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TEAMS=[[1,'Wilde Gurken',['Kitty','Larsi']],[2,'Team Orange',['Tom','Jo']],[4,'Käse Turbo',['Ben','Ida']],[8,'Nacht Eulen',['Olli']]];
+const LAYERS=[['decor','Deko',1,'Paper texture, Memphis shapes, smoke','#fff3df'],['content','Inhalt',2,'Stage, board, cards','#fffdf8'],['sticky','Sticky',10,'Header, tab bar, sticky list headers','#e9dcc8'],['dock','Host-Dock',30,'Host dock, host button (mobile)','#ffd23f'],['sheet','Sheets',40,'Side sheet, bottom sheet, popovers','#2ec4b6'],['clip','Clip',44,'YouTube clip overlay','#3a86ff'],['veto','Veto',46,'Veto bar and hold button, always above the clip','#ff4f4f'],['modal','Modal',50,'Confirm dialogs (destructive only)','#ff70c3'],['toast','Toasts',60,'Toasts, connection banners','#f6e3a8'],['confetti','Konfetti',70,'Confetti, emotes, celebration; never takes clicks','#ffffff']];
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,wide:true,role:'host',phase:'lobby',pTab:0,mTab:0,sheet:false,zv:{}};
+  root=React.createRef();
+  componentDidMount(){
+    let m=null,mo=null,mu=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs);
+    const cs=getComputedStyle(document.documentElement), zv={}; LAYERS.forEach(([k])=>{ zv[k]=cs.getPropertyValue('--cp-z-'+k).trim(); });
+    this.setState({mode:m,motion:mo,muted:mu==='1',wide:window.innerWidth>=980,zv}); this._sp=[];
+  }
+  componentWillUnmount(){ window.removeEventListener('resize',this._rs); (this._sp||[]).forEach(a=>a.cancel()); }
+  componentDidUpdate(){ const m=this.state.mode; if(m&&m!==this._lm){ this._lm=m; document.body.style.background=m==='dark'?'#17121d':'#fff3df'; }
+    const r=this.root.current; if(r&&this.state.motion!=='reduced'&&!this._spun){ this._spun=true; r.querySelectorAll('[data-spin="1"]').forEach(el=>this._sp.push(el.animate([{transform:'rotate(0)'},{transform:'rotate(360deg)'}],{duration:900,iterations:Infinity}))); } }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+  renderVals(){
+    const S=this.state, mode=S.mode||'light', dark=mode==='dark', host=S.role==='host', lobby=S.phase==='lobby';
+    const seg=(arr,cur,set)=>arr.map(([k,n],i)=>({n,on:cur===k,bl:i?'2px solid var(--cp-line)':'0',bg:cur===k?'var(--cp-ink)':'transparent',fg:cur===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>set(k)}));
+    const btn=(n,icon,kind)=>({n,icon,bs:kind==='dis'?'dashed':'solid',bc:kind==='dis'?'var(--cp-ink-3)':'var(--cp-line)',bg:kind==='p'?'var(--cp-primary)':kind==='dis'?'var(--cp-paper-2)':'var(--cp-surface)',fg:kind==='p'?'var(--cp-on-primary)':kind==='dis'?'var(--cp-ink-3)':'var(--cp-ink)',sh:kind==='p'?'var(--cp-shadow-btn)':'none'});
+    const dockBtns=lobby?[btn('Session starten','play','p'),btn('Teams prüfen','users'),btn('Einladen','link')]:[btn('Rad drehen','ferris-wheel','p'),btn('Clip überspringen','skip-forward'),btn('Ergebnis eintragen','list-ordered')];
+    const dockStates=[
+      {k:'Terminumfrage',btns:[btn('Termin festlegen','calendar-check','p'),btn('Termin vorschlagen','plus'),btn('Einladen','link')],more:true,note:''},
+      {k:'Termin steht, Teams ungleich',btns:[btn('Session starten','play','dis'),btn('Von der Bench nachziehen','users','p'),btn('Einladen','link')],more:true,note:'„Session starten“ ist aus: Nacht Eulen hat 1, die anderen haben 2.'},
+      {k:'Spiel bestimmen',btns:[btn('Rad drehen','ferris-wheel','p'),btn('Spiel direkt setzen','gamepad-2')],more:true,note:''},
+      {k:'Clip und Veto-Fenster',btns:[btn('Clip überspringen','skip-forward'),btn('Veto-Fenster läuft','clock','dis')],more:true,note:'Während der 60 Sekunden ist nichts primär: der Host wartet wie alle.'},
+      {k:'Spiel läuft',btns:[btn('Ergebnis eintragen','list-ordered','p'),btn('Spiel tauschen','refresh-cw')],more:true,note:''},
+      {k:'Eingeklappt',btns:[],more:false,note:'Nach 8 Sekunden ohne Eingabe schrumpft das Dock auf die Krone; ein Tipp oder H klappt es wieder auf.'}].map(d=>Object.assign({hasNote:!!d.note},d));
+    const R=(o)=>Object.assign({av:false,mark:false,ic:false,who:'',team:0,host:false,icon:'',icBg:'',a:'',b:'',r:'',rs:'12px',rf:'var(--cp-font-sans)',bd:'0',bg:'transparent'},o);
+    const tabRows=[
+      [R({av:true,who:'Sanne',host:true,a:'Sanne',b:'Start um 20:30, holt euch Snacks.',r:'20:01'}),R({av:true,who:'Kitty',team:1,a:'Kitty',b:'Wer hat Snacks? Ich hab nur Gurken.',r:'20:02'}),R({av:true,who:'Larsi',team:1,a:'Larsi',b:'Bitte kein Trackmania heute.',r:'20:03'}),R({av:true,who:'Chris',a:'Chris',b:'Ich buh euch von der Tribüne aus.',r:'20:05'}),R({av:true,who:'Olli',team:8,a:'Olli',b:'Nacht Eulen braucht noch wen!',r:'20:06'})],
+      [R({ic:true,icon:'ferris-wheel',icBg:'var(--cp-primary)',a:'Glücksrad: Rocket League',b:'Spiel 1',r:'20:32'}),R({ic:true,icon:'trophy',icBg:'var(--cp-primary)',a:'Wilde Gurken gewinnt',b:'Spiel 1',r:'20:51'}),R({ic:true,icon:'ban',icBg:'var(--cp-hot)',a:'Veto von Larsi und Olli',b:'Trackmania fliegt vom Rad',r:'20:54'}),R({ic:true,icon:'trophy',icBg:'var(--cp-primary)',a:'Nacht Eulen gewinnt',b:'Spiel 2',r:'21:12'})],
+      [R({mark:true,team:1,a:'1. Wilde Gurken',b:'Siege in Spiel 1',r:'5',rs:'22px',rf:'var(--cp-font-num)',bd:'2.5px solid var(--cp-line)',bg:'var(--cp-surface-2)'}),R({mark:true,team:8,a:'1. Nacht Eulen',b:'Sieg in Spiel 2',r:'5',rs:'22px',rf:'var(--cp-font-num)',bd:'2.5px solid var(--cp-line)',bg:'var(--cp-surface-2)'}),R({mark:true,team:2,a:'3. Team Orange',b:'',r:'2',rs:'22px',rf:'var(--cp-font-num)'}),R({mark:true,team:4,a:'4. Käse Turbo',b:'',r:'1',rs:'22px',rf:'var(--cp-font-num)'})],
+      [R({av:true,who:'Kitty',team:1,a:'Kitty (du)',b:'Wilde Gurken',r:'online'}),R({av:true,who:'Larsi',team:1,a:'Larsi',b:'Wilde Gurken',r:'online'}),R({av:true,who:'Olli',team:8,a:'Olli',b:'Nacht Eulen',r:'online'}),R({av:true,who:'Mia',a:'Mia',b:'Bench',r:'offline'}),R({av:true,who:'Sanne',host:true,a:'Sanne',b:'Tribüne',r:'online'})]];
+    const PT=[['Chat','message-square',3],['Aktivität','history',12],['Tabelle','trophy',0],['Leute','users',0]];
+    const pTabs=PT.map(([n,icon,badge],i)=>{ const a=S.pTab===i; return {n,icon,on:a,bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',hasBadge:!!badge&&!a,badge:String(badge),pick:()=>this.setState({pTab:i})}; });
+    const MT=[['Spielbrett','layout-grid',0],['Tabelle','trophy',0],['Chat','message-square',3],['Aktivität','history',12],['Leute','users',0]];
+    const mTabs=MT.map(([n,icon,badge],i)=>{ const a=S.mTab===i; return {n,icon,cur:a?'page':undefined,bar:a?'var(--cp-ink)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',hasBadge:!!badge&&!a,badge:String(badge),pick:()=>this.setState({mTab:i})}; });
+    const mapM=[null,2,0,1,3];
+    const teams=TEAMS.map(([n,name,ppl])=>({n,name,ppl,count:ppl.length+'/2',free:Array.from({length:2-ppl.length},()=>({}))}));
+    const layers=LAYERS.map(([k,n,v,d,bg],i)=>({n,bg,top:(440-i*44)+'px',op:1}));
+    const layersList=LAYERS.slice().reverse().map(([k,n,v,d,bg])=>({tok:'--cp-z-'+k,v:S.zv[k]||String(v),d:n+': '+d,bg}));
+    const bps=[['Mobile','< 600 px',false,'',true,'One column, 56 px header, bottom tab bar, host button. Sheets instead of side sheets and modals.'],['Tablet','600–979 px',false,'',true,'Same shell as mobile with 24 px gutters and two-column grids inside the stage. The side panel stays a tab.'],['Desktop','980–1439 px',true,'34%',false,'Header, stage, 340 px side panel, floating host dock. The main target.'],['Wide','≥ 1440 px',true,'24%',false,'The shell stops at 1440 px and centres on the paper texture. The stage gets more air, nothing gets bigger.']].map(([n,range,panel,pw,tabs,d])=>({n,range,panel,pw,tabs,d}));
+    const st=(o)=>Object.assign({bar:false,barBg:'',barFg:'',barIcon:'',barTxt:'',spin:'0',barAct:false,barActTxt:'',cb:false,cbV:'full',cbS:80,h:'',t:'',btn:false,btnTxt:'',op:1,note:''},o);
+    const appStates=[
+      st({k:'App startet',cb:true,cbV:'full',cbS:96,h:'Compibert sucht die Controller …',t:'',note:'First load and joining via link. After 150 ms, at least 300 ms, then straight into the lobby.'}),
+      st({k:'Verbindung wackelt',bar:true,barBg:'var(--cp-warning)',barFg:'var(--cp-on-warning)',barIcon:'loader-circle',spin:'1',barTxt:'Verbindung wird wiederhergestellt …',h:'Spielbrett',t:'Alles bleibt, wo es ist. Eingaben warten kurz.',op:.55,note:'After 2 s without the server. Content stays readable but dims slightly; actions queue.'}),
+      st({k:'Verbindung weg',bar:true,barBg:'var(--cp-error)',barFg:'var(--cp-on-error)',barIcon:'wifi-off',barTxt:'Verbindung verloren. Deine Vetos sind sicher.',barAct:true,barActTxt:'Neu laden',h:'Spielbrett',t:'Du siehst den letzten Stand.',op:.45,note:'After 15 s. Votes, words and drafts stay queued until reload or reconnect.'}),
+      st({k:'Einladungslink ungültig',cb:true,cbV:'head',cbS:72,h:'Dieser Link ist abgelaufen.',t:'Der Host hat einen neuen Einladungslink erstellt. Frag nach dem neuen.',note:'Rotated or wrong link. No hint at which session it was.'}),
+      st({k:'Session vorbei',cb:true,cbV:'head',cbS:72,h:'Freitags-Zocken ist vorbei.',t:'Wilde Gurken hat gewonnen. Ergebnisse, Chat und Replay liegen im Archiv.',btn:true,btnTxt:'Zum Archiv',note:'Old link to a finished session. Only for people who played; others get the „ungültig“ state.'}),
+      st({k:'Etwas ist schiefgelaufen',cb:true,cbV:'head',cbS:72,h:'Hoppla, das hat nicht geklappt.',t:'Lade die Seite neu. Die Session läuft auf dem Server weiter.',btn:true,btnTxt:'Neu laden',note:'Crash fallback. Shows an error code in small mono text for the host to report.'})];
+    const toc=[['Desktop shell','#desktop'],['Host dock','#dock'],['Mobile shell','#mobile'],['Layer stack','#ebenen'],['Breakpoints','#raster'],['App states','#zustaende']].map(([n,href])=>({n,href}));
+    const mi=S.mTab;
+    return {root:this.root,mode,motion:S.motion,muted:S.muted,wide:S.wide,dir:S.wide?'row':'column',toc,cbDir:dark?'m3b':'m3a',
+      setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,toggleMute:this.toggleMute,
+      roles:seg([['host','Host (Sanne)'],['player','Spielerin (Kitty)']],S.role,k=>this.setState({role:k,sheet:false})),phases:seg([['lobby','Lobby'],['running','Spiel läuft']],S.phase,k=>this.setState({phase:k})),
+      isHost:host,meName:host?'Sanne':'Kitty',lobby,running:!lobby,phasePill:lobby?'Termin steht':'Spiel 3 von 6',phasePillBg:lobby?'var(--cp-surface)':'var(--cp-primary)',phaseDot:lobby?'var(--cp-success)':'var(--cp-hot)',
+      faces:['Kitty','Larsi','Olli','Sanne'].map(n=>({n})),teams,dockBtns,dockStates,pTabs,panelRows:tabRows[S.pTab],panelChat:S.pTab===0,
+      mTabs,mRows:mi?tabRows[mapM[mi]]:[],mTitle:MT[mi][0],mBoard:mi===0,mList:mi!==0,
+      sheet:S.sheet,sheetOpen:S.sheet&&host,toggleSheet:()=>this.setState(s=>({sheet:!s.sheet})),
+      layers,layersList,bps,appStates};
+  }
+}
+</script>
+</body>
+</html>

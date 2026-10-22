@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="./compibert-options.js"></script>
+<script src="./battle-replay.js"></script>
+<style>body{margin:0;background:#f3e8d4;font-family:'Bricolage Grotesque',system-ui,sans-serif;color:#151515}a{color:#151515}a:hover{color:#1f5fe0}button:focus-visible{outline:3px solid #1f5fe0;outline-offset:3px}</style>
+</helmet>
+<section id="t9" ref="{{ root }}" style="padding:48px 52px 56px">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 40px;margin:0 0 30px;max-width:1800px">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:860px">
+      <div style="display:flex;align-items:baseline;gap:10px"><a href="#t9" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:#151515;color:#fff;border-radius:4px;text-decoration:none">9</a><span style="font-weight:700;font-size:13px">Battle replay</span></div>
+      <h1 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:72px;line-height:.9">Der Abend als Schlacht.</h1>
+      <p style="margin:0;font-size:17px;line-height:1.5;text-wrap:pretty">The last 1.0 ticket. Replays a finished session: the parties fight, after every game you see who stands where, with a game cut-in and a random generic gaming line in between. Same data in all three: Freitags-Zocken, 6 games, 4 teams, Eulen lead after game 5 and Gurken win the last one. Hit „Abspielen“.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-width:440px;padding:14px 18px;background:#fffdf8;border:2.5px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515;font-size:14px;line-height:1.45"><b>Meine Wahl: <a href="#9a" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(21,21,21,.1);border-radius:5px;text-decoration:none">9a</a></b><span>The only one where the standing after every game is readable at a glance, and it scales to 8 teams and to Jeder gegen jeden with 8 people. The lead-change stamp is borrowed from <a href="#9c" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(21,21,21,.1);border-radius:5px;text-decoration:none">9c</a> for lead changes.</span></div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start">
+
+    <div id="9a" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+      <div style="display:flex;align-items:baseline;gap:8px;font-size:12px;color:#5d5650"><a href="#9a" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(21,21,21,.1);color:#151515;border-radius:5px;text-decoration:none">9a</a>Race</div>
+      <div style="width:580px;max-width:100%;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;overflow:hidden">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:20px 24px 16px"><h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:40px;line-height:.92">Wettrennen</h2><p style="margin:0;font-size:15px;line-height:1.45;color:#5d5650;text-wrap:pretty">Every party is a token on a lane; points push it toward the finish. The game winner jumps, lead changes get a stamp, Compibert cheers along without words.</p></div>
+        <div data-scene="race" style="position:relative;height:360px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border-top:3px solid #151515;border-bottom:3px solid #151515">
+          <div style="position:absolute;left:16px;right:16px;top:12px;display:flex;align-items:center;gap:10px;z-index:8"><span data-k="gno" style="flex:none;padding:4px 10px;border:2px solid #151515;border-radius:999px;background:#fffdf8;font:800 13px 'Bricolage Grotesque',sans-serif">Start</span><div data-k="cut" style="min-width:0;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:baseline;gap:8px;padding:5px 14px;background:#ffd23f;border:2.5px solid #151515;border-radius:10px;box-shadow:3px 3px 0 #151515;z-index:8;white-space:nowrap;visibility:hidden"><b style="font:400 13px 'Bungee',sans-serif"></b><span style="font:400 22px 'Lilita One',sans-serif;line-height:1"></span></div></div>
+          
+          <div style="position:absolute;left:20px;top:64px;width:410px;height:240px;border:3px solid #151515;border-radius:12px;background:#fffdf8"></div>
+          <div style="position:absolute;left:418px;top:64px;width:12px;height:240px;background:repeating-linear-gradient(0deg,#151515 0 12px,#fffdf8 12px 24px);border:3px solid #151515;border-left:0;border-radius:0 12px 12px 0;box-sizing:border-box"></div>
+          <div data-k="track" style="position:absolute;left:24px;top:68px;width:394px;height:232px"></div>
+          <div style="position:absolute;right:12px;bottom:14px;width:112px;height:96px"><div data-rig="F2" data-view="full" data-id="race" style="width:100%;height:100%"></div></div>
+          
+          <div data-k="fx" style="position:absolute;inset:0;pointer-events:none;z-index:6"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:2px solid rgba(21,21,21,.16)"><button type="button" data-play="race" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;box-shadow:3px 3px 0 #151515;font:700 15px 'Bricolage Grotesque',sans-serif;cursor:pointer">Abspielen</button><span style="font:500 12px/1.45 'JetBrains Mono',monospace;color:#5d5650">≈ 1.45 s per game, 10 s total. Lanes = parties, up to 8.</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 24px 20px;font-size:14px;line-height:1.4"><div><b style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#04794a">Stark</b><ul style="margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Standing after each game is obvious</li><li>Scales to 8 lanes, also for solo mode</li><li>Lead changes read as overtaking</li></ul></div><div><b style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#c01f1f">Schwach</b><ul style="margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>More race than battle</li><li>Little drama when one party runs away</li></ul></div></div>
+      </div>
+    </div>
+
+    <div id="9b" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+      <div style="display:flex;align-items:baseline;gap:8px;font-size:12px;color:#5d5650"><a href="#9b" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(21,21,21,.1);color:#151515;border-radius:5px;text-decoration:none">9b</a>Brawl</div>
+      <div style="width:580px;max-width:100%;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;overflow:hidden">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:20px 24px 16px"><h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:40px;line-height:.92">Arena</h2><p style="margin:0;font-size:15px;line-height:1.45;color:#5d5650;text-wrap:pretty">Party shields in a ring. The game winner charges the middle, everyone gets knocked back, and shields grow with points. The ranking strip re-sorts below.</p></div>
+        <div data-scene="arena" style="position:relative;height:360px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border-top:3px solid #151515;border-bottom:3px solid #151515">
+          <span data-k="gno" style="position:absolute;left:16px;top:14px;padding:4px 10px;border:2px solid #151515;border-radius:999px;background:#fffdf8;font:800 13px 'Bricolage Grotesque',sans-serif;z-index:3">Start</span>
+          <div style="position:absolute;left:30px;top:52px;width:500px;height:226px;border-radius:50%;background:#fbe9cc;border:4px solid #151515;box-shadow:inset 0 0 0 10px #ffd23f,inset 0 0 0 13px #151515"></div>
+          <div data-k="ring" style="position:absolute;left:30px;top:52px;width:500px;height:226px"></div>
+          <div data-k="strip" style="position:absolute;left:20px;top:300px;width:416px;height:40px"></div>
+          <div style="position:absolute;right:4px;bottom:6px;width:120px;height:102px"><div data-rig="F2" data-view="full" data-id="arena" style="width:100%;height:100%"></div></div>
+          <div data-k="bub" style="position:absolute;right:14px;top:14px;max-width:150px;padding:8px 10px;background:#fffdf8;border:2.5px solid #151515;border-radius:12px 12px 2px 12px;font:800 13px/1.2 'Bricolage Grotesque',sans-serif;opacity:0;z-index:5"></div>
+          <div data-k="cut" style="position:absolute;left:140px;top:140px;display:flex;align-items:baseline;gap:10px;padding:10px 22px;background:#ffd23f;border:3px solid #151515;box-shadow:5px 5px 0 #151515;z-index:8;white-space:nowrap"><b style="font:400 18px 'Bungee',sans-serif"></b><span style="font:400 30px 'Lilita One',sans-serif"></span></div>
+          <div data-k="fx" style="position:absolute;left:30px;top:52px;width:500px;height:226px;pointer-events:none;z-index:6"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:2px solid rgba(21,21,21,.16)"><button type="button" data-play="arena" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;box-shadow:3px 3px 0 #151515;font:700 15px 'Bricolage Grotesque',sans-serif;cursor:pointer">Abspielen</button><span style="font:500 12px/1.45 'JetBrains Mono',monospace;color:#5d5650">≈ 2.7 s per game. Strip re-sorts with Flip.</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 24px 20px;font-size:14px;line-height:1.4"><div><b style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#04794a">Stark</b><ul style="margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Literally a battle, the most physical</li><li>Comic sound words fit the Memphis style</li><li>Growing shields show momentum</li></ul></div><div><b style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#c01f1f">Schwach</b><ul style="margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Standing only readable in the strip</li><li>Crowded beyond 6 parties</li></ul></div></div>
+      </div>
+    </div>
+
+    <div id="9c" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px">
+      <div style="display:flex;align-items:baseline;gap:8px;font-size:12px;color:#5d5650"><a href="#9c" style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(21,21,21,.1);color:#151515;border-radius:5px;text-decoration:none">9c</a>Arcade</div>
+      <div style="width:580px;max-width:100%;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;overflow:hidden">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:20px 24px 16px"><h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:40px;line-height:.92">Kampfbildschirm</h2><p style="margin:0;font-size:15px;line-height:1.45;color:#5d5650;text-wrap:pretty">Each game as a fighting-game round on the dark stage: game winner vs. runner-up, health bars, K.O. The ladder on the right keeps the totals.</p></div>
+        <div data-scene="fight" style="position:relative;height:360px;overflow:hidden;background-color:#17121d;background-image:radial-gradient(ellipse at 50% -10%,rgba(255,176,32,.18),transparent 55%);border-top:3px solid #151515;border-bottom:3px solid #151515;color:#f7efe1">
+          <span data-k="gno" style="position:absolute;left:16px;top:14px;padding:4px 10px;border:2px solid #f7efe1;border-radius:999px;background:#221b2b;font:800 13px 'Bricolage Grotesque',sans-serif">Start</span>
+          <div style="position:absolute;left:16px;top:48px;width:180px;display:flex;flex-direction:column;gap:4px"><span data-k="nmL" style="font:800 13px 'Bricolage Grotesque',sans-serif;min-height:17px"></span><div style="height:14px;border:2.5px solid #f7efe1;border-radius:4px;overflow:hidden"><div data-k="barL" style="height:100%;background:#ffd23f;transform-origin:0 50%"></div></div></div>
+          <div style="position:absolute;left:206px;top:58px;font:400 22px 'Bungee',sans-serif;color:#ff5a36">VS</div>
+          <div style="position:absolute;left:250px;top:48px;width:150px;display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span data-k="nmR" style="font:800 13px 'Bricolage Grotesque',sans-serif;min-height:17px"></span><div style="width:100%;height:14px;border:2.5px solid #f7efe1;border-radius:4px;overflow:hidden"><div data-k="barR" style="height:100%;background:#ffd23f;transform-origin:100% 50%"></div></div></div>
+          <div style="position:absolute;left:16px;right:156px;top:268px;height:2.5px;background:#f7efe1"></div>
+          <div data-k="L" style="position:absolute;left:70px;top:150px;width:86px;height:118px;border:3px solid #f7efe1;border-radius:20px 20px 6px 6px;display:grid;place-items:center;box-shadow:5px 5px 0 #ff5a36"><span style="font:800 26px 'Bricolage Grotesque',sans-serif"></span></div>
+          <div data-k="R" style="position:absolute;left:260px;top:150px;width:86px;height:118px;border:3px solid #f7efe1;border-radius:20px 20px 6px 6px;display:grid;place-items:center;box-shadow:5px 5px 0 #ff5a36"><span style="font:800 26px 'Bricolage Grotesque',sans-serif"></span></div>
+          <div data-k="big" style="position:absolute;left:16px;right:156px;top:100px;text-align:center;font:400 52px 'Lilita One',sans-serif;color:#ffd23f;text-shadow:4px 4px 0 #ff5a36;z-index:7;pointer-events:none"></div>
+          <div data-k="ladder" style="position:absolute;right:12px;top:48px;width:136px;display:flex;flex-direction:column;gap:8px;padding:10px;border:2.5px solid #f7efe1;border-radius:12px;background:#221b2b"></div>
+          <div style="position:absolute;right:20px;bottom:6px;width:116px;height:116px"><div data-rig="F2" data-view="bust" data-id="fight" data-dark="1" style="width:100%;height:100%"></div></div>
+          <div data-k="bub" style="position:absolute;left:16px;bottom:14px;max-width:240px;padding:8px 10px;background:#fffdf8;color:#151515;border:2.5px solid #f7efe1;border-radius:12px 12px 12px 2px;font:800 13px/1.2 'Bricolage Grotesque',sans-serif;opacity:0;z-index:5"></div>
+          <div data-k="cut" style="position:absolute;left:90px;top:160px;display:flex;align-items:baseline;gap:10px;padding:10px 22px;background:#ffd23f;color:#151515;border:3px solid #f7efe1;box-shadow:5px 5px 0 #ff5a36;z-index:8;white-space:nowrap"><b style="font:400 18px 'Bungee',sans-serif"></b><span style="font:400 30px 'Lilita One',sans-serif"></span></div>
+          <div data-k="fx" style="position:absolute;inset:0;pointer-events:none;z-index:6"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:2px solid rgba(21,21,21,.16)"><button type="button" data-play="fight" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;box-shadow:3px 3px 0 #151515;font:700 15px 'Bricolage Grotesque',sans-serif;cursor:pointer">Abspielen</button><span style="font:500 12px/1.45 'JetBrains Mono',monospace;color:#5d5650">≈ 3.4 s per game, 21 s total.</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 24px 20px;font-size:14px;line-height:1.4"><div><b style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#04794a">Stark</b><ul style="margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>The most „gaming“; everyone gets the reference</li><li>Big moments: FIGHT!, K.O.!</li><li>Dark stage, sticker look</li></ul></div><div><b style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#c01f1f">Schwach</b><ul style="margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Only two parties per round on screen</li><li>Longest; gets samey by game 6</li></ul></div></div>
+      </div>
+    </div>
+
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;margin-top:36px;padding:18px 22px;background:#fffdf8;border:2.5px solid #151515;border-radius:12px">
+    <b style="font-size:16px">Gilt für alle drei</b>
+    <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:14px;line-height:1.45">
+      <li>Gaming lines are generic, never brand or game quotes: „GG!“, „Clutch!“, „Respawn in 3 …“, „Achievement freigeschaltet“, „Comeback-Modus“ … drawn without repeats from a pool of 16, extendable.</li>
+      <li>Controls: play/pause, skip to the next game, speed 1× / 2×. Starts paused in the archive; autoplays once after the ceremony if the host chooses „Replay ansehen“.</li>
+      <li>Reduced motion: per game a still frame (cut-in card + standing) with a 200 ms crossfade; „Weiter“ button instead of a timer.</li>
+      <li>Data: per-game placements from the result entry; no new fields needed.</li>
+    </ul>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  root = React.createRef();
+  rigs = []; scenes = {};
+  componentDidMount() {
+    const go = () => (window.gsap && window.CBO && window.BR && this.root.current) ? this.boot() : (this._t = setTimeout(go, 60));
+    go();
+  }
+  boot() {
+    if (this.booted) return; this.booted = true;
+    gsap.defaults({ overwrite: 'auto' });
+    const s = document.documentElement.style;
+    Object.entries(CBO.CW.Minze).forEach(([k, v]) => s.setProperty('--cb-' + k, v)); s.setProperty('--cb-ink', '#151515');
+    const root = this.root.current, R = {};
+    root.querySelectorAll('[data-rig]').forEach((d, i) => { const r = CBO.mount(d, 900 + i); this.rigs.push(r); R[d.dataset.id] = r; CBO.treat(r, d.dataset.dark ? 'Sticker' : 'Harter Schatten'); });
+    this.R = R;
+    const init = () => root.querySelectorAll('[data-scene]').forEach(el => { const id = el.dataset.scene; if (this.scenes[id] || !el.offsetWidth || !el.querySelector('[data-k="track"],[data-k="ring"],[data-k="ladder"]').offsetWidth) return; try { this.scenes[id] = BR.init(id, el, R); } catch (e) { console.warn('scene ' + id + ': ' + e.message); } });
+    const wait = (n) => { init(); if (Object.keys(this.scenes).length < 3 && n < 60) this._w = setTimeout(() => wait(n + 1), 80); };
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(() => requestAnimationFrame(() => wait(0))));
+    root.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => { init(); const sc = this.scenes[b.dataset.play]; sc && sc.play(); }));
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._w); this.rigs.forEach(r => CBO.kill(r)); }
+  renderVals() { return { root: this.root }; }
+}
+</script>
+</body>
+</html>

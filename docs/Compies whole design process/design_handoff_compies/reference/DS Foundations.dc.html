@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button{font:inherit;color:inherit}button:focus-visible,a:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="cvd-p"><feColorMatrix type="matrix" values="0.152286 1.052583 -0.204868 0 0  0.114503 0.786281 0.099216 0 0  -0.003882 -0.048116 1.051998 0 0  0 0 0 1 0"></feColorMatrix></filter>
+  <filter id="cvd-d"><feColorMatrix type="matrix" values="0.367322 0.860646 -0.227968 0 0  0.280085 0.672501 0.047413 0 0  -0.011820 0.042940 0.968881 0 0  0 0 0 1 0"></feColorMatrix></filter>
+  <filter id="cvd-t"><feColorMatrix type="matrix" values="1.255528 -0.076749 -0.178779 0 0  -0.078411 0.930809 0.147602 0 0  0.004733 0.691367 0.303900 0 0  0 0 0 1 0"></feColorMatrix></filter>
+  <filter id="cvd-g"><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
+</svg>
+<div ref="{{ root }}" data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ L.dir }}">
+
+  <aside aria-label="Design-System-Navigation" style="position:{{ L.pos }};top:0;align-self:flex-start;z-index:10;box-sizing:border-box;width:{{ L.w }};height:{{ L.h }};overflow-y:auto;flex:none;background:var(--cp-paper);border-right:{{ L.br }};border-bottom:{{ L.bb }};padding:20px 18px;display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 48 }}" hint-size="48px,48px"></dc-import>
+      <div style="display:flex;flex-direction:column;gap:2px;line-height:1">
+        <span style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;text-transform:uppercase">Compies</span>
+        <span style="font-size:13px;color:var(--cp-ink-2)">Design System v1.0</span>
+      </div>
+    </div>
+    <nav aria-label="Design-System-Seiten" style="display:flex;flex-direction:{{ L.nav }};gap:2px;overflow-x:auto;scrollbar-width:none">
+      <sc-for list="{{ pages }}" as="pg" hint-placeholder-count="8">
+        <sc-if value="{{ pg.cur }}"><span aria-current="page" style="flex:none;display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;background:var(--cp-ink);color:var(--cp-paper);font-weight:700;white-space:nowrap">{{ pg.n }}</span></sc-if>
+        <sc-if value="{{ pg.link }}"><a href="{{ pg.href }}" style="flex:none;display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;font-weight:700;text-decoration:none;white-space:nowrap">{{ pg.n }}</a></sc-if>
+        <sc-if value="{{ pg.soon }}"><span title="Folgt im nächsten Block" style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;padding:0 12px;color:var(--cp-ink-2);white-space:nowrap">{{ pg.n }}<span style="font-size:12px">folgt</span></span></sc-if>
+      </sc-for>
+    </nav>
+    <sc-if value="{{ L.toc }}">
+      <div style="display:flex;flex-direction:column;gap:2px;padding-top:16px;border-top:2px solid var(--cp-line-soft)">
+        <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2);padding:0 12px 6px">On this page</span>
+        <sc-for list="{{ toc }}" as="tc" hint-placeholder-count="7"><a href="{{ tc.href }}" style="display:flex;align-items:center;min-height:36px;padding:0 12px;border-radius:10px;text-decoration:none">{{ tc.n }}</a></sc-for>
+      </div>
+    </sc-if>
+    <div style="margin-top:auto;display:flex;flex-wrap:wrap;gap:8px">
+      <div role="group" aria-label="Farbmodus" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+        <button type="button" onClick="{{ setLight }}" aria-pressed="{{ isLight }}" style="display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:0;cursor:pointer;font-weight:700;font-size:13px;background:{{ lightBg }};color:var(--cp-ink)"><dc-import name="Icon" icon="sun" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Hell</button>
+        <button type="button" onClick="{{ setDark }}" aria-pressed="{{ isDark }}" style="display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:0;border-left:2px solid var(--cp-line);cursor:pointer;font-weight:700;font-size:13px;background:{{ darkBg }};color:{{ darkInk }}"><dc-import name="Icon" icon="moon" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Dunkel</button>
+      </div>
+      <button type="button" onClick="{{ toggleMute }}" aria-pressed="{{ muted }}" aria-label="{{ muteLabel }}" title="{{ muteLabel }}" style="display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);cursor:pointer"><dc-import name="Icon" icon="{{ muteIcon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></button>
+      <button type="button" onClick="{{ toggleMotion }}" aria-pressed="{{ isReduced }}" style="display:flex;align-items:center;gap:6px;height:44px;padding:0 14px;border:2px solid var(--cp-line);border-radius:999px;background:{{ motionBg }};cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap"><dc-import name="Icon" icon="sparkles" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ motionLabel }}</button>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;max-width:1240px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:88px">
+
+    <section style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:32px;align-items:end">
+      <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+                <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,96px);line-height:.9;text-wrap:balance">Konfetti, aufgeräumt.</h1>
+        <p style="margin:0;max-width:64ch;font-size:17px;line-height:1.5;text-wrap:pretty">The tokens behind every COMPIES screen. Light mode is <b>3a Memphis Klassik</b> (cream paper, ink outlines, hard black shadows). Dark mode is <b>3b Bühne</b> (stage fog, cream outlines, the one orange shadow). Same components and same tokens, two lighting setups. The switches in the side rail flip the whole page.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card)">
+        <span style="font-size:13px;font-weight:700">Files in the handoff</span>
+        <div style="display:flex;flex-direction:column;gap:8px;font-family:var(--cp-font-mono);font-size:13px">
+          <a href="tokens/compies-tokens.css" style="display:flex;justify-content:space-between;gap:12px"><span>tokens/compies-tokens.css</span><span style="color:var(--cp-ink-2)">CSS variables, both modes</span></a>
+          <a href="tokens/compies-theme.css" style="display:flex;justify-content:space-between;gap:12px"><span>tokens/compies-theme.css</span><span style="color:var(--cp-ink-2)">Tailwind v4 @theme</span></a>
+          <a href="tokens/lucide-subset.js" style="display:flex;justify-content:space-between;gap:12px"><span>tokens/lucide-subset.js</span><span style="color:var(--cp-ink-2)">icon data (MIT)</span></a>
+        </div>
+        <div style="height:2px;background:var(--cp-line-soft)"></div>
+        <span style="font-size:13px;color:var(--cp-ink-2);line-height:1.45">Mode: <code style="font-family:var(--cp-font-mono)">html[data-theme]</code>, set by <code style="font-family:var(--cp-font-mono)">@nuxtjs/color-mode</code> (OS default, then the user's choice). Motion: <code style="font-family:var(--cp-font-mono)">html[data-motion=reduced]</code> from the profile setting, plus the OS media query.</span>
+      </div>
+    </section>
+
+    <!-- 01 COLOR -->
+    <section id="farbe" style="display:flex;flex-direction:column;gap:28px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">Color</h2>
+        <span style="color:var(--cp-ink-2)">Hex values and contrast ratios are read live from the CSS for the current mode.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Brand</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:20px">
+          <sc-for list="{{ brand }}" as="s" hint-placeholder-count="5">
+            <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden;display:flex;flex-direction:column">
+              <div style="height:92px;background:{{ s.v }};color:{{ s.on }};border-bottom:var(--cp-bw) solid var(--cp-line);display:flex;align-items:flex-end;justify-content:space-between;padding:10px 12px">
+                <span style="font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">Aa</span>
+                <span style="font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ s.ratio }}</span>
+              </div>
+              <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px">
+                <b style="font-size:16px">{{ s.name }}</b>
+                <span style="font-family:var(--cp-font-mono);font-size:12px">{{ s.token }}, {{ s.hex }}</span>
+                <span style="font-size:13px;color:var(--cp-ink-2);line-height:1.4;text-wrap:pretty">{{ s.use }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Neutrals</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px">
+          <sc-for list="{{ neutrals }}" as="s" hint-placeholder-count="9">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div style="height:72px;border-radius:12px;border:2px solid var(--cp-line);background:{{ s.bg }};color:{{ s.fg }};display:flex;align-items:flex-end;justify-content:space-between;padding:8px 10px">
+                <span style="font-family:var(--cp-font-display);font-weight:400;font-size:22px;line-height:1">Aa</span>
+                <span style="font-family:var(--cp-font-mono);font-size:11px;font-weight:700">{{ s.ratio }}</span>
+              </div>
+              <b style="font-size:14px">{{ s.name }}</b>
+              <span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2);overflow-wrap:anywhere">{{ s.token }}, {{ s.hex }}</span>
+              <span style="font-size:13px;color:var(--cp-ink-2);line-height:1.35">{{ s.use }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Semantic</h3>
+        <p style="margin:0;max-width:72ch;color:var(--cp-ink-2)">Each state has a <b style="color:var(--cp-ink)">fill</b> (badges, banners, toasts; ink text on top) and an <b style="color:var(--cp-ink)">fg</b> tone for text and icons on paper or surface. A state always comes with an icon and a word, never colour alone. Warning (amber) and team Orange are close by design. They never appear without their icon or symbol.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px">
+          <sc-for list="{{ semantic }}" as="s" hint-placeholder-count="4">
+            <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:14px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px;align-self:flex-start;padding:6px 12px 6px 8px;border-radius:999px;border:2px solid var(--cp-line);background:{{ s.fill }};color:{{ s.on }};font-weight:700;font-size:13px"><dc-import name="Icon" icon="{{ s.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ s.chip }}<span style="font-family:var(--cp-font-mono);font-size:11px;margin-left:6px">{{ s.r1 }}</span></div>
+              <div style="display:flex;align-items:center;gap:8px;color:{{ s.fg }};font-weight:700"><dc-import name="Icon" icon="{{ s.icon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import><span>{{ s.msg }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:2px;font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)"><span><b style="color:var(--cp-ink)">{{ s.n }}</b>, fill {{ s.hexFill }}</span><span>fg {{ s.hexFg }}, {{ s.r2 }} on surface</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Team colours</h3><span style="font-size:13px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--cp-hot);color:var(--cp-on-hot)">New palette</span></div>
+        <p style="margin:0;max-width:78ch;color:var(--cp-ink-2);text-wrap:pretty">Based on the Okabe–Ito set, which stays distinguishable for protan, deutan and tritan vision. Each team has three channels: <b style="color:var(--cp-ink)">colour + symbol + pattern</b>. The colours are the same in light and dark mode, so team identity never changes. Names are assigned in this order. The free-for-all palette uses the same eight.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px">
+          <sc-for list="{{ teams }}" as="tm" hint-placeholder-count="8">
+            <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden;display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:{{ tm.v }};color:{{ tm.ink }}">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:currentColor"><path d="{{ tm.sym }}"></path></svg>
+                <b style="font-family:var(--cp-font-display);font-weight:400;font-size:18px">Team {{ tm.n }}</b>
+                <span style="margin-left:auto;font-family:var(--cp-font-mono);font-size:11px;font-weight:700">{{ tm.ratio }}</span>
+              </div>
+              <div style="height:44px;background-color:{{ tm.v }};background-image:{{ tm.pat }};background-size:16px 16px;border-top:var(--cp-bw) solid var(--cp-line);border-bottom:var(--cp-bw) solid var(--cp-line)"></div>
+              <div style="padding:10px 12px 12px;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13px">
+                <span style="color:var(--cp-ink-2)">Token</span><span style="font-family:var(--cp-font-mono);font-size:12px">--cp-team-{{ tm.k }}, {{ tm.hex }}</span>
+                <span style="color:var(--cp-ink-2)">Symbol</span><span>{{ tm.symN }}</span>
+                <span style="color:var(--cp-ink-2)">Pattern</span><span>{{ tm.patN }}</span>
+                <span style="color:var(--cp-ink-2)">Ink</span><span>{{ tm.inkN }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><b style="font-size:16px">Colour-vision simulation</b><span style="font-size:13px;color:var(--cp-ink-2)">Machado 2009, full severity, applied to the real chips. Grayscale shows the worst case: symbol and pattern still carry it.</span></div>
+          <sc-for list="{{ cvd }}" as="row" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center">
+              <span style="font-size:13px;font-weight:700">{{ row.n }}</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;filter:{{ row.f }}">
+                <sc-for list="{{ teams }}" as="tm" hint-placeholder-count="8">
+                  <div style="display:flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 0;border-radius:999px;border:2px solid var(--cp-line);background:{{ tm.v }};color:{{ tm.ink }};font-weight:700;font-size:13px;overflow:hidden">
+                    <span style="width:26px;align-self:stretch;background-image:{{ tm.pat }};background-size:12px 12px;border-right:2px solid var(--cp-line)"></span>
+                    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="fill:currentColor"><path d="{{ tm.sym }}"></path></svg>{{ tm.n }}
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-success-fg)">Use for</span><span style="text-wrap:pretty">Team zone headers, the avatar ring of team members, wheel slices (one slice per <i>game</i> cycles through the eight), veto chips, leaderboard rows, chat name dots.</span></div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-error-fg)">Don't</span><span style="text-wrap:pretty">Don't use team colours for UI states or buttons. Never put a pattern behind text: patterns live on strips, slot wells and slice rims. Don't recolour a team between screens.</span></div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-info-fg)">Accessibility</span><span style="text-wrap:pretty">Team ink on team fill is ≥ 4.5:1 for all eight. On neutral surfaces the symbol gets a 1.5 px ink outline, so Gelb stays visible on cream. Screen readers announce teams by name: „Team Wilde Kartoffel, Rot, 2 von 2“.</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Contrast check ({{ modeName }})</h3>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 90px 110px;gap:12px;padding:10px 16px;border-bottom:2px solid var(--cp-line);font-size:13px;font-weight:700"><span>Pair</span><span>Sample</span><span>Ratio</span><span>WCAG AA</span></div>
+          <sc-for list="{{ pairs }}" as="p" hint-placeholder-count="14">
+            <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 90px 110px;gap:12px;align-items:center;padding:8px 16px;border-bottom:1.5px solid var(--cp-line-soft);font-size:13px">
+              <span style="font-family:var(--cp-font-mono);font-size:12px;overflow-wrap:anywhere">{{ p.n }}</span>
+              <span style="padding:4px 10px;border-radius:8px;background:{{ p.bg }};color:{{ p.fg }};font-weight:700;justify-self:start;border:1.5px solid var(--cp-line-soft)">{{ p.sample }}</span>
+              <span style="font-family:var(--cp-font-mono);font-weight:700">{{ p.ratio }}</span>
+              <span style="font-weight:700;color:{{ p.passC }}">{{ p.pass }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 TYPE -->
+    <section id="typo" style="display:flex;flex-direction:column;gap:28px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">Typography</h2>
+        <span style="color:var(--cp-ink-2)">Lilita One shouts, Bricolage Grotesque talks, Bungee keeps score.</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Headlines and timers, --cp-font-display</span>
+          <span style="font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:.95">Lilita One</span>
+          <span style="font-size:15px;line-height:1.45;text-wrap:pretty">Titles, section and card headings, team names, and the big countdowns. Chunky and slightly condensed, so long German compounds still fit a zone header. It has one weight, so hierarchy comes from size and colour, never from bold.</span>
+          <span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">Google Fonts, OFL, weight 400 only. Never synthesize bold.</span>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Scores, --cp-font-num</span>
+          <span style="font-family:var(--cp-font-num);font-size:48px;line-height:1">0123456789</span>
+          <span style="font-size:15px;line-height:1.45;text-wrap:pretty">Bungee for points, ranks, scores and the podium. Timers use Lilita One instead, so a countdown reads as a headline, not a score. Both go through <b>CpNum</b>: every digit sits in a fixed slot (Bungee 0.74 em, Lilita 0.6 em), so nothing wobbles.</span>
+          <span style="font-family:var(--cp-font-mono);font-size:12px;color:{{ digitC }};font-weight:700">{{ digitTxt }}</span>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Text and UI, --cp-font-sans</span>
+          <span style="font-family:var(--cp-font-sans);font-weight:700;font-size:40px;line-height:1.05">Bricolage Grotesque</span>
+          <span style="font-size:15px;line-height:1.45;text-wrap:pretty">Body, buttons, inputs, chat, tables and labels. 500 for text, 700 for emphasis and buttons. The optical-size axis keeps small text open. JetBrains Mono appears only in these docs and the handoff, never in the product.</span>
+          <span style="font-family:var(--cp-font-mono);font-size:12px;color:{{ tnumC }};font-weight:700">{{ tnumTxt }}</span>
+        </div>
+      </div>
+
+      <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr) 150px minmax(0,220px);gap:16px;padding:10px 16px;border-bottom:2px solid var(--cp-line);font-size:13px;font-weight:700"><span>Token</span><span>Sample</span><span>Desktop / mobile</span><span>Use</span></div>
+        <sc-for list="{{ scale }}" as="s" hint-placeholder-count="11">
+          <div style="display:grid;grid-template-columns:150px minmax(0,1fr) 150px minmax(0,220px);gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <span style="font-family:var(--cp-font-mono);font-size:12px">{{ s.t }}</span>
+            <span style="font-family:{{ s.f }};font-weight:{{ s.w }};font-size:{{ s.sz }};line-height:{{ s.lh }};letter-spacing:{{ s.ls }};text-transform:{{ s.tt }};min-width:0;overflow-x:clip;overflow-y:visible;padding-block:.08em;text-overflow:ellipsis;white-space:nowrap">{{ s.sample }}</span>
+            <span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">{{ s.spec }}</span>
+            <span style="font-size:13px;color:var(--cp-ink-2);line-height:1.35">{{ s.use }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Numerals</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px">
+          <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap">
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:clamp(64px,4vw + 36px,96px);line-height:.92"><dc-import name="Num" v="0:42" face="timer" say="42 Sekunden" hint-size="200px,88px"></dc-import></span><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">num-xl, veto countdown</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:clamp(40px,1.6vw + 28px,56px);line-height:.95"><dc-import name="Num" v="08:42" face="timer" say="8 Minuten 42" hint-size="180px,52px"></dc-import></span><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">num-lg, Anpfiff in</span></div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap">
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font-family:var(--cp-font-num);font-size:32px;line-height:1">47</span><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">num-md, points</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font-family:var(--cp-font-num);font-size:20px;line-height:1.1">16:12</span><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">num-sm, score</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font-family:var(--cp-font-num);font-size:15px;line-height:1.2">3/5</span><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">num-xs, vetos</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font-family:var(--cp-font-num);font-size:32px;line-height:1;color:var(--cp-success-fg)">+3</span><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">delta</span></div>
+            </div>
+          </div>
+          <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Tabular alignment</span>
+            <sc-for list="{{ lb }}" as="r" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:44px minmax(0,1fr) auto 64px;gap:12px;align-items:center;padding:6px 0;border-bottom:1.5px solid var(--cp-line-soft)">
+                <span style="font-family:var(--cp-font-num);font-size:20px">{{ r.rk }}</span>
+                <span style="font-weight:700;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.n }}</span>
+                <span style="font-family:var(--cp-font-num);font-size:15px;color:var(--cp-success-fg)">{{ r.d }}</span>
+                <span style="font-size:32px;line-height:1;display:flex;justify-content:flex-end"><dc-import name="Num" v="{{ r.p }}" hint-size="72px,32px"></dc-import></span>
+              </div>
+            </sc-for>
+            <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Numbers are right-aligned and sit in digit slots, so a countdown never wobbles and a rank change doesn't shift the column. Bungee numbers use the <code style="font-family:var(--cp-font-mono)">CpNum</code> component (utilities <code style="font-family:var(--cp-font-mono)">num</code> + <code style="font-family:var(--cp-font-mono)">num-slot</code> / <code style="font-family:var(--cp-font-mono)">num-sep</code>). Small Bricolage numbers (chat times, tables) use <code style="font-family:var(--cp-font-mono)">num-ui</code>.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">German words: hyphenation &amp; truncation</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-error-fg)">hyphens: manual</span>
+            <div style="width:150px;padding:10px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface);font-family:var(--cp-font-display);font-weight:400;font-size:20px;line-height:1.1;overflow:hidden">Schildkröten­überraschungs­kommando Käsekuchenverschwörung</div>
+            <span style="font-size:13px;color:var(--cp-ink-2)">The second word overflows the box without auto hyphenation.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-success-fg)">hyphens: auto with lang="de"</span>
+            <div lang="de" style="width:150px;padding:10px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface);font-family:var(--cp-font-display);font-weight:400;font-size:20px;line-height:1.1;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word">Schildkröten­überraschungs­kommando Käsekuchenverschwörung</div>
+            <span style="font-size:13px;color:var(--cp-ink-2)">Browser dictionary + <code style="font-family:var(--cp-font-mono)">&amp;shy;</code> in fixed copy.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-info-fg)">Team names: 1 line + tooltip</span>
+            <div title="Team Schildkröten Überraschung Turbo" style="width:170px;display:flex;align-items:center;gap:8px;padding:8px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-team-4);color:var(--cp-team-4-ink)"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="flex:none;fill:currentColor"><path d="M12 2.5 21.5 12 12 21.5 2.5 12Z"></path></svg><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--cp-font-display);font-weight:400;font-size:16px">Schildkröten Überraschung Turbo</span></div>
+            <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Team names are made of player words and never get hyphenated. They're cut with an ellipsis, and the full name shows on hover, on focus and via <code style="font-family:var(--cp-font-mono)">aria-label</code>.</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-success-fg)">Rules</span><span style="text-wrap:pretty">Set <code style="font-family:var(--cp-font-mono)">lang="de"</code> on &lt;html&gt;. Body text and info-sheet copy use <code style="font-family:var(--cp-font-mono)">hyphenate</code>. Headings use <code style="font-family:var(--cp-font-mono)">text-wrap: balance</code>, plus <code style="font-family:var(--cp-font-mono)">&amp;shy;</code> where a compound is known (Tiebreaker-Pool, Teamwahl).</span></div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-error-fg)">Never hyphenate</span><span style="text-wrap:pretty">Player names, team names, game names, buttons, badges or numbers. Buttons get shorter copy instead („Veto halten“, not „Veto einlegen und bestätigen“).</span></div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-info-fg)">Accessibility</span><span style="text-wrap:pretty">Body text never goes below 15 px on desktop or 16 px on mobile (16 px also stops iOS from zooming into inputs). Nothing is smaller than 12 px. Text reflows at 200 % zoom without horizontal scrolling. Never put text in all-caps Bungee.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 SPACE -->
+    <section id="raum" style="display:flex;flex-direction:column;gap:28px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">Spacing, grid &amp; breakpoints</h2>
+        <span style="color:var(--cp-ink-2)">4 px base, desktop first, mobile fully functional.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Spacing scale, Tailwind <code style="font-family:var(--cp-font-mono)">--spacing: 4px</code></span>
+          <sc-for list="{{ space }}" as="s" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:60px 70px minmax(0,1fr);gap:10px;align-items:center;font-size:13px">
+              <span style="font-family:var(--cp-font-mono);font-size:12px">{{ s.k }}</span>
+              <span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">{{ s.px }}</span>
+              <div style="display:flex;align-items:center;gap:10px;min-width:0"><span style="flex:none;height:16px;width:{{ s.px }};background:var(--cp-hot);border:2px solid var(--cp-line);border-radius:4px"></span><span style="color:var(--cp-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.use }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Layout tokens</span>
+            <sc-for list="{{ layout }}" as="s" hint-placeholder-count="7"><div style="display:grid;grid-template-columns:160px 64px minmax(0,1fr);gap:10px;font-size:13px;align-items:baseline"><span style="font-family:var(--cp-font-mono);font-size:12px">{{ s.k }}</span><b>{{ s.v }}</b><span style="color:var(--cp-ink-2)">{{ s.use }}</span></div></sc-for>
+          </div>
+          <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Reference frame at 1280</span>
+            <div style="display:grid;grid-template-rows:22px 1fr;gap:6px;height:170px;font-size:11px;font-weight:700">
+              <div style="background:var(--cp-paper-2);border:2px solid var(--cp-line);border-radius:6px;display:flex;align-items:center;padding:0 8px">Header 64</div>
+              <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr)) 30%;gap:4px">
+                <sc-for list="{{ cols12 }}" as="c" hint-placeholder-count="12"><div style="background:rgba(255,79,79,.16);border:1.5px dashed var(--cp-hot);border-radius:4px"></div></sc-for>
+                <div style="background:var(--cp-paper-2);border:2px solid var(--cp-line);border-radius:6px;display:grid;place-items:center;text-align:center;padding:4px">Side panel 340<br>Chat, Aktivität</div>
+              </div>
+            </div>
+            <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">The board area uses a 12-column grid with 24 px gutters (16 on mobile) and 4 columns below 768. The side panel is fixed, the board is fluid. The host dock floats bottom-left over the board and never covers the panel.</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:110px 130px minmax(0,1fr);gap:16px;padding:10px 16px;border-bottom:2px solid var(--cp-line);font-size:13px;font-weight:700"><span>Breakpoint</span><span>Range</span><span>What changes</span></div>
+        <sc-for list="{{ bps }}" as="b" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:110px 130px minmax(0,1fr);gap:16px;align-items:center;padding:10px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <span style="font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ b.k }}</span>
+            <span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">{{ b.r }}</span>
+            <span style="font-size:14px;text-wrap:pretty">{{ b.d }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- 04 FORM -->
+    <section id="form" style="display:flex;flex-direction:column;gap:28px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">Radii, borders, shadows, textures</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Radii</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px">
+          <sc-for list="{{ radii }}" as="r" hint-placeholder-count="7">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="height:76px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:{{ r.v }};box-shadow:var(--cp-shadow-sm)"></div>
+              <span style="font-family:var(--cp-font-mono);font-size:12px"><b>{{ r.k }}</b>, {{ r.v }}</span>
+              <span style="font-size:13px;color:var(--cp-ink-2);line-height:1.35">{{ r.use }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Borders</h3>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:60px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"></div><b style="font-size:13px">Outline, --cp-bw</b><span style="font-size:13px;color:var(--cp-ink-2)">3 px light / 2.5 px dark. Cards, zones, buttons, inputs.</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:60px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"></div><b style="font-size:13px">Thin, 2 px</b><span style="font-size:13px;color:var(--cp-ink-2)">Avatars, chips, checkboxes, nested controls.</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:60px;border-radius:12px;background:var(--cp-surface);display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 12px"><div style="height:1.5px;background:var(--cp-line-soft)"></div><div style="height:1.5px;background:var(--cp-line-soft)"></div></div><b style="font-size:13px">Divider, line-soft 1.5 px</b><span style="font-size:13px;color:var(--cp-ink-2)">Rows inside panels: chat, tables, settings.</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:60px;border:2px dashed var(--cp-line);border-radius:12px;background:var(--cp-paper-2)"></div><b style="font-size:13px">Dashed, 2 px</b><span style="font-size:13px;color:var(--cp-ink-2)">Empty slots and drop targets only; it means “something can go here”.</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Hard offset shadows</h3>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 14px">
+            <sc-for list="{{ shadows }}" as="s" hint-placeholder-count="6">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="height:60px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-surface);box-shadow:{{ s.v }};margin-right:10px"></div>
+                <span style="font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ s.k }}</span>
+                <span style="font-size:13px;color:var(--cp-ink-2);line-height:1.35">{{ s.use }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Textures</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px">
+          <div style="display:flex;flex-direction:column;gap:8px"><div data-theme="light" style="height:120px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size)"></div><b>Paper, light</b><span style="font-size:13px;color:var(--cp-ink-2)">Dot grid, 22 px, 10 % ink. App background only.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px"><div data-theme="dark" style="height:120px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size)"></div><b>Stage fog, dark</b><span style="font-size:13px;color:var(--cp-ink-2)">Warm spotlight from above, vignette below. Animated smoke sits on top (Smoke page).</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px"><div style="height:120px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-paper-2);position:relative;overflow:hidden">
+            <span style="position:absolute;left:18%;top:22%;width:38px;height:38px;border-radius:50%;background:var(--cp-team-1);border:4px solid var(--cp-sticker-rim);box-shadow:var(--cp-sticker-shadow);transform:rotate(-8deg)"></span>
+            <span style="position:absolute;left:46%;top:44%;width:42px;height:42px;border-radius:10px;background:var(--cp-team-3);border:4px solid var(--cp-sticker-rim);box-shadow:var(--cp-sticker-shadow);transform:rotate(14deg)"></span>
+            <span style="position:absolute;left:70%;top:16%;width:34px;height:34px;border-radius:10px;background:var(--cp-team-6);border:4px solid var(--cp-sticker-rim);box-shadow:var(--cp-sticker-shadow);transform:rotate(-20deg)"></span>
+            <span style="position:absolute;left:30%;top:64%;width:30px;height:30px;border-radius:50%;background:var(--cp-team-7);border:4px solid var(--cp-sticker-rim);box-shadow:var(--cp-sticker-shadow)"></span>
+          </div><b>Sticker</b><span style="font-size:13px;color:var(--cp-ink-2)">Die-cut rim, white in both modes, soft drop. For confetti and gutter decor. Never on cards or chat.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px"><div style="height:120px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden;display:grid;grid-template-columns:repeat(4,1fr)"><sc-for list="{{ teams }}" as="tm" hint-placeholder-count="8"><div style="background-color:{{ tm.v }};background-image:{{ tm.pat }};background-size:16px 16px"></div></sc-for></div><b>Team patterns</b><span style="font-size:13px;color:var(--cp-ink-2)">16 px SVG tiles, 26–34 % ink. Utility <code style="font-family:var(--cp-font-mono)">pattern-team-3</code>.</span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-success-fg)">Elevation logic</span><span style="text-wrap:pretty">Hard shadows mean “you can touch this”. On hover an element lifts 1 px (the shadow grows); on press it sinks into its shadow (translate 4/4, shadow 0). Flat surfaces with no shadow can't be interacted with.</span></div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-error-fg)">Don't</span><span style="text-wrap:pretty">No blurred shadows except <code style="font-family:var(--cp-font-mono)">soft</code> (tooltips, toasts). No gradients on surfaces. Use only one orange stage shadow per element in dark mode, never orange on orange.</span></div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-info-fg)">Accessibility</span><span style="text-wrap:pretty">Outlines are ≥ 3:1 against the background (ink 17:1, cream 16:1), so component edges pass WCAG 1.4.11. Under forced-colors the shadows drop out and the borders stay.</span></div>
+      </div>
+    </section>
+
+    <!-- 05 ICONS -->
+    <section id="icons" style="display:flex;flex-direction:column;gap:28px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">Icons &amp; illustration</h2>
+        <span style="color:var(--cp-ink-2)">Lucide (MIT), restyled: 2.5 px round line, offset duplicate on active.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px">
+          <sc-for list="{{ icons }}" as="ic" hint-placeholder-count="40">
+            <div title="{{ ic.k }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:8px;text-align:center">
+              <dc-import name="Icon" icon="{{ ic.k }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import>
+              <span style="font-size:12px;line-height:1.2">{{ ic.de }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:12px">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Sizes and stroke</span>
+            <div style="display:flex;align-items:flex-end;gap:22px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Icon" icon="crown" size="{{ 16 }}" hint-size="16px,16px"></dc-import><span style="font-family:var(--cp-font-mono);font-size:11px">16, 2</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import><span style="font-family:var(--cp-font-mono);font-size:11px">20, 2.5</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Icon" icon="crown" size="{{ 24 }}" hint-size="24px,24px"></dc-import><span style="font-family:var(--cp-font-mono);font-size:11px">24, 2.5</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Icon" icon="crown" size="{{ 32 }}" sw="{{ 2.25 }}" hint-size="32px,32px"></dc-import><span style="font-family:var(--cp-font-mono);font-size:11px">32, 2.25</span></div>
+            </div>
+            <div style="height:1.5px;background:var(--cp-line-soft)"></div>
+            <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Default and active</span>
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="display:grid;place-items:center;width:48px;height:48px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface)"><dc-import name="Icon" icon="message-square" size="{{ 22 }}" hint-size="22px,22px"></dc-import></div>
+              <dc-import name="Icon" icon="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></dc-import>
+              <div style="display:grid;place-items:center;width:48px;height:48px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface)"><dc-import name="Icon" icon="message-square" size="{{ 22 }}" offset="var(--cp-hot)" hint-size="22px,22px"></dc-import></div>
+              <span style="font-size:13px;color:var(--cp-ink-2);line-height:1.35">The active tab or toggle gets a Glut offset copy behind the line.</span>
+            </div>
+          </div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-success-fg)">Use</span><span style="text-wrap:pretty">Always pair an icon with a label, except in the header, the emote bar and the clip controls. There, icon-only buttons need <code style="font-family:var(--cp-font-mono)">aria-label</code> + a tooltip and a 44 px hit area. Icons inherit <code style="font-family:var(--cp-font-mono)">currentColor</code>.</span></div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-error-fg)">Don't</span><span style="text-wrap:pretty">Don't mix in other icon sets, use filled icons or recolour icons per team. Lucide has no Discord or Twitch logos, so sign-in uses the official brand marks as supplied assets.</span></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,2fr);gap:20px;align-items:stretch">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+          <dc-import name="Compibert" dir="{{ cbDir }}" variant="full" size="{{ 200 }}" hint-size="200px,168px"></dc-import>
+          <b style="font-size:16px">Compibert</b>
+          <span style="font-size:13px;color:var(--cp-ink-2);text-align:center;text-wrap:pretty">Original character. An SVG rig of named parts, animated by GSAP through a state machine.</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-success-fg)">Illustration rules</span><span style="text-wrap:pretty">Flat candy fills, 3 px ink outline, hard offset shadow, the same grammar as the UI. Only one Compibert per view (the award ceremony is the exception). He sits on edges, peeks out of frames and never covers controls.</span></div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-success-fg)">States (rig)</span><span style="text-wrap:pretty">idle, blink, think (loading), cheer, roar, sulk (veto), dance (award), peek. Rig parts: head, jaw, eye, brow, arm, legF, legB, tail, spikes, belly.</span></div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-error-fg)">Don't</span><span style="text-wrap:pretty">No references to film dinosaurs or other brands, no photos, no 3D (except the optional award podium), no system emoji anywhere.</span></div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--cp-info-fg)">Accessibility</span><span style="text-wrap:pretty">Decorative Compibert uses <code style="font-family:var(--cp-font-mono)">aria-hidden</code>. When he carries meaning (thinking = loading), the container gets <code style="font-family:var(--cp-font-mono)">role="status"</code> and a text such as „Compibert denkt nach …“.</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Emote illustration brief</h3><span style="font-size:13px;color:var(--cp-ink-2)">Placeholders until the illustrator delivers. Final art: SVG, same rig style, 128 px artboard, readable at 32 px.</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px">
+          <sc-for list="{{ emotes }}" as="em" hint-placeholder-count="4">
+            <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden;display:flex;flex-direction:column">
+              <div style="height:130px;display:grid;place-items:center;background:repeating-linear-gradient(45deg,var(--cp-paper-2) 0 10px,var(--cp-surface) 10px 20px);border-bottom:var(--cp-bw) solid var(--cp-line)"><span style="font-family:var(--cp-font-mono);font-size:12px;padding:4px 8px;background:var(--cp-surface);border:1.5px solid var(--cp-line-soft);border-radius:6px">{{ em.slot }}</span></div>
+              <div style="padding:12px 14px;display:flex;flex-direction:column;gap:4px"><b style="font-size:16px">{{ em.n }}</b><span style="font-size:13px;line-height:1.4;text-wrap:pretty">{{ em.brief }}</span><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">aria-label „{{ em.aria }}“</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 MOTION -->
+    <section id="bewegung" style="display:flex;flex-direction:column;gap:28px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">Motion</h2>
+        <span style="color:var(--cp-ink-2)">Pop for UI, drama for moments. Switch motion to <b style="color:var(--cp-ink)">reduziert</b> in the side rail to see every calm variant.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Durations</span>
+          <sc-for list="{{ durs }}" as="d" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:130px 64px minmax(0,1fr);gap:10px;align-items:center;font-size:13px">
+              <span style="font-family:var(--cp-font-mono);font-size:12px">{{ d.k }}</span><b style="font-family:var(--cp-font-mono);font-size:12px">{{ d.v }}</b>
+              <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="height:8px;width:{{ d.w }};background:var(--cp-hot);border-radius:4px"></span><span style="color:var(--cp-ink-2);line-height:1.3">{{ d.use }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+          <sc-for list="{{ eases }}" as="e" hint-placeholder-count="6">
+            <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><b style="font-family:var(--cp-font-mono);font-size:12px">{{ e.k }}</b><button type="button" onClick="{{ e.play }}" aria-label="{{ e.aria }}" style="display:grid;place-items:center;width:44px;height:44px;margin:-8px -8px -8px 0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:30px;height:30px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="play" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></button></div>
+              <svg viewBox="-6 -26 112 152" style="width:100%;height:96px;overflow:visible" aria-hidden="true"><rect x="0" y="0" width="100" height="100" fill="none" stroke="var(--cp-line-soft)" stroke-width="1.5"></rect><path d="{{ e.d }}" fill="none" stroke="var(--cp-hot)" stroke-width="4" stroke-linecap="round"></path></svg>
+              <div style="height:20px;border-radius:999px;background:var(--cp-paper-2);position:relative"><span ref="{{ e.ref }}" style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--cp-ink)"></span></div>
+              <span style="font-family:var(--cp-font-mono);font-size:11px;color:var(--cp-ink-2);overflow-wrap:anywhere">{{ e.css }}</span>
+              <span style="font-size:13px;line-height:1.35">{{ e.use }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:18px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Stagger: 40 ms, capped at 400 ms</span><button type="button" onClick="{{ playStagger }}" style="display:flex;align-items:center;gap:6px;height:44px;padding:0 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Abspielen</button></div>
+          <div ref="{{ R.stagger }}" style="display:flex;gap:10px;flex-wrap:wrap">
+            <sc-for list="{{ staggerAv }}" as="a" hint-placeholder-count="8"><span style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line);background:{{ a.c }};color:{{ a.ink }};font-weight:700;font-size:13px">{{ a.i }}</span></sc-for>
+          </div>
+        </div>
+        <div style="padding:16px 18px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-success-fg)">Choreography rules</span>
+          <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;text-wrap:pretty">
+            <li><b>Overshoot is physical.</b> ease-pop and ease-spring only for things that land: avatars, stickers, the coin, emotes, a climbing rank. Buttons, tabs, toasts, sheets and modals use ease-out or ease-snap and never bounce.</li>
+            <li><b>One hero at a time.</b> During a moment (spin, reveal, coin, podium) everything else holds still. Smoke slows to 50 %, idle loops pause.</li>
+            <li><b>Container → content → decor.</b> The panel lands first, then its rows stagger in, then stickers.</li>
+            <li><b>Exits are faster than entries</b> (× 0.7) and never bounce.</li>
+            <li><b>Server time rules.</b> The wheel, clip, countdown and reveals start from server timestamps. The client may only ease in and out around them.</li>
+            <li><b>Stagger caps at 400 ms total.</b> With more than 10 items, the stagger shrinks; it never gets longer.</li>
+            <li><b>Never block input.</b> Every animation can be interrupted, and a new state jumps straight to the end of the old one.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:24px">Animation classes</h3><span style="font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;border:2px solid var(--cp-line);background:{{ motionBg }}">Now playing: {{ motionLabel }}</span></div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;padding:10px 16px;border-bottom:2px solid var(--cp-line);font-size:13px;font-weight:700"><span>Class, used for</span><span>Full</span><span>Reduced motion</span><span>Demo</span></div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Pop-in</b><span style="font-size:13px;color:var(--cp-ink-2)">Physical landings only: an avatar dropping into a slot, stickers, emotes, the winning slice</span></div>
+            <span style="font-size:13px">360 ms, ease-pop, scale .6 → 1.06 → 1, rotate −6° → 0</span>
+            <span style="font-size:13px">Fade 140 ms, no scale</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.pop }}" aria-label="Pop-in abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px"><span ref="{{ R.pop }}" style="padding:6px 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-weight:700;font-size:13px;box-shadow:var(--cp-shadow-sm)">Neu dabei!</span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Press</b><span style="font-size:13px;color:var(--cp-ink-2)">Buttons, chips, grabbing an avatar</span></div>
+            <span style="font-size:13px">80 ms down, ease-snap, translate 4/4 px, shadow → 0, 140 ms up</span>
+            <span style="font-size:13px">Same; the travel is tiny and gives tactile feedback</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.press }}" aria-label="Press abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px"><span ref="{{ R.press }}" style="padding:8px 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-weight:700;font-size:13px;box-shadow:var(--cp-shadow-btn)">Rad drehen</span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Drag lift</b><span style="font-size:13px;color:var(--cp-ink-2)">Avatar picked up on the board</span></div>
+            <span style="font-size:13px">140 ms, ease-out, scale 1.12, rotate −8°, shadow-lift; follows the pointer with 60 ms lag</span>
+            <span style="font-size:13px">Scale 1.04, no rotation, no lag</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.lift }}" aria-label="Drag lift abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px"><span ref="{{ R.lift }}" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line);background:#ffd6a5;color:#151515;font-weight:700;font-size:13px">OL</span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Bounce back</b><span style="font-size:13px;color:var(--cp-ink-2)">Rejected drop: the slot was taken first, or the zone is locked</span></div>
+            <span style="font-size:13px">600 ms, ease-spring, springs back to its origin + 2 wiggles; the slot flashes Glut</span>
+            <span style="font-size:13px">Dims at the target, reappears at the origin (2 × 120 ms)</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.bounce }}" aria-label="Bounce back abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--cp-paper-2);border-radius:12px"><span ref="{{ R.bounce }}" style="display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px solid var(--cp-line);background:#caffbf;color:#151515;font-weight:700;font-size:13px;position:relative;z-index:1">MA</span><span ref="{{ R.bounceT }}" style="width:40px;height:40px;border-radius:50%;border:2px dashed var(--cp-line)"></span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Emote rise</b><span style="font-size:13px;color:var(--cp-ink-2)">Emote above the sender's avatar</span></div>
+            <span style="font-size:13px">1400 ms, ease-out, pops to 1.08, rises 64 px, fades from 80 %</span>
+            <span style="font-size:13px">Appears in place, holds 1 s, fades out</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.emote }}" aria-label="Emote abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;background:var(--cp-paper-2);border-radius:12px;position:relative;overflow:hidden"><span ref="{{ R.emote }}" style="position:absolute;left:50%;bottom:30px;margin-left:-32px;width:64px;text-align:center;padding:2px 0;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:800;font-size:12px;opacity:0">ROAAR</span><span style="display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:#bdb2ff;color:#151515;font-weight:700;font-size:11px">CH</span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Sheet in / out</b><span style="font-size:13px;color:var(--cp-ink-2)">Side sheet, bottom sheet, chat drawer, modal</span></div>
+            <span style="font-size:13px">In 360 ms ease-out from the edge, out 250 ms ease-in, overlay fades 220 ms</span>
+            <span style="font-size:13px">Fade 140 ms in place</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.sheet }}" aria-label="Sheet abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;background:var(--cp-paper-2);border-radius:12px;position:relative;overflow:hidden"><span ref="{{ R.sheet }}" style="position:absolute;right:0;top:0;bottom:0;width:58%;background:var(--cp-surface);border-left:var(--cp-bw) solid var(--cp-line);display:flex;align-items:center;padding-left:10px;font-weight:700;font-size:13px;transform:translateX(110%)">So läuft's</span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Reveal transform</b><span style="font-size:13px;color:var(--cp-ink-2)">Hidden wheel slice → real game name</span></div>
+            <span style="font-size:13px">300 ms ease-in flip X to 90°, swap, 300 ms ease-pop back + sticker puff</span>
+            <span style="font-size:13px">Crossfade 200 ms, no flip</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.reveal }}" aria-label="Reveal abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px;perspective:400px"><span ref="{{ R.reveal }}" style="padding:6px 12px;border-radius:8px;border:2px solid var(--cp-line);background:var(--cp-team-4);color:var(--cp-team-4-ink);font-weight:800;font-size:14px;white-space:nowrap">Mario Kartoffel</span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Veto stamp</b><span style="font-size:13px;color:var(--cp-ink-2)">Veto reveal, ban</span></div>
+            <span style="font-size:13px">220 ms ease-in, scale 2.4 → 1, rotate −12°; stage shakes 3 × 6 px; all parties land at once, 90 ms stagger</span>
+            <span style="font-size:13px">Fades in at its final size, no shake, no stagger</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.stamp }}" aria-label="Veto-Stempel abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div ref="{{ R.stampStage }}" style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px"><span ref="{{ R.stamp }}" style="padding:2px 12px;border:4px solid var(--cp-hot);color:var(--cp-hot);border-radius:8px;font-family:var(--cp-font-num);font-size:22px;transform:rotate(-12deg);opacity:0">VETO</span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Coin flip</b><span style="font-size:13px;color:var(--cp-ink-2)">Pick &amp; Ban: who starts</span></div>
+            <span style="font-size:13px">1600 ms ease-out, CSS 3D rotateY 5½ turns, 40 px arc, landing squash 0.92</span>
+            <span style="font-size:13px">Crossfades to the result face, 300 ms</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.coin }}" aria-label="Münzwurf abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px;perspective:300px"><span ref="{{ R.coin }}" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:3px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-family:var(--cp-font-num);font-size:16px;box-shadow:var(--cp-shadow-sm)">K</span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Rank change</b><span style="font-size:13px;color:var(--cp-ink-2)">Leaderboard rows (GSAP Flip)</span></div>
+            <span style="font-size:13px">600 ms ease-pop, rows swap, 60 ms stagger; the climber gets a −1.5° wobble + Sonne flash</span>
+            <span style="font-size:13px">Crossfade the new order 200 ms; a ▲ / ▼ marker shows the change</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.rank }}" aria-label="Rangwechsel abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 8px;background:var(--cp-paper-2);border-radius:12px;overflow:hidden">
+              <span ref="{{ R.rank }}" style="display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:6px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:700;position:relative;z-index:1"><span style="font-family:var(--cp-font-num)">1</span><span style="width:8px;height:8px;border-radius:50%;background:var(--cp-team-6)"></span>Team Blau<span style="margin-left:auto;font-family:var(--cp-font-num);color:var(--cp-success-fg)">▲</span></span>
+              <span ref="{{ R.rank2 }}" style="display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:6px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:700"><span style="font-family:var(--cp-font-num)">2</span><span style="width:8px;height:8px;border-radius:50%;background:var(--cp-team-1)"></span>Team Rot</span>
+            </div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Countdown tick</b><span style="font-size:13px;color:var(--cp-ink-2)">Veto window, last 10 s</span></div>
+            <span style="font-size:13px">220 ms per second, ease-pop, scale 1.14; the ring turns Glut at ≤ 10 s</span>
+            <span style="font-size:13px">Colour change only, no pulse</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.tick }}" aria-label="Countdown abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px"><span ref="{{ R.tick }}" style="display:inline-block;font-size:34px;line-height:1;color:{{ tickC }}"><dc-import name="Num" v="{{ tickV }}" face="timer" hint-size="90px,34px"></dc-import></span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Hold fill</b><span style="font-size:13px;color:var(--cp-ink-2)">Hold-to-confirm: veto, ban, pick</span></div>
+            <span style="font-size:13px">1000 ms linear fill, released early = 200 ms drain, confirm: pop + stamp</span>
+            <span style="font-size:13px">Same fill (it carries meaning), no pop on confirm</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.hold }}" aria-label="Hold fill abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px"><span ref="{{ R.holdBtn }}" style="position:relative;overflow:hidden;display:flex;align-items:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-hot);color:var(--cp-on-hot);font-weight:800;font-size:13px;box-shadow:var(--cp-shadow-btn)"><span ref="{{ R.hold }}" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:rgba(21,21,21,.24);transform-origin:left;transform:scaleX(0)"></span><span style="position:relative">Veto halten</span></span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Wheel spin</b><span style="font-size:13px;color:var(--cp-ink-2)">Lucky wheel, server-timed</span></div>
+            <span style="font-size:13px">Server duration (6–9 s), power4.out, 1 tick per slice passing the pointer; the winning slice pops out 12 px</span>
+            <span style="font-size:13px">No rotation: the highlight steps across 3 slices (180 ms each), then the result crossfades in</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.spin }}" aria-label="Rad abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;display:grid;place-items:center;background:var(--cp-paper-2);border-radius:12px;position:relative"><span ref="{{ R.spin }}" style="width:52px;height:52px;border-radius:50%;border:2.5px solid var(--cp-line);background:conic-gradient(var(--cp-team-1) 0 12.5%,var(--cp-team-2) 0 25%,var(--cp-team-3) 0 37.5%,var(--cp-team-4) 0 50%,var(--cp-team-5) 0 62.5%,var(--cp-team-6) 0 75%,var(--cp-team-7) 0 87.5%,var(--cp-team-8) 0)"></span><span style="position:absolute;left:50%;top:2px;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid var(--cp-ink)"></span></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Sticker confetti</b><span style="font-size:13px;color:var(--cp-ink-2)">Joins (dose 1), game win (3), wheel stop (2), award (5)</span></div>
+            <span style="font-size:13px">Cannon 1200 ms ease-out, then a 3–6 s flutter fall; stickers turn on their Y axis and land</span>
+            <span style="font-size:13px">30 % of the stickers, no flight: they fade in place, hold, fade out (600 ms)</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.conf }}" aria-label="Konfetti abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div ref="{{ R.conf }}" style="flex:1;height:64px;background:var(--cp-paper-2);border-radius:12px;position:relative;overflow:hidden"></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1.1fr) 240px;gap:16px;align-items:center;padding:12px 16px">
+            <div style="display:flex;flex-direction:column;gap:2px"><b>Smoke drift</b><span style="font-size:13px;color:var(--cp-ink-2)">Background, specified on the Smoke page</span></div>
+            <span style="font-size:13px">36–76 s loops, ease-io, drift ± 6 %, opacity ± 20 % (demo runs at 10× speed)</span>
+            <span style="font-size:13px">Static, at rest. No movement at all.</span>
+            <div style="display:flex;align-items:center;gap:12px"><button type="button" onClick="{{ play.smoke }}" aria-label="Rauch abspielen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import></button><div style="flex:1;height:64px;background:var(--cp-paper-2);border-radius:12px;position:relative;overflow:hidden"><span ref="{{ R.smoke }}" style="position:absolute;left:20%;top:-30%;width:90px;height:90px;border-radius:50%;background:radial-gradient(closest-side,var(--cp-pop),transparent);opacity:.55"></span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 SOUND -->
+    <section id="sound" style="display:flex;flex-direction:column;gap:28px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">Sound</h2>
+        <span style="color:var(--cp-ink-2)">A toy box, not an arcade. The sketches below are synthesized in the browser and only show the character.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+        <sc-for list="{{ soundRules }}" as="r" hint-placeholder-count="6">
+          <div style="padding:16px 18px;border-radius:12px;background:var(--cp-paper-2);display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:{{ r.c }}">{{ r.k }}</span><span style="text-wrap:pretty">{{ r.v }}</span></div>
+        </sc-for>
+      </div>
+      <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,1.4fr) 90px;gap:16px;padding:10px 16px;border-bottom:2px solid var(--cp-line);font-size:13px;font-weight:700"><span>Play</span><span>Moment</span><span>Character</span><span>Length</span></div>
+        <sc-for list="{{ sounds }}" as="s" hint-placeholder-count="12">
+          <div style="display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,1.4fr) 90px;gap:16px;align-items:center;padding:8px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+            <button type="button" onClick="{{ s.play }}" aria-label="{{ s.aria }}" style="display:grid;place-items:center;width:44px;height:44px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);cursor:pointer"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+            <div style="display:flex;flex-direction:column;gap:1px;min-width:0"><b>{{ s.n }}</b><span style="font-size:13px;color:var(--cp-ink-2)">{{ s.when }}</span></div>
+            <span style="font-size:14px;text-wrap:pretty">{{ s.c }}</span>
+            <span style="font-family:var(--cp-font-mono);font-size:12px">{{ s.len }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ muted }}"><div role="status" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-warning);color:var(--cp-on-warning);font-weight:700"><dc-import name="Icon" icon="volume-x" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Ton ist aus. Schalte ihn oben rechts ein, um die Skizzen zu hören.</div></sc-if>
+    </section>
+
+    <footer style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:var(--cp-bw) solid var(--cp-line);font-size:13px;color:var(--cp-ink-2)">
+      <span>COMPIES Design System, Foundations</span>
+      <span>Next up: Basics</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const VARS=['paper','paper-2','surface','surface-2','overlay','ink','ink-2','ink-3','line','line-soft','primary','on-primary','hot','on-hot','mint','pop','cobalt','focus','success','on-success','success-fg','warning','on-warning','warning-fg','error','on-error','error-fg','info','on-info','info-fg','online','offline'].concat([1,2,3,4,5,6,7,8].flatMap(k=>['team-'+k,'team-'+k+'-ink']));
+const hx=s=>{s=(s||'').trim();if(s[0]!=='#')return null;let h=s.slice(1);if(h.length===3)h=[...h].map(c=>c+c).join('');return [0,2,4].map(i=>parseInt(h.substr(i,2),16));};
+const lum=c=>{const a=c.map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*a[0]+.7152*a[1]+.0722*a[2];};
+const CR=(a,b)=>{const x=hx(a),y=hx(b);if(!x||!y)return null;const l1=lum(x),l2=lum(y);return (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05);};
+const fr=r=>r==null?'—':(r>=10?r.toFixed(1):r.toFixed(2))+':1';
+const TEAM=[['Rot','M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16Z','Kreis ●','Punkte'],['Orange','M12 3.5 21 19.5H3Z','Dreieck ▲','Zickzack'],['Gelb','M5 5h14v14H5Z','Quadrat ■','Karo'],['Himmel','M12 2.5 21.5 12 12 21.5 2.5 12Z','Raute ◆','Rauten'],['Grün','M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z','Kreuz ✚','Kreuze'],['Blau','M3 8.5h18v7H3Z','Balken ▬','Streifen'],['Pink','M3 17a9 9 0 0 1 18 0Z','Bogen ◓','Bögen'],['Nacht','M12 2 14.6 9.4 22 12 14.6 14.6 12 22 9.4 14.6 2 12 9.4 9.4Z','Stern ✦','Sterne']];
+const E={snap:'cubic-bezier(.2,0,0,1)',out:'cubic-bezier(.16,1,.3,1)',in:'cubic-bezier(.7,0,.84,0)',io:'cubic-bezier(.65,0,.35,1)',pop:'cubic-bezier(.34,1.56,.64,1)',spring:'cubic-bezier(.5,1.8,.4,.8)',linear:'linear'};
+const EB={snap:[.2,0,0,1],out:[.16,1,.3,1],in:[.7,0,.84,0],io:[.65,0,.35,1],pop:[.34,1.56,.64,1],spring:[.5,1.8,.4,.8]};
+
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,vals:{},digit:null,tnum:null,tick:12,wide:true};
+  root=React.createRef();
+  R=Object.fromEntries(['pop','press','lift','bounce','bounceT','emote','sheet','reveal','stamp','stampStage','coin','rank','rank2','tick','hold','holdBtn','spin','conf','smoke','stagger'].concat(Object.keys(EB).map(k=>'e_'+k)).map(k=>[k,React.createRef()]));
+  componentDidMount(){
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs); this._rs();
+    let m=null,mo=null,mu=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this.setState({mode:m,motion:mo,muted:mu==='1'},()=>requestAnimationFrame(()=>this.measure()));
+    const f=document.fonts; if(f){ Promise.all([f.load('40px Bungee'),f.load('500 20px "Bricolage Grotesque"'),f.load('40px "Lilita One"')]).then(()=>this.checkDigits()).catch(()=>{}); }
+  }
+  componentDidUpdate(){ const m=this.state.mode; if(m&&this._lastMode!==m){ this._lastMode=m; requestAnimationFrame(()=>this.measure()); document.body.style.background=m==='dark'?'#17121d':'#fff3df'; } }
+  measure(){ const el=this.root.current; if(!el) return; const cs=getComputedStyle(el); const v={}; VARS.forEach(k=>v[k]=cs.getPropertyValue('--cp-'+k).trim()); this.setState({vals:v}); }
+  checkDigits(){
+    const c=document.createElement('canvas').getContext('2d'); c.font='40px Bungee';
+    const w=[...'0123456789'].map(d=>c.measureText(d).width/40); const digit={min:Math.min(...w),max:Math.max(...w)};
+    const mk=t=>{const s=document.createElement('span');s.textContent=t;s.style.cssText='position:absolute;visibility:hidden;font:500 20px "Bricolage Grotesque";font-variant-numeric:tabular-nums;white-space:nowrap';document.body.appendChild(s);const x=s.getBoundingClientRect().width;s.remove();return x;};
+    const tnum=Math.abs(mk('1111111111')-mk('0000000000'))<.5;
+    this.setState({digit,tnum});
+  }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+
+  // ---------- sound sketches ----------
+  ac(){ if(!this._ac){ const C=window.AudioContext||window.webkitAudioContext; if(!C) return null; this._ac=new C(); this._m=this._ac.createGain(); this._m.gain.value=.45; this._m.connect(this._ac.destination);} if(this._ac.state==='suspended') this._ac.resume(); return this._ac; }
+  tone(t,f,d,o={}){ const c=this._ac,os=c.createOscillator(),g=c.createGain(); os.type=o.type||'sine'; os.frequency.setValueAtTime(f,t); if(o.f2) os.frequency.exponentialRampToValueAtTime(o.f2,t+d); if(o.vib){const l=c.createOscillator(),lg=c.createGain();l.frequency.value=o.vib;lg.gain.value=f*.025;l.connect(lg);lg.connect(os.frequency);l.start(t);l.stop(t+d+.05);} const a=o.a||.005; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(o.g||.3,t+a); if(o.hold) g.gain.setValueAtTime(o.g||.3,t+o.hold); g.gain.exponentialRampToValueAtTime(.0001,t+d); os.connect(g); let out=g; if(o.lp){const fl=c.createBiquadFilter();fl.type='lowpass';fl.frequency.value=o.lp;g.connect(fl);out=fl;} out.connect(this._m); os.start(t); os.stop(t+d+.05); }
+  noise(t,d,o={}){ const c=this._ac,n=Math.max(1,Math.floor(c.sampleRate*d)),b=c.createBuffer(1,n,c.sampleRate),ch=b.getChannelData(0); for(let i=0;i<n;i++) ch[i]=Math.random()*2-1; const s=c.createBufferSource(); s.buffer=b; const fl=c.createBiquadFilter(); fl.type=o.type||'bandpass'; fl.frequency.value=o.f||1200; fl.Q.value=o.Q||1; const g=c.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(o.g||.3,t+(o.a||.003)); if(o.hold) g.gain.setValueAtTime(o.g||.3,t+o.hold); g.gain.exponentialRampToValueAtTime(.0001,t+d); s.connect(fl); fl.connect(g); g.connect(this._m); s.start(t); s.stop(t+d+.02); return g; }
+  wood(t,g=.28){ this.tone(t,880,.07,{g}); this.tone(t,1760,.03,{g:g*.4,type:'triangle'}); this.noise(t,.02,{f:2800,Q:3,g:g*.5}); }
+  snd(k){
+    if(this.state.muted) return; const c=this.ac(); if(!c) return; const t=c.currentTime+.03;
+    const S={
+      tick:()=>{ for(let i=0;i<4;i++) this.wood(t+i*.11); },
+      suspense:()=>{ let x=0,i=0; while(x<3.6){ this.wood(t+x,.26-(x/3.6)*.08); x+=.05*Math.pow(1.17,i++); } this.tone(t,196,x,{type:'sawtooth',g:.035,f2:392,lp:900,a:.4}); this.noise(t,x,{f:6000,Q:.8,g:.03,a:.5}); },
+      reveal:()=>{ [523.25,659.25,783.99,1046.5].forEach((f,i)=>{ this.tone(t+i*.085,f,.55,{g:.26}); this.tone(t+i*.085,f*4,.07,{g:.05,type:'triangle'}); }); this.tone(t+.34,1318.5,.8,{g:.12}); },
+      veto:()=>{ this.tone(t,150,.28,{f2:48,g:.7}); this.noise(t,.14,{type:'lowpass',f:900,g:.45}); this.tone(t+.18,349.2,.34,{type:'sawtooth',f2:311,g:.13,lp:1500,vib:7}); this.tone(t+.52,293.7,.75,{type:'sawtooth',f2:207.7,g:.13,lp:1300,vib:6}); },
+      coin:()=>{ this.tone(t,2637,.5,{g:.12}); this.tone(t,3951,.35,{g:.07}); for(let i=0;i<14;i++) this.noise(t+.08+i*.065*(1+i*.04),.02,{f:5200,Q:6,g:.08}); const l=t+1.35; this.tone(l,2093,.9,{g:.14}); this.tone(l,3136,.6,{g:.08}); this.tone(l+.09,2093,.5,{g:.06}); },
+      fanfare:()=>{ [[392,0,.2],[523.25,.2,.2],[659.25,.4,.2],[783.99,.6,1.4]].forEach(([f,o,d])=>{ this.tone(t+o,f,d,{type:'sawtooth',g:.12,lp:2400,vib:o>.5?6:0,a:.02,hold:d*.6}); this.tone(t+o,f*1.005,d,{type:'square',g:.04,lp:1800,a:.02,hold:d*.6}); }); [523.25,659.25].forEach(f=>this.tone(t+.6,f,1.4,{type:'sawtooth',g:.06,lp:1800,a:.03,hold:.8})); this.noise(t+.6,.25,{f:3500,Q:.6,g:.08}); },
+      cheer:()=>{ const g=this.noise(t,2.4,{f:1400,Q:.5,g:.22,a:.35,hold:1.4}); for(let i=0;i<10;i++){ const s=t+.2+Math.random()*1.4,f=500+Math.random()*500; this.tone(s,f,.4+Math.random()*.3,{type:'triangle',f2:f*1.35,g:.035,a:.05}); } for(let i=0;i<18;i++) this.noise(t+.3+Math.random()*1.6,.05,{f:1600,Q:1.2,g:.1}); },
+      clap:()=>{ for(let i=0;i<5;i++){ const s=t+i*.15+Math.random()*.015; this.noise(s,.07,{f:1500,Q:1.1,g:.42}); this.noise(s+.008,.05,{f:2400,Q:1.5,g:.2}); } },
+      joy:()=>{ [740,698,659,622,587].forEach((f,i)=>this.tone(t+i*.12,f,.1,{type:'triangle',f2:f*.88,g:.2})); this.tone(t+.68,880,.35,{f2:1175,g:.12,vib:9}); },
+      angry:()=>{ this.tone(t,92,.7,{type:'sawtooth',g:.22,lp:700,vib:22,a:.04}); this.tone(t,138,.7,{type:'square',g:.06,lp:500,vib:19,a:.04}); this.noise(t,.6,{type:'lowpass',f:500,g:.12,a:.05}); },
+      roar:()=>{ this.tone(t,260,1.0,{type:'sawtooth',f2:85,g:.24,lp:1300,vib:28,a:.05}); this.tone(t,390,.8,{type:'square',f2:120,g:.07,lp:900,a:.05}); this.noise(t,1.0,{type:'lowpass',f:900,g:.2,a:.08,hold:.4}); this.tone(t+.95,1318.5,.12,{g:.07,type:'triangle'}); },
+      hold:()=>{ this.tone(t,262,1.0,{f2:784,g:.1,type:'triangle',a:.05,hold:.9}); this.wood(t+1.0,.3); this.tone(t+1.02,1046.5,.3,{g:.14}); }
+    }; S[k]&&S[k]();
+  }
+
+  // ---------- motion demos ----------
+  play(k){
+    const rm=this.state.motion==='reduced', R=this.R, el=R[k]&&R[k].current; if(!el) return;
+    const A=(n,f,o)=>n.animate(f,Object.assign({duration:300},o));
+    switch(k){
+      case 'pop': rm?A(el,[{opacity:0},{opacity:1}],{duration:140}):A(el,[{opacity:0,transform:'scale(.6) rotate(-6deg)'},{opacity:1,transform:'scale(1.06) rotate(1deg)',offset:.7},{opacity:1,transform:'none'}],{duration:360,easing:E.out}); break;
+      case 'press': A(el,[{transform:'none',boxShadow:'4px 4px 0 0 var(--cp-shadow-ink)'},{transform:'translate(4px,4px)',boxShadow:'0px 0px 0 0 var(--cp-shadow-ink)',offset:.2},{transform:'translate(4px,4px)',boxShadow:'0px 0px 0 0 var(--cp-shadow-ink)',offset:.6},{transform:'none',boxShadow:'4px 4px 0 0 var(--cp-shadow-ink)'}],{duration:420,easing:E.snap}); break;
+      case 'lift': rm?A(el,[{transform:'none'},{transform:'scale(1.04)',offset:.2},{transform:'scale(1.04)',offset:.8},{transform:'none'}],{duration:900}):A(el,[{transform:'none',boxShadow:'0 0 0 0 var(--cp-shadow-ink)'},{transform:'scale(1.12) rotate(-8deg)',boxShadow:'9px 13px 0 0 var(--cp-shadow-ink)',offset:.16,easing:E.out},{transform:'translate(14px,-4px) scale(1.12) rotate(-5deg)',boxShadow:'9px 13px 0 0 var(--cp-shadow-ink)',offset:.6},{transform:'none',boxShadow:'0 0 0 0 var(--cp-shadow-ink)'}],{duration:1100,easing:E.io}); break;
+      case 'bounce': { const T=R.bounceT.current, dx=T?T.getBoundingClientRect().left-el.getBoundingClientRect().left:120;
+        if(rm){ A(el,[{opacity:1},{opacity:.25,offset:.3},{opacity:.25,offset:.5},{opacity:1}],{duration:500}); }
+        else { A(el,[{transform:'none'},{transform:`translateX(${dx}px) scale(1.1) rotate(-6deg)`,offset:.35,easing:E.out},{transform:`translateX(${dx}px) scale(1.1) rotate(-6deg)`,offset:.42,easing:E.spring},{transform:'translateX(-8px) rotate(5deg)',offset:.8},{transform:'translateX(3px) rotate(-2deg)',offset:.9},{transform:'none'}],{duration:1150}); }
+        if(T) A(T,[{background:'transparent'},{background:'var(--cp-hot)',offset:.4},{background:'transparent'}],{duration:rm?500:900}); break; }
+      case 'emote': rm?A(el,[{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.85},{opacity:0}],{duration:1200}):A(el,[{opacity:0,transform:'translateY(14px) scale(.6)'},{opacity:1,transform:'translateY(0) scale(1.08)',offset:.15,easing:E.out},{opacity:1,transform:'translateY(-18px) scale(1)',offset:.8},{opacity:0,transform:'translateY(-30px) scale(1)'}],{duration:1400}); this.snd('roar'); break;
+      case 'sheet': rm?A(el,[{transform:'none',opacity:0},{transform:'none',opacity:1,offset:.1},{transform:'none',opacity:1,offset:.85},{transform:'none',opacity:0}],{duration:1600}):A(el,[{transform:'translateX(110%)',easing:E.out},{transform:'none',offset:.22},{transform:'none',offset:.8,easing:E.in},{transform:'translateX(110%)'}],{duration:1650}); break;
+      case 'reveal': { const real='Mario Kart 8', fake='Mario Kartoffel';
+        if(rm){ A(el,[{opacity:1},{opacity:0}],{duration:100}).finished.then(()=>{el.textContent=real; A(el,[{opacity:0},{opacity:1}],{duration:100});}); }
+        else { A(el,[{transform:'rotateX(0)'},{transform:'rotateX(90deg)'}],{duration:300,easing:E.in,fill:'forwards'}).finished.then(()=>{ el.textContent=real; this.snd('reveal'); A(el,[{transform:'rotateX(-90deg)'},{transform:'none'}],{duration:300,easing:E.pop}); }); }
+        clearTimeout(this._rv); this._rv=setTimeout(()=>{ if(this.R.reveal.current) this.R.reveal.current.textContent=fake; },2400); if(rm) this.snd('reveal'); break; }
+      case 'stamp': { const st=R.stampStage.current;
+        if(rm) A(el,[{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:1500});
+        else { A(el,[{opacity:0,transform:'scale(2.4) rotate(-12deg)',easing:E.in},{opacity:1,transform:'scale(1) rotate(-12deg)',offset:.15},{opacity:1,transform:'scale(1) rotate(-12deg)',offset:.85},{opacity:0,transform:'scale(1) rotate(-12deg)'}],{duration:1500}); if(st) A(st,[{transform:'none'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(-4px)'},{transform:'none'}],{duration:240,delay:220}); }
+        setTimeout(()=>this.snd('veto'),rm?0:200); break; }
+      case 'coin': if(rm){ A(el,[{opacity:1},{opacity:0,offset:.5},{opacity:1}],{duration:300}); setTimeout(()=>{el.textContent=el.textContent==='K'?'S':'K';},150); } else { A(el,[{transform:'translateY(0) rotateY(0)'},{transform:'translateY(-22px) rotateY(990deg)',offset:.45,easing:E.in},{transform:'translateY(0) rotateY(1980deg) scaleY(1)',offset:.9},{transform:'translateY(0) rotateY(1980deg) scaleY(.92)',offset:.95},{transform:'rotateY(1980deg)'}],{duration:1600,easing:E.out}); setTimeout(()=>{el.textContent=el.textContent==='K'?'S':'K';},800); } this.snd('coin'); break;
+      case 'rank': { const b=R.rank2.current;
+        if(rm){ A(el,[{opacity:0},{opacity:1}],{duration:200}); if(b) A(b,[{opacity:0},{opacity:1}],{duration:200}); }
+        else { A(el,[{transform:'translateY(28px)',background:'var(--cp-primary)'},{transform:'translateY(-3px) rotate(-1.5deg)',background:'var(--cp-primary)',offset:.6},{transform:'none',background:'var(--cp-surface)'}],{duration:600,easing:E.pop}); if(b) A(b,[{transform:'translateY(-28px)'},{transform:'none'}],{duration:600,delay:60,easing:E.pop,fill:'backwards'}); } break; }
+      case 'tick': { clearInterval(this._tk); let n=12; this.setState({tick:12}); this._tk=setInterval(()=>{ n--; const e=this.R.tick.current; if(!e||n<7){ clearInterval(this._tk); this.setState({tick:12}); return; } this.setState({tick:n}); if(!rm&&n<=10) A(e,[{transform:'scale(1)'},{transform:'scale(1.14)',offset:.4},{transform:'scale(1)'}],{duration:220,easing:E.pop}); if(n<=10&&!this.state.muted&&this.ac()){ this.wood(this._ac.currentTime,.2);} },1000); break; }
+      case 'hold': { const btn=R.holdBtn.current; A(el,[{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:1000,easing:'linear',fill:'forwards'}).finished.then(()=>{ if(!rm&&btn) A(btn,[{transform:'scale(1)'},{transform:'scale(1.08)'},{transform:'scale(1)'}],{duration:260,easing:E.pop}); setTimeout(()=>{ const f=this.R.hold.current; if(f) A(f,[{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:200,fill:'forwards'}); },700); }); this.snd('hold'); break; }
+      case 'spin': if(rm){ A(el,[{filter:'brightness(1)'},{filter:'brightness(1.35)'},{filter:'brightness(1)'},{filter:'brightness(1.35)'},{filter:'brightness(1)'}],{duration:600}); this.snd('reveal'); } else { A(el,[{transform:'rotate(0)'},{transform:'rotate(1935deg)'}],{duration:3600,easing:'cubic-bezier(.165,.84,.44,1)'}); this.snd('suspense'); setTimeout(()=>this.snd('reveal'),3650); } break;
+      case 'conf': { const box=el, w=box.clientWidth, h=box.clientHeight; const cols=[1,2,3,4,5,6,7,8].map(i=>'var(--cp-team-'+i+')').concat(['var(--cp-primary)']); const n=rm?6:20;
+        for(let i=0;i<n;i++){ const s=document.createElement('span'); const z=12+Math.random()*8; s.style.cssText=`position:absolute;width:${z}px;height:${z}px;left:${w/2-z/2}px;top:${h-z}px;background:${cols[i%cols.length]};border:3px solid var(--cp-sticker-rim);box-shadow:var(--cp-sticker-shadow);border-radius:${Math.random()<.5?'50%':'4px'};box-sizing:border-box`; box.appendChild(s);
+          if(rm){ s.style.left=(Math.random()*(w-z))+'px'; s.style.top=(Math.random()*(h-z))+'px'; A(s,[{opacity:0},{opacity:1,offset:.25},{opacity:1,offset:.75},{opacity:0}],{duration:900,fill:'forwards'}).finished.then(()=>s.remove()); }
+          else { const dx=(Math.random()-.5)*w*.9, up=-(h*.4+Math.random()*h*.5), r=(Math.random()-.5)*720; A(s,[{transform:'translate(0,0) rotate(0) rotateY(0)'},{transform:`translate(${dx}px,${up}px) rotate(${r/2}deg) rotateY(180deg)`,offset:.35,easing:E.out},{transform:`translate(${dx*1.2}px,${h*.1}px) rotate(${r}deg) rotateY(540deg)`}],{duration:1600+Math.random()*700,easing:E.in,fill:'forwards'}).finished.then(()=>s.remove()); } }
+        this.snd('cheer'); break; }
+      case 'smoke': if(rm) A(el,[{opacity:.55},{opacity:.55}],{duration:400}); else A(el,[{transform:'translate(0,0) scale(1)',opacity:.55},{transform:'translate(70px,18px) scale(1.15)',opacity:.75,offset:.5},{transform:'translate(0,0) scale(1)',opacity:.55}],{duration:6000,easing:E.io}); break;
+    }
+  }
+  playEase=k=>()=>{ const el=this.R['e_'+k].current; if(!el) return; const w=el.parentNode.clientWidth-20; el.animate([{transform:'translateX(0)'},{transform:`translateX(${w}px)`}],{duration:900,easing:E[k],fill:'forwards'}); };
+  playStagger=()=>{ const box=this.R.stagger.current; if(!box) return; const rm=this.state.motion==='reduced'; [...box.children].forEach((c,i)=>{ c.animate(rm?[{opacity:0},{opacity:1}]:[{opacity:0,transform:'scale(.5) translateY(10px)'},{opacity:1,transform:'scale(1.08)',offset:.7},{opacity:1,transform:'none'}],{duration:rm?140:360,delay:rm?0:Math.min(i*40,400),easing:E.out,fill:'backwards'}); }); };
+
+  renderVals(){
+    const v=this.state.vals, mode=this.state.mode||'light', dark=mode==='dark', rm=this.state.motion==='reduced';
+    const hex=k=>v[k]||'…';
+    const sw=(k,name,use,on)=>{ const r=on?CR(v[on],v[k]):CR(v[k],v.paper); return {v:`var(--cp-${k})`,on:on?`var(--cp-${on})`:'var(--cp-ink)',name,token:'--cp-'+k,hex:hex(k),use,ratio:on?fr(r)+' '+(r>=4.5?'AA':'✗'):fr(r)+' vs paper'}; };
+    const brand=[sw('primary','Sonne, primary','Primary buttons, active tabs, the host badge, the countdown tile.','on-primary'),sw('hot','Glut, hot','Danger, veto, live state. The one loud thing on screen.','on-hot'),sw('mint','Mint','Compibert\u2019s body, decor stickers. Decor only, never text.'),sw('pop','Pop','Celebration stickers and smoke. Decor only.'),sw('cobalt','Kobalt','Decor stickers and smoke. Not for links (use focus/info-fg).')];
+    const nb=(k,name,use)=>({bg:`var(--cp-${k})`,fg:'var(--cp-ink)',name,token:'--cp-'+k,hex:hex(k),use,ratio:CR(v.ink,v[k])?fr(CR(v.ink,v[k])):''});
+    const nf=(k,name,use)=>({bg:'var(--cp-paper)',fg:`var(--cp-${k})`,name,token:'--cp-'+k,hex:hex(k),use,ratio:fr(CR(v[k],v.paper))});
+    const neutrals=[nb('paper','Paper','App background'),nb('paper-2','Paper 2','Wells, empty slots, stripes'),nb('surface','Surface','Cards, zones, panels'),nb('surface-2','Surface 2','Nested, hover'),nf('ink','Ink','Text, outlines'),nf('ink-2','Ink 2','Secondary text'),nf('ink-3','Ink 3','Disabled only'),nb('line-soft','Line soft','Dividers'),nb('overlay','Overlay','Behind modals')];
+    const sem=(k,n,icon,chip,msg)=>({n,icon,chip,msg,fill:`var(--cp-${k})`,on:`var(--cp-on-${k})`,fg:`var(--cp-${k}-fg)`,hexFill:hex(k),hexFg:hex(k+'-fg'),r1:fr(CR(v['on-'+k],v[k])),r2:fr(CR(v[k+'-fg'],v.surface))});
+    const semantic=[sem('success','Success','circle-check','Gespeichert','Termin bestätigt'),sem('warning','Warning','triangle-alert','Teams ungleich','Pool wird knapp'),sem('error','Error','circle-alert','Getrennt','Verbindung verloren'),sem('info','Info','info','Hinweis','Teamwahl öffnet bald')];
+    const teams=TEAM.map(([n,sym,symN,patN],i)=>{const k=i+1,c=v['team-'+k],ink=v['team-'+k+'-ink'],r=CR(ink,c);return {k,n,sym,symN,patN,v:`var(--cp-team-${k})`,ink:`var(--cp-team-${k}-ink)`,pat:`var(--cp-team-${k}-pattern)`,hex:c||'…',inkN:(ink==='#fffdf8'?'Light':'Ink')+' text',ratio:fr(r)};});
+    const cvd=[{n:'Normal',f:'none'},{n:'Protanopia',f:'url(#cvd-p)'},{n:'Deuteranopia',f:'url(#cvd-d)'},{n:'Tritanopia',f:'url(#cvd-t)'},{n:'Grayscale',f:'url(#cvd-g)'}];
+    const pr=(n,fg,bg,need,sample)=>{const r=CR(v[fg],v[bg]);const ok=r!=null&&r>=need;return {n:`${fg} on ${bg}`+(need===3?' (non-text)':''),fg:`var(--cp-${fg})`,bg:`var(--cp-${bg})`,sample:sample||'Glücksrad',ratio:fr(r),pass:r==null?'—':(ok?'✓ ':'✗ ')+(need===3?'3:1':'4.5:1'),passC:ok?'var(--cp-success-fg)':'var(--cp-error-fg)'};};
+    const pairs=[pr(0,'ink','paper',4.5),pr(0,'ink-2','paper',4.5,'Ersatz, Host zieht nach'),pr(0,'ink','surface',4.5),pr(0,'ink-2','surface',4.5,'20:41'),pr(0,'on-primary','primary',4.5,'Rad drehen'),pr(0,'on-hot','hot',4.5,'Veto halten'),pr(0,'success-fg','surface',4.5,'Termin bestätigt'),pr(0,'warning-fg','surface',4.5,'Pool wird knapp'),pr(0,'error-fg','surface',4.5,'Verbindung verloren'),pr(0,'info-fg','surface',4.5,'Neu'),pr(0,'error-fg','paper',4.5,'Name zu lang'),pr(0,'focus','paper',3,'Fokus'),pr(0,'line','paper',3,'Rand'),pr(0,'online','surface',3,'●')];
+    const scale=[
+      {t:'display-xl',f:'var(--cp-font-display)',w:400,sz:'var(--cp-text-display-xl)',lh:.9,ls:'0',tt:'none',sample:'Siegerehrung!',spec:'96 / 56, lh .9',use:'Award ceremony, one per screen'},
+      {t:'display',f:'var(--cp-font-display)',w:400,sz:'var(--cp-text-display)',lh:.92,ls:'0',tt:'none',sample:'Glücksrad',spec:'64 / 40, lh .92',use:'Moment headlines (wheel, coin)'},
+      {t:'title',f:'var(--cp-font-display)',w:400,sz:'var(--cp-text-title)',lh:.95,ls:'0',tt:'none',sample:'Spielbrett',spec:'46 / 32, lh .95',use:'Page title'},
+      {t:'h2',f:'var(--cp-font-display)',w:400,sz:'var(--cp-text-h2)',lh:1.05,ls:'0',tt:'none',sample:'Freitags-Zocken #12',spec:'32 / 26, lh 1.05',use:'Section, modal title'},
+      {t:'h3',f:'var(--cp-font-display)',w:400,sz:'var(--cp-text-h3)',lh:1.15,ls:'0',tt:'none',sample:'Team Wilde Kartoffel',spec:'24 / 20, lh 1.15',use:'Card titles, sheet sections'},
+      {t:'h4',f:'var(--cp-font-display)',w:400,sz:'18px',lh:1.25,ls:'0',tt:'none',sample:'Bench und Tribüne',spec:'18, lh 1.25',use:'Zone headers, team names'},
+      {t:'body-lg',f:'var(--cp-font-sans)',w:500,sz:'17px',lh:1.5,ls:'0',tt:'none',sample:'Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet.',spec:'17, lh 1.5',use:'Info sheet, empty states'},
+      {t:'body',f:'var(--cp-font-sans)',w:500,sz:'15px',lh:1.45,ls:'0',tt:'none',sample:'Sobald der Termin steht, ziehen sich die Spieler selbst in ein Team.',spec:'15 / 16, lh 1.45',use:'Default UI + chat'},
+      {t:'small',f:'var(--cp-font-sans)',w:500,sz:'13px',lh:1.4,ls:'0',tt:'none',sample:'Teamwahl öffnet, sobald der Termin steht',spec:'13, lh 1.4',use:'Helper text, meta'},
+      {t:'caption',f:'var(--cp-font-sans)',w:500,sz:'12px',lh:1.35,ls:'0',tt:'none',sample:'Glücksrad: Counter-Strike 2',spec:'12, lh 1.35, floor',use:'Timestamps, avatar names'},
+      {t:'label',f:'var(--cp-font-sans)',w:700,sz:'12px',lh:1.2,ls:'.08em',tt:'uppercase',sample:'Nur Host',spec:'12, 700, +.08em',use:'Kickers, badges, table heads'}];
+    const lb=[{rk:'1.',n:'Team Turbo Dackel',d:'+3',p:'111'},{rk:'2.',n:'Team Wilde Kartoffel',d:'+2',p:'104'},{rk:'3.',n:'Team Laser Waschbär',d:'',p:'97'},{rk:'4.',n:'Team Grantige Gurke',d:'+1',p:'88'}];
+    const space=[['1','4px','Icon ↔ label in chips'],['2','8px','Inside controls, avatar gaps'],['3','12px','Card padding (compact), list gaps'],['4','16px','Card padding, mobile gutter'],['5','20px','Section padding (panel)'],['6','24px','Desktop gutter, zone gaps'],['8','32px','Between groups'],['10','40px','Page padding (desktop)'],['12','48px','Section spacing (mobile)'],['16','64px','Header height, section spacing']].map(([k,px,use])=>({k:'p-'+k,px,use}));
+    const layout=[['--cp-header-h','64px','App header'],['--cp-panel-w','340px','Chat / activity panel'],['--cp-gutter','24 / 16','Grid gutter desktop / mobile'],['--cp-maxw','1440px','Max content width'],['--cp-touch','44px','Minimum hit area, everywhere'],['--cp-control-md','44px','Default control height'],['--cp-control-sm','36px','Dense desktop only; hit area stays 44']].map(([k,v,use])=>({k,v,use}));
+    const bps=[{k:'xl, ≥ 1440',r:'90rem +',d:'Content max 1440, centred. Free-for-all boards with 8 players get 4 × 2 zones.'},{k:'lg, 1280',r:'80rem (reference)',d:'Header 64, board, side panel 340, host dock floating bottom-left. Every mockup starts here.'},{k:'md, < 1280',r:'64–80rem',d:'Panel 300. Team grid 4 → 3 columns, game cards 4 → 3.'},{k:'max-md, < 1024',r:'48–64rem',d:'Chat becomes a drawer from the right (badge on the header button). Host dock becomes a FAB that opens a bottom sheet.'},{k:'max-sm, < 768',r:'30–48rem',d:'Single column. Bottom tab bar: Spielbrett, Chat, Ich. Modals become bottom sheets. Drag & drop gets a tap-to-move fallback (tap avatar → tap zone).'},{k:'max-xs, < 480',r:'< 30rem',d:'Team zones become accordions, 40 px avatars with 44 px hit areas. Wheel 300 px, veto bar pinned to the bottom.'}];
+    const radii=[['xs','4px','Tags in tables, keyboard keys'],['sm','8px','Tooltips, chat bubbles, small tiles'],['md','12px','Inputs, selects, wells'],['lg','14px','Cards, team zones, panels'],['xl','20px','Modals, side and bottom sheets'],['pill','999px','Buttons, chips, badges, tabs'],['full','50%','Avatars, coin, online dot']].map(([k,v,use])=>({k:'rounded-'+k,v,use}));
+    const shadows=[['shadow-sm','var(--cp-shadow-sm)','Chips, small toggles, hover on rows'],['shadow-btn','var(--cp-shadow-btn)','Buttons; press → 0'],['shadow-card','var(--cp-shadow-card)','Cards, zones (orange on stage)'],['shadow-modal','var(--cp-shadow-modal)','Modals, sheets'],['shadow-lift','var(--cp-shadow-lift)','Dragged avatar'],['shadow-soft','var(--cp-shadow-soft)','Tooltips + toasts only (blurred)']].map(([k,v,use])=>({k,v,use}));
+    const IC=[['crown','Host'],['message-square','Chat'],['history','Aktivität'],['smile','Emote'],['ferris-wheel','Glücksrad'],['ban','Veto / Ban'],['hand','Halten'],['coins','Münzwurf'],['swords','Pick & Ban'],['trophy','Siegerehrung'],['medal','Platzierung'],['list-ordered','Rangliste'],['equal','Gleichauf'],['users','Team'],['armchair','Bench'],['eye','Tribüne'],['gamepad-2','Spiel'],['calendar','Termin'],['calendar-check','Termin steht'],['timer','Countdown'],['volume-2','Ton an'],['volume-x','Ton aus'],['play','Abspielen'],['skip-forward','Überspringen'],['refresh-cw','Link erneuern'],['link','Einladung'],['share-2','Teilen'],['download','.ics laden'],['lock','Gesperrt'],['wifi-off','Offline'],['loader-circle','Lädt'],['grip-vertical','Ziehen'],['shuffle','Zufall'],['pencil','Bearbeiten'],['trash-2','Löschen'],['settings','Einstellungen'],['bell','Push'],['sparkles','Bewegung'],['circle-help','Info'],['log-out','Abmelden']];
+    const icons=IC.map(([k,de])=>({k,de}));
+    const emotes=[{n:'Klatschen',slot:'emote-01, clap',brief:'Compibert claps with both tiny arms above his head, eyes closed and grinning. Motion lines at the hands.',aria:'Applaus'},{n:'Freudentränen',slot:'emote-02, tears-of-joy',brief:'Head thrown back, mouth wide open, two tear jets arching out. His tail curls up.',aria:'Lacht Tränen'},{n:'Grr',slot:'emote-03, angry',brief:'Pouting side view, brow down, steam puff from the nostrils, spikes standing up and tinted Glut.',aria:'Ist sauer'},{n:'Compibert-Roar',slot:'emote-04, roar',brief:'Front-on, jaw fully open, tiny teeth, 3 sound-wave arcs. The signature emote; may scale to 1.2× as it rises.',aria:'Brüllt'}];
+    const durs=[['dur-instant','80 ms','Press, toggle knob'],['dur-fast','140 ms','Hover, fades, reduced-motion default'],['dur-base','220 ms','Tabs, tooltips, countdown tick'],['dur-slow','360 ms','Pop-in, sheets'],['dur-slower','600 ms','Bounce back, rank change'],['dur-scene','1200 ms','Confetti cannon, reveal sequence'],['dur-hold','1000 ms','Hold-to-confirm'],['dur-epic','2400 ms','Podium entrance, award']].map(([k,v,use])=>({k,v,use,w:Math.max(3,parseInt(v)/2400*100)+'%'}));
+    const EU={snap:'UI state changes, press, tabs',out:'All UI entrances: toasts, sheets, modals, badges',in:'Exits, the stamp\u2019s fall',io:'Loops: smoke, idle Compibert',pop:'Physical landings: avatar drop, stickers, reveal',spring:'Bounce back, coin landing'};
+    const eases=Object.keys(EB).map(k=>{const [a,b,c,d]=EB[k];return {k:'ease-'+k,css:`cubic-bezier(${a}, ${b}, ${c}, ${d})`,d:`M0 100 C${a*100} ${100-b*100} ${c*100} ${100-d*100} 100 0`,use:EU[k],ref:this.R['e_'+k],play:this.playEase(k),aria:'ease-'+k+' abspielen'};});
+    const staggerAv=['KI','MO','LA','JU','BE','AY','TO','FY'].map((i,k)=>({i,c:`var(--cp-team-${k+1})`,ink:`var(--cp-team-${k+1}-ink)`}));
+    const P=k=>()=>this.play(k);
+    const play=Object.fromEntries(['pop','press','lift','bounce','emote','sheet','reveal','stamp','coin','rank','tick','hold','spin','conf','smoke'].map(k=>[k,P(k)]));
+    const soundRules=[
+      {k:'Character',c:'var(--cp-success-fg)',v:'Wood blocks, marimba, kazoo, slide whistle, rubber stamp, a cardboard crowd. Dry, close-miked, a bit silly. Memphis in sound: bright, plastic, toy-like.'},
+      {k:'Never',c:'var(--cp-error-fg)',v:'No 8-bit chiptune, trailer booms, realistic weapons, casino jingles or voice lines (except Compibert\u2019s roar). Nothing that sounds like a notification you\u2019d get from another app.'},
+      {k:'Tuning',c:'var(--cp-success-fg)',v:'Everything in C major; random and stacked sounds use the C pentatonic, so emotes from 12 people and the wheel ticks never clash.'},
+      {k:'Length & loudness',c:'var(--cp-success-fg)',v:'UI ≤ 150 ms at −24 LUFS, moments ≤ 1.5 s at −18, fanfare ≤ 4 s at −16. Peak ≤ −1 dBFS. The YouTube clip ducks by 6 dB under reveals and stamps.'},
+      {k:'Concurrency',c:'var(--cp-success-fg)',v:'At most 3 emote sounds per second for the whole room; extra emotes stay silent. Moment sounds pre-empt UI sounds. A sound restarts instead of stacking on itself.'},
+      {k:'Control & accessibility',c:'var(--cp-info-fg)',v:'Global mute in the header, persisted (profile + localStorage). Audio unlocks on the first click. Sound is never the only signal: every sound has a visual. Reduced motion doesn\u2019t mute, but it shortens the wheel suspense. Files: Opus + AAC, < 40 KB each, preloaded per phase.'}];
+    const SD=[['tick','Rad-Ticken','Every slice passing the pointer','Hollow wood block. Rate follows the wheel, so it is server-timed and never looped.','40 ms'],['suspense','Spannung beim Abbremsen','Last 3–4 s of the spin','Ticks slow down over a rising shaker + soft kazoo drone; stops dead with the wheel.','≈ 3.6 s'],['reveal','Reveal','Wheel stops, hidden slice transforms, game set','Marimba arpeggio up C–E–G–C with a bell on top.','600 ms'],['veto','Veto-Reveal','All vetoes revealed at once','Rubber-stamp thump, then a descending kazoo "wah-wah". Funny, not punishing.','1.2 s'],['coin','Münzwurf','Coin flip (Pick & Ban)','Thumb flick ping, flutter while spinning, two-bounce landing clink.','1.8 s'],['fanfare','Fanfare','Award ceremony, podium #1','Toy brass / kazoo, G–C–E–G, last note held with vibrato.','2.2 s'],['cheer','Jubel','Game winner, award ceremony','Cartoon crowd: noise swell, "whoo" glides, scattered claps. Size scales with the room.','2.4 s'],['clap','Emote, Klatschen','Clapping emote','5 dry hand claps, slightly loose timing.','750 ms'],['joy','Emote, Freudentränen','Tears-of-joy emote','"He-he-he-he" on falling triangle blips, then a happy squeal.','1 s'],['angry','Emote, Grr','Angry emote','Low buzzy growl with fast wobble; a tiny bit pathetic.','700 ms'],['roar','Emote, Compibert-Roar','Roar emote, Compibert in the award ceremony','Small dino roar: falling saw sweep + breath noise, ends on a squeaky blip.','1 s'],['hold','Hold-to-confirm','While holding veto / ban / pick','Rising tone tied to the progress; a wood click + bell on confirm. Silent drain on release.','1 s']];
+    const sounds=SD.map(([k,n,when,c,len])=>({n,when,c,len,play:()=>this.snd(k),aria:n+' abspielen'}));
+    const pages=[{n:'Foundations',cur:true},{n:'Basics',link:true,soon:false,href:'DS Basics.dc.html'},{n:'People & teams',link:true,soon:false,href:'DS People.dc.html'},{n:'Game & selection',link:true,soon:false,href:'DS Game.dc.html'},{n:'Scoring',link:true,soon:false,href:'DS Scoring.dc.html'},{n:'Communication',link:true,soon:false,href:'DS Communication.dc.html'},{n:'Frame',link:true,soon:false,href:'DS Frame.dc.html'},{n:'Smoke',link:true,soon:false,href:'DS Smoke.dc.html'},{n:'Handoff',link:true,soon:false,href:'DS Handoff.dc.html'}].map(p=>Object.assign({cur:false,link:false,soon:!p.cur},p));
+    const toc=[['01','Color','#farbe'],['02','Typography','#typo'],['03','Space','#raum'],['04','Form','#form'],['05','Icons','#icons'],['06','Motion','#bewegung'],['07','Sound','#sound']].map(([no,n,href])=>({no,n,href}));
+    const d=this.state.digit, tn=this.state.tnum;
+    const W=this.state.wide; const L=W?{dir:'row',pos:'sticky',w:'260px',h:'100vh',br:'var(--cp-bw) solid var(--cp-line)',bb:'0',nav:'column',toc:true}:{dir:'column',pos:'relative',w:'100%',h:'auto',br:'0',bb:'var(--cp-bw) solid var(--cp-line)',nav:'row',toc:false};
+    return {L,root:this.root,R:this.R,mode,motion:this.state.motion,muted:this.state.muted,cbDir:dark?'m3b':'m3a',modeName:dark?'Dunkel (3b)':'Hell (3a)',
+      isLight:!dark,isDark:dark,lightBg:dark?'transparent':'var(--cp-primary)',darkBg:dark?'var(--cp-primary)':'transparent',darkInk:dark?'var(--cp-on-primary)':'var(--cp-ink)',
+      setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,isReduced:rm,motionLabel:rm?'Bewegung: reduziert':'Bewegung: voll',motionBg:rm?'var(--cp-info)':'var(--cp-surface)',
+      toggleMute:this.toggleMute,muteIcon:this.state.muted?'volume-x':'volume-2',muteLabel:this.state.muted?'Ton einschalten':'Ton ausschalten',
+      brand,neutrals,semantic,teams,cvd,pairs,scale,lb,space,layout,cols12:Array.from({length:12},(_, i)=>({i})),bps,radii,shadows,icons,emotes,durs,eases,staggerAv,play,playStagger:this.playStagger,soundRules,sounds,pages,toc,
+      tickV:'0:'+String(this.state.tick).padStart(2,'0'),tickC:this.state.tick<=10?'var(--cp-hot)':'var(--cp-ink)',
+      digitTxt:d==null?'measuring digit widths …':`live check: digits ${d.min.toFixed(2)}–${d.max.toFixed(2)} em → slot .74 em ${d.max<=.74?'✓ covers all':'✗ too narrow'}`,digitC:d&&d.max>.74?'var(--cp-error-fg)':'var(--cp-success-fg)',
+      tnumTxt:tn==null?'checking tabular-nums …':tn?'✓ Bricolage honours tabular-nums (use num-ui)':'✗ Bricolage ignores tnum → times in chat use Bungee or monospace slots',tnumC:tn===false?'var(--cp-error-fg)':'var(--cp-success-fg)'};
+  }
+}
+</script>
+</body>
+</html>

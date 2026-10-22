@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div ref="{{ root }}" data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ dir }}">
+  <dc-import name="DSRail" cur="comms" toc="{{ toc }}" mode="{{ mode }}" motion="{{ motion }}" muted="{{ muted }}" wide="{{ wide }}" setLight="{{ setLight }}" setDark="{{ setDark }}" toggleMotion="{{ toggleMotion }}" toggleMute="{{ toggleMute }}" hint-size="260px,100vh"></dc-import>
+
+  <main style="flex:1;min-width:0;width:100%;box-sizing:border-box;max-width:1240px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:88px">
+
+    <section style="display:flex;flex-direction:column;gap:16px;max-width:860px">
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,88px);line-height:.95;text-wrap:balance">Wer sagt was?</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.5;text-wrap:pretty">Block 5, part 2: chat, activity feed, emotes, the date poll and push notifications. The chat, emotes and date poll all work. Emote art is labelled placeholders, with an illustration brief.</p>
+    </section>
+
+    <!-- CHAT -->
+    <section id="chat" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Chat</h2>
+        <span style="color:var(--cp-ink-2)">Everyone in the session can write: teams, bench, stands. The host can delete messages. Shown at the side panel's real width (340 px).</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <div role="group" aria-label="Ansicht" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+              <sc-for list="{{ views }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:36px;padding:0 12px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">{{ r.n }}</button></sc-for>
+            </div>
+            <button type="button" role="switch" aria-checked="{{ offline }}" onClick="{{ toggleOffline }}" style="height:36px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:{{ offBg }};font-weight:700;font-size:13px;cursor:pointer">Netz weg</button>
+          </div>
+          <div style="width:100%;max-width:360px;height:600px;box-sizing:border-box;display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);overflow:hidden">
+            <div role="tablist" aria-label="Seitenleiste" style="flex:none;display:flex;gap:4px;padding:6px 10px 0;border-bottom:2px solid var(--cp-line-soft)">
+              <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2"><button type="button" role="tab" aria-selected="{{ t.on }}" onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:8px;height:46px;padding:0 12px;border:0;border-bottom:3px solid {{ t.bar }};margin-bottom:-2px;background:transparent;color:{{ t.c }};font-weight:{{ t.w }};cursor:pointer"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 18 }}" offset="{{ t.off }}" hint-size="18px,18px"></dc-import>{{ t.n }}</button></sc-for>
+            </div>
+            <sc-if value="{{ tabChat }}">
+              <div ref="{{ chatScroll }}" role="log" aria-label="Chatverlauf" style="flex:1;min-height:0;overflow-y:auto;padding:12px 12px 6px;display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+                  <div style="display:flex;gap:8px;flex-direction:{{ g.dir }};align-items:flex-end">
+                    <sc-if value="{{ g.other }}"><dc-import name="Avatar" who="{{ g.who }}" size="{{ 28 }}" team="{{ g.team }}" host="{{ g.host }}" dot="{{ false }}" hint-size="28px,28px"></dc-import></sc-if>
+                    <div style="min-width:0;max-width:84%;display:flex;flex-direction:column;gap:3px;align-items:{{ g.align }}">
+                      <div style="display:flex;align-items:center;gap:6px;padding:0 4px;font-size:12px">
+                        <b>{{ g.name }}</b>
+                        <sc-if value="{{ g.host }}"><span style="display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 6px;border-radius:999px;border:1.5px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:10px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 10 }}" hint-size="10px,10px"></dc-import>Host</span></sc-if>
+                        <span style="color:var(--cp-ink-2)">{{ g.where }}</span>
+                        <span style="color:var(--cp-ink-2);font-variant-numeric:tabular-nums">{{ g.t }}</span>
+                      </div>
+                      <sc-for list="{{ g.msgs }}" as="m" hint-placeholder-count="1">
+                        <div style="position:relative;display:flex;align-items:center;gap:4px;flex-direction:{{ g.dir }}">
+                          <sc-if value="{{ m.live }}"><span style="padding:8px 12px;border-radius:{{ g.rad }};border:2px solid var(--cp-line);background:{{ g.bg }};color:{{ g.fg }};font-size:14px;line-height:1.4;overflow-wrap:anywhere;text-wrap:pretty;opacity:{{ m.op }}">{{ m.txt }}</span></sc-if>
+                          <sc-if value="{{ m.del }}"><span style="padding:6px 12px;border-radius:{{ g.rad }};border:2px dashed var(--cp-ink-3);color:var(--cp-ink-2);font-size:13px;font-style:italic">Vom Host gelöscht</span></sc-if>
+                          <sc-if value="{{ m.canDel }}"><button type="button" onClick="{{ m.delete }}" aria-label="{{ m.delAria }}" title="Löschen" style="flex:none;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:var(--cp-ink-2);cursor:pointer" style-hover="background:var(--cp-paper-2);color:var(--cp-error-fg)"><dc-import name="Icon" icon="trash-2" size="{{ 15 }}" hint-size="15px,15px"></dc-import></button></sc-if>
+                        </div>
+                        <sc-if value="{{ m.failed }}"><button type="button" onClick="{{ m.retry }}" style="align-self:flex-end;display:inline-flex;align-items:center;gap:5px;padding:2px 4px;border:0;background:transparent;color:var(--cp-error-fg);font-size:12px;font-weight:700;cursor:pointer"><dc-import name="Icon" icon="circle-alert" size="{{ 13 }}" hint-size="13px,13px"></dc-import>Nicht gesendet. Erneut senden</button></sc-if>
+                        <sc-if value="{{ m.sending }}"><span style="align-self:flex-end;font-size:11px;color:var(--cp-ink-2)">wird gesendet …</span></sc-if>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <form onSubmit="{{ send }}" style="flex:none;display:flex;align-items:flex-end;gap:6px;padding:10px;border-top:2px solid var(--cp-line-soft);background:var(--cp-surface-2)">
+                <label for="chat-in" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Nachricht</label>
+                <input id="chat-in" value="{{ draft }}" onInput="{{ onDraft }}" maxlength="500" placeholder="Nachricht an alle" autocomplete="off" style="flex:1;min-width:0;height:44px;box-sizing:border-box;padding:0 12px;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:16px">
+                <button type="submit" aria-label="Senden" aria-disabled="{{ noDraft }}" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ sendBg }};color:var(--cp-on-primary);box-shadow:{{ sendSh }};cursor:pointer"><dc-import name="Icon" icon="send" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+              </form>
+            </sc-if>
+            <sc-if value="{{ tabAct }}">
+              <div role="log" aria-label="Aktivität" style="flex:1;min-height:0;overflow-y:auto;padding:6px 12px 12px;display:flex;flex-direction:column">
+                <sc-for list="{{ feed }}" as="f" hint-placeholder-count="10">
+                  <sc-if value="{{ f.head }}"><div style="position:sticky;top:0;z-index:1;padding:10px 0 6px;background:var(--cp-surface);font-size:12px;font-weight:800;color:var(--cp-ink-2);text-transform:uppercase;letter-spacing:.04em">{{ f.h }}</div></sc-if>
+                  <sc-if value="{{ f.item }}">
+                    <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0">
+                      <span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:{{ f.bg }};color:{{ f.fg }}"><dc-import name="Icon" icon="{{ f.icon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span>
+                      <span style="flex:1;min-width:0;font-size:14px;line-height:1.4;text-wrap:pretty;padding-top:3px"><sc-for list="{{ f.parts }}" as="p" hint-placeholder-count="2"><span style="font-weight:{{ p.w }}">{{ p.t }}</span></sc-for></span>
+                      <span style="flex:none;font-size:12px;color:var(--cp-ink-2);font-variant-numeric:tabular-nums;padding-top:5px">{{ f.t }}</span>
+                    </div>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Talk around the game. Messages from one person within 2 minutes group under one name line. The name line says where they sit (team mark, „Bench“, „Tribüne“). Own messages sit right, in yellow.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No reactions, threads, DMs, images or links previews in 1.0. Deleted messages leave a dashed „Vom Host gelöscht“ in place so the conversation still makes sense. Game events never go in the chat; they go in Aktivität.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> <code style="font-family:var(--cp-font-mono)">role="log"</code> announces new messages politely, without stealing focus. Enter sends. The delete button is always in the tab order for the host, not only on hover. Failed sends keep the text and offer retry right under the message.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: right side panel, 340 px, Chat and Aktivität as tabs. Mobile: two entries in the bottom tab bar with an unread count; the composer sticks above the keyboard.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACTIVITY -->
+    <section id="aktivitaet" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Aktivität</h2>
+        <span style="color:var(--cp-ink-2)">Automatic events, grouped by game. Switch the tab in the panel above to see it in place. Event types:</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">
+        <sc-for list="{{ evTypes }}" as="e" hint-placeholder-count="10">
+          <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)">
+            <span style="flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);background:{{ e.bg }};color:{{ e.fg }}"><dc-import name="Icon" icon="{{ e.icon }}" size="{{ 15 }}" hint-size="15px,15px"></dc-import></span>
+            <div style="display:flex;flex-direction:column;min-width:0;line-height:1.3"><b style="font-size:14px">{{ e.n }}</b><span style="font-size:12px;color:var(--cp-ink-2);text-wrap:pretty">{{ e.ex }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Everything the app does on its own: joins, moves, draws, vetoes, bans, picks, results, corrections, date changes. Stored with the chat in the archive.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never post a veto before the reveal. Don't log every bench ↔ stands hop during a game; collapse repeated moves within 1 minute into one line.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Icons are decorative; the sentence carries the meaning and names the team in words. Game headers are real headings, so screen readers can jump between games.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Same list; the game header sticks while scrolling. The unread counter on the tab caps at 99+.</div>
+      </div>
+    </section>
+
+    <!-- EMOTES -->
+    <section id="emotes" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Emotes</h2>
+        <span style="color:var(--cp-ink-2)">Four emotes that rise above the sender's avatar on the board. Short cooldown against spam.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:16px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:16px">Live: you are Kitty</b><button type="button" role="switch" aria-checked="{{ crowd }}" onClick="{{ toggleCrowd }}" style="height:36px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:{{ crowdBg }};font-weight:700;font-size:13px;cursor:pointer">Tribüne jubelt</button></div>
+          <div style="display:flex;justify-content:space-around;align-items:flex-end;gap:12px;padding:96px 10px 16px;border-radius:14px;background:var(--cp-paper-2);overflow:hidden">
+            <sc-for list="{{ emoPeople }}" as="p" hint-placeholder-count="4">
+              <div data-av="{{ p.id }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:6px">
+                <dc-import name="Avatar" who="{{ p.n }}" size="{{ 48 }}" team="{{ p.team }}" host="{{ p.host }}" hint-size="48px,48px"></dc-import>
+                <span style="font-size:13px;font-weight:{{ p.w }}">{{ p.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div role="group" aria-label="Emote senden" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+            <sc-for list="{{ emotes }}" as="e" hint-placeholder-count="4">
+              <button type="button" onClick="{{ e.send }}" aria-disabled="{{ cool }}" aria-label="{{ e.aria }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:14px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:{{ emoSh }};cursor:{{ emoCur }};opacity:{{ emoOp }}" style-active="transform:translate(3px,3px);box-shadow:none">
+                <span style="position:relative;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;border:2.5px dashed var(--cp-ink-2);background:{{ e.bg }};color:#151515"><dc-import name="Icon" icon="{{ e.icon }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import></span>
+                <span style="font-size:12px;font-weight:700;line-height:1.2;text-align:center">{{ e.n }}</span>
+                <sc-if value="{{ cool }}"><svg viewBox="0 0 60 60" width="60" height="60" aria-hidden="true" style="position:absolute;top:6px;left:50%;margin-left:-30px;transform:rotate(-90deg)"><circle data-cool="1" cx="30" cy="30" r="28" fill="none" stroke="var(--cp-ink)" stroke-width="3" stroke-dasharray="176" stroke-dashoffset="0"></circle></svg></sc-if>
+              </button>
+            </sc-for>
+          </div>
+          <span aria-live="polite" style="font-size:13px;color:var(--cp-ink-2);min-height:18px">{{ emoMsg }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);display:flex;flex-direction:column;gap:10px">
+            <b style="font-family:var(--cp-font-display);font-weight:400;font-size:22px">Illustration brief</b>
+            <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45;text-wrap:pretty">
+              <li><b>Style:</b> Compibert's hands, face and props in the sticker style: 3 px ink line, flat accent fills, white die-cut rim, hard offset shadow. No gradients, no system emoji.</li>
+              <li><b>Klatschen:</b> two little claws clapping, three short motion ticks. Fill: yellow.</li>
+              <li><b>Freudentränen:</b> Compibert's face laughing, two big tear arcs. Fill: mint.</li>
+              <li><b>Wütend:</b> Compibert's face, steam puffs, furrowed brow. Fill: hot red.</li>
+              <li><b>Compibert-Brüller:</b> full head, mouth wide open, jagged roar lines. Fill: pink. The only emote with its own longer sound (the roar).</li>
+              <li><b>Delivery:</b> SVG, 96 × 96 artboard, readable at 32 px. A 3-frame bounce (squash, stretch, settle) per emote for the rise.</li>
+            </ul>
+          </div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No custom or extra emotes in 1.0. Cooldown 2 s per person; the room plays at most 3 emote sounds per second, extras are silent but still show. Emotes never cover the veto button or the timer.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Emote buttons have names; the cooldown ring has a text equivalent. Floating emotes are decorative and not announced. Reduced motion: the emote pops in place above the avatar and fades, no rise.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: an emote button in the dock opens this row as a popover. Mobile: a smile button next to the composer opens a bottom sheet with the four, 72 px each.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DATE POLL -->
+    <section id="termin" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Terminumfrage</h2>
+        <span style="color:var(--cp-ink-2)">Everyone votes Ja, Wenn nötig or Nein per slot and sees everyone else's vote. The app marks the best slot; the host confirms it.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <sc-if value="{{ confirmed }}">
+          <div role="status" style="display:flex;align-items:center;gap:12px;padding:10px 10px 10px 16px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-success);color:var(--cp-on-success);flex-wrap:wrap">
+            <dc-import name="Icon" icon="calendar-check" size="{{ 22 }}" hint-size="22px,22px"></dc-import>
+            <div style="flex:1;min-width:200px;display:flex;flex-direction:column"><b style="font-size:16px">Termin steht: {{ confLabel }} Uhr</b><span style="font-size:13px">Alle wurden benachrichtigt. Erinnerung 1 Stunde vorher. Die Teamwahl ist jetzt offen.</span></div>
+            <span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink);font-weight:700;font-size:13px"><dc-import name="Icon" icon="download" size="{{ 16 }}" hint-size="16px,16px"></dc-import>.ics laden</span>
+            <button type="button" onClick="{{ unconfirm }}" style="height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:transparent;color:var(--cp-on-success);font-weight:700;font-size:13px;cursor:pointer">Verschieben (Host)</button>
+          </div>
+        </sc-if>
+        <div style="overflow-x:auto">
+          <div role="table" aria-label="Terminumfrage" style="min-width:720px;display:grid;grid-template-columns:150px repeat(4,minmax(130px,1fr));gap:0">
+            <div role="row" style="display:contents">
+              <span role="columnheader" style="padding:10px 8px;font-size:13px;font-weight:700;color:var(--cp-ink-2);align-self:end">{{ votersN }} Leute</span>
+              <sc-for list="{{ slots }}" as="s" hint-placeholder-count="4">
+                <div role="columnheader" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:20px 6px 10px;margin:0 3px;border-radius:12px 12px 0 0;border:{{ s.bd }};border-bottom:0;background:{{ s.bg }}">
+                  <sc-if value="{{ s.best }}"><span style="position:absolute;top:-12px;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px;font-weight:800;white-space:nowrap"><dc-import name="Icon" icon="sparkles" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Bester Termin</span></sc-if>
+                  <b style="font-size:15px">{{ s.day }}</b>
+                  <span style="font-family:var(--cp-font-num);font-size:22px;line-height:1">{{ s.time }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <sc-for list="{{ voters }}" as="v" hint-placeholder-count="8">
+              <div role="row" style="display:contents">
+                <div role="rowheader" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-top:1.5px solid var(--cp-line-soft);min-height:52px">
+                  <dc-import name="Avatar" who="{{ v.n }}" size="{{ 28 }}" host="{{ v.host }}" dot="{{ false }}" hint-size="28px,28px"></dc-import>
+                  <b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.label }}</b>
+                </div>
+                <sc-for list="{{ v.cells }}" as="c" hint-placeholder-count="4">
+                  <div role="cell" style="display:flex;align-items:center;justify-content:center;padding:6px 4px;margin:0 3px;border-top:1.5px solid var(--cp-line-soft);border-left:{{ c.sideBd }};border-right:{{ c.sideBd }};background:{{ c.colBg }}">
+                    <sc-if value="{{ c.mine }}">
+                      <div role="radiogroup" aria-label="{{ c.aria }}" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden;background:var(--cp-surface)">
+                        <sc-for list="{{ c.opts }}" as="o" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{ o.on }}" aria-label="{{ o.n }}" title="{{ o.n }}" onClick="{{ o.pick }}" style="display:grid;place-items:center;width:38px;height:36px;border:0;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};cursor:pointer"><dc-import name="Icon" icon="{{ o.icon }}" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import></button></sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ c.other }}"><span aria-label="{{ c.say }}" title="{{ c.say }}" style="display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px {{ c.bs }} {{ c.bc }};background:{{ c.bg }};color:{{ c.fg }}"><sc-if value="{{ c.hasIcon }}"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 15 }}" sw="{{ 3 }}" hint-size="15px,15px"></dc-import></sc-if></span></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+            <div role="row" style="display:contents">
+              <span role="rowheader" style="padding:10px 8px;border-top:2px solid var(--cp-line);font-size:13px;font-weight:700">Summe</span>
+              <sc-for list="{{ slots }}" as="s" hint-placeholder-count="4">
+                <div role="cell" style="display:flex;flex-direction:column;gap:6px;padding:10px 8px 12px;margin:0 3px;border-top:2px solid var(--cp-line);border:{{ s.bd }};border-top:2px solid var(--cp-line);border-radius:0 0 12px 12px;background:{{ s.bg }}">
+                  <div style="display:flex;height:12px;border-radius:999px;border:1.5px solid var(--cp-line);overflow:hidden;background:var(--cp-paper-2)"><span style="width:{{ s.yW }};background:var(--cp-success)"></span><span style="width:{{ s.mW }};background:var(--cp-warning)"></span></div>
+                  <span style="font-size:12px;line-height:1.3"><b>{{ s.y }} Ja</b>, {{ s.m }} Wenn nötig</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Host</span>
+          <button type="button" onClick="{{ confirm }}" aria-disabled="{{ confirmed }}" style="display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ confBg }};color:var(--cp-on-primary);box-shadow:{{ confSh }};font-weight:700;cursor:pointer" style-active="transform:translate(4px,4px);box-shadow:none"><dc-import name="Icon" icon="calendar-check" size="{{ 18 }}" hint-size="18px,18px"></dc-import>{{ confBtn }}</button>
+          <span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 12px;font-weight:700;font-size:13px"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Termin vorschlagen</span>
+          <span style="display:flex;gap:14px;margin-left:auto;font-size:12px;color:var(--cp-ink-2);flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:5px"><span style="display:grid;place-items:center;width:20px;height:20px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-success);color:var(--cp-on-success)"><dc-import name="Icon" icon="check" size="{{ 11 }}" sw="{{ 3 }}" hint-size="11px,11px"></dc-import></span>Ja</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="display:grid;place-items:center;width:20px;height:20px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-warning);color:var(--cp-on-warning)"><dc-import name="Icon" icon="minus" size="{{ 11 }}" sw="{{ 3 }}" hint-size="11px,11px"></dc-import></span>Wenn nötig</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="display:grid;place-items:center;width:20px;height:20px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="x" size="{{ 11 }}" sw="{{ 3 }}" hint-size="11px,11px"></dc-import></span>Nein</span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:20px;height:20px;border-radius:50%;border:2px dashed var(--cp-ink-3);box-sizing:border-box"></span>Noch offen</span></span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> The „Terminumfrage“ phase, in the lobby's stage. Best slot: most Ja, then most Wenn nötig, then earliest. It moves live as people vote. Your own row is always on top.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No anonymous voting, no comments per slot. „Bester Termin“ is only a suggestion; nothing is fixed until the host confirms. Rescheduling keeps the teams.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> A real table with row and column headers. Each vote has a shape (check, dash, cross, dashed ring) as well as a colour. Your three options per slot are a radio group named after the slot.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: the table. Mobile: one card per slot with your three buttons full width and the others as an avatar row under „Ja“, „Wenn nötig“, „Nein“.</div>
+      </div>
+    </section>
+
+    <!-- PUSH -->
+    <section id="push" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Push-Benachrichtigungen</h2>
+        <span style="color:var(--cp-ink-2)">Via the PWA, desktop too. Ask in the app first, at a moment where the benefit is obvious; only then trigger the browser prompt.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:12px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 52 }}" hint-size="52px,52px"></dc-import>
+              <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:22px;line-height:1.1">Sollen wir dir Bescheid geben?</b><span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Wenn der Termin steht, eine Stunde vorher, und wenn es losgeht. Mehr nicht.</span></div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <span style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700"><dc-import name="Icon" icon="bell" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Ja, Benachrichtigungen an</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 14px;font-weight:700">Später</span>
+            </div>
+            <span style="font-size:12px;color:var(--cp-ink-2)">Soft ask: shown after your first vote in a date poll. „Später“ asks again after the next session, never twice in one.</span>
+          </div>
+          <div style="display:grid;gap:10px">
+            <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Only the seven events in the brief. Title says what happened, body says what to do next. Tapping opens the matching place in the app (poll, lobby, stage, ceremony).</div>
+            <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No push while the person has the session open in a visible tab. No chat messages, no emotes, no marketing. „Spiel gezogen“ and „Ergebnis“ only go to people not currently in the lobby.</div>
+            <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Copy works without the icon and without the session name being visible (it always names the session). Under 120 characters so lock screens don't cut the action.</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ pushes }}" as="p" hint-placeholder-count="7">
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:18px;border:1.5px solid var(--cp-line-soft);background:var(--cp-surface);box-shadow:var(--cp-shadow-soft)">
+              <span style="flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:10px;border:2px solid var(--cp-line);background:var(--cp-primary);overflow:hidden"><dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 32 }}" hint-size="32px,32px"></dc-import></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <div style="display:flex;gap:8px;font-size:12px;color:var(--cp-ink-2)"><span style="font-weight:700;letter-spacing:.04em">COMPIES</span><span style="margin-left:auto">{{ p.when }}</span></div>
+                <b style="font-size:14px">{{ p.title }}</b>
+                <span style="font-size:14px;line-height:1.4;text-wrap:pretty">{{ p.body }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <footer style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:var(--cp-bw) solid var(--cp-line);font-size:13px;color:var(--cp-ink-2)">
+      <span>COMPIES Design System, Communication</span>
+      <span>Next up: Frame, smoke test and docs</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ZONE={t1:[1,'Wilde Gurken Bande'],t8:[8,'Nacht Eulen'],t2:[2,'Team Orange'],bench:[0,'Bench'],stands:[0,'Tribüne']};
+const PEOPLE={Sanne:{z:'stands',host:true},Kitty:{z:'t1'},Larsi:{z:'t1'},Chris:{z:'stands'},Olli:{z:'t8'},Bea:{z:'t8'},Mia:{z:'bench'},Jo:{z:'t1'}};
+const M0=[['Sanne','20:01','Willkommen! Start um 20:15, holt euch Snacks.'],['Kitty','20:02','Wer hat Snacks? Ich hab nur Gurken.'],['Kitty','20:02','Passt ja zum Teamnamen.'],['Larsi','20:03','Bitte, bitte kein Trackmania heute.'],['Chris','20:05','Ich bleib auf der Tribüne und buh euch aus.'],['Olli','20:06','',true],['Bea','20:07','Nacht Eulen sind bereit. Wir haben Eulen-Kekse.'],['Sanne','20:09','Olli, das war unter der Gürtellinie. Weiter geht\u2019s.']].map(([who,t,txt,del],i)=>({id:'m'+i,who,t,txt,del:!!del,st:'ok'}));
+const EV={join:['log-in','var(--cp-info)','var(--cp-on-info)','Beitritt','Kitty ist der Session beigetreten'],move:['move','var(--cp-paper-2)','var(--cp-ink)','Platzwechsel','Chris ist auf die Tribüne gewechselt'],date:['calendar-check','var(--cp-success)','var(--cp-on-success)','Termin','Termin steht: Sa 25.10., 20:30 Uhr'],start:['play','var(--cp-primary)','var(--cp-on-primary)','Start','Sanne hat die Session gestartet'],wheel:['ferris-wheel','var(--cp-primary)','var(--cp-on-primary)','Glücksrad','Glücksrad: Counter-Strike 2'],veto:['ban','var(--cp-hot)','var(--cp-on-hot)','Veto (nach dem Aufdecken)','Veto von Larsi (Wilde Gurken Bande)'],ban:['ban','var(--cp-surface)','var(--cp-ink)','Ban und Pick','Nacht Eulen hat Trackmania gebannt'],win:['trophy','var(--cp-primary)','var(--cp-on-primary)','Ergebnis','Nacht Eulen gewinnt Spiel 2'],fix:['pencil','var(--cp-paper-2)','var(--cp-ink)','Korrektur','Sanne hat Spiel 1 korrigiert'],host:['crown','var(--cp-primary)','var(--cp-on-primary)','Host greift ein','Sanne hat Codenames gesetzt']};
+const FEED=[['h','Vor dem Start'],['join','19:58',[['Kitty',1],[' ist der Session beigetreten',0]]],['move','20:05',[['Chris',1],[' ist auf die Tribüne gewechselt',0]]],['date','20:10',[['Termin steht: ',0],['Sa 25.10., 20:30 Uhr',1]]],['start','20:31',[['Sanne',1],[' hat die Session gestartet',0]]],
+ ['h','Spiel 1, Rocket League'],['wheel','20:32',[['Glücksrad: ',0],['Rocket League',1]]],['win','20:51',[['Wilde Gurken Bande',1],[' gewinnt Spiel 1',0]]],
+ ['h','Spiel 2, Mario Kart 8'],['wheel','20:53',[['Glücksrad: ',0],['Trackmania',1]]],['veto','20:54',[['Veto von ',0],['Larsi',1],[' (Wilde Gurken Bande) und ',0],['Olli',1],[' (Nacht Eulen)',0]]],['wheel','20:55',[['Glücksrad: ',0],['Mario Kart 8',1]]],['win','21:12',[['Nacht Eulen',1],[' gewinnt Spiel 2',0]]],['fix','21:13',[['Sanne',1],[' hat Spiel 1 korrigiert',0]]]];
+const SLOTS=[['Fr 24.10.','20:15'],['Sa 25.10.','19:00'],['Sa 25.10.','20:30'],['So 26.10.','18:00']];
+const V0={Sanne:['y','y','y','m'],Larsi:['n','y','y','y'],Olli:['y','m','y','n'],Bea:['m','n','y','y'],Jo:['y','y','m',null],Mia:['n','m','y','m'],Chris:['y',null,'m','y']};
+const EMO=[['clap','Klatschen','hand','var(--cp-primary)'],['tears','Freudentränen','smile','var(--cp-mint)'],['angry','Wütend','zap','var(--cp-hot)'],['roar','Compibert-Brüller','volume-2','var(--cp-pop)']];
+const hm=()=>{ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,wide:true,view:'Kitty',offline:false,msgs:M0,draft:'',tab:0,crowd:false,cool:false,emoMsg:'',my:['y','m','y',null],confirmed:null};
+  root=React.createRef(); chatScroll=React.createRef();
+  componentDidMount(){
+    let m=null,mo=null,mu=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs);
+    this.setState({mode:m,motion:mo,muted:mu==='1',wide:window.innerWidth>=980}); setTimeout(()=>this.scrollChat(),60);
+  }
+  componentWillUnmount(){ window.removeEventListener('resize',this._rs); clearInterval(this._crowd); }
+  componentDidUpdate(){ const S=this.state, m=S.mode; if(m&&m!==this._lm){ this._lm=m; document.body.style.background=m==='dark'?'#17121d':'#fff3df'; }
+    const n=S.msgs.length; if(n!==this._lastN||S.tab!==this._lastTab){ this._lastN=n; this._lastTab=S.tab; this.scrollChat(); }
+    if(S.cool&&!this._lastCool){ const r=this.root.current; r&&r.querySelectorAll('[data-cool]').forEach(c=>c.animate([{strokeDashoffset:0},{strokeDashoffset:176}],{duration:2000,fill:'forwards'})); }
+    this._lastCool=S.cool; }
+  scrollChat(){ const s=this.chatScroll.current; if(s) s.scrollTop=s.scrollHeight; }
+  rm(){ return this.state.motion==='reduced'; }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+  send=e=>{ e&&e.preventDefault&&e.preventDefault(); const txt=this.state.draft.trim(); if(!txt) return; const id='n'+Date.now(), off=this.state.offline;
+    this.setState(s=>({draft:'',msgs:s.msgs.concat([{id,who:s.view,t:hm(),txt,del:false,st:'sending'}])})); setTimeout(()=>this.setState(s=>({msgs:s.msgs.map(m=>m.id===id?Object.assign({},m,{st:off?'failed':'ok'}):m)})),off?900:450); };
+  retry=id=>{ this.setState(s=>({msgs:s.msgs.map(m=>m.id===id?Object.assign({},m,{st:'sending'}):m)})); setTimeout(()=>this.setState(s=>({msgs:s.msgs.map(m=>m.id===id?Object.assign({},m,{st:s.offline?'failed':'ok'}):m)})),700); };
+  sound(k){ if(this.state.muted) return; try{ const C=this._ac||(this._ac=new (window.AudioContext||window.webkitAudioContext)()), t=C.currentTime;
+      if(k==='clap'){ for(let i=0;i<3;i++){ const b=C.createBuffer(1,C.sampleRate*.04,C.sampleRate), d=b.getChannelData(0); for(let j=0;j<d.length;j++) d[j]=(Math.random()*2-1)*Math.pow(1-j/d.length,3); const s=C.createBufferSource(), f=C.createBiquadFilter(), g=C.createGain(); s.buffer=b; f.type='bandpass'; f.frequency.value=1400; g.gain.value=.5; s.connect(f).connect(g).connect(C.destination); s.start(t+i*.11); } return; }
+      const o=C.createOscillator(), g=C.createGain(); const P={tears:['sine',660,1320,.35],angry:['sawtooth',140,95,.3],roar:['sawtooth',220,70,.7]}[k]; o.type=P[0]; o.frequency.setValueAtTime(P[1],t); o.frequency.exponentialRampToValueAtTime(P[2],t+P[3]); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(k==='tears'?.12:.08,t+.02); g.gain.exponentialRampToValueAtTime(.0001,t+P[3]); o.connect(g).connect(C.destination); o.start(t); o.stop(t+P[3]+.02); }catch(e){} }
+  float(pid,k){ const r=this.root.current; const host=r&&r.querySelector(`[data-av="${pid}"]`); if(!host) return; const E=EMO.find(x=>x[0]===k); const el=document.createElement('span');
+    el.style.cssText=`position:absolute;left:50%;bottom:62px;margin-left:-26px;width:52px;height:52px;display:grid;place-items:center;border-radius:50%;border:2.5px solid #151515;background:${E[3]};box-shadow:0 0 0 3px #fffdf8,3px 4px 0 3px var(--cp-shadow-ink);font:800 9px/1.1 var(--cp-font-sans);color:#151515;text-align:center;pointer-events:none;z-index:4`; el.textContent=E[1].replace('Compibert-','');
+    host.appendChild(el); const rm=this.rm(); const dx=(Math.random()-.5)*30;
+    const a=el.animate(rm?[{opacity:0,transform:'scale(.8)'},{opacity:1,transform:'scale(1)',offset:.2},{opacity:1,offset:.8},{opacity:0}]:[{opacity:0,transform:'translate(0,10px) scale(.4)'},{opacity:1,transform:'translate(0,-6px) scale(1.15)',offset:.15},{opacity:1,transform:`translate(${dx/2}px,-40px) scale(1) rotate(${dx/3}deg)`,offset:.6},{opacity:0,transform:`translate(${dx}px,-80px) scale(.9) rotate(${dx/2}deg)`}],{duration:1700,easing:'cubic-bezier(.16,1,.3,1)'}); a.onfinish=()=>el.remove(); };
+  emote=k=>{ if(this.state.cool) return; this.float('kitty',k); this.sound(k); this.setState({cool:true,emoMsg:'Gesendet. Nächstes Emote in 2 Sekunden.'}); setTimeout(()=>this.setState({cool:false,emoMsg:''}),2000); };
+  toggleCrowd=()=>{ const on=!this.state.crowd; this.setState({crowd:on}); clearInterval(this._crowd); if(on) this._crowd=setInterval(()=>{ const ids=['chris','sanne','larsi']; const k=['clap','tears','roar','clap'][Math.floor(Math.random()*4)]; this.float(ids[Math.floor(Math.random()*3)],k); },650); };
+  renderVals(){
+    const S=this.state, mode=S.mode||'light', dark=mode==='dark', me=S.view, isHost=me==='Sanne';
+    // chat groups
+    const groups=[]; S.msgs.forEach(m=>{ const last=groups[groups.length-1]; const mm=+m.t.slice(0,2)*60+ +m.t.slice(3); if(last&&last.who===m.who&&mm-last.tm<=2){ last.list.push(m); } else groups.push({who:m.who,t:m.t,tm:mm,list:[m]}); });
+    const G=groups.map(g=>{ const P=PEOPLE[g.who]||{z:'stands'}, Z=ZONE[P.z], mine=g.who===me;
+      return {who:g.who,name:mine?'Du':g.who,host:!!P.host,team:Z[0],where:Z[0]?'':Z[1],t:g.t,other:!mine,dir:mine?'row-reverse':'row',align:mine?'flex-end':'flex-start',bg:mine?'var(--cp-primary)':'var(--cp-surface)',fg:mine?'var(--cp-on-primary)':'var(--cp-ink)',rad:mine?'14px 14px 4px 14px':'14px 14px 14px 4px',
+        msgs:g.list.map(m=>({txt:m.txt,live:!m.del,del:m.del,op:m.st==='sending'?.6:1,failed:m.st==='failed',sending:m.st==='sending',retry:()=>this.retry(m.id),canDel:isHost&&!m.del&&!mine,delAria:`Nachricht von ${g.who} löschen`,delete:()=>this.setState(s=>({msgs:s.msgs.map(x=>x.id===m.id?Object.assign({},x,{del:true}):x)}))}))}; });
+    const feed=FEED.map(f=>{ if(f[0]==='h') return {head:true,item:false,h:f[1]}; const E=EV[f[0]]; return {head:false,item:true,icon:E[0],bg:E[1],fg:E[2],t:f[1],parts:f[2].map(([t,b])=>({t,w:b?800:500}))}; });
+    const evTypes=Object.values(EV).map(([icon,bg,fg,n,ex])=>({icon,bg,fg,n,ex}));
+    const tabs=[['Chat','message-square'],['Aktivität','history']].map(([n,icon],i)=>{ const a=S.tab===i; return {n,icon,on:a,bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',pick:()=>this.setState({tab:i})}; });
+    // poll
+    const VO=['y','m','n'], VL={y:'Ja',m:'Wenn nötig',n:'Nein'}, VI={y:'check',m:'minus',n:'x'};
+    const all=Object.assign({Kitty:S.my},V0); const names=['Kitty','Sanne','Larsi','Olli','Bea','Jo','Mia','Chris'];
+    const counts=SLOTS.map((_,i)=>{ let y=0,m=0; names.forEach(n=>{ const v=all[n][i]; if(v==='y') y++; if(v==='m') m++; }); return {y,m}; });
+    let best=0; counts.forEach((c,i)=>{ const b=counts[best]; if(c.y>b.y||(c.y===b.y&&c.m>b.m)) best=i; });
+    const shown=S.confirmed!=null?S.confirmed:best;
+    const slots=SLOTS.map(([day,time],i)=>{ const hi=i===shown; return {day,time,best:i===best&&S.confirmed==null,bd:hi?'3px solid var(--cp-focus)':'2px solid transparent',bg:hi?'var(--cp-surface-2)':'transparent',y:String(counts[i].y),m:String(counts[i].m),yW:(counts[i].y/names.length*100)+'%',mW:(counts[i].m/names.length*100)+'%'}; });
+    const voters=names.map(n=>{ const mine=n==='Kitty'; return {n,host:n==='Sanne',label:mine?'Du (Kitty)':n,cells:SLOTS.map(([d,t],i)=>{ const v=all[n][i], hi=i===shown;
+      const base={colBg:hi?'var(--cp-surface-2)':'transparent',sideBd:hi?'3px solid var(--cp-focus)':'2px solid transparent',mine,other:!mine,aria:`${d} ${t}`};
+      if(mine) return Object.assign(base,{opts:VO.map((k,j)=>({n:VL[k],icon:VI[k],on:v===k,bl:j?'2px solid var(--cp-line)':'0',bg:v===k?(k==='y'?'var(--cp-success)':k==='m'?'var(--cp-warning)':'var(--cp-ink)'):'transparent',fg:v===k?(k==='y'?'var(--cp-on-success)':k==='m'?'var(--cp-on-warning)':'var(--cp-paper)'):'var(--cp-ink-2)',pick:()=>this.setState(s=>{ const my=s.my.slice(); my[i]=k; return {my}; })}))});
+      return Object.assign(base,{say:`${n}: ${v?VL[v]:'noch offen'}`,hasIcon:!!v,icon:v?VI[v]:'x',bs:v?'solid':'dashed',bc:v?'var(--cp-line)':'var(--cp-ink-3)',bg:v==='y'?'var(--cp-success)':v==='m'?'var(--cp-warning)':v==='n'?'var(--cp-surface)':'transparent',fg:v==='y'?'var(--cp-on-success)':v==='m'?'var(--cp-on-warning)':'var(--cp-ink-2)'}); })}; });
+    const pushes=[['Termin steht','Freitags-Zocken: Sa 25.10., 20:30 Uhr. Tipp, um ihn in deinen Kalender zu legen.','vor 2 Min.'],['Termin verschoben','Freitags-Zocken ist jetzt am So 26.10., 18:00 Uhr. Die Teams bleiben, wie sie sind.','gestern'],['In einer Stunde geht\u2019s los','Freitags-Zocken startet um 20:30. Snacks holen, Controller laden.','19:30'],['Session gestartet','Sanne hat Freitags-Zocken gestartet. Ab ins Spielbrett!','20:31'],['Das Glücksrad sagt: Mario Kart 8','60 Sekunden für euer Veto. Freitags-Zocken, Spiel 2.','20:55'],['Nacht Eulen gewinnt Spiel 2','Ihr seid jetzt Zweite. Freitags-Zocken, Spiel 3 kommt gleich.','21:12'],['Wilde Gurken Bande gewinnt!','Freitags-Zocken ist vorbei. Komm zur Siegerehrung.','23:04']].map(([title,body,when])=>({title,body,when}));
+    const toc=[['Chat','#chat'],['Aktivität','#aktivitaet'],['Emotes','#emotes'],['Terminumfrage','#termin'],['Push','#push']].map(([n,href])=>({n,href}));
+    return {root:this.root,chatScroll:this.chatScroll,mode,motion:S.motion,muted:S.muted,wide:S.wide,dir:S.wide?'row':'column',toc,cbDir:dark?'m3b':'m3a',
+      setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,toggleMute:this.toggleMute,
+      views:[['Kitty','Als Kitty'],['Sanne','Als Sanne (Host)']].map(([k,n],i)=>({n,on:S.view===k,bl:i?'2px solid var(--cp-line)':'0',bg:S.view===k?'var(--cp-ink)':'transparent',fg:S.view===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.setState({view:k})})),
+      offline:S.offline,offBg:S.offline?'var(--cp-warning)':'var(--cp-surface)',toggleOffline:()=>this.setState(s=>({offline:!s.offline})),
+      tabs,tabChat:S.tab===0,tabAct:S.tab===1,groups:G,draft:S.draft,onDraft:e=>this.setState({draft:e.target.value}),send:this.send,noDraft:!S.draft.trim(),sendBg:S.draft.trim()?'var(--cp-primary)':'var(--cp-paper-2)',sendSh:S.draft.trim()?'var(--cp-shadow-sm)':'none',
+      feed,evTypes,
+      crowd:S.crowd,crowdBg:S.crowd?'var(--cp-warning)':'var(--cp-surface)',toggleCrowd:this.toggleCrowd,
+      emoPeople:[{id:'kitty',n:'Kitty',team:1,label:'Du',w:800},{id:'larsi',n:'Larsi',team:1,label:'Larsi',w:600},{id:'sanne',n:'Sanne',team:0,host:true,label:'Sanne',w:600},{id:'chris',n:'Chris',team:0,label:'Chris',w:600}].map(p=>Object.assign({host:false},p)),
+      emotes:EMO.map(([k,n,icon,bg])=>({n,icon,bg,aria:`Emote senden: ${n}`,send:()=>this.emote(k)})),cool:S.cool,emoSh:S.cool?'none':'var(--cp-shadow-sm)',emoCur:S.cool?'not-allowed':'pointer',emoOp:S.cool?.6:1,emoMsg:S.emoMsg,
+      slots,voters,votersN:String(names.length),confirmed:S.confirmed!=null,confLabel:S.confirmed!=null?SLOTS[S.confirmed].join(', '):'',confBtn:S.confirmed!=null?'Termin steht':`Termin festlegen: ${SLOTS[best].join(', ')}`,confBg:S.confirmed!=null?'var(--cp-paper-2)':'var(--cp-primary)',confSh:S.confirmed!=null?'none':'var(--cp-shadow-btn)',
+      confirm:()=>{ if(S.confirmed==null) this.setState({confirmed:best}); },unconfirm:()=>this.setState({confirmed:null}),
+      pushes};
+  }
+}
+</script>
+</body>
+</html>

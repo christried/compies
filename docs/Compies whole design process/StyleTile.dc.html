@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Bungee&family=Caveat+Brush&family=Fredoka:wght@400..700&family=Hanken+Grotesk:wght@400..900&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@500;700&family=Nunito:wght@400..800&family=Patrick+Hand&family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400..800&family=Bagel+Fat+One&family=Baloo+2:wght@500..800&family=DM+Sans:opsz,wght@9..40,400..700&family=DM+Serif+Display&family=League+Spartan:wght@500..800&family=Lilita+One&family=Orbitron:wght@600..900&family=Rammetto+One&family=Rubik:wght@400..800&family=Shrikhand&family=Space+Grotesk:wght@400..700&family=Space+Mono:wght@400;700&family=Syne:wght@600..800&display=swap"><script src="./themes.js"></script>
+</helmet>
+<svg width="0" height="0" style="position:absolute"><filter id="cp-wob"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"></feTurbulence><feDisplacementMap in="SourceGraphic" scale="3.2"></feDisplacementMap></filter></svg>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+<div style="width:600px;box-sizing:border-box;padding:28px;background-color:{{ t.c.bg }};background-image:{{ t.c.bgImg }};background-size:{{ t.c.bgSize }};color:{{ t.c.ink }};font-family:{{ t.f.b }};font-weight:{{ t.f.bw }};display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;align-items:flex-start;gap:16px">
+    <span style="font-family:{{ t.f.n }};font-weight:{{ t.f.nw }};font-size:44px;line-height:.9;color:{{ t.c.hot }}">{{ t.no }}</span>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+      <span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};text-transform:{{ t.f.hc }};letter-spacing:{{ t.f.ht }};font-size:30px;line-height:1">{{ t.name }}</span>
+      <span style="font-size:14px;color:{{ t.c.ink2 }}">„{{ t.de }}“ · {{ t.kind }}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;font-family:{{ t.f.lab }};font-size:11px">
+      <span style="padding:4px 8px;border:{{ t.s.border }};border-radius:{{ t.s.rChip }}">Dunkel · {{ t.modes.dark }}</span>
+      <span style="padding:4px 8px;border:{{ t.s.border }};border-radius:{{ t.s.rChip }}">Hell · {{ t.modes.light }}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">Palette</span>
+    <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">
+      <sc-for list="{{ base }}" as="b" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:5px"><div style="height:52px;background:{{ b.c }};border:{{ t.s.border }};border-radius:{{ t.s.rChip }}"></div><span style="font-size:11px;line-height:1.2">{{ b.n }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:{{ t.c.ink2 }}">{{ b.c }}</span></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;font-size:12px;color:{{ t.c.ink2 }}">
+      <div style="display:flex;width:120px;height:26px;border-radius:{{ t.s.rChip }};overflow:hidden;border:{{ t.s.border }}"><div style="flex:1;background:{{ t.alt.bg }}"></div><div style="flex:1;background:{{ t.alt.panel }}"></div><div style="flex:1;background:{{ t.alt.ink }}"></div><div style="flex:1;background:{{ t.alt.accent }}"></div></div>
+      <span>Other mode, base swatches</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">8 Teamfarben · Farbe + Form + Name</span>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+      <sc-for list="{{ t.teams }}" as="tm" hint-placeholder-count="8">
+        <div style="position:relative;height:62px;padding:8px 10px;box-sizing:border-box;background:{{ tm.c }};color:{{ tm.ink }};border-radius:{{ t.s.r }};border:{{ t.s.border }};box-shadow:{{ t.s.btnShadow }};display:flex;flex-direction:column;justify-content:space-between">
+          <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px"><span>{{ tm.n }}</span><span>{{ tm.g }}</span></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px">{{ tm.c }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:4px;height:14px"><sc-for list="{{ t.teams }}" as="tm" hint-placeholder-count="8"><div style="flex:1;background:{{ tm.c }};border-radius:{{ t.s.rChip }}"></div></sc-for></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">Typografie</span>
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};text-transform:{{ t.f.hc }};letter-spacing:{{ t.f.ht }};font-size:{{ t.tile.hs }};line-height:1;overflow-wrap:anywhere">Terminabstimmung</span><span style="font-size:11px;color:{{ t.c.ink2 }}">Headline — {{ t.tile.fh }}</span></div>
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:{{ t.f.bs }};line-height:1.45;max-width:46ch">Teamwahl öffnet, sobald der Termin steht. Jedes Mitglied steuert ein Wort zum Teamnamen bei – max. 12 Zeichen.</span><span style="font-size:11px;color:{{ t.c.ink2 }}">Body — {{ t.tile.fb }}</span></div>
+    <div style="display:flex;align-items:flex-end;gap:20px">
+      <span style="font-family:{{ t.f.n }};font-weight:{{ t.f.nw }};font-size:58px;line-height:.9;font-variant-numeric:tabular-nums;color:{{ t.c.hot }}">0:47</span>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:10px;font-family:{{ t.f.n }};font-weight:{{ t.f.nw }};font-size:20px;font-variant-numeric:tabular-nums"><span>1</span><span style="flex:1;height:10px;background:{{ lead1 }};border-radius:{{ t.s.rChip }}"></span><span>24</span></div>
+        <div style="display:flex;align-items:center;gap:10px;font-family:{{ t.f.n }};font-weight:{{ t.f.nw }};font-size:20px;font-variant-numeric:tabular-nums;color:{{ t.c.ink2 }}"><span>2</span><span style="width:70%;height:10px;background:{{ lead2 }};border-radius:{{ t.s.rChip }}"></span><span style="margin-left:auto">17</span></div>
+      </div>
+    </div>
+    <span style="font-size:11px;color:{{ t.c.ink2 }}">Numerals (countdown, leaderboard) — {{ t.tile.fn }}</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">Formen &amp; Kanten</span>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="position:relative;width:110px;height:66px;background:{{ t.c.panel }};border-radius:{{ t.s.r }}"><div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ t.s.shadow }};filter:{{ t.s.ff }}"></div></div>
+      <div style="height:40px;padding:0 18px;display:flex;align-items:center;background:{{ t.c.accent }};color:{{ t.c.accentInk }};border-radius:{{ t.s.rBtn }};border:{{ t.s.btnBorder }};box-shadow:{{ t.s.btnShadow }};font-weight:700;font-size:14px">Session starten</div>
+      <div style="height:44px;padding:0 20px;display:flex;align-items:center;background:{{ t.m.vetoBg }};color:{{ t.m.vetoInk }};border-radius:{{ t.m.vetoR }};border:{{ t.m.vetoBorder }};box-shadow:{{ t.m.vetoShadow }};font-family:{{ t.m.h }};font-weight:{{ t.m.hw }};text-transform:uppercase;font-size:16px">Veto</div>
+      <div style="width:44px;height:44px;border-radius:{{ t.s.rAv }};background:{{ t.c.av.0 }};border:{{ t.s.avBorder }};box-shadow:{{ avRing }};display:grid;place-items:center;font-weight:700;font-size:14px">KI</div>
+      <div style="width:44px;height:44px;border-radius:{{ t.s.rAv }};border:{{ t.s.slotEmpty }};display:grid;place-items:center;color:{{ t.c.ink2 }}">+</div>
+    </div>
+    <span style="font-size:12px;line-height:1.45;color:{{ t.c.ink2 }}">{{ t.tile.shapes }}</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">Texturen</span>
+      <div style="position:relative;height:96px;overflow:hidden;border:{{ t.s.border }};border-radius:{{ t.s.r }};background-color:{{ t.c.bg }};background-image:{{ t.c.bgImg }};background-size:{{ t.c.bgSize }}">
+        <sc-for list="{{ smoke2 }}" as="s" hint-placeholder-count="0"><div style="position:absolute;left:{{ s.x }};top:{{ s.y }};width:{{ s.w }};height:{{ s.h }};background:{{ s.bg }};-webkit-mask:{{ s.mask }};mask:{{ s.mask }};opacity:{{ s.o }};animation:{{ s.anim }}"></div></sc-for>
+      </div>
+      <span style="font-size:12px;line-height:1.45;color:{{ t.c.ink2 }}">{{ t.tile.tex }}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">Icons</span>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+        <sc-for list="{{ icons }}" as="ic" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;color:{{ t.c.ink }}">
+            <sc-if value="{{ t.i.pixel }}"><svg viewBox="0 0 8 8" width="28" height="28" style="shape-rendering:crispEdges"><sc-for list="{{ ic.pix }}" as="p"><rect x="{{ p.x }}" y="{{ p.y }}" width="1" height="1" style="fill:currentColor"></rect></sc-for></svg></sc-if>
+            <sc-if value="{{ vecIcons }}"><svg viewBox="-2 -2 28 28" width="30" height="30" style="overflow:visible"><sc-if value="{{ t.i.offset }}"><g transform="translate(1.6 1.6)"><sc-for list="{{ ic.paths }}" as="p"><path d="{{ p.d }}" style="fill:none;stroke:{{ t.c.hot }};stroke-width:{{ t.i.sw }};stroke-linecap:{{ t.i.cap }};stroke-linejoin:{{ t.i.join }}"></path></sc-for></g></sc-if><g style="filter:{{ t.i.filter }}"><sc-for list="{{ ic.paths }}" as="p"><path d="{{ p.d }}" style="fill:{{ iconFill }};stroke:currentColor;stroke-width:{{ t.i.sw }};stroke-linecap:{{ t.i.cap }};stroke-linejoin:{{ t.i.join }}"></path></sc-for></g></svg></sc-if>
+            <span style="font-size:10px;color:{{ t.c.ink2 }}">{{ ic.n }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <span style="font-size:12px;line-height:1.45;color:{{ t.c.ink2 }}">{{ t.tile.icons }}</span>
+    </div>
+  </div>
+  <div style="padding-top:14px;border-top:{{ t.s.div }};font-size:13px;line-height:1.45"><b>Motion:</b> {{ t.tile.motion }}</div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:600,&quot;height&quot;:1200},&quot;dir&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;swiss&quot;,&quot;memphis&quot;,&quot;hand&quot;,&quot;pixel&quot;,&quot;picnic&quot;,&quot;kofi&quot;,&quot;swissmemphis&quot;,&quot;swisspixel&quot;,&quot;kofihand&quot;,&quot;picnicpixel&quot;,&quot;memphispixel&quot;,&quot;swisshand&quot;],&quot;default&quot;:&quot;swiss&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  componentDidMount(){ if(!window.COMPIES_THEMES){ this._h=()=>{ if(!this._done){ this._done=true; this.forceUpdate(); } }; window.addEventListener('compies-themes',this._h);} }
+  componentWillUnmount(){ this._h && window.removeEventListener('compies-themes',this._h); }
+  renderVals(){
+    const T=window.COMPIES_THEMES; if(!T) return {ready:false};
+    const t=T[this.props.dir]||T.swiss, D=window.COMPIES_DATA;
+    return { ready:true, t,
+      base:[{n:'Grund',c:t.c.bg},{n:'Fläche',c:t.c.panel},{n:'Fläche 2',c:t.c.panel2},{n:'Text',c:t.c.ink},{n:'Akzent',c:t.c.accent},{n:'Live / Veto',c:t.c.hot}],
+      lead1:t.teams[0].c, lead2:t.teams[5].c, avRing:`0 0 0 3px ${t.teams[0].c}`,
+      smoke2:t.smoke.slice(0,3).map((s,i)=>Object.assign({},s,{x:(i*35-10)+'%',y:'-60%',w:'260px',h:'240px'})),
+      icons:D.icons(t), vecIcons:!t.i.pixel, iconFill:t.i.fill?D.rgba(t.c.hot,.25):'none' };
+  }
+}
+</script>
+</body>
+</html>

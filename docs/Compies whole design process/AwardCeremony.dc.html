@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="./compibert-options.js"></script>
+</helmet>
+<div ref="{{ stage }}" style="position:relative;width:100%;min-height:{{ minH }};box-sizing:border-box;overflow:hidden;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);display:flex;flex-direction:column;align-items:center;gap:18px;padding:22px 18px {{ trackH }}">
+  <div data-k="banner" style="display:flex;justify-content:center"><span style="padding:8px 24px;background:var(--cp-primary);color:var(--cp-on-primary);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);font-family:var(--cp-font-display);font-size:clamp(32px,5vw,52px);line-height:1">Siegerehrung!</span></div>
+  <span style="font-size:14px;font-weight:700;color:var(--cp-ink-2);text-align:center">{{ sub }}</span>
+  <div style="width:100%;max-width:820px;display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:20px 28px">
+    <div style="flex:0 1 auto;max-width:100%;display:flex;flex-direction:column;align-items:center;gap:16px">
+    <div data-k="win" style="position:relative;flex:none;width:240px;height:160px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;box-shadow:var(--cp-shadow-card);background:var(--cp-surface);overflow:hidden">
+      <div data-k="front" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--cp-paper-2)"><span style="font-family:'Bungee',var(--cp-font-display);font-size:48px;line-height:1">???</span><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Platz 1</span></div>
+      <div data-k="back" style="position:absolute;inset:0;display:flex;flex-direction:column;opacity:0">
+        <div style="height:40px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;background-color:var(--cp-team-{{ w.t }});background-image:var(--cp-team-{{ w.t }}-pattern);color:var(--cp-team-{{ w.t }}-ink);border-bottom:var(--cp-bw) solid var(--cp-line);font-weight:800;font-size:16px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ w.name }}</div>
+        <div style="flex:1;display:flex;align-items:flex-start;padding:12px 14px;font-family:'Bungee',var(--cp-font-display);font-size:32px;line-height:1">{{ w.pts }} P.</div>
+      </div>
+      <div data-k="stamp" style="position:absolute;right:12px;bottom:12px;padding:2px 10px;border:3px solid var(--cp-hot);border-radius:6px;color:var(--cp-hot);background:var(--cp-surface);font-family:'Bungee',var(--cp-font-display);font-size:20px;opacity:0">SIEGER</div>
+    </div>
+    <ul aria-label="{{ memLabel }}" style="margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:12px 10px;max-width:{{ memMax }}">
+      <sc-for list="{{ mem }}" as="m" hint-placeholder-count="3">
+        <li data-k="mem" style="display:flex;flex-direction:column;align-items:center;gap:6px;width:{{ m.w }};opacity:0">
+          <sc-if value="{{ m.av }}"><dc-import name="Avatar" who="{{ m.who }}" size="{{ m.s }}" team="{{ m.t }}" host="{{ m.host }}" dot="{{ false }}" hint-size="80px,80px"></dc-import></sc-if>
+          <sc-if value="{{ m.more }}"><span style="width:{{ m.px }};height:{{ m.px }};box-sizing:border-box;border-radius:50%;border:2.5px solid var(--cp-line);background:var(--cp-paper-2);display:grid;place-items:center;font-family:'Bungee',var(--cp-font-display);font-size:{{ m.fs }};color:var(--cp-ink)">{{ m.who }}</span></sc-if>
+          <span style="max-width:100%;font-size:{{ m.ns }};font-weight:800;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.label }}</span>
+        </li>
+      </sc-for>
+    </ul>
+    </div>
+    <ol aria-label="Endstand" style="flex:1 1 300px;max-width:420px;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ rest }}" as="r" hint-placeholder-count="3">
+        <li data-k="row" style="display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:52px;padding:0 14px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:12px;box-shadow:var(--cp-shadow-sm)">
+          <span style="font-family:'Bungee',var(--cp-font-display);font-size:22px">{{ r.rank }}</span>
+          <span style="display:flex;align-items:center;gap:8px;font-weight:800;min-width:0"><i style="flex:none;width:18px;height:18px;border-radius:5px;border:2px solid var(--cp-line);background-color:var(--cp-team-{{ r.t }});background-image:var(--cp-team-{{ r.t }}-pattern)"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span></span>
+          <span style="font-family:'Bungee',var(--cp-font-display);font-size:18px">{{ r.pts }} P.</span>
+        </li>
+      </sc-for>
+    </ol>
+  </div>
+  <div data-k="share" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;opacity:0">
+    <button type="button" data-next="tap" style="height:44px;padding:0 18px;border:2.5px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font:700 15px var(--cp-font-sans);cursor:pointer">Bild teilen</button>
+    <button type="button" onClick="{{ replay }}" style="height:44px;padding:0 18px;border:2.5px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);box-shadow:var(--cp-shadow-sm);font:700 15px var(--cp-font-sans);cursor:pointer">Nochmal ansehen</button>
+  </div>
+  <sc-if value="{{ canSkip }}"><button type="button" onClick="{{ skip }}" style="position:absolute;right:12px;top:12px;height:36px;padding:0 14px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);font:700 13px var(--cp-font-sans);cursor:pointer;z-index:6">Überspringen</button></sc-if>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:22px;background:var(--cp-paper-2);border-top:var(--cp-bw) solid var(--cp-line)"></div>
+  <div data-k="cbw" aria-hidden="true" style="position:absolute;left:0;bottom:16px;width:{{ cbW }};height:{{ cbH }};z-index:3;pointer-events:none"><div data-k="rig" style="width:100%;height:100%"></div></div>
+  <div data-k="tro" aria-hidden="true" style="position:absolute;left:0;top:0;width:48px;height:52px;z-index:4;pointer-events:none;opacity:0"><svg viewBox="0 0 52 56" width="48" height="52" style="display:block;overflow:visible"><path d="M8 12C0 12 0 26 11 27M44 12C52 12 52 26 41 27" style="fill:none;stroke:#151515;stroke-width:3.5;stroke-linecap:round"></path><path d="M8 5H44V17C44 31 36 37 26 37C16 37 8 31 8 17Z" style="fill:#ffd23f;stroke:#151515;stroke-width:3.5;stroke-linejoin:round"></path><rect x="22" y="37" width="8" height="8" style="fill:#ffd23f;stroke:#151515;stroke-width:3"></rect><rect x="13" y="45" width="26" height="9" rx="2" style="fill:#ff70c3;stroke:#151515;stroke-width:3"></rect></svg></div>
+  <div data-k="fx" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div>
+  <span role="status" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ live }}</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:980,&quot;height&quot;:580},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;zufall&quot;,&quot;stolpern&quot;,&quot;volltreffer&quot;],&quot;default&quot;:&quot;zufall&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desk&quot;,&quot;mob&quot;],&quot;default&quot;:&quot;desk&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;subtitle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Freitags-Zocken · 6 Spiele&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;canSkip&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;rows&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{t:number,name:string,pts:number}[]&quot;},&quot;members&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{who:string,host?:boolean}[]&quot;}}">
+class Component extends DCLogic {
+  stage = React.createRef();
+  state = { done: false };
+  componentDidMount() {
+    const go = () => (window.gsap && window.CBO && this.stage.current) ? this.boot() : (this._t = setTimeout(go, 60));
+    go();
+  }
+  boot() {
+    const el = this.stage.current, s = document.documentElement.style;
+    if (!s.getPropertyValue('--cb-body')) { Object.entries(CBO.CW.Minze).forEach(([k, v]) => s.setProperty('--cb-' + k, v)); s.setProperty('--cb-ink', '#151515'); }
+    gsap.defaults({ overwrite: 'auto' });
+    const d = this.q('rig'); d.dataset.rig = 'F2'; d.dataset.view = 'full';
+    this.cb = CBO.mount(d, 'aw' + Math.random().toString(36).slice(2, 6));
+    CBO.treat(this.cb, el.closest('[data-theme="dark"]') ? 'Sticker' : 'Harter Schatten');
+    this._io = new IntersectionObserver(es => { if (es[0].isIntersecting) { this._io.disconnect(); this.play(); } }, { threshold: .4 });
+    this._io.observe(el);
+  }
+  q(k) { return this.stage.current.querySelector('[data-k="' + k + '"]'); }
+  qa(k) { return [...this.stage.current.querySelectorAll('[data-k="' + k + '"]')]; }
+  rm() { return this.props.motion === 'reduced' || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches && this.props.motion !== 'full'); }
+  reset() {
+    const P = { banner: this.q('banner'), rows: this.qa('row'), win: this.q('win'), front: this.q('front'), back: this.q('back'), stamp: this.q('stamp'), share: this.q('share'), w: this.q('cbw'), tro: this.q('tro'), mem: this.qa('mem') };
+    this.tl && this.tl.kill(); this.q('fx').innerHTML = '';
+    gsap.set(P.mem, { opacity: 0, scale: 0, y: 18 });
+    gsap.set(P.banner, { y: -140, rotation: -4 }); gsap.set(P.rows, { x: 60, opacity: 0 }); gsap.set(P.win, { scale: .9, opacity: 0, y: 0 });
+    gsap.set(P.front, { opacity: 1 }); gsap.set(P.back, { opacity: 0 }); gsap.set(P.stamp, { opacity: 0, scale: 2.4, rotation: -8 }); gsap.set(P.share, { opacity: 0, y: 16 });
+    gsap.set(P.w, { x: -260, rotation: 0, transformOrigin: '62% 96%' }); gsap.set(P.tro, { opacity: 0, rotation: 0 });
+    CBO.toState(this.cb, 'idle'); return P;
+  }
+  end(P) {
+    gsap.set(P.banner, { y: 0, rotation: -4 }); gsap.set(P.rows, { x: 0, opacity: 1 }); gsap.set(P.win, { opacity: 1, scale: 1 }); gsap.set(P.front, { opacity: 0 }); gsap.set(P.back, { opacity: 1 });
+    gsap.set(P.stamp, { opacity: 1, scale: 1, rotation: -8 }); gsap.set(P.share, { opacity: 1, y: 0 }); gsap.set(P.tro, { opacity: 0 }); gsap.set(P.mem, { opacity: 1, scale: 1, y: 0 });
+    const st = this.stage.current.getBoundingClientRect(), wr = P.win.getBoundingClientRect();
+    gsap.set(P.w, { x: Math.max(8, wr.left - st.left - P.w.offsetWidth - 10), rotation: 0 });
+    CBO.toState(this.cb, this.rm() ? 'cheer' : 'dance');
+    this.setState({ done: true });
+  }
+  confetti(x, y, n) {
+    const L = this.q('fx'), PAL = ['#ffd23f', '#ff70c3', '#2ec4b6', '#3a86ff', '#ff4f4f', '#fffdf8'], R = gsap.utils.random;
+    for (let i = 0; i < n; i++) { const d = document.createElement('i');
+      d.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${R(6, 10)}px;height:${R(9, 14)}px;background:${PAL[i % 6]};border:1.5px solid #151515;border-radius:${i % 3 ? 2 : 50}px`;
+      L.appendChild(d); gsap.timeline({ onComplete: () => d.remove() }).to(d, { x: R(-200, 200), y: R(-200, -70), rotation: R(-360, 360), duration: .5, ease: 'power2.out' })
+        .to(d, { y: '+=' + R(300, 460), x: '+=' + R(-50, 50), rotation: '+=420', duration: R(1.3, 2), ease: 'power1.in' }).to(d, { opacity: 0, duration: .3 }, '-=.35'); }
+  }
+  play = () => {
+    if (!this.cb) return;
+    const P = this.reset(); this.setState({ done: false });
+    if (this.rm()) { gsap.set(P.w, { x: 8 }); return this.end(P); }
+    const v = this.props.variant && this.props.variant !== 'zufall' ? this.props.variant : (Math.random() < .7 ? 'stolpern' : 'volltreffer');
+    const st = this.stage.current.getBoundingClientRect(), wr = P.win.getBoundingClientRect(), wW = P.w.offsetWidth, wH = P.w.offsetHeight;
+    const groundY = st.height - 16 - wH, cardX = wr.left - st.left + wr.width / 2 - 24, cardY = wr.top - st.top - 40;
+    const stopX = gsap.utils.clamp(10, st.width - wW - 10, Math.min(cardX - wW * .9, st.width * .45 - wW / 2));
+    const handX = x => x + wW * .62, handY = groundY + wH * .3;
+    const tl = this.tl = gsap.timeline();
+    tl.to(P.banner, { y: 0, duration: .55, ease: 'back.out(2.2)' }, 0)
+      .to([...P.rows].reverse(), { x: 0, opacity: 1, duration: .45, ease: 'power3.out', stagger: .45 }, .6)
+      .to(P.win, { opacity: 1, scale: 1, duration: .4, ease: 'back.out(2)' }, .6 + P.rows.length * .45);
+    const t0 = .9 + P.rows.length * .45, runD = Math.max(.7, (stopX + 260) / 520);
+    tl.set(P.tro, { opacity: 1, x: handX(-260), y: handY }, t0).call(() => CBO.toState(this.cb, 'run'), null, t0)
+      .to(P.w, { x: stopX, duration: runD, ease: 'none' }, t0).to(P.tro, { x: handX(stopX), duration: runD, ease: 'none' }, t0)
+      .to(P.tro, { y: handY - 7, duration: .15, yoyo: true, repeat: Math.round(runD / .15), ease: 'sine.inOut' }, t0);
+    let land; const t1 = t0 + runD, arc = Math.max(60, groundY - cardY) + 50;
+    if (v === 'stolpern') {
+      tl.call(() => CBO.toState(this.cb, 'suspense'), null, t1).to(P.w, { rotation: 78, x: stopX + 46, duration: .38, ease: 'power2.in' }, t1)
+        .to(P.tro, { x: cardX, duration: .75, ease: 'power1.out' }, t1 + .05).to(P.tro, { y: cardY - 80, duration: .45, ease: 'power2.out' }, t1 + .05)
+        .to(P.tro, { y: cardY, duration: .3, ease: 'power2.in' }, t1 + .5).to(P.tro, { rotation: 720, duration: .75, ease: 'power1.out' }, t1 + .05);
+      land = t1 + .8; tl.to(P.w, { rotation: 0, x: stopX, duration: .45, ease: 'back.out(2)' }, land + .3);
+    } else {
+      tl.call(() => CBO.toState(this.cb, 'cheer'), null, t1).to(P.tro, { y: handY - 170, rotation: 360, duration: .5, ease: 'power2.out' }, t1)
+        .to(P.tro, { y: groundY + 6, duration: .42, ease: 'power2.in' }, t1 + .5).call(() => CBO.toState(this.cb, 'confused'), null, t1 + .92)
+        .to(P.tro, { x: cardX, duration: .7, ease: 'power1.inOut' }, t1 + 1.5).to(P.tro, { y: Math.min(cardY, groundY) - 90, duration: .38, ease: 'power2.out' }, t1 + 1.5)
+        .to(P.tro, { y: cardY, duration: .32, ease: 'power2.in' }, t1 + 1.88).to(P.tro, { rotation: 720, duration: .7 }, t1 + 1.5);
+      land = t1 + 2.2;
+    }
+    tl.to(P.win, { y: 6, duration: .08, yoyo: true, repeat: 1 }, land).to(P.tro, { opacity: 0, duration: .2 }, land + .1)
+      .to(P.front, { opacity: 0, duration: .15 }, land).to(P.back, { opacity: 1, duration: .15 }, land)
+      .to(P.stamp, { opacity: 1, scale: 1, duration: .3, ease: 'back.out(2.4)' }, land + .15)
+      .call(() => { this.confetti(cardX + 24, cardY + 30, 40); this.confetti(cardX + 24, cardY + 30, 24); this.setState({ done: true }); }, null, land + .15)
+      .to(P.mem, { opacity: 1, scale: 1, y: 0, duration: .4, ease: 'back.out(2)', stagger: .08 }, land + .45)
+      .call(() => CBO.toState(this.cb, 'laugh'), null, land + .3).call(() => CBO.toState(this.cb, 'dance'), null, land + 2.2)
+      .to(P.share, { opacity: 1, y: 0, duration: .35, ease: 'back.out(2)' }, land + 1.4);
+  };
+  skip = () => { this.tl && this.tl.kill(); this.end({ banner: this.q('banner'), rows: this.qa('row'), win: this.q('win'), front: this.q('front'), back: this.q('back'), stamp: this.q('stamp'), share: this.q('share'), w: this.q('cbw'), tro: this.q('tro'), mem: this.qa('mem') }); };
+  componentDidUpdate(pp) { if (this.cb && (pp.variant !== this.props.variant || pp.motion !== this.props.motion)) this.play(); }
+  componentWillUnmount() { clearTimeout(this._t); this._io && this._io.disconnect(); this.tl && this.tl.kill(); this.cb && CBO.kill(this.cb); }
+  renderVals() {
+    const rows = this.props.rows || [{ t: 1, name: 'Wilde Gurken Bande', pts: 17 }, { t: 8, name: 'Nacht Eulen', pts: 15 }, { t: 2, name: 'Team Orange', pts: 9 }, { t: 4, name: 'Käse Turbo', pts: 5 }];
+    const [w, ...r] = rows, compact = (this.props.size || 'desk') === 'mob';
+    const ms = this.props.members || [{ who: 'Kitty' }, { who: 'Larsi' }, { who: 'Mia' }];
+    const solo = ms.length === 1, s = solo ? 120 : compact ? 64 : 80, extra = ms.length > 6 ? ms.length - 5 : 0;
+    const cell = { s, t: w.t, px: s + 'px', w: (s + 12) + 'px', fs: Math.round(s * .3) + 'px', ns: solo ? '16px' : '13px' };
+    const mem = (extra ? ms.slice(0, 5) : ms).map(m => Object.assign({}, cell, { av: true, more: false, who: m.who, host: !!m.host, label: m.who }));
+    if (extra) mem.push(Object.assign({}, cell, { av: false, more: true, who: '+' + extra, host: false, label: extra === 1 ? '1 weitere' : extra + ' weitere' }));
+    return {
+      stage: this.stage, w: { t: w.t, name: w.name, pts: String(w.pts) }, mem, memLabel: solo ? 'Sieger' : 'Team ' + w.name, memMax: (6 * (s + 12) + 50) + 'px',
+      rest: r.map((x, i) => ({ t: x.t, name: x.name, pts: String(x.pts), rank: String(i + 2) })),
+      sub: this.props.subtitle || 'Freitags-Zocken · 6 Spiele',
+      minH: compact ? '640px' : '520px', trackH: compact ? '150px' : '170px', cbW: compact ? '120px' : '150px', cbH: compact ? '102px' : '128px',
+      canSkip: !this.state.done && this.props.canSkip !== false, skip: this.skip, replay: this.play,
+      live: this.state.done ? 'Gewonnen hat ' + w.name + ' mit ' + w.pts + ' Punkten.' : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

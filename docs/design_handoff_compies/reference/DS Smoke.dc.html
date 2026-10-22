@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ dir }}">
+  <dc-import name="DSRail" cur="smoke" toc="{{ toc }}" mode="{{ mode }}" motion="{{ motion }}" muted="{{ muted }}" wide="{{ wide }}" setLight="{{ setLight }}" setDark="{{ setDark }}" toggleMotion="{{ toggleMotion }}" toggleMute="{{ toggleMute }}" hint-size="260px,100vh"></dc-import>
+
+  <main style="flex:1;min-width:0;width:100%;box-sizing:border-box;max-width:1400px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:28px">
+    <section style="display:flex;flex-direction:column;gap:16px;max-width:860px">
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,88px);line-height:.95;text-wrap:balance">Rauchtest.</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.5;text-wrap:pretty">Block 6, part 2: eleven real screens built only from the system's tokens and components. Pick a screen, switch desktop or mobile, and flip light and dark in the rail. If something looks off here, the system has a gap.</p>
+    </section>
+
+    <div id="screens" style="position:sticky;top:0;z-index:20;display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface-2);scroll-margin-top:0">
+      <div role="tablist" aria-label="Screen" style="display:flex;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ screens }}" as="s" hint-placeholder-count="9"><button type="button" role="tab" aria-selected="{{ s.on }}" onClick="{{ s.pick }}" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:{{ s.bg }};color:{{ s.fg }};font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap"><span style="font-family:var(--cp-font-mono);font-size:11px;opacity:.8">{{ s.no }}</span>{{ s.n }}</button></sc-for>
+      </div>
+      <div style="display:flex;gap:12px 18px;flex-wrap:wrap;align-items:center">
+        <div role="group" aria-label="Gerät" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ vps }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="{{ r.icon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import>{{ r.n }}</button></sc-for></div>
+        <div role="group" aria-label="Rolle" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ roles }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:36px;padding:0 12px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer">{{ r.n }}</button></sc-for></div>
+        <sc-if value="{{ isS3 }}"><div role="group" aria-label="Moment" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ s3views }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:36px;padding:0 12px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer">{{ r.n }}</button></sc-for></div></sc-if>
+        <span style="font-size:13px;color:var(--cp-ink-2);flex:1;min-width:200px;text-wrap:pretty">{{ cur.d }}</span>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto;padding:4px 4px 10px">
+      <div style="position:relative;width:{{ vw }}px;height:{{ vh }}px;margin:0 auto;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ vr }};overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+
+        <header style="flex:none;height:{{ hh }};box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);position:relative;z-index:10">
+          <div style="display:flex;align-items:center;gap:8px"><dc-import name="CompibertRig" variant="head" size="{{ logoS }}" hint-size="32px,32px"></dc-import><sc-if value="{{ desk }}"><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></sc-if></div>
+          <sc-if value="{{ inSession }}">
+            <sc-if value="{{ desk }}"><span style="width:2px;height:28px;background:var(--cp-line-soft)"></span></sc-if>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;row-gap:0"><b style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:{{ cur.pillBg }};font-size:11px;font-weight:800;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:{{ cur.pillDot }};border:1.5px solid var(--cp-line)"></span>{{ cur.pill }}</span></div>
+            <sc-if value="{{ desk }}"><span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</span></sc-if>
+          </sc-if>
+          <sc-if value="{{ inHub }}">
+            <sc-if value="{{ desk }}"><nav aria-label="Hauptnavigation" style="display:flex;gap:4px;margin-left:18px"><sc-for list="{{ hubNav }}" as="h" hint-placeholder-count="4"><span aria-current="{{ h.cur }}" style="display:flex;align-items:center;gap:6px;height:64px;padding:0 12px;box-sizing:border-box;border-bottom:3px solid {{ h.bar }};color:{{ h.c }};font-weight:{{ h.w }}"><dc-import name="Icon" icon="{{ h.icon }}" size="{{ 16 }}" offset="{{ h.off }}" hint-size="16px,16px"></dc-import>{{ h.n }}</span></sc-for></nav></sc-if>
+            <span style="flex:1"></span>
+            <sc-if value="{{ deskHost }}"><span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Session erstellen</span></sc-if>
+          </sc-if>
+          <span aria-label="Ton" style="display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+          <dc-import name="Avatar" who="{{ meName }}" size="{{ 32 }}" host="{{ isHost }}" hint-size="32px,32px"></dc-import>
+        </header>
+
+        <div style="flex:1;min-height:0;display:flex">
+          <div style="position:relative;flex:1;min-width:0;overflow-y:auto;padding:{{ pad }};box-sizing:border-box">
+            <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+
+              <sc-if value="{{ s1 }}">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Terminumfrage läuft</span><span style="font-family:var(--cp-font-display);font-size:clamp(28px,4vw,40px);line-height:1">Wann zocken wir?</span></div>
+                <div style="display:flex;gap:10px;align-items:center;padding:10px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-info);color:var(--cp-on-info)"><dc-import name="Icon" icon="lock" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><span style="font-size:14px;text-wrap:pretty">Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench, Tribüne und Chat.</span></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:12px">
+                  <sc-for list="{{ pollSlots }}" as="p" hint-placeholder-count="4">
+                    <div style="position:relative;display:flex;flex-direction:column;gap:10px;padding:16px 14px 14px;border:{{ p.bd }};border-radius:14px;background:var(--cp-surface);box-shadow:{{ p.sh }}">
+                      <sc-if value="{{ p.best }}"><span style="position:absolute;top:-12px;left:12px;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px;font-weight:800"><dc-import name="Icon" icon="sparkles" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Bester Termin</span></sc-if>
+                      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b>{{ p.day }}</b><span style="font-family:var(--cp-font-num);font-size:24px;line-height:1">{{ p.time }}</span></div>
+                      <div style="display:flex;height:10px;border-radius:999px;border:1.5px solid var(--cp-line);overflow:hidden;background:var(--cp-paper-2)"><span style="width:{{ p.yW }};background:var(--cp-success)"></span><span style="width:{{ p.mW }};background:var(--cp-warning)"></span></div>
+                      <div style="display:flex;align-items:center;gap:8px"><span style="display:flex"><sc-for list="{{ p.yes }}" as="v" hint-placeholder-count="3"><span style="margin-left:-6px;display:grid"><dc-import name="Avatar" who="{{ v }}" size="{{ 24 }}" dot="{{ false }}" hint-size="24px,24px"></dc-import></span></sc-for></span><span style="font-size:12px"><b>{{ p.y }} Ja</b>, {{ p.m }} Wenn nötig</span></div>
+                      <div role="radiogroup" aria-label="{{ p.aria }}" style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ p.opts }}" as="o" hint-placeholder-count="3"><span role="radio" aria-checked="{{ o.on }}" style="display:flex;align-items:center;justify-content:center;gap:4px;height:36px;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-size:12px;font-weight:700"><dc-import name="Icon" icon="{{ o.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import>{{ o.n }}</span></sc-for></div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px">
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><dc-import name="Icon" icon="armchair" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b>Bench</b><span style="display:flex;gap:6px;margin-left:auto"><sc-for list="{{ benchP }}" as="v" hint-placeholder-count="4"><dc-import name="Avatar" who="{{ v }}" size="{{ 32 }}" hint-size="32px,32px"></dc-import></sc-for></span></div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><dc-import name="Icon" icon="eye" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b>Tribüne</b><span style="display:flex;gap:6px;margin-left:auto"><dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" hint-size="32px,32px"></dc-import><dc-import name="Avatar" who="Chris" size="{{ 32 }}" hint-size="32px,32px"></dc-import></span></div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ s2 }}">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Termin steht: Sa 25.10., 20:30 Uhr</span><span style="font-family:var(--cp-font-display);font-size:clamp(28px,4vw,40px);line-height:1">Spielbrett</span></div>
+                <sc-if value="{{ isHost }}"><div role="status" style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-warning);color:var(--cp-on-warning)"><dc-import name="Icon" icon="users" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><div style="display:flex;flex-direction:column;gap:4px"><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Nur du siehst das</span><span style="font-size:14px;text-wrap:pretty">Nacht Eulen hat 1, die anderen haben 2. Das Spiel startet erst, wenn alle Teams gleich groß sind.</span></div></div></sc-if>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px">
+                  <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
+                    <div role="group" aria-label="{{ t.aria }}" style="border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);overflow:hidden">
+                      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background-color:var(--cp-team-{{ t.n }});background-image:var(--cp-team-{{ t.n }}-pattern);border-bottom:2px solid var(--cp-line)"><dc-import name="TeamMark" team="{{ t.n }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import><span style="min-width:0;padding:1px 8px;border-radius:6px;background:var(--cp-team-{{ t.n }});color:var(--cp-team-{{ t.n }}-ink);font-family:var(--cp-font-display);font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span><span style="margin-left:auto;flex:none;padding:0 8px;border-radius:999px;background:var(--cp-surface);border:2px solid var(--cp-line);font-weight:800;font-size:12px">{{ t.count }}</span></div>
+                      <div style="display:flex;gap:12px;padding:12px;flex-wrap:wrap">
+                        <sc-for list="{{ t.ppl }}" as="p" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:56px"><dc-import name="Avatar" who="{{ p.n }}" size="{{ avS }}" team="{{ t.n }}" online="{{ p.on }}" hint-size="44px,44px"></dc-import><span style="font-size:12px;font-weight:{{ p.w }}">{{ p.l }}</span></div></sc-for>
+                        <sc-for list="{{ t.free }}" as="f" hint-placeholder-count="0"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:56px"><span style="width:{{ avPx }};height:{{ avPx }};border-radius:50%;border:2.5px dashed var(--cp-ink-3);box-sizing:border-box;display:grid;place-items:center;color:var(--cp-ink-3)"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span><span style="font-size:12px;color:var(--cp-ink-2)">Frei</span></div></sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px">
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><dc-import name="Icon" icon="armchair" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b>Bench</b><span style="display:flex;gap:6px;margin-left:auto"><dc-import name="Avatar" who="Mia" size="{{ 32 }}" online="{{ false }}" hint-size="32px,32px"></dc-import><dc-import name="Avatar" who="Tom" size="{{ 32 }}" hint-size="32px,32px"></dc-import></span></div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><dc-import name="Icon" icon="eye" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b>Tribüne</b><span style="display:flex;gap:6px;margin-left:auto"><dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" hint-size="32px,32px"></dc-import><dc-import name="Avatar" who="Chris" size="{{ 32 }}" hint-size="32px,32px"></dc-import></span></div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ s3 }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary)"><dc-import name="Icon" icon="ferris-wheel" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span><span style="font-family:var(--cp-font-display);font-size:clamp(18px,2vw,22px);line-height:1.15">{{ s3banner }}</span></div>
+                <sc-if value="{{ s3wheel }}"><div style="position:relative;padding:12px 0;overflow:hidden"><dc-import name="GameWheel" style="width:100%" skin="show" size="{{ wheelS }}" can-spin="{{ isHost }}" muted="{{ muted }}" motion="{{ motion }}" on-phase="{{ onWheel }}" hint-size="100%,520px"></dc-import>
+                  <div aria-hidden="true" style="position:absolute;left:{{ cbLeft }};bottom:0;pointer-events:none;transform:translateY({{ cbY }});transition:transform {{ cbT }};z-index:3"><dc-import name="CompibertRig" variant="{{ cbVar }}" size="{{ cbSize }}" state="{{ cbState }}" hint-size="150px,128px"></dc-import></div>
+                  <sc-if value="{{ cbBub }}"><span role="status" style="position:absolute;left:{{ cbBubLeft }};bottom:{{ cbBubBottom }};max-width:180px;padding:8px 12px;background:var(--cp-surface);border:2.5px solid var(--cp-line);border-radius:12px 12px 12px 2px;font-weight:800;font-size:14px;line-height:1.25;box-shadow:var(--cp-shadow-sm);z-index:4">{{ cbBubTxt }}</span></sc-if>
+                </div></sc-if>
+                <sc-if value="{{ s3veto }}"><dc-import name="VetoWindow" game="Mario Kart 8" host="{{ isHost }}" motion="{{ motion }}" hint-size="100%,820px"></dc-import></sc-if>
+              </sc-if>
+
+              <sc-if value="{{ s4 }}">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><sc-for list="{{ pbOrder }}" as="o" hint-placeholder-count="7"><span style="display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 9px 0 4px;border-radius:999px;border:{{ o.bd }};background:{{ o.bg }};opacity:{{ o.op }};font-weight:800;font-size:12px"><dc-import name="TeamMark" team="{{ o.n }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import>{{ o.k }}<sc-if value="{{ o.done }}"><dc-import name="Icon" icon="check" size="{{ 12 }}" sw="{{ 3 }}" hint-size="12px,12px"></dc-import></sc-if></span></sc-for></div>
+                <div aria-live="polite" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background-color:var(--cp-team-8);background-image:var(--cp-team-8-pattern)"><dc-import name="TeamMark" team="{{ 8 }}" size="{{ 36 }}" hint-size="36px,36px"></dc-import><span style="padding:3px 12px;border-radius:10px;background:var(--cp-team-8);color:var(--cp-team-8-ink);font-family:var(--cp-font-display);font-size:clamp(18px,2vw,24px);line-height:1.15">Nacht Eulen bannt, 2 von 2</span></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax({{ cardMin }},1fr));gap:12px">
+                  <sc-for list="{{ pbCards }}" as="g" hint-placeholder-count="9"><dc-import name="GameCard" dc-props="{{ g }}" hint-size="100%,180px"></dc-import></sc-for>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;max-width:520px;height:56px;padding:0 20px;border-radius:999px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-hot);color:var(--cp-on-hot);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:16px"><dc-import name="Icon" icon="ban" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Codenames bannen<span style="margin-left:auto;font-size:12px;font-weight:700">gedrückt halten</span></div>
+              </sc-if>
+
+              <sc-if value="{{ s5 }}">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:16px;align-items:start">
+                  <div style="display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+                    <div style="display:flex;flex-direction:column;line-height:1.15;margin-bottom:4px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Spiel 3 von 6</span><span style="font-family:var(--cp-font-display);font-size:26px">Counter-Strike 2</span></div>
+                    <sc-for list="{{ reRows }}" as="r" hint-placeholder-count="4">
+                      <sc-if value="{{ r.tie }}"><span style="display:flex;align-items:center;gap:6px;padding-left:50px;font-size:12px;font-weight:700"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper)"><dc-import name="Icon" icon="equal" size="{{ 12 }}" sw="{{ 3 }}" hint-size="12px,12px"></dc-import>gleichauf</span></span></sc-if>
+                      <div style="display:flex;align-items:center;gap:8px;min-height:56px;padding:4px 10px 4px 2px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line)"><span style="display:grid;place-items:center;width:30px;height:44px;color:var(--cp-ink-2)"><dc-import name="Icon" icon="grip-vertical" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><span style="flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ r.pbg }};font-family:var(--cp-font-display);font-size:18px">{{ r.p }}</span><dc-import name="TeamMark" team="{{ r.t }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import><b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</b><span style="flex:none;width:56px;height:36px;box-sizing:border-box;display:grid;place-items:center;border-radius:10px;border:2px solid var(--cp-line);font-family:var(--cp-font-num);color:{{ r.sc }}">{{ r.score }}</span><span style="flex:none;min-width:34px;text-align:right;font-family:var(--cp-font-num);font-size:20px">{{ r.pts }}</span></div>
+                    </sc-for>
+                    <span style="margin-top:6px;align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700"><dc-import name="Icon" icon="check" size="{{ 18 }}" sw="{{ 3 }}" hint-size="18px,18px"></dc-import>Ergebnis speichern</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+                    <div style="display:flex;flex-direction:column;line-height:1.15;margin-bottom:4px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Nach Spiel 2 von 6</span><span style="font-family:var(--cp-font-display);font-size:26px">Tabelle</span></div>
+                    <sc-for list="{{ lbRows }}" as="l" hint-placeholder-count="4">
+                      <div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 6px;border-radius:12px;border:{{ l.bd }};box-shadow:{{ l.sh }}"><span style="flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:10px;border:2.5px solid var(--cp-line);background:{{ l.rbg }};font-family:var(--cp-font-display);font-size:19px">{{ l.rank }}</span><dc-import name="TeamMark" team="{{ l.t }}" size="{{ 28 }}" hint-size="28px,28px"></dc-import><b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</b><span style="font-size:28px;line-height:1"><dc-import name="Num" v="{{ l.pts }}" hint-size="36px,28px"></dc-import></span></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ s6 }}">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Session erstellen, Schritt 5 von 8</span><span style="font-family:var(--cp-font-display);font-size:clamp(28px,4vw,40px);line-height:1">Auswahlmodus</span></div>
+                <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px" aria-hidden="true"><sc-for list="{{ steps8 }}" as="s" hint-placeholder-count="8"><span style="height:8px;border-radius:999px;border:1.5px solid var(--cp-line);background:{{ s.bg }}"></span></sc-for></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:16px;align-items:start">
+                  <div role="radiogroup" aria-label="Auswahlmodus" style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ modes }}" as="m" hint-placeholder-count="5">
+                      <div role="radio" aria-checked="{{ m.on }}" aria-disabled="{{ m.pl }}" style="display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 14px;border-radius:14px;box-sizing:border-box;border:{{ m.bd }};background:{{ m.bg }};color:{{ m.fg }};box-shadow:{{ m.sh }}">
+                        <span style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;border:2px {{ m.ibs }} {{ m.ibc }};background:{{ m.ibg }}"><dc-import name="Icon" icon="{{ m.icon }}" size="{{ 20 }}" offset="{{ m.off }}" hint-size="20px,20px"></dc-import></span>
+                        <span style="flex:1;min-width:0;display:flex;flex-direction:column"><b style="font-size:15px">{{ m.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ m.d }}</span></span>
+                        <sc-if value="{{ m.pl }}"><span style="flex:none;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 7px;border-radius:999px;border:2px dashed var(--cp-ink-2);color:var(--cp-ink-2);font-size:11px;font-weight:700;white-space:nowrap"><dc-import name="Icon" icon="lock" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Bald verfügbar</span></sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+                    <div style="display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:2px solid var(--cp-line-soft)"><dc-import name="Icon" icon="circle-help" size="{{ 18 }}" hint-size="18px,18px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px">Lucky Wheel</span></div>
+                    <div lang="de" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;hyphens:auto">
+                      <div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:18px">So läuft's</b><span style="text-wrap:pretty">Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wo es stehen bleibt. Danach hat jede Partei 60 Sekunden für ein Veto.</span></div>
+                      <div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:18px">Gut für</b><span>Maximale Spannung und Chaos.</span></div>
+                      <div style="display:flex;align-items:center;gap:12px;padding-top:6px;border-top:1.5px solid var(--cp-line-soft)"><span style="flex:none;position:relative;width:52px;height:30px;border-radius:999px;border:2.5px solid var(--cp-line);background:var(--cp-primary);box-sizing:border-box"><span style="position:absolute;top:3px;left:25px;width:19px;height:19px;border-radius:50%;background:var(--cp-ink)"></span></span><span style="display:flex;flex-direction:column"><b>Rad verdecken</b><span style="font-size:12px;color:var(--cp-ink-2)">Erfundene Namen, bis das Rad stoppt.</span></span></div>
+                      <div style="display:flex;align-items:center;gap:12px"><b style="flex:1">Drehdauer</b><span style="display:grid;place-items:center;width:36px;height:36px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="minus" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><span style="font-family:var(--cp-font-num);font-size:22px">5 s</span><span style="display:grid;place-items:center;width:36px;height:36px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="plus" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:12px;padding-top:4px"><span style="display:inline-flex;align-items:center;gap:6px;height:48px;padding:0 14px;font-weight:700"><dc-import name="Icon" icon="chevron-left" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Zurück</span><span style="display:inline-flex;align-items:center;gap:6px;height:48px;padding:0 22px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700">Weiter<dc-import name="Icon" icon="chevron-right" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></div>
+              </sc-if>
+
+              <sc-if value="{{ s7 }}">
+                <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Archiv, Sa 25.10.2026, 6 Spiele, 9 Leute</span><span style="font-family:var(--cp-font-display);font-size:clamp(28px,4vw,40px);line-height:1">Freitags-Zocken</span></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;align-items:start">
+                  <div style="display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px;border:3px solid var(--cp-line);border-radius:14px;background-color:var(--cp-team-1);background-image:var(--cp-team-1-pattern)"><dc-import name="TeamMark" team="{{ 1 }}" size="{{ 40 }}" hint-size="40px,40px"></dc-import><div style="display:flex;flex-direction:column;padding:4px 10px;border-radius:10px;background:var(--cp-team-1);color:var(--cp-team-1-ink)"><span style="font-size:12px;font-weight:700">Sieger</span><span style="font-family:var(--cp-font-display);font-size:24px;line-height:1">Wilde Gurken Bande</span></div><dc-import name="Icon" icon="trophy" size="{{ 28 }}" hint-size="28px,28px"></dc-import></div>
+                    <sc-for list="{{ finalRows }}" as="l" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:4px 10px 4px 4px;border-radius:12px;border:2px solid var(--cp-line-soft)"><span style="flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:2px solid var(--cp-line);background:{{ l.rbg }};font-family:var(--cp-font-display);font-size:17px">{{ l.rank }}</span><dc-import name="TeamMark" team="{{ l.t }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import><b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</b><span style="font-family:var(--cp-font-num);font-size:22px">{{ l.pts }}</span></div></sc-for>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <div style="border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden;box-shadow:var(--cp-shadow-card)"><dc-import name="ShareImage" style="width:100%" format="wide" rows="{{ shareRows }}" games="{{ shareGames }}" people="{{ 9 }}" hint-size="100%,200px"></dc-import></div>
+                    
+                    <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;font-size:14px"><dc-import name="Icon" icon="share-2" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Bild teilen</span><button type="button" onClick="{{ toReplay }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font:700 14px var(--cp-font-sans);cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Battle-Replay ansehen</button></div>
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <b style="font-size:16px">Alle Spiele</b>
+                  <sc-for list="{{ archGames }}" as="g" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-paper-2);font-weight:800;font-size:12px">{{ g.no }}</span><b style="flex:1;min-width:140px">{{ g.n }}</b><span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700"><dc-import name="Icon" icon="trophy" size="{{ 14 }}" hint-size="14px,14px"></dc-import><dc-import name="TeamMark" team="{{ g.w }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import>{{ g.wn }}</span><sc-if value="{{ g.hasScore }}"><span style="font-family:var(--cp-font-num);color:var(--cp-ink-2)">{{ g.score }}</span></sc-if></div></sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ s8 }}">
+                <span style="font-family:var(--cp-font-display);font-size:clamp(28px,4vw,40px);line-height:1">Profil</span>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:16px;align-items:start">
+                  <div style="display:flex;flex-direction:column;gap:16px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+                    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><dc-import name="Avatar" who="Kitty" size="{{ 80 }}" dot="{{ false }}" hint-size="80px,80px"></dc-import><div style="display:flex;flex-direction:column;gap:6px"><b>Profilbild</b><div style="display:flex;gap:8px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="upload" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Hochladen</span><span style="display:inline-flex;align-items:center;height:36px;padding:0 8px;font-weight:700;font-size:13px">Discord-Bild nutzen</span></div></div></div>
+                    <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:700">Anzeigename</span><span style="display:flex;align-items:center;height:48px;padding:0 14px;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);font-size:16px">Kitty</span><span style="font-size:13px;color:var(--cp-ink-2)">Muss nicht eindeutig sein.</span></div>
+                    <div style="display:flex;flex-direction:column;gap:8px"><b style="font-size:14px">Verbundene Konten</b>
+                      <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 6px 4px 12px;border:2px solid var(--cp-line);border-radius:12px"><dc-import name="Icon" icon="message-square" size="{{ 16 }}" hint-size="16px,16px"></dc-import><div style="flex:1;display:flex;flex-direction:column;line-height:1.25"><b>Discord</b><span style="font-size:12px;color:var(--cp-ink-2)">Verbunden als kitty_kat</span></div><span style="display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:999px;border:var(--cp-bw) solid var(--cp-ink-3);color:var(--cp-ink-3);font-weight:700;font-size:13px">Trennen</span></div>
+                      <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 6px 4px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-paper-2)"><dc-import name="Icon" icon="play" size="{{ 16 }}" hint-size="16px,16px"></dc-import><div style="flex:1;display:flex;flex-direction:column;line-height:1.25"><b>Twitch</b><span style="font-size:12px;color:var(--cp-ink-2)">Nicht verbunden</span></div><span style="display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px">Verbinden</span></div>
+                    </div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <b style="font-size:16px">Meine Sessions</b>
+                    <sc-for list="{{ mySessions }}" as="s" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ s.d }}</span></div><span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:999px;border:2px {{ s.bs }} var(--cp-line);background:{{ s.bg }};color:{{ s.fg }};font-size:12px;font-weight:800"><span style="width:7px;height:7px;border-radius:50%;background:{{ s.dot }}"></span>{{ s.st }}</span></div></sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ s10 }}">
+                <dc-import name="AwardCeremony" style="width:100%" size="{{ vp }}" motion="{{ motion }}" can-skip="{{ isHost }}" rows="{{ awardRows }}" members="{{ awardMembers }}" hint-size="100%,560px"></dc-import>
+              </sc-if>
+
+              <sc-if value="{{ s11 }}">
+                <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Archiv, Sa 25.10.2026, 6 Spiele, 9 Leute</span><span style="font-family:var(--cp-font-display);font-size:clamp(28px,4vw,40px);line-height:1">Freitags-Zocken: Battle-Replay</span></div>
+                <dc-import name="BattleReplay" style="width:100%" size="{{ vp }}" motion="{{ motion }}" hint-size="100%,380px"></dc-import>
+              </sc-if>
+
+              <sc-if value="{{ s9 }}">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-family:var(--cp-font-display);font-size:clamp(28px,4vw,40px);line-height:1">Admin</span><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-ink);color:var(--cp-paper);font-size:12px;font-weight:700"><dc-import name="Icon" icon="shield" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Plattform</span></div>
+                <div role="tablist" aria-label="Admin" style="display:flex;gap:4px;border-bottom:2px solid var(--cp-line-soft)"><sc-for list="{{ adminTabs }}" as="t" hint-placeholder-count="2"><button type="button" role="tab" aria-selected="{{ t.on }}" onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border:0;border-bottom:3px solid {{ t.bar }};margin-bottom:-2px;background:transparent;color:{{ t.c }};font-weight:{{ t.w }};cursor:pointer"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 18 }}" offset="{{ t.off }}" hint-size="18px,18px"></dc-import>{{ t.n }}<span style="font-size:12px;opacity:.75">{{ t.c2 }}</span></button></sc-for></div>
+                <div style="position:relative;display:flex;align-items:center;max-width:420px"><span style="position:absolute;left:14px;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="search" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><span style="width:100%;height:46px;box-sizing:border-box;padding:0 14px 0 42px;display:flex;align-items:center;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink-2)">{{ adminSearch }}</span></div>
+                <sc-if value="{{ adminUsers }}">
+                  <div style="display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);overflow:hidden">
+                    <sc-for list="{{ users }}" as="u" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:60px;padding:8px 14px;border-bottom:1.5px solid var(--cp-line-soft)"><dc-import name="Avatar" who="{{ u.n }}" size="{{ 36 }}" host="{{ u.host }}" online="{{ u.on }}" hint-size="36px,36px"></dc-import><div style="flex:1;min-width:120px;display:flex;flex-direction:column;line-height:1.3"><b>{{ u.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ u.acc }}</span></div><span style="font-size:12px;color:var(--cp-ink-2);min-width:90px">{{ u.since }}</span><span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700"><span style="position:relative;width:48px;height:28px;border-radius:999px;border:2.5px solid var(--cp-line);background:{{ u.tr }};box-sizing:border-box"><span style="position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:{{ u.kn }};border:2px solid var(--cp-line);box-sizing:border-box;transform:{{ u.tx }}"></span></span>Darf hosten</span></div></sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ adminLib }}">
+                  <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-warning);color:var(--cp-on-warning)"><dc-import name="Icon" icon="triangle-alert" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><span style="font-size:14px;text-wrap:pretty"><b>Mögliches Duplikat:</b> „CS 2“ von Larsi sieht aus wie „Counter-Strike 2“. Zusammenführen oder behalten?</span></div>
+                  <div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ libRows }}" as="g" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><dc-import name="GameCard" dc-props="{{ g.p }}" hint-size="100%,60px"></dc-import></div><span style="flex:none;font-size:12px;color:var(--cp-ink-2);min-width:80px">{{ g.by }}</span><span aria-label="Bearbeiten" style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="pencil" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></div></sc-for></div>
+                </sc-if>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ showDock }}">
+              <div role="toolbar" aria-label="Host-Steuerung" style="position:sticky;bottom:0;margin:20px auto 0;width:max-content;max-width:100%;z-index:30;display:flex;align-items:center;gap:8px;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);white-space:nowrap">
+                <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+                <sc-for list="{{ cur.dock }}" as="b" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) {{ b.bs }} {{ b.bc }};background:{{ b.bg }};color:{{ b.fg }};box-shadow:{{ b.sh }};font-weight:700;font-size:14px"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ b.n }}</span></sc-for>
+                <span aria-label="Mehr" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%"><dc-import name="Icon" icon="ellipsis" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ showPanel }}">
+            <aside style="flex:none;width:340px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);display:flex;flex-direction:column">
+              <div role="tablist" aria-label="Seitenleiste" style="flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--cp-line-soft)">
+                <sc-for list="{{ pTabs }}" as="t" hint-placeholder-count="4"><span role="tab" aria-selected="{{ t.on }}" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-bottom:3px solid {{ t.bar }};margin-bottom:-2px;color:{{ t.c }};font-weight:{{ t.w }};font-size:12px"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 18 }}" offset="{{ t.off }}" hint-size="18px,18px"></dc-import>{{ t.n }}<sc-if value="{{ t.hasBadge }}"><span style="position:absolute;top:6px;right:14px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">{{ t.badge }}</span></sc-if></span></sc-for>
+              </div>
+              <div style="flex:1;min-height:0;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ panelRows }}" as="r" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:flex-start;gap:10px;padding:4px 2px">
+                    <sc-if value="{{ r.av }}"><dc-import name="Avatar" who="{{ r.who }}" size="{{ 28 }}" team="{{ r.team }}" host="{{ r.host }}" dot="{{ false }}" hint-size="28px,28px"></dc-import></sc-if>
+                    <sc-if value="{{ r.ic }}"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:{{ r.icBg }};color:{{ r.icFg }}"><dc-import name="Icon" icon="{{ r.icon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></sc-if>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35"><b style="font-size:13px">{{ r.a }}</b><span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ r.b }}</span></div>
+                    <span style="flex:none;font-size:11px;color:var(--cp-ink-2);padding-top:2px">{{ r.r }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ panelChat }}"><div style="flex:none;display:flex;gap:6px;padding:10px;border-top:2px solid var(--cp-line-soft);background:var(--cp-surface-2)"><span style="flex:1;height:44px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink-2)">Nachricht an alle</span><span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-paper-2)"><dc-import name="Icon" icon="send" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></div></sc-if>
+            </aside>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ mobHostBtn }}"><span aria-label="Host-Steuerung" style="position:absolute;right:14px;bottom:96px;z-index:30;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn)"><dc-import name="Icon" icon="crown" size="{{ 24 }}" hint-size="24px,24px"></dc-import></span></sc-if>
+        <sc-if value="{{ mob }}">
+          <nav aria-label="Hauptnavigation" style="flex:none;position:relative;z-index:35;display:grid;grid-template-columns:repeat({{ mTabN }},1fr);padding:0 4px 18px;border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <sc-for list="{{ mTabs }}" as="t" hint-placeholder-count="5"><span aria-current="{{ t.cur }}" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-top:3px solid {{ t.bar }};margin-top:-2px;color:{{ t.c }};font-size:11px;font-weight:{{ t.w }}"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 22 }}" offset="{{ t.off }}" hint-size="22px,22px"></dc-import>{{ t.n }}<sc-if value="{{ t.hasBadge }}"><span style="position:absolute;top:6px;left:50%;margin-left:6px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--cp-surface);background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">{{ t.badge }}</span></sc-if></span></sc-for>
+          </nav>
+        </sc-if>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+      <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">What this proves.</b> Every screen uses the same shell, the same tokens and the shared parts (Avatar, TeamMark, GameCard, GameWheel, VetoWindow, Num, Icon). Light and dark come from the token file alone.</div>
+      <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-warning-fg)">Gaps found while building.</b> {{ gaps }}</div>
+      <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Not in this test.</b> Boot (3b), emotes (7a) and poking (5a) live in Compibert Momente; sound is specced in docs/compibert-sound.md. Everything else, incl. ceremony (10), share image (07) and battle replay (11), runs here.</div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const SC=[['s1','Terminumfrage','session','Lobby before the date is set: slots with votes, teams still locked, bench and stands open.'],['s2','Spielbrett','session','Date set, team selection open. Host sees the uneven-teams notice and the dock.'],['s3','Glücksrad + Veto','session','In the stage: the Show-Rad, then the 60-second veto window. Both are the live components.'],['s4','Pick & Ban','session','Mid-ban: order strip, whose turn, the board with bans and picks, the hold bar.'],['s5','Ergebnis + Tabelle','session','Host after a game: result entry next to the current table.'],['s6','Session erstellen','hub','Setup step 5 with the locked „Bald verfügbar“ modes and the info sheet.'],['s7','Archiv','hub','A finished session: winner, final table, share image, all games. Replay stays 1.0, last ticket.'],['s8','Profil','hub','Profile, linked accounts and „Meine Sessions“.'],['s9','Admin','hub','Platform admin: users with host permission, and the global game library.'],['s10','Siegerehrung','session','End of the session: places from the bottom up, then the Pokal-Lauf reveals the winner. Host can skip.'],['s11','Battle-Replay','hub','The finished session replayed as a race: one lane per party, about 1.5 s per game. Play, pause, next game, 2×.']];
+const T=[[1,'Wilde Gurken Bande'],[2,'Team Orange'],[4,'Käse Turbo'],[8,'Nacht Eulen']];
+const btn=(n,icon,kind)=>({n,icon,bs:kind==='dis'?'dashed':'solid',bc:kind==='dis'?'var(--cp-ink-3)':'var(--cp-line)',bg:kind==='p'?'var(--cp-primary)':kind==='dis'?'var(--cp-paper-2)':'var(--cp-surface)',fg:kind==='p'?'var(--cp-on-primary)':kind==='dis'?'var(--cp-ink-3)':'var(--cp-ink)',sh:kind==='p'?'var(--cp-shadow-btn)':'none'});
+const DOCK={s1:[btn('Termin festlegen','calendar-check','p'),btn('Einladen','link')],s2:[btn('Session starten','play','dis'),btn('Von der Bench nachziehen','users','p')],s3:[btn('Rad drehen','ferris-wheel','p'),btn('Spiel setzen','gamepad-2')],s4:[btn('Spiel direkt setzen','gamepad-2')],s5:[btn('Spiel tauschen','refresh-cw')]};
+const PILL={s1:['Terminumfrage','var(--cp-surface)','var(--cp-info)'],s2:['Termin steht','var(--cp-surface)','var(--cp-success)'],s3:['Spiel 3 von 6','var(--cp-primary)','var(--cp-hot)'],s4:['Pick & Ban','var(--cp-primary)','var(--cp-hot)'],s5:['Spiel 3 von 6','var(--cp-primary)','var(--cp-hot)'],s10:['Siegerehrung','var(--cp-primary)','var(--cp-success)']};
+const R=o=>Object.assign({av:false,ic:false,who:'',team:0,host:false,icon:'',icBg:'',icFg:'var(--cp-ink)',a:'',b:'',r:''},o);
+const CHAT=[R({av:true,who:'Sanne',host:true,a:'Sanne',b:'Start um 20:30, holt euch Snacks.',r:'20:01'}),R({av:true,who:'Kitty',team:1,a:'Kitty',b:'Wer hat Snacks? Ich hab nur Gurken.',r:'20:02'}),R({av:true,who:'Larsi',team:1,a:'Larsi',b:'Bitte kein Trackmania heute.',r:'20:03'}),R({av:true,who:'Chris',a:'Chris',b:'Ich buh euch von der Tribüne aus.',r:'20:05'}),R({av:true,who:'Olli',team:8,a:'Olli',b:'Nacht Eulen braucht noch wen!',r:'20:06'})];
+const FEED=[R({ic:true,icon:'ferris-wheel',icBg:'var(--cp-primary)',icFg:'var(--cp-on-primary)',a:'Glücksrad: Rocket League',b:'Spiel 1',r:'20:32'}),R({ic:true,icon:'trophy',icBg:'var(--cp-primary)',icFg:'var(--cp-on-primary)',a:'Wilde Gurken Bande gewinnt',b:'Spiel 1',r:'20:51'}),R({ic:true,icon:'ban',icBg:'var(--cp-hot)',icFg:'var(--cp-on-hot)',a:'Veto von Larsi und Olli',b:'Trackmania fliegt vom Rad',r:'20:54'}),R({ic:true,icon:'trophy',icBg:'var(--cp-primary)',icFg:'var(--cp-on-primary)',a:'Nacht Eulen gewinnt',b:'Spiel 2',r:'21:12'}),R({ic:true,icon:'ban',icBg:'var(--cp-surface)',a:'Wilde Gurken Bande bannt Trackmania',b:'Ban 1 von 4',r:'21:14'})];
+const TABLE=[R({ic:true,icon:'trophy',icBg:'var(--cp-primary)',icFg:'var(--cp-on-primary)',a:'1. Wilde Gurken Bande',b:'5 Punkte',r:''}),R({ic:true,icon:'trophy',icBg:'var(--cp-primary)',icFg:'var(--cp-on-primary)',a:'1. Nacht Eulen',b:'5 Punkte',r:''}),R({ic:true,icon:'list-ordered',icBg:'var(--cp-surface)',a:'3. Team Orange',b:'2 Punkte',r:''}),R({ic:true,icon:'list-ordered',icBg:'var(--cp-surface)',a:'4. Käse Turbo',b:'1 Punkt',r:''})];
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,wide:true,sc:'s2',vp:'desk',role:'host',s3v:'wheel',adminTab:0};
+  componentDidMount(){
+    let m=null,mo=null,mu=null,sc=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');sc=localStorage.getItem('compies-ds-smoke');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs);
+    this.setState({mode:m,motion:mo,muted:mu==='1',wide:window.innerWidth>=980,sc:sc&&SC.some(x=>x[0]===sc)?sc:'s2'});
+  }
+  componentWillUnmount(){ window.removeEventListener('resize',this._rs); clearTimeout(this._cbT); }
+  onWheel=(ph,x)=>{ clearTimeout(this._cbT); const rm=this.state.motion==='reduced';
+    if(ph==='spin') this.setState({cb:{on:true,st:rm?'cheer':'excited',txt:''}});
+    else if(ph==='brake') this.setState({cb:{on:true,st:'suspense',txt:''}});
+    else if(ph==='stop') { this.setState({cb:{on:true,st:'cheer',txt:(x.game||'')+'!'}}); }
+    else if(ph==='idle') this._cbT=setTimeout(()=>this.setState({cb:{on:false,st:'idle',txt:''}}),600); };
+  componentDidUpdate(){ const m=this.state.mode; if(m&&m!==this._lm){ this._lm=m; document.body.style.background=m==='dark'?'#17121d':'#fff3df'; } }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+  renderVals(){
+    const S=this.state, mode=S.mode||'light', dark=mode==='dark', desk=S.vp==='desk', mob=!desk, host=S.role==='host', sc=S.sc, C=SC.find(x=>x[0]===sc), inSession=C[2]==='session';
+    const seg=(arr,cur,set)=>arr.map(([k,n,icon],i)=>({n,icon,on:cur===k,bl:i?'2px solid var(--cp-line)':'0',bg:cur===k?'var(--cp-ink)':'transparent',fg:cur===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>set(k)}));
+    const screens=SC.map(([k,n],i)=>({n,no:String(i+1).padStart(2,'0'),on:sc===k,bg:sc===k?'var(--cp-ink)':'var(--cp-surface)',fg:sc===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>{ try{localStorage.setItem('compies-ds-smoke',k);}catch(e){} this.setState({sc:k}); }}));
+    const pill=PILL[sc]||['','',''];
+    const cur={d:C[3],pill:pill[0],pillBg:pill[1],pillDot:pill[2],dock:DOCK[sc]||[]};
+    // poll
+    const V={Fr:['Sanne','Olli','Jo','Chris'],Sa1:['Sanne','Larsi','Jo','Kitty'],Sa2:['Sanne','Larsi','Olli','Bea','Mia','Kitty'],So:['Larsi','Bea','Chris']};
+    const pollSlots=[['Fr 24.10.','20:15','Fr',2,'m'],['Sa 25.10.','19:00','Sa1',2,'y'],['Sa 25.10.','20:30','Sa2',1,'y'],['So 26.10.','18:00','So',2,null]].map(([day,time,k,m,my])=>{ const y=V[k].length, best=k==='Sa2';
+      return {day,time,best,y:String(y),m:String(m),yW:(y/8*100)+'%',mW:(m/8*100)+'%',yes:V[k].slice(0,4),aria:day+' '+time,bd:best?'3px solid var(--cp-focus)':'var(--cp-bw) solid var(--cp-line)',sh:best?'var(--cp-shadow-card)':'none',
+        opts:[['y','Ja','check'],['m','Nötig','minus'],['n','Nein','x']].map(([v,n,icon],i)=>({n,icon,on:my===v,bl:i?'2px solid var(--cp-line)':'0',bg:my===v?(v==='y'?'var(--cp-success)':v==='m'?'var(--cp-warning)':'var(--cp-ink)'):'transparent',fg:my===v?(v==='y'?'var(--cp-on-success)':v==='m'?'var(--cp-on-warning)':'var(--cp-paper)'):'var(--cp-ink-2)'}))}; });
+    const teams=[[1,['Kitty','Larsi']],[2,['Tom','Jo']],[4,['Ben','Ida']],[8,['Olli']]].map(([n,ppl])=>({n,name:T.find(t=>t[0]===n)[1],count:ppl.length+'/2',aria:`${T.find(t=>t[0]===n)[1]}, ${ppl.length} von 2`,ppl:ppl.map(p=>({n:p,l:p==='Kitty'&&!host?'Du':p,w:p==='Kitty'&&!host?800:600,on:p!=='Ida'})),free:Array.from({length:2-ppl.length},()=>({}))}));
+    // pick & ban
+    const ord=[[1,'B',1],[8,'B',1],[8,'B',0],[1,'B',0],[8,'P',0],[1,'P',0],[1,'P',0]];
+    const pbOrder=ord.map(([n,k,d],i)=>({n,k,done:!!d,bd:i===2?'3px solid var(--cp-focus)':'2px solid var(--cp-line)',bg:d?'var(--cp-paper-2)':'var(--cp-surface)',op:d?.75:1}));
+    const pbCards=[['Rocket League','default'],['Mario Kart 8','default'],['Counter-Strike 2','default'],['Overcooked 2','banned',1],['Gang Beasts','banned',8],['Codenames','default',0,true],['Trackmania','default'],['GeoGuessr','default'],['Halo Infinite','default']].map(([title,state,team,sel])=>({title,players:'2–8',fmt:'Teams',state,team:team||1,selected:!!sel,layout:mob?'row':'card'}));
+    // results
+    const reRows=[[8,'1','var(--cp-primary)','16','+3'],[1,'2','var(--cp-surface)','12','+2'],[2,'2','var(--cp-surface)','12','+2',true],[4,'4','var(--cp-surface)','','+0']].map(([t,p,pbg,score,pts,tie])=>({t,p,pbg,score:score||'Score',sc:score?'var(--cp-ink)':'var(--cp-ink-3)',pts,tie:!!tie,name:T.find(x=>x[0]===t)[1]}));
+    const lbRows=[[1,'1.',5],[8,'1.',5],[2,'3.',2],[4,'4.',1]].map(([t,rank,pts])=>({t,rank,pts:String(pts),name:T.find(x=>x[0]===t)[1],rbg:rank==='1.'?'var(--cp-primary)':'var(--cp-surface)',bd:rank==='1.'?'3px solid var(--cp-line)':'var(--cp-bw) solid var(--cp-line)',sh:rank==='1.'?'var(--cp-shadow-sm)':'none'}));
+    // setup
+    const modes=[['Admin-Wahl','crown','Du bestimmst jedes Spiel selbst.',0,0],['Lucky Wheel','ferris-wheel','Das Glücksrad entscheidet, danach 60 s für Vetos.',1,0],['Pick & Ban','swords','Erst bannen, dann picken.',0,0],['Loser\u2019s Pick','hand','Wer hinten liegt, sucht aus.',0,1],['Loser\u2019s Advantage','scale','Der Letzte bannt vor jedem Dreh.',0,1]].map(([n,icon,d,on,pl])=>({n,icon,d,on:!!on,pl:!!pl,bd:on?'3px solid var(--cp-line)':pl?'var(--cp-bw) dashed var(--cp-ink-3)':'var(--cp-bw) solid var(--cp-line)',bg:pl?'var(--cp-paper-2)':'var(--cp-surface)',fg:pl?'var(--cp-ink-2)':'var(--cp-ink)',sh:on?'var(--cp-shadow-card)':'none',ibg:on?'var(--cp-primary)':pl?'transparent':'var(--cp-paper-2)',ibs:pl?'dashed':'solid',ibc:pl?'var(--cp-ink-3)':'var(--cp-line)',off:on?'var(--cp-hot)':''}));
+    const steps8=Array.from({length:8},(_,i)=>({bg:i<4?'var(--cp-ink)':i===4?'var(--cp-primary)':'transparent'}));
+    // archive
+    const finalRows=[[1,'1.',17],[8,'2.',15],[2,'3.',9],[4,'4.',5]].map(([t,rank,pts])=>({t,rank,pts:String(pts),name:T.find(x=>x[0]===t)[1],rbg:rank==='1.'?'var(--cp-primary)':'var(--cp-surface)'}));
+    const podium=[[8,'2','56%'],[1,'1','78%'],[2,'3','40%']].map(([t,rank,h])=>({t,rank,h,name:T.find(x=>x[0]===t)[1]}));
+    const archGames=[['Rocket League',1,'3:1'],['Mario Kart 8',8,''],['Counter-Strike 2',8,'16:12'],['Overcooked 2',1,''],['Codenames',2,''],['Gang Beasts',1,'']].map(([n,w,score],i)=>({no:String(i+1),n,w,wn:T.find(x=>x[0]===w)[1],score,hasScore:!!score}));
+    // profile
+    const mySessions=[['Freitags-Zocken','Läuft gerade, Spiel 3 von 6','Läuft','var(--cp-primary)','var(--cp-on-primary)','var(--cp-hot)','solid'],['Brettspiel-Sonntag','So 02.11., 16:00 Uhr','Geplant','var(--cp-surface)','var(--cp-ink)','var(--cp-success)','solid'],['Rocket-Abend','Terminumfrage, 2 von 6 haben abgestimmt','Umfrage','var(--cp-surface)','var(--cp-ink)','var(--cp-info)','solid'],['Halloween-Turnier','31.10.2025, Sieg: Nacht Eulen','Archiv','transparent','var(--cp-ink-2)','var(--cp-ink-3)','dashed']].map(([n,d,st,bg,fg,dot,bs])=>({n,d,st,bg,fg,dot,bs}));
+    // admin
+    const users=[['Sanne','Discord, Twitch','seit Jan. 2026',true,true],['Kitty','Discord','seit Feb. 2026',false,true],['Larsi','Twitch','seit Feb. 2026',true,true],['Olli','Discord','seit März 2026',false,false],['Bea','Discord','seit Apr. 2026',false,true],['Chris','Twitch','seit Mai 2026',false,false]].map(([n,acc,since,can,on])=>({n,acc,since,host:can,on,tr:can?'var(--cp-primary)':'var(--cp-paper-2)',kn:can?'var(--cp-ink)':'var(--cp-surface)',tx:can?'translateX(20px)':'none'}));
+    const libRows=[['Counter-Strike 2','2–10','Teams','Sanne'],['CS 2','2–10','Teams','Larsi'],['Rocket League','2–8','Teams','Sanne'],['Mario Kart 8','1–12','Beides','Kitty'],['Overcooked 2','2–4','Teams','Bea'],['Codenames','4–8','Teams','Larsi']].map(([title,players,fmt,by])=>({by:'von '+by,p:{title,players,fmt,layout:'row'}}));
+    const adminTabs=[['Nutzer','users','24'],['Bibliothek','gamepad-2','86']].map(([n,icon,c2],i)=>{ const a=S.adminTab===i; return {n,icon,c2,on:a,bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',pick:()=>this.setState({adminTab:i})}; });
+    // panel
+    const pIdx=sc==='s3'?1:sc==='s4'?1:sc==='s5'?2:0;
+    const pTabs=[['Chat','message-square',3],['Aktivität','history',12],['Tabelle','trophy',0],['Leute','users',0]].map(([n,icon,badge],i)=>{ const a=pIdx===i; return {n,icon,on:a,bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',hasBadge:!!badge&&!a,badge:String(badge)}; });
+    const panelRows=[CHAT,FEED,TABLE][pIdx];
+    // mobile tabs
+    const sessTabs=[['Spielbrett','layout-grid',0],['Tabelle','trophy',0],['Chat','message-square',3],['Aktivität','history',12],['Leute','users',0]];
+    const hubTabs=[['Sessions','house',0],['Archiv','archive',0],['Profil','user',0],['Admin','shield',0]];
+    const hubCur={s6:0,s7:1,s8:2,s9:3}[sc]||0;
+    const mList=inSession?sessTabs:hubTabs, mCur=inSession?0:hubCur;
+    const mTabs=mList.map(([n,icon,badge],i)=>{ const a=i===mCur; return {n,icon,cur:a?'page':undefined,bar:a?'var(--cp-ink)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',hasBadge:!!badge&&!a,badge:String(badge)}; });
+    const hubNav=[['Sessions','house'],['Archiv','archive'],['Bibliothek','gamepad-2'],['Admin','shield']].map(([n,icon],i)=>{ const map={s6:0,s7:1,s8:-1,s9:3}; const a=map[sc]===i; return {n,icon,cur:a?'page':undefined,bar:a?'var(--cp-hot)':'transparent',c:a?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':''}; });
+    const toc=[['Screen picker','#screens']].map(([n,href])=>({n,href}));
+    const showDock=inSession&&host&&desk&&!!DOCK[sc];
+    return {mode,motion:S.motion,muted:S.muted,wide:S.wide,dir:S.wide?'row':'column',toc,cbDir:dark?'m3b':'m3a',
+      setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,toggleMute:this.toggleMute,
+      screens,cur,vps:seg([['desk','Desktop 1280','layout-grid'],['mob','Mobil 390','user']],S.vp,k=>this.setState({vp:k})),roles:seg([['host','Host (Sanne)'],['player','Spielerin (Kitty)']],S.role,k=>this.setState({role:k})),
+      isS3:sc==='s3',s3views:seg([['wheel','Glücksrad'],['veto','Veto-Fenster']],S.s3v,k=>this.setState({s3v:k})),
+      vw:desk?1280:390,vh:desk?800:820,vr:desk?'18px':'28px',hh:desk?'64px':'56px',logoS:desk?34:30,pad:desk?'20px 24px 24px':'14px 14px 24px',desk,mob,inSession,inHub:!inSession,deskHost:desk&&host,
+      meName:host?'Sanne':'Kitty',isHost:host,
+      s1:sc==='s1',s2:sc==='s2',s3:sc==='s3',s4:sc==='s4',s5:sc==='s5',s6:sc==='s6',s7:sc==='s7',s8:sc==='s8',s9:sc==='s9',s10:sc==='s10',s11:sc==='s11',
+      pollSlots,benchP:['Mia','Tom','Ben','Ida'],teams,avS:desk?44:40,avPx:desk?'44px':'40px',
+      shareRows:[[1,17],[8,15],[2,9],[4,5]].map(([t,pts])=>({t,pts,name:T.find(x=>x[0]===t)[1]})),shareGames:[['Rocket League',1],['Mario Kart 8',8],['Counter-Strike 2',8],['Overcooked 2',1],['Codenames',2],['Gang Beasts',1]].map(([name,w])=>({name,w})),toReplay:()=>{ try{localStorage.setItem('compies-ds-smoke','s11');}catch(e){} this.setState({sc:'s11'}); },
+      vp:desk?'desk':'mob',awardMembers:[{who:'Kitty'},{who:'Larsi'}],awardRows:[[1,17],[8,15],[2,9],[4,5]].map(([t,pts])=>({t,pts,name:T.find(x=>x[0]===t)[1]})),onWheel:this.onWheel,cbVar:desk?'full':'bust',cbSize:desk?170:84,cbLeft:desk?'18px':'6px',cbY:(S.cb&&S.cb.on)?'0px':(desk?'190px':'110px'),cbT:S.motion==='reduced'?'0s':((S.cb&&S.cb.on)?'.45s cubic-bezier(.34,1.56,.64,1)':'.4s cubic-bezier(.55,0,1,.45)'),cbState:(S.cb&&S.cb.st)||'idle',cbBub:!!(S.cb&&S.cb.on&&S.cb.txt),cbBubTxt:(S.cb&&S.cb.txt)||'',cbBubLeft:desk?'150px':'88px',cbBubBottom:desk?'150px':'78px',
+      s3banner:S.s3v==='wheel'?'Spiel 3 von 6: Sanne dreht das Glücksrad.':'Das Glücksrad sagt: Mario Kart 8. 60 Sekunden für Vetos.',s3wheel:S.s3v==='wheel',s3veto:S.s3v==='veto',wheelS:desk?440:340,
+      pbOrder,pbCards,cardMin:desk?'150px':'100%',reRows,lbRows,modes,steps8,finalRows,podium,archGames,mySessions,users,libRows,adminTabs,adminUsers:S.adminTab===0,adminLib:S.adminTab===1,adminSearch:S.adminTab===0?'Nutzer suchen':'Spiel suchen',
+      showDock,showPanel:inSession&&desk,pTabs,panelRows,panelChat:pIdx===0,mobHostBtn:mob&&inSession&&host,mTabs,mTabN:String(mList.length),hubNav,
+      gaps:'Archive needed a share image (now the real ShareImage, direction 8a). Admin needed a duplicate-merge notice and a library row with creator and edit; both use existing parts. The smoke test showed no new tokens are needed.'};
+  }
+}
+</script>
+</body>
+</html>

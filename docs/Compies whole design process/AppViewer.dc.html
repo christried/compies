@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}@keyframes cpSpin{to{transform:rotate(360deg)}}@keyframes cpPulse{0%,100%{opacity:1}50%{opacity:.35}}</style>
+</helmet>
+<div data-theme="{{ theme }}" data-motion="full" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto">
+  <sc-if value="{{ embed }}" hint-placeholder-val="{{ false }}">
+    <div style="width:100vw;height:100vh;display:grid;place-items:center;overflow:hidden">
+      <div style="width:{{ sw }}px;height:{{ sh }}px;position:relative"><div style="position:absolute;left:0;top:0;transform:scale({{ scale }});transform-origin:0 0">{{ children }}</div></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+    <main style="box-sizing:border-box;padding:28px clamp(14px,3vw,40px) 80px;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:flex-end;gap:12px 24px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+          <a href="App Screens.dc.html" style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;text-decoration:none;color:var(--cp-ink-2)"><dc-import name="Icon" icon="chevron-left" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Alle Screens</a>
+          <span style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">{{ kicker }}</span>
+          <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(36px,3vw + 16px,60px);line-height:.95">{{ title }}</h1>
+        </div>
+        <span style="flex:1"></span>
+        <button type="button" onClick="{{ toggleTheme }}" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="{{ themeIcon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ themeLabel }}</button>
+      </div>
+
+      <div style="position:sticky;top:0;z-index:20;display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface-2)">
+        <div role="tablist" aria-label="Screen" style="display:flex;gap:6px;flex-wrap:wrap">
+          <sc-for list="{{ screens }}" as="s" hint-placeholder-count="6"><button type="button" role="tab" aria-selected="{{ s.on }}" onClick="{{ s.pick }}" style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:2px {{ s.bs }} var(--cp-line);background:{{ s.bg }};color:{{ s.fg }};font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap"><span style="font-family:var(--cp-font-mono);font-size:11px;opacity:.8">{{ s.no }}</span>{{ s.n }}</button></sc-for>
+        </div>
+        <div style="display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center">
+          <div role="group" aria-label="Gerät" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ vps }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:34px;padding:0 12px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer">{{ r.n }}</button></sc-for></div>
+          <sc-if value="{{ hasRoles }}"><div role="group" aria-label="Rolle" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ roles }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:34px;padding:0 12px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer">{{ r.n }}</button></sc-for></div></sc-if>
+          <sc-if value="{{ hasStates }}"><div role="group" aria-label="Zustand" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center"><span style="font-size:12px;font-weight:800;color:var(--cp-ink-2);margin-right:4px">Zustand</span><sc-for list="{{ states }}" as="r" hint-placeholder-count="3"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:32px;padding:0 11px;border-radius:999px;border:2px solid var(--cp-line);background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap">{{ r.n }}</button></sc-for></div></sc-if>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;justify-content:center">
+        <div style="flex:none;max-width:100%;overflow-x:auto;padding:4px 10px 12px 4px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:8px;border:2px {{ scBs }} var(--cp-line);background:{{ scBg }};color:{{ scFg }};font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ scope }}</span><b style="font-size:15px">{{ curName }}</b><span style="font-size:13px;color:var(--cp-ink-2)">{{ curState }}</span></div>
+          <div style="width:{{ fsw }}px;height:{{ fsh }}px;position:relative"><div style="position:absolute;left:0;top:0;transform:scale({{ fscale }});transform-origin:0 0">{{ children }}</div></div>
+        </div>
+        <aside style="flex:1 1 260px;max-width:{{ notesW }};display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:14px;background:var(--cp-paper-2);font-size:14px;line-height:1.5">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:20px">Notizen</b>
+          <sc-for list="{{ notes }}" as="n" hint-placeholder-count="3"><div style="display:flex;gap:8px;align-items:flex-start"><span style="flex:none;width:7px;height:7px;margin-top:8px;border-radius:50%;background:var(--cp-ink)"></span><span style="text-wrap:pretty">{{ n }}</span></div></sc-for>
+        </aside>
+      </div>
+    </main>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;kicker&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;scope&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;[1.0]&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;embed&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;fw&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1280,&quot;tsType&quot;:&quot;number&quot;},&quot;fh&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:800,&quot;tsType&quot;:&quot;number&quot;},&quot;screens&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object[]&quot;},&quot;states&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object[]&quot;},&quot;roles&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object[]&quot;},&quot;vps&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object[]&quot;},&quot;notes&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;},&quot;toggleTheme&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;children&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;ReactNode&quot;}}">
+class Component extends DCLogic {
+  state={ww:typeof window!=='undefined'?window.innerWidth:1400,wh:typeof window!=='undefined'?window.innerHeight:900};
+  componentDidMount(){ this._r=()=>this.setState({ww:window.innerWidth,wh:window.innerHeight}); window.addEventListener('resize',this._r); this._flow(); }
+  _flow(){ const p=this.props; if(this._fl||!p.embed||!p.flowTaps||window.parent===window) return; this._fl=true;
+    const post=()=>{ if(this._sent) return; this._sent=true; window.parent.postMessage({cp:'next'},'*'); };
+    const reset=()=>{ clearTimeout(this._ht); document.querySelectorAll('[data-next="hold"] [data-fill]').forEach(f=>{ f.style.transition='width .2s'; if(f.dataset.w0!==undefined) f.style.width=f.dataset.w0; }); };
+    document.addEventListener('click',e=>{ const el=e.target.closest&&e.target.closest('[data-next="tap"]'); if(el){ e.preventDefault(); e.stopPropagation(); post(); } },true);
+    document.addEventListener('pointerdown',e=>{ const el=e.target.closest&&e.target.closest('[data-next="hold"]'); if(!el) return; const f=el.querySelector('[data-fill]'); if(f){ if(f.dataset.w0===undefined) f.dataset.w0=f.style.width; f.style.transition='width .9s linear'; f.style.width='100%'; } clearTimeout(this._ht); this._ht=setTimeout(post,950); },true);
+    ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,reset,true));
+    document.addEventListener('pointerover',e=>{ const el=e.target.closest&&e.target.closest('[data-next="tap"],[data-next="hold"]'); if(el) el.style.cursor='pointer'; },true);
+    const pulse=()=>document.querySelectorAll('[data-next="tap"],[data-next="hold"]').forEach(el=>{ const fc=getComputedStyle(el).getPropertyValue('--cp-focus').trim()||'#3a86ff'; el.animate&&el.animate([{outline:'0px solid '+fc,outlineOffset:'2px'},{outline:'5px solid '+fc,outlineOffset:'2px'},{outline:'0px solid '+fc,outlineOffset:'2px'}],{duration:900,iterations:2,easing:'ease-in-out'}); });
+    setTimeout(pulse,1800); }
+  componentWillUnmount(){ window.removeEventListener('resize',this._r); }
+  componentDidUpdate(){ this._flow(); const d=this.props.dark; if(d!==this._d){ this._d=d; document.body.style.background=d?'#17121d':'#fff3df'; } }
+  renderVals(){
+    const p=this.props, dark=!!p.dark, fw=p.fw??1280, fh=p.fh??800, embed=!!p.embed;
+    const scale=Math.min((this.state.ww-8)/fw,(this.state.wh-8)/fh,1.4);
+    const sc=p.scope||'[1.0]', post=sc.includes('Post'), last=sc.includes('Ticket');
+    const avail=this.state.ww-(this.state.ww>700?110:40)-(fw<800&&this.state.ww>1100?380:0), fscale=Math.min(1,avail/fw);
+    return {fscale,fsw:Math.round(fw*fscale)+6,fsh:Math.round(fh*fscale)+6,theme:dark?'dark':'light',embed,full:!embed,scale,sw:Math.round(fw*scale),sh:Math.round(fh*scale),
+      kicker:p.kicker||'',title:p.title||'',screens:p.screens||[],vps:p.vps||[],roles:p.roles||[],hasRoles:!!(p.roles&&p.roles.length),states:p.states||[],hasStates:!!(p.states&&p.states.length>1),
+      toggleTheme:p.toggleTheme,themeIcon:dark?'sun':'moon',themeLabel:dark?'Hell':'Dunkel',
+      scope:sc,scBs:post?'dashed':'solid',scBg:post?'var(--cp-surface)':last?'var(--cp-warning)':'var(--cp-ink)',scFg:post?'var(--cp-ink)':last?'var(--cp-on-warning)':'var(--cp-paper)',
+      curName:p.curName||'',curState:p.curState||'',notes:p.notes||[],notesW:fw>800?'340px':'520px'};
+  }
+}
+</script>
+</body>
+</html>

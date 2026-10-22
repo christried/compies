@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<span aria-hidden="true" style="display:inline-grid;place-items:center;flex:none;width:{{ s }}px;height:{{ s }}px;border-radius:50%;box-sizing:border-box;border:{{ bw }}px solid var(--cp-line);background:{{ bg }}"><svg viewBox="0 0 24 24" width="{{ is }}" height="{{ is }}" style="display:block"><path d="{{ d }}" fill="{{ fg }}"></path></svg></span>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:48,&quot;height&quot;:48},&quot;team&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1,&quot;min&quot;:1,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:24,&quot;tsType&quot;:&quot;number&quot;}}">
+const P=['M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16Z','M12 3.5 21 19.5H3Z','M5 5h14v14H5Z','M12 2.5 21.5 12 12 21.5 2.5 12Z','M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z','M3 8.5h18v7H3Z','M3 17a9 9 0 0 1 18 0Z','M12 2 14.6 9.4 22 12 14.6 14.6 12 22 9.4 14.6 2 12 9.4 9.4Z'];
+class Component extends DCLogic {
+  renderVals(){ const n=Math.max(1,Math.min(8,+(this.props.team??1)||1)), s=this.props.size??24;
+    return {s,bw:s>=28?2.5:2,is:Math.round(s*.56),d:P[n-1],bg:`var(--cp-team-${n})`,fg:`var(--cp-team-${n}-ink)`}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button{font:inherit;color:inherit}button:focus-visible,a:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div data-theme="{{ theme }}" lang="de" style="min-height:100vh;box-sizing:border-box;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;padding:24px clamp(14px,3vw,36px) 40px;display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:flex-end;gap:12px 20px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:6px"><a href="App Screens.dc.html" style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;text-decoration:none;color:var(--cp-ink-2)"><dc-import name="Icon" icon="chevron-left" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Alle Screens</a><span style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Phase 4, Klick-Prototypen</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(36px,3vw + 16px,56px);line-height:.95">Flows</h1></div>
+    <span style="flex:1"></span>
+    <div role="group" aria-label="Gerät" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ vps }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:36px;padding:0 14px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer">{{ r.n }}</button></sc-for></div>
+    <button type="button" onClick="{{ toggleTheme }}" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="{{ themeIcon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ themeLabel }}</button>
+  </div>
+
+  <div role="tablist" aria-label="Flow" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+    <sc-for list="{{ flows }}" as="f" hint-placeholder-count="5"><button type="button" role="tab" aria-selected="{{ f.on }}" onClick="{{ f.pick }}" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:14px;border:{{ f.bd }};background:{{ f.bg }};color:{{ f.fg }};box-shadow:{{ f.sh }};text-align:left;cursor:pointer"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid currentColor;font-weight:800;font-size:13px">{{ f.no }}</span><span style="display:flex;flex-direction:column;line-height:1.25"><b style="font-size:14px">{{ f.n }}</b><span style="font-size:12px;opacity:.8">{{ f.len }}</span></span></button></sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ mainCols }};gap:16px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="position:relative;height:{{ frameH }};border:2px solid var(--cp-line);border-radius:16px;overflow:hidden;background:var(--cp-paper-2)"><iframe src="{{ src }}" title="{{ stepTitle }}" style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div>
+      <div role="group" aria-label="Schritte" style="display:flex;gap:4px"><sc-for list="{{ dots }}" as="d" hint-placeholder-count="8"><button type="button" aria-label="{{ d.l }}" aria-current="{{ d.cur }}" onClick="{{ d.pick }}" style="flex:1;height:10px;padding:0;border-radius:999px;border:1.5px solid var(--cp-line);background:{{ d.bg }};cursor:pointer"></button></sc-for></div>
+    </div>
+    <aside style="display:flex;flex-direction:column;gap:12px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+      <span style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-ink-2)">{{ stepKick }}</span>
+      <span style="font-family:var(--cp-font-display);font-size:26px;line-height:1.05">{{ stepTitle }}</span>
+      <span style="font-size:14px;line-height:1.5;text-wrap:pretty">{{ stepText }}</span>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--cp-paper-2);font-size:12px"><dc-import name="Icon" icon="mouse-pointer-click" size="{{ 14 }}" hint-size="14px,14px"></dc-import><span style="text-wrap:pretty">{{ stepDo }}</span></div>
+      <div style="display:flex;gap:8px"><button type="button" onClick="{{ prev }}" style="display:inline-flex;align-items:center;gap:6px;height:48px;padding:0 14px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;cursor:pointer;opacity:{{ prevOp }}"><dc-import name="Icon" icon="chevron-left" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Zurück</button><button type="button" onClick="{{ next }}" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:48px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800;cursor:pointer">{{ nextLabel }}<dc-import name="Icon" icon="chevron-right" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button></div>
+      <span style="font-size:12px;color:var(--cp-ink-2)">Pfeiltasten ← → blättern. <a href="{{ openHref }}" target="_blank">Diesen Screen einzeln öffnen</a></span>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const A='App Einstieg.dc.html',B='App Vorbereitung.dc.html',L='App Lobby.dc.html',D='App Spielrunde.dc.html',E='App Ende & Archiv.dc.html',G='App Systemzustände.dc.html';
+const S=(f,s,st,role,t,txt,doo)=>({f,s,st,role,t,txt,doo});
+const FLOWS=[
+ {n:'Host plant den Abend',d:'Session erstellen, Terminumfrage, einladen',steps:[
+  S(A,'home','full','host','Home','Sanne hat Host-Recht. Oben läuft schon ein Abend, daneben die Karte zum Erstellen.','„Session erstellen“'),
+  S(B,'create','name','', 'Schritt 1: Name','Name tippen oder eine Idee antippen. Die Schrittliste links zeigt, was noch kommt.','„Weiter“ im Screen'),
+  S(B,'create','format','','Schritt 2: Format','4 Teams à 2. Rechts erklärt das Info-Sheet „Teams“ mit Beispiel.','„Weiter“'),
+  S(B,'create','games','','Schritt 3: Spiele','6 Spiele, änderbar während der Session.','„Weiter“'),
+  S(B,'create','mode','','Schritt 5: Auswahlmodus','Lucky Wheel mit „Rad verdecken“ und 5 s Drehdauer. Info-Sheet mit der Copy aus dem Brief.','„Weiter“'),
+  S(B,'create','pool','','Schritt 6: Spielepool','Vorschläge passen zu 4 × 2. Die Pool-Warnung sieht nur der Host.','„Weiter“'),
+  S(B,'create','date','','Schritt 8: Termin','Terminumfrage mit 4 Vorschlägen.','„Session erstellen“'),
+  S(B,'create','done','','Fertig','Session steht, Link ist direkt kopierbar.','„Zur Lobby“'),
+  S(A,'invite','copied','','Einladen','Aus der Lobby: Link kopiert, ab in den Discord.','Weiter'),
+  S(B,'poll','host','','Umfrage läuft','Stimmen trudeln ein. Bester Termin ist markiert, Sanne kann festlegen, sobald es passt.','Fertig')]},
+ {n:'Spielerin kommt dazu',d:'Link öffnen, anmelden, abstimmen, ins Team',steps:[
+  S(A,'open','out','','Link öffnen','Kitty klickt den Link im Discord und ist noch nicht angemeldet.','„Anmelden und beitreten“'),
+  S(A,'login','invite','','Anmelden','Die Einladung bleibt sichtbar, damit klar ist, wohin es geht.','„Mit Discord anmelden“'),
+  S(A,'setup','discord','','Profil','Erstes Mal hier: Name und Bild bestätigen.','„Los geht’s“'),
+  S(A,'open','in','','Bench','Direkt in der Lobby, auf der Bench. Teams sind noch zu.','Weiter'),
+  S(B,'poll','vote','','Abstimmen','Ja, Wenn nötig oder Nein pro Termin. Alle sehen, wer was gewählt hat.','Weiter'),
+  S(G,'push','soft','','Push?','Nach der ersten Stimme die weiche Frage. Erst bei Ja kommt der Browser-Dialog.','„Ja, gern“'),
+  S(B,'poll','set','','Termin steht','Sanne hat bestätigt. Kalenderdatei laden, Teamwahl ist offen.','Weiter'),
+  S(L,'board','drag','player','Ins Team ziehen','Kitty zieht sich selbst zu Team Orange. Der freie Slot wird zum Ziel.','„Loslassen“-Slot bei Team Orange'),
+  S(L,'board','open','player','Teamwort','Drin! Jetzt ein Wort für den Teamnamen abgeben.','Fertig')]},
+ {n:'Verdecktes Rad, 2 Vetos',d:'Drehen, Stopp, Verwandlung, Vetos, Aufdecken, neu drehen',steps:[
+  S(D,'wheel','hidden','player','Verdecktes Rad','Kitty sieht nur erfundene Namen. Drehen darf nur Sanne.','Weiter (Kitty wartet aufs Drehen)'),
+  S(D,'wheel','spin','player','Das Rad dreht','Standbild aus der Drehung. Läuft auf allen Geräten synchron, das Ergebnis steht auf dem Server schon fest.','Weiter (läuft von selbst)'),
+  S(D,'wheel','stop','player','Stopp','Das Feld blinkt, noch mit Fantasienamen: „Mario Kartoffel“.','Weiter (läuft von selbst)'),
+  S(D,'wheel','reveal','player','Verwandlung','„Mario Kartoffel“ verwandelt sich in Mario Kart 8.','Weiter (läuft von selbst)'),
+  S(D,'wheel','clip','player','Clip + Veto','Clip läuft für alle, die Veto-Leiste liegt darüber. 2 Vetos im Team.','„Veto“ unten 1 s gedrückt halten'),
+  S(D,'wheel','sealed','player','Versiegelt','Kittys Team sieht das Veto (Larsi hat gehalten). Die anderen sehen es nicht.','Weiter (die Uhr läuft)'),
+  S(D,'wheel','closed','player','Clip zu','Nach 30 s schließt der Clip, die Uhr läuft weiter.','Weiter (die Uhr läuft)'),
+  S(D,'wheel','vreveal','host','Aufdecken','0:00: zwei Vetos gleichzeitig aufgedeckt. Beide verbraucht, Mario Kart 8 fliegt vom Rad. Sanne dreht neu.','„Neu drehen“ in der Host-Leiste'),
+  S(D,'wheel','respin','host','Neu drehen','Ein Spiel weniger auf dem Rad, nächster Dreh.','„Rad drehen“ oder Fertig')]},
+ {n:'Pick & Ban im 2v2',d:'Münzwurf, Bans, Picks, Reihenfolge',steps:[
+  S(D,'pickban','coin','','Münzwurf','Kopf = Wilde Gurken, Schwanz = Nacht Eulen. Die Münze fällt überall gleichzeitig.','Weiter (Münze fällt von selbst)'),
+  S(D,'pickban','coinDone','','Kopf!','Wilde Gurken bannt zuerst, Nacht Eulen pickt zuerst.','Weiter'),
+  S(D,'pickban','banWait','','Ban: die anderen','Nacht Eulen bannt 2. Kitty schaut zu, keine Leiste.','Weiter (die anderen sind dran)'),
+  S(D,'pickban','banTurn','','Ban: wir','Letzter Ban für Wilde Gurken. Codenames ist gewählt.','„Codenames bannen“ 1 s halten'),
+  S(D,'pickban','pickWait','','Pick: die anderen','Nacht Eulen pickt Spiel 1.','Weiter (die anderen sind dran)'),
+  S(D,'pickban','pickTurn','','Pick: wir','Wilde Gurken pickt Spiel 2 und 3.','„Overcooked 2 picken“ 1 s halten'),
+  S(D,'pickban','order','','Reihenfolge','Picks = Spielreihenfolge. Los geht’s mit Counter-Strike 2.','Fertig')]},
+ {n:'Gleichstand bis zum Teilen',d:'Tiebreaker, Siegerehrung, Ergebnis-Bild',steps:[
+  S(D,'result','enter','','Letztes Ergebnis','Sanne trägt Spiel 6 ein. Danach stehen zwei Teams gleich auf Platz 1.','„Ergebnis speichern“'),
+  S(D,'tie','announce','host','Gleichstand!','Spiel 7 entscheidet. Nur die zwei spielen.','„Tiebreaker-Rad öffnen“ in der Host-Leiste'),
+  S(D,'tie','wheel','host','Tiebreaker-Rad','Eigenes Rad mit dem Tiebreaker-Pool. Der Knopf in der Radmitte dreht live.','„Rad drehen“ in der Host-Leiste'),
+  S(D,'tie','clip','player','Restvetos','Wilde Gurken hat noch 1 Veto, Nacht Eulen keins. Kitty spart es sich: Gang Beasts wird gespielt.','Weiter (kein Veto)'),
+  S(E,'ceremony','run','host','Siegerehrung','Pokal-Lauf: Compibert bringt den Pokal zu Nacht Eulen.','„Bild teilen“ (kommt am Ende der Show)'),
+  S(E,'ceremony','share','host','Teilen','Ergebnis-Bild als Querformat für Discord.','„Link kopieren“'),
+  S(E,'ceremony','copied','host','Link kopiert','Fertig. Ab ins Archiv.','Fertig')]}
+];
+class Component extends DCLogic {
+  state={f:0,i:0,vp:'desk',dark:false};
+  componentDidMount(){
+    let g={},l={}; try{g=JSON.parse(localStorage.getItem('compies-app')||'{}');l=JSON.parse(localStorage.getItem('compies-app-flows')||'{}');}catch(e){}
+    this.setState({vp:g.vp||'desk',dark:!!g.dark,f:l.f||0,i:l.i||0});
+    this._m=e=>{ if(e.data&&e.data.cp==='next') this.step(1); }; window.addEventListener('message',this._m);
+    this._k=e=>{ if(e.key==='ArrowRight') this.step(1); if(e.key==='ArrowLeft') this.step(-1); }; window.addEventListener('keydown',this._k);
+  }
+  componentWillUnmount(){ window.removeEventListener('message',this._m); window.removeEventListener('keydown',this._k); }
+  componentDidUpdate(){ if(this.state.dark!==this._d){ this._d=this.state.dark; document.body.style.background=this._d?'#17121d':'#fff3df'; } }
+  save(p){ this.setState(p,()=>{ const S=this.state; try{ localStorage.setItem('compies-app-flows',JSON.stringify({f:S.f,i:S.i})); const g=JSON.parse(localStorage.getItem('compies-app')||'{}'); localStorage.setItem('compies-app',JSON.stringify({...g,vp:S.vp,dark:S.dark})); }catch(e){} }); }
+  step(d){ const F=FLOWS[this.state.f], i=this.state.i+d; if(i<0) return; if(i>=F.steps.length){ if(this.state.f<FLOWS.length-1) this.save({f:this.state.f+1,i:0}); return; } this.save({i}); }
+  renderVals(){
+    const S=this.state, F=FLOWS[S.f], i=Math.min(S.i,F.steps.length-1), st=F.steps[i], desk=S.vp!=='mob';
+    const q=`s=${encodeURIComponent(st.s)}&st=${encodeURIComponent(st.st)}&vp=${S.vp}&theme=${S.dark?'dark':'light'}${st.role?'&role='+st.role:''}`;
+    return {theme:S.dark?'dark':'light',themeIcon:S.dark?'sun':'moon',themeLabel:S.dark?'Hell':'Dunkel',toggleTheme:()=>this.save({dark:!S.dark}),
+      vps:[['desk','Desktop'],['mob','Mobil']].map(([k,n],j)=>({n,on:S.vp===k,bl:j?'2px solid var(--cp-line)':'0',bg:S.vp===k?'var(--cp-ink)':'transparent',fg:S.vp===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.save({vp:k})})),
+      flows:FLOWS.map((f,j)=>({no:String(j+1),n:f.n,len:f.d+', '+f.steps.length+' Schritte',on:j===S.f,bd:j===S.f?'3px solid var(--cp-line)':'2px solid var(--cp-line)',bg:j===S.f?'var(--cp-primary)':'var(--cp-surface)',fg:'var(--cp-ink)',sh:j===S.f?'var(--cp-shadow-sm)':'none',pick:()=>this.save({f:j,i:0})})),
+      mainCols:'minmax(0,1fr) minmax(240px,320px)',frameH:desk?'min(72vh,640px)':'min(80vh,760px)',src:'./'+st.f+'?'+q+'&embed=1',openHref:'./'+st.f+'?'+q,
+      dots:F.steps.map((x,j)=>({l:'Schritt '+(j+1)+': '+x.t,cur:j===i?'step':undefined,bg:j<i?'var(--cp-ink)':j===i?'var(--cp-primary)':'var(--cp-surface)',pick:()=>this.save({i:j})})),
+      stepKick:`Flow ${S.f+1}, Schritt ${i+1} von ${F.steps.length}`,stepTitle:st.t,stepText:st.txt,stepDo:'Weiter mit: '+st.doo+(/^Weiter|^Fertig/.test(st.doo)?'':' (oder Weiter)'),prev:()=>this.step(-1),prevOp:i>0?1:.4,next:()=>this.step(1),nextLabel:i===F.steps.length-1?(S.f<FLOWS.length-1?'Nächster Flow':'Fertig'):'Weiter'};
+  }
+}
+</script>
+</body>
+</html>

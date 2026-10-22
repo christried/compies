@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%">
+  <div style="position:relative;width:100%;max-width:{{ size }}px;aspect-ratio:1;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background:var(--cp-surface-2);perspective:{{ persp }}px;perspective-origin:50% 42%">
+    <div ref="{{ camRef }}" style="position:absolute;inset:0;transform-style:preserve-3d;transform:{{ camT }}">
+      <div style="position:absolute;left:50%;top:50%;width:620px;height:620px;margin:-310px 0 0 -310px;transform:translateY(90px) rotateX(90deg);transform-style:preserve-3d;border-radius:50%;background-color:var(--cp-paper-2);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:inset 0 0 0 4px var(--cp-line-soft)">
+        <span style="position:absolute;left:50%;top:50%;width:230px;height:230px;margin:-115px 0 0 -115px;border-radius:50%;border:3px dashed var(--cp-line-soft);box-sizing:border-box"></span>
+        <span ref="{{ shRef }}" style="position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;background:var(--cp-shadow-ink);opacity:{{ shOp }};transform:{{ shT }};filter:blur(6px)"></span>
+      </div>
+      <div ref="{{ posRef }}" style="position:absolute;left:50%;top:50%;width:140px;height:140px;margin:-70px 0 0 -70px;transform-style:preserve-3d;transform:{{ posT }}">
+        <div ref="{{ rotRef }}" style="position:absolute;inset:0;transform-style:preserve-3d;transform:{{ rotT }}">
+          <sc-for list="{{ edges }}" as="e" hint-placeholder-count="0"><span style="position:absolute;inset:0;border-radius:50%;background:{{ e.c }};transform:translateZ({{ e.z }}px)"></span></sc-for>
+          <div style="position:absolute;inset:0;border-radius:50%;box-sizing:border-box;border:5px solid #151515;background:var(--cp-primary);display:grid;place-items:center;transform:translateZ(7px);backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:inset 0 0 0 7px #fffdf8,inset 0 0 0 10px #151515;color:var(--cp-on-primary)"><div style="width:104px;height:104px;border-radius:50%;overflow:hidden;display:grid;place-items:center"><dc-import name="CompibertRig" variant="head" size="{{ 104 }}" hint-size="104px,104px"></dc-import></div></div>
+          <div style="position:absolute;inset:0;border-radius:50%;box-sizing:border-box;border:5px solid #151515;background:#3a86ff;display:grid;place-items:center;text-align:center;transform:rotateY(180deg) translateZ(7px);backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:inset 0 0 0 7px #fffdf8,inset 0 0 0 10px #151515"><div style="width:118px;height:118px;border-radius:50%;overflow:hidden"><svg viewBox="0 0 100 100" width="118" height="118" style="display:block"><path d="M-4.6 81.5L-0.6 85.7L3.7 89.4L8.2 92.7L12.9 95.5L17.8 97.8L22.8 99.6L27.8 100.9L32.9 101.8L37.8 102.1L42.8 102.0L47.6 101.5L52.2 100.5L56.7 99.2L60.9 97.4L64.9 95.4L68.5 93.0L71.9 90.3L75.0 87.4L77.8 84.3L80.1 81.0L82.2 77.6L83.9 74.1L85.2 70.5L86.2 66.9L86.8 63.2L87.1 59.6L87.0 56.1L86.6 52.7L86.0 49.3L85.0 46.2L83.8 43.2L82.3 40.3L80.7 37.7L78.8 35.3L76.8 33.1L74.6 31.1L72.3 29.4L69.9 28.0L67.4 26.8L64.9 25.8L62.4 25.1L59.8 24.7L57.3 24.5L54.9 24.5L52.5 24.7L50.2 25.1L48.0 25.8L45.9 26.6L46.5 30.1L48.3 29.9L50.1 29.8L52.0 29.9L53.8 30.2L55.6 30.6L57.3 31.1L59.1 31.8L60.7 32.6L62.3 33.6L63.8 34.7L65.2 36.0L66.5 37.4L67.7 38.8L68.7 40.4L69.7 42.1L70.5 43.9L71.1 45.7L71.6 47.6L71.9 49.6L72.1 51.6L72.1 53.6L71.9 55.7L71.5 57.7L70.9 59.8L70.2 61.8L69.3 63.7L68.2 65.6L66.9 67.4L65.5 69.1L63.8 70.7L62.1 72.2L60.1 73.5L58.1 74.7L55.9 75.7L53.6 76.5L51.2 77.1L48.7 77.6L46.1 77.8L43.5 77.7L40.9 77.5L38.3 76.9L35.6 76.2L33.0 75.2L30.5 73.9L28.1 72.4L25.7 70.7L23.5 68.7L21.4 66.5Z" style="fill:#2ec4b6;stroke:#151515;stroke-width:3.4;stroke-linejoin:round"></path><path d="M18.3 95.2L31.0 77.1" style="fill:none;stroke:#ff70c3;stroke-width:5.5;stroke-linecap:round"></path><path d="M50.0 98.4L50.0 80.0" style="fill:none;stroke:#ff70c3;stroke-width:5.5;stroke-linecap:round"></path><path d="M74.2 84.6L65.7 72.5" style="fill:none;stroke:#ff70c3;stroke-width:5.5;stroke-linecap:round"></path><path d="M84.3 62.5L73.9 58.7" style="fill:none;stroke:#ff70c3;stroke-width:5.5;stroke-linecap:round"></path><path d="M80.3 41.9L73.2 43.8" style="fill:none;stroke:#ff70c3;stroke-width:5.5;stroke-linecap:round"></path><path d="M-4.6 81.5L-0.6 85.7L3.7 89.4L8.2 92.7L12.9 95.5L17.8 97.8L22.8 99.6L27.8 100.9L32.9 101.8L37.8 102.1L42.8 102.0L47.6 101.5L52.2 100.5L56.7 99.2L60.9 97.4L64.9 95.4L68.5 93.0L71.9 90.3L75.0 87.4L77.8 84.3L80.1 81.0L82.2 77.6L83.9 74.1L85.2 70.5L86.2 66.9L86.8 63.2L87.1 59.6L87.0 56.1L86.6 52.7L86.0 49.3L85.0 46.2L83.8 43.2L82.3 40.3L80.7 37.7L78.8 35.3L76.8 33.1L74.6 31.1L72.3 29.4L69.9 28.0L67.4 26.8L64.9 25.8L62.4 25.1L59.8 24.7L57.3 24.5L54.9 24.5L52.5 24.7L50.2 25.1L48.0 25.8L45.9 26.6L46.5 30.1L48.3 29.9L50.1 29.8L52.0 29.9L53.8 30.2L55.6 30.6L57.3 31.1L59.1 31.8L60.7 32.6L62.3 33.6L63.8 34.7L65.2 36.0L66.5 37.4L67.7 38.8L68.7 40.4L69.7 42.1L70.5 43.9L71.1 45.7L71.6 47.6L71.9 49.6L72.1 51.6L72.1 53.6L71.9 55.7L71.5 57.7L70.9 59.8L70.2 61.8L69.3 63.7L68.2 65.6L66.9 67.4L65.5 69.1L63.8 70.7L62.1 72.2L60.1 73.5L58.1 74.7L55.9 75.7L53.6 76.5L51.2 77.1L48.7 77.6L46.1 77.8L43.5 77.7L40.9 77.5L38.3 76.9L35.6 76.2L33.0 75.2L30.5 73.9L28.1 72.4L25.7 70.7L23.5 68.7L21.4 66.5Z" style="fill:none;stroke:#151515;stroke-width:3.4;stroke-linejoin:round"></path></svg></div></div>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ hasRes }}"><span ref="{{ resRef }}" style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%) rotate(-4deg);padding:4px 16px;border-radius:12px;border:3px solid #151515;background:{{ resBg }};color:#151515;font-family:var(--cp-font-display);font-size:28px;line-height:1.1;box-shadow:4px 4px 0 var(--cp-shadow-ink);white-space:nowrap">{{ resTxt }}</span></sc-if>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button type="button" onClick="{{ flip }}" aria-disabled="{{ busy }}" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ btnBg }};color:var(--cp-on-primary);box-shadow:{{ btnSh }};font-weight:700;cursor:pointer" style-active="transform:translate(4px,4px);box-shadow:none"><dc-import name="Icon" icon="coins" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Münze werfen</button>
+    <span aria-live="polite" style="font-size:13px;font-weight:700;color:var(--cp-ink-2);min-width:120px">{{ status }}</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:380,&quot;height&quot;:440},&quot;take&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dolly&quot;,&quot;table&quot;,&quot;bullet&quot;,&quot;classic&quot;],&quot;default&quot;:&quot;dolly&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:340,&quot;tsType&quot;:&quot;number&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;cbDir&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;m3a&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const cam=(z,p,y)=>`translateZ(${z}px) rotateX(${p}deg) rotateY(${y}deg)`;
+const pos=(x,y)=>`translate3d(${x}px,${y}px,0)`;
+const rot=(a,b,z=0)=>`rotateX(${a}deg) rotateY(${b}deg) rotateZ(${z}deg)`;
+const GROUND=83, STAND=20;
+class Component extends DCLogic {
+  state={camT:cam(0,this.props.take==='table'?48:0,0),posT:pos(0,STAND),rotT:rot(0,0),shT:'scale(.4,.12)',shOp:.25,busy:false,res:null};
+  camRef=React.createRef(); posRef=React.createRef(); rotRef=React.createRef(); shRef=React.createRef(); resRef=React.createRef();
+  reset(){ this.setState({camT:cam(0,this.props.take==='table'?48:0,0),posT:pos(0,STAND),rotT:rot(0,0),shT:'scale(.4,.12)',shOp:.25,res:null}); }
+  plan(tail){ const take=this.props.take||'dolly', A=tail?-90:90, k=360*4, Z=tail?0:180, R=(a,b)=>rot(a,b,Z);
+    if(take==='classic'){ const F=360*5+(tail?180:0); return {D:1700,final:{camT:cam(0,0,0),posT:pos(0,STAND),rotT:rot(0,F),shT:'scale(.4,.12)',shOp:.25},
+      cam:[{transform:cam(0,0,0)},{transform:cam(0,0,0)}],
+      pos:[{transform:pos(0,STAND)},{transform:pos(0,-150),offset:.45,easing:'cubic-bezier(.3,0,.7,1)'},{transform:pos(0,STAND),offset:.85},{transform:pos(0,STAND-10),offset:.93},{transform:pos(0,STAND)}],
+      rot:[{transform:rot(0,0)},{transform:rot(0,F)}],rotE:'cubic-bezier(.3,.1,.2,1)',
+      sh:[{transform:'scale(.4,.12)',opacity:.25},{transform:'scale(.2,.06)',opacity:.08,offset:.45},{transform:'scale(.4,.12)',opacity:.25,offset:.85},{transform:'scale(.4,.12)',opacity:.25}]}; }
+    if(take==='table'){ const F=A+k; return {D:2900,final:{camT:cam(140,90,0),posT:pos(0,GROUND),rotT:R(F,0),shT:'scale(1)',shOp:.35},
+      cam:[{transform:cam(0,48,0)},{transform:cam(0,48,0),offset:.62},{transform:cam(140,90,0),easing:'cubic-bezier(.65,0,.35,1)'}],
+      pos:[{transform:pos(0,STAND)},{transform:pos(50,-200),offset:.28,easing:'cubic-bezier(.3,0,.7,1)'},{transform:pos(-10,GROUND),offset:.5,easing:'cubic-bezier(.5,0,.8,.6)'},{transform:pos(-24,GROUND-40),offset:.58},{transform:pos(0,GROUND),offset:.66},{transform:pos(0,GROUND)}],
+      rot:[{transform:rot(0,0)},{transform:R(F-22,10),offset:.5},{transform:R(F+14,-8),offset:.62},{transform:R(F-8,5),offset:.72},{transform:R(F+3,-2),offset:.82},{transform:R(F,0)}],rotE:'cubic-bezier(.2,.4,.3,1)',
+      sh:[{transform:'scale(.5,.15)',opacity:.2},{transform:'scale(.35)',opacity:.1,offset:.28},{transform:'scale(1)',opacity:.35,offset:.5},{transform:'scale(.8)',opacity:.3,offset:.58},{transform:'scale(1)',opacity:.35}]}; }
+    if(take==='bullet'){ const F=A+k; return {D:3600,final:{camT:cam(150,90,360),posT:pos(0,GROUND),rotT:R(F,0),shT:'scale(1)',shOp:.35},
+      cam:[{transform:cam(0,8,0)},{transform:cam(40,18,0),offset:.18},{transform:cam(60,22,360),offset:.62,easing:'cubic-bezier(.65,0,.35,1)'},{transform:cam(60,22,360),offset:.72},{transform:cam(150,90,360),easing:'cubic-bezier(.16,1,.3,1)'}],
+      pos:[{transform:pos(0,STAND)},{transform:pos(0,-130),offset:.18,easing:'cubic-bezier(.2,0,.4,1)'},{transform:pos(0,-150),offset:.62},{transform:pos(0,GROUND),offset:.74,easing:'cubic-bezier(.6,0,1,.5)'},{transform:pos(0,GROUND-16),offset:.79},{transform:pos(0,GROUND),offset:.84},{transform:pos(0,GROUND)}],
+      rot:[{transform:rot(0,0)},{transform:R(540,0),offset:.18},{transform:R(700,0),offset:.62},{transform:R(F,0),offset:.74},{transform:R(F,0)}],rotE:'linear',
+      sh:[{transform:'scale(.4,.12)',opacity:.22},{transform:'scale(.3)',opacity:.08,offset:.18},{transform:'scale(.3)',opacity:.08,offset:.62},{transform:'scale(1)',opacity:.35,offset:.74},{transform:'scale(1)',opacity:.35}]}; }
+    const F=A+k; return {D:2600,final:{camT:cam(120,90,0),posT:pos(0,GROUND),rotT:R(F,0),shT:'scale(1)',shOp:.35},
+      cam:[{transform:cam(0,0,0)},{transform:cam(-40,18,0),offset:.4,easing:'cubic-bezier(.65,0,.35,1)'},{transform:cam(40,62,0),offset:.78,easing:'cubic-bezier(.65,0,.35,1)'},{transform:cam(120,90,0),easing:'cubic-bezier(.16,1,.3,1)'}],
+      pos:[{transform:pos(0,STAND)},{transform:pos(0,-210),offset:.42,easing:'cubic-bezier(.3,0,.7,1)'},{transform:pos(0,GROUND),offset:.76,easing:'cubic-bezier(.55,0,.9,.6)'},{transform:pos(0,GROUND-22),offset:.83},{transform:pos(0,GROUND),offset:.9},{transform:pos(0,GROUND)}],
+      rot:[{transform:rot(0,0)},{transform:R(F-8,0),offset:.76},{transform:R(F+6,0),offset:.86},{transform:R(F,0)}],rotE:'cubic-bezier(.25,.1,.25,1)',
+      sh:[{transform:'scale(.4,.12)',opacity:.25},{transform:'scale(.25)',opacity:.08,offset:.42},{transform:'scale(1)',opacity:.35,offset:.76},{transform:'scale(.85)',opacity:.3,offset:.83},{transform:'scale(1)',opacity:.35}]}; }
+  flip=()=>{ if(this.state.busy) return; const tail=Math.random()<.5, P=this.plan(tail), rm=this.props.motion==='reduced';
+    this.reset(); this.setState({busy:true});
+    const done=()=>{ this.setState(Object.assign({},P.final,{busy:false,res:tail?'tail':'head'}),()=>{ this.props.onResult&&this.props.onResult(tail); [this._a1,this._a2,this._a3,this._a4].forEach(a=>a&&a.cancel()); const r=this.resRef.current; r&&!rm&&r.animate([{transform:'translateX(-50%) rotate(-4deg) scale(.4)',opacity:0},{transform:'translateX(-50%) rotate(-4deg) scale(1.1)',opacity:1},{transform:'translateX(-50%) rotate(-4deg) scale(1)'}],{duration:380,easing:'cubic-bezier(.34,1.56,.64,1)'}); }); };
+    requestAnimationFrame(()=>{ if(rm){ const c=this.camRef.current; c&&c.animate([{opacity:1},{opacity:0},{opacity:1}],{duration:500}); setTimeout(done,250); return; }
+      const o={duration:P.D,fill:'forwards'};
+      this._a1=this.camRef.current.animate(P.cam,o); this._a2=this.posRef.current.animate(P.pos,o); this._a3=this.rotRef.current.animate(P.rot,Object.assign({easing:P.rotE},o)); this._a4=this.shRef.current.animate(P.sh,o);
+      this._a2.onfinish=done; }); };
+  renderVals(){ const S=this.state, p=this.props;
+    const edges=Array.from({length:13},(_,i)=>({z:i-6,c:i%4===0?'#151515':'#c99a1a'}));
+    return {size:p.size??340,persp:p.take==='classic'?900:760,camRef:this.camRef,posRef:this.posRef,rotRef:this.rotRef,shRef:this.shRef,resRef:this.resRef,camT:S.camT,posT:S.posT,rotT:S.rotT,shT:S.shT,shOp:S.shOp,edges,cbDir:p.cbDir||'m3a',
+      flip:this.flip,busy:S.busy,btnBg:S.busy?'var(--cp-paper-2)':'var(--cp-primary)',btnSh:S.busy?'none':'var(--cp-shadow-btn)',
+      hasRes:!!S.res,resTxt:S.res==='head'?'Kopf!':'Schwanz!',resBg:S.res==='head'?'var(--cp-primary)':'#3a86ff',status:S.busy?'Fliegt …':S.res?(S.res==='head'?'Wilde Gurken fängt an':'Nacht Eulen fängt an'):'Bereit'};
+  }
+}
+</script>
+</body>
+</html>

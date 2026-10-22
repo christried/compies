@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<span style="position:relative;display:inline-flex;align-items:baseline;font-family:{{ ff }};font-weight:400;white-space:nowrap;line-height:inherit"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap">{{ say }}</span><sc-for list="{{ chars }}" as="c" hint-placeholder-count="0"><span aria-hidden="true" style="display:inline-block;width:{{ c.w }};text-align:center">{{ c.ch }}</span></sc-for></span>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:60},&quot;v&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;0:42&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;face&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;score&quot;,&quot;timer&quot;],&quot;default&quot;:&quot;score&quot;,&quot;tsType&quot;:&quot;'score' | 'timer'&quot;},&quot;say&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals(){
+    const v=String(this.props.v ?? '0'), t=this.props.face==='timer';
+    const slot=t?'var(--cp-timer-slot,.6em)':'var(--cp-num-slot,.74em)', sep=t?'var(--cp-timer-sep,.3em)':'var(--cp-num-sep,.34em)';
+    const W=ch=>/[0-9]/.test(ch)?slot:/[:.,]/.test(ch)?sep:/[\/+\-−]/.test(ch)?'.56em':ch===' '?'.3em':'auto';
+    return { ff:t?'var(--cp-font-timer)':'var(--cp-font-num)', chars:[...v].map(ch=>({ch,w:W(ch)})), say:this.props.say||v };
+  }
+}
+</script>
+</body>
+</html>

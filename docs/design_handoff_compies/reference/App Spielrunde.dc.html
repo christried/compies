@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<dc-import name="AppViewer" flow-taps="{{ true }}" kicker="Phase 4, Teil D" title="Spielrunde" scope="[1.0]" dark="{{ dark }}" embed="{{ embed }}" fw="{{ fw }}" fh="{{ fh }}" screens="{{ screens }}" states="{{ states }}" roles="{{ roles }}" vps="{{ vps }}" notes="{{ notes }}" cur-name="{{ curName }}" cur-state="{{ curState }}" toggle-theme="{{ toggleTheme }}" hint-size="100%,900px">
+<dc-import name="AppFrame" vp="{{ vp }}" kind="session" me="{{ me }}" is-host="{{ isHost }}" title="{{ sessTitle }}" pill="live" pill-text="{{ pillText }}" panel="{{ panel }}" dock="{{ dock }}" emote="{{ emote }}" emote-mini="{{ emoteMini }}" lift="{{ lift }}" hint-size="1280px,800px">
+
+<div style="display:flex;flex-direction:column;gap:14px">
+  <sc-if value="{{ hasOrder }}"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><sc-for list="{{ order }}" as="o" hint-placeholder-count="7"><span style="display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 9px 0 4px;border-radius:999px;border:{{ o.bd }};background:{{ o.bg }};opacity:{{ o.op }};font-weight:800;font-size:12px"><dc-import name="TeamMark" team="{{ o.t }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import>{{ o.k }}<sc-if value="{{ o.done }}"><dc-import name="Icon" icon="check" size="{{ 12 }}" sw="{{ 3 }}" hint-size="12px,12px"></dc-import></sc-if></span></sc-for></div></sc-if>
+
+  <sc-if value="{{ hasBanner }}"><div aria-live="polite" style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background-color:{{ bnBg }};background-image:{{ bnPat }}">
+    <sc-if value="{{ bnTeam }}"><dc-import name="TeamMark" team="{{ bnTeam }}" size="{{ 34 }}" hint-size="34px,34px"></dc-import></sc-if>
+    <sc-if value="{{ bnIconOn }}"><span style="flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:2px solid var(--cp-line);background:{{ bnIconBg }};color:var(--cp-on-primary)"><dc-import name="Icon" icon="{{ bnIcon }}" size="{{ 17 }}" hint-size="17px,17px"></dc-import></span></sc-if>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px"><span style="padding:{{ bnChipPad }};border-radius:10px;background:{{ bnChipBg }};color:{{ bnChipFg }};font-family:var(--cp-font-display);font-size:{{ bnS }};line-height:1.15;text-wrap:pretty">{{ bnText }}</span><sc-if value="{{ bnSub }}"><span style="padding:0 {{ bnSubPad }};border-radius:6px;background:{{ bnChipBg }};color:{{ bnChipFg }};font-size:13px;font-weight:600">{{ bnSub }}</span></sc-if></div>
+  </div></sc-if>
+
+  <sc-for list="{{ notes2 }}" as="n" hint-placeholder-count="0"><div role="status" style="display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--cp-line);background:{{ n.bg }};color:var(--cp-on-primary)"><dc-import name="Icon" icon="{{ n.icon }}" size="{{ 13 }}" hint-size="13px,13px"></dc-import></span><div style="display:flex;flex-direction:column;gap:3px"><sc-if value="{{ n.host }}"><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);font-size:11px;font-weight:700;color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Nur du siehst das</span></sc-if><span style="font-size:14px;text-wrap:pretty">{{ n.t }}</span></div></div></sc-for>
+
+  <sc-if value="{{ hasCoin }}">
+    <div style="display:grid;grid-template-columns:{{ coinCols }};gap:16px;align-items:center">
+      <div style="display:grid;place-items:center;min-height:{{ coinH }}"><dc-import name="Coin3D" take="bullet" size="{{ coinS }}" hint-size="300px,340px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ coinSides }}" as="c" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:{{ c.bd }};border-radius:14px;background:var(--cp-surface);box-shadow:{{ c.sh }}"><img src="{{ c.img }}" alt="" width="52" height="52" style="flex:none"></img><div style="flex:1;display:flex;flex-direction:column;line-height:1.25"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:22px">{{ c.face }}</b><span style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700"><dc-import name="TeamMark" team="{{ c.t }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import>{{ c.n }}</span></div><sc-if value="{{ c.win }}"><span style="padding:3px 10px;border-radius:8px;border:2.5px solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-display);font-size:16px;transform:rotate(-6deg);color:var(--cp-on-primary)">BANNT ZUERST</span></sc-if></div></sc-for>
+        <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ coinNote }}</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasReveal }}">
+    <div style="position:relative;display:flex;flex-direction:{{ revDir }};align-items:center;justify-content:center;gap:20px;padding:26px 18px;border:3px solid var(--cp-line);border-radius:20px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-card);overflow:hidden">
+      <img src="./assets/share/sunburst.svg" alt="" style="position:absolute;left:50%;top:50%;width:1300px;transform:translate(-50%,-50%);opacity:.45"></img>
+      <span style="position:relative;padding:8px 16px;border-radius:12px;border:3px dashed var(--cp-ink);background:var(--cp-surface);color:var(--cp-ink-2);font-family:var(--cp-font-display);font-size:{{ revS }};text-decoration:line-through;text-decoration-thickness:4px;transform:rotate(-3deg)">Mario Kartoffel</span>
+      <span style="position:relative;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;border:3px solid var(--cp-ink);background:var(--cp-surface);color:var(--cp-ink);transform:rotate({{ revArrow }})"><dc-import name="Icon" icon="chevron-right" size="{{ 26 }}" sw="{{ 3 }}" hint-size="26px,26px"></dc-import></span>
+      <span style="position:relative;padding:10px 20px;border-radius:14px;border:3px solid var(--cp-ink);background:var(--cp-surface);color:var(--cp-ink);font-family:var(--cp-font-display);font-size:{{ revS2 }};box-shadow:var(--cp-shadow-card);transform:rotate(2deg)">Mario Kart 8</span>
+      <span style="position:relative;align-self:{{ revCbAlign }}"><dc-import name="CompibertRig" variant="bust" size="{{ revCb }}" state="cheer" hint-size="110px,110px"></dc-import></span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasWheel }}">
+    <div style="display:grid;grid-template-columns:{{ wheelCols }};gap:16px;align-items:start">
+      <div style="position:relative;display:grid;place-items:center;padding:4px 0;overflow:hidden"><dc-import name="GameWheel" skin="show" size="{{ wheelS }}" games="{{ wheelGames }}" hidden="{{ wheelHidden }}" freeze="{{ wheelFreeze }}" freeze-at="{{ 1 }}" freeze-fake="Mario Kartoffel" can-spin="{{ wheelSpin }}" controls="{{ wheelSpin }}" hint-size="420px,500px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-if value="{{ wheelHostChip }}"><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);font-size:12px;font-weight:800;color:var(--cp-on-primary)"><dc-import name="Icon" icon="eye-off" size="{{ 13 }}" hint-size="13px,13px"></dc-import>Für die anderen verdeckt, du siehst alles</span></sc-if>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:14px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+          <div style="display:flex;align-items:baseline;gap:8px"><b style="flex:1">Vetos übrig</b><span style="font-size:12px;color:var(--cp-ink-2)">1 pro Spiel und Partei</span></div>
+          <sc-for list="{{ vetoLeft }}" as="p" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:8px;min-height:36px;opacity:{{ p.op }}"><dc-import name="TeamMark" team="{{ p.t }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import><span style="flex:1;font-size:14px;font-weight:{{ p.w }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.n }}</span><span style="display:flex;gap:3px"><sc-for list="{{ p.pips }}" as="x" hint-placeholder-count="2"><span style="width:14px;height:14px;border-radius:4px;border:2px solid var(--cp-line);background:{{ x }}"></span></sc-for></span></div></sc-for>
+        </div>
+        <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ wheelNote }}</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasClip }}">
+    <div style="display:grid;grid-template-columns:{{ clipCols }};gap:14px;align-items:start">
+      <sc-if value="{{ clipOn }}"><div style="position:relative;aspect-ratio:16/9;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden;background:repeating-linear-gradient(135deg,var(--cp-paper-2) 0 14px,var(--cp-surface) 14px 28px);box-shadow:var(--cp-shadow-card)">
+        <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:6px 10px;border-radius:8px;background:var(--cp-surface);border:2px solid var(--cp-line);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;white-space:nowrap">YouTube-Clip: {{ clipGame }}, ab 0:42, 30 s</span>
+        <div style="position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800"><span style="width:8px;height:8px;border-radius:50%;background:var(--cp-hot);animation:cpPulse 1.2s infinite;color:var(--cp-on-hot)"></span>Clip läuft für alle</div>
+        <div style="position:absolute;right:10px;top:10px;display:flex;gap:6px"><span aria-label="Stumm" style="display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span><span aria-label="Für mich schließen" style="display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="x" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></div>
+        <div style="position:absolute;left:10px;right:10px;bottom:10px;display:flex;align-items:center;gap:10px"><span style="flex:1;height:10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);overflow:hidden"><span style="display:block;width:{{ clipPct }};height:100%;background:var(--cp-hot);color:var(--cp-on-hot)"></span></span><sc-if value="{{ isHost }}"><span style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:12px;white-space:nowrap"><dc-import name="Icon" icon="skip-forward" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Für alle überspringen</span></sc-if></div>
+      </div></sc-if>
+      <sc-if value="{{ clipOff }}"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);min-height:{{ clipOffH }}"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Clip vorbei. Noch Zeit für Vetos:</span><span style="font-family:var(--cp-font-timer);font-size:{{ bigT }};line-height:1;color:{{ timerC }}">{{ timer }}</span><dc-import name="GameCard" dc-props="{{ drawnCard }}" hint-size="220px,60px"></dc-import></div></sc-if>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <b style="font-size:14px">{{ partiesHead }}</b>
+        <div style="display:grid;grid-template-columns:{{ partyCols }};gap:8px">
+          <sc-for list="{{ parties }}" as="p" hint-placeholder-count="4"><div style="position:relative;display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 10px;border:{{ p.bd }};border-radius:12px;background:{{ p.bg }};overflow:hidden;opacity:{{ p.op }}"><dc-import name="TeamMark" team="{{ p.t }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25"><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ p.s }}</span></div><sc-if value="{{ p.sealed }}"><span title="Versiegelt" style="flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:8px;border:2px dashed var(--cp-ink-2);font-family:var(--cp-font-display);font-size:18px;color:var(--cp-ink-2)">?</span></sc-if><sc-if value="{{ p.stamp }}"><span style="flex:none;padding:2px 10px;border-radius:8px;border:2.5px solid var(--cp-line);background:var(--cp-hot);color:var(--cp-on-hot);font-family:var(--cp-font-display);font-size:18px;transform:rotate(-7deg);box-shadow:var(--cp-shadow-sm)">VETO</span></sc-if><sc-if value="{{ p.mine }}"><span style="flex:none;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:8px;border:2px solid var(--cp-line);background:var(--cp-primary);font-size:11px;font-weight:800;color:var(--cp-on-primary)"><dc-import name="Icon" icon="lock" size="{{ 11 }}" hint-size="11px,11px"></dc-import>Euer Veto</span></sc-if></div></sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasWait }}"><div style="display:flex;flex-direction:{{ waitDir }};align-items:center;gap:16px;padding:18px;border:var(--cp-bw) dashed var(--cp-line);border-radius:18px;background:var(--cp-surface)"><dc-import name="CompibertRig" variant="bust" size="{{ 110 }}" state="{{ waitState }}" hint-size="110px,110px"></dc-import><div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--cp-font-display);font-size:26px;line-height:1.05">{{ waitTitle }}</span><span style="color:var(--cp-ink-2);text-wrap:pretty">{{ waitText }}</span></div></div></sc-if>
+
+  <sc-if value="{{ hasGrid }}">
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px"><b style="flex:1 0 auto;white-space:nowrap">{{ gridHead }}</b><span style="font-size:12px;color:var(--cp-ink-2);text-wrap:pretty">{{ gridSub }}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax({{ cardMin }},1fr));gap:10px"><sc-for list="{{ cards }}" as="g" hint-placeholder-count="8"><dc-import name="GameCard" dc-props="{{ g }}" hint-size="100%,170px"></dc-import></sc-for></div>
+  </sc-if>
+
+  <sc-if value="{{ hasPlayOrder }}">
+    <div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ playOrder }}" as="o" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:10px"><span style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:10px;border:2.5px solid var(--cp-line);background:{{ o.bg }};color:{{ o.fg }};font-family:var(--cp-font-display);font-size:19px">{{ o.no }}</span><div style="flex:1;min-width:0"><dc-import name="GameCard" dc-props="{{ o.g }}" hint-size="100%,60px"></dc-import></div><sc-if value="{{ desk }}"><span style="flex:none;width:150px;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700"><dc-import name="TeamMark" team="{{ o.t }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import>gepickt von {{ o.tn }}</span></sc-if></div></sc-for></div>
+  </sc-if>
+
+  <sc-if value="{{ hasResult }}">
+    <div style="display:grid;grid-template-columns:{{ resCols }};gap:16px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px"><div style="flex:1;display:flex;flex-direction:column;line-height:1.15"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ resKick }}</span><span style="font-family:var(--cp-font-display);font-size:26px">{{ resGame }}</span></div><sc-if value="{{ resCorr }}"><span style="display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-warning);font-size:12px;font-weight:800;color:var(--cp-on-warning)"><dc-import name="Icon" icon="pencil" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Korrektur</span></sc-if></div>
+        <span style="font-size:12px;color:var(--cp-ink-2)">Ziehen, Pfeiltasten oder die Buttons. Score ist optional und nur Deko.</span>
+        <sc-for list="{{ resRows }}" as="r" hint-placeholder-count="4">
+          <sc-if value="{{ r.gap }}"><span style="display:flex;align-items:center;gap:6px;padding-left:44px"><span role="switch" aria-checked="{{ r.tie }}" style="display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px;border-radius:999px;border:2px {{ r.tbs }} var(--cp-line);background:{{ r.tbg }};color:{{ r.tfg }};font-size:12px;font-weight:700"><dc-import name="Icon" icon="equal" size="{{ 12 }}" sw="{{ 3 }}" hint-size="12px,12px"></dc-import>gleichauf</span></span></sc-if>
+          <div style="display:flex;align-items:center;gap:8px;min-height:56px;padding:4px 8px 4px 2px;border-radius:12px;border:{{ r.bd }};background:var(--cp-surface);box-shadow:{{ r.sh }};transform:{{ r.tf }}"><span style="display:grid;place-items:center;width:28px;height:44px;color:var(--cp-ink-2)"><dc-import name="Icon" icon="grip-vertical" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><span style="flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ r.pbg }};color:{{ r.pfg }};font-family:var(--cp-font-display);font-size:17px">{{ r.p }}</span><dc-import name="TeamMark" team="{{ r.t }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import><b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</b><span style="flex:none;width:52px;height:36px;box-sizing:border-box;display:grid;place-items:center;border-radius:10px;border:2px solid var(--cp-line);font-family:var(--cp-font-num);font-size:14px;color:{{ r.sc }}">{{ r.score }}</span><span style="flex:none;min-width:30px;text-align:right;font-family:var(--cp-font-num);font-size:18px">{{ r.pts }}</span></div>
+        </sc-for>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px"><span data-next="tap" style="display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800"><dc-import name="Icon" icon="check" size="{{ 18 }}" sw="{{ 3 }}" hint-size="18px,18px"></dc-import>{{ resCta }}</span><sc-if value="{{ resCorr }}"><span style="display:inline-flex;align-items:center;height:48px;padding:0 12px;font-weight:700">Abbrechen</span></sc-if></div>
+      </div>
+      <sc-if value="{{ resSide }}">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+          <b>Bisherige Spiele</b>
+          <sc-for list="{{ history }}" as="g" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;min-height:48px;padding:4px 6px 4px 10px;border:{{ g.bd }};border-radius:12px;background:{{ g.bg }}"><span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--cp-line);font-size:12px;font-weight:800">{{ g.no }}</span><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25"><b style="font-size:13px">{{ g.n }}</b><span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--cp-ink-2)"><dc-import name="TeamMark" team="{{ g.w }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ g.wn }}<sc-if value="{{ g.corr }}"><span style="margin-left:4px;padding:0 6px;border-radius:6px;border:1.5px solid var(--cp-line);font-size:10px;font-weight:800">korrigiert</span></sc-if></span></div><sc-if value="{{ g.score }}"><span style="font-family:var(--cp-font-num);font-size:13px;color:var(--cp-ink-2)">{{ g.score }}</span></sc-if><span aria-label="Korrigieren" style="flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px solid var(--cp-line);background:{{ g.ebg }};color:{{ g.efg }}"><dc-import name="Icon" icon="pencil" size="{{ 15 }}" hint-size="15px,15px"></dc-import></span></div></sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasLb }}">
+    <div style="position:relative;display:grid;grid-template-columns:{{ lbCols }};gap:16px;align-items:start">
+      <div style="position:relative;display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <div style="display:flex;flex-direction:column;line-height:1.15;margin-bottom:4px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ lbKick }}</span><span style="font-family:var(--cp-font-display);font-size:28px">Tabelle</span></div>
+        <sc-if value="{{ lbStamp }}"><div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:3px solid var(--cp-line);border-radius:14px;background-color:var(--cp-team-8);background-image:var(--cp-team-8-pattern)"><dc-import name="TeamMark" team="{{ 8 }}" size="{{ 34 }}" hint-size="34px,34px"></dc-import><span style="flex:1;padding:3px 10px;border-radius:10px;background:var(--cp-team-8);color:var(--cp-team-8-ink);font-family:var(--cp-font-display);font-size:22px;line-height:1.1">Nacht Eulen gewinnt Spiel 3!</span><span style="padding:3px 10px;border-radius:8px;border:2.5px solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-display);font-size:16px;transform:rotate(-8deg);box-shadow:var(--cp-shadow-sm);color:var(--cp-on-primary)">+3</span></div></sc-if>
+        <sc-for list="{{ lbRows }}" as="l" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 6px;border-radius:12px;border:{{ l.bd }};box-shadow:{{ l.sh }};background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:10px;border:2.5px solid var(--cp-line);background:{{ l.rbg }};color:{{ l.rfg }};font-family:var(--cp-font-display);font-size:19px">{{ l.rank }}</span><dc-import name="TeamMark" team="{{ l.t }}" size="{{ 28 }}" hint-size="28px,28px"></dc-import><b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</b><sc-if value="{{ l.delta }}"><span style="display:inline-flex;align-items:center;gap:2px;height:24px;padding:0 8px;border-radius:999px;border:2px solid var(--cp-line);background:{{ l.dbg }};color:{{ l.dfg }};font-size:12px;font-weight:800"><dc-import name="Icon" icon="{{ l.dIcon }}" size="{{ 12 }}" sw="{{ 3 }}" hint-size="12px,12px"></dc-import>{{ l.delta }}</span></sc-if><span style="font-family:var(--cp-font-num);font-size:26px;line-height:1">{{ l.pts }}</span></div></sc-for>
+        <sc-if value="{{ lbConfetti }}"><div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;overflow:visible"><sc-for list="{{ confetti }}" as="c" hint-placeholder-count="14"><span style="position:absolute;left:{{ c.x }};top:{{ c.y }};width:{{ c.w }};height:{{ c.h }};border-radius:3px;background:{{ c.c }};border:2px solid var(--cp-sticker-rim);box-shadow:2px 2px 0 var(--cp-shadow-ink);transform:rotate({{ c.r }})"></span></sc-for></div></sc-if>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <b>Spielverlauf</b>
+        <sc-for list="{{ history }}" as="g" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--cp-line);font-size:12px;font-weight:800">{{ g.no }}</span><b style="flex:1;min-width:0;font-size:13px">{{ g.n }}</b><span style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700"><dc-import name="TeamMark" team="{{ g.w }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import>{{ g.wn }}</span><sc-if value="{{ g.corr }}"><span style="padding:0 6px;border-radius:6px;border:1.5px solid var(--cp-line);font-size:10px;font-weight:800">korrigiert</span></sc-if><sc-if value="{{ g.score }}"><span style="font-family:var(--cp-font-num);font-size:13px;color:var(--cp-ink-2)">{{ g.score }}</span></sc-if></div></sc-for>
+        <sc-for list="{{ upNext }}" as="g" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 12px;border:2px dashed var(--cp-ink-3);border-radius:12px;color:var(--cp-ink-2)"><span style="flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px dashed var(--cp-ink-3);font-size:12px;font-weight:800">{{ g }}</span><span style="font-size:13px">noch offen</span></div></sc-for>
+      </div>
+      <sc-if value="{{ lbCb }}"><span aria-hidden="true" style="position:absolute;right:{{ lbCbR }};top:-30px;pointer-events:none"><dc-import name="CompibertRig" variant="bust" size="{{ 96 }}" state="cheer" hint-size="96px,96px"></dc-import></span></sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasTie }}">
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;padding:26px 18px;border:3px solid var(--cp-line);border-radius:20px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-card);overflow:hidden">
+      <img src="./assets/share/sunburst.svg" alt="" style="position:absolute;left:50%;top:50%;width:1400px;transform:translate(-50%,-50%);opacity:.45"></img>
+      <span style="position:relative;font-family:var(--cp-font-display);font-size:{{ tieH }};line-height:1;text-align:center;text-wrap:balance">{{ tieTitle }}</span>
+      <div style="position:relative;display:flex;flex-direction:{{ tieDir }};align-items:center;gap:14px">
+        <sc-for list="{{ tied }}" as="t" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:3px solid var(--cp-ink);border-radius:16px;background-color:var(--cp-team-{{ t.t }});background-image:var(--cp-team-{{ t.t }}-pattern);box-shadow:var(--cp-shadow-card)"><dc-import name="TeamMark" team="{{ t.t }}" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="padding:4px 12px;border-radius:10px;background:var(--cp-team-{{ t.t }});color:var(--cp-team-{{ t.t }}-ink);display:flex;flex-direction:column;line-height:1"><span style="font-family:var(--cp-font-display);font-size:24px">{{ t.n }}</span><span style="font-family:var(--cp-font-num);font-size:20px">{{ t.pts }} Punkte</span></span></div><sc-if value="{{ t.vs }}"><span style="font-family:var(--cp-font-display);font-size:34px;color:var(--cp-on-primary)">vs</span></sc-if></sc-for>
+      </div>
+      <span style="position:relative;max-width:52ch;text-align:center;font-weight:600;text-wrap:pretty">{{ tieText }}</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasLive }}"><dc-import name="VetoWindow" game="Mario Kart 8" host="{{ isHost }}" motion="full" hint-size="100%,820px"></dc-import></sc-if>
+
+  <sc-if value="{{ hasBar }}"><div aria-hidden="true" style="height:{{ barSpace }}"></div></sc-if>
+</div>
+
+<sc-if value="{{ hasBar }}">
+  <div role="region" aria-label="{{ barAria }}" style="position:absolute;left:{{ barL }};right:{{ barR }};bottom:{{ barB }};z-index:46;display:flex;align-items:center;gap:12px;flex-wrap:{{ barWrap }};padding:10px 10px 10px 16px;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ barRad }};background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+    <sc-if value="{{ barTimer }}"><span style="flex:none;display:flex;flex-direction:column;align-items:center;line-height:1"><span style="font-family:var(--cp-font-timer);font-size:{{ barTS }};color:{{ timerC }}">{{ timer }}</span><span style="font-size:10px;font-weight:800;color:var(--cp-ink-2);text-transform:uppercase;letter-spacing:.06em">Veto-Zeit</span></span></sc-if>
+    <div style="flex:1;min-width:{{ barTxtMin }};display:flex;flex-direction:column;line-height:1.3"><b style="font-size:14px">{{ barTitle }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ barSub }}</span></div>
+    <div data-next="{{ barNx }}" style="position:relative;flex:{{ barBtnFlex }};display:flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 22px;border-radius:999px;border:var(--cp-bw) {{ barBs }} {{ barBc }};background:{{ barBg }};color:{{ barFg }};box-shadow:{{ barSh }};overflow:hidden;font-weight:800;font-size:16px;white-space:nowrap"><sc-if value="{{ barFill }}"><span data-fill="1" style="position:absolute;left:0;top:0;bottom:0;width:{{ barFill }};background:var(--cp-hot);border-right:2.5px solid var(--cp-line);color:var(--cp-on-hot)"></span></sc-if><span style="position:relative;display:flex;align-items:center;gap:8px"><dc-import name="Icon" icon="{{ barIcon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import>{{ barBtn }}</span><sc-if value="{{ barHoldTag }}"><span style="position:relative;font-size:11px;font-weight:700;opacity:.85">halten</span></sc-if></div>
+  </div>
+</sc-if>
+
+</dc-import>
+</dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KEY='compies-app-D';
+const TN={1:'Wilde Gurken',2:'Team Orange',4:'Käse Turbo',8:'Nacht Eulen'};
+const SCR=[
+ {k:'wheel',no:'11',n:'Lucky Wheel',roles:1,st:[['idle','Rad sichtbar'],['hidden','Rad verdeckt'],['spin','Dreht (Standbild)'],['stop','Stopp (Standbild)'],['reveal','Verwandlung'],['clip','Clip + Veto-Fenster'],['sealed','Eigenes Veto versiegelt'],['closed','Clip zu, 30 s übrig'],['vreveal','Aufdecken: 2 Vetos'],['respin','Neu drehen'],['noveto','Kein Veto: wird gespielt'],['live','Live-Simulation']],notes:['Rad: der Server lost aus und schickt Start, Dauer und Ergebnis. Alle Geräte stoppen im selben Moment. Das Rad ist live: als Host „Drehen“ drücken zeigt Drehen, Bremsen, Stopp (und bei verdeckt die Verwandlung).','Verdeckt: Spieler:innen sehen erfundene Namen (oder ???), der Host sieht die echten und einen Hinweis darauf.','Veto-Fenster: 60 s ab Ziehung. 30 s Clip, dann schließt er automatisch. Die Veto-Leiste liegt immer über dem Clip (Layer veto 46 > clip 44), mobil in Daumenhöhe über der Tab-Leiste.','Veto = 1 s halten, nicht zurücknehmbar. Pro Spiel max. 1 Veto pro Partei: sobald jemand aus dem Team hält, ist der Button für das Team gesperrt, mit Grund.','Eigenes Team sieht sein Veto sofort („Euer Veto“), alle anderen sehen bis 0:00 nur „?“. Dann werden alle gleichzeitig aufgedeckt, Stempel + Ton. Alle Vetos werden verbraucht, das Spiel fliegt vom Rad, neuer Dreh.','Dreht / Stopp (Standbild): feste Referenzen für die Entwicklung. Dreht = Bewegungsunschärfe, Zeiger ausgelenkt, Lauflicht. Stopp = gezogenes Feld blinkt; beim verdeckten Rad steht noch der Fantasiename, 0,5 s später folgt die Verwandlung. Der echte Ablauf mit Timing ist im Live-Rad (Host, „Drehen“).','„Live-Simulation“ ist die interaktive VetoWindow-Komponente aus Phase 2 mit Zeitraffer.']},
+ {k:'advantage',no:'12',n:'Loser’s Advantage',roles:0,st:[['turn','Letzter bannt (dran)'],['wait','Alle anderen warten'],['tie','Zwei Letzte bannen'],['done','Gebannt: Host dreht']],notes:['Vor jedem Dreh außer dem ersten bannt die Partei auf dem letzten Platz 1 Spiel vom Rad. Keine Zeitbegrenzung, der Host kann jederzeit „Spiel setzen“.','Im Team darf jedes Mitglied bannen; wer zuerst hält, gewinnt.','Teilen sich mehrere den letzten Platz, bannt jede dieser Parteien 1 Spiel, nacheinander in Tabellenreihenfolge.','Das Rad ist in diesem Modus nie verdeckt.']},
+ {k:'pickban',no:'13',n:'Pick & Ban',roles:0,st:[['coin','Münzwurf'],['coinDone','Münze gefallen'],['banTurn','Ban: wir sind dran'],['banWait','Ban: die anderen'],['pickTurn','Pick: wir sind dran'],['pickWait','Pick: die anderen'],['order','Spielreihenfolge']],notes:['Beispiel 2v2: Wilde Gurken gegen Nacht Eulen, je 2 Bans, 6 Spiele. Münzwurf Zeitlupe (1i): Kopf = Compibert-Kopf auf Gelb, Schwanz = Ringelschwanz auf Kobalt.','Snake-Reihenfolge Bans: A 1, B 2, A 1. Picks beginnt die Partei, die nicht mit dem Bannen angefangen hat: B 1, A 2, B 2, A 1.','Wer dran ist: Banner in Teamfarbe + Halte-Leiste unten. Alle anderen sehen dasselbe Brett ohne Leiste und „X wählt gerade …“. Keine Uhr.','Bans und Picks tragen den Stempel mit TeamMark. Pick-Reihenfolge = Spielreihenfolge; der Clip läuft jeweils zu Beginn der Runde.']},
+ {k:'loser',no:'14',n:'Loser’s Pick',roles:0,st:[['turn','Letzter wählt (dran)'],['wait','Alle anderen warten'],['veto','Veto-Fenster'],['repick','Nach Veto: nochmal wählen'],['tie','Letzter Platz geteilt: Rad']],notes:['Spiel 1 bestimmt das Rad. Danach wählt die letztplatzierte Partei aus dem Pool, ohne Zeitlimit.','Nach der Wahl: 60-s-Veto-Fenster mit Clip, genau wie beim Lucky Wheel. Bei Veto fliegt das Spiel aus dem Pool und dieselbe Partei wählt nochmal.','Geteilter letzter Platz: das Glücksrad entscheidet das Spiel.']},
+ {k:'admin',no:'15',n:'Admin-Wahl',roles:0,st:[['host','Host wählt'],['player','Spieler:innen warten'],['set','Gesetzt: Clip']],notes:['Der Host wählt direkt aus dem Pool (oder der ganzen Bibliothek). Kein Zufall, keine Vetos.','Dieselbe Auswahl ist in jedem anderen Modus über „Spiel setzen“ erreichbar.']},
+ {k:'result',no:'16',n:'Ergebnis eintragen',roles:0,st:[['enter','Host: Teams sortieren'],['ffa','Host: Jeder gegen jeden'],['player','Spieler:innen warten'],['correct','Vergangenes Spiel korrigieren']],notes:['Parteien per Drag, Pfeiltasten oder Buttons sortieren. „gleichauf“ zwischen zwei Plätzen legt sie zusammen: 1, 2, 2, 4. Gleichauf bekommt die Punkte des besseren Platzes.','Score (z. B. 16:12) ist optional und rein kosmetisch; steht im Verlauf und im Archiv.','Korrigieren: jedes vergangene Spiel, ohne Bestätigungsdialog. Tabelle rechnet mit derselben Animation neu, der Feed loggt es, das Spiel bekommt „korrigiert“.']},
+ {k:'board',no:'17',n:'Live-Tabelle',roles:0,st:[['celebrate','Nach dem Spiel: Mini-Feier'],['calm','Ruhige Ansicht']],notes:['Zeilen gleiten in die neue Reihenfolge (Flip, 620 ms Spring), Punkte zählen hoch, Delta-Pille. Sieger des Spiels: Stempel + Sticker-Konfetti + kurzer Compibert-Jubel.','Geteilte Ränge zeigen beide „1.“. Verlauf rechts: gespielte Spiele mit Sieger und Score, offene Spiele gestrichelt.','Reduzierte Bewegung: Zeilen springen ohne Gleiten, kein Konfetti, Stempel blendet ein.']},
+ {k:'tie',no:'18',n:'Tiebreaker',roles:1,st:[['announce','Ankündigung'],['wheel','Tiebreaker-Rad'],['clip','Veto mit Restvetos'],['again','Wieder gleich: nochmal']],notes:['Nur bei Gleichstand auf Platz 1. Eigenes Rad mit dem Tiebreaker-Pool, nur die Punktgleichen spielen; alle anderen schauen zu (ausgegraut, keine Vetos).','Übrige Vetos zählen weiter, Bans gibt es keine. Endet auch der Tiebreaker gleich, dreht das Rad erneut.','Host-Ansicht: Host-Leiste mit „Tiebreaker-Rad öffnen“ bzw. „Rad drehen“. Auch der Host sieht Vetos erst bei 0:00.']}
+];
+const G=(title,o)=>Object.assign({title,players:'2–8',fmt:'Teams',layout:'card'},o||{});
+const POOL=['Rocket League','Mario Kart 8','Counter-Strike 2','Overcooked 2','Codenames','Trackmania','Halo Infinite','GeoGuessr','Gang Beasts','Tetris 99'];
+class Component extends DCLogic {
+  state={s:'wheel',st:{},vp:'desk',role:'player',dark:false,embed:false};
+  componentDidMount(){
+    let g={},l={}; try{g=JSON.parse(localStorage.getItem('compies-app')||'{}');l=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+    const q=new URLSearchParams(location.search), n={...this.state,...g,...l};
+    if(q.get('s')) n.s=q.get('s'); if(q.get('st')) n.st={...n.st,[n.s]:q.get('st')}; if(q.get('vp')) n.vp=q.get('vp'); if(q.get('role')) n.role=q.get('role'); if(q.get('theme')) n.dark=q.get('theme')==='dark'; n.embed=q.get('embed')==='1';
+    if(!SCR.some(x=>x.k===n.s)) n.s='wheel'; this.setState(n);
+  }
+  save(p){ this.setState(p,()=>{ if(this.state.embed) return; const S=this.state; try{localStorage.setItem('compies-app',JSON.stringify({vp:S.vp,role:S.role,dark:S.dark}));localStorage.setItem(KEY,JSON.stringify({s:S.s,st:S.st}));}catch(e){} }); }
+  renderVals(){
+    const S=this.state, C=SCR.find(x=>x.k===S.s)||SCR[0], st=S.st[C.k]||C.st[0][0], desk=S.vp!=='mob', mob=!desk;
+    const seg=(arr,cur,set)=>arr.map(([k,n],i)=>({n,on:cur===k,bl:i?'2px solid var(--cp-line)':'0',bg:cur===k?'var(--cp-ink)':'transparent',fg:cur===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>set(k)}));
+    const screens=SCR.map(x=>({no:x.no,n:x.n,on:x.k===C.k,bs:'solid',bg:x.k===C.k?'var(--cp-ink)':'var(--cp-surface)',fg:x.k===C.k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.save({s:x.k})}));
+    const states=C.st.map(([k,n])=>({n,on:k===st,bg:k===st?'var(--cp-primary)':'var(--cp-surface)',fg:k===st?'var(--cp-on-primary)':'var(--cp-ink)',pick:()=>this.save({st:{...S.st,[C.k]:k}})}));
+    let isHost=C.roles?S.role==='host':false, me='Kitty', myTeam=1;
+    const v={dark:S.dark,embed:S.embed,fw:desk?1280:390,fh:desk?800:844,screens,states,notes:C.notes,curName:C.no+' '+C.n,curState:C.st.find(x=>x[0]===st)[1],vps:seg([['desk','Desktop 1280'],['mob','Mobil 390']],S.vp,k=>this.save({vp:k})),roles:C.roles?seg([['player','Spielerin (Kitty)'],['host','Host (Sanne)']],S.role,k=>this.save({role:k})):[],toggleTheme:()=>this.save({dark:!S.dark}),
+      vp:S.vp,desk,mob,sessTitle:'Freitags-Zocken',pillText:'Spiel 3 von 6',panel:'feed',dock:[],emote:true,lift:0,notes2:[],
+      hasOrder:false,hasBanner:true,hasCoin:false,hasReveal:false,hasWheel:false,hasClip:false,hasWait:false,hasGrid:false,hasPlayOrder:false,hasResult:false,hasLb:false,hasTie:false,hasLive:false,hasBar:false,
+      wheelCols:desk?'minmax(0,1fr) 280px':'1fr',wheelS:desk?430:330,wheelGames:POOL.slice(0,8),wheelHidden:false,wheelFreeze:'',wheelSpin:false,wheelHostChip:false,wheelNote:'',
+      clipCols:desk?'minmax(0,1.5fr) minmax(0,1fr)':'1fr',partyCols:'1fr',clipOn:true,clipOff:false,clipGame:'Mario Kart 8',clipPct:'40%',clipOffH:desk?'260px':'200px',bigT:desk?'96px':'72px',timer:'0:48',timerC:'var(--cp-ink)',partiesHead:'Vetos',parties:[],drawnCard:{title:'Mario Kart 8',players:'1–12',fmt:'Beides',layout:'row',state:'drawn'},
+      cardMin:desk?'150px':'140px',cards:[],gridHead:'',gridSub:'',resCols:desk?'minmax(0,1.2fr) minmax(0,1fr)':'1fr',lbCols:desk?'minmax(0,1.2fr) minmax(0,1fr)':'1fr',history:[],upNext:[],waitDir:desk?'row':'column',
+      coinCols:desk?'1fr 1fr':'1fr',coinS:desk?300:220,coinH:desk?'360px':'260px',revDir:desk?'row':'column',revS:desk?'40px':'30px',revS2:desk?'52px':'38px',revArrow:desk?'0deg':'90deg',revCb:desk?120:90,revCbAlign:desk?'flex-end':'center',
+      tieH:desk?'54px':'38px',tieDir:desk?'row':'column',lbCbR:desk?'12px':'4px',
+      barL:desk?'24px':'10px',barR:desk?'364px':'10px',barB:desk?'20px':'90px',barRad:desk?'999px':'20px',barWrap:desk?'nowrap':'wrap',barTS:desk?'40px':'34px',barTxtMin:desk?'160px':'calc(100% - 90px)',barBtnFlex:desk?'none':'1 1 100%',barSpace:desk?'90px':'150px',barHoldTag:true,barFill:'',barTimer:false};
+    const BN=(text,o)=>Object.assign(v,{bnText:text,bnSub:'',bnTeam:0,bnIconOn:true,bnIcon:'ferris-wheel',bnIconBg:'var(--cp-primary)',bnBg:'var(--cp-surface)',bnPat:'none',bnChipBg:'transparent',bnChipFg:'var(--cp-ink)',bnChipPad:'0',bnSubPad:'0',bnS:desk?'22px':'18px'},o||{});
+    const TEAMBN=(t,text,sub)=>BN(text,{bnSub:sub||'',bnTeam:t,bnIconOn:false,bnBg:`var(--cp-team-${t})`,bnPat:`var(--cp-team-${t}-pattern)`,bnChipBg:`var(--cp-team-${t})`,bnChipFg:`var(--cp-team-${t}-ink)`,bnChipPad:'3px 10px',bnSubPad:'10px'});
+    const BAR=(o)=>Object.assign(v,{hasBar:true,barAria:'Aktion',barTitle:'',barSub:'',barBtn:'',barIcon:'ban',barBs:'solid',barBc:'var(--cp-line)',barBg:'var(--cp-hot)',barFg:'var(--cp-on-hot)',barSh:'var(--cp-shadow-btn)',barHoldTag:true,barFill:'',barTimer:false,barNx:o&&o.barHoldTag===false?'tap':'hold'},o);
+    const LOCKED={barNx:'',barBs:'dashed',barBc:'var(--cp-ink-3)',barBg:'var(--cp-paper-2)',barFg:'var(--cp-ink-2)',barSh:'none',barHoldTag:false};
+    const pips=(n,used)=>Array.from({length:n},(_,i)=>i<used?'var(--cp-paper-2)':'var(--cp-hot)');
+    const vetoLeft=(tied,cons)=>[[1,2],[8,2],[2,2],[4,2]].map(([t,n])=>({t,n:TN[t],pips:pips(n,(cons&&cons[t])||0),op:tied&&!tied.includes(t)?.4:1,w:t===myTeam?800:600}));
+    const party=(t,kind,who)=>{ const base={t,n:TN[t],sealed:false,stamp:false,mine:false,bd:'var(--cp-bw) solid var(--cp-line)',bg:'var(--cp-surface)',op:1,s:''};
+      if(kind==='sealed') return {...base,sealed:true,s:'versiegelt bis 0:00'};
+      if(kind==='mine') return {...base,mine:true,s:'von '+who+', nur ihr seht das',bd:'3px solid var(--cp-line)'};
+      if(kind==='veto') return {...base,stamp:true,s:'von '+who,bd:'3px solid var(--cp-line)'};
+      if(kind==='none') return {...base,s:'kein Veto',op:.7};
+      if(kind==='out') return {...base,s:'schaut zu',op:.4};
+      return base; };
+    const hist=[['Rocket League',1,'3:1',false],['Mario Kart 8',8,'',false]];
+    const histRows=(list,corrI)=>list.map(([n,w,score,corr],i)=>({no:String(i+1),n,w,wn:TN[w],score,corr:corr||false,bd:i===corrI?'3px solid var(--cp-focus)':'2px solid var(--cp-line)',bg:i===corrI?'var(--cp-surface-2)':'var(--cp-surface)',ebg:i===corrI?'var(--cp-primary)':'var(--cp-surface)',efg:i===corrI?'var(--cp-on-primary)':'var(--cp-ink)'}));
+    const hostDock=d=>{ if(isHost){ v.dock=d; } };
+    // ---------- 11 wheel ----------
+    if(C.k==='wheel'){
+      if(isHost) me='Sanne';
+      const cons1={1:0,8:0};
+      if(['idle','hidden','spin','stop','respin'].includes(st)){
+        const fz=st==='spin'||st==='stop', hidLike=st==='hidden'||fz;
+        v.hasWheel=true; v.wheelSpin=isHost&&!fz; v.vetoLeft=vetoLeft(null,st==='respin'?{1:1,8:1}:null);
+        v.wheelHidden=hidLike&&!isHost; v.wheelHostChip=hidLike&&isHost; v.wheelFreeze=fz?st:'';
+        if(st==='respin') v.wheelGames=POOL.filter(x=>x!=='Mario Kart 8').slice(0,7);
+        v.wheelNote=st==='hidden'?(isHost?'Die anderen sehen erfundene Namen wie „Mario Kartoffel“. Beim Stopp verwandelt sich das Feld ins echte Spiel.':'Was wirklich auf dem Rad ist, siehst du erst beim Stopp. Vetos also nicht zu früh horten.'):'Alles, was gezogen wird, fliegt vom Rad: gespielt, per Veto abgelehnt oder gebannt.';
+        if(st==='spin') v.wheelNote='Das Ticken wird zum Ende langsamer. Das Rad stoppt auf allen Geräten im selben Moment, die Zeit gibt der Server vor.';
+        if(st==='stop') v.wheelNote=isHost?'Du siehst schon Mario Kart 8. Die anderen sehen „Mario Kartoffel“, bis sich das Feld verwandelt.':'Das Feld blinkt, aber was ist „Mario Kartoffel“ wirklich? Gleich verwandelt es sich.';
+        if(st==='spin') BN('Das Rad dreht …',{bnSub:'Auf allen Geräten gleichzeitig. Das Ergebnis kennt nur der Server.',bnIcon:'ferris-wheel'});
+        else if(st==='stop') BN(isHost?'Stopp: Mario Kart 8.':'Stopp! „Mario Kartoffel“ …?',{bnSub:isHost?'Für die anderen verwandelt sich das Feld gleich.':'Gleich zeigt sich, was wirklich dahintersteckt.',bnIcon:'sparkles'});
+        else if(st==='respin'){ BN('Mario Kart 8 ist raus. Neuer Dreh!',{bnSub:'Noch 7 Spiele auf dem Rad. Beide Vetos sind verbraucht.',bnIcon:'refresh-cw'}); }
+        else BN(isHost?'Spiel 3 von 6: Du drehst das Glücksrad.':'Spiel 3 von 6: Gleich dreht Sanne das Glücksrad.',{bnSub:st==='hidden'?'Rad verdeckt':''});
+        hostDock([['Rad drehen','ferris-wheel','p'],['Spiel setzen','gamepad-2']]);
+        if(fz) hostDock([['Rad dreht …','ferris-wheel','dis'],['Spiel setzen','gamepad-2']]);
+        if(isHost&&(st==='idle'||st==='respin')) v.notes2=[{icon:'triangle-alert',bg:'var(--cp-warning)',host:true,t:'Pool wird knapp: 4 Spiele offen, bis zu 6 Vetos. Leg im Rad-Editor nach, wenn du magst.'}];
+      }
+      if(st==='reveal'){ v.hasReveal=true; BN('Das Rad sagt …',{bnSub:'verdecktes Rad: das echte Spiel zeigt sich erst jetzt',bnIcon:'sparkles'}); }
+      if(['clip','sealed','closed','vreveal','noveto'].includes(st)){
+        v.hasClip=true; v.lift=desk?96:96; v.emote=desk;
+        v.clipOn=st==='clip'||st==='sealed'; v.clipOff=st==='closed'; v.clipPct=st==='sealed'?'70%':'40%'; v.timer=st==='clip'?'0:48':st==='sealed'?'0:39':'0:22';
+        if(st==='closed'||st==='sealed'){ v.timerC=st==='closed'?'var(--cp-error-fg)':'var(--cp-ink)'; }
+        if(st==='vreveal'||st==='noveto'){ v.clipCols='1fr'; v.clipOn=false; }
+        const mineK=st==='sealed'||st==='closed';
+        v.parties=st==='vreveal'?[party(1,'veto','Larsi'),party(8,'veto','Olli'),party(2,'none'),party(4,'none')]:st==='noveto'?[party(1,'none'),party(8,'none'),party(2,'none'),party(4,'none')]:[mineK?party(1,'mine','Larsi'):party(1,'sealed'),party(8,'sealed'),party(2,'sealed'),party(4,'sealed')];
+        if(!mineK&&st!=='vreveal'&&st!=='noveto') v.parties[0]={...v.parties[0],sealed:false,s:'2 Vetos übrig, ihr habt noch keins'};
+        v.partyCols=(st==='vreveal'||st==='noveto')&&desk?'repeat(4,1fr)':'1fr';
+        v.partiesHead=st==='vreveal'?'Aufgedeckt':st==='noveto'?'Keine Vetos':'Vetos: werden bei 0:00 aufgedeckt';
+        if(st==='vreveal'){ BN('2 Vetos! Mario Kart 8 fliegt vom Rad.',{bnSub:'Beide Vetos sind verbraucht. Gleich wird neu gedreht.',bnIcon:'ban',bnIconBg:'var(--cp-hot)',bnBg:'var(--cp-surface)'}); hostDock([['Neu drehen','ferris-wheel','p'],['Spiel setzen','gamepad-2']]); v.lift=0; }
+        else if(st==='noveto'){ BN('Kein Veto. Mario Kart 8 wird gespielt!',{bnSub:'Viel Glück. Gespielt wird außerhalb der App, Sanne trägt danach das Ergebnis ein.',bnIcon:'gamepad-2'}); hostDock([['Ergebnis eintragen','list-ordered','p'],['Spiel setzen','gamepad-2']]); v.lift=0; v.hasWait=false; }
+        else { BN('Das Glücksrad sagt: Mario Kart 8.',{bnSub:'60 Sekunden für Vetos. Der Clip schließt nach 30 s von selbst.'}); hostDock([['Clip überspringen','skip-forward'],['Spiel setzen','gamepad-2']]);
+          if(st==='clip') BAR({barTimer:true,barAria:'Veto',barTitle:'Euer Team: 2 Vetos übrig',barSub:'Jede:r im Team darf. Pro Spiel 1 Veto.',barBtn:'Veto',barIcon:'ban',barFill:'35%'});
+          else BAR({barTimer:true,barAria:'Veto',barTitle:'Larsi hat für euch Veto eingelegt',barSub:'Versiegelt, die anderen sehen es erst bei 0:00.',barBtn:'Veto ist drin',barIcon:'lock',...LOCKED}); }
+        v.vetoLeft=vetoLeft();
+      }
+      if(isHost&&['clip','sealed','closed'].includes(st)){ v.parties=[1,8,2,4].map(t=>party(t,'sealed')); v.hasBar=false; v.partiesHead='Vetos: auch du siehst sie erst bei 0:00'; }
+      if(st==='live'){ v.hasBanner=false; v.hasLive=true; v.emote=false; }
+      if(st==='vreveal') v.notes2=[];
+    }
+    // ---------- 12 advantage ----------
+    if(C.k==='advantage'){
+      const turn=st==='turn', tie=st==='tie';
+      if(turn||tie){ me=tie?'Tom':'Ben'; myTeam=tie?2:4; } if(st==='done'){ me='Sanne'; isHost=true; }
+      v.pillText='Spiel 4 von 6';
+      if(st==='done'){ v.hasWheel=true; v.wheelSpin=true; v.wheelGames=['Rocket League','Counter-Strike 2','Overcooked 2','Codenames','Halo Infinite','Gang Beasts']; v.vetoLeft=vetoLeft(null,{1:1,8:1}); v.wheelNote='GeoGuessr ist raus. Danach wie gewohnt: Clip und 60 Sekunden für Vetos.'; BN('Käse Turbo hat GeoGuessr gebannt. Du drehst.',{bnIcon:'ferris-wheel'}); v.dock=[['Rad drehen','ferris-wheel','p'],['Spiel setzen','gamepad-2']]; }
+      else {
+        if(tie) TEAMBN(2,'Team Orange bannt, dann Käse Turbo','Ihr teilt euch den letzten Platz: jede Partei bannt 1 Spiel.');
+        else if(turn) TEAMBN(4,'Ihr liegt hinten: bannt 1 Spiel vom Rad','Dann dreht Sanne. Keine Uhr, aber alle schauen euch zu.');
+        else { TEAMBN(4,'Käse Turbo bannt 1 Spiel vom Rad','Ben oder Ida wählen gerade …'); }
+        v.hasGrid=true; v.gridHead='Auf dem Rad: 7 Spiele'; v.gridSub=turn||tie?'Antippen, dann halten':'Gleich dreht Sanne';
+        v.cards=['Rocket League','Counter-Strike 2','Overcooked 2','Codenames','Halo Infinite','GeoGuessr','Gang Beasts'].map(t=>G(t,{selected:(turn||tie)&&t==='GeoGuessr',layout:mob?'row':'card'}));
+        if(turn||tie) BAR({barTitle:tie?'Team Orange: 1 Ban':'Käse Turbo: 1 Ban',barSub:'Erst wählen, dann 1 s halten.',barBtn:'GeoGuessr bannen',barIcon:'ban',barFill:'0%'});
+        if(st==='wait'&&mob) v.cardMin='140px';
+      }
+      if(mob) v.cardMin='100%';
+    }
+    // ---------- 13 pick & ban ----------
+    if(C.k==='pickban'){
+      v.sessTitle='CS-Abend 2v2'; v.pillText='Pick & Ban';
+      const ord=[[1,'Ban'],[8,'Ban'],[8,'Ban'],[1,'Ban'],[8,'Pick'],[1,'Pick'],[1,'Pick'],[8,'Pick'],[8,'Pick'],[1,'Pick']];
+      const cur={coin:-1,coinDone:-1,banTurn:3,banWait:1,pickTurn:5,pickWait:4,order:99}[st];
+      v.hasOrder=st!=='coin'; v.order=ord.map(([t,k],i)=>({t,k,done:i<cur,bd:i===cur?'3px solid var(--cp-focus)':'2px solid var(--cp-line)',bg:i<cur?'var(--cp-paper-2)':'var(--cp-surface)',op:i<cur?.75:1}));
+      if(st==='coin'||st==='coinDone'){ v.hasCoin=true; v.emote=true;
+        v.coinSides=[['Kopf','./assets/coin/coin-kopf.svg',1],['Schwanz','./assets/coin/coin-schwanz.svg',8]].map(([face,img,t])=>({face,img,t,n:TN[t],win:st==='coinDone'&&t===1,bd:st==='coinDone'&&t===1?'3px solid var(--cp-line)':'var(--cp-bw) solid var(--cp-line)',sh:st==='coinDone'&&t===1?'var(--cp-shadow-card)':'none'}));
+        v.coinNote=st==='coin'?'Die Münze fällt auf allen Geräten gleichzeitig. Der Server hat schon entschieden, wir machen nur die Show.':'Kopf! Wilde Gurken bannt zuerst. Nacht Eulen fängt dafür mit dem Picken an.';
+        BN(st==='coin'?'Münzwurf: Wer bannt zuerst?':'Kopf! Wilde Gurken fängt an.',{bnIcon:'coins'}); }
+      const bans={'Trackmania':8,'Gang Beasts':1,'Tetris 99':8}, picks={'Counter-Strike 2':8,'Rocket League':1};
+      const stateOf=t=>{ if(st==='banWait') return t==='Gang Beasts'?['banned',1]:null; if(st==='banTurn') return t==='Gang Beasts'?['banned',1]:t==='Trackmania'||t==='Tetris 99'?['banned',8]:null; if(st==='pickTurn'||st==='pickWait'){ if(bans[t]) return ['banned',bans[t]]; if(t==='Gang Beasts') return ['banned',1]; if(st==='pickTurn'&&picks[t]) return ['picked',picks[t]]; if(st==='pickWait'&&t==='Counter-Strike 2') return null; } return null; };
+      if(['banTurn','banWait','pickTurn','pickWait'].includes(st)){
+        v.hasGrid=true; const turn=st==='banTurn'||st==='pickTurn', ban=st.startsWith('ban');
+        const t=turn?1:8; const n=ban?(st==='banTurn'?'Ban 2 von 2':'Ban 1 von 2'):(st==='pickTurn'?'Pick 1 von 2':'Pick 1 von 1');
+        TEAMBN(t,(turn?'Ihr seid dran: ':TN[t]+' ')+(ban?'bannt':'pickt')+', '+n,turn?'Jede:r im Team darf. Wer zuerst hält, entscheidet.':'Olli wählt gerade …');
+        v.gridHead=ban?'Pool: 10 Spiele':'Übrig: 6 Spiele'; v.gridSub=ban?'4 Bans, dann 6 Picks':'Pick-Reihenfolge = Spielreihenfolge';
+        v.cards=POOL.map(title=>{ const s=stateOf(title); return G(title,{state:s?s[0]:'default',team:s?s[1]:1,order:s&&s[0]==='picked'?1:undefined,selected:turn&&title===(ban?'Codenames':'Overcooked 2'),layout:mob?'row':'card'}); });
+        if(turn) BAR({barTitle:ban?'Wilde Gurken: letzter Ban':'Wilde Gurken: Pick für Spiel 2',barSub:'Erst wählen, dann 1 s halten.',barBtn:ban?'Codenames bannen':'Overcooked 2 picken',barIcon:ban?'ban':'check',barBg:ban?'var(--cp-hot)':'var(--cp-primary)',barFg:ban?'var(--cp-on-hot)':'var(--cp-on-primary)',barFill:'0%'});
+        if(mob) v.cardMin='100%';
+      }
+      if(st==='order'){ v.hasPlayOrder=true; BN('Die Reihenfolge steht. Los geht’s mit Counter-Strike 2!',{bnIcon:'list-ordered'});
+        v.playOrder=[['Counter-Strike 2',8],['Overcooked 2',1],['Rocket League',1],['Halo Infinite',8],['GeoGuessr',8],['Mario Kart 8',1]].map(([title,t],i)=>({no:String(i+1),t,tn:TN[t],bg:i===0?'var(--cp-primary)':'var(--cp-surface)',fg:i===0?'var(--cp-on-primary)':'var(--cp-ink)',g:{title,players:'2–8',fmt:'Teams',layout:'row',state:'picked',team:t,order:i+1}})); }
+    }
+    // ---------- 14 loser's pick ----------
+    if(C.k==='loser'){
+      v.pillText='Spiel 4 von 6';
+      if(st==='turn'||st==='repick'){ me='Ben'; myTeam=4; }
+      if(st==='turn'||st==='wait'||st==='repick'){
+        v.hasGrid=true; const turn=st!=='wait';
+        if(st==='repick') TEAMBN(4,'Veto! Ihr wählt nochmal.','Nacht Eulen hat Codenames abgelehnt (Veto von Olli). Codenames ist raus aus dem Pool.');
+        else if(turn) TEAMBN(4,'Ihr seid Letzter: Ihr sucht Spiel 4 aus','Danach haben die anderen 60 Sekunden für ein Veto.');
+        else TEAMBN(4,'Käse Turbo sucht Spiel 4 aus','Gleich startet der Clip und das Veto-Fenster.');
+        v.gridHead='Pool: 7 Spiele'; v.gridSub='Rocket League, Mario Kart 8, Counter-Strike 2 sind gespielt';
+        v.cards=['Overcooked 2','Codenames','Trackmania','Halo Infinite','GeoGuessr','Gang Beasts','Tetris 99'].map(title=>G(title,{state:st==='repick'&&title==='Codenames'?'vetoed':'default',team:8,selected:turn&&title===(st==='repick'?'Overcooked 2':'Codenames'),layout:mob?'row':'card'}));
+        if(turn) BAR({barTitle:'Käse Turbo wählt',barSub:'Erst wählen, dann 1 s halten.',barBtn:st==='repick'?'Overcooked 2 wählen':'Codenames wählen',barIcon:'hand',barBg:'var(--cp-primary)',barFg:'var(--cp-on-primary)',barFill:'0%'});
+        if(mob) v.cardMin='100%';
+      }
+      if(st==='veto'){ v.hasClip=true; v.clipGame='Codenames'; v.lift=96; v.emote=desk; v.vetoLeft=vetoLeft(); BN('Käse Turbo wählt Codenames.',{bnSub:'60 Sekunden für Vetos. Bei Veto wählt Käse Turbo nochmal.',bnIcon:'hand'});
+        v.parties=[party(1,'sealed'),party(8,'sealed'),party(2,'sealed'),{...party(4,'none'),s:'hat gewählt, kein Veto möglich'}]; v.parties[0]={...v.parties[0],sealed:false,s:'2 Vetos übrig'}; v.partiesHead='Vetos: werden bei 0:00 aufgedeckt';
+        BAR({barTimer:true,barAria:'Veto',barTitle:'Euer Team: 2 Vetos übrig',barSub:'Codenames ablehnen? Dann muss Käse Turbo nochmal ran.',barBtn:'Veto',barIcon:'ban',barFill:'60%'}); v.timer='0:51'; }
+      if(st==='tie'){ me='Sanne'; isHost=true; v.hasWheel=true; v.wheelSpin=true; v.wheelGames=['Overcooked 2','Codenames','Trackmania','Halo Infinite','GeoGuessr','Gang Beasts','Tetris 99']; v.vetoLeft=vetoLeft(); v.wheelNote='Danach Veto-Fenster wie immer.';
+        BN('Käse Turbo und Team Orange teilen sich den letzten Platz.',{bnSub:'Also entscheidet das Glücksrad über Spiel 4.',bnIcon:'scale'}); v.dock=[['Rad drehen','ferris-wheel','p'],['Spiel setzen','gamepad-2']]; }
+    }
+    // ---------- 15 admin ----------
+    if(C.k==='admin'){
+      v.pillText='Spiel 4 von 6';
+      if(st==='host'){ me='Sanne'; isHost=true; v.hasGrid=true; BN('Du wählst Spiel 4.',{bnSub:'Admin-Wahl: kein Rad, keine Vetos.',bnIcon:'crown'}); v.gridHead='Pool'; v.gridSub='oder die ganze Bibliothek durchsuchen';
+        v.cards=['Overcooked 2','Codenames','Trackmania','Halo Infinite','GeoGuessr','Gang Beasts','Tetris 99','Uno'].map(title=>G(title,{selected:title==='Halo Infinite',layout:mob?'row':'card'})); if(mob) v.cardMin='100%';
+        BAR({barTitle:'Halo Infinite',barSub:'Clip startet sofort für alle.',barBtn:'Als Spiel 4 setzen',barIcon:'check',barBg:'var(--cp-primary)',barFg:'var(--cp-on-primary)',barHoldTag:false}); }
+      if(st==='player'){ v.hasWait=true; v.hasBanner=false; v.waitState='think'; v.waitTitle='Sanne sucht Spiel 4 aus …'; v.waitText='Admin-Wahl: kein Rad, keine Vetos. Holt euch schon mal was zu trinken.'; }
+      if(st==='set'){ v.hasClip=true; v.clipGame='Halo Infinite'; v.clipCols='1fr'; v.parties=[]; v.partiesHead=''; BN('Sanne setzt Halo Infinite.',{bnSub:'Clip läuft, danach wird gespielt. Kein Veto in diesem Modus.',bnIcon:'crown'}); }
+    }
+    // ---------- 16 result ----------
+    if(C.k==='result'){
+      me='Sanne'; isHost=st!=='player'; if(isHost) v.emote=desk;
+      if(st==='player'){ me='Kitty'; v.hasWait=true; v.hasBanner=false; v.waitState='suspense'; v.waitTitle='Sanne trägt das Ergebnis ein …'; v.waitText='Counter-Strike 2, Spiel 3 von 6. Gleich bewegt sich die Tabelle.'; v.hasLb=true; v.lbStamp=false; v.lbConfetti=false; v.lbCb=false; v.lbKick='Nach Spiel 2 von 6'; }
+      else { v.hasResult=true; v.hasBanner=false; v.resSide=true; v.history=histRows(hist,st==='correct'?1:-1);
+        const ffa=st==='ffa', corr=st==='correct';
+        const rows=ffa?[['Bea',3,'1',false],['Olli',8,'2',false],['Kitty',1,'2',true],['Tom',2,'4',false],['Ida',4,'5',false],['Jo',5,'6',false]]:corr?[[8,'1',false],[1,'2',false],[2,'3',false],[4,'4',false]]:[[8,'1',false],[1,'2',false],[2,'2',true],[4,'4',false]];
+        const PT=ffa?{1:5,2:4,4:2,5:1,6:0}:{1:3,2:2,3:1,4:0};
+        v.resRows=rows.map((r,i)=>{ const name=ffa?r[0]:TN[r[0]], t=ffa?r[1]:r[0], p=ffa?r[2]:r[1], tie=ffa?r[3]:r[2];
+          return {name,t,p,pts:'+'+(PT[p]??0),pbg:p==='1'?'var(--cp-primary)':'var(--cp-surface)',pfg:p==='1'?'var(--cp-on-primary)':'var(--cp-ink)',gap:i>0,tie,tbs:tie?'solid':'dashed',tbg:tie?'var(--cp-ink)':'transparent',tfg:tie?'var(--cp-paper)':'var(--cp-ink-2)',score:ffa?'':['16','12','12','8'][i]||'',sc:'var(--cp-ink)',bd:i===1&&!ffa&&!corr?'3px solid var(--cp-focus)':'var(--cp-bw) solid var(--cp-line)',sh:i===1&&!ffa&&!corr?'var(--cp-shadow-lift)':'none',tf:i===1&&!ffa&&!corr?'translateX(4px) rotate(-.6deg)':'none'}; });
+        if(ffa) v.resRows.forEach(r=>{r.score='Score';r.sc='var(--cp-ink-3)';});
+        v.resKick=corr?'Korrektur: Spiel 2 von 6':ffa?'Spiel 3 von 6, Jeder gegen jeden':'Spiel 3 von 6'; v.resGame=corr?'Mario Kart 8':ffa?'Mario Kart 8':'Counter-Strike 2'; v.resCorr=corr; v.resCta=corr?'Korrektur speichern':'Ergebnis speichern';
+        if(corr) v.notes2=[{icon:'info',bg:'var(--cp-info)',host:false,t:'Die Tabelle rechnet nach dem Speichern neu, für alle sichtbar. Im Feed steht „Sanne hat Spiel 2 korrigiert“.'}];
+        if(ffa){ v.sessTitle='Mario-Kart-Marathon'; v.history=histRows([['Mario Kart 8',3,'',false],['Mario Kart 8',8,'',false]]); v.history.forEach((h,i)=>{h.wn=['Bea','Olli'][i];}); }
+      }
+    }
+    // ---------- 17 leaderboard ----------
+    if(C.k==='board'||(C.k==='result'&&st==='player')){
+      const cel=C.k==='board'&&st==='celebrate';
+      v.hasLb=true; if(C.k==='board'){ v.hasBanner=false; v.lbStamp=cel; v.lbConfetti=cel; v.lbCb=cel; v.lbKick=cel?'Nach Spiel 3 von 6':'Nach Spiel 3 von 6'; }
+      const R=C.k==='board'?[[8,'1.',8,'+3','arrow-up'],[1,'2.',7,'+2','arrow-down'],[2,'2.',7,'+2','arrow-up'],[4,'4.',3,'+0','']]:[[1,'1.',5,'',''],[8,'1.',5,'',''],[2,'3.',4,'',''],[4,'4.',3,'','']];
+      v.lbRows=R.map(([t,rank,pts,delta,dIcon])=>({t,rank,pts:String(pts),delta:cel?delta:'',dIcon:dIcon||'minus',dfg:dIcon==='arrow-up'?'var(--cp-on-success)':'var(--cp-ink)',dbg:dIcon==='arrow-up'?'var(--cp-success)':dIcon==='arrow-down'?'var(--cp-surface)':'var(--cp-paper-2)',name:TN[t],rbg:rank==='1.'?'var(--cp-primary)':'var(--cp-surface)',rfg:rank==='1.'?'var(--cp-on-primary)':'var(--cp-ink)',bd:rank==='1.'?'3px solid var(--cp-line)':'var(--cp-bw) solid var(--cp-line)',sh:rank==='1.'?'var(--cp-shadow-sm)':'none'}));
+      v.history=histRows(C.k==='board'?[...hist.map((h,i)=>i===1?[h[0],h[1],h[2],true]:h),['Counter-Strike 2',8,'16:12',false]]:hist);
+      v.upNext=C.k==='board'?['4','5','6']:['3','4','5','6'];
+      const CC=['var(--cp-primary)','var(--cp-mint)','var(--cp-pop)','var(--cp-cobalt)','var(--cp-hot)'];
+      v.confetti=Array.from({length:16},(_,i)=>({x:(6+((i*37)%88))+'%',y:(-6+((i*53)%12))+'%',w:(10+(i%3)*4)+'px',h:(6+(i%2)*6)+'px',c:CC[i%5],r:((i*47)%180-90)+'deg'}));
+      if(C.k==='board') hostDock([['Rad drehen','ferris-wheel','p'],['Spiel setzen','gamepad-2']]);
+      if(C.k==='board') isHost=false;
+    }
+    // ---------- 18 tiebreaker ----------
+    if(C.k==='tie'){
+      v.pillText='Tiebreaker';
+      if(st==='announce'||st==='again'){ v.hasTie=true; v.hasBanner=false; v.tied=[[1,15,true],[8,15,false]].map(([t,pts,vs])=>({t,n:TN[t],pts:String(pts),vs}));
+        v.tieTitle=st==='again'?'Schon wieder gleich!':'Gleichstand auf Platz 1!'; v.tieText=st==='again'?'Gang Beasts endete unentschieden. Das Tiebreaker-Rad dreht nochmal. Gang Beasts ist runter.':'Nach 6 Spielen: Spiel 7 entscheidet. Nur Wilde Gurken und Nacht Eulen spielen, alle anderen fiebern mit. Übrige Vetos zählen noch.'; v.emote=true; }
+      if(st==='wheel'){ v.hasWheel=true; v.wheelSpin=S.role==='host'; v.wheelGames=['Gang Beasts','GeoGuessr','Uno']; v.vetoLeft=vetoLeft([1,8],{1:1,8:2}); v.wheelNote='Tiebreaker-Pool: 3 Spiele. Team Orange und Käse Turbo schauen zu.'; BN('Tiebreaker: das eigene Rad dreht.',{bnSub:'Wilde Gurken gegen Nacht Eulen. Wer Spiel 7 gewinnt, gewinnt alles.',bnIcon:'swords'}); }
+      if(st==='clip'){ v.hasClip=true; v.clipGame='Gang Beasts'; v.lift=96; v.emote=desk; v.parties=[party(1,'sealed'),party(8,'sealed'),party(2,'out'),party(4,'out')]; v.parties[0]={...v.parties[0],sealed:false,s:'1 Veto übrig'}; v.parties[1]={...v.parties[1],s:'keine Vetos mehr'}; v.parties[1].sealed=false; v.partiesHead='Nur die Punktgleichen dürfen';
+        BN('Tiebreaker: Gang Beasts.',{bnSub:'Euer letztes Veto ist noch da.',bnIcon:'swords'}); BAR({barTimer:true,barAria:'Veto',barTitle:'Euer Team: 1 Veto übrig',barSub:'Nacht Eulen hat keins mehr.',barBtn:'Veto',barIcon:'ban',barFill:'0%'}); v.timer='0:55'; }
+      if(isHost){ me='Sanne'; if(st==='announce'||st==='again') v.dock=[['Tiebreaker-Rad öffnen','ferris-wheel','p'],['Spiel setzen','gamepad-2']]; if(st==='wheel') v.dock=[['Rad drehen','ferris-wheel','p'],['Spiel setzen','gamepad-2']];
+        if(st==='clip'){ v.hasBar=false; v.parties=[party(1,'sealed'),party(8,'sealed'),party(2,'out'),party(4,'out')]; v.partiesHead='Vetos: auch du siehst sie erst bei 0:00'; v.dock=[['Clip überspringen','skip-forward'],['Spiel setzen','gamepad-2']]; } }
+      if(st==='clip'&&!isHost) v.barNx='';
+      v.sessTitle='Freitags-Zocken';
+    }
+    v.me=me; v.isHost=isHost; if(!isHost&&v.dock.length&&C.k!=='board') v.dock=[];
+    v.lift=v.hasBar?(desk?96:150):0; v.emoteMini=mob&&v.hasBar;
+    return v;
+  }
+}
+</script>
+</body>
+</html>

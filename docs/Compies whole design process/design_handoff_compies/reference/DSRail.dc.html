@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<aside aria-label="Design-System-Navigation" style="position:{{ L.pos }};top:0;align-self:flex-start;z-index:10;box-sizing:border-box;width:{{ L.w }};height:{{ L.h }};overflow-y:auto;flex:none;background:var(--cp-paper);border-right:{{ L.br }};border-bottom:{{ L.bb }};padding:20px 18px;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <dc-import name="Compibert" dir="{{ cbDir }}" variant="head" size="{{ 48 }}" hint-size="48px,48px"></dc-import>
+    <div style="display:flex;flex-direction:column;gap:2px;line-height:1">
+      <span style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;text-transform:uppercase">Compies</span>
+      <span style="font-size:13px;color:var(--cp-ink-2)">Design System v1.0</span>
+    </div>
+  </div>
+  <nav aria-label="Design-System-Seiten" style="display:flex;flex-direction:{{ L.nav }};gap:2px;overflow-x:auto;scrollbar-width:none">
+    <sc-for list="{{ pages }}" as="pg" hint-placeholder-count="8">
+      <sc-if value="{{ pg.cur }}"><span aria-current="page" style="flex:none;display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;background:var(--cp-ink);color:var(--cp-paper);font-weight:700;white-space:nowrap">{{ pg.n }}</span></sc-if>
+      <sc-if value="{{ pg.link }}"><a href="{{ pg.href }}" style="flex:none;display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;font-weight:700;text-decoration:none;white-space:nowrap">{{ pg.n }}</a></sc-if>
+      <sc-if value="{{ pg.soon }}"><span title="Folgt in einem späteren Block" style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;padding:0 12px;color:var(--cp-ink-2);white-space:nowrap">{{ pg.n }}<span style="font-size:12px">folgt</span></span></sc-if>
+    </sc-for>
+  </nav>
+  <sc-if value="{{ L.toc }}">
+    <div style="display:flex;flex-direction:column;gap:2px;padding-top:16px;border-top:2px solid var(--cp-line-soft)">
+      <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2);padding:0 12px 6px">On this page</span>
+      <sc-for list="{{ toc }}" as="tc" hint-placeholder-count="8"><a href="{{ tc.href }}" style="display:flex;align-items:center;min-height:36px;padding:0 12px;border-radius:10px;text-decoration:none">{{ tc.n }}</a></sc-for>
+    </div>
+  </sc-if>
+  <div style="margin-top:auto;display:flex;flex-wrap:wrap;gap:8px">
+    <div role="group" aria-label="Farbmodus" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+      <button type="button" onClick="{{ setLight }}" aria-pressed="{{ isLight }}" style="display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:0;cursor:pointer;font-weight:700;font-size:13px;background:{{ lightBg }};color:var(--cp-ink)"><dc-import name="Icon" icon="sun" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Hell</button>
+      <button type="button" onClick="{{ setDark }}" aria-pressed="{{ isDark }}" style="display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:0;border-left:2px solid var(--cp-line);cursor:pointer;font-weight:700;font-size:13px;background:{{ darkBg }};color:{{ darkInk }}"><dc-import name="Icon" icon="moon" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Dunkel</button>
+    </div>
+    <button type="button" onClick="{{ toggleMute }}" aria-pressed="{{ muted }}" aria-label="{{ muteLabel }}" title="{{ muteLabel }}" style="display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);cursor:pointer"><dc-import name="Icon" icon="{{ muteIcon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></button>
+    <button type="button" onClick="{{ toggleMotion }}" aria-pressed="{{ isReduced }}" style="display:flex;align-items:center;gap:6px;height:44px;padding:0 14px;border:2px solid var(--cp-line);border-radius:999px;background:{{ motionBg }};cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap"><dc-import name="Icon" icon="sparkles" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ motionLabel }}</button>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:260,&quot;height&quot;:800},&quot;cur&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;basics&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;muted&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;wide&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;toc&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{n:string,href:string}[]&quot;},&quot;setLight&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;setDark&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;toggleMotion&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;toggleMute&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+const PAGES=[['foundations','Foundations','DS Foundations.dc.html'],['basics','Basics','DS Basics.dc.html'],['people','People & teams','DS People.dc.html'],['game','Game & selection','DS Game.dc.html'],['scoring','Scoring','DS Scoring.dc.html'],['comms','Communication','DS Communication.dc.html'],['frame','Frame','DS Frame.dc.html'],['smoke','Smoke','DS Smoke.dc.html'],['docs','Handoff','DS Handoff.dc.html']];
+class Component extends DCLogic {
+  renderVals(){
+    const p=this.props, dark=p.mode==='dark', rm=p.motion==='reduced', W=p.wide!==false;
+    const L=W?{pos:'sticky',w:'260px',h:'100vh',br:'var(--cp-bw) solid var(--cp-line)',bb:'0',nav:'column',toc:true}:{pos:'relative',w:'100%',h:'auto',br:'0',bb:'var(--cp-bw) solid var(--cp-line)',nav:'row',toc:false};
+    const pages=PAGES.map(([id,n,href])=>{const cur=id===p.cur;return {n,href,cur,link:!cur&&!!href,soon:!cur&&!href};});
+    return {L,pages,toc:p.toc||[],cbDir:dark?'m3b':'m3a',isLight:!dark,isDark:dark,lightBg:dark?'transparent':'var(--cp-primary)',darkBg:dark?'var(--cp-primary)':'transparent',darkInk:dark?'var(--cp-on-primary)':'var(--cp-ink)',
+      setLight:p.setLight,setDark:p.setDark,toggleMotion:p.toggleMotion,toggleMute:p.toggleMute,muted:!!p.muted,isReduced:rm,
+      motionLabel:rm?'Bewegung: reduziert':'Bewegung: voll',motionBg:rm?'var(--cp-info)':'var(--cp-surface)',muteIcon:p.muted?'volume-x':'volume-2',muteLabel:p.muted?'Ton einschalten':'Ton ausschalten'};
+  }
+}
+</script>
+</body>
+</html>

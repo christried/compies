@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="./compibert-options.js"></script>
+<script src="./compibert-decisions.js"></script>
+<style>body{margin:0;background:#f3e8d4;font-family:'Bricolage Grotesque',system-ui,sans-serif;color:#151515}a{color:#151515}a:hover{color:#1f5fe0}button{font:inherit;color:inherit}button:focus-visible{outline:3px solid #1f5fe0;outline-offset:3px}.dv-turn{padding:48px 52px 44px;border-bottom:2px solid rgba(21,21,21,.12);scroll-margin-top:16px}.dv-thd{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 40px;margin:0 0 26px;max-width:1800px}.dv-tid{font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:#151515;color:#fff;border-radius:4px;text-decoration:none}.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:rgba(21,21,21,.1);color:#151515;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:500 12px/1.3 'Bricolage Grotesque',sans-serif;color:#5d5650}.dv-opt:target .dv-oid{background:#1f5fe0;color:#fff}.dv-card{width:560px;max-width:100%;background:#fffdf8;border:3px solid #151515;border-radius:14px;box-shadow:6px 6px 0 #151515;overflow:hidden}.dv-hd{display:flex;flex-direction:column;gap:6px;padding:20px 24px 16px}.dv-h{margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:40px;line-height:.92}.dv-p{margin:0;font-size:15px;line-height:1.45;color:#5d5650;text-wrap:pretty}.dv-stage{position:relative;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;border-top:3px solid #151515;border-bottom:3px solid #151515;touch-action:none}.dv-ctl{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding:12px 24px;border-bottom:2px solid rgba(21,21,21,.16)}.dv-btn{height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;box-shadow:3px 3px 0 #151515;font-weight:700;font-size:15px;cursor:pointer}.dv-btn:active{transform:translate(3px,3px);box-shadow:none}.dv-meta{font:500 12px/1.45 'JetBrains Mono',monospace;color:#5d5650;flex:1;min-width:180px}.dv-pc{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 24px 20px}.dv-pc b{font-size:12px;letter-spacing:.08em;text-transform:uppercase}.dv-pc ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:14px;line-height:1.4}.dv-rec{display:flex;flex-direction:column;gap:6px;max-width:440px;padding:14px 18px;background:#fffdf8;border:2.5px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515;font-size:14px;line-height:1.45}.dv-em{width:64px;height:64px;border:2.5px solid #151515;border-radius:14px;background:#fff3df;box-shadow:3px 3px 0 #151515;cursor:pointer;display:grid;place-items:center;padding:0;overflow:hidden}.dv-em:active{transform:translate(3px,3px);box-shadow:none}</style>
+</helmet>
+<div ref="{{ root }}" lang="de">
+
+<section class="dv-turn" id="t0" style="padding-bottom:20px">
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:900px">
+    <h1 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:76px;line-height:.9">Die großen Entscheidungen.</h1>
+    <p style="margin:0;font-size:18px;line-height:1.5;text-wrap:pretty"><b>Entschieden:</b> <a class="dv-oid" href="#3b">3b</a> <a class="dv-oid" href="#4a">4a</a> <a class="dv-oid" href="#5a">5a</a> <a class="dv-oid" href="#6b">6b</a> <a class="dv-oid" href="#7a">7a</a>. The final specs live in <a href="Compibert Rig.dc.html">Compibert Rig</a>.</p><p style="margin:0;font-size:18px;line-height:1.5;text-wrap:pretty">Five decisions for Compibert (2b): boot, presence in the app, interaction, award ceremony and emotes. Every option runs live on the real rig. Hit „Abspielen“, or poke and drag where it says so. Each section ends with my pick, so you can just say „passt“ or override.</p>
+  </div>
+</section>
+
+<section class="dv-turn" id="t3">
+  <div class="dv-thd">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:820px"><div style="display:flex;align-items:baseline;gap:10px"><a class="dv-tid" href="#t3">3</a><span style="font-weight:700;font-size:13px">Boot</span></div><h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:54px;line-height:.95">Wie startet die App?</h2><p style="margin:0;font-size:16px;line-height:1.5;color:#5d5650;text-wrap:pretty">The first second people see. Plays on the first visit of a session; returning within 24 h skips straight to the content. Reduced motion: wordmark and Compibert fade in, 200 ms.</p></div>
+    <div class="dv-rec"><b>Meine Wahl: <a class="dv-oid" href="#3b">3b</a> + <a class="dv-oid" href="#3c">3c</a></b><span>Sprint-in on the first visit, because it sells the sprinter body. The O-peek for every load after that, as the loading indicator.</span></div>
+  </div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Origin story</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Ausbrüten</h3><p class="dv-p">An egg wobbles, cracks, the lid flies off and Compibert pops out cheering. The wordmark drops in beside him.</p></div>
+        <div class="dv-stage" data-scene="3a" style="height:340px">
+          <div data-k="grp" style="position:absolute;inset:0">
+            <div style="position:absolute;left:190px;top:290px;width:180px;height:16px;border-radius:50%;background:rgba(21,21,21,.14)"></div>
+            <div data-k="cbw" style="position:absolute;left:210px;top:176px;width:140px;height:119px"><div data-rig="F2" data-view="full" data-id="b3a" style="width:100%;height:100%"></div></div>
+            <div data-k="egg" style="position:absolute;left:205px;top:110px;width:150px;height:188px">
+              <svg viewBox="0 0 120 150" width="100%" height="100%" style="overflow:visible;display:block">
+                <path d="M10 70L22.5 62L35 78L47.5 62L60 78L72.5 62L85 78L97.5 62L110 70A50 72 0 0 1 10 70Z" style="fill:#fffdf8;stroke:#151515;stroke-width:4;stroke-linejoin:round"></path>
+                <circle cx="30" cy="96" r="6" style="fill:#2ec4b6;stroke:#151515;stroke-width:2.5"></circle><circle cx="64" cy="112" r="9" style="fill:#2ec4b6;stroke:#151515;stroke-width:2.5"></circle><circle cx="92" cy="94" r="5" style="fill:#ff70c3;stroke:#151515;stroke-width:2.5"></circle><circle cx="50" cy="130" r="5" style="fill:#ff70c3;stroke:#151515;stroke-width:2.5"></circle>
+                <g data-k="top"><path d="M10 70L22.5 62L35 78L47.5 62L60 78L72.5 62L85 78L97.5 62L110 70A50 62 0 0 0 10 70Z" style="fill:#fffdf8;stroke:#151515;stroke-width:4;stroke-linejoin:round"></path><circle cx="38" cy="40" r="7" style="fill:#2ec4b6;stroke:#151515;stroke-width:2.5"></circle><circle cx="68" cy="26" r="5" style="fill:#ff70c3;stroke:#151515;stroke-width:2.5"></circle><circle cx="86" cy="48" r="6" style="fill:#2ec4b6;stroke:#151515;stroke-width:2.5"></circle></g>
+                <path data-k="crack" d="M10 70L22.5 62L35 78L47.5 62L60 78L72.5 62L85 78L97.5 62L110 70" style="fill:none;stroke:#151515;stroke-width:4.5;stroke-linejoin:round;stroke-linecap:round"></path>
+              </svg>
+            </div>
+          </div>
+          <div style="position:absolute;left:296px;top:150px;display:flex;gap:1px;font-family:'Lilita One',sans-serif;font-size:56px;line-height:1">
+            <span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">C</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ff70c3">O</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #2ec4b6">M</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">P</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ff70c3">I</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #2ec4b6">E</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">S</span>
+          </div>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="3a">Abspielen</button><span class="dv-meta">≈ 3.4 s, tap to skip. Egg = 1 extra asset.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Origin story, people remember it</li><li>Reuses Jubeln and Winken from the rig</li><li>The egg can return as the empty-lobby motif</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Longest; needs tap-to-skip</li><li>A second asset to keep on-model</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="3b"><div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>Shows the sprinter<span style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:5px;background:#ffd23f;border:2px solid #151515;color:#151515">Gewählt</span></div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Reinsprinten</h3><p class="dv-p">He sprints in from the left, the letters spring up behind him, he skids to a stop in a puff of dust and waves.</p></div>
+        <div class="dv-stage" data-scene="3b" style="height:340px">
+          <div style="position:absolute;left:0;right:0;top:292px;height:3px;background:#151515"></div>
+          <div style="position:absolute;left:24px;top:214px;display:flex;gap:1px;font-family:'Lilita One',sans-serif;font-size:66px;line-height:1">
+            <span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">C</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ff70c3">O</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #2ec4b6">M</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">P</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ff70c3">I</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #2ec4b6">E</span><span data-k="L" style="display:inline-block;text-shadow:3px 3px 0 #ffd23f">S</span>
+          </div>
+          <div data-k="cbw" style="position:absolute;left:378px;top:160px;width:160px;height:136px">
+            <div data-k="sl" style="position:absolute;left:-80px;top:44px;width:76px;height:6px;border-radius:3px;background:#151515"></div>
+            <div data-k="sl" style="position:absolute;left:-104px;top:66px;width:96px;height:6px;border-radius:3px;background:#151515"></div>
+            <div data-k="sl" style="position:absolute;left:-66px;top:88px;width:56px;height:6px;border-radius:3px;background:#151515"></div>
+            <div data-k="dust" style="position:absolute;left:52px;top:112px;width:22px;height:22px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div>
+            <div data-k="dust" style="position:absolute;left:40px;top:116px;width:18px;height:18px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div>
+            <div data-k="dust" style="position:absolute;left:30px;top:118px;width:14px;height:14px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515"></div>
+            <div data-rig="F2" data-view="full" data-id="b3b" style="position:absolute;inset:0"></div>
+          </div>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="3b">Abspielen</button><span class="dv-meta">≈ 1.4 s + wave. New state: run (0.3 s cycle).</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Sells the sprinter body on day one</li><li>Fast, reads as „los geht’s“</li><li>Run cycle pays off again in ceremony and battle replay</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Wide: on mobile the letters need two rows</li><li>A sloppy run cycle would look cheap</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="3c"><div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>Logo, boot and loader in one</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Kopf aus dem O</h3><p class="dv-p">The wordmark pops in, his head peeks out of the O, looks around, winks. The same O-peek then loops as the loading indicator.</p></div>
+        <div class="dv-stage" data-scene="3c" style="height:340px">
+          <div style="position:absolute;left:0;right:0;top:104px;display:flex;justify-content:center;align-items:center;gap:3px;font-family:'Lilita One',sans-serif;font-size:96px;line-height:1">
+            <span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ffd23f">C</span>
+            <div data-k="hole" style="position:relative;width:92px;height:92px;margin:6px 2px 0;border-radius:50%;background:#151515;border:4px solid #151515;box-shadow:4px 4px 0 #ff70c3;overflow:hidden;flex:none"><div data-k="head" style="position:absolute;inset:0"><div data-rig="F2" data-view="head" data-id="b3c" style="width:100%;height:100%"></div></div></div>
+            <span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #2ec4b6">M</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ffd23f">P</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ff70c3">I</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #2ec4b6">E</span><span data-k="L" style="display:inline-block;text-shadow:4px 4px 0 #ffd23f">S</span>
+          </div>
+          <span data-k="status" style="position:absolute;left:0;right:0;top:236px;text-align:center;font-weight:700;font-size:16px">Lobby lädt …</span>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="3c">Abspielen</button><span class="dv-meta">≈ 1.2 s to the wink. Loader: head bob 0.9 s, head view only.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Works at any screen size</li><li>One idea for logo, boot and loading</li><li>Cheap: head view only</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Least spectacle</li><li>The body never shows at start</li></ul></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="dv-turn" id="t4">
+  <div class="dv-thd">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:820px"><div style="display:flex;align-items:baseline;gap:10px"><a class="dv-tid" href="#t4">4</a><span style="font-weight:700;font-size:13px">Präsenz (Rauchtest)</span></div><h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:54px;line-height:.95">Wo lebt Compibert in der App?</h2><p style="margin:0;font-size:16px;line-height:1.5;color:#5d5650;text-wrap:pretty">How much of him is on screen between the big moments. Shown on a cut-down lobby from the smoke test. Hit „Drehen“ in each mock: same wheel spin, three ways he takes part.</p></div>
+    <div class="dv-rec"><b>Meine Wahl: <a class="dv-oid" href="#4a">4a</a>, with the hop from <a class="dv-oid" href="#4c">4c</a> for the wheel</b><span>The game stays the star and every appearance feels like an event. A permanent sidekick gets old by the third game night.</span></div>
+  </div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="4a"><div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>Calm UI, big moments<span style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:5px;background:#ffd23f;border:2px solid #151515;color:#151515">Gewählt</span></div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Logo + Auftritte</h3><p class="dv-p">In the UI he is only the header logo. The full body shows up for big moments (wheel, wins, empty states, ceremony), then leaves.</p></div>
+        <div class="dv-stage" data-scene="4a" style="height:340px">
+          <div style="position:absolute;left:0;top:0;right:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#fffdf8;border-bottom:3px solid #151515;z-index:2;box-sizing:border-box"><div data-rig="F2" data-view="head" data-id="p4aLogo" style="width:30px;height:30px"></div><span style="font-family:'Lilita One',sans-serif;font-size:20px">COMPIES</span><span style="margin-left:auto;font-size:12px;font-weight:700;color:#5d5650">Spieleabend · Lobby</span></div>
+          <span style="position:absolute;left:16px;top:62px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Teams</span>
+          <div style="position:absolute;left:16px;top:84px;width:108px;height:136px;background:#fffdf8;border:3px solid #151515;border-radius:10px;box-shadow:4px 4px 0 #151515;overflow:hidden"><div style="height:28px;background:#009e73;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 8px;font-weight:800;font-size:12px">Kaktus</div><div style="display:flex;flex-direction:column;gap:6px;padding:8px;font-size:12px;font-weight:600"><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ff70c3;display:grid;place-items:center;font-size:10px;font-weight:800">MI</span>Mia</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#3a86ff;display:grid;place-items:center;font-size:10px;font-weight:800">JO</span>Jonas</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ffd23f;display:grid;place-items:center;font-size:10px;font-weight:800">LE</span>Lea</div></div></div>
+          <div style="position:absolute;left:136px;top:84px;width:108px;height:136px;background:#fffdf8;border:3px solid #151515;border-radius:10px;box-shadow:4px 4px 0 #151515;overflow:hidden"><div style="height:28px;background:#e4572e;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 8px;font-weight:800;font-size:12px">Raptoren</div><div style="display:flex;flex-direction:column;gap:6px;padding:8px;font-size:12px;font-weight:600"><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#2ec4b6;display:grid;place-items:center;font-size:10px;font-weight:800">BE</span>Ben</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ff70c3;display:grid;place-items:center;font-size:10px;font-weight:800">SA</span>Sami</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ffd23f;display:grid;place-items:center;font-size:10px;font-weight:800">TI</span>Tim</div></div></div>
+          <div style="position:absolute;left:264px;top:60px;width:280px;height:264px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:6px 6px 0 #151515;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:18px">
+            <div style="position:relative;width:168px;height:168px;flex:none"><div data-k="wheel" style="width:100%;height:100%;border-radius:50%;border:3px solid #151515;box-sizing:border-box;background:conic-gradient(#ffd23f 0 60deg,#ff70c3 0 120deg,#2ec4b6 0 180deg,#3a86ff 0 240deg,#ff4f4f 0 300deg,#fffdf8 0 360deg)"></div><div style="position:absolute;left:50%;top:-10px;margin-left:-10px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:20px solid #151515"></div><div style="position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#151515"></div></div>
+            <div style="display:flex;align-items:center;gap:10px"><button type="button" class="dv-btn" data-play="4a" style="height:40px">Drehen</button><span data-k="res" style="padding:6px 12px;border:2.5px solid #151515;border-radius:999px;background:#2ec4b6;font-weight:800;font-size:13px">Kaktus</span></div>
+          </div>
+          <div data-k="cbw" style="position:absolute;left:146px;top:216px;width:150px;height:128px;z-index:3"><div data-rig="F2" data-view="full" data-id="p4a" style="width:100%;height:100%"></div></div>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="4a">Abspielen</button><span class="dv-meta">Placements: header logo, 6 moment slots (wheel, win, empty, error, ceremony, boot).</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Calm screens; the game is the star</li><li>Every appearance feels like an event</li><li>Easiest to build: few, fixed slots</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>No company between moments</li><li>The logo has to carry the character most of the time</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="4b"><div class="dv-olabel"><a class="dv-oid" href="#4b">4b</a>Always there, with a voice</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Sidekick</h3><p class="dv-p">A bust in a dock in the corner that is always there, comments in speech bubbles and reacts to everything. Can be collapsed.</p></div>
+        <div class="dv-stage" data-scene="4b" style="height:340px">
+          <div style="position:absolute;left:0;top:0;right:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#fffdf8;border-bottom:3px solid #151515;z-index:2;box-sizing:border-box"><span style="font-family:'Lilita One',sans-serif;font-size:20px">COMPIES</span><span style="margin-left:auto;font-size:12px;font-weight:700;color:#5d5650">Spieleabend · Lobby</span></div>
+          <span style="position:absolute;left:16px;top:62px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Teams</span>
+          <div style="position:absolute;left:16px;top:84px;width:108px;height:128px;background:#fffdf8;border:3px solid #151515;border-radius:10px;box-shadow:4px 4px 0 #151515;overflow:hidden"><div style="height:28px;background:#009e73;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 8px;font-weight:800;font-size:12px">Kaktus</div><div style="display:flex;flex-direction:column;gap:6px;padding:8px;font-size:12px;font-weight:600"><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ff70c3;display:grid;place-items:center;font-size:10px;font-weight:800">MI</span>Mia</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#3a86ff;display:grid;place-items:center;font-size:10px;font-weight:800">JO</span>Jonas</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ffd23f;display:grid;place-items:center;font-size:10px;font-weight:800">LE</span>Lea</div></div></div>
+          <div style="position:absolute;left:136px;top:84px;width:108px;height:128px;background:#fffdf8;border:3px solid #151515;border-radius:10px;box-shadow:4px 4px 0 #151515;overflow:hidden"><div style="height:28px;background:#e4572e;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 8px;font-weight:800;font-size:12px">Raptoren</div><div style="display:flex;flex-direction:column;gap:6px;padding:8px;font-size:12px;font-weight:600"><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#2ec4b6;display:grid;place-items:center;font-size:10px;font-weight:800">BE</span>Ben</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ff70c3;display:grid;place-items:center;font-size:10px;font-weight:800">SA</span>Sami</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ffd23f;display:grid;place-items:center;font-size:10px;font-weight:800">TI</span>Tim</div></div></div>
+          <div style="position:absolute;left:264px;top:60px;width:280px;height:264px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:6px 6px 0 #151515;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:18px">
+            <div style="position:relative;width:168px;height:168px;flex:none"><div data-k="wheel" style="width:100%;height:100%;border-radius:50%;border:3px solid #151515;box-sizing:border-box;background:conic-gradient(#ffd23f 0 60deg,#ff70c3 0 120deg,#2ec4b6 0 180deg,#3a86ff 0 240deg,#ff4f4f 0 300deg,#fffdf8 0 360deg)"></div><div style="position:absolute;left:50%;top:-10px;margin-left:-10px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:20px solid #151515"></div><div style="position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#151515"></div></div>
+            <div style="display:flex;align-items:center;gap:10px"><button type="button" class="dv-btn" data-play="4b" style="height:40px">Drehen</button><span data-k="res" style="padding:6px 12px;border:2.5px solid #151515;border-radius:999px;background:#2ec4b6;font-weight:800;font-size:13px">Kaktus</span></div>
+          </div>
+          <div style="position:absolute;left:14px;top:230px;display:flex;align-items:flex-start;gap:8px;z-index:3">
+            <div style="position:relative;width:88px;height:88px;flex:none;border-radius:50%;background:#fffdf8;border:3px solid #151515;box-shadow:4px 4px 0 #151515;overflow:hidden"><div data-rig="F2" data-view="bust" data-id="p4b" style="width:100%;height:100%"></div></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px"><div data-k="bub" style="max-width:150px;padding:8px 12px;background:#fffdf8;border:2.5px solid #151515;border-radius:12px 12px 12px 2px;font-weight:700;font-size:13px;line-height:1.25">Wer dreht?</div><span style="font-size:11px;font-weight:700;padding:2px 8px;border:2px solid #151515;border-radius:999px;background:#fbe9cc">– einklappen</span></div>
+          </div>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="4b">Abspielen</button><span class="dv-meta">Dock: bust 88 px, bottom-left desktop, above the tab bar on mobile. Collapsed = head 32 px.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Gives the app a voice; copy can be funny</li><li>One fixed slot, simple layout</li><li>The bubble is a natural home for hints</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Permanent motion; risks getting annoying</li><li>Eats space on mobile</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="4c"><div class="dv-olabel"><a class="dv-oid" href="#4c">4c</a>Lives on the UI</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Mitbewohner</h3><p class="dv-p">He sits on top of cards, hops over to the wheel when it spins, watches, celebrates and hops back.</p></div>
+        <div class="dv-stage" data-scene="4c" style="height:340px">
+          <div style="position:absolute;left:0;top:0;right:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#fffdf8;border-bottom:3px solid #151515;z-index:2;box-sizing:border-box"><div data-rig="F2" data-view="head" data-id="p4cLogo" style="width:30px;height:30px"></div><span style="font-family:'Lilita One',sans-serif;font-size:20px">COMPIES</span><span style="margin-left:auto;font-size:12px;font-weight:700;color:#5d5650">Spieleabend · Lobby</span></div>
+          <div style="position:absolute;left:16px;top:118px;width:108px;height:150px;background:#fffdf8;border:3px solid #151515;border-radius:10px;box-shadow:4px 4px 0 #151515;overflow:hidden"><div style="height:28px;background:#009e73;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 8px;font-weight:800;font-size:12px">Kaktus</div><div style="display:flex;flex-direction:column;gap:6px;padding:8px;font-size:12px;font-weight:600"><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ff70c3;display:grid;place-items:center;font-size:10px;font-weight:800">MI</span>Mia</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#3a86ff;display:grid;place-items:center;font-size:10px;font-weight:800">JO</span>Jonas</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ffd23f;display:grid;place-items:center;font-size:10px;font-weight:800">LE</span>Lea</div></div></div>
+          <div style="position:absolute;left:136px;top:118px;width:108px;height:150px;background:#fffdf8;border:3px solid #151515;border-radius:10px;box-shadow:4px 4px 0 #151515;overflow:hidden"><div style="height:28px;background:#e4572e;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 8px;font-weight:800;font-size:12px">Raptoren</div><div style="display:flex;flex-direction:column;gap:6px;padding:8px;font-size:12px;font-weight:600"><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#2ec4b6;display:grid;place-items:center;font-size:10px;font-weight:800">BE</span>Ben</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ff70c3;display:grid;place-items:center;font-size:10px;font-weight:800">SA</span>Sami</div><div style="display:flex;align-items:center;gap:6px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #151515;background:#ffd23f;display:grid;place-items:center;font-size:10px;font-weight:800">TI</span>Tim</div></div></div>
+          <div style="position:absolute;left:264px;top:60px;width:280px;height:264px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:6px 6px 0 #151515;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:18px">
+            <div style="position:relative;width:168px;height:168px;flex:none"><div data-k="wheel" style="width:100%;height:100%;border-radius:50%;border:3px solid #151515;box-sizing:border-box;background:conic-gradient(#ffd23f 0 60deg,#ff70c3 0 120deg,#2ec4b6 0 180deg,#3a86ff 0 240deg,#ff4f4f 0 300deg,#fffdf8 0 360deg)"></div><div style="position:absolute;left:50%;top:-10px;margin-left:-10px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:20px solid #151515"></div><div style="position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#151515"></div></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-left:70px"><button type="button" class="dv-btn" data-play="4c" style="height:40px">Drehen</button><span data-k="res" style="padding:6px 12px;border:2.5px solid #151515;border-radius:999px;background:#2ec4b6;font-weight:800;font-size:13px">Kaktus</span></div>
+          </div>
+          <div data-k="cbw" data-dx="250" data-dy="190" style="position:absolute;left:22px;top:40px;width:96px;height:82px;z-index:3"><div data-rig="F2" data-view="full" data-id="p4c" style="width:100%;height:100%"></div></div>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="4c">Abspielen</button><span class="dv-meta">Perch spots per layout: card tops, wheel base, leaderboard edge. Hop 0.7 s arc.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Most alive; the signature of the app</li><li>Screenshots look like nobody else’s</li><li>Uses the full rig everywhere</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Every layout needs perch spots; reflow breaks them</li><li>Most engineering: z-index, collisions, mobile</li></ul></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="dv-turn" id="t5">
+  <div class="dv-thd">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:820px"><div style="display:flex;align-items:baseline;gap:10px"><a class="dv-tid" href="#t5">5</a><span style="font-weight:700;font-size:13px">Interaktion</span></div><h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:54px;line-height:.95">Was passiert, wenn man ihn anfasst?</h2><p style="margin:0;font-size:16px;line-height:1.5;color:#5d5650;text-wrap:pretty">These three are live: try them directly on the stage. Eye-follow runs in all of them.</p></div>
+    <div class="dv-rec"><b>Meine Wahl: <a class="dv-oid" href="#5a">5a</a> everywhere, <a class="dv-oid" href="#5b">5b</a> in the empty lobby</b><span>Poking is the toy everyone finds. Dragging is the treat while you wait for the others, where nothing else competes for drag.</span></div>
+  </div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="5a"><div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a>Tap toy<span style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:5px;background:#ffd23f;border:2px solid #151515;color:#151515">Gewählt</span></div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Anstupsen</h3><p class="dv-p">Each tap triggers a random reaction: laugh, hop, wave, squash, shrug. Five taps within two seconds and he gets angry.</p></div>
+        <div class="dv-stage" data-scene="5a" style="height:300px">
+          <div style="position:absolute;left:16px;top:16px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700"><span>Stupser</span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span><span data-k="dot" style="width:14px;height:14px;border-radius:50%;border:2.5px solid #151515"></span></div>
+          <span style="position:absolute;right:16px;top:14px;padding:4px 10px;border:2px solid #151515;border-radius:999px;background:#ffd23f;font-size:12px;font-weight:800">Tipp ihn an</span>
+          <div style="position:absolute;left:0;right:0;top:262px;height:3px;background:#151515"></div>
+          <div data-k="bub" style="position:absolute;left:350px;top:70px;padding:8px 12px;background:#fffdf8;border:2.5px solid #151515;border-radius:12px 12px 12px 2px;font-weight:800;font-size:15px;opacity:0">Hey!</div>
+          <div data-k="cbw" style="position:absolute;left:200px;top:138px;width:150px;height:128px;cursor:pointer"><div data-rig="F2" data-view="full" data-id="i5a" style="width:100%;height:100%"></div></div>
+        </div>
+        <div class="dv-ctl"><span class="dv-meta" style="flex:1">Hit area = his silhouette + 8 px, min 44 px. Same tap on touch and mouse. Reaction 1.5 s, angry 2.6 s.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Instant toy, everyone finds it</li><li>The angry easter egg turns spam into a joke</li><li>Works anywhere he appears</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Needs a clear hit area in small slots</li><li>Gets repetitive without new reactions</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="5b"><div class="dv-olabel"><a class="dv-oid" href="#5b">5b</a>Physical</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Hochheben</h3><p class="dv-p">Grab and drag him around. He dangles, panics, falls when you let go and lands with a squash. Drop him from high up and he is dizzy.</p></div>
+        <div class="dv-stage" data-scene="5b" style="height:300px">
+          <span style="position:absolute;right:16px;top:14px;padding:4px 10px;border:2px solid #151515;border-radius:999px;background:#ffd23f;font-size:12px;font-weight:800">Zieh ihn hoch</span>
+          <div style="position:absolute;left:0;right:0;top:262px;height:3px;background:#151515"></div>
+          <div data-k="cbw" style="position:absolute;left:200px;top:138px;width:150px;height:128px;cursor:grab">
+            <div data-k="dust" style="position:absolute;left:50px;top:108px;width:20px;height:20px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515;opacity:0"></div>
+            <div data-k="dust" style="position:absolute;left:84px;top:110px;width:18px;height:18px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515;opacity:0"></div>
+            <div data-k="dust" style="position:absolute;left:66px;top:112px;width:14px;height:14px;border-radius:50%;background:#fbe9cc;border:2.5px solid #151515;opacity:0"></div>
+            <div data-rig="F2" data-view="full" data-id="i5b" style="position:absolute;inset:0"></div>
+          </div>
+        </div>
+        <div class="dv-ctl"><span class="dv-meta" style="flex:1">Follow: quickTo 0.18 s. Swing = −1.4 × pointer velocity, max ±28°. Fall ∝ √height, squash 0.78.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Physical, very satisfying</li><li>Perfect for the empty lobby while waiting</li><li>Shows off the rig</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Clashes with drag on the game board</li><li>No room for it in the header or dock</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="5c"><div class="dv-olabel"><a class="dv-oid" href="#5c">5c</a>Hands off</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Nur schauen</h3><p class="dv-p">No click. His eye follows you and he waves when the pointer comes near, at most every four seconds.</p></div>
+        <div class="dv-stage" data-scene="5c" style="height:300px">
+          <span style="position:absolute;right:16px;top:14px;padding:4px 10px;border:2px solid #151515;border-radius:999px;background:#ffd23f;font-size:12px;font-weight:800">Fahr über ihn</span>
+          <div style="position:absolute;left:0;right:0;top:262px;height:3px;background:#151515"></div>
+          <div data-k="cbw" style="position:absolute;left:200px;top:138px;width:150px;height:128px"><div data-rig="F2" data-view="full" data-id="i5c" style="width:100%;height:100%"></div></div>
+        </div>
+        <div class="dv-ctl"><span class="dv-meta" style="flex:1">Hover = wave 1.9 s, cooldown 4 s. Not focusable, aria-hidden.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>No conflict with any UI interaction</li><li>Never annoying</li><li>Cheapest to build</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Least fun</li><li>On touch, all you get is the eye following</li></ul></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="dv-turn" id="t6">
+  <div class="dv-thd">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:820px"><div style="display:flex;align-items:baseline;gap:10px"><a class="dv-tid" href="#t6">6</a><span style="font-weight:700;font-size:13px">Siegerehrung</span></div><h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:54px;line-height:.95">Wie feiern wir den Sieger?</h2><p style="margin:0;font-size:16px;line-height:1.5;color:#5d5650;text-wrap:pretty">The end of every session, usually on one shared screen. Brief: podium, confetti, Compibert dancing, sound. Example: Kaktus 1st, Raptoren 2nd, Nachos 3rd.</p></div>
+    <div class="dv-rec"><b>Meine Wahl: <a class="dv-oid" href="#6a">6a</a> as the frame, <a class="dv-oid" href="#6c">6c</a> for place 1</b><span>Podium 3 and 2 as in 6a, then the stage goes dark for the drum-roll spotlight. <a class="dv-oid" href="#6b">6b</a> as a rare gag variant (1 in 5).</span></div>
+  </div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="6a"><div class="dv-olabel"><a class="dv-oid" href="#6a">6a</a>He hosts</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Podium-Show</h3><p class="dv-p">Compibert hosts: the podium rises place by place, he claps, holds his breath for the drum roll, place 1 rises with confetti and he dances.</p></div>
+        <div class="dv-stage" data-scene="6a" style="height:360px">
+          <div style="position:absolute;left:0;right:0;top:330px;bottom:0;background:#fbe9cc;border-top:3px solid #151515"></div>
+          <div data-k="p2" style="position:absolute;left:210px;top:230px;width:100px;height:100px;box-sizing:border-box;background:#fffdf8;border:3px solid #151515;border-bottom:0;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:40px">2</div>
+          <div data-k="p1" style="position:absolute;left:312px;top:190px;width:100px;height:140px;box-sizing:border-box;background:#ffd23f;border:3px solid #151515;border-bottom:0;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:52px">1</div>
+          <div data-k="p3" style="position:absolute;left:414px;top:260px;width:100px;height:70px;box-sizing:border-box;background:#fbe9cc;border:3px solid #151515;border-bottom:0;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:34px">3</div>
+          <div data-k="n2" style="position:absolute;left:210px;top:190px;width:100px;display:flex;justify-content:center"><span style="padding:5px 10px;border:2.5px solid #151515;border-radius:999px;background:#e4572e;font-weight:800;font-size:13px;box-shadow:3px 3px 0 #151515">Raptoren</span></div>
+          <div data-k="n1" style="position:absolute;left:302px;top:144px;width:120px;display:flex;justify-content:center"><span style="padding:6px 14px;border:3px solid #151515;border-radius:999px;background:#009e73;font-weight:800;font-size:16px;box-shadow:4px 4px 0 #151515">Kaktus</span></div>
+          <div data-k="n3" style="position:absolute;left:414px;top:220px;width:100px;display:flex;justify-content:center"><span style="padding:5px 10px;border:2.5px solid #151515;border-radius:999px;background:#f3e04a;font-weight:800;font-size:13px;box-shadow:3px 3px 0 #151515">Nachos</span></div>
+          <div data-k="bub" style="position:absolute;left:24px;top:110px;max-width:170px;padding:8px 12px;background:#fffdf8;border:2.5px solid #151515;border-radius:12px 12px 2px 12px;font-weight:800;font-size:15px;line-height:1.2">Die Siegerehrung!</div>
+          <div data-k="cbw" style="position:absolute;left:14px;top:206px;width:150px;height:128px"><div data-rig="F2" data-view="full" data-id="c6a" style="width:100%;height:100%"></div></div>
+          <div data-k="fx" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="6a">Abspielen</button><span class="dv-meta">≈ 6 s to the winner. Host can skip. More than 3 parties: places 4+ as a list below.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Clear structure, works for any number of parties</li><li>Suspense built in: 3, 2, drum roll, 1</li><li>Exactly the brief: podium, confetti, dancing</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Classic; the least surprising</li><li>Feels long with only two teams</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="6b"><div class="dv-olabel"><a class="dv-oid" href="#6b">6b</a>Slapstick<span style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:5px;background:#ffd23f;border:2px solid #151515;color:#151515">Gewählt</span></div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Pokal-Lauf</h3><p class="dv-p">He sprints in with the trophy, trips, and the trophy flies onto the winning team. Stamp, confetti; he laughs it off and claps.</p></div>
+        <div class="dv-stage" data-scene="6b" style="height:360px">
+          <div style="position:absolute;left:0;right:0;top:336px;bottom:0;background:#fbe9cc;border-top:3px solid #151515"></div>
+          <div style="position:absolute;left:30px;top:84px;width:140px;height:100px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515;overflow:hidden;display:flex;flex-direction:column"><div style="height:30px;background:#e4572e;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 10px;font-weight:800;font-size:14px">Raptoren</div><div style="flex:1;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:26px">21 P.</div></div>
+          <div data-k="win" style="position:absolute;left:210px;top:84px;width:140px;height:100px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515;overflow:hidden;display:flex;flex-direction:column"><div style="height:30px;background:#009e73;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 10px;font-weight:800;font-size:14px">Kaktus</div><div style="flex:1;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:26px">24 P.</div><div data-k="stamp" style="position:absolute;left:12px;top:48px;padding:2px 10px;border:3px solid #c01f1f;border-radius:6px;color:#c01f1f;background:#fffdf8;font-family:'Bungee',sans-serif;font-size:20px">SIEGER</div></div>
+          <div style="position:absolute;left:390px;top:84px;width:140px;height:100px;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515;overflow:hidden;display:flex;flex-direction:column"><div style="height:30px;background:#f3e04a;border-bottom:3px solid #151515;display:flex;align-items:center;padding:0 10px;font-weight:800;font-size:14px">Nachos</div><div style="flex:1;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:26px">15 P.</div></div>
+          <div data-k="cbw" style="position:absolute;left:0;top:222px;width:140px;height:119px"><div data-rig="F2" data-view="full" data-id="c6b" style="width:100%;height:100%"></div></div>
+          <div data-k="tro" data-tx="172" data-ty="-139" style="position:absolute;left:82px;top:167px;width:52px;height:56px;z-index:4"><svg viewBox="0 0 52 56" width="52" height="56" style="display:block;overflow:visible"><path d="M8 12C0 12 0 26 11 27M44 12C52 12 52 26 41 27" style="fill:none;stroke:#151515;stroke-width:3.5;stroke-linecap:round"></path><path d="M8 5H44V17C44 31 36 37 26 37C16 37 8 31 8 17Z" style="fill:#ffd23f;stroke:#151515;stroke-width:3.5;stroke-linejoin:round"></path><rect x="22" y="37" width="8" height="8" style="fill:#ffd23f;stroke:#151515;stroke-width:3"></rect><rect x="13" y="45" width="26" height="9" rx="2" style="fill:#ff70c3;stroke:#151515;stroke-width:3"></rect></svg></div>
+          <div data-k="fx" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="6b">Abspielen</button><span class="dv-meta">≈ 2 s to the winner, 4 s total. Trophy = 1 extra asset.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Funniest; the one people will film</li><li>Short</li><li>Pays off the run cycle</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Only reveals the winner, no podium</li><li>The joke wears off without variants</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="6c"><div class="dv-olabel"><a class="dv-oid" href="#6c">6c</a>Suspense, dark stage</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Trommelwirbel</h3><p class="dv-p">The stage goes dark. He drums, a spotlight sweeps over the teams, slows down like the wheel and lands on the winner. Fireworks.</p></div>
+        <div class="dv-stage" data-scene="6c" data-theme="dark" style="height:360px;background-color:#17121d;background-image:radial-gradient(ellipse at 50% -10%,rgba(255,176,32,.16),transparent 55%),radial-gradient(ellipse at 50% 120%,rgba(0,0,0,.5),transparent 60%);background-size:100% 100%;color:#f7efe1">
+          <div style="position:absolute;left:0;right:0;top:334px;height:2.5px;background:#f7efe1"></div>
+          <div data-k="card" style="position:absolute;left:30px;top:64px;width:140px;height:116px;background:#221b2b;border:2.5px solid #f7efe1;border-radius:12px;overflow:hidden;display:flex;flex-direction:column"><div style="height:30px;background:#e4572e;border-bottom:2.5px solid #f7efe1;display:flex;align-items:center;padding:0 10px;font-weight:800;font-size:14px;color:#151515">Raptoren</div><div style="flex:1;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:26px">21 P.</div></div>
+          <div data-k="card" style="position:absolute;left:210px;top:64px;width:140px;height:116px;background:#221b2b;border:2.5px solid #f7efe1;border-radius:12px;overflow:hidden;display:flex;flex-direction:column"><div style="height:30px;background:#009e73;border-bottom:2.5px solid #f7efe1;display:flex;align-items:center;padding:0 10px;font-weight:800;font-size:14px;color:#151515">Kaktus</div><div style="flex:1;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:26px">24 P.</div></div>
+          <div data-k="card" style="position:absolute;left:390px;top:64px;width:140px;height:116px;background:#221b2b;border:2.5px solid #f7efe1;border-radius:12px;overflow:hidden;display:flex;flex-direction:column"><div style="height:30px;background:#f3e04a;border-bottom:2.5px solid #f7efe1;display:flex;align-items:center;padding:0 10px;font-weight:800;font-size:14px;color:#151515">Nachos</div><div style="flex:1;display:grid;place-items:center;font-family:'Bungee',sans-serif;font-size:26px">15 P.</div></div>
+          <div data-k="spot" style="position:absolute;left:5px;top:28px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(255,236,190,.5),rgba(255,236,190,.18) 50%,rgba(255,236,190,0) 70%);mix-blend-mode:screen;pointer-events:none;z-index:3"></div>
+          <div data-k="cbw" style="position:absolute;left:24px;top:208px;width:150px;height:128px"><div data-rig="F2" data-view="full" data-id="c6c" data-dark="1" style="width:100%;height:100%"></div></div>
+          <div data-k="drum" style="position:absolute;left:176px;top:270px;width:96px;height:64px;z-index:4"><div style="position:absolute;left:0;right:0;top:12px;bottom:0;border:2.5px solid #f7efe1;border-top:0;border-radius:0 0 14px 14px;background:repeating-linear-gradient(90deg,#ff5a36 0 16px,#ff7fc0 16px 22px)"></div><div style="position:absolute;left:0;right:0;top:0;height:24px;border-radius:50%;background:#fffdf8;border:2.5px solid #f7efe1;box-sizing:border-box;box-shadow:inset 0 -4px 0 #d9cdb8"></div></div>
+          <span style="position:absolute;right:20px;top:300px;font-family:'Lilita One',sans-serif;font-size:24px;color:#ffd23f">Trommelwirbel …</span>
+          <div data-k="fx" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div>
+        </div>
+        <div class="dv-ctl"><button type="button" class="dv-btn" data-play="6c">Abspielen</button><span class="dv-meta">≈ 3.4 s sweep with the wheel’s slow-down easing. Needs the drum-roll sound.</span></div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Most suspense; a real moment on a shared screen</li><li>Dark stage and the sticker look shine</li><li>Familiar: slows down like the wheel</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Only works fully with sound</li><li>Cramped with many teams (needs two rows)</li></ul></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="dv-turn" id="t7">
+  <div class="dv-thd">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:820px"><div style="display:flex;align-items:baseline;gap:10px"><a class="dv-tid" href="#t7">7</a><span style="font-weight:700;font-size:13px">Emotes</span></div><h2 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:54px;line-height:.95">Wie sehen die vier Emotes aus?</h2><p style="margin:0;font-size:16px;line-height:1.5;color:#5d5650;text-wrap:pretty">Klatschen, Freudentränen, Wütend, Brüllen. They rise above the sender’s avatar, 2 s cooldown. Click the buttons under each stage, or „Abspielen“ for all four.</p></div>
+    <div class="dv-rec"><b>Meine Wahl: <a class="dv-oid" href="#7b">7b</a></b><span>The only option where all four read by silhouette, clapping included. Brüllen with the lean-back is the best gag in the set.</span></div>
+  </div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="7a"><div class="dv-olabel"><a class="dv-oid" href="#7a">7a</a>Head in a sticker<span style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:5px;background:#ffd23f;border:2px solid #151515;color:#151515">Gewählt</span></div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Kopf-Sticker</h3><p class="dv-p">His head in a round sticker, acting out the emotion with the face rig.</p></div>
+        <div class="dv-stage" data-scene="7a" style="height:300px">
+          <div data-k="ring" style="position:absolute;left:225px;top:66px;width:110px;height:110px;border-radius:50%;border:3px solid #151515;box-sizing:border-box;opacity:0"></div><div data-k="ring" style="position:absolute;left:225px;top:66px;width:110px;height:110px;border-radius:50%;border:3px solid #ff70c3;box-sizing:border-box;opacity:0"></div>
+          <div data-k="fl" style="position:absolute;left:225px;top:66px;width:110px;height:110px;border-radius:50%;background:#fffdf8;border:3px solid #151515;box-shadow:5px 5px 0 #151515;box-sizing:border-box;overflow:hidden"><div data-rig="F2" data-view="emote" data-id="e7aFl" style="width:100%;height:100%"></div></div>
+          <div style="position:absolute;left:0;right:0;top:196px;display:flex;justify-content:center;gap:80px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#ff70c3;display:grid;place-items:center;font-weight:800">MI</span><span style="font-size:13px;font-weight:700">Mia</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#ffd23f;display:grid;place-items:center;font-weight:800;box-shadow:0 0 0 4px #fff3df,0 0 0 6.5px #151515">DU</span><span style="font-size:13px;font-weight:800">Du</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#2ec4b6;display:grid;place-items:center;font-weight:800">BE</span><span style="font-size:13px;font-weight:700">Ben</span></div>
+          </div>
+        </div>
+        <div class="dv-ctl">
+          <button type="button" class="dv-em" data-emote="clap" aria-label="Emote senden: Klatschen"><div data-rig="F2" data-view="emote" data-id="e7a_clap" style="width:58px;height:58px"></div></button>
+          <button type="button" class="dv-em" data-emote="tears" aria-label="Emote senden: Freudentränen"><div data-rig="F2" data-view="emote" data-id="e7a_tears" style="width:58px;height:58px"></div></button>
+          <button type="button" class="dv-em" data-emote="angry" aria-label="Emote senden: Wütend"><div data-rig="F2" data-view="emote" data-id="e7a_angry" style="width:58px;height:58px"></div></button>
+          <button type="button" class="dv-em" data-emote="roar" aria-label="Emote senden: Brüllen"><div data-rig="F2" data-view="emote" data-id="e7a_roar" style="width:58px;height:58px"></div></button>
+          <button type="button" class="dv-btn" data-play="7a" style="margin-left:auto">Abspielen</button>
+        </div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Reads at 32 px over avatars</li><li>Matches avatar and coin shapes</li><li>Cheapest: head view only</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Klatschen needs two floating mitts (no arms in the head crop)</li><li>Four round heads look alike from afar</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="7b"><div class="dv-olabel"><a class="dv-oid" href="#7b">7b</a>Tiny full body</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Mini-Ganzkörper</h3><p class="dv-p">A tiny full-body Compibert performs the emote above your avatar: claps, laughs to tears, fumes, roars.</p></div>
+        <div class="dv-stage" data-scene="7b" style="height:300px">
+          <div data-k="ring" style="position:absolute;left:224px;top:58px;width:112px;height:112px;border-radius:50%;border:3px solid #151515;box-sizing:border-box;opacity:0"></div><div data-k="ring" style="position:absolute;left:224px;top:58px;width:112px;height:112px;border-radius:50%;border:3px solid #ff70c3;box-sizing:border-box;opacity:0"></div>
+          <div data-k="fl" style="position:absolute;left:206px;top:56px;width:148px;height:126px"><div data-rig="F2" data-view="full" data-id="e7bFl" style="width:100%;height:100%"></div></div>
+          <div style="position:absolute;left:0;right:0;top:196px;display:flex;justify-content:center;gap:80px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#ff70c3;display:grid;place-items:center;font-weight:800">MI</span><span style="font-size:13px;font-weight:700">Mia</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#ffd23f;display:grid;place-items:center;font-weight:800;box-shadow:0 0 0 4px #fff3df,0 0 0 6.5px #151515">DU</span><span style="font-size:13px;font-weight:800">Du</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#2ec4b6;display:grid;place-items:center;font-weight:800">BE</span><span style="font-size:13px;font-weight:700">Ben</span></div>
+          </div>
+        </div>
+        <div class="dv-ctl">
+          <button type="button" class="dv-em" data-emote="clap" aria-label="Emote senden: Klatschen"><div data-rig="F2" data-view="full" data-id="e7b_clap" style="width:58px;height:50px"></div></button>
+          <button type="button" class="dv-em" data-emote="tears" aria-label="Emote senden: Freudentränen"><div data-rig="F2" data-view="full" data-id="e7b_tears" style="width:58px;height:50px"></div></button>
+          <button type="button" class="dv-em" data-emote="angry" aria-label="Emote senden: Wütend"><div data-rig="F2" data-view="full" data-id="e7b_angry" style="width:58px;height:50px"></div></button>
+          <button type="button" class="dv-em" data-emote="roar" aria-label="Emote senden: Brüllen"><div data-rig="F2" data-view="full" data-id="e7b_roar" style="width:58px;height:50px"></div></button>
+          <button type="button" class="dv-btn" data-play="7b" style="margin-left:auto">Abspielen</button>
+        </div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>All four read by silhouette, clapping too</li><li>Brüllen with the lean-back is the best gag</li><li>Animated, not a static sticker</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Wider; overlaps neighbours on dense boards</li><li>Needs ≥ 56 px to read</li></ul></div></div>
+      </div>
+    </div>
+    <div class="dv-opt" id="7c"><div class="dv-olabel"><a class="dv-oid" href="#7c">7c</a>Loud type</div>
+      <div class="dv-card">
+        <div class="dv-hd"><h3 class="dv-h">Typo-Sticker</h3><p class="dv-p">Comic-style sound-word stickers in the Memphis colours, with his crest spikes as the shared mark.</p></div>
+        <div class="dv-stage" data-scene="7c" style="height:300px">
+          <div data-k="ring" style="position:absolute;left:220px;top:70px;width:120px;height:120px;border-radius:50%;border:3px solid #151515;box-sizing:border-box;opacity:0"></div><div data-k="ring" style="position:absolute;left:220px;top:70px;width:120px;height:120px;border-radius:50%;border:3px solid #2ec4b6;box-sizing:border-box;opacity:0"></div>
+          <div data-k="fl" style="position:absolute;left:170px;top:84px;width:220px;height:90px;display:flex;align-items:center;justify-content:center">
+            <div data-k="st" data-e="clap" style="position:relative;display:flex;align-items:center;padding:10px 18px;background:#ffd23f;border:3px solid #151515;border-radius:14px;box-shadow:5px 5px 0 #151515;transform:rotate(-5deg);font-family:'Lilita One',sans-serif;font-size:40px;line-height:1"><span style="position:absolute;left:14px;top:-15px;display:flex;gap:4px"><i style="width:16px;height:14px;background:#ff70c3;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#ff70c3;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#ff70c3;clip-path:polygon(50% 0,100% 100%,0 100%)"></i></span>KLATSCH!</div>
+            <div data-k="st" data-e="tears" style="position:relative;display:none;align-items:center;padding:10px 18px;background:#3a86ff;border:3px solid #151515;border-radius:14px;box-shadow:5px 5px 0 #151515;transform:rotate(4deg);font-family:'Lilita One',sans-serif;font-size:42px;line-height:1"><span style="position:absolute;left:14px;top:-15px;display:flex;gap:4px"><i style="width:16px;height:14px;background:#ffd23f;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#ffd23f;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#ffd23f;clip-path:polygon(50% 0,100% 100%,0 100%)"></i></span>HAHA!<i style="position:absolute;right:-12px;top:6px;width:16px;height:16px;background:#9cc6ff;border:2.5px solid #151515;border-radius:50% 0 50% 50%;transform:rotate(-45deg)"></i><i style="position:absolute;right:-20px;top:30px;width:12px;height:12px;background:#9cc6ff;border:2.5px solid #151515;border-radius:50% 0 50% 50%;transform:rotate(-45deg)"></i></div>
+            <div data-k="st" data-e="angry" style="position:relative;display:none;align-items:center;padding:10px 18px;background:#ff4f4f;border:3px solid #151515;border-radius:14px;box-shadow:5px 5px 0 #151515;transform:rotate(-3deg);font-family:'Lilita One',sans-serif;font-size:44px;line-height:1"><span style="position:absolute;left:14px;top:-15px;display:flex;gap:4px"><i style="width:16px;height:14px;background:#151515;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#151515;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#151515;clip-path:polygon(50% 0,100% 100%,0 100%)"></i></span>GRRR!</div>
+            <div data-k="st" data-e="roar" style="position:relative;display:none;align-items:center;padding:10px 18px;background:#2ec4b6;border:3px solid #151515;border-radius:14px;box-shadow:5px 5px 0 #151515;transform:rotate(-7deg);font-family:'Lilita One',sans-serif;font-size:40px;line-height:1"><span style="position:absolute;left:14px;top:-15px;display:flex;gap:4px"><i style="width:16px;height:14px;background:#ff70c3;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#ff70c3;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#ff70c3;clip-path:polygon(50% 0,100% 100%,0 100%)"></i><i style="width:16px;height:14px;background:#ff70c3;clip-path:polygon(50% 0,100% 100%,0 100%)"></i></span>ROOOAR!</div>
+          </div>
+          <div style="position:absolute;left:0;right:0;top:196px;display:flex;justify-content:center;gap:80px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#ff70c3;display:grid;place-items:center;font-weight:800">MI</span><span style="font-size:13px;font-weight:700">Mia</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#ffd23f;display:grid;place-items:center;font-weight:800;box-shadow:0 0 0 4px #fff3df,0 0 0 6.5px #151515">DU</span><span style="font-size:13px;font-weight:800">Du</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:56px;height:56px;border-radius:50%;border:3px solid #151515;background:#2ec4b6;display:grid;place-items:center;font-weight:800">BE</span><span style="font-size:13px;font-weight:700">Ben</span></div>
+          </div>
+        </div>
+        <div class="dv-ctl">
+          <button type="button" class="dv-em" data-emote="clap" aria-label="Emote senden: Klatschen" style="background:#ffd23f;font-family:'Lilita One',sans-serif;font-size:12px">KLATSCH</button>
+          <button type="button" class="dv-em" data-emote="tears" aria-label="Emote senden: Freudentränen" style="background:#3a86ff;font-family:'Lilita One',sans-serif;font-size:14px">HAHA</button>
+          <button type="button" class="dv-em" data-emote="angry" aria-label="Emote senden: Wütend" style="background:#ff4f4f;font-family:'Lilita One',sans-serif;font-size:14px">GRRR</button>
+          <button type="button" class="dv-em" data-emote="roar" aria-label="Emote senden: Brüllen" style="background:#2ec4b6;font-family:'Lilita One',sans-serif;font-size:12px">ROAR</button>
+          <button type="button" class="dv-btn" data-play="7c" style="margin-left:auto">Abspielen</button>
+        </div>
+        <div class="dv-pc"><div><b style="color:#04794a">Stark</b><ul><li>Loudest from across the room</li><li>Reads without the character</li><li>No rig needed, cheapest</li></ul></div><div><b style="color:#c01f1f">Schwach</b><ul><li>Barely Compibert; the brief asks for his style</li><li>Text on the board gets noisy</li></ul></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  root = React.createRef();
+  rigs = [];
+  scenes = {};
+  componentDidMount() {
+    const go = () => (window.gsap && window.CBO && window.CBD && this.root.current) ? this.boot() : (this._t = setTimeout(go, 60));
+    go();
+  }
+  boot() {
+    if (this.booted) return; this.booted = true;
+    gsap.defaults({ overwrite: 'auto' });
+    const s = document.documentElement.style;
+    Object.entries(CBO.CW.Minze).forEach(([k, v]) => s.setProperty('--cb-' + k, v));
+    s.setProperty('--cb-ink', '#151515');
+    const root = this.root.current, R = {};
+    root.querySelectorAll('[data-rig]').forEach((d, i) => {
+      const r = CBO.mount(d, 500 + i); this.rigs.push(r); R[d.dataset.id] = r;
+      const w = d.clientWidth; CBO.treat(r, (w < 40 || d.dataset.view === 'emote') ? 'Pur' : d.dataset.dark ? 'Sticker' : 'Harter Schatten');
+    });
+    root.querySelectorAll('[data-scene]').forEach(el => {
+      try { this.scenes[el.dataset.scene] = CBD.init(el.dataset.scene, el, R); } catch (e) { console.error('scene', el.dataset.scene, e); }
+    });
+    root.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => { const sc = this.scenes[b.dataset.play]; sc && sc.play(); }));
+    this._io = new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return; const id = e.target.dataset.scene; this._io.unobserve(e.target);
+      if (/^(3|4|6)/.test(id)) { const sc = this.scenes[id]; sc && setTimeout(() => sc.play(), 300); }
+    }), { threshold: .6 });
+    root.querySelectorAll('[data-scene]').forEach(el => this._io.observe(el));
+    this._mv = e => { this.mx = e.clientX; this.my = e.clientY; if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = 0; CBO.track(this.rigs, this.mx, this.my); }); };
+    window.addEventListener('pointermove', this._mv);
+  }
+  componentWillUnmount() {
+    clearTimeout(this._t); this._io && this._io.disconnect();
+    this._mv && window.removeEventListener('pointermove', this._mv);
+    this.rigs.forEach(r => CBO.kill(r));
+  }
+  renderVals() { return { root: this.root }; }
+}
+</script>
+</body>
+</html>

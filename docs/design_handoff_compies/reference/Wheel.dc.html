@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Bungee&family=Caveat+Brush&family=Fredoka:wght@400..700&family=Hanken+Grotesk:wght@400..900&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@500;700&family=Nunito:wght@400..800&family=Patrick+Hand&family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400..800&family=Bagel+Fat+One&family=Baloo+2:wght@500..800&family=DM+Sans:opsz,wght@9..40,400..700&family=DM+Serif+Display&family=League+Spartan:wght@500..800&family=Lilita+One&family=Orbitron:wght@600..900&family=Rammetto+One&family=Rubik:wght@400..800&family=Shrikhand&family=Space+Grotesk:wght@400..700&family=Space+Mono:wght@400;700&family=Syne:wght@600..800&display=swap"><script src="./themes.js"></script>
+</helmet>
+<svg width="0" height="0" style="position:absolute"><filter id="cp-wob"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"></feTurbulence><feDisplacementMap in="SourceGraphic" scale="3.2"></feDisplacementMap></filter></svg>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+<div style="position:relative;width:1280px;height:800px;overflow:hidden;background-color:{{ t.c.bg }};background-image:{{ t.c.bgImg }};background-size:{{ t.c.bgSize }};color:{{ t.c.ink }};font-family:{{ t.f.b }};font-weight:{{ t.f.bw }};font-size:{{ t.f.bs }};display:flex;flex-direction:column">
+  <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+    <sc-for list="{{ t.smoke }}" as="s" hint-placeholder-count="0"><div style="position:absolute;left:{{ s.x }};top:{{ s.y }};width:{{ s.w }};height:{{ s.h }};background:{{ s.bg }};-webkit-mask:{{ s.mask }};mask:{{ s.mask }};opacity:{{ s.o }};animation:{{ s.anim }}"></div></sc-for>
+  </div>
+  <div style="position:relative;z-index:2;height:64px;flex:none;display:flex;align-items:center;gap:18px;padding:0 20px;border-bottom:{{ t.s.div }}">
+    <div style="display:flex;align-items:center;gap:10px"><dc-import name="Compibert" dir="{{ t.id }}" variant="head" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};font-size:{{ t.f.logo }};letter-spacing:{{ t.f.ht }};text-transform:uppercase;line-height:1">Compies</span></div>
+    <div style="width:1px;height:28px;background:{{ t.c.line }}"></div>
+    <div style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:15px">Freitags-Zocken #12</span><span style="font-size:12px;color:{{ t.c.ink2 }}">Läuft · Spiel 3 von 8</span></div>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="color:{{ t.c.ink2 }}">Führung</span><span style="padding:4px 8px;background:{{ t.teams.0.c }};color:{{ t.teams.0.ink }};border-radius:{{ t.s.rChip }};font-weight:700">● Rot 12</span><span style="padding:4px 8px;background:{{ t.teams.5.c }};color:{{ t.teams.5.ink }};border-radius:{{ t.s.rChip }};font-weight:700">✚ Blau 9</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border:{{ t.s.border }};border-radius:{{ t.s.rChip }};font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px"><span style="width:8px;height:8px;border-radius:{{ t.s.rDot }};background:{{ t.c.hot }};animation:cpLive 1s ease-in-out infinite"></span>Live · synchron</div>
+    <div style="position:relative;width:38px;height:38px;border-radius:{{ t.s.rAv }};background:{{ me.bg }};color:{{ me.fg }};border:{{ t.s.avBorder }};box-shadow:{{ me.sh }};display:grid;place-items:center;font-weight:700;font-size:13px">{{ me.i }}</div>
+  </div>
+
+  <div style="position:relative;z-index:1;flex:1;min-height:0;display:flex">
+    <div style="flex:1;min-width:0;padding:18px 24px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:flex-end;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">Spiel 3 von 8 · Lucky Wheel</span><span style="font-family:{{ t.m.h }};font-weight:{{ t.m.hw }};text-transform:{{ t.m.hc }};letter-spacing:{{ t.f.ht }};font-size:36px;line-height:.95">Glücksrad</span></div>
+        <div style="flex:1"></div>
+        <span style="font-size:12px;color:{{ t.c.ink2 }}">8 Spiele auf dem Rad</span>
+        <span style="padding:5px 8px;background:{{ t.c.ink }};color:{{ t.c.bg }};border-radius:{{ t.s.rChip }};font-family:'JetBrains Mono',monospace;font-size:10px">[1.0]</span>
+      </div>
+      <div style="flex:1;min-height:0;display:flex;gap:24px">
+        <div style="width:350px;flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+          <div style="position:relative;width:340px;height:360px">
+            <div style="position:absolute;left:50%;top:0;margin-left:-16px;width:32px;height:30px;background:{{ t.m.pointer }};clip-path:polygon(0 0,100% 0,50% 100%);z-index:3"></div>
+            <svg viewBox="-10 -10 420 420" width="340" height="340" style="position:absolute;left:0;top:18px;overflow:visible">
+              <sc-for list="{{ slices }}" as="s" hint-placeholder-count="0">
+                <g transform="{{ s.tx }}">
+                  <path d="{{ s.d }}" style="fill:{{ s.fill }};stroke:{{ s.sc }};stroke-width:{{ s.sw }};stroke-linejoin:round"></path>
+                  <path d="{{ s.d }}" style="fill:{{ t.c.bg }};opacity:{{ s.dim }}"></path>
+                  
+                </g>
+              </sc-for>
+            </svg>
+            <sc-for list="{{ slices }}" as="s" hint-placeholder-count="0"><div style="position:absolute;left:170px;top:188px;width:0;height:0;transform:{{ s.tf }};z-index:1"><span style="position:absolute;transform:translate(-50%,-50%);white-space:nowrap;color:{{ s.ink }};font-family:{{ t.m.h }};font-weight:{{ t.m.hw }};font-size:{{ t.m.wl }};text-transform:{{ t.m.hc }};line-height:1">{{ s.label }}</span></div></sc-for>
+            <div style="position:absolute;left:128px;top:146px;width:84px;height:84px;border-radius:{{ t.s.rAv }};background:{{ t.c.panel }};border:{{ t.s.border }};box-shadow:{{ t.m.frame }};display:grid;place-items:center;z-index:2"><dc-import name="Compibert" dir="{{ t.id }}" variant="head" size="{{ 64 }}" hint-size="64px,64px"></dc-import></div>
+          </div>
+          <div style="position:relative;width:100%;display:flex;align-items:center;gap:12px;padding:12px 16px;box-sizing:border-box;background:{{ t.teams.0.c }};color:{{ t.teams.0.ink }};border-radius:{{ t.m.r }};border:{{ t.m.frameBorder }};box-shadow:{{ t.m.frame }};animation:cpPulse 2.4s ease-in-out infinite">
+            <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:12px;font-weight:700;opacity:.8">Das Rad hat entschieden</span><span style="font-family:{{ t.m.h }};font-weight:{{ t.m.hw }};text-transform:{{ t.m.hc }};font-size:28px;line-height:1">Counter-Strike 2</span></div>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+          <div style="position:relative;aspect-ratio:16/9;width:100%;overflow:hidden;border-radius:{{ t.m.r }};border:{{ t.m.frameBorder }};box-shadow:{{ t.m.frame }};background:repeating-linear-gradient(135deg, {{ stripeA }} 0 14px, {{ stripeB }} 14px 28px)">
+            <div style="position:absolute;inset:0;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:{{ t.c.ink2 }}">YouTube-Clip · Counter-Strike 2 · ab 1:12</div>
+            <div style="position:absolute;inset:0;background-image:{{ t.m.scanImg }}"></div>
+            <div style="position:absolute;left:12px;top:12px;display:flex;gap:6px;font-size:11px;font-weight:700"><span style="padding:4px 8px;background:{{ t.c.hot }};color:{{ t.c.hotInk }};border-radius:{{ t.s.rChip }}">CLIP · für alle synchron</span></div>
+            <div style="position:absolute;right:12px;top:12px;display:flex;gap:6px"><span style="padding:5px 10px;background:{{ t.c.panel }};color:{{ t.c.ink }};border-radius:{{ t.s.rChip }};font-size:12px;font-weight:700">Ton aus</span><span style="padding:5px 10px;background:{{ t.c.panel }};color:{{ t.c.ink }};border-radius:{{ t.s.rChip }};font-size:12px;font-weight:700">Schließen ✕</span></div>
+            <div style="position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;gap:10px;padding:8px 12px;background:{{ t.c.panel }};border-radius:{{ t.s.rChip }}">
+              <span style="font-family:{{ t.m.n }};font-size:12px;font-variant-numeric:tabular-nums">0:13</span>
+              <div style="flex:1;height:6px;background:{{ t.c.line }};border-radius:{{ t.s.rChip }};overflow:hidden"><div style="width:{{ clipPct }};height:100%;background:{{ t.c.hot }}"></div></div>
+              <span style="font-family:{{ t.m.n }};font-size:12px;color:{{ t.c.ink2 }}">0:30</span>
+              <span style="font-size:11px;color:{{ t.c.ink2 }}">schließt automatisch</span>
+            </div>
+          </div>
+
+          <div style="position:relative;display:flex;align-items:center;gap:18px;padding:14px 16px;background:{{ t.m.panel }};border-radius:{{ t.m.r }};border:{{ t.m.frameBorder }};box-shadow:{{ t.m.frame }}">
+            <div style="position:relative;width:128px;height:128px;flex:none">
+              <svg viewBox="0 0 120 120" width="128" height="128" style="position:absolute;inset:0;transform:rotate(-90deg)"><circle cx="60" cy="60" r="52" style="fill:none;stroke:{{ t.m.ringTrack }};stroke-width:{{ t.m.ringW }}"></circle><circle cx="60" cy="60" r="52" style="fill:none;stroke:{{ t.m.ringColor }};stroke-width:{{ t.m.ringW }};stroke-dasharray:{{ ringDash }};stroke-linecap:{{ t.m.ringCap }}"></circle></svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="font-family:{{ t.m.n }};font-weight:{{ t.m.nw }};font-size:{{ t.m.nsize }};line-height:.9;font-variant-numeric:tabular-nums">47</span><span style="font-size:11px;color:{{ t.c.ink2 }}">Sek.</span></div>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+              <span style="font-family:{{ t.m.h }};font-weight:{{ t.m.hw }};text-transform:{{ t.m.hc }};font-size:22px;line-height:1">Veto-Fenster</span>
+              <span style="font-size:13px;line-height:1.4;color:{{ t.c.ink2 }};text-wrap:pretty">Clip läuft noch 17 s, danach 30 s nur Veto. Wer ein Veto eingelegt hat, siehst du erst bei 0.</span>
+              <span style="font-size:12px;font-weight:700">✚ Team Blau · 2 Vetos</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="position:relative;width:160px;height:72px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;background:{{ t.m.vetoBg }};color:{{ t.m.vetoInk }};border-radius:{{ t.m.vetoR }};border:{{ t.m.vetoBorder }};box-shadow:{{ t.m.vetoShadow }}">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:{{ holdPct }};background:{{ t.m.vetoFill }}"></div>
+                <span style="position:relative;font-family:{{ t.m.h }};font-weight:{{ t.m.hw }};text-transform:uppercase;font-size:26px;line-height:1">Veto</span>
+                <span style="position:relative;font-size:11px;font-weight:700;opacity:.85">gedrückt halten …</span>
+              </div>
+              <span style="font-size:11px;color:{{ t.c.ink2 }}">1 s halten · nicht rücknehmbar</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">Vetos · verdeckt bis 0:00, dann großes Aufdecken</span>
+            <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px">
+              <sc-for list="{{ vchips }}" as="v" hint-placeholder-count="8"><div style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;background:{{ v.c }};color:{{ v.ink }};border-radius:{{ t.s.rChip }};border:{{ t.s.avBorder }};font-weight:700"><span style="font-size:11px">{{ v.g }} {{ v.n }}</span><span style="font-family:{{ t.m.n }};font-size:12px;white-space:nowrap">{{ v.s }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:340px;flex:none;border-left:{{ t.s.div }};display:flex;flex-direction:column;background:{{ t.c.panelSide }};min-height:0">
+      <div style="display:flex;align-items:flex-end;gap:2px;padding:10px 14px 0;border-bottom:{{ t.s.div }}">
+        <div style="padding:9px 12px;color:{{ t.c.ink2 }};display:flex;gap:6px;align-items:center">Chat<span style="font-size:10px;padding:1px 6px;border-radius:{{ t.s.rChip }};background:{{ t.c.hot }};color:{{ t.c.hotInk }}">5</span></div>
+        <div style="padding:9px 12px;font-weight:700;border-bottom:3px solid {{ t.c.tabLine }};margin-bottom:-1px">Aktivität</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px;padding:12px 10px">
+        <sc-for list="{{ act }}" as="a" hint-placeholder-count="7">
+          <div style="display:flex;gap:10px;padding:9px 8px;border-bottom:{{ t.s.div }};font-size:13px;line-height:1.35"><span style="color:{{ t.c.ink2 }};font-variant-numeric:tabular-nums;font-size:12px">{{ a.time }}</span><span style="flex:1">{{ a.txt }}</span></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;padding:0 14px 14px">
+        <sc-for list="{{ emotes }}" as="em" hint-placeholder-count="4"><div style="flex:1;height:34px;display:grid;place-items:center;border:{{ t.s.border }};border-radius:{{ t.s.rBtn }};background:{{ t.c.panel }};font-size:12px;font-weight:700;white-space:nowrap">{{ em.l }}</div></sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;dir&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;swiss&quot;,&quot;memphis&quot;,&quot;hand&quot;,&quot;pixel&quot;,&quot;picnic&quot;,&quot;kofi&quot;,&quot;swissmemphis&quot;,&quot;swisspixel&quot;,&quot;kofihand&quot;,&quot;picnicpixel&quot;,&quot;memphispixel&quot;,&quot;swisshand&quot;],&quot;default&quot;:&quot;swiss&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  componentDidMount(){ if(!window.COMPIES_THEMES){ this._h=()=>{ if(!this._done){ this._done=true; this.forceUpdate(); } }; window.addEventListener('compies-themes',this._h);} }
+  componentWillUnmount(){ this._h && window.removeEventListener('compies-themes',this._h); }
+  renderVals(){
+    const T=window.COMPIES_THEMES; if(!T) return {ready:false};
+    const t=T[this.props.dir]||T.swiss, D=window.COMPIES_DATA, l=D.lobby(t), w=D.wheel(t);
+    const nils=l.teams[5].slots[0].p;
+    return Object.assign({ready:true,t,me:nils,emotes:l.emotes,stripeA:t.c.panel,stripeB:t.c.panel2},w);
+  }
+}
+</script>
+</body>
+</html>

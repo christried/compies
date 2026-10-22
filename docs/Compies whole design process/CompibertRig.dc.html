@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="./compibert-options.js"></script>
+</helmet>
+<div ref="{{ el }}" aria-hidden="true" style="width:{{ w }};height:{{ h }};flex:none;position:relative"></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:200},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;head&quot;,&quot;bust&quot;,&quot;full&quot;,&quot;emote&quot;,&quot;tail&quot;],&quot;default&quot;:&quot;head&quot;,&quot;tsType&quot;:&quot;'head'|'bust'|'full'|'emote'&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:120,&quot;min&quot;:16,&quot;max&quot;:480,&quot;tsType&quot;:&quot;number&quot;},&quot;still&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;idle&quot;,&quot;wave&quot;,&quot;look&quot;,&quot;excited&quot;,&quot;suspense&quot;,&quot;cheer&quot;,&quot;laugh&quot;,&quot;angry&quot;,&quot;sad&quot;,&quot;dance&quot;,&quot;sleep&quot;,&quot;think&quot;,&quot;confused&quot;,&quot;run&quot;,&quot;clap&quot;,&quot;roar&quot;],&quot;default&quot;:&quot;idle&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  el = React.createRef();
+  componentDidMount() {
+    const go = () => (window.gsap && window.CBO && this.el.current) ? this.boot() : (this._t = setTimeout(go, 60));
+    go();
+  }
+  boot() {
+    const d = this.el.current, s = document.documentElement.style;
+    if (!s.getPropertyValue('--cb-body')) { Object.entries(CBO.CW.Minze).forEach(([k, v]) => s.setProperty('--cb-' + k, v)); s.setProperty('--cb-ink', '#151515'); }
+    gsap.defaults({ overwrite: 'auto' });
+    const v = this.props.variant || 'head';
+    d.dataset.view = v; d.dataset.rig = 'F2'; if (v === 'tail') d.dataset.coin = '1';
+    this.r = CBO.mount(d, 'r' + Math.random().toString(36).slice(2, 7));
+    this.look();
+    if (this.props.still) this.r.reduced = true;
+    CBO.toState(this.r, this.props.state || 'idle');
+    this._mv = e => { if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = 0; CBO.track([this.r], e.clientX, e.clientY); }); };
+    window.addEventListener('pointermove', this._mv);
+  }
+  look() {
+    const d = this.el.current, dark = !!d.closest('[data-theme="dark"]'), v = this.props.variant || 'head';
+    CBO.treat(this.r, (d.clientWidth < 40 || v === 'emote' || v === 'head' || v === 'tail') ? 'Pur' : dark ? 'Sticker' : 'Harter Schatten');
+  }
+  componentDidUpdate(pp) {
+    if (!this.r) return;
+    if (pp.state !== this.props.state) CBO.toState(this.r, this.props.state || 'idle');
+    this.look();
+  }
+  componentWillUnmount() {
+    clearTimeout(this._t); this._mv && window.removeEventListener('pointermove', this._mv);
+    this.r && CBO.kill(this.r);
+  }
+  renderVals() {
+    const size = this.props.size || 120, v = this.props.variant || 'head';
+    const ratio = v === 'full' ? 344 / 404 : 1;
+    return { el: this.el, w: size + 'px', h: Math.round(size * ratio) + 'px' };
+  }
+}
+</script>
+</body>
+</html>

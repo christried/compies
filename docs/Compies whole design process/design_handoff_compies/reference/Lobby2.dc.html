@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Bungee&family=Caveat+Brush&family=Fredoka:wght@400..700&family=Hanken+Grotesk:wght@400..900&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@500;700&family=Nunito:wght@400..800&family=Patrick+Hand&family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400..800&family=Bagel+Fat+One&family=Baloo+2:wght@500..800&family=DM+Sans:opsz,wght@9..40,400..700&family=DM+Serif+Display&family=League+Spartan:wght@500..800&family=Lilita+One&family=Orbitron:wght@600..900&family=Rammetto+One&family=Rubik:wght@400..800&family=Shrikhand&family=Space+Grotesk:wght@400..700&family=Space+Mono:wght@400;700&family=Syne:wght@600..800&display=swap"><script src="./themes.js"></script></helmet>
+<svg width="0" height="0" style="position:absolute"><filter id="cp-wob"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"></feTurbulence><feDisplacementMap in="SourceGraphic" scale="3.2"></feDisplacementMap></filter></svg>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+<div lang="de" style="position:relative;width:1280px;height:800px;overflow:hidden;background-color:{{ t.c.bg }};background-image:{{ t.c.bgImg }};background-size:{{ t.c.bgSize }};color:{{ t.c.ink }};font-family:{{ t.f.b }};font-weight:{{ t.f.bw }};font-size:{{ t.f.bs }};display:flex;flex-direction:column">
+  <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+    <sc-for list="{{ t.smoke }}" as="s" hint-placeholder-count="0"><div style="position:absolute;left:{{ s.x }};top:{{ s.y }};width:{{ s.w }};height:{{ s.h }};background:{{ s.bg }};-webkit-mask:{{ s.mask }};mask:{{ s.mask }};opacity:{{ s.o }}"></div></sc-for>
+    <sc-for list="{{ t.decos }}" as="d" hint-placeholder-count="0"><div style="position:absolute;left:{{ d.x }};top:{{ d.y }};width:{{ d.w }};height:{{ d.h }};background:{{ d.bg }};border-radius:{{ d.r }};border:{{ d.b }};transform:rotate({{ d.rot }});clip-path:{{ d.clip }};opacity:{{ d.o }};box-shadow:{{ d.sh }}"></div></sc-for>
+  </div>
+
+  <div style="position:relative;z-index:4;height:64px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:{{ t.s.div }};background:{{ t.c.barBg }}">
+    <div style="display:flex;align-items:center;gap:10px">
+      <dc-import name="Compibert" dir="{{ t.id }}" variant="head" size="{{ 40 }}" hint-size="40px,40px"></dc-import>
+      <span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};font-size:{{ t.f.logo }};letter-spacing:{{ t.f.ht }};text-transform:uppercase;line-height:1">Compies</span>
+    </div>
+    <div style="width:1px;height:28px;background:{{ t.c.line }}"></div>
+    <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+      <span style="font-weight:700;font-size:15px">Freitags-Zocken #12</span>
+      <span style="font-size:12px;color:{{ t.c.ink2 }}">Termin steht · Fr 24.10., 20:15 Uhr</span>
+    </div>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border:{{ t.s.border }};border-radius:{{ t.s.rChip }};background:{{ t.c.panel }};font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px"><span style="width:8px;height:8px;border-radius:{{ t.s.rDot }};background:{{ t.c.ok }}"></span>Teamwahl offen</div>
+    <div onClick="{{ fire }}" title="Konfetti testen" style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;height:38px;padding:0 14px;background:{{ t.c.hot }};color:{{ t.c.hotInk }};border-radius:{{ t.s.rBtn }};box-shadow:{{ t.s.btnShadow }};border:{{ t.s.btnBorder }};font-weight:700;font-size:13px" style-active="transform:translateY(2px) scale(.97)"><svg viewBox="0 0 24 24" width="17" height="17" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round"><path d="M4 20 8.5 8.5l7 7z"></path><path d="M13 3v2.5M19.5 5 18 6.5M21 11h-2.5M14.5 9.5c1.2-1.4 3-1.6 4.2-.8"></path></svg>Konfetti!</div>
+    <div style="display:flex;align-items:center;gap:8px;height:38px;padding:0 16px;background:{{ t.c.accent }};color:{{ t.c.accentInk }};border-radius:{{ t.s.rBtn }};box-shadow:{{ t.s.btnShadow }};border:{{ t.s.btnBorder }};font-weight:700;font-size:13px"><svg viewBox="0 0 24 24" width="16" height="16" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"><path d="M3 19h18M4 16 3 7l5 4 4-7 4 7 5-4-1 9z"></path></svg>Host-Steuerung</div>
+    <div style="position:relative;width:38px;height:38px;border-radius:{{ t.s.rAv }};background:{{ me.bg }};color:{{ me.fg }};border:{{ t.s.avBorder }};display:grid;place-items:center;font-weight:700;font-size:13px">{{ me.i }}<span style="position:absolute;top:-9px;right:-6px;font-size:13px;color:{{ t.c.accent }}">♛</span></div>
+  </div>
+
+  <sc-if value="{{ t.x.marquee }}">
+    <div style="position:relative;z-index:2;height:36px;flex:none;overflow:hidden;background:{{ t.c.accent }};color:{{ t.c.accentInk }};display:flex;align-items:center;white-space:nowrap;font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};text-transform:uppercase;font-size:20px;letter-spacing:.02em;gap:28px;padding-left:20px"><span>Glücksrad ✱ Veto ✱ Münzwurf ✱ Live-Leaderboard ✱ Siegerehrung ✱ Compibert brüllt ✱</span><span>Glücksrad ✱ Veto ✱ Münzwurf ✱ Live-Leaderboard ✱</span></div>
+  </sc-if>
+
+  <div style="position:relative;z-index:1;flex:1;min-height:0;display:flex">
+    <div style="position:relative;flex:1;min-width:0;padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+      <sc-if value="{{ L.head }}">
+        <div style="display:flex;align-items:flex-end;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+            <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">{{ t.x.lab.kicker }}</span>
+            <span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};font-size:{{ t.f.title }};letter-spacing:{{ t.f.ht }};text-transform:{{ t.f.hc }};line-height:.9">Spielbrett</span>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;gap:8px;font-size:12px">
+            <span style="padding:5px 10px;border:{{ t.s.border }};border-radius:{{ t.s.rChip }};background:{{ t.c.panel }}">8 Teams · je 2</span>
+            <span style="padding:5px 10px;border:{{ t.s.border }};border-radius:{{ t.s.rChip }};background:{{ t.c.panel }}">Konfetti-Dosis {{ doseTxt }}</span>
+            <span style="padding:5px 8px;background:{{ t.c.ink }};color:{{ t.c.bg }};border-radius:{{ t.s.rChip }};font-family:'JetBrains Mono',monospace;font-size:10px">[1.0]</span>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ L.warn }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:9px 12px;background:{{ t.c.warnBg }};color:{{ t.c.warnInk }};border-radius:{{ t.s.r }};font-size:13px">
+          <span style="font-family:{{ t.f.lab }};font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;background:{{ t.c.hot }};color:{{ t.c.hotInk }};border-radius:{{ t.s.rChip }};white-space:nowrap">Nur Host</span>
+          <span style="flex:1;min-width:0">Team Lila hat 1/2 – das Spiel startet erst, wenn alle Teams gleich groß sind.</span>
+          <span style="font-weight:700;text-decoration:underline;white-space:nowrap">Von der Bench nachziehen</span>
+        </div>
+      </sc-if>
+
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ L.cols }};grid-template-rows:{{ L.rows }};gap:{{ L.gap }};align-content:{{ L.align }}">
+        <sc-if value="{{ L.mosaic }}">
+          <div style="grid-column:1 / span 2;grid-row:1;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;padding:0 4px 4px;min-width:0">
+            <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px;color:{{ t.c.ink2 }}">{{ t.x.lab.kicker }} · 8 Teams · je 2 · Konfetti {{ doseTxt }}</span>
+            <span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};font-size:{{ t.f.title }};letter-spacing:{{ t.f.ht }};text-transform:{{ t.f.hc }};line-height:.9">Spielbrett</span>
+            <span style="font-size:12px;line-height:1.35;color:{{ t.c.ink2 }};text-wrap:pretty"><b style="color:{{ t.c.hot }}">Nur Host:</b> Team Lila hat 1/2 – erst starten, wenn alle Teams gleich groß sind.</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ L.cd }}">
+          <div style="position:relative;grid-column:{{ L.cdC }};grid-row:{{ L.cdR }};background:{{ t.c.accent }};color:{{ t.c.accentInk }};border-radius:{{ t.s.r }};display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 14px;min-width:0;min-height:0">
+            <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ t.s.shadow }};filter:{{ t.s.ff }};pointer-events:none"></div>
+            <dc-import name="Compibert" dir="{{ t.id }}" variant="full" size="{{ 112 }}" hint-size="112px,95px"></dc-import>
+            <div style="position:relative;display:flex;flex-direction:column;gap:4px;min-width:0">
+              <span style="font-family:{{ t.f.lab }};text-transform:{{ t.f.labc }};letter-spacing:{{ t.f.labt }};font-size:11px">Anpfiff in</span>
+              <span style="font-family:{{ t.f.n }};font-weight:{{ t.f.nw }};font-size:42px;line-height:.95;font-variant-numeric:tabular-nums;white-space:nowrap">08:42</span>
+              <span style="font-size:12px;font-weight:700">Lila fehlt noch 1</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{ teams }}" as="tm" hint-placeholder-count="8">
+          <sc-if value="{{ L.isCard }}">
+            <div style="position:relative;grid-column:{{ tm.gc }};grid-row:{{ tm.gr }};transform:{{ tm.tf }};background:{{ t.c.panel }};border-radius:{{ t.s.r }};display:flex;flex-direction:column;min-width:0;min-height:0">
+              <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ t.s.shadow }};filter:{{ t.s.ff }};pointer-events:none"></div>
+              <sc-if value="{{ L.tape }}"><div style="position:absolute;left:50%;top:-11px;width:72px;height:22px;margin-left:-36px;background:{{ tapeC }};transform:rotate(-4deg);z-index:3"></div></sc-if>
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:{{ tm.c }};color:{{ tm.ink }};border-radius:{{ t.s.rTop }}">
+                <span style="font-size:13px;width:14px;text-align:center">{{ tm.g }}</span>
+                <span title="{{ tm.full }}" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:{{ t.f.th }};font-weight:{{ t.f.thw }};text-transform:{{ t.f.thc }};font-size:{{ t.f.ths }};line-height:1.2">{{ tm.name }}</span>
+                <span style="font-size:11px;font-weight:700;opacity:.85">{{ tm.cnt }}</span>
+              </div>
+              <div style="display:flex;gap:8px;padding:{{ L.slotPad }}">
+                <sc-for list="{{ tm.slots }}" as="sl" hint-placeholder-count="2">
+                  <div style="position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px">
+                    <sc-if value="{{ sl.filled }}">
+                      <div style="position:relative;width:{{ L.avs }};height:{{ L.avs }};box-sizing:border-box;border-radius:{{ t.s.rAv }};background:{{ sl.p.bg }};color:{{ sl.p.fg }};border:{{ t.s.avBorder }};box-shadow:{{ sl.p.sh }};display:grid;place-items:center;font-weight:700;font-size:14px">{{ sl.p.i }}<span style="position:absolute;right:-3px;bottom:-3px;width:11px;height:11px;border-radius:{{ t.s.rDot }};background:{{ sl.p.dot }};border:2px solid {{ t.c.panel }}"></span></div>
+                      <span style="font-size:12px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sl.p.n }}</span>
+                    </sc-if>
+                    <sc-if value="{{ sl.empty }}">
+                      <div style="width:{{ L.avs }};height:{{ L.avs }};box-sizing:border-box;border-radius:{{ t.s.rAv }};border:{{ sl.eb }};background:{{ sl.ebg }};display:grid;place-items:center;font-size:20px;color:{{ t.c.ink2 }}">+</div>
+                      <span style="font-size:12px;color:{{ t.c.ink2 }}">Frei</span>
+                      <sc-if value="{{ sl.drop }}">
+                        <div style="position:absolute;left:50%;top:0;margin-left:-22px;width:44px;height:44px;transform:translate(-16px,-30px) rotate(-9deg) scale(1.14);z-index:5">
+                          <div style="width:44px;height:44px;box-sizing:border-box;border-radius:{{ t.s.rAv }};background:{{ drag.bg }};color:{{ drag.fg }};border:{{ t.s.avBorder }};box-shadow:{{ t.s.dragShadow }};display:grid;place-items:center;font-weight:700;font-size:14px">{{ drag.i }}</div>
+                          <span style="position:absolute;left:32px;top:36px;font-size:12px;font-weight:700;white-space:nowrap;padding:2px 6px;background:{{ t.c.ink }};color:{{ t.c.bg }};border-radius:{{ t.s.rChip }}">Olli</span>
+                        </div>
+                      </sc-if>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:0 12px 9px;font-size:11px;color:{{ t.c.ink2 }}"><span>{{ tm.vetos }}</span><span>{{ tm.g }} {{ tm.cn }}</span></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ L.isRows }}">
+            <div style="position:relative;grid-column:{{ tm.gc }};grid-row:{{ tm.gr }};background:{{ t.c.panel }};border-radius:{{ t.s.r }};display:flex;min-width:0;min-height:0">
+              <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ t.s.shadow }};filter:{{ t.s.ff }};pointer-events:none"></div>
+              <div style="width:150px;flex:none;box-sizing:border-box;padding:9px 12px;background:{{ tm.c }};color:{{ tm.ink }};border-radius:{{ rLeft }};display:flex;flex-direction:column;justify-content:space-between;gap:4px;min-height:0">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:11px;gap:6px"><span style="font-size:17px;line-height:1">{{ tm.g }}</span><span style="opacity:.85;white-space:nowrap">{{ tm.cnt }} · {{ tm.vetos }}</span></div>
+                <span title="{{ tm.full }}" style="font-family:{{ t.f.th }};font-weight:{{ t.f.thw }};text-transform:{{ t.f.thc }};font-size:{{ t.f.ths }};line-height:1.05;hyphens:auto;overflow-wrap:break-word">{{ tm.name }}</span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:0 12px">
+                <sc-for list="{{ tm.slots }}" as="sl" hint-placeholder-count="2">
+                  <div style="position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:8px">
+                    <sc-if value="{{ sl.filled }}">
+                      <div style="position:relative;flex:none;width:40px;height:40px;box-sizing:border-box;border-radius:{{ t.s.rAv }};background:{{ sl.p.bg }};color:{{ sl.p.fg }};border:{{ t.s.avBorder }};box-shadow:{{ sl.p.sh }};display:grid;place-items:center;font-weight:700;font-size:13px">{{ sl.p.i }}<span style="position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:{{ t.s.rDot }};background:{{ sl.p.dot }};border:2px solid {{ t.c.panel }}"></span></div>
+                      <span style="font-size:13px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sl.p.n }}</span>
+                    </sc-if>
+                    <sc-if value="{{ sl.empty }}">
+                      <div style="flex:none;width:40px;height:40px;box-sizing:border-box;border-radius:{{ t.s.rAv }};border:{{ sl.eb }};background:{{ sl.ebg }};display:grid;place-items:center;font-size:18px;color:{{ t.c.ink2 }}">+</div>
+                      <span style="font-size:12px;color:{{ t.c.ink2 }}">Frei</span>
+                      <sc-if value="{{ sl.drop }}">
+                        <div style="position:absolute;left:0;top:50%;margin-top:-22px;width:44px;height:44px;transform:translate(10px,-18px) rotate(-9deg) scale(1.12);z-index:5">
+                          <div style="width:44px;height:44px;box-sizing:border-box;border-radius:{{ t.s.rAv }};background:{{ drag.bg }};color:{{ drag.fg }};border:{{ t.s.avBorder }};box-shadow:{{ t.s.dragShadow }};display:grid;place-items:center;font-weight:700;font-size:14px">{{ drag.i }}</div>
+                          <span style="position:absolute;left:34px;top:34px;font-size:12px;font-weight:700;white-space:nowrap;padding:2px 6px;background:{{ t.c.ink }};color:{{ t.c.bg }};border-radius:{{ t.s.rChip }}">Olli</span>
+                        </div>
+                      </sc-if>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ t.x.hasNote }}"><div style="position:absolute;left:40px;bottom:150px;transform:rotate(-3deg);font-family:{{ t.x.note.f }};color:{{ t.x.note.c }};font-size:24px;line-height:1;z-index:3">{{ t.x.note.txt }}</div></sc-if>
+
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.55fr);gap:14px">
+        <div style="position:relative;background:{{ t.c.panel }};border-radius:{{ t.s.r }};padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+          <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ t.s.shadow }};filter:{{ t.s.ff }};pointer-events:none"></div>
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:{{ t.f.th }};font-weight:{{ t.f.thw }};text-transform:{{ t.f.thc }};font-size:{{ t.f.ths }}">{{ t.x.lab.bench }}</span><span style="font-size:12px;color:{{ t.c.ink2 }}">Ersatz · Host zieht nach</span></div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:44px;height:44px;box-sizing:border-box;border-radius:{{ t.s.rAv }};border:{{ t.s.slotEmpty }};opacity:.7"></div>
+            <sc-for list="{{ bench }}" as="p" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="position:relative;width:44px;height:44px;box-sizing:border-box;border-radius:{{ t.s.rAv }};background:{{ p.bg }};color:{{ p.fg }};border:{{ t.s.avBorder }};display:grid;place-items:center;font-weight:700;font-size:14px">{{ p.i }}<span style="position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:{{ t.s.rDot }};background:{{ p.dot }};border:2px solid {{ t.c.panel }}"></span></div><span style="font-size:11px">{{ p.n }}</span></div></sc-for>
+          </div>
+        </div>
+        <div style="position:relative;background:{{ t.c.panel }};border-radius:{{ t.s.r }};padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+          <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ t.s.shadow }};filter:{{ t.s.ff }};pointer-events:none"></div>
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:{{ t.f.th }};font-weight:{{ t.f.thw }};text-transform:{{ t.f.thc }};font-size:{{ t.f.ths }}">{{ t.x.lab.stands }}</span><span style="font-size:12px;color:{{ t.c.ink2 }}">Zuschauer · nur Emotes in 1.0</span></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <sc-for list="{{ stands }}" as="p" hint-placeholder-count="8">
+              <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="position:relative;width:40px;height:40px;box-sizing:border-box;border-radius:{{ t.s.rAv }};background:{{ p.bg }};color:{{ p.fg }};border:{{ t.s.avBorder }};display:grid;place-items:center;font-weight:700;font-size:13px">{{ p.i }}<span style="position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:{{ t.s.rDot }};background:{{ p.dot }};border:2px solid {{ t.c.panel }}"></span></div>
+                <span style="font-size:11px">{{ p.n }}</span>
+                <sc-if value="{{ p.host }}"><span style="position:absolute;top:-12px;font-size:14px;color:{{ t.c.accent }}">♛</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:38px;top:-14px;display:flex;align-items:center;gap:6px;padding:5px 10px 5px 5px;background:{{ t.c.accent }};color:{{ t.c.accentInk }};border:{{ t.s.btnBorder }};box-shadow:{{ t.s.btnShadow }};border-radius:{{ t.s.rChip }};font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};font-size:14px;text-transform:uppercase;white-space:nowrap;z-index:4"><dc-import name="Compibert" dir="{{ t.id }}" variant="head" size="{{ 26 }}" hint-size="26px,26px"></dc-import>Roaar!</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:340px;flex:none;border-left:{{ t.s.div }};display:flex;flex-direction:column;background:{{ t.c.panelSide }};min-height:0">
+      <div style="display:flex;align-items:flex-end;gap:2px;padding:10px 14px 0;border-bottom:{{ t.s.div }}">
+        <div style="padding:9px 12px;font-weight:700;border-bottom:3px solid {{ t.c.tabLine }};margin-bottom:-1px">Chat</div>
+        <div style="padding:9px 12px;color:{{ t.c.ink2 }};display:flex;gap:6px;align-items:center">Aktivität<span style="font-size:10px;padding:1px 6px;border-radius:{{ t.s.rChip }};background:{{ t.c.panel2 }};color:{{ t.c.ink }}">12</span></div>
+        <div style="flex:1"></div>
+        <span style="margin-bottom:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:{{ t.c.ink2 }}">[1.0]</span>
+      </div>
+      <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:13px;padding:14px">
+        <sc-for list="{{ chat }}" as="m" hint-placeholder-count="7">
+          <sc-if value="{{ m.sys }}"><div style="display:flex;gap:8px;font-size:12px;color:{{ t.c.ink2 }};padding-left:40px"><span style="font-variant-numeric:tabular-nums">{{ m.time }}</span><span>{{ m.txt }}</span></div></sc-if>
+          <sc-if value="{{ m.msg }}">
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="flex:none;width:30px;height:30px;border-radius:{{ t.s.rAv }};background:{{ m.p.bg }};color:{{ m.p.fg }};display:grid;place-items:center;font-weight:700;font-size:11px">{{ m.p.i }}</div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <div style="display:flex;gap:6px;align-items:center;font-size:12px"><span style="width:8px;height:8px;border-radius:{{ t.s.rDot }};background:{{ m.c }}"></span><b style="font-weight:700">{{ m.n }}</b><span style="color:{{ t.c.ink2 }}">{{ m.w }}</span><span style="margin-left:auto;color:{{ t.c.ink2 }};font-variant-numeric:tabular-nums">{{ m.time }}</span></div>
+                <div style="line-height:1.35;text-wrap:pretty">{{ m.txt }}</div>
+              </div>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;padding:0 14px 10px">
+        <sc-for list="{{ emotes }}" as="em" hint-placeholder-count="4"><div style="flex:1;height:34px;display:grid;place-items:center;border:{{ t.s.border }};border-radius:{{ t.s.rBtn }};background:{{ t.c.panel }};font-size:12px;font-weight:700;white-space:nowrap">{{ em.l }}</div></sc-for>
+      </div>
+      <div style="display:flex;gap:8px;padding:0 14px 14px">
+        <div style="flex:1;height:42px;box-sizing:border-box;display:flex;align-items:center;padding:0 14px;border:{{ t.s.border }};border-radius:{{ t.s.rBtn }};background:{{ t.c.panel }};color:{{ t.c.ink2 }}">Nachricht schreiben …</div>
+        <div style="width:42px;height:42px;box-sizing:border-box;display:grid;place-items:center;background:{{ t.c.accent }};color:{{ t.c.accentInk }};border-radius:{{ t.s.rBtn }};border:{{ t.s.btnBorder }};box-shadow:{{ t.s.btnShadow }}"><svg viewBox="0 0 24 24" width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"><path d="M4 12 20 4l-5 16-3-7z"></path></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6">
+    <sc-for list="{{ fg }}" as="d" hint-placeholder-count="0"><div style="position:absolute;left:{{ d.x }};top:{{ d.y }};width:{{ d.w }};height:{{ d.h }};background:{{ d.bg }};border-radius:{{ d.r }};border:{{ d.b }};transform:rotate({{ d.rot }});clip-path:{{ d.clip }};opacity:{{ d.o }};box-shadow:{{ d.sh }}"></div></sc-for>
+  </div>
+  <canvas ref="{{ cv }}" width="1280" height="800" style="position:absolute;left:0;top:0;width:1280px;height:800px;pointer-events:none;z-index:20"></canvas>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;dir&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;m3a&quot;,&quot;m3b&quot;,&quot;m3c&quot;,&quot;m3d&quot;,&quot;m3e&quot;,&quot;m3f&quot;,&quot;m3g&quot;,&quot;m3h&quot;,&quot;m2a&quot;,&quot;m2b&quot;,&quot;m2c&quot;,&quot;m2d&quot;,&quot;m2e&quot;,&quot;m2f&quot;,&quot;m2g&quot;,&quot;m2h&quot;,&quot;m2i&quot;,&quot;m2j&quot;,&quot;m2k&quot;,&quot;m2l&quot;,&quot;m2m&quot;,&quot;m2n&quot;,&quot;m2o&quot;,&quot;m2p&quot;,&quot;m2q&quot;,&quot;m2r&quot;,&quot;m2s&quot;,&quot;m2t&quot;],&quot;default&quot;:&quot;m3a&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;confetti&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;sticker&quot;,&quot;stickdoodle&quot;,&quot;memphis&quot;,&quot;doodle&quot;,&quot;paper&quot;,&quot;bauhaus&quot;,&quot;spark&quot;,&quot;riso&quot;,&quot;clay&quot;,&quot;pixel&quot;],&quot;default&quot;:&quot;auto&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Konfetti&quot;},&quot;dose&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0,&quot;max&quot;:5,&quot;step&quot;:1,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Konfetti&quot;}}">
+class Component extends DCLogic {
+  cv = React.createRef();
+  parts = [];
+  componentDidMount(){ if(!window.COMPIES_THEMES){ this._h=()=>{ if(!this._done){ this._done=true; this.forceUpdate(); } }; window.addEventListener('compies-themes',this._h);} }
+  componentWillUnmount(){ this._h && window.removeEventListener('compies-themes',this._h); cancelAnimationFrame(this._raf); this._raf=0; }
+  theme(){ const T=window.COMPIES_THEMES; return T && (T[this.props.dir] || T.m2a); }
+  fire = (e) => {
+    const t=this.theme(), cv=this.cv.current; if(!t||!cv) return;
+    const cf=this.cf=Object.assign({dose:3,kind:'memphis',cols:t.teams.map(x=>x.c),ink:t.c.ink,rim:'#ffffff'},t.conf);
+    const ov=this.props.confetti; if(ov&&ov!=='auto') cf.kind=ov;
+    const dv=this.props.dose; if(dv) cf.dose=Math.max(1,Math.min(5,dv|0));
+    const rb=cv.getBoundingClientRect(), sc=rb.width/1280||1;
+    let ox=1000, oy=32;
+    if(e && e.currentTarget && e.currentTarget.getBoundingClientRect){ const b=e.currentTarget.getBoundingClientRect(); ox=(b.left+b.width/2-rb.left)/sc; oy=(b.top+b.height/2-rb.top)/sc; }
+    const rm=window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const N=Math.round([0,40,80,130,200,300][cf.dose]*(rm?.3:1));
+    const S={memphis:['tri','ring','squig','rect','dot','half'],paper:['rect','rect','rect','dot'],bauhaus:['dot','half','quarter','sq','bar'],spark:['spark','spark','dot','ring'],riso:['riso','riso','tri','rect'],pixel:['pix'],clay:['blob','blob','pill'],sticker:['sticker','sticker','sticker','spark'],stickdoodle:['sticker','sticker','sticker','doodle','loop'],doodle:['doodle','squig','ring','loop']}[cf.kind]||['rect'];
+    const R=Math.random, P=this.parts;
+    const add=(x,y,ang,spd,n,spread)=>{ for(let i=0;i<n;i++){ const a=ang+(R()-.5)*spread, v=spd*(.5+R()*.7); P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:R()*6.28,vr:(R()-.5)*.35,s:8+R()*9,c:cf.cols[(R()*cf.cols.length)|0],c2:cf.cols[(R()*cf.cols.length)|0],sh:S[(R()*S.length)|0],t:0,ph:R()*6.28}); } };
+    add(ox,oy,Math.PI*.62,13,N*(cf.dose>=3?.45:1),1.6);
+    if(cf.dose>=3){ add(-10,810,-Math.PI*.36,24,N*.27,.5); add(1290,810,-Math.PI*.64,24,N*.27,.5); }
+    if(cf.dose>=5){ for(let i=0;i<N*.4;i++) add(R()*1280,-20-R()*400,Math.PI/2,2,1,.2); }
+    if(!this._raf) this._raf=requestAnimationFrame(this.tick);
+  };
+  tick = () => {
+    const cv=this.cv.current; if(!cv){ this._raf=0; this.parts=[]; return; }
+    const x=cv.getContext('2d'), cf=this.cf; x.clearRect(0,0,1280,800);
+    const pix=cf.kind==='pixel';
+    this.parts=this.parts.filter(p=>p.y<860&&p.t<700);
+    for(const p of this.parts){ p.t++; p.vx*=.975; if(p.vy<0) p.vy*=.975; p.vy=Math.min(p.vy+.3,3.6); p.x+=p.vx+Math.sin(p.t*.07+p.ph)*.9; p.y+=p.vy; p.r+=p.vr; this.draw(x,p,cf,pix); }
+    this._raf=this.parts.length?requestAnimationFrame(this.tick):0;
+  };
+  draw(x,p,cf,pix){
+    const s=p.s; x.save();
+    if(pix){ x.translate(Math.round(p.x/4)*4,Math.round(p.y/4)*4); x.fillStyle=p.c; const q=p.ph>3?12:8; x.fillRect(-q/2,-q/2,q,q); x.restore(); return; }
+    x.translate(p.x,p.y); x.rotate(p.r); x.fillStyle=p.c; x.strokeStyle=p.c; x.lineCap='round'; x.lineJoin='round';
+    const fl=Math.cos(p.t*.12+p.ph), rr=(w,h,r)=>{ x.beginPath(); if(x.roundRect) x.roundRect(-w/2,-h/2,w,h,r); else x.rect(-w/2,-h/2,w,h); };
+    switch(p.sh){
+      case 'rect': x.scale(1,fl); x.fillRect(-s*.35,-s*.6,s*.7,s*1.2); break;
+      case 'tri': x.scale(fl,1); x.beginPath(); x.moveTo(0,-s*.6); x.lineTo(s*.55,s*.45); x.lineTo(-s*.55,s*.45); x.closePath(); x.fill(); break;
+      case 'ring': x.lineWidth=3; x.beginPath(); x.arc(0,0,s*.45,0,6.283); x.stroke(); break;
+      case 'dot': x.beginPath(); x.arc(0,0,s*.34,0,6.283); x.fill(); break;
+      case 'half': x.beginPath(); x.arc(0,0,s*.6,Math.PI,0); x.closePath(); x.fill(); break;
+      case 'quarter': x.beginPath(); x.moveTo(0,0); x.arc(0,0,s*.9,0,Math.PI/2); x.closePath(); x.fill(); break;
+      case 'sq': x.scale(fl,1); x.fillRect(-s*.4,-s*.4,s*.8,s*.8); break;
+      case 'bar': x.fillRect(-s*.9,-s*.15,s*1.8,s*.3); break;
+      case 'squig': x.lineWidth=3.2; x.beginPath(); x.moveTo(-s,0); x.quadraticCurveTo(-s*.5,-s*.6,0,0); x.quadraticCurveTo(s*.5,s*.6,s,0); x.stroke(); break;
+      case 'spark': x.beginPath(); for(let i=0;i<8;i++){ const a=i*Math.PI/4, d=i%2?s*.16:s*.62; x.lineTo(Math.cos(a)*d,Math.sin(a)*d); } x.closePath(); x.fill(); break;
+      case 'riso': x.globalCompositeOperation='multiply'; x.globalAlpha=.85; x.beginPath(); x.arc(0,0,s*.45,0,6.283); x.fill(); x.fillStyle=p.c2; x.beginPath(); x.arc(3,2,s*.45,0,6.283); x.fill(); break;
+      case 'blob': { const g=x.createRadialGradient(-s*.2,-s*.22,1,0,0,s*.65); g.addColorStop(0,'#ffffff'); g.addColorStop(.28,p.c); g.addColorStop(1,window.COMPIES_DATA.shade(p.c,-.3)); x.fillStyle=g; x.beginPath(); x.arc(0,0,s*.6,0,6.283); x.fill(); break; }
+      case 'pill': rr(s*1.5,s*.6,s*.3); x.fill(); x.fillStyle='rgba(255,255,255,.45)'; rr(s*1.1,s*.16,s*.08); x.fill(); break;
+      case 'sticker': { const z=s*1.25, k=(p.ph*.64)|0; x.scale(1,.55+.45*Math.abs(fl)); x.beginPath();
+        if(k===0){ if(x.roundRect) x.roundRect(-z*.5,-z*.5,z,z,z*.24); else x.rect(-z*.5,-z*.5,z,z); }
+        else if(k===1){ x.arc(0,0,z*.52,0,6.283); }
+        else if(k===2){ for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, d=i%2?z*.27:z*.62; x.lineTo(Math.cos(a)*d,Math.sin(a)*d); } x.closePath(); }
+        else { x.moveTo(0,-z*.55); x.lineTo(z*.58,z*.45); x.lineTo(-z*.58,z*.45); x.closePath(); }
+        x.shadowColor='rgba(0,0,0,.3)'; x.shadowBlur=6; x.shadowOffsetY=3; x.lineWidth=7; x.strokeStyle=cf.rim||'#ffffff'; x.stroke();
+        x.shadowColor='transparent'; x.fill(); x.fillStyle='rgba(255,255,255,.6)'; x.beginPath(); x.arc(-z*.17,-z*.17,z*.08,0,6.283); x.fill(); break; }
+      case 'doodle': x.strokeStyle=cf.ink; x.lineWidth=2.4; x.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, d=i%2?s*.3:s*.7; x.lineTo(Math.cos(a)*d,Math.sin(a)*d); } x.closePath(); x.stroke(); break;
+      case 'loop': x.lineWidth=2.6; x.beginPath(); x.arc(0,0,s*.45,0,5.2); x.stroke(); break;
+    }
+    x.restore();
+  }
+  renderVals(){
+    const t=this.theme(); if(!t) return {ready:false};
+    const d=window.COMPIES_DATA.lobby(t);
+    const LAY={
+      grid:{cols:'repeat(4,minmax(0,1fr))',rows:'auto auto',align:'start',warn:true,head:true,isCard:true},
+      rows:{cols:'repeat(2,minmax(0,1fr))',rows:'repeat(4,minmax(0,1fr))',align:'stretch',warn:true,head:true,isRows:true,gap:'10px 14px'},
+      arena:{cols:'repeat(3,minmax(0,1fr))',rows:'repeat(3,minmax(0,1fr))',align:'stretch',warn:false,head:true,isCard:true,cd:true,cdC:'2',cdR:'2',compact:true,gap:'12px',pos:[[1,1],[1,2],[1,3],[2,1],[2,3],[3,1],[3,2],[3,3]]},
+      scatter:{cols:'repeat(4,minmax(0,1fr))',rows:'auto auto',align:'center',warn:true,head:true,isCard:true,tilt:true,gap:'22px 16px'},
+      mosaic:{cols:'repeat(4,minmax(0,1fr))',rows:'repeat(3,minmax(0,1fr))',align:'stretch',warn:false,head:false,isCard:true,mosaic:true,cd:true,cdC:'3 / span 2',cdR:'3',compact:true,gap:'12px',pos:[[1,3],[1,4],[2,1],[2,2],[2,3],[2,4],[3,1],[3,2]]}};
+    const L=Object.assign({gap:'14px',isCard:false,isRows:false,cd:false,mosaic:false},LAY[t.lay]||LAY.grid);
+    L.tape=!!(t.x&&t.x.tape)&&!!L.isCard;
+    L.avs=L.compact?'42px':'48px'; L.slotPad=L.compact?'9px 10px 5px':'14px 10px 10px';
+    const tilt=[-2.4,1.8,-1.2,2.6,1.4,-2.2,2.2,-1.6], dy=[4,-6,8,-2,-4,6,-8,3];
+    const teams=d.teams.map((tm,k)=>Object.assign({},tm,{gc:L.pos?String(L.pos[k][1]):'auto',gr:L.pos?String(L.pos[k][0]):'auto',tf:L.tilt?`rotate(${tilt[k]}deg) translateY(${dy[k]}px)`:'none'}));
+    const r=t.s.r, dose=(t.conf&&t.conf.dose)||3;
+    return Object.assign({},d,{ready:true,t,L,teams,me:d.stands[1],fg:t.fg||[],
+      rLeft:(r==='0px'||r==='0')?'0':`${r} 0 0 ${r}`, tapeC:(t.x&&t.x.tapeC)||'rgba(255,236,150,.8)',
+      doseTxt:'●●●●●'.slice(0,dose)+'○○○○○'.slice(0,5-dose), fire:this.fire, cv:this.cv});
+  }
+}
+</script>
+</body>
+</html>

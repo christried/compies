@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="./image-slot.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button,input{font:inherit;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div ref="{{ root }}" data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);background-attachment:fixed;color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;font-optical-sizing:auto;display:flex;flex-direction:{{ dir }}">
+  <dc-import name="DSRail" cur="people" toc="{{ toc }}" mode="{{ mode }}" motion="{{ motion }}" muted="{{ muted }}" wide="{{ wide }}" setLight="{{ setLight }}" setDark="{{ setDark }}" toggleMotion="{{ toggleMotion }}" toggleMute="{{ toggleMute }}" hint-size="260px,100vh"></dc-import>
+
+  <main style="flex:1;min-width:0;width:100%;box-sizing:border-box;max-width:1240px;margin:0 auto;padding:44px clamp(16px,3vw,48px) 120px;display:flex;flex-direction:column;gap:88px">
+
+    <section style="display:flex;flex-direction:column;gap:16px;max-width:860px">
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(48px,5vw + 20px,88px);line-height:.95;text-wrap:balance">Wer spielt mit wem.</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.5;text-wrap:pretty">Block 3: everything about people in a session, from avatars and team identity to the game board where everyone drags themselves into a team. The board demo is live: switch between host and player, move through the phases, and try to steal the last slot.</p>
+    </section>
+
+    <!-- AVATAR -->
+    <section id="avatar" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Avatar</h2>
+        <span style="color:var(--cp-ink-2)">Profile picture from Discord or Twitch, or an upload. Initials on a soft tint while it loads or if there is none. Team, host and presence sit on the rim.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:18px">
+          <b style="font-size:16px">Sizes</b>
+          <div style="display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap">
+            <sc-for list="{{ avSizes }}" as="a" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+                <dc-import name="Avatar" who="{{ a.who }}" size="{{ a.s }}" host="{{ a.host }}" team="{{ a.team }}" hint-size="40px,40px"></dc-import>
+                <span style="font-size:12px;color:var(--cp-ink-2);text-align:center;line-height:1.3">{{ a.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:1.5px;background:var(--cp-line-soft)"></div>
+          <b style="font-size:16px">States</b>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:20px 12px">
+            <sc-for list="{{ avStates }}" as="a" hint-placeholder-count="7">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+                <dc-import name="Avatar" who="{{ a.who }}" size="{{ 48 }}" team="{{ a.team }}" host="{{ a.host }}" online="{{ a.on }}" lifted="{{ a.lifted }}" hint-size="48px,48px"></dc-import>
+                <span style="font-size:13px;font-weight:700;line-height:1.2">{{ a.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Every person, everywhere: board, chat, activity, poll results, leaderboard, ceremony. Rim slots are fixed: team mark bottom-left, host crown top-right, presence dot bottom-right.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't tint the avatar itself with the team colour (the tints are neutral on purpose). Don't add more rim badges; mood and emotes float above the avatar, never on it. No square avatars.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The avatar is decorative; the name next to it or the label of its button carries everything („Sanne, Host, online, Team Rot“). Offline differs by shape (hollow ring) and greyscale, not just colour. The team is shown by colour and symbol.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Board: 48 desktop, 40 mobile. Lists 32, chat 24. Below 32 px the team ring stays, the presence dot stays, the crown stays; everything else drops.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEAM IDENTITY -->
+    <section id="teams" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Team identity</h2>
+        <span style="color:var(--cp-ink-2)">Colour, symbol and pattern are assigned in order and never change during a session. The team name is the only part people make themselves.</span>
+      </div>
+      <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <b style="font-size:16px">Team chip</b>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <sc-for list="{{ chips }}" as="c" hint-placeholder-count="8">
+              <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px 0 5px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-team-{{ c.n }});color:var(--cp-team-{{ c.n }}-ink);font-weight:700;font-size:14px;white-space:nowrap"><dc-import name="TeamMark" team="{{ c.n }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import>{{ c.label }}</span>
+            </sc-for>
+          </div>
+          <span style="font-size:13px;color:var(--cp-ink-2)">Used in rows, results and the leaderboard. Before anyone has added a word, a team is named after its colour.</span>
+        </div>
+        <div style="height:1.5px;background:var(--cp-line-soft)"></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <b style="font-size:16px">Free-for-all: every player is a party</b>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+            <sc-for list="{{ ffa }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;border:2px solid var(--cp-line);border-radius:14px;overflow:hidden;background:var(--cp-surface)">
+                <span style="height:22px;background-color:var(--cp-team-{{ f.n }});background-image:var(--cp-team-{{ f.n }}-pattern);border-bottom:2px solid var(--cp-line)"></span>
+                <div style="display:flex;align-items:center;gap:10px;padding:12px">
+                  <dc-import name="Avatar" who="{{ f.who }}" size="{{ 40 }}" team="{{ f.n }}" hint-size="40px,40px"></dc-import>
+                  <div style="display:flex;flex-direction:column;min-width:0"><b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.who }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ f.p }}</span></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-size:13px;color:var(--cp-ink-2)">Same palette and symbols as teams, up to 8 parties. The player's display name stands in for the team name.</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Pattern only on surfaces with no text on top: zone header strips, wheel slices, leaderboard bars. Chip or solid colour where text sits.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never put text directly on a pattern. Never use team colours for UI states (success, error) or for badges. Never show a colour without its symbol.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Each team has its own text colour, so chip text meets 4.5:1 for all 8 teams. Screen readers get the team name; colour and symbol are hidden for them.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Chips stay 36 px everywhere. In tight rows on mobile, the chip collapses to the 26 px symbol with the name in the row's text.</div>
+      </div>
+    </section>
+
+    <!-- TEAM NAME -->
+    <section id="name" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Team name builder</h2>
+        <span style="color:var(--cp-ink-2)">Everyone in a team adds one word. Words line up in the order people joined. The name freezes at kick-off.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap"><b style="font-size:16px">Live: your word (as Kitty)</b><span style="font-size:13px;color:var(--cp-ink-2)">Changes on the board below too</span></div>
+          <sc-if value="{{ inTeam }}">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background-color:var(--cp-team-{{ myN }});background-image:var(--cp-team-{{ myN }}-pattern)">
+              <dc-import name="TeamMark" team="{{ myN }}" size="{{ 30 }}" hint-size="30px,30px"></dc-import>
+              <span title="{{ myName }}" style="min-width:0;padding:2px 10px;border-radius:8px;background:var(--cp-team-{{ myN }});color:var(--cp-team-{{ myN }}-ink);font-family:var(--cp-font-display);font-size:22px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ myName }}</span>
+              <sc-if value="{{ myFrozen }}"><span style="margin-left:auto;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--cp-surface);border:2px solid var(--cp-line)" title="Eingefroren"><dc-import name="Icon" icon="lock" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></sc-if>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <span style="font-size:13px;color:var(--cp-ink-2)">Reihenfolge:</span>
+              <sc-for list="{{ myWords }}" as="w" hint-placeholder-count="3">
+                <span style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px 0 4px;border-radius:999px;border:2px solid {{ w.bc }};background:var(--cp-surface);font-size:13px;font-weight:700"><dc-import name="Avatar" who="{{ w.who }}" size="{{ 22 }}" dot="{{ false }}" hint-size="22px,22px"></dc-import>{{ w.w }}</span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ notInTeam }}"><div style="padding:12px 14px;border:2px dashed var(--cp-line-soft);border-radius:12px;color:var(--cp-ink-2);font-size:14px">Du bist gerade in keinem Team. Dein Wort zählt, sobald du einem beitrittst.</div></sc-if>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label for="my-word" style="font-size:14px;font-weight:700">Dein Wort für den Teamnamen</label>
+            <input id="my-word" value="{{ myWord }}" onInput="{{ onWord }}" readonly="{{ wordRO }}" maxlength="13" autocomplete="off" aria-invalid="{{ wordErr }}" aria-describedby="my-word-help" style="width:100%;height:48px;box-sizing:border-box;padding:0 14px;border-radius:12px;border:{{ wordBd }};background:{{ wordBg }};font-size:16px">
+            <span id="my-word-help" aria-live="polite" style="display:flex;justify-content:space-between;gap:8px;font-size:13px;color:{{ wordHelpC }};font-weight:{{ wordHelpW }}"><span>{{ wordHelp }}</span><span style="font-variant-numeric:tabular-nums;color:var(--cp-ink-2);font-weight:500">{{ wordLen }}/12</span></span>
+          </div>
+          <sc-if value="{{ canReset }}"><button type="button" onClick="{{ resetName }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="rotate-ccw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Name zurücksetzen (Host)</button></sc-if>
+        </div>
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;padding:6px 0">
+          <sc-for list="{{ nameStates }}" as="s" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;align-items:center;padding:10px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+              <span style="font-size:13px;font-weight:700">{{ s.k }}</span>
+              <div style="display:flex;align-items:center;gap:8px;min-width:0;padding:6px 8px;border:2px solid var(--cp-line);border-radius:10px;background-color:var(--cp-team-{{ s.n }});background-image:var(--cp-team-{{ s.n }}-pattern)">
+                <dc-import name="TeamMark" team="{{ s.n }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import>
+                <span title="{{ s.name }}" style="min-width:0;padding:1px 8px;border-radius:6px;background:var(--cp-team-{{ s.n }});color:var(--cp-team-{{ s.n }}-ink);font-family:var(--cp-font-display);font-size:18px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+                <sc-if value="{{ s.lock }}"><span style="margin-left:auto;flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--cp-surface);border:2px solid var(--cp-line)"><dc-import name="Icon" icon="lock" size="{{ 12 }}" hint-size="12px,12px"></dc-import></span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+          <span style="display:block;padding:10px 16px 6px;font-size:13px;color:var(--cp-ink-2)">Truncated names show in full on hover and in the team's detail sheet.</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> The word field appears in the team zone as soon as you join a team. Leaving takes your word with you; the remaining words close up.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No spaces (a typed space is removed with a hint), no more than 12 characters, no editing after kick-off. The host can only reset, never write a name for a team.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The counter and the space hint are announced politely. Frozen fields are <code style="font-family:var(--cp-font-mono)">readonly</code>, not disabled, so the word can still be read. The full name is the zone's accessible name.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: inline in the team zone under your avatar. Mobile: in the zone's detail sheet, which opens when you tap your own team header.</div>
+      </div>
+    </section>
+
+    <!-- BOARD -->
+    <section id="brett" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Spielbrett</h2>
+        <span style="color:var(--cp-ink-2)">Drag avatars between team slots, bench and stands. Players move themselves, the host moves everyone. Click or press Enter on an avatar to move it without dragging.</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:14px 16px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface-2)">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700">Du bist</span>
+          <div role="group" aria-label="Rolle" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+            <sc-for list="{{ roles }}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:40px;padding:0 14px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">{{ r.n }}</button></sc-for>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700">Phase</span>
+          <div role="group" aria-label="Phase" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+            <sc-for list="{{ phases }}" as="r" hint-placeholder-count="3"><button type="button" aria-pressed="{{ r.on }}" onClick="{{ r.pick }}" style="height:40px;padding:0 14px;border:0;border-left:{{ r.bl }};background:{{ r.bg }};color:{{ r.fg }};font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">{{ r.n }}</button></sc-for>
+          </div>
+        </div>
+        <button type="button" role="switch" aria-checked="{{ conflict }}" onClick="{{ toggleConflict }}" style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:{{ conflictBg }};font-size:13px;font-weight:700;cursor:pointer">Jemand ist schneller</button>
+        <button type="button" onClick="{{ resetBoard }}" style="display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:0;border-radius:999px;background:transparent;font-size:13px;font-weight:700;cursor:pointer;margin-left:auto" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="rotate-ccw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Zurücksetzen</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <sc-if value="{{ hasNotice }}">
+          <div role="status" style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-surface)">
+            <span style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px solid var(--cp-line);background:{{ notice.fill }};color:{{ notice.on }}"><dc-import name="Icon" icon="{{ notice.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <sc-if value="{{ notice.host }}"><span style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Nur du siehst das</span></sc-if>
+              <span style="font-size:14px;line-height:1.45;text-wrap:pretty">{{ notice.txt }}</span>
+              <sc-if value="{{ notice.hasAct }}"><button type="button" onClick="{{ notice.act }}" style="align-self:flex-start;padding:0;border:0;background:transparent;font-size:14px;font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;cursor:pointer">{{ notice.actL }}</button></sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px">
+          <sc-for list="{{ tz }}" as="z" hint-placeholder-count="2">
+            <div data-zone="{{ z.id }}" role="group" aria-label="{{ z.aria }}" style="border:{{ z.bd }};border-radius:16px;background:{{ z.bg }};box-shadow:{{ z.sh }};transform:{{ z.tf }};overflow:hidden;display:flex;flex-direction:column;transition:transform 140ms cubic-bezier(.2,0,0,1),box-shadow 140ms cubic-bezier(.2,0,0,1)">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background-color:var(--cp-team-{{ z.n }});background-image:var(--cp-team-{{ z.n }}-pattern);border-bottom:var(--cp-bw) solid var(--cp-line)">
+                <dc-import name="TeamMark" team="{{ z.n }}" size="{{ 30 }}" hint-size="30px,30px"></dc-import>
+                <span title="{{ z.name }}" style="min-width:0;padding:2px 10px;border-radius:8px;background:var(--cp-team-{{ z.n }});color:var(--cp-team-{{ z.n }}-ink);font-family:var(--cp-font-display);font-size:22px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ z.name }}</span>
+                <span style="margin-left:auto;flex:none;display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:var(--cp-surface);border:2px solid var(--cp-line);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums"><sc-if value="{{ z.locked }}"><dc-import name="Icon" icon="lock" size="{{ 14 }}" hint-size="14px,14px"></dc-import></sc-if>{{ z.count }}</span>
+              </div>
+              <div style="display:flex;gap:14px;padding:16px 14px 14px;flex-wrap:wrap;min-height:84px;align-items:flex-start">
+                <sc-for list="{{ z.slots }}" as="s" hint-placeholder-count="3">
+                  <sc-if value="{{ s.filled }}">
+                    <button type="button" data-pid="{{ s.p.id }}" aria-label="{{ s.p.aria }}" onPointerDown="{{ s.p.down }}" onClick="{{ s.p.click }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;width:64px;padding:4px 0;border:0;border-radius:12px;background:{{ s.p.selBg }};cursor:{{ s.p.cur }};touch-action:{{ s.p.ta }};opacity:{{ s.p.op }}">
+                      <dc-import name="Avatar" who="{{ s.p.n }}" size="{{ 48 }}" team="{{ z.n }}" host="{{ s.p.host }}" online="{{ s.p.on }}" hint-size="48px,48px"></dc-import>
+                      <span style="max-width:64px;font-size:13px;font-weight:{{ s.p.w }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.p.label }}</span>
+                    </button>
+                  </sc-if>
+                  <sc-if value="{{ s.empty }}">
+                    <span style="display:flex;flex-direction:column;align-items:center;gap:8px;width:64px;padding:4px 0">
+                      <span style="display:grid;place-items:center;width:48px;height:48px;border-radius:50%;box-sizing:border-box;border:2.5px dashed {{ s.c }};background:{{ s.bg }};color:{{ s.c }}"><dc-import name="Icon" icon="{{ s.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+                      <span style="font-size:13px;color:var(--cp-ink-2);font-weight:{{ s.w }}">{{ s.label }}</span>
+                    </span>
+                  </sc-if>
+                </sc-for>
+              </div>
+              <sc-if value="{{ z.hasMsg }}"><div style="display:flex;align-items:center;gap:6px;padding:0 14px 14px;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><dc-import name="Icon" icon="lock" size="{{ 14 }}" hint-size="14px,14px"></dc-import>{{ z.msg }}</div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px">
+          <sc-for list="{{ oz }}" as="z" hint-placeholder-count="2">
+            <div data-zone="{{ z.id }}" role="group" aria-label="{{ z.aria }}" style="border:{{ z.bd }};border-radius:16px;background:{{ z.bg }};box-shadow:{{ z.sh }};transform:{{ z.tf }};display:flex;flex-direction:column;transition:transform 140ms cubic-bezier(.2,0,0,1),box-shadow 140ms cubic-bezier(.2,0,0,1)">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px 0">
+                <span style="display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="{{ z.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+                <div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-family:var(--cp-font-display);font-size:22px">{{ z.title }}</span><span style="font-size:12px;color:var(--cp-ink-2)">{{ z.sub }}</span></div>
+                <span style="margin-left:auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums">{{ z.count }}</span>
+              </div>
+              <div style="display:flex;gap:14px;padding:14px;flex-wrap:wrap;min-height:84px;align-items:flex-start">
+                <sc-for list="{{ z.people }}" as="p" hint-placeholder-count="2">
+                  <button type="button" data-pid="{{ p.id }}" aria-label="{{ p.aria }}" onPointerDown="{{ p.down }}" onClick="{{ p.click }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;width:64px;padding:4px 0;border:0;border-radius:12px;background:{{ p.selBg }};cursor:{{ p.cur }};touch-action:{{ p.ta }};opacity:{{ p.op }}">
+                    <dc-import name="Avatar" who="{{ p.n }}" size="{{ 48 }}" host="{{ p.host }}" online="{{ p.on }}" hint-size="48px,48px"></dc-import>
+                    <span style="max-width:64px;font-size:13px;font-weight:{{ p.w }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.label }}</span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ z.isEmpty }}"><span style="align-self:center;color:var(--cp-ink-2);font-size:14px">{{ z.empty }}</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ hasSel }}">
+          <div ref="{{ panelRef }}" role="group" aria-label="{{ selTitle }}" onKeyDown="{{ panelKey }}" style="display:flex;flex-direction:column;gap:12px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+            <div style="display:flex;align-items:center;gap:10px"><b style="flex:1;font-size:16px">{{ selTitle }}</b><button type="button" onClick="{{ closeSel }}" aria-label="Abbrechen" style="display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:999px;background:transparent;cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="x" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+              <sc-for list="{{ selDests }}" as="d" hint-placeholder-count="3">
+                <button type="button" onClick="{{ d.go }}" aria-disabled="{{ d.dis }}" style="display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border-radius:12px;border:{{ d.bd }};background:{{ d.bg }};color:{{ d.fg }};cursor:{{ d.cur }};text-align:left">
+                  <sc-if value="{{ d.isTeam }}"><dc-import name="TeamMark" team="{{ d.n }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import></sc-if>
+                  <sc-if value="{{ d.notTeam }}"><span style="display:grid;place-items:center;width:26px;height:26px"><dc-import name="Icon" icon="{{ d.icon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span></sc-if>
+                  <span style="display:flex;flex-direction:column;min-width:0"><b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.label }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ d.sub }}</span></span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div aria-live="polite" style="min-height:24px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700">{{ live }}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Mobile, 390 px: tap an avatar, pick a place</span>
+          <div style="position:relative;width:100%;max-width:390px;height:600px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:20px;background:var(--cp-paper);overflow:hidden">
+            <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-family:var(--cp-font-display);font-size:26px;line-height:1">Spielbrett</span>
+              <sc-for list="{{ mobTeams }}" as="m" hint-placeholder-count="2">
+                <div style="border:2px solid var(--cp-line);border-radius:14px;overflow:hidden;background:var(--cp-surface)">
+                  <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background-color:var(--cp-team-{{ m.n }});background-image:var(--cp-team-{{ m.n }}-pattern);border-bottom:2px solid var(--cp-line)">
+                    <dc-import name="TeamMark" team="{{ m.n }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import>
+                    <span style="min-width:0;padding:1px 8px;border-radius:6px;background:var(--cp-team-{{ m.n }});color:var(--cp-team-{{ m.n }}-ink);font-family:var(--cp-font-display);font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.name }}</span>
+                    <span style="margin-left:auto;padding:0 8px;border-radius:999px;background:var(--cp-surface);border:2px solid var(--cp-line);font-weight:800;font-size:12px">{{ m.count }}</span>
+                  </div>
+                  <div style="display:flex;gap:10px;padding:10px">
+                    <sc-for list="{{ m.ppl }}" as="p" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:52px"><dc-import name="Avatar" who="{{ p.n }}" size="{{ 40 }}" team="{{ m.n }}" online="{{ p.on }}" hint-size="40px,40px"></dc-import><span style="font-size:12px;font-weight:{{ p.w }}">{{ p.label }}</span></div></sc-for>
+                    <sc-for list="{{ m.free }}" as="f" hint-placeholder-count="1"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:52px"><span style="width:40px;height:40px;border-radius:50%;border:2.5px dashed var(--cp-ink-3);box-sizing:border-box"></span><span style="font-size:12px;color:var(--cp-ink-2)">Frei</span></div></sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="display:flex;gap:10px">
+                <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><dc-import name="Icon" icon="armchair" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b style="font-size:14px">Bench</b><span style="margin-left:auto;font-weight:800;font-size:13px">2</span></div>
+                <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><dc-import name="Icon" icon="eye" size="{{ 18 }}" hint-size="18px,18px"></dc-import><b style="font-size:14px">Tribüne</b><span style="margin-left:auto;font-weight:800;font-size:13px">2</span></div>
+              </div>
+            </div>
+            <div style="position:absolute;inset:0;background:var(--cp-overlay)"></div>
+            <div role="dialog" aria-label="Kitty verschieben" style="position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;background:var(--cp-surface);border-top:var(--cp-bw) solid var(--cp-line);border-radius:20px 20px 0 0;padding:10px 16px 18px;display:flex;flex-direction:column;gap:10px">
+              <span aria-hidden="true" style="align-self:center;width:44px;height:5px;border-radius:999px;background:var(--cp-ink-3)"></span>
+              <div style="display:flex;align-items:center;gap:10px"><dc-import name="Avatar" who="Kitty" size="{{ 40 }}" team="{{ 1 }}" hint-size="40px,40px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px">Wohin, Kitty?</span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><dc-import name="TeamMark" team="{{ 8 }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import><span style="display:flex;flex-direction:column"><b>Nacht Eulen</b><span style="font-size:12px;color:var(--cp-ink-2)">1 Platz frei</span></span></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px"><dc-import name="Icon" icon="armchair" size="{{ 20 }}" hint-size="20px,20px"></dc-import><b>Bench</b></div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:12px"><dc-import name="Icon" icon="eye" size="{{ 20 }}" hint-size="20px,20px"></dc-import><b>Tribüne</b></div>
+              <span style="display:grid;place-items:center;height:44px;font-weight:700">Abbrechen</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> The lobby, from the date poll until the ceremony. A drag lifts the avatar (scale, tilt, hard shadow); valid zones light up in the focus colour, invalid ones go dashed red and the reason rides along under the avatar.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Never move someone optimistically into the last slot: wait for the server, then bounce the loser back with a spring and say who was faster. Never hide the reason for a locked zone. No drag handles; the avatar is the handle.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Dragging always has a click alternative: Enter or a click on an avatar opens „verschieben nach“, focus moves into it, Esc returns to the avatar. Every result is announced („Kitty ist jetzt auf der Bench“). Zones are labelled groups with their count („Wilde Gurken Bande, 3 von 3“).</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: drag and drop, teams in a grid, bench and stands below. Mobile: teams stack as rows, bench and stands collapse to counters, and tapping an avatar opens the „Wohin?“ bottom sheet. Long-press drag (400 ms) works too, but the sheet is the main way.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ZONE STATES -->
+    <section id="zonen" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Team zone states</h2>
+        <span style="color:var(--cp-ink-2)">A team zone tells you at a glance whether you can get in, and if not, why.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px">
+        <sc-for list="{{ zStates }}" as="z" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;font-weight:700">{{ z.k }}</span>
+            <div style="border:{{ z.bd }};border-radius:14px;background:{{ z.bg }};box-shadow:{{ z.sh }};overflow:hidden">
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background-color:var(--cp-team-4);background-image:var(--cp-team-4-pattern);border-bottom:2px solid var(--cp-line)">
+                <dc-import name="TeamMark" team="{{ 4 }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import>
+                <span style="min-width:0;padding:1px 8px;border-radius:6px;background:var(--cp-team-4);color:var(--cp-team-4-ink);font-family:var(--cp-font-display);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ z.name }}</span>
+                <span style="margin-left:auto;flex:none;display:flex;align-items:center;gap:4px;padding:0 8px;height:24px;border-radius:999px;background:var(--cp-surface);border:2px solid var(--cp-line);font-weight:800;font-size:12px"><sc-if value="{{ z.lock }}"><dc-import name="Icon" icon="lock" size="{{ 12 }}" hint-size="12px,12px"></dc-import></sc-if>{{ z.count }}</span>
+              </div>
+              <div style="display:flex;gap:10px;padding:12px 10px">
+                <sc-for list="{{ z.slots }}" as="s" hint-placeholder-count="3">
+                  <sc-if value="{{ s.filled }}"><dc-import name="Avatar" who="{{ s.who }}" size="{{ 36 }}" team="{{ 4 }}" hint-size="36px,36px"></dc-import></sc-if>
+                  <sc-if value="{{ s.empty }}"><span style="display:grid;place-items:center;width:36px;height:36px;border-radius:50%;box-sizing:border-box;border:2.5px dashed {{ s.c }};background:{{ s.bg }};color:{{ s.c }}"><dc-import name="Icon" icon="{{ s.icon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></sc-if>
+                </sc-for>
+              </div>
+            </div>
+            <span style="font-size:13px;color:{{ z.mc }};font-weight:{{ z.mw }};text-wrap:pretty">{{ z.msg }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Count pill top-right is always „filled / size“. A lock in the pill means no one gets in right now; the line under the zone says why and until when.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't grey out a locked zone: people still need to read who is in it. Don't show empty slots as „+“ when nobody can join; show the lock.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> Drop target and refusal differ in line style (solid focus vs. dashed error), not only in colour. The reason is real text, also given in the move panel.</div>
+        <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Same states. On mobile the lock reason sits in the sheet next to the disabled option instead of under the zone.</div>
+      </div>
+    </section>
+
+    <!-- PLAYER LIST -->
+    <section id="liste" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Player list</h2>
+        <span style="color:var(--cp-ink-2)">The same people as rows: for the side panel, screen readers, and the host's quick moves. Live with the board above.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div role="list" aria-label="Alle in der Session" style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:6px 0">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+            <div role="listitem" style="position:relative;display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 10px 6px 16px;border-bottom:1.5px solid var(--cp-line-soft)">
+              <dc-import name="Avatar" who="{{ r.n }}" size="{{ 32 }}" team="{{ r.team }}" host="{{ r.host }}" online="{{ r.on }}" hint-size="32px,32px"></dc-import>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25">
+                <span style="display:flex;align-items:center;gap:6px;min-width:0"><b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.n }}</b><sc-if value="{{ r.me }}"><span style="font-size:12px;color:var(--cp-ink-2)">(du)</span></sc-if><sc-if value="{{ r.host }}"><span style="display:inline-flex;align-items:center;gap:3px;height:20px;padding:0 6px;border-radius:999px;border:1.5px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px;font-weight:700"><dc-import name="Icon" icon="crown" size="{{ 10 }}" hint-size="10px,10px"></dc-import>Host</span></sc-if></span>
+                <span style="font-size:12px;color:var(--cp-ink-2)">{{ r.status }}</span>
+              </div>
+              <span style="flex:none;display:flex;align-items:center;gap:6px;max-width:44%;font-size:13px;font-weight:700">
+                <sc-if value="{{ r.locTeam }}"><dc-import name="TeamMark" team="{{ r.team }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></sc-if>
+                <sc-if value="{{ r.locOther }}"><dc-import name="Icon" icon="{{ r.locIcon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import></sc-if>
+                <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.loc }}</span>
+              </span>
+              <sc-if value="{{ r.canMenu }}"><button type="button" onClick="{{ r.toggle }}" aria-expanded="{{ r.open }}" aria-label="{{ r.menuL }}" style="flex:none;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:999px;background:{{ r.mBg }};cursor:pointer" style-hover="background:var(--cp-paper-2)"><dc-import name="Icon" icon="ellipsis" size="{{ 20 }}" hint-size="20px,20px"></dc-import></button></sc-if>
+              <sc-if value="{{ r.noMenu }}"><span style="flex:none;width:44px"></span></sc-if>
+              <sc-if value="{{ r.open }}">
+                <div role="menu" onKeyDown="{{ r.menuKey }}" style="position:absolute;right:10px;top:52px;z-index:5;min-width:240px;padding:6px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-soft);display:flex;flex-direction:column">
+                  <sc-for list="{{ r.dests }}" as="d" hint-placeholder-count="3">
+                    <button type="button" role="menuitem" onClick="{{ d.go }}" aria-disabled="{{ d.dis }}" title="{{ d.sub }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border:0;border-radius:10px;background:transparent;color:{{ d.fg }};cursor:{{ d.cur }};text-align:left" style-hover="background:var(--cp-paper-2)">
+                      <sc-if value="{{ d.isTeam }}"><dc-import name="TeamMark" team="{{ d.n }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></sc-if>
+                      <sc-if value="{{ d.notTeam }}"><dc-import name="Icon" icon="{{ d.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import></sc-if>
+                      <span style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.verb }}</span><sc-if value="{{ d.dis }}"><span style="font-size:12px;color:var(--cp-ink-2)">{{ d.sub }}</span></sc-if></span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> Side panel tab „Leute“, the host's substitution flow, and as the accessible twin of the board. Sorted by teams in order, then bench, then stands; online before offline within a zone.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> Don't offer actions the person can't take: players only get a menu on their own row. No kick or ban in 1.0; the host's only tools are moves.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> A list of rows with a menu button (<code style="font-family:var(--cp-font-mono)">aria-expanded</code>). Menu items are reachable but marked <code style="font-family:var(--cp-font-mono)">aria-disabled</code> with their reason in the item. Esc closes the menu and returns focus.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: a popover menu, 340 px panel width. Mobile: a full-width list in the „Leute“ tab, and the menu opens the same „Wohin?“ sheet as the board.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="profil" style="display:flex;flex-direction:column;gap:24px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:1">Profile</h2>
+        <span style="color:var(--cp-ink-2)">Display name, avatar, and the Discord and Twitch accounts used to sign in.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+        <div style="background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);padding:22px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+            <div style="flex:none;width:96px;height:96px;border-radius:50%;box-shadow:0 0 0 var(--cp-bw) var(--cp-line)"><image-slot id="ds-profile-avatar" shape="circle" placeholder="Bild hierher ziehen" style="width:96px;height:96px"></image-slot></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <b style="font-size:16px">Profilbild</b>
+              <span style="font-size:13px;color:var(--cp-ink-2);max-width:32ch;text-wrap:pretty">Standard ist dein Discord-Bild. JPG oder PNG, wird rund zugeschnitten.</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <span style="display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="upload" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Hochladen</span>
+                <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;font-weight:700;font-size:13px">Discord-Bild nutzen</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label for="dname" style="font-size:14px;font-weight:700">Anzeigename</label>
+            <input id="dname" value="{{ dname }}" onInput="{{ onDname }}" maxlength="24" autocomplete="nickname" aria-describedby="dname-help" style="width:100%;height:48px;box-sizing:border-box;padding:0 14px;border-radius:12px;border:{{ dnameBd }};background:var(--cp-surface);font-size:16px">
+            <span id="dname-help" aria-live="polite" style="display:flex;justify-content:space-between;gap:8px;font-size:13px;color:{{ dnameC }};font-weight:{{ dnameW }}"><span>{{ dnameHelp }}</span><span style="font-variant-numeric:tabular-nums;color:var(--cp-ink-2);font-weight:500">{{ dnameLen }}/24</span></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <b style="font-size:14px">Verbundene Konten</b>
+            <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 8px 6px 14px;border:2px solid var(--cp-line);border-radius:12px;background:{{ a.bg }}">
+                <span style="display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="{{ a.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25"><b>{{ a.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ a.sub }}</span></div>
+                <button type="button" onClick="{{ a.act }}" aria-disabled="{{ a.dis }}" title="{{ a.why }}" style="display:inline-flex;align-items:center;height:40px;padding:0 14px;border-radius:999px;border:{{ a.bd }};background:{{ a.bbg }};color:{{ a.bfg }};box-shadow:{{ a.bsh }};font-weight:700;font-size:13px;cursor:{{ a.cur }}">{{ a.btn }}</button>
+              </div>
+            </sc-for>
+            <sc-if value="{{ lastOne }}"><span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--cp-ink-2)"><dc-import name="Icon" icon="info" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Ein Konto muss verbunden bleiben, sonst kannst du dich nicht mehr anmelden.</span></sc-if>
+          </div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-success-fg)">Use for.</b> The profile page and first sign-in. Names don't have to be unique; the avatar tells two Kittys apart. Changes save on blur, without a toast.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-error-fg)">Don't.</b> No brand logos or brand colours for Discord and Twitch in this system; plain icon plus name. Never allow unlinking the last account.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b style="color:var(--cp-info-fg)">Accessibility.</b> The upload is a real file input behind the button, plus drag-and-drop. The cropped preview has alt text („Dein Profilbild“). The disabled unlink keeps focus and gives its reason.</div>
+          <div style="padding:14px 16px;border-radius:12px;background:var(--cp-paper-2);font-size:14px;line-height:1.45;text-wrap:pretty"><b>Desktop and mobile.</b> Desktop: single column, 560 px max. Mobile: same order, the avatar row stacks, and the upload opens the camera roll.</div>
+        </div>
+      </div>
+    </section>
+
+    <footer style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:20px;border-top:var(--cp-bw) solid var(--cp-line);font-size:13px;color:var(--cp-ink-2)">
+      <span>COMPIES Design System, People and teams</span>
+      <span>Next up: Game and selection</span>
+    </footer>
+  </main>
+
+  <sc-if value="{{ ghost }}">
+    <div ref="{{ ghostRef }}" style="position:fixed;left:{{ gx }}px;top:{{ gy }}px;z-index:60;pointer-events:none">
+      <div style="transform:translate(-50%,-50%) rotate(-6deg);display:flex;flex-direction:column;align-items:center;gap:8px">
+        <dc-import name="Avatar" who="{{ gWho }}" size="{{ 48 }}" team="{{ gTeam }}" host="{{ gHost }}" lifted="{{ true }}" hint-size="48px,48px"></dc-import>
+        <sc-if value="{{ gHasReason }}"><span style="padding:4px 10px;border-radius:8px;background:var(--cp-ink);color:var(--cp-paper);font-size:12px;font-weight:700;white-space:nowrap">{{ gReason }}</span></sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TN={1:'Rot',2:'Orange',3:'Gelb',4:'Himmel',5:'Grün',6:'Blau',7:'Pink',8:'Nacht'};
+const P0=[['kitty','Kitty','Wilde','t1',1],['larsi','Larsi','Gurken','t1',1],['jo','Jo','Bande','t1',1],['olli','Olli','Nacht','t8',1],['bea','Bea','Eulen','t8',1],['mia','Mia','Turbo','bench',0],['tom','Tom','Käse','bench',1],['sanne','Sanne','Chefin','stands',1,1],['chris','Chris','Buh','stands',1]];
+const mkP=()=>P0.map(([id,n,w,z,on,host],i)=>({id,n,w,z,on:!!on,host:!!host,seq:i+1}));
+const ZO={t1:0,t8:1,bench:2,stands:3};
+class Component extends DCLogic {
+  state={mode:null,motion:'full',muted:false,wide:true,role:'host',phase:'set',conflict:false,people:mkP(),seqC:20,frozen:{},drag:null,bounce:null,sel:null,live:'',wordErr:false,rowMenu:null,dname:'Kitty',acc:{discord:true,twitch:false}};
+  root=React.createRef(); ghostRef=React.createRef(); panelRef=React.createRef();
+  componentDidMount(){
+    let m=null,mo=null,mu=null; try{m=localStorage.getItem('compies-ds-mode');mo=localStorage.getItem('compies-ds-motion');mu=localStorage.getItem('compies-ds-muted');}catch(e){}
+    if(!m) m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(!mo) mo=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';
+    this._rs=()=>{ const w=window.innerWidth>=980; if(w!==this.state.wide) this.setState({wide:w}); }; window.addEventListener('resize',this._rs);
+    this.setState({mode:m,motion:mo,muted:mu==='1',wide:window.innerWidth>=980});
+  }
+  componentWillUnmount(){ window.removeEventListener('resize',this._rs); this.unbind(); }
+  componentDidUpdate(){
+    const S=this.state, m=S.mode; if(m&&m!==this._lm){ this._lm=m; document.body.style.background=m==='dark'?'#17121d':'#fff3df'; }
+    const rm=S.motion==='reduced';
+    if(S.bounce&&!this._bAnim){ const el=this.ghostRef.current; if(rm||!el){ this.setState({bounce:null}); } else { this._bAnim=true; const b=S.bounce; const a=el.animate([{transform:'translate(0,0)'},{transform:`translate(${b.ox-b.x}px,${b.oy-b.y}px)`}],{duration:460,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'forwards'}); a.onfinish=()=>{ this._bAnim=false; this.setState({bounce:null}); }; } }
+    if(this._pop){ const id=this._pop; this._pop=null; const el=this.root.current&&this.root.current.querySelector(`[data-pid="${id}"]`); if(el&&!rm) el.animate([{transform:'scale(.6)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:340,easing:'cubic-bezier(.34,1.56,.64,1)'}); }
+    if(S.sel&&S.sel!==this._ls){ const b=this.panelRef.current&&this.panelRef.current.querySelector('button[aria-disabled="false"]'); b&&b.focus(); }
+    this._ls=S.sel;
+  }
+  setMode=m=>()=>{ try{localStorage.setItem('compies-ds-mode',m);}catch(e){} this.setState({mode:m}); };
+  toggleMotion=()=>{ const mo=this.state.motion==='reduced'?'full':'reduced'; try{localStorage.setItem('compies-ds-motion',mo);}catch(e){} this.setState({motion:mo}); };
+  toggleMute=()=>{ const mu=!this.state.muted; try{localStorage.setItem('compies-ds-muted',mu?'1':'0');}catch(e){} this.setState({muted:mu}); };
+  // model
+  members=(z,ppl)=>(ppl||this.state.people).filter(p=>p.z===z).sort((a,b)=>a.seq-b.seq);
+  tname=(n,S)=>{ S=S||this.state; if(S.frozen[n]) return S.frozen[n]; const w=this.members('t'+n,S.people).map(p=>p.w).filter(Boolean); return w.length?w.join(' '):'Team '+TN[n]; };
+  zlabel=(z,S)=>z[0]==='t'?this.tname(+z.slice(1),S):z==='bench'?'Bench':'Tribüne';
+  where=(z,S)=>z[0]==='t'?'in '+this.tname(+z.slice(1),S):z==='bench'?'auf der Bench':'auf der Tribüne';
+  canDrag=id=>this.state.role==='host'||id==='kitty';
+  reason=(id,dest)=>{ const S=this.state, p=S.people.find(x=>x.id===id); if(!p) return 'Unbekannt'; if(p.z===dest) return 'Ist schon hier.'; const host=S.role==='host';
+    if(!host&&id!=='kitty') return 'Nur der Host kann andere verschieben.';
+    if(dest[0]==='t'){ if(S.phase==='poll') return 'Teamwahl öffnet, sobald der Termin steht.'; if(S.phase==='running'&&!host) return 'Teams sind gesperrt, das Spiel läuft.'; if(this.members(dest).length>=3) return 'Team ist voll.'; }
+    if(p.z[0]==='t'&&S.phase==='running'&&!host) return 'Nur der Host kann dich aus dem Team holen.';
+    return null; };
+  apply=(id,dest,extra)=>{ this.setState(s=>{ const seq=s.seqC+1; const people=s.people.map(p=>p.id===id?Object.assign({},p,{z:dest,seq}):p); const ns=Object.assign({},s,{people,seqC:seq}); const who=s.people.find(p=>p.id===id).n; return Object.assign({people,seqC:seq,sel:null,rowMenu:null,live:`${who} ist jetzt ${this.where(dest,ns)}.`},extra||{}); }); this._pop=id; };
+  attempt=(id,dest,drop)=>{ const r=this.reason(id,dest); const S=this.state;
+    if(r){ this.setState({live:r}); return false; }
+    if(S.conflict&&dest[0]==='t'&&this.members(dest).length===2){ const rival=S.people.find(x=>x.z==='bench'&&x.on&&x.id!==id)||S.people.find(x=>x.z==='stands'&&!x.host&&x.id!==id);
+      if(rival){ const nm=this.zlabel(dest); this.apply(rival.id,dest,{conflict:false}); setTimeout(()=>this.setState({live:`${rival.n} war schneller. Der letzte Platz in ${nm} ist weg.`}),0); return false; } }
+    this.apply(id,dest); return true; };
+  // drag
+  unbind(){ window.removeEventListener('pointermove',this.wm); window.removeEventListener('pointerup',this.wu); window.removeEventListener('pointercancel',this.wu); window.removeEventListener('keydown',this.wk); }
+  down=(id,e)=>{ if(e.button>0||!this.canDrag(id)||this.state.bounce) return; const r=e.currentTarget.getBoundingClientRect(); this._o={id,ox:r.left+r.width/2,oy:r.top+28,sx:e.clientX,sy:e.clientY,started:false};
+    window.addEventListener('pointermove',this.wm); window.addEventListener('pointerup',this.wu); window.addEventListener('pointercancel',this.wu); window.addEventListener('keydown',this.wk); };
+  wm=e=>{ const o=this._o; if(!o) return; if(!o.started){ if(Math.hypot(e.clientX-o.sx,e.clientY-o.sy)<6) return; o.started=true; this._dragged=true; this.setState({sel:null,rowMenu:null}); }
+    e.preventDefault&&e.preventDefault();
+    const el=document.elementFromPoint(e.clientX,e.clientY); const zEl=el&&el.closest&&el.closest('[data-zone]'); const over=zEl?zEl.getAttribute('data-zone'):null;
+    const cur=this.state.people.find(p=>p.id===o.id).z; const reason=over&&over!==cur?this.reason(o.id,over):null;
+    this.setState({drag:{id:o.id,x:e.clientX,y:e.clientY,over:over===cur?null:over,reason}}); };
+  wu=()=>{ const o=this._o; this._o=null; this.unbind(); if(!o||!o.started) return; setTimeout(()=>{this._dragged=false;},0);
+    const d=this.state.drag; if(!d) return; const back=()=>this.setState({drag:null,bounce:{id:d.id,x:d.x,y:d.y,ox:o.ox,oy:o.oy}});
+    if(!d.over){ back(); return; }
+    const ok=this.attempt(d.id,d.over,true); if(ok) this.setState({drag:null}); else back(); };
+  wk=e=>{ if(e.key==='Escape'&&this._o&&this._o.started){ const o=this._o; this._o=null; this.unbind(); const d=this.state.drag; this._dragged=false; if(d) this.setState({drag:null,bounce:{id:d.id,x:d.x,y:d.y,ox:o.ox,oy:o.oy},live:'Abgebrochen.'}); } };
+  click=id=>{ if(this._dragged) return; if(!this.canDrag(id)){ this.setState({live:'Nur der Host kann andere verschieben.'}); return; } this.setState(s=>({sel:s.sel===id?null:id,rowMenu:null})); };
+  closeSel=()=>{ const id=this.state.sel; this.setState({sel:null}); setTimeout(()=>{ const el=this.root.current&&this.root.current.querySelector(`[data-pid="${id}"]`); el&&el.focus(); },0); };
+  dests=(id)=>{ const S=this.state, p=S.people.find(x=>x.id===id); return ['t1','t8','bench','stands'].filter(z=>z!==p.z).map(z=>{ const r=this.reason(id,z), isT=z[0]==='t', n=isT?+z.slice(1):0, free=isT?3-this.members(z).length:0;
+    return {isTeam:isT,notTeam:!isT,n,icon:z==='bench'?'armchair':'eye',label:this.zlabel(z),verb:isT?'Nach '+this.zlabel(z):z==='bench'?'Auf die Bench':'Auf die Tribüne',sub:r||(isT?(free===1?'1 Platz frei':free+' Plätze frei'):z==='bench'?'Ersatz, unbegrenzt':'Zuschauen und Emotes'),dis:!!r,
+      bd:r?'var(--cp-bw) dashed var(--cp-ink-3)':'var(--cp-bw) solid var(--cp-line)',bg:r?'var(--cp-paper-2)':'var(--cp-surface)',fg:r?'var(--cp-ink-2)':'var(--cp-ink)',cur:r?'not-allowed':'pointer',go:()=>{ if(r){ this.setState({live:r}); return; } this.attempt(id,z); }}; }); };
+  setPhase=ph=>()=>this.setState(s=>({phase:ph,sel:null,rowMenu:null,frozen:ph==='running'?{1:this.tname(1,Object.assign({},s,{frozen:{}})),8:this.tname(8,Object.assign({},s,{frozen:{}}))}:{},live:ph==='poll'?'Terminumfrage läuft: Teamwahl gesperrt.':ph==='set'?'Termin steht: Teamwahl offen.':'Das Spiel läuft: Teams gesperrt, Namen eingefroren.'}));
+  fillFrom=(z)=>{ const b=this.state.people.find(p=>p.z==='bench'&&p.on); if(b) this.apply(b.id,z); };
+  renderVals(){
+    const S=this.state, mode=S.mode||'light', host=S.role==='host', ph=S.phase, drag=S.drag;
+    const lifted=id=>(drag&&drag.id===id)||(S.bounce&&S.bounce.id===id);
+    const seat=p=>{ const me=p.id==='kitty', can=this.canDrag(p.id);
+      return {id:p.id,n:p.n,host:p.host,on:p.on,label:me?'Du':p.n,w:me?800:600,cur:can?'grab':'default',ta:can?'none':'auto',op:lifted(p.id)?.3:1,selBg:S.sel===p.id?'var(--cp-paper-2)':'transparent',
+        aria:`${p.n}${me?' (du)':''}${p.host?', Host':''}, ${p.on?'online':'offline'}${can?'. Ziehen oder Enter zum Verschieben':''}`,down:e=>this.down(p.id,e),click:()=>this.click(p.id)}; };
+    const zoneLook=id=>{ if(!drag||drag.over!==id) return {bd:'var(--cp-bw) solid var(--cp-line)',sh:'var(--cp-shadow-sm)',tf:'none',bg:'var(--cp-surface)',st:''}; if(drag.reason) return {bd:'3px dashed var(--cp-error-fg)',sh:'none',tf:'none',bg:'var(--cp-surface)',st:'deny'}; return {bd:'3px solid var(--cp-focus)',sh:'var(--cp-shadow-card)',tf:'translate(-2px,-2px)',bg:'var(--cp-surface-2)',st:'ok'}; };
+    const tz=[1,8].map(n=>{ const id='t'+n, m=this.members(id), L=zoneLook(id), name=this.tname(n); let firstFree=true;
+      const slots=[0,1,2].map(i=>{ if(m[i]) return {filled:true,empty:false,p:seat(m[i])}; const lock=ph==='poll'||(ph==='running'&&!host); const hi=L.st==='ok'&&firstFree; firstFree=false;
+        return {filled:false,empty:true,icon:lock?'lock':'plus',label:hi?'Hier rein':lock?'Gesperrt':'Frei',c:hi?'var(--cp-ink)':'var(--cp-ink-3)',bg:hi?'var(--cp-primary)':'transparent',w:hi?800:500}; });
+      return Object.assign({id,n,name,slots,count:m.length+'/3',locked:ph==='poll'||(ph==='running'&&!host),aria:`${name}, ${m.length} von 3`,hasMsg:ph!=='set',msg:ph==='poll'?'Teamwahl öffnet, sobald der Termin steht.':host?'Spiel läuft: nur du kannst noch tauschen. Name eingefroren.':'Gesperrt seit Spielstart. Name eingefroren.'},L); });
+    const oz=[['bench','Bench','Ersatz, unbegrenzt','armchair','Niemand auf der Bench.'],['stands','Tribüne','Zuschauer, nur Emotes','eye','Die Tribüne ist leer.']].map(([id,title,sub,icon,empty])=>{ const m=this.members(id).sort((a,b)=>(b.on-a.on)||(a.seq-b.seq)); return Object.assign({id,title,sub,icon,empty,people:m.map(seat),isEmpty:!m.length,count:String(m.length),aria:`${title}, ${m.length}`},zoneLook(id)); });
+    const c1=this.members('t1').length, c8=this.members('t8').length;
+    let notice=null;
+    if(ph==='poll') notice={icon:'lock',fill:'var(--cp-info)',on:'var(--cp-on-info)',txt:'Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench, Tribüne und Chat.'};
+    else if(host&&c1!==c8){ const sm=c1<c8?'t1':'t8', big=Math.max(c1,c8); const has=S.people.some(p=>p.z==='bench'&&p.on); notice={icon:'users',fill:'var(--cp-warning)',on:'var(--cp-on-warning)',host:true,txt:`${this.zlabel(sm)} hat ${Math.min(c1,c8)}, die anderen haben ${big}. Das Spiel startet erst, wenn alle Teams gleich groß sind.`,hasAct:has,actL:'Von der Bench nachziehen',act:()=>this.fillFrom(sm)}; }
+    else if(!host&&ph==='running') notice={icon:'lock',fill:'var(--cp-info)',on:'var(--cp-on-info)',txt:'Das Spiel läuft. Zwischen Bench und Tribüne kannst du frei wechseln.'};
+    const selP=S.sel&&S.people.find(p=>p.id===S.sel);
+    const gid=drag?drag.id:S.bounce?S.bounce.id:null, gp=gid&&S.people.find(p=>p.id===gid);
+    const gz=gp&&gp.z;
+    // rows
+    const rows=S.people.slice().sort((a,b)=>(ZO[a.z]-ZO[b.z])||(b.on-a.on)||(a.seq-b.seq)).map(p=>{ const me=p.id==='kitty', isT=p.z[0]==='t', can=host||me, open=S.rowMenu===p.id;
+      return {n:p.n,me,host:p.host,on:p.on,team:isT?+p.z.slice(1):0,status:p.on?'online':'offline, zuletzt 19:40',locTeam:isT,locOther:!isT,locIcon:p.z==='bench'?'armchair':'eye',loc:this.zlabel(p.z),canMenu:can,noMenu:!can,open,mBg:open?'var(--cp-paper-2)':'transparent',menuL:`${p.n} verschieben`,
+        toggle:()=>this.setState(s=>({rowMenu:s.rowMenu===p.id?null:p.id,sel:null})),menuKey:e=>{ if(e.key==='Escape') this.setState({rowMenu:null}); },dests:open?this.dests(p.id):[]}; });
+    // builder
+    const me=S.people.find(p=>p.id==='kitty'), inTeam=me.z[0]==='t', myN=inTeam?+me.z.slice(1):1;
+    const ro=ph==='running';
+    const myWords=inTeam?this.members(me.z).map(p=>({who:p.n,w:p.w||'…',bc:p.id==='kitty'?'var(--cp-focus)':'var(--cp-line)'})):[];
+    const roleBtn=(arr,cur,set)=>arr.map(([k,n],i)=>({n,on:cur===k,bg:cur===k?'var(--cp-ink)':'transparent',fg:cur===k?'var(--cp-paper)':'var(--cp-ink)',bl:i?'2px solid var(--cp-line)':'0',pick:set(k)}));
+    const sl=(who)=>({filled:true,empty:false,who}), em=(icon,hi)=>({filled:false,empty:true,icon,c:hi?'var(--cp-ink)':'var(--cp-ink-3)',bg:hi?'var(--cp-primary)':'transparent'});
+    const nd={bd:'var(--cp-bw) solid var(--cp-line)',bg:'var(--cp-surface)',sh:'var(--cp-shadow-sm)',mc:'var(--cp-ink-2)',mw:500};
+    const zStates=[
+      Object.assign({},nd,{k:'Offen',name:'Käse',count:'1/3',slots:[sl('Tom'),em('plus'),em('plus')],msg:'Zwei Plätze frei. Rein ziehen oder antippen.'}),
+      Object.assign({},nd,{k:'Drop-Ziel',name:'Käse',count:'1/3',bd:'3px solid var(--cp-focus)',bg:'var(--cp-surface-2)',sh:'var(--cp-shadow-card)',slots:[sl('Tom'),em('plus',true),em('plus')],msg:'Loslassen, um beizutreten.'}),
+      Object.assign({},nd,{k:'Voll, Ablehnung',name:'Käse Turbo Bande',count:'3/3',bd:'3px dashed var(--cp-error-fg)',sh:'none',slots:[sl('Tom'),sl('Mia'),sl('Jo')],msg:'Team ist voll.',mc:'var(--cp-error-fg)',mw:700}),
+      Object.assign({},nd,{k:'Gesperrt: Terminumfrage',name:'Team Himmel',count:'0/3',lock:true,slots:[em('lock'),em('lock'),em('lock')],msg:'Teamwahl öffnet, sobald der Termin steht.'}),
+      Object.assign({},nd,{k:'Gesperrt: Spiel läuft',name:'Käse Turbo Bande',count:'3/3',lock:true,slots:[sl('Tom'),sl('Mia'),sl('Jo')],msg:'Gesperrt seit Spielstart. Nur der Host kann tauschen.'}),
+      Object.assign({},nd,{k:'Ungleich (Host)',name:'Käse',count:'1/3',slots:[sl('Tom'),em('plus'),em('plus')],bd:'3px solid var(--cp-warning)',msg:'Hat 1, die anderen haben 3. Erst gleich groß, dann Start.',mc:'var(--cp-warning-fg)',mw:700})];
+    const dn=S.dname.trim();
+    const accts=[['discord','Discord','message-square'],['twitch','Twitch','play']].map(([k,n,icon])=>{ const on=S.acc[k], cnt=Object.values(S.acc).filter(Boolean).length, last=on&&cnt===1;
+      return {n,icon,sub:on?(k==='discord'?'Verbunden als kitty_kat':'Verbunden'):'Nicht verbunden',bg:on?'var(--cp-surface)':'var(--cp-paper-2)',btn:on?'Trennen':'Verbinden',dis:last,why:last?'Ein Konto muss verbunden bleiben.':'',
+        bd:on?'var(--cp-bw) solid '+(last?'var(--cp-ink-3)':'var(--cp-line)'):'var(--cp-bw) solid var(--cp-line)',bbg:on?'transparent':'var(--cp-primary)',bfg:last?'var(--cp-ink-3)':on?'var(--cp-ink)':'var(--cp-on-primary)',bsh:on?'none':'var(--cp-shadow-btn)',cur:last?'not-allowed':'pointer',
+        act:()=>{ if(last) return; this.setState(s=>({acc:Object.assign({},s.acc,{[k]:!s.acc[k]})})); }}; });
+    const toc=[['Avatar','#avatar'],['Team identity','#teams'],['Team name','#name'],['Spielbrett','#brett'],['Zone states','#zonen'],['Player list','#liste'],['Profile','#profil']].map(([n,href])=>({n,href}));
+    return {root:this.root,ghostRef:this.ghostRef,panelRef:this.panelRef,mode,motion:S.motion,muted:S.muted,wide:S.wide,dir:S.wide?'row':'column',toc,
+      setLight:this.setMode('light'),setDark:this.setMode('dark'),toggleMotion:this.toggleMotion,toggleMute:this.toggleMute,
+      avSizes:[[24,'24, chat'],[32,'32, lists'],[40,'40, mobile board'],[48,'48, board'],[80,'80, profile']].map(([s,label])=>({s,label,who:'Sanne',host:true,team:1})),
+      avStates:[{n:'Online',who:'Kitty'},{n:'Offline',who:'Mia',on:false},{n:'Host',who:'Sanne',host:true},{n:'Im Team',who:'Larsi',team:6},{n:'Host im Team',who:'Sanne',team:3,host:true},{n:'Offline im Team',who:'Bea',team:8,on:false},{n:'Wird gezogen',who:'Olli',team:2,lifted:true}].map(a=>Object.assign({on:true,team:0,host:false,lifted:false},a)),
+      chips:[1,2,3,4,5,6,7,8].map(n=>({n,label:'Team '+TN[n]})),
+      ffa:[['Kitty',1],['Olli',2],['Bea',4],['Larsi',6]].map(([who,n],i)=>({who,n,p:'Partei '+(i+1)})),
+      inTeam,notInTeam:!inTeam,myN,myName:this.tname(myN),myFrozen:!!S.frozen[myN],myWords,myWord:me.w,wordRO:ro,wordErr:S.wordErr,wordLen:String(me.w.length),
+      wordBd:S.wordErr?'var(--cp-bw) solid var(--cp-error-fg)':ro?'var(--cp-bw) dashed var(--cp-ink-3)':'var(--cp-bw) solid var(--cp-line)',wordBg:ro?'var(--cp-paper-2)':'var(--cp-surface)',
+      wordHelp:ro?'Eingefroren seit Spielstart.':S.wordErr?'Nur ein Wort, ohne Leerzeichen.':'Ein Wort, bis zu 12 Zeichen.',wordHelpC:S.wordErr?'var(--cp-error-fg)':'var(--cp-ink-2)',wordHelpW:S.wordErr?700:500,
+      onWord:e=>{ if(ro) return; const raw=e.target.value, err=/\s/.test(raw), v=raw.replace(/\s+/g,'').slice(0,12); this.setState(s=>({wordErr:err,people:s.people.map(p=>p.id==='kitty'?Object.assign({},p,{w:v}):p)})); },
+      canReset:ro&&host&&inTeam&&S.frozen[myN]!=='Team '+TN[myN],resetName:()=>this.setState(s=>({frozen:Object.assign({},s.frozen,{[myN]:'Team '+TN[myN]}),live:'Name zurückgesetzt auf Team '+TN[myN]+'.'})),
+      nameStates:[{k:'Noch keine Wörter',n:4,name:'Team Himmel'},{k:'Drei Wörter',n:5,name:'Käse Turbo Bande'},{k:'Zu lang',n:6,name:'Supertolle Nachteulen Gurkenkönige'},{k:'Eingefroren',n:3,name:'Wilde Gurken Bande',lock:true},{k:'Vom Host zurückgesetzt',n:7,name:'Team Pink',lock:true}].map(s=>Object.assign({lock:false},s)),
+      roles:roleBtn([['host','Host (Sanne)'],['player','Spielerin (Kitty)']],S.role,k=>()=>this.setState({role:k,sel:null,rowMenu:null,live:k==='host'?'Du bist jetzt Sanne, der Host.':'Du bist jetzt Kitty. Du kannst nur dich selbst verschieben.'})),
+      phases:roleBtn([['poll','Terminumfrage'],['set','Termin steht'],['running','Läuft']],ph,this.setPhase),
+      conflict:S.conflict,conflictBg:S.conflict?'var(--cp-warning)':'var(--cp-surface)',toggleConflict:()=>this.setState(s=>({conflict:!s.conflict,live:!s.conflict?'Beim nächsten Versuch auf den letzten Platz ist jemand schneller.':''})),
+      resetBoard:()=>this.setState({people:mkP(),frozen:{},phase:'set',sel:null,rowMenu:null,conflict:false,live:'Zurückgesetzt.'}),
+      hasNotice:!!notice,notice:notice||{},tz,oz,
+      hasSel:!!selP,selTitle:selP?`${selP.n} verschieben nach`:'',selDests:selP?this.dests(selP.id):[],closeSel:this.closeSel,panelKey:e=>{ if(e.key==='Escape') this.closeSel(); },
+      live:S.live,
+      ghost:!!gp,gx:drag?drag.x:S.bounce?S.bounce.x:0,gy:drag?drag.y:S.bounce?S.bounce.y:0,gWho:gp?gp.n:'',gHost:gp?gp.host:false,gTeam:gz&&gz[0]==='t'?+gz.slice(1):0,gHasReason:!!(drag&&drag.reason),gReason:drag&&drag.reason||'',
+      mobTeams:[1,8].map(n=>{ const m=this.members('t'+n); return {n,name:this.tname(n),count:m.length+'/3',ppl:m.map(p=>({n:p.n,on:p.on,label:p.id==='kitty'?'Du':p.n,w:p.id==='kitty'?800:600})),free:Array.from({length:3-m.length},()=>({}))}; }),
+      zStates:zStates.map(z=>Object.assign({lock:false},z)),rows,
+      dname:S.dname,onDname:e=>this.setState({dname:e.target.value.slice(0,24)}),dnameLen:String(S.dname.length),dnameBd:dn?'var(--cp-bw) solid var(--cp-line)':'var(--cp-bw) solid var(--cp-error-fg)',
+      dnameHelp:dn?'Muss nicht eindeutig sein. Alle in der Lobby sehen ihn.':'Ohne Namen geht es nicht. Wie sollen dich die anderen nennen?',dnameC:dn?'var(--cp-ink-2)':'var(--cp-error-fg)',dnameW:dn?500:700,
+      accounts:accts,lastOne:Object.values(S.acc).filter(Boolean).length===1};
+  }
+}
+</script>
+</body>
+</html>

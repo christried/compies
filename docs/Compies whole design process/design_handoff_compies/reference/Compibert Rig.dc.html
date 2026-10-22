@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="./compibert-options.js"></script>
+<script src="./compibert-decisions.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button{font:inherit;color:inherit}button:focus-visible,a:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div ref="{{ root }}" data-theme="{{ mode }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-size:15px;line-height:1.5">
+<main style="max-width:1320px;margin:0 auto;padding:40px clamp(16px,3vw,40px) 96px;display:flex;flex-direction:column;gap:72px">
+
+  <header style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end">
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Phase 3, Compibert</span>
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(56px,6vw + 20px,112px);line-height:.88">Compibert, gerigged.</h1>
+      <p style="margin:0;max-width:62ch;font-size:17px;line-height:1.5;text-wrap:pretty">Direction <b>2b Flitzer Großkopf</b> as a production rig: one SVG, named parts with documented pivots, 13 states, a two-layer state machine and the liveliness layer on top. Everything runs on GSAP, the same code the app will use.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;padding:20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card)">
+      <span style="font-size:13px;font-weight:700">Files</span>
+      <div style="display:flex;flex-direction:column;gap:8px;font-family:var(--cp-font-mono);font-size:13px">
+        <a href="assets/compibert/compibert-full.svg" style="display:flex;justify-content:space-between;gap:12px"><span>compibert-full.svg</span><span style="color:var(--cp-ink-2)">viewBox 0 36 404 344</span></a>
+        <a href="assets/compibert/compibert-bust.svg" style="display:flex;justify-content:space-between;gap:12px"><span>compibert-bust.svg</span><span style="color:var(--cp-ink-2)">150 36 254 254</span></a>
+        <a href="assets/compibert/compibert-head.svg" style="display:flex;justify-content:space-between;gap:12px"><span>compibert-head.svg</span><span style="color:var(--cp-ink-2)">212 40 192 192</span></a>
+        <a href="compibert-options.js" style="display:flex;justify-content:space-between;gap:12px"><span>compibert-options.js</span><span style="color:var(--cp-ink-2)">reference states</span></a>
+        <a href="Compibert Momente.dc.html" style="display:flex;justify-content:space-between;gap:12px"><span>Compibert Momente</span><span style="color:var(--cp-ink-2)">boot, moments, poke, ceremony, emotes</span></a>
+      </div>
+      <div style="height:2px;background:var(--cp-line-soft)"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <div role="group" aria-label="Farbmodus" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+          <button type="button" onClick="{{ setLight }}" aria-pressed="{{ isLight }}" style="height:40px;padding:0 14px;border:0;cursor:pointer;font-weight:700;background:{{ lightBg }};color:{{ lightFg }}">Hell</button>
+          <button type="button" onClick="{{ setDark }}" aria-pressed="{{ isDark }}" style="height:40px;padding:0 14px;border:0;border-left:2px solid var(--cp-line);cursor:pointer;font-weight:700;background:{{ darkBg }};color:{{ darkFg }}">Dunkel</button>
+        </div>
+        <button type="button" onClick="{{ toggleMotion }}" aria-pressed="{{ isReduced }}" style="height:44px;padding:0 14px;border:2px solid var(--cp-line);border-radius:999px;cursor:pointer;font-weight:700;background:{{ motionBg }};color:var(--cp-ink)">Reduzierte Bewegung</button>
+        <button type="button" onClick="{{ togglePivots }}" aria-pressed="{{ pivots }}" style="height:44px;padding:0 14px;border:2px solid var(--cp-line);border-radius:999px;cursor:pointer;font-weight:700;background:{{ pivotBg }};color:var(--cp-ink)">Pivots zeigen</button>
+      </div>
+    </div>
+  </header>
+
+  <section id="prototyp" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">01 Prototyp</h2>
+      <span style="color:var(--cp-ink-2)">Fire app events and watch the state machine decide. Try „Sieg“, then „Letzter Platz“ while he is still jumping.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:24px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div style="position:relative;height:clamp(320px,42vw,500px);background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden">
+          <div data-rig="F2" data-view="full" data-hero="1" style="position:absolute;inset:28px 36px 20px"></div>
+          <div style="position:absolute;left:14px;top:14px;display:flex;flex-wrap:wrap;gap:8px">
+            <span style="display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);font-size:13px;font-weight:700">Basis <span style="font-family:var(--cp-font-mono);font-weight:700">{{ baseDe }}</span></span>
+            <span style="display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:{{ reactBg }};font-size:13px;font-weight:700;color:#151515">Reaktion <span style="font-family:var(--cp-font-mono);font-weight:700">{{ reactDe }}</span></span>
+          </div>
+        </div>
+        <span style="font-size:13px;color:var(--cp-ink-2)">Move the cursor anywhere on the page: the eye follows. 10 s without input switches to „Umschauen“ (app: 20 s).</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">App-Events</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ events }}" as="e" hint-placeholder-count="14">
+              <button type="button" onClick="{{ e.fire }}" style="min-height:40px;padding:6px 14px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);cursor:pointer;font-size:14px;font-weight:700;text-align:left" style-active="transform:translate(3px,3px);box-shadow:none">{{ e.de }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:14px 16px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px;min-height:200px">
+          <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Protokoll</span>
+          <sc-if value="{{ logEmpty }}" hint-placeholder-val="{{ true }}"><span style="font-size:14px;color:var(--cp-ink-2)">Noch nichts passiert.</span></sc-if>
+          <sc-for list="{{ log }}" as="l" hint-placeholder-count="0">
+            <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:6px 0;border-top:1.5px solid var(--cp-line-soft);font-size:14px;line-height:1.4">
+              <span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2);padding-top:2px">{{ l.t }}</span>
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span><b>{{ l.ev }}</b>: {{ l.res }}</span><span style="font-size:13px;color:var(--cp-ink-2)">{{ l.note }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="varianten" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">02 Varianten</h2>
+      <span style="color:var(--cp-ink-2)">One rig, three crops. Bust is the same SVG with a tighter viewBox; head removes body, limbs, tail and shadow.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px">
+      <div style="display:flex;flex-direction:column;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden">
+        <div style="height:240px;padding:18px 22px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-paper-2)"><div data-rig="F2" data-view="full" style="width:100%;height:100%"></div></div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:6px"><b style="font-size:18px">Ganzkörper</b><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">viewBox 0 36 404 344, min 120 px wide</span><span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Award ceremony, empty states, boot, wheel side-kick, battle replay.</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden">
+        <div style="height:240px;padding:18px 22px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-paper-2);display:flex;justify-content:center"><div data-rig="F2" data-view="bust" style="width:204px;height:100%"></div></div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:6px"><b style="font-size:18px">Büste</b><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">viewBox 150 36 254 254, 48 to 160 px</span><span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Header, sheets, toasts, the veto window, notifications.</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden">
+        <div style="height:240px;padding:18px 22px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-paper-2);display:flex;align-items:flex-end;justify-content:center;gap:16px">
+          <div data-rig="F2" data-view="head" style="width:120px;height:120px"></div>
+          <div data-rig="F2" data-view="head" style="width:48px;height:48px"></div>
+          <div data-rig="F2" data-view="head" style="width:24px;height:24px"></div>
+          <div data-rig="F2" data-view="head" style="width:16px;height:16px"></div>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:6px"><b style="font-size:18px">Kopf</b><span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">viewBox 212 40 192 192, 16 px and up</span><span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Loading indicator, favicon, coin „Kopf“, emotes, avatars. Below 24 px: no blink, no fx.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="rig" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">03 Rig</h2>
+      <span style="color:var(--cp-ink-2)">Pivots are absolute SVG user units, read straight from the file. Apply them once, every tween after that rotates and scales from the right place.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px;align-items:start">
+      <div style="display:flex;flex-direction:column;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden">
+        <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.9fr) minmax(0,.8fr) minmax(0,2fr);gap:10px;padding:10px 16px;border-bottom:2px solid var(--cp-line);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase"><span>Teil</span><span>Eltern</span><span>svgOrigin</span><span>Bewegt</span></div>
+        <sc-for list="{{ parts }}" as="pt" hint-placeholder-count="20">
+          <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.9fr) minmax(0,.8fr) minmax(0,2fr);gap:10px;padding:8px 16px;border-bottom:1.5px solid var(--cp-line-soft);font-size:13px;line-height:1.4;align-items:baseline">
+            <span style="font-family:var(--cp-font-mono);font-weight:700;overflow-wrap:anywhere">{{ pt.id }}</span>
+            <span style="font-family:var(--cp-font-mono);color:var(--cp-ink-2);overflow-wrap:anywhere">{{ pt.parent }}</span>
+            <span style="font-family:var(--cp-font-mono)">{{ pt.pv }}</span>
+            <span style="color:var(--cp-ink-2);text-wrap:pretty">{{ pt.what }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+        <div style="display:flex;flex-direction:column;gap:10px;padding:18px 20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+          <b style="font-size:17px">Layer order, back to front</b>
+          <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:1.45">
+            <li>shadow</li><li>tail-1 › tail-2 › tail-3 (child first, so each segment covers the next one's base)</li><li>leg-right › shin-right (far, darker)</li><li>torso: arm-right, neck › head, body, arm-left</li><li>leg-left › shin-left (near, over the body)</li>
+          </ol>
+          <span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">„left“ = screen-left = near side. Far parts use the darker body tone. Fills are CSS variables (<code style="font-family:var(--cp-font-mono)">--cb-body</code>, <code style="font-family:var(--cp-font-mono)">--cb-body2</code>, <code style="font-family:var(--cp-font-mono)">--cb-belly</code>, <code style="font-family:var(--cp-font-mono)">--cb-spike</code>, <code style="font-family:var(--cp-font-mono)">--cb-cheek</code>, <code style="font-family:var(--cp-font-mono)">--cb-ink</code>) with hex fallbacks. No bitmaps, no masks, one clipPath per eye and one for the belly.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:18px 20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+          <b style="font-size:17px">Outline treatment</b>
+          <span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Light: <code style="font-family:var(--cp-font-mono)">filter="url(#cb_hrd)"</code> on <code style="font-family:var(--cp-font-mono)">.cb-fig</code>, hard ink shadow 7/8 units. Dark: <code style="font-family:var(--cp-font-mono)">url(#cb_stk)</code>, cream rim 8 units plus the same shadow. Coins and sizes below 32 px: no filter.</span>
+        </div>
+        <pre style="margin:0;padding:18px 20px;background:#151515;color:#f7efe1;border-radius:14px;font-family:var(--cp-font-mono);font-size:12.5px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere">gsap.defaults({ overwrite: 'auto' })
+svg.querySelectorAll('[data-pivot]').forEach(el =>
+  gsap.set(el, { svgOrigin: el.dataset.pivot }))
+// lids sit above the eye, closed = y 0
+gsap.set('#compibert-lid-left', { y: -(2 * 24 + 10) })</pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="zustaende" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">04 Zustände</h2>
+      <span style="color:var(--cp-ink-2)">Every state starts by easing all parts to rest over 250 ms while its own tracks begin. Rotations in degrees, positions in SVG units. ∞ = until the state changes.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,400px),1fr));gap:24px">
+      <sc-for list="{{ states }}" as="s" hint-placeholder-count="13">
+        <article style="display:flex;flex-direction:column;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden">
+          <div style="height:220px;padding:14px 20px 10px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-paper-2)"><div data-rig="F2" data-view="full" data-state="{{ s.id }}" style="width:100%;height:100%"></div></div>
+          <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">{{ s.de }}</h3>
+              <span style="font-family:var(--cp-font-mono);font-size:12px;font-weight:700;padding:3px 9px;border:2px solid var(--cp-line);border-radius:999px;background:{{ s.kindBg }};color:#151515">{{ s.kind }}</span>
+            </div>
+            <span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">state: {{ s.id }}</span>
+            <p style="margin:0;font-size:14px;line-height:1.45;text-wrap:pretty">{{ s.desc }}</p>
+            <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13px;line-height:1.4">
+              <span style="font-weight:700">Auslöser</span><span>{{ s.trigger }}</span>
+              <span style="font-weight:700">Danach</span><span>{{ s.returns }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;border-top:2px solid var(--cp-line);margin-top:4px">
+              <sc-for list="{{ s.tl }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:2px;padding:7px 0;border-bottom:1.5px solid var(--cp-line-soft)">
+                  <span style="font-size:13px;line-height:1.4"><b style="font-family:var(--cp-font-mono);font-size:12.5px">{{ t.part }}</b> {{ t.what }}</span>
+                  <span style="font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2)">{{ t.meta }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="uebergaenge" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">05 Übergänge und Zustandstabelle</h2>
+      <span style="color:var(--cp-ink-2)">Template for the state machine in the app. The prototype above runs exactly these rules.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px;align-items:start">
+      <ol style="margin:0;padding:18px 20px 18px 40px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.5">
+        <li><b>Two layers.</b> Basis = context, persistent (Ruhe, Umschauen, Schläft, Mitfiebern, Spannung, Tanzen, Nachdenken, Verwirrt). Reaktion = one-shot with a duration (Winken, Lachen, Wütend, Jubeln, Traurig). He shows the reaction if there is one, otherwise the base.</li>
+        <li><b>Never hard-cut.</b> Every switch tweens all parts to rest in 250 ms while the next state starts; <code style="font-family:var(--cp-font-mono)">overwrite: 'auto'</code> hands each property over. Mouths crossfade in 100 ms.</li>
+        <li><b>Exit point.</b> If he is in the air (root y &lt; −3), the switch waits for the landing, at most 320 ms.</li>
+        <li><b>Priority.</b> Verwirrt 4, Jubeln and Traurig 3, Lachen and Wütend 2, Winken 1. Equal or higher replaces the running reaction and restarts the timer; lower is dropped, never queued.</li>
+        <li><b>Base changes during a reaction</b> are silent. The reaction ends into the new base.</li>
+        <li><b>„Traurig“ during „Jubeln“:</b> same priority, latest wins. He lands, blends into Traurig, 4 s from now, then back to the base.</li>
+        <li><b>Errors interrupt everything</b> and block reactions until the connection is back; then he waves once. Same after „Schläft“ when someone joins.</li>
+        <li><b>Room emotes:</b> he reacts at most once per 4 s to other people's emotes; your own emote always triggers.</li>
+        <li><b>Reduced motion:</b> same machine. States become held poses with a 200 ms crossfade, loops are paused at their start, blinking stays.</li>
+      </ol>
+      <div style="display:flex;flex-direction:column;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);overflow:hidden">
+        <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1.2fr);gap:10px;padding:10px 16px;border-bottom:2px solid var(--cp-line);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase"><span>Event</span><span>Zustand</span><span>Ebene</span><span>Danach</span></div>
+        <sc-for list="{{ table }}" as="r" hint-placeholder-count="14">
+          <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1.2fr);gap:10px;padding:8px 16px;border-bottom:1.5px solid var(--cp-line-soft);font-size:13.5px;line-height:1.4;align-items:baseline">
+            <span style="font-weight:700">{{ r.de }}</span>
+            <span style="font-family:var(--cp-font-mono);font-size:12.5px">{{ r.st }}</span>
+            <span style="color:var(--cp-ink-2)">{{ r.layer }}</span>
+            <span style="color:var(--cp-ink-2)">{{ r.after }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="leben" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">06 Lebendigkeit</h2>
+      <span style="color:var(--cp-ink-2)">Runs under every state, independent of the state timeline, so nothing reads as an obvious loop.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:20px">
+      <div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px"><b style="font-size:17px">Blinzeln</b><span style="font-size:14px;line-height:1.5;text-wrap:pretty">Random every 1.6–5.2 s. Lid to y 0 in 70 ms <code style="font-family:var(--cp-font-mono)">power2.in</code>, back in 110 ms <code style="font-family:var(--cp-font-mono)">power2.out</code>. 18 % double blink. Returns to the state's lid height. Off while sleeping.</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px"><b style="font-size:17px">Atmen und Schwanz</b><span style="font-size:14px;line-height:1.5;text-wrap:pretty">body scaleY 1.035, scaleX .99, 1.6–2.1 s picked per mount, sine yoyo. Tail ±4/7/11°, 1.5 s, offset 0.22 s per segment. States only change timeScale: .2 Spannung, .3 Schläft, .4 Traurig, up to 2.6 Mitfiebern.</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px"><b style="font-size:17px">Auge folgt dem Cursor</b><span style="font-size:14px;line-height:1.5;text-wrap:pretty">pupil-left via <code style="font-family:var(--cp-font-mono)">quickTo</code> .4 s power3, max .42 rx / .36 ry, full deflection at 220 px. neck rotation ±6° quickTo .7 s. Paused in Umschauen, Spannung, Nachdenken, Verwirrt, Schläft. Touch: follows the last tap.</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px"><b style="font-size:17px">Zufall</b><span style="font-size:14px;line-height:1.5;text-wrap:pretty">In Ruhe, every 2.2–5.5 s one micro action: 45 % head tilt (−8…6°), 27 % arm twitch, 28 % small hop. Loop lengths are randomised per instance, so two Compiberts on screen never sync.</span></div>
+    </div>
+  </section>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { mode: 'light', reduced: false, pivots: false, base: 'idle', react: null, log: [], parts: [] };
+  root = React.createRef();
+  rigs = [];
+  DE = { idle: 'Ruhe', wave: 'Winken', look: 'Umschauen', excited: 'Mitfiebern', suspense: 'Spannung', cheer: 'Jubeln', laugh: 'Lachen', angry: 'Wütend', sad: 'Traurig', dance: 'Tanzen', sleep: 'Schläft', think: 'Nachdenken', confused: 'Verwirrt', run: 'Rennen', clap: 'Klatschen', roar: 'Brüllen' };
+  scenes = {};
+  EV = [
+    { id: 'boot', de: 'App-Start', st: 'run', type: 'react', dur: 1.2, prio: 1 },
+    { id: 'join', de: 'Anmeldung, neue Person', st: 'wave', type: 'react', dur: 2.2, prio: 1 },
+    { id: 'clap', de: 'Emote Klatschen', st: 'clap', type: 'react', dur: 2, prio: 2 },
+    { id: 'roar', de: 'Emote Brüllen', st: 'roar', type: 'react', dur: 2.4, prio: 2 },
+    { id: 'inactive', de: '20 s keine Eingabe', st: 'look', type: 'base' },
+    { id: 'empty', de: 'Lobby leer', st: 'sleep', type: 'base' },
+    { id: 'spin', de: 'Rad dreht', st: 'excited', type: 'base' },
+    { id: 'brake', de: 'Rad bremst', st: 'suspense', type: 'base' },
+    { id: 'reveal', de: 'Rad stoppt', st: 'cheer', type: 'react', dur: 1.6, prio: 3, base: 'idle' },
+    { id: 'win', de: 'Sieg', st: 'cheer', type: 'react', dur: 4, prio: 3 },
+    { id: 'lol', de: 'Emote Tränen vor Lachen', st: 'laugh', type: 'react', dur: 2.4, prio: 2 },
+    { id: 'mad', de: 'Emote Wütend, Veto aufgedeckt', st: 'angry', type: 'react', dur: 2.6, prio: 2 },
+    { id: 'lose', de: 'Letzter Platz', st: 'sad', type: 'react', dur: 4, prio: 3 },
+    { id: 'award', de: 'Siegerehrung', st: 'dance', type: 'base' },
+    { id: 'load', de: 'Laden', st: 'think', type: 'base' },
+    { id: 'error', de: 'Verbindung verloren', st: 'confused', type: 'base' },
+    { id: 'ok', de: 'Alles wieder gut', st: 'idle', type: 'base' }
+  ];
+  TABLE = [
+    ['App-Start, nichts los', 'idle', 'Basis', 'bleibt'],
+    ['Anmeldung, neue Person in der Lobby', 'wave', 'Reaktion 1, 2.2 s', 'Basis'],
+    ['20 s keine Eingabe', 'look', 'Basis', 'idle bei Eingabe'],
+    ['Lobby leer', 'sleep', 'Basis', 'wave, sobald jemand kommt'],
+    ['Rad dreht', 'excited', 'Basis', 'suspense beim Bremsen'],
+    ['Rad bremst (letzte 40 %)', 'suspense', 'Basis', 'cheer beim Stopp'],
+    ['Rad stoppt, Ergebnis', 'cheer', 'Reaktion 3, 1.6 s', 'idle'],
+    ['Sieg (Spiel oder Session)', 'cheer', 'Reaktion 3, 4 s', 'Basis'],
+    ['Emote Tränen vor Lachen', 'laugh', 'Reaktion 2, 2.4 s', 'Basis'],
+    ['Emote Wütend, Veto aufgedeckt', 'angry', 'Reaktion 2, 2.6 s', 'Basis'],
+    ['Letzter Platz, Niederlage', 'sad', 'Reaktion 3, 4 s', 'Basis'],
+    ['Siegerehrung', 'dance', 'Basis', 'idle am Ende'],
+    ['Laden > 400 ms', 'think', 'Basis', 'vorherige Basis'],
+    ['Verbindung wird wiederhergestellt (2 s) oder verloren', 'confused', 'Basis, Prio 4', 'wave, dann idle'],
+    ['App-Start, erster Besuch in 24 h', 'run', 'Boot, 0.9 s', 'wave, dann idle'],
+    ['Emote Klatschen (eigenes)', 'clap', 'Reaktion 2, 2 s', 'Basis'],
+    ['Emote Brüllen (eigenes)', 'roar', 'Reaktion 2, 2.4 s', 'Basis'],
+    ['Siegerehrung: Pokal-Lauf', 'run → suspense', 'Szene', 'laugh, dann dance']
+  ];
+  SPEC = [
+    { id: 'idle', kind: 'Basis', trigger: 'Default, when nothing else is going on', returns: 'stays', desc: 'Stands, breathes, blinks and watches the cursor. Small random actions keep him from looking like a loop.', tl: [
+      ['head', 'micro tilt to rnd(−8, 6), hold .5–1.4 s', '.35–.6 s, sine.inOut, yoyo 1, every 2.2–5.5 s'],
+      ['arm-left', 'twitch to −22', '.14 s, sine.inOut, yoyo 3'],
+      ['root', 'small hop y −10', '.14 s, power2.out, yoyo 1']] },
+    { id: 'wave', kind: 'Reaktion 1', trigger: 'Sign-in, a new person joins the lobby', returns: 'base after 2.2 s', desc: 'Arm up, a quick triple wave, head tilted, big grin.', tl: [
+      ['arm-left', 'rotation 0 → −140', '.35 s, back.out(2)'],
+      ['arm-left', 'wave −140 ↔ −108', '.17 s, sine.inOut, yoyo 5, repeatDelay .9, ∞'],
+      ['head', 'rotation −6, brow-left y −6', '.4 s, sine.out'],
+      ['jaw', 'mouth → grin', '.1 s crossfade; tail timeScale 1.8']] },
+    { id: 'look', kind: 'Basis', trigger: '20 s without pointer or key input', returns: 'idle on any input', desc: 'Looks behind, up, then forward with a raised brow, like he is checking if anyone is still there.', tl: [
+      ['pupil-left', 'x −max, then (−.6, −1)·max, then (1, −.3)·max, then 0', '.35–.45 s each, power2.inOut, holds .6–.8 s'],
+      ['head', 'rotation −4 → −10 → 3 → 0', '.5–.6 s, sine.inOut'],
+      ['brow-left', 'y −4 on the forward look', '.3 s'],
+      ['timeline', 'repeat ∞, repeatDelay .6', 'eye-follow paused']] },
+    { id: 'excited', kind: 'Basis', trigger: 'The wheel is spinning', returns: 'suspense when it starts braking', desc: 'Pumps his arms in turns and bounces along, eyes wide open, tail going wild.', tl: [
+      ['arm-left, arm-right', 'alternate −130 / −60', '.2 s, power2.out, .42 s cycle, ∞'],
+      ['root', 'y 0 → −12 → 0', '.2 s power2.out, .2 s power2.in'],
+      ['head', 'rotation −5 ↔ 2', '.2 s'],
+      ['lid, brow', 'lids open, brow y −7, mouth grin', 'tail timeScale 2.6']] },
+    { id: 'suspense', kind: 'Basis', trigger: 'The wheel slows down (last 40 % of the spin)', returns: 'cheer (1.6 s) at the stop', desc: 'Holds his breath: hands up, mouth a small o, eye fixed on the wheel, trembling, one bead of sweat.', tl: [
+      ['pupil-left', 'fixed x .7·max', '.25 s; eye-follow paused'],
+      ['arm-left, arm-right', 'rotation −80 / −90', '.4 s, power2.out'],
+      ['root', 'tremble x ±1.6', '.05 s, none, yoyo ∞'],
+      ['fx sweat', 'y 0 → 30, opacity 1 → 0', '1.1 s, power1.in, repeatDelay .4, ∞; breath and tail timeScale .2']] },
+    { id: 'cheer', kind: 'Reaktion 3', trigger: 'Game or session win; wheel result', returns: 'base after 4 s (1.6 s after a wheel stop)', desc: 'Happy eyes, both arms up and jumping with squash on every landing.', tl: [
+      ['eye-left', 'eyeball opacity 0, happy arc 1', '.1 s'],
+      ['arm-left, arm-right', 'rotation −150 / −140', '.3 s, back.out(2), stagger .04'],
+      ['root', 'y 0 → −38 → 0, then scaleY .9 scaleX 1.07', '.26 s power2.out, .2 s power2.in, squash .07 yoyo 1; repeatDelay .1, ∞'],
+      ['shadow', 'scale .6, opacity .06 in the air', 'synced with root']] },
+    { id: 'laugh', kind: 'Reaktion 2', trigger: 'Emote „Tränen vor Lachen“, funny moments', returns: 'base after 2.4 s', desc: 'Head thrown back, holding his belly, shaking with laughter while tears fly off.', tl: [
+      ['head', 'rotation −12', '.25 s, power2.out'],
+      ['arm-left, arm-right', 'rotation 24 / 18 (on the belly)', '.25 s'],
+      ['torso, root', 'rotation ±5, y −4', '.09 s, sine.inOut, yoyo 7, repeatDelay .35, ∞'],
+      ['fx tear', 'arcs back x −28, y −8 → 28, fades', '.9 s, repeatDelay .2, ∞']] },
+    { id: 'angry', kind: 'Reaktion 2', trigger: 'Emote „Wütend“, a veto is revealed', returns: 'base after 2.6 s', desc: 'Brow down, fists up, a throbbing anger mark and a short roar every second.', tl: [
+      ['brow-left', 'rotation 16, y 5; lids .3', '.15 s'],
+      ['torso, head', 'rotation 6 / 4; arms −48 / −56', '.2–.3 s'],
+      ['fx anger', 'scale 1 ↔ 1.2', '.22 s, sine.inOut, yoyo ∞'],
+      ['roar loop', 'mouth → roar, head −10 then shake x ±3 ×9, back to frown', '.12 s + .04 s steps, repeatDelay 1.1, ∞']] },
+    { id: 'sad', kind: 'Reaktion 3', trigger: 'Last place, defeat', returns: 'base after 4 s', desc: 'Slumps forward, head down, brow up in the middle, a slow tear.', tl: [
+      ['brow-left', 'rotation −14, y −2; lids .38', '.3 s'],
+      ['head, torso', 'rotation 12 / 5', '.6 s, sine.inOut'],
+      ['arm-left, arm-right', 'rotation 12 (hanging)', '.5 s'],
+      ['fx tear', 'y 0 → 46, opacity 1 → 0, scale .6 → 1', '1.3 s, power1.in, repeatDelay .5, ∞; breath and tail .4']] },
+    { id: 'dance', kind: 'Basis', trigger: 'Award ceremony', returns: 'idle when the ceremony ends', desc: 'Two-beat dance at 120 bpm: sway, alternate arms, stepping legs, bounce on every beat. Sync the beat to the fanfare.', tl: [
+      ['torso, head', 'rotation ±8 / ∓6', '.5 s per beat, sine.inOut'],
+      ['arm-left, arm-right', 'alternate −150 / −40', '.4 s, back.out(1.6)'],
+      ['leg-left, leg-right', 'rotation ±10 / ∓6', '.25 s, sine.inOut'],
+      ['root', 'y 0 → −14 → 0 on every beat', '.25 s power2.out, .25 s power2.in; 1 s cycle, ∞']] },
+    { id: 'sleep', kind: 'Basis', trigger: 'Lobby is empty', returns: 'wave when someone joins', desc: 'Eye closed, head nodded off, slow deep breaths and rising Zs.', tl: [
+      ['lid-left', 'closed (y 0)', '.5 s; blink off, eye-follow off'],
+      ['head, torso', 'rotation 14 / 4', '.9 s, sine.inOut'],
+      ['jaw', 'mouth → o', '.2 s; breath and tail timeScale .3'],
+      ['fx z ×3', 'opacity 0 → 1, x 30, y −60, scale .5 → 1.1', '2 s, sine.out, fade from 1.6 s, stagger .75, ∞']] },
+    { id: 'think', kind: 'Basis', trigger: 'Loading longer than 400 ms', returns: 'previous base when loaded', desc: 'Looks up, hand on the chin tapping, three thinking dots pop up in turn.', tl: [
+      ['pupil-left', 'x .4·max, y −max; brow y −8, rotation −8', '.35 s, power2.inOut'],
+      ['arm-left', 'rotation −100, then tap −100 ↔ −108', '.45 s power2.out; .35 s sine.inOut, yoyo ∞'],
+      ['head', 'rotation −7; mouth flat', '.5 s, sine.inOut'],
+      ['fx dots ×3', 'scale .4 → 1, all fade after .5 s', '.2 s, back.out(2), stagger .3, repeatDelay .3, ∞']] },
+    { id: 'run', kind: 'Szene', trigger: 'Boot (3b), Pokal-Lauf (6b), battle replay', returns: 'set by the scene', desc: 'Sprint cycle: legs and shins swing in counter-phase, arms pump against the legs, a bob on every step, body leaning into the run.', tl: [
+      ['torso, head', 'rotation 8 / −8 (lean, head level)', '.2 s'],
+      ['leg-left, leg-right', '−42 ↔ 34, counter-phase', '.15 s per half step, sine.inOut, ∞'],
+      ['shin-left, shin-right', 'back leg kicks to 40, front −8', '.15 s'],
+      ['arm-left, arm-right; root', 'arms 30 ↔ −40 against the legs; root y −9 per step', '.075 s yoyo; tail timeScale 3']] },
+    { id: 'clap', kind: 'Reaktion 2', trigger: 'Own emote „Klatschen“, places 2 and 3 in the ceremony', returns: 'base after 2 s', desc: 'Happy eyes, big grin, quick claps with a tiny bounce. In head and emote crops two floating mitts clap under the chin instead.', tl: [
+      ['arm-left, arm-right', 'set to −96 / −70', '.2 s'],
+      ['arm-left, arm-right', 'clap: −74 / −92 and back', '.09 s power2.in, .11 s power2.out, repeatDelay .04, ∞'],
+      ['root', 'y −3 on each clap', 'synced'],
+      ['fx mitts (emote crop)', 'x ±9, rotation ±10, yellow impact lines', 'same .2 s cycle']] },
+    { id: 'roar', kind: 'Reaktion 2', trigger: 'Own emote „Brüllen“', returns: 'base after 2.4 s', desc: 'Inhales and leans back with a small o, then lunges forward into a full roar with a head shake.', tl: [
+      ['head, torso', 'inhale: −14 / −5, torso scale 1.04, mouth o', '.4 s, power2.out'],
+      ['head, torso', 'roar: 9 / 6, mouth roar, arms −70 / −78', '.12 s, power3.out'],
+      ['head', 'shake x ±2.5 ×22', '.03 s, none'],
+      ['loop', 'back to frown, rest, repeat', 'repeatDelay .7, ∞']] },
+    { id: 'confused', kind: 'Basis, Prio 4', trigger: 'Connection „wird wiederhergestellt“ (2 s) or lost (15 s); errors', returns: 'one wave on reconnect, then idle', desc: 'Shrugs, tilts his head from side to side, wobbly mouth, a question mark swinging above him.', tl: [
+      ['arm-left, arm-right', 'rotation −55 / −65 (shrug)', '.3 s, back.out(2)'],
+      ['head', 'tilt −12 ↔ 8', '.6 s, sine.inOut, yoyo ∞, repeatDelay .8'],
+      ['brow-left', 'rotation 14, y −6; mouth wobble', '.25 s'],
+      ['fx ?', 'scale .2 → 1, then rotation ±12', '.35 s back.out(2.4); .6 s sine.inOut yoyo ∞']] }
+  ];
+  DESC = { root: 'Whole figure: jumps, squash and stretch from the feet', shadow: 'Ground shadow, shrinks when he leaves the ground', 'tail-1': 'Tail base, sways ±4°', 'tail-2': 'Mid tail, ±7°, .22 s later', 'tail-3': 'Tail tip, ±11°, .44 s later', 'leg-right': 'Far thigh, rotates at the hip', 'shin-right': 'Far shin and foot, rotates at the knee', torso: 'Upper body lean: sad, angry, dance', 'arm-right': 'Far arm at the shoulder, negative = up', neck: 'Cursor head turn ±6°', head: 'Nods, tilts, shakes, laughs back', 'eye-left': 'Eye group: eyeball, pupil, lid, happy arc', jaw: 'Holds the mouth shapes', 'brow-left': 'Rotates around its centre: angry, sad, curious', body: 'Breathing scale from the belly bottom', 'arm-left': 'Near arm: waves, pumps, taps the chin', 'leg-left': 'Near thigh at the hip', 'shin-left': 'Near shin and foot at the knee' };
+  componentDidMount() {
+    const go = () =>  (window.gsap && window.CBO && window.CBD) ? this.boot() : (this._t = setTimeout(go, 60));
+    go();
+  }
+  boot() {
+    if (this.booted) return;
+    gsap.defaults({ overwrite: 'auto' });
+    const s = document.documentElement.style;
+    Object.entries(CBO.CW.Minze).forEach(([k, v]) => s.setProperty('--cb-' + k, v));
+    s.setProperty('--cb-ink', '#151515');
+    this.readParts();
+    this.booted = true;
+    setTimeout(() => { try { this.mountAll(); } catch (e) { console.warn('mountAll: ' + e.message + ' ' + (e.stack||'').slice(0,300)); } }, 0);
+    this._mv = e => { this.mx = e.clientX; this.my = e.clientY; this.poke(); if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = 0; CBO.track(this.rigs, this.mx, this.my); }); };
+    window.addEventListener('pointermove', this._mv);
+    this.poke();
+  }
+  mountAll() {
+    const root = this.root.current; if (!root) return;
+    root.querySelectorAll('[data-rig]').forEach((d, i) => {
+      if (d.dataset.mounted) return; d.dataset.mounted = '1';
+      const r = CBO.mount(d, 300 + i); r.reduced = this.state.reduced || !!d.dataset.pose; this.rigs.push(r);
+      if (r.hero) this.hero = r;
+      if (d.dataset.state) CBO.toState(r, d.dataset.state);
+    });
+    this.applyLook();
+    if (!window.CBD) return;
+    root.querySelectorAll('[data-scene]').forEach(el => {
+      if (el.dataset.inited) return; el.dataset.inited = '1';
+      const R = {}; this.rigs.filter(r => el.contains(r.div)).forEach(r => { if (r.div.dataset.id) R[r.div.dataset.id] = r; });
+      try { const sc = CBD.init(el.dataset.scene, el, R); if (sc) this.scenes[el.dataset.sid || el.dataset.scene] = sc; } catch (e) { console.warn('scene ' + el.dataset.scene + ': ' + (e && e.message)); }
+      if (!this._io) this._io = new IntersectionObserver(es => es.forEach(en => { if (!en.isIntersecting) return; this._io.unobserve(en.target); const s = this.scenes[en.target.dataset.sid || en.target.dataset.scene]; if (s && en.target.dataset.auto) setTimeout(() => s.play(), 300); }), { threshold: .5 });
+      this._io.observe(el);
+    });
+    root.querySelectorAll('[data-play]').forEach(b => { if (b.dataset.bound) return; b.dataset.bound = '1'; b.addEventListener('click', () => { const s = this.scenes[b.dataset.play]; s && s.play(); }); });
+  }
+  readParts() {
+    const doc = new DOMParser().parseFromString('<div>' + CBO.build('F2', 'full', 'x') + '</div>', 'text/html');
+    const rows = [];
+    doc.querySelectorAll('[data-pivot]').forEach(el => {
+      const c = [...el.classList].find(k => k.startsWith('compibert-')); if (!c) return;
+      const id = c.replace('compibert-', '');
+      let par = el.parentElement, pc = null;
+      while (par && !pc) { pc = [...(par.classList || [])].find(k => k.startsWith('compibert-')); par = par.parentElement; }
+      const pv = el.dataset.pivot.split(' ').map(v => Math.round(+v)).join(' ');
+      rows.push({ id: c, parent: pc || 'svg', pv, what: this.DESC[id] || '' });
+    });
+    rows.push({ id: 'compibert-pupil-left', parent: 'compibert-eye-left', pv: 'x, y', what: 'Translate only, clipped by the eye. Cursor follow.' });
+    rows.push({ id: 'compibert-lid-left', parent: 'compibert-eye-left', pv: 'y', what: 'Translate only: y = −(2·ry + 10)·(1 − closed). ry = 24.' });
+    rows.push({ id: 'compibert-mouth-*', parent: 'compibert-jaw', pv: 'opacity', what: 'smile, grin, frown, flat, wobble, o, roar. Crossfade .1 s.' });
+    rows.push({ id: 'compibert-fx-*', parent: 'compibert-head', pv: 'own', what: 'z ×3, tear, anger, sweat, question, dots ×3. Hidden at rest.' });
+    this.setState({ parts: rows });
+  }
+  applyLook() {
+    const t = this.state.mode === 'dark' ? 'Sticker' : 'Harter Schatten';
+    this.rigs.forEach(r => { CBO.treat(r, (r.div.clientWidth < 40 || r.view === 'emote') ? 'Pur' : r.div.dataset.dark ? 'Sticker' : t); CBO.pivots(r, this.state.pivots); });
+  }
+  componentDidUpdate(pp, ps) {
+    if (!this.booted) return;
+    try { this.mountAll(); } catch (e) { console.warn('mountAll(upd): ' + e.message + ' ' + (e.stack||'').slice(0,400)); }
+    if (ps.mode !== this.state.mode || ps.pivots !== this.state.pivots) this.applyLook();
+    if (ps.reduced !== this.state.reduced) this.rigs.forEach(r => { r.reduced = this.state.reduced; CBO.toState(r, r.div.dataset.state || (r.hero ? this.cur || 'idle' : 'idle')); });
+  }
+  componentWillUnmount() {
+    clearTimeout(this._t); clearTimeout(this._idle); clearTimeout(this._rt);
+    this._mv && window.removeEventListener('pointermove', this._mv);
+    this.rigs.forEach(r => CBO.kill(r));
+  }
+  poke() {
+    clearTimeout(this._idle);
+    if (this.state.base === 'look' && !this._fromBtn) this.setBase('idle', 'Eingabe', 'zurück zu Ruhe');
+    this._fromBtn = false;
+    this._idle = setTimeout(() => { if (this.state.base === 'idle') this.fire(this.EV[1], true); }, 10000);
+  }
+  now() { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map(v => String(v).padStart(2, '0')).join(':'); }
+  addLog(ev, res, note) { this.setState(s => ({ log: [{ t: this.now(), ev, res, note: note || '' }].concat(s.log).slice(0, 6) })); }
+  show() {
+    const s = this.state.react ? this.state.react.st : this.state.base;
+    if (this.hero && s !== this.cur) { this.cur = s; CBO.toState(this.hero, s); }
+  }
+  setBase(st, evDe, note) {
+    this.setState({ base: st }, () => this.show());
+    this.addLog(evDe, 'Basis → ' + this.DE[st], note);
+  }
+  fire(ev, auto) {
+    if (ev.id === 'inactive' && !auto) this._fromBtn = true;
+    const S = this.state, D = this.DE;
+    if (ev.type === 'base') {
+      const prev = S.base;
+      if (ev.id === 'ok' && (prev === 'confused' || prev === 'sleep')) {
+        this.setState({ base: 'idle' });
+        return this.react({ st: 'wave', dur: 2.2, prio: 1 }, ev.de, 'Wieder da: einmal winken, dann Ruhe', true);
+      }
+      if (ev.st === 'confused' && S.react) {
+        clearTimeout(this._rt);
+        this.setState({ base: 'confused', react: null }, () => this.show());
+        return this.addLog(ev.de, 'Basis → Verwirrt', 'Prio 4 unterbricht ' + D[S.react.st]);
+      }
+      if (ev.id === 'join' ) return;
+      this.setState({ base: ev.st }, () => this.show());
+      return this.addLog(ev.de, 'Basis → ' + D[ev.st], S.react ? D[S.react.st] + ' läuft weiter, endet in ' + D[ev.st] : '');
+    }
+    if (S.base === 'confused') return this.addLog(ev.de, 'verworfen', 'Verwirrt hat Vorrang, bis die Verbindung zurück ist');
+    if (S.react && ev.prio < S.react.prio) return this.addLog(ev.de, 'verworfen', D[S.react.st] + ' hat höhere Priorität');
+    if (ev.base) this.setState({ base: ev.base });
+    if (S.base === 'sleep' && ev.st === 'wave') this.setState({ base: 'idle' });
+    const note = S.react ? 'ersetzt ' + D[S.react.st] + (this.hero && gsap.getProperty(this.hero.p.root, 'y') < -3 ? ', wartet auf die Landung' : '') : '';
+    this.react(ev, ev.de, note);
+  }
+  react(ev, evDe, note, force) {
+    clearTimeout(this._rt);
+    const r = { st: ev.st, prio: ev.prio };
+    this.setState({ react: r }, () => this.show());
+    this.addLog(evDe, 'Reaktion ' + this.DE[ev.st] + ', ' + ev.dur + ' s', note);
+    this._rt = setTimeout(() => {
+      this.setState({ react: null }, () => this.show());
+      this.addLog(this.DE[ev.st] + ' vorbei', 'zurück zu ' + this.DE[this.state.base], '');
+    }, ev.dur * 1000);
+  }
+  renderVals() {
+    const S = this.state, light = S.mode === 'light';
+    return {
+      root: this.root, mode: S.mode, motion: S.reduced ? 'reduced' : 'full',
+      isLight: light, isDark: !light,
+      lightBg: light ? 'var(--cp-ink)' : 'transparent', lightFg: light ? 'var(--cp-paper)' : 'var(--cp-ink)',
+      darkBg: !light ? 'var(--cp-ink)' : 'transparent', darkFg: !light ? 'var(--cp-paper)' : 'var(--cp-ink)',
+      setLight: () => this.setState({ mode: 'light' }), setDark: () => this.setState({ mode: 'dark' }),
+      isReduced: S.reduced, motionBg: S.reduced ? 'var(--cp-primary)' : 'transparent', toggleMotion: () => this.setState(s => ({ reduced: !s.reduced })),
+      pivots: S.pivots, pivotBg: S.pivots ? 'var(--cp-primary)' : 'transparent', togglePivots: () => this.setState(s => ({ pivots: !s.pivots })),
+      baseDe: this.DE[S.base], reactDe: S.react ? this.DE[S.react.st] : 'keine', reactBg: S.react ? '#ffd23f' : 'var(--cp-surface)',
+      events: this.EV.map(e => ({ de: e.de, fire: () => this.fire(e) })),
+      log: S.log, logEmpty: !S.log.length,
+      parts: S.parts,
+      states: this.SPEC.map(s => ({ id: s.id, de: this.DE[s.id], kind: s.kind, kindBg: s.kind.startsWith('Reaktion') ? '#ffd23f' : s.kind.includes('Prio') ? '#ff70c3' : '#2ec4b6', trigger: s.trigger, returns: s.returns, desc: s.desc, tl: s.tl.map(t => ({ part: t[0], what: t[1], meta: t[2] })) })),
+      table: this.TABLE.map(t => ({ de: t[0], st: t[1], layer: t[2], after: t[3] })),
+      moments: [
+        { n: 'Header-Logo', where: 'Head 30 px, header left', io: 'always there', st: 'idle · cheer · confused' },
+        { n: 'Boot', where: 'Full body 160, splash', io: '3b sprint-in (07)', st: 'run → wave' },
+        { n: 'Rad', where: 'Full body 150, bottom edge beside the wheel', io: 'rises .45 s back.out(1.8), sinks .4 s power2.in', st: 'excited → suspense → cheer' },
+        { n: 'Spielsieger', where: 'Bust 96, beside the winner row', io: 'scale .6 → 1 .35 s, fade out', st: 'cheer 1.6 s' },
+        { n: 'Leere Lobby', where: 'Full body 200, centre', io: 'fade .3 s', st: 'sleep, wave on join' },
+        { n: 'Laden > 400 ms', where: 'Bust 72, in place of content', io: 'fade .2 s', st: 'think' },
+        { n: 'Verbindung', where: 'Bust 56 inside the notice', io: 'with the notice', st: 'confused' },
+        { n: 'Siegerehrung', where: 'Full body, full screen', io: 'see 10', st: 'run → laugh → dance' }
+      ],
+      pokes: [
+        { n: 'Lachen', d: 'laugh: head back, shaking, a tear', t: '1.5 s' },
+        { n: 'Hüpfer', d: 'root y −46 and back, squash on landing', t: '.6 s' },
+        { n: 'Winken', d: 'wave', t: '1.5 s' },
+        { n: 'Quetschen', d: 'squash to scaleY .72, elastic back', t: '.6 s' },
+        { n: 'Schulterzucken', d: 'confused: shrug, head tilt, question mark', t: '1.5 s' },
+        { n: 'Wütend (5 in 2 s)', d: 'angry + bubble „Hey! Lass das.“, counter resets', t: '2.6 s' }
+      ],
+      emotes: [{ de: 'Klatschen', st: 'clap' }, { de: 'Freudentränen', st: 'laugh' }, { de: 'Wütend', st: 'angry' }, { de: 'Brüllen', st: 'roar' }]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Bungee&family=Caveat+Brush&family=Fredoka:wght@400..700&family=Hanken+Grotesk:wght@400..900&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@500;700&family=Nunito:wght@400..800&family=Patrick+Hand&family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"><script src="./themes.js"></script>
+</helmet>
+<svg width="0" height="0" style="position:absolute"><filter id="cp-wob"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"></feTurbulence><feDisplacementMap in="SourceGraphic" scale="3.2"></feDisplacementMap></filter></svg>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+<div style="width:410px;height:864px;box-sizing:border-box;padding:10px;border-radius:56px;background:#0a0a0a">
+<div style="position:relative;width:390px;height:844px;overflow:hidden;border-radius:46px;background-color:{{ t.c.bg }};background-image:{{ t.c.bgImg }};background-size:{{ t.c.bgSize }};color:{{ t.c.ink }};font-family:{{ t.f.b }};font-weight:{{ t.f.bw }};font-size:{{ t.f.bs }};display:flex;flex-direction:column">
+  <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+    <sc-for list="{{ smokeM }}" as="s" hint-placeholder-count="0"><div style="position:absolute;left:{{ s.x }};top:{{ s.y }};width:{{ s.w }};height:{{ s.h }};background:{{ s.bg }};-webkit-mask:{{ s.mask }};mask:{{ s.mask }};opacity:{{ s.o }};animation:{{ s.anim }}"></div></sc-for>
+  </div>
+  <div style="position:relative;height:50px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 34px;font-size:15px;font-weight:700;font-family:-apple-system,system-ui,sans-serif"><span>20:06</span><span style="position:absolute;left:50%;top:11px;margin-left:-60px;width:120px;height:32px;border-radius:20px;background:#0a0a0a"></span><span style="font-size:12px">5G ▮▮▮</span></div>
+  <div style="position:relative;z-index:1;flex:none;display:flex;align-items:center;gap:10px;padding:6px 16px 10px">
+    <dc-import name="Compibert" dir="{{ t.id }}" variant="head" size="{{ 36 }}" hint-size="36px,36px"></dc-import>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-family:{{ t.f.h }};font-weight:{{ t.f.hw }};text-transform:{{ t.f.hc }};letter-spacing:{{ t.f.ht }};font-size:20px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Freitags-Zocken #12</span><span style="font-size:12px;color:{{ t.c.ink2 }};display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:{{ t.s.rDot }};background:{{ t.c.ok }};animation:cpLive 1.6s infinite"></span>Teamwahl offen · Fr 20:15</span></div>
+    <div style="width:44px;height:44px;display:grid;place-items:center;background:{{ t.c.accent }};color:{{ t.c.accentInk }};border-radius:{{ t.s.rBtn }};border:{{ t.s.btnBorder }};box-shadow:{{ t.s.btnShadow }}"><svg viewBox="0 0 24 24" width="20" height="20" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"><path d="M3 19h18M4 16 3 7l5 4 4-7 4 7 5-4-1 9z"></path></svg></div>
+  </div>
+  <div style="position:relative;z-index:1;flex:none;display:flex;margin:0 16px;padding:3px;gap:3px;background:{{ t.c.panel2 }};border-radius:{{ t.s.rBtn }};border:{{ t.s.border }}">
+    <div style="flex:1;height:38px;display:grid;place-items:center;background:{{ t.c.ink }};color:{{ t.c.bg }};border-radius:{{ t.s.rBtn }};font-weight:700;font-size:14px">Spielbrett</div>
+    <div style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:14px">Chat<span style="font-size:10px;padding:1px 6px;border-radius:{{ t.s.rChip }};background:{{ t.c.hot }};color:{{ t.c.hotInk }}">3</span></div>
+    <div style="flex:1;height:38px;display:grid;place-items:center;font-weight:700;font-size:14px;color:{{ t.c.ink2 }}">Aktivität</div>
+  </div>
+  <div style="position:relative;z-index:1;flex:none;margin:10px 16px 0;display:flex;align-items:center;gap:8px;padding:8px 10px;background:{{ t.c.warnBg }};border-radius:{{ t.s.r }};font-size:12px;line-height:1.3"><span style="padding:2px 6px;background:{{ t.c.hot }};color:{{ t.c.hotInk }};border-radius:{{ t.s.rChip }};font-size:10px;font-weight:700;white-space:nowrap">HOST</span><span>Team Lila 1/2 – Start gesperrt</span></div>
+  <div style="position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;padding:10px 16px 0">
+    <sc-for list="{{ teams }}" as="tm" hint-placeholder-count="8">
+      <div style="position:relative;height:46px;display:flex;align-items:center;gap:10px;padding-right:8px;background:{{ t.c.panel }};border-radius:{{ t.s.r }}">
+        <div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};box-shadow:{{ shadowSm }};filter:{{ t.s.ff }};pointer-events:none"></div>
+        <div style="align-self:stretch;width:40px;flex:none;display:grid;place-items:center;background:{{ tm.c }};color:{{ tm.ink }};border-radius:{{ rLeft }};font-size:14px">{{ tm.g }}</div>
+        <span title="{{ tm.full }}" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:{{ t.f.th }};font-weight:{{ t.f.thw }};text-transform:{{ t.f.thc }};font-size:{{ thsM }}">{{ tm.name }}</span>
+        <sc-for list="{{ tm.slots }}" as="sl" hint-placeholder-count="2">
+          <sc-if value="{{ sl.filled }}"><div style="position:relative;width:32px;height:32px;flex:none;border-radius:{{ t.s.rAv }};background:{{ sl.p.bg }};color:{{ sl.p.fg }};border:{{ t.s.avBorder }};display:grid;place-items:center;font-weight:700;font-size:11px">{{ sl.p.i }}<span style="position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:{{ t.s.rDot }};background:{{ sl.p.dot }};border:2px solid {{ t.c.panel }}"></span></div></sc-if>
+          <sc-if value="{{ sl.empty }}"><div style="width:32px;height:32px;flex:none;box-sizing:border-box;border-radius:{{ t.s.rAv }};border:{{ sl.eb }};background:{{ sl.ebg }};display:grid;place-items:center;color:{{ t.c.ink2 }};animation:cpGlow 1.8s ease-in-out infinite">+</div></sc-if>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-top:4px">
+      <div style="position:relative;padding:8px 10px;background:{{ t.c.panel }};border-radius:{{ t.s.r }};display:flex;flex-direction:column;gap:6px"><div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};filter:{{ t.s.ff }};pointer-events:none"></div><span style="font-weight:700;font-size:13px">{{ t.x.lab.bench }} · 3</span><div style="display:flex;gap:4px"><div style="width:30px;height:30px;border-radius:{{ t.s.rAv }};background:{{ drag.bg }};display:grid;place-items:center;font-size:10px;font-weight:700;box-shadow:0 0 0 2px {{ t.teams.6.c }}">{{ drag.i }}</div><sc-for list="{{ bench }}" as="p"><div style="width:30px;height:30px;border-radius:{{ t.s.rAv }};background:{{ p.bg }};color:{{ p.fg }};display:grid;place-items:center;font-size:10px;font-weight:700">{{ p.i }}</div></sc-for></div></div>
+      <div style="position:relative;padding:8px 10px;background:{{ t.c.panel }};border-radius:{{ t.s.r }};display:flex;flex-direction:column;gap:6px"><div style="position:absolute;inset:0;border:{{ t.s.border }};border-radius:{{ t.s.r }};filter:{{ t.s.ff }};pointer-events:none"></div><span style="font-weight:700;font-size:13px">{{ t.x.lab.stands }} · 8</span><div style="display:flex"><sc-for list="{{ stands5 }}" as="p"><div style="width:30px;height:30px;margin-right:-8px;border-radius:{{ t.s.rAv }};background:{{ p.bg }};color:{{ p.fg }};border:2px solid {{ t.c.panel }};display:grid;place-items:center;font-size:10px;font-weight:700">{{ p.i }}</div></sc-for><span style="margin-left:14px;font-size:12px;color:{{ t.c.ink2 }};align-self:center">+3</span></div></div>
+    </div>
+    <span style="font-size:11px;color:{{ t.c.ink2 }};text-align:center">Avatar halten &amp; ziehen, um die Zone zu wechseln</span>
+  </div>
+  <div style="position:relative;z-index:1;flex:none;display:flex;gap:8px;padding:10px 16px 8px;border-top:{{ t.s.div }};background:{{ t.c.panelSide }}">
+    <sc-for list="{{ emotes }}" as="em" hint-placeholder-count="4"><div style="flex:1;height:48px;display:grid;place-items:center;border:{{ t.s.border }};border-radius:{{ t.s.rBtn }};background:{{ t.c.panel }};font-size:12px;font-weight:700">{{ em.l }}</div></sc-for>
+  </div>
+  <div style="flex:none;height:26px;display:grid;place-items:center;background:{{ t.c.panelSide }}"><div style="width:134px;height:5px;border-radius:3px;background:{{ t.c.ink }};opacity:.8"></div></div>
+</div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:410,&quot;height&quot;:864},&quot;dir&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;swiss&quot;,&quot;memphis&quot;,&quot;hand&quot;,&quot;pixel&quot;,&quot;picnic&quot;,&quot;kofi&quot;,&quot;swissmemphis&quot;,&quot;swisspixel&quot;,&quot;kofihand&quot;,&quot;picnicpixel&quot;,&quot;memphispixel&quot;,&quot;swisshand&quot;],&quot;default&quot;:&quot;swiss&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  componentDidMount(){ if(!window.COMPIES_THEMES){ this._h=()=>{ if(!this._done){ this._done=true; this.forceUpdate(); } }; window.addEventListener('compies-themes',this._h);} }
+  componentWillUnmount(){ this._h && window.removeEventListener('compies-themes',this._h); }
+  renderVals(){
+    const T=window.COMPIES_THEMES; if(!T) return {ready:false};
+    const t=T[this.props.dir]||T.swiss, l=window.COMPIES_DATA.lobby(t);
+    const r=t.s.r==='0px'?'0':`${t.s.r} 0 0 ${t.s.r}`;
+    const sm=t.s.shadow.indexOf('px 0 0')>-1&&t.s.shadow.indexOf('6px 6px')===-1?t.s.shadow:t.s.shadow.replace(/6px 6px/g,'3px 3px').replace(/0 24px 48px/,'0 8px 16px').replace(/0 12px 30px/,'0 4px 12px');
+    return Object.assign({ready:true,t,rLeft:r,shadowSm:sm,thsM:parseInt(t.f.ths)>16?'17px':'14px',stands5:l.stands.slice(0,5),
+      smokeM:t.smoke.slice(0,4).map((s,i)=>Object.assign({},s,{w:'380px',h:'340px',x:(i%2?40:-30)+'%',y:(i*25-10)+'%'}))},l);
+  }
+}
+</script>
+</body>
+</html>

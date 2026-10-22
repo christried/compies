@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;display=swap">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="./compibert-options.js"></script>
+</helmet>
+<div ref="{{ root }}" style="position:relative;width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding:14px 16px 16px;border:var(--cp-bw,3px) solid var(--cp-line,#151515);border-radius:16px;background-color:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 1.4px,transparent 1.6px);background-size:22px 22px;color:#151515;overflow:hidden;font-family:'Bricolage Grotesque',sans-serif">
+  <div style="display:flex;align-items:center;gap:10px;min-height:34px">
+    <span data-k="gno" style="flex:none;padding:4px 10px;border:2px solid #151515;border-radius:999px;background:#fffdf8;font-weight:800;font-size:13px">Start</span>
+    <div data-k="cut" style="min-width:0;display:flex;align-items:baseline;gap:8px;padding:5px 14px;background:#ffd23f;border:2.5px solid #151515;border-radius:10px;box-shadow:3px 3px 0 #151515;white-space:nowrap;overflow:hidden;visibility:hidden"><b data-k="cutA" style="font:400 13px 'Bungee',sans-serif"></b><span data-k="cutB" style="font:400 22px 'Lilita One',sans-serif;line-height:1;overflow:hidden;text-overflow:ellipsis"></span></div>
+  </div>
+  <div style="display:flex;align-items:flex-end;gap:12px">
+    <div style="position:relative;flex:1;min-width:0;height:{{ boxH }};box-sizing:border-box;border:3px solid #151515;border-radius:12px;background:#fffdf8">
+      <div style="position:absolute;right:0;top:0;bottom:0;width:12px;background:repeating-linear-gradient(0deg,#151515 0 12px,#fffdf8 12px 24px);border-left:3px solid #151515;border-radius:0 9px 9px 0"></div>
+      <div data-k="track" style="position:absolute;left:4px;right:15px;top:4px;bottom:4px">
+        <sc-for list="{{ lanes }}" as="l" hint-placeholder-count="4">
+          <div style="position:absolute;left:0;right:0;top:{{ l.top }};height:{{ l.h }};border-bottom:{{ l.bd }}"></div>
+          <div data-k="tok" style="position:absolute;left:0;top:{{ l.tokTop }};width:{{ l.tok }};height:{{ l.tok }};box-sizing:border-box;border-radius:50%;border:3px solid #151515;background-color:var(--cp-team-{{ l.t }});background-image:var(--cp-team-{{ l.t }}-pattern);color:var(--cp-team-{{ l.t }}-ink);display:grid;place-items:center;font-weight:800;font-size:{{ l.fs }};box-shadow:3px 3px 0 #151515;z-index:2"><span style="padding:0 3px;border-radius:5px;background:var(--cp-team-{{ l.t }})">{{ l.ab }}</span></div>
+          <span data-k="pts" style="position:absolute;left:0;top:{{ l.ptsTop }};font:400 16px 'Bungee',sans-serif;line-height:1;z-index:2">0</span>
+        </sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ cbSide }}" hint-placeholder-val="{{ true }}"><div style="flex:none;width:112px;height:96px"><div data-k="rig" style="width:100%;height:100%"></div></div></sc-if>
+  </div>
+  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+    <sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+      <button type="button" onClick="{{ toggle }}" aria-label="{{ playLbl }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;box-shadow:3px 3px 0 #151515;font:700 15px 'Bricolage Grotesque',sans-serif;color:#151515;cursor:pointer" style-active="transform:translate(3px,3px);box-shadow:none"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="{{ playIcon }}" style="fill:#151515"></path></svg>{{ playTxt }}</button>
+      <button type="button" onClick="{{ next }}" style="height:44px;padding:0 14px;border:2.5px solid #151515;border-radius:999px;background:#fffdf8;box-shadow:3px 3px 0 #151515;font:700 15px 'Bricolage Grotesque',sans-serif;color:#151515;cursor:pointer" style-active="transform:translate(3px,3px);box-shadow:none">Nächstes Spiel</button>
+      <button type="button" onClick="{{ speed }}" aria-pressed="{{ fast }}" aria-label="Doppelte Geschwindigkeit" style="height:44px;min-width:52px;padding:0 12px;border:2.5px solid #151515;border-radius:999px;background:{{ speedBg }};box-shadow:3px 3px 0 #151515;font:400 14px 'Bungee',sans-serif;color:#151515;cursor:pointer" style-active="transform:translate(3px,3px);box-shadow:none">2×</button>
+    </sc-if>
+    <sc-if value="{{ reduced }}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{ step }}" style="height:44px;padding:0 18px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;box-shadow:3px 3px 0 #151515;font:700 15px 'Bricolage Grotesque',sans-serif;color:#151515;cursor:pointer">{{ stepTxt }}</button>
+    </sc-if>
+    <button type="button" onClick="{{ restart }}" style="height:44px;padding:0 14px;border:2.5px solid #151515;border-radius:999px;background:#fffdf8;box-shadow:3px 3px 0 #151515;font:700 15px 'Bricolage Grotesque',sans-serif;color:#151515;cursor:pointer" style-active="transform:translate(3px,3px);box-shadow:none">Von vorn</button>
+    <sc-if value="{{ cbRow }}" hint-placeholder-val="{{ false }}"><div style="margin-left:auto;flex:none;width:76px;height:65px"><div data-k="rig" style="width:100%;height:100%"></div></div></sc-if>
+  </div>
+  <div data-k="fx" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:6"></div>
+  <span role="status" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ live }}</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:640,&quot;height&quot;:400},&quot;size&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desk&quot;,&quot;mob&quot;],&quot;default&quot;:&quot;desk&quot;,&quot;tsType&quot;:&quot;'desk'|'mob'&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;'full'|'reduced'&quot;},&quot;autoplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;teams&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{t:number,name:string,ab?:string}[]&quot;},&quot;games&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{name:string,pts:number[]}[]&quot;}}">
+const DEF_T = [{ t: 1, name: 'Wilde Gurken Bande', ab: 'GU' }, { t: 8, name: 'Nacht Eulen', ab: 'EU' }, { t: 2, name: 'Team Orange', ab: 'OR' }, { t: 4, name: 'Käse Turbo', ab: 'KÄ' }];
+const DEF_G = [['Rocket League', [4, 3, 1, 0]], ['Mario Kart 8', [2, 4, 1, 1]], ['Counter-Strike 2', [1, 4, 0, 2]], ['Overcooked 2', [4, 1, 3, 0]], ['Codenames', [1, 2, 4, 1]], ['Gang Beasts', [5, 1, 0, 1]]].map(([name, pts]) => ({ name, pts }));
+const STEP = 1.45;
+class Component extends DCLogic {
+  root = React.createRef();
+  state = { playing: false, fast: false, idx: -1, done: false };
+  data() {
+    const teams = this.props.teams && this.props.teams.length ? this.props.teams : DEF_T, games = this.props.games && this.props.games.length ? this.props.games : DEF_G;
+    const tot = []; let acc = teams.map(() => 0); games.forEach(g => { acc = acc.map((v, i) => v + (g.pts[i] || 0)); tot.push(acc.slice()); });
+    const max = Math.max(1, ...tot[tot.length - 1]);
+    const rank = a => a.map((v, i) => [v, i]).sort((x, y) => y[0] - x[0] || x[1] - y[1]).map(x => x[1]);
+    return { teams, games, tot, max, rank };
+  }
+  rm() { return this.props.motion === 'reduced'; }
+  geo() { const n = this.data().teams.length, LH = n <= 4 ? 58 : n <= 6 ? 46 : 38, tok = n <= 4 ? 42 : n <= 6 ? 34 : 28; return { n, LH, tok }; }
+  q(k) { return this.root.current && this.root.current.querySelector('[data-k="' + k + '"]'); }
+  qa(k) { return this.root.current ? [...this.root.current.querySelectorAll('[data-k="' + k + '"]')] : []; }
+  componentDidMount() {
+    const go = () => (window.gsap && window.CBO && this.root.current) ? this.boot() : (this._t = setTimeout(go, 60));
+    go();
+  }
+  boot() {
+    const s = document.documentElement.style;
+    if (!s.getPropertyValue('--cb-body')) { Object.entries(CBO.CW.Minze).forEach(([k, v]) => s.setProperty('--cb-' + k, v)); s.setProperty('--cb-ink', '#151515'); }
+    gsap.defaults({ overwrite: 'auto' });
+    this.mountRig();
+    this._ro = new ResizeObserver(() => { const w = this.q('track') && this.q('track').clientWidth; if (w && w !== this._w) { this._w = w; this.build(true); } });
+    this._ro.observe(this.root.current);
+    this._io = new IntersectionObserver(es => { if (es[0].isIntersecting && this.props.autoplay !== false && !this._auto) { this._auto = true; setTimeout(() => this.rm() ? null : this.play(), 300); } }, { threshold: .5 });
+    this._io.observe(this.root.current);
+  }
+  mountRig() {
+    const d = this.q('rig'); if (!d || d.dataset.mounted) return;
+    if (this.cb) { CBO.kill(this.cb); this.cb = null; }
+    d.dataset.mounted = '1'; d.dataset.rig = 'F2'; d.dataset.view = 'full';
+    this.cb = CBO.mount(d, 'br' + Math.random().toString(36).slice(2, 6));
+    CBO.treat(this.cb, d.clientWidth < 90 ? 'Pur' : 'Harter Schatten');
+  }
+  cbS(s) { this.cb && CBO.toState(this.cb, s); }
+  xOf(v) { const D = this.data(), { tok } = this.geo(), W = this.q('track').clientWidth; return 4 + (W - tok - 52) * v / D.max; }
+  setTexts(i) {
+    const D = this.data(), gno = this.q('gno'), a = this.q('cutA'), b = this.q('cutB');
+    if (!gno) return;
+    if (i < 0) { gno.textContent = 'Start'; return; }
+    if (i >= D.games.length) { gno.textContent = 'Spiel ' + D.games.length + ' / ' + D.games.length; a.textContent = 'Sieg'; b.textContent = D.teams[D.rank(D.tot[D.tot.length - 1])[0]].name; return; }
+    gno.textContent = 'Spiel ' + (i + 1) + ' / ' + D.games.length; a.textContent = 'Spiel ' + (i + 1); b.textContent = D.games[i].name;
+  }
+  pose(i) {
+    const D = this.data(), toks = this.qa('tok'), pts = this.qa('pts'), { tok } = this.geo(), tot = i < 0 ? D.teams.map(() => 0) : D.tot[Math.min(i, D.tot.length - 1)];
+    toks.forEach((k, j) => { gsap.set(k, { x: this.xOf(tot[j]), y: 0, scale: 1 }); });
+    pts.forEach((p, j) => { gsap.set(p, { x: this.xOf(tot[j]) + tok + 10 }); p.textContent = tot[j]; });
+  }
+  build(keep) {
+    if (!this.q('track') || !this.q('track').clientWidth) return;
+    const was = this.tl ? this.tl.time() : 0, playing = this.tl && !this.tl.paused() && this.tl.progress() < 1;
+    this.tl && this.tl.kill(); this.q('fx').innerHTML = '';
+    const D = this.data(), toks = this.qa('tok'), pts = this.qa('pts'), { LH, tok } = this.geo(), cut = this.q('cut');
+    if (this.rm()) { this.pose(this.state.idx); this.setTexts(this.state.idx); gsap.set(cut, { autoAlpha: this.state.idx >= 0 ? 1 : 0, y: 0 }); this.crown(this.state.idx >= D.games.length); return; }
+    this.pose(-1); this.setTexts(-1); gsap.set(cut, { autoAlpha: 0, y: -14 }); this.crown(false);
+    const tl = this.tl = gsap.timeline({ paused: true, onUpdate: () => { const i = Math.floor((tl.time() - .25) / STEP); if (i !== this._ti) { this._ti = i; this.setTexts(Math.min(i, D.games.length)); this.setState({ idx: i }); } }, onComplete: () => this.setState({ playing: false, done: true }) });
+    const proxy = D.teams.map(() => ({ v: 0 }));
+    let t = .25, lead = -1;
+    D.games.forEach((g, i) => {
+      const tot = D.tot[i], w = g.pts.indexOf(Math.max(...g.pts)), nl = D.rank(tot)[0];
+      tl.addLabel('g' + i, t).fromTo(cut, { autoAlpha: 0, y: -14 }, { autoAlpha: 1, y: 0, duration: .2, ease: 'back.out(2.5)', immediateRender: false }, t).to(cut, { autoAlpha: 0, y: 10, duration: .18, ease: 'power2.in' }, t + 1.15);
+      toks.forEach((k, j) => {
+        tl.to(k, { x: this.xOf(tot[j]), duration: .5, ease: 'power2.inOut' }, t + .35 + j * .03).to(pts[j], { x: this.xOf(tot[j]) + tok + 10, duration: .5, ease: 'power2.inOut' }, t + .35 + j * .03)
+          .to(proxy[j], { v: tot[j], duration: .5, ease: 'none', onUpdate: () => { pts[j].textContent = Math.round(proxy[j].v); } }, t + .35);
+      });
+      tl.to(toks[w], { y: -10, duration: .12, yoyo: true, repeat: 3, ease: 'power1.out' }, t + .4)
+        .call(() => this.chip(toks[w], '+' + g.pts[w]), null, t + .75);
+      const changed = nl !== lead && i > 0; lead = nl;
+      tl.call(() => this.cbS(changed ? 'excited' : 'clap'), null, t + .4).call(() => this.cbS('idle'), null, t + 1.2);
+      if (changed) tl.call(() => this.stamp(toks[nl]), null, t + 1.0);
+      t += STEP;
+    });
+    const wn = D.rank(D.tot[D.tot.length - 1])[0];
+    tl.addLabel('end', t).fromTo(cut, { autoAlpha: 0, y: -14 }, { autoAlpha: 1, y: 0, duration: .25, ease: 'back.out(2.5)', immediateRender: false }, t)
+      .to(toks[wn], { scale: 1.25, duration: .35, ease: 'back.out(3)' }, t).to(pts[wn], { x: this.xOf(D.max) + tok + 16, duration: .35 }, t)
+      .call(() => { this.crown(true); this.cbS('dance'); }, null, t + .1).to({}, { duration: .6 });
+    tl.timeScale(this.state.fast ? 2 : 1);
+    if (keep && was) { tl.time(Math.min(was, tl.duration()), true); this.pose(Math.min(this._ti, D.games.length - 1)); if (playing) tl.play(); }
+  }
+  chip(tokEl, txt) {
+    const fx = this.q('fx'), r = tokEl.getBoundingClientRect(), s = this.root.current.getBoundingClientRect();
+    const c = document.createElement('span');
+    c.style.cssText = `position:absolute;left:${r.left - s.left + r.width / 2}px;top:${r.top - s.top - 14}px;padding:1px 7px;border:2.5px solid #151515;border-radius:999px;background:#ffd23f;font:400 13px 'Bungee',sans-serif;color:#151515;white-space:nowrap;z-index:7`;
+    c.textContent = txt; fx.appendChild(c);
+    gsap.timeline({ onComplete: () => c.remove() }).fromTo(c, { xPercent: -50, y: 6, opacity: 0, scale: .4 }, { y: 0, opacity: 1, scale: 1, duration: .22, ease: 'back.out(3)' }).to(c, { y: -6, opacity: 0, duration: .25, delay: .35 });
+  }
+  stamp(tokEl) {
+    const fx = this.q('fx'), r = tokEl.getBoundingClientRect(), s = this.root.current.getBoundingClientRect(), tr = this.q('track').getBoundingClientRect();
+    const c = document.createElement('span');
+    c.style.cssText = `position:absolute;left:${Math.max(tr.left - s.left + 2, r.left - s.left - 92)}px;top:${r.top - s.top + r.height / 2 - 13}px;padding:2px 8px;border:2.5px solid #151515;border-radius:6px;background:#ff4f4f;color:#151515;font:400 13px 'Bungee',sans-serif;transform:rotate(-8deg);z-index:7`;
+    c.textContent = 'FÜHRUNG'; fx.appendChild(c);
+    gsap.timeline({ onComplete: () => c.remove() }).fromTo(c, { scale: 2.2, opacity: 0 }, { scale: 1, opacity: 1, duration: .22, ease: 'back.out(2.5)' }).to(c, { opacity: 0, duration: .2, delay: .3 });
+  }
+  crown(on) {
+    const fx = this.q('fx'); if (!fx) return;
+    const old = fx.querySelector('[data-crown]'); old && old.remove(); if (!on) return;
+    const D = this.data(), wn = D.rank(D.tot[D.tot.length - 1])[0], k = this.qa('tok')[wn], r = k.getBoundingClientRect(), s = this.root.current.getBoundingClientRect();
+    const c = document.createElement('span'); c.dataset.crown = '1';
+    c.style.cssText = `position:absolute;left:${r.left - s.left + r.width / 2 - 17}px;top:${r.top - s.top - 20}px;z-index:7`;
+    c.innerHTML = '<svg viewBox="0 0 40 26" width="34" height="22"><path d="M3 23L6 5L14 14L20 2L26 14L34 5L37 23Z" style="fill:#ffd23f;stroke:#151515;stroke-width:3;stroke-linejoin:round"></path></svg>';
+    fx.appendChild(c); if (!this.rm()) gsap.from(c, { y: -30, opacity: 0, duration: .4, ease: 'bounce.out' });
+  }
+  play = () => { if (!this.tl) this.build(); if (!this.tl) return; if (this.tl.progress() >= 1) this.tl.restart(); else this.tl.play(); this.setState({ playing: true, done: false }); };
+  toggle = () => { if (this.state.playing) { this.tl && this.tl.pause(); this.setState({ playing: false }); this.cbS('idle'); } else this.play(); };
+  next = () => {
+    if (!this.tl) this.build(); const D = this.data(), i = Math.max(-1, this._ti == null ? -1 : this._ti) + 1;
+    const lab = i >= D.games.length ? 'end' : 'g' + i; this.q('fx').innerHTML = '';
+    this.tl.seek(lab, true); this.pose(Math.min(i, D.games.length) - 1 + (i >= D.games.length ? 0 : 0)); this.setTexts(i); this._ti = i; this.setState({ idx: i }); this.cbS('idle');
+    if (!this.state.playing) this.tl.pause();
+  };
+  speed = () => this.setState(s => ({ fast: !s.fast }), () => this.tl && this.tl.timeScale(this.state.fast ? 2 : 1));
+  restart = () => { this._ti = -1; if (this.rm()) { this.setState({ idx: -1 }, () => this.build()); return; } this.build(); this.play(); };
+  step = () => { const D = this.data(); if (this.state.idx >= D.games.length) return; const el = this.q('track');
+    gsap.to(el, { opacity: 0, duration: .1, onComplete: () => this.setState(s => ({ idx: s.idx + 1 }), () => { this.build(); gsap.to(el, { opacity: 1, duration: .1 }); }) }); };
+  componentDidUpdate(pp) {
+    this.mountRig();
+    if (pp.motion !== this.props.motion || pp.teams !== this.props.teams || pp.games !== this.props.games) { this.setState({ idx: -1, playing: false, done: false }); this._ti = -1; setTimeout(() => this.build(), 0); }
+  }
+  componentWillUnmount() { clearTimeout(this._t); this._ro && this._ro.disconnect(); this._io && this._io.disconnect(); this.tl && this.tl.kill(); this.cb && CBO.kill(this.cb); }
+  renderVals() {
+    const D = this.data(), { n, LH, tok } = this.geo(), mob = this.props.size === 'mob', S = this.state, rm = this.rm();
+    const lanes = D.teams.map((T, i) => ({ t: T.t, ab: T.ab || T.name.slice(0, 2).toUpperCase(), top: i * LH + 'px', h: LH + 'px', bd: i < n - 1 ? '2px dashed rgba(21,21,21,.25)' : '0', tokTop: (i * LH + LH / 2 - tok / 2) + 'px', tok: tok + 'px', fs: (tok > 36 ? 14 : 11) + 'px', ptsTop: (i * LH + LH / 2 - 8) + 'px' }));
+    const idx = S.idx, last = D.games.length;
+    let live = '';
+    if (idx >= 0) { const tt = D.tot[Math.min(idx, last - 1)], l = D.rank(tt)[0]; live = idx >= last ? D.teams[l].name + ' gewinnt mit ' + tt[l] + ' Punkten.' : 'Nach Spiel ' + (idx + 1) + ', ' + D.games[idx].name + ': ' + D.teams[l].name + ' führt mit ' + tt[l] + ' Punkten.'; }
+    return {
+      root: this.root, lanes, boxH: (n * LH + 14) + 'px', cbSide: !mob, cbRow: mob,
+      full: !rm, reduced: rm, toggle: this.toggle, next: this.next, speed: this.speed, restart: this.restart, step: this.step,
+      playing: S.playing, playTxt: S.playing ? 'Pause' : (S.done ? 'Nochmal' : 'Abspielen'), playLbl: S.playing ? 'Replay pausieren' : 'Replay abspielen',
+      playIcon: S.playing ? 'M3 2h3.5v12H3zM9.5 2H13v12H9.5z' : 'M4 2l10 6-10 6z',
+      fast: S.fast, speedBg: S.fast ? '#ffd23f' : '#fffdf8',
+      stepTxt: idx < 0 ? 'Start' : idx >= last ? 'Fertig' : idx === last - 1 ? 'Ergebnis' : 'Weiter', live
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<sc-if value="{{ isStrip }}" hint-placeholder-val="{{ true }}">
+<div role="note" aria-label="{{ aria }}" style="position:relative;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;background:var(--cp-paper-2);overflow:hidden;display:flex;flex-direction:column;color:var(--cp-ink)">
+  <div style="position:relative;z-index:4;padding:{{ copyPad }};display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:600px">
+    <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase"><span style="width:16px;height:10px;border-radius:2px;border:1.5px solid #151515;background:repeating-linear-gradient(-45deg,#ff4f4f 0 3px,#fffdf8 3px 6px)"></span>{{ chip }}</span>
+    <b style="font-family:var(--cp-font-display);font-weight:400;font-size:{{ titleS }};line-height:1.05;text-wrap:balance">{{ title }}</b>
+    <span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">{{ text }}</span>
+  </div>
+  <div aria-hidden="true" style="position:relative;height:{{ sceneH }}">
+    <div style="position:absolute;left:-40px;right:-40px;top:8px;z-index:3;height:30px;box-sizing:border-box;transform:rotate(-3deg);border-top:2.5px solid #151515;border-bottom:2.5px solid #151515;background:repeating-linear-gradient(-45deg,#ff4f4f 0 14px,#fffdf8 14px 28px);box-shadow:0 4px 0 rgba(21,21,21,.22);display:flex;align-items:center;justify-content:space-around;overflow:hidden">
+      <sc-for list="{{ tape }}" as="l" hint-placeholder-count="4"><span style="flex:none;padding:0 10px;background:#151515;color:#fffdf8;font-family:var(--cp-font-display);font-size:15px;line-height:20px;text-transform:uppercase;letter-spacing:.04em">{{ l }}</span></sc-for>
+    </div>
+    <div style="position:absolute;left:-24px;bottom:10px;display:flex;z-index:1">
+      <sc-for list="{{ panels }}" as="p" hint-placeholder-count="8"><div style="flex:none;position:relative;width:{{ panelW }};height:{{ panelH }}"><div style="position:absolute;left:0;right:0;top:0;bottom:14px;box-sizing:border-box;border-left:5px solid var(--cp-line);border-right:5px solid var(--cp-line);border-top:3px solid var(--cp-line);border-bottom:3px solid var(--cp-line);background-image:linear-gradient(color-mix(in srgb,var(--cp-line) 38%,transparent) 1.5px,transparent 1.5px),linear-gradient(90deg,color-mix(in srgb,var(--cp-line) 38%,transparent) 1.5px,transparent 1.5px);background-size:12px 12px"></div><span style="position:absolute;left:-15px;bottom:0;width:32px;height:16px;box-sizing:border-box;border-radius:3px;border:2.5px solid var(--cp-line);background:var(--cp-offline)"></span><span style="position:absolute;right:-15px;bottom:0;width:32px;height:16px;box-sizing:border-box;border-radius:3px;border:2.5px solid var(--cp-line);background:var(--cp-offline)"></span></div></sc-for>
+    </div>
+    <sc-if value="{{ sign }}"><div style="position:absolute;z-index:2;left:{{ signL }};bottom:{{ signB }};transform:rotate(2deg);padding:7px 12px 8px;border:3px solid #151515;border-radius:6px;background:#ffd23f;color:#151515;box-shadow:4px 4px 0 var(--cp-shadow-ink);display:flex;flex-direction:column;align-items:center;line-height:1.05;text-align:center"><span style="position:absolute;top:-9px;left:14px;width:6px;height:14px;border-radius:2px;background:#151515"></span><span style="position:absolute;top:-9px;right:14px;width:6px;height:14px;border-radius:2px;background:#151515"></span><span style="font-family:var(--cp-font-display);font-size:{{ signS }};text-transform:uppercase">Baustelle!</span><span style="font-size:12px;font-weight:800">Eltern haften für ihre Dinos.</span></div></sc-if>
+    <img src="./assets/baustelle/leitkegel.svg" alt="" width="{{ coneW }}" style="position:absolute;z-index:2;right:{{ coneR }};bottom:4px;display:block"></img>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isHero }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;position:relative;min-height:{{ heroMinH }};box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:20px;background:var(--cp-paper-2);overflow:hidden;display:flex;flex-direction:column;color:var(--cp-ink)">
+  <div aria-hidden="true" style="position:absolute;left:-40px;right:-40px;top:{{ heroTapeT }};z-index:3;height:34px;box-sizing:border-box;transform:rotate(-4deg);border-top:3px solid #151515;border-bottom:3px solid #151515;background:repeating-linear-gradient(-45deg,#ff4f4f 0 16px,#fffdf8 16px 32px);box-shadow:0 5px 0 rgba(21,21,21,.22);display:flex;align-items:center;justify-content:space-around;overflow:hidden">
+    <sc-for list="{{ tape }}" as="l" hint-placeholder-count="4"><span style="flex:none;padding:0 12px;background:#151515;color:#fffdf8;font-family:var(--cp-font-display);font-size:17px;line-height:22px;text-transform:uppercase;letter-spacing:.04em">{{ l }}</span></sc-for>
+  </div>
+  <div style="position:relative;z-index:4;flex:1;display:flex;flex-direction:{{ heroDir }};align-items:center;justify-content:center;gap:{{ heroGap }};padding:{{ heroPad }}">
+    <div aria-hidden="true" style="position:relative;flex:none;width:{{ cbWpx }};height:{{ cbHpx }}">
+      <dc-import name="CompibertRig" variant="full" size="{{ cbW }}" still="{{ true }}" state="{{ cbState }}" hint-size="240px,204px"></dc-import>
+      <svg viewBox="0 36 404 344" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none"><g transform="translate(236 6) scale(.95) rotate(-7 80 66)"><g stroke="#151515" stroke-linejoin="round" fill="#ffd23f"><path d="M24 66 C24 26 52 8 80 8 C108 8 136 26 136 66 Z" stroke-width="6"></path><rect x="70" y="9" width="20" height="56" rx="6" stroke-width="4"></rect><rect x="6" y="60" width="148" height="14" rx="7" stroke-width="6"></rect></g></g></svg>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:{{ heroAlign }};gap:12px;max-width:520px;text-align:{{ heroTA }}">
+      <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase"><span style="width:16px;height:10px;border-radius:2px;border:1.5px solid #151515;background:repeating-linear-gradient(-45deg,#ff4f4f 0 3px,#fffdf8 3px 6px)"></span>{{ chip }}</span>
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ heroTitleS }};line-height:.98;text-wrap:balance">{{ title }}</h1>
+      <p style="margin:0;font-size:16px;line-height:1.5;color:var(--cp-ink-2);text-wrap:pretty">{{ text }}</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:{{ heroAlign }};margin-top:6px">
+        <sc-if value="{{ hasCta }}"><span data-next="tap" style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:15px"><dc-import name="Icon" icon="calendar" size="{{ 18 }}" hint-size="18px,18px"></dc-import>{{ cta }}</span></sc-if>
+        <sc-if value="{{ hasCta2 }}"><span style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;font-size:15px"><dc-import name="Icon" icon="{{ cta2Icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import>{{ cta2 }}</span></sc-if>
+      </div>
+    </div>
+  </div>
+  <div aria-hidden="true" style="position:relative;flex:none;height:{{ heroFenceH }}">
+    <div style="position:absolute;left:-24px;bottom:10px;display:flex">
+      <sc-for list="{{ panels }}" as="p" hint-placeholder-count="10"><div style="flex:none;position:relative;width:{{ panelW }};height:{{ panelH }}"><div style="position:absolute;left:0;right:0;top:0;bottom:14px;box-sizing:border-box;border-left:5px solid var(--cp-line);border-right:5px solid var(--cp-line);border-top:3px solid var(--cp-line);border-bottom:3px solid var(--cp-line);background-image:linear-gradient(color-mix(in srgb,var(--cp-line) 38%,transparent) 1.5px,transparent 1.5px),linear-gradient(90deg,color-mix(in srgb,var(--cp-line) 38%,transparent) 1.5px,transparent 1.5px);background-size:12px 12px"></div><span style="position:absolute;left:-15px;bottom:0;width:32px;height:16px;box-sizing:border-box;border-radius:3px;border:2.5px solid var(--cp-line);background:var(--cp-offline)"></span><span style="position:absolute;right:-15px;bottom:0;width:32px;height:16px;box-sizing:border-box;border-radius:3px;border:2.5px solid var(--cp-line);background:var(--cp-offline)"></span></div></sc-for>
+    </div>
+    <div style="position:absolute;z-index:2;left:{{ signL }};bottom:{{ signB }};transform:rotate(2deg);padding:8px 14px 9px;border:3px solid #151515;border-radius:6px;background:#ffd23f;color:#151515;box-shadow:4px 4px 0 var(--cp-shadow-ink);display:flex;flex-direction:column;align-items:center;line-height:1.05;text-align:center"><span style="position:absolute;top:-9px;left:14px;width:6px;height:14px;border-radius:2px;background:#151515"></span><span style="position:absolute;top:-9px;right:14px;width:6px;height:14px;border-radius:2px;background:#151515"></span><span style="font-family:var(--cp-font-display);font-size:{{ signS }};text-transform:uppercase">Baustelle!</span><span style="font-size:12px;font-weight:800">Eltern haften für ihre Dinos.</span></div>
+    <sc-if value="{{ hasBar }}"><img src="./assets/baustelle/absperrschranke.svg" alt="" width="{{ barW }}" style="position:absolute;z-index:2;left:{{ barL }};bottom:6px;display:block"></img></sc-if>
+    <img src="./assets/baustelle/leitkegel.svg" alt="" width="{{ coneW }}" style="position:absolute;z-index:2;right:{{ coneR }};bottom:4px;display:block"></img>
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:320},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;strip&quot;,&quot;hero&quot;],&quot;default&quot;:&quot;strip&quot;,&quot;tsType&quot;:&quot;'strip'|'hero'&quot;},&quot;compact&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;chip&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Kommt mit dem nächsten Update&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Hier wird noch gebaut.&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;text&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;sign&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;cta&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;cta2&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;cta2Icon&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;house&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;cbState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;idle&quot;,&quot;wave&quot;,&quot;think&quot;,&quot;look&quot;],&quot;default&quot;:&quot;idle&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props, compact = !!p.compact, hero = p.variant === 'hero';
+    const chip = p.chip ?? 'Kommt mit dem nächsten Update';
+    const n = compact ? 4 : 9;
+    return {
+      isStrip: !hero, isHero: hero, compact,
+      aria: 'Baustelle: ' + (p.title || ''),
+      chip, title: p.title ?? 'Hier wird noch gebaut.', text: p.text ?? '',
+      copyPad: compact ? '14px 14px 4px' : '18px 20px 6px', titleS: compact ? '22px' : '26px',
+      sceneH: compact ? '118px' : '138px',
+      tape: compact ? ['Baustelle', 'Betreten verboten', 'Baustelle'] : ['Baustelle', 'Betreten verboten', 'Baustelle', 'Betreten verboten', 'Baustelle', 'Betreten verboten'],
+      panels: Array.from({ length: hero ? (compact ? 4 : 10) : n }, (_, i) => ({ i })),
+      panelW: compact ? '112px' : '150px', panelH: compact ? '82px' : '100px',
+      sign: p.sign !== false, signL: compact ? '18px' : '30%', signB: compact ? '34px' : '40px', signS: compact ? '16px' : '20px',
+      coneW: compact ? 40 : 52, coneR: compact ? '14px' : '28px',
+      heroMinH: compact ? '640px' : '686px', heroTapeT: compact ? '26px' : '34px',
+      heroDir: compact ? 'column' : 'row', heroGap: compact ? '14px' : '48px', heroPad: compact ? '88px 18px 8px' : '96px 48px 12px',
+      heroAlign: compact ? 'center' : 'flex-start', heroTA: compact ? 'center' : 'left', heroTitleS: compact ? '36px' : '56px',
+      cbW: compact ? 170 : 250, cbWpx: (compact ? 170 : 250) + 'px', cbHpx: Math.round((compact ? 170 : 250) * 344 / 404) + 'px', cbState: p.cbState || 'idle',
+      heroFenceH: compact ? '110px' : '130px', barW: compact ? 110 : 150, barL: '8%', hasBar: !compact,
+      cta: p.cta || '', hasCta: !!p.cta, cta2: p.cta2 || '', hasCta2: !!p.cta2, cta2Icon: p.cta2Icon || 'house'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}a{color:inherit}button{font:inherit;color:inherit}button:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}.dv-sub{font:600 12px/1.2 system-ui,sans-serif;color:#1a1a1a;margin:8px 0 14px;text-transform:uppercase;letter-spacing:.06em}</style>
+</helmet>
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Glücksrad skins and Münzwurf takes. Everything is live: spin, throw, repeat.</span></div>
+  <div class="dv-sub">Glücksrad, simple to rich</div>
+  <div class="dv-opts">
+    <sc-for list="{{ wheels }}" as="w" hint-placeholder-count="6">
+      <div class="dv-opt" id="{{ w.id }}">
+        <div class="dv-olabel"><a class="dv-oid" href="#{{ w.id }}">{{ w.id }}</a>{{ w.n }}</div>
+        <div class="dv-card" style="width:480px">
+          <div data-theme="light" style="padding:38px 30px 22px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px">
+            <dc-import name="GameWheel" skin="{{ w.skin }}" size="{{ 400 }}" hint-size="100%,560px" style="width:100%"></dc-import>
+          </div>
+          <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;font:13px/1.45 system-ui,sans-serif;color:#1a1a1a">
+            <div style="display:flex;align-items:center;gap:8px"><b>Complexity</b><span style="display:flex;gap:3px"><sc-for list="{{ w.dots }}" as="d" hint-placeholder-count="5"><span style="width:10px;height:10px;border-radius:50%;border:1.5px solid #1a1a1a;background:{{ d.bg }}"></span></sc-for></span></div>
+            <span style="text-wrap:pretty">{{ w.d }}</span>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div class="dv-sub" style="margin-top:40px">Münzwurf, four camera takes</div>
+  <div class="dv-opts">
+    <sc-for list="{{ coins }}" as="c" hint-placeholder-count="4">
+      <div class="dv-opt" id="{{ c.id }}">
+        <div class="dv-olabel"><a class="dv-oid" href="#{{ c.id }}">{{ c.id }}</a>{{ c.n }}</div>
+        <div class="dv-card" style="width:380px">
+          <div data-theme="light" style="padding:20px;background:var(--cp-paper);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px">
+            <dc-import name="Coin3D" take="{{ c.take }}" size="{{ 340 }}" hint-size="100%,400px" style="width:100%"></dc-import>
+          </div>
+          <div style="padding:14px 16px 16px;font:13px/1.45 system-ui,sans-serif;color:#1a1a1a;text-wrap:pretty">{{ c.d }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <p class="dv-next">Try next: "<a class="dv-oid" href="#1d">1d</a> but with the confetti from <a class="dv-oid" href="#1c">1c</a>" · "<a class="dv-oid" href="#1g">1g</a>, but slower at the top" · "push <a class="dv-oid" href="#1f">1f</a> even further"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const dots=n=>Array.from({length:5},(_,i)=>({bg:i<n?'#1a1a1a':'transparent'}));
+    const wheels=[
+      ['1a','Sticker, clean','sticker',1,'Today\u2019s wheel, refined: flat accent slices, ink lines, hard offset shadow. New: the winning slice flashes with a thick outline. Calm and very legible.'],
+      ['1b','Show-Rad','show',3,'Game-show wheel: a hot rim with 24 bulbs that blink at rest, chase during the spin and flash together on the result. Pins at every slice edge and a hinged flapper that kicks on each pin.'],
+      ['1c','Sticker-Bogen','bogen',3,'The wheel as a peeled sticker: white die-cut rim, soft lift shadow, a texture per slice (dots, stripes, zigzag). Compibert sits in the spin button. Sticker confetti bursts on the result.'],
+      ['1d','Arcade','arcade',4,'Cabinet feel: black LED ring, bevelled slice band, chrome pins, glare, and a slight overshoot when it settles so the flapper ticks back once. Most \u201cmachine\u201d of the set.'],
+      ['1e','Kipp-3D','kipp',4,'Tilted into perspective with real thickness, glare and a standing pin as the pointer. Reads as a physical object on a table. Only option with depth; keeps the flat palette.'],
+      ['1f','Memphis-Party','party',5,'Everything on: Memphis shapes floating around the wheel, slice textures, multicolour lights, Compibert hub and sticker confetti. Loudest option; best if the wheel is the one big show moment.']
+    ].map(([id,n,skin,c,d])=>({id,n,skin,d,dots:dots(c)}));
+    const coins=[
+      ['1g','Kamera-Fahrt','dolly','Your brief: starts in today\u2019s front view, the camera climbs while the coin flips end over end, the coin lands flat with a small bounce, and the camera ends straight above it, framing the result.'],
+      ['1h','Tisch-Wurf','table','The camera starts at 45\u00b0 over a table. The coin arcs in from the side, bounces, wobbles like a spinning disc and settles. Then the camera tilts down and zooms in on the face.'],
+      ['1i','Zeitlupe','bullet','Bullet time: the coin shoots up and nearly freezes at the top while the camera orbits it once. Then it drops hard, lands flat, and the camera snaps to the top view.'],
+      ['1j','Klassisch','classic','Baseline: no camera move. The thicker coin spins around its axis in front view and lands upright. Fastest (1.7 s), least spectacle.']
+    ].map(([id,n,take,d])=>({id,n,take,d}));
+    return {wheels,coins};
+  }
+}
+</script>
+</body>
+</html>

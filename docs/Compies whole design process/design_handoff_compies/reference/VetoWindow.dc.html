@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div ref="{{ root }}" style="display:flex;flex-direction:column;gap:16px;width:100%">
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;border:2px solid var(--cp-line);border-radius:14px;background:var(--cp-surface-2)">
+    <button type="button" onClick="{{ restart }}" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="{{ runIcon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ runLabel }}</button>
+    <div role="group" aria-label="Tempo" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+      <sc-for list="{{ speeds }}" as="s" hint-placeholder-count="2"><button type="button" aria-pressed="{{ s.on }}" onClick="{{ s.pick }}" style="height:36px;padding:0 12px;border:0;border-left:{{ s.bl }};background:{{ s.bg }};color:{{ s.fg }};font-weight:700;font-size:13px;cursor:pointer">{{ s.n }}</button></sc-for>
+    </div>
+    <button type="button" role="switch" aria-checked="{{ larsi }}" onClick="{{ toggleLarsi }}" style="height:36px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:{{ larsiBg }};font-weight:700;font-size:13px;cursor:pointer">Larsi drückt zuerst</button>
+    <button type="button" role="switch" aria-checked="{{ nacht }}" onClick="{{ toggleNacht }}" style="height:36px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:{{ nachtBg }};font-weight:700;font-size:13px;cursor:pointer">Team Nacht vetot</button>
+    <button type="button" role="switch" aria-checked="{{ blocked }}" onClick="{{ toggleBlocked }}" style="height:36px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:{{ blockedBg }};font-weight:700;font-size:13px;cursor:pointer">Browser blockiert Ton</button>
+  </div>
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+      <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Vom Glücksrad gezogen</span>
+      <span style="font-family:var(--cp-font-display);font-size:clamp(30px,2.6vw + 14px,44px);line-height:1">{{ game }}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ timerLabel }}</span>
+      <span ref="{{ timerRef }}" role="timer" aria-live="off" style="font-size:clamp(48px,4vw + 20px,72px);line-height:.9;color:{{ timerC }};font-variant-numeric:tabular-nums"><dc-import name="Num" v="{{ timer }}" face="timer" say="{{ timerSay }}" hint-size="120px,64px"></dc-import></span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="position:relative;height:16px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-paper-2);overflow:hidden">
+      <span style="position:absolute;left:0;top:0;bottom:0;width:{{ prog }};background:{{ progC }}"></span>
+      <span style="position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--cp-line)"></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--cp-ink-2)"><span>Clip, 30 s</span><span>Bedenkzeit, 30 s</span></div>
+  </div>
+
+  <sc-if value="{{ clipOpen }}">
+    <div style="position:relative;width:100%;max-width:640px;aspect-ratio:16/9;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:#151515;color:#fff3df;overflow:hidden;box-shadow:var(--cp-shadow-card)">
+      <div style="position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;text-align:center"><dc-import name="Icon" icon="play" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="font-weight:700">YouTube-Clip, ab 1:12, 30 s</span><span style="font-size:13px;opacity:.85">läuft auf allen Geräten gleichzeitig</span></div>
+      <div style="position:absolute;top:10px;right:10px;display:flex;gap:8px">
+        <button type="button" onClick="{{ toggleClipMute }}" aria-label="{{ clipMuteL }}" title="{{ clipMuteL }}" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:2px solid #fff3df;background:rgba(21,21,21,.6);color:#fff3df;cursor:pointer"><dc-import name="Icon" icon="{{ clipMuteIcon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+        <button type="button" onClick="{{ closeClip }}" aria-label="Clip für mich schließen" title="Clip für mich schließen" style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;border:2px solid #fff3df;background:rgba(21,21,21,.6);color:#fff3df;cursor:pointer"><dc-import name="Icon" icon="x" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+      </div>
+      <sc-if value="{{ showUnmute }}"><button type="button" onClick="{{ unblock }}" style="position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:700;cursor:pointer"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Ton aktivieren</button></sc-if>
+      <span style="position:absolute;left:0;bottom:0;height:5px;width:{{ clipProg }};background:var(--cp-hot);color:var(--cp-on-hot)"></span>
+    </div>
+    <sc-if value="{{ host }}"><button type="button" onClick="{{ skipAll }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="skip-forward" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Clip für alle überspringen<span style="display:inline-flex;align-items:center;gap:3px;height:20px;padding:0 6px;border-radius:999px;border:1.5px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:11px"><dc-import name="Icon" icon="crown" size="{{ 10 }}" hint-size="10px,10px"></dc-import>Host</span></button></sc-if>
+  </sc-if>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+    <sc-for list="{{ tiles }}" as="v" hint-placeholder-count="4">
+      <div data-vt="1" style="position:relative;display:flex;flex-direction:column;gap:8px;min-height:116px;padding:12px;border:{{ v.bd }};border-radius:14px;background:{{ v.bg }};box-sizing:border-box">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0"><dc-import name="TeamMark" team="{{ v.n }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import><b style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.name }}</b></div>
+        <sc-if value="{{ v.secret }}"><div style="flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px"><span style="font-family:var(--cp-font-display);font-size:30px;line-height:1">?</span><span style="font-size:12px;color:var(--cp-ink-2)">Geheim bis 0:00</span></div></sc-if>
+        <sc-if value="{{ v.open }}"><div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px"><span style="font-size:14px;font-weight:700">{{ v.line }}</span><span style="font-size:12px;color:var(--cp-ink-2)">{{ v.sub }}</span></div></sc-if>
+        <sc-if value="{{ v.stamp }}"><span data-st="1" style="position:absolute;right:10px;bottom:12px;transform:rotate(-8deg);padding:2px 12px;border-radius:10px;border:3px solid var(--cp-line);background:var(--cp-hot);color:var(--cp-on-hot);font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;box-shadow:var(--cp-shadow-sm)">Veto</span></sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:520px">
+    <button type="button" aria-describedby="veto-hint" aria-disabled="{{ hb.locked }}" onPointerDown="{{ hDown }}" onPointerUp="{{ hUp }}" onPointerLeave="{{ hUp }}" onPointerCancel="{{ hUp }}" onKeyDown="{{ hKd }}" onKeyUp="{{ hKu }}" onContextMenu="{{ noCtx }}" style="position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;width:100%;height:60px;padding:0 20px;border-radius:999px;box-sizing:border-box;border:{{ hb.bd }};background:{{ hb.bg }};color:{{ hb.fg }};box-shadow:{{ hb.sh }};font-weight:800;font-size:17px;cursor:{{ hb.cur }};touch-action:none;user-select:none;-webkit-user-select:none;text-align:left">
+      <span ref="{{ fillRef }}" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--cp-ink);opacity:.2;transform-origin:left;transform:scaleX(0);pointer-events:none"></span>
+      <span style="position:relative;display:grid"><dc-import name="Icon" icon="{{ hb.icon }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import></span>
+      <span style="position:relative;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ hb.label }}</span>
+      <span style="position:relative;font-size:13px;font-weight:700">{{ hb.aside }}</span>
+    </button>
+    <span id="veto-hint" style="font-size:13px;color:var(--cp-ink-2)">{{ hint }}</span>
+  </div>
+
+  <sc-if value="{{ hasOutcome }}"><div role="status" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:{{ outBg }};color:{{ outFg }};font-weight:700;font-size:16px"><dc-import name="Icon" icon="{{ outIcon }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import><span style="text-wrap:pretty">{{ outcome }}</span></div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:820,&quot;height&quot;:900},&quot;game&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Mario Kart 8&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;host&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const T=60000, CLIP=30000;
+class Component extends DCLogic {
+  state={t:0,run:false,speed:6,closed:false,skipped:false,clipMuted:false,blocked:false,larsi:false,nacht:true,left:2,by:null,revealed:false,hold:'idle'};
+  root=React.createRef(); fillRef=React.createRef(); timerRef=React.createRef();
+  componentWillUnmount(){ clearInterval(this._iv); }
+  rm(){ return this.props.motion==='reduced'; }
+  restart=()=>{ clearInterval(this._iv); this._ha&&this._ha.cancel(); const f=this.fillRef.current; f&&f.animate([{transform:'scaleX(0)'},{transform:'scaleX(0)'}],{duration:1,fill:'forwards'});
+    this.setState({t:0,run:true,closed:false,skipped:false,left:2,by:null,revealed:false,hold:'idle'}); this._ls=null;
+    this._iv=setInterval(()=>{ const S=this.state; if(!S.run) return; let t=S.t+100*S.speed; const up={t};
+      if(S.larsi&&!S.by&&t>=12000){ up.by='Larsi'; up.left=S.left-1; this._hc(); }
+      if(t>=T){ up.t=T; up.run=false; up.revealed=true; clearInterval(this._iv); }
+      this.setState(up,()=>{ const s=Math.ceil((T-this.state.t)/1000); if(this.state.run&&s<=10&&s!==this._ls){ this._ls=s; const el=this.timerRef.current; if(el&&!this.rm()) el.animate([{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:260,easing:'cubic-bezier(.2,0,0,1)'}); } if(up.revealed) this.reveal(); }); },100); };
+  reveal(){ if(this.rm()) return; setTimeout(()=>{ const r=this.root.current; if(!r) return; r.querySelectorAll('[data-vt]').forEach(el=>el.animate([{transform:'perspective(600px) rotateY(90deg)'},{transform:'perspective(600px) rotateY(0)'}],{duration:420,easing:'cubic-bezier(.16,1,.3,1)'})); r.querySelectorAll('[data-st]').forEach(el=>el.animate([{transform:'rotate(-8deg) scale(2.2)',opacity:0},{transform:'rotate(-8deg) scale(.9)',opacity:1,offset:.7},{transform:'rotate(-8deg) scale(1)'}],{duration:520,delay:300,easing:'cubic-bezier(.2,0,0,1)',fill:'backwards'})); },0); }
+  canHold(){ const S=this.state; return S.run&&!S.by&&S.left>0; }
+  _hc(){ this._ha&&this._ha.cancel(); this._ha=null; }
+  hStart=()=>{ if(!this.canHold()||this.state.hold==='holding') return; const el=this.fillRef.current; if(!el) return; this._hc(); const a=el.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:1000,easing:'linear',fill:'forwards'}); this._ha=a; a.onfinish=()=>{ if(!this.canHold()) return; this.setState(s=>({by:'Kitty',left:s.left-1,hold:'idle'})); }; this.setState({hold:'holding'}); };
+  hEnd=()=>{ if(this.state.hold!=='holding') return; const a=this._ha, el=this.fillRef.current; if(a&&el&&a.playState!=='finished'){ const p=Math.min(1,(a.currentTime||0)/1000); a.onfinish=null; a.cancel(); this._ha=el.animate([{transform:`scaleX(${p})`},{transform:'scaleX(0)'}],{duration:200,fill:'forwards'}); } this.setState({hold:'idle'}); };
+  renderVals(){
+    const S=this.state, p=this.props, host=p.host!==false, rem=Math.max(0,Math.ceil((T-S.t)/1000)), game=p.game||'Mario Kart 8';
+    const clipOver=S.t>=CLIP||S.skipped, clipOpen=S.run&&!clipOver&&!S.closed;
+    const mine=S.by, others=S.revealed&&S.nacht;
+    const tiles=[{n:1,name:'Wilde Gurken Bande',mine:true},{n:2,name:'Team Orange'},{n:4,name:'Käse Turbo'},{n:8,name:'Nacht Eulen',v:true}].map(x=>{ const vetoed=x.mine?!!mine:(x.v&&S.nacht);
+      if(x.mine){ return {n:x.n,name:x.name,secret:false,open:true,line:mine?`Veto eingelegt (${mine})`:'Noch kein Veto',sub:`Ihr: ${S.left} von 2 Vetos übrig`,stamp:S.revealed&&vetoed,bd:'3px solid var(--cp-focus)',bg:'var(--cp-surface)'}; }
+      if(!S.revealed) return {n:x.n,name:x.name,secret:true,open:false,stamp:false,bd:'var(--cp-bw) solid var(--cp-line)',bg:'var(--cp-surface)'};
+      return {n:x.n,name:x.name,secret:false,open:true,line:vetoed?'Veto':'Kein Veto',sub:vetoed?'von Olli':'Vetos gespart',stamp:vetoed,bd:'var(--cp-bw) solid var(--cp-line)',bg:vetoed?'var(--cp-surface)':'var(--cp-paper-2)'}; });
+    const bd='var(--cp-bw) solid var(--cp-line)';
+    let hb={label:'Veto halten',icon:'ban',aside:`${S.left} von 2 übrig`,bd,bg:'var(--cp-hot)',fg:'var(--cp-on-hot)',sh:'var(--cp-shadow-btn)',cur:'pointer',locked:false};
+    if(S.hold==='holding') hb.label='Halten …';
+    if(!S.run&&!S.revealed) hb=Object.assign(hb,{label:'Startet, sobald das Spiel feststeht',icon:'clock',aside:'',bg:'var(--cp-paper-2)',fg:'var(--cp-ink-2)',bd:'var(--cp-bw) dashed var(--cp-ink-3)',sh:'none',cur:'not-allowed',locked:true});
+    else if(S.by==='Kitty') hb=Object.assign(hb,{label:'Veto eingelegt',icon:'lock',aside:'',bg:'var(--cp-surface-2)',fg:'var(--cp-ink)',sh:'none',cur:'default',locked:true});
+    else if(S.by) hb=Object.assign(hb,{label:`${S.by} hat schon gevetot`,icon:'lock',aside:'',bg:'var(--cp-paper-2)',fg:'var(--cp-ink-2)',bd:'var(--cp-bw) dashed var(--cp-ink-3)',sh:'none',cur:'not-allowed',locked:true});
+    else if(S.revealed) hb=Object.assign(hb,{label:'Zeit abgelaufen',icon:'clock',aside:'',bg:'var(--cp-paper-2)',fg:'var(--cp-ink-2)',bd:'var(--cp-bw) dashed var(--cp-ink-3)',sh:'none',cur:'not-allowed',locked:true});
+    const vt=[mine?'Wilde Gurken Bande':null,S.nacht?'Nacht Eulen':null].filter(Boolean);
+    const hint=S.revealed?'Alle Vetos sind aufgedeckt.':S.by?(S.by==='Kitty'?'Die anderen sehen es erst beim Aufdecken.':'Ein Veto pro Team und Spiel. Euer Team hat für dieses Spiel schon gevetot.'):'Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.';
+    const hold=(fn)=>fn;
+    return {root:this.root,fillRef:this.fillRef,timerRef:this.timerRef,game,host,
+      restart:this.restart,runIcon:S.run?'rotate-ccw':'play',runLabel:S.run||S.revealed?'Neu starten':'Veto-Fenster starten',
+      speeds:[[1,'Echtzeit'],[6,'Zeitraffer ×6']].map(([k,n],i)=>({n,on:S.speed===k,bl:i?'2px solid var(--cp-line)':'0',bg:S.speed===k?'var(--cp-ink)':'transparent',fg:S.speed===k?'var(--cp-paper)':'var(--cp-ink)',pick:()=>this.setState({speed:k})})),
+      larsi:S.larsi,larsiBg:S.larsi?'var(--cp-warning)':'var(--cp-surface)',toggleLarsi:()=>this.setState(s=>({larsi:!s.larsi})),
+      nacht:S.nacht,nachtBg:S.nacht?'var(--cp-warning)':'var(--cp-surface)',toggleNacht:()=>this.setState(s=>({nacht:!s.nacht})),
+      blocked:S.blocked,blockedBg:S.blocked?'var(--cp-warning)':'var(--cp-surface)',toggleBlocked:()=>this.setState(s=>({blocked:!s.blocked})),
+      timer:`${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`,timerSay:`${rem} Sekunden`,timerC:S.run&&rem<=10?'var(--cp-error-fg)':'var(--cp-ink)',
+      timerLabel:S.revealed?'Aufgedeckt':!S.run?'Veto-Fenster':clipOver?'Bedenkzeit':'Clip läuft',
+      prog:(S.t/T*100).toFixed(1)+'%',progC:S.t>=CLIP?'var(--cp-hot)':'var(--cp-primary)',clipOpen,clipProg:(Math.min(S.t,CLIP)/CLIP*100).toFixed(1)+'%',
+      showUnmute:S.blocked,unblock:()=>this.setState({blocked:false}),clipMuteIcon:S.clipMuted?'volume-x':'volume-2',clipMuteL:S.clipMuted?'Ton an':'Ton aus',toggleClipMute:()=>this.setState(s=>({clipMuted:!s.clipMuted})),closeClip:()=>this.setState({closed:true}),skipAll:()=>this.setState({skipped:true}),
+      tiles,hb,hint,hDown:e=>{ if(e.button>0) return; this.hStart(); },hUp:()=>this.hEnd(),hKd:e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); if(!e.repeat) this.hStart(); } },hKu:e=>{ if(e.key===' '||e.key==='Enter') this.hEnd(); },noCtx:e=>e.preventDefault(),
+      hasOutcome:S.revealed,outcome:vt.length?`Veto von ${vt.join(' und ')}. ${game} fliegt vom Rad, es wird neu gedreht.`:`Kein Veto. ${game} wird gespielt. Viel Glück!`,
+      outBg:vt.length?'var(--cp-hot)':'var(--cp-success)',outFg:vt.length?'var(--cp-on-hot)':'var(--cp-on-success)',outIcon:vt.length?'ban':'party-popper'};
+  }
+}
+</script>
+</body>
+</html>
