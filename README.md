@@ -15,6 +15,14 @@ Requirements: Node 24 (`.nvmrc`) and pnpm (the version is pinned in `package.jso
    | Variable | What |
    |---|---|
    | `DATABASE_URL` | Connection string of your Neon dev branch |
+   | `BETTER_AUTH_URL` | Origin the app runs on: `http://localhost:3000` locally |
+   | `BETTER_AUTH_SECRET` | Random string, at least 32 characters (`openssl rand -base64 32`) |
+   | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Discord OAuth app; its redirect URIs include `<origin>/api/auth/callback/discord` |
+   | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Twitch OAuth app; its redirect URIs include `<origin>/api/auth/callback/twitch` |
+   | `HOST_PROVIDER_IDS` | Who has the Host permission: `discord:<user id>,twitch:<user id>` (ADR 0002) |
+   | `ADMIN_PROVIDER_IDS` | The Platform admin, same format; also gets the Host permission |
+
+   The allowlists apply at each sign-in, so a change takes effect at that User's next sign-in.
 
 4. Apply the migrations to your branch: `pnpm db:migrate`
 5. Start the dev server: `pnpm dev`, then open http://localhost:3000. `GET /api/health` answers `{"status":"ok"}` when the database is reachable and migrated.
