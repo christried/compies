@@ -39,7 +39,7 @@ describe('route guard and logout', () => {
     const page = await mountSuspended(CatchAllPage, { route: '/archiv' })
 
     await page.get('button[aria-label="Konto von Kitty"]').trigger('click')
-    await page.get('[role="menuitem"]').trigger('click')
+    await page.findAll('[role="menuitem"]').find(item => item.text() === 'Abmelden')!.trigger('click')
 
     await vi.waitFor(() => expect(currentPath()).toBe('/anmelden'))
     expect(signOut).toHaveBeenCalled()

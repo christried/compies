@@ -733,6 +733,51 @@
       "note": "Erst nach deiner Bestätigung zählt es und die Tabelle bewegt sich."
     }
   },
+  "legal": {
+    "_scope": "PLATZHALTER-Texte bis der Betreiber die echten Texte liefert (Release-Ticket). Jeder Platzhalter ist als [PLATZHALTER: …] markiert.",
+    "links": {
+      "impressum": "Impressum",
+      "datenschutz": "Datenschutz"
+    },
+    "impressum": {
+      "title": "Impressum",
+      "operator": {
+        "heading": "Anbieter",
+        "text": "[PLATZHALTER: Name und Anschrift des Betreibers gemäß § 5 DDG]"
+      },
+      "contact": {
+        "heading": "Kontakt",
+        "text": "[PLATZHALTER: E-Mail-Adresse und ggf. weitere Kontaktwege]"
+      },
+      "responsible": {
+        "heading": "Verantwortlich für den Inhalt",
+        "text": "[PLATZHALTER: Name und Anschrift der verantwortlichen Person gemäß § 18 Abs. 2 MStV]"
+      }
+    },
+    "datenschutz": {
+      "title": "Datenschutzerklärung",
+      "controller": {
+        "heading": "Verantwortliche Stelle",
+        "text": "[PLATZHALTER: Name und Kontakt des Verantwortlichen]"
+      },
+      "signIn": {
+        "heading": "Anmeldung über Discord und Twitch",
+        "text": "[PLATZHALTER: Welche Angaben von Discord und Twitch übernommen werden (Name, Bild, Konto-ID) und auf welcher Rechtsgrundlage]"
+      },
+      "storage": {
+        "heading": "Speicherung und Speicherdauer",
+        "text": "[PLATZHALTER: Wie lange Konto- und Sessiondaten gespeichert werden und wann sie gelöscht werden]"
+      },
+      "cookies": {
+        "heading": "Cookies",
+        "text": "[PLATZHALTER: Welche Cookies gesetzt werden (Anmeldung, Farbschema) und ob sie einwilligungspflichtig sind]"
+      },
+      "rights": {
+        "heading": "Deine Rechte",
+        "text": "[PLATZHALTER: Auskunft, Berichtigung, Löschung, Widerspruch und Beschwerde bei der Aufsichtsbehörde]"
+      }
+    }
+  },
   "mvp": {
     "_scope": "[MVP] Terminfindung zuerst. Remove keys as the real screens replace them.",
     "home": {
