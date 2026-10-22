@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, Check, ChevronRight, CircleAlert, Link as LinkIcon, Search } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, Check, ChevronRight, CircleAlert, Link as LinkIcon, Search } from '@lucide/vue'
 import { berlinLocalNow, formatSetDay, formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
@@ -10,7 +10,7 @@ import type { SessionView } from '~~/shared/session'
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
 // The set Date replaces the cards and the matrix with DateSetCard. Reschedule and Reopen (#14) are
-// wired here too. Other host actions are stubs until #15 (Termine bearbeiten).
+// wired here too. Termine bearbeiten opens SlotEditSheet (#15).
 // The Invite link (`/s/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
@@ -164,19 +164,26 @@ const previousWhen = computed(() => {
   return t('mvp.set.dateTime', { date: formatSetDay(instant), time: formatSlotTime(instant) })
 })
 
+const editing = ref(false)
+const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
+  id: slot.id,
+  startsAt: slot.startsAt,
+  votes: (data.value?.votes ?? []).filter(vote => vote.slotId === slot.id).length,
+})))
 const inviteOpen = ref(false)
-
-function onHostAction(key: string) {
-  if (key === 'set') openConfirm()
-  else if (key === 'invite') inviteOpen.value = true
-  else comingSoon()
-}
 
 const hostActions = computed(() => [
   { key: 'set', label: t('dock.setDate'), icon: CalendarCheck, primary: true },
-  // #15 adds "Termine bearbeiten" here.
+  { key: 'edit', label: t('mvp.slots.title'), icon: CalendarClock },
   { key: 'invite', label: t('common.invite'), icon: LinkIcon },
 ])
+
+function onHostAction(key: string) {
+  if (key === 'set') openConfirm()
+  else if (key === 'edit') editing.value = true
+  else if (key === 'invite') inviteOpen.value = true
+  else comingSoon()
+}
 
 // Only a loaded Session is refetched; the invite path never loads one.
 usePollRefresh(() => {
@@ -366,6 +373,15 @@ usePollRefresh(() => {
       :loading="confirming"
       @confirm="confirmDate"
       @cancel="confirmOpen = false"
+    />
+    <SlotEditSheet
+      v-if="data?.session.isHost && data.session.phase === 'poll'"
+      :open="editing"
+      :slug="slug"
+      :slots="editableSlots"
+      @close="editing = false"
+      @changed="refresh"
+    />
     />
 
     <DateRescheduleDialog

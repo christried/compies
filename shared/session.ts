@@ -30,3 +30,27 @@ export interface SessionView {
   /** The Invite link (#16). Only the Host gets it; null for every other Member. */
   inviteUrl: string | null
 }
+
+/** One card on Home (`GET /api/s`, #12). Times are UTC ISO strings. */
+export interface HomeSession {
+  slug: string
+  name: string
+  host: { name: string }
+  phase: SessionView['session']['phase']
+  dateMode: 'poll' | 'direct'
+  startsAt: string | null
+  /** The Best slot so far, or null. */
+  bestSlot: { id: string, startsAt: string } | null
+  /** Members who have a Vote on every votable Slot, out of all Members. */
+  progress: { voted: number, total: number }
+  /** Whether the viewer has a Vote on every votable Slot. */
+  viewerVoted: boolean
+  isHost: boolean
+  /** The call to action: `open` for the Host, `vote` while the viewer still has to vote, `view` otherwise. */
+  action: 'open' | 'vote' | 'view'
+}
+
+/** What `GET /api/s` returns, already in Home order (open polls to vote on, other open polls, Dates upcoming first). */
+export interface HomeView {
+  sessions: HomeSession[]
+}
