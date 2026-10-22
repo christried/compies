@@ -760,7 +760,7 @@
     }
   },
   "legal": {
-    "_scope": "PLATZHALTER-Texte bis der Betreiber die echten Texte liefert (Release-Ticket). Jeder Platzhalter ist als [PLATZHALTER: …] markiert.",
+    "_scope": "Impressum und Datenschutzerklärung von COMPIES. Jeder Abschnitt hat eine Überschrift und einen Text; Absätze sind durch eine Leerzeile getrennt. Bei Änderungen an der App (neue Dienste, Cookies, Daten) hier nachziehen und den Stand anpassen.",
     "links": {
       "impressum": "Impressum",
       "datenschutz": "Datenschutz"
@@ -768,39 +768,107 @@
     "impressum": {
       "title": "Impressum",
       "operator": {
-        "heading": "Anbieter",
-        "text": "[PLATZHALTER: Name und Anschrift des Betreibers gemäß § 5 DDG]"
+        "heading": "Angaben gemäß § 5 DDG",
+        "text": "Dominik Christian Gilges\nAugust-Thyssen-Str. 16\n52249 Eschweiler"
       },
       "contact": {
         "heading": "Kontakt",
-        "text": "[PLATZHALTER: E-Mail-Adresse und ggf. weitere Kontaktwege]"
+        "text": "E-Mail: foodieflip.dev{'@'}gmail.com"
       },
       "responsible": {
-        "heading": "Verantwortlich für den Inhalt",
-        "text": "[PLATZHALTER: Name und Anschrift der verantwortlichen Person gemäß § 18 Abs. 2 MStV]"
+        "heading": "Redaktionell verantwortlich",
+        "text": "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV: Dominik Christian Gilges (Anschrift wie oben)."
+      },
+      "scope": {
+        "heading": "Geltungsbereich",
+        "text": "Dieses Impressum gilt für die Web-Anwendung COMPIES unter compies.christried.me."
+      },
+      "dispute": {
+        "heading": "Verbraucherstreitbeilegung",
+        "text": "Zur Teilnahme an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle sind wir nicht verpflichtet und nicht bereit."
       }
     },
     "datenschutz": {
       "title": "Datenschutzerklärung",
+      "intro": {
+        "heading": "Worum es geht",
+        "text": "Diese Datenschutzerklärung gilt für die Web-Anwendung COMPIES unter compies.christried.me. Sie beschreibt, welche personenbezogenen Daten beim Betrieb von COMPIES verarbeitet werden, zu welchem Zweck, auf welcher Rechtsgrundlage und welche Rechte du hast."
+      },
       "controller": {
-        "heading": "Verantwortliche Stelle",
-        "text": "[PLATZHALTER: Name und Kontakt des Verantwortlichen]"
+        "heading": "1. Verantwortlicher",
+        "text": "Dominik Christian Gilges\nAugust-Thyssen-Str. 16\n52249 Eschweiler\nE-Mail: foodieflip.dev{'@'}gmail.com\n\nEin Datenschutzbeauftragter ist nicht bestellt, da hierzu keine gesetzliche Pflicht besteht."
+      },
+      "overview": {
+        "heading": "2. Überblick",
+        "text": "COMPIES ist ein privates, nicht-kommerzielles Hobby-Projekt, mit dem eine Gruppe von Freundinnen und Freunden Termine für Spieleabende findet: Ein Host schlägt in einer Session mehrere Termine vor, die Mitglieder stimmen ab, und der Host legt den Termin fest. Es gibt keine Werbung, kein Tracking und keine Analyse-Tools. Verarbeitet werden nur die Daten, die für Anmeldung, Betrieb und die Funktionen der Anwendung erforderlich sind."
+      },
+      "hosting": {
+        "heading": "3. Hosting (Vercel)",
+        "text": "COMPIES wird bei der Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA, gehostet; die Server-Funktionen laufen in Frankfurt am Main. Beim Aufruf der Anwendung verarbeitet Vercel technisch notwendige Zugriffsdaten in Server-Logs, darunter IP-Adresse, Datum und Uhrzeit der Anfrage, die angefragte URL, den Referrer sowie Browser- und Betriebssystem-Angaben. Ebenfalls in diesen Logs landen technische Fehlermeldungen der Anwendung. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, stabilen und fehlerfreien Betrieb). Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO). Zur Übermittlung in die USA siehe Abschnitt 13."
+      },
+      "database": {
+        "heading": "4. Datenbank (Neon)",
+        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 5), Sitzungs- und Sicherheitsdaten (Abschnitt 8) sowie deine Sessions, Terminvorschläge und Stimmen (Abschnitt 9). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
       },
       "signIn": {
-        "heading": "Anmeldung über Discord und Twitch",
-        "text": "[PLATZHALTER: Welche Angaben von Discord und Twitch übernommen werden (Name, Bild, Konto-ID) und auf welcher Rechtsgrundlage]"
+        "heading": "5. Anmeldung über Discord oder Twitch und Anzeigename",
+        "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift COMPIES darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in COMPIES sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Sessions anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Sessions anlegen)."
       },
-      "storage": {
-        "heading": "Speicherung und Speicherdauer",
-        "text": "[PLATZHALTER: Wie lange Konto- und Sessiondaten gespeichert werden und wann sie gelöscht werden]"
+      "avatar": {
+        "heading": "6. Profilbild",
+        "text": "Neben deinem Anzeigenamen zeigt COMPIES ein rundes Profilbild – dir selbst und den Mitgliedern der Sessions, denen du angehörst. Es ist dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.\n\nDas Profilbild wird direkt von den Servern von Discord bzw. Twitch geladen. Dabei erhält der jeweilige Dienst technisch bedingt die IP-Adresse des Geräts, auf dem das Bild angezeigt wird, sowie übliche Browserangaben – das gilt auch für andere Mitglieder deiner Sessions, die dein Bild sehen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erkennbarkeit der Mitglieder in einer gemeinsam genutzten Anwendung) bzw. für das Laden von Discord und Twitch Art. 6 Abs. 1 lit. f DSGVO."
       },
       "cookies": {
-        "heading": "Cookies",
-        "text": "[PLATZHALTER: Welche Cookies gesetzt werden (Anmeldung, Farbschema) und ob sie einwilligungspflichtig sind]"
+        "heading": "7. Cookies und Speicher im Browser",
+        "text": "COMPIES setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nDesign-Cookie (nuxt-color-mode): merkt sich, ob du das helle, dunkle oder das Systemdesign gewählt hast; 1 Jahr.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich COMPIES wie eine installierte App verhält; Inhalte deiner Sessions werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
+      },
+      "security": {
+        "heading": "8. Sitzungs- und Sicherheitsdaten",
+        "text": "Zu jeder Anmeldesitzung speichern wir deine IP-Adresse und die Browserkennung (User-Agent), um Missbrauch erkennen zu können. Außerdem zählt COMPIES zum Schutz vor Missbrauch und Überlastung, wie oft bestimmte Aktionen aufgerufen werden – je nach Aktion deinem Konto oder der aufrufenden IP-Adresse zugeordnet (z. B. Anmeldeversuche oder Abstimmungen). Diese Zähler liegen nur im Arbeitsspeicher, gelten nur für ein kurzes Zeitfenster und werden danach überschrieben. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Sicherheit der Anwendung und dem Schutz vor Missbrauch)."
+      },
+      "sessions": {
+        "heading": "9. Sessions, Terminvorschläge und Stimmen",
+        "text": "Ein Host legt eine Session mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jeder Session speichern wir, wer sie angelegt hat, ihre Terminvorschläge, den festgelegten Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Wenn nötig, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast.\n\nName, Terminvorschläge und Termin einer Session sowie Anzeigename, Profilbild und Stimmen ihrer Mitglieder sind für alle Mitglieder dieser Session sichtbar. Wer den Einladungslink einer Session erhält, kann ihr nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen der Session sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+      },
+      "calendar": {
+        "heading": "10. Kalenderdatei",
+        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link der Session herunterladen. Sie wird von COMPIES selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+      },
+      "fonts": {
+        "heading": "11. Schriftarten, Symbole und Tracking",
+        "text": "Die Schriftarten (Lilita One, Bricolage Grotesque, Bungee, JetBrains Mono) werden selbst gehostet ausgeliefert; es wird keine Verbindung zu Google Fonts hergestellt. Symbole und Illustrationen sind fest in die Anwendung eingebunden und werden nicht von externen Diensten nachgeladen. Es kommen keine Analyse-, Tracking- oder Werbedienste zum Einsatz und es findet kein Profiling statt. Ein Cookie-Banner ist daher nicht erforderlich."
+      },
+      "recipients": {
+        "heading": "12. Empfänger",
+        "text": "Deine Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang sowie die Mitglieder der Sessions, denen du angehörst (Abschnitt 9). Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht."
+      },
+      "transfer": {
+        "heading": "13. Übermittlung in Drittländer",
+        "text": "Vercel, Neon, Discord und Twitch sind bzw. gehören zu Unternehmen mit Sitz in den USA. Soweit dabei personenbezogene Daten in die USA übermittelt werden, stützt sich dies auf den Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework (Art. 45 DSGVO), soweit der jeweilige Anbieter danach zertifiziert ist, und im Übrigen auf die Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO)."
+      },
+      "retention": {
+        "heading": "14. Speicherdauer",
+        "text": "Kontodaten, Sessions, Terminvorschläge und Stimmen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Entfernt ein Host einen Terminvorschlag, werden die Stimmen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 8). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
+      },
+      "obligation": {
+        "heading": "15. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
+        "text": "Du bist weder gesetzlich noch vertraglich verpflichtet, Daten bereitzustellen. Ohne die für die Anmeldung nötigen Angaben (Abschnitt 5) kannst du COMPIES jedoch nicht nutzen. Eine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt; der Abgleich mit der Host-Liste (Abschnitt 5) ist eine reine Berechtigungsprüfung."
       },
       "rights": {
-        "heading": "Deine Rechte",
-        "text": "[PLATZHALTER: Auskunft, Berichtigung, Löschung, Widerspruch und Beschwerde bei der Aufsichtsbehörde]"
+        "heading": "16. Deine Rechte",
+        "text": "Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18) und Datenübertragbarkeit (Art. 20 DSGVO). Eine erteilte Einwilligung kannst du jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3 DSGVO); die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Zur Ausübung genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nWiderspruchsrecht (Art. 21 DSGVO): Soweit eine Verarbeitung auf Art. 6 Abs. 1 lit. f DSGVO beruht, kannst du ihr aus Gründen, die sich aus deiner besonderen Situation ergeben, jederzeit widersprechen. Wir verarbeiten die Daten dann nicht mehr, es sei denn, wir können zwingende schutzwürdige Gründe nachweisen, die deine Interessen, Rechte und Freiheiten überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen."
+      },
+      "complaint": {
+        "heading": "17. Beschwerderecht",
+        "text": "Du hast das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO), insbesondere in dem Mitgliedstaat deines Aufenthaltsorts, deines Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes. Für den Verantwortlichen zuständig ist:\n\nLandesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen\nKavalleriestraße 2–4\n40213 Düsseldorf"
+      },
+      "dataSecurity": {
+        "heading": "18. Datensicherheit",
+        "text": "Die Verbindung zu COMPIES ist durchgehend per TLS (HTTPS) verschlüsselt. Wir treffen angemessene technische und organisatorische Maßnahmen, um deine Daten vor Verlust, Missbrauch und unbefugtem Zugriff zu schützen."
+      },
+      "changes": {
+        "heading": "19. Änderungen und Stand",
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: Oktober 2026."
       }
     }
   },
@@ -859,9 +927,9 @@
     },
     "poll": {
       "live": "Aktualisiert sich von selbst",
-   "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
-   "past": "vorbei",
-   "notVoted": "noch nicht abgestimmt",
+      "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
+      "past": "vorbei",
+      "notVoted": "noch nicht abgestimmt",
       "saved": "Gespeichert.",
       "savedText": "Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.",
       "pickThis": "Diesen festlegen",
