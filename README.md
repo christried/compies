@@ -38,3 +38,18 @@ The test projects:
 - `nuxt` (`test/nuxt/`): pages and components in a Nuxt runtime.
 
 CI runs all three checks on pull requests into and pushes to `staging` and `main`.
+
+## Deploy
+
+Only `staging` and `main` build on Vercel (`vercel.json`); feature branches don't deploy (ADR 0007).
+
+| Branch | URL | Database |
+|---|---|---|
+| `staging` | https://staging.compies.christried.me (behind Vercel login) | Neon `staging` branch |
+| `main` | https://compies.christried.me | Neon `main` branch |
+
+Flow: feature branch cut from `staging` → PR into `staging` → check on staging → release PR `staging` → `main`. Both branches are protected: changes land only through a PR with green CI, and force pushes are blocked.
+
+The Vercel build command is `pnpm db:migrate && pnpm build`, so each deploy first applies the committed migrations to that environment's `DATABASE_URL`. drizzle-kit runs all pending migrations in one transaction. If one fails, nothing is applied, the build fails, and the previous deployment keeps serving. Fix forward with a new migration; never edit a migration that has already run on staging.
+
+ESLint rejects `@vercel/*` imports, because the app must not depend on Vercel-only runtime APIs (ADR 0005).
