@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { isSignInProvider, type SignInProvider } from '~~/shared/auth'
+import type { InvitePreview } from '~/components/SignInCard.vue'
 import { isInviteLinkPath, safeRedirect, SIGN_IN_PATH } from '~/utils/auth-guard'
 
 // Sign-in (screen 02). The OAuth round trip leaves the app: Better Auth comes back to the target
@@ -9,8 +10,21 @@ const { t } = useI18n()
 useHead({ title: () => `${t('auth.title')} | ${t('app.name')}` })
 
 const target = computed(() => safeRedirect(route.query.redirect))
-// The join ticket (#10) loads the Session and Host for an Invite link target into the notice.
-const invited = computed(() => isInviteLinkPath(target.value.split(/[?#]/)[0]!))
+const invitePath = computed(() => {
+  const path = target.value.split(/[?#]/)[0]!
+  return isInviteLinkPath(path) ? path : null
+})
+const invited = computed(() => invitePath.value !== null)
+// The notice names the Session and the Host (#10). The preview answers only for valid links.
+const { data: invite } = await useAsyncData<InvitePreview | null>('sign-in-invite', async () => {
+  if (!invitePath.value) return null
+  try {
+    return await $fetch<InvitePreview>(`/api/invite/${invitePath.value.slice('/s/'.length)}`)
+  }
+  catch {
+    return null
+  }
+}, { watch: [invitePath] })
 
 const busy = ref<SignInProvider | null>(null)
 const failedHere = ref<SignInProvider | null>(null)
@@ -84,6 +98,7 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
         </div>
         <SignInCard
           :invited="invited"
+          :invite="invite"
           :busy="busy"
           :failed="failed"
           @sign-in="signIn"

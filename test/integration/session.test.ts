@@ -192,13 +192,22 @@ describe('sessions', () => {
       expect((await read(guestCookie, slug)).status).toBe(404)
     })
 
-    it('answers 404 for an unknown or deleted Session', async () => {
+    it('answers 404 for an unknown Session', async () => {
+      const cookie = await signInAsHost()
+
+      expect((await read(cookie, 'nie-gab-es-k7q2')).status).toBe(404)
+    })
+
+    it('answers 410 "Session deleted" to a former Member of a deleted Session, and 404 to anyone else', async () => {
       const cookie = await signInAsHost()
       const { slug } = await (await create(cookie, poll())).json()
+      const { cookie: guestCookie } = await signIn(testDb.db, guest)
       await testDb.db.update(sessions).set({ deletedAt: new Date() })
 
-      expect((await read(cookie, slug)).status).toBe(404)
-      expect((await read(cookie, 'nie-gab-es-k7q2')).status).toBe(404)
+      const former = await read(cookie, slug)
+      expect(former.status).toBe(410)
+      expect(former.statusText).toBe('Session deleted')
+      expect((await read(guestCookie, slug)).status).toBe(404)
     })
   })
 })

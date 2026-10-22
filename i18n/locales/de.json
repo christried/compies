@@ -566,7 +566,9 @@
     "invalidTitle": "Dieser Link gilt nicht mehr.",
     "deletedTitle": "Diese Session gibt’s nicht mehr.",
     "joinedToast": "Du bist drin! Du sitzt erstmal auf der Bench.",
-    "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand."
+    "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand.",
+    "kicker": "Einladung",
+    "joining": "Einen Moment, wir setzen dich auf die Bench …"
   },
   "pushAsk": {
     "title": "Danke fürs Abstimmen! Sollen wir Bescheid sagen?",
@@ -608,6 +610,14 @@
       "text": "Unser Fehler, nicht deiner. Versuch’s nochmal; wenn es bleibt, schick uns die Fehler-ID.",
       "code": "Fehler-ID: {id}",
       "retry": "Nochmal versuchen"
+    },
+    "invalid": {
+      "title": "Link ungültig",
+      "text": "Dieser Link funktioniert nicht mehr. Frag den Host nach dem neuen."
+    },
+    "deleted": {
+      "title": "Session gelöscht",
+      "text": "Diese Session wurde vom Host gelöscht. Hier gibt es nichts mehr zu sehen."
     },
     "home": "Zur Startseite"
   },

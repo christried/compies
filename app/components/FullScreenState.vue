@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Full-page system states (screen 31) in the bare shell. Focus goes to the title on mount.
 const props = defineProps<{
-  kind: 'notFound' | 'noPermission' | 'generic'
+  kind: 'notFound' | 'noPermission' | 'generic' | 'invalid' | 'deleted'
 }>()
 
 const { t } = useI18n()

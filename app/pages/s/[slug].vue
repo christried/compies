@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
+import { isInviteLinkPath } from '~/utils/auth-guard'
 
 // The Session link (`/s/<slug>`, ADR 0006) in the session shell. In this ticket Members see the
 // Session read-only: name, Phase, and the Slots in time order or the set Date. Voting comes with
-// #11 and the Host actions with #13. The Invite link (`/s/<slug>-<token>`) joins with #10.
+// #11 and the Host actions with #13. The Invite link (`/s/<slug>-<token>`) is handled by InviteEntry (#10).
 
 type Phase = 'draft' | 'poll' | 'date_set' | 'running' | 'finished' | 'archived'
 
@@ -16,10 +17,12 @@ interface SessionView {
 const route = useRoute()
 const { t } = useI18n()
 const slug = computed(() => String(route.params.slug))
-const { data, error } = await useFetch<SessionView>(() => `/api/s/${slug.value}`)
+const invite = isInviteLinkPath(route.path)
+const { data, error } = await useFetch<SessionView>(() => `/api/s/${slug.value}`, { immediate: !invite })
 
 const notFound = computed(() => error.value?.statusCode === 404)
-const failed = computed(() => error.value !== null && !notFound.value)
+const deleted = computed(() => error.value?.statusCode === 410)
+const failed = computed(() => error.value !== null && !notFound.value && !deleted.value)
 
 function when(iso: string) {
   const instant = new Date(iso)
@@ -32,7 +35,14 @@ useHead({ title: () => `${data.value?.session.name ?? t('app.name')} | ${t('app.
 </script>
 
 <template>
-  <AppShell kind="session">
+  <InviteEntry
+    v-if="invite"
+    :invite="slug"
+  />
+  <AppShell
+    v-else
+    kind="session"
+  >
     <template
       v-if="data"
       #title
@@ -82,7 +92,22 @@ useHead({ title: () => `${data.value?.session.name ?? t('app.name')} | ${t('app.
 
     <FullScreenState
       v-else-if="notFound"
-      kind="notFound"
+      kind="invalid"
+    >
+      <template #actions>
+        <AppButton
+          to="/"
+          size="lg"
+        >
+          {{ t('errorPage.home') }}
+          <AppIcon :icon="ChevronRight" />
+        </AppButton>
+      </template>
+    </FullScreenState>
+
+    <FullScreenState
+      v-else-if="deleted"
+      kind="deleted"
     >
       <template #actions>
         <AppButton
