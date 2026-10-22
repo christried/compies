@@ -68,6 +68,10 @@ _Avoid_: Option, proposal, Termin
 One User's answer to one Slot: yes, maybe or no (UI: Ja / Wenn nötig / Nein).
 _Avoid_: Response, availability
 
+**Has voted**:
+A Member has voted once they have a Vote on every Slot that still lies in the future; Slots that have passed do not count, and with no future Slot left nobody has voted.
+_Avoid_: Done, complete, responded
+
 **Best slot**:
 The Slot with the most yes Votes, then the most maybe Votes, then the earliest time.
 _Avoid_: Winner, recommended slot

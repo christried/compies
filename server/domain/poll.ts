@@ -43,8 +43,10 @@ export function bestSlotId(slots: PollSlot[], votes: PollVote[], now: Date): str
 }
 
 /**
- * "Has voted": a Vote on every votable Slot (the Slots that are not past). With nothing left to vote
- * on, nobody has voted, so an empty list is false rather than vacuously true.
+ * "Has voted" (GLOSSARY): a Vote on every votable Slot (the Slots that are not past). The spec says
+ * "every Slot"; past Slots are left out on purpose, because nobody can vote on them any more, so a
+ * Member who joins late could otherwise never count as voted. With nothing left to vote on, nobody
+ * has voted, so an empty list is false rather than vacuously true.
  */
 export function hasVoted(votableSlotIds: string[], votes: PollVote[], userId: string): boolean {
   if (votableSlotIds.length === 0) return false
