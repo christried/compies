@@ -12,7 +12,7 @@ const extraWord = computed(() => props.variant === 'hero' ? 'max-md:hidden' : 'm
 <template>
   <div
     aria-hidden="true"
-    class="construction-tape absolute -inset-x-10 layer-sticky flex items-center justify-around overflow-hidden"
+    class="tape construction-tape absolute -inset-x-10 layer-sticky flex items-center justify-around overflow-hidden"
     :class="variant === 'hero'
       ? 'construction-tape-hero top-[26px] h-[34px] -rotate-4 md:top-[34px]'
       : 'top-2 h-[30px] -rotate-3'"
@@ -30,9 +30,8 @@ const extraWord = computed(() => props.variant === 'hero' ? 'max-md:hidden' : 'm
 </template>
 
 <style>
+/* Stripes and edges come from the `tape` utility; the hero tape is a size larger (BaustelleZone variant=hero). */
 .construction-tape {
-  border-block: 2.5px solid #151515;
-  background-image: repeating-linear-gradient(-45deg, #ff4f4f 0 14px, #fffdf8 14px 28px);
   box-shadow: 0 4px 0 rgba(21, 21, 21, .22);
 }
 .construction-tape-hero {

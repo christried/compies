@@ -17,7 +17,7 @@ export interface ConstructionSite {
 export function constructionSite(path: string): ConstructionSite {
   const [first, slug, sub] = path.split('/').filter(Boolean)
 
-  if (first === 's' && slug && sub) {
+  if (first === 's' && slug) {
     return { area: sub === 'brett' ? 'brett' : 'generic', shell: 'session' }
   }
   const hubSite = HUB_SITES.find(site => site === first)

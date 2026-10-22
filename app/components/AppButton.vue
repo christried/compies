@@ -5,14 +5,15 @@ import type { RouteLocationRaw } from 'vue-router'
 // loading and disabled-with-reason arrive with the first form (M2).
 withDefaults(defineProps<{
   variant?: 'primary' | 'secondary'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'md' | 'lg'
   /** Renders a NuxtLink instead of a button. */
   to?: RouteLocationRaw
 }>(), { variant: 'primary', size: 'md', to: undefined })
 
 const NuxtLink = resolveComponent('NuxtLink')
 
-const SIZE = { sm: 'h-control-sm px-3.5 text-small', md: 'h-control-md px-4 text-small', lg: 'h-control-lg px-5 text-body' }
+// No 36 px size: it would fall under the 44 px hit-target rule.
+const SIZE = { md: 'h-control-md px-4 text-small', lg: 'h-control-lg px-5 text-body' }
 const VARIANT = {
   primary: 'bg-primary text-on-primary font-extrabold',
   secondary: 'bg-surface text-ink font-bold',

@@ -18,6 +18,10 @@ describe('constructionSite', () => {
     expect(constructionSite('/s/freitags-zocken-k7q2/brett')).toEqual({ area: 'brett', shell: 'session' })
   })
 
+  it('keeps Session links in the session shell until the poll page exists', () => {
+    expect(constructionSite('/s/freitags-zocken-k7q2')).toEqual({ area: 'generic', shell: 'session' })
+  })
+
   it('shows the generic state for any other Session sub-route', () => {
     expect(constructionSite('/s/freitags-zocken-k7q2/tabelle')).toEqual({ area: 'generic', shell: 'session' })
     expect(constructionSite('/s/freitags-zocken-k7q2/chat/old')).toEqual({ area: 'generic', shell: 'session' })
