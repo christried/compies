@@ -28,6 +28,15 @@ describe('create a Session', () => {
     expect(page.find('input').exists()).toBe(false)
   })
 
+  it('keeps the header navigation but leaves out the phone tab bar on the form (screen M2)', async () => {
+    signInAs(host)
+
+    const page = await mountSuspended(CreatePage, { route: '/neu' })
+
+    expect(page.findAll('nav[aria-label="Hauptnavigation"]')).toHaveLength(1)
+    expect(page.get('header').find('nav[aria-label="Hauptnavigation"]').exists()).toBe(true)
+  })
+
   it('starts with one Slot in poll mode and offers to add more', async () => {
     signInAs(host)
 

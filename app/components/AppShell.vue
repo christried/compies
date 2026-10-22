@@ -5,7 +5,9 @@ withDefaults(defineProps<{
   kind?: 'hub' | 'session' | 'bare'
   /** The stage fills the frame edge to edge, without padding or max width (sign-in, setup). */
   flush?: boolean
-}>(), { kind: 'hub', flush: false })
+  /** A hub page that is a task, not a place, leaves out the phone tab bar (screen M2). */
+  noTabs?: boolean
+}>(), { kind: 'hub', flush: false, noTabs: false })
 
 const { t } = useI18n()
 const user = useAuthUser()
@@ -34,7 +36,7 @@ const user = useAuthUser()
     </main>
 
     <HubNav
-      v-if="kind === 'hub'"
+      v-if="kind === 'hub' && !noTabs"
       layout="tabs"
       :is-admin="user?.isAdmin"
       class="sticky bottom-0 layer-sticky md:hidden"

@@ -115,6 +115,7 @@ const MODES = computed(() => [
   <AppShell
     v-else
     kind="hub"
+    no-tabs
   >
     <div class="mx-auto flex w-full max-w-[680px] flex-col gap-[18px] px-1">
       <NuxtLink
