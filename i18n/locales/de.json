@@ -26,6 +26,7 @@
     "offline": "offline",
     "lastSeen": "offline, zuletzt {time}",
     "holdToConfirm": "gedrückt halten",
+    "holdFor1s": "1 Sekunde halten",
     "counter": "{n}/{max}"
   },
   "nav": {
@@ -847,6 +848,9 @@
     },
     "poll": {
       "live": "Aktualisiert sich von selbst",
+   "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
+   "past": "vorbei",
+   "notVoted": "noch nicht abgestimmt",
       "saved": "Gespeichert.",
       "savedText": "Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.",
       "pickThis": "Diesen festlegen",
@@ -911,7 +915,7 @@
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
-    "voteFailed": "Deine Stimme ist nicht angekommen. Tipp nochmal.",
+    "voteFailed": "Deine Stimme ist nicht angekommen",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Sessions erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

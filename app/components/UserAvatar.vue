@@ -5,7 +5,8 @@
 const props = withDefaults(defineProps<{
   name: string
   image?: string | null
-  size?: 32 | 40 | 64
+  /** 24 for the poll matrix rows (DS People). */
+  size?: 24 | 32 | 40 | 64
 }>(), { image: null, size: 40 })
 
 const failed = ref(false)
