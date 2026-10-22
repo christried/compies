@@ -12,7 +12,8 @@ const props = withDefaults(defineProps<{
   doneLabel?: string
   /** Hold time in milliseconds. */
   duration?: number
-  variant?: 'hot' | 'primary'
+  /** `secondary` is for a hold next to a primary action (#14 "Neue Terminsuche"). */
+  variant?: 'hot' | 'primary' | 'secondary'
   disabled?: boolean
   /** Shown with aria-describedby when disabled. */
   disabledReason?: string
@@ -88,7 +89,7 @@ const visibleLabel = computed(() => {
     <button
       type="button"
       class="outline-memphis hit-44 relative inline-flex h-control-lg cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden rounded-pill border-(length:--cp-bw) border-line px-5 font-extrabold whitespace-nowrap shadow-btn transition-transform dur-instant ease-snap select-none active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none"
-      :class="variant === 'hot' ? 'bg-hot text-ink' : 'bg-primary text-on-primary'"
+      :class="{ 'bg-hot text-ink': variant === 'hot', 'bg-primary text-on-primary': variant === 'primary', 'bg-surface text-ink': variant === 'secondary' }"
       :aria-disabled="disabled ? 'true' : undefined"
       :aria-describedby="disabled && disabledReason ? reasonId : undefined"
       @pointerdown="onPointerDown"

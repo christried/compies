@@ -940,6 +940,19 @@
       "noFutureSlot": "Kein Termin liegt mehr in der Zukunft.",
       "dateTime": "{date}, {time} Uhr",
       "ics": "In den Kalender (.ics)"
+    },
+    "reschedule": {
+      "title": "Termin verschieben?",
+      "label": "Neuer Termin",
+      "text": "Alle werden benachrichtigt und bekommen ein neues .ics.",
+      "cta": "Termin verschieben"
+    },
+    "reopen": {
+      "cta": "Neue Terminsuche",
+      "notice": "Der Termin {when} wurde aufgehoben, bitte aus deinem Kalender löschen",
+      "noSlotsTitle": "Noch keine Termine.",
+      "noSlotsHost": "Schlag die ersten Termine über „Termine bearbeiten“ vor, dann kann abgestimmt werden.",
+      "noSlotsMember": "Sobald der Host Termine vorschlägt, kannst du abstimmen."
     }
   },
   "error": {

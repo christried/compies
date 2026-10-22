@@ -165,6 +165,7 @@ describe('sessions', () => {
         phase: 'poll',
         dateMode: 'poll',
         startsAt: null,
+        previousStartsAt: null,
         isHost: true,
       })
       expect(slots.map((slot: { startsAt: string }) => slot.startsAt)).toEqual([

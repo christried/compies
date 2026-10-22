@@ -15,6 +15,8 @@ export interface SessionView {
     phase: 'draft' | 'poll' | 'date_set' | 'running' | 'finished' | 'archived'
     dateMode: 'poll' | 'direct'
     startsAt: string | null
+    /** The Date a Reopen withdrew (#14), until the next Date is set. Members see a notice for it. */
+    previousStartsAt: string | null
     isHost: boolean
   }
   viewerId: string
