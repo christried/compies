@@ -97,6 +97,7 @@ const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
   startsAt: slot.startsAt,
   votes: (data.value?.votes ?? []).filter(vote => vote.slotId === slot.id).length,
 })))
+const inviteOpen = ref(false)
 
 const hostActions = computed(() => [
   { key: 'set', label: t('dock.setDate'), icon: CalendarCheck, primary: true },
@@ -106,6 +107,7 @@ const hostActions = computed(() => [
 
 function onHostAction(key: string) {
   if (key === 'edit') editing.value = true
+  else if (key === 'invite') inviteOpen.value = true
   else comingSoon()
 }
 
@@ -257,6 +259,15 @@ usePollRefresh(() => {
       :slots="editableSlots"
       @close="editing = false"
       @changed="refresh"
+    />
+
+    <InviteSheet
+      v-if="data?.inviteUrl"
+      :open="inviteOpen"
+      :slug="slug"
+      :url="data.inviteUrl"
+      @close="inviteOpen = false"
+      @rotated="refresh()"
     />
   </AppShell>
 </template>

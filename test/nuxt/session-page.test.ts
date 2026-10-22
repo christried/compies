@@ -11,7 +11,7 @@ const SANNE = '00000000-0000-4000-8000-000000000003'
 const LARSI = '00000000-0000-4000-8000-000000000002'
 
 type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no' }
-type SessionOverrides = { session?: Partial<ReturnType<typeof sessionOf>>, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number } }
+type SessionOverrides = { session?: Partial<ReturnType<typeof sessionOf>>, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null }
 
 function sessionOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, dateMode: string, startsAt: string | null, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, dateMode: 'poll', startsAt: null, isHost }
@@ -35,6 +35,7 @@ function view(slug: string, votes: Vote[], overrides: SessionOverrides = {}) {
     ],
     bestSlotId: overrides.bestSlotId === undefined ? 'sat' : overrides.bestSlotId,
     progress: overrides.progress ?? { voted: 2, total: 3 },
+    inviteUrl: overrides.inviteUrl ?? null,
   }
 }
 
@@ -170,6 +171,7 @@ describe('the Session poll', () => {
   })
 
   it('opens the Slot editor from the Host dock', async () => {
+    document.body.innerHTML = ''
     const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
     const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
 
@@ -183,6 +185,17 @@ describe('the Session poll', () => {
     expect(dialog?.textContent).toContain('Termine bearbeiten')
     expect(dialog?.textContent).toContain('Vorgeschlagene Termine')
     document.body.innerHTML = ''
+  })
+
+  it('opens the Invite sheet from the Host dock with the Invite link, and only the Host has that action', async () => {
+    const inviteUrl = 'http://localhost/s/freitags-zocken-invite-AbCdEfGhIjKl'
+    const hostView = serve(s => view(s, sanneAndLarsi, { session: { isHost: true }, inviteUrl }))
+    const page = await mountSuspended(SessionPage, { route: `/s/${hostView.slug}` })
+    const einladen = page.get('[role="toolbar"]').findAll('button').find((node: Wrapper) => node.text() === 'Einladen')!
+
+    await einladen.trigger('click')
+
+    await vi.waitFor(() => expect([...document.querySelectorAll('[role="dialog"]')].some(node => node.textContent?.includes(inviteUrl))).toBe(true))
   })
 
   it('shows the set Date for a direct Session and no vote cards', async () => {
