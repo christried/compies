@@ -514,11 +514,29 @@
     "twitch": "Mit Twitch anmelden",
     "invitedBy": "{host} lädt dich zu {session} ein",
     "joinAndSignIn": "Anmelden und beitreten",
-    "cancelled": "Anmelden hat nicht geklappt. Versuch’s nochmal."
+    "cancelled": "Anmelden hat nicht geklappt. Versuch’s nochmal.",
+    "titleInvite": "Erst kurz anmelden",
+    "intro": "Mit dem Konto, mit dem du eh schon zockst. Wir übernehmen nur Name und Bild.",
+    "inviteNotice": "{host} hat dich zu {session} eingeladen. Melde dich an, dann geht’s direkt auf die Bench.",
+    "cancelledTitle": "Anmeldung abgebrochen.",
+    "cancelledProvider": "{headline} {provider} hat uns nichts geschickt. Einfach nochmal versuchen.",
+    "redirecting": "Weiter zu {provider} …",
+    "linkLater": "Beide Konten lassen sich später im Profil verknüpfen.",
+    "heroTitle": "Wer gewinnt heute Abend?",
+    "heroText": "Termin finden, Teams bilden, Spiele auslosen, Punkte zählen. Gespielt wird woanders, gefeiert wird hier.",
+    "provider": {
+      "discord": "Discord",
+      "twitch": "Twitch"
+    },
+    "accountMenu": "Konto von {name}",
+    "logout": "Abmelden"
   },
   "onboarding": {
+    "kicker": "Fast geschafft",
     "title": "Wie sollen wir dich nennen?",
-    "nameHint": "Muss nicht eindeutig sein. Max. 24 Zeichen.",
+    "nameHint": "Muss nicht eindeutig sein. Max. 32 Zeichen.",
+    "avatarHint": "Kommt von Discord oder Twitch und bleibt dort aktuell.",
+    "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal.",
     "nameMissing": "Ohne Namen geht’s nicht.",
     "avatarFromProvider": "Bild von {provider} nehmen",
     "avatarUpload": "Eigenes Bild hochladen",

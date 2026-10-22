@@ -1,12 +1,15 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import CatchAllPage from '~/pages/[...path].vue'
+import { kitty, signInAs } from './auth'
 
 async function visit(route: string) {
   return mountSuspended(CatchAllPage, { route })
 }
 
 describe('construction page route guard', () => {
+  beforeEach(() => signInAs(kitty))
+
   it('renders the Archiv state with its own title in the hub shell', async () => {
     const page = await visit('/archiv')
 
