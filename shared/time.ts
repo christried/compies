@@ -1,4 +1,5 @@
-// Every time a User enters or reads is Europe/Berlin, hard-coded; storage is UTC (ADR 0003).
+// Every time a User enters or reads is Europe/Berlin, hard-coded; storage is UTC (ADR 0003). The one
+// conversion between the two, shared by the server and the forms in the app.
 const ZONE = 'Europe/Berlin'
 // Far enough from a DST change to read the offset in force on either side of it.
 const DST_PROBE_MS = 6 * 60 * 60_000

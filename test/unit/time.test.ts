@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { berlinToUtc, utcToBerlin } from '../../server/domain/time'
+import { berlinToUtc, utcToBerlin } from '../../shared/time'
 
 // 2026: summer time starts Sun 29 March (02:00 → 03:00), ends Sun 25 October (03:00 → 02:00).
 describe('berlinToUtc', () => {
