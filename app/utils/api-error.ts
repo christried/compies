@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from '../../shared/errors'
+import type { ApiErrorCode } from '~~/shared/errors'
 
 // What a failed API call tells the UI (shared/errors.ts). `$fetch` puts the answer's statusMessage in
 // `data.statusMessage`; the status code is on the error itself.

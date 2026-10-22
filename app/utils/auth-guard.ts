@@ -1,7 +1,7 @@
 // Sign-in route guard (#1 § Auth and permissions). Every app route needs a signed-in User who has
 // finished profile setup, except sign-in itself, the invite preview and the legal pages.
 
-import { parseSessionPath } from '../../shared/links'
+import { parseSessionPath } from '~~/shared/links'
 
 export const SIGN_IN_PATH = '/anmelden'
 export const SETUP_PATH = '/einrichten'
