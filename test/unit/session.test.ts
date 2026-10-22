@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseAddedSlot, parseNewSession, slotsEditable } from '../../server/domain/session'
-import { berlinToUtc } from '../../server/domain/time'
+import { berlinToUtc } from '../../shared/time'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Times below are Berlin wall-clock values.
 const now = new Date('2026-10-22T10:00:00Z')
@@ -109,7 +109,7 @@ describe('parseAddedSlot', () => {
 describe('slotsEditable', () => {
   it('lets the Host change Slots only in the poll phase', () => {
     expect(slotsEditable('poll')).toBe(true)
-    for (const phase of ['draft', 'date_set', 'running', 'finished', 'archived']) {
+    for (const phase of ['draft', 'date_set', 'running', 'finished', 'archived'] as const) {
       expect(slotsEditable(phase)).toBe(false)
     }
   })

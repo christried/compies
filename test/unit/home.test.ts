@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { arrangeHome, homeAction, isPastHomeGrace, needsVote } from '../../server/domain/home'
+import type { Phase } from '../../shared/session'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Dates older than 24 h before this instant drop off Home.
 const now = new Date('2026-10-22T10:00:00Z')
@@ -52,7 +53,7 @@ describe('homeAction', () => {
 })
 
 describe('arrangeHome', () => {
-  const item = (name: string, fields: { phase?: string, needsVote?: boolean, startsAt?: Date | null, createdAt?: Date } = {}) => ({
+  const item = (name: string, fields: { phase?: Phase, needsVote?: boolean, startsAt?: Date | null, createdAt?: Date } = {}) => ({
     name,
     phase: fields.phase ?? 'poll',
     needsVote: fields.needsVote ?? false,
@@ -69,6 +70,17 @@ describe('arrangeHome', () => {
     ], now)
 
     expect(arranged.map(row => row.name)).toEqual(['todo-poll', 'voted-poll', 'date-sooner', 'date-later'])
+  })
+
+  it('lists upcoming Dates before Dates that passed within the last 24 h, the most recent of those first', () => {
+    const arranged = arrangeHome([
+      item('passed-earlier', { phase: 'date_set', startsAt: hoursAgo(20) }),
+      item('passed-just-now', { phase: 'date_set', startsAt: hoursAgo(1) }),
+      item('upcoming-later', { phase: 'date_set', startsAt: hoursAhead(48) }),
+      item('upcoming-sooner', { phase: 'date_set', startsAt: hoursAhead(2) }),
+    ], now)
+
+    expect(arranged.map(row => row.name)).toEqual(['upcoming-sooner', 'upcoming-later', 'passed-just-now', 'passed-earlier'])
   })
 
   it('lists the newest open polls first within a group', () => {

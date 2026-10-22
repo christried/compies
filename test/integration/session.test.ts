@@ -72,6 +72,7 @@ describe('sessions', () => {
       const response = await create(cookie, poll())
 
       expect(response.status).toBe(403)
+      expect(response.statusText).toBe('no_host_permission')
       expect(await sessionRows()).toEqual([])
     })
 

@@ -561,6 +561,7 @@
     "title": "Leute einladen",
     "copy": "Link kopieren",
     "copied": "Link kopiert",
+    "copiedShort": "Kopiert",
     "rotate": "Link erneuern (halten)",
     "rotateText": "Der alte Link wird sofort ungültig. Wer schon drin ist, bleibt drin.",
     "openSignedOut": "Du bist zu {session} eingeladen",

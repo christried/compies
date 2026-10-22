@@ -20,13 +20,28 @@ describe('construction page route guard', () => {
 
   it('links the call to action to the latest open poll when the User has one', async () => {
     homeSessions = [
-      { slug: 'freitags-zocken-k7q2', name: 'Freitags-Zocken', phase: 'poll' },
+      { slug: 'freitags-zocken-k7q2', name: 'Freitags-Zocken', phase: 'poll', createdAt: '2026-10-20T10:00:00.000Z' },
     ]
     const page = await visit('/archiv')
 
     await vi.waitFor(() => {
       const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
       expect(cta?.attributes('href')).toBe('/s/freitags-zocken-k7q2')
+    })
+  })
+
+  it('picks the most recently created open poll, not the first one on Home', async () => {
+    // Home lists polls to vote on first, so an older poll can come before a newer one.
+    homeSessions = [
+      { slug: 'alt-a1b2', name: 'Alt', phase: 'poll', createdAt: '2026-10-01T10:00:00.000Z' },
+      { slug: 'abend-c3d4', name: 'Abend', phase: 'date_set', createdAt: '2026-10-21T10:00:00.000Z' },
+      { slug: 'neu-e5f6', name: 'Neu', phase: 'poll', createdAt: '2026-10-20T10:00:00.000Z' },
+    ]
+    const page = await visit('/archiv')
+
+    await vi.waitFor(() => {
+      const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
+      expect(cta?.attributes('href')).toBe('/s/neu-e5f6')
     })
   })
 

@@ -1,7 +1,8 @@
-import { createError, defineEventHandler, getRouterParam } from 'h3'
+import { defineEventHandler, getRouterParam } from 'h3'
 import { sessionMembers } from '../../db/schema'
 import { useDb } from '../../utils/db'
-import { isMember, sessionForInvite, sessionNotFound } from '../../utils/invite'
+import { sessionDeleted, sessionNotFound } from '../../utils/errors'
+import { isMember, sessionForInvite } from '../../utils/invite'
 import { requireUser } from '../../utils/user'
 
 // Join a Session through its Invite link (#10, ADR 0006): the signed-in User becomes a Member on
@@ -15,9 +16,7 @@ export default defineEventHandler(async (event) => {
 
   if (session.deletedAt) {
     // Only a former Member learns that the Session was deleted; everyone else gets the generic answer.
-    if (await isMember(db, session.id, user.id)) {
-      throw createError({ statusCode: 410, statusMessage: 'Session deleted' })
-    }
+    if (await isMember(db, session.id, user.id)) throw sessionDeleted()
     throw sessionNotFound()
   }
 

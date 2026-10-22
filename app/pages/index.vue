@@ -4,8 +4,9 @@ import type { HomeView } from '~~/shared/session'
 
 // Home (screen M1, #12): every Session the User is a Member of, in the order the server sends (open
 // polls to vote on, other open polls, Dates upcoming first). Hosts (canHost) get „Neue Terminumfrage“.
-// The list shows two skeleton cards while it loads, an empty state for new Users and a generic error
-// with a retry. It refetches on window focus (ADR 0001), not on a timer.
+// The list shows two skeleton cards while it loads, one friendly empty state for new Users (Hosts
+// included, #1 story 21) and a generic error with a retry. It refetches on window focus and when the
+// tab becomes visible again (ADR 0001), not on a timer.
 
 const { t } = useI18n()
 const user = useAuthUser()
@@ -18,11 +19,7 @@ const empty = computed(() => !error.value && !!data.value && sessions.value.leng
 const greetingName = computed(() => user.value?.displayName ?? user.value?.name ?? '')
 const title = computed(() => t(empty.value ? 'mvp.home.titleEmpty' : 'mvp.home.title'))
 
-if (import.meta.client) {
-  const onFocus = () => refresh()
-  window.addEventListener('focus', onFocus)
-  onScopeDispose(() => window.removeEventListener('focus', onFocus))
-}
+useRefreshOnReturn(refresh)
 </script>
 
 <template>
@@ -73,11 +70,6 @@ if (import.meta.client) {
         </div>
       </section>
 
-      <EmptyState
-        v-else-if="empty && user?.canHost"
-        :title="t('empty.homeHost.title')"
-        :text="t('empty.homeHost.text')"
-      />
       <EmptyState
         v-else-if="empty"
         :title="t('mvp.home.emptyTitle')"

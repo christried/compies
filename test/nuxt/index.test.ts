@@ -30,6 +30,7 @@ function card(overrides: Partial<HomeSession>): HomeSession {
     phase: 'poll',
     dateMode: 'poll',
     startsAt: null,
+    createdAt: '2026-10-20T10:00:00.000Z',
     bestSlot: null,
     progress: { voted: 1, total: 3 },
     viewerVoted: false,
@@ -79,12 +80,13 @@ describe('home page', () => {
     expect(page.text()).toContain('Noch keine Einladung.')
   })
 
-  it('shows the Host empty state to a Host with no Sessions', async () => {
+  it('shows a Host with no Sessions the same friendly empty state, with no notice about hosting', async () => {
     signInAs({ ...kitty, canHost: true })
     const page = await mountSuspended(IndexPage)
     await settle(page)
 
-    expect(page.text()).toContain('Noch keine Session.')
+    expect(page.text()).toContain('Noch keine Einladung.')
+    expect(page.text()).not.toContain('Noch keine Session.')
   })
 
   it('shows „Neue Terminumfrage“ only to Users with the Host permission', async () => {
@@ -149,5 +151,27 @@ describe('home page', () => {
     window.dispatchEvent(new Event('focus'))
 
     await vi.waitFor(() => expect(requests.mock.calls.length).toBeGreaterThan(before))
+  })
+
+  it('refetches the list when the tab becomes visible again, and not while it is hidden', async () => {
+    homeSessions = [card({})]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+    const visibility = vi.spyOn(document, 'visibilityState', 'get')
+
+    try {
+      visibility.mockReturnValue('hidden')
+      const before = requests.mock.calls.length
+      document.dispatchEvent(new Event('visibilitychange'))
+      await new Promise(resolve => setTimeout(resolve, 50))
+      expect(requests.mock.calls.length).toBe(before)
+
+      visibility.mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await vi.waitFor(() => expect(requests.mock.calls.length).toBeGreaterThan(before))
+    }
+    finally {
+      visibility.mockRestore()
+    }
   })
 })

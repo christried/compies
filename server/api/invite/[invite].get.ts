@@ -2,7 +2,8 @@ import { eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { users } from '../../db/schema'
 import { useDb } from '../../utils/db'
-import { sessionForInvite, sessionNotFound } from '../../utils/invite'
+import { sessionNotFound } from '../../utils/errors'
+import { sessionForInvite } from '../../utils/invite'
 
 // Signed-out preview of an Invite link (screen 07, ADR 0006): the Session name and the Host's
 // Display name and avatar. Nothing else, so no Slots, Votes or Members leak to a visitor.

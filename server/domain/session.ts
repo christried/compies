@@ -1,5 +1,5 @@
-import { SESSION_NAME_MAX, SLOTS_MAX } from '../../shared/session'
-import { berlinToUtc, utcToBerlin } from './time'
+import { SESSION_NAME_MAX, SLOTS_MAX, sessionNameLength, slotProblems, type Phase, type SlotProblem } from '../../shared/session'
+import { berlinToUtc, utcToBerlin } from '../../shared/time'
 
 // Session input rules for creating a Session (#1 § Domain rules). Times arrive as Berlin wall-clock
 // values (`YYYY-MM-DDTHH:mm`, ADR 0003) and are stored as UTC instants.
@@ -13,9 +13,8 @@ const LOCAL_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
 /** The Session name: trimmed, 1 to 60 characters (emoji count as one). Null when invalid. */
 export function parseSessionName(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
-  const name = raw.trim()
-  const length = [...name].length
-  return length >= 1 && length <= SESSION_NAME_MAX ? name : null
+  const length = sessionNameLength(raw)
+  return length >= 1 && length <= SESSION_NAME_MAX ? raw.trim() : null
 }
 
 export type SlotError = SessionInputError | 'slots_max'
@@ -28,14 +27,13 @@ export function parseLocalTime(raw: unknown): Date | null {
 }
 
 /**
- * The Slot rules shared by create and the Host's edits (#1 § Domain rules): a Slot is future only and
- * unique per minute within the Session. `existing` Slots are only checked for duplicates, because a
- * Slot that has become past is still a Slot.
+ * The first Slot rule a request breaks (shared/session.ts slotProblems), shared by create and the
+ * Host's edits. A Slot in the past is named before a duplicate.
  */
-function slotRuleError(proposed: Date[], existing: Date[], now: Date): 'in_past' | 'duplicate_slot' | null {
-  if (proposed.some(slot => slot <= now)) return 'in_past'
-  const minutes = [...proposed, ...existing].map(slot => slot.getTime())
-  return new Set(minutes).size === minutes.length ? null : 'duplicate_slot'
+function slotRuleError(proposed: Date[], existing: Date[], now: Date): SlotProblem | null {
+  const problems = slotProblems(proposed, existing, now)
+  if (problems.includes('in_past')) return 'in_past'
+  return problems.includes('duplicate_slot') ? 'duplicate_slot' : null
 }
 
 /** Validates a Slot the Host adds to a Date poll. `existing` are the Session's Slots as they are now. */
@@ -48,7 +46,7 @@ export function parseAddedSlot(raw: unknown, existing: Date[], now: Date): { ok:
 }
 
 /** Slots can be added, removed and only then changed by the Host while the Date poll is open (#1). */
-export function slotsEditable(phase: string): boolean {
+export function slotsEditable(phase: Phase): boolean {
   return phase === 'poll'
 }
 

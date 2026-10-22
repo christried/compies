@@ -1,9 +1,10 @@
 import { and, eq, sql } from 'drizzle-orm'
-import { createError, defineEventHandler, getRouterParam } from 'h3'
+import { defineEventHandler, getRouterParam } from 'h3'
 import { sessions } from '../../../db/schema'
 import { reopenRejection, reopenValues } from '../../../domain/phase'
 import { useDb } from '../../../utils/db'
-import { isMember, sessionNotFound } from '../../../utils/invite'
+import { apiError } from '../../../utils/errors'
+import { loadSession } from '../../../utils/session-access'
 import { requireUser } from '../../../utils/user'
 
 // Reopen (#1 § Domain rules, #14): the Host withdraws the set Date and the Session goes back to the
@@ -13,15 +14,11 @@ import { requireUser } from '../../../utils/user'
 // Reschedule cannot store a stale Date. The phase is part of the WHERE, so a second Reopen fails.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  const slug = getRouterParam(event, 'slug') ?? ''
-
   const db = useDb(event)
-  const [session] = await db.select().from(sessions).where(eq(sessions.slug, slug))
-  if (!session || !(await isMember(db, session.id, user.id))) throw sessionNotFound()
-  if (session.deletedAt) throw createError({ statusCode: 410, statusMessage: 'Session deleted' })
-  if (session.hostId !== user.id) throw createError({ statusCode: 403, statusMessage: 'not_host' })
+  const session = await loadSession(db, getRouterParam(event, 'slug') ?? '', user.id, { hostOnly: true })
 
-  if (reopenRejection({ phase: session.phase })) throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
+  const rejection = reopenRejection({ phase: session.phase })
+  if (rejection) throw apiError(rejection)
 
   const [row] = await db
     .update(sessions)
@@ -32,7 +29,7 @@ export default defineEventHandler(async (event) => {
     })
     .where(and(eq(sessions.id, session.id), eq(sessions.phase, 'date_set')))
     .returning({ phase: sessions.phase })
-  if (!row) throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
+  if (!row) throw apiError('wrong_phase')
 
   return { phase: row.phase }
 })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarClock, Check, ChevronRight, CircleAlert, Link as LinkIcon, Search } from '@lucide/vue'
-import { berlinLocalNow, formatSetDay, formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
+import { apiFailure } from '~/utils/api-error'
+import { formatSetDay, formatSlotDay, formatSlotTime, formatSlotWhen } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
 import type { SessionView } from '~~/shared/session'
@@ -9,8 +10,8 @@ import type { SessionView } from '~~/shared/session'
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
-// The set Date replaces the cards and the matrix with DateSetCard. Reschedule and Reopen (#14) are
-// wired here too. Termine bearbeiten opens SlotEditSheet (#15).
+// The set Date replaces the cards and the matrix with DateSetCard. Set the Date, Reschedule and Reopen
+// (#13, #14) post through useHostActions. Termine bearbeiten opens SlotEditSheet (#15).
 // The Invite link (`/s/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
@@ -32,21 +33,19 @@ const savedNote = ref(false)
 
 const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
   const instant = new Date(slot.startsAt)
-  const day = formatSlotDay(instant)
-  const time = formatSlotTime(instant)
-  return { id: slot.id, day, time, past: slot.past, label: `${day} ${time}` }
+  return { id: slot.id, day: formatSlotDay(instant), time: formatSlotTime(instant), past: slot.past, label: formatSlotWhen(instant) }
 }))
 
-const me = computed(() => data.value?.viewerId ?? '')
+const viewerId = computed(() => data.value?.viewerId ?? '')
 const people = computed(() => data.value?.members ?? [])
 const total = computed(() => people.value.length)
 
 /** The server's Votes with this User's pending Votes laid over them. */
 const shownVotes = computed(() => {
-  const overlaid = (data.value?.votes ?? []).filter(vote => vote.userId !== me.value || pending.value[vote.slotId] === undefined)
+  const overlaid = (data.value?.votes ?? []).filter(vote => vote.userId !== viewerId.value || pending.value[vote.slotId] === undefined)
   const mine = Object.entries(pending.value)
     .filter((entry): entry is [string, VoteValue] => entry[1] !== undefined)
-    .map(([slotId, value]) => ({ slotId, userId: me.value, value }))
+    .map(([slotId, value]) => ({ slotId, userId: viewerId.value, value }))
   return [...overlaid, ...mine]
 })
 
@@ -59,7 +58,7 @@ function countsFor(slotId: string) {
 }
 
 function myVoteFor(slotId: string): VoteValue | null {
-  return shownVotes.value.find(vote => vote.slotId === slotId && vote.userId === me.value)?.value ?? null
+  return shownVotes.value.find(vote => vote.slotId === slotId && vote.userId === viewerId.value)?.value ?? null
 }
 
 async function vote(slotId: string, value: VoteValue) {
@@ -69,7 +68,8 @@ async function vote(slotId: string, value: VoteValue) {
     savedNote.value = true
   }
   catch (failure) {
-    const rateLimited = (failure as { statusCode?: number }).statusCode === 429
+    // Only a rate limit gets its own copy; any other refusal is the plain "did not arrive" (#11).
+    const rateLimited = apiFailure(failure).code === 'rate_limited'
     toast({ tone: 'error', text: t(rateLimited ? 'error.rateLimited' : 'error.voteFailed') })
   }
   finally {
@@ -85,8 +85,7 @@ function comingSoon() {
   toast({ tone: 'info', text: t('common.comingSoon') })
 }
 
-const confirmOpen = ref(false)
-const confirming = ref(false)
+const { confirmOpen, confirming, rescheduleOpen, rescheduling, confirmDate: confirmStart, rescheduleDate, reopenDate } = useHostActions(slug, refresh)
 const confirmPreset = ref<string | null>(null)
 
 /** The Slots the Host can still confirm, in time order, with their counts for the dialog. */
@@ -105,55 +104,10 @@ function openConfirm(slotId?: string) {
   confirmOpen.value = true
 }
 
-async function confirmDate(slotId: string) {
+/** Sets the Date to the Slot the Host picked in the dialog. */
+function confirmDate(slotId: string) {
   const slot = data.value?.slots.find(candidate => candidate.id === slotId)
-  if (!slot) return
-  confirming.value = true
-  try {
-    await $fetch(`/api/s/${slug.value}/confirm`, { method: 'POST', body: { startsAt: berlinLocalNow(new Date(slot.startsAt)) } })
-    confirmOpen.value = false
-  }
-  catch (failure) {
-    const past = (failure as { statusCode?: number }).statusCode === 400
-    toast({ tone: 'error', text: t(past ? 'error.slotPast' : 'error.saveFailed') })
-  }
-  finally {
-    confirming.value = false
-    await refresh()
-  }
-}
-
-const rescheduleOpen = ref(false)
-const rescheduling = ref(false)
-
-/** Moves the set Date (#14). The dialog closes on success only; the card then shows the new time. */
-async function rescheduleDate(startsAt: string) {
-  rescheduling.value = true
-  try {
-    await $fetch(`/api/s/${slug.value}/reschedule`, { method: 'POST', body: { startsAt } })
-    rescheduleOpen.value = false
-  }
-  catch (failure) {
-    const past = (failure as { statusCode?: number }).statusCode === 400
-    toast({ tone: 'error', text: t(past ? 'error.slotPast' : 'error.saveFailed') })
-  }
-  finally {
-    rescheduling.value = false
-    await refresh()
-  }
-}
-
-/** Withdraws the set Date and goes back to the poll (#14). Slots and Votes stay. */
-async function reopenDate() {
-  try {
-    await $fetch(`/api/s/${slug.value}/reopen`, { method: 'POST' })
-  }
-  catch {
-    toast({ tone: 'error', text: t('error.saveFailed') })
-  }
-  finally {
-    await refresh()
-  }
+  if (slot) return confirmStart(new Date(slot.startsAt))
 }
 
 /** The withdrawn Date as the notice shows it, in Berlin time. */
@@ -293,7 +247,7 @@ usePollRefresh(() => {
             :people="people"
             :slots="slots"
             :votes="shownVotes"
-            :me-id="me"
+            :me-id="viewerId"
           />
         </section>
       </template>
@@ -381,7 +335,6 @@ usePollRefresh(() => {
       :slots="editableSlots"
       @close="editing = false"
       @changed="refresh"
-    />
     />
 
     <DateRescheduleDialog

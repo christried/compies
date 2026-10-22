@@ -1,5 +1,5 @@
-// A sliding-window rate limit kept in memory, per key (#1: about 30 votes per User per minute).
-// It lives in one server instance, so the limit is per instance; Better Auth's own limiter covers sign-in.
+// The sliding-window rule behind the vote limit (#1: about 30 votes per User per minute). Pure: the
+// limiter in server/utils/rate-limit.ts keeps the hits and asks this rule.
 
 export interface RateLimitOptions {
   /** Hits allowed inside one window. */
@@ -7,25 +7,13 @@ export interface RateLimitOptions {
   windowMs: number
 }
 
-export interface RateLimiter {
-  /** Records a hit for `key` and returns false when the key is over its limit. */
-  take(key: string, now: Date): boolean
-}
-
-export function createRateLimiter({ limit, windowMs }: RateLimitOptions): RateLimiter {
-  const hits = new Map<string, number[]>()
-
-  return {
-    take(key, now) {
-      const cutoff = now.getTime() - windowMs
-      const recent = (hits.get(key) ?? []).filter(time => time > cutoff)
-      if (recent.length >= limit) {
-        hits.set(key, recent)
-        return false
-      }
-      recent.push(now.getTime())
-      hits.set(key, recent)
-      return true
-    },
-  }
+/**
+ * Whether one more hit at `now` is allowed, given the earlier hits (epoch ms), and the hits to keep:
+ * the ones still inside the window, plus this one when it was allowed.
+ */
+export function slidingWindow(hits: number[], now: Date, { limit, windowMs }: RateLimitOptions): { allowed: boolean, hits: number[] } {
+  const cutoff = now.getTime() - windowMs
+  const recent = hits.filter(time => time > cutoff)
+  if (recent.length >= limit) return { allowed: false, hits: recent }
+  return { allowed: true, hits: [...recent, now.getTime()] }
 }

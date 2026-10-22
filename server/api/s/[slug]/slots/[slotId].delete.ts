@@ -1,11 +1,11 @@
-import { and, eq } from 'drizzle-orm'
-import { createError, defineEventHandler, getRouterParam } from 'h3'
+import { eq } from 'drizzle-orm'
+import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes } from '../../../../db/schema'
 import { useDb } from '../../../../utils/db'
+import { slotNotFound } from '../../../../utils/errors'
 import { lockSessionForSlotEdit } from '../../../../utils/host-session'
+import { findSlot } from '../../../../utils/slots'
 import { requireUser } from '../../../../utils/user'
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Remove a Slot from a Date poll (#15, #1 § Domain rules). Host only, Phase `poll`. The Slot's Votes
 // are deleted in the same transaction as the Slot. The UI asks for a 1 s hold when there are Votes;
@@ -17,13 +17,8 @@ export default defineEventHandler(async (event) => {
 
   return useDb(event).transaction(async (tx) => {
     const session = await lockSessionForSlotEdit(tx, slug, user.id)
-    const [slot] = UUID.test(slotId)
-      ? await tx
-          .select({ id: pollSlots.id })
-          .from(pollSlots)
-          .where(and(eq(pollSlots.id, slotId), eq(pollSlots.sessionId, session.id)))
-      : []
-    if (!slot) throw createError({ statusCode: 404, statusMessage: 'Slot not found' })
+    const slot = await findSlot(tx, session.id, slotId)
+    if (!slot) throw slotNotFound()
 
     const dropped = await tx
       .delete(pollVotes)

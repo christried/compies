@@ -1,7 +1,6 @@
 import { and, eq } from 'drizzle-orm'
-import { createError } from 'h3'
 import { sessionMembers, sessions } from '../db/schema'
-import { parseSessionPath } from '../domain/slug'
+import { parseSessionPath } from '../../shared/links'
 import type { Db } from './db'
 
 // Invite link lookups (ADR 0006). The Invite link is `<slug>-<token>`; it only matches while the
@@ -25,9 +24,4 @@ export async function isMember(db: Db, sessionId: string, userId: string) {
     .from(sessionMembers)
     .where(and(eq(sessionMembers.sessionId, sessionId), eq(sessionMembers.userId, userId)))
   return member !== undefined
-}
-
-/** The generic answer for every link that does not lead to a live Session (ADR 0006). */
-export function sessionNotFound() {
-  return createError({ statusCode: 404, statusMessage: 'Session not found' })
 }

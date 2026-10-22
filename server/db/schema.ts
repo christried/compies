@@ -1,4 +1,5 @@
 import { boolean, index, integer, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { PHASES } from '../../shared/session'
 
 // MVP schema (#1). Every instant is timestamptz in UTC (ADR 0003); every id is a database-generated uuid.
 
@@ -59,7 +60,7 @@ export const authVerifications = pgTable('auth_verifications', {
   updatedAt: updatedAt(),
 }, table => [index('auth_verifications_identifier_idx').on(table.identifier)])
 
-export const sessionPhase = pgEnum('session_phase', ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'])
+export const sessionPhase = pgEnum('session_phase', PHASES)
 export const dateMode = pgEnum('date_mode', ['poll', 'direct'])
 
 export const sessions = pgTable('sessions', {

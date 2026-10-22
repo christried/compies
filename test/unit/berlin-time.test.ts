@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { berlinLocalNow, formatSlotDay, formatSlotTime } from '../../app/utils/berlin-time'
+import { formatSlotDay, formatSlotTime, formatSlotWhen } from '../../app/utils/berlin-time'
 
 describe('berlin-time', () => {
   it('formats a day as weekday and day.month in Berlin time', () => {
@@ -12,7 +12,7 @@ describe('berlin-time', () => {
     expect(formatSlotTime(new Date('2026-10-30T19:30:00Z'))).toBe('20:30')
   })
 
-  it('gives the current Berlin wall-clock time in the form a datetime field uses', () => {
-    expect(berlinLocalNow(new Date('2026-10-22T10:00:00Z'))).toBe('2026-10-22T12:00')
+  it('formats a Slot as day and time, as cards and lists show it', () => {
+    expect(formatSlotWhen(new Date('2026-10-24T18:30:00Z'))).toBe('Sa 24.10. 20:30')
   })
 })

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
-import { berlinLocalNow, formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
-import { SLOTS_MAX } from '~~/shared/session'
+import { apiErrorKey } from '~/utils/api-error'
+import { formatSlotWhen } from '~/utils/berlin-time'
+import { SLOTS_MAX, slotProblems } from '~~/shared/session'
+import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // The Host's Slot editor (#15), opened from the host dock while the Date poll is open. Lists the
 // Slots with their Votes and adds one with the create form's Slot row. A Slot without Votes goes at
@@ -28,35 +30,30 @@ const { t } = useI18n()
 const { toast } = useToast()
 const blockerId = useId()
 const newSlot = ref('')
-const now = ref(berlinLocalNow())
+/** Berlin wall-clock now, minute precision, as the field's lower bound (ADR 0003). */
+const now = ref(utcToBerlin(new Date()))
 const busy = ref(false)
 // Bumped after a failed removal so the hold buttons start again from zero.
 const epoch = ref(0)
 
 watch(() => props.open, (open) => {
-  if (open) now.value = berlinLocalNow()
+  if (open) now.value = utcToBerlin(new Date())
 })
 
-const rows = computed(() => props.slots.map((slot) => {
-  const instant = new Date(slot.startsAt)
-  return { ...slot, label: `${formatSlotDay(instant)} ${formatSlotTime(instant)}` }
-}))
+const rows = computed(() => props.slots.map(slot => ({ ...slot, label: formatSlotWhen(new Date(slot.startsAt)) })))
 
 const full = computed(() => props.slots.length >= SLOTS_MAX)
 
-// The Slots as Berlin wall-clock minutes, so a new time can be compared with them as text.
-const taken = computed(() => new Set(props.slots.map(slot => berlinLocalNow(new Date(slot.startsAt)))))
-
-const problem = computed<'past' | 'duplicate' | null>(() => {
+/** The Slot rule the new time breaks, as the server would judge it (shared/session.ts). */
+const problem = computed(() => {
   if (newSlot.value === '') return null
-  if (newSlot.value <= now.value) return 'past'
-  if (taken.value.has(newSlot.value)) return 'duplicate'
-  return null
+  const existing = props.slots.map(slot => new Date(slot.startsAt))
+  return slotProblems([berlinToUtc(newSlot.value)], existing, berlinToUtc(now.value))[0] ?? null
 })
 
 const problemText = computed(() => {
-  if (problem.value === 'past') return t('error.slotPast')
-  if (problem.value === 'duplicate') return t('error.slotDuplicate')
+  if (problem.value === 'in_past') return t('error.slotPast')
+  if (problem.value === 'duplicate_slot') return t('error.slotDuplicate')
   return undefined
 })
 
@@ -64,15 +61,7 @@ const addBlocked = computed(() => newSlot.value === '' || problem.value !== null
 
 /** What a failed save says, from the reason the server gives. */
 function failureText(failure: unknown): string {
-  const error = failure as { statusCode?: number, statusMessage?: string, data?: { statusMessage?: string } }
-  switch (error.data?.statusMessage ?? error.statusMessage) {
-    case 'in_past': return t('error.slotPast')
-    case 'duplicate_slot': return t('error.slotDuplicate')
-    case 'slots_max': return t('error.slotsMax', { max: SLOTS_MAX })
-    case 'invalid_time': return t('mvp.slots.incomplete')
-    case 'wrong_phase': return t('mvp.slots.locked')
-  }
-  return error.statusCode === 403 ? t('error.forbidden') : t('error.saveFailed')
+  return t(apiErrorKey(failure, 'error.saveFailed', { invalid_time: 'mvp.slots.incomplete', wrong_phase: 'mvp.slots.locked' }), { max: SLOTS_MAX })
 }
 
 async function add() {
