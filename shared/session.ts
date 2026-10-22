@@ -25,6 +25,8 @@ export interface SessionView {
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */
   progress: { voted: number, total: number }
+  /** The Invite link (#16). Only the Host gets it; null for every other Member. */
+  inviteUrl: string | null
 }
 
 /** One card on Home (`GET /api/s`, #12). Times are UTC ISO strings. */

@@ -5,6 +5,8 @@ const ZONE = 'Europe/Berlin'
 
 const dayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: ZONE, weekday: 'short', day: '2-digit', month: '2-digit' })
 const timeFormat = new Intl.DateTimeFormat('de-DE', { timeZone: ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+const longDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: ZONE, weekday: 'long', day: 'numeric', month: 'long' })
+const tileFormat = new Intl.DateTimeFormat('de-DE', { timeZone: ZONE, weekday: 'short', day: '2-digit', month: 'short' })
 const wallClockFormat = new Intl.DateTimeFormat('en-CA', {
   timeZone: ZONE,
   year: 'numeric',
@@ -25,6 +27,22 @@ export function formatSlotDay(instant: Date): string {
 /** A Slot's time as `20:30` (Berlin). */
 export function formatSlotTime(instant: Date): string {
   return timeFormat.format(instant)
+}
+
+/** A Date's day as `Samstag, 24. Oktober` (Berlin), for the Date set card. */
+export function formatSetDay(instant: Date): string {
+  return longDayFormat.format(instant)
+}
+
+/** The Date set card's calendar tile (Berlin): `Sa`, `Okt`, `24` and `20:30`. */
+export function formatDateTile(instant: Date): { weekday: string, month: string, day: string, time: string } {
+  const parts = Object.fromEntries(tileFormat.formatToParts(instant).map(part => [part.type, part.value]))
+  return {
+    weekday: (parts.weekday ?? '').replace(/\.$/, ''),
+    month: (parts.month ?? '').replace(/\.$/, ''),
+    day: parts.day ?? '',
+    time: formatSlotTime(instant),
+  }
 }
 
 /** The Berlin wall-clock time at `instant`, minute precision, in the `YYYY-MM-DDTHH:mm` form a datetime field uses. */

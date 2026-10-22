@@ -569,7 +569,16 @@
     "joinedToast": "Du bist drin! Du sitzt erstmal auf der Bench.",
     "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand.",
     "kicker": "Einladung",
-    "joining": "Einen Moment, wir setzen dich auf die Bench …"
+    "joining": "Einen Moment, wir setzen dich auf die Bench …",
+    "sheetText": "Wer den Link hat und sich anmeldet, landet auf der Bench. Von dort ziehen sich alle selbst ins Team.",
+    "leakedTitle": "Link geleakt?",
+    "renew": "Link erneuern",
+    "renewTitle": "Einladungslink erneuern?",
+    "renewOld": "Der alte Link funktioniert sofort nicht mehr.",
+    "renewMembers": "Alle in der Session bleiben drin.",
+    "renewShare": "Den neuen Link musst du neu teilen.",
+    "renewed": "Erneuert.",
+    "renewedText": "Neuer Link aktiv. Der alte führt jetzt ins Leere."
   },
   "pushAsk": {
     "title": "Danke fürs Abstimmen! Sollen wir Bescheid sagen?",
@@ -911,6 +920,14 @@
       "summary": "{session} (COMPIES)",
       "description": "Zur Session: {url}",
       "alarm": "{session} startet in 1 Stunde"
+    },
+    "set": {
+      "confirmTitle": "Termin festlegen?",
+      "pickLabel": "Welcher Termin?",
+      "slotLabel": "{day}, {time} Uhr",
+      "noFutureSlot": "Kein Termin liegt mehr in der Zukunft.",
+      "dateTime": "{date}, {time} Uhr",
+      "ics": "In den Kalender (.ics)"
     }
   },
   "error": {

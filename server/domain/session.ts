@@ -19,7 +19,7 @@ export function parseSessionName(raw: unknown): string | null {
 }
 
 /** A Berlin wall-clock value as an instant. Null for text that is not a real time, such as 30 Feb or a skipped DST hour. */
-function parseLocalTime(raw: unknown): Date | null {
+export function parseLocalTime(raw: unknown): Date | null {
   if (typeof raw !== 'string' || !LOCAL_TIME.test(raw)) return null
   const instant = berlinToUtc(raw)
   return utcToBerlin(instant) === raw ? instant : null

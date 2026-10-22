@@ -11,7 +11,7 @@ const SANNE = '00000000-0000-4000-8000-000000000003'
 const LARSI = '00000000-0000-4000-8000-000000000002'
 
 type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no' }
-type SessionOverrides = { session?: Partial<ReturnType<typeof sessionOf>>, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number } }
+type SessionOverrides = { session?: Partial<ReturnType<typeof sessionOf>>, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null }
 
 function sessionOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, dateMode: string, startsAt: string | null, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, dateMode: 'poll', startsAt: null, isHost }
@@ -35,6 +35,7 @@ function view(slug: string, votes: Vote[], overrides: SessionOverrides = {}) {
     ],
     bestSlotId: overrides.bestSlotId === undefined ? 'sat' : overrides.bestSlotId,
     progress: overrides.progress ?? { voted: 2, total: 3 },
+    inviteUrl: overrides.inviteUrl ?? null,
   }
 }
 
@@ -169,6 +170,17 @@ describe('the Session poll', () => {
     expect(hostPage.get('[role="toolbar"]').text()).toContain('Einladen')
   })
 
+  it('opens the Invite sheet from the Host dock with the Invite link, and only the Host has that action', async () => {
+    const inviteUrl = 'http://localhost/s/freitags-zocken-invite-AbCdEfGhIjKl'
+    const hostView = serve(s => view(s, sanneAndLarsi, { session: { isHost: true }, inviteUrl }))
+    const page = await mountSuspended(SessionPage, { route: `/s/${hostView.slug}` })
+    const einladen = page.get('[role="toolbar"]').findAll('button').find((node: Wrapper) => node.text() === 'Einladen')!
+
+    await einladen.trigger('click')
+
+    await vi.waitFor(() => expect([...document.querySelectorAll('[role="dialog"]')].some(node => node.textContent?.includes(inviteUrl))).toBe(true))
+  })
+
   it('shows the set Date for a direct Session and no vote cards', async () => {
     const { slug } = serve(s => view(s, [], {
       session: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z', isHost: true },
@@ -179,7 +191,7 @@ describe('the Session poll', () => {
 
     const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
 
-    expect(page.text()).toContain('Termin steht: Sa 24.10. 20:00 Uhr')
+    expect(page.text()).toContain('Samstag, 24. Oktober, 20:00 Uhr')
     expect(page.findAll('[role="radiogroup"]')).toHaveLength(0)
   })
 
@@ -207,5 +219,135 @@ describe('the Session poll', () => {
     const page = await mountSuspended(SessionPage, { route: '/s/geloescht-k7q2' })
 
     expect(page.get('h1').text()).toBe('Session gelöscht')
+  })
+})
+
+describe('setting the Date', () => {
+  beforeEach(() => {
+    signInAs(kitty)
+    useState('toasts').value = []
+    document.body.innerHTML = ''
+  })
+
+  /** The open confirm dialog, which is teleported to the body. */
+  function dialog(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('[role="dialog"]')
+  }
+
+  /** The label of the chosen option in the dialog, without its vote counts. */
+  function selectedOption(): string | undefined {
+    return dialog()?.querySelector('[role="radio"][aria-checked="true"] b')?.textContent?.trim()
+  }
+
+  /** Clicks the button with this label inside `root` and lets Vue run the handler. */
+  async function clickButton(root: ParentNode | null | undefined, label: string) {
+    const button = [...(root?.querySelectorAll('button') ?? [])].find(element => element.textContent?.trim() === label)
+    expect(button, label).toBeDefined()
+    button!.click()
+    await new Promise(resolve => setTimeout(resolve))
+  }
+
+  it('lets the Host pick a Slot card and opens the confirm dialog with that Slot preselected', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    await clickButton(page.get('[data-slot="fri"]').element, 'Diesen festlegen')
+
+    expect(dialog()?.textContent).toContain('Termin festlegen?')
+    expect(selectedOption()).toBe('Fr 23.10., 20:00 Uhr')
+  })
+
+  it('preselects the Best slot when the Host opens the dialog from the dock', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    expect(selectedOption()).toBe('Sa 24.10., 20:00 Uhr')
+  })
+
+  it('preselects the earliest future Slot when nobody has voted yet', async () => {
+    const { slug } = serve(s => view(s, [], { session: { isHost: true }, bestSlotId: null }))
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    expect(selectedOption()).toBe('Fr 23.10., 20:00 Uhr')
+  })
+
+  it('confirms the chosen Slot, then shows the Date set card to everyone', async () => {
+    let sent: unknown = null
+    const store = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
+    registerEndpoint(`/api/s/${store.slug}/confirm`, {
+      method: 'POST',
+      handler: async (event) => {
+        sent = await readBody(event)
+        store.set(view(store.slug, sanneAndLarsi, {
+          session: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z', isHost: true },
+          bestSlotId: null,
+        }))
+        return { startsAt: '2026-10-24T18:00:00.000Z' }
+      },
+    })
+    const page = await mountSuspended(SessionPage, { route: `/s/${store.slug}` })
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    await clickButton(dialog(), 'Festlegen')
+
+    await vi.waitFor(() => expect(sent).toEqual({ startsAt: '2026-10-24T20:00' }))
+    await vi.waitFor(() => expect(page.text()).toContain('Samstag, 24. Oktober, 20:00 Uhr'))
+    expect(page.findAll('[role="radiogroup"]')).toHaveLength(0)
+    expect(dialog()).toBeNull()
+  })
+
+  it('shows the .ics download to every Member, and Verschieben only to the Host', async () => {
+    const member = serve(s => view(s, [], {
+      session: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z' },
+      slots: [],
+      bestSlotId: null,
+    }))
+    const memberPage = await mountSuspended(SessionPage, { route: `/s/${member.slug}` })
+    expect(memberPage.get(`a[href="/api/s/${member.slug}/ics"]`).attributes('download')).toBeDefined()
+    expect(memberPage.text()).not.toContain('Verschieben')
+
+    const hostStore = serve(s => view(s, [], {
+      session: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z', isHost: true },
+      slots: [],
+      bestSlotId: null,
+    }))
+    const hostPage = await mountSuspended(SessionPage, { route: `/s/${hostStore.slug}` })
+    expect(hostPage.text()).toContain('Verschieben')
+    expect(hostPage.text()).toContain('Einladen')
+  })
+
+  it('tells the Host when no Slot lies in the future, and opens no dialog', async () => {
+    const { slug } = serve(s => view(s, [], {
+      session: { isHost: true },
+      slots: [{ id: 'old', startsAt: '2026-10-20T18:00:00.000Z', past: true }],
+      bestSlotId: null,
+    }))
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    expect(dialog()).toBeNull()
+    expect(shownToasts().map(toast => toast.text)).toContain('Kein Termin liegt mehr in der Zukunft.')
+  })
+
+  it('shows the server refusal as a toast and keeps the dialog closed on success only', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi, { session: { isHost: true } }))
+    registerEndpoint(`/api/s/${slug}/confirm`, {
+      method: 'POST',
+      handler: () => {
+        throw createError({ statusCode: 400, statusMessage: 'in_past' })
+      },
+    })
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    await clickButton(dialog(), 'Festlegen')
+
+    await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Der Termin liegt in der Vergangenheit.'))
+    expect(dialog()).not.toBeNull()
   })
 })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CalendarCheck, Check, ChevronRight, Link as LinkIcon } from '@lucide/vue'
-import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
+import { berlinLocalNow, formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
 import type { SessionView } from '~~/shared/session'
@@ -8,7 +8,9 @@ import type { SessionView } from '~~/shared/session'
 // The Session link (`/s/<slug>`, ADR 0006) in the session shell (screen M3). Members see the poll:
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
-// Host actions are stubs until #13 (Termin festlegen), #15 (Termine bearbeiten) and #16 (Einladen).
+// The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
+// The set Date replaces the cards and the matrix with DateSetCard. Other host actions are stubs until
+// #14 (Verschieben, Neue Terminsuche), #15 (Termine bearbeiten) and #16 (Einladen).
 // The Invite link (`/s/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
@@ -34,13 +36,6 @@ const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
   const time = formatSlotTime(instant)
   return { id: slot.id, day, time, past: slot.past, label: `${day} ${time}` }
 }))
-
-const setDate = computed(() => {
-  const startsAt = data.value?.session.startsAt
-  if (!startsAt) return null
-  const instant = new Date(startsAt)
-  return `${formatSlotDay(instant)} ${formatSlotTime(instant)}`
-})
 
 const me = computed(() => data.value?.viewerId ?? '')
 const people = computed(() => data.value?.members ?? [])
@@ -86,9 +81,54 @@ async function vote(slotId: string, value: VoteValue) {
   }
 }
 
-// #13 opens the date confirm dialog here; until then the host actions only say so.
 function comingSoon() {
   toast({ tone: 'info', text: t('common.comingSoon') })
+}
+
+const confirmOpen = ref(false)
+const confirming = ref(false)
+const confirmPreset = ref<string | null>(null)
+
+/** The Slots the Host can still confirm, in time order, with their counts for the dialog. */
+const confirmOptions = computed(() => slots.value
+  .filter(slot => !slot.past)
+  .map(slot => ({ id: slot.id, day: slot.day, time: slot.time, ...countsFor(slot.id) })))
+
+/** Opens the confirm dialog: the Slot picked on its card, else the Best slot, else the earliest future Slot. */
+function openConfirm(slotId?: string) {
+  const first = confirmOptions.value[0]
+  if (!first) {
+    toast({ tone: 'error', text: t('mvp.set.noFutureSlot') })
+    return
+  }
+  confirmPreset.value = slotId ?? data.value?.bestSlotId ?? first.id
+  confirmOpen.value = true
+}
+
+async function confirmDate(slotId: string) {
+  const slot = data.value?.slots.find(candidate => candidate.id === slotId)
+  if (!slot) return
+  confirming.value = true
+  try {
+    await $fetch(`/api/s/${slug.value}/confirm`, { method: 'POST', body: { startsAt: berlinLocalNow(new Date(slot.startsAt)) } })
+    confirmOpen.value = false
+  }
+  catch (failure) {
+    const past = (failure as { statusCode?: number }).statusCode === 400
+    toast({ tone: 'error', text: t(past ? 'error.slotPast' : 'error.saveFailed') })
+  }
+  finally {
+    confirming.value = false
+    await refresh()
+  }
+}
+
+const inviteOpen = ref(false)
+
+function onHostAction(key: string) {
+  if (key === 'set') openConfirm()
+  else if (key === 'invite') inviteOpen.value = true
+  else comingSoon()
 }
 
 const hostActions = computed(() => [
@@ -166,7 +206,7 @@ usePollRefresh(() => {
               :best="data.bestSlotId === slot.id"
               :can-pick="data.session.isHost"
               @vote="value => vote(slot.id, value)"
-              @pick="comingSoon"
+              @pick="openConfirm(slot.id)"
             />
           </li>
         </ol>
@@ -184,12 +224,14 @@ usePollRefresh(() => {
         </section>
       </template>
 
-      <p
-        v-else-if="setDate"
-        class="m-0 flex items-center gap-2 rounded-[14px] border-(length:--cp-bw) border-line bg-surface p-4 font-bold"
-      >
-        {{ t('poll.confirmedBanner', { slot: setDate }) }}
-      </p>
+      <DateSetCard
+        v-else-if="data.session.startsAt"
+        :starts-at="data.session.startsAt"
+        :is-host="data.session.isHost"
+        :ics-url="`/api/s/${slug}/ics`"
+        @reschedule="comingSoon"
+        @invite="onHostAction('invite')"
+      />
 
       <BaustelleZone
         compact
@@ -236,7 +278,27 @@ usePollRefresh(() => {
     <HostDock
       v-if="data?.session.isHost && data.session.phase === 'poll'"
       :actions="hostActions"
-      @action="comingSoon"
+      @action="onHostAction"
+    />
+
+    <DateConfirmDialog
+      v-if="data?.session.isHost"
+      :open="confirmOpen"
+      :options="confirmOptions"
+      :preselected="confirmPreset"
+      :total="total"
+      :loading="confirming"
+      @confirm="confirmDate"
+      @cancel="confirmOpen = false"
+    />
+
+    <InviteSheet
+      v-if="data?.inviteUrl"
+      :open="inviteOpen"
+      :slug="slug"
+      :url="data.inviteUrl"
+      @close="inviteOpen = false"
+      @rotated="refresh()"
     />
   </AppShell>
 </template>
