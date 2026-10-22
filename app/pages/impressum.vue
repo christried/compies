@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Impressum (#8): public, reachable without sign-in. Placeholder copy until the operator supplies the text.
+// Impressum (#8): public, reachable without sign-in.
 const { t } = useI18n()
 useHead({ title: () => `${t('legal.impressum.title')} | ${t('app.name')}` })
 </script>
@@ -8,7 +8,7 @@ useHead({ title: () => `${t('legal.impressum.title')} | ${t('app.name')}` })
   <AppShell kind="bare">
     <LegalDocument
       doc="impressum"
-      :sections="['operator', 'contact', 'responsible']"
+      :sections="['operator', 'contact', 'responsible', 'scope', 'dispute']"
     />
   </AppShell>
 </template>

@@ -17,7 +17,8 @@ describe('legal pages', () => {
 
     expect(page.get('h1').text()).toBe('Impressum')
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(false)
-    expect(page.get('main').text()).toContain('PLATZHALTER')
+    expect(page.get('main').text()).toContain('Dominik Christian Gilges')
+    expect(page.get('main').text()).toContain('foodieflip.dev@gmail.com')
   })
 
   it('render the Datenschutzerklärung signed out, in the bare shell', async () => {
@@ -25,17 +26,24 @@ describe('legal pages', () => {
 
     expect(page.get('h1').text()).toBe('Datenschutzerklärung')
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(false)
-    expect(page.get('main').text()).toContain('PLATZHALTER')
+    expect(page.get('main').text()).toContain('Discord')
+    expect(page.get('main').text()).toContain('Twitch')
   })
 
-  it('mark every placeholder, so none of it can ship as real text', async () => {
-    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
-    const sections = page.findAll('section')
+  it('ship no placeholder text', async () => {
+    for (const [Page, route] of [[ImpressumPage, '/impressum'], [DatenschutzPage, '/datenschutz']] as const) {
+      const page = await mountSuspended(Page, { route })
 
-    expect(sections.length).toBeGreaterThan(1)
-    for (const section of sections) {
-      expect(section.get('p').text()).toMatch(/^\[PLATZHALTER: .+\]$/)
+      expect(page.get('main').text()).not.toContain('PLATZHALTER')
     }
+  })
+
+  it('split a section text into paragraphs at blank lines', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const controller = page.findAll('section').find(s => s.get('h2').text() === '1. Verantwortlicher')!
+
+    expect(controller.findAll('p')).toHaveLength(2)
+    expect(controller.get('p').element.textContent).toContain('Gilges\nAugust-Thyssen-Str. 16\n52249 Eschweiler')
   })
 
   it('link both pages from the sign-in footer', async () => {
