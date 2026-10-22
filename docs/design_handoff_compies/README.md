@@ -48,7 +48,7 @@ Notes for the stack decision (leave the final call to the Claude Code session):
 | [03-screens.md](03-screens.md) | Every screen (M1–M4, 01–36): layout + breakpoints, components, data, host vs player, states, **realtime events**; event catalogue |
 | [04-motion.md](04-motion.md) | GSAP timeline per animation + reduced-motion twin, Compibert rig + state machine, synchronised moments |
 | [05-assets.md](05-assets.md) | Compibert, coin, emotes, icons, construction assets, sound cues, share image, battle replay storyboard |
-| [06-copy.md](06-copy.md) + `i18n/de.json` | All German UI copy as i18n keys (vue-i18n), incl. info sheet copy, hidden-wheel names, errors, empty states, push |
+| [06-copy.md](06-copy.md) + `i18n/locales/de.json` (repo root) | All German UI copy as i18n keys (vue-i18n), incl. info sheet copy, hidden-wheel names, errors, empty states, push |
 | [07-scope-and-tickets.md](07-scope-and-tickets.md) | Scope labels, MVP cut, 1.0 ticket order, Post-1.0 issues, data model notes |
 | [08-open-questions.md](08-open-questions.md) | Everything still unclear or assumed |
 | `reference/` | The HTML design files, tokens, assets and earlier docs (handoff.md, compibert-handoff.md, Spec Changes.md) |

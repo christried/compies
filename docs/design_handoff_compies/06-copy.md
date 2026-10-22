@@ -1,6 +1,6 @@
 # 06 Copy
 
-All German UI copy lives in **`i18n/de.json`** (vue-i18n format, `{name}` placeholders, `|` for plural forms). Version 1 ships German only; every string goes through `t()` from day one so English (Post-1.0) is a translation, not a refactor.
+All German UI copy lives in **`i18n/locales/de.json`** at the repo root (moved there for `@nuxtjs/i18n`) (vue-i18n format, `{name}` placeholders, `|` for plural forms). Version 1 ships German only; every string goes through `t()` from day one so English (Post-1.0) is a translation, not a refactor.
 
 Tone: friendly, clear, a little cheeky. Short sentences. Du-form. No „·“ separators. German quotes „…“. Typographic apostrophe ’.
 

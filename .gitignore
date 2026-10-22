@@ -1,0 +1,22 @@
+# Nuxt
+.nuxt
+.output
+.data
+.nitro
+.cache
+dist
+
+# Node
+node_modules
+*.log
+
+# Misc
+.DS_Store
+.vercel
+coverage
+
+# Local env files
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
