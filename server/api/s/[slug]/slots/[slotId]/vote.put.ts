@@ -1,14 +1,15 @@
-import { and, eq } from 'drizzle-orm'
-import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
-import { pollSlots, pollVotes, sessionMembers, sessions } from '../../../../../db/schema'
+import { defineEventHandler, getRouterParam, readBody } from 'h3'
+import { pollVotes } from '../../../../../db/schema'
 import { parseVoteValue, voteRejection } from '../../../../../domain/poll'
-import { createRateLimiter } from '../../../../../domain/rate-limit'
 import { useDb } from '../../../../../utils/db'
+import { apiError, slotNotFound } from '../../../../../utils/errors'
+import { createRateLimiter } from '../../../../../utils/rate-limit'
+import { loadSession } from '../../../../../utils/session-access'
+import { findSlot } from '../../../../../utils/slots'
 import { requireUser } from '../../../../../utils/user'
 
 // About 30 votes per User per minute (#1 § Polling). In memory, so the limit holds per instance.
 const voteLimiter = createRateLimiter({ limit: 30, windowMs: 60_000 })
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Put a Vote (ADR 0001, #1 § Domain rules). Members only; the Slot must belong to this Session, the
 // Phase must be `poll`, and the Slot must not be past. A Vote can be changed but not taken back, so
@@ -18,44 +19,22 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 // a Slot that was just removed, or after the Date was set. Votes do not block each other.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  if (!voteLimiter.take(user.id, new Date())) {
-    throw createError({ statusCode: 429, statusMessage: 'Too many votes' })
-  }
+  if (!voteLimiter.take(user.id, new Date())) throw apiError('rate_limited')
 
   const slug = getRouterParam(event, 'slug') ?? ''
   const slotId = getRouterParam(event, 'slotId') ?? ''
-  const notFound = (message: string) => createError({ statusCode: 404, statusMessage: message })
 
   const body = await readBody<{ value?: unknown } | null>(event)
   const value = parseVoteValue(body?.value)
-  if (!value) throw createError({ statusCode: 400, statusMessage: 'invalid_value' })
+  if (!value) throw apiError('invalid_value')
 
   return useDb(event).transaction(async (tx) => {
-    const [session] = await tx
-      .select()
-      .from(sessions)
-      .where(eq(sessions.slug, slug))
-      .for('share')
-    if (!session) throw notFound('Session not found')
-
-    const [member] = await tx
-      .select({ userId: sessionMembers.userId })
-      .from(sessionMembers)
-      .where(and(eq(sessionMembers.sessionId, session.id), eq(sessionMembers.userId, user.id)))
-    if (!member) throw notFound('Session not found')
-    if (session.deletedAt) throw createError({ statusCode: 410, statusMessage: 'Session deleted' })
-
-    const [slot] = UUID.test(slotId)
-      ? await tx
-          .select({ id: pollSlots.id, startsAt: pollSlots.startsAt })
-          .from(pollSlots)
-          .where(and(eq(pollSlots.id, slotId), eq(pollSlots.sessionId, session.id)))
-      : []
-    if (!slot) throw notFound('Slot not found')
+    const session = await loadSession(tx, slug, user.id, { lock: 'share' })
+    const slot = await findSlot(tx, session.id, slotId)
+    if (!slot) throw slotNotFound()
 
     const rejection = voteRejection({ phase: session.phase, startsAt: slot.startsAt, now: new Date() })
-    if (rejection === 'wrong_phase') throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
-    if (rejection === 'slot_past') throw createError({ statusCode: 400, statusMessage: 'slot_past' })
+    if (rejection) throw apiError(rejection)
 
     await tx
       .insert(pollVotes)

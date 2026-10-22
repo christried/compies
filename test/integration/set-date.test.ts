@@ -149,7 +149,7 @@ describe('setting the Date and the .ics', () => {
 
       const voted = await racingRequest(`/api/s/${slug}/slots/${slotIds[0]}/vote`, {
         method: 'PUT',
-        headers: { 'content-type': 'application/json', cookie: guestCookie },
+        headers: { 'content-type': 'application/json', 'cookie': guestCookie },
         body: JSON.stringify({ value: 'yes' }),
       })
       await vi.waitFor(() => expect(votesWhenSet).toBeDefined())

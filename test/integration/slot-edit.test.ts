@@ -89,14 +89,6 @@ describe('the Host edits Slots', () => {
     })
   }
 
-  function vote(cookie: string, slug: string, slotId: string, value: string) {
-    return request(`/api/s/${slug}/slots/${slotId}/vote`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ value }),
-    })
-  }
-
   function read(cookie: string, slug: string) {
     return request(`/api/s/${slug}`, { headers: { cookie } })
   }
@@ -185,6 +177,7 @@ describe('the Host edits Slots', () => {
       const stranger = await add(outsiderCookie, slug, { startsAt: '2090-11-02T19:00' })
 
       expect(member.status).toBe(403)
+      expect(member.statusText).toBe('not_host')
       expect(stranger.status).toBe(404)
       expect(await slotRows(sessionId)).toHaveLength(1)
     })
@@ -249,7 +242,7 @@ describe('the Host edits Slots', () => {
       await testDb.db.insert(sessionMembers).values({ sessionId, userId: guestId })
       const [slot] = await slotRows(sessionId)
 
-      expect((await remove(guestCookie, slug, slot!.id)).status).toBe(403)
+      expect((await remove(guestCookie, slug, slot!.id)).statusText).toBe('not_host')
       expect((await remove(outsiderCookie, slug, slot!.id)).status).toBe(404)
       expect(await slotRows(sessionId)).toHaveLength(1)
     })
@@ -280,7 +273,7 @@ describe('the Host edits Slots', () => {
 
       const voted = await racingRequest(`/api/s/${slug}/slots/${slot!.id}/vote`, {
         method: 'PUT',
-        headers: { 'content-type': 'application/json', cookie: guestCookie },
+        headers: { 'content-type': 'application/json', 'cookie': guestCookie },
         body: JSON.stringify({ value: 'yes' }),
       })
       await vi.waitFor(() => expect(removed).toBeDefined())

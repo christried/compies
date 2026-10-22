@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createInviteToken, createSlug, parseSessionPath } from '../../server/domain/slug'
+import { createInviteToken, createSlug } from '../../server/domain/slug'
+import { parseSessionPath } from '../../shared/links'
 
 describe('createSlug', () => {
   it('kebab-cases the name and appends the suffix', () => {

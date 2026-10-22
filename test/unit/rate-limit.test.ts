@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRateLimiter } from '../../server/domain/rate-limit'
+import { createRateLimiter } from '../../server/utils/rate-limit'
 
 const start = new Date('2026-10-22T10:00:00Z')
 

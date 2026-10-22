@@ -7,12 +7,16 @@ export const SESSION_NAME_MAX = 60
 /** Slots in a Date poll. */
 export const SLOTS_MAX = 8
 
+/** The Phases of a Session (GLOSSARY: Phase). The MVP uses poll and date_set; the rest come with 1.0. */
+export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
+export type Phase = (typeof PHASES)[number]
+
 /** What `GET /api/s/:slug` returns to a Member (#11). Times are UTC ISO strings. */
 export interface SessionView {
   session: {
     slug: string
     name: string
-    phase: 'draft' | 'poll' | 'date_set' | 'running' | 'finished' | 'archived'
+    phase: Phase
     dateMode: 'poll' | 'direct'
     startsAt: string | null
     /** The Date a Reopen withdrew (#14), until the next Date is set. Members see a notice for it. */
@@ -31,12 +35,15 @@ export interface SessionView {
   inviteUrl: string | null
 }
 
+/** A Home card's call to action: `open` for the Host, `vote` while the viewer still has to vote, `view` otherwise. */
+export type HomeAction = 'open' | 'vote' | 'view'
+
 /** One card on Home (`GET /api/s`, #12). Times are UTC ISO strings. */
 export interface HomeSession {
   slug: string
   name: string
   host: { name: string }
-  phase: SessionView['session']['phase']
+  phase: Phase
   dateMode: 'poll' | 'direct'
   startsAt: string | null
   /** When the Session was created; picks the latest open poll for the Construction page (#12). */
@@ -48,8 +55,7 @@ export interface HomeSession {
   /** Whether the viewer has a Vote on every votable Slot. */
   viewerVoted: boolean
   isHost: boolean
-  /** The call to action: `open` for the Host, `vote` while the viewer still has to vote, `view` otherwise. */
-  action: 'open' | 'vote' | 'view'
+  action: HomeAction
 }
 
 /** What `GET /api/s` returns, already in Home order (open polls to vote on, other open polls, Dates upcoming first). */

@@ -32,7 +32,8 @@ export function createInterleavingDb(client: PGlite, pattern: RegExp, competitor
   }
   const wrap = <T extends object>(target: T): T => new Proxy(target, {
     get(object, property) {
-      const value = Reflect.get(object, property, object)
+      const value: unknown = Reflect.get(object, property, object)
+      if (typeof value !== 'function') return value
       if (property === 'query') {
         return async (statement: string, ...rest: unknown[]) => {
           await beforeStatement(statement)
@@ -42,7 +43,7 @@ export function createInterleavingDb(client: PGlite, pattern: RegExp, competitor
       if (property === 'transaction') {
         return (run: (tx: object) => unknown) => value.call(object, (tx: object) => run(wrap(tx)))
       }
-      return typeof value === 'function' ? value.bind(object) : value
+      return value.bind(object)
     },
   })
   return drizzle({ client: wrap(client), schema })

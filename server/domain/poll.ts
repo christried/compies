@@ -1,4 +1,5 @@
 import { VOTE_VALUES, type VoteValue } from '../../shared/poll'
+import type { Phase } from '../../shared/session'
 
 // Date poll rules (#1 § Domain rules, ADR 0001). Pure functions: the handlers load the rows and
 // pass them in; `now` is injected so the rules can be tested at a fixed moment.
@@ -51,10 +52,34 @@ export function hasVoted(votableSlotIds: string[], votes: PollVote[], userId: st
   return votableSlotIds.every(id => voted.has(id))
 }
 
+export interface PollStanding<S extends PollSlot> {
+  /** The Slots that can still be voted on (not past), in the given order. */
+  votableSlotIds: string[]
+  bestSlot: S | null
+  /** Members who have voted (see hasVoted), out of all Members. */
+  progress: { voted: number, total: number }
+  viewerVoted: boolean
+}
+
+/** Where a Session's poll stands for one viewer: the Best slot and who has voted. Used by the Session read and Home. */
+export function pollStanding<S extends PollSlot>(input: { slots: S[], votes: PollVote[], memberIds: string[], viewerId: string, now: Date }): PollStanding<S> {
+  const votableSlotIds = input.slots.filter(slot => !isPast(slot.startsAt, input.now)).map(slot => slot.id)
+  const bestId = bestSlotId(input.slots, input.votes, input.now)
+  return {
+    votableSlotIds,
+    bestSlot: input.slots.find(slot => slot.id === bestId) ?? null,
+    progress: {
+      voted: input.memberIds.filter(id => hasVoted(votableSlotIds, input.votes, id)).length,
+      total: input.memberIds.length,
+    },
+    viewerVoted: hasVoted(votableSlotIds, input.votes, input.viewerId),
+  }
+}
+
 export type VoteRejection = 'wrong_phase' | 'slot_past'
 
 /** Why a Vote on this Slot is refused, or null. Votes need the poll phase and a Slot that is not past (#1). */
-export function voteRejection(input: { phase: string, startsAt: Date, now: Date }): VoteRejection | null {
+export function voteRejection(input: { phase: Phase, startsAt: Date, now: Date }): VoteRejection | null {
   if (input.phase !== 'poll') return 'wrong_phase'
   if (isPast(input.startsAt, input.now)) return 'slot_past'
   return null

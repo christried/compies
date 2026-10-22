@@ -1,9 +1,11 @@
 import { eq } from 'drizzle-orm'
-import { createError, defineEventHandler, getRequestURL, readBody } from 'h3'
+import { createError, defineEventHandler, readBody } from 'h3'
 import { pollSlots, sessionMembers, sessions } from '../../db/schema'
 import { parseNewSession } from '../../domain/session'
 import { createInviteToken, createSlug } from '../../domain/slug'
 import { useDb, type Db } from '../../utils/db'
+import { apiError } from '../../utils/errors'
+import { inviteUrl } from '../../utils/links'
 import { requireUser } from '../../utils/user'
 
 const SLUG_ATTEMPTS = 5
@@ -12,10 +14,10 @@ const SLUG_ATTEMPTS = 5
 // The Session, its Slots and the Host's Bench membership are written in one transaction.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  if (!user.canHost) throw createError({ statusCode: 403, statusMessage: 'Host permission required' })
+  if (!user.canHost) throw apiError('no_host_permission')
 
   const parsed = parseNewSession(await readBody(event), new Date())
-  if (!parsed.ok) throw createError({ statusCode: 400, statusMessage: parsed.error })
+  if (!parsed.ok) throw apiError(parsed.error)
   const input = parsed.session
 
   const db = useDb(event)
@@ -36,7 +38,7 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  return { slug, inviteUrl: `${getRequestURL(event).origin}/s/${slug}-${inviteToken}` }
+  return { slug, inviteUrl: inviteUrl(event, slug, inviteToken) }
 })
 
 /** A slug that no Session uses yet. The random suffix makes a clash rare; the unique column is the last guard. */

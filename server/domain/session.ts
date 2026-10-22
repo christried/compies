@@ -1,5 +1,5 @@
-import { SESSION_NAME_MAX, SLOTS_MAX } from '../../shared/session'
-import { berlinToUtc, utcToBerlin } from './time'
+import { SESSION_NAME_MAX, SLOTS_MAX, type Phase } from '../../shared/session'
+import { berlinToUtc, utcToBerlin } from '../../shared/time'
 
 // Session input rules for creating a Session (#1 § Domain rules). Times arrive as Berlin wall-clock
 // values (`YYYY-MM-DDTHH:mm`, ADR 0003) and are stored as UTC instants.
@@ -48,7 +48,7 @@ export function parseAddedSlot(raw: unknown, existing: Date[], now: Date): { ok:
 }
 
 /** Slots can be added, removed and only then changed by the Host while the Date poll is open (#1). */
-export function slotsEditable(phase: string): boolean {
+export function slotsEditable(phase: Phase): boolean {
   return phase === 'poll'
 }
 

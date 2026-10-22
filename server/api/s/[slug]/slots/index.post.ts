@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm'
-import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
+import { defineEventHandler, getRouterParam, readBody } from 'h3'
 import { pollSlots } from '../../../../db/schema'
 import { parseAddedSlot } from '../../../../domain/session'
 import { useDb } from '../../../../utils/db'
+import { apiError } from '../../../../utils/errors'
 import { lockSessionForSlotEdit } from '../../../../utils/host-session'
 import { requireUser } from '../../../../utils/user'
 
@@ -22,7 +23,7 @@ export default defineEventHandler(async (event) => {
       .where(eq(pollSlots.sessionId, session.id))
 
     const parsed = parseAddedSlot(body?.startsAt, existing.map(row => row.startsAt), new Date())
-    if (!parsed.ok) throw createError({ statusCode: 400, statusMessage: parsed.error })
+    if (!parsed.ok) throw apiError(parsed.error)
 
     const [slot] = await tx
       .insert(pollSlots)

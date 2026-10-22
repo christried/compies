@@ -1,8 +1,10 @@
-import { and, asc, eq } from 'drizzle-orm'
-import { createError, defineEventHandler, getRequestURL, getRouterParam } from 'h3'
-import { pollSlots, pollVotes, sessionMembers, sessions, users } from '../../db/schema'
-import { bestSlotId, hasVoted, isPast } from '../../domain/poll'
+import { asc, eq } from 'drizzle-orm'
+import { defineEventHandler, getRouterParam } from 'h3'
+import { pollSlots, pollVotes, sessionMembers, users } from '../../db/schema'
+import { isPast, pollStanding } from '../../domain/poll'
 import { useDb } from '../../utils/db'
+import { inviteUrl } from '../../utils/links'
+import { loadSession } from '../../utils/session-access'
 import { requireUser } from '../../utils/user'
 
 // The Session link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
@@ -12,22 +14,8 @@ import { requireUser } from '../../utils/user'
 // many Members have voted on every votable Slot. The poll UI refetches this every 15 s (ADR 0001).
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  const slug = getRouterParam(event, 'slug') ?? ''
-  const notFound = () => createError({ statusCode: 404, statusMessage: 'Session not found' })
-
   const db = useDb(event)
-  const [session] = await db
-    .select()
-    .from(sessions)
-    .where(eq(sessions.slug, slug))
-  if (!session) throw notFound()
-
-  const [member] = await db
-    .select({ userId: sessionMembers.userId })
-    .from(sessionMembers)
-    .where(and(eq(sessionMembers.sessionId, session.id), eq(sessionMembers.userId, user.id)))
-  if (!member) throw notFound()
-  if (session.deletedAt) throw createError({ statusCode: 410, statusMessage: 'Session deleted' })
+  const session = await loadSession(db, getRouterParam(event, 'slug') ?? '', user.id)
 
   const now = new Date()
   const isHost = session.hostId === user.id
@@ -50,7 +38,7 @@ export default defineEventHandler(async (event) => {
     .where(eq(sessionMembers.sessionId, session.id))
     .orderBy(asc(sessionMembers.joinedAt))
 
-  const votable = slots.filter(slot => !isPast(slot.startsAt, now)).map(slot => slot.id)
+  const standing = pollStanding({ slots, votes, memberIds: members.map(row => row.id), viewerId: user.id, now })
 
   return {
     session: {
@@ -64,7 +52,7 @@ export default defineEventHandler(async (event) => {
       isHost,
     },
     // The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on.
-    inviteUrl: isHost ? `${getRequestURL(event).origin}/s/${session.slug}-${session.inviteToken}` : null,
+    inviteUrl: isHost ? inviteUrl(event, session.slug, session.inviteToken) : null,
     viewerId: user.id,
     slots: slots.map(slot => ({
       id: slot.id,
@@ -78,10 +66,7 @@ export default defineEventHandler(async (event) => {
       image: row.image,
       isHost: row.id === session.hostId,
     })),
-    bestSlotId: bestSlotId(slots, votes, now),
-    progress: {
-      voted: members.filter(row => hasVoted(votable, votes, row.id)).length,
-      total: members.length,
-    },
+    bestSlotId: standing.bestSlot?.id ?? null,
+    progress: standing.progress,
   }
 })

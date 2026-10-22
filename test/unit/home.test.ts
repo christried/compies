@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { arrangeHome, homeAction, isPastHomeGrace, needsVote } from '../../server/domain/home'
+import type { Phase } from '../../shared/session'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Dates older than 24 h before this instant drop off Home.
 const now = new Date('2026-10-22T10:00:00Z')
@@ -52,7 +53,7 @@ describe('homeAction', () => {
 })
 
 describe('arrangeHome', () => {
-  const item = (name: string, fields: { phase?: string, needsVote?: boolean, startsAt?: Date | null, createdAt?: Date } = {}) => ({
+  const item = (name: string, fields: { phase?: Phase, needsVote?: boolean, startsAt?: Date | null, createdAt?: Date } = {}) => ({
     name,
     phase: fields.phase ?? 'poll',
     needsVote: fields.needsVote ?? false,

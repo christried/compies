@@ -99,6 +99,7 @@ describe('rotating the Invite link', () => {
       const response = await rotate(guestCookie, slug)
 
       expect(response.status).toBe(403)
+      expect(response.statusText).toBe('not_host')
       expect(await tokenOf(slug)).toBe(before)
     })
 
