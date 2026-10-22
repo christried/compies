@@ -6,5 +6,6 @@ setLucideProps({ strokeWidth: 2.5 })
 </script>
 
 <template>
+  <NuxtPwaManifest />
   <NuxtPage />
 </template>

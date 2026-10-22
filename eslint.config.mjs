@@ -13,4 +13,9 @@ export default withNuxt(
       }],
     },
   },
+  {
+    // The mascot keeps its one-word name from the design handoff.
+    files: ['app/components/Compibert.vue'],
+    rules: { 'vue/multi-word-component-names': 'off' },
+  },
 )

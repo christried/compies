@@ -5,7 +5,9 @@
     ".nuxt/types/nitro.d.ts",
     "test/unit/**/*",
     "test/integration/**/*",
+    "test/build/**/*",
     "vitest.config.ts",
+    "vitest.build.config.ts",
     "drizzle.config.ts"
   ]
 }

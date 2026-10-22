@@ -1,23 +1,18 @@
 <script setup lang="ts">
-import { CalendarClock } from '@lucide/vue'
-
+// Home skeleton: the real Home (session cards, host CTA, empty state) lands with MVP 11.
 const { t } = useI18n()
 </script>
 
 <template>
-  <main class="flex min-h-dvh flex-col items-center justify-center gap-6 bg-paper p-6 text-ink">
-    <CalendarClock
-      class="size-12"
-      aria-hidden="true"
-    />
-    <h1 class="font-display text-display">
-      {{ t('app.name') }}
-    </h1>
-    <p class="text-h3 font-display">
-      {{ t('mvp.home.title') }}
-    </p>
-    <p class="text-ink-2">
-      {{ t('app.loading') }}
-    </p>
-  </main>
+  <AppShell kind="hub">
+    <div class="mx-auto flex w-full max-w-[1040px] flex-col gap-5">
+      <h1 class="m-0 text-[32px] leading-none md:text-[44px]">
+        {{ t('mvp.home.title') }}
+      </h1>
+      <BaustelleZone
+        :title="t('mvp.zone.homeTitle')"
+        :text="t('mvp.zone.homeText')"
+      />
+    </div>
+  </AppShell>
 </template>
