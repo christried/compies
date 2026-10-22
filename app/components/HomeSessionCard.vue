@@ -4,8 +4,8 @@ import type { HomeSession } from '~~/shared/session'
 
 // One Session on Home (screen M1, 02-components). Shows the name and the Host, the phase, the Best
 // slot so far (an open poll) or the Date (a set Session), how many Members voted and the User's own
-// status. The call to action is „Abstimmen“ while the User still has to vote (primary), „Ansehen“
-// once they have voted or a Date is set, and „Öffnen“ for the Host.
+// status. The call to action asks the User to vote while they still have to (primary), lets them
+// view the Session once they have voted or a Date is set, and opens it for the Host.
 
 const props = defineProps<{ session: HomeSession }>()
 

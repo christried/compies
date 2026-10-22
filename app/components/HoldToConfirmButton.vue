@@ -106,8 +106,8 @@ const visibleLabel = computed(() => {
         :style="{
           transform: holding || done ? 'scaleX(1)' : 'scaleX(0)',
           transitionProperty: 'transform',
-          transitionDuration: holding ? `${duration}ms` : '200ms',
-          transitionTimingFunction: holding ? 'linear' : 'ease-out',
+          transitionDuration: holding ? `${duration}ms` : 'var(--cp-dur-base)',
+          transitionTimingFunction: holding ? 'var(--cp-ease-linear)' : 'var(--cp-ease-out)',
         }"
       />
       <span class="relative flex items-center gap-2">

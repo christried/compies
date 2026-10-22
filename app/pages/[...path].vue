@@ -25,7 +25,7 @@ const latestPollSlug = computed(() => (home.value?.sessions ?? [])
       :area="site.area"
       :latest-poll-slug="latestPollSlug"
     >
-      <!-- „Abmelden“ is the only working action on Profil in the MVP. -->
+      <!-- Signing out is the only working action on Profil in the MVP. -->
       <template
         v-if="site.area === 'profil'"
         #secondary

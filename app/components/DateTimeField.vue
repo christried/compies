@@ -5,7 +5,7 @@ import { CircleAlert } from '@lucide/vue'
 // `YYYY-MM-DDTHH:mm` in Europe/Berlin, or empty until both parts are set (ADR 0003).
 const props = withDefaults(defineProps<{
   modelValue: string
-  /** Accessible name of the group, e.g. „Termin 1“. */
+  /** Accessible name of the group, e.g. the numbered Slot label of the create form. */
   label: string
   /** The earliest selectable day, as a Berlin value; only its date part is used. */
   min?: string
