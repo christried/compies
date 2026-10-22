@@ -59,6 +59,8 @@ export default defineEventHandler(async (event) => {
       phase: session.phase,
       dateMode: session.dateMode,
       startsAt: session.startsAt,
+      // Set while a Reopen notice is due: the Date that was withdrawn (#14). Cleared by the next Date.
+      previousStartsAt: session.previousStartsAt,
       isHost,
     },
     // The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on.

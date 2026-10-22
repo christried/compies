@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { CalendarCheck, Check, ChevronRight, Link as LinkIcon } from '@lucide/vue'
-import { berlinLocalNow, formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
+import { CalendarCheck, Check, ChevronRight, CircleAlert, Link as LinkIcon, Search } from '@lucide/vue'
+import { berlinLocalNow, formatSetDay, formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
 import type { SessionView } from '~~/shared/session'
@@ -9,8 +9,8 @@ import type { SessionView } from '~~/shared/session'
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
-// The set Date replaces the cards and the matrix with DateSetCard. Other host actions are stubs until
-// #14 (Verschieben, Neue Terminsuche), #15 (Termine bearbeiten) and #16 (Einladen).
+// The set Date replaces the cards and the matrix with DateSetCard. Reschedule and Reopen (#14) are
+// wired here too. Other host actions are stubs until #15 (Termine bearbeiten).
 // The Invite link (`/s/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
@@ -123,6 +123,47 @@ async function confirmDate(slotId: string) {
   }
 }
 
+const rescheduleOpen = ref(false)
+const rescheduling = ref(false)
+
+/** Moves the set Date (#14). The dialog closes on success only; the card then shows the new time. */
+async function rescheduleDate(startsAt: string) {
+  rescheduling.value = true
+  try {
+    await $fetch(`/api/s/${slug.value}/reschedule`, { method: 'POST', body: { startsAt } })
+    rescheduleOpen.value = false
+  }
+  catch (failure) {
+    const past = (failure as { statusCode?: number }).statusCode === 400
+    toast({ tone: 'error', text: t(past ? 'error.slotPast' : 'error.saveFailed') })
+  }
+  finally {
+    rescheduling.value = false
+    await refresh()
+  }
+}
+
+/** Withdraws the set Date and goes back to the poll (#14). Slots and Votes stay. */
+async function reopenDate() {
+  try {
+    await $fetch(`/api/s/${slug.value}/reopen`, { method: 'POST' })
+  }
+  catch {
+    toast({ tone: 'error', text: t('error.saveFailed') })
+  }
+  finally {
+    await refresh()
+  }
+}
+
+/** The withdrawn Date as the notice shows it, in Berlin time. */
+const previousWhen = computed(() => {
+  const previous = data.value?.session.previousStartsAt
+  if (!previous) return null
+  const instant = new Date(previous)
+  return t('mvp.set.dateTime', { date: formatSetDay(instant), time: formatSlotTime(instant) })
+})
+
 const inviteOpen = ref(false)
 
 function onHostAction(key: string) {
@@ -167,6 +208,14 @@ usePollRefresh(() => {
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-4"
     >
       <template v-if="data.session.phase === 'poll'">
+        <NoticeBanner
+          v-if="previousWhen"
+          tone="warning"
+          :icon="CircleAlert"
+        >
+          {{ t('mvp.reopen.notice', { when: previousWhen }) }}
+        </NoticeBanner>
+
         <header class="flex flex-wrap items-end gap-3">
           <div class="flex min-w-[200px] flex-1 flex-col gap-0.5">
             <span class="text-[13px] font-bold text-ink-2">
@@ -193,7 +242,22 @@ usePollRefresh(() => {
           <b>{{ t('mvp.poll.saved') }}</b> {{ t('mvp.poll.savedText') }}
         </NoticeBanner>
 
-        <ol class="m-0 grid list-none gap-3 p-0 md:grid-cols-4">
+        <section
+          v-if="slots.length === 0"
+          class="flex flex-col gap-1 rounded-[20px] border-2 border-dashed border-line bg-surface p-5 text-ink-2"
+        >
+          <h2 class="m-0 text-[18px] text-ink">
+            {{ t('mvp.reopen.noSlotsTitle') }}
+          </h2>
+          <p class="m-0 text-pretty">
+            {{ data.session.isHost ? t('mvp.reopen.noSlotsHost') : t('mvp.reopen.noSlotsMember') }}
+          </p>
+        </section>
+
+        <ol
+          v-else
+          class="m-0 grid list-none gap-3 p-0 md:grid-cols-4"
+        >
           <li
             v-for="slot in slots"
             :key="slot.id"
@@ -211,7 +275,10 @@ usePollRefresh(() => {
           </li>
         </ol>
 
-        <section class="flex flex-col gap-2">
+        <section
+          v-if="slots.length > 0"
+          class="flex flex-col gap-2"
+        >
           <h2 class="m-0 text-[14px] font-bold">
             {{ t('mvp.poll.whoWhen') }}
           </h2>
@@ -229,9 +296,18 @@ usePollRefresh(() => {
         :starts-at="data.session.startsAt"
         :is-host="data.session.isHost"
         :ics-url="`/api/s/${slug}/ics`"
-        @reschedule="comingSoon"
+        @reschedule="rescheduleOpen = true"
         @invite="onHostAction('invite')"
-      />
+      >
+        <template #host-actions>
+          <HoldToConfirmButton
+            variant="secondary"
+            :label="t('mvp.reopen.cta')"
+            :icon="Search"
+            @confirm="reopenDate"
+          />
+        </template>
+      </DateSetCard>
 
       <BaustelleZone
         compact
@@ -290,6 +366,15 @@ usePollRefresh(() => {
       :loading="confirming"
       @confirm="confirmDate"
       @cancel="confirmOpen = false"
+    />
+
+    <DateRescheduleDialog
+      v-if="data?.session.isHost && data.session.startsAt"
+      :open="rescheduleOpen"
+      :starts-at="data.session.startsAt"
+      :loading="rescheduling"
+      @confirm="rescheduleDate"
+      @cancel="rescheduleOpen = false"
     />
 
     <InviteSheet

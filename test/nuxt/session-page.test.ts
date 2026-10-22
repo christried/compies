@@ -13,8 +13,8 @@ const LARSI = '00000000-0000-4000-8000-000000000002'
 type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no' }
 type SessionOverrides = { session?: Partial<ReturnType<typeof sessionOf>>, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null }
 
-function sessionOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, dateMode: string, startsAt: string | null, isHost: boolean } {
-  return { slug, name: 'Freitags-Zocken', phase, dateMode: 'poll', startsAt: null, isHost }
+function sessionOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, dateMode: string, startsAt: string | null, previousStartsAt: string | null, isHost: boolean } {
+  return { slug, name: 'Freitags-Zocken', phase, dateMode: 'poll', startsAt: null, previousStartsAt: null, isHost }
 }
 
 /** The `GET /api/s/:slug` body for a Member (Kitty) in a poll with Slots Fr, Sa and a past Di. */
@@ -349,5 +349,121 @@ describe('setting the Date', () => {
 
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Der Termin liegt in der Vergangenheit.'))
     expect(dialog()).not.toBeNull()
+  })
+})
+
+describe('rescheduling and reopening the Date', () => {
+  beforeEach(() => {
+    signInAs(kitty)
+    useState('toasts').value = []
+    document.body.innerHTML = ''
+  })
+
+  async function clickButton(root: ParentNode | null | undefined, label: string) {
+    const button = [...(root?.querySelectorAll('button') ?? [])].find(element => element.textContent?.trim() === label)
+    expect(button, label).toBeDefined()
+    button!.click()
+    await new Promise(resolve => setTimeout(resolve))
+  }
+
+  /** A set Date (Sat 24 Oct, 20:00 Berlin) with no Slots, as the Host or a Member sees it. */
+  const setView = (session: SessionOverrides['session'] = {}) => (s: string) => view(s, [], {
+    session: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z', ...session },
+    slots: [],
+    bestSlotId: null,
+  })
+
+  it('shows every Member the notice with the withdrawn Date while the poll is open again', async () => {
+    const member = serve(s => view(s, [], {
+      session: { phase: 'poll', previousStartsAt: '2026-10-24T18:00:00.000Z' },
+    }))
+
+    const page = await mountSuspended(SessionPage, { route: `/s/${member.slug}` })
+
+    expect(page.text()).toContain('Der Termin Samstag, 24. Oktober, 20:00 Uhr wurde aufgehoben, bitte aus deinem Kalender löschen')
+  })
+
+  it('shows no notice when no Date was withdrawn', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi))
+
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    expect(page.text()).not.toContain('wurde aufgehoben')
+  })
+
+  it('tells the Host to suggest the first Slots when a reopened Session has none, and shows no matrix', async () => {
+    const { slug } = serve(s => view(s, [], {
+      session: { isHost: true, phase: 'poll', dateMode: 'direct' },
+      slots: [],
+      bestSlotId: null,
+    }))
+
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    expect(page.text()).toContain('Schlag die ersten Termine vor, dann kann abgestimmt werden.')
+    expect(page.text()).not.toContain('Wer kann wann?')
+  })
+
+  it('tells a Member to wait for the Host when there are no Slots', async () => {
+    const { slug } = serve(s => view(s, [], { slots: [], bestSlotId: null }))
+
+    const page = await mountSuspended(SessionPage, { route: `/s/${slug}` })
+
+    expect(page.text()).toContain('Sobald der Host Termine vorschlägt, kannst du abstimmen.')
+  })
+
+  it('offers Neue Terminsuche as a secondary hold next to Verschieben to the Host only', async () => {
+    const hostPage = await mountSuspended(SessionPage, { route: `/s/${serve(setView({ isHost: true })).slug}` })
+    expect(hostPage.text()).toContain('Neue Terminsuche')
+    expect(hostPage.text()).toContain('Verschieben')
+
+    const memberPage = await mountSuspended(SessionPage, { route: `/s/${serve(setView()).slug}` })
+    expect(memberPage.text()).not.toContain('Neue Terminsuche')
+  })
+
+  it('opens the reschedule dialog from Verschieben with the current Date, and sends the new time', async () => {
+    let sent: unknown = null
+    const store = serve(setView({ isHost: true }))
+    registerEndpoint(`/api/s/${store.slug}/reschedule`, {
+      method: 'POST',
+      handler: async (event) => {
+        sent = await readBody(event)
+        return { startsAt: '2026-10-24T18:00:00.000Z' }
+      },
+    })
+    const page = await mountSuspended(SessionPage, { route: `/s/${store.slug}` })
+
+    await clickButton(page.element, 'Verschieben')
+    // Matched by title: a confirm dialog from an earlier test can still sit in the body.
+    const rescheduleDialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(element => element.textContent?.includes('Termin verschieben?'))
+    expect(rescheduleDialog).toBeDefined()
+    await clickButton(rescheduleDialog, 'Termin verschieben')
+
+    await vi.waitFor(() => expect(sent).toEqual({ startsAt: '2026-10-24T20:00' }))
+  })
+
+  it('withdraws the Date after a one second hold on Neue Terminsuche, and every Member then sees the notice', async () => {
+    let reopened = 0
+    const store = serve(setView({ isHost: true }))
+    registerEndpoint(`/api/s/${store.slug}/reopen`, {
+      method: 'POST',
+      handler: () => {
+        reopened += 1
+        store.set(view(store.slug, [], {
+          session: { isHost: true, phase: 'poll', startsAt: null, previousStartsAt: '2026-10-24T18:00:00.000Z' },
+          slots: [],
+          bestSlotId: null,
+        }))
+        return { phase: 'poll' }
+      },
+    })
+    const page = await mountSuspended(SessionPage, { route: `/s/${store.slug}` })
+    const hold = page.findAll('button').find(button => button.text() === 'Neue Terminsuche')!
+
+    await hold.trigger('pointerdown')
+    await new Promise(resolve => setTimeout(resolve, 1100))
+
+    await vi.waitFor(() => expect(reopened).toBe(1))
+    await vi.waitFor(() => expect(page.text()).toContain('wurde aufgehoben, bitte aus deinem Kalender löschen'))
   })
 })
