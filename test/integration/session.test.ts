@@ -171,7 +171,7 @@ describe('sessions', () => {
         '2090-10-30T19:30:00.000Z',
         '2090-10-31T18:00:00.000Z',
       ])
-      expect(slots[0]).toEqual({ id: expect.any(String), startsAt: expect.any(String) })
+      expect(slots[0]).toEqual({ id: expect.any(String), startsAt: expect.any(String), past: false })
     })
 
     it('shows the Date of a direct Session and no Slots', async () => {
