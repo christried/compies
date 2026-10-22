@@ -1,0 +1,2 @@
+/* compies-theme.css imports Tailwind and the tokens; keep it the single entry. */
+@import "./compies-theme.css";

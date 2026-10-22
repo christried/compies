@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- Served by the service worker when a navigation fails. Self-contained on purpose (no app,
+     no i18n runtime, no network): copy follows de.json (connectionG.reload) and the token colours. -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff3df" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17121d" media="(prefers-color-scheme: dark)">
+  <title>COMPIES</title>
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #fff3df; --surface: #fffdf8; --ink: #151515; --ink-2: #5d5650;
+      --primary: #ffd23f; --on-primary: #151515; --focus: #1f5fe0;
+      --bw: 3px; --shadow-card: 6px 6px 0 #151515; --shadow-btn: 4px 4px 0 #151515;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --paper: #17121d; --surface: #221b2b; --ink: #f7efe1; --ink-2: #b9ad9f;
+        --primary: #ffd23f; --on-primary: #17121d; --focus: #8fb3ff;
+        --bw: 2.5px; --shadow-card: 6px 6px 0 #ff5a36; --shadow-btn: 4px 4px 0 #0b0810;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 16px;
+      background: var(--paper); color: var(--ink);
+      font: 500 15px/1.45 "Bricolage Grotesque", system-ui, sans-serif;
+    }
+    main {
+      width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; gap: 14px;
+      padding: 28px 22px; text-align: center;
+      background: var(--surface); border: var(--bw) solid var(--ink); border-radius: 20px; box-shadow: var(--shadow-card);
+    }
+    img { width: 72px; height: 72px; }
+    h1 { margin: 0; font: 400 32px/1 "Lilita One", "Bricolage Grotesque", system-ui, sans-serif; text-wrap: balance; }
+    p { margin: 0; color: var(--ink-2); text-wrap: pretty; }
+    button {
+      display: inline-flex; align-items: center; height: 52px; padding: 0 20px; margin-top: 6px;
+      border: var(--bw) solid var(--ink); border-radius: 999px; box-shadow: var(--shadow-btn);
+      background: var(--primary); color: var(--on-primary); font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      button:active { translate: 4px 4px; box-shadow: none; }
+    }
+    button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/icons/favicon.svg" alt="">
+    <h1>Keine Verbindung.</h1>
+    <p>Compibert wartet, bis du wieder online bist. Dann geht’s hier weiter.</p>
+    <button type="button" onclick="location.reload()">Seite neu laden</button>
+  </main>
+</body>
+</html>

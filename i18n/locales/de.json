@@ -29,6 +29,7 @@
     "counter": "{n}/{max}"
   },
   "nav": {
+    "main": "Hauptnavigation",
     "sessions": "Sessions",
     "archive": "Archiv",
     "library": "Bibliothek",
