@@ -71,6 +71,17 @@ describe('arrangeHome', () => {
     expect(arranged.map(row => row.name)).toEqual(['todo-poll', 'voted-poll', 'date-sooner', 'date-later'])
   })
 
+  it('lists upcoming Dates before Dates that passed within the last 24 h, the most recent of those first', () => {
+    const arranged = arrangeHome([
+      item('passed-earlier', { phase: 'date_set', startsAt: hoursAgo(20) }),
+      item('passed-just-now', { phase: 'date_set', startsAt: hoursAgo(1) }),
+      item('upcoming-later', { phase: 'date_set', startsAt: hoursAhead(48) }),
+      item('upcoming-sooner', { phase: 'date_set', startsAt: hoursAhead(2) }),
+    ], now)
+
+    expect(arranged.map(row => row.name)).toEqual(['upcoming-sooner', 'upcoming-later', 'passed-just-now', 'passed-earlier'])
+  })
+
   it('lists the newest open polls first within a group', () => {
     const arranged = arrangeHome([
       item('older', { needsVote: true, createdAt: hoursAgo(72) }),
