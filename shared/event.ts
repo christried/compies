@@ -34,18 +34,25 @@ export function slotProblems(proposed: Date[], existing: Date[], now: Date): (Sl
 export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
 export type Phase = (typeof PHASES)[number]
 
+/** One Session of an Event (#48). Times are UTC ISO strings. */
+export interface SessionView {
+  id: string
+  /** The Date, or null while the Session waits for one from the Date poll. */
+  startsAt: string | null
+  /** The Date a Reopen withdrew, until the next Date is set. Members see a notice for it. */
+  previousStartsAt: string | null
+}
+
 /** What `GET /api/e/:slug` returns to a Member (#11). Times are UTC ISO strings. */
 export interface EventView {
   event: {
     slug: string
     name: string
     phase: Phase
-    dateMode: 'poll' | 'direct'
-    startsAt: string | null
-    /** The Date a Reopen withdrew (#14), until the next Date is set. Members see a notice for it. */
-    previousStartsAt: string | null
     isHost: boolean
   }
+  /** The Event's Sessions (ADR 0011). Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
+  sessions: SessionView[]
   viewerId: string
   slots: { id: string, startsAt: string, past: boolean }[]
   votes: { slotId: string, userId: string, value: VoteValue }[]
@@ -67,7 +74,7 @@ export interface HomeEvent {
   name: string
   host: { name: string }
   phase: Phase
-  dateMode: 'poll' | 'direct'
+  /** The Date of the Event's Session (#48). Several Sessions come with #49. */
   startsAt: string | null
   /** When the Event was created; picks the latest open poll for the Construction page (#12). */
   createdAt: string

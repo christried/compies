@@ -1,30 +1,37 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
-import { events } from '../../../db/schema'
+import { events, sessions } from '../../../db/schema'
 import { setDateRejection, setDateValues } from '../../../domain/phase'
 import { useDb } from '../../../utils/db'
 import { apiError } from '../../../utils/errors'
 import { readNewDate } from '../../../utils/new-date'
 import { loadEvent } from '../../../utils/event-access'
+import { eventSession, slotAt } from '../../../utils/sessions'
 import { requireUser } from '../../../utils/user'
 
-// Set the Date (#1 § Domain rules, ADR 0003): the Host moves the poll to `date_set` at a future Berlin
-// time. The body carries `startsAt` as `YYYY-MM-DDTHH:mm` (the Berlin wall clock, as the create form
-// sends it). From then on the Votes are frozen, because votes need the poll phase. The phase is part of
-// the update's WHERE, so two confirms at once cannot both succeed.
+// Set the Date (#1 § Domain rules, ADR 0003, ADR 0011): the Host gives the Event's Session a future
+// Berlin time (`YYYY-MM-DDTHH:mm`, as the create form sends it) and the Event moves to `date_set`. The
+// Session remembers the Slot that has that time, if there is one. The Event row is locked for the whole
+// transaction, so two confirms at once cannot both pass; the Session update also needs it still undated.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  const db = useDb(event)
-  const eventRow = await loadEvent(db, getRouterParam(event, 'slug') ?? '', user.id, { hostOnly: true })
+  const slug = getRouterParam(event, 'slug') ?? ''
 
-  const startsAt = await readNewDate(event, startsAt => setDateRejection({ phase: eventRow.phase, startsAt, now: new Date() }))
+  return useDb(event).transaction(async (tx) => {
+    const eventRow = await loadEvent(tx, slug, user.id, { hostOnly: true, lock: 'update' })
 
-  const [row] = await db
-    .update(events)
-    .set(setDateValues(startsAt))
-    .where(and(eq(events.id, eventRow.id), eq(events.phase, 'poll')))
-    .returning({ startsAt: events.startsAt })
-  if (!row) throw apiError('wrong_phase')
+    const startsAt = await readNewDate(event, startsAt => setDateRejection({ phase: eventRow.phase, startsAt, now: new Date() }))
 
-  return { startsAt: row.startsAt }
+    const session = await eventSession(tx, eventRow.id)
+    const values = setDateValues(startsAt, await slotAt(tx, eventRow.id, startsAt))
+    const [row] = await tx
+      .update(sessions)
+      .set(values.session)
+      .where(and(eq(sessions.id, session.id), isNull(sessions.startsAt)))
+      .returning({ startsAt: sessions.startsAt })
+    if (!row) throw apiError('wrong_phase')
+
+    await tx.update(events).set({ phase: values.phase }).where(eq(events.id, eventRow.id))
+    return { startsAt: row.startsAt }
+  })
 })

@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
-import { pollSlots, pollVotes, eventMembers, events, users } from '../../db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../db/schema'
 import { arrangeHome, homeAction, needsVote } from '../../domain/home'
 import { pollStanding } from '../../domain/poll'
 import { useDb } from '../../utils/db'
@@ -22,8 +22,6 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       slug: events.slug,
       name: events.name,
       phase: events.phase,
-      dateMode: events.dateMode,
-      startsAt: events.startsAt,
       createdAt: events.createdAt,
       hostId: events.hostId,
       hostName: users.name,
@@ -36,6 +34,12 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
 
   if (rows.length === 0) return { events: [] }
   const eventIds = rows.map(row => row.id)
+
+  // Until several Sessions per Event come with #49, an Event's Date is its first Session's.
+  const dates = await db
+    .select({ eventId: sessions.eventId, startsAt: sessions.startsAt })
+    .from(sessions)
+    .where(inArray(sessions.eventId, eventIds))
 
   const slots = await db
     .select({ id: pollSlots.id, eventId: pollSlots.eventId, startsAt: pollSlots.startsAt })
@@ -54,6 +58,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
     .where(inArray(eventMembers.eventId, eventIds))
 
   const cards = rows.map((row) => {
+    const startsAt = dates.find(date => date.eventId === row.id)?.startsAt ?? null
     const eventVotes = votes.filter(vote => vote.eventId === row.id)
     const standing = pollStanding({
       slots: slots.filter(slot => slot.eventId === row.id),
@@ -69,8 +74,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       name: row.name,
       host: { name: row.hostDisplayName ?? row.hostName },
       phase: row.phase,
-      dateMode: row.dateMode,
-      startsAt: row.startsAt?.toISOString() ?? null,
+      startsAt: startsAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
       bestSlot: standing.bestSlot && { id: standing.bestSlot.id, startsAt: standing.bestSlot.startsAt.toISOString() },
       progress: standing.progress,
@@ -79,7 +83,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       action: homeAction({ isHost, needsVote: viewerNeedsVote }),
     }
     // Home order reads the row's own times and whether the viewer still has to vote.
-    return { card, phase: row.phase, needsVote: viewerNeedsVote, startsAt: row.startsAt, createdAt: row.createdAt }
+    return { card, phase: row.phase, needsVote: viewerNeedsVote, startsAt, createdAt: row.createdAt }
   })
 
   return { events: arrangeHome(cards, now).map(entry => entry.card) }

@@ -1,3 +1,6 @@
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
@@ -14,6 +17,34 @@ export async function createTestDb() {
   const db = drizzle({ client, schema })
   await migrate(db, { migrationsFolder })
   return { db, client }
+}
+
+/**
+ * A fresh in-memory Postgres with only the migrations before `tag` applied, the database as it was
+ * just before that migration. The migrator reads a journal and the SQL files of the folder it is given,
+ * so a temporary folder gets the committed journal cut before `tag` and copies of those SQL files. The
+ * committed migrations, `tag` included, then apply with `migrateTo` on the same database.
+ */
+export async function createTestDbBefore(tag: string) {
+  const journal = JSON.parse(readFileSync(join(migrationsFolder, 'meta', '_journal.json'), 'utf8')) as { entries: { tag: string }[] }
+  const index = journal.entries.findIndex(entry => entry.tag === tag)
+  if (index < 0) throw new Error(`No migration ${tag}`)
+  const earlier = journal.entries.slice(0, index)
+
+  const folder = mkdtempSync(join(tmpdir(), 'compies-migrations-'))
+  mkdirSync(join(folder, 'meta'))
+  writeFileSync(join(folder, 'meta', '_journal.json'), JSON.stringify({ ...journal, entries: earlier }))
+  for (const entry of earlier) copyFileSync(join(migrationsFolder, `${entry.tag}.sql`), join(folder, `${entry.tag}.sql`))
+
+  const client = new PGlite()
+  const db = drizzle({ client, schema })
+  await migrate(db, { migrationsFolder: folder })
+  return { db, client, folder }
+}
+
+/** Applies the committed migrations that the database has not seen yet, as a deploy does. */
+export async function migrateTo(db: Awaited<ReturnType<typeof createTestDb>>['db']) {
+  await migrate(db, { migrationsFolder })
 }
 
 /**

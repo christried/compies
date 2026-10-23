@@ -11,16 +11,20 @@ const SANNE = '00000000-0000-4000-8000-000000000003'
 const LARSI = '00000000-0000-4000-8000-000000000002'
 
 type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no' }
-type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>>, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null }
+/** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
+type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
+type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null }
 
-function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, dateMode: string, startsAt: string | null, previousStartsAt: string | null, isHost: boolean } {
-  return { slug, name: 'Freitags-Zocken', phase, dateMode: 'poll', startsAt: null, previousStartsAt: null, isHost }
+function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
+  return { slug, name: 'Freitags-Zocken', phase, isHost }
 }
 
 /** The `GET /api/e/:slug` body for a Member (Kitty) in a poll with Slots Fr, Sa and a past Di. */
 function view(slug: string, votes: Vote[], overrides: EventOverrides = {}) {
+  const { startsAt = null, previousStartsAt = null, ...event } = { ...eventOf(slug), ...overrides.event }
   return {
-    event: { ...eventOf(slug), ...overrides.event },
+    event,
+    sessions: [{ id: `session-${slug}`, startsAt, previousStartsAt }],
     viewerId: kitty.id,
     slots: overrides.slots ?? [
       { id: 'fri', startsAt: '2026-10-23T18:00:00.000Z', past: false },
@@ -582,7 +586,7 @@ describe('rescheduling and reopening the Date', () => {
 
   it('tells the Host to suggest the first Slots when a reopened Event has none, and shows no matrix', async () => {
     const { slug } = serve(s => view(s, [], {
-      event: { isHost: true, phase: 'poll', dateMode: 'direct' },
+      event: { isHost: true, phase: 'poll' },
       slots: [],
       bestSlotId: null,
     }))

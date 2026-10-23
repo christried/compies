@@ -5,7 +5,7 @@ import readEvent from '../../server/api/e/[slug].get'
 import addSlot from '../../server/api/e/[slug]/slots/index.post'
 import removeSlot from '../../server/api/e/[slug]/slots/[slotId].delete'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -287,7 +287,8 @@ describe('the Host edits Slots', () => {
       const { cookie } = await signInAs(host, { hostPermission: true })
       const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30'])
       const [slot] = await slotRows(eventId)
-      await testDb.db.update(events).set({ phase: 'date_set', dateMode: 'poll', startsAt: slot!.startsAt }).where(eq(events.id, eventId))
+      await testDb.db.update(events).set({ phase: 'date_set' }).where(eq(events.id, eventId))
+      await testDb.db.update(sessions).set({ startsAt: slot!.startsAt, slotId: slot!.id }).where(eq(sessions.eventId, eventId))
 
       const response = await remove(cookie, slug, slot!.id)
 

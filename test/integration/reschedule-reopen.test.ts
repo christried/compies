@@ -8,7 +8,7 @@ import downloadIcs from '../../server/api/e/[slug]/ics.get'
 import reopenDate from '../../server/api/e/[slug]/reopen.post'
 import rescheduleDate from '../../server/api/e/[slug]/reschedule.post'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -133,6 +133,12 @@ describe('reschedule and reopen', () => {
     return row!
   }
 
+  /** The Event's one Session (#48), which carries the Date and the calendar sequence. */
+  async function sessionOf(eventId: string) {
+    const [row] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId))
+    return row!
+  }
+
   /** An Event with its Date set at 31 Oct 2090, 19:00 Berlin (18:00 UTC). */
   async function setPoll(cookie: string) {
     const created = await createPoll(cookie)
@@ -165,7 +171,7 @@ describe('reschedule and reopen', () => {
       const response = await reschedule(cookie, slug, { startsAt: '2090-11-01T20:00' })
 
       expect(response.status).toBe(403)
-      expect((await eventRow(eventId)).startsAt).toEqual(new Date('2090-10-31T18:00:00.000Z'))
+      expect((await sessionOf(eventId)).startsAt).toEqual(new Date('2090-10-31T18:00:00.000Z'))
     })
 
     it('answers 409 while the Event is still a poll, without a set Date to move', async () => {
@@ -188,7 +194,7 @@ describe('reschedule and reopen', () => {
       expect(await past.json()).toMatchObject({ statusMessage: 'in_past' })
       expect((await reschedule(cookie, slug, { startsAt: '2090-02-30T19:00' })).status).toBe(400)
       expect((await reschedule(cookie, slug, {})).status).toBe(400)
-      expect((await eventRow(eventId)).startsAt).toEqual(new Date('2090-10-31T18:00:00.000Z'))
+      expect((await sessionOf(eventId)).startsAt).toEqual(new Date('2090-10-31T18:00:00.000Z'))
     })
 
     it('moves the Date within date_set, stores UTC, clears the previous Date and counts the .ics sequence up', async () => {
@@ -199,8 +205,8 @@ describe('reschedule and reopen', () => {
 
       expect(response.status).toBe(200)
       expect(await response.json()).toEqual({ startsAt: '2090-11-01T19:00:00.000Z' })
-      expect(await eventRow(eventId)).toMatchObject({
-        phase: 'date_set',
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })
+      expect(await sessionOf(eventId)).toMatchObject({
         startsAt: new Date('2090-11-01T19:00:00.000Z'),
         previousStartsAt: null,
         icsSequence: 1,
@@ -214,7 +220,8 @@ describe('reschedule and reopen', () => {
       await reschedule(cookie, slug, { startsAt: '2090-11-01T20:00' })
       await reschedule(cookie, slug, { startsAt: '2090-11-02T20:00' })
 
-      expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set', icsSequence: 2 })
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })
+      expect(await sessionOf(eventId)).toMatchObject({ icsSequence: 2 })
     })
 
     it('keeps the same calendar UID and serves the higher SEQUENCE in the .ics', async () => {
@@ -227,7 +234,7 @@ describe('reschedule and reopen', () => {
 
       expect(before).toContain('SEQUENCE:0')
       expect(after).toContain('SEQUENCE:1')
-      expect(after).toContain(`UID:${eventId}@compies`)
+      expect(after).toContain(`UID:${(await sessionOf(eventId)).id}@compies`)
       expect(after).toContain('DTSTART:20901101T190000Z')
     })
   })
@@ -277,10 +284,10 @@ describe('reschedule and reopen', () => {
       const response = await reopen(cookie, slug)
 
       expect(response.status).toBe(200)
-      expect(await eventRow(eventId)).toMatchObject({
-        phase: 'poll',
-        dateMode: 'poll',
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'poll' })
+      expect(await sessionOf(eventId)).toMatchObject({
         startsAt: null,
+        slotId: null,
         previousStartsAt: new Date('2090-10-31T18:00:00.000Z'),
         icsSequence: 1,
       })
@@ -308,13 +315,10 @@ describe('reschedule and reopen', () => {
       await addMember(eventId, cookie)
       await reopen(hostCookie, slug)
 
-      const body = await (await view(cookie, slug)).json() as { event: { phase: string, startsAt: string | null, previousStartsAt: string | null } }
+      const body = await (await view(cookie, slug)).json() as { event: { phase: string }, sessions: { startsAt: string | null, previousStartsAt: string | null }[] }
 
-      expect(body.event).toMatchObject({
-        phase: 'poll',
-        startsAt: null,
-        previousStartsAt: '2090-10-31T18:00:00.000Z',
-      })
+      expect(body.event).toMatchObject({ phase: 'poll' })
+      expect(body.sessions).toEqual([{ id: expect.any(String), startsAt: null, previousStartsAt: '2090-10-31T18:00:00.000Z' }])
     })
 
     it('makes a direct Event a poll with no Slots for the Host to fill', async () => {
@@ -324,7 +328,8 @@ describe('reschedule and reopen', () => {
       const response = await reopen(cookie, slug)
 
       expect(response.status).toBe(200)
-      expect(await eventRow(eventId)).toMatchObject({ phase: 'poll', dateMode: 'poll', startsAt: null })
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'poll' })
+      expect(await sessionOf(eventId)).toMatchObject({ startsAt: null })
       expect(await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId))).toEqual([])
       const body = await (await view(cookie, slug)).json() as { slots: unknown[] }
       expect(body.slots).toEqual([])
@@ -348,15 +353,15 @@ describe('reschedule and reopen', () => {
       const response = await confirm(cookie, slug, { startsAt: '2090-11-03T19:00' })
 
       expect(response.status).toBe(200)
-      expect(await eventRow(eventId)).toMatchObject({
-        phase: 'date_set',
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })
+      expect(await sessionOf(eventId)).toMatchObject({
         previousStartsAt: null,
         icsSequence: 2,
       })
       const afterConfirm = await (await ics(cookie, slug)).text()
       expect(beforeReopen).toContain('SEQUENCE:1')
       expect(afterConfirm).toContain('SEQUENCE:2')
-      expect(afterConfirm).toContain(`UID:${eventId}@compies`)
+      expect(afterConfirm).toContain(`UID:${(await sessionOf(eventId)).id}@compies`)
     })
 
     it('refuses a Reschedule once the Date is withdrawn', async () => {
@@ -376,7 +381,7 @@ describe('reschedule and reopen', () => {
       await reopen(cookie, slug)
 
       expect((await reopen(cookie, slug)).status).toBe(409)
-      expect(await eventRow(eventId)).toMatchObject({ icsSequence: 1, previousStartsAt: new Date('2090-10-31T18:00:00.000Z') })
+      expect(await sessionOf(eventId)).toMatchObject({ icsSequence: 1, previousStartsAt: new Date('2090-10-31T18:00:00.000Z') })
     })
   })
 })

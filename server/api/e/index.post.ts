@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { createError, defineEventHandler, readBody } from 'h3'
-import { pollSlots, eventMembers, events } from '../../db/schema'
+import { pollSlots, eventMembers, events, sessions } from '../../db/schema'
 import { parseNewEvent } from '../../domain/event'
 import { createInviteToken, createSlug } from '../../domain/slug'
 import { useDb, type Db } from '../../utils/db'
@@ -11,7 +11,7 @@ import { requireUser } from '../../utils/user'
 const SLUG_ATTEMPTS = 5
 
 // Create an Event (screen M2). Only Users with the Host permission may create one (ADR 0002).
-// The Event, its Slots and the Host's Bench membership are written in one transaction.
+// The Event, its one Session, its Slots and the Host's membership are written in one transaction.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   if (!user.canHost) throw apiError('no_host_permission')
@@ -23,15 +23,16 @@ export default defineEventHandler(async (event) => {
   const db = useDb(event)
   const slug = await freeSlug(db, input.name)
   const inviteToken = createInviteToken()
-  const initial = input.dateMode === 'poll'
-    ? { phase: 'poll' as const, dateMode: 'poll' as const, startsAt: null }
-    : { phase: 'date_set' as const, dateMode: 'direct' as const, startsAt: input.startsAt }
+  // A poll Event's Session waits for a Date from the poll; a direct one has its Date from the start.
+  const phase = input.dateMode === 'poll' ? 'poll' as const : 'date_set' as const
+  const startsAt = input.dateMode === 'poll' ? null : input.startsAt
 
   await db.transaction(async (tx) => {
     const [row] = await tx
       .insert(events)
-      .values({ slug, inviteToken, hostId: user.id, name: input.name, ...initial })
+      .values({ slug, inviteToken, hostId: user.id, name: input.name, phase })
       .returning({ id: events.id })
+    await tx.insert(sessions).values({ eventId: row!.id, startsAt })
     await tx.insert(eventMembers).values({ eventId: row!.id, userId: user.id })
     if (input.dateMode === 'poll') {
       await tx.insert(pollSlots).values(input.slots.map(startsAt => ({ eventId: row!.id, startsAt })))

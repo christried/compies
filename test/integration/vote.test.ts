@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -211,7 +211,8 @@ describe('poll votes and the Event read', () => {
     it('answers 409 once the Date is set, so votes are frozen', async () => {
       const { cookie: hostCookie } = await signInAs(host, { hostPermission: true })
       const { slug, eventId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30'])
-      await testDb.db.update(events).set({ phase: 'date_set', startsAt: new Date('2090-10-30T19:30:00Z') }).where(eq(events.id, eventId))
+      await testDb.db.update(events).set({ phase: 'date_set' }).where(eq(events.id, eventId))
+      await testDb.db.update(sessions).set({ startsAt: new Date('2090-10-30T19:30:00Z') }).where(eq(sessions.eventId, eventId))
 
       const response = await vote(hostCookie, slug, slotIdAt('2090-10-30T19:30:00.000Z'), 'yes')
 
