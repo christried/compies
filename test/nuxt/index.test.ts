@@ -28,7 +28,6 @@ function card(overrides: Partial<HomeEvent>): HomeEvent {
     name: 'Freitags-Zocken',
     host,
     phase: 'poll',
-    dateMode: 'poll',
     startsAt: null,
     createdAt: '2026-10-20T10:00:00.000Z',
     bestSlot: null,
@@ -120,7 +119,7 @@ describe('home page', () => {
   it('shows the Best slot so far for an open poll and the Date for a set Event', async () => {
     homeEvents = [
       card({ slug: 'a-aaaa', name: 'Umfrage', bestSlot: { id: 'x', startsAt: '2090-10-31T18:00:00.000Z' } }),
-      card({ slug: 'b-bbbb', name: 'Fest', phase: 'date_set', dateMode: 'direct', startsAt: '2090-11-01T19:00:00.000Z', action: 'view', progress: { voted: 0, total: 0 } }),
+      card({ slug: 'b-bbbb', name: 'Fest', phase: 'date_set', startsAt: '2090-11-01T19:00:00.000Z', action: 'view', progress: { voted: 0, total: 0 } }),
     ]
     const page = await mountSuspended(IndexPage)
     await settle(page)

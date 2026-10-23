@@ -110,31 +110,36 @@ function confirmDate(slotId: string) {
   if (slot) return confirmStart(new Date(slot.startsAt))
 }
 
+/** The Event's Session (#48): one for now, so the page reads its Date. #49 lists them all. */
+const session = computed(() => data.value?.sessions[0] ?? null)
+const startsAt = computed(() => session.value?.startsAt ?? null)
+
 /** The withdrawn Date as the notice shows it, in Berlin time. */
 const previousWhen = computed(() => {
-  const previous = data.value?.event.previousStartsAt
+  const previous = session.value?.previousStartsAt
   if (!previous) return null
   const instant = new Date(previous)
   return t('mvp.set.dateTime', { date: formatSetDay(instant), time: formatSlotTime(instant) })
 })
 
-// The Reopen notice stays closed in this browser for this Event and this withdrawn Date. A later
-// Reopen with another Date has another value, so it shows again. Without storage it returns on reload.
+// The Reopen notice stays closed in this browser per Session and withdrawn Date. A later Reopen with
+// another Date has another value, so it shows again. Without storage it returns on reload.
 const REOPEN_KEY_PREFIX = 'compies-reopen-closed:'
+const reopenKey = () => REOPEN_KEY_PREFIX + (session.value?.id ?? '')
 const closedReopenAt = ref<string | null>(null)
 // False during SSR and until the stored state is read, so a closed notice never paints.
 const storageRead = ref(false)
 const reopenNoticeShown = computed(() => {
-  const previous = data.value?.event.previousStartsAt
+  const previous = session.value?.previousStartsAt
   return storageRead.value && Boolean(previous) && previous !== closedReopenAt.value
 })
 
 function closeReopenNotice() {
-  const previous = data.value?.event.previousStartsAt
+  const previous = session.value?.previousStartsAt
   if (!previous) return
   closedReopenAt.value = previous
   try {
-    localStorage.setItem(REOPEN_KEY_PREFIX + slug.value, previous)
+    localStorage.setItem(reopenKey(), previous)
   }
   catch {
     // Storage blocked: the notice comes back after a reload.
@@ -144,7 +149,7 @@ function closeReopenNotice() {
 // Storage exists only in the browser, so the closed Date is read after mount, not during SSR.
 onMounted(() => {
   try {
-    closedReopenAt.value = localStorage.getItem(REOPEN_KEY_PREFIX + slug.value)
+    closedReopenAt.value = localStorage.getItem(reopenKey())
   }
   catch {
     // Storage blocked: nothing is remembered.
@@ -289,8 +294,8 @@ usePollRefresh(() => {
       </template>
 
       <DateSetCard
-        v-else-if="data.event.startsAt"
-        :starts-at="data.event.startsAt"
+        v-else-if="startsAt"
+        :starts-at="startsAt"
         :is-host="data.event.isHost"
         :ics-url="`/api/e/${slug}/ics`"
         @reschedule="rescheduleOpen = true"
@@ -374,9 +379,9 @@ usePollRefresh(() => {
     />
 
     <DateRescheduleDialog
-      v-if="data?.event.isHost && data.event.startsAt"
+      v-if="data?.event.isHost && startsAt"
       :open="rescheduleOpen"
-      :starts-at="data.event.startsAt"
+      :starts-at="startsAt"
       :loading="rescheduling"
       @confirm="rescheduleDate"
       @cancel="rescheduleOpen = false"
