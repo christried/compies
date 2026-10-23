@@ -159,7 +159,8 @@ function selectTime(value: unknown) {
 /**
  * The popover of one field (ADR 0010). A click opens it and keeps the focus in the input, so typing goes on;
  * ArrowDown moves the focus into it; Escape or a pick closes it with the focus back in the input; a press or a
- * focus outside it closes it, except inside its own field.
+ * focus outside it closes it, except inside its own field. Escape stops at the field while the popover is open,
+ * so an enclosing dialog stays open (spec #41).
  */
 function fieldPopover(open: Ref<boolean>, field: Ref<HTMLElement | null>, input: Ref<HTMLInputElement | null>, panel: Ref<HTMLElement | null>, targets: string[]) {
   let byKey = false
@@ -195,6 +196,11 @@ function fieldPopover(open: Ref<boolean>, field: Ref<HTMLElement | null>, input:
     outside(event: Event) {
       if (field.value?.contains(event.target as Node)) event.preventDefault()
       else dismissed = true
+    },
+    escape(event: KeyboardEvent) {
+      if (!open.value) return
+      event.stopPropagation()
+      open.value = false
     },
   }
 }
@@ -242,6 +248,7 @@ function fieldClass(hasError: boolean | undefined) {
             ref="dateField"
             class="relative min-w-0 flex-1"
             @click="date.show(false)"
+            @keydown.esc="date.escape"
           >
             <label
               :for="`${id}-date`"
@@ -367,6 +374,7 @@ function fieldClass(hasError: boolean | undefined) {
             ref="timeField"
             class="relative w-36 flex-none"
             @click="time.show(false)"
+            @keydown.esc="time.escape"
           >
             <label
               :for="`${id}-time`"

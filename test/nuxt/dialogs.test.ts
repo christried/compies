@@ -1,7 +1,9 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import AppSheet from '~/components/AppSheet.vue'
 import ConfirmModal from '~/components/ConfirmModal.vue'
+import DateRescheduleDialog from '~/components/DateRescheduleDialog.vue'
 
 // Sheets and dialogs are teleported to the body, so these tests query the document. Each test starts
 // from an empty body, since teleported content can outlive the test that mounted it.
@@ -63,5 +65,33 @@ describe('ConfirmModal', () => {
     confirm?.click()
 
     expect(page.emitted('confirm')).toBeUndefined()
+  })
+})
+
+describe('DateRescheduleDialog', () => {
+  it('closes only the calendar on Escape while its field is focused, and the second Escape closes the dialog', async () => {
+    const page = await mountSuspended(DateRescheduleDialog, {
+      props: { open: true, startsAt: '2090-10-30T18:30:00.000Z' },
+      attachTo: document.body,
+    })
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!
+    const input = dialog.querySelector<HTMLInputElement>('input[type="text"]')!
+
+    input.focus()
+    input.click()
+    await flushPromises()
+    expect(document.querySelector('[role="gridcell"]')).not.toBeNull()
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(document.querySelector('[role="gridcell"]')).toBeNull()
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(page.emitted('cancel')).toBeUndefined()
+    expect(document.activeElement).toBe(input)
+    expect(input.value).toBe('30.10.2090')
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(page.emitted('cancel')).toHaveLength(1)
+    page.unmount()
   })
 })
