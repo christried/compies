@@ -54,7 +54,7 @@ Common rules for every component:
 - [`MoveToMenu`](#movetomenu) [1.0]
 - [`PlayerList`](#playerlist) [1.0]
 - [`ProfileForm`](#profileform) [MVP] name only · [1.0] full
-- [`SessionStepper`](#sessionstepper) [1.0] (MVP: date step only = M2)
+- [`EventStepper`](#eventstepper) [1.0] (MVP: date step only = M2)
 - [`InfoSheet`](#infosheet) [1.0]
 - [`PointsTableEditor`](#pointstableeditor) [1.0]
 - [`GamePoolPicker`](#gamepoolpicker) [1.0]
@@ -120,7 +120,7 @@ Round icon-only button (sound toggle, close, remove slot).
 ## HoldToConfirmButton
 **Scope:** [MVP] · **Ref:** DS Basics, VetoWindow, DS Game
 
-Irreversible or destructive actions: veto, ban, pick, rotate link, end/delete session, remove slot with votes.
+Irreversible or destructive actions: veto, ban, pick, rotate link, end/delete Event, remove a Session, remove slot with votes.
 
 - **Props / variants:** `label`, `holdingLabel?` („Halten …“), `doneLabel?`, `duration = 1000`, `variant: hot | primary`, `disabled`, `disabledReason`, `icon`
 - **States:** idle · holding (fill sweeps left→right) · released early (fill drains back 200 ms, nothing happens) · confirmed (fill full, icon → check, `doneLabel`, emits `confirm`) · locked (team already used it: dashed + reason, e.g. „Larsi hat schon ein Veto eingelegt“)
@@ -228,7 +228,7 @@ Side sheet (desktop: info sheet, host „Mehr“) and bottom sheet (mobile: host
 ## ConfirmModal
 **Scope:** [MVP] · **Ref:** App Vorbereitung 08 confirm
 
-Short confirm for consequential but reversible actions (confirm date, start session).
+Short confirm for consequential but reversible actions (confirm date, start Session).
 
 - **Props / variants:** `open`, `title`, `icon`, `confirmLabel`, `cancelLabel`
 - **States:** open · loading on confirm
@@ -362,29 +362,29 @@ Small tape chip next to nav items that lead to a construction page.
 
 Layout frame: header, stage, side panel, mobile tab bar, host dock slot.
 
-- **Props / variants:** `kind: hub | session | bare`, `panel?: boolean`
+- **Props / variants:** `kind: hub | event | bare`, `panel?: boolean`
 - **States:** —
 - **Slots:** `#header`, default (stage), `#panel`, `#dock`, `#tabs`
-- **Desktop / mobile:** ≥ 980: header 64, stage max 1100 centred, panel 340 right (session only), dock floating. < 980: header 56, content, bottom TabBar, crown button 56 bottom-right for hosts.
+- **Desktop / mobile:** ≥ 980: header 64, stage max 1100 centred, panel 340 right (Event only), dock floating. < 980: header 56, content, bottom TabBar, crown button 56 bottom-right for hosts.
 - **Accessibility:** Landmarks: `header`, `nav`, `main`, `aside`. Skip link „Zur Bühne springen“.
 - **Motion:** —
 
 ## AppHeader
 **Scope:** [MVP] · **Ref:** AppFrame
 
-Logo (Compibert head), hub nav or session title + phase pill, invite button, sound toggle, avatar menu.
+Logo (Compibert head), hub nav or Event title + phase pill, invite button, sound toggle, avatar menu.
 
 - **Props / variants:** `kind`, `title?`, `phase?: draft | poll | date_set | running | finished | archived`, `isHost`
-- **States:** hub · session · bare
+- **States:** hub · event · bare
 - **Slots:** `#actions`
-- **Desktop / mobile:** Desktop shows wordmark + nav. Mobile: head logo only, session title + pill wrap to 2 lines max.
+- **Desktop / mobile:** Desktop shows wordmark + nav. Mobile: head logo only, Event title + pill wrap to 2 lines max.
 - **Accessibility:** Logo links to Home; pill has text (dot is decorative).
 - **Motion:** Logo Compibert reacts (idle → cheer/confused) via CompibertBus.
 
 ## HubNav
 **Scope:** [MVP] · **Ref:** AppFrame
 
-Main navigation: Sessions, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin). Bibliothek only for Users with the Host permission and the Platform admin; Admin only for the Platform admin.
+Main navigation: Events, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin). Bibliothek only for Users with the Host permission and the Platform admin; Admin only for the Platform admin.
 
 - **Props / variants:** `current`, `canHost`, `isAdmin`, `soon: string[]` (MVP: archiv, bibliothek, profil)
 - **States:** active (3 px hot underline, offset icon) · soon (NavSoonMarker)
@@ -396,7 +396,7 @@ Main navigation: Sessions, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin)
 ## PhasePill
 **Scope:** [MVP] · **Ref:** AppFrame
 
-Session phase chip in the header and on cards.
+Event phase chip in the header and on cards.
 
 - **Props / variants:** `phase`
 - **States:** Entwurf · Terminumfrage (info dot) · Termin steht (success dot) · Läuft (yellow, hot dot) · Beendet · Archiv
@@ -420,7 +420,7 @@ Host controls, reachable wherever the host sits.
 ## SidePanel
 **Scope:** [1.0] · **Ref:** AppFrame
 
-Session side panel with tabs Chat, Aktivität, Tabelle, Leute.
+Event side panel with tabs Chat, Aktivität, Tabelle, Leute.
 
 - **Props / variants:** `tab`
 - **States:** per tab; unread badges
@@ -444,7 +444,7 @@ Realtime connection state.
 ## FullScreenState
 **Scope:** [MVP] · **Ref:** App Systemzustände 31, App Einstieg 07
 
-Loading, invalid link, deleted session, 404, no permission, generic error.
+Loading, invalid link, deleted Event, 404, no permission, generic error.
 
 - **Props / variants:** `kind`, `errorId?`
 - **States:** one per kind
@@ -597,12 +597,12 @@ Display name, avatar (provider or upload), linked accounts, settings.
 - **Accessibility:** Form semantics; upload button with file input.
 - **Motion:** —
 
-## SessionStepper
+## EventStepper
 **Scope:** [1.0] (MVP: date step only = M2) · **Ref:** App Vorbereitung 05
 
 Guided 8-step setup: Name, Format, Anzahl Spiele, Punktetabelle, Auswahlmodus, Spielepool, Tiebreaker-Pool, Termin.
 
-- **Props / variants:** `session`, `step`
+- **Props / variants:** `event`, `step`
 - **States:** per step; error per step; done
 - **Slots:** one per step, `#info`
 - **Desktop / mobile:** Desktop: step list left (230), form centre, InfoSheet right (340) on format/mode/tie steps. Mobile: progress bar (8 segments), form, info via button + bottom sheet, sticky footer Zurück/Weiter.
@@ -864,7 +864,7 @@ Announces a tie on 1st place and the tiebreaker wheel.
 ## ChatPanel
 **Scope:** [1.0] · **Ref:** DS Communication
 
-Session chat for everyone incl. bench and stands.
+Event chat for everyone incl. bench and stands.
 
 - **Props / variants:** `messages[]`, `me`, `role`
 - **States:** grouped (2 min) · own (right, yellow) · sending · failed + retry · deleted by host („Vom Host gelöscht“) · empty
@@ -924,7 +924,7 @@ Soft in-app ask before the browser prompt.
 ## PwaInstallHint
 **Scope:** [1.0] · **Ref:** App Systemzustände 29
 
-Install hint on Home after the first session.
+Install hint on Home after the first Event.
 
 - **Props / variants:** —
 - **States:** banner · iOS instruction sheet · installed
@@ -962,7 +962,7 @@ Install hint on Home after the first session.
 
 Server-rendered share image (Satori).
 
-- **Props / variants:** `format: wide (1200×630) | square (1080×1080)`, `session`, `date`, `rows`, `games`, `people`
+- **Props / variants:** `format: wide (1200×630) | square (1080×1080)`, `event`, `date`, `rows`, `games`, `people`
 - **States:** —
 - **Slots:** —
 - **Desktop / mobile:** —
@@ -996,9 +996,9 @@ Download PNG or copy link with preview.
 ## ArchiveList / ArchiveCard / ArchiveDetail
 **Scope:** [1.0] · **Ref:** App Ende & Archiv 21, 22
 
-Past sessions you played in; read-only detail.
+Past Events you played in; read-only detail.
 
-- **Props / variants:** `filter: alle | gewonnen | host`, `sessions[]`
+- **Props / variants:** `filter: alle | gewonnen | host`, `events[]`
 - **States:** list · empty · no results · loading
 - **Slots:** —
 - **Desktop / mobile:** Desktop 3-col grid; mobile 1-col.

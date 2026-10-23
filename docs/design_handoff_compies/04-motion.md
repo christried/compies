@@ -246,7 +246,7 @@ Hierarchy (outer → inner): root › torso › neck › head › (eye-left, bro
 | Rad dreht | `excited` | Basis | suspense beim Bremsen |
 | Rad bremst (letzte 40 %) | `suspense` | Basis | cheer beim Stopp |
 | Rad stoppt, Ergebnis | `cheer` | Reaktion 3, 1.6 s | idle |
-| Sieg (Spiel oder Session) | `cheer` | Reaktion 3, 4 s | Basis |
+| Sieg (Spiel oder Event) | `cheer` | Reaktion 3, 4 s | Basis |
 | Emote Tränen vor Lachen | `laugh` | Reaktion 2, 2.4 s | Basis |
 | Emote Wütend, Veto aufgedeckt | `angry` | Reaktion 2, 2.6 s | Basis |
 | Letzter Platz, Niederlage | `sad` | Reaktion 3, 4 s | Basis |
@@ -334,7 +334,7 @@ Trigger: The wheel slows down (last 40 % of the spin). Returns: cheer (1.6 s) at
 | `fx sweat` | y 0 → 30, opacity 1 → 0 | 1.1 s, power1.in, repeatDelay .4, ∞; breath and tail timeScale .2 |
 
 #### `cheer` (Jubeln) · Reaktion 3
-Trigger: Game or session win; wheel result. Returns: base after 4 s (1.6 s after a wheel stop). Happy eyes, both arms up and jumping with squash on every landing.
+Trigger: Game or Event win; wheel result. Returns: base after 4 s (1.6 s after a wheel stop). Happy eyes, both arms up and jumping with squash on every landing.
 
 | Target | Properties | Duration / ease / repeat |
 |---|---|---|
