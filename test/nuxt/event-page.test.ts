@@ -617,7 +617,7 @@ describe('rescheduling and reopening the Date', () => {
   it('opens the reschedule dialog from Verschieben with the current Date, and sends the new time', async () => {
     let sent: unknown = null
     const store = serve(setView({ isHost: true }))
-    registerEndpoint(`/api/e/${store.slug}/reschedule`, {
+    registerEndpoint(`/api/e/${store.slug}/sessions/session-${store.slug}/reschedule`, {
       method: 'POST',
       handler: async (event) => {
         sent = await readBody(event)
@@ -638,7 +638,7 @@ describe('rescheduling and reopening the Date', () => {
   it('withdraws the Date after a one second hold on Neue Terminsuche, and every Member then sees the notice', async () => {
     let reopened = 0
     const store = serve(setView({ isHost: true }))
-    registerEndpoint(`/api/e/${store.slug}/reopen`, {
+    registerEndpoint(`/api/e/${store.slug}/sessions/session-${store.slug}/reopen`, {
       method: 'POST',
       handler: () => {
         reopened += 1
@@ -714,7 +714,7 @@ describe('several Sessions on the Event page', () => {
     await new Promise(resolve => setTimeout(resolve))
   }
 
-  it('shows a numbered card per dated Session, one calendar link and one Einladen for the whole Event, and no Host actions on the cards', async () => {
+  it('shows a numbered card per dated Session with the Host actions on each, and one calendar link and one Einladen for the whole Event', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
       { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
       { number: 2, startsAt: '2026-10-31T19:00:00.000Z' },
@@ -726,8 +726,140 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).toContain('Session 2')
     expect(page.findAll(`a[href="/api/e/${slug}/ics"]`)).toHaveLength(1)
     expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
-    expect(page.text()).not.toContain('Verschieben')
+    expect(page.findAll('button').filter(button => button.text() === 'Verschieben')).toHaveLength(2)
+    expect(page.findAll('button').filter(button => button.text() === 'Neue Terminsuche')).toHaveLength(2)
+    expect(page.findAll('button').filter(button => button.text() === 'Entfernen')).toHaveLength(2)
     expect(page.text()).not.toContain('Termin festlegen')
+    // Every button on the cards is 48 px (h-12), the Reopen and removal holds too (#55).
+    const cardButtons = page.findAll('button').filter(button => ['Verschieben', 'Neue Terminsuche', 'Entfernen'].includes(button.text()))
+    expect(cardButtons).toHaveLength(6)
+    expect(cardButtons.every(button => button.classes().includes('h-12'))).toBe(true)
+  })
+
+  it('reschedules the Session whose card was used, sending its own id', async () => {
+    let sentTo = ''
+    let sent: unknown = null
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: 2, startsAt: '2026-10-31T19:00:00.000Z' },
+    ], 0, { event: { phase: 'date_set', isHost: true }, slots: [], bestSlotId: null }))
+    registerEndpoint(`/api/e/${slug}/sessions/session-${slug}-1/reschedule`, {
+      method: 'POST',
+      handler: async (event) => {
+        sentTo = 'second'
+        sent = await readBody(event)
+        return { startsAt: '2026-11-01T19:00:00.000Z' }
+      },
+    })
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    const second = page.findAll('section').filter(section => section.text().includes('Session 2'))[0]!
+
+    await clickButton(second.element, 'Verschieben')
+    const rescheduleDialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(element => element.textContent?.includes('Termin verschieben?'))
+    await clickButton(rescheduleDialog, 'Termin verschieben')
+
+    await vi.waitFor(() => expect(sentTo).toBe('second'))
+    expect(sent).toEqual({ startsAt: '2026-10-31T20:00' })
+  })
+
+  it('removes a dated Session after a one second hold on Entfernen, and does not hold a removal that is refused', async () => {
+    let removed = 0
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: 2, startsAt: '2026-10-31T19:00:00.000Z' },
+    ], 0, { event: { phase: 'date_set', isHost: true }, slots: [], bestSlotId: null }))
+    registerEndpoint(`/api/e/${slug}/sessions/session-${slug}-0`, {
+      method: 'DELETE',
+      handler: () => {
+        removed += 1
+        throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
+      },
+    })
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    const hold = page.findAll('button').filter(button => button.text() === 'Entfernen')[0]!
+
+    await hold.trigger('pointerdown')
+    await new Promise(resolve => setTimeout(resolve, 1100))
+
+    await vi.waitFor(() => expect(removed).toBe(1))
+    await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Konnte nicht speichern. Nochmal versuchen?'))
+    // The refused hold starts again from zero, so a second hold sends the removal once more.
+    const again = page.findAll('button').filter(button => button.text() === 'Entfernen')[0]!
+    await again.trigger('pointerdown')
+    await new Promise(resolve => setTimeout(resolve, 1100))
+    await vi.waitFor(() => expect(removed).toBe(2))
+  })
+
+  it('opens the Session sheet after the cards, with a Date field or the choice to leave the Date to the poll', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+    ], 0, { event: { phase: 'date_set', isHost: true }, slots: [], bestSlotId: null }))
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    await clickButton(page.element, 'Session hinzufügen')
+    const sheet = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(element => element.textContent?.includes('Termin eintragen'))
+    expect(sheet).toBeDefined()
+    expect(sheet!.querySelector('[role="radiogroup"]')).not.toBeNull()
+    expect(sheet!.textContent).toContain('Aus der Umfrage')
+
+    // Closed again, so the teleported sheet does not outlive the test.
+    sheet!.querySelector<HTMLElement>('button[aria-label="Schließen"]')!.click()
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+  })
+
+  it('offers no Entfernen on the card of the last Session', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+    ], 0, { event: { phase: 'date_set', isHost: true }, slots: [], bestSlotId: null }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.text()).toContain('Verschieben')
+    expect(page.text()).toContain('Neue Terminsuche')
+    expect(page.text()).not.toContain('Entfernen')
+  })
+
+  it('shows no Session actions to a Member', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+    ], 0, { event: { phase: 'date_set', isHost: false }, slots: [], bestSlotId: null }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.text()).not.toContain('Session hinzufügen')
+    expect(page.text()).not.toContain('Entfernen')
+    expect(page.text()).not.toContain('Neue Terminsuche')
+  })
+
+  it('removes one undated Session with the − next to the missing Dates, and keeps the last Session', async () => {
+    let removed = 0
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: null, startsAt: null },
+      { number: null, startsAt: null },
+    ], 2, { event: { phase: 'poll', isHost: true } }))
+    registerEndpoint(`/api/e/${slug}/sessions/session-${slug}-2`, {
+      method: 'DELETE',
+      handler: () => {
+        removed += 1
+        return { phase: 'poll' }
+      },
+    })
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    await page.get('button[aria-label="Session ohne Termin entfernen"]').trigger('click')
+
+    await vi.waitFor(() => expect(removed).toBe(1))
+  })
+
+  it('shows no − when the Event has one Session, the last one', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: null, startsAt: null },
+    ], 1, { event: { phase: 'poll', isHost: true } }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.find('button[aria-label="Session ohne Termin entfernen"]').exists()).toBe(false)
   })
 
   it('says how many Dates are still missing above the poll, and the dock offers Termin festlegen next to Termine bearbeiten', async () => {
