@@ -12,11 +12,22 @@ describe('InviteLinkCard', () => {
     useState('toasts').value = []
     const page = await mountSuspended(InviteLinkCard, { props: { url } })
 
-    expect(page.text()).toContain(url)
+    expect(page.get('input').element.value).toBe(url)
     await page.get('button').trigger('click')
 
     expect(writeText).toHaveBeenCalledWith(url)
     expect(useToast().toasts.value.at(-1)?.text).toBe('Link kopiert')
+  })
+
+  it('shows the link in a read-only field that a click selects whole', async () => {
+    const page = await mountSuspended(InviteLinkCard, { props: { url } })
+    const field = page.get('input').element as HTMLInputElement
+
+    expect(field.readOnly).toBe(true)
+    await page.get('input').trigger('click')
+
+    expect(field.selectionStart).toBe(0)
+    expect(field.selectionEnd).toBe(url.length)
   })
 
   it('shows „Kopiert“ on the button once copied, until the link changes (#1 story 30)', async () => {
