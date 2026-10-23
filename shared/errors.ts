@@ -18,6 +18,10 @@ export const API_ERROR_STATUS = {
   duplicate_slot: 400,
   duplicate_date: 400,
   slots_max: 400,
+  /** An Event has at most 8 Sessions (#55). */
+  sessions_max: 400,
+  /** The last Session of an Event cannot be removed (#55). */
+  last_session: 409,
   /** The User is a Member, but only the Host of this Event may do this. */
   not_host: 403,
   /** Creating an Event needs the Host permission (ADR 0002). */

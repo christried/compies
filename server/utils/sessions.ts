@@ -1,12 +1,13 @@
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
-import { pollSlots, sessions } from '../db/schema'
+import { events, pollSlots, sessions } from '../db/schema'
 import { sequenceRaises } from '../domain/session'
-import { rescheduleValues } from '../domain/phase'
+import { phaseOf, rescheduleValues } from '../domain/phase'
 import { apiError } from './errors'
 import type { Db } from './db'
 
-// The Sessions of an Event (ADR 0011, #48, #52, #53). eventSession is the single-Session shortcut of the
-// Reschedule route that still has no Session id; the per-Session handlers use eventSessions.
+// The Sessions of an Event (ADR 0011, #48, #52, #53, #55). Every handler that adds, removes, moves or
+// reopens a Session reads the Sessions under the Event lock, writes the change, then raises the calendar
+// sequences (raiseSequences) and writes the Phase (setEventPhase) in the same transaction.
 
 export type SessionRow = typeof sessions.$inferSelect
 
@@ -15,11 +16,20 @@ export function eventSessions(db: Db, eventId: string): Promise<SessionRow[]> {
   return db.select().from(sessions).where(eq(sessions.eventId, eventId))
 }
 
-/** The Event's one Session. Every Event has one: the migration and the create handler give it one. */
-export async function eventSession(db: Db, eventId: string): Promise<SessionRow> {
-  const [session] = await eventSessions(db, eventId)
-  if (!session) throw new Error(`Event ${eventId} has no Session`)
-  return session
+/** Raises the calendar SEQUENCE of these Sessions by one, so a re-import replaces their entries (#53, #55). */
+export async function raiseSequences(db: Db, ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  await db.update(sessions).set({ icsSequence: sql`${sessions.icsSequence} + 1` }).where(inArray(sessions.id, ids))
+}
+
+/**
+ * The Event's Phase from its Sessions' Dates (#52, #55): the date poll while any Session has no Date, else
+ * date set. Written by every handler that changes the Dates or the Sessions; returns the Phase written.
+ */
+export async function setEventPhase(db: Db, eventId: string, startsAt: (Date | null)[]): Promise<'poll' | 'date_set'> {
+  const phase = phaseOf(startsAt)
+  await db.update(events).set({ phase }).where(eq(events.id, eventId))
+  return phase
 }
 
 /** Whether a Session of this Event has the Slot as its Date's Slot, so the Slot is no longer open (#52). */
@@ -46,10 +56,7 @@ export async function moveSessionDate(db: Db, before: SessionRow[], sessionId: s
   if (!row) throw apiError('wrong_phase')
 
   const after = before.map(session => (session.id === sessionId ? { ...session, startsAt } : session))
-  const raised = sequenceRaises(before, after)
-  if (raised.length > 0) {
-    await db.update(sessions).set({ icsSequence: sql`${sessions.icsSequence} + 1` }).where(inArray(sessions.id, raised))
-  }
+  await raiseSequences(db, sequenceRaises(before, after))
   return startsAt
 }
 

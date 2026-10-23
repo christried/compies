@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { CalendarCheck, CalendarClock, CalendarPlus, Check, ChevronRight, CircleAlert, Link as LinkIcon, Search } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, CalendarPlus, Check, ChevronRight, CircleAlert, Link as LinkIcon, Minus, Plus, Search, Trash2 } from '@lucide/vue'
 import { apiFailure } from '~/utils/api-error'
 import { formatSetDay, formatSlotDay, formatSlotTime, formatSlotWhen } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
-import type { EventView } from '~~/shared/event'
+import { SESSIONS_MAX, sessionsEditable, type EventView } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). Members see the poll:
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
 // The Host picks only the Slot; its time goes to the next Session without a Date (#52). Each Session with
-// a Date gets a DateSetCard at the top, numbered when the Event has several Sessions (#49). While Dates
-// are missing the poll follows. Reschedule and Reopen (#13, #14) post through useHostActions and still
-// act on a one-Session Event only; the per-Session actions come with #55. Termine bearbeiten opens
+// a Date gets a DateSetCard at the top, numbered when the Event has several Sessions (#49). The Host acts on
+// each card: Verschieben, Neue Terminsuche and Entfernen (#55). "Session hinzufügen" sits after the cards,
+// and the "−" next to "N Termine gesucht" removes an undated Session. Termine bearbeiten opens
 // SlotEditSheet (#15).
 // The Invite link (`/e/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
@@ -104,8 +104,33 @@ function comingSoon() {
   toast({ tone: 'info', text: t('common.comingSoon') })
 }
 
-const { confirmOpen, confirming, rescheduleOpen, rescheduling, confirmDate: confirmStart, rescheduleDate, reopenDate } = useHostActions(slug, refresh)
+const {
+  confirmOpen,
+  confirming,
+  rescheduleOpen,
+  rescheduling,
+  rescheduleSessionId,
+  addOpen,
+  adding,
+  confirmDate: confirmStart,
+  openReschedule,
+  rescheduleDate,
+  reopenSession,
+  removeSession,
+  addSession,
+} = useHostActions(slug, refresh)
 const confirmPreset = ref<string | null>(null)
+
+/** Bumped when a Reopen or a removal is refused, so its hold button starts again from zero (#55). */
+const holdEpoch = ref(0)
+
+async function reopenOne(sessionId: string) {
+  if (!(await reopenSession(sessionId))) holdEpoch.value += 1
+}
+
+async function removeOne(sessionId: string) {
+  if (!(await removeSession(sessionId))) holdEpoch.value += 1
+}
 
 /** The open Slots the Host can still confirm, in time order, with their counts for the dialog (#52). */
 const confirmOptions = computed(() => slots.value
@@ -137,9 +162,20 @@ function openConfirm(slotId?: string) {
   confirmOpen.value = true
 }
 
-/** The Event's one Session, when it has only one: the Host acts on its card and sets its Date (#49). */
-const onlySession = computed(() => (sessions.value.length === 1 ? sessions.value[0] ?? null : null))
-const startsAt = computed(() => onlySession.value?.startsAt ?? null)
+/** The Session the reschedule dialog moves, while it still has its Date (#55). */
+const rescheduleSession = computed(() => sessions.value.find(session => session.id === rescheduleSessionId.value && session.startsAt !== null) ?? null)
+
+/** Sessions can be added, removed and reopened while the Event is in the poll or date set (#55). */
+const editable = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
+const full = computed(() => sessions.value.length >= SESSIONS_MAX)
+
+/** The last Session still waiting for a Date: the "−" next to "N Termine gesucht" removes it (#55). */
+const lastUndated = computed(() => [...sessions.value].reverse().find(session => session.startsAt === null) ?? null)
+
+/** The "−" removes one undated Session with one tap, as long as one Session stays (#55). */
+function removeMissing() {
+  if (lastUndated.value) removeOne(lastUndated.value.id)
+}
 
 /** The withdrawn Date as the notice shows it, in Berlin time. */
 function whenOf(iso: string) {
@@ -257,15 +293,26 @@ usePollRefresh(() => {
           :key="session.id"
           :starts-at="session.startsAt ?? ''"
           :number="sessions.length > 1 ? session.number : null"
-          :is-host="data.event.isHost && onlySession?.id === session.id"
-          @reschedule="rescheduleOpen = true"
+          :is-host="data.event.isHost"
+          @reschedule="openReschedule(session.id)"
         >
           <template #host-actions>
             <HoldToConfirmButton
+              :key="`reopen-${session.id}-${holdEpoch}`"
               variant="secondary"
+              size="card"
               :label="t('mvp.reopen.cta')"
               :icon="Search"
-              @confirm="reopenDate"
+              @confirm="reopenOne(session.id)"
+            />
+            <HoldToConfirmButton
+              v-if="sessions.length > 1"
+              :key="`remove-${session.id}-${holdEpoch}`"
+              variant="hot"
+              size="card"
+              :label="t('mvp.sessions.remove')"
+              :icon="Trash2"
+              @confirm="removeOne(session.id)"
             />
           </template>
         </DateSetCard>
@@ -297,6 +344,30 @@ usePollRefresh(() => {
         </div>
       </template>
 
+      <div
+        v-if="data.event.isHost && editable"
+        class="flex flex-wrap items-center gap-2"
+      >
+        <AppButton
+          v-if="!full"
+          variant="secondary"
+          size="card"
+          @click="addOpen = true"
+        >
+          <AppIcon
+            :icon="Plus"
+            :size="18"
+          />
+          {{ t('mvp.sessions.add') }}
+        </AppButton>
+        <p
+          v-else
+          class="m-0 text-small font-bold text-ink-2"
+        >
+          {{ t('mvp.sessions.max', { max: SESSIONS_MAX }) }}
+        </p>
+      </div>
+
       <template v-if="data.event.phase === 'poll'">
         <header class="flex flex-wrap items-end gap-3">
           <div class="flex min-w-[200px] flex-1 flex-col gap-0.5">
@@ -318,12 +389,20 @@ usePollRefresh(() => {
           <b>{{ t('mvp.poll.saved') }}</b> {{ t('mvp.poll.savedText') }}
         </NoticeBanner>
 
-        <p
+        <div
           v-if="missing > 0"
-          class="m-0 font-display text-[26px] leading-[1.05] max-sm:text-[22px]"
+          class="flex flex-wrap items-center gap-3"
         >
-          {{ t('mvp.poll.missingDates', { n: missing }, missing) }}
-        </p>
+          <p class="m-0 font-display text-[26px] leading-[1.05] max-sm:text-[22px]">
+            {{ t('mvp.poll.missingDates', { n: missing }, missing) }}
+          </p>
+          <IconButton
+            v-if="data.event.isHost && sessions.length > 1"
+            :icon="Minus"
+            :label="t('mvp.sessions.removeMissing')"
+            @click="removeMissing"
+          />
+        </div>
 
         <VoteLegend v-if="slots.length > 0" />
 
@@ -444,12 +523,20 @@ usePollRefresh(() => {
     />
 
     <DateRescheduleDialog
-      v-if="data?.event.isHost && startsAt"
+      v-if="data?.event.isHost && rescheduleSession"
       :open="rescheduleOpen"
-      :starts-at="startsAt"
+      :starts-at="rescheduleSession.startsAt ?? ''"
       :loading="rescheduling"
       @confirm="rescheduleDate"
       @cancel="rescheduleOpen = false"
+    />
+
+    <SessionAddSheet
+      v-if="data?.event.isHost && editable"
+      :open="addOpen"
+      :busy="adding"
+      @close="addOpen = false"
+      @submit="addSession"
     />
 
     <InviteSheet

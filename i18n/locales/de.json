@@ -1049,6 +1049,18 @@
       "noSlotsTitle": "Noch keine Termine.",
       "noSlotsHost": "Schlag die ersten Termine über „Termine bearbeiten“ vor, dann kann abgestimmt werden.",
       "noSlotsMember": "Sobald der Host Termine vorschlägt, kannst du abstimmen."
+    },
+    "sessions": {
+      "add": "Session hinzufügen",
+      "addText": "Die neue Session bekommt einen eigenen Termin, oder der Termin kommt aus der Terminumfrage.",
+      "choice": "Termin",
+      "withDate": "Termin eintragen",
+      "withPoll": "Aus der Umfrage",
+      "dateLabel": "Termin der Session",
+      "cta": "Hinzufügen",
+      "max":"Mehr als {max} Sessions gibt es nicht.",
+      "remove": "Entfernen",
+      "removeMissing": "Session ohne Termin entfernen"
     }
   },
   "error": {
@@ -1069,6 +1081,8 @@
     "dateDuplicate": "Zwei Sessions können nicht am selben Termin sein.",
     "tooFewSlots": "Schlag mindestens so viele Termine vor, wie Sessions geplant sind.",
     "sessionsInvalid": "Sessions: zwischen 1 und 8.",
+    "sessionsMax": "Höchstens 8 Sessions.",
+    "lastSession": "Mindestens eine Session bleibt.",
     "slotsMin": "Mindestens ein Termin.",
     "slotsMax": "Höchstens {max} Vorschläge.",
     "teamWordSpace": "Nur ein Wort, ohne Leerzeichen.",

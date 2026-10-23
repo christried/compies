@@ -5,8 +5,8 @@ import { formatDateTile, formatSetDay, formatSlotTime } from '~/utils/berlin-tim
 // The card of one Session with its Date (02-components § DateSetCard, screen M3 set / sethost). It
 // shows the calendar tile and the full date; with several Sessions also the Session's number. The
 // Event page adds the calendar download and "Einladen" once for the whole Event. The Host row (#14
-// "Verschieben") is emitted here; Reopen goes into the `host-actions` slot. The page shows the row only
-// for an Event with one Session (#49: several Sessions get their host actions with #52).
+// "Verschieben") is emitted here; Neue Terminsuche and Entfernen go into the `host-actions` slot. Every
+// Session card has its Host row (#55).
 const props = defineProps<{
   /** The Date as a UTC ISO instant. */
   startsAt: string
