@@ -202,7 +202,6 @@ const MODES = computed(() => [
               :model-value="slots[index] ?? ''"
               class="min-w-0 flex-1"
               :label="t('mvp.create.slotLabel', { n: index + 1 })"
-              :min="now"
               :error="slotErrors[index]"
               @update:model-value="value => (slots[index] = value)"
             />
@@ -217,7 +216,7 @@ const MODES = computed(() => [
           <button
             v-if="slots.length < SLOTS_MAX"
             type="button"
-            class="hit-44 inline-flex items-center gap-1.5 self-start rounded-pill border-[2.5px] border-dashed border-line px-3.5 text-small font-bold text-ink outline-memphis lift"
+            class="hit-44 inline-flex min-h-11 items-center gap-1.5 self-start rounded-pill border-[2.5px] border-dashed border-line px-3.5 text-small font-bold text-ink outline-memphis lift"
             @click="addSlot"
           >
             <AppIcon
@@ -235,7 +234,6 @@ const MODES = computed(() => [
           v-else
           v-model="direct"
           :label="t('mvp.create.dateLabel')"
-          :min="now"
           :error="directError"
         />
 

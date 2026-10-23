@@ -1,3 +1,5 @@
+import { parseDate } from '@internationalized/date'
+import type { DateValue } from '@internationalized/date'
 import { Check, X } from '@lucide/vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
@@ -173,16 +175,84 @@ describe('DateTimeField', () => {
     expect(part(page.element, 'Uhrzeit').value).toBe('12:34')
   })
 
-  it('opens a calendar on a click in the date field, with days before min disabled', async () => {
-    const page = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Termin 1', min: '2026-10-22T12:00' } })
+  it('opens a calendar on a click in the date field, and days before today (Berlin) are disabled', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Termin 1' }, attachTo: document.body })
 
     part(page.element, 'Datum').click()
     await flushPromises()
 
+    const today = parseDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date()))
     const cells = [...document.querySelectorAll('[role="gridcell"]')]
-    const day = (n: string) => cells.find(cell => cell.textContent?.trim() === n)!
-    expect(day('21').getAttribute('aria-disabled')).toBe('true')
-    expect(day('22').getAttribute('aria-disabled')).not.toBe('true')
+    const day = (value: DateValue) => cells.find(cell => cell.textContent?.trim() === String(value.day))!
+    expect(day(today.subtract({ days: 1 })).getAttribute('aria-disabled')).toBe('true')
+    expect(day(today).getAttribute('aria-disabled')).not.toBe('true')
+    page.unmount()
+  })
+
+  it('keeps the focus in the date field on a click, so typing lands in it', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Termin 1' }, attachTo: document.body })
+    const input = part(page.element, 'Datum')
+
+    input.focus()
+    input.click()
+    await flushPromises()
+    expect(document.querySelector('[role="gridcell"]')).not.toBeNull()
+    expect(document.activeElement).toBe(input)
+
+    input.value += '3'
+    input.dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(part(page.element, 'Datum').value).toBe('3')
+    page.unmount()
+  })
+
+  it('keeps the focus in the time field on a click and does not move it into the list', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' }, attachTo: document.body })
+    const input = part(page.element, 'Uhrzeit')
+
+    input.focus()
+    input.click()
+    await flushPromises()
+
+    expect(document.querySelector('[role="option"]')).not.toBeNull()
+    expect(document.activeElement).toBe(input)
+    page.unmount()
+  })
+
+  it('moves into the open calendar on ArrowDown, closes on Escape with the focus back in the field, and reopens on the next click', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' }, attachTo: document.body })
+    const input = part(page.element, 'Datum')
+
+    input.focus()
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    await flushPromises()
+    expect(document.activeElement?.closest('[role="gridcell"]')).not.toBeNull()
+
+    document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(document.querySelector('[role="gridcell"]')).toBeNull()
+    expect(document.activeElement).toBe(input)
+
+    input.click()
+    await flushPromises()
+    expect(document.querySelector('[role="gridcell"]')).not.toBeNull()
+    page.unmount()
+  })
+
+  it('moves into the open time list on ArrowDown and closes it on Escape with the focus in the field', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' }, attachTo: document.body })
+    const input = part(page.element, 'Uhrzeit')
+
+    input.focus()
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    await flushPromises()
+    expect(document.querySelector('[role="listbox"]')?.contains(document.activeElement)).toBe(true)
+
+    document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(document.querySelector('[role="option"]')).toBeNull()
+    expect(document.activeElement).toBe(input)
+    page.unmount()
   })
 
   it('opens the time list in 15-minute steps', async () => {
