@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Phase chip in the Session header and on cards (02-components § PhasePill). The text carries the
+// Phase chip in the Event header and on cards (02-components § PhasePill). The text carries the
 // meaning; the dot only adds colour. Phases beyond the MVP (running, finished, archived) are styled
 // too, so 1.0 needs no change here.
 type Phase = 'draft' | 'poll' | 'date_set' | 'running' | 'finished' | 'archived'

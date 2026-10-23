@@ -20,9 +20,9 @@ describe('SignInCard', () => {
     expect(card.text()).toContain('Die Konten lassen sich später im Profil verknüpfen.')
   })
 
-  it('Über Einladung: names the Host and the Session', async () => {
+  it('Über Einladung: names the Host and the Event', async () => {
     const card = await mountSuspended(SignInCard, {
-      props: { invited: true, invite: { sessionName: 'Freitags-Zocken', host: { name: 'Sanne', image: null } } },
+      props: { invited: true, invite: { eventName: 'Freitags-Zocken', host: { name: 'Sanne', image: null } } },
     })
 
     expect(card.get('h1').text()).toBe('Erst kurz anmelden')
@@ -62,7 +62,7 @@ describe('sign-in page', () => {
   beforeEach(() => signInAs(null))
 
   it('switches to the invite state when the target is an Invite link', async () => {
-    const page = await mountSuspended(SignInPage, { route: '/anmelden?redirect=%2Fs%2Ffreitags-zocken-k7q2-Ab3dE6gH9jK1' })
+    const page = await mountSuspended(SignInPage, { route: '/anmelden?redirect=%2Fe%2Ffreitags-zocken-k7q2-Ab3dE6gH9jK1' })
 
     expect(page.get('h1').text()).toBe('Erst kurz anmelden')
   })

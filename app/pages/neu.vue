@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Plus, X } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
-import { SESSION_NAME_MAX, SLOTS_MAX, sessionNameLength, slotProblems as slotRuleProblems } from '~~/shared/session'
+import { EVENT_NAME_MAX, SLOTS_MAX, eventNameLength, slotProblems as slotRuleProblems } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
-// Create a Session (screen M2, `?s=create`): a name, then a Date poll with up to 8 Slots or one
+// Create an Event (screen M2, `?s=create`): a name, then a Date poll with up to 8 Slots or one
 // direct Date. Only Users with the Host permission get the form (ADR 0002); everyone else sees the
 // Construction page. Times are Berlin wall-clock values; the server is the final judge.
 
@@ -25,14 +25,14 @@ const created = ref<{ slug: string, inviteUrl: string } | null>(null)
 const doneHeading = useTemplateRef('doneHeading')
 
 const trimmedName = computed(() => name.value.trim())
-const nameTooLong = computed(() => sessionNameLength(name.value) > SESSION_NAME_MAX)
+const nameTooLong = computed(() => eventNameLength(name.value) > EVENT_NAME_MAX)
 const nameError = computed(() => {
   if (attempted.value && trimmedName.value === '') return t('error.nameRequired')
-  if (nameTooLong.value) return t('error.nameTooLong', { max: SESSION_NAME_MAX })
+  if (nameTooLong.value) return t('error.nameTooLong', { max: EVENT_NAME_MAX })
   return undefined
 })
 
-/** Each Slot row's problem under the server's Slot rules (shared/session.ts); null for an empty row. */
+/** Each Slot row's problem under the server's Slot rules (shared/event.ts); null for an empty row. */
 const slotProblems = computed(() => {
   const instants = slots.value.map(value => (value === '' ? null : berlinToUtc(value)))
   const problems = slotRuleProblems(instants.filter(instant => instant !== null), [], berlinToUtc(now.value))
@@ -50,7 +50,7 @@ const directError = computed(() => (directPast.value ? t('error.slotPast') : und
 /** Why the CTA is blocked, or null when the form can be sent. */
 const blocker = computed<string | null>(() => {
   if (trimmedName.value === '') return t('error.nameRequired')
-  if (nameTooLong.value) return t('error.nameTooLong', { max: SESSION_NAME_MAX })
+  if (nameTooLong.value) return t('error.nameTooLong', { max: EVENT_NAME_MAX })
   if (mode.value === 'direct') {
     if (direct.value === '') return t('mvp.create.slotEmpty')
     return directPast.value ? t('mvp.create.blockedPast') : null
@@ -85,7 +85,7 @@ async function submit() {
   saving.value = true
   failure.value = null
   try {
-    created.value = await $fetch<{ slug: string, inviteUrl: string }>('/api/s', { method: 'POST', body })
+    created.value = await $fetch<{ slug: string, inviteUrl: string }>('/api/e', { method: 'POST', body })
     await nextTick()
     doneHeading.value?.focus()
   }
@@ -149,7 +149,7 @@ const MODES = computed(() => [
           </p>
           <InviteLinkCard :url="created.inviteUrl" />
           <NuxtLink
-            :to="`/s/${created.slug}`"
+            :to="`/e/${created.slug}`"
             class="inline-flex items-center gap-1 self-start font-extrabold no-underline"
           >
             {{ t('mvp.create.toPoll') }}
@@ -179,7 +179,7 @@ const MODES = computed(() => [
           :label="t('mvp.create.nameLabel')"
           :help="t('mvp.create.nameHelp')"
           :error="nameError"
-          :maxlength="SESSION_NAME_MAX"
+          :maxlength="EVENT_NAME_MAX"
         />
 
         <SegmentedControl

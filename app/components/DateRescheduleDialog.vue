@@ -3,7 +3,7 @@ import { CalendarClock } from '@lucide/vue'
 import { utcToBerlin } from '~~/shared/time'
 
 // Reschedule the set Date (02-components § DateConfirmDialog, screen M3 move; #14). The Host picks a
-// new future Berlin time. The Session stays set, and every Member gets the same .ics updated. The
+// new future Berlin time. The Event stays set, and every Member gets the same .ics updated. The
 // field starts at the current Date, so a small shift is one edit.
 const props = defineProps<{
   open: boolean

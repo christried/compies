@@ -23,7 +23,7 @@ function serve() {
     posted,
     deleted,
     add(handler?: () => unknown) {
-      registerEndpoint(`/api/s/${slug}/slots`, {
+      registerEndpoint(`/api/e/${slug}/slots`, {
         method: 'POST',
         handler: async (event) => {
           posted.push(await readBody(event))
@@ -32,7 +32,7 @@ function serve() {
       })
     },
     remove(slotId: string, handler?: () => unknown) {
-      registerEndpoint(`/api/s/${slug}/slots/${slotId}`, {
+      registerEndpoint(`/api/e/${slug}/slots/${slotId}`, {
         method: 'DELETE',
         handler: () => {
           deleted.push(slotId)

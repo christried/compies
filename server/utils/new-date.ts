@@ -1,6 +1,6 @@
 import { readBody, type H3Event } from 'h3'
 import type { PhaseRejection } from '../domain/phase'
-import { parseLocalTime } from '../domain/session'
+import { parseLocalTime } from '../domain/event'
 import { apiError } from './errors'
 
 /**

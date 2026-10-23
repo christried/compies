@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { arrangeHome, homeAction, isPastHomeGrace, needsVote } from '../../server/domain/home'
-import type { Phase } from '../../shared/session'
+import type { Phase } from '../../shared/event'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Dates older than 24 h before this instant drop off Home.
 const now = new Date('2026-10-22T10:00:00Z')
@@ -35,14 +35,14 @@ describe('needsVote', () => {
     expect(needsVote('poll', slots, votes, 'me')).toBe(false)
   })
 
-  it('is false when no Slot is left to vote on, and for Sessions with a Date', () => {
+  it('is false when no Slot is left to vote on, and for Events with a Date', () => {
     expect(needsVote('poll', [], [], 'me')).toBe(false)
     expect(needsVote('date_set', slots, [], 'me')).toBe(false)
   })
 })
 
 describe('homeAction', () => {
-  it('opens the Session for its Host', () => {
+  it('opens the Event for its Host', () => {
     expect(homeAction({ isHost: true, needsVote: true })).toBe('open')
   })
 

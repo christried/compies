@@ -3,7 +3,7 @@ import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes } from '../../../../db/schema'
 import { useDb } from '../../../../utils/db'
 import { slotNotFound } from '../../../../utils/errors'
-import { lockSessionForSlotEdit } from '../../../../utils/host-session'
+import { lockEventForSlotEdit } from '../../../../utils/host-event'
 import { findSlot } from '../../../../utils/slots'
 import { requireUser } from '../../../../utils/user'
 
@@ -16,8 +16,8 @@ export default defineEventHandler(async (event) => {
   const slotId = getRouterParam(event, 'slotId') ?? ''
 
   return useDb(event).transaction(async (tx) => {
-    const session = await lockSessionForSlotEdit(tx, slug, user.id)
-    const slot = await findSlot(tx, session.id, slotId)
+    const eventRow = await lockEventForSlotEdit(tx, slug, user.id)
+    const slot = await findSlot(tx, eventRow.id, slotId)
     if (!slot) throw slotNotFound()
 
     const dropped = await tx

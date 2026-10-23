@@ -2,17 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { reopenRejection, reopenValues, rescheduleRejection, rescheduleValues, setDateRejection, setDateValues } from '../../server/domain/phase'
 
 // Phase transitions (#1 § Domain rules). Each transition is a pure rule next to the others: the
-// handlers load the Session, ask the rule, and write the returned values with a conditional update.
+// handlers load the Event, ask the rule, and write the returned values with a conditional update.
 
 const now = new Date('2026-10-22T09:00:00.000Z')
 const later = new Date('2026-10-24T18:00:00.000Z')
 
 describe('setDateRejection', () => {
-  it('lets the Host set a future time while the Session is in the poll phase', () => {
+  it('lets the Host set a future time while the Event is in the poll phase', () => {
     expect(setDateRejection({ phase: 'poll', startsAt: later, now })).toBeNull()
   })
 
-  it('refuses any phase other than poll, so a set Date or a Session before its poll cannot be changed this way', () => {
+  it('refuses any phase other than poll, so a set Date or an Event before its poll cannot be changed this way', () => {
     expect(setDateRejection({ phase: 'date_set', startsAt: later, now })).toBe('wrong_phase')
     expect(setDateRejection({ phase: 'draft', startsAt: later, now })).toBe('wrong_phase')
   })
@@ -38,7 +38,7 @@ describe('rescheduleRejection', () => {
     expect(rescheduleRejection({ phase: 'date_set', startsAt: later, now })).toBeNull()
   })
 
-  it('refuses a Session that has no set Date yet, so Reschedule never acts on a poll', () => {
+  it('refuses an Event that has no set Date yet, so Reschedule never acts on a poll', () => {
     expect(rescheduleRejection({ phase: 'poll', startsAt: later, now })).toBe('wrong_phase')
     expect(rescheduleRejection({ phase: 'draft', startsAt: later, now })).toBe('wrong_phase')
   })

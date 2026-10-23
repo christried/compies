@@ -11,18 +11,18 @@ import TextField from '~/components/TextField.vue'
 describe('TextField', () => {
   it('labels the input and links the error and the help text to it', async () => {
     const page = await mountSuspended(TextField, {
-      props: { modelValue: '', label: 'Name der Session', help: 'Sehen alle in der Einladung.', error: 'Gib der Session einen Namen.' },
+      props: { modelValue: '', label: 'Name der Event', help: 'Sehen alle in der Einladung.', error: 'Gib der Event einen Namen.' },
     })
 
     const input = page.get('input')
     expect(page.get('label').attributes('for')).toBe(input.attributes('id'))
     expect(input.attributes('aria-invalid')).toBe('true')
     const described = input.attributes('aria-describedby')!.split(' ').map(id => page.get(`[id="${id}"]`).text())
-    expect(described).toEqual(['Gib der Session einen Namen.', 'Sehen alle in der Einladung.'])
+    expect(described).toEqual(['Gib der Event einen Namen.', 'Sehen alle in der Einladung.'])
   })
 
   it('emits what is typed', async () => {
-    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name der Session' } })
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name der Event' } })
 
     await page.get('input').setValue('Freitags')
 

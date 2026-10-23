@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 const cta = computed(() => props.latestPollSlug
-  ? { to: `/s/${props.latestPollSlug}`, label: t('mvp.site.toPoll'), icon: CalendarDays }
+  ? { to: `/e/${props.latestPollSlug}`, label: t('mvp.site.toPoll'), icon: CalendarDays }
   : { to: '/', label: t('mvp.site.toHome'), icon: House })
 const heading = useTemplateRef('heading')
 const nuxtApp = useNuxtApp()

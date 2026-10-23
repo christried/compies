@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { LogOut } from '@lucide/vue'
 import { constructionSite, viewerOf } from '~/utils/construction'
-import type { HomeSession, HomeView } from '~~/shared/session'
+import type { HomeEvent, HomeView } from '~~/shared/event'
 
 // MVP route guard: every path without a page of its own lands here (see utils/construction.ts).
 const route = useRoute()
@@ -13,10 +13,10 @@ const signOut = useSignOut()
 
 // Shares the Home list (same key), so the CTA can point at the User's latest open poll (#12): the
 // most recently created one, whatever its place in Home order. ISO strings sort as their times.
-const { data: home } = useFetch<HomeView>('/api/s', { key: 'home-sessions' })
-const latestPollSlug = computed(() => (home.value?.sessions ?? [])
-  .filter(session => session.phase === 'poll')
-  .reduce<HomeSession | null>((latest, session) => (!latest || session.createdAt > latest.createdAt ? session : latest), null)
+const { data: home } = useFetch<HomeView>('/api/e', { key: 'home-events' })
+const latestPollSlug = computed(() => (home.value?.events ?? [])
+  .filter(event => event.phase === 'poll')
+  .reduce<HomeEvent | null>((latest, event) => (!latest || event.createdAt > latest.createdAt ? event : latest), null)
   ?.slug ?? null)
 </script>
 

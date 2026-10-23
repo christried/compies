@@ -1,5 +1,5 @@
 import { VOTE_VALUES, type VoteValue } from '../../shared/poll'
-import type { Phase } from '../../shared/session'
+import type { Phase } from '../../shared/event'
 
 // Date poll rules (#1 § Domain rules, ADR 0001). Pure functions: the handlers load the rows and
 // pass them in; `now` is injected so the rules can be tested at a fixed moment.
@@ -63,7 +63,7 @@ export interface PollStanding<S extends PollSlot> {
   viewerVoted: boolean
 }
 
-/** Where a Session's poll stands for one viewer: the Best slot and who has voted. Used by the Session read and Home. */
+/** Where an Event's poll stands for one viewer: the Best slot and who has voted. Used by the Event read and Home. */
 export function pollStanding<S extends PollSlot>(input: { slots: S[], votes: PollVote[], memberIds: string[], viewerId: string, now: Date }): PollStanding<S> {
   const votableSlotIds = input.slots.filter(slot => !isPast(slot.startsAt, input.now)).map(slot => slot.id)
   const bestId = bestSlotId(input.slots, input.votes, input.now)

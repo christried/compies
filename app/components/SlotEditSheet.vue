@@ -2,7 +2,7 @@
 import { Plus, X } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
 import { formatSlotWhen } from '~/utils/berlin-time'
-import { SLOTS_MAX, slotProblems } from '~~/shared/session'
+import { SLOTS_MAX, slotProblems } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // The Host's Slot editor (#15), opened from the host dock while the Date poll is open. Lists the
@@ -12,7 +12,7 @@ import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 export interface EditableSlot {
   id: string
-  /** UTC ISO string, as the Session read returns it. */
+  /** UTC ISO string, as the Event read returns it. */
   startsAt: string
   /** Votes on this Slot, from the last read. */
   votes: number
@@ -44,7 +44,7 @@ const rows = computed(() => props.slots.map(slot => ({ ...slot, label: formatSlo
 
 const full = computed(() => props.slots.length >= SLOTS_MAX)
 
-/** The Slot rule the new time breaks, as the server would judge it (shared/session.ts). */
+/** The Slot rule the new time breaks, as the server would judge it (shared/event.ts). */
 const problem = computed(() => {
   if (newSlot.value === '') return null
   const existing = props.slots.map(slot => new Date(slot.startsAt))
@@ -68,7 +68,7 @@ async function add() {
   if (addBlocked.value || busy.value) return
   busy.value = true
   try {
-    await $fetch(`/api/s/${props.slug}/slots`, { method: 'POST', body: { startsAt: newSlot.value } })
+    await $fetch(`/api/e/${props.slug}/slots`, { method: 'POST', body: { startsAt: newSlot.value } })
     newSlot.value = ''
     emit('changed')
   }
@@ -82,7 +82,7 @@ async function add() {
 
 async function remove(slotId: string) {
   try {
-    await $fetch(`/api/s/${props.slug}/slots/${slotId}`, { method: 'DELETE' })
+    await $fetch(`/api/e/${props.slug}/slots/${slotId}`, { method: 'DELETE' })
     emit('changed')
   }
   catch (failure) {

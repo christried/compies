@@ -1,14 +1,14 @@
 import type { VoteValue } from './poll'
 
-// Session limits shared by the create form and the server (#1 § Domain rules).
+// Event limits shared by the create form and the server (#1 § Domain rules).
 
-/** Session name: 1 to this many characters after trimming (emoji count as one). */
-export const SESSION_NAME_MAX = 60
+/** Event name: 1 to this many characters after trimming (emoji count as one). */
+export const EVENT_NAME_MAX = 60
 /** Slots in a Date poll. */
 export const SLOTS_MAX = 8
 
-/** A Session name's length as the rules count it: trimmed, an emoji counts as one. */
-export function sessionNameLength(raw: string): number {
+/** An Event name's length as the rules count it: trimmed, an emoji counts as one. */
+export function eventNameLength(raw: string): number {
   return [...raw.trim()].length
 }
 
@@ -16,7 +16,7 @@ export type SlotProblem = 'in_past' | 'duplicate_slot'
 
 /**
  * The Slot rules (#1 § Domain rules): a Slot lies in the future and is unique per minute in its
- * Session. One answer per proposed Slot: `in_past`, `duplicate_slot` when an earlier proposed Slot or
+ * Event. One answer per proposed Slot: `in_past`, `duplicate_slot` when an earlier proposed Slot or
  * an existing one starts at the same time, or null. Existing Slots are only checked for duplicates,
  * because a Slot that has become past is still a Slot. The server and the forms both use this.
  */
@@ -30,13 +30,13 @@ export function slotProblems(proposed: Date[], existing: Date[], now: Date): (Sl
   })
 }
 
-/** The Phases of a Session (GLOSSARY: Phase). The MVP uses poll and date_set; the rest come with 1.0. */
+/** The Phases of an Event (GLOSSARY: Phase). The MVP uses poll and date_set; the rest come with 1.0. */
 export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
 export type Phase = (typeof PHASES)[number]
 
-/** What `GET /api/s/:slug` returns to a Member (#11). Times are UTC ISO strings. */
-export interface SessionView {
-  session: {
+/** What `GET /api/e/:slug` returns to a Member (#11). Times are UTC ISO strings. */
+export interface EventView {
+  event: {
     slug: string
     name: string
     phase: Phase
@@ -61,15 +61,15 @@ export interface SessionView {
 /** A Home card's call to action: `open` for the Host, `vote` while the viewer still has to vote, `view` otherwise. */
 export type HomeAction = 'open' | 'vote' | 'view'
 
-/** One card on Home (`GET /api/s`, #12). Times are UTC ISO strings. */
-export interface HomeSession {
+/** One card on Home (`GET /api/e`, #12). Times are UTC ISO strings. */
+export interface HomeEvent {
   slug: string
   name: string
   host: { name: string }
   phase: Phase
   dateMode: 'poll' | 'direct'
   startsAt: string | null
-  /** When the Session was created; picks the latest open poll for the Construction page (#12). */
+  /** When the Event was created; picks the latest open poll for the Construction page (#12). */
   createdAt: string
   /** The Best slot so far, or null. */
   bestSlot: { id: string, startsAt: string } | null
@@ -81,7 +81,7 @@ export interface HomeSession {
   action: HomeAction
 }
 
-/** What `GET /api/s` returns, already in Home order (open polls to vote on, other open polls, Dates upcoming first). */
+/** What `GET /api/e` returns, already in Home order (open polls to vote on, other open polls, Dates upcoming first). */
 export interface HomeView {
-  sessions: HomeSession[]
+  events: HomeEvent[]
 }

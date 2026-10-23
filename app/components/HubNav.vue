@@ -16,7 +16,7 @@ const route = useRoute()
 interface NavItem { key: string, to: string, label: string, icon: Component }
 
 const items = computed<NavItem[]>(() => [
-  { key: 'sessions', to: '/', label: t('nav.sessions'), icon: House },
+  { key: 'events', to: '/', label: t('nav.events'), icon: House },
   { key: 'archiv', to: '/archiv', label: t('nav.archive'), icon: Archive },
   ...(canSeeLibrary(props.viewer) ? [{ key: 'bibliothek', to: '/bibliothek', label: t('nav.library'), icon: Gamepad2 }] : []),
   { key: 'profil', to: '/profil', label: t('nav.profile'), icon: User },
@@ -25,7 +25,7 @@ const items = computed<NavItem[]>(() => [
 
 const current = computed(() => {
   const first = route.path.split('/').filter(Boolean)[0]
-  return items.value.find(item => item.key === first)?.key ?? (first ? undefined : 'sessions')
+  return items.value.find(item => item.key === first)?.key ?? (first ? undefined : 'events')
 })
 const soon = (key: string) => (HUB_SITES as readonly string[]).includes(key)
 </script>

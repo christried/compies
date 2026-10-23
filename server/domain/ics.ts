@@ -1,5 +1,5 @@
 // The calendar file a Member downloads for a Date (#1 § Domain rules, ADR 0003). One event per
-// Session: the UID is stable per Session and SEQUENCE is the Session's icsSequence, so a Reschedule
+// Event: the UID is stable per Event and SEQUENCE is the Event's icsSequence, so a Reschedule
 // updates the same event in the calendar. Times are UTC. The builder is pure: the endpoint passes in
 // the copy (from de.json) and the current time.
 
@@ -7,9 +7,9 @@
 export const ICS_DURATION_MS = 7 * 60 * 60_000
 
 export interface IcsInput {
-  /** Stable per Session. */
+  /** Stable per Event. */
   uid: string
-  /** The Session's `icsSequence`. */
+  /** The Event's `icsSequence`. */
   sequence: number
   startsAt: Date
   /** DTSTAMP: when the file is made. */
@@ -18,13 +18,13 @@ export interface IcsInput {
   description: string
   /** The text the 1 h alarm shows. */
   alarm: string
-  /** The Session link. */
+  /** The Event link. */
   url: string
 }
 
 /**
  * Fills the `{name}` placeholders of a de.json text. The values go in through a function, so `$&`,
- * `$'` and the like in a Session name stay as typed instead of being read as replacement patterns.
+ * `$'` and the like in an Event name stay as typed instead of being read as replacement patterns.
  */
 export function fillCopy(template: string, values: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (placeholder, key: string) => values[key] ?? placeholder)

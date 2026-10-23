@@ -1,39 +1,39 @@
 <script setup lang="ts">
 import { formatSlotWhen } from '~/utils/berlin-time'
-import type { HomeSession } from '~~/shared/session'
+import type { HomeEvent } from '~~/shared/event'
 
-// One Session on Home (screen M1, 02-components). Shows the name and the Host, the phase, the Best
-// slot so far (an open poll) or the Date (a set Session), how many Members voted and the User's own
+// One Event on Home (screen M1, 02-components). Shows the name and the Host, the phase, the Best
+// slot so far (an open poll) or the Date (a set Event), how many Members voted and the User's own
 // status. The call to action asks the User to vote while they still have to (primary), lets them
-// view the Session once they have voted or a Date is set, and opens it for the Host.
+// view the Event once they have voted or a Date is set, and opens it for the Host.
 
-const props = defineProps<{ session: HomeSession }>()
+const props = defineProps<{ event: HomeEvent }>()
 
 const { t } = useI18n()
 
-const isPoll = computed(() => props.session.phase === 'poll')
+const isPoll = computed(() => props.event.phase === 'poll')
 
-const hostLine = computed(() => props.session.isHost
+const hostLine = computed(() => props.event.isHost
   ? t('mvp.home.hostYou')
-  : t('mvp.home.hostLabel', { name: props.session.host.name }))
+  : t('mvp.home.hostLabel', { name: props.event.host.name }))
 
 const whenLabel = computed(() => isPoll.value ? t('mvp.home.bestSoFar') : t('mvp.home.date'))
 const whenValue = computed(() => {
-  if (!isPoll.value) return props.session.startsAt ? formatSlotWhen(new Date(props.session.startsAt)) : ''
-  return props.session.bestSlot ? formatSlotWhen(new Date(props.session.bestSlot.startsAt)) : t('mvp.home.noBest')
+  if (!isPoll.value) return props.event.startsAt ? formatSlotWhen(new Date(props.event.startsAt)) : ''
+  return props.event.bestSlot ? formatSlotWhen(new Date(props.event.bestSlot.startsAt)) : t('mvp.home.noBest')
 })
 
 const votedText = computed(() => t('mvp.home.votedCount', {
-  n: props.session.progress.voted,
-  total: props.session.progress.total,
+  n: props.event.progress.voted,
+  total: props.event.progress.total,
 }))
 const ownStatus = computed(() => {
   if (!isPoll.value) return t('mvp.home.setReady')
-  return props.session.viewerVoted ? t('mvp.home.voted') : t('mvp.home.notVoted')
+  return props.event.viewerVoted ? t('mvp.home.voted') : t('mvp.home.notVoted')
 })
 
 const CTA_LABEL = { open: 'mvp.home.open', vote: 'mvp.home.vote', view: 'mvp.home.view' } as const
-const ctaLabel = computed(() => t(CTA_LABEL[props.session.action]))
+const ctaLabel = computed(() => t(CTA_LABEL[props.event.action]))
 </script>
 
 <template>
@@ -41,11 +41,11 @@ const ctaLabel = computed(() => t(CTA_LABEL[props.session.action]))
     <div class="flex min-w-0 items-start justify-between gap-3">
       <div class="flex min-w-0 flex-col gap-0.5">
         <h3 class="m-0 truncate font-display text-[24px] leading-tight font-normal">
-          {{ session.name }}
+          {{ event.name }}
         </h3>
         <span class="text-[13px] text-ink-2">{{ hostLine }}</span>
       </div>
-      <PhasePill :phase="session.phase" />
+      <PhasePill :phase="event.phase" />
     </div>
 
     <div class="flex flex-col gap-0.5">
@@ -60,8 +60,8 @@ const ctaLabel = computed(() => t(CTA_LABEL[props.session.action]))
 
     <div class="mt-auto pt-1">
       <AppButton
-        :to="`/s/${session.slug}`"
-        :variant="session.action === 'vote' ? 'primary' : 'secondary'"
+        :to="`/e/${event.slug}`"
+        :variant="event.action === 'vote' ? 'primary' : 'secondary'"
       >
         {{ ctaLabel }}
       </AppButton>

@@ -17,7 +17,7 @@ const props = defineProps<{
   options: ConfirmOption[]
   /** The Slot that starts selected. */
   preselected: string | null
-  /** Members in the Session, for the line that says how many will see the Date. */
+  /** Members in the Event, for the line that says how many will see the Date. */
   total: number
   loading?: boolean
 }>()

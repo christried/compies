@@ -13,7 +13,7 @@ describe('guardRoute', () => {
   describe('signed out', () => {
     it('sends every app route to sign-in, keeping where the visitor was heading', () => {
       expect(guardRoute(route('/archiv'), null)).toBe('/anmelden?redirect=%2Farchiv')
-      expect(guardRoute(route('/s/freitags-zocken-k7q2?x=1'), null)).toBe('/anmelden?redirect=%2Fs%2Ffreitags-zocken-k7q2%3Fx%3D1')
+      expect(guardRoute(route('/e/freitags-zocken-k7q2?x=1'), null)).toBe('/anmelden?redirect=%2Fe%2Ffreitags-zocken-k7q2%3Fx%3D1')
     })
 
     it('sends Home to sign-in without a redirect', () => {
@@ -22,7 +22,7 @@ describe('guardRoute', () => {
 
     it('lets the visitor open sign-in, the invite preview and the legal pages', () => {
       expect(guardRoute(route('/anmelden?redirect=%2Farchiv'), null)).toBeNull()
-      expect(guardRoute(route('/s/freitags-zocken-k7q2-Ab3dE6gH9jK1'), null)).toBeNull()
+      expect(guardRoute(route('/e/freitags-zocken-k7q2-Ab3dE6gH9jK1'), null)).toBeNull()
       expect(guardRoute(route('/impressum'), null)).toBeNull()
       expect(guardRoute(route('/datenschutz'), null)).toBeNull()
     })
@@ -39,8 +39,8 @@ describe('guardRoute', () => {
     })
 
     it('keeps a pending invite through profile setup', () => {
-      expect(guardRoute(route('/s/freitags-zocken-k7q2-Ab3dE6gH9jK1'), newUser))
-        .toBe('/einrichten?redirect=%2Fs%2Ffreitags-zocken-k7q2-Ab3dE6gH9jK1')
+      expect(guardRoute(route('/e/freitags-zocken-k7q2-Ab3dE6gH9jK1'), newUser))
+        .toBe('/einrichten?redirect=%2Fe%2Ffreitags-zocken-k7q2-Ab3dE6gH9jK1')
     })
 
     it('passes the sign-in target on to profile setup', () => {
@@ -56,8 +56,8 @@ describe('guardRoute', () => {
   describe('signed in after profile setup', () => {
     it('lets the User through', () => {
       expect(guardRoute(route('/'), user)).toBeNull()
-      expect(guardRoute(route('/s/freitags-zocken-k7q2'), user)).toBeNull()
-      expect(guardRoute(route('/s/freitags-zocken-k7q2-Ab3dE6gH9jK1'), user)).toBeNull()
+      expect(guardRoute(route('/e/freitags-zocken-k7q2'), user)).toBeNull()
+      expect(guardRoute(route('/e/freitags-zocken-k7q2-Ab3dE6gH9jK1'), user)).toBeNull()
     })
 
     it('sends sign-in and profile setup on to their target', () => {
@@ -70,7 +70,7 @@ describe('guardRoute', () => {
 
 describe('safeRedirect', () => {
   it('keeps a path on this site', () => {
-    expect(safeRedirect('/s/abc-k7q2?tab=1#top')).toBe('/s/abc-k7q2?tab=1#top')
+    expect(safeRedirect('/e/abc-k7q2?tab=1#top')).toBe('/e/abc-k7q2?tab=1#top')
   })
 
   it('falls back to Home for anything that could leave the site', () => {
@@ -81,10 +81,10 @@ describe('safeRedirect', () => {
 })
 
 describe('isInviteLinkPath', () => {
-  it('tells an Invite link from a Session link by its 12-character token', () => {
-    expect(isInviteLinkPath('/s/freitags-zocken-k7q2-Ab3dE6gH9jK1')).toBe(true)
-    expect(isInviteLinkPath('/s/freitags-zocken-k7q2')).toBe(false)
-    expect(isInviteLinkPath('/s/freitags-zocken-k7q2-Ab3dE6gH9jK1/brett')).toBe(false)
-    expect(isInviteLinkPath('/s/k7q2-Ab3dE6gH9jK')).toBe(false)
+  it('tells an Invite link from an Event link by its 12-character token', () => {
+    expect(isInviteLinkPath('/e/freitags-zocken-k7q2-Ab3dE6gH9jK1')).toBe(true)
+    expect(isInviteLinkPath('/e/freitags-zocken-k7q2')).toBe(false)
+    expect(isInviteLinkPath('/e/freitags-zocken-k7q2-Ab3dE6gH9jK1/brett')).toBe(false)
+    expect(isInviteLinkPath('/e/k7q2-Ab3dE6gH9jK')).toBe(false)
   })
 })

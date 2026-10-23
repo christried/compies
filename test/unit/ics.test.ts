@@ -10,9 +10,9 @@ const base = {
   startsAt: new Date('2026-10-24T18:00:00.000Z'),
   now: new Date('2026-10-22T09:00:00.000Z'),
   summary: 'Freitags-Zocken (COMPIES)',
-  description: 'Zur Session: https://compies.example/s/freitags-zocken-k7q2',
+  description: 'Zur Event: https://compies.example/e/freitags-zocken-k7q2',
   alarm: 'Freitags-Zocken startet in 1 Stunde',
-  url: 'https://compies.example/s/freitags-zocken-k7q2',
+  url: 'https://compies.example/e/freitags-zocken-k7q2',
 }
 
 /** The file with folded lines joined again, one entry per property line. */
@@ -30,7 +30,7 @@ describe('buildIcs', () => {
     expect(ics).not.toMatch(/[^\r]\n/)
   })
 
-  it('uses the stable UID and the Session sequence', () => {
+  it('uses the stable UID and the Event sequence', () => {
     const lines = unfolded(buildIcs({ ...base, sequence: 3 }))
 
     expect(lines).toContain('UID:3f2a9c1e-0000-4000-8000-000000000001@compies')
@@ -62,12 +62,12 @@ describe('buildIcs', () => {
     ])
   })
 
-  it('carries the summary, the Session link and the description', () => {
+  it('carries the summary, the Event link and the description', () => {
     const lines = unfolded(buildIcs(base))
 
     expect(lines).toContain('SUMMARY:Freitags-Zocken (COMPIES)')
-    expect(lines).toContain('URL:https://compies.example/s/freitags-zocken-k7q2')
-    expect(lines).toContain('DESCRIPTION:Zur Session: https://compies.example/s/freitags-zocken-k7q2')
+    expect(lines).toContain('URL:https://compies.example/e/freitags-zocken-k7q2')
+    expect(lines).toContain('DESCRIPTION:Zur Event: https://compies.example/e/freitags-zocken-k7q2')
   })
 
   it('escapes commas, semicolons and backslashes in text values', () => {

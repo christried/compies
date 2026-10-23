@@ -1,13 +1,13 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
-import { pollSlots, pollVotes, sessionMembers, sessions, users } from '../../db/schema'
+import { pollSlots, pollVotes, eventMembers, events, users } from '../../db/schema'
 import { arrangeHome, homeAction, needsVote } from '../../domain/home'
 import { pollStanding } from '../../domain/poll'
 import { useDb } from '../../utils/db'
 import { requireUser } from '../../utils/user'
-import type { HomeSession, HomeView } from '../../../shared/session'
+import type { HomeEvent, HomeView } from '../../../shared/event'
 
-// Home (#12, screen M1): every Session the User is a Member of, not deleted, in Home order. Each card
+// Home (#12, screen M1): every Event the User is a Member of, not deleted, in Home order. Each card
 // carries what the card shows: the Host, the phase, the Best slot or the Date, how many Members have
 // voted, the User's own status and the call to action. Dates more than 24 h past are left out.
 // Pure rules live in server/domain/home.ts and poll.ts; this handler only loads the rows.
@@ -18,53 +18,53 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
 
   const rows = await db
     .select({
-      id: sessions.id,
-      slug: sessions.slug,
-      name: sessions.name,
-      phase: sessions.phase,
-      dateMode: sessions.dateMode,
-      startsAt: sessions.startsAt,
-      createdAt: sessions.createdAt,
-      hostId: sessions.hostId,
+      id: events.id,
+      slug: events.slug,
+      name: events.name,
+      phase: events.phase,
+      dateMode: events.dateMode,
+      startsAt: events.startsAt,
+      createdAt: events.createdAt,
+      hostId: events.hostId,
       hostName: users.name,
       hostDisplayName: users.displayName,
     })
-    .from(sessionMembers)
-    .innerJoin(sessions, eq(sessionMembers.sessionId, sessions.id))
-    .innerJoin(users, eq(sessions.hostId, users.id))
-    .where(and(eq(sessionMembers.userId, user.id), isNull(sessions.deletedAt)))
+    .from(eventMembers)
+    .innerJoin(events, eq(eventMembers.eventId, events.id))
+    .innerJoin(users, eq(events.hostId, users.id))
+    .where(and(eq(eventMembers.userId, user.id), isNull(events.deletedAt)))
 
-  if (rows.length === 0) return { sessions: [] }
-  const sessionIds = rows.map(row => row.id)
+  if (rows.length === 0) return { events: [] }
+  const eventIds = rows.map(row => row.id)
 
   const slots = await db
-    .select({ id: pollSlots.id, sessionId: pollSlots.sessionId, startsAt: pollSlots.startsAt })
+    .select({ id: pollSlots.id, eventId: pollSlots.eventId, startsAt: pollSlots.startsAt })
     .from(pollSlots)
-    .where(inArray(pollSlots.sessionId, sessionIds))
+    .where(inArray(pollSlots.eventId, eventIds))
 
   const votes = await db
-    .select({ slotId: pollVotes.slotId, userId: pollVotes.userId, value: pollVotes.value, sessionId: pollSlots.sessionId })
+    .select({ slotId: pollVotes.slotId, userId: pollVotes.userId, value: pollVotes.value, eventId: pollSlots.eventId })
     .from(pollVotes)
     .innerJoin(pollSlots, eq(pollVotes.slotId, pollSlots.id))
-    .where(inArray(pollSlots.sessionId, sessionIds))
+    .where(inArray(pollSlots.eventId, eventIds))
 
   const members = await db
-    .select({ sessionId: sessionMembers.sessionId, userId: sessionMembers.userId })
-    .from(sessionMembers)
-    .where(inArray(sessionMembers.sessionId, sessionIds))
+    .select({ eventId: eventMembers.eventId, userId: eventMembers.userId })
+    .from(eventMembers)
+    .where(inArray(eventMembers.eventId, eventIds))
 
   const cards = rows.map((row) => {
-    const sessionVotes = votes.filter(vote => vote.sessionId === row.id)
+    const eventVotes = votes.filter(vote => vote.eventId === row.id)
     const standing = pollStanding({
-      slots: slots.filter(slot => slot.sessionId === row.id),
-      votes: sessionVotes,
-      memberIds: members.filter(member => member.sessionId === row.id).map(member => member.userId),
+      slots: slots.filter(slot => slot.eventId === row.id),
+      votes: eventVotes,
+      memberIds: members.filter(member => member.eventId === row.id).map(member => member.userId),
       viewerId: user.id,
       now,
     })
     const isHost = row.hostId === user.id
-    const viewerNeedsVote = needsVote(row.phase, standing.votableSlotIds, sessionVotes, user.id)
-    const card: HomeSession = {
+    const viewerNeedsVote = needsVote(row.phase, standing.votableSlotIds, eventVotes, user.id)
+    const card: HomeEvent = {
       slug: row.slug,
       name: row.name,
       host: { name: row.hostDisplayName ?? row.hostName },
@@ -82,5 +82,5 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
     return { card, phase: row.phase, needsVote: viewerNeedsVote, startsAt: row.startsAt, createdAt: row.createdAt }
   })
 
-  return { sessions: arrangeHome(cards, now).map(entry => entry.card) }
+  return { events: arrangeHome(cards, now).map(entry => entry.card) }
 })

@@ -34,7 +34,7 @@ watch(() => props.open, (open) => {
 
 async function rotate() {
   try {
-    const { inviteUrl } = await $fetch<{ inviteUrl: string }>(`/api/s/${props.slug}/rotate`, { method: 'POST' })
+    const { inviteUrl } = await $fetch<{ inviteUrl: string }>(`/api/e/${props.slug}/rotate`, { method: 'POST' })
     current.value = inviteUrl
     rotated.value = true
     confirming.value = false

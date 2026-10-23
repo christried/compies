@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { viewerOf } from '~/utils/construction'
 
-// Layout frame. hub = header + HubNav (bottom tab bar below md); session = header with a
+// Layout frame. hub = header + HubNav (bottom tab bar below md); event = header with a
 // title area and no side panel in the MVP; bare = header only (errors, sign-in).
 withDefaults(defineProps<{
-  kind?: 'hub' | 'session' | 'bare'
+  kind?: 'hub' | 'event' | 'bare'
   /** The stage fills the frame edge to edge, without padding or max width (sign-in, setup). */
   flush?: boolean
   /** A hub page that is a task, not a place, leaves out the phone tab bar (screen M2). */

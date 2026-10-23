@@ -5,7 +5,7 @@ import CreatePage from '~/pages/neu.vue'
 import { kitty, signInAs } from './auth'
 
 const host = { ...kitty, canHost: true }
-const created = { slug: 'freitags-zocken-k7q2', inviteUrl: 'http://localhost/s/freitags-zocken-k7q2-AbCdEfGhIjKl' }
+const created = { slug: 'freitags-zocken-k7q2', inviteUrl: 'http://localhost/e/freitags-zocken-k7q2-AbCdEfGhIjKl' }
 
 // Each Slot is a DateTimeField group: its date input comes first, then its time input.
 async function fillSlot(page: Awaited<ReturnType<typeof mountSuspended>>, index: number, date: string, time: string) {
@@ -15,7 +15,7 @@ async function fillSlot(page: Awaited<ReturnType<typeof mountSuspended>>, index:
   await timeInput!.setValue(time.replace(':', ''))
 }
 
-describe('create a Session', () => {
+describe('create an Event', () => {
   beforeEach(() => {
     useState('toasts').value = []
   })
@@ -86,7 +86,7 @@ describe('create a Session', () => {
   it('posts the poll and shows the success card with the Invite link and the way to the poll', async () => {
     signInAs(host)
     const saved = vi.fn()
-    registerEndpoint('/api/s', {
+    registerEndpoint('/api/e', {
       method: 'POST',
       handler: async (event) => {
         saved(await readBody(event))
@@ -102,13 +102,13 @@ describe('create a Session', () => {
     await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
     expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30'] })
     expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
-    expect(page.get('a[href="/s/freitags-zocken-k7q2"]').text()).toContain('Zur Umfrage')
+    expect(page.get('a[href="/e/freitags-zocken-k7q2"]').text()).toContain('Zur Umfrage')
   })
 
   it('posts a direct Date from the second mode', async () => {
     signInAs(host)
     const saved = vi.fn()
-    registerEndpoint('/api/s', {
+    registerEndpoint('/api/e', {
       method: 'POST',
       handler: async (event) => {
         saved(await readBody(event))
@@ -126,10 +126,10 @@ describe('create a Session', () => {
     expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', startsAt: '2090-11-07T20:00' })
   })
 
-  it('disables the CTA while the Session is being saved', async () => {
+  it('disables the CTA while the Event is being saved', async () => {
     signInAs(host)
     let finish = () => {}
-    registerEndpoint('/api/s', {
+    registerEndpoint('/api/e', {
       method: 'POST',
       handler: () => new Promise((resolve) => {
         finish = () => resolve(created)

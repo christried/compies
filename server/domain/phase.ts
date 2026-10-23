@@ -1,20 +1,20 @@
-import type { Phase } from '../../shared/session'
+import type { Phase } from '../../shared/event'
 import { isPast } from './poll'
 
-// Phase transitions of a Session (#1 § Domain rules). Pure: the handlers load the Session, ask the
+// Phase transitions of an Event (#1 § Domain rules). Pure: the handlers load the Event, ask the
 // rule, and write the returned values with a conditional update. The .ics SEQUENCE is counted up in
 // SQL by the handlers (`icsSequence + 1`), so two writes at once cannot both produce the same number.
 
 export type PhaseRejection = 'wrong_phase' | 'in_past'
 
-/** A new Date needs the Session in `from` and a time in the future. The phase is checked first. */
+/** A new Date needs the Event in `from` and a time in the future. The phase is checked first. */
 function newDateRejection(input: { phase: Phase, startsAt: Date, now: Date }, from: Phase): PhaseRejection | null {
   if (input.phase !== from) return 'wrong_phase'
   if (isPast(input.startsAt, input.now)) return 'in_past'
   return null
 }
 
-/** Set the Date (poll → date_set): the Session must be in the poll phase and the time must be in the future. */
+/** Set the Date (poll → date_set): the Event must be in the poll phase and the time must be in the future. */
 export function setDateRejection(input: { phase: Phase, startsAt: Date, now: Date }): PhaseRejection | null {
   return newDateRejection(input, 'poll')
 }

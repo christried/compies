@@ -15,6 +15,13 @@
       "when": 1792683648611,
       "tag": "0001_auth_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792760000000,
+      "tag": "0002_event_rename",
+      "breakpoints": true
     }
   ]
 }
