@@ -17,6 +17,7 @@ export function apiFailure(failure: unknown): ApiFailure {
 const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   in_past: 'error.slotPast',
   slot_past: 'error.slotPast',
+  slot_taken: 'error.slotTakenDate',
   duplicate_slot: 'error.slotDuplicate',
   duplicate_date: 'error.dateDuplicate',
   too_few_slots: 'error.tooFewSlots',

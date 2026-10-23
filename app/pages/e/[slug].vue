@@ -10,10 +10,11 @@ import type { EventView } from '~~/shared/event'
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
-// Each Session with a Date gets a DateSetCard at the top, numbered when the Event has several Sessions
-// (#49). While Dates are missing the poll follows. Set the Date, Reschedule and Reopen (#13, #14) post
-// through useHostActions. Termine bearbeiten opens SlotEditSheet (#15). With several Sessions the Host
-// actions on the cards and "Termin festlegen" wait for Review 2.4 and 2.5 (#52, #53).
+// The Host picks only the Slot; its time goes to the next Session without a Date (#52). Each Session with
+// a Date gets a DateSetCard at the top, numbered when the Event has several Sessions (#49). While Dates
+// are missing the poll follows. Reschedule and Reopen (#13, #14) post through useHostActions and still
+// act on a one-Session Event only; the per-Session actions come with #55. Termine bearbeiten opens
+// SlotEditSheet (#15).
 // The Invite link (`/e/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
@@ -106,32 +107,36 @@ function comingSoon() {
 const { confirmOpen, confirming, rescheduleOpen, rescheduling, confirmDate: confirmStart, rescheduleDate, reopenDate } = useHostActions(slug, refresh)
 const confirmPreset = ref<string | null>(null)
 
-/** The Slots the Host can still confirm, in time order, with their counts for the dialog. */
+/** The open Slots the Host can still confirm, in time order, with their counts for the dialog (#52). */
 const confirmOptions = computed(() => slots.value
   .filter(slot => !slot.past)
   .map(slot => ({ id: slot.id, day: slot.day, time: slot.time, ...countsFor(slot.id) })))
+
+/** The Event's Sessions (#49): dated ones in Date order with their numbers, then those still waiting for a Date. */
+const sessions = computed(() => data.value?.sessions ?? [])
+const datedSessions = computed(() => sessions.value.filter(session => session.startsAt !== null))
+const missing = computed(() => data.value?.missingDates ?? 0)
+/** The Dates still missing after the one the Host sets now (#52): the dialog says so. */
+const missingAfterSet = computed(() => Math.max(missing.value - 1, 0))
+
+/** Why "Termin festlegen" cannot set a Date right now, or null (#52): no open Slot at all, or none in the future. */
+const setBlocked = computed(() => {
+  if (slots.value.length === 0) return t('mvp.set.noSlots')
+  if (confirmOptions.value.length === 0) return t('mvp.set.noFutureSlot')
+  return null
+})
 
 /** Opens the confirm dialog: the Slot picked on its card, else the Best slot, else the earliest future Slot. */
 function openConfirm(slotId?: string) {
   const first = confirmOptions.value[0]
   if (!first) {
-    toast({ tone: 'error', text: t('mvp.set.noFutureSlot') })
+    toast({ tone: 'info', text: setBlocked.value ?? t('mvp.set.noFutureSlot') })
     return
   }
   confirmPreset.value = slotId ?? data.value?.bestSlotId ?? first.id
   confirmOpen.value = true
 }
 
-/** Sets the Date to the Slot the Host picked in the dialog. */
-function confirmDate(slotId: string) {
-  const slot = data.value?.slots.find(candidate => candidate.id === slotId)
-  if (slot) return confirmStart(new Date(slot.startsAt))
-}
-
-/** The Event's Sessions (#49): dated ones in Date order with their numbers, then those still waiting for a Date. */
-const sessions = computed(() => data.value?.sessions ?? [])
-const datedSessions = computed(() => sessions.value.filter(session => session.startsAt !== null))
-const missing = computed(() => data.value?.missingDates ?? 0)
 /** The Event's one Session, when it has only one: the Host acts on its card and sets its Date (#49). */
 const onlySession = computed(() => (sessions.value.length === 1 ? sessions.value[0] ?? null : null))
 const startsAt = computed(() => onlySession.value?.startsAt ?? null)
@@ -193,10 +198,10 @@ const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
 })))
 const inviteOpen = ref(false)
 
-// "Termin festlegen" waits for several Sessions (#52): the dock offers it only for a one-Session Event.
+// "Termin festlegen" looks disabled with its reason when no open future Slot can become a Date (#52).
 const hostActions = computed(() => [
-  ...(onlySession.value ? [{ key: 'set', label: t('dock.setDate'), icon: CalendarCheck, primary: true }] : []),
-  { key: 'edit', label: t('mvp.slots.title'), icon: CalendarClock, primary: onlySession.value === null },
+  { key: 'set', label: t('dock.setDate'), icon: CalendarCheck, primary: true, disabledReason: setBlocked.value ?? undefined },
+  { key: 'edit', label: t('mvp.slots.title'), icon: CalendarClock },
   { key: 'invite', label: t('common.invite'), icon: LinkIcon },
 ])
 
@@ -348,7 +353,7 @@ usePollRefresh(() => {
               :total="total"
               :my-vote="myVoteFor(slot.id)"
               :best="data.bestSlotId === slot.id"
-              :can-pick="onlySession !== null && data.event.isHost"
+              :can-pick="data.event.isHost"
               @vote="value => vote(slot.id, value)"
               @pick="openConfirm(slot.id)"
             />
@@ -424,9 +429,9 @@ usePollRefresh(() => {
       :open="confirmOpen"
       :options="confirmOptions"
       :preselected="confirmPreset"
-      :total="total"
+      :missing-after="missingAfterSet"
       :loading="confirming"
-      @confirm="confirmDate"
+      @confirm="confirmStart"
       @cancel="confirmOpen = false"
     />
     <SlotEditSheet

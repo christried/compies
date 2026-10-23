@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { CalendarCheck, Eye } from '@lucide/vue'
 
-// The Host sets the Date (02-components § DateConfirmDialog, screen M3 confirm). A ConfirmModal with
-// the future Slots as a radio group. The preselected one is the Best slot, or the earliest future Slot
-// when nobody has voted; the Host can pick another future Slot. Confirming needs a chosen Slot.
+// The Host sets a Date (02-components § DateConfirmDialog, screen M3 confirm, #52). A ConfirmModal with
+// the open future Slots as a radio group. The preselected one is the Best slot, or the earliest future
+// Slot when nobody has voted; the Host can pick another. Confirming needs a chosen Slot. The dialog says
+// how many Dates still wait after this one, and no line when this one fills the last.
 export interface ConfirmOption {
   id: string
   day: string
@@ -17,8 +18,8 @@ const props = defineProps<{
   options: ConfirmOption[]
   /** The Slot that starts selected. */
   preselected: string | null
-  /** Members in the Event, for the line that says how many will see the Date. */
-  total: number
+  /** The Sessions still without a Date after this one is set. */
+  missingAfter: number
   loading?: boolean
 }>()
 
@@ -71,12 +72,15 @@ function confirm() {
         </button>
       </div>
       <ul class="m-0 flex list-none flex-col gap-2 p-0 text-[14px]">
-        <li class="flex gap-2">
+        <li v-if="missingAfter > 0">
+          {{ t('mvp.set.missingAfter', { n: missingAfter }, missingAfter) }}
+        </li>
+        <li class="flex items-center gap-2">
           <AppIcon
             :icon="Eye"
             :size="16"
           />
-          {{ t('mvp.poll.confirmSeeAll', { n: total }) }}
+          {{ t('mvp.poll.confirmSeeAll') }}
         </li>
       </ul>
     </div>
