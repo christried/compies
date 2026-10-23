@@ -24,6 +24,7 @@ import {
   PopoverRoot,
 } from 'reka-ui'
 import type { Ref } from 'vue'
+import { joinBerlinLocal, splitBerlinLocal } from '~~/shared/time'
 
 // A Berlin date and time in two own fields (ADR 0010, 02-components § DateTimeField). The value is
 // `YYYY-MM-DDTHH:mm` in Europe/Berlin, or empty until both parts are set and valid (ADR 0003).
@@ -89,9 +90,9 @@ function parseTimeDigits(digits: string) {
 }
 
 // Each part keeps its typed digits; its text and its value are derived from them.
-const [initialDate = '', initialTime = ''] = props.modelValue.split('T')
-const dateDigits = ref(isoToDigits(initialDate))
-const timeDigits = ref(initialTime.replace(':', ''))
+const initial = splitBerlinLocal(props.modelValue)
+const dateDigits = ref(isoToDigits(initial.date))
+const timeDigits = ref(initial.time.replace(':', ''))
 const dateText = computed(() => formatDateDigits(dateDigits.value))
 const dateValue = computed(() => parseDateDigits(dateDigits.value))
 const timeText = computed(() => formatTimeDigits(timeDigits.value))
@@ -99,7 +100,7 @@ const timeValue = computed(() => parseTimeDigits(timeDigits.value))
 const timeInvalid = computed(() => timeDigits.value.length === 4 && !timeValue.value)
 
 function combined() {
-  return dateValue.value && timeValue.value ? `${dateValue.value}T${timeValue.value}` : ''
+  return dateValue.value && timeValue.value ? joinBerlinLocal(dateValue.value, timeValue.value) : ''
 }
 
 function onPart() {
@@ -130,9 +131,9 @@ function commitTime() {
 // A value from outside (a reset, or the Slot list changing) replaces what the inputs show.
 watch(() => props.modelValue, (value) => {
   if (value === combined()) return
-  const [datePart = '', timePart = ''] = value.split('T')
-  dateDigits.value = isoToDigits(datePart)
-  timeDigits.value = timePart.replace(':', '')
+  const parts = splitBerlinLocal(value)
+  dateDigits.value = isoToDigits(parts.date)
+  timeDigits.value = parts.time.replace(':', '')
 })
 
 // The earliest selectable day is today in Berlin, in every date field: the field owns it, so no caller

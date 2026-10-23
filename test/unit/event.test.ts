@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseAddedSlot, parseNewEvent, slotsEditable } from '../../server/domain/event'
+import { parseAddedSlot, parseNewEvent } from '../../server/domain/event'
+import { slotsEditable } from '../../shared/event'
 import { berlinToUtc } from '../../shared/time'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Times below are Berlin wall-clock values.

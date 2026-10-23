@@ -1,13 +1,14 @@
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { events, pollSlots, sessions } from '../db/schema'
-import { sequenceRaises } from '../domain/session'
-import { phaseOf, rescheduleValues } from '../domain/phase'
+import { sequenceRaises, type SessionDate } from '../domain/session'
+import { phaseAfterChange, rescheduleValues } from '../domain/phase'
+import type { Phase } from '../../shared/event'
 import { apiError } from './errors'
 import type { Db } from './db'
 
-// The Sessions of an Event (ADR 0011, #48, #52, #53, #55). Every handler that adds, removes, moves or
-// reopens a Session reads the Sessions under the Event lock, writes the change, then raises the calendar
-// sequences (raiseSequences) and writes the Phase (setEventPhase) in the same transaction.
+// The Sessions of an Event (ADR 0011, #48, #52, #53, #55). Every handler that adds, removes, moves, sets or
+// reopens a Session reads the Sessions under the Event lock, writes the change, then calls finishSessionChange
+// in the same transaction: it raises the calendar sequences and writes the Phase.
 
 export type SessionRow = typeof sessions.$inferSelect
 
@@ -23,12 +24,15 @@ export async function raiseSequences(db: Db, ids: string[]): Promise<void> {
 }
 
 /**
- * The Event's Phase from its Sessions' Dates (#52, #55): the date poll while any Session has no Date, else
- * date set. Written by every handler that changes the Dates or the Sessions; returns the Phase written.
+ * The tail of every change to an Event's Sessions (#49, #52, #53, #55): `before` and `after` are the Sessions
+ * as read under the Event lock and as they are once the change is written. Raises the SEQUENCE of every
+ * Session whose entry changed (sequenceRaises), then writes the Phase the Dates leave (phaseAfterChange).
+ * Returns the Phase written.
  */
-export async function setEventPhase(db: Db, eventId: string, startsAt: (Date | null)[]): Promise<'poll' | 'date_set'> {
-  const phase = phaseOf(startsAt)
-  await db.update(events).set({ phase }).where(eq(events.id, eventId))
+export async function finishSessionChange(db: Db, event: { id: string, phase: Phase }, before: SessionDate[], after: SessionDate[]): Promise<Phase> {
+  await raiseSequences(db, sequenceRaises(before, after))
+  const phase = phaseAfterChange(event.phase, after.map(session => session.startsAt))
+  await db.update(events).set({ phase }).where(eq(events.id, event.id))
   return phase
 }
 
@@ -43,11 +47,10 @@ export async function isSlotTaken(db: Db, eventId: string, slotId: string): Prom
 
 /**
  * Moves one Session's set Date (Reschedule, #53). `before` is the Event's Sessions as read under the
- * Event lock; the caller has checked the Session has a Date and the new time is future. The Session keeps
- * its Slot. Every Session whose number changes (sequenceRaises), the moved one included, gets its
- * icsSequence raised in the same transaction, so a re-import updates its entry.
+ * Event lock; the caller has checked the Session has a Date and the new time is future and distinct. The
+ * Session keeps its Slot. The Sessions whose entry changes get their icsSequence raised (finishSessionChange).
  */
-export async function moveSessionDate(db: Db, before: SessionRow[], sessionId: string, startsAt: Date): Promise<Date> {
+export async function moveSessionDate(db: Db, event: { id: string, phase: Phase }, before: SessionRow[], sessionId: string, startsAt: Date): Promise<Date> {
   const [row] = await db
     .update(sessions)
     .set(rescheduleValues(startsAt))
@@ -56,7 +59,7 @@ export async function moveSessionDate(db: Db, before: SessionRow[], sessionId: s
   if (!row) throw apiError('wrong_phase')
 
   const after = before.map(session => (session.id === sessionId ? { ...session, startsAt } : session))
-  await raiseSequences(db, sequenceRaises(before, after))
+  await finishSessionChange(db, event, before, after)
   return startsAt
 }
 

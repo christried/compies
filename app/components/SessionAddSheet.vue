@@ -12,20 +12,20 @@ const emit = defineEmits<{ close: [], submit: [startsAt: string | null] }>()
 
 const { t } = useI18n()
 const mode = ref<'date' | 'poll'>('date')
-const value = ref('')
+const berlinTime = ref('')
 
 watch(() => props.open, (open) => {
   if (open) {
     mode.value = 'date'
-    value.value = ''
+    berlinTime.value = ''
   }
 })
 
-const blocked = computed(() => props.busy || (mode.value === 'date' && value.value === ''))
+const blocked = computed(() => props.busy || (mode.value === 'date' && berlinTime.value === ''))
 
 function submit() {
   if (blocked.value) return
-  emit('submit', mode.value === 'date' ? value.value : null)
+  emit('submit', mode.value === 'date' ? berlinTime.value : null)
 }
 </script>
 
@@ -48,7 +48,7 @@ function submit() {
     />
     <DateTimeField
       v-if="mode === 'date'"
-      v-model="value"
+      v-model="berlinTime"
       :label="t('mvp.sessions.dateLabel')"
     />
     <AppButton

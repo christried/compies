@@ -10,7 +10,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 // Slots are far in the future so the "not past" rule holds without a fake clock. Past Slots are
 // made by moving their start into 2001 directly in the database.
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
-const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
+const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 const outsider = { provider: 'discord', id: '4', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
 describe('poll votes and the Event read', () => {
@@ -44,7 +44,7 @@ describe('poll votes and the Event read', () => {
   })
 
   /** Signs a User in and returns the cookie and the User's row id. */
-  async function signInAs(profile: typeof host | typeof guest | typeof outsider, { hostPermission = false } = {}) {
+  async function signInAs(profile: typeof host | typeof member | typeof outsider, { hostPermission = false } = {}) {
     if (hostPermission) setAllowlist({ hosts: `discord:${profile.id}` })
     const { cookie } = await signIn(testDb.db, profile)
     const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
@@ -84,23 +84,23 @@ describe('poll votes and the Event read', () => {
   describe('GET /api/e/:slug', () => {
     it('returns the Slots with their past flag, every Member\'s Votes, the Best slot and the vote progress to a Member', async () => {
       const { cookie: hostCookie, id: hostId } = await signInAs(host, { hostPermission: true })
-      const { cookie: guestCookie, id: guestId } = await signInAs(guest)
+      const { cookie: memberCookie, id: memberId } = await signInAs(member)
       const { slug, eventId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30', '2090-10-31T19:00'])
-      await addMember(eventId, guestId)
+      await addMember(eventId, memberId)
       const fri = slotIdAt('2090-10-30T19:30:00.000Z')
       const sat = slotIdAt('2090-10-31T18:00:00.000Z')
       await testDb.db.insert(pollVotes).values([
         { slotId: fri, userId: hostId, value: 'yes' },
         { slotId: sat, userId: hostId, value: 'maybe' },
-        { slotId: fri, userId: guestId, value: 'yes' },
-        { slotId: sat, userId: guestId, value: 'no' },
+        { slotId: fri, userId: memberId, value: 'yes' },
+        { slotId: sat, userId: memberId, value: 'no' },
       ])
 
-      const response = await read(guestCookie, slug)
+      const response = await read(memberCookie, slug)
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.viewerId).toBe(guestId)
+      expect(body.viewerId).toBe(memberId)
       expect(body.slots).toEqual([
         { id: fri, startsAt: '2090-10-30T19:30:00.000Z', past: false },
         { id: sat, startsAt: '2090-10-31T18:00:00.000Z', past: false },
@@ -109,7 +109,7 @@ describe('poll votes and the Event read', () => {
       expect(body.votes).toContainEqual({ slotId: fri, userId: hostId, value: 'yes' })
       expect(body.members).toEqual([
         { id: hostId, name: 'Hostess', image: expect.any(String), isHost: true },
-        { id: guestId, name: 'Gast', image: expect.any(String), isHost: false },
+        { id: memberId, name: 'Gast', image: expect.any(String), isHost: false },
       ])
       expect(body.bestSlotId).toBe(fri)
       expect(body.progress).toEqual({ voted: 2, total: 2 })
@@ -118,14 +118,14 @@ describe('poll votes and the Event read', () => {
     it('counts a Member as voted only once they have a Vote on every votable Slot', async () => {
       const { cookie: hostCookie, id: hostId } = await signInAs(host, { hostPermission: true })
       const { slug, eventId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30', '2090-10-31T19:00'])
-      const { id: guestId } = await signInAs(guest)
-      await addMember(eventId, guestId)
+      const { id: memberId } = await signInAs(member)
+      await addMember(eventId, memberId)
       const fri = slotIdAt('2090-10-30T19:30:00.000Z')
       const sat = slotIdAt('2090-10-31T18:00:00.000Z')
       await testDb.db.insert(pollVotes).values([
         { slotId: fri, userId: hostId, value: 'yes' },
         { slotId: sat, userId: hostId, value: 'no' },
-        { slotId: fri, userId: guestId, value: 'yes' },
+        { slotId: fri, userId: memberId, value: 'yes' },
       ])
 
       const body = await (await read(hostCookie, slug)).json()

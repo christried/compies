@@ -1,4 +1,4 @@
-// Vote values shared by the server and the poll UI (#1 § Domain rules). UI copy: Ja / Wenn nötig / Nein.
+// Vote values shared by the server and the poll UI (#1 § Domain rules). UI copy: Ja / Meh / Nein.
 
 export const VOTE_VALUES = ['yes', 'maybe', 'no'] as const
 

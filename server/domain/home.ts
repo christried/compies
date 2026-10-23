@@ -61,7 +61,8 @@ function homeDate(item: HomeOrderable, now: Date): Date | null {
   return index === null ? null : item.sessionStarts[index] ?? null
 }
 
-function group(item: HomeOrderable, now: Date): number {
+/** The sort bucket of an item: one of GROUP. */
+function orderGroup(item: HomeOrderable, now: Date): number {
   if (item.needsVote) return GROUP.toVote
   if (item.phase === 'poll') return GROUP.otherPoll
   const startsAt = homeDate(item, now)
@@ -78,8 +79,8 @@ export function arrangeHome<T extends HomeOrderable>(items: T[], now: Date): T[]
   return items
     .filter(item => staysOnHome(item.sessionStarts, now))
     .sort((a, b) => {
-      const groupA = group(a, now)
-      const byGroup = groupA - group(b, now)
+      const groupA = orderGroup(a, now)
+      const byGroup = groupA - orderGroup(b, now)
       if (byGroup !== 0) return byGroup
       if (groupA === GROUP.upcomingDate) return time(a) - time(b)
       if (groupA === GROUP.passedDate) return time(b) - time(a)

@@ -482,8 +482,8 @@ describe('setting the Date', () => {
     const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
     const calendarLink = memberPage.get(`a[href="/api/e/${member.slug}/ics"]`)
     expect(calendarLink.attributes('download')).toBeDefined()
-    // The control is about the Date, so it shows a calendar, not a file download.
-    expect(calendarLink.find('svg').classes()).toContain('lucide-calendar-plus')
+    // The control is about the Date, so it is labelled as a calendar entry, not as a file download.
+    expect(calendarLink.text()).toBe('In den Kalender')
     expect(memberPage.text()).not.toContain('Verschieben')
 
     const hostStore = serve(s => view(s, [], {
@@ -817,6 +817,20 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).toContain('Verschieben')
     expect(page.text()).toContain('Neue Terminsuche')
     expect(page.text()).not.toContain('Entfernen')
+  })
+
+  it('offers no Session change once the Event is finished: no Neue Terminsuche, Entfernen or Session hinzufügen, but Verschieben stays', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: 2, startsAt: '2026-10-31T19:00:00.000Z' },
+    ], 0, { event: { phase: 'finished', isHost: true }, slots: [], bestSlotId: null }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.findAll('button').filter(button => button.text() === 'Verschieben')).toHaveLength(2)
+    expect(page.text()).not.toContain('Neue Terminsuche')
+    expect(page.text()).not.toContain('Entfernen')
+    expect(page.text()).not.toContain('Session hinzufügen')
   })
 
   it('shows no Session actions to a Member', async () => {

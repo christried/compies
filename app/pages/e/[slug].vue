@@ -112,7 +112,7 @@ const {
   rescheduleSessionId,
   addOpen,
   adding,
-  confirmDate: confirmStart,
+  confirmDate,
   openReschedule,
   rescheduleDate,
   reopenSession,
@@ -165,8 +165,8 @@ function openConfirm(slotId?: string) {
 /** The Session the reschedule dialog moves, while it still has its Date (#55). */
 const rescheduleSession = computed(() => sessions.value.find(session => session.id === rescheduleSessionId.value && session.startsAt !== null) ?? null)
 
-/** Sessions can be added, removed and reopened while the Event is in the poll or date set (#55). */
-const editable = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
+/** Sessions can be added, removed and reopened in every Phase before the Event finishes (#55, sessionsEditable). */
+const canChangeSessions = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
 const full = computed(() => sessions.value.length >= SESSIONS_MAX)
 
 /** The last Session still waiting for a Date: the "−" next to "N Termine gesucht" removes it (#55). */
@@ -183,48 +183,8 @@ function whenOf(iso: string) {
   return t('mvp.set.dateTime', { date: formatSetDay(instant), time: formatSlotTime(instant) })
 }
 
-// The Reopen notice of a Session stays closed in this browser per Session and withdrawn Date. A later
-// Reopen with another Date has another value, so it shows again. Without storage it returns on reload.
-const REOPEN_KEY_PREFIX = 'compies-reopen-closed:'
-/** The withdrawn Date each Session's notice was closed at, by Session id. */
-const closedReopens = ref<Record<string, string | null>>({})
-// False during SSR and until the stored state is read, so a closed notice never paints.
-const storageRead = ref(false)
-const reopenNotices = computed(() => (storageRead.value
-  ? sessions.value.filter(session => session.previousStartsAt && session.previousStartsAt !== closedReopens.value[session.id])
-  : []))
-
-function readClosedReopens() {
-  for (const session of sessions.value) {
-    try {
-      closedReopens.value[session.id] = localStorage.getItem(REOPEN_KEY_PREFIX + session.id)
-    }
-    catch {
-      // Storage blocked: nothing is remembered.
-    }
-  }
-}
-
-function closeReopenNotice(session: { id: string, previousStartsAt: string | null }) {
-  const previous = session.previousStartsAt
-  if (!previous) return
-  closedReopens.value[session.id] = previous
-  try {
-    localStorage.setItem(REOPEN_KEY_PREFIX + session.id, previous)
-  }
-  catch {
-    // Storage blocked: the notice comes back after a reload.
-  }
-}
-
-// Storage exists only in the browser, so the closed Dates are read after mount, not during SSR.
-onMounted(() => {
-  readClosedReopens()
-  storageRead.value = true
-})
-watch(sessions, () => {
-  if (storageRead.value) readClosedReopens()
-})
+/** The Reopen notices of the Sessions, and how a Member closes one (#14, useReopenNotices). */
+const { notices: reopenNotices, close: closeReopenNotice } = useReopenNotices(sessions)
 
 const editing = ref(false)
 const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
@@ -298,6 +258,7 @@ usePollRefresh(() => {
         >
           <template #host-actions>
             <HoldToConfirmButton
+              v-if="canChangeSessions"
               :key="`reopen-${session.id}-${holdEpoch}`"
               variant="secondary"
               size="card"
@@ -306,7 +267,7 @@ usePollRefresh(() => {
               @confirm="reopenOne(session.id)"
             />
             <HoldToConfirmButton
-              v-if="sessions.length > 1"
+              v-if="canChangeSessions && sessions.length > 1"
               :key="`remove-${session.id}-${holdEpoch}`"
               variant="hot"
               size="card"
@@ -345,7 +306,7 @@ usePollRefresh(() => {
       </template>
 
       <div
-        v-if="data.event.isHost && editable"
+        v-if="data.event.isHost && canChangeSessions"
         class="flex flex-wrap items-center gap-2"
       >
         <AppButton
@@ -386,7 +347,7 @@ usePollRefresh(() => {
           :icon="Check"
           @close="savedNote = false"
         >
-          <b>{{ t('mvp.poll.saved') }}</b> {{ t('mvp.poll.savedText') }}
+          {{ t('mvp.poll.savedNote') }}
         </NoticeBanner>
 
         <div
@@ -397,7 +358,7 @@ usePollRefresh(() => {
             {{ t('mvp.poll.missingDates', { n: missing }, missing) }}
           </p>
           <IconButton
-            v-if="data.event.isHost && sessions.length > 1"
+            v-if="data.event.isHost && canChangeSessions && sessions.length > 1"
             :icon="Minus"
             :label="t('mvp.sessions.removeMissing')"
             @click="removeMissing"
@@ -510,7 +471,7 @@ usePollRefresh(() => {
       :preselected="confirmPreset"
       :missing-after="missingAfterSet"
       :loading="confirming"
-      @confirm="confirmStart"
+      @confirm="confirmDate"
       @cancel="confirmOpen = false"
     />
     <SlotEditSheet
@@ -532,7 +493,7 @@ usePollRefresh(() => {
     />
 
     <SessionAddSheet
-      v-if="data?.event.isHost && editable"
+      v-if="data?.event.isHost && canChangeSessions"
       :open="addOpen"
       :busy="adding"
       @close="addOpen = false"

@@ -3,7 +3,7 @@ import { defineEventHandler } from 'h3'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../db/schema'
 import { arrangeHome, homeAction, homeSessionIndex, needsVote } from '../../domain/home'
 import { pollStanding } from '../../domain/poll'
-import { missingDates, sessionNumbers } from '../../domain/session'
+import { missingDates, openSlots, sessionNumbers } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { requireUser } from '../../utils/user'
 import type { HomeEvent, HomeView } from '../../../shared/event'
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   const eventIds = rows.map(row => row.id)
 
   const sessionRows = await db
-    .select({ eventId: sessions.eventId, startsAt: sessions.startsAt })
+    .select({ eventId: sessions.eventId, startsAt: sessions.startsAt, slotId: sessions.slotId })
     .from(sessions)
     .where(inArray(sessions.eventId, eventIds))
 
@@ -59,12 +59,16 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
     .where(inArray(eventMembers.eventId, eventIds))
 
   const cards = rows.map((row) => {
-    const sessionStarts = sessionRows.filter(session => session.eventId === row.id).map(session => session.startsAt)
+    const eventSessionRows = sessionRows.filter(session => session.eventId === row.id)
+    const sessionStarts = eventSessionRows.map(session => session.startsAt)
     const numbers = sessionNumbers(sessionStarts)
     const nextIndex = homeSessionIndex(sessionStarts, now)
-    const eventVotes = votes.filter(vote => vote.eventId === row.id)
+    // Only open Slots count for the Best slot, progress and the vote call to action (#52, #54): a Slot that a Session has as its Date is closed.
+    const eventSlots = openSlots(slots.filter(slot => slot.eventId === row.id), eventSessionRows.map(session => session.slotId))
+    const openIds = new Set(eventSlots.map(slot => slot.id))
+    const eventVotes = votes.filter(vote => vote.eventId === row.id && openIds.has(vote.slotId))
     const standing = pollStanding({
-      slots: slots.filter(slot => slot.eventId === row.id),
+      slots: eventSlots,
       votes: eventVotes,
       memberIds: members.filter(member => member.eventId === row.id).map(member => member.userId),
       viewerId: user.id,

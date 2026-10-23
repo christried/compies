@@ -2,11 +2,10 @@ import { defineEventHandler, getRouterParam, readBody } from 'h3'
 import { sessions } from '../../../../db/schema'
 import { parseLocalTime } from '../../../../domain/event'
 import { addSessionRejection } from '../../../../domain/phase'
-import { sequenceRaises } from '../../../../domain/session'
 import { useDb } from '../../../../utils/db'
 import { apiError } from '../../../../utils/errors'
 import { loadEvent } from '../../../../utils/event-access'
-import { isSlotTaken, eventSessions, raiseSequences, setEventPhase, slotAt } from '../../../../utils/sessions'
+import { finishSessionChange, isSlotTaken, eventSessions, slotAt } from '../../../../utils/sessions'
 import { requireUser } from '../../../../utils/user'
 
 // Adds a Session to an Event (#55, ADR 0011). The Host gives a Date, or leaves it to the Date poll by sending
@@ -44,7 +43,6 @@ export default defineEventHandler(async (event) => {
       .returning({ id: sessions.id, startsAt: sessions.startsAt })
 
     const after = [...before, { id: row!.id, startsAt: row!.startsAt }]
-    await raiseSequences(tx, sequenceRaises(before, after))
-    return { id: row!.id, phase: await setEventPhase(tx, eventRow.id, after.map(session => session.startsAt)) }
+    return { id: row!.id, phase: await finishSessionChange(tx, eventRow, before, after) }
   })
 })

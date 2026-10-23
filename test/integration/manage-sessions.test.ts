@@ -17,7 +17,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 // Managing each Session (#55, ADR 0011): add, remove and Reopen one Session, with the Phase, the Slots and
 // the calendar sequences that follow. Dates and Slots are in 2090 so "in the future" holds without a fake clock.
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
-const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
+const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 const outsider = { provider: 'discord', id: '3', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
 describe('managing each Session', () => {
@@ -162,7 +162,7 @@ describe('managing each Session', () => {
     it('answers 403 for a Member who is not the Host and adds nothing', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId } = await createDirect(hostCookie, ['2090-11-07T20:00'])
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
 
       expect((await add(cookie, slug, { startsAt: '2090-11-08T20:00' })).status).toBe(403)
@@ -222,6 +222,18 @@ describe('managing each Session', () => {
       expect(await sessionRowsOf(eventId)).toHaveLength(1)
     })
 
+    it('adds an undated Session to a running Event, which stays running (Sessions change until the Event finishes)', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId } = await createPoll(cookie, 2)
+      await testDb.db.update(events).set({ phase: 'running' }).where(eq(events.id, eventId))
+
+      const response = await add(cookie, slug)
+
+      expect(response.status).toBe(200)
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'running' })
+      expect(await sessionRowsOf(eventId)).toHaveLength(2)
+    })
+
     it('refuses a ninth Session with 400 sessions_max', async () => {
       const cookie = await signInAsHost()
       const dates = Array.from({ length: 8 }, (_, index) => `2090-11-0${index + 1}T20:00`)
@@ -246,7 +258,7 @@ describe('managing each Session', () => {
     it('answers 403 for a Member who is not the Host and removes nothing', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId } = await createPoll(hostCookie, 2, 2)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
       const [first] = await sessionRowsOf(eventId)
 
@@ -278,7 +290,7 @@ describe('managing each Session', () => {
     it('removes a dated Session: its Slot goes back to the poll with its Votes, and the Event follows the Dates left', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(hostCookie, 2, 2)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
       await vote(cookie, slug, slotIds[0]!, 'yes')
       await confirm(hostCookie, slug, slotIds[0]!)
@@ -345,7 +357,7 @@ describe('managing each Session', () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(hostCookie, 2)
       await confirm(hostCookie, slug, slotIds[1]!)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
       const [session] = await sessionRowsOf(eventId)
 
@@ -367,7 +379,7 @@ describe('managing each Session', () => {
     it('withdraws only the named Session: the Event goes back to the poll, the other Date stays, and the Slot returns with its Votes', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(hostCookie, 2, 2)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
       await vote(cookie, slug, slotIds[0]!, 'yes')
       await confirm(hostCookie, slug, slotIds[0]!)

@@ -12,7 +12,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 // all get the same 404 "Event not found", so nobody can probe which Events exist. Only a former
 // Member of a deleted Event gets 410 "Event deleted".
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: 'https://img.example/host.png' } as const
-const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
+const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 const newcomer = { provider: 'twitch', id: '3', name: 'Neu', email: 'neu@example.com', image: undefined } as const
 
 describe('invite links', () => {
@@ -134,34 +134,34 @@ describe('invite links', () => {
 
     it('makes a signed-in User a Member on the Bench and answers with the Event link', async () => {
       const { slug, invite } = await createHostedEvent()
-      const { cookie } = await signIn(testDb.db, guest)
-      const guestId = await userId('Gast')
+      const { cookie } = await signIn(testDb.db, member)
+      const memberId = await userId('Gast')
 
       const response = await join(invite, cookie)
 
       expect(response.status).toBe(200)
       expect(await response.json()).toEqual({ slug, joined: true })
-      expect((await memberships()).find(row => row.userId === guestId)).toMatchObject({ zone: 'bench' })
+      expect((await memberships()).find(row => row.userId === memberId)).toMatchObject({ zone: 'bench' })
     })
 
     it('changes nothing when a Member joins a second time, keeping their zone', async () => {
       const { slug, invite } = await createHostedEvent()
-      const { cookie } = await signIn(testDb.db, guest)
-      const guestId = await userId('Gast')
+      const { cookie } = await signIn(testDb.db, member)
+      const memberId = await userId('Gast')
       await join(invite, cookie)
-      await testDb.db.update(eventMembers).set({ zone: 'stands' }).where(eq(eventMembers.userId, guestId))
+      await testDb.db.update(eventMembers).set({ zone: 'stands' }).where(eq(eventMembers.userId, memberId))
 
       const second = await join(invite, cookie)
 
       expect(second.status).toBe(200)
       expect(await second.json()).toEqual({ slug, joined: false })
       expect(await memberships()).toHaveLength(2)
-      expect((await memberships()).find(row => row.userId === guestId)).toMatchObject({ zone: 'stands' })
+      expect((await memberships()).find(row => row.userId === memberId)).toMatchObject({ zone: 'stands' })
     })
 
     it('lets the Member open the Event link afterwards', async () => {
       const { slug, invite } = await createHostedEvent()
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await join(invite, cookie)
 
       const response = await readLink(cookie, slug)
@@ -172,7 +172,7 @@ describe('invite links', () => {
 
     it('answers the same 404 for a rotated link and keeps existing Members', async () => {
       const { slug, invite, hostCookie } = await createHostedEvent()
-      const { cookie: memberCookie } = await signIn(testDb.db, guest)
+      const { cookie: memberCookie } = await signIn(testDb.db, member)
       await join(invite, memberCookie)
       await testDb.db.update(events).set({ inviteToken: 'Zz9Zz9Zz9Zz9' }).where(eq(events.slug, slug))
       const { cookie: newcomerCookie } = await signIn(testDb.db, newcomer)
@@ -188,7 +188,7 @@ describe('invite links', () => {
 
     it('answers the same 404 to a non-Member of a deleted Event, and 410 to its former Member', async () => {
       const { slug, invite } = await createHostedEvent()
-      const { cookie: memberCookie } = await signIn(testDb.db, guest)
+      const { cookie: memberCookie } = await signIn(testDb.db, member)
       await join(invite, memberCookie)
       await testDb.db.update(events).set({ deletedAt: new Date() }).where(eq(events.slug, slug))
       const { cookie: stranger } = await signIn(testDb.db, newcomer)
@@ -203,7 +203,7 @@ describe('invite links', () => {
     })
 
     it('answers 404 for a link with an unknown slug', async () => {
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
 
       const response = await join('nie-gab-es-k7q2Zz9Zz9Zz', cookie)
 
@@ -216,7 +216,7 @@ describe('invite links', () => {
     it('answers 410 to its former Member and 404 to a non-Member', async () => {
       const { slug, hostCookie } = await createHostedEvent()
       await testDb.db.update(events).set({ deletedAt: new Date() }).where(eq(events.slug, slug))
-      const { cookie: stranger } = await signIn(testDb.db, guest)
+      const { cookie: stranger } = await signIn(testDb.db, member)
 
       const former = await readLink(hostCookie, slug)
       const nonMember = await readLink(stranger, slug)

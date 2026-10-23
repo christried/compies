@@ -1,4 +1,4 @@
-import { EVENT_NAME_MAX, SLOTS_MAX, eventNameLength, slotProblems, type Phase, type SlotProblem } from '../../shared/event'
+import { EVENT_NAME_MAX, SLOTS_MAX, eventNameLength, slotProblems, type SlotProblem } from '../../shared/event'
 import { berlinToUtc, utcToBerlin } from '../../shared/time'
 import { parseSessionCount } from './session'
 
@@ -49,11 +49,6 @@ export function parseAddedSlot(raw: unknown, existing: Date[], now: Date): { ok:
   if (!startsAt) return { ok: false, error: 'invalid_time' }
   const problem = slotRuleError([startsAt], existing, now)
   return problem ? { ok: false, error: problem } : { ok: true, startsAt }
-}
-
-/** Slots can be added, removed and only then changed by the Host while the Date poll is open (#1). */
-export function slotsEditable(phase: Phase): boolean {
-  return phase === 'poll'
 }
 
 /**

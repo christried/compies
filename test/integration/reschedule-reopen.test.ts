@@ -15,7 +15,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 // Reschedule and Reopen (#14, #1 § Domain rules). Slots and Dates are in 2090 so the "in the future"
 // rule holds without a fake clock.
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
-const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
+const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 const outsider = { provider: 'discord', id: '3', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
 describe('reschedule and reopen', () => {
@@ -171,7 +171,7 @@ describe('reschedule and reopen', () => {
     it('answers 403 for a Member who is not the Host and leaves the Date alone', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId } = await setPoll(hostCookie)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
 
       const response = await reschedule(cookie, slug, { startsAt: '2090-11-01T20:00' })
@@ -215,7 +215,7 @@ describe('reschedule and reopen', () => {
       expect(await sessionOf(eventId)).toMatchObject({
         startsAt: new Date('2090-11-01T19:00:00.000Z'),
         previousStartsAt: null,
-        icsSequence: 1,
+        icsSequence: 2,
       })
     })
 
@@ -227,7 +227,7 @@ describe('reschedule and reopen', () => {
       await reschedule(cookie, slug, { startsAt: '2090-11-02T20:00' })
 
       expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })
-      expect(await sessionOf(eventId)).toMatchObject({ icsSequence: 2 })
+      expect(await sessionOf(eventId)).toMatchObject({ icsSequence: 3 })
     })
 
     it('keeps the same calendar UID and serves the higher SEQUENCE in the .ics', async () => {
@@ -238,8 +238,8 @@ describe('reschedule and reopen', () => {
       await reschedule(cookie, slug, { startsAt: '2090-11-01T20:00' })
       const after = await (await ics(cookie, slug)).text()
 
-      expect(before).toContain('SEQUENCE:0')
-      expect(after).toContain('SEQUENCE:1')
+      expect(before).toContain('SEQUENCE:1')
+      expect(after).toContain('SEQUENCE:2')
       expect(after).toContain(`UID:${(await sessionOf(eventId)).id}@compies`)
       expect(after).toContain('DTSTART:20901101T190000Z')
     })
@@ -286,7 +286,7 @@ describe('reschedule and reopen', () => {
     it('answers 403 for a Member who is not the Host and leaves the Dates alone', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, ids } = await createSessions(hostCookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
 
       expect((await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-11-09T20:00' })).status).toBe(403)
@@ -356,6 +356,17 @@ describe('reschedule and reopen', () => {
       expect(await (await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2001-11-01T20:00' })).json()).toMatchObject({ statusMessage: 'in_past' })
       expect((await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-02-30T19:00' })).status).toBe(400)
     })
+
+    it('refuses a Date another Session already has with 400 duplicate_date, and moves nothing', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId, ids } = await createSessions(cookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+
+      const response = await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-11-08T20:00' })
+
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ statusMessage: 'duplicate_date' })
+      expect((await sessionRowsOf(eventId)).find(row => row.id === ids[0])?.startsAt).toEqual(new Date('2090-11-07T19:00:00.000Z'))
+    })
   })
 
   describe('POST /api/e/:slug/sessions/:id/reopen (the one Session of an Event)', () => {
@@ -378,7 +389,7 @@ describe('reschedule and reopen', () => {
     it('answers 403 for a Member who is not the Host and leaves the Date alone', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId } = await setPoll(hostCookie)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
 
       expect((await reopen(cookie, slug)).status).toBe(403)
@@ -408,7 +419,7 @@ describe('reschedule and reopen', () => {
         startsAt: null,
         slotId: null,
         previousStartsAt: new Date('2090-10-31T18:00:00.000Z'),
-        icsSequence: 1,
+        icsSequence: 2,
       })
     })
 
@@ -430,7 +441,7 @@ describe('reschedule and reopen', () => {
     it('shows every Member the notice: the view carries previousStartsAt and no current Date', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId } = await setPoll(hostCookie)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
       await reopen(hostCookie, slug)
 
@@ -475,11 +486,11 @@ describe('reschedule and reopen', () => {
       expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })
       expect(await sessionOf(eventId)).toMatchObject({
         previousStartsAt: null,
-        icsSequence: 2,
+        icsSequence: 4,
       })
       const afterConfirm = await (await ics(cookie, slug)).text()
-      expect(beforeReopen).toContain('SEQUENCE:1')
-      expect(afterConfirm).toContain('SEQUENCE:2')
+      expect(beforeReopen).toContain('SEQUENCE:2')
+      expect(afterConfirm).toContain('SEQUENCE:4')
       expect(afterConfirm).toContain(`UID:${(await sessionOf(eventId)).id}@compies`)
     })
 
@@ -500,7 +511,7 @@ describe('reschedule and reopen', () => {
       await reopen(cookie, slug)
 
       expect((await reopen(cookie, slug)).status).toBe(409)
-      expect(await sessionOf(eventId)).toMatchObject({ icsSequence: 1, previousStartsAt: new Date('2090-10-31T18:00:00.000Z') })
+      expect(await sessionOf(eventId)).toMatchObject({ icsSequence: 2, previousStartsAt: new Date('2090-10-31T18:00:00.000Z') })
     })
   })
 })

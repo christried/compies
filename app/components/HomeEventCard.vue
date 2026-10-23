@@ -53,7 +53,7 @@ const ctaLabel = computed(() => t(CTA_LABEL[props.event.action]))
 </script>
 
 <template>
-  <article class="flex h-full min-w-0 flex-col gap-3.5 rounded-[18px] border-2 border-line bg-surface p-5 shadow-card">
+  <article class="flex h-full min-w-0 flex-col gap-3.5 rounded-[20px] border-2 border-line bg-surface p-5 shadow-card">
     <div class="flex min-w-0 items-start justify-between gap-3">
       <div class="flex min-w-0 flex-col gap-0.5">
         <h3 class="m-0 truncate font-display text-[24px] leading-tight font-normal">
