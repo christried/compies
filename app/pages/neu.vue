@@ -133,7 +133,7 @@ const MODES = computed(() => [
         class="flex flex-col gap-5 rounded-xl border-3 border-line bg-surface p-5 shadow-card md:flex-row md:items-center"
       >
         <div
-          class="w-[120px] flex-none"
+          class="size-[120px] flex-none overflow-hidden rounded-full border-(length:--cp-bw) border-line bg-surface shadow-sticker"
           aria-hidden="true"
         >
           <Compibert variant="bust" />
