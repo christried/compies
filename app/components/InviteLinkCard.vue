@@ -28,9 +28,15 @@ async function copy() {
 
 <template>
   <div class="flex flex-wrap gap-2">
-    <span class="flex h-[52px] min-w-[200px] flex-1 items-center overflow-hidden rounded-md border-(length:--cp-bw) border-line bg-paper-2 px-3.5 font-mono text-[14px] text-ellipsis whitespace-nowrap text-ink">
-      {{ url }}
-    </span>
+    <!-- A read-only field: a click selects the whole link, and it can be scrolled and selected by hand. -->
+    <input
+      type="text"
+      readonly
+      :value="url"
+      :aria-label="t('invite.linkLabel')"
+      class="h-[52px] min-w-[200px] flex-1 rounded-md border-(length:--cp-bw) border-line bg-paper-2 px-3.5 font-mono text-[14px] text-ink"
+      @click="($event.target as HTMLInputElement).select()"
+    >
     <AppButton
       size="lg"
       @click="copy"

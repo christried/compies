@@ -165,6 +165,44 @@ describe('the Session poll', () => {
     await vi.waitFor(() => expect(page.text()).toContain('Gespeichert.'))
   })
 
+  it('votes with the arrow keys, one Vote per step, and keeps the selected option as the only tab stop', async () => {
+    let saved: unknown = null
+    const store = serve(s => view(s, sanneAndLarsi))
+    registerEndpoint(`/api/s/${store.slug}/slots/sat/vote`, {
+      method: 'PUT',
+      handler: async (event) => {
+        saved = await readBody(event)
+        store.set(view(store.slug, [...sanneAndLarsi, { slotId: 'sat', userId: kitty.id, value: 'maybe' }], { progress: { voted: 3, total: 3 } }))
+        return { slotId: 'sat', value: 'maybe' }
+      },
+    })
+    const page = await mountSuspended(SessionPage, { route: `/s/${store.slug}` })
+
+    await radio(page, 'Sa 24.10. 20:00', 'Ja').trigger('keydown', { key: 'ArrowRight' })
+
+    await vi.waitFor(() => expect(saved).toEqual({ value: 'maybe' }))
+    await vi.waitFor(() => expect(radio(page, 'Sa 24.10. 20:00', 'Wenn nötig').attributes('aria-checked')).toBe('true'))
+    const group = page.get('[role="radiogroup"][aria-label="Sa 24.10. 20:00"]')
+    expect(group.findAll('[role="radio"]').map((option: Wrapper) => option.attributes('tabindex'))).toEqual(['-1', '0', '-1'])
+  })
+
+  it('does not take a vote with the arrow keys on a past Slot', async () => {
+    const store = serve(s => view(s, sanneAndLarsi))
+    const saved: unknown[] = []
+    registerEndpoint(`/api/s/${store.slug}/slots/old/vote`, {
+      method: 'PUT',
+      handler: async (event) => {
+        saved.push(await readBody(event))
+        return { slotId: 'old', value: 'yes' }
+      },
+    })
+    const page = await mountSuspended(SessionPage, { route: `/s/${store.slug}` })
+
+    await radio(page, 'Di 20.10. 20:00', 'Ja').trigger('keydown', { key: 'ArrowRight' })
+
+    expect(saved).toEqual([])
+  })
+
   it('rolls the vote back and raises the error toast when saving fails', async () => {
     const { slug } = serve(s => view(s, sanneAndLarsi))
     registerEndpoint(`/api/s/${slug}/slots/fri/vote`, {
@@ -229,7 +267,7 @@ describe('the Session poll', () => {
 
     await einladen.trigger('click')
 
-    await vi.waitFor(() => expect([...document.querySelectorAll('[role="dialog"]')].some(node => node.textContent?.includes(inviteUrl))).toBe(true))
+    await vi.waitFor(() => expect([...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[readonly]')].some(node => node.value === inviteUrl)).toBe(true))
     page.unmount()
   })
 

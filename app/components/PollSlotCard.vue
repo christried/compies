@@ -29,15 +29,15 @@ const { t } = useI18n()
 const label = computed(() => `${props.timeslot.day} ${props.timeslot.time}`)
 const share = (count: number) => (props.total > 0 ? `${(count / props.total) * 100}%` : '0%')
 
-const OPTIONS = [
-  { value: 'yes', key: 'poll.yes', icon: Check, fill: 'bg-success text-on-success' },
-  { value: 'maybe', key: 'poll.maybe', icon: Minus, fill: 'bg-warning text-on-warning' },
-  { value: 'no', key: 'poll.no', icon: X, fill: 'bg-ink text-paper' },
-] as const
+const OPTIONS = computed(() => [
+  { value: 'yes', label: t('poll.yes'), icon: Check, fill: 'bg-success text-on-success' },
+  { value: 'maybe', label: t('poll.maybe'), icon: Minus, fill: 'bg-warning text-on-warning' },
+  { value: 'no', label: t('poll.no'), icon: X, fill: 'bg-ink text-paper' },
+])
 
-function choose(value: VoteValue) {
+function choose(value: string) {
   if (props.timeslot.past) return
-  emit('vote', value)
+  emit('vote', value as VoteValue)
 }
 </script>
 
@@ -84,43 +84,26 @@ function choose(value: VoteValue) {
       <CpNum :value="counts.maybe" /> {{ t('poll.maybe') }},
       <CpNum :value="counts.no" /> {{ t('poll.no') }}
     </span>
-    <div
-      role="radiogroup"
-      :aria-label="label"
-      :aria-disabled="timeslot.past ? 'true' : undefined"
-      class="grid grid-cols-3 overflow-hidden rounded-pill border-2 border-line"
-    >
-      <button
-        v-for="(option, index) in OPTIONS"
-        :key="option.value"
-        type="button"
-        role="radio"
-        :aria-checked="myVote === option.value ? 'true' : 'false'"
-        :aria-disabled="timeslot.past ? 'true' : undefined"
-        class="outline-memphis hit-44 flex h-11 items-center justify-center gap-1 text-[12px] font-bold transition-colors dur-instant"
-        :class="myVote === option.value ? option.fill : 'bg-transparent text-ink-2'"
-        :style="index > 0 ? { borderLeft: '2px solid var(--cp-line)' } : undefined"
-        @click="choose(option.value)"
-      >
-        <AppIcon
-          :icon="option.icon"
-          :size="13"
-        />
-        {{ t(option.key) }}
-      </button>
-    </div>
-    <button
+    <SegmentedControl
+      :model-value="myVote ?? ''"
+      :options="OPTIONS"
+      :label="label"
+      :disabled="timeslot.past"
+      @update:model-value="choose"
+    />
+    <AppButton
       v-if="canPick && !timeslot.past"
-      type="button"
-      class="outline-memphis hit-44 flex h-11 items-center justify-center gap-1.5 rounded-pill border-(length:--cp-bw) border-line font-bold shadow-btn max-md:hidden"
-      :class="best ? 'bg-primary text-on-primary' : 'bg-surface text-ink'"
+      :variant="best ? 'primary' : 'secondary'"
+      class="max-md:hidden"
       @click="emit('pick')"
     >
-      <AppIcon
-        :icon="CalendarCheck"
-        :size="14"
-      />
+      <template #icon>
+        <AppIcon
+          :icon="CalendarCheck"
+          :size="14"
+        />
+      </template>
       {{ t('mvp.poll.pickThis') }}
-    </button>
+    </AppButton>
   </article>
 </template>

@@ -37,7 +37,7 @@ describe('InviteSheet', () => {
     await mountSuspended(InviteSheet, { props: { open: true, slug: `freitags-invite-${testNumber}`, url: link } })
 
     expect(dialog()?.textContent).toContain('Leute einladen')
-    expect(dialog()?.textContent).toContain(link)
+    expect(dialog()?.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe(link)
   })
 
   it('renders nothing while closed', async () => {
@@ -67,7 +67,7 @@ describe('InviteSheet', () => {
     button('Abbrechen')!.click()
 
     await vi.waitFor(() => expect(dialog()?.textContent).not.toContain('Einladungslink erneuern?'))
-    expect(dialog()?.textContent).toContain(old)
+    expect(dialog()?.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe(old)
     expect(rotations).toBe(0)
   })
 
@@ -96,7 +96,7 @@ describe('InviteSheet', () => {
     press(button('Link erneuern')!)
     await vi.waitFor(() => expect(rotations).toBe(1), { timeout: 3000 })
     await vi.waitFor(() => expect(dialog()?.textContent).toContain('Erneuert'))
-    expect(dialog()?.textContent).toContain(fresh)
+    expect(dialog()?.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe(fresh)
     expect(dialog()?.textContent).toContain('Neuer Link aktiv. Der alte führt jetzt ins Leere.')
     expect(page.emitted('rotated')).toEqual([[fresh]])
   })

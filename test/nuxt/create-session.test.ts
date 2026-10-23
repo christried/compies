@@ -101,7 +101,7 @@ describe('create a Session', () => {
 
     await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
     expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30'] })
-    expect(page.text()).toContain(created.inviteUrl)
+    expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
     expect(page.get('a[href="/s/freitags-zocken-k7q2"]').text()).toContain('Zur Umfrage')
   })
 
