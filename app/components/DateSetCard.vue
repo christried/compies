@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarClock, Download, Link as LinkIcon } from '@lucide/vue'
+import { CalendarClock, CalendarPlus, Link as LinkIcon } from '@lucide/vue'
 import { formatDateTile, formatSetDay, formatSlotTime } from '~/utils/berlin-time'
 
 // The set Date (02-components § DateSetCard, screen M3 set / sethost). It replaces the Slot cards and the
@@ -52,7 +52,7 @@ const headline = computed(() => t('mvp.set.dateTime', { date: formatSetDay(insta
           class="outline-memphis hit-44 inline-flex h-12 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-primary px-4.5 font-extrabold whitespace-nowrap text-on-primary no-underline shadow-btn transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint"
         >
           <AppIcon
-            :icon="Download"
+            :icon="CalendarPlus"
             :size="18"
           />
           {{ t('mvp.set.ics') }}

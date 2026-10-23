@@ -397,7 +397,10 @@ describe('setting the Date', () => {
       bestSlotId: null,
     }))
     const memberPage = await mountSuspended(SessionPage, { route: `/s/${member.slug}` })
-    expect(memberPage.get(`a[href="/api/s/${member.slug}/ics"]`).attributes('download')).toBeDefined()
+    const calendarLink = memberPage.get(`a[href="/api/s/${member.slug}/ics"]`)
+    expect(calendarLink.attributes('download')).toBeDefined()
+    // The control is about the Date, so it shows a calendar, not a file download.
+    expect(calendarLink.find('svg').classes()).toContain('lucide-calendar-plus')
     expect(memberPage.text()).not.toContain('Verschieben')
 
     const hostStore = serve(s => view(s, [], {
