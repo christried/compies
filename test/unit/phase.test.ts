@@ -39,20 +39,19 @@ describe('setDateValues', () => {
 
 describe('rescheduleRejection', () => {
   it('lets the Host move a set Date to a future time', () => {
-    expect(rescheduleRejection({ phase: 'date_set', startsAt: later, now })).toBeNull()
+    expect(rescheduleRejection({ hasDate: true, startsAt: later, now })).toBeNull()
   })
 
-  it('refuses an Event that has no set Date yet, so Reschedule never acts on a poll', () => {
-    expect(rescheduleRejection({ phase: 'poll', startsAt: later, now })).toBe('wrong_phase')
-    expect(rescheduleRejection({ phase: 'draft', startsAt: later, now })).toBe('wrong_phase')
+  it('refuses a Session that has no set Date yet, so Reschedule never acts on an undated one', () => {
+    expect(rescheduleRejection({ hasDate: false, startsAt: later, now })).toBe('wrong_phase')
   })
 
   it('refuses a time that is not in the future', () => {
-    expect(rescheduleRejection({ phase: 'date_set', startsAt: now, now })).toBe('in_past')
+    expect(rescheduleRejection({ hasDate: true, startsAt: now, now })).toBe('in_past')
   })
 
-  it('checks the phase before the time', () => {
-    expect(rescheduleRejection({ phase: 'poll', startsAt: now, now })).toBe('wrong_phase')
+  it('checks the Date before the time', () => {
+    expect(rescheduleRejection({ hasDate: false, startsAt: now, now })).toBe('wrong_phase')
   })
 })
 

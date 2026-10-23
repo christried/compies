@@ -1,9 +1,12 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { pollSlots, sessions } from '../db/schema'
+import { sequenceRaises } from '../domain/session'
+import { rescheduleValues } from '../domain/phase'
+import { apiError } from './errors'
 import type { Db } from './db'
 
-// The Sessions of an Event (ADR 0011, #48). Each Event has exactly one Session for now; #49 brings
-// several, and these helpers are the one place that will change.
+// The Sessions of an Event (ADR 0011, #48, #53). eventSession is the single-Session shortcut of the
+// Reschedule route that still has no Session id; the per-Session handlers use eventSessions.
 
 export type SessionRow = typeof sessions.$inferSelect
 
@@ -17,6 +20,28 @@ export async function eventSession(db: Db, eventId: string): Promise<SessionRow>
   const [session] = await eventSessions(db, eventId)
   if (!session) throw new Error(`Event ${eventId} has no Session`)
   return session
+}
+
+/**
+ * Moves one Session's set Date (Reschedule, #53). `before` is the Event's Sessions as read under the
+ * Event lock; the caller has checked the Session has a Date and the new time is future. The Session keeps
+ * its Slot. Every Session whose number changes (sequenceRaises), the moved one included, gets its
+ * icsSequence raised in the same transaction, so a re-import updates its entry.
+ */
+export async function moveSessionDate(db: Db, before: SessionRow[], sessionId: string, startsAt: Date): Promise<Date> {
+  const [row] = await db
+    .update(sessions)
+    .set(rescheduleValues(startsAt))
+    .where(and(eq(sessions.id, sessionId), isNotNull(sessions.startsAt)))
+    .returning({ startsAt: sessions.startsAt })
+  if (!row) throw apiError('wrong_phase')
+
+  const after = before.map(session => (session.id === sessionId ? { ...session, startsAt } : session))
+  const raised = sequenceRaises(before, after)
+  if (raised.length > 0) {
+    await db.update(sessions).set({ icsSequence: sql`${sessions.icsSequence} + 1` }).where(inArray(sessions.id, raised))
+  }
+  return startsAt
 }
 
 /** The Slot of this Event that starts at this instant, or null. A Date typed in by the Host may match one. */
