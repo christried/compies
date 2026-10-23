@@ -122,9 +122,11 @@ const previousWhen = computed(() => {
 // Reopen with another Date has another value, so it shows again. Without storage it returns on reload.
 const REOPEN_KEY_PREFIX = 'compies-reopen-closed:'
 const closedReopenAt = ref<string | null>(null)
+// False during SSR and until the stored state is read, so a closed notice never paints.
+const storageRead = ref(false)
 const reopenNoticeShown = computed(() => {
   const previous = data.value?.session.previousStartsAt
-  return Boolean(previous) && previous !== closedReopenAt.value
+  return storageRead.value && Boolean(previous) && previous !== closedReopenAt.value
 })
 
 function closeReopenNotice() {
@@ -147,6 +149,7 @@ onMounted(() => {
   catch {
     // Storage blocked: nothing is remembered.
   }
+  storageRead.value = true
 })
 
 const editing = ref(false)
