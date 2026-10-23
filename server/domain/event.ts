@@ -1,12 +1,18 @@
 import { EVENT_NAME_MAX, SLOTS_MAX, eventNameLength, slotProblems, type Phase, type SlotProblem } from '../../shared/event'
 import { berlinToUtc, utcToBerlin } from '../../shared/time'
+import { parseSessionCount } from './session'
 
-// Event input rules for creating an Event (#1 § Domain rules). Times arrive as Berlin wall-clock
+// Event input rules for creating an Event (#1 § Domain rules, #49). Times arrive as Berlin wall-clock
 // values (`YYYY-MM-DDTHH:mm`, ADR 0003) and are stored as UTC instants.
 
-export type EventInputError = 'invalid_name' | 'invalid_mode' | 'invalid_slots' | 'invalid_time' | 'in_past' | 'duplicate_slot'
+export type EventInputError
+  = 'invalid_name' | 'invalid_mode' | 'invalid_sessions' | 'invalid_slots' | 'invalid_time'
+    | 'too_few_slots' | 'in_past' | 'duplicate_slot' | 'duplicate_date'
 
-export type NewEvent = { dateMode: 'poll', name: string, slots: Date[] } | { dateMode: 'direct', name: string, startsAt: Date }
+/** A new Event with `sessions` Sessions. Poll Sessions wait for a Date from the Slots; direct ones get one Date each. */
+export type NewEvent
+  = { dateMode: 'poll', name: string, sessions: number, slots: Date[] }
+    | { dateMode: 'direct', name: string, sessions: number, startsAt: Date[] }
 
 const LOCAL_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
 
@@ -51,29 +57,37 @@ export function slotsEditable(phase: Phase): boolean {
 }
 
 /**
- * Validates what the create form sends. Slots must lie in the future and be unique per minute.
- * `now` is injected so the rule can be tested at a fixed moment.
+ * Validates what the create form sends (#49): a name, the date mode, the Session count (1 to 8) and
+ * either the Slots (at least one per Session, at most 8, all in the future and unique per minute) or
+ * one Date per Session (in the future and distinct). `now` is injected so the rules can be tested.
  */
 export function parseNewEvent(input: unknown, now: Date): { ok: true, event: NewEvent } | { ok: false, error: EventInputError } {
-  const body = (input ?? {}) as { name?: unknown, dateMode?: unknown, slots?: unknown, startsAt?: unknown }
+  const body = (input ?? {}) as { name?: unknown, dateMode?: unknown, sessions?: unknown, slots?: unknown, startsAt?: unknown }
   const name = parseEventName(body.name)
   if (!name) return { ok: false, error: 'invalid_name' }
+  if (body.dateMode !== 'poll' && body.dateMode !== 'direct') return { ok: false, error: 'invalid_mode' }
+  // A request without a Session count makes an Event with one Session, as before #49.
+  const sessions = parseSessionCount(body.sessions ?? 1)
+  if (sessions === null) return { ok: false, error: 'invalid_sessions' }
 
   if (body.dateMode === 'direct') {
-    const startsAt = parseLocalTime(body.startsAt)
-    if (!startsAt) return { ok: false, error: 'invalid_time' }
-    if (startsAt <= now) return { ok: false, error: 'in_past' }
-    return { ok: true, event: { dateMode: 'direct', name, startsAt } }
+    if (!Array.isArray(body.startsAt) || body.startsAt.length !== sessions) return { ok: false, error: 'invalid_time' }
+    const startsAt = body.startsAt.map(parseLocalTime)
+    if (startsAt.some(date => date === null)) return { ok: false, error: 'invalid_time' }
+    const dates = startsAt as Date[]
+    if (dates.some(date => date <= now)) return { ok: false, error: 'in_past' }
+    if (new Set(dates.map(date => date.getTime())).size !== dates.length) return { ok: false, error: 'duplicate_date' }
+    return { ok: true, event: { dateMode: 'direct', name, sessions, startsAt: dates } }
   }
 
-  if (body.dateMode !== 'poll') return { ok: false, error: 'invalid_mode' }
   if (!Array.isArray(body.slots) || body.slots.length < 1 || body.slots.length > SLOTS_MAX) {
     return { ok: false, error: 'invalid_slots' }
   }
   const slots = body.slots.map(parseLocalTime)
   if (slots.some(slot => slot === null)) return { ok: false, error: 'invalid_time' }
   const instants = slots as Date[]
+  if (instants.length < sessions) return { ok: false, error: 'too_few_slots' }
   const problem = slotRuleError(instants, [], now)
   if (problem) return { ok: false, error: problem }
-  return { ok: true, event: { dateMode: 'poll', name, slots: instants } }
+  return { ok: true, event: { dateMode: 'poll', name, sessions, slots: instants } }
 }

@@ -23,16 +23,19 @@ export default defineEventHandler(async (event) => {
   const db = useDb(event)
   const slug = await freeSlug(db, input.name)
   const inviteToken = createInviteToken()
-  // A poll Event's Session waits for a Date from the poll; a direct one has its Date from the start.
+  // Poll Sessions wait for a Date from the poll; direct ones have their Dates from the start. The Event
+  // is in the poll phase while any Session has no Date (ADR 0011).
   const phase = input.dateMode === 'poll' ? 'poll' as const : 'date_set' as const
-  const startsAt = input.dateMode === 'poll' ? null : input.startsAt
+  const startsAt: (Date | null)[] = input.dateMode === 'poll'
+    ? Array.from({ length: input.sessions }, () => null)
+    : input.startsAt
 
   await db.transaction(async (tx) => {
     const [row] = await tx
       .insert(events)
       .values({ slug, inviteToken, hostId: user.id, name: input.name, phase })
       .returning({ id: events.id })
-    await tx.insert(sessions).values({ eventId: row!.id, startsAt })
+    await tx.insert(sessions).values(startsAt.map(date => ({ eventId: row!.id, startsAt: date })))
     await tx.insert(eventMembers).values({ eventId: row!.id, userId: user.id })
     if (input.dateMode === 'poll') {
       await tx.insert(pollSlots).values(input.slots.map(startsAt => ({ eventId: row!.id, startsAt })))

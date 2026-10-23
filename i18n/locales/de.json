@@ -826,7 +826,7 @@
       },
       "cookies": {
         "heading": "7. Cookies und Speicher im Browser",
-        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Event, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Events werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
+        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Session, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Events werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
       },
       "security": {
         "heading": "8. Sitzungs- und Sicherheitsdaten",
@@ -834,7 +834,7 @@
       },
       "events": {
         "heading": "9. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer sie angelegt hat, ihre Terminvorschläge, den festgelegten Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast.\n\nName, Terminvorschläge und Termin eines Events sowie Anzeigename, Profilbild und Stimmen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, je einem Abend mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast.\n\nName, Terminvorschläge und die Termine der Sessions eines Events sowie Anzeigename, Profilbild und Stimmen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "10. Kalenderdatei",
@@ -919,8 +919,17 @@
       "blockedPast": "Erst den Termin in der Vergangenheit ändern.",
       "laterTitle": "Format, Modus und Spiele kommen später.",
       "laterText": "Sobald das Update da ist, trägst du sie in diesem Event nach. Umfrage und Stimmen bleiben, wie sie sind.",
-      "doneTitle": "{name} steht!",
-      "doneText": "Die Umfrage läuft. Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.",
+      "doneTitle": "Umfrage für {name} läuft!",
+      "doneTitleDirect": "{name} steht!",
+      "doneText": "Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.",
+      "doneDirectTextPlural": "Die Termine stehen. Schick den Link an deine Freunde, dann können sie sich hier anmelden.",
+      "toEvent": "Zum Event",
+      "sessionsLabel": "Sessions",
+      "sessionsHelp": "Ein Event kann sich über mehrere Abende ziehen. Jede Session ist ein Abend mit eigenem Termin.",
+      "sessionsLess": "Eine Session weniger",
+      "sessionsMore": "Eine Session mehr",
+      "minSlots": "Schlag mindestens {n} Termine vor.",
+      "directEmpty": "Bitte Datum und Uhrzeit ausfüllen.",
       "copyLink": "Link kopieren",
       "copied": "Link kopiert",
       "toPoll": "Zur Umfrage",
@@ -941,6 +950,8 @@
     },
     "poll": {
       "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
+      "missingDates": "{n} Termin gesucht | {n} Termine gesucht",
+      "sessionNumber": "Session {n}",
       "past": "vorbei",
       "notVoted": "noch nicht abgestimmt",
       "saved": "Gespeichert.",
@@ -1049,6 +1060,9 @@
     "nameTooLong": "Höchstens {max} Zeichen.",
     "slotPast": "Der Termin liegt in der Vergangenheit.",
     "slotDuplicate": "Diesen Termin gibt es schon.",
+    "dateDuplicate": "Zwei Sessions können nicht am selben Termin sein.",
+    "tooFewSlots": "Schlag mindestens so viele Termine vor, wie Sessions geplant sind.",
+    "sessionsInvalid": "Sessions: zwischen 1 und 8.",
     "slotsMin": "Mindestens ein Termin.",
     "slotsMax": "Höchstens {max} Vorschläge.",
     "teamWordSpace": "Nur ein Wort, ohne Leerzeichen.",

@@ -191,7 +191,7 @@ describe('the Host edits Slots', () => {
 
     it('refuses once the Date is set, with 409 wrong_phase', async () => {
       const { cookie } = await signInAs(host, { hostPermission: true })
-      const { slug, eventId } = await createEventWith(cookie, { dateMode: 'direct', startsAt: '2090-11-07T20:00' })
+      const { slug, eventId } = await createEventWith(cookie, { dateMode: 'direct', startsAt: ['2090-11-07T20:00'] })
 
       const response = await add(cookie, slug, { startsAt: '2090-11-08T20:00' })
 

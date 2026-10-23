@@ -684,3 +684,73 @@ describe('rescheduling and reopening the Date', () => {
     await vi.waitFor(() => expect(later.text()).toContain('25. Oktober, 19:00 Uhr wurde aufgehoben'))
   })
 })
+
+/** The `GET /api/e/:slug` body of an Event with several Sessions (#49): the Sessions come as the server numbers them. */
+function viewWithSessions(slug: string, sessions: { startsAt: string | null, number: number | null }[], missingDates: number, overrides: EventOverrides = {}) {
+  return {
+    ...view(slug, [], overrides),
+    sessions: sessions.map((session, index) => ({ id: `session-${slug}-${index}`, previousStartsAt: null, ...session })),
+    missingDates,
+  } as ReturnType<typeof view>
+}
+
+describe('several Sessions on the Event page', () => {
+  beforeEach(() => {
+    signInAs(kitty)
+    useState('toasts').value = []
+  })
+
+  it('shows a numbered card per dated Session, one calendar link and one Einladen for the whole Event, and no Host actions on the cards', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: 2, startsAt: '2026-10-31T19:00:00.000Z' },
+    ], 0, { event: { phase: 'date_set', isHost: true }, slots: [], bestSlotId: null }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.text()).toContain('Session 1')
+    expect(page.text()).toContain('Session 2')
+    expect(page.findAll(`a[href="/api/e/${slug}/ics"]`)).toHaveLength(1)
+    expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
+    expect(page.text()).not.toContain('Verschieben')
+    expect(page.text()).not.toContain('Termin festlegen')
+  })
+
+  it('says how many Dates are still missing above the poll, and the dock offers no Termin festlegen', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: null, startsAt: null },
+      { number: null, startsAt: null },
+      { number: null, startsAt: null },
+    ], 3, { event: { phase: 'poll', isHost: true } }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.text()).toContain('3 Termine gesucht')
+    expect(page.text()).not.toContain('1 Termin gesucht')
+    expect(page.get('[role="toolbar"]').text()).not.toContain('Termin festlegen')
+    expect(page.get('[role="toolbar"]').text()).toContain('Termine bearbeiten')
+    expect(page.get('[role="toolbar"]').text()).toContain('Einladen')
+  })
+
+  it('numbers the dated card and asks for the one missing Date in the singular', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: null, startsAt: null },
+    ], 1, { event: { phase: 'poll' } }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.text()).toContain('Session 1')
+    expect(page.text()).toContain('1 Termin gesucht')
+    expect(page.text()).not.toContain('Termine gesucht')
+  })
+
+  it('shows no number on the card of an Event with one Session', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [{ number: 1, startsAt: '2026-10-30T19:00:00.000Z' }], 0, { event: { phase: 'date_set' } }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.text()).not.toContain('Session 1')
+    expect(page.text()).toContain('Freitags-Zocken')
+  })
+})
