@@ -47,7 +47,7 @@ Dark mode has one signature: `--cp-shadow-card` and `--cp-shadow-modal` are **or
 | 7 | Pink | #cc79a7 | #151515 | ◗ | Bögen |
 | 8 | Nacht | #3d2d8f | #fffdf8 | ✦ | Sterne |
 
-Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assigned in join order of teams, never reused within a session. Before any team word exists, a team is named after its colour („Team Rot“). Never put text directly on a pattern.
+Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assigned in join order of teams, never reused within an Event. Before any team word exists, a team is named after its colour („Team Rot“). Never put text directly on a pattern.
 
 ## Type scale
 
