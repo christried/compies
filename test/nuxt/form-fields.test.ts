@@ -52,6 +52,21 @@ describe('DateTimeField', () => {
     await flushPromises()
   }
 
+  // One input event per key, as a person types: each event sees what the field shows so far.
+  async function typeKeys(root: Element, name: 'Datum' | 'Uhrzeit', keys: string) {
+    const input = part(root, name)
+    for (const key of keys) {
+      input.value += key
+      input.dispatchEvent(new Event('input'))
+      await flushPromises()
+    }
+  }
+
+  async function leave(root: Element, name: 'Datum' | 'Uhrzeit') {
+    part(root, name).dispatchEvent(new Event('blur'))
+    await flushPromises()
+  }
+
   it('reports one Berlin wall-clock value once both the date and the time are set', async () => {
     const page = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Termin 1' } })
 
@@ -89,10 +104,44 @@ describe('DateTimeField', () => {
     expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T19:30'])
   })
 
-  it('reads three typed digits as H MM, so 930 is 09:30', async () => {
+  it('fills the time digits left to right while typing, so 1-3-0-0 is 13:00 and not 01:30', async () => {
     const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
 
-    await type(page.element, 'Uhrzeit', '930')
+    await typeKeys(page.element, 'Uhrzeit', '130')
+    expect(part(page.element, 'Uhrzeit').value).toBe('13:0')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual([''])
+
+    await typeKeys(page.element, 'Uhrzeit', '0')
+    expect(part(page.element, 'Uhrzeit').value).toBe('13:00')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T13:00'])
+  })
+
+  it('reads 2-0-3-0 as 20:30 typed key by key', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '2030')
+
+    expect(part(page.element, 'Uhrzeit').value).toBe('20:30')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T20:30'])
+  })
+
+  it('reads 1-9-3-0 as 19:30 typed key by key', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '1930')
+
+    expect(part(page.element, 'Uhrzeit').value).toBe('19:30')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T19:30'])
+  })
+
+  it('reads three typed digits as H MM once the field is left, so 930 is 09:30', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '930')
+    expect(part(page.element, 'Uhrzeit').value).toBe('93:0')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual([''])
+
+    await leave(page.element, 'Uhrzeit')
 
     expect(part(page.element, 'Uhrzeit').value).toBe('09:30')
     expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T09:30'])
@@ -102,6 +151,15 @@ describe('DateTimeField', () => {
     const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
 
     await type(page.element, 'Uhrzeit', '2460')
+
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual([''])
+    expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('rejects 2-4-6-0 typed key by key, four digits validated as they stand', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '2460')
 
     expect(page.emitted('update:modelValue')?.at(-1)).toEqual([''])
     expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBe('true')

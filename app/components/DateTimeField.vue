@@ -52,11 +52,11 @@ function formatTime(hours: number, minutes: number) {
   return `${pad(hours)}:${pad(minutes)}`
 }
 
-/** `2090-10-30` as typed: `30.10.2090`. */
-function isoToText(iso: string) {
+/** `30102090` for `2090-10-30`: the digits the date field keeps. */
+function isoToDigits(iso: string) {
   if (!iso) return ''
   const [year = '', month = '', day = ''] = iso.split('-')
-  return `${day}.${month}.${year}`
+  return `${day}${month}${year}`
 }
 
 /** The typed digits of a date as far as they go: `30.10.2090`. */
@@ -75,32 +75,32 @@ function parseDateDigits(digits: string) {
   return `${digits.slice(4, 8)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`
 }
 
-/** The typed digits of a time as they show: `930` is `09:30`, `193` is `19:3` until `1930`. */
-function displayTimeDigits(digits: string) {
-  if (digits.length === 3 && Number(digits.slice(1)) <= 59) return `0${digits[0]}:${digits.slice(1)}`
-  if (digits.length <= 2) return digits
-  return `${digits.slice(0, 2)}:${digits.slice(2)}`
+/** The typed digits of a time as they show: `13`, then `13:0` and `13:00`. A colon after two digits, no reflow. */
+function formatTimeDigits(digits: string) {
+  return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits
 }
 
-/** `HH:mm` for three digits (H MM) or four (HH MM), or '' while incomplete or impossible. */
+/** `HH:mm` for four digits (HH MM), or '' while incomplete or impossible. */
 function parseTimeDigits(digits: string) {
-  const hours = digits.length === 3 ? Number(digits[0]) : Number(digits.slice(0, 2))
-  const minutes = digits.length === 3 ? Number(digits.slice(1)) : Number(digits.slice(2))
-  if (!(digits.length === 3 || digits.length === 4) || !(hours <= 23 && minutes <= 59)) return ''
+  if (digits.length !== 4) return ''
+  const hours = Number(digits.slice(0, 2))
+  const minutes = Number(digits.slice(2))
+  if (!(hours <= 23 && minutes <= 59)) return ''
   return formatTime(hours, minutes)
 }
 
+// Each part keeps its typed digits; its text and its value are derived from them.
 const [initialDate = '', initialTime = ''] = props.modelValue.split('T')
-const date = ref(initialDate)
-const dateText = ref(isoToText(initialDate))
+const dateDigits = ref(isoToDigits(initialDate))
 const timeDigits = ref(initialTime.replace(':', ''))
-const timeText = ref(initialTime)
-
+const dateText = computed(() => formatDateDigits(dateDigits.value))
+const dateValue = computed(() => parseDateDigits(dateDigits.value))
+const timeText = computed(() => formatTimeDigits(timeDigits.value))
 const timeValue = computed(() => parseTimeDigits(timeDigits.value))
 const timeInvalid = computed(() => timeDigits.value.length === 4 && !timeValue.value)
 
 function combined() {
-  return date.value && timeValue.value ? `${date.value}T${timeValue.value}` : ''
+  return dateValue.value && timeValue.value ? `${dateValue.value}T${timeValue.value}` : ''
 }
 
 function onPart() {
@@ -109,48 +109,42 @@ function onPart() {
 
 function onDateInput(event: Event) {
   const input = event.target as HTMLInputElement
-  const digits = input.value.replace(/\D/g, '').slice(0, 8)
-  dateText.value = formatDateDigits(digits)
+  dateDigits.value = input.value.replace(/\D/g, '').slice(0, 8)
   input.value = dateText.value
-  date.value = parseDateDigits(digits)
   onPart()
 }
 
 function onTimeInput(event: Event) {
   const input = event.target as HTMLInputElement
   timeDigits.value = input.value.replace(/\D/g, '').slice(0, 4)
-  timeText.value = displayTimeDigits(timeDigits.value)
   input.value = timeText.value
   onPart()
 }
 
-// Once the field is left, a complete time shows in its canonical form.
-function onTimeBlur() {
-  if (!timeValue.value) return
-  timeDigits.value = timeValue.value.replace(':', '')
-  timeText.value = timeValue.value
+// Leaving the time (blur or Enter) reads a three-digit entry as H MM: 930 is 09:30.
+function commitTime() {
+  if (timeDigits.value.length !== 3) return
+  timeDigits.value = `0${timeDigits.value}`
+  onPart()
 }
 
 // A value from outside (a reset, or the Slot list changing) replaces what the inputs show.
 watch(() => props.modelValue, (value) => {
   if (value === combined()) return
   const [datePart = '', timePart = ''] = value.split('T')
-  date.value = datePart
-  dateText.value = isoToText(datePart)
+  dateDigits.value = isoToDigits(datePart)
   timeDigits.value = timePart.replace(':', '')
-  timeText.value = timePart
 })
 
 // Calendar: days before the earliest allowed day cannot be picked; it opens on the Berlin today.
 const minValue = computed(() => (props.min ? parseDate(props.min.split('T')[0]!) : undefined))
-const calendarValue = computed(() => (date.value ? parseDate(date.value) : undefined))
+const calendarValue = computed(() => (dateValue.value ? parseDate(dateValue.value) : undefined))
 const berlinToday = parseDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date()))
 const calendarPlaceholder = computed(() => calendarValue.value ?? minValue.value ?? berlinToday)
 
 function selectDate(value: DateValue | undefined) {
   if (!value) return
-  date.value = value.toString()
-  dateText.value = isoToText(date.value)
+  dateDigits.value = isoToDigits(value.toString())
   dateOpen.value = false
   onPart()
 }
@@ -159,23 +153,22 @@ function selectDate(value: DateValue | undefined) {
 // different ways: a click keeps the focus in the input so typing goes on; a key moves it inside.
 const dateOpen = ref(false)
 const timeOpen = ref(false)
-const dateKeepsFocus = ref(false)
-const timeKeepsFocus = ref(false)
+const dateSuppressAutoFocus = ref(false)
+const timeSuppressAutoFocus = ref(false)
 
 function openDate(byPointer: boolean) {
-  dateKeepsFocus.value = byPointer
+  dateSuppressAutoFocus.value = byPointer
   dateOpen.value = true
 }
 
 function openTime(byPointer: boolean) {
-  timeKeepsFocus.value = byPointer
+  timeSuppressAutoFocus.value = byPointer
   timeOpen.value = true
 }
 
 function selectTime(value: unknown) {
   if (typeof value !== 'string') return
   timeDigits.value = value.replace(':', '')
-  timeText.value = value
   timeOpen.value = false
   onPart()
 }
@@ -197,9 +190,9 @@ function fieldClass(hasError: boolean | undefined) {
 }
 
 // Stops a pointer-opened popover from taking the focus out of the input.
-function keepFocus(keeps: boolean) {
+function suppressAutoFocus(suppress: boolean) {
   return (event: Event) => {
-    if (keeps) event.preventDefault()
+    if (suppress) event.preventDefault()
   }
 }
 </script>
@@ -253,8 +246,8 @@ function keepFocus(keeps: boolean) {
           <PopoverContent
             align="start"
             :side-offset="6"
-            class="layer-toast outline-memphis max-w-[calc(100vw-2rem)] rounded-lg bg-surface p-1.5 shadow-card"
-            @open-auto-focus="keepFocus(dateKeepsFocus)"
+            class="layer-popover outline-memphis max-w-[calc(100vw-2rem)] rounded-lg bg-surface p-1.5 shadow-card"
+            @open-auto-focus="suppressAutoFocus(dateSuppressAutoFocus)"
           >
             <CalendarRoot
               v-slot="{ grid, weekDays }"
@@ -349,7 +342,8 @@ function keepFocus(keeps: boolean) {
               class="hit-44 h-12 w-full rounded-md bg-surface py-0 pr-12 pl-3 font-num text-[17px] text-ink"
               :class="fieldClass(!!error || timeInvalid)"
               @input="onTimeInput"
-              @blur="onTimeBlur"
+              @blur="commitTime"
+              @keydown.enter="commitTime"
               @keydown.down.prevent="openTime(false)"
             >
             <button
@@ -370,8 +364,8 @@ function keepFocus(keeps: boolean) {
           <PopoverContent
             align="end"
             :side-offset="6"
-            class="layer-toast outline-memphis w-36 rounded-lg bg-surface p-1.5 shadow-card"
-            @open-auto-focus="keepFocus(timeKeepsFocus)"
+            class="layer-popover outline-memphis w-36 rounded-lg bg-surface p-1.5 shadow-card"
+            @open-auto-focus="suppressAutoFocus(timeSuppressAutoFocus)"
           >
             <ListboxRoot
               :model-value="timeValue || undefined"
