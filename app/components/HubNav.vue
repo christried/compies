@@ -52,6 +52,7 @@ const soon = (key: string) => (HUB_SITES as readonly string[]).includes(key)
         item.key === current
           ? ['font-extrabold text-ink', layout === 'header' ? 'border-hot' : 'border-ink']
           : 'border-transparent font-semibold text-ink-2',
+        'hover:tint',
       ]"
     >
       <AppIcon

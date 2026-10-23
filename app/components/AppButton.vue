@@ -25,7 +25,7 @@ const VARIANT = {
     :is="to ? NuxtLink : 'button'"
     :to="to"
     :type="to ? undefined : 'button'"
-    class="outline-memphis inline-flex items-center justify-center gap-2 rounded-pill shadow-btn whitespace-nowrap no-underline transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:transition-colors reduced:hover:translate-y-0 reduced:active:translate-0 motion-reduce:transition-colors motion-reduce:hover:translate-y-0 motion-reduce:active:translate-0 disabled:pointer-events-none aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:active:translate-0"
+    class="outline-memphis inline-flex items-center justify-center gap-2 rounded-pill shadow-btn whitespace-nowrap no-underline transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:transition-colors reduced:hover:translate-y-0 reduced:hover:tint reduced:active:translate-0 motion-reduce:transition-colors motion-reduce:hover:translate-y-0 motion-reduce:hover:tint motion-reduce:active:translate-0 disabled:pointer-events-none aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none aria-disabled:active:translate-0"
     :class="[SIZE[size], VARIANT[variant]]"
   >
     <slot name="icon" />

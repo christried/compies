@@ -62,7 +62,7 @@ function confirm() {
           role="radio"
           :aria-checked="selected === option.id ? 'true' : 'false'"
           :data-slot="option.id"
-          class="outline-memphis hit-44 flex items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-left text-ink"
+          class="outline-memphis hit-44 flex items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-left text-ink hover:tint"
           :class="selected === option.id ? 'border-[3px] border-focus bg-surface' : 'border-(length:--cp-bw) border-line bg-surface'"
           @click="chosen = option.id"
         >
