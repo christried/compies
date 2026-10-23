@@ -58,7 +58,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
       :tabindex="isTabStop(index) ? 0 : -1"
       class="hit-44 flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap px-3 text-small font-bold focus-visible:focus-ring transition-colors dur-instant"
       :class="[
-        option.value === modelValue ? (option.fill ?? 'bg-ink text-paper') : 'bg-surface text-ink hover:bg-paper-2',
+        option.value === modelValue ? (option.fill ?? 'bg-ink text-paper') : 'bg-surface text-ink not-aria-disabled:hover:bg-paper-2',
         index === 0 ? 'rounded-l-pill' : '',
         index === options.length - 1 ? 'rounded-r-pill' : '',
         index > 0 ? 'border-l-(length:--cp-bw) border-line' : '',

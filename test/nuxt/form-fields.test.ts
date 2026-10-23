@@ -253,6 +253,15 @@ describe('SegmentedControl', () => {
     expect(page.findAll('[role="radio"]').map(radio => radio.attributes('tabindex'))).toEqual(['0', '-1'])
   })
 
+  it('tints an unselected option on hover only while it is not aria-disabled', async () => {
+    const page = await mountSuspended(SegmentedControl, { props: { modelValue: 'poll', options, label: 'Termin', disabled: true } })
+
+    const unselected = page.findAll('[role="radio"]')[1]!
+    expect(unselected.attributes('aria-disabled')).toBe('true')
+    expect(unselected.classes()).toContain('not-aria-disabled:hover:bg-paper-2')
+    expect(unselected.classes()).not.toContain('hover:bg-paper-2')
+  })
+
   it('does not select anything while disabled', async () => {
     const page = await mountSuspended(SegmentedControl, { props: { modelValue: 'poll', options, label: 'Termin', disabled: true } })
 
