@@ -5,7 +5,8 @@ import type { HomeSession, HomeView } from '~~/shared/session'
 
 // MVP route guard: every path without a page of its own lands here (see utils/construction.ts).
 const route = useRoute()
-const site = computed(() => constructionSite(route.path))
+const user = useAuthUser()
+const site = computed(() => constructionSite(route.path, user.value))
 
 const { t } = useI18n()
 const signOut = useSignOut()
