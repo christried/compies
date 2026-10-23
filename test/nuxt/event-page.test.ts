@@ -482,8 +482,8 @@ describe('setting the Date', () => {
     const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
     const calendarLink = memberPage.get(`a[href="/api/e/${member.slug}/ics"]`)
     expect(calendarLink.attributes('download')).toBeDefined()
-    // The control is about the Date, so it shows a calendar, not a file download.
-    expect(calendarLink.find('svg').classes()).toContain('lucide-calendar-plus')
+    // The control is about the Date, so it is labelled as a calendar entry, not as a file download.
+    expect(calendarLink.text()).toBe('In den Kalender')
     expect(memberPage.text()).not.toContain('Verschieben')
 
     const hostStore = serve(s => view(s, [], {
