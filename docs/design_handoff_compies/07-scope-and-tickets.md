@@ -59,7 +59,7 @@ The MVP is four slices of the planned tickets. Each slice is a real part of that
 - Invite link `/e/<slug>-<token>`, copy, rotate (hold 1 s, screen 06). Link opening 07 (signed out → sign-in with invite context; invalid/rotated/deleted).
 
 **T7a Date poll**
-- Screens M1 and M3 (= 08 without chat panel and push). One Date poll per Event. Vote Ja / Wenn nötig / Nein per slot, change until confirmed; matrix „Wer kann wann?“; best slot rule; Host sets a Session's Date from a slot; reschedule (one Session, new date/time, notify by UI state only); .ics download with one entry per Session.
+- Screens M1 and M3 (= 08 without chat panel and push). One Date poll per Event. Vote Ja / Meh / Nein per slot, change until confirmed; matrix „Wer kann wann?“; best slot rule; Host sets a Session's Date from a slot; reschedule (one Session, new date/time, notify by UI state only); .ics download with one entry per Session.
 - Live: polling every 15 s while visible + on focus. Optimistic votes with rollback.
 - .ics: `UID` stable per Session, `SEQUENCE` +1 per reschedule of that Session, `DTSTART` UTC, default duration 3 h (see open questions), `VALARM TRIGGER:-PT1H`, `URL` = Event link. Summary from `mvp.ics.summary`.
 - Later in T7b (with T6 realtime + T17 push): realtime updates, push on confirm/reschedule, server reminder.

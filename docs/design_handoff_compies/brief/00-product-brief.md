@@ -138,7 +138,7 @@ A guided flow (stepper) with these settings:
 
 - One Date poll per Event serves all its Sessions. Members vote once for all of them.
 - The Host proposes several slots (**date + time**).
-- Everyone with the invite link votes while signed in: **Ja / Wenn nötig / Nein** (yes / if need be / no). Everyone sees who voted what.
+- Everyone with the invite link votes while signed in: **Ja / Meh / Nein** (yes / if need be / no). Everyone sees who voted what.
 - The app highlights the best slot. The Host sets the Date of **one Session at a time** from an open slot, so each Session can get a different time. The Date poll stays open until every Session has a Date. Alternatively, the Host sets the Dates directly without a poll.
 - After a Date is confirmed for a Session:
   - a push notification goes to everyone

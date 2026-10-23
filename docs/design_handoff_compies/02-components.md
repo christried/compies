@@ -651,7 +651,7 @@ Fill wheel/pick pool and tiebreaker pool from the library with suggestions.
 One proposed date in the poll.
 
 - **Props / variants:** `slot: {startsAt}`, `counts: {yes, maybe, no}`, `total`, `myVote`, `best`, `canPick` (host)
-- **States:** not voted (all options neutral) · voted (selected option filled: Ja success, Nötig warning, Nein ink) · best (3 px focus border, card shadow, „Bester Termin“ chip) · confirmed
+- **States:** not voted (all options neutral) · voted (selected option filled: Ja success, Meh warning, Nein error red with dark text (`bg-error text-on-error`)) · best (3 px focus border, card shadow, „Bester Termin“ chip) · confirmed
 - **Slots:** —
 - **Desktop / mobile:** Desktop 4 columns; mobile 1 column. Host on desktop gets „Diesen festlegen“ in the card.
 - **Accessibility:** Options = `role="radiogroup"` labelled with the slot („Sa 25.10. 20:30“); chip text says best.
@@ -663,7 +663,7 @@ One proposed date in the poll.
 „Wer kann wann?“: everyone × every slot.
 
 - **Props / variants:** `people[]`, `slots[]`, `votes`, `me`
-- **States:** cells: Ja (check, circle, success) · Wenn nötig (minus, circle, warning) · Nein (x, square) · Noch offen (dashed circle)
+- **States:** cells: Ja (check, circle, success) · Meh (minus, circle, warning) · Nein (x, square, error red with dark text) · Noch offen (dashed circle)
 - **Slots:** —
 - **Desktop / mobile:** Desktop name column 200 + equal columns; mobile 130 + 72 px columns, horizontal scroll.
 - **Accessibility:** Real `<table>` with row/column headers; cell `title` and text equivalent („Ja“).

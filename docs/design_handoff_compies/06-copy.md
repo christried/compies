@@ -71,6 +71,7 @@ Tone: friendly, clear, a little cheeky. Short sentences. Du-form. No „·“ se
 - The app is „Compies“ in every text (tab titles, PWA name, .ics title, legal texts). Only the wordmark is all caps, and the wordmark gets its capitals from CSS, not from the string.
 - Compibert appears on screen but is never named in any copy.
 - The calendar is about the Date, not the file: no „.ics“, „Datei“ or „Download“ in UI copy. The button is „In den Kalender“. Only the Datenschutzerklärung describes the file.
+- The vote options are Ja, Meh and Nein, as text (Meh has no icon on the card; the matrix cell keeps its minus). „Wenn nötig“ is retired everywhere. The legend above the Slot cards says what each promises: Ja „Ich kann da!“ · Meh „Krieg ich hin.“ · Nein „Wird nichts bei mir.“. The domain value stays `maybe`.
 - Never concatenate sentences from fragments; use one key with placeholders.
 - Team names, game names and user names are data, never translated.
 - Dates: `Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })` → „Sa 25.10.“; time „20:30“; long form „Samstag, 25. Oktober, 20:30 Uhr“. Time zone Europe/Berlin.
