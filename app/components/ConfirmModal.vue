@@ -75,7 +75,7 @@ const { onKeydown } = useDialog(toRef(props, 'open'), panel, () => emit('cancel'
           </AppButton>
           <button
             type="button"
-            class="hit-44 mx-auto rounded-md px-3 font-bold underline-offset-4 transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card hover:underline active:translate-1 active:shadow-none reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint"
+            class="hit-44 mx-auto rounded-md px-3 font-bold underline-offset-4 hover:underline"
             @click="emit('cancel')"
           >
             {{ cancelLabel ?? t('common.cancel') }}

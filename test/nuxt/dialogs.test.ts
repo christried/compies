@@ -44,6 +44,17 @@ describe('ConfirmModal', () => {
     expect(page.emitted('cancel')).toHaveLength(1)
   })
 
+  it('shows the cancel as a text link: no lift and no shadow, only an underline on hover', async () => {
+    await mountSuspended(ConfirmModal, {
+      props: { open: true, title: 'Termin festlegen?', confirmLabel: 'Festlegen' },
+    })
+    const cancel = [...(document.querySelector('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(button => button.textContent?.includes('Abbrechen'))!
+
+    expect(cancel.className).toContain('hover:underline')
+    expect(cancel.className).not.toContain('hover:-translate-y-0.5')
+    expect(cancel.className).not.toContain('hover:shadow-card')
+  })
+
   it('does not confirm twice while loading', async () => {
     const page = await mountSuspended(ConfirmModal, {
       props: { open: true, title: 'Termin festlegen?', confirmLabel: 'Festlegen', loading: true },
