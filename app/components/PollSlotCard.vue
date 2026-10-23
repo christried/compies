@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, Check, Minus, Sparkles, X } from '@lucide/vue'
+import { CalendarCheck, Check, Sparkles, X } from '@lucide/vue'
 import { VOTE_VALUES, type VoteValue } from '~~/shared/poll'
 
 // One proposed Slot in the poll (02-components § PollSlotCard, screen M3). The three vote options are
@@ -31,7 +31,7 @@ const share = (count: number) => (props.total > 0 ? `${(count / props.total) * 1
 
 const options = computed(() => [
   { value: 'yes', label: t('poll.yes'), icon: Check, fill: 'bg-success text-on-success' },
-  { value: 'maybe', label: t('poll.maybe'), icon: Minus, fill: 'bg-warning text-on-warning' },
+  { value: 'maybe', label: t('poll.maybe'), fill: 'bg-warning text-on-warning' },
   { value: 'no', label: t('poll.no'), icon: X, fill: 'bg-error text-on-error' },
 ])
 

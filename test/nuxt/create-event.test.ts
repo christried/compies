@@ -173,6 +173,18 @@ describe('create an Event', () => {
     expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', sessions: 2, startsAt: ['2090-11-07T20:00', '2090-11-08T19:00'] })
   })
 
+  it('numbers the direct rows on screen once there is more than one Session', async () => {
+    signInAs(host)
+    const page = await mountSuspended(CreatePage, { route: '/neu' })
+    await page.findAll('[role="radio"]')[1]!.trigger('click')
+    expect(page.text()).not.toContain('Termin 1')
+
+    await page.get('button[aria-label="Eine Session mehr"]').trigger('click')
+
+    expect(page.text()).toContain('Termin 1')
+    expect(page.text()).toContain('Termin 2')
+  })
+
   it('asks for a Date in every direct row, and says when two rows share one', async () => {
     signInAs(host)
     const page = await mountSuspended(CreatePage, { route: '/neu' })
