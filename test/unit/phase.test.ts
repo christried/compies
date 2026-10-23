@@ -8,7 +8,7 @@ const now = new Date('2026-10-22T09:00:00.000Z')
 const later = new Date('2026-10-24T18:00:00.000Z')
 
 describe('setDateRejection', () => {
-  const open = { phase: 'poll' as const, startsAt: later, now, taken: false, undated: 2 }
+  const open = { phase: 'poll' as const, startsAt: later, now, taken: false, undated: 2, duplicate: false }
 
   it('lets the Host set a free future Slot while a Session waits for a Date', () => {
     expect(setDateRejection(open)).toBeNull()
@@ -25,6 +25,10 @@ describe('setDateRejection', () => {
 
   it('refuses a Slot that already became a Date', () => {
     expect(setDateRejection({ ...open, taken: true })).toBe('slot_taken')
+  })
+
+  it('refuses a time another Session already has, with duplicate_date', () => {
+    expect(setDateRejection({ ...open, duplicate: true })).toBe('duplicate_date')
   })
 
   it('refuses a time that is not in the future, including the very same instant', () => {

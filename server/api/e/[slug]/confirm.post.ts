@@ -30,7 +30,8 @@ export default defineEventHandler(async (event) => {
     const before = await eventSessions(tx, eventRow.id)
     const undated = before.filter(row => row.startsAt === null)
     const taken = await isSlotTaken(tx, eventRow.id, slot.id)
-    const rejection = setDateRejection({ phase: eventRow.phase, startsAt: slot.startsAt, now: new Date(), taken, undated: undated.length })
+    const duplicate = before.some(row => row.startsAt?.getTime() === slot.startsAt.getTime())
+    const rejection = setDateRejection({ phase: eventRow.phase, startsAt: slot.startsAt, now: new Date(), taken, undated: undated.length, duplicate })
     if (rejection) throw apiError(rejection)
 
     const [row] = await tx

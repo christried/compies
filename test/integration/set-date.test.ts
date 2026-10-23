@@ -6,6 +6,7 @@ import readEvent from '../../server/api/e/[slug].get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import downloadIcs from '../../server/api/e/[slug]/ics.get'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
+import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -28,6 +29,7 @@ describe('setting the Dates from the shared Date poll', () => {
       'POST /api/e/:slug/confirm': confirmDate,
       'GET /api/e/:slug/ics': downloadIcs,
       'PUT /api/e/:slug/slots/:slotId/vote': putVote,
+      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
     })
   })
 
@@ -181,6 +183,27 @@ describe('setting the Dates from the shared Date poll', () => {
       expect((await response.json()).statusMessage).toBe('slot_taken')
       expect(await eventRow(eventId)).toMatchObject({ phase: 'poll' })
       expect((await sessionsOf(eventId)).filter(row => row.startsAt !== null)).toHaveLength(1)
+    })
+
+    it('refuses a Slot whose time another Session already has, with 400 duplicate_date, and leaves the poll as it was', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId, slotIds } = await createPoll(cookie, 2)
+      expect((await confirm(cookie, slug, slotIds[1])).status).toBe(200)
+      const [dated] = (await sessionsOf(eventId)).filter(row => row.slotId === slotIds[1])
+      // The Session moves onto the time of the other, still open Slot; it keeps its own Slot.
+      const moved = await request(`/api/e/${slug}/sessions/${dated!.id}/reschedule`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ startsAt: '2090-10-30T20:30' }),
+      })
+      expect(moved.status).toBe(200)
+
+      const response = await confirm(cookie, slug, slotIds[0])
+
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ statusMessage: 'duplicate_date' })
+      expect((await sessionsOf(eventId)).filter(row => row.startsAt === null)).toHaveLength(1)
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'poll' })
     })
 
     it('rejects a Slot in the past, with 400 in_past', async () => {

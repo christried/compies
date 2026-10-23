@@ -21,18 +21,18 @@ export function phaseAfterChange(phase: Phase, startsAt: (Date | null)[]): Phase
   return phase === 'poll' || phase === 'date_set' ? phaseOf(startsAt) : phase
 }
 
-export type SetDateRejection = PhaseRejection | 'slot_taken'
+export type SetDateRejection = PhaseRejection | 'slot_taken' | 'duplicate_date'
 
 /**
  * Setting a Date from a Slot (#52): the Event is in the poll phase with a Session that waits for a Date
- * (`undated` counts them), the Slot is not one a Session already has as its Date (`taken`), and its time
- * is in the future. Checked in that order.
+ * (`undated` counts them), the Slot is not one a Session already has as its Date (`taken`), its time is in
+ * the future, and no other Session has that time (`duplicate`, #49: distinct Dates). Checked in that order.
  */
-export function setDateRejection(input: { phase: Phase, startsAt: Date, now: Date, taken: boolean, undated: number }): SetDateRejection | null {
+export function setDateRejection(input: { phase: Phase, startsAt: Date, now: Date, taken: boolean, undated: number, duplicate: boolean }): SetDateRejection | null {
   if (input.phase !== 'poll' || input.undated === 0) return 'wrong_phase'
   if (input.taken) return 'slot_taken'
   if (isPast(input.startsAt, input.now)) return 'in_past'
-  return null
+  return input.duplicate ? 'duplicate_date' : null
 }
 
 /**
