@@ -35,6 +35,20 @@ describe('ToastStack', () => {
     await vi.waitFor(() => expect(page.find('[role="alert"]').exists()).toBe(false))
   })
 
+  it('gives every toast an ✕ that closes it, not only errors', async () => {
+    const page = await mountSuspended(ToastStack)
+
+    useToast().toast({ tone: 'success', text: 'Link kopiert' })
+    useToast().toast({ tone: 'info', text: 'Kommt bald' })
+    await vi.waitFor(() => expect(page.findAll('[role="status"]')).toHaveLength(2))
+
+    for (const toast of page.findAll('[role="status"]')) {
+      expect(toast.get('button').attributes('aria-label')).toBe('Schließen')
+    }
+    await page.get('[role="status"] button').trigger('click')
+    await vi.waitFor(() => expect(page.findAll('[role="status"]')).toHaveLength(1))
+  })
+
   it('stacks at most three toasts and drops the oldest', async () => {
     const page = await mountSuspended(ToastStack)
 

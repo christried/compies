@@ -71,6 +71,12 @@ function radio(page: Awaited<ReturnType<typeof mountSuspended>>, slotLabel: stri
   return page.get(`[role="radiogroup"][aria-label="${slotLabel}"]`).findAll('[role="radio"]').find((button: Wrapper) => button.text() === option)!
 }
 
+/** Presses the ✕ of the notice that shows `text`. */
+function closeNotice(page: Awaited<ReturnType<typeof mountSuspended>>, text: string) {
+  const notice = page.findAll('[role="status"]').find((element: Wrapper) => element.text().includes(text))!
+  return notice.get('button[aria-label="Schließen"]').trigger('click')
+}
+
 describe('the Session poll', () => {
   beforeEach(() => {
     signInAs(kitty)
@@ -138,6 +144,25 @@ describe('the Session poll', () => {
     await vi.waitFor(() => expect(saved).toEqual({ value: 'yes' }))
     await vi.waitFor(() => expect(page.text()).toContain('Gespeichert.'))
     expect(radio(page, 'Sa 24.10. 20:00', 'Ja').attributes('aria-checked')).toBe('true')
+  })
+
+  it('closes the saved notice for this view, and it comes back with the next Vote', async () => {
+    const store = serve(s => view(s, sanneAndLarsi))
+    for (const slot of ['fri', 'sat']) {
+      registerEndpoint(`/api/s/${store.slug}/slots/${slot}/vote`, {
+        method: 'PUT',
+        handler: () => ({ slotId: slot, value: 'yes' }),
+      })
+    }
+    const page = await mountSuspended(SessionPage, { route: `/s/${store.slug}` })
+
+    await radio(page, 'Sa 24.10. 20:00', 'Ja').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Gespeichert.'))
+    await closeNotice(page, 'Gespeichert.')
+    expect(page.text()).not.toContain('Gespeichert.')
+
+    await radio(page, 'Fr 23.10. 20:00', 'Ja').trigger('click')
+    await vi.waitFor(() => expect(page.text()).toContain('Gespeichert.'))
   })
 
   it('rolls the vote back and raises the error toast when saving fails', async () => {
@@ -509,5 +534,29 @@ describe('rescheduling and reopening the Date', () => {
 
     await vi.waitFor(() => expect(reopened).toBe(1))
     await vi.waitFor(() => expect(page.text()).toContain('wurde aufgehoben, bitte aus deinem Kalender löschen'))
+  })
+
+  it('keeps a closed Reopen notice closed after a remount, and shows it again for a different withdrawn Date', async () => {
+    const member = serve(s => view(s, [], {
+      session: { phase: 'poll', previousStartsAt: '2026-10-24T18:00:00.000Z' },
+    }))
+    const first = await mountSuspended(SessionPage, { route: `/s/${member.slug}` })
+    expect(first.text()).toContain('wurde aufgehoben')
+
+    await closeNotice(first, 'wurde aufgehoben')
+    expect(first.text()).not.toContain('wurde aufgehoben')
+
+    // A reload starts with an empty Nuxt data cache, so the page fetches again.
+    clearNuxtData()
+    const remounted = await mountSuspended(SessionPage, { route: `/s/${member.slug}` })
+    expect(remounted.text()).toContain('Freitags-Zocken')
+    await vi.waitFor(() => expect(remounted.text()).not.toContain('wurde aufgehoben'))
+
+    member.set(view(member.slug, [], {
+      session: { phase: 'poll', previousStartsAt: '2026-10-25T18:00:00.000Z' },
+    }))
+    clearNuxtData()
+    const later = await mountSuspended(SessionPage, { route: `/s/${member.slug}` })
+    await vi.waitFor(() => expect(later.text()).toContain('25. Oktober, 19:00 Uhr wurde aufgehoben'))
   })
 })

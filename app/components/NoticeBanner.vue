@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
+import { X } from '@lucide/vue'
+
 // An inline notice inside a page (02-components § NoticeBanner). It is announced as a status when it
-// appears; the text carries the meaning. `hostOnly` adds the "Nur du siehst das" chip.
+// appears; the text carries the meaning. `hostOnly` adds the "Nur du siehst das" chip. Every notice
+// has an ✕; the page decides what closing means (it emits `close`, the banner does not hide itself).
 withDefaults(defineProps<{
   tone?: 'success' | 'info' | 'warning'
   icon?: Component
   hostOnly?: boolean
 }>(), { tone: 'info', icon: undefined, hostOnly: false })
 
+const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 </script>
 
@@ -36,5 +40,16 @@ const { t } = useI18n()
       class="rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] font-bold"
     >{{ t('common.hostOnly') }}</span>
     <slot name="action" />
+    <button
+      type="button"
+      class="hit-44 grid flex-none place-items-center"
+      :aria-label="t('common.close')"
+      @click="emit('close')"
+    >
+      <AppIcon
+        :icon="X"
+        :size="16"
+      />
+    </button>
   </div>
 </template>
