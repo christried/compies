@@ -245,7 +245,7 @@ Transient feedback („Link kopiert“, „X war schneller“, vote failed).
 - **Props / variants:** `toast({tone: success | info | warning | error, text, action?, duration?})`
 - **States:** enter · visible · leave; max 3 stacked; errors stay until dismissed. Every toast has an ✕ that dismisses it.
 - **Slots:** —
-- **Desktop / mobile:** Desktop bottom centre above the dock; mobile above the tab bar.
+- **Desktop / mobile:** Desktop bottom centre above the dock; mobile above the tab bar. With a Host dock on the page, desktop sits above the dock pill (bottom 96 px) and phones above the crown button (bottom 144 px).
 - **Accessibility:** `role="status"` (errors `role="alert"`); action reachable by keyboard; auto-dismiss pauses on hover/focus.
 - **Motion:** `y 20→0, opacity`, `dur-base ease-out`; leave `dur-fast`. Sound `ui-toast`.
 
@@ -665,7 +665,7 @@ One proposed date in the poll.
 - **Props / variants:** `people[]`, `slots[]`, `votes`, `me`
 - **States:** cells: Ja (check, circle, success) · Meh (minus, circle, warning) · Nein (x, square, error red with dark text) · Noch offen (dashed circle)
 - **Slots:** —
-- **Desktop / mobile:** Desktop name column 200 + equal columns; mobile 130 + 72 px columns, horizontal scroll.
+- **Desktop / mobile:** Desktop name column 200 + equal columns; mobile 130 + 72 px columns, horizontal scroll only when the Slots don't fit. Headers show the day and the time on separate lines, never cut.
 - **Accessibility:** Real `<table>` with row/column headers; cell `title` and text equivalent („Ja“).
 - **Motion:** cell change pop `dur-base ease-pop`.
 

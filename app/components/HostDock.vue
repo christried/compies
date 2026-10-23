@@ -45,8 +45,16 @@ function onShortcut(event: KeyboardEvent) {
   toolbar.value?.querySelector<HTMLElement>('button')?.focus()
 }
 
-onMounted(() => window.addEventListener('keydown', onShortcut))
-onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut))
+// While mounted, the toasts lift above the dock (ToastStack, useHostDock).
+let leaveDock: (() => void) | undefined
+onMounted(() => {
+  window.addEventListener('keydown', onShortcut)
+  leaveDock = useHostDock().attach()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onShortcut)
+  leaveDock?.()
+})
 </script>
 
 <template>

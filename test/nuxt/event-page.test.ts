@@ -94,6 +94,24 @@ describe('the Event poll', () => {
     expect(cards).toEqual(['Fr 23.10. 20:00', 'Sa 24.10. 20:00', 'Di 20.10. 20:00'])
   })
 
+  it('shows no refresh hint, and keeps the section headings at their levels', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.text()).not.toContain('Aktualisiert sich von selbst')
+    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Wann zocken wir?', 'Wer kann wann?'])
+  })
+
+  it('writes each matrix column header as the day and the time on separate lines', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    const [friday] = page.findAll('thead th').slice(1)
+    expect(friday!.findAll('span').map(line => line.text())).toEqual(['Fr 23.10.', '20:00'])
+  })
+
   it('marks the Best slot and keeps it out of the past', async () => {
     const { slug } = serve(s => view(s, sanneAndLarsi))
 

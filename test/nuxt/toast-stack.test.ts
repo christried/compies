@@ -1,5 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { Crown } from '@lucide/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import HostDock from '~/components/HostDock.vue'
 import ToastStack from '~/components/ToastStack.vue'
 import { useToast } from '~/composables/useToast'
 
@@ -59,5 +61,18 @@ describe('ToastStack', () => {
       expect(texts).toHaveLength(3)
       expect(texts[0]).toContain('zwei')
     })
+  })
+
+  it('sits above the Host dock while one is mounted, and back at its place once it is gone', async () => {
+    const page = await mountSuspended(ToastStack)
+    expect(page.classes()).toContain('bottom-20')
+    expect(page.classes()).not.toContain('bottom-36')
+
+    const dock = await mountSuspended(HostDock, { props: { actions: [{ key: 'set', label: 'Termin festlegen', icon: Crown }] } })
+    await vi.waitFor(() => expect(page.classes()).toContain('bottom-36'))
+    expect(page.classes()).toContain('md:bottom-24')
+
+    dock.unmount()
+    await vi.waitFor(() => expect(page.classes()).toContain('bottom-20'))
   })
 })

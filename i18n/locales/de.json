@@ -940,7 +940,6 @@
       "nextMonth": "Nächster Monat"
     },
     "poll": {
-      "live": "Aktualisiert sich von selbst",
       "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
       "past": "vorbei",
       "notVoted": "noch nicht abgestimmt",
