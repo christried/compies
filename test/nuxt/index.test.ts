@@ -28,7 +28,9 @@ function card(overrides: Partial<HomeEvent>): HomeEvent {
     name: 'Freitags-Zocken',
     host,
     phase: 'poll',
-    startsAt: null,
+    sessionCount: 1,
+    missingDates: 1,
+    nextSession: null,
     createdAt: '2026-10-20T10:00:00.000Z',
     bestSlot: null,
     progress: { voted: 1, total: 3 },
@@ -127,13 +129,51 @@ describe('home page', () => {
   it('shows the Best slot so far for an open poll and the Date for a set Event', async () => {
     homeEvents = [
       card({ slug: 'a-aaaa', name: 'Umfrage', bestSlot: { id: 'x', startsAt: '2090-10-31T18:00:00.000Z' } }),
-      card({ slug: 'b-bbbb', name: 'Fest', phase: 'date_set', startsAt: '2090-11-01T19:00:00.000Z', action: 'view', progress: { voted: 0, total: 0 } }),
+      card({ slug: 'b-bbbb', name: 'Fest', phase: 'date_set', missingDates: 0, nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' }, action: 'view', progress: { voted: 0, total: 0 } }),
     ]
     const page = await mountSuspended(IndexPage)
     await settle(page)
 
     expect(page.text()).toContain('Bester Termin bisher')
     expect(page.text()).toContain('Termin steht')
+  })
+
+  it('shows how many Dates are set while Dates are missing, with the Best slot', async () => {
+    homeEvents = [
+      card({
+        slug: 'a-aaaa',
+        name: 'Zwei Abende',
+        sessionCount: 2,
+        missingDates: 1,
+        nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' },
+        bestSlot: { id: 'x', startsAt: '2090-10-31T18:00:00.000Z' },
+      }),
+    ]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.text()).toContain('1 von 2 Terminen steht')
+    expect(page.text()).toContain('Bester Termin bisher')
+  })
+
+  it('shows the next Session with its number once every Date is set', async () => {
+    homeEvents = [
+      card({
+        slug: 'a-aaaa',
+        name: 'Zwei Abende',
+        phase: 'date_set',
+        sessionCount: 2,
+        missingDates: 0,
+        nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' },
+        action: 'view',
+        progress: { voted: 0, total: 0 },
+      }),
+    ]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.text()).toContain('Session 1 von 2 ·')
+    expect(page.text()).not.toContain('Terminen steht')
   })
 
   it('shows the error state with a retry when the list fails to load', async () => {
