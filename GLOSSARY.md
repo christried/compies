@@ -17,7 +17,7 @@ The User who created a Session and has full rights inside it. Each Session has e
 _Avoid_: Organiser, owner, session admin
 
 **Host permission**:
-The platform-wide right to create Sessions. Losing it does not stop a User from being the Host of Sessions they already created.
+The platform-wide right to create Sessions and to see the Game library. Losing it does not stop a User from being the Host of Sessions they already created.
 _Avoid_: Host role, canHost (that is a column, not the concept)
 
 **Display name**:
@@ -107,3 +107,11 @@ _Avoid_: Audience, spectators
 **Construction page**:
 The placeholder shown for every area not built yet in the MVP (UI: Baustelle).
 _Avoid_: Coming soon page, placeholder
+
+**Game library**:
+The platform-wide collection of games that Hosts fill their Sessions from; only Users with the Host permission and the Platform admin see it (UI: Bibliothek).
+_Avoid_: Game list, catalogue
+
+**Compibert**:
+The app's mascot; it appears on screen but is never named in UI copy.
+_Avoid_: CompiBeard, Compi, mascot
