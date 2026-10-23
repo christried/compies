@@ -229,7 +229,7 @@ describe('setting the Date and the .ics', () => {
       expect(body).toContain('SEQUENCE:0')
       expect(body).toContain('TRIGGER:-PT1H')
       expect(body).toContain(`URL:http://localhost/s/${slug}`)
-      expect(body).toContain('SUMMARY:Freitags-Zocken (COMPIES)')
+      expect(body).toContain('SUMMARY:Freitags-Zocken (Compies)')
     })
 
     it('follows icsSequence, keeping the same UID', async () => {
@@ -270,7 +270,7 @@ describe('setting the Date and the .ics', () => {
 
       const body = await (await ics(cookie, slug)).text()
 
-      expect(body).toContain('SUMMARY:Pay $& $\' $$ night (COMPIES)')
+      expect(body).toContain('SUMMARY:Pay $& $\' $$ night (Compies)')
     })
 
     it('answers 404 while no Date is set', async () => {

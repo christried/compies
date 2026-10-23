@@ -12,7 +12,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'de' },
-      title: 'COMPIES',
+      title: 'Compies',
       // The manifest link comes from <NuxtPwaManifest /> in app.vue.
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/icons/favicon.svg' },
@@ -23,7 +23,7 @@ export default defineNuxtConfig({
       meta: [
         { name: 'theme-color', content: '#fff3df', media: '(prefers-color-scheme: light)' },
         { name: 'theme-color', content: '#17121d', media: '(prefers-color-scheme: dark)' },
-        { name: 'apple-mobile-web-app-title', content: 'COMPIES' },
+        { name: 'apple-mobile-web-app-title', content: 'Compies' },
       ],
     },
   },
@@ -72,8 +72,8 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'COMPIES',
-      short_name: 'COMPIES',
+      name: 'Compies',
+      short_name: 'Compies',
       description: 'Spieleabende mit Glücksrad, Vetos und Siegerehrung.',
       lang: 'de',
       start_url: '/',
