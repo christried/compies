@@ -99,8 +99,8 @@ describe('create an Event', () => {
 
     await page.get('form').trigger('submit')
 
-    await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
-    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30'] })
+    await vi.waitFor(() => expect(page.text()).toContain('Umfrage für Freitags-Zocken läuft!'))
+    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'] })
     expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
     expect(page.get('a[href="/e/freitags-zocken-k7q2"]').text()).toContain('Zur Umfrage')
   })
@@ -123,7 +123,86 @@ describe('create an Event', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(saved).toHaveBeenCalled())
-    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', startsAt: '2090-11-07T20:00' })
+    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', sessions: 1, startsAt: ['2090-11-07T20:00'] })
+  })
+
+  it('starts with one Session and counts up to 8', async () => {
+    signInAs(host)
+    const page = await mountSuspended(CreatePage, { route: '/neu' })
+
+    expect(page.get('output').text()).toBe('1')
+    for (let i = 0; i < 9; i++) await page.findAll('button').find(button => button.attributes('aria-label') === 'Eine Session mehr')?.trigger('click')
+
+    expect(page.get('output').text()).toBe('8')
+    expect(page.get('button[aria-label="Eine Session mehr"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('asks for at least as many Slots as Sessions in poll mode', async () => {
+    signInAs(host)
+    const page = await mountSuspended(CreatePage, { route: '/neu' })
+    await page.get('input[type="text"]').setValue('Freitags-Zocken')
+    await page.get('button[aria-label="Eine Session mehr"]').trigger('click')
+    await fillSlot(page, 0, '2090-10-30', '20:30')
+
+    expect(page.get('button[type="submit"]').attributes('aria-disabled')).toBe('true')
+    expect(page.text()).toContain('Schlag mindestens 2 Termine vor.')
+  })
+
+  it('shows one date and time row per Session in direct mode and posts them all', async () => {
+    signInAs(host)
+    const saved = vi.fn()
+    registerEndpoint('/api/e', {
+      method: 'POST',
+      handler: async (event) => {
+        saved(await readBody(event))
+        return created
+      },
+    })
+    const page = await mountSuspended(CreatePage, { route: '/neu' })
+    await page.get('input[type="text"]').setValue('Freitags-Zocken')
+    await page.findAll('[role="radio"]')[1]!.trigger('click')
+    await page.get('button[aria-label="Eine Session mehr"]').trigger('click')
+    expect(page.findAll('[role="group"]')).toHaveLength(2)
+    expect(page.findAll('[role="group"]')[1]!.attributes('aria-label')).toBe('Termin 2')
+
+    await fillSlot(page, 0, '2090-11-07', '20:00')
+    await fillSlot(page, 1, '2090-11-08', '19:00')
+    await page.get('form').trigger('submit')
+
+    await vi.waitFor(() => expect(saved).toHaveBeenCalled())
+    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', sessions: 2, startsAt: ['2090-11-07T20:00', '2090-11-08T19:00'] })
+  })
+
+  it('asks for a Date in every direct row, and says when two rows share one', async () => {
+    signInAs(host)
+    const page = await mountSuspended(CreatePage, { route: '/neu' })
+    await page.get('input[type="text"]').setValue('Freitags-Zocken')
+    await page.findAll('[role="radio"]')[1]!.trigger('click')
+    await page.get('button[aria-label="Eine Session mehr"]').trigger('click')
+
+    await fillSlot(page, 0, '2090-11-07', '20:00')
+    expect(page.text()).toContain('Bitte Datum und Uhrzeit ausfüllen.')
+
+    await fillSlot(page, 1, '2090-11-07', '20:00')
+    expect(page.findAll('[role="group"]')[1]!.text()).toContain('Zwei Sessions können nicht am selben Termin sein.')
+    expect(page.get('button[type="submit"]').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('says "steht" with the plural text after a direct Event with several Sessions', async () => {
+    signInAs(host)
+    registerEndpoint('/api/e', { method: 'POST', handler: () => created })
+    const page = await mountSuspended(CreatePage, { route: '/neu' })
+    await page.get('input[type="text"]').setValue('Freitags-Zocken')
+    await page.findAll('[role="radio"]')[1]!.trigger('click')
+    await page.get('button[aria-label="Eine Session mehr"]').trigger('click')
+    await fillSlot(page, 0, '2090-11-07', '20:00')
+    await fillSlot(page, 1, '2090-11-08', '19:00')
+
+    await page.get('form').trigger('submit')
+
+    await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
+    expect(page.text()).toContain('Die Termine stehen.')
+    expect(page.get('a[href="/e/freitags-zocken-k7q2"]').text()).toContain('Zum Event')
   })
 
   it('disables the CTA while the Event is being saved', async () => {
