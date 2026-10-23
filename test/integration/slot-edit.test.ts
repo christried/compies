@@ -12,7 +12,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 // Slots are far in the future so the "in the future" rule holds without a fake clock. Past times are
 // well before today and so always past.
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
-const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
+const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 const outsider = { provider: 'discord', id: '4', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
 describe('the Host edits Slots', () => {
@@ -47,7 +47,7 @@ describe('the Host edits Slots', () => {
     vi.unstubAllEnvs()
   })
 
-  async function signInAs(profile: typeof host | typeof guest | typeof outsider, { hostPermission = false } = {}) {
+  async function signInAs(profile: typeof host | typeof member | typeof outsider, { hostPermission = false } = {}) {
     if (hostPermission) setAllowlist({ hosts: `discord:${profile.id}` })
     const { cookie } = await signIn(testDb.db, profile)
     const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
@@ -108,12 +108,12 @@ describe('the Host edits Slots', () => {
 
     it('shows the new Slot to Members on their next read', async () => {
       const { cookie } = await signInAs(host, { hostPermission: true })
-      const { cookie: guestCookie, id: guestId } = await signInAs(guest)
+      const { cookie: memberCookie, id: memberId } = await signInAs(member)
       const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30'])
-      await testDb.db.insert(eventMembers).values({ eventId, userId: guestId })
+      await testDb.db.insert(eventMembers).values({ eventId, userId: memberId })
 
       await add(cookie, slug, { startsAt: '2090-11-02T19:00' })
-      const view = await (await read(guestCookie, slug)).json()
+      const view = await (await read(memberCookie, slug)).json()
 
       expect(view.slots.map((slot: { startsAt: string }) => slot.startsAt)).toContain('2090-11-02T18:00:00.000Z')
     })
@@ -168,16 +168,16 @@ describe('the Host edits Slots', () => {
 
     it('refuses a Member who is not the Host with 403, and an outsider with 404', async () => {
       const { cookie } = await signInAs(host, { hostPermission: true })
-      const { cookie: guestCookie, id: guestId } = await signInAs(guest)
+      const { cookie: memberCookie, id: memberId } = await signInAs(member)
       const { cookie: outsiderCookie } = await signInAs(outsider)
       const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30'])
-      await testDb.db.insert(eventMembers).values({ eventId, userId: guestId })
+      await testDb.db.insert(eventMembers).values({ eventId, userId: memberId })
 
-      const member = await add(guestCookie, slug, { startsAt: '2090-11-02T19:00' })
+      const response = await add(memberCookie, slug, { startsAt: '2090-11-02T19:00' })
       const stranger = await add(outsiderCookie, slug, { startsAt: '2090-11-02T19:00' })
 
-      expect(member.status).toBe(403)
-      expect(member.statusText).toBe('not_host')
+      expect(response.status).toBe(403)
+      expect(response.statusText).toBe('not_host')
       expect(stranger.status).toBe(404)
       expect(await slotRows(eventId)).toHaveLength(1)
     })
@@ -204,14 +204,14 @@ describe('the Host edits Slots', () => {
   describe('DELETE /api/e/:slug/slots/:slotId', () => {
     it('deletes the Slot and its Votes together and leaves the other Slots alone', async () => {
       const { cookie, id: hostId } = await signInAs(host, { hostPermission: true })
-      const { id: guestId } = await signInAs(guest)
+      const { id: memberId } = await signInAs(member)
       const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30', '2090-10-31T20:30'])
-      await testDb.db.insert(eventMembers).values({ eventId, userId: guestId })
+      await testDb.db.insert(eventMembers).values({ eventId, userId: memberId })
       const [doomed, kept] = (await slotRows(eventId)).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
       await testDb.db.insert(pollVotes).values([
         { slotId: doomed!.id, userId: hostId, value: 'yes' },
-        { slotId: doomed!.id, userId: guestId, value: 'maybe' },
-        { slotId: kept!.id, userId: guestId, value: 'no' },
+        { slotId: doomed!.id, userId: memberId, value: 'maybe' },
+        { slotId: kept!.id, userId: memberId, value: 'no' },
       ])
 
       const response = await remove(cookie, slug, doomed!.id)
@@ -220,7 +220,7 @@ describe('the Host edits Slots', () => {
       expect(await response.json()).toEqual({ slotId: doomed!.id, votesDeleted: 2 })
       expect((await slotRows(eventId)).map(row => row.id)).toEqual([kept!.id])
       const votes = await testDb.db.select().from(pollVotes)
-      expect(votes).toEqual([{ slotId: kept!.id, userId: guestId, value: 'no', updatedAt: expect.any(Date) }])
+      expect(votes).toEqual([{ slotId: kept!.id, userId: memberId, value: 'no', updatedAt: expect.any(Date) }])
     })
 
     it('removes a Slot without Votes', async () => {
@@ -236,13 +236,13 @@ describe('the Host edits Slots', () => {
 
     it('refuses a Member who is not the Host with 403, and an outsider with 404', async () => {
       const { cookie } = await signInAs(host, { hostPermission: true })
-      const { cookie: guestCookie, id: guestId } = await signInAs(guest)
+      const { cookie: memberCookie, id: memberId } = await signInAs(member)
       const { cookie: outsiderCookie } = await signInAs(outsider)
       const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30'])
-      await testDb.db.insert(eventMembers).values({ eventId, userId: guestId })
+      await testDb.db.insert(eventMembers).values({ eventId, userId: memberId })
       const [slot] = await slotRows(eventId)
 
-      expect((await remove(guestCookie, slug, slot!.id)).statusText).toBe('not_host')
+      expect((await remove(memberCookie, slug, slot!.id)).statusText).toBe('not_host')
       expect((await remove(outsiderCookie, slug, slot!.id)).status).toBe(404)
       expect(await slotRows(eventId)).toHaveLength(1)
     })
@@ -276,9 +276,9 @@ describe('the Host edits Slots', () => {
 
     it('answers a Vote that races the removal of its Slot with 200 or 404, never a server error', async () => {
       const { cookie } = await signInAs(host, { hostPermission: true })
-      const { cookie: guestCookie, id: guestId } = await signInAs(guest)
+      const { cookie: memberCookie, id: memberId } = await signInAs(member)
       const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30'])
-      await testDb.db.insert(eventMembers).values({ eventId, userId: guestId })
+      await testDb.db.insert(eventMembers).values({ eventId, userId: memberId })
       const [slot] = await slotRows(eventId)
       // The Host removes the Slot just as the Vote is about to be written.
       let removed: Response | undefined
@@ -289,7 +289,7 @@ describe('the Host edits Slots', () => {
 
       const voted = await racingRequest(`/api/e/${slug}/slots/${slot!.id}/vote`, {
         method: 'PUT',
-        headers: { 'content-type': 'application/json', 'cookie': guestCookie },
+        headers: { 'content-type': 'application/json', 'cookie': memberCookie },
         body: JSON.stringify({ value: 'yes' }),
       })
       await vi.waitFor(() => expect(removed).toBeDefined())

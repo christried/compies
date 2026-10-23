@@ -8,7 +8,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Slots and dates are far in the future so the "in the future" rule holds without a fake clock.
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
-const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
+const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 
 describe('events', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
@@ -71,7 +71,7 @@ describe('events', () => {
     })
 
     it('answers 403 for a User without the Host permission', async () => {
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
 
       const response = await create(cookie, poll())
 
@@ -241,9 +241,9 @@ describe('events', () => {
     it('answers 404 to a User who is not a Member, so Events cannot be probed', async () => {
       const cookie = await signInAsHost()
       const { slug } = await (await create(cookie, poll())).json()
-      const { cookie: guestCookie } = await signIn(testDb.db, guest)
+      const { cookie: memberCookie } = await signIn(testDb.db, member)
 
-      expect((await read(guestCookie, slug)).status).toBe(404)
+      expect((await read(memberCookie, slug)).status).toBe(404)
     })
 
     it('answers 404 for an unknown Event', async () => {
@@ -255,13 +255,13 @@ describe('events', () => {
     it('answers 410 "Event deleted" to a former Member of a deleted Event, and 404 to anyone else', async () => {
       const cookie = await signInAsHost()
       const { slug } = await (await create(cookie, poll())).json()
-      const { cookie: guestCookie } = await signIn(testDb.db, guest)
+      const { cookie: memberCookie } = await signIn(testDb.db, member)
       await testDb.db.update(events).set({ deletedAt: new Date() })
 
       const former = await read(cookie, slug)
       expect(former.status).toBe(410)
       expect(former.statusText).toBe('Event deleted')
-      expect((await read(guestCookie, slug)).status).toBe(404)
+      expect((await read(memberCookie, slug)).status).toBe(404)
     })
   })
 })

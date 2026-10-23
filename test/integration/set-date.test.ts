@@ -12,7 +12,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Slots and Dates are in 2090 so the "in the future" rule holds without a fake clock.
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
-const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
+const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 const outsider = { provider: 'discord', id: '3', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
 describe('setting the Dates from the shared Date poll', () => {
@@ -232,12 +232,12 @@ describe('setting the Dates from the shared Date poll', () => {
     it('refuses a Vote on a Slot that became a Date while the Event is still in the poll, with 409 slot_taken', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(hostCookie, 2)
-      const { cookie: guestCookie } = await signIn(testDb.db, guest)
-      await addMember(eventId, guestCookie)
+      const { cookie: memberCookie } = await signIn(testDb.db, member)
+      await addMember(eventId, memberCookie)
       await confirm(hostCookie, slug, slotIds[0])
 
-      const taken = await vote(guestCookie, slug, slotIds[0]!, 'yes')
-      const open = await vote(guestCookie, slug, slotIds[1]!, 'yes')
+      const taken = await vote(memberCookie, slug, slotIds[0]!, 'yes')
+      const open = await vote(memberCookie, slug, slotIds[1]!, 'yes')
 
       expect(taken.status).toBe(409)
       expect((await taken.json()).statusMessage).toBe('slot_taken')
@@ -248,9 +248,9 @@ describe('setting the Dates from the shared Date poll', () => {
     it('lets no Vote land after the Date is set, even one that races the confirm', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(hostCookie)
-      const { cookie: guestCookie } = await signIn(testDb.db, guest)
-      await addMember(eventId, guestCookie)
-      // The Host sets the Date just as the Guest's Vote is about to be written.
+      const { cookie: memberCookie } = await signIn(testDb.db, member)
+      await addMember(eventId, memberCookie)
+      // The Host sets the Date just as the Member's Vote is about to be written.
       let votesWhenSet: unknown[] | undefined
       const racingDb = createInterleavingDb(testDb.client, /insert into "poll_votes"/i, async () => {
         expect((await confirm(hostCookie, slug, slotIds[1])).status).toBe(200)
@@ -260,7 +260,7 @@ describe('setting the Dates from the shared Date poll', () => {
 
       const voted = await racingRequest(`/api/e/${slug}/slots/${slotIds[0]}/vote`, {
         method: 'PUT',
-        headers: { 'content-type': 'application/json', 'cookie': guestCookie },
+        headers: { 'content-type': 'application/json', 'cookie': memberCookie },
         body: JSON.stringify({ value: 'yes' }),
       })
       await vi.waitFor(() => expect(votesWhenSet).toBeDefined())
@@ -296,7 +296,7 @@ describe('setting the Dates from the shared Date poll', () => {
     it('answers 403 for a Member who is not the Host and leaves the poll alone', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(hostCookie)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
 
       const response = await confirm(cookie, slug, slotIds[1])
@@ -336,21 +336,21 @@ describe('setting the Dates from the shared Date poll', () => {
     it('counts the Best slot and the progress on open future Slots only', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(hostCookie, 2)
-      const { cookie: guestCookie } = await signIn(testDb.db, guest)
-      await addMember(eventId, guestCookie)
+      const { cookie: memberCookie } = await signIn(testDb.db, member)
+      await addMember(eventId, memberCookie)
       const hostId = await userId(hostCookie)
       // Before the first Date: the Slot that becomes the Date is the best one.
       await testDb.db.insert(pollVotes).values([
         { slotId: slotIds[0]!, userId: hostId, value: 'yes' },
-        { slotId: slotIds[0]!, userId: await userId(guestCookie), value: 'yes' },
+        { slotId: slotIds[0]!, userId: await userId(memberCookie), value: 'yes' },
       ])
       await confirm(hostCookie, slug, slotIds[0])
-      await vote(guestCookie, slug, slotIds[1]!, 'maybe')
+      await vote(memberCookie, slug, slotIds[1]!, 'maybe')
 
       const view = await (await read(hostCookie, slug)).json()
 
       expect(view.bestSlotId).toBe(slotIds[1])
-      // The Host has no Vote on the one open Slot, the Guest has: one of two Members has voted.
+      // The Host has no Vote on the one open Slot, the Member has: one of two Members has voted.
       expect(view.progress).toEqual({ voted: 1, total: 2 })
     })
   })

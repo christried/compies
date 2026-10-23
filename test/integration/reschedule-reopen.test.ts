@@ -15,7 +15,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 // Reschedule and Reopen (#14, #1 § Domain rules). Slots and Dates are in 2090 so the "in the future"
 // rule holds without a fake clock.
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
-const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
+const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 const outsider = { provider: 'discord', id: '3', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
 describe('reschedule and reopen', () => {
@@ -171,7 +171,7 @@ describe('reschedule and reopen', () => {
     it('answers 403 for a Member who is not the Host and leaves the Date alone', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId } = await setPoll(hostCookie)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
 
       const response = await reschedule(cookie, slug, { startsAt: '2090-11-01T20:00' })
@@ -286,7 +286,7 @@ describe('reschedule and reopen', () => {
     it('answers 403 for a Member who is not the Host and leaves the Dates alone', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId, ids } = await createSessions(hostCookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
 
       expect((await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-11-09T20:00' })).status).toBe(403)
@@ -389,7 +389,7 @@ describe('reschedule and reopen', () => {
     it('answers 403 for a Member who is not the Host and leaves the Date alone', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId } = await setPoll(hostCookie)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
 
       expect((await reopen(cookie, slug)).status).toBe(403)
@@ -441,7 +441,7 @@ describe('reschedule and reopen', () => {
     it('shows every Member the notice: the view carries previousStartsAt and no current Date', async () => {
       const hostCookie = await signInAsHost()
       const { slug, eventId } = await setPoll(hostCookie)
-      const { cookie } = await signIn(testDb.db, guest)
+      const { cookie } = await signIn(testDb.db, member)
       await addMember(eventId, cookie)
       await reopen(hostCookie, slug)
 

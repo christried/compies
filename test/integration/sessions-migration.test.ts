@@ -10,7 +10,7 @@ import { createTestDbBefore, migrateTo } from './harness'
 const MIGRATION = '0003_sessions'
 
 const HOST = '00000000-0000-4000-8000-0000000000a1'
-const GUEST = '00000000-0000-4000-8000-0000000000a2'
+const MEMBER = '00000000-0000-4000-8000-0000000000a2'
 
 // Three Events of the pre-#48 shape: one in the poll, one with a set Date and a withdrawn Date, and one
 // direct Event whose Date is no Slot.
@@ -34,7 +34,7 @@ describe('migration: Event Date moves to its Session', () => {
     client = before.client
     folder = before.folder
 
-    await client.query(`INSERT INTO users (id, name, email) VALUES ($1, 'Host', 'host@example.com'), ($2, 'Gast', 'guest@example.com')`, [HOST, GUEST])
+    await client.query(`INSERT INTO users (id, name, email) VALUES ($1, 'Host', 'host@example.com'), ($2, 'Gast', 'member@example.com')`, [HOST, MEMBER])
 
     // Event rows in the pre-#48 columns: date_mode, starts_at, previous_starts_at and ics_sequence sit on the Event.
     await client.query(`
@@ -57,12 +57,12 @@ describe('migration: Event Date moves to its Session', () => {
       INSERT INTO poll_votes (slot_id, user_id, value) VALUES
         ($1, $3, 'yes'), ($1, $4, 'no'), ($2, $3, 'maybe'),
         ($5, $3, 'yes'), ($6, $4, 'maybe')
-    `, [POLL_SLOT_1, POLL_SLOT_2, HOST, GUEST, SET_SLOT_1, SET_SLOT_2])
+    `, [POLL_SLOT_1, POLL_SLOT_2, HOST, MEMBER, SET_SLOT_1, SET_SLOT_2])
 
     await client.query(`
       INSERT INTO event_members (event_id, user_id) VALUES
         ($1, $3), ($1, $4), ($2, $3), ($2, $4), ($5, $3)
-    `, [POLL, SET, HOST, GUEST, DIRECT])
+    `, [POLL, SET, HOST, MEMBER, DIRECT])
 
     await migrateTo(before.db)
   })
