@@ -1021,6 +1021,7 @@
     },
     "ics": {
       "summary": "{event} (Compies)",
+      "sessionSummary": "{event} · Session {n} (Compies)",
       "description": "Zum Event: {url}",
       "alarm": "{event} startet in 1 Stunde"
     },
