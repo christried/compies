@@ -20,8 +20,8 @@
 | Profile: name + avatar from provider, logout | [MVP] |
 | Profile: avatar upload (R2), settings (sound, push, reduced motion, theme) | [1.0] |
 | Host permission | [MVP] env allowlist · [1.0] admin UI (T3) |
-| Create session: name + date (poll or direct) | [MVP] |
-| Create session: format, games, points, mode, pools, info sheet | [1.0] |
+| Create Event: name + Session dates (poll or direct) | [MVP] |
+| Create Event: format, Game count, points, mode, pools, info sheet | [1.0] |
 | Invite link + rotate | [MVP] |
 | Date poll: vote, matrix, best slot, confirm, reschedule, .ics with 1 h alarm | [MVP] |
 | Date poll: push (confirmed, rescheduled, reminder) | [1.0] (T17) |
@@ -45,7 +45,7 @@ The MVP is four slices of the planned tickets. Each slice is a real part of that
 - Nuxt, Tailwind v4 theme from `tokens/`, `@nuxtjs/color-mode`, vue-i18n with `i18n/de.json`, fonts, Lucide (`lucide-vue-next`, stroke 2.5).
 - PWA shell: manifest + icons from `reference/assets/icons/`, offline fallback page. No push yet.
 - Base components: Button, IconButton, HoldToConfirmButton, TextField, SegmentedControl, Toast, Sheet/Modal, Icon, CpNum, AppShell (header, HubNav with tape marker, mobile tab bar), FullScreenState, **ConstructionPage**, **BaustelleZone**, Compibert (still head in header; full body still pose on the construction page).
-- Route guard: every route not in the MVP renders ConstructionPage (`/archiv`, `/bibliothek`, `/profil`, `/admin`, `/s/:id/brett`, …). See M4.
+- Route guard: every route not in the MVP renders ConstructionPage (`/archiv`, `/bibliothek`, `/profil`, `/admin`, `/e/:id/brett`, …). See M4.
 - Acceptance: `App MVP Terminfindung.dc.html?s=site` all 4 states, light/dark, desktop/mobile.
 
 **T2a Sign-in**
@@ -54,14 +54,14 @@ The MVP is four slices of the planned tickets. Each slice is a real part of that
 - Logout reachable from the avatar menu and the construction page „Profil“.
 - Later in T2b: link a second provider, upload avatar (R2), settings.
 
-**T5a Create session (date step only)**
-- Screen M2. Creates a real `sessions` row in phase `poll` (or `date_set` with „Direkt festlegen“). Format, mode, pools, points stay `NULL` until T5b adds the full stepper (05), which edits the same row.
-- Invite link `/s/<slug>-<token>`, copy, rotate (hold 1 s, screen 06). Link opening 07 (signed out → sign-in with invite context; invalid/rotated/deleted).
+**T5a Create Event (date step only)**
+- Screen M2. Creates a real `events` row in phase `poll` (or `date_set` with „Direkt festlegen“) and one `sessions` row per Session (1 by default). Format, mode, pools, points and Game count stay `NULL` until T5b adds the full stepper (05), which edits the same row.
+- Invite link `/e/<slug>-<token>`, copy, rotate (hold 1 s, screen 06). Link opening 07 (signed out → sign-in with invite context; invalid/rotated/deleted).
 
 **T7a Date poll**
-- Screens M1 and M3 (= 08 without chat panel and push). Vote Ja / Wenn nötig / Nein per slot, change until confirmed; matrix „Wer kann wann?“; best slot rule; host confirm; reschedule (new date/time, notify by UI state only); .ics download.
+- Screens M1 and M3 (= 08 without chat panel and push). One Date poll per Event. Vote Ja / Wenn nötig / Nein per slot, change until confirmed; matrix „Wer kann wann?“; best slot rule; Host sets a Session's Date from a slot; reschedule (one Session, new date/time, notify by UI state only); .ics download with one entry per Session.
 - Live: polling every 15 s while visible + on focus. Optimistic votes with rollback.
-- .ics: `UID` stable per session, `SEQUENCE` +1 per reschedule, `DTSTART` UTC, default duration 3 h (see open questions), `VALARM TRIGGER:-PT1H`, `URL` = session link. Summary from `mvp.ics.summary`.
+- .ics: `UID` stable per Session, `SEQUENCE` +1 per reschedule of that Session, `DTSTART` UTC, default duration 3 h (see open questions), `VALARM TRIGGER:-PT1H`, `URL` = Event link. Summary from `mvp.ics.summary`.
 - Later in T7b (with T6 realtime + T17 push): realtime updates, push on confirm/reschedule, server reminder.
 
 **MVP release:** deploy to the custom domain. Then continue with T3.
@@ -74,8 +74,8 @@ Adjustable. Strikethrough parts are already done in the MVP.
 2. Sign-in, profile, avatar upload (R2): **T2b** = second provider linking, upload, settings (sound, push, reduced motion, theme). Screens 02, 03, 25.
 3. Platform admin: user list, search, grant/revoke host permission (26). Replaces the env allowlist.
 4. Game library incl. YouTube excerpt preview and duplicate check (23, 24).
-5. Create session: **T5b** full 8-step stepper + info side sheet (05), editing existing MVP sessions.
-6. Realtime foundation: one PartyServer room per session, presence, clock sync, reconnect (27). Switch the poll to events.
+5. Create Event: **T5b** full 8-step stepper + info side sheet (05), editing existing MVP Events.
+6. Realtime foundation: one PartyServer room per Event, presence, clock sync, reconnect (27). Switch the poll to events.
 7. Date poll: **T7b** realtime + reminder job (push lands in 17).
 8. Lobby/game board: drag and drop, zones, locking, team names, team colours (09, 10).
 9. Chat, activity feed, emotes.
@@ -96,20 +96,21 @@ With each ticket, delete the matching construction routes and BaustelleZone usag
 
 | Issue | Mockup | Notes |
 |---|---|---|
-| Crews: overview, found, members + host rights, crew invite (rotatable), crew archive | `App Post-1.0.dc.html?s=crews` (5 states) | Data model already has `crewId` (nullable) on sessions and permissions |
+| Crews: overview, found, members + host rights, crew invite (rotatable), crew archive | `App Post-1.0.dc.html?s=crews` (5 states) | Data model already has `crewId` (nullable) on Events and permissions |
 | Permission to found crews (admin), later „open for everyone“ | same, state „Ohne Gründungsrecht“ | |
 | Format: tournament bracket | `?s=bracket` | „Bald verfügbar“ card in 1.0 setup |
 | Format: league | `?s=league` | suggests 3 / 1 / 0, needs crews |
 | Players report results, host confirms, contradictions go to host | `?s=report` (3 states) | |
 | More features for the stands | none yet | brief §7 |
 | English + further languages | `?s=lang` | copy deck already keyed |
-| Proposals from design (confirm first): kick/ban from a session, chat reactions/threads/DMs/images, custom emotes, per-slot comments in the poll | none | from `reference/docs/post-1.0.md` |
+| Proposals from design (confirm first): kick/ban from an Event, chat reactions/threads/DMs/images, custom emotes, per-slot comments in the poll | none | from `reference/docs/post-1.0.md` |
 
 ## Data model notes (for the MVP to be future-proof)
 
 Minimum tables for the MVP, shaped so 1.0 and crews need no rebuild:
 - `users` (+ Better Auth tables): `displayName`, `avatarUrl`, `canHost`, `isAdmin`.
-- `sessions`: `id`, `slug`, `inviteToken`, `hostId`, `crewId` (nullable, Post-1.0), `name`, `phase` (`draft | poll | date_set | running | finished | archived`), `dateMode` (`poll | direct`), `startsAt` (nullable), `icsSequence`, and nullable 1.0 config: `format`, `partyCount`, `teamSize`, `gameCount`, `pointsTable` (jsonb), `selectionMode`, `hiddenWheel`, `spinSeconds`.
-- `session_members`: `sessionId`, `userId`, `joinedAt`, `zone` (`bench | stands | team`, default `bench`), `partyId` (nullable), `teamWord` (nullable). Created when a signed-in user opens the invite link.
-- `poll_slots`: `id`, `sessionId`, `startsAt` (UTC), `position`.
+- `events`: `id`, `slug`, `inviteToken`, `hostId`, `crewId` (nullable, Post-1.0), `name`, `phase` (`draft | poll | date_set | running | finished | archived`), and nullable 1.0 config: `format`, `partyCount`, `teamSize`, `gameCount`, `pointsTable` (jsonb), `selectionMode`, `hiddenWheel`, `spinSeconds`. There is no date mode: the Date poll is open while any Session has no Date.
+- `sessions` (one per evening): `id`, `eventId`, `startsAt` (nullable), `withdrawnStartsAt` (nullable, the Date its last Reopen withdrew, for the notice), `slotId` (nullable, the Slot its Date came from), `icsSequence`. A Slot is open when no Session refers to it. The Session number is derived from the Dates (1…n in Date order).
+- `event_members`: `eventId`, `userId`, `joinedAt`, `zone` (`bench | stands | team`, default `bench`), `partyId` (nullable), `teamWord` (nullable). Created when a signed-in user opens the invite link.
+- `poll_slots`: `id`, `eventId`, `startsAt` (UTC), `position`.
 - `poll_votes`: `slotId`, `userId`, `value` (`yes | maybe | no`), `updatedAt`. Unique (slotId, userId).

@@ -4,7 +4,7 @@
 
 ## ⚠ Priority change: the MVP ships first
 
-We already have a group waiting to use COMPIES for a real gaming night. So the **first release is an MVP where only date coordination works** (sign-in, create a session with date proposals, invite link, poll, confirm, .ics). Every other area of the app is visible but shows a **construction site** (Bauzaun, Absperrband, Compibert with a hard hat).
+We already have a group waiting to use COMPIES for a real gaming night. So the **first release is an MVP where only date coordination works** (sign-in, create an Event with date proposals, invite link, poll, confirm, .ics). Every other area of the app is visible but shows a **construction site** (Bauzaun, Absperrband, Compibert with a hard hat).
 
 - Designs: `App MVP Terminfindung.dc.html` (screens M1–M4) and the reusable `BaustelleZone.dc.html`.
 - Ticket order: [07-scope-and-tickets.md](07-scope-and-tickets.md) puts the MVP cut (**T1, T2a, T5a, T7a**) before everything else. The rest of the 1.0 order stays as planned.
@@ -12,7 +12,7 @@ We already have a group waiting to use COMPIES for a real gaming night. So the *
 
 ## Overview
 
-COMPIES (from *competitiveness*) organises game nights for groups of friends: finding a date, forming teams, picking games (lucky wheel, pick & ban, …), recording results, a live leaderboard and a big award ceremony. Games are played outside the app. Everyone is live on the same page at the same time; one host runs the session. Primary device: desktop. Mobile is fully functional. Shipped as a PWA. UI language 1.0: German (i18n from day one).
+COMPIES (from *competitiveness*) organises game nights for groups of friends: finding a date, forming teams, picking games (lucky wheel, pick & ban, …), recording results, a live leaderboard and a big award ceremony. Games are played outside the app. Everyone is live on the same page at the same time; one Host runs the Event. Primary device: desktop. Mobile is fully functional. Shipped as a PWA. UI language 1.0: German (i18n from day one).
 
 ## About the design files
 
@@ -33,7 +33,7 @@ Planned: Nuxt (Vue) + Tailwind CSS v4 · Neon + Drizzle · Better Auth (Discord,
 
 Notes for the stack decision (leave the final call to the Claude Code session):
 1. **MVP needs only:** Nuxt + Tailwind + Better Auth + Neon/Drizzle + Vercel. No Durable Objects, R2, push or OG images yet. The poll refreshes by polling every 15 s while the tab is visible (the UI already says „Aktualisiert sich von selbst“). Swap to realtime events in T6 without UI changes.
-2. **Two platforms (Vercel + Cloudflare)** means cross-origin websockets: the Durable Object must verify who connects. Suggested: Nuxt mints a short-lived signed room token (JWT, 60 s, contains userId + sessionId + role); the DO verifies it on connect. Alternative worth evaluating: run Nuxt on Cloudflare too (Nitro `cloudflare` preset) to keep one platform and same-origin sockets. Neon works from Workers via its HTTP driver.
+2. **Two platforms (Vercel + Cloudflare)** means cross-origin websockets: the Durable Object must verify who connects. Suggested: Nuxt mints a short-lived signed room token (JWT, 60 s, contains userId + eventId + role); the DO verifies it on connect. Alternative worth evaluating: run Nuxt on Cloudflare too (Nitro `cloudflare` preset) to keep one platform and same-origin sockets. Neon works from Workers via its HTTP driver.
 3. **Server time is the clock** for every synchronised moment (wheel stop, clip start, countdowns, reveals). See [04-motion.md § Synchronised moments](04-motion.md#synchronised-moments). This is the one hard requirement the design puts on realtime.
 4. **iOS web push** only works for installed PWAs (iOS 16.4+). The design already has an iOS install sheet (screen 29) and a soft push ask (28).
 5. **GSAP**: all plugins used (Flip, optional MotionPath) are free in current GSAP 3.x. No Rive, no Lottie (brief).

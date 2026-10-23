@@ -45,8 +45,7 @@ async function signIn(provider: SignInProvider) {
       method: 'POST',
       body: { provider, callbackURL: target.value, errorCallbackURL: `${SIGN_IN_PATH}?${back}`, disableRedirect: true },
     })
-    // Not navigateTo: it stops the app scope first, which drops the colour-mode entry (data-theme)
-    // and flashes light until the provider page replaces ours (#32).
+    // Not navigateTo: it stops the app scope first, and the page would flash until the provider page replaces ours (#32).
     window.location.href = url
   }
   catch {
