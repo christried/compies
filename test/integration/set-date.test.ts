@@ -258,7 +258,7 @@ describe('setting the Date and the .ics', () => {
       const created = await request('/api/e', {
         method: 'POST',
         headers: { 'content-type': 'application/json', cookie },
-        body: JSON.stringify({ name: 'Abend', dateMode: 'direct', startsAt: '2090-11-07T20:00' }),
+        body: JSON.stringify({ name: 'Abend', dateMode: 'direct', startsAt: ['2090-11-07T20:00'] }),
       })
       const { slug } = await created.json() as { slug: string }
 
@@ -273,7 +273,7 @@ describe('setting the Date and the .ics', () => {
       const created = await request('/api/e', {
         method: 'POST',
         headers: { 'content-type': 'application/json', cookie },
-        body: JSON.stringify({ name: 'Pay $& $\' $$ night', dateMode: 'direct', startsAt: '2090-11-07T20:00' }),
+        body: JSON.stringify({ name: 'Pay $& $\' $$ night', dateMode: 'direct', startsAt: ['2090-11-07T20:00'] }),
       })
       const { slug } = await created.json() as { slug: string }
 

@@ -6,12 +6,15 @@
 export const API_ERROR_STATUS = {
   invalid_name: 400,
   invalid_mode: 400,
+  invalid_sessions: 400,
   invalid_slots: 400,
   invalid_time: 400,
   invalid_value: 400,
+  too_few_slots: 400,
   in_past: 400,
   slot_past: 400,
   duplicate_slot: 400,
+  duplicate_date: 400,
   slots_max: 400,
   /** The User is a Member, but only the Host of this Event may do this. */
   not_host: 403,

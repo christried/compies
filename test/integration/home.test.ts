@@ -71,7 +71,7 @@ describe('GET /api/e (Home)', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name, dateMode: 'direct', startsAt }),
+      body: JSON.stringify({ name, dateMode: 'direct', startsAt: [startsAt] }),
     })
     const { slug } = await response.json()
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))

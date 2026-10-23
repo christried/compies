@@ -6,6 +6,8 @@ import type { VoteValue } from './poll'
 export const EVENT_NAME_MAX = 60
 /** Slots in a Date poll. */
 export const SLOTS_MAX = 8
+/** Sessions of one Event (ADR 0011, #49). */
+export const SESSIONS_MAX = 8
 
 /** An Event name's length as the rules count it: trimmed, an emoji counts as one. */
 export function eventNameLength(raw: string): number {
@@ -34,9 +36,11 @@ export function slotProblems(proposed: Date[], existing: Date[], now: Date): (Sl
 export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
 export type Phase = (typeof PHASES)[number]
 
-/** One Session of an Event (#48). Times are UTC ISO strings. */
+/** One Session of an Event (#48, #49). Times are UTC ISO strings. */
 export interface SessionView {
   id: string
+  /** 1…n in Date order for a Session with a Date; null while it waits for one (server/domain/session.ts). */
+  number: number | null
   /** The Date, or null while the Session waits for one from the Date poll. */
   startsAt: string | null
   /** The Date a Reopen withdrew, until the next Date is set. Members see a notice for it. */
@@ -51,8 +55,10 @@ export interface EventView {
     phase: Phase
     isHost: boolean
   }
-  /** The Event's Sessions (ADR 0011). Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
+  /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
+  /** How many Sessions still wait for a Date. */
+  missingDates: number
   viewerId: string
   slots: { id: string, startsAt: string, past: boolean }[]
   votes: { slotId: string, userId: string, value: VoteValue }[]
@@ -74,7 +80,7 @@ export interface HomeEvent {
   name: string
   host: { name: string }
   phase: Phase
-  /** The Date of the Event's Session (#48). Several Sessions come with #49. */
+  /** The Date of the Event's Session (#48). Several Sessions come with #54. */
   startsAt: string | null
   /** When the Event was created; picks the latest open poll for the Construction page (#12). */
   createdAt: string

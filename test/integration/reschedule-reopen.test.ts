@@ -81,7 +81,7 @@ describe('reschedule and reopen', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name: 'Abend', dateMode: 'direct', startsAt: '2090-11-07T20:00' }),
+      body: JSON.stringify({ name: 'Abend', dateMode: 'direct', startsAt: ['2090-11-07T20:00'] }),
     })
     const { slug } = await response.json() as { slug: string }
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
@@ -318,7 +318,7 @@ describe('reschedule and reopen', () => {
       const body = await (await view(cookie, slug)).json() as { event: { phase: string }, sessions: { startsAt: string | null, previousStartsAt: string | null }[] }
 
       expect(body.event).toMatchObject({ phase: 'poll' })
-      expect(body.sessions).toEqual([{ id: expect.any(String), startsAt: null, previousStartsAt: '2090-10-31T18:00:00.000Z' }])
+      expect(body.sessions).toEqual([{ id: expect.any(String), number: null, startsAt: null, previousStartsAt: '2090-10-31T18:00:00.000Z' }])
     })
 
     it('makes a direct Event a poll with no Slots for the Host to fill', async () => {

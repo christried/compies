@@ -116,7 +116,7 @@ describe('events', () => {
     it('creates a direct Date in the phase date_set, without Slots', async () => {
       const cookie = await signInAsHost()
 
-      const response = await create(cookie, { name: 'Abend', dateMode: 'direct', startsAt: '2090-11-07T20:00' })
+      const response = await create(cookie, direct({ startsAt: ['2090-11-07T20:00'] }))
 
       expect(response.status).toBe(200)
       const [event] = await eventRows()
@@ -125,16 +125,49 @@ describe('events', () => {
       expect(await testDb.db.select().from(pollSlots)).toEqual([])
     })
 
+    it('creates an Event with several Sessions by poll: one undated Session per Session, Slots for all of them', async () => {
+      const cookie = await signInAsHost()
+
+      const response = await create(cookie, poll({ sessions: 3, slots: slotsOnDays(3) }))
+
+      expect(response.status).toBe(200)
+      const [event] = await eventRows()
+      expect(event).toMatchObject({ phase: 'poll' })
+      expect(await sessionRows(event!.id)).toMatchObject([
+        { startsAt: null, slotId: null },
+        { startsAt: null, slotId: null },
+        { startsAt: null, slotId: null },
+      ])
+      expect(await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, event!.id))).toHaveLength(3)
+    })
+
+    it('creates an Event with several Sessions by direct Dates: one Session per Date, phase date_set', async () => {
+      const cookie = await signInAsHost()
+
+      const response = await create(cookie, direct({ sessions: 2, startsAt: ['2090-11-08T19:00', '2090-11-07T20:00'] }))
+
+      expect(response.status).toBe(200)
+      const [event] = await eventRows()
+      expect(event).toMatchObject({ phase: 'date_set' })
+      const rows = await sessionRows(event!.id)
+      expect(rows.map(row => row.startsAt?.toISOString()).sort()).toEqual(['2090-11-07T19:00:00.000Z', '2090-11-08T18:00:00.000Z'])
+    })
+
     it('answers 400 with the rule that failed and writes nothing', async () => {
       const cookie = await signInAsHost()
       const cases: [unknown, string][] = [
         [poll({ name: '  ' }), 'invalid_name'],
+        [poll({ sessions: 0 }), 'invalid_sessions'],
+        [poll({ sessions: 9, slots: slotsOnDays(9) }), 'invalid_sessions'],
         [poll({ slots: [] }), 'invalid_slots'],
         [poll({ slots: slotsOnDays(9) }), 'invalid_slots'],
+        [poll({ sessions: 2, slots: ['2090-10-30T20:30'] }), 'too_few_slots'],
         [poll({ slots: ['2090-10-30 20:30'] }), 'invalid_time'],
         [poll({ slots: ['2001-10-30T20:30'] }), 'in_past'],
         [poll({ slots: ['2090-10-30T20:30', '2090-10-30T20:30'] }), 'duplicate_slot'],
-        [{ name: 'Abend', dateMode: 'direct', startsAt: '2001-01-01T20:00' }, 'in_past'],
+        [direct({ startsAt: ['2001-01-01T20:00'] }), 'in_past'],
+        [direct({ sessions: 2, startsAt: ['2090-11-07T20:00', '2090-11-07T20:00'] }), 'duplicate_date'],
+        [direct({ sessions: 2, startsAt: ['2090-11-07T20:00'] }), 'invalid_time'],
       ]
 
       for (const [body, code] of cases) {
@@ -165,7 +198,8 @@ describe('events', () => {
         phase: 'poll',
         isHost: true,
       })
-      expect(sessions).toEqual([{ id: expect.any(String), startsAt: null, previousStartsAt: null }])
+      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: null, previousStartsAt: null }])
+      expect(response.ok).toBe(true)
       expect(slots.map((slot: { startsAt: string }) => slot.startsAt)).toEqual([
         '2090-10-30T19:30:00.000Z',
         '2090-10-31T18:00:00.000Z',
@@ -175,13 +209,33 @@ describe('events', () => {
 
     it('shows the Date of a direct Event and no Slots', async () => {
       const cookie = await signInAsHost()
-      const { slug } = await (await create(cookie, { name: 'Abend', dateMode: 'direct', startsAt: '2090-11-07T20:00' })).json()
+      const { slug } = await (await create(cookie, direct({ startsAt: ['2090-11-07T20:00'] }))).json()
 
-      const { event, slots, sessions } = await (await read(cookie, slug)).json()
+      const { event, slots, sessions, missingDates } = await (await read(cookie, slug)).json()
 
       expect(event).toMatchObject({ phase: 'date_set' })
-      expect(sessions).toMatchObject([{ startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null }])
+      expect(sessions).toMatchObject([{ number: 1, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null }])
+      expect(missingDates).toBe(0)
       expect(slots).toEqual([])
+    })
+
+    it('numbers the dated Sessions in Date order and counts the Sessions still missing a Date', async () => {
+      const cookie = await signInAsHost()
+      const { slug } = await (await create(cookie, poll({ sessions: 3, slots: slotsOnDays(3) }))).json()
+
+      const { sessions, missingDates } = await (await read(cookie, slug)).json()
+      expect(sessions).toEqual([
+        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null },
+        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null },
+        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null },
+      ])
+      expect(missingDates).toBe(3)
+
+      const { slug: directSlug } = await (await create(cookie, direct({ sessions: 2, startsAt: ['2090-11-08T19:00', '2090-11-07T20:00'] }))).json()
+      const { sessions: dated, missingDates: none } = await (await read(cookie, directSlug)).json()
+      expect(dated.map((session: { number: number }) => session.number)).toEqual([1, 2])
+      expect(dated.map((session: { startsAt: string }) => session.startsAt)).toEqual(['2090-11-07T19:00:00.000Z', '2090-11-08T18:00:00.000Z'])
+      expect(none).toBe(0)
     })
 
     it('answers 404 to a User who is not a Member, so Events cannot be probed', async () => {
@@ -213,7 +267,11 @@ describe('events', () => {
 })
 
 function poll(overrides: Record<string, unknown> = {}) {
-  return { name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30'], ...overrides }
+  return { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], ...overrides }
+}
+
+function direct(overrides: Record<string, unknown> = {}) {
+  return { name: 'Abend', dateMode: 'direct', sessions: 1, startsAt: ['2090-11-07T20:00'], ...overrides }
 }
 
 function slotsOnDays(count: number) {
