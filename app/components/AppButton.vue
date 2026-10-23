@@ -5,7 +5,8 @@ import type { RouteLocationRaw } from 'vue-router'
 // disabled-with-reason is aria-disabled (still focusable, reason linked via aria-describedby).
 withDefaults(defineProps<{
   variant?: 'primary' | 'secondary'
-  size?: 'md' | 'lg' | 'xl'
+  /** card = 48 px, the buttons of the Event page's Session cards and its calendar and invite row (#49). */
+  size?: 'md' | 'card' | 'lg' | 'xl'
   /** Renders a NuxtLink instead of a button. */
   to?: RouteLocationRaw
 }>(), { variant: 'primary', size: 'md', to: undefined })
@@ -13,7 +14,7 @@ withDefaults(defineProps<{
 const NuxtLink = resolveComponent('NuxtLink')
 
 // No 36 px size: it would fall under the 44 px hit-target rule. xl = sign-in buttons.
-const SIZE = { md: 'h-control-md px-4 text-small', lg: 'h-control-lg px-5 text-body', xl: 'h-14 px-6 text-[16px]' }
+const SIZE = { md: 'h-control-md px-4 text-small', card: 'h-12 px-4.5 text-small', lg: 'h-control-lg px-5 text-body', xl: 'h-14 px-6 text-[16px]' }
 const VARIANT = {
   primary: 'bg-primary text-on-primary font-extrabold',
   secondary: 'bg-surface text-ink font-bold',

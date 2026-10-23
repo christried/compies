@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, CalendarClock, Check, ChevronRight, CircleAlert, Link as LinkIcon, Search } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, CalendarPlus, Check, ChevronRight, CircleAlert, Link as LinkIcon, Search } from '@lucide/vue'
 import { apiFailure } from '~/utils/api-error'
 import { formatSetDay, formatSlotDay, formatSlotTime, formatSlotWhen } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
@@ -10,8 +10,10 @@ import type { EventView } from '~~/shared/event'
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
-// The set Date replaces the cards and the matrix with DateSetCard. Set the Date, Reschedule and Reopen
-// (#13, #14) post through useHostActions. Termine bearbeiten opens SlotEditSheet (#15).
+// Each Session with a Date gets a DateSetCard at the top, numbered when the Event has several Sessions
+// (#49). While Dates are missing the poll follows. Set the Date, Reschedule and Reopen (#13, #14) post
+// through useHostActions. Termine bearbeiten opens SlotEditSheet (#15). With several Sessions the Host
+// actions on the cards and "Termin festlegen" wait for Review 2.4 and 2.5 (#52, #53).
 // The Invite link (`/e/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
@@ -126,51 +128,61 @@ function confirmDate(slotId: string) {
   if (slot) return confirmStart(new Date(slot.startsAt))
 }
 
-/** The Event's Session (#48): one for now, so the page reads its Date. #49 lists them all. */
-const session = computed(() => data.value?.sessions[0] ?? null)
-const startsAt = computed(() => session.value?.startsAt ?? null)
+/** The Event's Sessions (#49): dated ones in Date order with their numbers, then those still waiting for a Date. */
+const sessions = computed(() => data.value?.sessions ?? [])
+const datedSessions = computed(() => sessions.value.filter(session => session.startsAt !== null))
+const missing = computed(() => data.value?.missingDates ?? 0)
+/** The Event's one Session, when it has only one: the Host acts on its card and sets its Date (#49). */
+const onlySession = computed(() => (sessions.value.length === 1 ? sessions.value[0] ?? null : null))
+const startsAt = computed(() => onlySession.value?.startsAt ?? null)
 
 /** The withdrawn Date as the notice shows it, in Berlin time. */
-const previousWhen = computed(() => {
-  const previous = session.value?.previousStartsAt
-  if (!previous) return null
-  const instant = new Date(previous)
+function whenOf(iso: string) {
+  const instant = new Date(iso)
   return t('mvp.set.dateTime', { date: formatSetDay(instant), time: formatSlotTime(instant) })
-})
+}
 
-// The Reopen notice stays closed in this browser per Session and withdrawn Date. A later Reopen with
-// another Date has another value, so it shows again. Without storage it returns on reload.
+// The Reopen notice of a Session stays closed in this browser per Session and withdrawn Date. A later
+// Reopen with another Date has another value, so it shows again. Without storage it returns on reload.
 const REOPEN_KEY_PREFIX = 'compies-reopen-closed:'
-const reopenKey = () => REOPEN_KEY_PREFIX + (session.value?.id ?? '')
-const closedReopenAt = ref<string | null>(null)
+/** The withdrawn Date each Session's notice was closed at, by Session id. */
+const closedReopens = ref<Record<string, string | null>>({})
 // False during SSR and until the stored state is read, so a closed notice never paints.
 const storageRead = ref(false)
-const reopenNoticeShown = computed(() => {
-  const previous = session.value?.previousStartsAt
-  return storageRead.value && Boolean(previous) && previous !== closedReopenAt.value
-})
+const reopenNotices = computed(() => (storageRead.value
+  ? sessions.value.filter(session => session.previousStartsAt && session.previousStartsAt !== closedReopens.value[session.id])
+  : []))
 
-function closeReopenNotice() {
-  const previous = session.value?.previousStartsAt
+function readClosedReopens() {
+  for (const session of sessions.value) {
+    try {
+      closedReopens.value[session.id] = localStorage.getItem(REOPEN_KEY_PREFIX + session.id)
+    }
+    catch {
+      // Storage blocked: nothing is remembered.
+    }
+  }
+}
+
+function closeReopenNotice(session: { id: string, previousStartsAt: string | null }) {
+  const previous = session.previousStartsAt
   if (!previous) return
-  closedReopenAt.value = previous
+  closedReopens.value[session.id] = previous
   try {
-    localStorage.setItem(reopenKey(), previous)
+    localStorage.setItem(REOPEN_KEY_PREFIX + session.id, previous)
   }
   catch {
     // Storage blocked: the notice comes back after a reload.
   }
 }
 
-// Storage exists only in the browser, so the closed Date is read after mount, not during SSR.
+// Storage exists only in the browser, so the closed Dates are read after mount, not during SSR.
 onMounted(() => {
-  try {
-    closedReopenAt.value = localStorage.getItem(reopenKey())
-  }
-  catch {
-    // Storage blocked: nothing is remembered.
-  }
+  readClosedReopens()
   storageRead.value = true
+})
+watch(sessions, () => {
+  if (storageRead.value) readClosedReopens()
 })
 
 const editing = ref(false)
@@ -181,9 +193,10 @@ const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
 })))
 const inviteOpen = ref(false)
 
+// "Termin festlegen" waits for several Sessions (#52): the dock offers it only for a one-Session Event.
 const hostActions = computed(() => [
-  { key: 'set', label: t('dock.setDate'), icon: CalendarCheck, primary: true },
-  { key: 'edit', label: t('mvp.slots.title'), icon: CalendarClock },
+  ...(onlySession.value ? [{ key: 'set', label: t('dock.setDate'), icon: CalendarCheck, primary: true }] : []),
+  { key: 'edit', label: t('mvp.slots.title'), icon: CalendarClock, primary: onlySession.value === null },
   { key: 'invite', label: t('common.invite'), icon: LinkIcon },
 ])
 
@@ -223,16 +236,63 @@ usePollRefresh(() => {
       v-if="data"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-4"
     >
-      <template v-if="data.event.phase === 'poll'">
-        <NoticeBanner
-          v-if="reopenNoticeShown"
-          tone="warning"
-          :icon="CircleAlert"
-          @close="closeReopenNotice"
-        >
-          {{ t('mvp.reopen.notice', { when: previousWhen }) }}
-        </NoticeBanner>
+      <NoticeBanner
+        v-for="session in reopenNotices"
+        :key="session.id"
+        tone="warning"
+        :icon="CircleAlert"
+        @close="closeReopenNotice(session)"
+      >
+        {{ t('mvp.reopen.notice', { when: whenOf(session.previousStartsAt ?? '') }) }}
+      </NoticeBanner>
 
+      <template v-if="datedSessions.length > 0">
+        <DateSetCard
+          v-for="session in datedSessions"
+          :key="session.id"
+          :starts-at="session.startsAt ?? ''"
+          :number="sessions.length > 1 ? session.number : null"
+          :is-host="data.event.isHost && onlySession?.id === session.id"
+          @reschedule="rescheduleOpen = true"
+        >
+          <template #host-actions>
+            <HoldToConfirmButton
+              variant="secondary"
+              :label="t('mvp.reopen.cta')"
+              :icon="Search"
+              @confirm="reopenDate"
+            />
+          </template>
+        </DateSetCard>
+
+        <div class="flex flex-wrap gap-2">
+          <a
+            :href="`/api/e/${slug}/ics`"
+            download
+            class="outline-memphis inline-flex h-12 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-primary px-4.5 font-extrabold whitespace-nowrap text-on-primary no-underline shadow-btn lift"
+          >
+            <AppIcon
+              :icon="CalendarPlus"
+              :size="18"
+            />
+            {{ t('mvp.set.ics') }}
+          </a>
+          <AppButton
+            v-if="data.event.isHost"
+            variant="secondary"
+            size="card"
+            @click="onHostAction('invite')"
+          >
+            <AppIcon
+              :icon="LinkIcon"
+              :size="18"
+            />
+            {{ t('common.invite') }}
+          </AppButton>
+        </div>
+      </template>
+
+      <template v-if="data.event.phase === 'poll'">
         <header class="flex flex-wrap items-end gap-3">
           <div class="flex min-w-[200px] flex-1 flex-col gap-0.5">
             <span class="text-[13px] font-bold text-ink-2">
@@ -252,6 +312,13 @@ usePollRefresh(() => {
         >
           <b>{{ t('mvp.poll.saved') }}</b> {{ t('mvp.poll.savedText') }}
         </NoticeBanner>
+
+        <p
+          v-if="missing > 0"
+          class="m-0 font-display text-[26px] leading-[1.05] max-sm:text-[22px]"
+        >
+          {{ t('mvp.poll.missingDates', { n: missing }, missing) }}
+        </p>
 
         <VoteLegend v-if="slots.length > 0" />
 
@@ -281,7 +348,7 @@ usePollRefresh(() => {
               :total="total"
               :my-vote="myVoteFor(slot.id)"
               :best="data.bestSlotId === slot.id"
-              :can-pick="data.event.isHost"
+              :can-pick="onlySession !== null && data.event.isHost"
               @vote="value => vote(slot.id, value)"
               @pick="openConfirm(slot.id)"
             />
@@ -303,24 +370,6 @@ usePollRefresh(() => {
           />
         </section>
       </template>
-
-      <DateSetCard
-        v-else-if="startsAt"
-        :starts-at="startsAt"
-        :is-host="data.event.isHost"
-        :ics-url="`/api/e/${slug}/ics`"
-        @reschedule="rescheduleOpen = true"
-        @invite="onHostAction('invite')"
-      >
-        <template #host-actions>
-          <HoldToConfirmButton
-            variant="secondary"
-            :label="t('mvp.reopen.cta')"
-            :icon="Search"
-            @confirm="reopenDate"
-          />
-        </template>
-      </DateSetCard>
 
       <BaustelleZone
         compact
