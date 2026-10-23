@@ -61,7 +61,6 @@ export const authVerifications = pgTable('auth_verifications', {
 }, table => [index('auth_verifications_identifier_idx').on(table.identifier)])
 
 export const eventPhase = pgEnum('event_phase', PHASES)
-export const dateMode = pgEnum('date_mode', ['poll', 'direct'])
 
 export const events = pgTable('events', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -70,13 +69,22 @@ export const events = pgTable('events', {
   hostId: uuid('host_id').notNull().references(() => users.id),
   name: text('name').notNull(),
   phase: eventPhase('phase').notNull(),
-  dateMode: dateMode('date_mode').notNull(),
-  startsAt: timestamp('starts_at', { withTimezone: true }),
-  previousStartsAt: timestamp('previous_starts_at', { withTimezone: true }),
-  icsSequence: integer('ics_sequence').default(0).notNull(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
+})
+
+// A sitting of an Event on one Date (ADR 0011, #48). The Date lives here, not on the Event.
+// `slotId` is the Slot the Date came from, if any: a Slot a Session refers to is no longer open.
+// `previousStartsAt` is the Date the last Reopen withdrew (for the notice); `icsSequence` is this
+// Session's own calendar SEQUENCE.
+export const sessions = pgTable('sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  startsAt: timestamp('starts_at', { withTimezone: true }),
+  previousStartsAt: timestamp('previous_starts_at', { withTimezone: true }),
+  slotId: uuid('slot_id').references(() => pollSlots.id, { onDelete: 'set null' }),
+  icsSequence: integer('ics_sequence').default(0).notNull(),
 })
 
 export const memberZone = pgEnum('member_zone', ['bench', 'stands', 'team'])
