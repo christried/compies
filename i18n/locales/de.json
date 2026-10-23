@@ -945,7 +945,7 @@
       "whoWhen": "Wer kann wann?",
       "you": "{name} (du)",
       "confirmSeeAll": "Alle {n} sehen den Termin sofort hier.",
-                  "confirmCta": "Festlegen",
+      "confirmCta": "Festlegen",
       "cancel": "Abbrechen",
       "setText": "Der Termin ist fix. Wenn dir was dazwischenkommt, sag dem Host sofort Bescheid. Wird geil.",
       "zoneOpenTitle": "Spielbrett im Rohbau.",
