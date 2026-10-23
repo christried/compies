@@ -47,6 +47,17 @@ export function berlinToUtc(local: string): Date {
   return new Date(matchingInstant ?? wallClock - offsetBefore * 60_000)
 }
 
+/** A Berlin wall-clock value `YYYY-MM-DDTHH:mm` split into its date and time parts (each '' when missing). */
+export function splitBerlinLocal(local: string): { date: string, time: string } {
+  const [date = '', time = ''] = local.split('T')
+  return { date, time }
+}
+
+/** The Berlin wall-clock value `YYYY-MM-DDTHH:mm` from its date and time parts, the inverse of `splitBerlinLocal`. */
+export function joinBerlinLocal(date: string, time: string): string {
+  return `${date}T${time}`
+}
+
 /** An instant as Berlin wall-clock time `YYYY-MM-DDTHH:mm`, the inverse of `berlinToUtc`. */
 export function utcToBerlin(instant: Date): string {
   const { year, month, day, hour, minute } = wallClockParts(instant.getTime())
