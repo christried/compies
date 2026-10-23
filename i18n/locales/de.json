@@ -925,6 +925,14 @@
       "saving": "Speichert …",
       "doneDirectText": "Der Termin steht. Schick ihn an deine Freunde und sie können sich hier anmelden."
     },
+    "dateTime": {
+      "datePlaceholder": "TT.MM.JJJJ",
+      "timePlaceholder": "HH:MM",
+      "calendarOpen": "Kalender öffnen",
+      "timeOpen": "Uhrzeiten öffnen",
+      "prevMonth": "Vorheriger Monat",
+      "nextMonth": "Nächster Monat"
+    },
     "poll": {
       "live": "Aktualisiert sich von selbst",
       "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
