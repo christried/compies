@@ -258,6 +258,7 @@ usePollRefresh(() => {
         >
           <template #host-actions>
             <HoldToConfirmButton
+              v-if="canChangeSessions"
               :key="`reopen-${session.id}-${holdEpoch}`"
               variant="secondary"
               size="card"
@@ -266,7 +267,7 @@ usePollRefresh(() => {
               @confirm="reopenOne(session.id)"
             />
             <HoldToConfirmButton
-              v-if="sessions.length > 1"
+              v-if="canChangeSessions && sessions.length > 1"
               :key="`remove-${session.id}-${holdEpoch}`"
               variant="hot"
               size="card"
@@ -357,7 +358,7 @@ usePollRefresh(() => {
             {{ t('mvp.poll.missingDates', { n: missing }, missing) }}
           </p>
           <IconButton
-            v-if="data.event.isHost && sessions.length > 1"
+            v-if="data.event.isHost && canChangeSessions && sessions.length > 1"
             :icon="Minus"
             :label="t('mvp.sessions.removeMissing')"
             @click="removeMissing"

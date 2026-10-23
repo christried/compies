@@ -819,6 +819,20 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).not.toContain('Entfernen')
   })
 
+  it('offers no Session change once the Event is finished: no Neue Terminsuche, Entfernen or Session hinzufügen, but Verschieben stays', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: 2, startsAt: '2026-10-31T19:00:00.000Z' },
+    ], 0, { event: { phase: 'finished', isHost: true }, slots: [], bestSlotId: null }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(page.findAll('button').filter(button => button.text() === 'Verschieben')).toHaveLength(2)
+    expect(page.text()).not.toContain('Neue Terminsuche')
+    expect(page.text()).not.toContain('Entfernen')
+    expect(page.text()).not.toContain('Session hinzufügen')
+  })
+
   it('shows no Session actions to a Member', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
       { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
