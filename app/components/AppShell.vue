@@ -20,7 +20,10 @@ const user = useAuthUser()
       class="fixed top-2 left-2 layer-toast -translate-y-24 rounded-pill bg-primary px-4 py-2 font-extrabold text-on-primary focus:translate-y-0"
     >{{ t('app.skipToStage') }}</a>
 
-    <AppHeader :kind="kind">
+    <AppHeader
+      :kind="kind"
+      :flush="flush"
+    >
       <template #title>
         <slot name="title" />
       </template>
