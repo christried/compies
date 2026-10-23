@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CalendarCheck, Check, Minus, Sparkles, X } from '@lucide/vue'
-import type { VoteValue } from '~~/shared/poll'
+import { VOTE_VALUES, type VoteValue } from '~~/shared/poll'
 
 // One proposed Slot in the poll (02-components § PollSlotCard, screen M3). The three vote options are
 // a radiogroup labelled with the Slot. A past Slot is marked vorbei and cannot be voted on. The
@@ -29,15 +29,17 @@ const { t } = useI18n()
 const label = computed(() => `${props.timeslot.day} ${props.timeslot.time}`)
 const share = (count: number) => (props.total > 0 ? `${(count / props.total) * 100}%` : '0%')
 
-const OPTIONS = computed(() => [
+const options = computed(() => [
   { value: 'yes', label: t('poll.yes'), icon: Check, fill: 'bg-success text-on-success' },
   { value: 'maybe', label: t('poll.maybe'), icon: Minus, fill: 'bg-warning text-on-warning' },
   { value: 'no', label: t('poll.no'), icon: X, fill: 'bg-ink text-paper' },
 ])
 
+// The control reports a string; only a known vote value is emitted, so no cast is needed.
 function choose(value: string) {
-  if (props.timeslot.past) return
-  emit('vote', value as VoteValue)
+  const vote = VOTE_VALUES.find(known => known === value)
+  if (!vote || props.timeslot.past) return
+  emit('vote', vote)
 }
 </script>
 
@@ -86,7 +88,7 @@ function choose(value: string) {
     </span>
     <SegmentedControl
       :model-value="myVote ?? ''"
-      :options="OPTIONS"
+      :options="options"
       :label="label"
       :disabled="timeslot.past"
       @update:model-value="choose"
