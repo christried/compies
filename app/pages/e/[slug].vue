@@ -221,13 +221,6 @@ usePollRefresh(() => {
               {{ t('poll.title') }}
             </h2>
           </div>
-          <span class="inline-flex items-center gap-1.5 text-[12px] font-bold text-ink-2">
-            <span
-              class="size-2 rounded-full border border-line bg-online"
-              aria-hidden="true"
-            />
-            {{ t('mvp.poll.live') }}
-          </span>
         </header>
 
         <NoticeBanner
@@ -276,7 +269,7 @@ usePollRefresh(() => {
           v-if="slots.length > 0"
           class="flex flex-col gap-2"
         >
-          <h2 class="m-0 text-[14px] font-bold">
+          <h2 class="m-0 font-display text-[26px] leading-[1.05] font-normal max-sm:text-[22px]">
             {{ t('mvp.poll.whoWhen') }}
           </h2>
           <PollMatrix

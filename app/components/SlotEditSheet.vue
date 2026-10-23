@@ -99,7 +99,7 @@ async function remove(slotId: string) {
     @close="emit('close')"
   >
     <section class="flex flex-col gap-2.5">
-      <h3 class="m-0 text-[14px] font-bold">
+      <h3 class="m-0 font-display text-[20px] leading-tight font-normal">
         {{ t('mvp.slots.listTitle') }}
       </h3>
       <p

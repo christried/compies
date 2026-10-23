@@ -63,6 +63,14 @@ describe('home page', () => {
     expect(page.get('h3').text()).toBe('Freitags-Zocken')
   })
 
+  it('keeps „Deine Events“ as a second-level heading', async () => {
+    homeEvents = [card({ name: 'Freitags-Zocken' })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Deine Events'])
+  })
+
   it('shows two skeleton cards marked busy while the list loads', async () => {
     mode = 'hang'
     const page = await mountSuspended(IndexPage)

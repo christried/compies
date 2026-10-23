@@ -81,7 +81,7 @@ useRefreshOnReturn(refresh)
         v-else-if="data"
         class="flex flex-col gap-3"
       >
-        <h2 class="m-0 text-[20px] leading-none font-bold">
+        <h2 class="m-0 font-display text-[26px] leading-[1.05] font-normal max-sm:text-[22px]">
           {{ t('mvp.home.events') }}
         </h2>
         <ul class="m-0 grid list-none grid-cols-1 gap-3.5 p-0 min-[600px]:grid-cols-2">
