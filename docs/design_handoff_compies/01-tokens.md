@@ -68,7 +68,7 @@ No „·“ separators in kickers, headers or timers.
 - Radius: xs 4 · sm 8 · md 12 · lg 14 · xl 20 · pill 999.
 - Borders: `border-memphis` 3 px light / 2.5 px dark, thin 2 px.
 - Shadows (hard, no blur): sm 3/3 · btn 4/4 · card 6/6 · modal 10/10 · lift 9/13 (dragged avatar) · soft (tooltips, toasts only) · sticker (confetti, emotes).
-- Layers (`layer-*`, never raw z-index): decor 1 · content 2 · sticky 10 · dock 30 · sheet 40 · clip 44 · veto 46 · modal 50 · toast 60 · confetti 70. **The veto bar always sits above the clip.**
+- Layers (`layer-*`, never raw z-index): decor 1 · content 2 · sticky 10 · header 20 · dock 30 · sheet 40 · clip 44 · veto 46 · modal 50 · popover 55 · toast 60 · confetti 70. **The veto bar always sits above the clip.**
 - Breakpoints: `sm` 600 (tablet), `md` 980 (desktop shell: side panel + floating dock; below = tab bar + crown button), `lg` 1280 (reference), `xl` 1440 (shell stops growing). Inside stage and panel use **container queries**.
 
 ## Motion tokens
