@@ -41,6 +41,7 @@ const user = useAuthUser()
     <HubNav
       v-if="kind === 'hub' && !noTabs"
       layout="tabs"
+      :can-host="user?.canHost"
       :is-admin="user?.isAdmin"
       class="sticky bottom-0 layer-sticky md:hidden"
     />

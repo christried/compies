@@ -12,7 +12,7 @@ const user = useAuthUser()
 </script>
 
 <template>
-  <header class="sticky top-0 layer-sticky flex-none border-b-(length:--cp-bw) border-line bg-surface">
+  <header class="sticky top-0 layer-header flex-none border-b-(length:--cp-bw) border-line bg-surface">
     <div
       class="flex h-14 items-center gap-3 px-3.5 md:h-header"
       :class="flush ? 'w-full' : 'mx-auto max-w-shell'"
@@ -35,6 +35,7 @@ const user = useAuthUser()
       <template v-if="kind === 'hub'">
         <HubNav
           layout="header"
+          :can-host="user?.canHost"
           :is-admin="user?.isAdmin"
           class="max-md:hidden"
         />
