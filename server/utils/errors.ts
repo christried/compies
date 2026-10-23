@@ -21,3 +21,8 @@ export function eventDeleted() {
 export function slotNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Slot not found' })
 }
+
+/** A Session id that the Event does not hold (#53). */
+export function sessionNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Session not found' })
+}
