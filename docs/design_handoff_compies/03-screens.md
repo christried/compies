@@ -33,7 +33,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 ### M3 Terminumfrage (MVP)
 **Scope:** [MVP] · **Ref:** `App MVP Terminfindung ?s=poll`
 
-- **Layout:** Event shell, **no side panel** in the MVP. Desktop: kicker („Terminumfrage läuft, 7 von 9 haben abgestimmt“) + h1 + live hint right; slot cards 4-col (gap 12); „Wer kann wann?“ matrix; BaustelleZone. Host dock floating bottom-centre: „Termin festlegen“ (primary) + „Einladen“. Mobile: slot cards 1-col, matrix scrolls horizontally (130 + 4×72), crown button bottom-right opens the host sheet. Date set: DateSetCard replaces cards + matrix.
+- **Layout:** Event shell, **no side panel** in the MVP. Desktop: kicker („Terminumfrage läuft, 7 von 9 haben abgestimmt“) + h1, no refresh hint; slot cards 4-col (gap 12); „Wer kann wann?“ matrix; BaustelleZone. Host dock floating bottom-centre: „Termin festlegen“ (primary) + „Einladen“. Mobile: slot cards 1-col, matrix scrolls horizontally only when the Slots don't fit (130 + 4×72), crown button bottom-right opens the host sheet. Date set: DateSetCard replaces cards + matrix.
 - **Components:** AppShell (event), PhasePill, PollSlotCard, PollMatrix, UserAvatar, HostDock / host sheet, DateConfirmDialog, DateSetCard, InviteLinkCard, BaustelleZone, ToastStack
 - **Data:** Event (name, phase, host), slots[], votes[] (all members, visible to everyone), members (name, avatar), best slot (computed server-side: most yes → most maybe → earliest), confirmed startsAt, icsSequence.
 - **Host vs player:** Player: votes. Host: votes too + „Diesen festlegen“ on each card (desktop), dock/sheet „Termin festlegen“ (preselects best slot), „Verschieben“ after confirm, „Einladen“.

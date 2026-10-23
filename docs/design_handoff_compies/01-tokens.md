@@ -60,6 +60,8 @@ Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assign
 | num-hero … num-xs | `text-num-*` + `num` | clamp 96–160 … 15 | Bungee, fixed digit slots (`num-slot` .74em, `num-sep` .34em) |
 | timer | `timer` | | Lilita One, slots .6em / .3em |
 
+**Section heading (one style):** „Wer kann wann?“ and „Deine Events“ are h2 in Lilita One, 26 px (22 px on phones). Inside sheets the sub-heading is one step smaller: h3 in Lilita One, 20 px („Vorgeschlagene Termine“). Headings keep their levels.
+
 No „·“ separators in kickers, headers or timers.
 
 ## Space, size, radius, elevation, layers
