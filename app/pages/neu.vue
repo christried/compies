@@ -275,14 +275,23 @@ const MODES = computed(() => [
           v-else
           class="flex flex-col gap-[18px]"
         >
-          <DateTimeField
+          <div
             v-for="(_, index) in direct"
             :key="index"
-            :model-value="direct[index] ?? ''"
-            :label="sessionCount > 1 ? t('mvp.create.slotLabel', { n: index + 1 }) : t('mvp.create.dateLabel')"
-            :error="directErrors[index]"
-            @update:model-value="value => (direct[index] = value)"
-          />
+            class="flex flex-col gap-2"
+          >
+            <span
+              v-if="sessionCount > 1"
+              aria-hidden="true"
+              class="text-[13px] font-extrabold text-ink-2 uppercase"
+            >{{ t('mvp.create.slotLabel', { n: index + 1 }) }}</span>
+            <DateTimeField
+              :model-value="direct[index] ?? ''"
+              :label="sessionCount > 1 ? t('mvp.create.slotLabel', { n: index + 1 }) : t('mvp.create.dateLabel')"
+              :error="directErrors[index]"
+              @update:model-value="value => (direct[index] = value)"
+            />
+          </div>
         </div>
 
         <BaustelleZone
