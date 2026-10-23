@@ -327,7 +327,7 @@ describe('setting the Date', () => {
     expect(dialog()).toBeNull()
   })
 
-  it('shows the .ics download to every Member, and Verschieben only to the Host', async () => {
+  it('shows the calendar link to every Member, and Verschieben only to the Host', async () => {
     const member = serve(s => view(s, [], {
       session: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z' },
       slots: [],

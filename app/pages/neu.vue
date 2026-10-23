@@ -147,7 +147,7 @@ const MODES = computed(() => [
             {{ t('mvp.create.doneTitle', { name: trimmedName }) }}
           </h1>
           <p class="m-0 font-semibold text-pretty">
-            {{ mode === 'poll' ? t('mvp.create.doneText', { n: slots.length }) : t('mvp.create.doneDirectText') }}
+            {{ mode === 'poll' ? t('mvp.create.doneText') : t('mvp.create.doneDirectText') }}
           </p>
           <InviteLinkCard :url="created.inviteUrl" />
           <NuxtLink
