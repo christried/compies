@@ -97,9 +97,11 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
       </div>
 
       <div class="flex flex-col items-center justify-center gap-[18px] px-[22px] py-6 md:p-10">
-        <div class="size-[120px] overflow-hidden rounded-full border-(length:--cp-bw) border-line bg-surface shadow-sticker md:hidden">
-          <Compibert variant="bust" />
-        </div>
+        <Compibert
+          variant="bust"
+          :size="120"
+          class="md:hidden"
+        />
         <SignInCard
           :invited="invited"
           :invite="invite"

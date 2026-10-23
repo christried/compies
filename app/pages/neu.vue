@@ -132,12 +132,10 @@ const MODES = computed(() => [
         v-if="created"
         class="flex flex-col gap-5 rounded-xl border-3 border-line bg-surface p-5 shadow-card md:flex-row md:items-center"
       >
-        <div
-          class="size-[120px] flex-none overflow-hidden rounded-full border-(length:--cp-bw) border-line bg-surface shadow-sticker"
-          aria-hidden="true"
-        >
-          <Compibert variant="bust" />
-        </div>
+        <Compibert
+          variant="bust"
+          :size="120"
+        />
         <div class="flex min-w-0 flex-1 flex-col gap-3">
           <h1
             ref="doneHeading"
