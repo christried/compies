@@ -36,7 +36,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
   >
     <button
       type="button"
-      class="group hit-44 grid place-items-center rounded-pill transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:hover:translate-y-0 motion-reduce:hover:translate-y-0"
+      class="group hit-44 grid place-items-center rounded-pill lift"
       aria-haspopup="menu"
       :aria-expanded="open"
       :aria-label="t('auth.accountMenu', { name })"

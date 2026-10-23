@@ -62,7 +62,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut))
         v-for="action in actions"
         :key="action.key"
         type="button"
-        class="outline-memphis hit-44 inline-flex h-11 items-center gap-2 rounded-pill px-4 font-bold whitespace-nowrap shadow-btn transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
+        class="outline-memphis hit-44 inline-flex h-11 items-center gap-2 rounded-pill px-4 font-bold whitespace-nowrap shadow-btn lift aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
         :class="action.primary ? 'bg-primary text-on-primary' : 'border-(length:--cp-bw) border-line bg-surface text-ink'"
         @click="run(action)"
       >
@@ -76,7 +76,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut))
 
     <button
       type="button"
-      class="outline-memphis hit-44 fixed right-4 bottom-20 layer-dock grid size-14 place-items-center rounded-pill border-(length:--cp-bw) border-line bg-primary text-on-primary shadow-btn transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint md:hidden"
+      class="outline-memphis hit-44 fixed right-4 bottom-20 layer-dock grid size-14 place-items-center rounded-pill border-(length:--cp-bw) border-line bg-primary text-on-primary shadow-btn lift md:hidden"
       :aria-label="t('dock.label')"
       aria-haspopup="dialog"
       :aria-expanded="sheetOpen"

@@ -13,7 +13,7 @@ withDefaults(defineProps<{
 <template>
   <button
     type="button"
-    class="hit-44 grid size-10 flex-none place-items-center rounded-pill border-2 border-line bg-surface text-ink transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint"
+    class="hit-44 grid size-10 flex-none place-items-center rounded-pill border-2 border-line bg-surface text-ink lift"
     :aria-label="label"
     :aria-pressed="pressed"
     :title="label"

@@ -212,6 +212,34 @@
   }
 }
 
+/* Hover lift (#33): a control rises with a card shadow on hover and presses down on click. Hover-only
+   devices lift; under reduced motion the control stays still and shows the hover tint instead. */
+@utility lift {
+  transition-property: translate, box-shadow;
+  transition-duration: var(--cp-dur-instant);
+  transition-timing-function: var(--cp-ease-snap);
+  @media (hover: hover) {
+    &:hover {
+      translate: 0 calc(var(--spacing) * -0.5);
+      box-shadow: var(--shadow-card);
+    }
+  }
+  &:active {
+    translate: var(--spacing);
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:hover {
+      translate: none;
+      @apply tint;
+    }
+  }
+  [data-motion=reduced] &:hover {
+    translate: none;
+    @apply tint;
+  }
+}
+
 @layer base {
   html { font-family: var(--cp-font-sans); font-weight: 500; font-optical-sizing: auto; color: var(--cp-ink); background: var(--cp-paper); }
   :lang(de) { hyphenate-character: "-"; }
