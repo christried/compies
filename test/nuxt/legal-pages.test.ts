@@ -67,6 +67,19 @@ describe('legal pages', () => {
     expect(link(menu, '/datenschutz')?.attributes('role')).toBe('menuitem')
   })
 
+  it('shows the reduced-motion hover on an overlay above the avatar, not on the covered button', async () => {
+    signInAs(kitty)
+    const menu = await mountSuspended(UserMenu)
+    const button = menu.get('button[aria-haspopup="menu"]')
+
+    // The avatar is opaque and covers the button, so the tint sits on a layer above it.
+    expect(button.classes()).not.toContain('motion-reduce:hover:tint')
+    const overlay = button.get('span:last-child')
+    expect(overlay.classes()).toContain('motion-reduce:group-hover:tint')
+    expect(overlay.classes()).toContain('reduced:group-hover:tint')
+    expect(button.classes()).toContain('group')
+  })
+
   it('goes back in history when the visitor came from inside the app', async () => {
     signInAs(null)
     const page = await mountSuspended(ImpressumPage, { route: '/impressum' })

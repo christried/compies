@@ -36,7 +36,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
   >
     <button
       type="button"
-      class="hit-44 grid place-items-center rounded-pill transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint"
+      class="group hit-44 grid place-items-center rounded-pill transition-[translate,box-shadow] dur-instant ease-snap hover:-translate-y-0.5 hover:shadow-card active:translate-1 active:shadow-none reduced:hover:translate-y-0 motion-reduce:hover:translate-y-0"
       aria-haspopup="menu"
       :aria-expanded="open"
       :aria-label="t('auth.accountMenu', { name })"
@@ -46,6 +46,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
         :name="name"
         :image="user.image"
         :size="40"
+      />
+      <!-- The opaque avatar covers the button, so the reduced-motion hover tint sits on this layer above it. -->
+      <span
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 rounded-pill reduced:group-hover:tint motion-reduce:group-hover:tint"
       />
     </button>
 
