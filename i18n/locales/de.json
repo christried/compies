@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "COMPIES",
-    "loading": "Compibert sucht die Controller …",
+    "name": "Compies",
+    "loading": "Einen Moment, wir suchen die Controller …",
     "skipToStage": "Zur Bühne springen"
   },
   "common": {
@@ -258,7 +258,7 @@
       },
       "pickBan": {
         "title": "Pick & Ban",
-        "how": "Wie das Map-Veto in Counter-Strike. Ein Münzwurf (Compibert-Kopf oder Compibert-Schwanz) entscheidet, wer anfängt. Jede Partei bekommt so viele Bans, wie sie Mitglieder hat. Gebannt wird abwechselnd: A bannt 1, B bannt 2, A bannt 2 und so weiter, bis alle Bans weg sind. Danach wird nach demselben Muster gepickt. Mit dem Picken beginnt die Partei, die nicht mit dem Bannen angefangen hat. Die Reihenfolge der Picks ist die Spielreihenfolge.",
+        "how": "Wie das Map-Veto in Counter-Strike. Ein Münzwurf (Kopf oder Schwanz) entscheidet, wer anfängt. Jede Partei bekommt so viele Bans, wie sie Mitglieder hat. Gebannt wird abwechselnd: A bannt 1, B bannt 2, A bannt 2 und so weiter, bis alle Bans weg sind. Danach wird nach demselben Muster gepickt. Mit dem Picken beginnt die Partei, die nicht mit dem Bannen angefangen hat. Die Reihenfolge der Picks ist die Spielreihenfolge.",
         "good": "Taktische Abende, bei denen jede Partei mitbestimmen will.",
         "warn": "Es läuft keine Uhr. Du sorgst dafür, dass es vorangeht. Der Pool muss mindestens so groß sein wie alle Bans plus die Anzahl Spiele."
       },
@@ -422,7 +422,7 @@
     "clap": "Klatschen",
     "tears": "Freudentränen",
     "angry": "Wütend",
-    "roar": "Compibert-Brüller"
+    "roar": "Brüller"
   },
   "poll": {
     "title": "Wann zocken wir?",
@@ -439,7 +439,7 @@
     "confirmed": "Termin steht",
     "confirmedBanner": "Termin steht: {slot} Uhr",
     "confirmedText": "Alle wurden benachrichtigt. Erinnerung 1 Stunde vorher. Die Teamwahl ist jetzt offen.",
-    "ics": ".ics laden",
+    "ics": "In den Kalender",
     "reschedule": "Verschieben",
     "propose": "Termin vorschlagen"
   },
@@ -590,7 +590,7 @@
     "denied": "Okay, kein Push. Umentscheiden geht im Profil."
   },
   "pwa": {
-    "title": "COMPIES als App installieren",
+    "title": "Compies als App installieren",
     "text": "Eigenes Fenster, Icon auf dem Home-Bildschirm und Push auch bei geschlossenem Browser.",
     "later": "Später",
     "install": "Installieren",
@@ -599,7 +599,7 @@
     "iosStep2": "Wähle „Zum Home-Bildschirm“",
     "iosStep3": "Tippe auf „Hinzufügen“",
     "iosNote": "Auf iPhone und iPad geht Push nur mit installierter App.",
-    "done": "Installiert. Ab jetzt wohnt Compibert auf deinem {where}."
+    "done": "Installiert. Ab jetzt hast du Compies auf deinem {where}."
   },
   "sound": {
     "enable": "Ton aktivieren",
@@ -760,7 +760,7 @@
     }
   },
   "legal": {
-    "_scope": "Impressum und Datenschutzerklärung von COMPIES. Jeder Abschnitt hat eine Überschrift und einen Text; Absätze sind durch eine Leerzeile getrennt. Bei Änderungen an der App (neue Dienste, Cookies, Daten) hier nachziehen und den Stand anpassen.",
+    "_scope": "Impressum und Datenschutzerklärung von Compies. Jeder Abschnitt hat eine Überschrift und einen Text; Absätze sind durch eine Leerzeile getrennt. Bei Änderungen an der App (neue Dienste, Cookies, Daten) hier nachziehen und den Stand anpassen.",
     "links": {
       "impressum": "Impressum",
       "datenschutz": "Datenschutz"
@@ -781,7 +781,7 @@
       },
       "scope": {
         "heading": "Geltungsbereich",
-        "text": "Dieses Impressum gilt für die Web-Anwendung COMPIES unter compies.christried.me."
+        "text": "Dieses Impressum gilt für die Web-Anwendung Compies unter compies.christried.me."
       },
       "dispute": {
         "heading": "Verbraucherstreitbeilegung",
@@ -792,7 +792,7 @@
       "title": "Datenschutzerklärung",
       "intro": {
         "heading": "Worum es geht",
-        "text": "Diese Datenschutzerklärung gilt für die Web-Anwendung COMPIES unter compies.christried.me. Sie beschreibt, welche personenbezogenen Daten beim Betrieb von COMPIES verarbeitet werden, zu welchem Zweck, auf welcher Rechtsgrundlage und welche Rechte du hast."
+        "text": "Diese Datenschutzerklärung gilt für die Web-Anwendung Compies unter compies.christried.me. Sie beschreibt, welche personenbezogenen Daten beim Betrieb von Compies verarbeitet werden, zu welchem Zweck, auf welcher Rechtsgrundlage und welche Rechte du hast."
       },
       "controller": {
         "heading": "1. Verantwortlicher",
@@ -800,11 +800,11 @@
       },
       "overview": {
         "heading": "2. Überblick",
-        "text": "COMPIES ist ein privates, nicht-kommerzielles Hobby-Projekt, mit dem eine Gruppe von Freundinnen und Freunden Termine für Spieleabende findet: Ein Host schlägt in einer Session mehrere Termine vor, die Mitglieder stimmen ab, und der Host legt den Termin fest. Es gibt keine Werbung, kein Tracking und keine Analyse-Tools. Verarbeitet werden nur die Daten, die für Anmeldung, Betrieb und die Funktionen der Anwendung erforderlich sind."
+        "text": "Compies ist ein privates, nicht-kommerzielles Hobby-Projekt, mit dem eine Gruppe von Freundinnen und Freunden Termine für Spieleabende findet: Ein Host schlägt in einer Session mehrere Termine vor, die Mitglieder stimmen ab, und der Host legt den Termin fest. Es gibt keine Werbung, kein Tracking und keine Analyse-Tools. Verarbeitet werden nur die Daten, die für Anmeldung, Betrieb und die Funktionen der Anwendung erforderlich sind."
       },
       "hosting": {
         "heading": "3. Hosting (Vercel)",
-        "text": "COMPIES wird bei der Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA, gehostet; die Server-Funktionen laufen in Frankfurt am Main. Beim Aufruf der Anwendung verarbeitet Vercel technisch notwendige Zugriffsdaten in Server-Logs, darunter IP-Adresse, Datum und Uhrzeit der Anfrage, die angefragte URL, den Referrer sowie Browser- und Betriebssystem-Angaben. Ebenfalls in diesen Logs landen technische Fehlermeldungen der Anwendung. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, stabilen und fehlerfreien Betrieb). Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO). Zur Übermittlung in die USA siehe Abschnitt 13."
+        "text": "Compies wird bei der Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA, gehostet; die Server-Funktionen laufen in Frankfurt am Main. Beim Aufruf der Anwendung verarbeitet Vercel technisch notwendige Zugriffsdaten in Server-Logs, darunter IP-Adresse, Datum und Uhrzeit der Anfrage, die angefragte URL, den Referrer sowie Browser- und Betriebssystem-Angaben. Ebenfalls in diesen Logs landen technische Fehlermeldungen der Anwendung. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, stabilen und fehlerfreien Betrieb). Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO). Zur Übermittlung in die USA siehe Abschnitt 13."
       },
       "database": {
         "heading": "4. Datenbank (Neon)",
@@ -812,19 +812,19 @@
       },
       "signIn": {
         "heading": "5. Anmeldung über Discord oder Twitch und Anzeigename",
-        "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift COMPIES darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in COMPIES sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Sessions anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Sessions anlegen)."
+        "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift Compies darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in Compies sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Sessions anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Sessions anlegen)."
       },
       "avatar": {
         "heading": "6. Profilbild",
-        "text": "Neben deinem Anzeigenamen zeigt COMPIES ein rundes Profilbild – dir selbst und den Mitgliedern der Sessions, denen du angehörst. Es ist dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.\n\nDas Profilbild wird direkt von den Servern von Discord bzw. Twitch geladen. Dabei erhält der jeweilige Dienst technisch bedingt die IP-Adresse des Geräts, auf dem das Bild angezeigt wird, sowie übliche Browserangaben – das gilt auch für andere Mitglieder deiner Sessions, die dein Bild sehen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erkennbarkeit der Mitglieder in einer gemeinsam genutzten Anwendung) bzw. für das Laden von Discord und Twitch Art. 6 Abs. 1 lit. f DSGVO."
+        "text": "Neben deinem Anzeigenamen zeigt Compies ein rundes Profilbild – dir selbst und den Mitgliedern der Sessions, denen du angehörst. Es ist dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.\n\nDas Profilbild wird direkt von den Servern von Discord bzw. Twitch geladen. Dabei erhält der jeweilige Dienst technisch bedingt die IP-Adresse des Geräts, auf dem das Bild angezeigt wird, sowie übliche Browserangaben – das gilt auch für andere Mitglieder deiner Sessions, die dein Bild sehen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erkennbarkeit der Mitglieder in einer gemeinsam genutzten Anwendung) bzw. für das Laden von Discord und Twitch Art. 6 Abs. 1 lit. f DSGVO."
       },
       "cookies": {
         "heading": "7. Cookies und Speicher im Browser",
-        "text": "COMPIES setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nDesign-Cookie (nuxt-color-mode): merkt sich, ob du das helle, dunkle oder das Systemdesign gewählt hast; 1 Jahr.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich COMPIES wie eine installierte App verhält; Inhalte deiner Sessions werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
+        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nDesign-Cookie (nuxt-color-mode): merkt sich, ob du das helle, dunkle oder das Systemdesign gewählt hast; 1 Jahr.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Sessions werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
       },
       "security": {
         "heading": "8. Sitzungs- und Sicherheitsdaten",
-        "text": "Zu jeder Anmeldesitzung speichern wir deine IP-Adresse und die Browserkennung (User-Agent), um Missbrauch erkennen zu können. Außerdem zählt COMPIES zum Schutz vor Missbrauch und Überlastung, wie oft bestimmte Aktionen aufgerufen werden – je nach Aktion deinem Konto oder der aufrufenden IP-Adresse zugeordnet (z. B. Anmeldeversuche oder Abstimmungen). Diese Zähler liegen nur im Arbeitsspeicher, gelten nur für ein kurzes Zeitfenster und werden danach überschrieben. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Sicherheit der Anwendung und dem Schutz vor Missbrauch)."
+        "text": "Zu jeder Anmeldesitzung speichern wir deine IP-Adresse und die Browserkennung (User-Agent), um Missbrauch erkennen zu können. Außerdem zählt Compies zum Schutz vor Missbrauch und Überlastung, wie oft bestimmte Aktionen aufgerufen werden – je nach Aktion deinem Konto oder der aufrufenden IP-Adresse zugeordnet (z. B. Anmeldeversuche oder Abstimmungen). Diese Zähler liegen nur im Arbeitsspeicher, gelten nur für ein kurzes Zeitfenster und werden danach überschrieben. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Sicherheit der Anwendung und dem Schutz vor Missbrauch)."
       },
       "sessions": {
         "heading": "9. Sessions, Terminvorschläge und Stimmen",
@@ -832,7 +832,7 @@
       },
       "calendar": {
         "heading": "10. Kalenderdatei",
-        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link der Session herunterladen. Sie wird von COMPIES selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link der Session herunterladen. Sie wird von Compies selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "fonts": {
         "heading": "11. Schriftarten, Symbole und Tracking",
@@ -852,7 +852,7 @@
       },
       "obligation": {
         "heading": "15. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
-        "text": "Du bist weder gesetzlich noch vertraglich verpflichtet, Daten bereitzustellen. Ohne die für die Anmeldung nötigen Angaben (Abschnitt 5) kannst du COMPIES jedoch nicht nutzen. Eine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt; der Abgleich mit der Host-Liste (Abschnitt 5) ist eine reine Berechtigungsprüfung."
+        "text": "Du bist weder gesetzlich noch vertraglich verpflichtet, Daten bereitzustellen. Ohne die für die Anmeldung nötigen Angaben (Abschnitt 5) kannst du Compies jedoch nicht nutzen. Eine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt; der Abgleich mit der Host-Liste (Abschnitt 5) ist eine reine Berechtigungsprüfung."
       },
       "rights": {
         "heading": "16. Deine Rechte",
@@ -864,7 +864,7 @@
       },
       "dataSecurity": {
         "heading": "18. Datensicherheit",
-        "text": "Die Verbindung zu COMPIES ist durchgehend per TLS (HTTPS) verschlüsselt. Wir treffen angemessene technische und organisatorische Maßnahmen, um deine Daten vor Verlust, Missbrauch und unbefugtem Zugriff zu schützen."
+        "text": "Die Verbindung zu Compies ist durchgehend per TLS (HTTPS) verschlüsselt. Wir treffen angemessene technische und organisatorische Maßnahmen, um deine Daten vor Verlust, Missbrauch und unbefugtem Zugriff zu schützen."
       },
       "changes": {
         "heading": "19. Änderungen und Stand",
@@ -887,12 +887,12 @@
       "votedCount": "{n} von {total} haben abgestimmt",
       "notVoted": "Du hast noch nicht abgestimmt",
       "voted": "Du hast abgestimmt",
-      "setReady": "Termin steht, .ics bereit",
+      "setReady": "Termin steht",
       "open": "Öffnen",
       "vote": "Abstimmen",
       "view": "Ansehen",
       "emptyTitle": "Noch keine Einladung.",
-      "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Frag deinen Host, Compibert wartet so lange.",
+      "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Bis dahin lohnt sich eine Nachfrage beim Host.",
       "noBest": "Noch kein Termin mit Ja oder Wenn nötig."
     },
     "create": {
@@ -914,7 +914,7 @@
       "laterTitle": "Format, Modus und Spiele kommen später.",
       "laterText": "Sobald das Update da ist, trägst du sie in dieser Session nach. Umfrage und Stimmen bleiben, wie sie sind.",
       "doneTitle": "{name} steht!",
-      "doneText": "{n} Terminvorschläge. Schick den Link in euren Discord, wer ihn öffnet, meldet sich an und stimmt ab.",
+      "doneText": "Die Umfrage läuft. Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.",
       "copyLink": "Link kopieren",
       "copied": "Link kopiert",
       "toPoll": "Zur Umfrage",
@@ -923,7 +923,7 @@
       "timeInput": "Uhrzeit",
       "slotEmpty": "Bitte alle Termine ausfüllen.",
       "saving": "Speichert …",
-      "doneDirectText": "Der Termin steht. Schick den Link in euren Discord, wer ihn öffnet, meldet sich an und sieht ihn."
+      "doneDirectText": "Der Termin steht. Schick ihn an deine Freunde und sie können sich hier anmelden."
     },
     "poll": {
       "live": "Aktualisiert sich von selbst",
@@ -936,11 +936,9 @@
       "whoWhen": "Wer kann wann?",
       "you": "{name} (du)",
       "confirmSeeAll": "Alle {n} sehen den Termin sofort hier.",
-      "confirmIcs": "Die Kalenderdatei steht zum Download bereit.",
-      "confirmReminder": "Sie erinnert 1 Stunde vorher.",
-      "confirmCta": "Festlegen",
+                  "confirmCta": "Festlegen",
       "cancel": "Abbrechen",
-      "setText": "Leg ihn dir in den Kalender. Die Datei erinnert dich 1 Stunde vorher. Verschiebt der Host, siehst du es hier und lädst die Datei neu.",
+      "setText": "Der Termin ist fix. Wenn dir was dazwischenkommt, sag dem Host sofort Bescheid. Wird geil.",
       "zoneOpenTitle": "Spielbrett im Rohbau.",
       "zoneOpenText": "Teams, Chat und Glücksrad kommen mit dem nächsten Update. Bis dahin reicht: abstimmen.",
       "zoneSetTitle": "Teamwahl kommt mit dem nächsten Update.",
@@ -982,7 +980,7 @@
       },
       "generic": {
         "title": "Hier wird noch gebaut.",
-        "text": "Diese Ecke von COMPIES ist noch Rohbau. Die Terminumfrage funktioniert schon."
+        "text": "Diese Ecke von Compies ist noch Rohbau. Die Terminumfrage funktioniert schon."
       }
     },
     "slots": {
@@ -998,7 +996,7 @@
       "locked": "Termine lassen sich nur ändern, solange noch kein Termin festliegt."
     },
     "ics": {
-      "summary": "{session} (COMPIES)",
+      "summary": "{session} (Compies)",
       "description": "Zur Session: {url}",
       "alarm": "{session} startet in 1 Stunde"
     },
@@ -1008,12 +1006,12 @@
       "slotLabel": "{day}, {time} Uhr",
       "noFutureSlot": "Kein Termin liegt mehr in der Zukunft.",
       "dateTime": "{date}, {time} Uhr",
-      "ics": "In den Kalender (.ics)"
+      "ics": "In den Kalender"
     },
     "reschedule": {
       "title": "Termin verschieben?",
       "label": "Neuer Termin",
-      "text": "Alle werden benachrichtigt und bekommen ein neues .ics.",
+      "text": "Alle sehen den neuen Termin sofort hier.",
       "cta": "Termin verschieben"
     },
     "reopen": {
@@ -1094,6 +1092,6 @@
       "title": "Noch keine Stimmen.",
       "text": "Teil den Link, dann füllt sich die Tabelle."
     },
-    "lobbyEmpty": "Alle schlafen. Compibert auch."
+    "lobbyEmpty": "Alle schlafen. Du auch?"
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, Clock, Download, Eye } from '@lucide/vue'
+import { CalendarCheck, Eye } from '@lucide/vue'
 
 // The Host sets the Date (02-components § DateConfirmDialog, screen M3 confirm). A ConfirmModal with
 // the future Slots as a radio group. The preselected one is the Best slot, or the earliest future Slot
@@ -77,20 +77,6 @@ function confirm() {
             :size="16"
           />
           {{ t('mvp.poll.confirmSeeAll', { n: total }) }}
-        </li>
-        <li class="flex gap-2">
-          <AppIcon
-            :icon="Download"
-            :size="16"
-          />
-          {{ t('mvp.poll.confirmIcs') }}
-        </li>
-        <li class="flex gap-2">
-          <AppIcon
-            :icon="Clock"
-            :size="16"
-          />
-          {{ t('mvp.poll.confirmReminder') }}
         </li>
       </ul>
     </div>
