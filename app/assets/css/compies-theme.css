@@ -109,7 +109,7 @@
   --border-width-memphis: var(--cp-bw);  --border-width-thin: var(--cp-bw-thin);
 
   /* layer stack: use layer-dock, layer-veto … never raw z-index */
-  --layer-decor: var(--cp-z-decor);  --layer-content: var(--cp-z-content);  --layer-sticky: var(--cp-z-sticky);  --layer-dock: var(--cp-z-dock);  --layer-sheet: var(--cp-z-sheet);
+  --layer-decor: var(--cp-z-decor);  --layer-content: var(--cp-z-content);  --layer-sticky: var(--cp-z-sticky);  --layer-header: var(--cp-z-header);  --layer-dock: var(--cp-z-dock);  --layer-sheet: var(--cp-z-sheet);
   --layer-clip: var(--cp-z-clip);  --layer-veto: var(--cp-z-veto);  --layer-modal: var(--cp-z-modal);  --layer-toast: var(--cp-z-toast);  --layer-confetti: var(--cp-z-confetti);
 
   /* matches DS Frame: mobile < 600 · tablet 600–979 · desktop 980–1439 · wide ≥ 1440. Reference layout 1280. */
