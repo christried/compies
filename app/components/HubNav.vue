@@ -6,9 +6,11 @@ import { HUB_SITES } from '~/utils/construction'
 // Main navigation: the header nav on desktop, the bottom tab bar below md.
 const props = withDefaults(defineProps<{
   layout: 'header' | 'tabs'
-  /** Platform admins also see Admin. */
+  /** Hosts see the Game library; the Platform admin sees it too. */
+  canHost?: boolean
+  /** The Platform admin sees Admin and the Game library. */
   isAdmin?: boolean
-}>(), { isAdmin: false })
+}>(), { canHost: false, isAdmin: false })
 
 const { t } = useI18n()
 const route = useRoute()
@@ -18,7 +20,7 @@ interface NavItem { key: string, to: string, label: string, icon: Component }
 const items = computed<NavItem[]>(() => [
   { key: 'sessions', to: '/', label: t('nav.sessions'), icon: House },
   { key: 'archiv', to: '/archiv', label: t('nav.archive'), icon: Archive },
-  { key: 'bibliothek', to: '/bibliothek', label: t('nav.library'), icon: Gamepad2 },
+  ...(props.canHost || props.isAdmin ? [{ key: 'bibliothek', to: '/bibliothek', label: t('nav.library'), icon: Gamepad2 }] : []),
   { key: 'profil', to: '/profil', label: t('nav.profile'), icon: User },
   ...(props.isAdmin ? [{ key: 'admin', to: '/admin', label: t('nav.admin'), icon: Shield }] : []),
 ])
