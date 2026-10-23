@@ -1,0 +1,53 @@
+compies mvp review 1
+
+- Prozess-Anpassung: Schaue so oft wie nötig während und nach des Implementationsprozesses danach, ob "fertige" Branches im origin gelöscht sind. Auf GitHub sollten, der Übersicht wegen, nur main + staging + aktive dev branches existieren
+
+- User Feedback: es wäre super wenn Compibert, nur im Browser von Playern, die im aktuell führenden Team sind, einen Partyhut tragen würde.
+
+Compi ist Staging-Test Nummer 1, aus dem sich weitere Tickets bzw. ein neues Spec ergibt, den wir abarbeiten müssen.
+
+Im Login Screen fühlt sich CompiBeard etwas fehl am Platz an. Die Position müssen wir nochmal überdenken. Genauso: Der Text unten links ist nicht in Ordnung und muss allgemeiner sein (nicht HEUTE ABEND), allerdings ist dem Gefühl nach die Platzierung über dem Hintergrund schlecht und deswegen wirkt das ein Problem, da er schlechter lesbar ist.
+
+Das Compi-Logo oben fühlt sich auf der Anmelden-Seite irgendwie komisch an und es wäre, glaube ich, ganz cool, wenn es eher links am Rand ist und nicht so weit in der Mitte. Die Anmeldungen funktionieren problemlos. Leider wechselt es, wenn man im Dark Mode ist, immer kurzfristig in den Light Mode, wenn man auf Anmelden klickt (während des Anmeldeprozesses, so scheint es).
+
+Auf den Seiten zum Impressum und Datenschutz wäre es, glaube ich, sehr praktisch, wenn wir eine Form von Zurück-Button hätten, um zurückzunavigieren, am besten direkt über dem Content. Da können wir von der Anmeldenseite unten auf Impressum oder Datenschutz klicken und dann von da aus wieder zurück, ohne über den Browser zu navigieren oder oben auf Compies klicken zu müssen. Der Text unter dem Wort „Anmelden“ soll lauten: „Einfach nur mit dem Konto, mit dem du eh schon zockst, und das war's.“ Unter den beiden Anmeldearten soll stehen: „Die Konten lassen sich später im Profil verknüpfen, nicht beide, weil zu einem späteren Zeitpunkt sollen es vielleicht noch mehr werden.“ Im Hauptbildschirm fällt auf, dass der Avatar vom Profil oben rechts kleiner ist als der Sound-Mute-Button. Diese Kreise sollen gleich groß sein.
+
+Generell ist der Hover State sehr wichtig. Auch wenn es hier eine Progressive Web Application ist, möchte ich als PC-User, wenn ich über Items hovere, in irgendeiner Form den Effekt wahrnehmen: also eine Art Hochheben, so wie es bei dem Button „Neue Terminumfrage“ zum Beispiel passiert. Eben auch so was wie der Kreis des User-Avatars: Wenn ich da hovere, habe ich zum Beispiel gar keinen Pointer, oder auch wenn ich draufklicke und dann über „Abmelden“ hovere. Auch dort habe ich keinen Cursor-Pointer.
+
+Hier muss ich auch den korrekten Hover State haben. Das gilt auch für alle anderen Stellen in der App. Der Button „Neue Terminumfrage“ sieht super so aus, wie er ist. Ich kann mir nur gut vorstellen, dass der eine leichte Aura kriegen kann. Ich hänge dir hier noch einen Screenshot-Link an, über den du sehen kannst, was ich mit Aura meine. https://daisyui.com/components/aura/?lang=de  in der Terminübersicht ist .ics-breit wirklich gar nicht interessant für den User. Die Information kann weg. In der Sessions-Übersicht steht unten der Text „Für den Rest ist noch Rohbau“. Das ist gut. Generell ist der Name CompiBeard überall herauszuhalten und soll nicht mitbenutzt werden. CompiBeard wird gezeigt und das ist auch wichtig, aber der Name CompiBeard soll nicht im UI vorkommen. 
+
+Wenn der App-Name Compies irgendwo benutzt wird, dann ist das besser, wenn nur das C großgeschrieben ist, mit Ausnahme natürlich vom Wordmark. Dort ist jeder Buchstabe groß, zum Beispiel oben links oder generell überall, wo die App so bildlich dargestellt wird. Da ist es immer wichtig, dass Compies so aussieht wie im Wordmark. Aber wenn es im Fließtext passiert, dann ist Compies nur mit dem ersten Buchstaben großgeschrieben. 
+
+Im Formular zum Erstellen einer neuen Session gibt es den Switch für „Terminumfrage“ und „direkt festlegen“. Die Funktionalität ist super. Optisch ist es allerdings noch verbesserungswürdig, denn in der Mitte overlappt dieser blaue Balken leicht. Die Fläche von „Terminumfrage“, also das linke Feld, steht rechts leicht darüber. Dieser Balken in der Mitte ist leider nicht ganz in der Mitte.
+
+Der Termin validiert sauber. Allerdings möchte ich, wenn ich auf das kleine Kalender-Icon klicke oder generell auf den Input klicke, dass ein Date Picker aufgeht. Das Gleiche möchte ich auch bei der Uhrzeit. Hier möchte ich sowohl die Uhrzeit eingeben können als auch die Möglichkeit haben, wenn ich mit der Maus darauf klicke, einen Uhrzeit Picker zu öffnen. 
+
+
+Der OZ-Picker ist zudem etwas buggy. Ich möchte hier nur vier Ziffern eingeben können und das soll immer im 24-Stunden-Format sein. Dieses PM, was auch immer dahintersteht, soll weg. Gerade ist es noch so, dass, sobald ich die ersten beiden eingegeben habe, eine Ziffer danach dafür sorgt, dass nach rechts gescrollt wird und ich meine ersten Ziffern nicht mehr sehen kann. 
+
+Wenn ich eine Session angelegt habe, kriege ich direkt den Link. Das ist super. Der Text darunter soll eigentlich nur sein: „Der Termin steht. Schick ihn an deine Freunde und sie können sich hier anmelden.“ Der Link darunter ist nicht scrollable. Das ist ein Problem. Ich möchte, wenn ich in die Fläche reinklicke, den ganzen Link auch händisch markieren und lesen können. 
+Compi wird es teilweise, zum Beispiel auch bei dem linken Teilen-Screen, so ein bisschen zu sehen geben und sollte hier so ein bisschen mehr hereinfaden und nicht so unten links in der Ecke hart abgeschnitten sein. Ich weiß, das Bild ist hart abgeschnitten, aber es wäre cool, wenn das ein bisschen runder wäre oder der so ein bisschen aus dem Hintergrund käme, damit das etwas weniger kantig aussieht. 
+
+Wenn kein Termin mehr in der Zukunft liegt und ich auf „Termin festlegen“ klicke, kriege ich unten auch im Dark Mode eine dunkle Fehleranzeige mit dunklem Text, die nicht gut lesbar ist.
+Die Notifications oben, zum Beispiel:
+- „Der Termin Mittwoch, 11. November, dies, das wurde aufgehoben. Bitte aus deinem Kalender löschen.“
+- „Gespeichert.“
+- „Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.“
+Diese Meldungen sollen auch dismissible sein, über ein X am rechten Rand zum Beispiel.
+
+Bei den Terminkarten, wo man voten kann, sind die Ränder am klippen und sehen sehr merkwürdig aus. Es sind abgerundete dreifache Inputs aber an den rechten Seiten, an den Ecken (sowohl rechts als auch links, oben und unten jeweils), sieht man sehr deutlich, dass da ineinander geklippt wird. Das muss man sich nochmal anschauen. Das sieht ganz, ganz grauenvoll aus, im Light Mode noch härter als im Dark Mode.
+
+Zusätzlich ist der mittlere Ausfallpunkt, also wenn nötig mit einem Minus davor, sehr unschön unzentriert. Das Minus ist sehr nah links am Rand. Wenn nötig ist sehr viel weiter weg vom Minus, als das Ja weiter weg ist vom Haken oder das Nein vom X. Das muss nochmal komplett überarbeitet werden, damit es besser aussieht. 
+
+
+Generell ist die Erwähnung der ICS-Datei überall total unnötig. Es geht mehr um den grundsätzlichen Gedanken, dass ein Termin verschoben wird oder angezeigt wird, als darum, dass diese Datei überall ist. Das heißt: den Abstand davon, hier überall zu erwähnen und zu sagen: „Hey das ist ein neuer Termin“, sowas in der Richtung. 
+
+
+Unter dem Button „Neue Terminsuche“ mit der Lupe steht „1 Sekunde halten“. Auch an anderen Stellen der App ist so ein Begleittext unter den Buttons. Der ist links-aligned und sieht damit sehr merkwürdig aus. Versuche, ihn entweder mittig zu alignen oder generell besser aussehen zu lassen. Weil dieser Text so weit von dem Text im Button entfernt ist (weil der Text im Button nicht links-aligned ist), sieht das sehr merkwürdig aus. Schau dir das nochmal an und bessere das optisch auf. 
+Analog zu dem, was ich zu den ICS-Dateien schon gesagt hatte, ist es nochmal wichtig: Wenn der Termin steht, steht dort zum Beispiel „Mittwoch, 11. November, 11.11.“ Darunter steht: „Leg ihn dir in den Kalender.“ Das ist dieser Text, wo jetzt gerade „Leg ihn dir in den Kalender“ steht.
+
+Schreibst du einen anderen Platzhalter-Text rein, nämlich so was in der Richtung: „Dieser Termin ist fix. Sollte dir irgendwas dazwischenkommen, melde dich bitte unverzüglich beim Host. Wird geil.“ Irgendwas in der Richtung, vielleicht ein bisschen mehr dem Ton der App entsprechend. 
+
+Das Absperrband auf den noch gesperrten Seiten (zum Beispiel Bibliothek) klippt über das Menü, das aufgeht, wenn man auf seinen Avatar klickt. Das ist nicht gut, es sollte unter dem Menü sein. 
+
+Die Bibliothek-Subpage soll nur sichtbar sein für Hosts. Falls das nicht schon so ist, sollen die Spieler obviously niemals sehen, was es für Spieleroptionen gibt, die den Hosts vorenthalten werden. Das Gleiche mit dem Admin-Bereich: Der soll nur sichtbar sein für Admins, aber das ist bisher ja auch schon so. 

@@ -302,7 +302,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Layout:** Search + filters + grid.
 - **Components:** GameLibrary, GameCard, SkeletonCard
 - **Data:** Global games.
-- **Host vs player:** Hosts create; edit for creator + admin.
+- **Host vs player:** Only Users with the Host permission and the Platform admin see the library (nav item and route). Hosts create; edit for creator + admin.
 - **States:** Liste + Filter · Detail · Keine Treffer · Lädt
 - **Realtime:** —
 

@@ -343,7 +343,7 @@ For every game, this loop runs:
 
 ## 15. Game library [1.0]
 
-- **Global**: visible to everyone. Every host benefits from games already added.
+- **Global**: one library for the whole platform, so every host benefits from games already added. Only users with the host permission and the platform admin see it; players never learn which games exist. The games a host puts into a session's pool stay visible to that session's members (wheel, pick & ban).
 - Games are **not imported** but created by hosts. Played games stay stored.
 - **Fields:**
   - name

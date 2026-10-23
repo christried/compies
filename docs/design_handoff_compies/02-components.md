@@ -149,7 +149,7 @@ Date + time pair for poll slots and direct date.
 - **Props / variants:** `modelValue: string (ISO, local Europe/Berlin)`, `min`, `error`
 - **States:** default · focus · error („Der Termin liegt in der Vergangenheit.“, „Diesen Termin gibt es schon.“)
 - **Slots:** —
-- **Desktop / mobile:** Native `<input type=date>` + `<input type=time>` styled like TextField (date flex 1, time 108 px, Bungee digits). Mobile uses the native pickers.
+- **Desktop / mobile:** Own fields on every device, not native inputs (ADR 0010): date typed as TT.MM.JJJJ with a calendar popover, time typed as four digits (24 h) with a list in 15-minute steps. Styled like TextField (date flex 1, Bungee digits).
 - **Accessibility:** Grouped with `role="group"` + label „Termin 1“ etc.
 - **Motion:** —
 
