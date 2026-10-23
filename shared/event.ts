@@ -38,7 +38,12 @@ export type Phase = (typeof PHASES)[number]
 
 /** Sessions are added, removed and reopened in every Phase before the Event finishes (#55). */
 export function sessionsEditable(phase: Phase): boolean {
-  return phase === 'poll' || phase === 'date_set'
+  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
+}
+
+/** Slots can be added, removed and only then changed by the Host while the Date poll is open (#1). */
+export function slotsEditable(phase: Phase): boolean {
+  return phase === 'poll'
 }
 
 /** One Session of an Event (#48, #49). Times are UTC ISO strings. */

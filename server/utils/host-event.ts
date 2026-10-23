@@ -1,4 +1,4 @@
-import { slotsEditable } from '../domain/event'
+import { slotsEditable } from '../../shared/event'
 import { apiError } from './errors'
 import { loadEvent } from './event-access'
 import type { Db } from './db'

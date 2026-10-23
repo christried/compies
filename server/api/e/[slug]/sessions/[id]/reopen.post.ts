@@ -2,11 +2,10 @@ import { eq, sql } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { sessions } from '../../../../../db/schema'
 import { reopenRejection, reopenValues } from '../../../../../domain/phase'
-import { sequenceRaises } from '../../../../../domain/session'
 import { useDb } from '../../../../../utils/db'
 import { apiError, sessionNotFound } from '../../../../../utils/errors'
 import { loadEvent } from '../../../../../utils/event-access'
-import { eventSessions, raiseSequences, setEventPhase } from '../../../../../utils/sessions'
+import { eventSessions, finishSessionChange } from '../../../../../utils/sessions'
 import { requireUser } from '../../../../../utils/user'
 
 // Reopen of one Session (#14, #55, ADR 0011): the Host withdraws that Session's set Date. The old Date is kept
@@ -35,7 +34,6 @@ export default defineEventHandler(async (event) => {
       .where(eq(sessions.id, session.id))
 
     const after = before.map(row => (row.id === session.id ? { ...row, ...reopenValues() } : row))
-    await raiseSequences(tx, sequenceRaises(before, after))
-    return { phase: await setEventPhase(tx, eventRow.id, after.map(row => row.startsAt)) }
+    return { phase: await finishSessionChange(tx, eventRow, before, after) }
   })
 })

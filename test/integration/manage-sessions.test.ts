@@ -222,6 +222,18 @@ describe('managing each Session', () => {
       expect(await sessionRowsOf(eventId)).toHaveLength(1)
     })
 
+    it('adds an undated Session to a running Event, which stays running (Sessions change until the Event finishes)', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId } = await createPoll(cookie, 2)
+      await testDb.db.update(events).set({ phase: 'running' }).where(eq(events.id, eventId))
+
+      const response = await add(cookie, slug)
+
+      expect(response.status).toBe(200)
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'running' })
+      expect(await sessionRowsOf(eventId)).toHaveLength(2)
+    })
+
     it('refuses a ninth Session with 400 sessions_max', async () => {
       const cookie = await signInAsHost()
       const dates = Array.from({ length: 8 }, (_, index) => `2090-11-0${index + 1}T20:00`)

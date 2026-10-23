@@ -22,7 +22,12 @@ export default defineEventHandler(async (event) => {
     const session = before.find(row => row.id === sessionId)
     if (!session) throw sessionNotFound()
 
-    const startsAt = await readNewDate(event, startsAt => rescheduleRejection({ hasDate: session.startsAt !== null, startsAt, now: new Date() }))
-    return { startsAt: await moveSessionDate(tx, before, session.id, startsAt) }
+    const startsAt = await readNewDate(event, startsAt => rescheduleRejection({
+      hasDate: session.startsAt !== null,
+      startsAt,
+      now: new Date(),
+      duplicate: before.some(row => row.id !== session.id && row.startsAt?.getTime() === startsAt.getTime()),
+    }))
+    return { startsAt: await moveSessionDate(tx, eventRow, before, session.id, startsAt) }
   })
 })

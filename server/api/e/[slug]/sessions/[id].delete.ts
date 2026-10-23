@@ -2,11 +2,10 @@ import { eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { sessions } from '../../../../db/schema'
 import { removeSessionRejection } from '../../../../domain/phase'
-import { sequenceRaises } from '../../../../domain/session'
 import { useDb } from '../../../../utils/db'
 import { apiError, sessionNotFound } from '../../../../utils/errors'
 import { loadEvent } from '../../../../utils/event-access'
-import { eventSessions, raiseSequences, setEventPhase } from '../../../../utils/sessions'
+import { eventSessions, finishSessionChange } from '../../../../utils/sessions'
 import { requireUser } from '../../../../utils/user'
 
 // Removes one Session of an Event (#55, ADR 0011), dated or not. Its Slot, if its Date came from one, goes back
@@ -30,7 +29,6 @@ export default defineEventHandler(async (event) => {
     await tx.delete(sessions).where(eq(sessions.id, session.id))
 
     const after = before.filter(row => row.id !== session.id)
-    await raiseSequences(tx, sequenceRaises(before, after))
-    return { phase: await setEventPhase(tx, eventRow.id, after.map(row => row.startsAt)), id: session.id }
+    return { phase: await finishSessionChange(tx, eventRow, before, after), id: session.id }
   })
 })

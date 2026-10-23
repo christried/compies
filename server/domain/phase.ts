@@ -12,6 +12,15 @@ export function phaseOf(startsAt: (Date | null)[]): 'poll' | 'date_set' {
   return startsAt.some(date => date === null) ? 'poll' : 'date_set'
 }
 
+/**
+ * The Phase after a change to the Sessions (#55): the Dates decide only while the Event is in the date
+ * poll or date set. A running, finished or archived Event keeps its Phase when a Session is added,
+ * removed or reopened.
+ */
+export function phaseAfterChange(phase: Phase, startsAt: (Date | null)[]): Phase {
+  return phase === 'poll' || phase === 'date_set' ? phaseOf(startsAt) : phase
+}
+
 export type SetDateRejection = PhaseRejection | 'slot_taken'
 
 /**
@@ -28,22 +37,22 @@ export function setDateRejection(input: { phase: Phase, startsAt: Date, now: Dat
 
 /**
  * What a Set Date writes (#52): the undated Session gets the Date and the Slot it came from (null when no
- * Slot has that time). The Event stays in the poll while another Session waits, else moves to `date_set`.
- * The previous Date is forgotten; Votes stay frozen by their own rule (#1, #52).
+ * Slot has that time). The previous Date is forgotten; Votes stay frozen by their own rule (#1, #52).
+ * The Event's Phase follows from the Dates (phaseOf), written by the handler.
  */
-export function setDateValues(startsAt: Date, slotId: string | null, undated: number) {
-  const phase = undated > 1 ? 'poll' as const : 'date_set' as const
-  return { phase, session: { startsAt, previousStartsAt: null, slotId } }
+export function setDateValues(startsAt: Date, slotId: string | null) {
+  return { startsAt, previousStartsAt: null, slotId }
 }
 
 /**
- * Reschedule (#14, #53): only a Session that has a set Date moves, and only to a future time. The Event's
- * phase does not decide it: while another Session still waits for a Date, a dated one can move.
+ * Reschedule (#14, #53): only a Session that has a set Date moves, to a future time that no other Session
+ * has (#49: distinct Dates). The Event's phase does not decide it: while another Session still waits for
+ * a Date, a dated one can move.
  */
-export function rescheduleRejection(input: { hasDate: boolean, startsAt: Date, now: Date }): PhaseRejection | null {
+export function rescheduleRejection(input: { hasDate: boolean, startsAt: Date, now: Date, duplicate: boolean }): PhaseRejection | 'duplicate_date' | null {
   if (!input.hasDate) return 'wrong_phase'
   if (isPast(input.startsAt, input.now)) return 'in_past'
-  return null
+  return input.duplicate ? 'duplicate_date' : null
 }
 
 /** The Session columns a Reschedule writes. The Slot it came from stays taken; the handler adds `icsSequence + 1`. */

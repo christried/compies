@@ -136,7 +136,7 @@ describe('setting the Dates from the shared Date poll', () => {
       expect(await sessionOf(eventId)).toMatchObject({
         startsAt: new Date('2090-10-31T18:00:00.000Z'),
         previousStartsAt: null,
-        icsSequence: 0,
+        icsSequence: 1,
         slotId: slotIds[1],
       })
     })
@@ -154,6 +154,20 @@ describe('setting the Dates from the shared Date poll', () => {
       const rows = await sessionsOf(eventId)
       expect(rows.map(row => row.slotId).sort()).toEqual([...slotIds].sort())
       expect(rows.every(row => row.startsAt !== null)).toBe(true)
+    })
+
+    it('raises the calendar sequence of a Session whose number moves when an earlier Date is set after it', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId, slotIds } = await createPoll(cookie, 2)
+      const sessionWithSlot = async (slotId: string) => (await sessionsOf(eventId)).find(row => row.slotId === slotId)!
+
+      // The first Date goes to the first Session (number 1); the second Date is earlier, so that Session becomes number 1.
+      expect((await confirm(cookie, slug, slotIds[1])).status).toBe(200)
+      const sequenceBefore = (await sessionWithSlot(slotIds[1]!)).icsSequence
+
+      expect((await confirm(cookie, slug, slotIds[0])).status).toBe(200)
+
+      expect((await sessionWithSlot(slotIds[1]!)).icsSequence).toBeGreaterThan(sequenceBefore)
     })
 
     it('rejects a Slot that already became a Date, with 409 slot_taken, and leaves the poll as it was', async () => {
@@ -356,7 +370,7 @@ describe('setting the Dates from the shared Date poll', () => {
       const body = await response.text()
       expect(body).toContain(`UID:${session.id}@compies`)
       expect(body).toContain('DTSTART:20901031T180000Z')
-      expect(body).toContain('SEQUENCE:0')
+      expect(body).toContain('SEQUENCE:1')
       expect(body).toContain('TRIGGER:-PT1H')
       expect(body).toContain(`URL:http://localhost/e/${slug}`)
       expect(body).toContain('SUMMARY:Freitags-Zocken (Compies)')
