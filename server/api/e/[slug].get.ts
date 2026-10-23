@@ -5,6 +5,7 @@ import { isPast, pollStanding } from '../../domain/poll'
 import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
+import { eventSessions } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 
 // The Event link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
@@ -40,17 +41,21 @@ export default defineEventHandler(async (event) => {
 
   const standing = pollStanding({ slots, votes, memberIds: members.map(row => row.id), viewerId: user.id, now })
 
+  const sessions = await eventSessions(db, eventRow.id)
+
   return {
     event: {
       slug: eventRow.slug,
       name: eventRow.name,
       phase: eventRow.phase,
-      dateMode: eventRow.dateMode,
-      startsAt: eventRow.startsAt,
-      // Set while a Reopen notice is due: the Date that was withdrawn (#14). Cleared by the next Date.
-      previousStartsAt: eventRow.previousStartsAt,
       isHost,
     },
+    // Each Session's Date; a Session's previousStartsAt is set while a Reopen notice is due (#14).
+    sessions: sessions.map(session => ({
+      id: session.id,
+      startsAt: session.startsAt?.toISOString() ?? null,
+      previousStartsAt: session.previousStartsAt?.toISOString() ?? null,
+    })),
     // The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on.
     inviteUrl: isHost ? inviteUrl(event, eventRow.slug, eventRow.inviteToken) : null,
     viewerId: user.id,

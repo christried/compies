@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
-import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -61,6 +61,10 @@ describe('events', () => {
     return testDb.db.select().from(events)
   }
 
+  async function sessionRows(eventId: string) {
+    return testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId))
+  }
+
   describe('POST /api/e', () => {
     it('requires sign-in', async () => {
       expect((await create(undefined, poll())).status).toBe(401)
@@ -92,12 +96,10 @@ describe('events', () => {
         slug,
         name: 'Freitags-Zocken',
         phase: 'poll',
-        dateMode: 'poll',
-        startsAt: null,
         hostId: host!.id,
-        icsSequence: 0,
         deletedAt: null,
       })
+      expect(await sessionRows(event!.id)).toEqual([{ id: expect.any(String), eventId: event!.id, startsAt: null, previousStartsAt: null, slotId: null, icsSequence: 0 }])
       expect(inviteUrl.endsWith(`${slug}-${event!.inviteToken}`)).toBe(true)
       expect(event!.inviteToken).toMatch(/^[A-Za-z0-9]{12}$/)
 
@@ -118,11 +120,8 @@ describe('events', () => {
 
       expect(response.status).toBe(200)
       const [event] = await eventRows()
-      expect(event).toMatchObject({
-        phase: 'date_set',
-        dateMode: 'direct',
-        startsAt: new Date('2090-11-07T19:00:00Z'),
-      })
+      expect(event).toMatchObject({ phase: 'date_set' })
+      expect(await sessionRows(event!.id)).toMatchObject([{ startsAt: new Date('2090-11-07T19:00:00Z'), slotId: null }])
       expect(await testDb.db.select().from(pollSlots)).toEqual([])
     })
 
@@ -159,16 +158,14 @@ describe('events', () => {
       const response = await read(cookie, slug)
 
       expect(response.status).toBe(200)
-      const { event, slots } = await response.json()
+      const { event, slots, sessions } = await response.json()
       expect(event).toEqual({
         slug,
         name: 'Freitags-Zocken',
         phase: 'poll',
-        dateMode: 'poll',
-        startsAt: null,
-        previousStartsAt: null,
         isHost: true,
       })
+      expect(sessions).toEqual([{ id: expect.any(String), startsAt: null, previousStartsAt: null }])
       expect(slots.map((slot: { startsAt: string }) => slot.startsAt)).toEqual([
         '2090-10-30T19:30:00.000Z',
         '2090-10-31T18:00:00.000Z',
@@ -180,9 +177,10 @@ describe('events', () => {
       const cookie = await signInAsHost()
       const { slug } = await (await create(cookie, { name: 'Abend', dateMode: 'direct', startsAt: '2090-11-07T20:00' })).json()
 
-      const { event, slots } = await (await read(cookie, slug)).json()
+      const { event, slots, sessions } = await (await read(cookie, slug)).json()
 
-      expect(event).toMatchObject({ phase: 'date_set', dateMode: 'direct', startsAt: '2090-11-07T19:00:00.000Z' })
+      expect(event).toMatchObject({ phase: 'date_set' })
+      expect(sessions).toMatchObject([{ startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null }])
       expect(slots).toEqual([])
     })
 

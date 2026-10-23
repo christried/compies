@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import createEvent from '../../server/api/e/index.post'
 import listHome from '../../server/api/e/index.get'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -137,7 +137,6 @@ describe('GET /api/e (Home)', () => {
       name: 'Freitags-Zocken',
       host: { name: 'Hostess' },
       phase: 'poll',
-      dateMode: 'poll',
       startsAt: null,
       createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*Z$/),
       bestSlot: { id: poll.slotIdAt('2090-10-31T18:00:00.000Z'), startsAt: '2090-10-31T18:00:00.000Z' },
@@ -186,8 +185,8 @@ describe('GET /api/e (Home)', () => {
     await addMember(gone.eventId, guestUser.id)
     await addMember(recent.eventId, guestUser.id)
     const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000)
-    await testDb.db.update(events).set({ startsAt: hoursAgo(30) }).where(eq(events.id, gone.eventId))
-    await testDb.db.update(events).set({ startsAt: hoursAgo(2) }).where(eq(events.id, recent.eventId))
+    await testDb.db.update(sessions).set({ startsAt: hoursAgo(30) }).where(eq(sessions.eventId, gone.eventId))
+    await testDb.db.update(sessions).set({ startsAt: hoursAgo(2) }).where(eq(sessions.eventId, recent.eventId))
 
     const { events: listed } = await (await list(guestUser.cookie)).json()
 

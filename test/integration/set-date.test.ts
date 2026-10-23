@@ -5,7 +5,7 @@ import createEvent from '../../server/api/e/index.post'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import downloadIcs from '../../server/api/e/[slug]/ics.get'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -98,6 +98,12 @@ describe('setting the Date and the .ics', () => {
     return row!
   }
 
+  /** The Event's one Session (#48), which carries the Date. */
+  async function sessionOf(eventId: string) {
+    const [row] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId))
+    return row!
+  }
+
   describe('POST /api/e/:slug/confirm', () => {
     it('requires sign-in', async () => {
       const cookie = await signInAsHost()
@@ -108,18 +114,20 @@ describe('setting the Date and the .ics', () => {
 
     it('moves a poll to date_set at the chosen Berlin time, stored in UTC, and clears the previous Date', async () => {
       const cookie = await signInAsHost()
-      const { slug, eventId } = await createPoll(cookie)
-      await testDb.db.update(events).set({ previousStartsAt: new Date('2090-10-29T18:00:00.000Z') }).where(eq(events.id, eventId))
+      const { slug, eventId, slotIds } = await createPoll(cookie)
+      await testDb.db.update(sessions).set({ previousStartsAt: new Date('2090-10-29T18:00:00.000Z') }).where(eq(sessions.eventId, eventId))
 
       const response = await confirm(cookie, slug, { startsAt: '2090-10-31T19:00' })
 
       expect(response.status).toBe(200)
       expect(await response.json()).toEqual({ startsAt: '2090-10-31T18:00:00.000Z' })
-      expect(await eventRow(eventId)).toMatchObject({
-        phase: 'date_set',
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })
+      // The Date sits on the Session, which refers to the Slot at that time (the second one).
+      expect(await sessionOf(eventId)).toMatchObject({
         startsAt: new Date('2090-10-31T18:00:00.000Z'),
         previousStartsAt: null,
         icsSequence: 0,
+        slotId: slotIds[1],
       })
     })
 
@@ -208,15 +216,16 @@ describe('setting the Date and the .ics', () => {
       const response = await confirm(cookie, slug, { startsAt: '2090-10-30T20:30' })
 
       expect(response.status).toBe(409)
-      expect((await eventRow(eventId)).startsAt).toEqual(new Date('2090-10-31T18:00:00.000Z'))
+      expect((await sessionOf(eventId)).startsAt).toEqual(new Date('2090-10-31T18:00:00.000Z'))
     })
   })
 
   describe('GET /api/e/:slug/ics', () => {
-    it('serves the Date to a Member as an .ics with a stable UID per Event', async () => {
+    it('serves the Date to a Member as an .ics with a stable UID per Session', async () => {
       const cookie = await signInAsHost()
       const { slug, eventId } = await createPoll(cookie)
       await confirm(cookie, slug, { startsAt: '2090-10-31T19:00' })
+      const session = await sessionOf(eventId)
 
       const response = await ics(cookie, slug)
 
@@ -224,7 +233,7 @@ describe('setting the Date and the .ics', () => {
       expect(response.headers.get('content-type')).toContain('text/calendar')
       expect(response.headers.get('content-disposition')).toBe(`attachment; filename="${slug}.ics"`)
       const body = await response.text()
-      expect(body).toContain(`UID:${eventId}@compies`)
+      expect(body).toContain(`UID:${session.id}@compies`)
       expect(body).toContain('DTSTART:20901031T180000Z')
       expect(body).toContain('SEQUENCE:0')
       expect(body).toContain('TRIGGER:-PT1H')
@@ -236,12 +245,12 @@ describe('setting the Date and the .ics', () => {
       const cookie = await signInAsHost()
       const { slug, eventId } = await createPoll(cookie)
       await confirm(cookie, slug, { startsAt: '2090-10-31T19:00' })
-      await testDb.db.update(events).set({ icsSequence: 2 }).where(eq(events.id, eventId))
+      await testDb.db.update(sessions).set({ icsSequence: 2 }).where(eq(sessions.eventId, eventId))
 
       const body = await (await ics(cookie, slug)).text()
 
       expect(body).toContain('SEQUENCE:2')
-      expect(body).toContain(`UID:${eventId}@compies`)
+      expect(body).toContain(`UID:${(await sessionOf(eventId)).id}@compies`)
     })
 
     it('works for a direct Event from the moment it is created', async () => {

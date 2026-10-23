@@ -28,8 +28,12 @@ describe('setDateRejection', () => {
 })
 
 describe('setDateValues', () => {
-  it('moves to date_set, sets the Date and forgets the previous one', () => {
-    expect(setDateValues(later)).toEqual({ phase: 'date_set', startsAt: later, previousStartsAt: null })
+  it('moves the Event to date_set and gives its Session the Date and the Slot it came from, forgetting the previous Date', () => {
+    expect(setDateValues(later, 'slot-1')).toEqual({ phase: 'date_set', session: { startsAt: later, previousStartsAt: null, slotId: 'slot-1' } })
+  })
+
+  it('leaves the Slot empty when the Date matches no Slot', () => {
+    expect(setDateValues(later, null).session.slotId).toBeNull()
   })
 })
 
@@ -70,7 +74,7 @@ describe('reopenRejection', () => {
 })
 
 describe('reopenValues', () => {
-  it('goes back to the poll with dateMode poll and no Date; the handler keeps the old Date as previousStartsAt', () => {
-    expect(reopenValues()).toEqual({ phase: 'poll', dateMode: 'poll', startsAt: null })
+  it('goes back to the poll and frees the Session of its Date and Slot; the handler keeps the old Date as previousStartsAt', () => {
+    expect(reopenValues()).toEqual({ phase: 'poll', session: { startsAt: null, slotId: null } })
   })
 })
