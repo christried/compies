@@ -41,7 +41,7 @@ const valueOf = computed(() => {
 const LOOK: Record<VoteValue | 'open', { key: string, icon?: typeof Check, cell: string }> = {
   yes: { key: 'poll.yes', icon: Check, cell: 'bg-success text-on-success border-solid rounded-full' },
   maybe: { key: 'poll.maybe', icon: Minus, cell: 'bg-warning text-on-warning border-solid rounded-full' },
-  no: { key: 'poll.no', icon: X, cell: 'bg-surface text-ink border-solid rounded-[6px]' },
+  no: { key: 'poll.no', icon: X, cell: 'bg-error text-on-error border-solid rounded-[6px]' },
   open: { key: 'mvp.poll.notVoted', cell: 'bg-transparent text-ink-3 border-dashed rounded-full' },
 }
 

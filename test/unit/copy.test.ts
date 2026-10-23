@@ -38,6 +38,11 @@ describe('copy rules', () => {
     expect(hits).toEqual([])
   })
 
+  it('calls the middle vote option Meh everywhere, never „Wenn nötig“', () => {
+    const hits = entries.filter(e => /wenn nötig/i.test(e.value)).map(e => e.key)
+    expect(hits).toEqual([])
+  })
+
   it('names no design cookie while the app is light only', () => {
     const hits = entries.filter(e => /nuxt-color-mode|design-cookie/i.test(e.value)).map(e => e.key)
     expect(hits).toEqual([])

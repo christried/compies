@@ -199,9 +199,70 @@ describe('the Event poll', () => {
     await radio(page, 'Sa 24.10. 20:00', 'Ja').trigger('keydown', { key: 'ArrowRight' })
 
     await vi.waitFor(() => expect(saved).toEqual({ value: 'maybe' }))
-    await vi.waitFor(() => expect(radio(page, 'Sa 24.10. 20:00', 'Wenn nötig').attributes('aria-checked')).toBe('true'))
+    await vi.waitFor(() => expect(radio(page, 'Sa 24.10. 20:00', 'Meh').attributes('aria-checked')).toBe('true'))
     const group = page.get('[role="radiogroup"][aria-label="Sa 24.10. 20:00"]')
     expect(group.findAll('[role="radio"]').map((option: Wrapper) => option.attributes('tabindex'))).toEqual(['-1', '0', '-1'])
+  })
+
+  it('explains the three options in a legend above the Slot cards', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    const legend = page.get('[data-testid="vote-legend"]')
+    expect(legend.text()).toContain('Ja')
+    expect(legend.text()).toContain('Ich kann da!')
+    expect(legend.text()).toContain('Meh')
+    expect(legend.text()).toContain('Krieg ich hin.')
+    expect(legend.text()).toContain('Nein')
+    expect(legend.text()).toContain('Wird nichts bei mir.')
+  })
+
+  it('draws a selected Nein in the error red with dark text, and a Nein cell in the matrix as a red square', async () => {
+    const store = serve(s => view(s, [...sanneAndLarsi, { slotId: 'fri', userId: kitty.id, value: 'no' }]))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+
+    const selected = radio(page, 'Fr 23.10. 20:00', 'Nein')
+    expect(selected.classes()).toEqual(expect.arrayContaining(['bg-error', 'text-on-error']))
+    const cell = page.get('table td[title="Nein"] span')
+    expect(cell.classes()).toEqual(expect.arrayContaining(['bg-error', 'text-on-error']))
+  })
+
+  it('saves only the last of several quick arrow presses, and the selection follows each press', async () => {
+    const saved: { value: string }[] = []
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const store = serve(s => view(s, sanneAndLarsi))
+    registerEndpoint(`/api/e/${store.slug}/slots/sat/vote`, {
+      method: 'PUT',
+      handler: async (event) => {
+        const body = await readBody(event) as { value: 'yes' | 'maybe' | 'no' }
+        saved.push(body)
+        if (saved.length === 1) await gate
+        store.set(view(store.slug, [...sanneAndLarsi, { slotId: 'sat', userId: kitty.id, value: body.value }], { progress: { voted: 3, total: 3 } }))
+        return { slotId: 'sat', value: body.value }
+      },
+    })
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+    const group = page.get('[role="radiogroup"][aria-label="Sa 24.10. 20:00"]')
+    const press = async () => {
+      await group.get('[aria-checked="true"], [role="radio"][tabindex="0"]').trigger('keydown', { key: 'ArrowRight' })
+    }
+
+    await press()
+    expect(radio(page, 'Sa 24.10. 20:00', 'Meh').attributes('aria-checked')).toBe('true')
+    await press()
+    expect(radio(page, 'Sa 24.10. 20:00', 'Nein').attributes('aria-checked')).toBe('true')
+    await press()
+    expect(radio(page, 'Sa 24.10. 20:00', 'Ja').attributes('aria-checked')).toBe('true')
+
+    release()
+
+    await vi.waitFor(() => expect(saved).toEqual([{ value: 'maybe' }, { value: 'yes' }]))
+    await vi.waitFor(() => expect(radio(page, 'Sa 24.10. 20:00', 'Ja').attributes('aria-checked')).toBe('true'))
   })
 
   it('does not take a vote with the arrow keys on a past Slot', async () => {

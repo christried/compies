@@ -61,23 +61,39 @@ function myVoteFor(slotId: string): VoteValue | null {
   return shownVotes.value.find(vote => vote.slotId === slotId && vote.userId === viewerId.value)?.value ?? null
 }
 
+function dropPending(slotId: string) {
+  pending.value = Object.fromEntries(Object.entries(pending.value).filter(([key]) => key !== slotId))
+}
+
+/** The Slots with a Vote on its way to the server. */
+const sending = new Set<string>()
+
+// Quick presses: the drawn choice follows each press at once, but while a Vote is in flight the later
+// choices wait, and only the newest of them is sent (#50). A failed save falls back to the saved Vote.
 async function vote(slotId: string, value: VoteValue) {
   pending.value = { ...pending.value, [slotId]: value }
+  if (sending.has(slotId)) return
+  sending.add(slotId)
   try {
-    await $fetch(`/api/e/${slug.value}/slots/${slotId}/vote`, { method: 'PUT', body: { value } })
-    savedNote.value = true
+    let sent: VoteValue | undefined = value
+    while (sent !== undefined) {
+      await $fetch(`/api/e/${slug.value}/slots/${slotId}/vote`, { method: 'PUT', body: { value: sent } })
+      savedNote.value = true
+      const newest: VoteValue | undefined = pending.value[slotId]
+      sent = newest === sent ? undefined : newest
+    }
   }
   catch (failure) {
     // Only a rate limit gets its own copy; any other refusal is the plain "did not arrive" (#11).
     const rateLimited = apiFailure(failure).code === 'rate_limited'
     toast({ tone: 'error', text: t(rateLimited ? 'error.rateLimited' : 'error.voteFailed') })
+    dropPending(slotId)
   }
   finally {
+    sending.delete(slotId)
     // Refetch first so the server's answer replaces the drawn Vote without a flicker back to the old one.
     await refresh()
-    if (pending.value[slotId] === value) {
-      pending.value = Object.fromEntries(Object.entries(pending.value).filter(([key]) => key !== slotId))
-    }
+    if (!sending.has(slotId)) dropPending(slotId)
   }
 }
 
@@ -231,6 +247,8 @@ usePollRefresh(() => {
         >
           <b>{{ t('mvp.poll.saved') }}</b> {{ t('mvp.poll.savedText') }}
         </NoticeBanner>
+
+        <VoteLegend v-if="slots.length > 0" />
 
         <section
           v-if="slots.length === 0"
