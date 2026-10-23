@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
   modules: [
-    '@nuxt/eslint', '@nuxtjs/color-mode', '@nuxtjs/i18n', '@nuxt/fonts',
+    '@nuxt/eslint', '@nuxtjs/i18n', '@nuxt/fonts',
     // Its client plugin imports a virtual module the Nuxt test environment cannot load;
     // test/build/pwa.test.ts checks the PWA against the production build instead.
     ...(process.env.VITEST ? [] : ['@vite-pwa/nuxt']),
@@ -21,22 +21,13 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/icons/apple-touch-icon.png' },
       ],
       meta: [
-        { name: 'theme-color', content: '#fff3df', media: '(prefers-color-scheme: light)' },
-        { name: 'theme-color', content: '#17121d', media: '(prefers-color-scheme: dark)' },
+        { name: 'theme-color', content: '#fff3df' },
         { name: 'apple-mobile-web-app-title', content: 'Compies' },
       ],
     },
   },
   css: ['~/assets/css/main.css'],
 
-  // The token file switches every colour on <html data-theme="light|dark">.
-  colorMode: {
-    dataValue: 'theme',
-    classSuffix: '',
-    preference: 'system',
-    fallback: 'light',
-    storage: 'cookie',
-  },
   compatibilityDate: '2026-10-22',
   vite: { plugins: [tailwindcss()] },
   typescript: { strict: true },

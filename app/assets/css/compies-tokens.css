@@ -1,7 +1,7 @@
 /* =====================================================================
    COMPIES design tokens · v1.0 · framework-agnostic CSS custom properties
    Light = 3a "Memphis Klassik 3.0" · Dark = 3b "Bühne"
-   Mode:   <html data-theme="light|dark">  (set by @nuxtjs/color-mode: OS default + user toggle)
+   Mode:   <html data-theme="light|dark">  (light only for now; dark and system come with #43)
    Motion: <html data-motion="reduced">    (in-app setting; OS setting handled via media query)
    ===================================================================== */
 
