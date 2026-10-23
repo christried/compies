@@ -80,8 +80,12 @@ export interface HomeEvent {
   name: string
   host: { name: string }
   phase: Phase
-  /** The Date of the Event's Session (#48). Several Sessions come with #54. */
-  startsAt: string | null
+  /** How many Sessions the Event has (#54). */
+  sessionCount: number
+  /** How many Sessions still wait for a Date. */
+  missingDates: number
+  /** The next upcoming Session, else the latest passed one; null while no Session has a Date. */
+  nextSession: { number: number | null, startsAt: string } | null
   /** When the Event was created; picks the latest open poll for the Construction page (#12). */
   createdAt: string
   /** The Best slot so far, or null. */

@@ -899,7 +899,9 @@
       "view": "Ansehen",
       "emptyTitle": "Noch keine Einladung.",
       "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Bis dahin lohnt sich eine Nachfrage beim Host.",
-      "noBest": "Noch kein Termin mit Ja oder Meh."
+      "noBest": "Noch kein Termin mit Ja oder Meh.",
+      "datesStanding": "{n} von {total} Terminen steht",
+      "sessionOf": "Session {n} von {total}"
     },
     "create": {
       "back": "Zurück",
