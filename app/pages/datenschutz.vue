@@ -6,6 +6,9 @@ useHead({ title: () => `${t('legal.datenschutz.title')} | ${t('app.name')}` })
 
 <template>
   <AppShell kind="bare">
+    <div class="mx-auto flex w-full max-w-[720px] flex-col">
+      <BackLink />
+    </div>
     <LegalDocument
       doc="datenschutz"
       :sections="[

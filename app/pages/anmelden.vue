@@ -45,7 +45,9 @@ async function signIn(provider: SignInProvider) {
       method: 'POST',
       body: { provider, callbackURL: target.value, errorCallbackURL: `${SIGN_IN_PATH}?${back}`, disableRedirect: true },
     })
-    await navigateTo(url, { external: true })
+    // Not navigateTo: it stops the app scope first, which drops the colour-mode entry (data-theme)
+    // and flashes light until the provider page replaces ours (#32).
+    window.location.href = url
   }
   catch {
     busy.value = null
@@ -68,7 +70,7 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
   >
     <div class="grid flex-1 md:grid-cols-[1.15fr_1fr]">
       <div
-        class="relative flex flex-col justify-end overflow-hidden border-r-(length:--cp-bw) border-line bg-primary p-10 text-on-primary max-md:hidden"
+        class="relative flex flex-col overflow-hidden border-r-(length:--cp-bw) border-line bg-primary p-10 text-on-primary max-md:hidden"
         aria-hidden="true"
       >
         <img
@@ -76,19 +78,21 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
           alt=""
           class="absolute top-[42%] left-[60%] w-[1100px] max-w-none -translate-1/2 opacity-50"
         >
-        <div class="absolute top-[90px] right-10">
-          <Compibert
-            variant="full"
-            :size="300"
-          />
-        </div>
-        <div class="relative flex max-w-[420px] flex-col gap-2.5">
-          <p class="m-0 font-display text-[64px] leading-[.92]">
+        <!-- Headline and text on a solid sticker card, off the sunburst (#32). -->
+        <div class="relative flex max-w-[420px] flex-col gap-2.5 self-start rounded-xl bg-surface p-6 text-ink outline-memphis shadow-card">
+          <p class="m-0 font-display text-[56px] leading-[.92]">
             {{ t('auth.heroTitle') }}
           </p>
           <p class="m-0 text-[17px] font-semibold">
             {{ t('auth.heroText') }}
           </p>
+        </div>
+        <!-- Compibert stands on the bottom edge and is cut off by it, so he peeks up (#32). -->
+        <div class="absolute right-8 bottom-0 translate-y-[14%]">
+          <Compibert
+            variant="full"
+            :size="300"
+          />
         </div>
       </div>
 
