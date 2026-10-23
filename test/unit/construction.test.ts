@@ -1,30 +1,55 @@
 import { describe, expect, it } from 'vitest'
 import { constructionSite } from '../../app/utils/construction'
 
+const visitor = { hasHostPermission: false, isAdmin: false }
+const host = { hasHostPermission: true, isAdmin: false }
+const admin = { hasHostPermission: true, isAdmin: true }
+
 describe('constructionSite', () => {
-  it('maps each unbuilt hub area to its own Construction page in the hub shell', () => {
-    expect(constructionSite('/archiv')).toEqual({ area: 'archiv', shell: 'hub' })
-    expect(constructionSite('/bibliothek')).toEqual({ area: 'bibliothek', shell: 'hub' })
-    expect(constructionSite('/profil')).toEqual({ area: 'profil', shell: 'hub' })
-    expect(constructionSite('/admin')).toEqual({ area: 'admin', shell: 'hub' })
+  it('maps each unbuilt hub area to its own Construction page in the hub shell for those who may see it', () => {
+    expect(constructionSite('/archiv', visitor)).toEqual({ area: 'archiv', shell: 'hub' })
+    expect(constructionSite('/bibliothek', host)).toEqual({ area: 'bibliothek', shell: 'hub' })
+    expect(constructionSite('/profil', visitor)).toEqual({ area: 'profil', shell: 'hub' })
+    expect(constructionSite('/admin', admin)).toEqual({ area: 'admin', shell: 'hub' })
   })
 
   it('keeps the area for deeper paths and trailing slashes', () => {
-    expect(constructionSite('/archiv/')).toEqual({ area: 'archiv', shell: 'hub' })
-    expect(constructionSite('/admin/users')).toEqual({ area: 'admin', shell: 'hub' })
+    expect(constructionSite('/archiv/', visitor)).toEqual({ area: 'archiv', shell: 'hub' })
+    expect(constructionSite('/admin/users', admin)).toEqual({ area: 'admin', shell: 'hub' })
+  })
+
+  it('shows the generic state for Bibliothek to Users without the Host permission', () => {
+    expect(constructionSite('/bibliothek', visitor)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/bibliothek/', visitor)).toEqual({ area: 'generic', shell: 'hub' })
+  })
+
+  it('shows Bibliothek to the Platform admin even without a Host permission flag', () => {
+    expect(constructionSite('/bibliothek', { hasHostPermission: false, isAdmin: true })).toEqual({ area: 'bibliothek', shell: 'hub' })
+  })
+
+  it('shows the generic state for Admin to everyone but the Platform admin', () => {
+    expect(constructionSite('/admin', visitor)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/admin', host)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/admin/users', host)).toEqual({ area: 'generic', shell: 'hub' })
+  })
+
+  it('treats a signed-out visitor like a User without rights', () => {
+    expect(constructionSite('/bibliothek', null)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/admin', null)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/archiv', null)).toEqual({ area: 'archiv', shell: 'hub' })
   })
 
   it('shows the Spielbrett state in the session shell', () => {
-    expect(constructionSite('/s/freitags-zocken-k7q2/brett')).toEqual({ area: 'brett', shell: 'session' })
+    expect(constructionSite('/s/freitags-zocken-k7q2/brett', visitor)).toEqual({ area: 'brett', shell: 'session' })
   })
 
   it('shows the generic state for any other Session sub-route', () => {
-    expect(constructionSite('/s/freitags-zocken-k7q2/tabelle')).toEqual({ area: 'generic', shell: 'session' })
-    expect(constructionSite('/s/freitags-zocken-k7q2/chat/old')).toEqual({ area: 'generic', shell: 'session' })
+    expect(constructionSite('/s/freitags-zocken-k7q2/tabelle', visitor)).toEqual({ area: 'generic', shell: 'session' })
+    expect(constructionSite('/s/freitags-zocken-k7q2/chat/old', visitor)).toEqual({ area: 'generic', shell: 'session' })
   })
 
   it('shows the generic state in the hub shell for unknown areas', () => {
-    expect(constructionSite('/crews')).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/archivxyz')).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/crews', visitor)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/archivxyz', visitor)).toEqual({ area: 'generic', shell: 'hub' })
   })
 })

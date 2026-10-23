@@ -36,7 +36,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
   >
     <button
       type="button"
-      class="hit-44 grid place-items-center rounded-pill"
+      class="group hit-44 grid place-items-center rounded-pill lift"
       aria-haspopup="menu"
       :aria-expanded="open"
       :aria-label="t('auth.accountMenu', { name })"
@@ -45,7 +45,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
       <UserAvatar
         :name="name"
         :image="user.image"
-        :size="32"
+        :size="40"
+      />
+      <!-- The opaque avatar covers the button, so the reduced-motion hover tint sits on this layer above it. -->
+      <span
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 rounded-pill reduced:group-hover:tint motion-reduce:group-hover:tint"
       />
     </button>
 
@@ -63,7 +68,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
         :key="page"
         :to="`/${page}`"
         role="menuitem"
-        class="flex h-control-md items-center rounded-md px-3 font-bold text-ink no-underline hover:bg-paper-2"
+        class="flex h-control-md items-center rounded-md px-3 font-bold text-ink no-underline hover:tint"
         @click="open = false"
       >
         {{ t(`legal.links.${page}`) }}
@@ -71,7 +76,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
       <button
         type="button"
         role="menuitem"
-        class="flex h-control-md items-center gap-2.5 rounded-md px-3 text-left font-bold text-ink hover:bg-paper-2"
+        class="flex h-control-md items-center gap-2.5 rounded-md px-3 text-left font-bold text-ink hover:tint"
         @click="signOut"
       >
         <AppIcon :icon="LogOut" />

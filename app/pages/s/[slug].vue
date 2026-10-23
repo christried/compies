@@ -118,6 +118,40 @@ const previousWhen = computed(() => {
   return t('mvp.set.dateTime', { date: formatSetDay(instant), time: formatSlotTime(instant) })
 })
 
+// The Reopen notice stays closed in this browser for this Session and this withdrawn Date. A later
+// Reopen with another Date has another value, so it shows again. Without storage it returns on reload.
+const REOPEN_KEY_PREFIX = 'compies-reopen-closed:'
+const closedReopenAt = ref<string | null>(null)
+// False during SSR and until the stored state is read, so a closed notice never paints.
+const storageRead = ref(false)
+const reopenNoticeShown = computed(() => {
+  const previous = data.value?.session.previousStartsAt
+  return storageRead.value && Boolean(previous) && previous !== closedReopenAt.value
+})
+
+function closeReopenNotice() {
+  const previous = data.value?.session.previousStartsAt
+  if (!previous) return
+  closedReopenAt.value = previous
+  try {
+    localStorage.setItem(REOPEN_KEY_PREFIX + slug.value, previous)
+  }
+  catch {
+    // Storage blocked: the notice comes back after a reload.
+  }
+}
+
+// Storage exists only in the browser, so the closed Date is read after mount, not during SSR.
+onMounted(() => {
+  try {
+    closedReopenAt.value = localStorage.getItem(REOPEN_KEY_PREFIX + slug.value)
+  }
+  catch {
+    // Storage blocked: nothing is remembered.
+  }
+  storageRead.value = true
+})
+
 const editing = ref(false)
 const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
   id: slot.id,
@@ -170,9 +204,10 @@ usePollRefresh(() => {
     >
       <template v-if="data.session.phase === 'poll'">
         <NoticeBanner
-          v-if="previousWhen"
+          v-if="reopenNoticeShown"
           tone="warning"
           :icon="CircleAlert"
+          @close="closeReopenNotice"
         >
           {{ t('mvp.reopen.notice', { when: previousWhen }) }}
         </NoticeBanner>
@@ -199,6 +234,7 @@ usePollRefresh(() => {
           v-if="savedNote"
           tone="success"
           :icon="Check"
+          @close="savedNote = false"
         >
           <b>{{ t('mvp.poll.saved') }}</b> {{ t('mvp.poll.savedText') }}
         </NoticeBanner>

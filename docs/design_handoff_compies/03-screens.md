@@ -14,7 +14,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Layout:** Hub shell. Desktop: header 64 + HubNav (Sessions active, Archiv/Bibliothek/Profil with tape marker), content max 1040, title row (kicker „Hallo {name}“, h1 44 px, host CTA right), section „Deine Sessions“ as 2-col card grid (gap 14), BaustelleZone below. Mobile (<600): h1 32, 1-col cards, bottom tab bar with the same 4 items (markers top-right). Tablet 600–979: 2-col cards, tab bar.
 - **Components:** AppShell, AppHeader, HubNav, NavSoonMarker, AppButton, PhasePill, session card (local), EmptyState, BaustelleZone, Compibert (bust, sleep)
 - **Data:** Sessions the user is a member of: name, host name, phase, best slot so far (or confirmed date), votedCount/total, my vote status.
-- **Host vs player:** Host (canHost): „Neue Terminumfrage“ (primary) in the title row. Without the right: no button, no notice. Card CTA: „Öffnen“ (host) / „Abstimmen“ (not voted, primary) / „Ansehen“ (voted or date set).
+- **Host vs player:** Host (canHost): „Neue Terminumfrage“ (primary) in the title row. Without the right: no button, no notice. Nav: Bibliothek only with the Host permission or as Platform admin; Admin only as Platform admin. Card CTA: „Öffnen“ (host) / „Abstimmen“ (not voted, primary) / „Ansehen“ (voted or date set).
 - **States:** Host mit Umfragen · Eingeladen, noch nicht abgestimmt · Noch keine Einladung (empty) · loading (SkeletonCard ×2) · error (FullScreenState generic)
 - **Realtime:** MVP: refetch on focus. 1.0: none needed on Home (push covers changes).
 
@@ -47,7 +47,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Layout:** Hub shell (Archiv, Bibliothek, Profil, Admin) or session shell (Spielbrett and any session sub-route). ConstructionPage fills the stage: desktop row (Compibert 250 + text column max 520, title 56); mobile column centred (Compibert 170, title 36). Tape top, fence/barrier/sign/cone bottom.
 - **Components:** ConstructionPage (BaustelleZone hero), Compibert (full, still, hard hat), AppButton
 - **Data:** Area key from the route; link to the user's most relevant poll (latest open) or Home.
-- **Host vs player:** Same for everyone.
+- **Host vs player:** Bibliothek only for Users with the Host permission and the Platform admin; for everyone else the address shows the generic state (no hint that the Game library exists). Admin only for the Platform admin; for everyone else the generic state. Otherwise same for everyone.
 - **States:** Archiv · Bibliothek · Profil (+ „Abmelden“) · Spielbrett (Session) · Admin · generic
 - **Realtime:** —
 

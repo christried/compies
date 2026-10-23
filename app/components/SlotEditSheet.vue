@@ -160,7 +160,7 @@ async function remove(slotId: string) {
       <div class="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          class="hit-44 inline-flex items-center gap-1.5 self-start rounded-pill border-[2.5px] border-dashed border-line px-3.5 text-small font-bold text-ink outline-memphis aria-disabled:text-ink-3"
+          class="hit-44 inline-flex items-center gap-1.5 self-start rounded-pill border-[2.5px] border-dashed border-line px-3.5 text-small font-bold text-ink outline-memphis lift aria-disabled:text-ink-3 aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
           :aria-disabled="addBlocked || busy ? 'true' : undefined"
           :aria-describedby="newSlot === '' ? blockerId : undefined"
         >

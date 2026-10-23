@@ -2,6 +2,7 @@
 import fullSvg from '~/assets/compibert/compibert-full.svg?raw'
 import headSvg from '~/assets/compibert/compibert-head.svg?raw'
 
+// The bust is a framed upper-body pose: its round sticker frame is part of the pose, so every use gets it.
 // MVP: still poses only (head in the header, full body on the Construction page).
 // The animated rig with states and the CompibertBus lands in 1.0 (04-motion § Compibert).
 const props = withDefaults(defineProps<{
@@ -43,7 +44,10 @@ const markup = computed(() => {
   <!-- eslint-disable vue/no-v-html -- the rig is our own static asset, not user content -->
   <span
     class="compibert block flex-none"
-    :class="variant === 'full' ? 'overflow-visible' : 'overflow-hidden'"
+    :class="[
+      variant === 'full' ? 'overflow-visible' : 'overflow-hidden',
+      variant === 'bust' ? 'rounded-full border-(length:--cp-bw) border-line bg-surface shadow-sticker' : '',
+    ]"
     :style="{
       'width': size ? `${size}px` : '100%',
       'aspectRatio': ASPECT[variant],

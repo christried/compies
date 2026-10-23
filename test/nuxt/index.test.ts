@@ -58,7 +58,7 @@ describe('home page', () => {
     const page = await mountSuspended(IndexPage)
     await settle(page)
 
-    expect(page.text()).toContain('COMPIES')
+    expect(page.text()).toContain('Compies')
     expect(page.get('h1').text()).toBe('Wann zocken wir?')
     expect(page.get('h3').text()).toBe('Freitags-Zocken')
   })
@@ -126,7 +126,7 @@ describe('home page', () => {
     await settle(page)
 
     expect(page.text()).toContain('Bester Termin bisher')
-    expect(page.text()).toContain('Termin steht, .ics bereit')
+    expect(page.text()).toContain('Termin steht')
   })
 
   it('shows the error state with a retry when the list fails to load', async () => {

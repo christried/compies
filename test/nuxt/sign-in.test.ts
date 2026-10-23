@@ -16,6 +16,8 @@ describe('SignInCard', () => {
     expect(card.get('h1').text()).toBe('Anmelden')
     expect(card.findAll('button').map(b => b.text())).toEqual(['Mit Discord anmelden', 'Mit Twitch anmelden'])
     expect(card.find('[role="alert"]').exists()).toBe(false)
+    expect(card.text()).toContain('Einfach nur mit dem Konto, mit dem du eh schon zockst, und das war’s.')
+    expect(card.text()).toContain('Die Konten lassen sich später im Profil verknüpfen.')
   })
 
   it('Über Einladung: names the Host and the Session', async () => {
@@ -63,6 +65,13 @@ describe('sign-in page', () => {
     const page = await mountSuspended(SignInPage, { route: '/anmelden?redirect=%2Fs%2Ffreitags-zocken-k7q2-Ab3dE6gH9jK1' })
 
     expect(page.get('h1').text()).toBe('Erst kurz anmelden')
+  })
+
+  it('shows the new hero title', async () => {
+    const page = await mountSuspended(SignInPage, { route: '/anmelden' })
+
+    expect(page.text()).toContain('Wer gewinnt diesmal?')
+    expect(page.text()).not.toContain('Wer gewinnt heute Abend?')
   })
 
   it('shows the cancelled state when the provider sent the visitor back', async () => {

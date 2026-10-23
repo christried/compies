@@ -182,8 +182,8 @@ Big choice cards (format, mode, points preset, date mode).
 
 2–4 short exclusive options (Terminumfrage / Direkt festlegen, Desktop filter chips).
 
-- **Props / variants:** `options: {value,label,icon?}[]`, `modelValue`
-- **States:** selected (ink fill, paper text) · focus
+- **Props / variants:** `options: {value,label,icon?,fill?}[]`, `modelValue`, `label`, `disabled?`. An option's `fill` (e.g. success for „Ja“) replaces the ink fill when it is selected; `icon` is drawn before the label.
+- **States:** selected (ink fill, paper text, or the option's own `fill`) · focus · disabled (a past Slot: the options show, none is selected, no pointer and no hover tint)
 - **Slots:** —
 - **Desktop / mobile:** Same; full width on mobile.
 - **Accessibility:** `role="radiogroup"` with radios (or buttons with `aria-pressed` for filters).
@@ -243,7 +243,7 @@ Short confirm for consequential but reversible actions (confirm date, start sess
 Transient feedback („Link kopiert“, „X war schneller“, vote failed).
 
 - **Props / variants:** `toast({tone: success | info | warning | error, text, action?, duration?})`
-- **States:** enter · visible · leave; max 3 stacked; errors stay until dismissed
+- **States:** enter · visible · leave; max 3 stacked; errors stay until dismissed. Every toast has an ✕ that dismisses it.
 - **Slots:** —
 - **Desktop / mobile:** Desktop bottom centre above the dock; mobile above the tab bar.
 - **Accessibility:** `role="status"` (errors `role="alert"`); action reachable by keyboard; auto-dismiss pauses on hover/focus.
@@ -255,7 +255,7 @@ Transient feedback („Link kopiert“, „X war schneller“, vote failed).
 Inline notices (team selection locked, uneven teams, pool warning).
 
 - **Props / variants:** `tone`, `icon`, `hostOnly?: boolean`, `action?`
-- **States:** default · host-only (chip „Nur du siehst das“)
+- **States:** default · host-only (chip „Nur du siehst das“). Every notice has an ✕: it emits `close`, and the page decides what closing means.
 - **Slots:** default, `#action`
 - **Desktop / mobile:** Same.
 - **Accessibility:** `role="status"` when it appears live, else plain text.
@@ -384,9 +384,9 @@ Logo (Compibert head), hub nav or session title + phase pill, invite button, sou
 ## HubNav
 **Scope:** [MVP] · **Ref:** AppFrame
 
-Main navigation: Sessions, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin).
+Main navigation: Sessions, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin). Bibliothek only for Users with the Host permission and the Platform admin; Admin only for the Platform admin.
 
-- **Props / variants:** `current`, `soon: string[]` (MVP: archiv, bibliothek, profil)
+- **Props / variants:** `current`, `canHost`, `isAdmin`, `soon: string[]` (MVP: archiv, bibliothek, profil)
 - **States:** active (3 px hot underline, offset icon) · soon (NavSoonMarker)
 - **Slots:** —
 - **Desktop / mobile:** Desktop header nav; mobile = bottom TabBar with the same items.
@@ -1011,6 +1011,7 @@ Past sessions you played in; read-only detail.
 The mascot: inline SVG rig + GSAP + state machine.
 
 - **Props / variants:** `variant: head | bust | full | emote | tail`, `size`, `state`, `still?: boolean`, `accessory?: "hardhat"` (MVP)
+- **Framed pose:** the bust is a framed upper-body pose with a round sticker frame, and the frame is part of the pose, so every use shows it (empty states, the set Date, sign-in). Head and full have no frame.
 - **States:** 16 states (see 04-motion)
 - **Slots:** —
 - **Desktop / mobile:** Max one animated full body at a time.

@@ -132,12 +132,10 @@ const MODES = computed(() => [
         v-if="created"
         class="flex flex-col gap-5 rounded-xl border-3 border-line bg-surface p-5 shadow-card md:flex-row md:items-center"
       >
-        <div
-          class="w-[120px] flex-none"
-          aria-hidden="true"
-        >
-          <Compibert variant="bust" />
-        </div>
+        <Compibert
+          variant="bust"
+          :size="120"
+        />
         <div class="flex min-w-0 flex-1 flex-col gap-3">
           <h1
             ref="doneHeading"
@@ -147,7 +145,7 @@ const MODES = computed(() => [
             {{ t('mvp.create.doneTitle', { name: trimmedName }) }}
           </h1>
           <p class="m-0 font-semibold text-pretty">
-            {{ mode === 'poll' ? t('mvp.create.doneText', { n: slots.length }) : t('mvp.create.doneDirectText') }}
+            {{ mode === 'poll' ? t('mvp.create.doneText') : t('mvp.create.doneDirectText') }}
           </p>
           <InviteLinkCard :url="created.inviteUrl" />
           <NuxtLink
@@ -219,7 +217,7 @@ const MODES = computed(() => [
           <button
             v-if="slots.length < SLOTS_MAX"
             type="button"
-            class="hit-44 inline-flex items-center gap-1.5 self-start rounded-pill border-[2.5px] border-dashed border-line px-3.5 text-small font-bold text-ink outline-memphis"
+            class="hit-44 inline-flex items-center gap-1.5 self-start rounded-pill border-[2.5px] border-dashed border-line px-3.5 text-small font-bold text-ink outline-memphis lift"
             @click="addSlot"
           >
             <AppIcon

@@ -3,7 +3,7 @@ import { Plus } from '@lucide/vue'
 import type { HomeView } from '~~/shared/session'
 
 // Home (screen M1, #12): every Session the User is a Member of, in the order the server sends (open
-// polls to vote on, other open polls, Dates upcoming first). Hosts (canHost) get „Neue Terminumfrage“.
+// polls to vote on, other open polls, Dates upcoming first). Users with the Host permission get „Neue Terminumfrage“.
 // The list shows two skeleton cards while it loads, one friendly empty state for new Users (Hosts
 // included, #1 story 21) and a generic error with a retry. It refetches on window focus and when the
 // tab becomes visible again (ADR 0001), not on a timer.
@@ -38,6 +38,7 @@ useRefreshOnReturn(refresh)
           v-if="user?.canHost"
           to="/neu"
           size="lg"
+          class="aura"
         >
           <template #icon>
             <AppIcon :icon="Plus" />

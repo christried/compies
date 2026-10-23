@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { Archive, Gamepad2, House, Shield, User } from '@lucide/vue'
 import type { Component } from 'vue'
-import { HUB_SITES } from '~/utils/construction'
+import { canSeeAdmin, canSeeLibrary, type ConstructionViewer, HUB_SITES } from '~/utils/construction'
 
 // Main navigation: the header nav on desktop, the bottom tab bar below md.
 const props = withDefaults(defineProps<{
   layout: 'header' | 'tabs'
-  /** Platform admins also see Admin. */
-  isAdmin?: boolean
-}>(), { isAdmin: false })
+  /** Who sees the hidden areas (Bibliothek, Admin); null when signed out. The rules live in construction.ts. */
+  viewer?: ConstructionViewer | null
+}>(), { viewer: null })
 
 const { t } = useI18n()
 const route = useRoute()
@@ -18,9 +18,9 @@ interface NavItem { key: string, to: string, label: string, icon: Component }
 const items = computed<NavItem[]>(() => [
   { key: 'sessions', to: '/', label: t('nav.sessions'), icon: House },
   { key: 'archiv', to: '/archiv', label: t('nav.archive'), icon: Archive },
-  { key: 'bibliothek', to: '/bibliothek', label: t('nav.library'), icon: Gamepad2 },
+  ...(canSeeLibrary(props.viewer) ? [{ key: 'bibliothek', to: '/bibliothek', label: t('nav.library'), icon: Gamepad2 }] : []),
   { key: 'profil', to: '/profil', label: t('nav.profile'), icon: User },
-  ...(props.isAdmin ? [{ key: 'admin', to: '/admin', label: t('nav.admin'), icon: Shield }] : []),
+  ...(canSeeAdmin(props.viewer) ? [{ key: 'admin', to: '/admin', label: t('nav.admin'), icon: Shield }] : []),
 ])
 
 const current = computed(() => {
@@ -52,6 +52,7 @@ const soon = (key: string) => (HUB_SITES as readonly string[]).includes(key)
         item.key === current
           ? ['font-extrabold text-ink', layout === 'header' ? 'border-hot' : 'border-ink']
           : 'border-transparent font-semibold text-ink-2',
+        'hover:tint',
       ]"
     >
       <AppIcon

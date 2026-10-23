@@ -18,8 +18,8 @@ function run(toast: { id: number, action?: { run: () => void } }) {
       v-for="toast in toasts"
       :key="toast.id"
       :role="toast.tone === 'error' ? 'alert' : 'status'"
-      class="animate-enter pointer-events-auto flex max-w-[480px] items-center gap-3 rounded-pill border-2 border-line bg-surface px-4 py-2.5 font-bold text-ink shadow-soft"
-      :class="toast.tone === 'error' && 'bg-error text-on-error'"
+      class="animate-enter pointer-events-auto flex max-w-[480px] items-center gap-3 rounded-pill border-2 border-line px-4 py-2.5 font-bold shadow-soft"
+      :class="toast.tone === 'error' ? 'bg-error text-on-error' : 'bg-surface text-ink'"
     >
       <span>{{ toast.text }}</span>
       <button
@@ -31,7 +31,6 @@ function run(toast: { id: number, action?: { run: () => void } }) {
         {{ toast.action.label }}
       </button>
       <button
-        v-if="toast.tone === 'error'"
         type="button"
         class="hit-44 grid place-items-center"
         :aria-label="t('common.close')"

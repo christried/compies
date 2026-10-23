@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Volume2, VolumeX } from '@lucide/vue'
+import { viewerOf } from '~/utils/construction'
 
 // Logo (Compibert head), then the hub nav or the session title area, then sound toggle and
 // the avatar menu when signed in. The Einladen button lands with the invite sheet.
-defineProps<{ kind: 'hub' | 'session' | 'bare' }>()
+// Full-width pages (sign-in, setup) stretch the header edge to edge, so the logo sits at the left edge.
+defineProps<{ kind: 'hub' | 'session' | 'bare', flush?: boolean }>()
 
 const { t } = useI18n()
 const sound = useSound()
@@ -11,8 +13,11 @@ const user = useAuthUser()
 </script>
 
 <template>
-  <header class="sticky top-0 layer-sticky flex-none border-b-(length:--cp-bw) border-line bg-surface">
-    <div class="mx-auto flex h-14 max-w-shell items-center gap-3 px-3.5 md:h-header">
+  <header class="sticky top-0 layer-header flex-none border-b-(length:--cp-bw) border-line bg-surface">
+    <div
+      class="flex h-14 items-center gap-3 px-3.5 md:h-header"
+      :class="flush ? 'w-full' : 'mx-auto max-w-shell'"
+    >
       <NuxtLink
         to="/"
         :aria-label="t('app.name')"
@@ -31,7 +36,7 @@ const user = useAuthUser()
       <template v-if="kind === 'hub'">
         <HubNav
           layout="header"
-          :is-admin="user?.isAdmin"
+          :viewer="viewerOf(user)"
           class="max-md:hidden"
         />
         <span class="flex-1" />
