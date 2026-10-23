@@ -7,25 +7,33 @@ import { isPast } from './poll'
 
 export type PhaseRejection = 'wrong_phase' | 'in_past'
 
-/** A new Date needs the Event in `from` and a time in the future. The phase is checked first. */
-function newDateRejection(input: { phase: Phase, startsAt: Date, now: Date }, from: Phase): PhaseRejection | null {
-  if (input.phase !== from) return 'wrong_phase'
+/** The Phase an Event has from its Sessions' Dates (#52): the date poll while any Session has no Date, else date set. */
+export function phaseOf(startsAt: (Date | null)[]): 'poll' | 'date_set' {
+  return startsAt.some(date => date === null) ? 'poll' : 'date_set'
+}
+
+export type SetDateRejection = PhaseRejection | 'slot_taken'
+
+/**
+ * Setting a Date from a Slot (#52): the Event is in the poll phase with a Session that waits for a Date
+ * (`undated` counts them), the Slot is not one a Session already has as its Date (`taken`), and its time
+ * is in the future. Checked in that order.
+ */
+export function setDateRejection(input: { phase: Phase, startsAt: Date, now: Date, taken: boolean, undated: number }): SetDateRejection | null {
+  if (input.phase !== 'poll' || input.undated === 0) return 'wrong_phase'
+  if (input.taken) return 'slot_taken'
   if (isPast(input.startsAt, input.now)) return 'in_past'
   return null
 }
 
-/** Set the Date (poll → date_set): the Event must be in the poll phase and the time must be in the future. */
-export function setDateRejection(input: { phase: Phase, startsAt: Date, now: Date }): PhaseRejection | null {
-  return newDateRejection(input, 'poll')
-}
-
 /**
- * What a Set Date writes: the Event moves to `date_set`, and its Session gets the Date and the Slot the
- * Date came from (null when no Slot has that time). The previous Date is forgotten; Votes stay frozen by
- * their own rule (#1).
+ * What a Set Date writes (#52): the undated Session gets the Date and the Slot it came from (null when no
+ * Slot has that time). The Event stays in the poll while another Session waits, else moves to `date_set`.
+ * The previous Date is forgotten; Votes stay frozen by their own rule (#1, #52).
  */
-export function setDateValues(startsAt: Date, slotId: string | null) {
-  return { phase: 'date_set' as const, session: { startsAt, previousStartsAt: null, slotId } }
+export function setDateValues(startsAt: Date, slotId: string | null, undated: number) {
+  const phase = undated > 1 ? 'poll' as const : 'date_set' as const
+  return { phase, session: { startsAt, previousStartsAt: null, slotId } }
 }
 
 /**

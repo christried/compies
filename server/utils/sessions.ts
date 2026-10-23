@@ -5,7 +5,7 @@ import { rescheduleValues } from '../domain/phase'
 import { apiError } from './errors'
 import type { Db } from './db'
 
-// The Sessions of an Event (ADR 0011, #48, #53). eventSession is the single-Session shortcut of the
+// The Sessions of an Event (ADR 0011, #48, #52, #53). eventSession is the single-Session shortcut of the
 // Reschedule route that still has no Session id; the per-Session handlers use eventSessions.
 
 export type SessionRow = typeof sessions.$inferSelect
@@ -20,6 +20,15 @@ export async function eventSession(db: Db, eventId: string): Promise<SessionRow>
   const [session] = await eventSessions(db, eventId)
   if (!session) throw new Error(`Event ${eventId} has no Session`)
   return session
+}
+
+/** Whether a Session of this Event has the Slot as its Date's Slot, so the Slot is no longer open (#52). */
+export async function isSlotTaken(db: Db, eventId: string, slotId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(and(eq(sessions.eventId, eventId), eq(sessions.slotId, slotId)))
+  return row !== undefined
 }
 
 /**

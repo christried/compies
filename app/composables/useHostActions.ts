@@ -1,7 +1,6 @@
 import { apiErrorKey } from '~/utils/api-error'
-import { utcToBerlin } from '~~/shared/time'
 
-// The Host's Date actions on the Event page (#13, #14): Set the Date, Reschedule and Reopen. Each
+// The Host's Date actions on the Event page (#13, #14, #52): Set the Date from a Slot, Reschedule and Reopen. Each
 // posts to its endpoint, shows the server's refusal as a toast and refetches the Event afterwards
 // (ADR 0001). The dialogs close on success only.
 
@@ -30,9 +29,9 @@ export function useHostActions(slug: Readonly<Ref<string>>, refresh: () => Promi
     }
   }
 
-  /** Sets the Date to a Slot's start, sent as the Berlin wall clock (ADR 0003). */
-  function confirmDate(startsAt: Date) {
-    return post('confirm', { body: { startsAt: utcToBerlin(startsAt) }, busy: confirming, done: () => (confirmOpen.value = false) })
+  /** Sets the Date of the next undated Session from the Slot the Host picked (#52). */
+  function confirmDate(slotId: string) {
+    return post('confirm', { body: { slotId }, busy: confirming, done: () => (confirmOpen.value = false) })
   }
 
   /** Moves the set Date to a new Berlin time (`YYYY-MM-DDTHH:mm`); the card then shows the new time. */

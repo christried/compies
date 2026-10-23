@@ -5,6 +5,7 @@ import { useDb } from '../../../../../utils/db'
 import { apiError, slotNotFound } from '../../../../../utils/errors'
 import { createRateLimiter } from '../../../../../utils/rate-limit'
 import { loadEvent } from '../../../../../utils/event-access'
+import { isSlotTaken } from '../../../../../utils/sessions'
 import { findSlot } from '../../../../../utils/slots'
 import { requireUser } from '../../../../../utils/user'
 
@@ -33,7 +34,8 @@ export default defineEventHandler(async (event) => {
     const slot = await findSlot(tx, eventRow.id, slotId)
     if (!slot) throw slotNotFound()
 
-    const rejection = voteRejection({ phase: eventRow.phase, startsAt: slot.startsAt, now: new Date() })
+    const taken = await isSlotTaken(tx, eventRow.id, slot.id)
+    const rejection = voteRejection({ phase: eventRow.phase, startsAt: slot.startsAt, now: new Date(), taken })
     if (rejection) throw apiError(rejection)
 
     await tx

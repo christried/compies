@@ -141,10 +141,10 @@ describe('reschedule and reopen', () => {
     return row!
   }
 
-  /** An Event with its Date set at 31 Oct 2090, 19:00 Berlin (18:00 UTC). */
+  /** An Event with its Date set from the second Slot, 31 Oct 2090, 19:00 Berlin (18:00 UTC). */
   async function setPoll(cookie: string) {
     const created = await createPoll(cookie)
-    await confirm(cookie, created.slug, { startsAt: '2090-10-31T19:00' })
+    await confirm(cookie, created.slug, { slotId: created.slotIds[1] })
     return created
   }
 
@@ -320,7 +320,7 @@ describe('reschedule and reopen', () => {
     it('keeps the Slot the Session took, and a dated Session moves while another one still waits for its Date', async () => {
       const cookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(cookie)
-      await confirm(cookie, slug, { startsAt: '2090-10-31T19:00' })
+      await confirm(cookie, slug, { slotId: slotIds[1] })
       // A second Session that still waits for its Date keeps the Event in the date poll (#52 sets the Dates one by one).
       await testDb.db.insert(sessions).values({ eventId, startsAt: null })
       await testDb.db.update(events).set({ phase: 'poll' }).where(eq(events.id, eventId))
@@ -412,7 +412,7 @@ describe('reschedule and reopen', () => {
       const cookie = await signInAsHost()
       const { slug, eventId, slotIds } = await createPoll(cookie)
       await vote(cookie, slug, slotIds[0]!, 'yes')
-      await confirm(cookie, slug, { startsAt: '2090-10-31T19:00' })
+      await confirm(cookie, slug, { slotId: slotIds[1] })
 
       await reopen(cookie, slug)
 
@@ -460,12 +460,12 @@ describe('reschedule and reopen', () => {
 
     it('lets a new Date be set afterwards: the notice clears and the .ics sequence goes higher than before', async () => {
       const cookie = await signInAsHost()
-      const { slug, eventId } = await setPoll(cookie)
+      const { slug, eventId, slotIds } = await setPoll(cookie)
       await reschedule(cookie, slug, { startsAt: '2090-11-01T20:00' })
       const beforeReopen = await (await ics(cookie, slug)).text()
       await reopen(cookie, slug)
 
-      const response = await confirm(cookie, slug, { startsAt: '2090-11-03T19:00' })
+      const response = await confirm(cookie, slug, { slotId: slotIds[1] })
 
       expect(response.status).toBe(200)
       expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })

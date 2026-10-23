@@ -1,33 +1,42 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import { defineEventHandler, getRouterParam } from 'h3'
+import { defineEventHandler, getRouterParam, readBody } from 'h3'
 import { events, sessions } from '../../../db/schema'
 import { setDateRejection, setDateValues } from '../../../domain/phase'
 import { useDb } from '../../../utils/db'
-import { apiError } from '../../../utils/errors'
-import { readNewDate } from '../../../utils/new-date'
+import { apiError, slotNotFound } from '../../../utils/errors'
 import { loadEvent } from '../../../utils/event-access'
-import { eventSession, slotAt } from '../../../utils/sessions'
+import { findSlot } from '../../../utils/slots'
+import { eventSessions, isSlotTaken } from '../../../utils/sessions'
 import { requireUser } from '../../../utils/user'
 
-// Set the Date (#1 § Domain rules, ADR 0003, ADR 0011): the Host gives the Event's Session a future
-// Berlin time (`YYYY-MM-DDTHH:mm`, as the create form sends it) and the Event moves to `date_set`. The
-// Session remembers the Slot that has that time, if there is one. The Event row is locked for the whole
-// transaction, so two confirms at once cannot both pass; the Session update also needs it still undated.
+// Set a Date from the shared Date poll (#1 § Domain rules, ADR 0011, #52): the Host picks a Slot, and its
+// time goes to the first Session that still has no Date. The Event stays in the poll while another
+// Session waits and moves to `date_set` once every Session has one. The Slot is taken by that Session, so
+// it is no longer open. The Event row is locked for the whole transaction, so two confirms at once queue
+// up: one Slot never goes to two Sessions, and one Session is never filled twice.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const slug = getRouterParam(event, 'slug') ?? ''
+  const body = await readBody<{ slotId?: unknown } | null>(event)
+  const slotId = typeof body?.slotId === 'string' ? body.slotId : ''
 
   return useDb(event).transaction(async (tx) => {
     const eventRow = await loadEvent(tx, slug, user.id, { hostOnly: true, lock: 'update' })
 
-    const startsAt = await readNewDate(event, startsAt => setDateRejection({ phase: eventRow.phase, startsAt, now: new Date() }))
+    const slot = await findSlot(tx, eventRow.id, slotId)
+    if (!slot) throw slotNotFound()
 
-    const session = await eventSession(tx, eventRow.id)
-    const values = setDateValues(startsAt, await slotAt(tx, eventRow.id, startsAt))
+    const rows = await eventSessions(tx, eventRow.id)
+    const undated = rows.filter(row => row.startsAt === null)
+    const taken = await isSlotTaken(tx, eventRow.id, slot.id)
+    const rejection = setDateRejection({ phase: eventRow.phase, startsAt: slot.startsAt, now: new Date(), taken, undated: undated.length })
+    if (rejection) throw apiError(rejection)
+
+    const values = setDateValues(slot.startsAt, slot.id, undated.length)
     const [row] = await tx
       .update(sessions)
       .set(values.session)
-      .where(and(eq(sessions.id, session.id), isNull(sessions.startsAt)))
+      .where(and(eq(sessions.id, undated[0]!.id), isNull(sessions.startsAt)))
       .returning({ startsAt: sessions.startsAt })
     if (!row) throw apiError('wrong_phase')
 

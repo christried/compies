@@ -467,7 +467,7 @@ describe('setting the Date', () => {
 
     await clickButton(dialog(), 'Festlegen')
 
-    await vi.waitFor(() => expect(sent).toEqual({ startsAt: '2026-10-24T20:00' }))
+    await vi.waitFor(() => expect(sent).toEqual({ slotId: 'sat' }))
     await vi.waitFor(() => expect(page.text()).toContain('Samstag, 24. Oktober, 20:00 Uhr'))
     expect(page.findAll('[role="radiogroup"]')).toHaveLength(0)
     expect(dialog()).toBeNull()
@@ -698,7 +698,21 @@ describe('several Sessions on the Event page', () => {
   beforeEach(() => {
     signInAs(kitty)
     useState('toasts').value = []
+    document.body.innerHTML = ''
   })
+
+  /** The open confirm dialog, which is teleported to the body. */
+  function dialog(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('[role="dialog"]')
+  }
+
+  /** Clicks the button with this label inside `root` and lets Vue run the handler. */
+  async function clickButton(root: ParentNode | null | undefined, label: string) {
+    const button = [...(root?.querySelectorAll('button') ?? [])].find(element => element.textContent?.trim() === label)
+    expect(button, label).toBeDefined()
+    button!.click()
+    await new Promise(resolve => setTimeout(resolve))
+  }
 
   it('shows a numbered card per dated Session, one calendar link and one Einladen for the whole Event, and no Host actions on the cards', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
@@ -716,7 +730,7 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).not.toContain('Termin festlegen')
   })
 
-  it('says how many Dates are still missing above the poll, and the dock offers no Termin festlegen', async () => {
+  it('says how many Dates are still missing above the poll, and the dock offers Termin festlegen next to Termine bearbeiten', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
       { number: null, startsAt: null },
       { number: null, startsAt: null },
@@ -727,9 +741,89 @@ describe('several Sessions on the Event page', () => {
 
     expect(page.text()).toContain('3 Termine gesucht')
     expect(page.text()).not.toContain('1 Termin gesucht')
-    expect(page.get('[role="toolbar"]').text()).not.toContain('Termin festlegen')
+    expect(page.get('[role="toolbar"]').text()).toContain('Termin festlegen')
     expect(page.get('[role="toolbar"]').text()).toContain('Termine bearbeiten')
     expect(page.get('[role="toolbar"]').text()).toContain('Einladen')
+  })
+
+  it('sets the Date of the next undated Session from the Slot the Host picks, and says what is still missing afterwards', async () => {
+    let sent: unknown = null
+    const store = serve(s => viewWithSessions(s, [
+      { number: null, startsAt: null },
+      { number: null, startsAt: null },
+    ], 2, { event: { phase: 'poll', isHost: true }, bestSlotId: null }))
+    registerEndpoint(`/api/e/${store.slug}/confirm`, {
+      method: 'POST',
+      handler: async (event) => {
+        sent = await readBody(event)
+        return { startsAt: '2026-10-24T18:00:00.000Z' }
+      },
+    })
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    expect(dialog()?.textContent).toContain('Danach fehlt noch 1 Termin.')
+    expect(dialog()?.textContent).toContain('Alle sehen den Termin sofort hier.')
+    await clickButton(dialog(), 'Festlegen')
+
+    await vi.waitFor(() => expect(sent).toEqual({ slotId: 'fri' }))
+  })
+
+  it('names the Dates still missing afterwards in the plural, and says nothing once the last Date is set', async () => {
+    const plural = serve(s => viewWithSessions(s, [
+      { number: null, startsAt: null },
+      { number: null, startsAt: null },
+      { number: null, startsAt: null },
+    ], 3, { event: { phase: 'poll', isHost: true } }))
+    const pluralPage = await mountSuspended(EventPage, { route: `/e/${plural.slug}` })
+    await clickButton(pluralPage.get('[role="toolbar"]').element, 'Termin festlegen')
+    expect(dialog()?.textContent).toContain('Danach fehlen noch 2 Termine.')
+    await clickButton(dialog(), 'Abbrechen')
+    pluralPage.unmount()
+
+    const last = serve(s => viewWithSessions(s, [
+      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: null, startsAt: null },
+    ], 1, { event: { phase: 'poll', isHost: true } }))
+    const lastPage = await mountSuspended(EventPage, { route: `/e/${last.slug}` })
+    await clickButton(lastPage.get('[role="toolbar"]').element, 'Termin festlegen')
+    expect(dialog()?.textContent).not.toContain('Danach')
+  })
+
+  it('shows "Termin festlegen" disabled with the reason when no Slot is open, and answers a click with a neutral toast', async () => {
+    const { slug } = serve(s => view(s, [], { event: { isHost: true }, slots: [], bestSlotId: null }))
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    const set = [...page.get('[role="toolbar"]').element.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Termin festlegen')!
+
+    expect(set.getAttribute('aria-disabled')).toBe('true')
+    expect(set.disabled).toBe(false)
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    expect(dialog()).toBeNull()
+    expect(shownToasts()).toEqual([expect.objectContaining({ text: 'Schlag erst einen Termin vor.', tone: 'info' })])
+  })
+
+  it('shows "Termin festlegen" disabled with the future reason when only past Slots are left', async () => {
+    const { slug } = serve(s => view(s, [], {
+      event: { isHost: true },
+      slots: [{ id: 'old', startsAt: '2026-10-20T18:00:00.000Z', past: true }],
+      bestSlotId: null,
+    }))
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    const set = [...page.get('[role="toolbar"]').element.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Termin festlegen')!
+    expect(set.getAttribute('aria-disabled')).toBe('true')
+    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+
+    expect(shownToasts()).toEqual([expect.objectContaining({ text: 'Kein Termin liegt mehr in der Zukunft.', tone: 'info' })])
+  })
+
+  it('leaves "Termin festlegen" enabled while a future Slot is open', async () => {
+    const { slug } = serve(s => view(s, [], { event: { isHost: true } }))
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    const set = [...page.get('[role="toolbar"]').element.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Termin festlegen')!
+    expect(set.getAttribute('aria-disabled')).toBeNull()
   })
 
   it('numbers the dated card and asks for the one missing Date in the singular', async () => {
