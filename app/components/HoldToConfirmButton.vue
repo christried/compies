@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<{
   duration?: number
   /** `secondary` is for a hold next to a primary action (#14 "Neue Terminsuche"). */
   variant?: 'hot' | 'primary' | 'secondary'
-  /** card = 48 px, the buttons of a Session card (#55); lg = 52 px. */
+  /** card = 48 px, the buttons of a Session card (#55, #49: same text as its siblings); lg = 52 px. */
   size?: 'card' | 'lg'
   disabled?: boolean
   /** Shown with aria-describedby when disabled. */
@@ -91,8 +91,8 @@ const visibleLabel = computed(() => {
   <div class="flex flex-col items-center gap-1.5">
     <button
       type="button"
-      class="outline-memphis hit-44 relative inline-flex cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden rounded-pill border-(length:--cp-bw) border-line px-5 font-extrabold whitespace-nowrap shadow-btn transition-[transform,translate,box-shadow] dur-instant ease-snap select-none hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
-      :class="{ 'bg-hot text-ink': variant === 'hot', 'bg-primary text-on-primary': variant === 'primary', 'bg-surface text-ink': variant === 'secondary', 'h-12': size === 'card', 'h-control-lg': size === 'lg' }"
+      class="outline-memphis hit-44 relative inline-flex cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden rounded-pill border-(length:--cp-bw) border-line px-5 whitespace-nowrap shadow-btn transition-[transform,translate,box-shadow] dur-instant ease-snap select-none hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
+      :class="{ 'bg-hot text-ink': variant === 'hot', 'bg-primary text-on-primary': variant === 'primary', 'bg-surface text-ink': variant === 'secondary', 'h-12 text-body font-bold': size === 'card', 'h-control-lg font-extrabold': size === 'lg' }"
       :aria-disabled="disabled ? 'true' : undefined"
       :aria-describedby="disabled && disabledReason ? reasonId : undefined"
       @pointerdown="onPointerDown"

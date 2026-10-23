@@ -269,7 +269,7 @@ usePollRefresh(() => {
             <HoldToConfirmButton
               v-if="canChangeSessions && sessions.length > 1"
               :key="`remove-${session.id}-${holdEpoch}`"
-              variant="hot"
+              variant="secondary"
               size="card"
               :label="t('mvp.sessions.remove')"
               :icon="Trash2"
@@ -282,7 +282,7 @@ usePollRefresh(() => {
           <a
             :href="`/api/e/${slug}/ics`"
             download
-            class="outline-memphis inline-flex h-12 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-primary px-4.5 font-extrabold whitespace-nowrap text-on-primary no-underline shadow-btn lift"
+            class="outline-memphis inline-flex h-12 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-primary px-4.5 text-body font-bold whitespace-nowrap text-on-primary no-underline shadow-btn lift"
           >
             <AppIcon
               :icon="CalendarPlus"
