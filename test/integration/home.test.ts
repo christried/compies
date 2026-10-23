@@ -78,6 +78,30 @@ describe('GET /api/e (Home)', () => {
     return { slug, eventId: event!.id }
   }
 
+  /** Creates an Event with several Sessions in the Date poll (none dated yet) and returns its slug and Event id. */
+  async function createSessionPoll(cookie: string, name: string, slots: string[]) {
+    const response = await request('/api/e', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name, dateMode: 'poll', sessions: 2, slots }),
+    })
+    const { slug } = await response.json()
+    const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+    return { slug, eventId: event!.id }
+  }
+
+  /** Creates an Event with one direct Date per Session and returns its slug and Event id. */
+  async function createSessionDates(cookie: string, name: string, startsAt: string[]) {
+    const response = await request('/api/e', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name, dateMode: 'direct', sessions: startsAt.length, startsAt }),
+    })
+    const { slug } = await response.json()
+    const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+    return { slug, eventId: event!.id }
+  }
+
   function vote(cookie: string, slug: string, slotId: string, value: string) {
     return request(`/api/e/${slug}/slots/${slotId}/vote`, {
       method: 'PUT',
@@ -137,7 +161,9 @@ describe('GET /api/e (Home)', () => {
       name: 'Freitags-Zocken',
       host: { name: 'Hostess' },
       phase: 'poll',
-      startsAt: null,
+      sessionCount: 1,
+      missingDates: 1,
+      nextSession: null,
       createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*Z$/),
       bestSlot: { id: poll.slotIdAt('2090-10-31T18:00:00.000Z'), startsAt: '2090-10-31T18:00:00.000Z' },
       progress: { voted: 1, total: 2 },
@@ -201,6 +227,75 @@ describe('GET /api/e (Home)', () => {
 
     const [card] = (await (await list(guestUser.cookie)).json()).events
 
-    expect(card).toMatchObject({ phase: 'date_set', startsAt: '2090-11-01T19:00:00.000Z', action: 'view' })
+    expect(card).toMatchObject({
+      phase: 'date_set',
+      sessionCount: 1,
+      missingDates: 0,
+      nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' },
+      action: 'view',
+    })
+  })
+
+  it('counts the Sessions and the ones still waiting for a Date while the Date poll runs', async () => {
+    const hostUser = await signInAs(host, { hostPermission: true })
+    const guestUser = await signInAs(guest)
+    const poll = await createSessionPoll(hostUser.cookie, 'Zwei Abende', ['2090-10-30T20:30', '2090-10-31T19:00'])
+    await addMember(poll.eventId, guestUser.id)
+    const [dated] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, poll.eventId))
+    await testDb.db.update(sessions).set({ startsAt: new Date('2090-11-01T19:00:00Z') }).where(eq(sessions.id, dated!.id))
+
+    const [card] = (await (await list(guestUser.cookie)).json()).events
+
+    expect(card).toMatchObject({
+      phase: 'poll',
+      sessionCount: 2,
+      missingDates: 1,
+      nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' },
+    })
+  })
+
+  it('shows the next Session, numbered, once every Date is set', async () => {
+    const hostUser = await signInAs(host, { hostPermission: true })
+    const guestUser = await signInAs(guest)
+    const evenings = await createSessionDates(hostUser.cookie, 'Zwei Abende', ['2090-11-08T20:00', '2090-11-01T20:00'])
+    await addMember(evenings.eventId, guestUser.id)
+
+    const [card] = (await (await list(guestUser.cookie)).json()).events
+
+    expect(card).toMatchObject({
+      sessionCount: 2,
+      missingDates: 0,
+      nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' },
+      action: 'view',
+    })
+  })
+
+  it('keeps an Event on Home between its Sessions, and shows the next upcoming one', async () => {
+    const hostUser = await signInAs(host, { hostPermission: true })
+    const guestUser = await signInAs(guest)
+    const evenings = await createSessionDates(hostUser.cookie, 'Zwei Abende', ['2090-11-01T20:00', '2090-11-08T20:00'])
+    await addMember(evenings.eventId, guestUser.id)
+    const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000)
+    const [first, second] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, evenings.eventId))
+    await testDb.db.update(sessions).set({ startsAt: hoursAgo(30) }).where(eq(sessions.id, first!.id))
+    await testDb.db.update(sessions).set({ startsAt: new Date(Date.now() + 48 * 3_600_000) }).where(eq(sessions.id, second!.id))
+
+    const { events: listed } = await (await list(guestUser.cookie)).json()
+
+    expect(listed.map((row: { name: string }) => row.name)).toEqual(['Zwei Abende'])
+    expect(listed[0].nextSession).toMatchObject({ number: 2, startsAt: expect.any(String) })
+  })
+
+  it('drops an Event once all its Sessions are more than 24 h past', async () => {
+    const hostUser = await signInAs(host, { hostPermission: true })
+    const guestUser = await signInAs(guest)
+    const evenings = await createSessionDates(hostUser.cookie, 'Vorbei', ['2090-11-01T20:00', '2090-11-08T20:00'])
+    await addMember(evenings.eventId, guestUser.id)
+    const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000)
+    await testDb.db.update(sessions).set({ startsAt: hoursAgo(30) }).where(eq(sessions.eventId, evenings.eventId))
+
+    const { events: listed } = await (await list(guestUser.cookie)).json()
+
+    expect(listed).toEqual([])
   })
 })

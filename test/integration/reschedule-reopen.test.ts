@@ -7,6 +7,7 @@ import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import downloadIcs from '../../server/api/e/[slug]/ics.get'
 import reopenDate from '../../server/api/e/[slug]/reopen.post'
 import rescheduleDate from '../../server/api/e/[slug]/reschedule.post'
+import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createTestDb, createTestServer } from './harness'
@@ -30,6 +31,7 @@ describe('reschedule and reopen', () => {
       'GET /api/e/:slug': getEvent,
       'POST /api/e/:slug/confirm': confirmDate,
       'POST /api/e/:slug/reschedule': rescheduleDate,
+      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
       'POST /api/e/:slug/reopen': reopenDate,
       'GET /api/e/:slug/ics': downloadIcs,
       'PUT /api/e/:slug/slots/:slotId/vote': putVote,
@@ -236,6 +238,119 @@ describe('reschedule and reopen', () => {
       expect(after).toContain('SEQUENCE:1')
       expect(after).toContain(`UID:${(await sessionOf(eventId)).id}@compies`)
       expect(after).toContain('DTSTART:20901101T190000Z')
+    })
+  })
+
+  describe('POST /api/e/:slug/sessions/:id/reschedule (one Session of several, #53)', () => {
+    /** An Event with one direct Session per Date, in the order given; returns the slug and the Session ids in that order. */
+    async function createSessions(cookie: string, dates: string[]) {
+      const response = await request('/api/e', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ name: 'Mehrere Abende', dateMode: 'direct', sessions: dates.length, startsAt: dates }),
+      })
+      const { slug } = await response.json() as { slug: string }
+      const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+      const ids = (await sessionRowsOf(event!.id)).map(row => row.id)
+      return { slug, eventId: event!.id, ids }
+    }
+
+    /** All Sessions of an Event, earliest Date first (undated last). */
+    async function sessionRowsOf(eventId: string) {
+      return testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId)).orderBy(sessions.startsAt)
+    }
+
+    function rescheduleOne(cookie: string | undefined, slug: string, sessionId: string, body: unknown) {
+      return post(`/api/e/${slug}/sessions/${sessionId}/reschedule`, cookie, body)
+    }
+
+    it('requires sign-in', async () => {
+      const cookie = await signInAsHost()
+      const { slug, ids } = await createSessions(cookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+
+      expect((await rescheduleOne(undefined, slug, ids[0]!, { startsAt: '2090-11-09T20:00' })).status).toBe(401)
+    })
+
+    it('answers 404 for a User who is not a Member', async () => {
+      const hostCookie = await signInAsHost()
+      const { slug, ids } = await createSessions(hostCookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+      const { cookie } = await signIn(testDb.db, outsider)
+
+      expect((await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-11-09T20:00' })).status).toBe(404)
+    })
+
+    it('answers 403 for a Member who is not the Host and leaves the Dates alone', async () => {
+      const hostCookie = await signInAsHost()
+      const { slug, eventId, ids } = await createSessions(hostCookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+      const { cookie } = await signIn(testDb.db, guest)
+      await addMember(eventId, cookie)
+
+      expect((await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-11-09T20:00' })).status).toBe(403)
+      expect((await sessionRowsOf(eventId)).map(row => row.startsAt)).toEqual([
+        new Date('2090-11-07T19:00:00.000Z'),
+        new Date('2090-11-08T19:00:00.000Z'),
+      ])
+    })
+
+    it('answers 404 for a Session id the Event does not hold, including one of another Event', async () => {
+      const cookie = await signInAsHost()
+      const { slug } = await createSessions(cookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+      const other = await createSessions(cookie, ['2090-12-07T20:00'])
+
+      expect((await rescheduleOne(cookie, slug, other.ids[0]!, { startsAt: '2090-11-09T20:00' })).status).toBe(404)
+      expect((await rescheduleOne(cookie, slug, '00000000-0000-4000-8000-000000000000', { startsAt: '2090-11-09T20:00' })).status).toBe(404)
+    })
+
+    it('moves only the named Session, keeps the other Dates, and raises the sequence of both Sessions whose number changed', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId, ids } = await createSessions(cookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+
+      // The first Session moves to 21:00 on the 8th, after the second one (20:00): the two swap numbers.
+      const response = await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-11-08T21:00' })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ startsAt: '2090-11-08T20:00:00.000Z' })
+      const rows = await sessionRowsOf(eventId)
+      expect(rows.map(row => [row.id, row.startsAt, row.icsSequence])).toEqual([
+        [ids[1], new Date('2090-11-08T19:00:00.000Z'), 1],
+        [ids[0], new Date('2090-11-08T20:00:00.000Z'), 1],
+      ])
+    })
+
+    it('keeps the Slot the Session took, and a dated Session moves while another one still waits for its Date', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId, slotIds } = await createPoll(cookie)
+      await confirm(cookie, slug, { slotId: slotIds[1] })
+      // A second Session that still waits for its Date keeps the Event in the date poll (#52 sets the Dates one by one).
+      await testDb.db.insert(sessions).values({ eventId, startsAt: null })
+      await testDb.db.update(events).set({ phase: 'poll' }).where(eq(events.id, eventId))
+      const [dated] = (await sessionRowsOf(eventId)).filter(row => row.startsAt !== null)
+
+      const response = await rescheduleOne(cookie, slug, dated!.id, { startsAt: '2090-11-01T20:00' })
+
+      expect(response.status).toBe(200)
+      expect(await eventRow(eventId)).toMatchObject({ phase: 'poll' })
+      const moved = (await sessionRowsOf(eventId)).find(row => row.id === dated!.id)
+      expect(moved).toMatchObject({ startsAt: new Date('2090-11-01T19:00:00.000Z'), slotId: slotIds[1] })
+    })
+
+    it('refuses a Session that has no Date yet with 409 wrong_phase', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId } = await createPoll(cookie)
+      const [undated] = await testDb.db.insert(sessions).values({ eventId, startsAt: null }).returning()
+
+      const response = await rescheduleOne(cookie, slug, undated!.id, { startsAt: '2090-11-01T20:00' })
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({ statusMessage: 'wrong_phase' })
+    })
+
+    it('refuses a time in the past and text that is not a Berlin time', async () => {
+      const cookie = await signInAsHost()
+      const { slug, ids } = await createSessions(cookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+
+      expect(await (await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2001-11-01T20:00' })).json()).toMatchObject({ statusMessage: 'in_past' })
+      expect((await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-02-30T19:00' })).status).toBe(400)
     })
   })
 

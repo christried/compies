@@ -1,15 +1,17 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../db/schema'
-import { arrangeHome, homeAction, needsVote } from '../../domain/home'
+import { arrangeHome, homeAction, homeSessionIndex, needsVote } from '../../domain/home'
 import { pollStanding } from '../../domain/poll'
+import { missingDates, sessionNumbers } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { requireUser } from '../../utils/user'
 import type { HomeEvent, HomeView } from '../../../shared/event'
 
 // Home (#12, screen M1): every Event the User is a Member of, not deleted, in Home order. Each card
-// carries what the card shows: the Host, the phase, the Best slot or the Date, how many Members have
-// voted, the User's own status and the call to action. Dates more than 24 h past are left out.
+// carries what the card shows: the Host, the phase, the Best slot or the next Session, the Sessions
+// still waiting for a Date, how many Members have voted, the User's own status and the call to action.
+// Events whose Sessions have all passed by more than 24 h are left out (#54).
 // Pure rules live in server/domain/home.ts and poll.ts; this handler only loads the rows.
 export default defineEventHandler(async (event): Promise<HomeView> => {
   const user = await requireUser(event)
@@ -35,8 +37,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   if (rows.length === 0) return { events: [] }
   const eventIds = rows.map(row => row.id)
 
-  // Until several Sessions per Event come with #49, an Event's Date is its first Session's.
-  const dates = await db
+  const sessionRows = await db
     .select({ eventId: sessions.eventId, startsAt: sessions.startsAt })
     .from(sessions)
     .where(inArray(sessions.eventId, eventIds))
@@ -58,7 +59,9 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
     .where(inArray(eventMembers.eventId, eventIds))
 
   const cards = rows.map((row) => {
-    const startsAt = dates.find(date => date.eventId === row.id)?.startsAt ?? null
+    const sessionStarts = sessionRows.filter(session => session.eventId === row.id).map(session => session.startsAt)
+    const numbers = sessionNumbers(sessionStarts)
+    const nextIndex = homeSessionIndex(sessionStarts, now)
     const eventVotes = votes.filter(vote => vote.eventId === row.id)
     const standing = pollStanding({
       slots: slots.filter(slot => slot.eventId === row.id),
@@ -74,7 +77,9 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       name: row.name,
       host: { name: row.hostDisplayName ?? row.hostName },
       phase: row.phase,
-      startsAt: startsAt?.toISOString() ?? null,
+      sessionCount: sessionStarts.length,
+      missingDates: missingDates(sessionStarts),
+      nextSession: nextIndex === null ? null : { number: numbers[nextIndex] ?? null, startsAt: sessionStarts[nextIndex]!.toISOString() },
       createdAt: row.createdAt.toISOString(),
       bestSlot: standing.bestSlot && { id: standing.bestSlot.id, startsAt: standing.bestSlot.startsAt.toISOString() },
       progress: standing.progress,
@@ -83,7 +88,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       action: homeAction({ isHost, needsVote: viewerNeedsVote }),
     }
     // Home order reads the row's own times and whether the viewer still has to vote.
-    return { card, phase: row.phase, needsVote: viewerNeedsVote, startsAt, createdAt: row.createdAt }
+    return { card, phase: row.phase, needsVote: viewerNeedsVote, sessionStarts, createdAt: row.createdAt }
   })
 
   return { events: arrangeHome(cards, now).map(entry => entry.card) }

@@ -38,3 +38,31 @@ export function openSlots<S extends { id: string }>(slots: S[], sessionSlotIds: 
   const taken = new Set(sessionSlotIds.filter((id): id is string => id !== null))
   return slots.filter(slot => !taken.has(slot.id))
 }
+
+/** A Session as the Event holds it: its id and its set Date (null while it waits for one). */
+export interface SessionDate {
+  id: string
+  startsAt: Date | null
+}
+
+function numbersById(sessions: SessionDate[]): Map<string, number | null> {
+  const numbers = sessionNumbers(sessions.map(session => session.startsAt))
+  return new Map(sessions.map((session, index) => [session.id, numbers[index]!]))
+}
+
+/**
+ * The Sessions whose .ics SEQUENCE goes up when the Event's Sessions change from `before` to `after`
+ * (#53, #55): every Session still there whose Date moved or whose number (sessionNumbers) changed, so a
+ * re-import replaces its entry with the new time or title. A Session that is new or gone has no entry
+ * to replace, so it is left out. Every handler that adds, removes or moves a Session calls this.
+ */
+export function sequenceRaises(before: SessionDate[], after: SessionDate[]): string[] {
+  const timeBefore = new Map(before.map(session => [session.id, session.startsAt?.getTime() ?? null]))
+  const numberBefore = numbersById(before)
+  const numberAfter = numbersById(after)
+  return after
+    .filter(session => timeBefore.has(session.id))
+    .filter(session => timeBefore.get(session.id) !== (session.startsAt?.getTime() ?? null)
+      || numberBefore.get(session.id) !== numberAfter.get(session.id))
+    .map(session => session.id)
+}

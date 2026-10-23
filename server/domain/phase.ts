@@ -7,13 +7,6 @@ import { isPast } from './poll'
 
 export type PhaseRejection = 'wrong_phase' | 'in_past'
 
-/** A new Date needs the Event in `from` and a time in the future. The phase is checked first. */
-function newDateRejection(input: { phase: Phase, startsAt: Date, now: Date }, from: Phase): PhaseRejection | null {
-  if (input.phase !== from) return 'wrong_phase'
-  if (isPast(input.startsAt, input.now)) return 'in_past'
-  return null
-}
-
 /** The Phase an Event has from its Sessions' Dates (#52): the date poll while any Session has no Date, else date set. */
 export function phaseOf(startsAt: (Date | null)[]): 'poll' | 'date_set' {
   return startsAt.some(date => date === null) ? 'poll' : 'date_set'
@@ -43,9 +36,14 @@ export function setDateValues(startsAt: Date, slotId: string | null, undated: nu
   return { phase, session: { startsAt, previousStartsAt: null, slotId } }
 }
 
-/** Reschedule (date_set → date_set, #14): only a set Date moves, and only to a future time. */
-export function rescheduleRejection(input: { phase: Phase, startsAt: Date, now: Date }): PhaseRejection | null {
-  return newDateRejection(input, 'date_set')
+/**
+ * Reschedule (#14, #53): only a Session that has a set Date moves, and only to a future time. The Event's
+ * phase does not decide it: while another Session still waits for a Date, a dated one can move.
+ */
+export function rescheduleRejection(input: { hasDate: boolean, startsAt: Date, now: Date }): PhaseRejection | null {
+  if (!input.hasDate) return 'wrong_phase'
+  if (isPast(input.startsAt, input.now)) return 'in_past'
+  return null
 }
 
 /** The Session columns a Reschedule writes. The Slot it came from stays taken; the handler adds `icsSequence + 1`. */
