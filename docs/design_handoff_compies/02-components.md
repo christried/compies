@@ -384,9 +384,9 @@ Logo (Compibert head), hub nav or session title + phase pill, invite button, sou
 ## HubNav
 **Scope:** [MVP] · **Ref:** AppFrame
 
-Main navigation: Sessions, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin).
+Main navigation: Sessions, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin). Bibliothek only for Users with the Host permission and the Platform admin; Admin only for the Platform admin.
 
-- **Props / variants:** `current`, `soon: string[]` (MVP: archiv, bibliothek, profil)
+- **Props / variants:** `current`, `canHost`, `isAdmin`, `soon: string[]` (MVP: archiv, bibliothek, profil)
 - **States:** active (3 px hot underline, offset icon) · soon (NavSoonMarker)
 - **Slots:** —
 - **Desktop / mobile:** Desktop header nav; mobile = bottom TabBar with the same items.
