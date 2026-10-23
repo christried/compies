@@ -4,7 +4,7 @@ import type { Component } from 'vue'
 import type { SignInProvider } from '~~/shared/auth'
 
 export interface InvitePreview {
-  sessionName: string
+  eventName: string
   host: { name: string, image: string | null }
 }
 
@@ -13,7 +13,7 @@ export interface InvitePreview {
 withDefaults(defineProps<{
   /** The visitor came from an Invite link. */
   invited?: boolean
-  /** Session and Host for the invite notice. */
+  /** Event and Host for the invite notice. */
   invite?: InvitePreview | null
   /** The provider whose round trip is running (Weiterleitung). */
   busy?: SignInProvider | null
@@ -53,8 +53,8 @@ const providerName = (provider: SignInProvider) => t(`auth.provider.${provider}`
         <template #host>
           <b>{{ invite.host.name }}</b>
         </template>
-        <template #session>
-          <b>{{ invite.sessionName }}</b>
+        <template #event>
+          <b>{{ invite.eventName }}</b>
         </template>
       </i18n-t>
     </div>

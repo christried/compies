@@ -1,8 +1,8 @@
 import { apiErrorKey } from '~/utils/api-error'
 import { utcToBerlin } from '~~/shared/time'
 
-// The Host's Date actions on the Session page (#13, #14): Set the Date, Reschedule and Reopen. Each
-// posts to its endpoint, shows the server's refusal as a toast and refetches the Session afterwards
+// The Host's Date actions on the Event page (#13, #14): Set the Date, Reschedule and Reopen. Each
+// posts to its endpoint, shows the server's refusal as a toast and refetches the Event afterwards
 // (ADR 0001). The dialogs close on success only.
 
 export function useHostActions(slug: Readonly<Ref<string>>, refresh: () => Promise<unknown>) {
@@ -18,7 +18,7 @@ export function useHostActions(slug: Readonly<Ref<string>>, refresh: () => Promi
   async function post(action: string, options: { body?: Record<string, unknown>, busy?: Ref<boolean>, done?: () => void } = {}) {
     if (options.busy) options.busy.value = true
     try {
-      await $fetch(`/api/s/${slug.value}/${action}`, { method: 'POST', body: options.body })
+      await $fetch(`/api/e/${slug.value}/${action}`, { method: 'POST', body: options.body })
       options.done?.()
     }
     catch (failure) {

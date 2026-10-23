@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import InviteLinkCard from '~/components/InviteLinkCard.vue'
 import { useToast } from '~/composables/useToast'
 
-const url = 'http://localhost/s/freitags-zocken-k7q2-AbCdEfGhIjKl'
+const url = 'http://localhost/e/freitags-zocken-k7q2-AbCdEfGhIjKl'
 
 describe('InviteLinkCard', () => {
   it('shows the link and copies it to the clipboard with a confirmation', async () => {
@@ -38,7 +38,7 @@ describe('InviteLinkCard', () => {
     await page.get('button').trigger('click')
     await vi.waitFor(() => expect(page.get('button').text()).toBe('Kopiert'))
 
-    await page.setProps({ url: 'http://localhost/s/freitags-zocken-k7q2-ZyXwVuTsRqPo' })
+    await page.setProps({ url: 'http://localhost/e/freitags-zocken-k7q2-ZyXwVuTsRqPo' })
     expect(page.get('button').text()).toBe('Link kopieren')
   })
 })

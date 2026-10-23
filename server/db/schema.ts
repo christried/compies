@@ -1,5 +1,5 @@
 import { boolean, index, integer, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
-import { PHASES } from '../../shared/session'
+import { PHASES } from '../../shared/event'
 
 // MVP schema (#1). Every instant is timestamptz in UTC (ADR 0003); every id is a database-generated uuid.
 
@@ -23,7 +23,7 @@ export const users = pgTable('users', {
 })
 
 // Better Auth's login sessions, provider accounts and OAuth state, renamed so that a bare "session"
-// always means a game Session (ADR 0004). Columns as `npx auth generate` emits them, but timestamptz.
+// is free for the sittings of an Event (ADR 0004, ADR 0011). Columns as `npx auth generate` emits them, but timestamptz.
 export const authSessions = pgTable('auth_sessions', {
   id: uuid('id').defaultRandom().primaryKey(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
@@ -60,16 +60,16 @@ export const authVerifications = pgTable('auth_verifications', {
   updatedAt: updatedAt(),
 }, table => [index('auth_verifications_identifier_idx').on(table.identifier)])
 
-export const sessionPhase = pgEnum('session_phase', PHASES)
+export const eventPhase = pgEnum('event_phase', PHASES)
 export const dateMode = pgEnum('date_mode', ['poll', 'direct'])
 
-export const sessions = pgTable('sessions', {
+export const events = pgTable('events', {
   id: uuid('id').defaultRandom().primaryKey(),
   slug: text('slug').notNull().unique(),
   inviteToken: text('invite_token').notNull().unique(),
   hostId: uuid('host_id').notNull().references(() => users.id),
   name: text('name').notNull(),
-  phase: sessionPhase('phase').notNull(),
+  phase: eventPhase('phase').notNull(),
   dateMode: dateMode('date_mode').notNull(),
   startsAt: timestamp('starts_at', { withTimezone: true }),
   previousStartsAt: timestamp('previous_starts_at', { withTimezone: true }),
@@ -81,19 +81,19 @@ export const sessions = pgTable('sessions', {
 
 export const memberZone = pgEnum('member_zone', ['bench', 'stands', 'team'])
 
-export const sessionMembers = pgTable('session_members', {
-  sessionId: uuid('session_id').notNull().references(() => sessions.id),
+export const eventMembers = pgTable('event_members', {
+  eventId: uuid('event_id').notNull().references(() => events.id),
   userId: uuid('user_id').notNull().references(() => users.id),
   joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
   zone: memberZone('zone').default('bench').notNull(),
-}, table => [primaryKey({ columns: [table.sessionId, table.userId] })])
+}, table => [primaryKey({ columns: [table.eventId, table.userId] })])
 
 export const pollSlots = pgTable('poll_slots', {
   id: uuid('id').defaultRandom().primaryKey(),
-  sessionId: uuid('session_id').notNull().references(() => sessions.id, { onDelete: 'cascade' }),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
   createdAt: createdAt(),
-}, table => [unique().on(table.sessionId, table.startsAt)])
+}, table => [unique().on(table.eventId, table.startsAt)])
 
 export const voteValue = pgEnum('vote_value', ['yes', 'maybe', 'no'])
 

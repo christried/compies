@@ -5,7 +5,7 @@ import InviteSheet from '~/components/InviteSheet.vue'
 
 // Each test gets its own slug: registerEndpoint keeps the first handler for a path.
 let testNumber = 0
-const url = (slug: string, token: string) => `http://localhost/s/${slug}-${token}`
+const url = (slug: string, token: string) => `http://localhost/e/${slug}-${token}`
 
 function dialog() {
   return [...document.querySelectorAll('[role="dialog"]')].find(node => node.textContent?.includes('Leute einladen')) as HTMLElement | undefined
@@ -53,7 +53,7 @@ describe('InviteSheet', () => {
     const slug = `freitags-invite-${testNumber}`
     const old = url(slug, 'AbCdEfGhIjKl')
     let rotations = 0
-    registerEndpoint(`/api/s/${slug}/rotate`, {
+    registerEndpoint(`/api/e/${slug}/rotate`, {
       method: 'POST',
       handler: () => {
         rotations += 1
@@ -76,7 +76,7 @@ describe('InviteSheet', () => {
     const slug = `freitags-invite-${testNumber}`
     const fresh = url(slug, 'ZzYyXxWwVvUu')
     let rotations = 0
-    registerEndpoint(`/api/s/${slug}/rotate`, {
+    registerEndpoint(`/api/e/${slug}/rotate`, {
       method: 'POST',
       handler: () => {
         rotations += 1
@@ -105,7 +105,7 @@ describe('InviteSheet', () => {
     testNumber += 1
     const slug = `freitags-invite-${testNumber}`
     const old = url(slug, 'AbCdEfGhIjKl')
-    registerEndpoint(`/api/s/${slug}/rotate`, {
+    registerEndpoint(`/api/e/${slug}/rotate`, {
       method: 'POST',
       handler: () => {
         throw createError({ statusCode: 500, statusMessage: 'boom' })

@@ -2,7 +2,7 @@
 import { Check, Minus, X } from '@lucide/vue'
 import type { VoteValue } from '~~/shared/poll'
 
-// "Wer kann wann?": everyone in the Session against every Slot (02-components § PollMatrix). A real
+// "Wer kann wann?": everyone in the Event against every Slot (02-components § PollMatrix). A real
 // table with row and column headers. "noch nicht abgestimmt" (no Vote yet) is drawn dashed and is
 // not the same as Nein. Scrolls sideways on phones.
 export interface MatrixPerson {

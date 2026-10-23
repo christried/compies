@@ -39,13 +39,13 @@ describe('constructionSite', () => {
     expect(constructionSite('/archiv', null)).toEqual({ area: 'archiv', shell: 'hub' })
   })
 
-  it('shows the Spielbrett state in the session shell', () => {
-    expect(constructionSite('/s/freitags-zocken-k7q2/brett', visitor)).toEqual({ area: 'brett', shell: 'session' })
+  it('shows the Spielbrett state in the event shell', () => {
+    expect(constructionSite('/e/freitags-zocken-k7q2/brett', visitor)).toEqual({ area: 'brett', shell: 'event' })
   })
 
-  it('shows the generic state for any other Session sub-route', () => {
-    expect(constructionSite('/s/freitags-zocken-k7q2/tabelle', visitor)).toEqual({ area: 'generic', shell: 'session' })
-    expect(constructionSite('/s/freitags-zocken-k7q2/chat/old', visitor)).toEqual({ area: 'generic', shell: 'session' })
+  it('shows the generic state for any other Event sub-route', () => {
+    expect(constructionSite('/e/freitags-zocken-k7q2/tabelle', visitor)).toEqual({ area: 'generic', shell: 'event' })
+    expect(constructionSite('/e/freitags-zocken-k7q2/chat/old', visitor)).toEqual({ area: 'generic', shell: 'event' })
   })
 
   it('shows the generic state in the hub shell for unknown areas', () => {

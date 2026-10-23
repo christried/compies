@@ -15,7 +15,7 @@ export interface PollSlotView {
 const props = defineProps<{
   timeslot: PollSlotView
   counts: { yes: number, maybe: number, no: number }
-  /** Members in the Session, the base for the bars. */
+  /** Members in the Event, the base for the bars. */
   total: number
   myVote: VoteValue | null
   best: boolean

@@ -2,10 +2,10 @@
 import { Volume2, VolumeX } from '@lucide/vue'
 import { viewerOf } from '~/utils/construction'
 
-// Logo (Compibert head), then the hub nav or the session title area, then sound toggle and
+// Logo (Compibert head), then the hub nav or the event title area, then sound toggle and
 // the avatar menu when signed in. The Einladen button lands with the invite sheet.
 // Full-width pages (sign-in, setup) stretch the header edge to edge, so the logo sits at the left edge.
-defineProps<{ kind: 'hub' | 'session' | 'bare', flush?: boolean }>()
+defineProps<{ kind: 'hub' | 'event' | 'bare', flush?: boolean }>()
 
 const { t } = useI18n()
 const sound = useSound()
@@ -28,7 +28,7 @@ const user = useAuthUser()
         </span>
         <span
           class="font-display text-[22px] leading-none uppercase"
-          :class="kind === 'session' && 'max-md:hidden'"
+          :class="kind === 'event' && 'max-md:hidden'"
           aria-hidden="true"
         >{{ t('app.name') }}</span>
       </NuxtLink>
@@ -42,7 +42,7 @@ const user = useAuthUser()
         <span class="flex-1" />
       </template>
 
-      <template v-else-if="kind === 'session'">
+      <template v-else-if="kind === 'event'">
         <span class="h-7 w-0.5 bg-line-soft max-md:hidden" />
         <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5">
           <slot name="title" />

@@ -4,28 +4,28 @@ import { apiFailure } from '~/utils/api-error'
 import { formatSetDay, formatSlotDay, formatSlotTime, formatSlotWhen } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
-import type { SessionView } from '~~/shared/session'
+import type { EventView } from '~~/shared/event'
 
-// The Session link (`/s/<slug>`, ADR 0006) in the session shell (screen M3). Members see the poll:
+// The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). Members see the poll:
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
 // The set Date replaces the cards and the matrix with DateSetCard. Set the Date, Reschedule and Reopen
 // (#13, #14) post through useHostActions. Termine bearbeiten opens SlotEditSheet (#15).
-// The Invite link (`/s/<slug>-<token>`) is handled by InviteEntry (#10), not here.
+// The Invite link (`/e/<slug>-<token>`) is handled by InviteEntry (#10), not here.
 
 const route = useRoute()
 const { t } = useI18n()
 const { toast } = useToast()
 const slug = computed(() => String(route.params.slug))
 const invite = isInviteLinkPath(route.path)
-const { data, error, refresh } = await useFetch<SessionView>(() => `/api/s/${slug.value}`, { immediate: !invite })
+const { data, error, refresh } = await useFetch<EventView>(() => `/api/e/${slug.value}`, { immediate: !invite })
 
 const notFound = computed(() => error.value?.statusCode === 404)
 const deleted = computed(() => error.value?.statusCode === 410)
 const failed = computed(() => error.value !== null && !notFound.value && !deleted.value)
 
-useHead({ title: () => `${data.value?.session.name ?? t('app.name')} | ${t('app.name')}` })
+useHead({ title: () => `${data.value?.event.name ?? t('app.name')} | ${t('app.name')}` })
 
 /** Votes that are being saved, by Slot. They are drawn at once and dropped when the server has answered. */
 const pending = ref<Partial<Record<string, VoteValue>>>({})
@@ -64,7 +64,7 @@ function myVoteFor(slotId: string): VoteValue | null {
 async function vote(slotId: string, value: VoteValue) {
   pending.value = { ...pending.value, [slotId]: value }
   try {
-    await $fetch(`/api/s/${slug.value}/slots/${slotId}/vote`, { method: 'PUT', body: { value } })
+    await $fetch(`/api/e/${slug.value}/slots/${slotId}/vote`, { method: 'PUT', body: { value } })
     savedNote.value = true
   }
   catch (failure) {
@@ -112,25 +112,25 @@ function confirmDate(slotId: string) {
 
 /** The withdrawn Date as the notice shows it, in Berlin time. */
 const previousWhen = computed(() => {
-  const previous = data.value?.session.previousStartsAt
+  const previous = data.value?.event.previousStartsAt
   if (!previous) return null
   const instant = new Date(previous)
   return t('mvp.set.dateTime', { date: formatSetDay(instant), time: formatSlotTime(instant) })
 })
 
-// The Reopen notice stays closed in this browser for this Session and this withdrawn Date. A later
+// The Reopen notice stays closed in this browser for this Event and this withdrawn Date. A later
 // Reopen with another Date has another value, so it shows again. Without storage it returns on reload.
 const REOPEN_KEY_PREFIX = 'compies-reopen-closed:'
 const closedReopenAt = ref<string | null>(null)
 // False during SSR and until the stored state is read, so a closed notice never paints.
 const storageRead = ref(false)
 const reopenNoticeShown = computed(() => {
-  const previous = data.value?.session.previousStartsAt
+  const previous = data.value?.event.previousStartsAt
   return storageRead.value && Boolean(previous) && previous !== closedReopenAt.value
 })
 
 function closeReopenNotice() {
-  const previous = data.value?.session.previousStartsAt
+  const previous = data.value?.event.previousStartsAt
   if (!previous) return
   closedReopenAt.value = previous
   try {
@@ -173,7 +173,7 @@ function onHostAction(key: string) {
   else comingSoon()
 }
 
-// Only a loaded Session is refetched; the invite path never loads one.
+// Only a loaded Event is refetched; the invite path never loads one.
 usePollRefresh(() => {
   if (data.value) refresh()
 })
@@ -186,23 +186,23 @@ usePollRefresh(() => {
   />
   <AppShell
     v-else
-    kind="session"
+    kind="event"
   >
     <template
       v-if="data"
       #title
     >
       <h1 class="m-0 min-w-0 truncate text-[22px] leading-none">
-        {{ data.session.name }}
+        {{ data.event.name }}
       </h1>
-      <PhasePill :phase="data.session.phase" />
+      <PhasePill :phase="data.event.phase" />
     </template>
 
     <div
       v-if="data"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-4"
     >
-      <template v-if="data.session.phase === 'poll'">
+      <template v-if="data.event.phase === 'poll'">
         <NoticeBanner
           v-if="reopenNoticeShown"
           tone="warning"
@@ -247,7 +247,7 @@ usePollRefresh(() => {
             {{ t('mvp.reopen.noSlotsTitle') }}
           </h2>
           <p class="m-0 text-pretty">
-            {{ data.session.isHost ? t('mvp.reopen.noSlotsHost') : t('mvp.reopen.noSlotsMember') }}
+            {{ data.event.isHost ? t('mvp.reopen.noSlotsHost') : t('mvp.reopen.noSlotsMember') }}
           </p>
         </section>
 
@@ -265,7 +265,7 @@ usePollRefresh(() => {
               :total="total"
               :my-vote="myVoteFor(slot.id)"
               :best="data.bestSlotId === slot.id"
-              :can-pick="data.session.isHost"
+              :can-pick="data.event.isHost"
               @vote="value => vote(slot.id, value)"
               @pick="openConfirm(slot.id)"
             />
@@ -289,10 +289,10 @@ usePollRefresh(() => {
       </template>
 
       <DateSetCard
-        v-else-if="data.session.startsAt"
-        :starts-at="data.session.startsAt"
-        :is-host="data.session.isHost"
-        :ics-url="`/api/s/${slug}/ics`"
+        v-else-if="data.event.startsAt"
+        :starts-at="data.event.startsAt"
+        :is-host="data.event.isHost"
+        :ics-url="`/api/e/${slug}/ics`"
         @reschedule="rescheduleOpen = true"
         @invite="onHostAction('invite')"
       >
@@ -349,13 +349,13 @@ usePollRefresh(() => {
     />
 
     <HostDock
-      v-if="data?.session.isHost && data.session.phase === 'poll'"
+      v-if="data?.event.isHost && data.event.phase === 'poll'"
       :actions="hostActions"
       @action="onHostAction"
     />
 
     <DateConfirmDialog
-      v-if="data?.session.isHost"
+      v-if="data?.event.isHost"
       :open="confirmOpen"
       :options="confirmOptions"
       :preselected="confirmPreset"
@@ -365,7 +365,7 @@ usePollRefresh(() => {
       @cancel="confirmOpen = false"
     />
     <SlotEditSheet
-      v-if="data?.session.isHost && data.session.phase === 'poll'"
+      v-if="data?.event.isHost && data.event.phase === 'poll'"
       :open="editing"
       :slug="slug"
       :slots="editableSlots"
@@ -374,9 +374,9 @@ usePollRefresh(() => {
     />
 
     <DateRescheduleDialog
-      v-if="data?.session.isHost && data.session.startsAt"
+      v-if="data?.event.isHost && data.event.startsAt"
       :open="rescheduleOpen"
-      :starts-at="data.session.startsAt"
+      :starts-at="data.event.startsAt"
       :loading="rescheduling"
       @confirm="rescheduleDate"
       @cancel="rescheduleOpen = false"

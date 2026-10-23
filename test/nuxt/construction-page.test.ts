@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CatchAllPage from '~/pages/[...path].vue'
 import { kitty, signInAs } from './auth'
 
-// The Home list the construction CTA reads (#12). Each test sets the Sessions it returns.
-let homeSessions: unknown[] = []
-registerEndpoint('/api/s', { method: 'GET', handler: () => ({ sessions: homeSessions }) })
+// The Home list the construction CTA reads (#12). Each test sets the Events it returns.
+let homeEvents: unknown[] = []
+registerEndpoint('/api/e', { method: 'GET', handler: () => ({ events: homeEvents }) })
 
 async function visit(route: string) {
   return mountSuspended(CatchAllPage, { route })
@@ -14,25 +14,25 @@ async function visit(route: string) {
 describe('construction page route guard', () => {
   beforeEach(async () => {
     signInAs(kitty)
-    homeSessions = []
-    await clearNuxtData('home-sessions')
+    homeEvents = []
+    await clearNuxtData('home-events')
   })
 
   it('links the call to action to the latest open poll when the User has one', async () => {
-    homeSessions = [
+    homeEvents = [
       { slug: 'freitags-zocken-k7q2', name: 'Freitags-Zocken', phase: 'poll', createdAt: '2026-10-20T10:00:00.000Z' },
     ]
     const page = await visit('/archiv')
 
     await vi.waitFor(() => {
       const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
-      expect(cta?.attributes('href')).toBe('/s/freitags-zocken-k7q2')
+      expect(cta?.attributes('href')).toBe('/e/freitags-zocken-k7q2')
     })
   })
 
   it('picks the most recently created open poll, not the first one on Home', async () => {
     // Home lists polls to vote on first, so an older poll can come before a newer one.
-    homeSessions = [
+    homeEvents = [
       { slug: 'alt-a1b2', name: 'Alt', phase: 'poll', createdAt: '2026-10-01T10:00:00.000Z' },
       { slug: 'abend-c3d4', name: 'Abend', phase: 'date_set', createdAt: '2026-10-21T10:00:00.000Z' },
       { slug: 'neu-e5f6', name: 'Neu', phase: 'poll', createdAt: '2026-10-20T10:00:00.000Z' },
@@ -41,7 +41,7 @@ describe('construction page route guard', () => {
 
     await vi.waitFor(() => {
       const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
-      expect(cta?.attributes('href')).toBe('/s/neu-e5f6')
+      expect(cta?.attributes('href')).toBe('/e/neu-e5f6')
     })
   })
 
@@ -82,8 +82,8 @@ describe('construction page route guard', () => {
     expect(page.findAll('nav[aria-label="Hauptnavigation"] a').some(a => a.text() === 'Bibliothek')).toBe(true)
   })
 
-  it('renders the Spielbrett state in the session shell, without the hub navigation', async () => {
-    const page = await visit('/s/freitags-zocken-k7q2/brett')
+  it('renders the Spielbrett state in the event shell, without the hub navigation', async () => {
+    const page = await visit('/e/freitags-zocken-k7q2/brett')
 
     expect(page.get('h1').text()).toBe('Spielbrett im Rohbau.')
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(false)

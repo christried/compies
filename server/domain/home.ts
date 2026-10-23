@@ -1,4 +1,4 @@
-import type { HomeAction, Phase } from '../../shared/session'
+import type { HomeAction, Phase } from '../../shared/event'
 import { hasVoted, isPast, type PollVote } from './poll'
 
 // Home rules (#1 user stories 15–24, #12). Pure functions: the list handler loads the rows and
@@ -6,7 +6,7 @@ import { hasVoted, isPast, type PollVote } from './poll'
 
 export const HOME_DATE_GRACE_MS = 24 * 60 * 60 * 1000
 
-/** A Session with a Date leaves Home once the Date is more than 24 h past. Polls have no Date and stay. */
+/** An Event with a Date leaves Home once the Date is more than 24 h past. Polls have no Date and stay. */
 export function isPastHomeGrace(startsAt: Date | null, now: Date): boolean {
   return startsAt !== null && startsAt.getTime() < now.getTime() - HOME_DATE_GRACE_MS
 }
@@ -16,7 +16,7 @@ export function needsVote(phase: Phase, votableSlotIds: string[], votes: PollVot
   return phase === 'poll' && votableSlotIds.length > 0 && !hasVoted(votableSlotIds, votes, userId)
 }
 
-/** The card's call to action: the Host opens the Session, a User who still has to vote is asked to vote, the rest view it. */
+/** The card's call to action: the Host opens the Event, a User who still has to vote is asked to vote, the rest view it. */
 export function homeAction(input: { isHost: boolean, needsVote: boolean }): HomeAction {
   if (input.isHost) return 'open'
   return input.needsVote ? 'vote' : 'view'
@@ -39,7 +39,7 @@ function group(item: HomeOrderable, now: Date): number {
 }
 
 /**
- * The order and the set of Sessions on Home (#12): drops Dates more than 24 h past, then sorts by
+ * The order and the set of Events on Home (#12): drops Dates more than 24 h past, then sorts by
  * group. Open polls go newest first. Upcoming Dates go soonest first; a Date that passed within the
  * last 24 h comes after them, the most recent one first.
  */

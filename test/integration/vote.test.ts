@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createSession from '../../server/api/s/index.post'
-import readSession from '../../server/api/s/[slug].get'
-import putVote from '../../server/api/s/[slug]/slots/[slotId]/vote.put'
-import { pollSlots, pollVotes, sessionMembers, sessions, users } from '../../server/db/schema'
+import createEvent from '../../server/api/e/index.post'
+import readEvent from '../../server/api/e/[slug].get'
+import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
+import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -13,16 +13,16 @@ const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@examp
 const guest = { provider: 'discord', id: '2', name: 'Gast', email: 'guest@example.com', image: undefined } as const
 const outsider = { provider: 'discord', id: '4', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
-describe('poll votes and the Session read', () => {
+describe('poll votes and the Event read', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: ReturnType<typeof createTestServer>
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestServer(testDb.db, {
-      'POST /api/s': createSession,
-      'GET /api/s/:slug': readSession,
-      'PUT /api/s/:slug/slots/:slotId/vote': putVote,
+      'POST /api/e': createEvent,
+      'GET /api/e/:slug': readEvent,
+      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
     })
   })
 
@@ -34,8 +34,8 @@ describe('poll votes and the Session read', () => {
     stubAuthEnv()
     await testDb.db.delete(pollVotes)
     await testDb.db.delete(pollSlots)
-    await testDb.db.delete(sessionMembers)
-    await testDb.db.delete(sessions)
+    await testDb.db.delete(eventMembers)
+    await testDb.db.delete(events)
     await testDb.db.delete(users)
   })
 
@@ -51,26 +51,26 @@ describe('poll votes and the Session read', () => {
     return { cookie, id: row!.id }
   }
 
-  /** Makes a User a Member of the Session (the join flow is #10; here only the row matters). */
-  async function addMember(sessionId: string, userId: string) {
-    await testDb.db.insert(sessionMembers).values({ sessionId, userId })
+  /** Makes a User a Member of the Event (the join flow is #10; here only the row matters). */
+  async function addMember(eventId: string, userId: string) {
+    await testDb.db.insert(eventMembers).values({ eventId, userId })
   }
 
   async function createPoll(cookie: string, slots: string[]) {
-    const response = await request('/api/s', {
+    const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
       body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots }),
     })
     const { slug } = await response.json()
-    const [session] = await testDb.db.select().from(sessions).where(eq(sessions.slug, slug))
-    const rows = await testDb.db.select().from(pollSlots).where(eq(pollSlots.sessionId, session!.id))
+    const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+    const rows = await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, event!.id))
     const slotIdAt = (startsAt: string) => rows.find(row => row.startsAt.toISOString() === startsAt)!.id
-    return { slug, sessionId: session!.id, slotIdAt }
+    return { slug, eventId: event!.id, slotIdAt }
   }
 
   function vote(cookie: string | undefined, slug: string, slotId: string, value: unknown) {
-    return request(`/api/s/${slug}/slots/${slotId}/vote`, {
+    return request(`/api/e/${slug}/slots/${slotId}/vote`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
       body: JSON.stringify({ value }),
@@ -78,15 +78,15 @@ describe('poll votes and the Session read', () => {
   }
 
   function read(cookie: string | undefined, slug: string) {
-    return request(`/api/s/${slug}`, { headers: cookie ? { cookie } : {} })
+    return request(`/api/e/${slug}`, { headers: cookie ? { cookie } : {} })
   }
 
-  describe('GET /api/s/:slug', () => {
+  describe('GET /api/e/:slug', () => {
     it('returns the Slots with their past flag, every Member\'s Votes, the Best slot and the vote progress to a Member', async () => {
       const { cookie: hostCookie, id: hostId } = await signInAs(host, { hostPermission: true })
       const { cookie: guestCookie, id: guestId } = await signInAs(guest)
-      const { slug, sessionId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30', '2090-10-31T19:00'])
-      await addMember(sessionId, guestId)
+      const { slug, eventId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30', '2090-10-31T19:00'])
+      await addMember(eventId, guestId)
       const fri = slotIdAt('2090-10-30T19:30:00.000Z')
       const sat = slotIdAt('2090-10-31T18:00:00.000Z')
       await testDb.db.insert(pollVotes).values([
@@ -117,9 +117,9 @@ describe('poll votes and the Session read', () => {
 
     it('counts a Member as voted only once they have a Vote on every votable Slot', async () => {
       const { cookie: hostCookie, id: hostId } = await signInAs(host, { hostPermission: true })
-      const { slug, sessionId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30', '2090-10-31T19:00'])
+      const { slug, eventId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30', '2090-10-31T19:00'])
       const { id: guestId } = await signInAs(guest)
-      await addMember(sessionId, guestId)
+      await addMember(eventId, guestId)
       const fri = slotIdAt('2090-10-30T19:30:00.000Z')
       const sat = slotIdAt('2090-10-31T18:00:00.000Z')
       await testDb.db.insert(pollVotes).values([
@@ -147,7 +147,7 @@ describe('poll votes and the Session read', () => {
       expect(body.progress).toEqual({ voted: 0, total: 1 })
     })
 
-    it('answers 404 to a User who is not a Member, so a Session\'s votes stay hidden', async () => {
+    it('answers 404 to a User who is not a Member, so an Event\'s votes stay hidden', async () => {
       const { cookie: hostCookie } = await signInAs(host, { hostPermission: true })
       const { slug } = await createPoll(hostCookie, ['2090-10-30T20:30'])
       const { cookie: outsiderCookie } = await signInAs(outsider)
@@ -156,7 +156,7 @@ describe('poll votes and the Session read', () => {
     })
   })
 
-  describe('PUT /api/s/:slug/slots/:slotId/vote', () => {
+  describe('PUT /api/e/:slug/slots/:slotId/vote', () => {
     it('requires sign-in', async () => {
       const { cookie: hostCookie } = await signInAs(host, { hostPermission: true })
       const { slug, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30'])
@@ -175,7 +175,7 @@ describe('poll votes and the Session read', () => {
       expect(await testDb.db.select().from(pollVotes)).toEqual([])
     })
 
-    it('answers 404 for a Slot that belongs to another Session or does not exist', async () => {
+    it('answers 404 for a Slot that belongs to another Event or does not exist', async () => {
       const { cookie: hostCookie } = await signInAs(host, { hostPermission: true })
       const { slug } = await createPoll(hostCookie, ['2090-10-30T20:30'])
       const other = await createPoll(hostCookie, ['2090-11-07T20:00'])
@@ -210,8 +210,8 @@ describe('poll votes and the Session read', () => {
 
     it('answers 409 once the Date is set, so votes are frozen', async () => {
       const { cookie: hostCookie } = await signInAs(host, { hostPermission: true })
-      const { slug, sessionId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30'])
-      await testDb.db.update(sessions).set({ phase: 'date_set', startsAt: new Date('2090-10-30T19:30:00Z') }).where(eq(sessions.id, sessionId))
+      const { slug, eventId, slotIdAt } = await createPoll(hostCookie, ['2090-10-30T20:30'])
+      await testDb.db.update(events).set({ phase: 'date_set', startsAt: new Date('2090-10-30T19:30:00Z') }).where(eq(events.id, eventId))
 
       const response = await vote(hostCookie, slug, slotIdAt('2090-10-30T19:30:00.000Z'), 'yes')
 
