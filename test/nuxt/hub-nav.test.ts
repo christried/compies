@@ -16,7 +16,7 @@ describe('HubNav', () => {
   beforeEach(() => signInAs(kitty))
 
   it('marks the item of the current area as the current page', async () => {
-    const nav = await mountSuspended(HubNav, { props: { layout: 'header', canHost: true }, route: '/bibliothek' })
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { hasHostPermission: true, isAdmin: false } }, route: '/bibliothek' })
 
     expect(link(nav, 'Bibliothek').attributes('aria-current')).toBe('page')
     expect(link(nav, 'Sessions').attributes('aria-current')).toBeUndefined()
@@ -29,7 +29,7 @@ describe('HubNav', () => {
   })
 
   it('flags unbuilt areas as Baustelle, with a tape marker, and leaves Sessions alone', async () => {
-    const nav = await mountSuspended(HubNav, { props: { layout: 'header', canHost: true }, route: '/' })
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { hasHostPermission: true, isAdmin: false } }, route: '/' })
 
     for (const label of ['Archiv', 'Bibliothek', 'Profil']) {
       expect(link(nav, label).attributes('aria-description')).toBe('Baustelle')
@@ -46,20 +46,20 @@ describe('HubNav', () => {
   })
 
   it('shows Bibliothek, and not Admin, to a User with the Host permission', async () => {
-    const nav = await mountSuspended(HubNav, { props: { layout: 'tabs', canHost: true }, route: '/' })
+    const nav = await mountSuspended(HubNav, { props: { layout: 'tabs', viewer: { hasHostPermission: true, isAdmin: false } }, route: '/' })
 
     expect(labels(nav)).toEqual(['Sessions', 'Archiv', 'Bibliothek', 'Profil'])
   })
 
   it('shows Bibliothek and Admin to the Platform admin', async () => {
-    const nav = await mountSuspended(HubNav, { props: { layout: 'header', isAdmin: true }, route: '/' })
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { hasHostPermission: false, isAdmin: true } }, route: '/' })
 
     expect(labels(nav)).toEqual(['Sessions', 'Archiv', 'Bibliothek', 'Profil', 'Admin'])
     expect(link(nav, 'Admin').attributes('href')).toBe('/admin')
   })
 
   it('shows Bibliothek to the Platform admin even when the Host flag is not set', async () => {
-    const nav = await mountSuspended(HubNav, { props: { layout: 'header', isAdmin: true, canHost: false }, route: '/' })
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { hasHostPermission: false, isAdmin: true } }, route: '/' })
 
     expect(labels(nav)).toContain('Bibliothek')
   })

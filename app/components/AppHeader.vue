@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Volume2, VolumeX } from '@lucide/vue'
+import { viewerOf } from '~/utils/construction'
 
 // Logo (Compibert head), then the hub nav or the session title area, then sound toggle and
 // the avatar menu when signed in. The Einladen button lands with the invite sheet.
@@ -35,8 +36,7 @@ const user = useAuthUser()
       <template v-if="kind === 'hub'">
         <HubNav
           layout="header"
-          :can-host="user?.canHost"
-          :is-admin="user?.isAdmin"
+          :viewer="viewerOf(user)"
           class="max-md:hidden"
         />
         <span class="flex-1" />

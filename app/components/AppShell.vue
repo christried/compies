@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { viewerOf } from '~/utils/construction'
+
 // Layout frame. hub = header + HubNav (bottom tab bar below md); session = header with a
 // title area and no side panel in the MVP; bare = header only (errors, sign-in).
 withDefaults(defineProps<{
@@ -41,8 +43,7 @@ const user = useAuthUser()
     <HubNav
       v-if="kind === 'hub' && !noTabs"
       layout="tabs"
-      :can-host="user?.canHost"
-      :is-admin="user?.isAdmin"
+      :viewer="viewerOf(user)"
       class="sticky bottom-0 layer-sticky md:hidden"
     />
   </div>
