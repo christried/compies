@@ -2,12 +2,15 @@
 import type { Component } from 'vue'
 
 // Two to four exclusive options as a radio group (02-components § SegmentedControl). Arrow keys
-// move and select, with the focus following; the selected option is the only tab stop.
+// move and select, with the focus following; the selected option is the only tab stop. Options can
+// carry their own selected fill and icon (the Slot card's vote options); a disabled group shows its
+// options but does not select.
 const props = defineProps<{
   modelValue: string
-  options: { value: string, label: string, icon?: Component }[]
+  options: { value: string, label: string, icon?: Component, fill?: string }[]
   /** The group's accessible name. */
   label: string
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -15,6 +18,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const group = useTemplateRef('group')
 
 function select(value: string) {
+  if (props.disabled) return
   emit('update:modelValue', value)
 }
 
@@ -33,6 +37,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
     ref="group"
     role="radiogroup"
     :aria-label="label"
+    :aria-disabled="disabled ? 'true' : undefined"
     class="grid max-w-[420px] overflow-hidden rounded-pill border-(length:--cp-bw) border-line"
     :style="{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }"
   >
@@ -42,9 +47,10 @@ function onKeydown(event: KeyboardEvent, index: number) {
       type="button"
       role="radio"
       :aria-checked="option.value === modelValue ? 'true' : 'false'"
+      :aria-disabled="disabled ? 'true' : undefined"
       :tabindex="option.value === modelValue ? 0 : -1"
       class="hit-44 flex items-center justify-center gap-1.5 px-3 text-small font-bold outline-memphis focus-ring"
-      :class="option.value === modelValue ? 'bg-ink text-paper' : 'bg-surface text-ink'"
+      :class="option.value === modelValue ? (option.fill ?? 'bg-ink text-paper') : 'bg-surface text-ink'"
       @click="select(option.value)"
       @keydown="onKeydown($event, index)"
     >
