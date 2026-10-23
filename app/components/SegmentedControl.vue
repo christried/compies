@@ -22,6 +22,13 @@ function select(value: string) {
   emit('update:modelValue', value)
 }
 
+// Without a matching value the first option is the one tab stop, so the group stays reachable.
+const hasSelection = computed(() => props.options.some(option => option.value === props.modelValue))
+
+function isTabStop(index: number) {
+  return props.options[index]!.value === props.modelValue || (!hasSelection.value && index === 0)
+}
+
 function onKeydown(event: KeyboardEvent, index: number) {
   const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key]
   if (step === undefined) return
@@ -38,7 +45,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
     role="radiogroup"
     :aria-label="label"
     :aria-disabled="disabled ? 'true' : undefined"
-    class="grid max-w-[420px] overflow-hidden rounded-pill border-(length:--cp-bw) border-line"
+    class="grid max-w-[420px] rounded-pill border-(length:--cp-bw) border-line"
     :style="{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }"
   >
     <button
@@ -48,9 +55,14 @@ function onKeydown(event: KeyboardEvent, index: number) {
       role="radio"
       :aria-checked="option.value === modelValue ? 'true' : 'false'"
       :aria-disabled="disabled ? 'true' : undefined"
-      :tabindex="option.value === modelValue ? 0 : -1"
-      class="hit-44 flex items-center justify-center gap-1.5 px-3 text-small font-bold outline-memphis focus-ring"
-      :class="option.value === modelValue ? (option.fill ?? 'bg-ink text-paper') : 'bg-surface text-ink'"
+      :tabindex="isTabStop(index) ? 0 : -1"
+      class="hit-44 flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap px-3 text-small font-bold focus-visible:focus-ring transition-colors dur-instant"
+      :class="[
+        option.value === modelValue ? (option.fill ?? 'bg-ink text-paper') : 'bg-surface text-ink hover:bg-paper-2',
+        index === 0 ? 'rounded-l-pill' : '',
+        index === options.length - 1 ? 'rounded-r-pill' : '',
+        index > 0 ? 'border-l-(length:--cp-bw) border-line' : '',
+      ]"
       @click="select(option.value)"
       @keydown="onKeydown($event, index)"
     >

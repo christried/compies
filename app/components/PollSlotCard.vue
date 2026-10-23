@@ -91,18 +91,19 @@ function choose(value: string) {
       :disabled="timeslot.past"
       @update:model-value="choose"
     />
-    <button
+    <AppButton
       v-if="canPick && !timeslot.past"
-      type="button"
-      class="outline-memphis hit-44 flex h-11 items-center justify-center gap-1.5 rounded-pill border-(length:--cp-bw) border-line font-bold shadow-btn max-md:hidden"
-      :class="best ? 'bg-primary text-on-primary' : 'bg-surface text-ink'"
+      :variant="best ? 'primary' : 'secondary'"
+      class="max-md:hidden"
       @click="emit('pick')"
     >
-      <AppIcon
-        :icon="CalendarCheck"
-        :size="14"
-      />
+      <template #icon>
+        <AppIcon
+          :icon="CalendarCheck"
+          :size="14"
+        />
+      </template>
       {{ t('mvp.poll.pickThis') }}
-    </button>
+    </AppButton>
   </article>
 </template>

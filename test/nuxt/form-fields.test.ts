@@ -1,3 +1,4 @@
+import { Check, X } from '@lucide/vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 import DateTimeField from '~/components/DateTimeField.vue'
@@ -99,5 +100,40 @@ describe('SegmentedControl', () => {
 
     await radios[0]!.trigger('keydown', { key: 'ArrowLeft' })
     expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
+  })
+
+  it('fills the selected option with its own colour and draws its icon', async () => {
+    const coloured = [
+      { value: 'yes', label: 'Ja', icon: Check, fill: 'bg-success text-on-success' },
+      { value: 'no', label: 'Nein', icon: X, fill: 'bg-ink text-paper' },
+    ]
+    const page = await mountSuspended(SegmentedControl, { props: { modelValue: 'yes', options: coloured, label: 'Vote' } })
+    const [yes, no] = page.findAll('[role="radio"]')
+
+    expect(yes!.classes()).toContain('bg-success')
+    expect(no!.classes()).not.toContain('bg-success')
+    expect(yes!.find('svg').exists()).toBe(true)
+    expect(no!.find('svg').exists()).toBe(true)
+  })
+
+  it('leaves the selected option as the only tab stop', async () => {
+    const page = await mountSuspended(SegmentedControl, { props: { modelValue: 'direct', options, label: 'Termin' } })
+
+    expect(page.findAll('[role="radio"]').map(radio => radio.attributes('tabindex'))).toEqual(['-1', '0'])
+  })
+
+  it('keeps the first option reachable while nothing is selected', async () => {
+    const page = await mountSuspended(SegmentedControl, { props: { modelValue: '', options, label: 'Termin' } })
+
+    expect(page.findAll('[role="radio"]').map(radio => radio.attributes('tabindex'))).toEqual(['0', '-1'])
+  })
+
+  it('does not select anything while disabled', async () => {
+    const page = await mountSuspended(SegmentedControl, { props: { modelValue: 'poll', options, label: 'Termin', disabled: true } })
+
+    await page.findAll('[role="radio"]')[1]!.trigger('click')
+
+    expect(page.get('[role="radiogroup"]').attributes('aria-disabled')).toBe('true')
+    expect(page.emitted('update:modelValue')).toBeUndefined()
   })
 })
