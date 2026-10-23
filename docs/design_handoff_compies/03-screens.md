@@ -160,7 +160,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Components:** HostDock, Sheet, HoldToConfirmButton, NextGamePicker, GamePoolPicker, NumberStepper
 - **Data:** Phase-dependent actions.
 - **Host vs player:** Host only.
-- **States:** Dock · Mehr-Menü · Session starten · Leute verschieben · Rad & Pools bearbeiten · Nächstes Spiel setzen · Anzahl Spiele ändern · Teamname zurücksetzen · Chat-Nachricht löschen · Event beenden · Event löschen
+- **States:** Dock · Mehr-Menü · Session starten · Leute verschieben · Rad & Pools bearbeiten · Nächstes Spiel setzen · Anzahl Spiele ändern · Teamname zurücksetzen · Chat-Nachricht löschen · Session beenden · Event löschen
 - **Realtime:** Sends intents; receives `event.configChanged`, `wheel.entriesChanged`, `round.determined`.
 
 
