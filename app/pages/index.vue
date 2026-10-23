@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
-import type { HomeView } from '~~/shared/session'
+import type { HomeView } from '~~/shared/event'
 
-// Home (screen M1, #12): every Session the User is a Member of, in the order the server sends (open
+// Home (screen M1, #12): every Event the User is a Member of, in the order the server sends (open
 // polls to vote on, other open polls, Dates upcoming first). Users with the Host permission get „Neue Terminumfrage“.
 // The list shows two skeleton cards while it loads, one friendly empty state for new Users (Hosts
 // included, #1 story 21) and a generic error with a retry. It refetches on window focus and when the
@@ -10,11 +10,11 @@ import type { HomeView } from '~~/shared/session'
 
 const { t } = useI18n()
 const user = useAuthUser()
-const { data, status, error, refresh } = useFetch<HomeView>('/api/s', { key: 'home-sessions' })
+const { data, status, error, refresh } = useFetch<HomeView>('/api/e', { key: 'home-events' })
 
 const pending = computed(() => status.value === 'pending')
-const sessions = computed(() => data.value?.sessions ?? [])
-const empty = computed(() => !error.value && !!data.value && sessions.value.length === 0)
+const events = computed(() => data.value?.events ?? [])
+const empty = computed(() => !error.value && !!data.value && events.value.length === 0)
 
 const greetingName = computed(() => user.value?.displayName ?? user.value?.name ?? '')
 const title = computed(() => t(empty.value ? 'mvp.home.titleEmpty' : 'mvp.home.title'))
@@ -81,16 +81,16 @@ useRefreshOnReturn(refresh)
         v-else-if="data"
         class="flex flex-col gap-3"
       >
-        <h2 class="m-0 text-[20px] leading-none font-bold">
-          {{ t('mvp.home.sessions') }}
+        <h2 class="m-0 font-display text-[26px] leading-[1.05] font-normal max-sm:text-[22px]">
+          {{ t('mvp.home.events') }}
         </h2>
         <ul class="m-0 grid list-none grid-cols-1 gap-3.5 p-0 min-[600px]:grid-cols-2">
           <li
-            v-for="session in sessions"
-            :key="session.slug"
+            v-for="event in events"
+            :key="event.slug"
             class="min-w-0"
           >
-            <HomeSessionCard :session="session" />
+            <HomeEventCard :event="event" />
           </li>
         </ul>
       </section>

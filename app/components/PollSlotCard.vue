@@ -15,7 +15,7 @@ export interface PollSlotView {
 const props = defineProps<{
   timeslot: PollSlotView
   counts: { yes: number, maybe: number, no: number }
-  /** Members in the Session, the base for the bars. */
+  /** Members in the Event, the base for the bars. */
   total: number
   myVote: VoteValue | null
   best: boolean
@@ -32,7 +32,7 @@ const share = (count: number) => (props.total > 0 ? `${(count / props.total) * 1
 const options = computed(() => [
   { value: 'yes', label: t('poll.yes'), icon: Check, fill: 'bg-success text-on-success' },
   { value: 'maybe', label: t('poll.maybe'), icon: Minus, fill: 'bg-warning text-on-warning' },
-  { value: 'no', label: t('poll.no'), icon: X, fill: 'bg-ink text-paper' },
+  { value: 'no', label: t('poll.no'), icon: X, fill: 'bg-error text-on-error' },
 ])
 
 // The control reports a string; only a known vote value is emitted, so no cast is needed.

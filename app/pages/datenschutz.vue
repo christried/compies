@@ -13,7 +13,7 @@ useHead({ title: () => `${t('legal.datenschutz.title')} | ${t('app.name')}` })
       doc="datenschutz"
       :sections="[
         'intro', 'controller', 'overview', 'hosting', 'database', 'signIn', 'avatar', 'cookies',
-        'security', 'sessions', 'calendar', 'fonts', 'recipients', 'transfer', 'retention',
+        'security', 'events', 'calendar', 'fonts', 'recipients', 'transfer', 'retention',
         'obligation', 'rights', 'complaint', 'dataSecurity', 'changes',
       ]"
     />

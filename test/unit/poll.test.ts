@@ -80,6 +80,15 @@ describe('voteRejection', () => {
   it('rejects a Vote on a past Slot', () => {
     expect(voteRejection({ phase: 'poll', startsAt: PAST.startsAt, now })).toBe('slot_past')
   })
+
+  it('rejects a Vote on a Slot that already became a Date, so the Votes stay frozen (#52)', () => {
+    expect(voteRejection({ phase: 'poll', startsAt: FRI.startsAt, now, taken: true })).toBe('slot_taken')
+  })
+
+  it('checks the phase first, then the taken Slot, then the time', () => {
+    expect(voteRejection({ phase: 'date_set', startsAt: FRI.startsAt, now, taken: true })).toBe('wrong_phase')
+    expect(voteRejection({ phase: 'poll', startsAt: PAST.startsAt, now, taken: true })).toBe('slot_taken')
+  })
 })
 
 describe('parseVoteValue', () => {

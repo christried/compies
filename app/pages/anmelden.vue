@@ -15,11 +15,11 @@ const invitePath = computed(() => {
   return isInviteLinkPath(path) ? path : null
 })
 const invited = computed(() => invitePath.value !== null)
-// The notice names the Session and the Host (#10). The preview answers only for valid links.
+// The notice names the Event and the Host (#10). The preview answers only for valid links.
 const { data: invite } = await useAsyncData<InvitePreview | null>('sign-in-invite', async () => {
   if (!invitePath.value) return null
   try {
-    return await $fetch<InvitePreview>(`/api/invite/${invitePath.value.slice('/s/'.length)}`)
+    return await $fetch<InvitePreview>(`/api/invite/${invitePath.value.slice('/e/'.length)}`)
   }
   catch {
     return null
@@ -45,8 +45,7 @@ async function signIn(provider: SignInProvider) {
       method: 'POST',
       body: { provider, callbackURL: target.value, errorCallbackURL: `${SIGN_IN_PATH}?${back}`, disableRedirect: true },
     })
-    // Not navigateTo: it stops the app scope first, which drops the colour-mode entry (data-theme)
-    // and flashes light until the provider page replaces ours (#32).
+    // Not navigateTo: it stops the app scope first, and the page would flash until the provider page replaces ours (#32).
     window.location.href = url
   }
   catch {

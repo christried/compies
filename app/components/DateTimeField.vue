@@ -23,6 +23,8 @@ import {
   PopoverPortal,
   PopoverRoot,
 } from 'reka-ui'
+import type { Ref } from 'vue'
+import { joinBerlinLocal, splitBerlinLocal } from '~~/shared/time'
 
 // A Berlin date and time in two own fields (ADR 0010, 02-components § DateTimeField). The value is
 // `YYYY-MM-DDTHH:mm` in Europe/Berlin, or empty until both parts are set and valid (ADR 0003).
@@ -30,10 +32,8 @@ const props = withDefaults(defineProps<{
   modelValue: string
   /** Accessible name of the group, e.g. the numbered Slot label of the create form. */
   label: string
-  /** The earliest selectable day, as a Berlin value; only its date part is used. */
-  min?: string
   error?: string
-}>(), { min: undefined, error: undefined })
+}>(), { error: undefined })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
@@ -90,9 +90,9 @@ function parseTimeDigits(digits: string) {
 }
 
 // Each part keeps its typed digits; its text and its value are derived from them.
-const [initialDate = '', initialTime = ''] = props.modelValue.split('T')
-const dateDigits = ref(isoToDigits(initialDate))
-const timeDigits = ref(initialTime.replace(':', ''))
+const initial = splitBerlinLocal(props.modelValue)
+const dateDigits = ref(isoToDigits(initial.date))
+const timeDigits = ref(initial.time.replace(':', ''))
 const dateText = computed(() => formatDateDigits(dateDigits.value))
 const dateValue = computed(() => parseDateDigits(dateDigits.value))
 const timeText = computed(() => formatTimeDigits(timeDigits.value))
@@ -100,7 +100,7 @@ const timeValue = computed(() => parseTimeDigits(timeDigits.value))
 const timeInvalid = computed(() => timeDigits.value.length === 4 && !timeValue.value)
 
 function combined() {
-  return dateValue.value && timeValue.value ? `${dateValue.value}T${timeValue.value}` : ''
+  return dateValue.value && timeValue.value ? joinBerlinLocal(dateValue.value, timeValue.value) : ''
 }
 
 function onPart() {
@@ -131,16 +131,16 @@ function commitTime() {
 // A value from outside (a reset, or the Slot list changing) replaces what the inputs show.
 watch(() => props.modelValue, (value) => {
   if (value === combined()) return
-  const [datePart = '', timePart = ''] = value.split('T')
-  dateDigits.value = isoToDigits(datePart)
-  timeDigits.value = timePart.replace(':', '')
+  const parts = splitBerlinLocal(value)
+  dateDigits.value = isoToDigits(parts.date)
+  timeDigits.value = parts.time.replace(':', '')
 })
 
-// Calendar: days before the earliest allowed day cannot be picked; it opens on the Berlin today.
-const minValue = computed(() => (props.min ? parseDate(props.min.split('T')[0]!) : undefined))
-const calendarValue = computed(() => (dateValue.value ? parseDate(dateValue.value) : undefined))
+// The earliest selectable day is today in Berlin, in every date field: the field owns it, so no caller
+// has to pass it (ADR 0003, spec #41).
 const berlinToday = parseDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date()))
-const calendarPlaceholder = computed(() => calendarValue.value ?? minValue.value ?? berlinToday)
+const calendarValue = computed(() => (dateValue.value ? parseDate(dateValue.value) : undefined))
+const calendarPlaceholder = computed(() => calendarValue.value ?? berlinToday)
 
 function selectDate(value: DateValue | undefined) {
   if (!value) return
@@ -149,29 +149,67 @@ function selectDate(value: DateValue | undefined) {
   onPart()
 }
 
-// The popovers open on a click anywhere in their field. A click or a key opens them in
-// different ways: a click keeps the focus in the input so typing goes on; a key moves it inside.
-const dateOpen = ref(false)
-const timeOpen = ref(false)
-const dateSuppressAutoFocus = ref(false)
-const timeSuppressAutoFocus = ref(false)
-
-function openDate(byPointer: boolean) {
-  dateSuppressAutoFocus.value = byPointer
-  dateOpen.value = true
-}
-
-function openTime(byPointer: boolean) {
-  timeSuppressAutoFocus.value = byPointer
-  timeOpen.value = true
-}
-
 function selectTime(value: unknown) {
   if (typeof value !== 'string') return
   timeDigits.value = value.replace(':', '')
   timeOpen.value = false
   onPart()
 }
+
+/**
+ * The popover of one field (ADR 0010). A click opens it and keeps the focus in the input, so typing goes on;
+ * ArrowDown moves the focus into it; Escape or a pick closes it with the focus back in the input; a press or a
+ * focus outside it closes it, except inside its own field.
+ */
+function fieldPopover(open: Ref<boolean>, field: Ref<HTMLElement | null>, input: Ref<HTMLInputElement | null>, panel: Ref<HTMLElement | null>, targets: string[]) {
+  let byKey = false
+  let dismissed = false
+
+  // The first of the targets that is in the panel takes the focus: the selected item, else the first one.
+  function focusPanel() {
+    for (const target of targets) {
+      const element = panel.value?.querySelector<HTMLElement>(target)
+      if (element) {
+        element.focus()
+        return
+      }
+    }
+  }
+
+  return {
+    show(keyboard: boolean) {
+      byKey = keyboard
+      dismissed = false
+      if (open.value && keyboard) focusPanel()
+      else open.value = true
+    },
+    openAutoFocus(event: Event) {
+      event.preventDefault()
+      if (byKey) focusPanel()
+      else input.value?.focus()
+    },
+    closeAutoFocus(event: Event) {
+      event.preventDefault()
+      if (!dismissed) input.value?.focus()
+    },
+    outside(event: Event) {
+      if (field.value?.contains(event.target as Node)) event.preventDefault()
+      else dismissed = true
+    },
+  }
+}
+
+const dateField = ref<HTMLElement | null>(null)
+const dateInput = ref<HTMLInputElement | null>(null)
+const datePanel = ref<HTMLElement | null>(null)
+const dateOpen = ref(false)
+const date = fieldPopover(dateOpen, dateField, dateInput, datePanel, ['[data-selected]', '[tabindex="0"]'])
+
+const timeField = ref<HTMLElement | null>(null)
+const timeInput = ref<HTMLInputElement | null>(null)
+const timePanel = ref<HTMLElement | null>(null)
+const timeOpen = ref(false)
+const time = fieldPopover(timeOpen, timeField, timeInput, timePanel, ['[data-state="checked"]', '[role="option"]'])
 
 // The list opens scrolled to the typed time (or the next step), or to 19:00 when the field is empty.
 const timeScroll = ref<HTMLElement | null>(null)
@@ -188,13 +226,6 @@ watch(timeOpen, async (open) => {
 function fieldClass(hasError: boolean | undefined) {
   return hasError ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'
 }
-
-// Stops a pointer-opened popover from taking the focus out of the input.
-function suppressAutoFocus(suppress: boolean) {
-  return (event: Event) => {
-    if (suppress) event.preventDefault()
-  }
-}
 </script>
 
 <template>
@@ -208,8 +239,9 @@ function suppressAutoFocus(suppress: boolean) {
       <PopoverRoot v-model:open="dateOpen">
         <PopoverAnchor as-child>
           <div
+            ref="dateField"
             class="relative min-w-0 flex-1"
-            @click="openDate(true)"
+            @click="date.show(false)"
           >
             <label
               :for="`${id}-date`"
@@ -217,23 +249,25 @@ function suppressAutoFocus(suppress: boolean) {
             >{{ t('mvp.create.dateInput') }}</label>
             <input
               :id="`${id}-date`"
+              ref="dateInput"
               :value="dateText"
               type="text"
               inputmode="numeric"
               autocomplete="off"
               :placeholder="t('mvp.dateTime.datePlaceholder')"
               :aria-invalid="error ? 'true' : undefined"
-              class="hit-44 h-12 w-full rounded-md bg-surface py-0 pr-12 pl-3 text-[17px] font-semibold text-ink"
+              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-12 pl-3 text-[17px] font-semibold text-ink"
               :class="fieldClass(!!error)"
               @input="onDateInput"
-              @keydown.down.prevent="openDate(false)"
+              @keydown.down.prevent="date.show(true)"
             >
             <button
               type="button"
               class="absolute top-1/2 right-1 grid size-11 -translate-y-1/2 place-items-center rounded-md text-ink-2"
               :aria-label="t('mvp.dateTime.calendarOpen')"
               :aria-expanded="dateOpen"
-              @click.stop="openDate(false)"
+              @mousedown.prevent
+              @click.stop="date.show($event.detail === 0)"
             >
               <AppIcon
                 :icon="CalendarDays"
@@ -247,76 +281,82 @@ function suppressAutoFocus(suppress: boolean) {
             align="start"
             :side-offset="6"
             class="layer-popover outline-memphis max-w-[calc(100vw-2rem)] rounded-lg bg-surface p-1.5 shadow-card"
-            @open-auto-focus="suppressAutoFocus(dateSuppressAutoFocus)"
+            @open-auto-focus="date.openAutoFocus"
+            @close-auto-focus="date.closeAutoFocus"
+            @pointer-down-outside="date.outside"
+            @focus-outside="date.outside"
           >
-            <CalendarRoot
-              v-slot="{ grid, weekDays }"
-              :model-value="calendarValue"
-              :placeholder="calendarPlaceholder"
-              :min-value="minValue"
-              :week-starts-on="1"
-              locale="de-DE"
-              @update:model-value="selectDate"
-            >
-              <CalendarHeader class="flex items-center justify-between">
-                <CalendarPrev
-                  class="grid size-11 place-items-center rounded-md text-ink"
-                  :aria-label="t('mvp.dateTime.prevMonth')"
-                >
-                  <AppIcon
-                    :icon="ChevronLeft"
-                    :size="18"
-                  />
-                </CalendarPrev>
-                <CalendarHeading class="font-bold text-ink" />
-                <CalendarNext
-                  class="grid size-11 place-items-center rounded-md text-ink"
-                  :aria-label="t('mvp.dateTime.nextMonth')"
-                >
-                  <AppIcon
-                    :icon="ChevronRight"
-                    :size="18"
-                  />
-                </CalendarNext>
-              </CalendarHeader>
-              <div
-                v-for="month in grid"
-                :key="month.value.toString()"
-                class="mt-2"
+            <div ref="datePanel">
+              <CalendarRoot
+                v-slot="{ grid, weekDays }"
+                :model-value="calendarValue"
+                :placeholder="calendarPlaceholder"
+                :min-value="berlinToday"
+                :week-starts-on="1"
+                locale="de-DE"
+                @update:model-value="selectDate"
               >
-                <CalendarGrid>
-                  <CalendarGridHead>
-                    <CalendarGridRow>
-                      <CalendarHeadCell
-                        v-for="day in weekDays"
-                        :key="day"
-                        class="grid size-11 place-items-center text-small font-bold text-ink-2"
+                <CalendarHeader class="flex items-center justify-between">
+                  <CalendarPrev
+                    class="grid size-11 place-items-center rounded-md text-ink"
+                    :aria-label="t('mvp.dateTime.prevMonth')"
+                  >
+                    <AppIcon
+                      :icon="ChevronLeft"
+                      :size="18"
+                    />
+                  </CalendarPrev>
+                  <CalendarHeading class="font-bold text-ink" />
+                  <CalendarNext
+                    class="grid size-11 place-items-center rounded-md text-ink"
+                    :aria-label="t('mvp.dateTime.nextMonth')"
+                  >
+                    <AppIcon
+                      :icon="ChevronRight"
+                      :size="18"
+                    />
+                  </CalendarNext>
+                </CalendarHeader>
+                <div
+                  v-for="month in grid"
+                  :key="month.value.toString()"
+                  class="mt-2"
+                >
+                  <CalendarGrid class="w-full border-separate border-spacing-0">
+                    <CalendarGridHead>
+                      <CalendarGridRow>
+                        <CalendarHeadCell
+                          v-for="day in weekDays"
+                          :key="day"
+                          class="h-11 w-11 p-0 text-center align-middle text-small font-bold text-ink-2"
+                        >
+                          {{ day }}
+                        </CalendarHeadCell>
+                      </CalendarGridRow>
+                    </CalendarGridHead>
+                    <CalendarGridBody>
+                      <CalendarGridRow
+                        v-for="(week, index) in month.rows"
+                        :key="index"
                       >
-                        {{ day }}
-                      </CalendarHeadCell>
-                    </CalendarGridRow>
-                  </CalendarGridHead>
-                  <CalendarGridBody>
-                    <CalendarGridRow
-                      v-for="(week, index) in month.rows"
-                      :key="index"
-                    >
-                      <CalendarCell
-                        v-for="day in week"
-                        :key="day.toString()"
-                        :date="day"
-                      >
-                        <CalendarCellTrigger
-                          :day="day"
-                          :month="month.value"
-                          class="grid size-11 place-items-center rounded-md text-ink data-[outside-view]:text-ink-3 data-[disabled]:text-ink-3 data-[disabled]:line-through data-[selected]:bg-ink data-[selected]:text-paper data-[today]:font-bold"
-                        />
-                      </CalendarCell>
-                    </CalendarGridRow>
-                  </CalendarGridBody>
-                </CalendarGrid>
-              </div>
-            </CalendarRoot>
+                        <CalendarCell
+                          v-for="day in week"
+                          :key="day.toString()"
+                          :date="day"
+                          class="p-0"
+                        >
+                          <CalendarCellTrigger
+                            :day="day"
+                            :month="month.value"
+                            class="grid size-11 place-items-center rounded-md text-ink data-[outside-view]:text-ink-3 data-[disabled]:text-ink-3 data-[disabled]:line-through data-[selected]:bg-ink data-[selected]:text-paper data-[today]:font-bold"
+                          />
+                        </CalendarCell>
+                      </CalendarGridRow>
+                    </CalendarGridBody>
+                  </CalendarGrid>
+                </div>
+              </CalendarRoot>
+            </div>
           </PopoverContent>
         </PopoverPortal>
       </PopoverRoot>
@@ -324,8 +364,9 @@ function suppressAutoFocus(suppress: boolean) {
       <PopoverRoot v-model:open="timeOpen">
         <PopoverAnchor as-child>
           <div
+            ref="timeField"
             class="relative w-36 flex-none"
-            @click="openTime(true)"
+            @click="time.show(false)"
           >
             <label
               :for="`${id}-time`"
@@ -333,25 +374,27 @@ function suppressAutoFocus(suppress: boolean) {
             >{{ t('mvp.create.timeInput') }}</label>
             <input
               :id="`${id}-time`"
+              ref="timeInput"
               :value="timeText"
               type="text"
               inputmode="numeric"
               autocomplete="off"
               :placeholder="t('mvp.dateTime.timePlaceholder')"
               :aria-invalid="error || timeInvalid ? 'true' : undefined"
-              class="hit-44 h-12 w-full rounded-md bg-surface py-0 pr-12 pl-3 font-num text-[17px] text-ink"
+              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-12 pl-3 font-num text-[17px] text-ink"
               :class="fieldClass(!!error || timeInvalid)"
               @input="onTimeInput"
               @blur="commitTime"
               @keydown.enter="commitTime"
-              @keydown.down.prevent="openTime(false)"
+              @keydown.down.prevent="time.show(true)"
             >
             <button
               type="button"
               class="absolute top-1/2 right-1 grid size-11 -translate-y-1/2 place-items-center rounded-md text-ink-2"
               :aria-label="t('mvp.dateTime.timeOpen')"
               :aria-expanded="timeOpen"
-              @click.stop="openTime(false)"
+              @mousedown.prevent
+              @click.stop="time.show($event.detail === 0)"
             >
               <AppIcon
                 :icon="Clock"
@@ -365,29 +408,34 @@ function suppressAutoFocus(suppress: boolean) {
             align="end"
             :side-offset="6"
             class="layer-popover outline-memphis w-36 rounded-lg bg-surface p-1.5 shadow-card"
-            @open-auto-focus="suppressAutoFocus(timeSuppressAutoFocus)"
+            @open-auto-focus="time.openAutoFocus"
+            @close-auto-focus="time.closeAutoFocus"
+            @pointer-down-outside="time.outside"
+            @focus-outside="time.outside"
           >
-            <ListboxRoot
-              :model-value="timeValue || undefined"
-              @update:model-value="selectTime"
-            >
-              <ListboxContent>
-                <div
-                  ref="timeScroll"
-                  class="relative max-h-72 overflow-y-auto"
-                >
-                  <ListboxItem
-                    v-for="step in TIME_STEPS"
-                    :key="step"
-                    :value="step"
-                    :data-time="step"
-                    class="flex h-11 cursor-pointer items-center rounded-md px-3 font-num text-[17px] text-ink data-[highlighted]:bg-surface-2 data-[state=checked]:font-bold"
+            <div ref="timePanel">
+              <ListboxRoot
+                :model-value="timeValue || undefined"
+                @update:model-value="selectTime"
+              >
+                <ListboxContent>
+                  <div
+                    ref="timeScroll"
+                    class="relative max-h-72 overflow-y-auto"
                   >
-                    {{ step }}
-                  </ListboxItem>
-                </div>
-              </ListboxContent>
-            </ListboxRoot>
+                    <ListboxItem
+                      v-for="step in TIME_STEPS"
+                      :key="step"
+                      :value="step"
+                      :data-time="step"
+                      class="flex h-11 cursor-pointer items-center rounded-md px-3 font-num text-[17px] text-ink data-[highlighted]:bg-surface-2 data-[state=checked]:font-bold"
+                    >
+                      {{ step }}
+                    </ListboxItem>
+                  </div>
+                </ListboxContent>
+              </ListboxRoot>
+            </div>
           </PopoverContent>
         </PopoverPortal>
       </PopoverRoot>

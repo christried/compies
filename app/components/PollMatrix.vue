@@ -2,9 +2,10 @@
 import { Check, Minus, X } from '@lucide/vue'
 import type { VoteValue } from '~~/shared/poll'
 
-// "Wer kann wann?": everyone in the Session against every Slot (02-components § PollMatrix). A real
+// "Wer kann wann?": everyone in the Event against every Slot (02-components § PollMatrix). A real
 // table with row and column headers. "noch nicht abgestimmt" (no Vote yet) is drawn dashed and is
-// not the same as Nein. Scrolls sideways on phones.
+// not the same as Nein. Scrolls sideways only when the Slots don't fit; headers keep the day and the
+// time on separate lines and are never cut.
 export interface MatrixPerson {
   id: string
   name: string
@@ -14,7 +15,10 @@ export interface MatrixPerson {
 
 export interface MatrixSlot {
   id: string
-  label: string
+  /** The day as the header shows it, e.g. `Sa 24.10.` */
+  day: string
+  /** The time on its own line, e.g. `20:30`. */
+  time: string
   past: boolean
 }
 
@@ -37,7 +41,7 @@ const valueOf = computed(() => {
 const LOOK: Record<VoteValue | 'open', { key: string, icon?: typeof Check, cell: string }> = {
   yes: { key: 'poll.yes', icon: Check, cell: 'bg-success text-on-success border-solid rounded-full' },
   maybe: { key: 'poll.maybe', icon: Minus, cell: 'bg-warning text-on-warning border-solid rounded-full' },
-  no: { key: 'poll.no', icon: X, cell: 'bg-surface text-ink border-solid rounded-[6px]' },
+  no: { key: 'poll.no', icon: X, cell: 'bg-error text-on-error border-solid rounded-[6px]' },
   open: { key: 'mvp.poll.notVoted', cell: 'bg-transparent text-ink-3 border-dashed rounded-full' },
 }
 
@@ -48,7 +52,7 @@ function lookFor(userId: string, slotId: string) {
 
 <template>
   <div class="overflow-x-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface">
-    <table class="w-full min-w-[418px] border-collapse md:min-w-0">
+    <table class="w-full border-collapse">
       <caption class="sr-only">
         {{ t('mvp.poll.whoWhen') }}
       </caption>
@@ -62,10 +66,11 @@ function lookFor(userId: string, slotId: string) {
             v-for="slot in slots"
             :key="slot.id"
             scope="col"
-            class="border-b-2 border-line-soft px-1 py-2 text-center text-[12px] leading-tight font-extrabold"
+            class="border-b-2 border-line-soft px-1 py-2 text-center text-[12px] leading-tight font-extrabold whitespace-nowrap"
             :class="slot.past && 'text-ink-3'"
           >
-            {{ slot.label }}
+            <span class="block">{{ slot.day }}</span>
+            <span class="block">{{ slot.time }}</span>
             <span
               v-if="slot.past"
               class="block text-[11px] font-bold"
@@ -80,7 +85,7 @@ function lookFor(userId: string, slotId: string) {
         >
           <th
             scope="row"
-            class="border-b-[1.5px] border-line-soft px-3 py-1.5 text-left text-[13px]"
+            class="min-w-[120px] border-b-[1.5px] border-line-soft px-3 py-1.5 text-left text-[13px]"
             :class="person.id === meId ? 'font-extrabold' : 'font-semibold'"
           >
             <span class="flex items-center gap-2">

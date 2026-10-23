@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createInviteToken, createSlug } from '../../server/domain/slug'
-import { parseSessionPath } from '../../shared/links'
+import { parseEventPath } from '../../shared/links'
 
 describe('createSlug', () => {
   it('kebab-cases the name and appends the suffix', () => {
@@ -13,8 +13,8 @@ describe('createSlug', () => {
     expect(createSlug('Café Zocken', 'x9y8')).toBe('cafe-zocken-x9y8')
   })
 
-  it('falls back to "session" when the name has no ASCII letters or digits', () => {
-    expect(createSlug('🎮🎮', 'k7q2')).toBe('session-k7q2')
+  it('falls back to "event" when the name has no ASCII letters or digits', () => {
+    expect(createSlug('🎮🎮', 'k7q2')).toBe('event-k7q2')
   })
 
   it('appends four lowercase letters or digits by default', () => {
@@ -32,20 +32,20 @@ describe('createInviteToken', () => {
   })
 })
 
-describe('parseSessionPath', () => {
-  it('reads a Session link as the whole segment', () => {
-    expect(parseSessionPath('freitags-zocken-k7q2')).toEqual({ kind: 'session', slug: 'freitags-zocken-k7q2' })
+describe('parseEventPath', () => {
+  it('reads an Event link as the whole segment', () => {
+    expect(parseEventPath('freitags-zocken-k7q2')).toEqual({ kind: 'event', slug: 'freitags-zocken-k7q2' })
   })
 
   it('splits an Invite link on its last dash', () => {
-    expect(parseSessionPath('freitags-zocken-k7q2-AbCdEf123456')).toEqual({
+    expect(parseEventPath('freitags-zocken-k7q2-AbCdEf123456')).toEqual({
       kind: 'invite', slug: 'freitags-zocken-k7q2', token: 'AbCdEf123456',
     })
   })
 
-  it('rejects segments that are neither a Session link nor an Invite link', () => {
+  it('rejects segments that are neither an Event link nor an Invite link', () => {
     for (const segment of ['', 'Freitags-k7q2', 'a--b-k7q2', 'abc-', '-k7q2', 'abc-AbCdEf12345']) {
-      expect(parseSessionPath(segment)).toBeNull()
+      expect(parseEventPath(segment)).toBeNull()
     }
   })
 })

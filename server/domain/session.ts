@@ -1,79 +1,68 @@
-import { SESSION_NAME_MAX, SLOTS_MAX, sessionNameLength, slotProblems, type Phase, type SlotProblem } from '../../shared/session'
-import { berlinToUtc, utcToBerlin } from '../../shared/time'
+import { SESSIONS_MAX } from '../../shared/event'
 
-// Session input rules for creating a Session (#1 § Domain rules). Times arrive as Berlin wall-clock
-// values (`YYYY-MM-DDTHH:mm`, ADR 0003) and are stored as UTC instants.
+// The Sessions of an Event (ADR 0011, #49). Pure: the create handler checks the count, the Event
+// view numbers the Sessions and counts the missing Dates. Numbering lives only here.
 
-export type SessionInputError = 'invalid_name' | 'invalid_mode' | 'invalid_slots' | 'invalid_time' | 'in_past' | 'duplicate_slot'
-
-export type NewSession = { dateMode: 'poll', name: string, slots: Date[] } | { dateMode: 'direct', name: string, startsAt: Date }
-
-const LOCAL_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
-
-/** The Session name: trimmed, 1 to 60 characters (emoji count as one). Null when invalid. */
-export function parseSessionName(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null
-  const length = sessionNameLength(raw)
-  return length >= 1 && length <= SESSION_NAME_MAX ? raw.trim() : null
-}
-
-export type SlotError = SessionInputError | 'slots_max'
-
-/** A Berlin wall-clock value as an instant. Null for text that is not a real time, such as 30 Feb or a skipped DST hour. */
-export function parseLocalTime(raw: unknown): Date | null {
-  if (typeof raw !== 'string' || !LOCAL_TIME.test(raw)) return null
-  const instant = berlinToUtc(raw)
-  return utcToBerlin(instant) === raw ? instant : null
+/** The Session count of the create form: a whole number from 1 to 8 (SESSIONS_MAX). Null when invalid. */
+export function parseSessionCount(raw: unknown): number | null {
+  return Number.isInteger(raw) && (raw as number) >= 1 && (raw as number) <= SESSIONS_MAX ? raw as number : null
 }
 
 /**
- * The first Slot rule a request breaks (shared/session.ts slotProblems), shared by create and the
- * Host's edits. A Slot in the past is named before a duplicate.
+ * The number of each Session, in the order given. Sessions with a Date get 1…n in Date order
+ * ("Session 1" is always the first evening); a Session without a Date gets null and only counts
+ * as a missing Date. Equal Dates keep their given order.
  */
-function slotRuleError(proposed: Date[], existing: Date[], now: Date): SlotProblem | null {
-  const problems = slotProblems(proposed, existing, now)
-  if (problems.includes('in_past')) return 'in_past'
-  return problems.includes('duplicate_slot') ? 'duplicate_slot' : null
+export function sessionNumbers(startsAt: (Date | null)[]): (number | null)[] {
+  const numbers: (number | null)[] = startsAt.map(() => null)
+  const dated = startsAt
+    .map((date, index) => ({ date, index }))
+    .filter((entry): entry is { date: Date, index: number } => entry.date !== null)
+    .sort((a, b) => a.date.getTime() - b.date.getTime() || a.index - b.index)
+  dated.forEach((entry, position) => {
+    numbers[entry.index] = position + 1
+  })
+  return numbers
 }
 
-/** Validates a Slot the Host adds to a Date poll. `existing` are the Session's Slots as they are now. */
-export function parseAddedSlot(raw: unknown, existing: Date[], now: Date): { ok: true, startsAt: Date } | { ok: false, error: SlotError } {
-  if (existing.length >= SLOTS_MAX) return { ok: false, error: 'slots_max' }
-  const startsAt = parseLocalTime(raw)
-  if (!startsAt) return { ok: false, error: 'invalid_time' }
-  const problem = slotRuleError([startsAt], existing, now)
-  return problem ? { ok: false, error: problem } : { ok: true, startsAt }
-}
-
-/** Slots can be added, removed and only then changed by the Host while the Date poll is open (#1). */
-export function slotsEditable(phase: Phase): boolean {
-  return phase === 'poll'
+/** How many Sessions still wait for a Date. */
+export function missingDates(startsAt: (Date | null)[]): number {
+  return startsAt.filter(date => date === null).length
 }
 
 /**
- * Validates what the create form sends. Slots must lie in the future and be unique per minute.
- * `now` is injected so the rule can be tested at a fixed moment.
+ * The open Slots of an Event (#52): a Slot is open when no Session refers to it, because its Date came
+ * from that Slot. `sessionSlotIds` are the Slot ids the Sessions refer to (null for none). Order is kept.
  */
-export function parseNewSession(input: unknown, now: Date): { ok: true, session: NewSession } | { ok: false, error: SessionInputError } {
-  const body = (input ?? {}) as { name?: unknown, dateMode?: unknown, slots?: unknown, startsAt?: unknown }
-  const name = parseSessionName(body.name)
-  if (!name) return { ok: false, error: 'invalid_name' }
+export function openSlots<S extends { id: string }>(slots: S[], sessionSlotIds: (string | null)[]): S[] {
+  const taken = new Set(sessionSlotIds.filter((id): id is string => id !== null))
+  return slots.filter(slot => !taken.has(slot.id))
+}
 
-  if (body.dateMode === 'direct') {
-    const startsAt = parseLocalTime(body.startsAt)
-    if (!startsAt) return { ok: false, error: 'invalid_time' }
-    if (startsAt <= now) return { ok: false, error: 'in_past' }
-    return { ok: true, session: { dateMode: 'direct', name, startsAt } }
-  }
+/** A Session as the Event holds it: its id and its set Date (null while it waits for one). */
+export interface SessionDate {
+  id: string
+  startsAt: Date | null
+}
 
-  if (body.dateMode !== 'poll') return { ok: false, error: 'invalid_mode' }
-  if (!Array.isArray(body.slots) || body.slots.length < 1 || body.slots.length > SLOTS_MAX) {
-    return { ok: false, error: 'invalid_slots' }
-  }
-  const slots = body.slots.map(parseLocalTime)
-  if (slots.some(slot => slot === null)) return { ok: false, error: 'invalid_time' }
-  const instants = slots as Date[]
-  const problem = slotRuleError(instants, [], now)
-  if (problem) return { ok: false, error: problem }
-  return { ok: true, session: { dateMode: 'poll', name, slots: instants } }
+function numbersById(sessions: SessionDate[]): Map<string, number | null> {
+  const numbers = sessionNumbers(sessions.map(session => session.startsAt))
+  return new Map(sessions.map((session, index) => [session.id, numbers[index]!]))
+}
+
+/**
+ * The Sessions whose .ics SEQUENCE goes up when the Event's Sessions change from `before` to `after`
+ * (#53, #55): every Session still there whose Date moved or whose number (sessionNumbers) changed, so a
+ * re-import replaces its entry with the new time or title. A Session that is new or gone has no entry
+ * to replace, so it is left out. Every handler that adds, removes, moves or sets a Date calls this.
+ */
+export function sequenceRaises(before: SessionDate[], after: SessionDate[]): string[] {
+  const timeBefore = new Map(before.map(session => [session.id, session.startsAt?.getTime() ?? null]))
+  const numberBefore = numbersById(before)
+  const numberAfter = numbersById(after)
+  return after
+    .filter(session => timeBefore.has(session.id))
+    .filter(session => timeBefore.get(session.id) !== (session.startsAt?.getTime() ?? null)
+      || numberBefore.get(session.id) !== numberAfter.get(session.id))
+    .map(session => session.id)
 }

@@ -6,7 +6,7 @@ export const HUB_SITES = ['archiv', 'bibliothek', 'profil', 'admin'] as const
 
 export type HubSite = typeof HUB_SITES[number]
 export type ConstructionArea = HubSite | 'brett' | 'generic'
-export type ShellKind = 'hub' | 'session'
+export type ShellKind = 'hub' | 'event'
 
 export interface ConstructionSite {
   area: ConstructionArea
@@ -15,7 +15,7 @@ export interface ConstructionSite {
 
 /** The rights of the viewer that decide which hidden areas show; null when signed out. */
 export interface ConstructionViewer {
-  /** The Host permission: the User may host Sessions (the `canHost` column of the auth user). */
+  /** The Host permission: the User may host Events (the `canHost` column of the auth user). */
   hasHostPermission: boolean
   isAdmin: boolean
 }
@@ -42,8 +42,8 @@ export function canSeeAdmin(viewer: ConstructionViewer | null) {
 export function constructionSite(path: string, viewer: ConstructionViewer | null): ConstructionSite {
   const [first, slug, sub] = path.split('/').filter(Boolean)
 
-  if (first === 's' && slug) {
-    return { area: sub === 'brett' ? 'brett' : 'generic', shell: 'session' }
+  if (first === 'e' && slug) {
+    return { area: sub === 'brett' ? 'brett' : 'generic', shell: 'event' }
   }
   const hubSite = HUB_SITES.find(site => site === first)
   if (hubSite === 'bibliothek' && !canSeeLibrary(viewer)) return { area: 'generic', shell: 'hub' }

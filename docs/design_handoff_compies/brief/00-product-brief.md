@@ -4,6 +4,8 @@
 > Attach it to every design phase (Claude Design). It also becomes part of the final handoff to Claude Code.
 >
 > **Language note:** This brief is in English. The **app UI in version 1.0 is German**. All UI copy quoted in this brief (labels, explanation texts, placeholder names, feed examples) is German on purpose and must stay German in the designs.
+>
+> **Terms:** an **Event** is the whole competition of a group, played over one or more **Sessions**; a **Session** is one evening on one Date. The terms follow the glossary (`GLOSSARY.md`).
 
 ## Scope labels
 
@@ -29,7 +31,7 @@ Every feature carries a label. These labels must remain visible in all designs, 
   - recording results
   - showing a live leaderboard
   - and ending with a big award ceremony
-- **Everyone is live on the same website at the same time.** One host runs the session; everyone else does lightweight interactions (choosing a team, vetoes, bans, picks, chat, emotes).
+- **Everyone is live on the same website at the same time.** One Host runs the Event; everyone else does lightweight interactions (choosing a team, vetoes, bans, picks, chat, emotes).
 - **Show character:** The app should be funny, beautiful and full of effects and motion. Lots of satisfying effects that never get annoying.
 - **Mascot "Compibert":** a small, cheeky dinosaur (a Compsognathus). **Original character design**. No references to film designs or protected brands.
 - **Usage:** primarily **desktop** (everyone is gaming at their PC). Mobile must be **fully functional**. Also shipped as a **PWA**.
@@ -45,22 +47,22 @@ Every feature carries a label. These labels must remain visible in all designs, 
 
 | Role | Who | Can |
 |---|---|---|
-| **Platform admin** | the operator only | Everything. Manages the user list and grants/revokes the **"host sessions"** permission. Maintains the game library. |
-| **Host** | users who received the host permission from the platform admin | Create sessions. Within their own session they are **session admin** and can do everything there. **No** other admin rights on the platform. |
-| **User** | anyone who has signed in | Edit their profile, join sessions via invite links, view the archive of their own sessions. |
+| **Platform admin** | the operator only | Everything. Manages the user list and grants/revokes the **Host permission**. Maintains the game library. |
+| **Host** | users who received the Host permission from the platform admin | Create Events. Within their own Event they have full rights. **No** other admin rights on the platform. |
+| **User** | anyone who has signed in | Edit their profile, join Events via invite links, view the archive of their own Events. |
 
-- Each session has **exactly one host**: the person who created it.
-- The host can sit **anywhere**: in a team, on the bench or in the stands. Everywhere they have the same full rights. **Default assumption: the host does not play**, but can always act as a regular player.
-- The host controls must therefore be **reachable regardless of where the host is sitting**.
+- Each Event has **exactly one Host**: the User who created it.
+- The Host can sit **anywhere**: in a team, on the bench or in the stands. Everywhere they have the same full rights. **Default assumption: the Host does not play**, but can always act as a regular player.
+- The Host controls must therefore be **reachable regardless of where the Host is sitting**.
 
 ### [Post-1.0] Crews
 
-- A **crew** is a group (circle of friends) with its own members, sessions, archive and host permissions.
+- A **crew** is a group (circle of friends) with its own members, Events, archive and host permissions.
 - The operator's crew is the first crew.
 - **Founding a crew** is a permission granted by the platform admin (later switchable to "open for everyone").
 - The **crew owner** manages members and grants host permissions within their crew.
 - People join a crew via the **crew invite link** (rotatable).
-- Archive: all crew members see their crew's sessions. Session participants don't have to be crew members.
+- Archive: all crew members see their crew's Events. Event Members don't have to be crew members.
 - Mockups wanted for: crew overview, member management, crew invite, permission management.
 
 ---
@@ -72,38 +74,42 @@ Every feature carries a label. These labels must remain visible in all designs, 
   - **Display name**: freely chosen, not unique
   - **Avatar**: defaults to the Discord/Twitch picture, replaceable by an upload
   - Linked accounts
-  - "My sessions" (upcoming, running, archive)
+  - "My Events" (upcoming, running, archive)
   - Settings: sound on/off, push notifications, reduced motion (in addition to the OS setting)
 
 ---
 
-## 4. Session lifecycle [1.0]
+## 4. Event lifecycle [1.0]
 
 ```
 Draft → Date poll (optional) → Date set → Running → Finished → Archive
 ```
 
+An Event is played over one or more **Sessions**, each on its own Date. The phases belong to the Event; the Sessions carry the Dates.
+
 | Phase | What happens |
 |---|---|
-| **Draft** | The host configures the session (see 5). |
-| **Date poll** | Voting on dates. Lobby, chat, bench and stands are already usable; team slots are still locked ("Teamwahl öffnet, sobald der Termin steht"). |
-| **Date set** | Team selection is open. A session can only be started once a date is set. |
-| **Running** | The host has started; teams are locked. The game-round loop runs (see 9). |
-| **Finished** | After the configured number of games (plus tiebreaker if needed), the award ceremony follows. |
+| **Draft** | The Host configures the Event (see 5). |
+| **Date poll** | Voting on dates for the Event's Sessions. It is open while any Session has no Date. Lobby, chat, bench and stands are already usable; team slots are still locked ("Teamwahl öffnet, sobald der Termin steht"). |
+| **Date set** | Every Session has a Date. Team selection is open. |
+| **Running** | The Host has started a Session; teams are locked. The game-round loop runs (see 9). The Date poll stays open while a Session has no Date. |
+| **Finished** | The Game count (plus tiebreaker if needed) has been played (see 10), the award ceremony follows. |
 | **Archive** | Read-only. |
 
-- Access to a session only via its **invite link**. The host can **rotate** the link (the old link becomes invalid).
+- **Sessions:** The Host can add and remove Sessions until the Event is finished. A Session that has started stays. Sessions are numbered in the order of their Dates. Adding a Session without a Date, or reopening a Date, brings the Event back into the Date poll.
+- A Session can be started once its Date is set, also earlier than planned.
+- Access to an Event only via its **invite link**. The Host can **rotate** the link (the old link becomes invalid).
 - Anyone arriving via the link lands on the **bench**.
-- Multiple sessions may run **in parallel**, also by different hosts.
-- Only the session's host and the platform admin can delete it.
+- Multiple Events may run **in parallel**, also by different Hosts.
+- Only the Event's Host and the platform admin can delete it.
 
 ---
 
-## 5. Creating a session [1.0]
+## 5. Creating an Event [1.0]
 
 A guided flow (stepper) with these settings:
 
-1. **Name** of the session
+1. **Name** of the Event
 2. **Format**
    - **Free-for-all** ("Jeder gegen jeden"): every player is their own party. 2 to 8 parties.
    - **Teams**: 2 to 8 teams.
@@ -111,34 +117,35 @@ A guided flow (stepper) with these settings:
      - Max 6 players per team, max 24 players in teams in total (e.g. 1v1 … 6v6, 4 × 6, 8 × 3).
    - **Tournament bracket** **[Post-1.0]**: shown as "Bald verfügbar"
    - **League** **[Post-1.0]**: shown as "Bald verfügbar"
-3. **Number of games** after which the session ends. Can be changed during the session.
+3. **Game count**: the number of games the Event runs for. Can be changed at any time, also during the Event (see 10).
 4. **Points table**: how many points each placement earns. Presets:
    - *Linear*: number of parties minus placement (with 4 parties: 3/2/1/0)
    - *Winner takes all*
    - *Custom table*
-5. **Selection mode**: how the next game is determined (see 8). Fixed for the whole session. Options:
+5. **Selection mode**: how the next game is determined (see 8). Fixed for the whole Event. Options:
    - Hide wheel (only for "Lucky Wheel", see 8)
 6. **Game pool**: the games for the wheel, picks and bans, taken from the game library.
-   - While filling it, the host gets **suggestions** that match the chosen format and player count.
-   - Nothing is **filtered out automatically**; the host decides.
+   - While filling it, the Host gets **suggestions** that match the chosen format and player count.
+   - Nothing is **filtered out automatically**; the Host decides.
 7. **Tiebreaker pool**: a separate game pool used only for the tiebreaker.
-8. **Date**: set it directly or start a date poll (see 6).
+8. **Sessions and Dates**: how many Sessions the Event has (1 to 8, default 1), and the Date of each Session. Set them directly (one date and time per Session) or start a Date poll for all Sessions (see 6).
 
-**Info side sheet:** Next to the format and selection-mode choices, a side sheet explains every option **in detail**, with an example run-through, so that hosts without prior knowledge understand everything. The (German) copy is in section 17.
+**Info side sheet:** Next to the format and selection-mode choices, a side sheet explains every option **in detail**, with an example run-through, so that Hosts without prior knowledge understand everything. The (German) copy is in section 17.
 
 ---
 
 ## 6. Date poll [1.0]
 
-- The host proposes several slots (**date + time**).
-- Everyone with the invite link votes while signed in: **Ja / Wenn nötig / Nein** (yes / if need be / no). Everyone sees who voted what.
-- The app highlights the best slot; the host confirms it. Alternatively, the host sets a date directly without a poll.
-- After confirming:
+- One Date poll per Event serves all its Sessions. Members vote once for all of them.
+- The Host proposes several slots (**date + time**).
+- Everyone with the invite link votes while signed in: **Ja / Meh / Nein** (yes / if need be / no). Everyone sees who voted what.
+- The app highlights the best slot. The Host sets the Date of **one Session at a time** from an open slot, so each Session can get a different time. The Date poll stays open until every Session has a Date. Alternatively, the Host sets the Dates directly without a poll.
+- After a Date is confirmed for a Session:
   - a push notification goes to everyone
-  - the date can be downloaded as a calendar file (.ics)
-  - a reminder goes out 1 hour before
-- The host can reschedule; everyone gets notified again. Teams stay as they are.
-- The host may start as soon as a date is set, also earlier than planned.
+  - the Date can be downloaded as a calendar file (.ics); the file holds one entry per Session with a Date
+  - a reminder goes out 1 hour before the Session
+- The Host can **reschedule** one Session; everyone gets notified again. Teams stay as they are.
+- The Host can **reopen** a Session's Date: it is withdrawn, and the slot it came from is open again in the Date poll with its votes.
 
 ---
 
@@ -148,60 +155,60 @@ The **game board** is the heart of the lobby. All participants appear as **avata
 
 **Zones**
 - **Team slots** (or player slots in free-for-all)
-- **Bench** ("Bench" in the German UI too): substitutes, unlimited, also during the session. The host pulls people from here into teams when needed.
+- **Bench** ("Bench" in the German UI too): substitutes, unlimited, also during the Event. The Host pulls people from here into teams when needed.
 - **Stands** ("Tribüne"): spectators, unlimited. In 1.0 no function besides emotes. **[Post-1.0]**: more features for the stands.
 
 **Rules**
-- Everyone moves **only themselves**; the host moves **everyone**.
-- Before the date is set: team slots locked.
-- After the session starts:
+- Everyone moves **only themselves**; the Host moves **everyone**.
+- Before the Event is in date set: team slots locked.
+- After the Event starts:
   - Team slots are locked for players.
   - Everyone may still move freely between **bench and stands**.
-  - The host can still remove people from teams and substitute from the bench.
-- A game can only start when **all teams have equal size**. Otherwise the host sees a clear notice.
+  - The Host can still remove people from teams and substitute from the bench.
+- A game can only start when **all teams have equal size**. Otherwise the Host sees a clear notice.
 - If two people drag onto the last free slot at the same time, the server decides. The other avatar bounces back with an animation.
 - **Online indicator** on every avatar.
 
 **Team names**
 - Each team member contributes **one word** (max 12 characters).
 - Word order = order in which people joined the team.
-- The name is frozen when the session starts. The host can reset it.
+- The name is frozen when the Event starts. The Host can reset it.
 - Long names are truncated; the full name shows on hover.
 
 **Team colors:** assigned automatically from a fixed palette of **8 clearly distinguishable colors**.
 
-**Host controls:** always reachable, wherever the host sits.
+**Host controls:** always reachable, wherever the Host sits.
 
 ---
 
 ## 8. Game selection: modes, vetoes, bans [1.0]
 
 ### Ground rule
-**In every mode and at any time, the host can set or change the next game directly.** This is also the fallback if anything goes wrong.
+**In every mode and at any time, the Host can set or change the next game directly.** This is also the fallback if anything goes wrong.
 
 ### The five modes
 
 | Mode | How it works | Vetoes |
 |---|---|---|
-| **Admin pick** | The host picks every game directly. | – |
-| **Lucky Wheel** | The host fills the wheel and spins it. The drawn game leaves the wheel, and the clip starts automatically. | ✅ |
+| **Admin pick** | The Host picks every game directly. | – |
+| **Lucky Wheel** | The Host fills the wheel and spins it. The drawn game leaves the wheel, and the clip starts automatically. | ✅ |
 | **Pick & Ban** | First bans, then picks, alternating in a snake pattern, like map veto in Counter-Strike. **No time limit.** | – (bans replace vetoes) |
 | **Loser's Pick** | The party in last place picks the next game from the pool. | ✅ |
-| **Lucky Wheel – Loser's Advantage** | Before each spin, the last-placed party bans one game from the wheel (no time limit). Then the host spins. | ✅ |
+| **Lucky Wheel – Loser's Advantage** | Before each spin, the last-placed party bans one game from the wheel (no time limit). Then the Host spins. | ✅ |
 
 ### Wheel, general
 - The result is **drawn on the server**. The animation runs on **all devices at the same time** and stops everywhere at the same moment.
 - **Everything that gets drawn leaves the wheel**, whether it was played, vetoed or banned. The remaining slices redistribute (animated).
-- The host can edit the wheel **at any time**, also during the session.
+- The Host can edit the wheel **at any time**, also during the Event.
 - It is intended that games are left on the wheel at the end. That keeps it exciting until the last spin.
 - **Pool warning:**
-  - If the pool can no longer mathematically cover the configured number of games (including possible vetoes and bans), **only the host** gets a notice.
+  - If the pool can no longer mathematically cover the configured Game count (including possible vetoes and bans), **only the Host** gets a notice.
   - The others notice nothing.
   - The warning doesn't block anything.
-- If a drawn game can't be played (server down, etc.), the host can put it back on the wheel and spin again.
+- If a drawn game can't be played (server down, etc.), the Host can put it back on the wheel and spin again.
 
 ### Hidden wheel (option for "Lucky Wheel")
-- The host can configure that players **can't** see the entries. The animation still runs.
+- The Host can configure that players **can't** see the entries. The animation still runs.
 - Instead of real games, the wheel shows placeholders: either "???" or **made-up game names** (list in section 18).
 - As soon as the wheel stops, the slice **transforms** (animated) into the real name.
 - This prevents people from saving their vetoes strategically.
@@ -230,9 +237,9 @@ The **game board** is the heart of the lobby. All participants appear as **avata
 - **Who starts is decided by an animated coin flip.** One side of the coin shows **Compibert's funny head** ("Kopf"), the other his **tail / rear end** ("Schwanz").
 - **Number of bans per party = number of members** (i.e. as many as it would have vetoes). In free-for-all that's 1 ban per person.
 - **Ban order follows a snake pattern:** party A 1 ban, party B 2 bans, A 2 bans, B 2 bans … until all bans are used. With more than 2 parties, the snake goes back and forth: A, B, C, C, B, A, A, B, C …
-- **Then picks** in the same pattern until the configured number of games is reached. The party that did **not** start the bans starts the picks.
+- **Then picks** in the same pattern until the Game count is reached. The party that did **not** start the bans starts the picks.
 - **Pick order = play order.**
-- **No time limit.** The host is responsible for keeping things moving.
+- **No time limit.** The Host is responsible for keeping things moving.
 - In a team, any member can ban or pick for the team (first to confirm wins; hold-to-confirm button).
 - The clip plays at the start of the round in which the game is played.
 
@@ -245,7 +252,7 @@ The **game board** is the heart of the lobby. All participants appear as **avata
 ### Lucky Wheel – Loser's Advantage in detail
 - No ban before the **first spin** (there is no last place yet).
 - Before every further spin, the last-placed party bans **1 game** from the wheel (no time limit). If several parties share last place, each of them bans 1 game.
-- Then the host spins, followed by the normal 60-second veto window.
+- Then the Host spins, followed by the normal 60-second veto window.
 - The wheel is always visible (cannot be hidden).
 
 ---
@@ -257,10 +264,10 @@ For every game, this loop runs:
 1. **The game is determined** (depending on the mode, see 8)
 2. **Clip:** a 30-second excerpt of a YouTube video (start second + length are stored with the game). It plays on all devices at the same time.
    - On desktop it starts **automatically with sound**. If the browser blocks it, a "Ton aktivieren" (enable sound) prompt appears.
-   - Everyone can mute or close the clip for themselves. The host can skip it for everyone.
+   - Everyone can mute or close the clip for themselves. The Host can skip it for everyone.
    - The clip closes automatically when it ends.
 3. **The game is played outside the app.**
-4. **The host enters the result:**
+4. **The Host enters the result:**
    - Drag and drop the parties into the correct **placement**.
    - A **"gleichauf"** (tied) toggle merges places. Draws are allowed but rare.
    - Optionally enter **scores** from the game (e.g. 16:12). They are **purely cosmetic** and don't affect the standings.
@@ -268,15 +275,18 @@ For every game, this loop runs:
 6. **Live leaderboard** updates with animation, plus a **small celebration** for the game's winner.
 7. On to the next game.
 
-- The host can **correct past results**; the leaderboard recalculates.
-- The host can change the number of games during the session.
+- The Host can **correct past results**; the leaderboard recalculates.
+- The Host can change the Game count during the Event (see 10).
 
 ---
 
 ## 10. Scoring, end & tiebreaker [1.0]
 
 - There are **party standings only**. No individual standings per player in team mode.
-- The session ends after the configured number of games.
+- **Game count:** the number of games the Event runs for. It belongs to the Event, and the Host can change it at any time.
+- **The Event finishes after its last Session**, once the Game count (plus a tiebreaker if needed) has been played. It never finishes after a set time.
+- **The Session that plays the last game becomes the last one.** Later Sessions are removed.
+- **Short of the count**, the Event stays open until the Host adds a Session or lowers the Game count.
 - **Tiebreaker:** If parties are tied for **1st place**, an extra game (n+1) is played.
   - It is drawn from a **separate wheel** using the **tiebreaker pool**.
   - Only the tied parties play.
@@ -287,9 +297,9 @@ For every game, this loop runs:
 
 ## 11. Award ceremony & sharing [1.0]
 
-- A **big, funny, spectacular award ceremony** at the end of the session: podium, confetti, Compibert dancing, sound. Optionally a 3D podium (only here).
+- A **big, funny, spectacular award ceremony** at the end of the Event: podium, confetti, Compibert dancing, sound. Optionally a 3D podium (only here).
 - A **shareable image** with final standings, teams/players and Compibert, e.g. for Discord.
-- **Battle replay** **[1.0 – last ticket]**: an in-app animation that tells the session as a battle.
+- **Battle replay** **[1.0 – last ticket]**: an in-app animation that tells the Event as a battle.
   - The parties battle each other.
   - After every game you see who stood where.
   - In between: game cut-ins and randomly generated, generic gaming references.
@@ -302,9 +312,9 @@ For every game, this loop runs:
 ## 12. Chat & activity feed [1.0]
 
 - One panel with **two tabs**: **Chat** and **Aktivität** (activity). Both with timestamps.
-- **Chat:** everyone in the session can write, including bench and stands. The host can delete messages.
+- **Chat:** everyone in the Event can write, including bench and stands. The Host can delete messages.
 - **Activity:** automatic events, e.g.:
-  - "Kitty ist der Session beigetreten"
+  - "Kitty ist dem Event beigetreten"
   - "Chris ist auf die Tribüne gewechselt"
   - "Team Wilde Kartoffel hat Trackmania gebannt"
   - "Glücksrad: Counter-Strike 2"
@@ -343,8 +353,8 @@ For every game, this loop runs:
 
 ## 15. Game library [1.0]
 
-- **Global**: one library for the whole platform, so every host benefits from games already added. Only users with the host permission and the platform admin see it; players never learn which games exist. The games a host puts into a session's pool stay visible to that session's members (wheel, pick & ban).
-- Games are **not imported** but created by hosts. Played games stay stored.
+- **Global**: one library for the whole platform, so every Host benefits from games already added. Only users with the Host permission and the platform admin see it; players never learn which games exist. The games a Host puts into an Event's pool stay visible to that Event's Members (wheel, pick & ban).
+- Games are **not imported** but created by Hosts. Played games stay stored.
 - **Fields:**
   - name
   - image (upload)
@@ -360,7 +370,7 @@ For every game, this loop runs:
 ## 16. Archive, notifications, admin area [1.0]
 
 **Archive**
-- Visible to everyone who played **at least one game in a party** in that session, and to the platform admin. **[Post-1.0]**: additionally all crew members.
+- Visible to everyone who played **at least one game in a party** in that Event, and to the platform admin. **[Post-1.0]**: additionally all crew members.
 - Contents:
   - final standings
   - all games with results and cosmetic scores
@@ -369,17 +379,17 @@ For every game, this loop runs:
   - battle replay
 
 **Push notifications** (via the PWA, also on desktop):
-- date confirmed
-- date rescheduled
-- reminder 1 hour before
-- session started
+- date confirmed (for a Session)
+- date rescheduled (for a Session)
+- reminder 1 hour before a Session
+- Session started
 - game drawn
 - result entered
-- session finished
+- Event finished
 
 **Platform admin area**
 - user list with search
-- grant/revoke host permission
+- grant/revoke Host permission
 - manage games in the library
 - **[Post-1.0]**: permission to found crews
 
@@ -444,7 +454,7 @@ Counter-Strudel · League of Leberkäse · Mario Kartoffel · Rocket Lieg · Sup
 | Database | **Neon** (Postgres) + **Drizzle** |
 | Auth | **Better Auth** with Discord and Twitch |
 | Hosting | **Vercel** with a custom domain |
-| Realtime | **Cloudflare Durable Objects + PartyServer**: one room per session. The server dictates the timing (wheel stop, clip start, countdowns); clients sync their clocks to the server. Online presence comes from the connection. |
+| Realtime | **Cloudflare Durable Objects + PartyServer**: one room per Event. The server dictates the timing (wheel stop, clip start, countdowns); clients sync their clocks to the server. Online presence comes from the connection. |
 | Files | **Cloudflare R2** (avatars, game images) |
 | App | **PWA** with push notifications |
 | Share image | **nuxt-og-image** (Satori) |
@@ -452,7 +462,7 @@ Counter-Strudel · League of Leberkäse · Mario Kartoffel · Rocket Lieg · Sup
 | Mascot | **No Rive.** Compibert is an SVG with a **rig of individually named parts**, animated with GSAP and driven by a state machine. |
 | Accessibility | When "reduce motion" is set in the OS, every big animation has a calm alternative. |
 | i18n | All copy as translation keys. Version 1 German only. |
-| Data model | Designed so that crews **[Post-1.0]** can be added without a rebuild. |
+| Data model | Designed so that crews **[Post-1.0]** can be added without a rebuild. Events and Sessions are separate tables: the Event holds the competition, each Session its Date. |
 
 ---
 
@@ -461,12 +471,12 @@ Counter-Strudel · League of Leberkäse · Mario Kartoffel · Rocket Lieg · Sup
 **[Post-1.0]**
 - Crews (incl. crew owner, crew invite link, permission to found crews, archive for crew members)
 - Tournament bracket and league formats
-- Players report results themselves (host confirms)
+- Players report results themselves (Host confirms)
 - More features for the stands
 - English and further languages
 
 **[Discarded]**
-- Cross-session stats, Elo/TrueSkill, head-to-head, badges
+- Cross-Event stats, Elo/TrueSkill, head-to-head, badges
 - Seasons, hall of fame
 - Bonus points
 - Importing a game database (IGDB/RAWG)

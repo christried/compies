@@ -1,12 +1,12 @@
 import { INVITE_TOKEN_LENGTH } from '../../shared/links'
 
-// New Session addresses (ADR 0006): the slug is the kebab-cased name plus 4 random characters, the
+// New Event addresses (ADR 0006): the slug is the kebab-cased name plus 4 random characters, the
 // Invite token 12 base62 characters. Reading an address is in shared/links.ts.
 
 const SLUG_SUFFIX_LENGTH = 4
 const SLUG_SUFFIX_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const BASE62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-const FALLBACK_SLUG_BASE = 'session'
+const FALLBACK_SLUG_BASE = 'event'
 
 /** `count` characters drawn uniformly from `alphabet`, by rejecting bytes that would bias the modulo. */
 function randomChars(count: number, alphabet: string): string {
@@ -34,7 +34,7 @@ export function kebabCase(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-/** The Session slug for a name: kebab case plus a random suffix. The suffix is injectable for tests. */
+/** The Event slug for a name: kebab case plus a random suffix. The suffix is injectable for tests. */
 export function createSlug(name: string, suffix = randomChars(SLUG_SUFFIX_LENGTH, SLUG_SUFFIX_ALPHABET)): string {
   return `${kebabCase(name) || FALLBACK_SLUG_BASE}-${suffix}`
 }

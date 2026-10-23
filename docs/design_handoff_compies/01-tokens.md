@@ -9,7 +9,7 @@ Files: `tokens/compies-tokens.css` (all CSS variables, framework-agnostic) and `
 ```html
 <html lang="de" data-theme="light|dark" data-motion="full|reduced">
 ```
-- **Mode:** first visit follows `prefers-color-scheme`, then the user's choice (Hell / Dunkel / System) from settings. Persist in a cookie so SSR renders the right theme (`@nuxtjs/color-mode` with `dataValue: 'theme'`).
+- **Mode:** light only for now. The app ignores `prefers-color-scheme` and stores no theme cookie; nothing sets `data-theme="dark"`, so the light tokens apply everywhere. Later (#43): the user's choice (Hell / Dunkel / System) from settings, persisted in a cookie so SSR renders the right theme, with the dark token set kept in the CSS until then.
 - **Motion:** `data-motion="reduced"` from the in-app toggle; the OS setting is covered by `@media (prefers-reduced-motion)` inside the token file. JS reads `getComputedStyle(document.documentElement).getPropertyValue('--cp-motion')` → `full | reduced`. Tailwind variant: `reduced:`.
 - **Fonts** (self-host in production): Lilita One 400 (display + timers), Bricolage Grotesque 400–800 with optical sizing (UI), Bungee 400 (scores), JetBrains Mono 500/700 (codes, links).
 
@@ -47,7 +47,7 @@ Dark mode has one signature: `--cp-shadow-card` and `--cp-shadow-modal` are **or
 | 7 | Pink | #cc79a7 | #151515 | ◗ | Bögen |
 | 8 | Nacht | #3d2d8f | #fffdf8 | ✦ | Sterne |
 
-Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assigned in join order of teams, never reused within a session. Before any team word exists, a team is named after its colour („Team Rot“). Never put text directly on a pattern.
+Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assigned in join order of teams, never reused within an Event. Before any team word exists, a team is named after its colour („Team Rot“). Never put text directly on a pattern.
 
 ## Type scale
 
@@ -59,6 +59,8 @@ Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assign
 | label | `label` | 12, 700, caps, +0.08em | Bricolage |
 | num-hero … num-xs | `text-num-*` + `num` | clamp 96–160 … 15 | Bungee, fixed digit slots (`num-slot` .74em, `num-sep` .34em) |
 | timer | `timer` | | Lilita One, slots .6em / .3em |
+
+**Section heading (one style):** „Wer kann wann?“ and „Deine Events“ are h2 in Lilita One, 26 px (22 px on phones). Inside sheets the sub-heading is one step smaller: h3 in Lilita One, 20 px („Vorgeschlagene Termine“). Headings keep their levels.
 
 No „·“ separators in kickers, headers or timers.
 

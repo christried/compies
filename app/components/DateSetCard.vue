@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { CalendarClock, CalendarPlus, Link as LinkIcon } from '@lucide/vue'
+import { CalendarClock } from '@lucide/vue'
 import { formatDateTile, formatSetDay, formatSlotTime } from '~/utils/berlin-time'
 
-// The set Date (02-components § DateSetCard, screen M3 set / sethost). It replaces the Slot cards and the
-// matrix for everyone: calendar tile, the full date, and the .ics download. The Host also gets a host
-// row under the text. Reschedule (#14 "Verschieben") is emitted here; Reopen and other host actions go
-// into the `host-actions` slot, next to "Verschieben" and "Einladen".
+// The card of one Session with its Date (02-components § DateSetCard, screen M3 set / sethost). It
+// shows the calendar tile and the full date; with several Sessions also the Session's number. The
+// Event page adds the calendar download and "Einladen" once for the whole Event. The Host row (#14
+// "Verschieben") is emitted here; Neue Terminsuche and Entfernen go into the `host-actions` slot. Every
+// Session card has its Host row (#55).
 const props = defineProps<{
   /** The Date as a UTC ISO instant. */
   startsAt: string
+  /** The Session's number, shown when the Event has several Sessions. */
+  number?: number | null
   isHost: boolean
-  /** The Members-only .ics endpoint. */
-  icsUrl: string
 }>()
 
-const emit = defineEmits<{ reschedule: [], invite: [] }>()
+const emit = defineEmits<{ reschedule: [] }>()
 
 const { t } = useI18n()
 const instant = computed(() => new Date(props.startsAt))
@@ -36,6 +37,10 @@ const headline = computed(() => t('mvp.set.dateTime', { date: formatSetDay(insta
     </div>
 
     <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+      <span
+        v-if="number"
+        class="text-[13px] font-extrabold text-ink-2 uppercase"
+      >{{ t('mvp.poll.sessionNumber', { n: number }) }}</span>
       <time
         :datetime="startsAt"
         class="font-display text-[30px] leading-none"
@@ -45,41 +50,22 @@ const headline = computed(() => t('mvp.set.dateTime', { date: formatSetDay(insta
       <p class="m-0 text-pretty text-ink-2">
         {{ t('mvp.poll.setText') }}
       </p>
-      <div class="flex flex-wrap gap-2">
-        <a
-          :href="icsUrl"
-          download
-          class="outline-memphis hit-44 inline-flex h-12 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-primary px-4.5 font-extrabold whitespace-nowrap text-on-primary no-underline shadow-btn lift"
+      <div
+        v-if="isHost"
+        class="flex flex-wrap gap-2"
+      >
+        <AppButton
+          variant="secondary"
+          size="card"
+          @click="emit('reschedule')"
         >
           <AppIcon
-            :icon="CalendarPlus"
+            :icon="CalendarClock"
             :size="18"
           />
-          {{ t('mvp.set.ics') }}
-        </a>
-        <template v-if="isHost">
-          <AppButton
-            variant="secondary"
-            @click="emit('reschedule')"
-          >
-            <AppIcon
-              :icon="CalendarClock"
-              :size="18"
-            />
-            {{ t('poll.reschedule') }}
-          </AppButton>
-          <AppButton
-            variant="secondary"
-            @click="emit('invite')"
-          >
-            <AppIcon
-              :icon="LinkIcon"
-              :size="18"
-            />
-            {{ t('common.invite') }}
-          </AppButton>
-          <slot name="host-actions" />
-        </template>
+          {{ t('poll.reschedule') }}
+        </AppButton>
+        <slot name="host-actions" />
       </div>
     </div>
   </section>

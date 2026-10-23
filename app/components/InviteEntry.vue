@@ -4,11 +4,11 @@ import type { InvitePreview } from '~/components/SignInCard.vue'
 import { apiFailure } from '~/utils/api-error'
 import { SIGN_IN_PATH } from '~/utils/auth-guard'
 
-// The Invite link `/s/<slug>-<token>` (#10, ADR 0006, screen 07 `App Einstieg ?s=open`). A signed-out
-// visitor sees the Session name and the Host's Display name and avatar, nothing else, and is sent to
+// The Invite link `/e/<slug>-<token>` (#10, ADR 0006, screen 07 `App Einstieg ?s=open`). A signed-out
+// visitor sees the Event name and the Host's Display name and avatar, nothing else, and is sent to
 // sign-in with the link as the redirect. A signed-in User joins on the Bench and moves on to the
-// Session link. Invalid and rotated links get the generic page; a former Member of a deleted
-// Session gets „Session gelöscht“.
+// Event link. Invalid and rotated links get the generic page; a former Member of a deleted
+// Event gets „Event gelöscht“.
 
 const props = defineProps<{ invite: string }>()
 
@@ -21,7 +21,7 @@ useHead({ title: () => `${t('auth.titleInvite')} | ${t('app.name')}` })
 
 const { data: preview, error: previewError } = await useFetch<InvitePreview>(`/api/invite/${props.invite}`, { immediate: !signedIn })
 const previewFailed = computed(() => !signedIn && !!previewError.value)
-const signInPath = `${SIGN_IN_PATH}?redirect=${encodeURIComponent(`/s/${props.invite}`)}`
+const signInPath = `${SIGN_IN_PATH}?redirect=${encodeURIComponent(`/e/${props.invite}`)}`
 
 const failure = ref<'invalid' | 'deleted' | null>(null)
 
@@ -29,7 +29,7 @@ async function join() {
   try {
     const { slug, joined } = await $fetch<{ slug: string, joined: boolean }>(`/api/invite/${props.invite}`, { method: 'POST' })
     if (joined) toast({ tone: 'success', text: t('invite.joinedToast') })
-    await navigateTo(`/s/${slug}`, { replace: true })
+    await navigateTo(`/e/${slug}`, { replace: true })
   }
   catch (error) {
     failure.value = apiFailure(error).status === 410 ? 'deleted' : 'invalid'
@@ -75,7 +75,7 @@ onMounted(() => {
           :size="64"
         />
         <h1 class="m-0 text-[34px] leading-none text-balance">
-          {{ t('auth.invitedBy', { host: preview.host.name, session: preview.sessionName }) }}
+          {{ t('auth.invitedBy', { host: preview.host.name, event: preview.eventName }) }}
         </h1>
         <p class="m-0 max-w-[42ch] text-body text-pretty text-ink-2">
           {{ t('auth.intro') }}

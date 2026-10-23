@@ -5,11 +5,14 @@ import { Crown } from '@lucide/vue'
 // Host controls (02-components § HostDock). Desktop: a floating pill at the bottom centre. Phones: a
 // crown button bottom right that opens the same actions in a sheet. Shortcut H focuses the toolbar.
 // Callers pass at most three actions; the "Mehr" overflow is not needed yet.
+// An action with a `disabledReason` looks disabled (dashed) but stays focusable and clickable: the caller
+// answers the click with the reason, as a neutral toast (#52).
 export interface DockAction {
   key: string
   label: string
   icon: Component
   primary?: boolean
+  disabledReason?: string
 }
 
 defineProps<{
@@ -45,8 +48,16 @@ function onShortcut(event: KeyboardEvent) {
   toolbar.value?.querySelector<HTMLElement>('button')?.focus()
 }
 
-onMounted(() => window.addEventListener('keydown', onShortcut))
-onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut))
+// While mounted, the toasts lift above the dock (ToastStack, useHostDock).
+let leaveDock: (() => void) | undefined
+onMounted(() => {
+  window.addEventListener('keydown', onShortcut)
+  leaveDock = useHostDock().attach()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onShortcut)
+  leaveDock?.()
+})
 </script>
 
 <template>
@@ -64,6 +75,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut))
         type="button"
         class="outline-memphis hit-44 inline-flex h-11 items-center gap-2 rounded-pill px-4 font-bold whitespace-nowrap shadow-btn lift aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
         :class="action.primary ? 'bg-primary text-on-primary' : 'border-(length:--cp-bw) border-line bg-surface text-ink'"
+        :aria-disabled="action.disabledReason ? 'true' : undefined"
         @click="run(action)"
       >
         <AppIcon
@@ -100,6 +112,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut))
           type="button"
           class="outline-memphis hit-44 flex h-14 items-center gap-3 rounded-pill border-(length:--cp-bw) border-line px-5 font-bold shadow-btn hover:tint aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:bg-none"
           :class="action.primary ? 'bg-primary text-on-primary' : 'bg-surface text-ink'"
+          :aria-disabled="action.disabledReason ? 'true' : undefined"
           @click="run(action)"
         >
           <AppIcon

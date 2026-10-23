@@ -4,16 +4,16 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 **Breakpoints** (Tailwind): mobile < 600 · `sm` tablet 600–979 (mobile shell, 2-col grids) · `md` desktop 980–1439 (desktop shell: side panel + floating host dock) · `xl` ≥ 1440 (shell stops growing, centred). Reference layout 1280. Inside stage and panel, use container queries.
 
-**Shells:** hub (Home, Archiv, Bibliothek, Profil, Admin) = header + HubNav, mobile bottom tabs. Session = header with title + PhasePill + Einladen, stage, side panel (desktop), mobile tabs Spielbrett / Tabelle / Chat / Aktivität / Leute, host dock or crown button. Bare = header only (errors, sign-in).
+**Shells:** hub (Home, Archiv, Bibliothek, Profil, Admin) = header + HubNav, mobile bottom tabs. Event = header with title + PhasePill + Einladen, stage, side panel (desktop), mobile tabs Spielbrett / Tabelle / Chat / Aktivität / Leute, host dock or crown button. Bare = header only (errors, sign-in).
 
 ## MVP screens (build first)
 
 ### M1 Start (Home, MVP)
 **Scope:** [MVP] · **Ref:** `App MVP Terminfindung ?s=home`
 
-- **Layout:** Hub shell. Desktop: header 64 + HubNav (Sessions active, Archiv/Bibliothek/Profil with tape marker), content max 1040, title row (kicker „Hallo {name}“, h1 44 px, host CTA right), section „Deine Sessions“ as 2-col card grid (gap 14), BaustelleZone below. Mobile (<600): h1 32, 1-col cards, bottom tab bar with the same 4 items (markers top-right). Tablet 600–979: 2-col cards, tab bar.
-- **Components:** AppShell, AppHeader, HubNav, NavSoonMarker, AppButton, PhasePill, session card (local), EmptyState, BaustelleZone, Compibert (bust, sleep)
-- **Data:** Sessions the user is a member of: name, host name, phase, best slot so far (or confirmed date), votedCount/total, my vote status.
+- **Layout:** Hub shell. Desktop: header 64 + HubNav (Events active, Archiv/Bibliothek/Profil with tape marker), content max 1040, title row (kicker „Hallo {name}“, h1 44 px, host CTA right), section „Deine Events“ as 2-col card grid (gap 14), BaustelleZone below. Mobile (<600): h1 32, 1-col cards, bottom tab bar with the same 4 items (markers top-right). Tablet 600–979: 2-col cards, tab bar.
+- **Components:** AppShell, AppHeader, HubNav, NavSoonMarker, AppButton, PhasePill, Event card (local), EmptyState, BaustelleZone, Compibert (bust, sleep)
+- **Data:** Events the user is a member of: name, host name, phase, best slot so far (or confirmed date), votedCount/total, my vote status.
 - **Host vs player:** Host (canHost): „Neue Terminumfrage“ (primary) in the title row. Without the right: no button, no notice. Nav: Bibliothek only with the Host permission or as Platform admin; Admin only as Platform admin. Card CTA: „Öffnen“ (host) / „Abstimmen“ (not voted, primary) / „Ansehen“ (voted or date set).
 - **States:** Host mit Umfragen · Eingeladen, noch nicht abgestimmt · Noch keine Einladung (empty) · loading (SkeletonCard ×2) · error (FullScreenState generic)
 - **Realtime:** MVP: refetch on focus. 1.0: none needed on Home (push covers changes).
@@ -24,18 +24,18 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** Hub shell without tab bar on mobile. Single column max 680: back link, kicker + h1, name field, SegmentedControl (Terminumfrage / Direkt festlegen, max 420), slot list (date flex 1 + time 108 + remove 44), dashed „Termin vorschlagen“, help text, BaustelleZone (compact, no sign), footer CTA. Done state: success card (Compibert bust wave, link field + copy, „Zur Umfrage“).
 - **Components:** TextField, SegmentedControl, DateTimeField, IconButton, AppButton, BaustelleZone, InviteLinkCard, ToastStack, Compibert
-- **Data:** POST session {name, dateMode, slots[] | startsAt}. Response: slug, inviteUrl.
+- **Data:** POST event {name, sessions, slots[] | startsAt[]}. Response: slug, inviteUrl.
 - **Host vs player:** Host only (route guard → ConstructionPage „generic“ or 403 otherwise).
-- **States:** Formular · Termin in der Vergangenheit (inline error, CTA aria-disabled + reason) · Angelegt + Link · Direkt festlegen (single DateTimeField, CTA „Session anlegen“) · saving
+- **States:** Formular · Termin in der Vergangenheit (inline error, CTA aria-disabled + reason) · Angelegt + Link · Direkt festlegen (single DateTimeField, CTA „Event anlegen“) · saving
 - **Realtime:** —
 
 
 ### M3 Terminumfrage (MVP)
 **Scope:** [MVP] · **Ref:** `App MVP Terminfindung ?s=poll`
 
-- **Layout:** Session shell, **no side panel** in the MVP. Desktop: kicker („Terminumfrage läuft, 7 von 9 haben abgestimmt“) + h1 + live hint right; slot cards 4-col (gap 12); „Wer kann wann?“ matrix; BaustelleZone. Host dock floating bottom-centre: „Termin festlegen“ (primary) + „Einladen“. Mobile: slot cards 1-col, matrix scrolls horizontally (130 + 4×72), crown button bottom-right opens the host sheet. Date set: DateSetCard replaces cards + matrix.
-- **Components:** AppShell (session), PhasePill, PollSlotCard, PollMatrix, UserAvatar, HostDock / host sheet, DateConfirmDialog, DateSetCard, InviteLinkCard, BaustelleZone, ToastStack
-- **Data:** Session (name, phase, host), slots[], votes[] (all members, visible to everyone), members (name, avatar), best slot (computed server-side: most yes → most maybe → earliest), confirmed startsAt, icsSequence.
+- **Layout:** Event shell, **no side panel** in the MVP. Desktop: kicker („Terminumfrage läuft, 7 von 9 haben abgestimmt“) + h1, no refresh hint; slot cards 4-col (gap 12); „Wer kann wann?“ matrix; BaustelleZone. Host dock floating bottom-centre: „Termin festlegen“ (primary) + „Einladen“. Mobile: slot cards 1-col, matrix scrolls horizontally only when the Slots don't fit (130 + 4×72), crown button bottom-right opens the host sheet. Date set: DateSetCard replaces cards + matrix.
+- **Components:** AppShell (event), PhasePill, PollSlotCard, PollMatrix, UserAvatar, HostDock / host sheet, DateConfirmDialog, DateSetCard, InviteLinkCard, BaustelleZone, ToastStack
+- **Data:** Event (name, phase, host), slots[], votes[] (all members, visible to everyone), members (name, avatar), best slot (computed server-side: most yes → most maybe → earliest), confirmed startsAt, icsSequence.
 - **Host vs player:** Player: votes. Host: votes too + „Diesen festlegen“ on each card (desktop), dock/sheet „Termin festlegen“ (preselects best slot), „Verschieben“ after confirm, „Einladen“.
 - **States:** Abstimmen · Abgestimmt (saved notice) · Host-Ansicht · Host: festlegen (dialog) · Termin steht · Termin steht (Host) · vote failed (rollback + toast „Deine Stimme ist nicht angekommen“) · reschedule dialog (from 08)
 - **Realtime:** MVP: polling (15 s, visible tab) + refetch after own mutations. 1.0 events: `poll.voted`, `poll.slotAdded`, `poll.slotRemoved`, `poll.confirmed`, `poll.rescheduled`, `member.joined`.
@@ -44,11 +44,11 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 ### M4 Baustelle (construction page)
 **Scope:** [MVP] · **Ref:** `App MVP Terminfindung ?s=site`
 
-- **Layout:** Hub shell (Archiv, Bibliothek, Profil, Admin) or session shell (Spielbrett and any session sub-route). ConstructionPage fills the stage: desktop row (Compibert 250 + text column max 520, title 56); mobile column centred (Compibert 170, title 36). Tape top, fence/barrier/sign/cone bottom.
+- **Layout:** Hub shell (Archiv, Bibliothek, Profil, Admin) or Event shell (Spielbrett and any Event sub-route). ConstructionPage fills the stage: desktop row (Compibert 250 + text column max 520, title 56); mobile column centred (Compibert 170, title 36). Tape top, fence/barrier/sign/cone bottom.
 - **Components:** ConstructionPage (BaustelleZone hero), Compibert (full, still, hard hat), AppButton
 - **Data:** Area key from the route; link to the user's most relevant poll (latest open) or Home.
 - **Host vs player:** Bibliothek only for Users with the Host permission and the Platform admin; for everyone else the address shows the generic state (no hint that the Game library exists). Admin only for the Platform admin; for everyone else the generic state. Otherwise same for everyone.
-- **States:** Archiv · Bibliothek · Profil (+ „Abmelden“) · Spielbrett (Session) · Admin · generic
+- **States:** Archiv · Bibliothek · Profil (+ „Abmelden“) · Spielbrett (Event) · Admin · generic
 - **Realtime:** —
 
 
@@ -70,7 +70,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** Centred card max 440; desktop with Compibert left. Discord primary, Twitch secondary.
 - **Components:** AppButton, Compibert, FullScreenState
-- **Data:** Invite context (session name, host) when coming from a link.
+- **Data:** Invite context (Event name, host) when coming from a link.
 - **Host vs player:** —
 - **States:** Standard · Über Einladung · Weiterleitung · Abgebrochen
 - **Realtime:** —
@@ -92,18 +92,18 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** As M1, plus „Läuft gerade“ hero card on top (primary), upcoming, archive teaser, PWA hint.
 - **Components:** as M1 + PwaInstallHint
-- **Data:** Sessions by phase.
+- **Data:** Events by phase.
 - **Host vs player:** Create button needs host right; otherwise a notice.
-- **States:** Mit Sessions · Leer · Lädt · Fehler
-- **Realtime:** `session.started` for a session you are in → „Läuft gerade“ card (optional; push covers it).
+- **States:** Mit Events · Leer · Lädt · Fehler
+- **Realtime:** `session.started` for a Session of an Event you are in → „Läuft gerade“ card (optional; push covers it).
 
 
-### 05 Session erstellen
+### 05 Event erstellen
 **Scope:** [1.0] (MVP: M2) · **Ref:** `App Vorbereitung ?s=create`
 
 - **Layout:** Desktop: step list 230 | form | InfoSheet 340. Mobile: 8-segment progress, form, sticky footer, info as bottom sheet.
-- **Components:** SessionStepper, RadioCardGroup, LockedOption, NumberStepper, PointsTableEditor, GamePoolPicker, InfoSheet, DateTimeField
-- **Data:** Session config; library (suggestions by format + player count).
+- **Components:** EventStepper, RadioCardGroup, LockedOption, NumberStepper, PointsTableEditor, GamePoolPicker, InfoSheet, DateTimeField
+- **Data:** Event config; library (suggestions by format + player count).
 - **Host vs player:** Host only.
 - **States:** 1 Name · 2 Format: Teams · 2 Format: Jeder gegen jeden · 3 Spiele · 4 Punkte · 4 Eigene Tabelle (Fehler) · 5 Lucky Wheel · 5 Pick & Ban + Info · 5 Loser-Modi noch gesperrt · 6 Spielepool · 7 Tiebreaker · 8 Termin · Fertig
 - **Realtime:** —
@@ -125,9 +125,9 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** Centred card / FullScreenState.
 - **Components:** FullScreenState, AppButton
-- **Data:** Session preview (name, host) for valid links only.
+- **Data:** Event preview (name, host) for valid links only.
 - **Host vs player:** —
-- **States:** Abgemeldet · Ungültig / erneuert · Session gelöscht · Angemeldet: Bench
+- **States:** Abgemeldet · Ungültig / erneuert · Event gelöscht · Angemeldet: Bench
 - **Realtime:** —
 
 
@@ -160,8 +160,8 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Components:** HostDock, Sheet, HoldToConfirmButton, NextGamePicker, GamePoolPicker, NumberStepper
 - **Data:** Phase-dependent actions.
 - **Host vs player:** Host only.
-- **States:** Dock · Mehr-Menü · Session starten · Leute verschieben · Rad & Pools bearbeiten · Nächstes Spiel setzen · Anzahl Spiele ändern · Teamname zurücksetzen · Chat-Nachricht löschen · Session beenden · Session löschen
-- **Realtime:** Sends intents; receives `session.configChanged`, `wheel.entriesChanged`, `round.determined`.
+- **States:** Dock · Mehr-Menü · Session starten · Leute verschieben · Rad & Pools bearbeiten · Nächstes Spiel setzen · Anzahl Spiele ändern · Teamname zurücksetzen · Chat-Nachricht löschen · Session beenden · Event löschen
+- **Realtime:** Sends intents; receives `event.configChanged`, `wheel.entriesChanged`, `round.determined`.
 
 
 ### 11 Lucky Wheel
@@ -279,7 +279,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** Filters (Alle, Gewonnen, Als Host) + search + card grid.
 - **Components:** ArchiveList, ArchiveCard, SkeletonCard, EmptyState
-- **Data:** Sessions where the user played ≥ 1 game (or admin).
+- **Data:** Events where the user played ≥ 1 game (or admin).
 - **Host vs player:** —
 - **States:** Liste · Leer · Suche ohne Treffer · Lädt
 - **Realtime:** —
@@ -290,7 +290,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** Tabs: Endstand + Bild, Alle Spiele, Chat & Aktivität.
 - **Components:** ArchiveDetail, ShareImage, GameHistory, ChatPanel (read-only), ActivityFeed
-- **Data:** Everything stored for the session.
+- **Data:** Everything stored for the Event.
 - **Host vs player:** Read-only for all.
 - **States:** Endstand + Bild · Alle Spiele · Chat & Aktivität
 - **Realtime:** —
@@ -407,7 +407,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 ## Realtime event catalogue (1.0)
 
-One PartyServer room per session (`session:<id>`). The server is the only clock and the only source of truth. Every server message carries `serverTime` (ms). Clients send **intents**; the server validates and broadcasts **events**. On (re)connect the client receives `state.snapshot` and re-poses everything from it (never replays history).
+One PartyServer room per Event (`event:<id>`). The server is the only clock and the only source of truth. Every server message carries `serverTime` (ms). Clients send **intents**; the server validates and broadcasts **events**. On (re)connect the client receives `state.snapshot` and re-poses everything from it (never replays history).
 
 ### Visibility rules
 - **Everyone in the room** unless noted.
@@ -422,7 +422,7 @@ One PartyServer room per session (`session:<id>`). The server is the only clock 
 |---|---|---|
 | `clock.pong` | `{t0, serverTime}` | clock sync (see 04-motion) |
 | `state.snapshot` | full room state incl. running timers | join / reconnect |
-| `presence.sync` / `presence.join` / `presence.leave` | `{userIds}` / `{userId}` | online dots, „Kitty ist der Session beigetreten“ |
+| `presence.sync` / `presence.join` / `presence.leave` | `{userIds}` / `{userId}` | online dots, „Kitty ist dem Event beigetreten“ |
 | `member.joined` | `{userId, zone: "bench"}` | avatar pops onto the bench |
 | `member.moved` | `{userId, from, to: {zone, partyId?, slot?}, by}` | **player moved** → Flip avatar |
 | `member.moveRejected` | `{userId, target, winnerId}` (to the loser) | bounce-back + „X war schneller“ |
@@ -430,7 +430,7 @@ One PartyServer room per session (`session:<id>`). The server is the only clock 
 | `poll.voted` | `{slotId, userId, value}` | bars + matrix cell |
 | `poll.slotAdded` / `poll.slotRemoved` | `{slot}` / `{slotId}` | cards |
 | `poll.confirmed` / `poll.rescheduled` | `{startsAt, icsSequence}` | DateSetCard, team selection opens |
-| `session.started` / `session.configChanged` / `session.ended` / `session.deleted` | | locks, game count, ceremony, redirect |
+| `session.started` / `event.configChanged` / `event.finished` / `event.deleted` | | locks, game count, ceremony, redirect |
 | `round.determined` | `{round, gameId, via, determinedAt, vetoEndsAt, clip: {videoId, start, length, startAt}}` | result card, clip, veto window |
 | `wheel.spin` | `{wheelId, startAt, durationMs, resultIndex, offset, entriesVersion}` | **wheel spun, with stop timestamp** |
 | `wheel.revealed` | `{index, gameId, label}` at stopAt | hidden-wheel transform |
@@ -453,4 +453,4 @@ One PartyServer room per session (`session:<id>`). The server is the only clock 
 `ping`, `move`, `setTeamWord`, `vote`, `confirmDate`, `reschedule`, `startSession`, `spin`, `editWheel`, `putBack`, `setNextGame`, `skipClip`, `castVeto`, `flipCoin`, `ban`, `pick`, `saveResult`, `correctResult`, `startCeremony`, `chat`, `deleteChat`, `emote` (server enforces 2 s cooldown + room sound limit flag).
 
 ### MVP (no realtime)
-HTTP only: `GET /api/s/:slug` (session + slots + votes + members), `PUT /api/s/:slug/slots/:slotId/vote`, `POST /api/s/:slug/confirm`, `POST /api/s/:slug/reschedule`, `POST /api/s/:slug/rotate`, `GET /api/s/:slug/termin.ics`. Poll every 15 s while `document.visibilityState === "visible"`.
+HTTP only: `GET /api/e/:slug` (Event + Sessions + slots + votes + members), `PUT /api/e/:slug/slots/:slotId/vote`, `POST /api/e/:slug/confirm` (a Slot's time to an undated Session), `POST /api/e/:slug/sessions` and `DELETE /api/e/:slug/sessions/:id` (add and remove a Session), `POST /api/e/:slug/sessions/:id/reschedule` and `/reopen`, `POST /api/e/:slug/rotate`, `GET /api/e/:slug/ics`. Poll every 15 s while `document.visibilityState === "visible"`.

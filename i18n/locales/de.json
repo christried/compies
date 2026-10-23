@@ -31,12 +31,12 @@
   },
   "nav": {
     "main": "Hauptnavigation",
-    "sessions": "Sessions",
+    "events": "Events",
     "archive": "Archiv",
     "library": "Bibliothek",
     "profile": "Profil",
     "admin": "Admin",
-    "createSession": "Session erstellen",
+    "createEvent": "Event erstellen",
     "tabs": {
       "board": "Spielbrett",
       "table": "Tabelle",
@@ -163,7 +163,7 @@
     "connect": "Verbinden",
     "disconnect": "Trennen",
     "lastAccount": "Ein Konto muss verbunden bleiben, sonst kannst du dich nicht mehr anmelden.",
-    "mySessions": "Meine Sessions",
+    "mySessions": "Meine Events",
     "sessionState": {
       "running": "Läuft",
       "planned": "Geplant",
@@ -373,7 +373,7 @@
     "winStamp": "Sieg in Spiel {n}!",
     "wonStamp": "Spiel {n} gewonnen",
     "takesFirst": "{team} übernimmt Platz 1",
-    "endWinner": "{team} gewinnt die Session. Auf zur Siegerehrung!",
+    "endWinner": "{team} gewinnt das Event. Auf zur Siegerehrung!",
     "endTie": "Gleichstand auf Platz 1: {teams}. Jetzt kommt der Tiebreaker."
   },
   "history": {
@@ -405,7 +405,7 @@
     "logAria": "Aktivität",
     "beforeStart": "Vor dem Start",
     "gameHeader": "Spiel {n}, {game}",
-    "join": "{name} ist der Session beigetreten",
+    "join": "{name} ist dem Event beigetreten",
     "move": "{name} ist auf die Tribüne gewechselt",
     "date": "Termin steht: {date}",
     "start": "{name} hat die Session gestartet",
@@ -428,12 +428,17 @@
     "title": "Wann zocken wir?",
     "people": "{n} Leute",
     "yes": "Ja",
-    "maybe": "Wenn nötig",
-    "maybeShort": "Nötig",
+    "maybe": "Meh",
+    "maybeShort": "Meh",
     "no": "Nein",
+    "legend": {
+      "yes": "Ich kann da!",
+      "maybe": "Krieg ich hin.",
+      "no": "Wird nichts bei mir."
+    },
     "open": "Noch offen",
     "sum": "Summe",
-    "sumText": "{y} Ja, {m} Wenn nötig",
+    "sumText": "{y} Ja, {m} Meh",
     "best": "Bester Termin",
     "confirm": "Termin festlegen: {slot}",
     "confirmed": "Termin steht",
@@ -517,12 +522,12 @@
     "title": "Anmelden",
     "discord": "Mit Discord anmelden",
     "twitch": "Mit Twitch anmelden",
-    "invitedBy": "{host} lädt dich zu {session} ein",
+    "invitedBy": "{host} lädt dich zu {event} ein",
     "joinAndSignIn": "Anmelden und beitreten",
     "cancelled": "Anmelden hat nicht geklappt. Versuch’s nochmal.",
     "titleInvite": "Erst kurz anmelden",
     "intro": "Einfach nur mit dem Konto, mit dem du eh schon zockst, und das war’s.",
-    "inviteNotice": "{host} hat dich zu {session} eingeladen. Melde dich an, dann geht’s direkt auf die Bench.",
+    "inviteNotice": "{host} hat dich zu {event} eingeladen. Melde dich an, dann geht’s direkt auf die Bench.",
     "cancelledTitle": "Anmeldung abgebrochen.",
     "cancelledProvider": "{headline} {provider} hat uns nichts geschickt. Einfach nochmal versuchen.",
     "redirecting": "Weiter zu {provider} …",
@@ -548,13 +553,13 @@
     "go": "Los geht’s"
   },
   "home": {
-    "title": "Deine Sessions",
+    "title": "Deine Events",
     "running": "Läuft gerade",
     "upcoming": "Demnächst",
     "recent": "Zuletzt",
-    "create": "Session erstellen",
-    "createFirst": "Erste Session erstellen",
-    "noHostRight": "Sessions erstellen dürfen nur Hosts. Frag die Plattform-Admin, wenn du auch mal ran willst.",
+    "create": "Event erstellen",
+    "createFirst": "Erstes Event erstellen",
+    "noHostRight": "Events erstellen dürfen nur Hosts. Frag die Plattform-Admin, wenn du auch mal ran willst.",
     "emptyPlayer": "Noch nichts hier. Einladungen landen automatisch auf dieser Seite."
   },
   "invite": {
@@ -565,9 +570,9 @@
     "linkLabel": "Einladungslink",
     "rotate": "Link erneuern (halten)",
     "rotateText": "Der alte Link wird sofort ungültig. Wer schon drin ist, bleibt drin.",
-    "openSignedOut": "Du bist zu {session} eingeladen",
+    "openSignedOut": "Du bist zu {event} eingeladen",
     "invalidTitle": "Dieser Link gilt nicht mehr.",
-    "deletedTitle": "Diese Session gibt’s nicht mehr.",
+    "deletedTitle": "Dieses Event gibt’s nicht mehr.",
     "joinedToast": "Du bist drin! Du sitzt erstmal auf der Bench.",
     "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand.",
     "kicker": "Einladung",
@@ -577,7 +582,7 @@
     "renew": "Link erneuern",
     "renewTitle": "Einladungslink erneuern?",
     "renewOld": "Der alte Link funktioniert sofort nicht mehr.",
-    "renewMembers": "Alle in der Session bleiben drin.",
+    "renewMembers": "Alle im Event bleiben drin.",
     "renewShare": "Den neuen Link musst du neu teilen.",
     "renewed": "Erneuert.",
     "renewedText": "Neuer Link aktiv. Der alte führt jetzt ins Leere."
@@ -614,7 +619,7 @@
     },
     "noPermission": {
       "title": "Da darfst du (noch) nicht rein.",
-      "text": "Das Archiv sehen nur Leute, die in der Session mindestens ein Spiel gespielt haben.",
+      "text": "Das Archiv sehen nur Leute, die im Event mindestens ein Spiel gespielt haben.",
       "otherAccount": "Anders anmelden"
     },
     "generic": {
@@ -628,8 +633,8 @@
       "text": "Dieser Link funktioniert nicht mehr. Frag den Host nach dem neuen."
     },
     "deleted": {
-      "title": "Session gelöscht",
-      "text": "Diese Session wurde vom Host gelöscht. Hier gibt es nichts mehr zu sehen."
+      "title": "Event gelöscht",
+      "text": "Dieses Event wurde vom Host gelöscht. Hier gibt es nichts mehr zu sehen."
     },
     "home": "Zur Startseite"
   },
@@ -698,7 +703,7 @@
     "all": "Alle",
     "won": "Gewonnen",
     "asHost": "Als Host",
-    "empty": "Noch leer. Sessions landen hier, sobald du ein Spiel mitgespielt hast.",
+    "empty": "Noch leer. Events landen hier, sobald du ein Spiel mitgespielt hast.",
     "loading": "Archiv lädt …",
     "place": "Platz {n}"
   },
@@ -728,12 +733,12 @@
       "ownerNote": "Du wirst Crew-Owner: du verwaltest Mitglieder, vergibst Host-Rechte und erneuerst den Einladungslink.",
       "noRight": "Crews gründen darf gerade nur, wer das Recht von der Plattform-Admin bekommen hat. Später wird das für alle geöffnet.",
       "members": "Mitglieder",
-      "sessions": "Sessions",
+      "sessions": "Events",
       "invite": "Einladen",
       "canHost": "Darf hosten",
       "owner": "Owner",
       "inviteTitle": "Leute in die Crew holen",
-      "inviteText": "Wer über diesen Link kommt, wird Mitglied und sieht alle Sessions und das Archiv der Crew. Session-Einladungen bleiben davon getrennt.",
+      "inviteText": "Wer über diesen Link kommt, wird Mitglied und sieht alle Events und das Archiv der Crew. Session-Einladungen bleiben davon getrennt.",
       "rotate": "Erneuern (halten)",
       "rotateText": "Alter Link wird sofort ungültig. Mitglieder bleiben Mitglieder.",
       "archive": "Crew-Archiv: {crew}"
@@ -801,7 +806,7 @@
       },
       "overview": {
         "heading": "2. Überblick",
-        "text": "Compies ist ein privates, nicht-kommerzielles Hobby-Projekt, mit dem eine Gruppe von Freundinnen und Freunden Termine für Spieleabende findet: Ein Host schlägt in einer Session mehrere Termine vor, die Mitglieder stimmen ab, und der Host legt den Termin fest. Es gibt keine Werbung, kein Tracking und keine Analyse-Tools. Verarbeitet werden nur die Daten, die für Anmeldung, Betrieb und die Funktionen der Anwendung erforderlich sind."
+        "text": "Compies ist ein privates, nicht-kommerzielles Hobby-Projekt, mit dem eine Gruppe von Freundinnen und Freunden Termine für ihre Spielrunden findet: Ein Host schlägt in einem Event mehrere Termine vor, die Mitglieder stimmen ab, und der Host legt den Termin fest. Es gibt keine Werbung, kein Tracking und keine Analyse-Tools. Verarbeitet werden nur die Daten, die für Anmeldung, Betrieb und die Funktionen der Anwendung erforderlich sind."
       },
       "hosting": {
         "heading": "3. Hosting (Vercel)",
@@ -809,31 +814,31 @@
       },
       "database": {
         "heading": "4. Datenbank (Neon)",
-        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 5), Sitzungs- und Sicherheitsdaten (Abschnitt 8) sowie deine Sessions, Terminvorschläge und Stimmen (Abschnitt 9). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
+        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 5), Sitzungs- und Sicherheitsdaten (Abschnitt 8) sowie deine Events, Terminvorschläge und Stimmen (Abschnitt 9). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
       },
       "signIn": {
         "heading": "5. Anmeldung über Discord oder Twitch und Anzeigename",
-        "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift Compies darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in Compies sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Sessions anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Sessions anlegen)."
+        "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift Compies darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in Compies sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Events anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Events anlegen)."
       },
       "avatar": {
         "heading": "6. Profilbild",
-        "text": "Neben deinem Anzeigenamen zeigt Compies ein rundes Profilbild – dir selbst und den Mitgliedern der Sessions, denen du angehörst. Es ist dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.\n\nDas Profilbild wird direkt von den Servern von Discord bzw. Twitch geladen. Dabei erhält der jeweilige Dienst technisch bedingt die IP-Adresse des Geräts, auf dem das Bild angezeigt wird, sowie übliche Browserangaben – das gilt auch für andere Mitglieder deiner Sessions, die dein Bild sehen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erkennbarkeit der Mitglieder in einer gemeinsam genutzten Anwendung) bzw. für das Laden von Discord und Twitch Art. 6 Abs. 1 lit. f DSGVO."
+        "text": "Neben deinem Anzeigenamen zeigt Compies ein rundes Profilbild – dir selbst und den Mitgliedern der Events, denen du angehörst. Es ist dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.\n\nDas Profilbild wird direkt von den Servern von Discord bzw. Twitch geladen. Dabei erhält der jeweilige Dienst technisch bedingt die IP-Adresse des Geräts, auf dem das Bild angezeigt wird, sowie übliche Browserangaben – das gilt auch für andere Mitglieder deiner Events, die dein Bild sehen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erkennbarkeit der Mitglieder in einer gemeinsam genutzten Anwendung) bzw. für das Laden von Discord und Twitch Art. 6 Abs. 1 lit. f DSGVO."
       },
       "cookies": {
         "heading": "7. Cookies und Speicher im Browser",
-        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nDesign-Cookie (nuxt-color-mode): merkt sich, ob du das helle, dunkle oder das Systemdesign gewählt hast; 1 Jahr.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Session, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Sessions werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
+        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Session, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Events werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
       },
       "security": {
         "heading": "8. Sitzungs- und Sicherheitsdaten",
         "text": "Zu jeder Anmeldesitzung speichern wir deine IP-Adresse und die Browserkennung (User-Agent), um Missbrauch erkennen zu können. Außerdem zählt Compies zum Schutz vor Missbrauch und Überlastung, wie oft bestimmte Aktionen aufgerufen werden – je nach Aktion deinem Konto oder der aufrufenden IP-Adresse zugeordnet (z. B. Anmeldeversuche oder Abstimmungen). Diese Zähler liegen nur im Arbeitsspeicher, gelten nur für ein kurzes Zeitfenster und werden danach überschrieben. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Sicherheit der Anwendung und dem Schutz vor Missbrauch)."
       },
-      "sessions": {
-        "heading": "9. Sessions, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt eine Session mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jeder Session speichern wir, wer sie angelegt hat, ihre Terminvorschläge, den festgelegten Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Wenn nötig, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast.\n\nName, Terminvorschläge und Termin einer Session sowie Anzeigename, Profilbild und Stimmen ihrer Mitglieder sind für alle Mitglieder dieser Session sichtbar. Wer den Einladungslink einer Session erhält, kann ihr nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen der Session sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+      "events": {
+        "heading": "9. Events, Terminvorschläge und Stimmen",
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast.\n\nName, Terminvorschläge und die Termine der Sessions eines Events sowie Anzeigename, Profilbild und Stimmen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "10. Kalenderdatei",
-        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link der Session herunterladen. Sie wird von Compies selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link des Events herunterladen. Sie wird von Compies selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "fonts": {
         "heading": "11. Schriftarten, Symbole und Tracking",
@@ -841,7 +846,7 @@
       },
       "recipients": {
         "heading": "12. Empfänger",
-        "text": "Deine Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang sowie die Mitglieder der Sessions, denen du angehörst (Abschnitt 9). Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht."
+        "text": "Deine Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang sowie die Mitglieder der Events, denen du angehörst (Abschnitt 9). Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht."
       },
       "transfer": {
         "heading": "13. Übermittlung in Drittländer",
@@ -849,7 +854,7 @@
       },
       "retention": {
         "heading": "14. Speicherdauer",
-        "text": "Kontodaten, Sessions, Terminvorschläge und Stimmen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Entfernt ein Host einen Terminvorschlag, werden die Stimmen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 8). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
+        "text": "Kontodaten, Events, Terminvorschläge und Stimmen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Entfernt ein Host einen Terminvorschlag, werden die Stimmen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 8). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
       },
       "obligation": {
         "heading": "15. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
@@ -879,7 +884,7 @@
       "hello": "Hallo {name}",
       "title": "Wann zocken wir?",
       "titleEmpty": "Noch nix los.",
-      "sessions": "Deine Sessions",
+      "events": "Deine Events",
       "newPoll": "Neue Terminumfrage",
       "hostLabel": "Host: {name}",
       "hostYou": "Host: du",
@@ -894,13 +899,15 @@
       "view": "Ansehen",
       "emptyTitle": "Noch keine Einladung.",
       "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Bis dahin lohnt sich eine Nachfrage beim Host.",
-      "noBest": "Noch kein Termin mit Ja oder Wenn nötig."
+      "noBest": "Noch kein Termin mit Ja oder Meh.",
+      "datesStanding": "{n} von {total} Terminen steht",
+      "sessionOf": "Session {n} von {total}"
     },
     "create": {
       "back": "Zurück",
-      "kicker": "Neue Session",
+      "kicker": "Neues Event",
       "title": "Erst mal: Wann zocken wir?",
-      "nameLabel": "Name der Session",
+      "nameLabel": "Name des Events",
       "nameHelp": "Sehen alle in der Einladung.",
       "dateLabel": "Termin",
       "modePoll": "Terminumfrage",
@@ -908,14 +915,23 @@
       "slotsTitle": "Vorschläge für die Umfrage",
       "addSlot": "Termin vorschlagen",
       "removeSlot": "Vorschlag entfernen",
-      "slotsHelp": "Abgestimmt wird mit Ja, Wenn nötig oder Nein. Bis zu 8 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
+      "slotsHelp": "Abgestimmt wird mit Ja, Meh oder Nein. Bis zu 8 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
       "submit": "Umfrage starten",
-      "submitDirect": "Session anlegen",
+      "submitDirect": "Event anlegen",
       "blockedPast": "Erst den Termin in der Vergangenheit ändern.",
       "laterTitle": "Format, Modus und Spiele kommen später.",
-      "laterText": "Sobald das Update da ist, trägst du sie in dieser Session nach. Umfrage und Stimmen bleiben, wie sie sind.",
-      "doneTitle": "{name} steht!",
-      "doneText": "Die Umfrage läuft. Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.",
+      "laterText": "Sobald das Update da ist, trägst du sie in diesem Event nach. Umfrage und Stimmen bleiben, wie sie sind.",
+      "doneTitle": "Umfrage für {name} läuft!",
+      "doneTitleDirect": "{name} steht!",
+      "doneText": "Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.",
+      "doneDirectTextPlural": "Die Termine stehen. Schick den Link an deine Freunde, dann können sie sich hier anmelden.",
+      "toEvent": "Zum Event",
+      "sessionsLabel": "Sessions",
+      "sessionsHelp": "Ein Event kann sich über mehrere Termine ziehen. Jede Session hat ihren eigenen Termin.",
+      "sessionsLess": "Eine Session weniger",
+      "sessionsMore": "Eine Session mehr",
+      "minSlots": "Schlag mindestens {n} Termine vor.",
+      "directEmpty": "Bitte Datum und Uhrzeit ausfüllen.",
       "copyLink": "Link kopieren",
       "copied": "Link kopiert",
       "toPoll": "Zur Umfrage",
@@ -935,16 +951,16 @@
       "nextMonth": "Nächster Monat"
     },
     "poll": {
-      "live": "Aktualisiert sich von selbst",
       "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
+      "missingDates": "{n} Termin gesucht | {n} Termine gesucht",
+      "sessionNumber": "Session {n}",
       "past": "vorbei",
       "notVoted": "noch nicht abgestimmt",
-      "saved": "Gespeichert.",
-      "savedText": "Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.",
+      "savedNote": "Gespeichert. Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.",
       "pickThis": "Diesen festlegen",
       "whoWhen": "Wer kann wann?",
       "you": "{name} (du)",
-      "confirmSeeAll": "Alle {n} sehen den Termin sofort hier.",
+      "confirmSeeAll": "Alle sehen den Termin sofort hier.",
       "confirmCta": "Festlegen",
       "cancel": "Abbrechen",
       "setText": "Der Termin ist fix. Wenn dir was dazwischenkommt, sag dem Host sofort Bescheid. Wird geil.",
@@ -1005,15 +1021,18 @@
       "locked": "Termine lassen sich nur ändern, solange noch kein Termin festliegt."
     },
     "ics": {
-      "summary": "{session} (Compies)",
-      "description": "Zur Session: {url}",
-      "alarm": "{session} startet in 1 Stunde"
+      "summary": "{event} (Compies)",
+      "sessionSummary": "{event} · Session {n} (Compies)",
+      "description": "Zum Event: {url}",
+      "alarm": "{event} startet in 1 Stunde"
     },
     "set": {
       "confirmTitle": "Termin festlegen?",
       "pickLabel": "Welcher Termin?",
       "slotLabel": "{day}, {time} Uhr",
       "noFutureSlot": "Kein Termin liegt mehr in der Zukunft.",
+      "noSlots": "Schlag erst einen Termin vor.",
+      "missingAfter": "Danach fehlt noch {n} Termin. | Danach fehlen noch {n} Termine.",
       "dateTime": "{date}, {time} Uhr",
       "ics": "In den Kalender"
     },
@@ -1029,6 +1048,18 @@
       "noSlotsTitle": "Noch keine Termine.",
       "noSlotsHost": "Schlag die ersten Termine über „Termine bearbeiten“ vor, dann kann abgestimmt werden.",
       "noSlotsMember": "Sobald der Host Termine vorschlägt, kannst du abstimmen."
+    },
+    "sessions": {
+      "add": "Session hinzufügen",
+      "addText": "Die neue Session bekommt einen eigenen Termin, oder der Termin kommt aus der Terminumfrage.",
+      "choice": "Termin",
+      "withDate": "Termin eintragen",
+      "withPoll": "Aus der Umfrage",
+      "dateLabel": "Termin der Session",
+      "cta": "Hinzufügen",
+      "max":"Mehr als {max} Sessions gibt es nicht.",
+      "remove": "Entfernen",
+      "removeMissing": "Session ohne Termin entfernen"
     }
   },
   "error": {
@@ -1037,14 +1068,20 @@
     "voteFailed": "Deine Stimme ist nicht angekommen",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
-    "noHostRight": "Sessions erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",
-    "sessionNotFound": "Diese Session gibt es nicht (mehr).",
+    "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",
+    "eventNotFound": "Dieses Event gibt es nicht (mehr).",
     "linkInvalid": "Dieser Link funktioniert nicht mehr. Frag den Host nach dem neuen.",
     "rateLimited": "Langsam, langsam. Versuch es in ein paar Sekunden.",
-    "nameRequired": "Gib der Session einen Namen.",
+    "nameRequired": "Gib dem Event einen Namen.",
     "nameTooLong": "Höchstens {max} Zeichen.",
     "slotPast": "Der Termin liegt in der Vergangenheit.",
+    "slotTakenDate": "Dieser Termin steht schon fest.",
     "slotDuplicate": "Diesen Termin gibt es schon.",
+    "dateDuplicate": "Zwei Sessions können nicht am selben Termin sein.",
+    "tooFewSlots": "Schlag mindestens so viele Termine vor, wie Sessions geplant sind.",
+    "sessionsInvalid": "Sessions: zwischen 1 und 8.",
+    "sessionsMax": "Höchstens 8 Sessions.",
+    "lastSession": "Mindestens eine Session bleibt.",
     "slotsMin": "Mindestens ein Termin.",
     "slotsMax": "Höchstens {max} Vorschläge.",
     "teamWordSpace": "Nur ein Wort, ohne Leerzeichen.",
@@ -1065,15 +1102,15 @@
   "empty": {
     "home": {
       "title": "Noch keine Einladung.",
-      "text": "Sobald dir jemand einen Link schickt, landet die Session hier."
+      "text": "Sobald dir jemand einen Link schickt, landet das Event hier."
     },
     "homeHost": {
-      "title": "Noch keine Session.",
+      "title": "Noch kein Event.",
       "text": "Leg los: Name, Termine, Link teilen."
     },
     "archive": {
       "title": "Noch nichts im Archiv.",
-      "text": "Spiel mindestens ein Spiel in einer Session, dann taucht sie hier auf."
+      "text": "Spiel mindestens ein Spiel in einem Event, dann taucht es hier auf."
     },
     "library": {
       "title": "Die Bibliothek ist leer.",
