@@ -7,11 +7,12 @@ import { kitty, signInAs } from './auth'
 const host = { ...kitty, canHost: true }
 const created = { slug: 'freitags-zocken-k7q2', inviteUrl: 'http://localhost/s/freitags-zocken-k7q2-AbCdEfGhIjKl' }
 
+// Each Slot is a DateTimeField group: its date input comes first, then its time input.
 async function fillSlot(page: Awaited<ReturnType<typeof mountSuspended>>, index: number, date: string, time: string) {
-  const dates = page.findAll('input[type="date"]')
-  const times = page.findAll('input[type="time"]')
-  await dates[index]!.setValue(date)
-  await times[index]!.setValue(time)
+  const [dateInput, timeInput] = page.findAll('[role="group"]')[index]!.findAll('input')
+  const [year, month, day] = date.split('-')
+  await dateInput!.setValue(`${day}.${month}.${year}`)
+  await timeInput!.setValue(time.replace(':', ''))
 }
 
 describe('create a Session', () => {
@@ -43,7 +44,7 @@ describe('create a Session', () => {
     const page = await mountSuspended(CreatePage, { route: '/neu' })
 
     expect(page.get('h1').text()).toBe('Erst mal: Wann zocken wir?')
-    expect(page.findAll('input[type="date"]')).toHaveLength(1)
+    expect(page.findAll('[role="group"]')).toHaveLength(1)
     expect(page.text()).toContain('Termin vorschlagen')
   })
 
@@ -53,7 +54,7 @@ describe('create a Session', () => {
 
     for (let i = 0; i < 7; i++) await page.findAll('button').find(button => button.text().includes('Termin vorschlagen'))!.trigger('click')
 
-    expect(page.findAll('input[type="date"]')).toHaveLength(8)
+    expect(page.findAll('[role="group"]')).toHaveLength(8)
     expect(page.text()).not.toContain('Termin vorschlagen')
   })
 
