@@ -13,6 +13,8 @@ export const API_ERROR_STATUS = {
   too_few_slots: 400,
   in_past: 400,
   slot_past: 400,
+  /** The Slot became a Session's Date: it is no longer open, and its Votes are frozen (#52). */
+  slot_taken: 409,
   duplicate_slot: 400,
   duplicate_date: 400,
   slots_max: 400,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { missingDates, parseSessionCount, sessionNumbers } from '../../server/domain/session'
+import { missingDates, openSlots, parseSessionCount, sessionNumbers } from '../../server/domain/session'
 import { berlinToUtc } from '../../shared/time'
 
 describe('parseSessionCount', () => {
@@ -39,5 +39,17 @@ describe('missingDates', () => {
     expect(missingDates([null, new Date(), null])).toBe(2)
     expect(missingDates([new Date()])).toBe(0)
     expect(missingDates([])).toBe(0)
+  })
+})
+
+describe('openSlots', () => {
+  const slots = [{ id: 'fri' }, { id: 'sat' }, { id: 'sun' }]
+
+  it('leaves out the Slots that a Session refers to, and keeps the order', () => {
+    expect(openSlots(slots, ['sat', null])).toEqual([{ id: 'fri' }, { id: 'sun' }])
+  })
+
+  it('keeps every Slot while no Session has a Date', () => {
+    expect(openSlots(slots, [null, null])).toEqual(slots)
   })
 })

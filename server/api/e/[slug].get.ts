@@ -2,7 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes, eventMembers, users } from '../../db/schema'
 import { isPast, pollStanding } from '../../domain/poll'
-import { missingDates, sessionNumbers } from '../../domain/session'
+import { missingDates, openSlots, sessionNumbers } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
@@ -12,8 +12,9 @@ import { requireUser } from '../../utils/user'
 // The Event link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
 // same 404, so nobody can probe which Events exist. A former Member of a deleted Event gets
 // 410 "Event deleted" instead (#10).
-// Members see every Member's Votes (#1 § Data), the computed Best slot (#1 § Domain rules) and how
-// many Members have voted on every votable Slot. The poll UI refetches this every 15 s (ADR 0001).
+// Members see the open Slots only (#52): a Slot that became a Session's Date is gone from the poll, with
+// its Votes. The Best slot and how many Members have voted on every votable Slot count open future Slots.
+// The poll UI refetches this every 15 s (ADR 0001).
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const db = useDb(event)
@@ -21,17 +22,20 @@ export default defineEventHandler(async (event) => {
 
   const now = new Date()
   const isHost = eventRow.hostId === user.id
-  const slots = await db
+  const rows = await eventSessions(db, eventRow.id)
+  const allSlots = await db
     .select({ id: pollSlots.id, startsAt: pollSlots.startsAt })
     .from(pollSlots)
     .where(eq(pollSlots.eventId, eventRow.id))
     .orderBy(asc(pollSlots.startsAt))
+  const slots = openSlots(allSlots, rows.map(row => row.slotId))
+  const openIds = new Set(slots.map(slot => slot.id))
 
-  const votes = await db
+  const votes = (await db
     .select({ slotId: pollVotes.slotId, userId: pollVotes.userId, value: pollVotes.value })
     .from(pollVotes)
     .innerJoin(pollSlots, eq(pollVotes.slotId, pollSlots.id))
-    .where(eq(pollSlots.eventId, eventRow.id))
+    .where(eq(pollSlots.eventId, eventRow.id))).filter(vote => openIds.has(vote.slotId))
 
   const members = await db
     .select({ id: users.id, name: users.name, displayName: users.displayName, image: users.image })
@@ -44,7 +48,6 @@ export default defineEventHandler(async (event) => {
 
   // Sessions with a Date come first in Date order and get their number (#49); the Sessions still
   // waiting for a Date follow and only count as missing Dates.
-  const rows = await eventSessions(db, eventRow.id)
   const numbers = sessionNumbers(rows.map(row => row.startsAt))
   const sessionViews = rows
     .map((row, index) => ({ row, number: numbers[index] ?? null }))

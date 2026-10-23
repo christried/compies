@@ -247,6 +247,22 @@ describe('the Host edits Slots', () => {
       expect(await slotRows(eventId)).toHaveLength(1)
     })
 
+    it('refuses to remove a Slot that became a Session\'s Date, with 409 slot_taken, and keeps its Votes (#52)', async () => {
+      const { cookie, id: hostId } = await signInAs(host, { hostPermission: true })
+      const { slug, eventId } = await createEventWith(cookie, { dateMode: 'poll', sessions: 2, slots: ['2090-10-30T20:30', '2090-10-31T20:30'] })
+      const [taken] = (await slotRows(eventId)).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+      await testDb.db.insert(pollVotes).values({ slotId: taken!.id, userId: hostId, value: 'yes' })
+      const [session] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId))
+      await testDb.db.update(sessions).set({ startsAt: taken!.startsAt, slotId: taken!.id }).where(eq(sessions.id, session!.id))
+
+      const response = await remove(cookie, slug, taken!.id)
+
+      expect(response.status).toBe(409)
+      expect((await response.json()).statusMessage).toBe('slot_taken')
+      expect(await slotRows(eventId)).toHaveLength(2)
+      expect(await testDb.db.select().from(pollVotes)).toHaveLength(1)
+    })
+
     it('answers 404 for a Slot that is not in this Event or is not an id', async () => {
       const { cookie } = await signInAs(host, { hostPermission: true })
       const { slug } = await createPoll(cookie, ['2090-10-30T20:30'])

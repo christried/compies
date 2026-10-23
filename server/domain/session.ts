@@ -29,3 +29,12 @@ export function sessionNumbers(startsAt: (Date | null)[]): (number | null)[] {
 export function missingDates(startsAt: (Date | null)[]): number {
   return startsAt.filter(date => date === null).length
 }
+
+/**
+ * The open Slots of an Event (#52): a Slot is open when no Session refers to it, because its Date came
+ * from that Slot. `sessionSlotIds` are the Slot ids the Sessions refer to (null for none). Order is kept.
+ */
+export function openSlots<S extends { id: string }>(slots: S[], sessionSlotIds: (string | null)[]): S[] {
+  const taken = new Set(sessionSlotIds.filter((id): id is string => id !== null))
+  return slots.filter(slot => !taken.has(slot.id))
+}

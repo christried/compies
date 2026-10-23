@@ -60,6 +60,7 @@ export interface EventView {
   /** How many Sessions still wait for a Date. */
   missingDates: number
   viewerId: string
+  /** The open Slots only (#52): a Slot that became a Session's Date is left out, with its Votes. */
   slots: { id: string, startsAt: string, past: boolean }[]
   votes: { slotId: string, userId: string, value: VoteValue }[]
   members: { id: string, name: string, image: string | null, isHost: boolean }[]

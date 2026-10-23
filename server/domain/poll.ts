@@ -78,11 +78,15 @@ export function pollStanding<S extends PollSlot>(input: { slots: S[], votes: Pol
   }
 }
 
-export type VoteRejection = 'wrong_phase' | 'slot_past'
+export type VoteRejection = 'wrong_phase' | 'slot_taken' | 'slot_past'
 
-/** Why a Vote on this Slot is refused, or null. Votes need the poll phase and a Slot that is not past (#1). */
-export function voteRejection(input: { phase: Phase, startsAt: Date, now: Date }): VoteRejection | null {
+/**
+ * Why a Vote on this Slot is refused, or null. Votes need the poll phase and a Slot that is not past (#1).
+ * A Slot that became a Session's Date is taken and its Votes are frozen (#52).
+ */
+export function voteRejection(input: { phase: Phase, startsAt: Date, now: Date, taken?: boolean }): VoteRejection | null {
   if (input.phase !== 'poll') return 'wrong_phase'
+  if (input.taken) return 'slot_taken'
   if (isPast(input.startsAt, input.now)) return 'slot_past'
   return null
 }

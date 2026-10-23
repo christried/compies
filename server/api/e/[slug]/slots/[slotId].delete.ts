@@ -2,8 +2,9 @@ import { eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes } from '../../../../db/schema'
 import { useDb } from '../../../../utils/db'
-import { slotNotFound } from '../../../../utils/errors'
+import { apiError, slotNotFound } from '../../../../utils/errors'
 import { lockEventForSlotEdit } from '../../../../utils/host-event'
+import { isSlotTaken } from '../../../../utils/sessions'
 import { findSlot } from '../../../../utils/slots'
 import { requireUser } from '../../../../utils/user'
 
@@ -19,6 +20,8 @@ export default defineEventHandler(async (event) => {
     const eventRow = await lockEventForSlotEdit(tx, slug, user.id)
     const slot = await findSlot(tx, eventRow.id, slotId)
     if (!slot) throw slotNotFound()
+    // A Slot that became a Date is not open any more, and its Votes are frozen (#52).
+    if (await isSlotTaken(tx, eventRow.id, slot.id)) throw apiError('slot_taken')
 
     const dropped = await tx
       .delete(pollVotes)
