@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Check, Minus, X } from '@lucide/vue'
+import { Check, X } from '@lucide/vue'
 
 // What the three vote options promise (#50): shown above the Slot cards during the Date poll, each
-// in the option's own look. One line on desktop, stacked on phones.
+// in the option's own look. One line on desktop, stacked on phones. Meh is text only, no icon.
 const { t } = useI18n()
 
 const items = computed(() => [
   { key: 'yes', label: t('poll.yes'), promise: t('poll.legend.yes'), icon: Check, look: 'bg-success text-on-success' },
-  { key: 'maybe', label: t('poll.maybe'), promise: t('poll.legend.maybe'), icon: Minus, look: 'bg-warning text-on-warning' },
+  { key: 'maybe', label: t('poll.maybe'), promise: t('poll.legend.maybe'), icon: undefined, look: 'bg-warning text-on-warning' },
   { key: 'no', label: t('poll.no'), promise: t('poll.legend.no'), icon: X, look: 'bg-error text-on-error' },
 ])
 </script>
@@ -27,6 +27,7 @@ const items = computed(() => [
         :class="item.look"
       >
         <AppIcon
+          v-if="item.icon"
           :icon="item.icon"
           :size="11"
         />

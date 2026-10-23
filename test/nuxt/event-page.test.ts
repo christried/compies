@@ -222,6 +222,26 @@ describe('the Event poll', () => {
     expect(legend.text()).toContain('Wird nichts bei mir.')
   })
 
+  it('draws no icon on Meh, neither on its option nor on its legend chip, while Ja and Nein keep theirs', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(radio(page, 'Sa 24.10. 20:00', 'Meh').find('svg').exists()).toBe(false)
+    expect(radio(page, 'Sa 24.10. 20:00', 'Ja').find('svg').exists()).toBe(true)
+    expect(radio(page, 'Sa 24.10. 20:00', 'Nein').find('svg').exists()).toBe(true)
+    const chips = page.findAll('[data-testid="vote-legend"] li > span:first-child')
+    expect(chips.map(chip => chip.find('svg').exists())).toEqual([true, false, true])
+  })
+
+  it('keeps the minus in the matrix cell of a Meh Vote', async () => {
+    const store = serve(s => view(s, [...sanneAndLarsi, { slotId: 'fri', userId: kitty.id, value: 'maybe' }]))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+
+    expect(page.get('table td[title="Meh"] span').find('svg').exists()).toBe(true)
+  })
+
   it('draws a selected Nein in the error red with dark text, and a Nein cell in the matrix as a red square', async () => {
     const store = serve(s => view(s, [...sanneAndLarsi, { slotId: 'fri', userId: kitty.id, value: 'no' }]))
 
