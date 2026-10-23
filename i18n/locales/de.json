@@ -428,12 +428,17 @@
     "title": "Wann zocken wir?",
     "people": "{n} Leute",
     "yes": "Ja",
-    "maybe": "Wenn nötig",
-    "maybeShort": "Nötig",
+    "maybe": "Meh",
+    "maybeShort": "Meh",
     "no": "Nein",
+    "legend": {
+      "yes": "Ich kann da!",
+      "maybe": "Krieg ich hin.",
+      "no": "Wird nichts bei mir."
+    },
     "open": "Noch offen",
     "sum": "Summe",
-    "sumText": "{y} Ja, {m} Wenn nötig",
+    "sumText": "{y} Ja, {m} Meh",
     "best": "Bester Termin",
     "confirm": "Termin festlegen: {slot}",
     "confirmed": "Termin steht",
@@ -829,7 +834,7 @@
       },
       "events": {
         "heading": "9. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer sie angelegt hat, ihre Terminvorschläge, den festgelegten Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Wenn nötig, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast.\n\nName, Terminvorschläge und Termin eines Events sowie Anzeigename, Profilbild und Stimmen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer sie angelegt hat, ihre Terminvorschläge, den festgelegten Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast.\n\nName, Terminvorschläge und Termin eines Events sowie Anzeigename, Profilbild und Stimmen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "10. Kalenderdatei",
@@ -894,7 +899,7 @@
       "view": "Ansehen",
       "emptyTitle": "Noch keine Einladung.",
       "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Bis dahin lohnt sich eine Nachfrage beim Host.",
-      "noBest": "Noch kein Termin mit Ja oder Wenn nötig."
+      "noBest": "Noch kein Termin mit Ja oder Meh."
     },
     "create": {
       "back": "Zurück",
@@ -908,7 +913,7 @@
       "slotsTitle": "Vorschläge für die Umfrage",
       "addSlot": "Termin vorschlagen",
       "removeSlot": "Vorschlag entfernen",
-      "slotsHelp": "Abgestimmt wird mit Ja, Wenn nötig oder Nein. Bis zu 8 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
+      "slotsHelp": "Abgestimmt wird mit Ja, Meh oder Nein. Bis zu 8 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
       "submit": "Umfrage starten",
       "submitDirect": "Event anlegen",
       "blockedPast": "Erst den Termin in der Vergangenheit ändern.",
