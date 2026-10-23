@@ -5,8 +5,7 @@ import createEvent from '../../server/api/e/index.post'
 import getEvent from '../../server/api/e/[slug].get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import downloadIcs from '../../server/api/e/[slug]/ics.get'
-import reopenDate from '../../server/api/e/[slug]/reopen.post'
-import rescheduleDate from '../../server/api/e/[slug]/reschedule.post'
+import reopenSession from '../../server/api/e/[slug]/sessions/[id]/reopen.post'
 import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
@@ -30,9 +29,8 @@ describe('reschedule and reopen', () => {
       'POST /api/e': createEvent,
       'GET /api/e/:slug': getEvent,
       'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/reschedule': rescheduleDate,
       'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-      'POST /api/e/:slug/reopen': reopenDate,
+      'POST /api/e/:slug/sessions/:id/reopen': reopenSession,
       'GET /api/e/:slug/ics': downloadIcs,
       'PUT /api/e/:slug/slots/:slotId/vote': putVote,
     })
@@ -106,12 +104,18 @@ describe('reschedule and reopen', () => {
     return post(`/api/e/${slug}/confirm`, cookie, body)
   }
 
-  function reschedule(cookie: string | undefined, slug: string, body: unknown) {
-    return post(`/api/e/${slug}/reschedule`, cookie, body)
+  /** The per-Session path of the Event's one Session (#55). */
+  async function onlySessionPath(slug: string, action: string) {
+    const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+    return `/api/e/${slug}/sessions/${(await sessionOf(event!.id)).id}/${action}`
   }
 
-  function reopen(cookie: string | undefined, slug: string) {
-    return post(`/api/e/${slug}/reopen`, cookie)
+  async function reschedule(cookie: string | undefined, slug: string, body: unknown) {
+    return post(await onlySessionPath(slug, 'reschedule'), cookie, body)
+  }
+
+  async function reopen(cookie: string | undefined, slug: string) {
+    return post(await onlySessionPath(slug, 'reopen'), cookie)
   }
 
   function vote(cookie: string, slug: string, slotId: string, value: string) {
@@ -148,7 +152,7 @@ describe('reschedule and reopen', () => {
     return created
   }
 
-  describe('POST /api/e/:slug/reschedule', () => {
+  describe('POST /api/e/:slug/sessions/:id/reschedule (the one Session of a poll Event)', () => {
     it('requires sign-in', async () => {
       const cookie = await signInAsHost()
       const { slug } = await setPoll(cookie)
@@ -354,7 +358,7 @@ describe('reschedule and reopen', () => {
     })
   })
 
-  describe('POST /api/e/:slug/reopen', () => {
+  describe('POST /api/e/:slug/sessions/:id/reopen (the one Session of an Event)', () => {
     it('requires sign-in', async () => {
       const cookie = await signInAsHost()
       const { slug } = await setPoll(cookie)

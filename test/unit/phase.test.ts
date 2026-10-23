@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { phaseOf, reopenRejection, reopenValues, rescheduleRejection, rescheduleValues, setDateRejection, setDateValues } from '../../server/domain/phase'
+import { addSessionRejection, phaseOf, removeSessionRejection, reopenRejection, reopenValues, rescheduleRejection, rescheduleValues, setDateRejection, setDateValues } from '../../server/domain/phase'
 
 // Phase transitions (#1 § Domain rules). Each transition is a pure rule next to the others: the
 // handlers load the Event, ask the rule, and write the returned values with a conditional update.
@@ -87,18 +87,51 @@ describe('rescheduleValues', () => {
 })
 
 describe('reopenRejection', () => {
-  it('lets the Host reopen a set Date', () => {
-    expect(reopenRejection({ phase: 'date_set' })).toBeNull()
+  it('lets the Host reopen one set Date, in date set or while another Session still waits in the poll', () => {
+    expect(reopenRejection({ phase: 'date_set', hasDate: true })).toBeNull()
+    expect(reopenRejection({ phase: 'poll', hasDate: true })).toBeNull()
   })
 
-  it('refuses a poll or any other phase: there is no set Date to withdraw', () => {
-    expect(reopenRejection({ phase: 'poll' })).toBe('wrong_phase')
-    expect(reopenRejection({ phase: 'draft' })).toBe('wrong_phase')
+  it('refuses a Session that has no Date, and any phase that is not editable', () => {
+    expect(reopenRejection({ phase: 'poll', hasDate: false })).toBe('wrong_phase')
+    expect(reopenRejection({ phase: 'draft', hasDate: true })).toBe('wrong_phase')
   })
 })
 
 describe('reopenValues', () => {
-  it('goes back to the poll and frees the Session of its Date and Slot; the handler keeps the old Date as previousStartsAt', () => {
-    expect(reopenValues()).toEqual({ phase: 'poll', session: { startsAt: null, slotId: null } })
+  it('frees the Session of its Date and Slot; the handler keeps the old Date as previousStartsAt', () => {
+    expect(reopenValues()).toEqual({ startsAt: null, slotId: null })
+  })
+})
+
+describe('addSessionRejection', () => {
+  const now = new Date('2090-01-01T00:00:00Z')
+  const future = new Date('2090-02-01T19:00:00Z')
+
+  it('adds an undated Session in an editable phase, and a dated one with a future Date that is nobody\'s', () => {
+    expect(addSessionRejection({ phase: 'poll', count: 1, startsAt: null, now, duplicate: false })).toBeNull()
+    expect(addSessionRejection({ phase: 'date_set', count: 1, startsAt: future, now, duplicate: false })).toBeNull()
+  })
+
+  it('refuses a ninth Session, a past Date, another Session\'s Date and a phase that is not editable', () => {
+    expect(addSessionRejection({ phase: 'poll', count: 8, startsAt: null, now, duplicate: false })).toBe('sessions_max')
+    expect(addSessionRejection({ phase: 'poll', count: 1, startsAt: new Date('2089-01-01T19:00:00Z'), now, duplicate: false })).toBe('in_past')
+    expect(addSessionRejection({ phase: 'poll', count: 1, startsAt: future, now, duplicate: true })).toBe('duplicate_date')
+    expect(addSessionRejection({ phase: 'finished', count: 1, startsAt: null, now, duplicate: false })).toBe('wrong_phase')
+  })
+})
+
+describe('removeSessionRejection', () => {
+  it('removes a Session of an editable Event while another one stays', () => {
+    expect(removeSessionRejection({ phase: 'poll', count: 2 })).toBeNull()
+    expect(removeSessionRejection({ phase: 'date_set', count: 3 })).toBeNull()
+  })
+
+  it('never removes the last Session', () => {
+    expect(removeSessionRejection({ phase: 'poll', count: 1 })).toBe('last_session')
+  })
+
+  it('refuses a phase that is not editable', () => {
+    expect(removeSessionRejection({ phase: 'finished', count: 2 })).toBe('wrong_phase')
   })
 })

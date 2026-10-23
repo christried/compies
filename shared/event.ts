@@ -36,6 +36,11 @@ export function slotProblems(proposed: Date[], existing: Date[], now: Date): (Sl
 export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
 export type Phase = (typeof PHASES)[number]
 
+/** Sessions are added, removed and reopened in every Phase before the Event finishes (#55). */
+export function sessionsEditable(phase: Phase): boolean {
+  return phase === 'poll' || phase === 'date_set'
+}
+
 /** One Session of an Event (#48, #49). Times are UTC ISO strings. */
 export interface SessionView {
   id: string
