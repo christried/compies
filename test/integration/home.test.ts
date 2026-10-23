@@ -254,6 +254,27 @@ describe('GET /api/e (Home)', () => {
     })
   })
 
+  it('counts the Best slot and the progress on open future Slots only, so a Slot that became a Date is no Best slot', async () => {
+    const hostUser = await signInAs(host, { hostPermission: true })
+    const guestUser = await signInAs(guest)
+    const poll = await createPoll(hostUser.cookie, 'Runde', ['2090-10-30T20:30', '2090-10-31T20:30'])
+    await addMember(poll.eventId, guestUser.id)
+    const taken = poll.slotIdAt('2090-10-30T19:30:00.000Z')
+    const open = poll.slotIdAt('2090-10-31T19:30:00.000Z')
+    // The taken Slot has more yes Votes, but a Session already has it as its Date; the Event keeps its
+    // Session without a Date (the one from creation), so it stays in the date poll.
+    await vote(guestUser.cookie, poll.slug, taken, 'yes')
+    await vote(guestUser.cookie, poll.slug, open, 'maybe')
+    await vote(hostUser.cookie, poll.slug, open, 'no')
+    await testDb.db.insert(sessions).values({ eventId: poll.eventId, startsAt: new Date('2090-10-30T19:30:00.000Z'), slotId: taken })
+
+    const card = (await (await list(guestUser.cookie)).json()).events[0]
+
+    expect(card.bestSlot).toEqual({ id: open, startsAt: '2090-10-31T19:30:00.000Z' })
+    expect(card.progress).toEqual({ voted: 2, total: 2 })
+    expect(card).toMatchObject({ action: 'view', viewerVoted: true })
+  })
+
   it('shows the next Session, numbered, once every Date is set', async () => {
     const hostUser = await signInAs(host, { hostPermission: true })
     const guestUser = await signInAs(guest)
