@@ -48,13 +48,13 @@ describe('create an Event', () => {
     expect(page.text()).toContain('Termin vorschlagen')
   })
 
-  it('hides the add button at 8 Slots', async () => {
+  it('hides the add button at 16 Slots', async () => {
     signInAs(host)
     const page = await mountSuspended(CreatePage, { route: '/neu' })
 
-    for (let i = 0; i < 7; i++) await page.findAll('button').find(button => button.text().includes('Termin vorschlagen'))!.trigger('click')
+    for (let i = 0; i < 15; i++) await page.findAll('button').find(button => button.text().includes('Termin vorschlagen'))!.trigger('click')
 
-    expect(page.findAll('[role="group"]')).toHaveLength(8)
+    expect(page.findAll('[role="group"]')).toHaveLength(16)
     expect(page.text()).not.toContain('Termin vorschlagen')
   })
 

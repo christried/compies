@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Eine Terminumfrage kann jetzt bis zu **16 Termine** haben. ([#84](https://github.com/christried/compies/issues/84))
+- Du kannst „Wer kann wann?“ als CSV exportieren, zum Beispiel für Excel. ([#84](https://github.com/christried/compies/issues/84))
+
+### Geändert
+
+- In „Wer kann wann?“ bleiben die Namen stehen, wenn du seitwärts scrollst. ([#84](https://github.com/christried/compies/issues/84))
+
 ## [1.1.2] - 2026-10-24 – Angemeldet bleiben
 
 ### Behoben

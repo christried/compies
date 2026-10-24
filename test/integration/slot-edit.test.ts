@@ -129,16 +129,16 @@ describe('the Host edits Slots', () => {
       expect(await slotRows(eventId)).toHaveLength(1)
     })
 
-    it('holds at most 8 Slots per Event', async () => {
+    it('holds at most 16 Slots per Event', async () => {
       const { cookie } = await signInAs(host, { hostPermission: true })
-      const eight = Array.from({ length: 8 }, (_, day) => `2090-11-${String(day + 1).padStart(2, '0')}T20:00`)
-      const { slug, eventId } = await createPoll(cookie, eight)
+      const sixteen = Array.from({ length: 16 }, (_, day) => `2090-11-${String(day + 1).padStart(2, '0')}T20:00`)
+      const { slug, eventId } = await createPoll(cookie, sixteen)
 
       const response = await add(cookie, slug, { startsAt: '2090-12-01T20:00' })
 
       expect(response.status).toBe(400)
       expect((await response.json()).statusMessage).toBe('slots_max')
-      expect(await slotRows(eventId)).toHaveLength(8)
+      expect(await slotRows(eventId)).toHaveLength(16)
     })
 
     it('rejects a Slot in the same minute as an existing one', async () => {
