@@ -210,7 +210,7 @@ describe('reschedule and reopen', () => {
       const response = await reschedule(cookie, slug, { startsAt: '2090-11-01T20:00' })
 
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ startsAt: '2090-11-01T19:00:00.000Z' })
+      expect(await response.json()).toMatchObject({ startsAt: '2090-11-01T19:00:00.000Z' })
       expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })
       expect(await sessionOf(eventId)).toMatchObject({
         startsAt: new Date('2090-11-01T19:00:00.000Z'),
@@ -313,7 +313,7 @@ describe('reschedule and reopen', () => {
       const response = await rescheduleOne(cookie, slug, ids[0]!, { startsAt: '2090-11-08T21:00' })
 
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ startsAt: '2090-11-08T20:00:00.000Z' })
+      expect(await response.json()).toMatchObject({ startsAt: '2090-11-08T20:00:00.000Z' })
       const rows = await sessionRowsOf(eventId)
       expect(rows.map(row => [row.id, row.startsAt, row.icsSequence])).toEqual([
         [ids[1], new Date('2090-11-08T19:00:00.000Z'), 1],

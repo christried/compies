@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import AppSheet from '~/components/AppSheet.vue'
 import ConfirmModal from '~/components/ConfirmModal.vue'
+import DateConfirmDialog from '~/components/DateConfirmDialog.vue'
 import DateRescheduleDialog from '~/components/DateRescheduleDialog.vue'
 
 // Sheets and dialogs are teleported to the body, so these tests query the document. Each test starts
@@ -65,6 +66,49 @@ describe('ConfirmModal', () => {
     confirm?.click()
 
     expect(page.emitted('confirm')).toBeUndefined()
+  })
+})
+
+describe('DateConfirmDialog', () => {
+  const options = Array.from({ length: 16 }, (_, index) => ({ id: `s${index + 1}`, day: `Tag ${index + 1}`, time: '20:00', yes: 1, maybe: 0 }))
+
+  it('checks the Slot the card opened it with, and a click moves the selection', async () => {
+    const scrolled: string[] = []
+    Element.prototype.scrollIntoView = function (this: HTMLElement) {
+      scrolled.push(this.dataset.slot ?? '')
+    }
+    const page = await mountSuspended(DateConfirmDialog, {
+      props: { open: true, options, preselected: 's9', missingAfter: 0 },
+      attachTo: document.body,
+    })
+    const radio = (id: string) => document.querySelector<HTMLElement>(`[data-slot="${id}"]`)!
+
+    expect(radio('s9').getAttribute('aria-checked')).toBe('true')
+    expect(radio('s9').className).toContain('border-focus')
+    expect(radio('s9').className).not.toContain('outline-memphis')
+    expect(radio('s1').getAttribute('aria-checked')).toBe('false')
+    expect(scrolled).toEqual(['s9'])
+
+    radio('s3').click()
+    await page.vm.$nextTick()
+    expect(radio('s3').getAttribute('aria-checked')).toBe('true')
+    expect(radio('s9').getAttribute('aria-checked')).toBe('false')
+
+    const confirm = [...document.querySelectorAll<HTMLElement>('[role="dialog"] button:not([role="radio"])')].find(button => button.textContent?.trim())
+    confirm?.click()
+    expect(page.emitted('confirm')).toEqual([['s3']])
+    page.unmount()
+  })
+
+  it('keeps the buttons in the dialog with 16 Slots', async () => {
+    const page = await mountSuspended(DateConfirmDialog, {
+      props: { open: true, options, preselected: null, missingAfter: 2 },
+      attachTo: document.body,
+    })
+
+    expect(document.querySelectorAll('[role="radio"]')).toHaveLength(16)
+    expect(document.querySelectorAll('[role="dialog"] button:not([role="radio"])').length).toBeGreaterThanOrEqual(2)
+    page.unmount()
   })
 })
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Check, Minus, X } from '@lucide/vue'
 import type { VoteValue } from '~~/shared/poll'
+import { buildPollCsv } from '~~/shared/poll-csv'
 
 // "Wer kann wann?": everyone in the Event against every Slot (02-components § PollMatrix). A real
 // table with row and column headers. "noch nicht abgestimmt" (no Vote yet) is drawn dashed and is
@@ -30,6 +31,23 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const route = useRoute()
+
+// The file is built here from what the matrix shows, so it needs no request (#84).
+function exportCsv() {
+  const csv = buildPollCsv({
+    labels: { name: t('mvp.poll.csvName'), past: t('mvp.poll.past'), yes: t('poll.yes'), maybe: t('poll.maybe'), no: t('poll.no') },
+    people: props.people,
+    slots: props.slots,
+    votes: props.votes,
+  })
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${route.params.slug}-terminumfrage.csv`
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url))
+}
 
 const valueOf = computed(() => {
   const map = new Map<string, VoteValue>()
@@ -51,72 +69,83 @@ function lookFor(userId: string, slotId: string) {
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface">
-    <table class="w-full border-collapse">
-      <caption class="sr-only">
-        {{ t('mvp.poll.whoWhen') }}
-      </caption>
-      <thead>
-        <tr>
-          <th
-            scope="col"
-            class="border-b-2 border-line-soft px-3 py-2"
-          />
-          <th
-            v-for="slot in slots"
-            :key="slot.id"
-            scope="col"
-            class="border-b-2 border-line-soft px-1 py-2 text-center text-[12px] leading-tight font-extrabold whitespace-nowrap"
-            :class="slot.past && 'text-ink-3'"
-          >
-            <span class="block">{{ slot.day }}</span>
-            <span class="block">{{ slot.time }}</span>
-            <span
-              v-if="slot.past"
-              class="block text-[11px] font-bold"
-            >{{ t('mvp.poll.past') }}</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="person in people"
-          :key="person.id"
-        >
-          <th
-            scope="row"
-            class="min-w-[120px] border-b-[1.5px] border-line-soft px-3 py-1.5 text-left text-[13px]"
-            :class="person.id === meId ? 'font-extrabold' : 'font-semibold'"
-          >
-            <span class="flex items-center gap-2">
-              <UserAvatar
-                :name="person.name"
-                :image="person.image"
-                :size="24"
-              />
-              {{ person.id === meId ? t('mvp.poll.you', { name: person.name }) : person.name }}
-            </span>
-          </th>
-          <td
-            v-for="slot in slots"
-            :key="slot.id"
-            class="border-b-[1.5px] border-line-soft text-center"
-            :title="t(lookFor(person.id, slot.id).key)"
-          >
-            <span
-              class="inline-grid size-[26px] place-items-center border-2 border-line"
-              :class="lookFor(person.id, slot.id).cell"
+  <div class="grid gap-3">
+    <div class="overflow-x-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface">
+      <table class="w-full border-collapse">
+        <caption class="sr-only">
+          {{ t('mvp.poll.whoWhen') }}
+        </caption>
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              class="sticky left-0 z-[1] border-b-2 border-line-soft bg-surface px-3 py-2"
+            />
+            <th
+              v-for="slot in slots"
+              :key="slot.id"
+              scope="col"
+              class="border-b-2 border-line-soft px-1 py-2 text-center text-[12px] leading-tight font-extrabold whitespace-nowrap"
+              :class="slot.past && 'text-ink-3'"
             >
-              <AppIcon
-                v-if="lookFor(person.id, slot.id).icon"
-                :icon="lookFor(person.id, slot.id).icon!"
-                :size="13"
-              />
-            </span>
-            <span class="sr-only">{{ t(lookFor(person.id, slot.id).key) }}</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+              <span class="block">{{ slot.day }}</span>
+              <span class="block">{{ slot.time }}</span>
+              <span
+                v-if="slot.past"
+                class="block text-[11px] font-bold"
+              >{{ t('mvp.poll.past') }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="person in people"
+            :key="person.id"
+          >
+            <th
+              scope="row"
+              class="sticky left-0 z-[1] min-w-[120px] border-b-[1.5px] border-line-soft bg-surface px-3 py-1.5 text-left text-[13px]"
+              :class="person.id === meId ? 'font-extrabold' : 'font-semibold'"
+            >
+              <span class="flex items-center gap-2">
+                <UserAvatar
+                  :name="person.name"
+                  :image="person.image"
+                  :size="24"
+                />
+                {{ person.id === meId ? t('mvp.poll.you', { name: person.name }) : person.name }}
+              </span>
+            </th>
+            <td
+              v-for="slot in slots"
+              :key="slot.id"
+              class="border-b-[1.5px] border-line-soft text-center"
+              :title="t(lookFor(person.id, slot.id).key)"
+            >
+              <span
+                class="inline-grid size-[26px] place-items-center border-2 border-line"
+                :class="lookFor(person.id, slot.id).cell"
+              >
+                <AppIcon
+                  v-if="lookFor(person.id, slot.id).icon"
+                  :icon="lookFor(person.id, slot.id).icon!"
+                  :size="13"
+                />
+              </span>
+              <span class="sr-only">{{ t(lookFor(person.id, slot.id).key) }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <AppButton
+        variant="secondary"
+        size="md"
+        @click="exportCsv"
+      >
+        {{ t('mvp.poll.exportCsv') }}
+      </AppButton>
+    </div>
   </div>
 </template>

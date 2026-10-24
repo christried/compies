@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import me from '../../server/api/me.get'
 import profileSetup from '../../server/api/profile/setup.post'
-import { users } from '../../server/db/schema'
+import { authSessions, users } from '../../server/db/schema'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -65,6 +65,15 @@ describe('the signed-in User and profile setup', () => {
       const { user } = await (await request('/api/me', { headers: { cookie } })).json()
 
       expect(user.canHost).toBe(true)
+    })
+
+    it('renews an older login session and passes the new login cookie on', async () => {
+      const { cookie } = await signIn(testDb.db, kitty)
+      await testDb.db.update(authSessions).set({ expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) })
+
+      const response = await request('/api/me', { headers: { cookie } })
+
+      expect(response.headers.getSetCookie().join('\n')).toMatch(/better-auth\.session_token=.*Max-Age=604800/)
     })
 
     it('answers null for a forged login session cookie', async () => {
