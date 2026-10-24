@@ -7,7 +7,6 @@ import DatenschutzPage from '~/pages/datenschutz.vue'
 import SignInPage from '~/pages/anmelden.vue'
 import { kitty, signInAs } from './auth'
 
-const link = (wrapper: VueWrapper, href: string) => wrapper.findAll('a').find(a => a.attributes('href') === href)
 // The back link reads the in-app history entry at click time; a direct visit has none.
 const setHistoryBack = (back: string | null) => window.history.replaceState({ ...window.history.state, back }, '')
 const backLink = (page: VueWrapper) => page.findAll('a').find(a => a.text().includes('Zurück'))!
@@ -49,22 +48,41 @@ describe('legal pages', () => {
     expect(controller.get('p').element.textContent).toContain('Gilges\nAugust-Thyssen-Str. 16\n52249 Eschweiler')
   })
 
-  it('link both pages from the sign-in footer', async () => {
+  it('link both pages, Neuigkeiten and the version label from the sign-in footer', async () => {
     signInAs(null)
     const page = await mountSuspended(SignInPage, { route: '/anmelden' })
+    const footer = page.get('footer')
 
-    expect(page.get('footer').element.contains(link(page, '/impressum')!.element)).toBe(true)
-    expect(page.get('footer').element.contains(link(page, '/datenschutz')!.element)).toBe(true)
+    expect(footer.findAll('a').map(a => a.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten', '/neuigkeiten'])
+    expect(footer.findAll('a').at(-1)!.text()).toMatch(/^v\d+\.\d+\.\d+$/)
+    expect(footer.findAll('a').at(-1)!.attributes('aria-label')).toMatch(/^Version \d+\.\d+\.\d+, zu den Neuigkeiten$/)
   })
 
-  it('link both pages from the avatar menu', async () => {
+  it('link both pages, Neuigkeiten and the version label from the avatar menu', async () => {
     signInAs(kitty)
     const menu = await mountSuspended(UserMenu)
 
     await menu.get('button[aria-haspopup="menu"]').trigger('click')
 
-    expect(link(menu, '/impressum')?.attributes('role')).toBe('menuitem')
-    expect(link(menu, '/datenschutz')?.attributes('role')).toBe('menuitem')
+    const items = menu.findAll('a[role="menuitem"]')
+    expect(items.map(a => a.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten', '/neuigkeiten'])
+    expect(items.map(a => a.text())).toEqual(['Impressum', 'Datenschutz', 'Neuigkeiten', expect.stringMatching(/^v\d+\.\d+\.\d+$/)])
+  })
+
+  it('dots the version label in the avatar menu until the newest Release is seen', async () => {
+    signInAs(kitty)
+    localStorage.removeItem('compies.news.seen')
+    const menu = await mountSuspended(UserMenu)
+    await menu.get('button[aria-haspopup="menu"]').trigger('click')
+    const label = () => menu.findAll('a[role="menuitem"]').at(-1)!
+
+    expect(label().attributes('aria-label')).toMatch(/^Version \d+\.\d+\.\d+, neu, zu den Neuigkeiten$/)
+
+    localStorage.setItem('compies.news.seen', label().text().slice(1))
+    const seen = await mountSuspended(UserMenu)
+    await seen.get('button[aria-haspopup="menu"]').trigger('click')
+    expect(seen.findAll('a[role="menuitem"]').at(-1)!.attributes('aria-label')).toMatch(/^Version \d+\.\d+\.\d+, zu den Neuigkeiten$/)
+    localStorage.removeItem('compies.news.seen')
   })
 
   it('shows the reduced-motion hover on an overlay above the avatar, not on the covered button', async () => {

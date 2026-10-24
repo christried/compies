@@ -1,11 +1,11 @@
 // Sign-in route guard (#1 § Auth and permissions). Every app route needs a signed-in User who has
-// finished profile setup, except sign-in itself, the invite preview and the legal pages.
+// finished profile setup, except sign-in itself, the invite preview, the legal pages and Neuigkeiten.
 
 import { parseEventPath } from '~~/shared/links'
 
 export const SIGN_IN_PATH = '/anmelden'
 export const SETUP_PATH = '/einrichten'
-const LEGAL_PATHS = ['/impressum', '/datenschutz']
+const PUBLIC_PATHS = ['/impressum', '/datenschutz', '/neuigkeiten']
 
 export interface GuardUser {
   displayName: string | null
@@ -34,7 +34,7 @@ function withRedirect(path: string, target: string) {
 
 /** Where to send the visitor instead of `to`, or null to let them through. */
 export function guardRoute(to: GuardRoute, user: GuardUser | null): string | null {
-  if (LEGAL_PATHS.includes(to.path)) return null
+  if (PUBLIC_PATHS.includes(to.path)) return null
   // Sign-in and profile setup carry the original target along in `redirect`.
   const target = to.path === SIGN_IN_PATH || to.path === SETUP_PATH ? safeRedirect(to.query.redirect) : to.fullPath
 

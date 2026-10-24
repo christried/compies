@@ -92,6 +92,12 @@ Common rules for every component:
 - [`GameLibrary / GameForm`](#gamelibrary-gameform) [1.0]
 - [`AdminUserTable`](#adminusertable) [1.0]
 - [`Confetti`](#confetti) [1.0]
+- [`ReleaseCard`](#releasecard) [1.x] (with CopyLinkButton and NewStamp)
+- [`ChangeGroup`](#changegroup) [1.x]
+- [`ChangelogInline`](#changeloginline) [1.x] (with IssueChip)
+- [`ReleaseNav`](#releasenav) [1.x] (ReleaseRail and ReleaseJumpStrip)
+- [`VersionLabel`](#versionlabel) [1.x]
+- [`LegalLinks`](#legallinks) [1.x]
 
 ## AppButton
 **Scope:** [MVP] · **Ref:** DS Basics
@@ -1054,4 +1060,77 @@ Sticker confetti (white rim, hard shadow).
 - **Desktop / mobile:** count halves on mobile.
 - **Accessibility:** `aria-hidden`, `pointer-events:none`, `layer-confetti`.
 - **Motion:** see 04-motion § Confetti; skipped on reduced motion.
+- **Built (#80):** `confetti(layer, x, y, count)` in `app/utils/confetti.ts`, on the Web Animations API (the app ships no GSAP). First user: the „Neu“ stamp on Neuigkeiten, with its smaller burst (18 desktop, 10 mobile).
+
+## ReleaseCard
+**Scope:** [1.x] · **Ref:** Neuigkeiten · **Spec:** 09-neuigkeiten § ReleaseCard, § CopyLinkButton, § NewStamp
+
+One Release from `CHANGELOG.md` on `/neuigkeiten`: version, name, date, copy-link button, intro, groups. CopyLinkButton and NewStamp are built into it, not as components of their own.
+
+- **Props / variants:** `release: Release` (from `shared/changelog.ts`), `newest?: boolean`
+- **States:** default · newest (NewStamp, version with the `primary` offset shadow) · newest first view (stamp lands once per device: `localStorage["compies.news.seen"]` through `useNewsSeen`)
+- **Slots:** —
+- **Desktop / mobile:** Surface card, `border-memphis`, radius 20, `shadow-card`; version 44 / 32, name 30 / 24.
+- **Accessibility:** `<section id="1.2.0" aria-labelledby>`, `h2` with `tabindex="-1"`, version read as „Version 1.2.0“. Copy button: IconButton with „Link zu Version 1.2.0 kopieren“, toast „Link kopiert“ or the error toast with the link.
+- **Motion:** NewStamp timeline on the Web Animations API. Compibert does not cheer yet: the CompibertBus (`reveal`) is still to come.
+
+## ChangeGroup
+**Scope:** [1.x] · **Ref:** Neuigkeiten · **Spec:** 09-neuigkeiten § ChangeGroup
+
+`h3` label pill and list for one of the five groups, with one nested level. Colour, icon and bullet shape per group.
+
+- **Props / variants:** `group: ChangeGroup` (`type: neu | geaendert | behoben | entfernt | sicherheit`)
+- **States:** —
+- **Slots:** —
+- **Desktop / mobile:** Body 17 / 16.
+- **Accessibility:** Real `h3`, `ul > li`; bullets and icon `aria-hidden`. The parser refuses unknown group names, so there is no fallback group.
+- **Motion:** —
+
+## ChangelogInline
+**Scope:** [1.x] · **Ref:** Neuigkeiten · **Spec:** 09-neuigkeiten § ChangelogInline
+
+Renders the parser's inline nodes: text, bold, code, links. A link named `#64` becomes the IssueChip; parentheses that only wrap Issue chips are dropped.
+
+- **Props / variants:** `nodes: Inline[]`
+- **States:** —
+- **Slots:** —
+- **Desktop / mobile:** Same.
+- **Accessibility:** Links `target="_blank" rel="noopener noreferrer"`, title „Öffnet in neuem Tab“; IssueChip `aria-label` „Issue 64 auf GitHub, öffnet in neuem Tab“.
+- **Motion:** colour `dur-fast`.
+
+## ReleaseNav
+**Scope:** [1.x] · **Ref:** Neuigkeiten · **Spec:** 09-neuigkeiten § ReleaseRail, § ReleaseJumpStrip
+
+All Releases as links to `#<version>`. `variant="rail"`: the sticky card from `md` up, the Release in view marked with `aria-current`. `variant="strip"`: the „Springe zu“ pill row below `md`. The page does the scroll-spy and the jump (scroll, focus the `h2`, `history.replaceState`).
+
+- **Props / variants:** `variant: rail | strip`, `current?: version`; emits `jump(version)`
+- **States:** item default · hover · current (rail) · newest (mini „Neu“ chip in the rail, `primary` pill in the strip)
+- **Slots:** —
+- **Desktop / mobile:** Rail only from `md`, strip only below.
+- **Accessibility:** `<nav aria-label="Versionen">`; link names „Version 1.2.0, Mehr Termine, 2. Nov. 2026, neu“.
+- **Motion:** jump scroll smooth, `auto` under reduced motion; spy paused for 700 ms after a jump.
+
+## VersionLabel
+**Scope:** [1.x] · **Ref:** Neuigkeiten (state Versionslabel) · **Spec:** 09-neuigkeiten § VersionLabel
+
+„v1.2.0“ chip linking to `/neuigkeiten`. The version is the newest Release in `CHANGELOG.md`; the changelog guard test keeps `package.json` at the same version.
+
+- **Props / variants:** `unseen?: boolean` (user menu only)
+- **States:** default · hover/focus (`primary` fill) · unseen (dot)
+- **Slots:** —
+- **Desktop / mobile:** 28 px pill, 44 px hit area via `::before`. In the user menu's last row, the sign-in footer and the Neuigkeiten footer (there it scrolls to the top).
+- **Accessibility:** „Version 1.2.0, zu den Neuigkeiten“, with „, neu“ when unseen; `role="menuitem"` in the user menu.
+- **Motion:** colour `dur-fast`.
+
+## LegalLinks
+**Scope:** [1.x] · **Ref:** Neuigkeiten (state Versionslabel)
+
+Impressum, Datenschutz and Neuigkeiten as 13/700 `ink-2` text links, 44 px high. Used with VersionLabel in the user menu's last row (`role="menuitem"`), the sign-in footer and the Neuigkeiten footer.
+
+- **Props / variants:** `role?: "menuitem"`
+- **States:** default · hover (`ink`, underlined) · current page (`aria-current="page"`, 800 `ink`)
+- **Slots:** —
+- **Desktop / mobile:** Same; the parent lays the row out.
+- **Accessibility:** Inside `<nav aria-label="Rechtliches">` outside the menu.
+- **Motion:** —
 
