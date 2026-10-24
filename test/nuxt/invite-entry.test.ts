@@ -22,6 +22,7 @@ describe('the Invite link, signed out', () => {
 
     expect(page.get('h1').text()).toBe('Sanne lädt dich zu Freitags-Zocken ein')
     expect(page.get(`a[href="/anmelden?redirect=${encodeURIComponent(`/e/${path}`)}"]`).text()).toBe('Anmelden und beitreten')
+    await vi.waitFor(() => expect(document.title).toBe('Erst kurz anmelden | Compies'))
   })
 
   it('shows nothing of the Event but its name and the Host, no Slots or counts', async () => {
@@ -141,6 +142,7 @@ describe('the Invite link, signed in', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${path}` })
 
     await vi.waitFor(() => expect(page.get('h1').text()).toBe('Link ungültig'))
+    await vi.waitFor(() => expect(document.title).toBe('Link ungültig | Compies'))
   })
 })
 
