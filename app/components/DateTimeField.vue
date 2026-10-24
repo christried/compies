@@ -97,7 +97,8 @@ const dateText = computed(() => formatDateDigits(dateDigits.value))
 const dateValue = computed(() => parseDateDigits(dateDigits.value))
 const timeText = computed(() => formatTimeDigits(timeDigits.value))
 const timeValue = computed(() => parseTimeDigits(timeDigits.value))
-const timeInvalid = computed(() => timeDigits.value.length === 4 && !timeValue.value)
+// Invalid once it cannot be completed: an impossible hour (25), or four digits that are no time (2460).
+const timeInvalid = computed(() => (timeDigits.value.length === 2 && Number(timeDigits.value) > 23) || (timeDigits.value.length === 4 && !timeValue.value))
 
 function combined() {
   return dateValue.value && timeValue.value ? joinBerlinLocal(dateValue.value, timeValue.value) : ''
@@ -121,10 +122,20 @@ function onTimeInput(event: Event) {
   onPart()
 }
 
-// Leaving the time (blur or Enter) reads a three-digit entry as H MM: 930 is 09:30.
+// Leaving the time (blur or Enter) completes it: 9 is 09:00, 15 is 15:00, 153 is 15:30, 930 is 09:30.
+// An impossible hour such as 25 stays as typed and invalid.
 function commitTime() {
-  if (timeDigits.value.length !== 3) return
-  timeDigits.value = `0${timeDigits.value}`
+  const digits = timeDigits.value
+  if (digits.length === 1 || digits.length === 2) {
+    if (Number(digits) > 23) return
+    timeDigits.value = `${pad(Number(digits))}00`
+  }
+  else if (digits.length === 3) {
+    timeDigits.value = Number(digits.slice(0, 2)) <= 23 ? `${digits}0` : `0${digits}`
+  }
+  else {
+    return
+  }
   onPart()
 }
 
@@ -429,7 +440,7 @@ function fieldClass(hasError: boolean | undefined) {
                 <ListboxContent>
                   <div
                     ref="timeScroll"
-                    class="relative max-h-72 overflow-y-auto"
+                    class="relative max-h-72 overflow-y-auto p-1.5"
                   >
                     <ListboxItem
                       v-for="step in TIME_STEPS"
