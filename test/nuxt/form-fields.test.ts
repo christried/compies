@@ -149,6 +149,43 @@ describe('DateTimeField', () => {
     expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T09:30'])
   })
 
+  it('completes one or two digits that form an hour to :00 once the field is left', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '9')
+    await leave(page.element, 'Uhrzeit')
+    expect(part(page.element, 'Uhrzeit').value).toBe('09:00')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T09:00'])
+
+    await type(page.element, 'Uhrzeit', '15')
+    part(page.element, 'Uhrzeit').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    await flushPromises()
+    expect(part(page.element, 'Uhrzeit').value).toBe('15:00')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T15:00'])
+  })
+
+  it('completes three digits whose first two form an hour to HH:M0, so 153 is 15:30', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '153')
+    expect(part(page.element, 'Uhrzeit').value).toBe('15:3')
+    await leave(page.element, 'Uhrzeit')
+
+    expect(part(page.element, 'Uhrzeit').value).toBe('15:30')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T15:30'])
+  })
+
+  it('leaves an impossible hour such as 25 as typed and invalid once the field is left', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '25')
+    await leave(page.element, 'Uhrzeit')
+
+    expect(part(page.element, 'Uhrzeit').value).toBe('25')
+    expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBe('true')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual([''])
+  })
+
   it('rejects an impossible time such as 24:60', async () => {
     const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
 
