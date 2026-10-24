@@ -1,0 +1,53 @@
+# Release workflow
+
+COMPIES keeps its version history in `CHANGELOG.md` at the repo root (Keep a Changelog, German, written for Users) and its version in `package.json`. Both move with a Release. The flow to production is ADR 0007: feature branch → PR into `staging` → check on staging → Release PR into `main`.
+
+## Changelog lines (every ticket PR)
+
+- A PR with a change Users can see adds its lines under `## [Unreleased]` in `CHANGELOG.md`, in the same PR.
+- Write plain German for Users („Du kannst jetzt …“), not developer notes. Issue references are links: `([#64](https://github.com/christried/compies/issues/64))`.
+- Groups are `### Neu`, `### Geändert`, `### Behoben`, `### Entfernt`, `### Sicherheit`, only these five, in this order when present.
+- Bullets with at most one nested level. Bold, inline code and links are fine.
+- A PR with no change Users can notice (refactors, tests, docs) adds no line.
+
+## Version cut (own PR into `staging`)
+
+When a Release is ready, a PR into `staging` does three things:
+
+1. Turns `## [Unreleased]` into a Release heading `## [x.y.z] - YYYY-MM-DD – Name`, with the date of the cut and the short German name, and an optional one-paragraph intro.
+2. Leaves `## [Unreleased]` empty above it.
+3. Sets `version` in `package.json` to `x.y.z`.
+
+The cut lands on `staging` through its own PR first, before the Release PR to `main`.
+
+## Release PR to `main`
+
+Which case applies depends on what `staging` holds after the cut.
+
+**Case A: staging holds nothing for a later Release.** The cut commit is the last commit on `staging`.
+
+- Open the Release PR from `staging` into `main`.
+- Merge it.
+
+**Case B: staging already holds work for a later Release.** Work merged into `staging` after the cut belongs to the next Release, and `staging` must keep taking work.
+
+- Cut a branch `release/x.y.z` from the staging commit that holds the version cut.
+- Open the Release PR from `release/x.y.z` into `main`.
+- Merge it. `staging` is not touched.
+
+**After the merge, in both cases:**
+
+- Tag the merge commit on `main` as `vX.Y.Z` and push the tag.
+- If `main` and `staging` have diverged (the merge commit on `main` is not in `staging`), merge `main` back into `staging` so the next Release PR is clean.
+- Delete the `release/x.y.z` branch once it is merged (Case B only).
+
+## Semantic versioning
+
+- A Release with a new feature raises the minor number and resets the patch number: `1.1.1` → `1.2.0`.
+- A Release with fixes only raises the patch number: `1.1.1` → `1.1.2`.
+- The major number is reserved for a break Users feel, for example everyone having to sign in again.
+
+## Checks
+
+- `test/unit/changelog-file.test.ts` fails when `CHANGELOG.md` breaks its format, its Releases do not strictly go down in version or dates go up, or `package.json` is not at the newest Release version. Run `pnpm test` before opening a Release PR.
+- The parser is `shared/changelog.ts`. The Neuigkeiten page reads the same file through it.
