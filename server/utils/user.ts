@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { createError, type H3Event } from 'h3'
+import { appendResponseHeader, createError, type H3Event } from 'h3'
 import { users } from '../db/schema'
 import { useAuth } from './auth'
 import { useDb } from './db'
@@ -19,7 +19,9 @@ export const userColumns = {
  * the login session, so a revoked right applies immediately (ADR 0002).
  */
 export async function getUser(event: H3Event) {
-  const authSession = await useAuth(event).api.getSession({ headers: event.headers })
+  // Better Auth renews an older login session here and returns the new cookie only with returnHeaders.
+  const { headers, response: authSession } = await useAuth(event).api.getSession({ headers: event.headers, returnHeaders: true })
+  for (const cookie of headers.getSetCookie()) appendResponseHeader(event, 'set-cookie', cookie)
   if (!authSession) return null
   const [user] = await useDb(event).select(userColumns).from(users).where(eq(users.id, authSession.user.id))
   return user ?? null
