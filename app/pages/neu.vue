@@ -5,7 +5,7 @@ import { EVENT_NAME_MAX, SESSIONS_MAX, SLOTS_MAX, eventNameLength, slotProblems 
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // Create an Event (screen M2, `?s=create`): a name, the Session count (1 to 8), then a Date poll with
-// up to 8 Slots (at least one per Session) or one direct Date per Session. Only Users with the Host
+// up to 16 Slots (at least one per Session) or one direct Date per Session. Only Users with the Host
 // permission get the form (ADR 0002); everyone else sees the Construction page. Times are Berlin
 // wall-clock values; the server is the final judge.
 

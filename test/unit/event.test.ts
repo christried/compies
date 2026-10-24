@@ -68,11 +68,11 @@ describe('parseNewEvent', () => {
     expect(parseNewEvent(poll({ sessions: 8, slots: slotsOnDays(8) }), now).ok).toBe(true)
   })
 
-  it('takes 1 to 8 Slots in poll mode', () => {
+  it('takes 1 to 16 Slots in poll mode', () => {
     expect(parseNewEvent(poll({ slots: [] }), now)).toEqual({ ok: false, error: 'invalid_slots' })
     expect(parseNewEvent(poll({ slots: undefined }), now)).toEqual({ ok: false, error: 'invalid_slots' })
-    expect(parseNewEvent(poll({ slots: slotsOnDays(9) }), now)).toEqual({ ok: false, error: 'invalid_slots' })
-    expect(parseNewEvent(poll({ slots: slotsOnDays(8) }), now).ok).toBe(true)
+    expect(parseNewEvent(poll({ slots: slotsOnDays(17) }), now)).toEqual({ ok: false, error: 'invalid_slots' })
+    expect(parseNewEvent(poll({ slots: slotsOnDays(16) }), now).ok).toBe(true)
   })
 
   it('makes one Session when the count is left out', () => {
@@ -132,11 +132,11 @@ describe('parseAddedSlot', () => {
     expect(parseAddedSlot('2026-10-30T20:31', existing, now).ok).toBe(true)
   })
 
-  it('holds at most 8 Slots per Event', () => {
-    const seven = slotsOnDays(7).map(local => berlinToUtc(local))
-    const eight = slotsOnDays(8).map(local => berlinToUtc(local))
-    expect(parseAddedSlot('2026-12-01T20:00', seven, now).ok).toBe(true)
-    expect(parseAddedSlot('2026-12-01T20:00', eight, now)).toEqual({ ok: false, error: 'slots_max' })
+  it('holds at most 16 Slots per Event', () => {
+    const fifteen = slotsOnDays(15).map(local => berlinToUtc(local))
+    const sixteen = slotsOnDays(16).map(local => berlinToUtc(local))
+    expect(parseAddedSlot('2026-12-01T20:00', fifteen, now).ok).toBe(true)
+    expect(parseAddedSlot('2026-12-01T20:00', sixteen, now)).toEqual({ ok: false, error: 'slots_max' })
   })
 
   it('does not reject a new Slot because an older Slot has become past', () => {

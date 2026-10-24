@@ -53,7 +53,7 @@ export function parseAddedSlot(raw: unknown, existing: Date[], now: Date): { ok:
 
 /**
  * Validates what the create form sends (#49): a name, the date mode, the Session count (1 to 8) and
- * either the Slots (at least one per Session, at most 8, all in the future and unique per minute) or
+ * either the Slots (at least one per Session, at most 16, all in the future and unique per minute) or
  * one Date per Session (in the future and distinct). `now` is injected so the rules can be tested.
  */
 export function parseNewEvent(input: unknown, now: Date): { ok: true, event: NewEvent } | { ok: false, error: EventInputError } {

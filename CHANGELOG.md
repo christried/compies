@@ -4,7 +4,21 @@
 
 ### Neu
 
+- Eine Terminumfrage kann jetzt bis zu **16 Termine** haben. ([#84](https://github.com/christried/compies/issues/84))
+- Du kannst „Wer kann wann?“ als CSV exportieren, zum Beispiel für Excel. ([#84](https://github.com/christried/compies/issues/84))
 - Auf der Seite „Neuigkeiten“ siehst du, was jede Version gebracht hat. Du findest sie im Menü, auf der Anmeldeseite und über die Versionsnummer. ([#80](https://github.com/christried/compies/issues/80))
+
+### Geändert
+
+- In „Wer kann wann?“ bleiben die Namen stehen, wenn du seitwärts scrollst. ([#84](https://github.com/christried/compies/issues/84))
+- „Termin festlegen“ zeigt deutlich, welchen Termin du gewählt hast, auch bei vielen Terminen. ([#82](https://github.com/christried/compies/issues/82))
+
+## [1.1.2] - 2026-10-24 – Angemeldet bleiben
+
+### Behoben
+
+- Du bleibst angemeldet, solange du die App mindestens einmal pro Woche nutzt. Bisher wurdest du nach 7 Tagen abgemeldet. ([#64](https://github.com/christried/compies/issues/64))
+- Läuft deine Anmeldung ab oder meldest du dich in einem anderen Tab ab, landest du auf der Anmeldeseite und danach wieder dort, wo du warst, statt bei einer Fehlermeldung. ([#66](https://github.com/christried/compies/issues/66))
 
 ## [1.1.1] - 2026-10-24 – Tab-Titel
 
