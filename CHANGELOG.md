@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Auf der Seite „Neuigkeiten“ siehst du, was jede Version gebracht hat. Du findest sie im Menü, auf der Anmeldeseite und über die Versionsnummer. ([#80](https://github.com/christried/compies/issues/80))
+
 ## [1.1.1] - 2026-10-24 – Tab-Titel
 
 ### Behoben

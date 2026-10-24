@@ -765,11 +765,30 @@
       "note": "Erst nach deiner Bestätigung zählt es und die Tabelle bewegt sich."
     }
   },
+  "news": {
+    "title": "Neuigkeiten",
+    "intro": "Frisch geschraubt: Hier siehst du, was sich bei Compies getan hat.",
+    "rail": "Versionen",
+    "jump": "Springe zu",
+    "new": "Neu",
+    "say": "Version {v}",
+    "item": "Version {v}, {name}, {date}",
+    "itemNew": "Version {v}, {name}, {date}, neu",
+    "copy": "Link zu Version {v} kopieren",
+    "copied": "Link kopiert",
+    "copyFailed": "Kopieren ging nicht. Link: {url}",
+    "issue": "Issue {n} auf GitHub, öffnet in neuem Tab",
+    "newTab": "Öffnet in neuem Tab",
+    "version": "Version {v}, zu den Neuigkeiten",
+    "versionUnseen": "Version {v}, neu, zu den Neuigkeiten"
+  },
   "legal": {
     "_scope": "Impressum und Datenschutzerklärung von Compies. Jeder Abschnitt hat eine Überschrift und einen Text; Absätze sind durch eine Leerzeile getrennt. Bei Änderungen an der App (neue Dienste, Cookies, Daten) hier nachziehen und den Stand anpassen.",
+    "nav": "Rechtliches",
     "links": {
       "impressum": "Impressum",
-      "datenschutz": "Datenschutz"
+      "datenschutz": "Datenschutz",
+      "neuigkeiten": "Neuigkeiten"
     },
     "impressum": {
       "title": "Impressum",
