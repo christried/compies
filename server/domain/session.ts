@@ -45,6 +45,11 @@ export interface SessionDate {
   startsAt: Date | null
 }
 
+/** Whether a Session other than `exceptId` has this instant as its set Date (#49: Dates are distinct). */
+export function hasDateAt(sessions: SessionDate[], instant: Date, exceptId?: string): boolean {
+  return sessions.some(session => session.id !== exceptId && session.startsAt?.getTime() === instant.getTime())
+}
+
 function numbersById(sessions: SessionDate[]): Map<string, number | null> {
   const numbers = sessionNumbers(sessions.map(session => session.startsAt))
   return new Map(sessions.map((session, index) => [session.id, numbers[index]!]))
