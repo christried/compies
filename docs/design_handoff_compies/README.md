@@ -51,6 +51,7 @@ Notes for the stack decision (leave the final call to the Claude Code session):
 | [06-copy.md](06-copy.md) + `i18n/locales/de.json` (repo root) | All German UI copy as i18n keys (vue-i18n), incl. info sheet copy, hidden-wheel names, errors, empty states, push |
 | [07-scope-and-tickets.md](07-scope-and-tickets.md) | Scope labels, MVP cut, 1.0 ticket order, Post-1.0 issues, data model notes |
 | [08-open-questions.md](08-open-questions.md) | Everything still unclear or assumed |
+| [09-neuigkeiten.md](09-neuigkeiten.md) | The „Neuigkeiten“ page (Changelog, 1.2): its new elements, motion and states |
 | `reference/` | The HTML design files, tokens, assets and earlier docs (handoff.md, compibert-handoff.md, Spec Changes.md) |
 | `brief/00-product-brief.md` | The product brief (single source of truth for scope) |
 
