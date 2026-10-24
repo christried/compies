@@ -23,6 +23,7 @@ describe('GET /api/health', () => {
   })
 
   it('reports 503 when the database does not answer', async () => {
+    // Booting a second PGlite with the migrations can pass the 5 s default when the whole suite runs in parallel.
     const unreachable = await createTestDb()
     await unreachable.client.close()
     const request = createTestServer(unreachable.db, { 'GET /api/health': health })
@@ -31,5 +32,5 @@ describe('GET /api/health', () => {
 
     expect(response.status).toBe(503)
     expect(await response.json()).toEqual({ status: 'error' })
-  })
+  }, 30_000)
 })

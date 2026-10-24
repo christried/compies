@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { LogOut } from '@lucide/vue'
 
-// Avatar menu in the header. MVP: who is signed in, and „Abmelden“; the legal pages join with #8.
+// Avatar menu in the header: who is signed in, the legal pages (#8), and „Abmelden“.
 const { t } = useI18n()
 const user = useAuthUser()
 const signOut = useSignOut()
 
+const legalPages = ['impressum', 'datenschutz'] as const
 const open = ref(false)
 const root = useTemplateRef('root')
-const firstItem = useTemplateRef('firstItem')
 const name = computed(() => user.value?.displayName ?? user.value?.name ?? '')
 
 async function toggle() {
   open.value = !open.value
   if (open.value) {
     await nextTick()
-    firstItem.value?.focus()
+    root.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
   }
 }
 
@@ -36,7 +36,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
   >
     <button
       type="button"
-      class="hit-44 grid place-items-center rounded-pill"
+      class="group hit-44 grid place-items-center rounded-pill lift"
       aria-haspopup="menu"
       :aria-expanded="open"
       :aria-label="t('auth.accountMenu', { name })"
@@ -45,7 +45,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
       <UserAvatar
         :name="name"
         :image="user.image"
-        :size="32"
+        :size="40"
+      />
+      <!-- The opaque avatar covers the button, so the reduced-motion hover tint sits on this layer above it. -->
+      <span
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 rounded-pill reduced:group-hover:tint motion-reduce:group-hover:tint"
       />
     </button>
 
@@ -58,11 +63,20 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
       <p class="m-0 truncate px-3 pt-2 pb-1.5 text-small font-bold text-ink-2">
         {{ name }}
       </p>
+      <NuxtLink
+        v-for="page in legalPages"
+        :key="page"
+        :to="`/${page}`"
+        role="menuitem"
+        class="flex h-control-md items-center rounded-md px-3 font-bold text-ink no-underline hover:tint"
+        @click="open = false"
+      >
+        {{ t(`legal.links.${page}`) }}
+      </NuxtLink>
       <button
-        ref="firstItem"
         type="button"
         role="menuitem"
-        class="flex h-control-md items-center gap-2.5 rounded-md px-3 text-left font-bold text-ink hover:bg-paper-2"
+        class="flex h-control-md items-center gap-2.5 rounded-md px-3 text-left font-bold text-ink hover:tint"
         @click="signOut"
       >
         <AppIcon :icon="LogOut" />

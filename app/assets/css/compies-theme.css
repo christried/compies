@@ -109,8 +109,8 @@
   --border-width-memphis: var(--cp-bw);  --border-width-thin: var(--cp-bw-thin);
 
   /* layer stack: use layer-dock, layer-veto … never raw z-index */
-  --layer-decor: var(--cp-z-decor);  --layer-content: var(--cp-z-content);  --layer-sticky: var(--cp-z-sticky);  --layer-dock: var(--cp-z-dock);  --layer-sheet: var(--cp-z-sheet);
-  --layer-clip: var(--cp-z-clip);  --layer-veto: var(--cp-z-veto);  --layer-modal: var(--cp-z-modal);  --layer-toast: var(--cp-z-toast);  --layer-confetti: var(--cp-z-confetti);
+  --layer-decor: var(--cp-z-decor);  --layer-content: var(--cp-z-content);  --layer-sticky: var(--cp-z-sticky);  --layer-header: var(--cp-z-header);  --layer-dock: var(--cp-z-dock);  --layer-sheet: var(--cp-z-sheet);
+  --layer-clip: var(--cp-z-clip);  --layer-veto: var(--cp-z-veto);  --layer-modal: var(--cp-z-modal);  --layer-popover: var(--cp-z-popover);  --layer-toast: var(--cp-z-toast);  --layer-confetti: var(--cp-z-confetti);
 
   /* matches DS Frame: mobile < 600 · tablet 600–979 · desktop 980–1439 · wide ≥ 1440. Reference layout 1280. */
   --breakpoint-*: initial;
@@ -158,6 +158,16 @@
 [data-motion=reduced] .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
 [data-motion=reduced] .animate-tick, [data-motion=reduced] .animate-wiggle { animation: none; }
 
+/* Aura on „Neue Terminumfrage“ (#33): a comet of light runs around the border. Own styling on the
+   tokens, no daisyUI. The angle is registered so the gradient turns without the shape moving. */
+@property --cp-aura-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes cp-aura-spin { to { --cp-aura-angle: 360deg; } }
+/* Still glow under reduced motion: the ring stays, the light stops running. */
+@media (prefers-reduced-motion: reduce) {
+  .aura::before { animation: none; background: color-mix(in srgb, var(--cp-hot) 70%, transparent); }
+}
+[data-motion=reduced] .aura::before { animation: none; background: color-mix(in srgb, var(--cp-hot) 70%, transparent); }
+
 /* ---------- utilities ---------- */
 @utility layer-* { z-index: --value(--layer-*); }
 @utility dur-* { transition-duration: --value(--dur-*); animation-duration: --value(--dur-*); }
@@ -181,6 +191,54 @@
 @utility tape-chip { background-image: repeating-linear-gradient(-45deg, #ff4f4f 0 3px, #fffdf8 3px 6px); border: 1.5px solid #151515; border-radius: 2px; }
 @utility fence-mesh { background-image: linear-gradient(color-mix(in srgb, var(--cp-line) 38%, transparent) 1.5px, transparent 1.5px), linear-gradient(90deg, color-mix(in srgb, var(--cp-line) 38%, transparent) 1.5px, transparent 1.5px); background-size: 12px 12px; }
 @utility hit-44 { position: relative; &::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%,-50%); } }
+/* Hover tint (#33): items inside a group, and the reduced-motion stand-in for the lift. Used as hover:tint. */
+@utility tint { background-image: linear-gradient(color-mix(in srgb, var(--cp-ink) 8%, transparent), color-mix(in srgb, var(--cp-ink) 8%, transparent)); }
+@utility aura {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    z-index: -1;
+    padding: 4px;
+    border-radius: inherit;
+    pointer-events: none;
+    /* a comet segment of light, turning; the mask keeps only the 4 px ring outside the button */
+    background: conic-gradient(from var(--cp-aura-angle), transparent 0deg 240deg, var(--cp-hot) 320deg, transparent 360deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    animation: cp-aura-spin 4s linear infinite;
+  }
+}
+
+/* Hover lift (#33): a control rises with a card shadow on hover and presses down on click. Hover-only
+   devices lift; under reduced motion the control stays still and shows the hover tint instead. */
+@utility lift {
+  transition-property: translate, box-shadow;
+  transition-duration: var(--cp-dur-instant);
+  transition-timing-function: var(--cp-ease-snap);
+  @media (hover: hover) {
+    &:hover {
+      translate: 0 calc(var(--spacing) * -0.5);
+      box-shadow: var(--shadow-card);
+    }
+  }
+  &:active {
+    translate: var(--spacing);
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:hover {
+      translate: none;
+      @apply tint;
+    }
+  }
+  [data-motion=reduced] &:hover {
+    translate: none;
+    @apply tint;
+  }
+}
 
 @layer base {
   html { font-family: var(--cp-font-sans); font-weight: 500; font-optical-sizing: auto; color: var(--cp-ink); background: var(--cp-paper); }
@@ -188,4 +246,9 @@
   h1, h2, h3, h4 { font-family: var(--cp-font-display); font-weight: 400; font-synthesis: none; text-wrap: balance; }
   p, li { text-wrap: pretty; }
   :focus-visible { outline: 3px solid var(--cp-focus); outline-offset: 3px; }
+  /* One pointer rule for every clickable element (Tailwind v4 preflight gives buttons no pointer).
+     Zero specificity, so a component can still set its own cursor. Controls disabled with a reason
+     (aria-disabled) get not-allowed. Focus rings are not touched here. */
+  :where(a[href], button, [role="button"], [role="menuitem"], [role="radio"], [role="tab"], label:has(> input:is([type="radio"], [type="checkbox"]):not(:disabled))):not(:disabled, [aria-disabled="true"]) { cursor: pointer; }
+  :where(button, [role="button"], [role="menuitem"], [role="radio"], [role="tab"]):is(:disabled, [aria-disabled="true"]) { cursor: not-allowed; }
 }

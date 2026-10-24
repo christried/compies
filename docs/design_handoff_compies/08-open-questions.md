@@ -6,7 +6,7 @@ Decide these before or during the matching ticket. Each has the assumption the d
 
 1. **Push in the MVP?** Assumed: no. The .ics carries a 1 h alarm instead; „Termin steht“ is visible in the app. Push arrives with T17.
 2. **Host permission in the MVP:** assumed env allowlist (operator + named hosts). OK, or do we need the admin list (T3) before launch?
-3. **Event length in the .ics:** assumed 3 h. Make it a session field later?
+3. **Event length in the .ics:** assumed 3 h. Make it a Session field later?
 4. **Time zone:** assumed Europe/Berlin for display and input, UTC in the DB. Anyone in another zone?
 5. **Max slots per poll:** assumed 8.
 6. **Editing slots after the poll started:** not designed. Assumption: host can add slots any time; removing a slot that has votes needs hold-to-confirm and drops those votes. Confirm.

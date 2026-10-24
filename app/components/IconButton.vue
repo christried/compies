@@ -13,7 +13,7 @@ withDefaults(defineProps<{
 <template>
   <button
     type="button"
-    class="hit-44 grid size-10 flex-none place-items-center rounded-pill border-2 border-line bg-surface text-ink"
+    class="hit-44 grid size-10 flex-none place-items-center rounded-pill border-2 border-line bg-surface text-ink lift"
     :aria-label="label"
     :aria-pressed="pressed"
     :title="label"

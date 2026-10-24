@@ -9,7 +9,7 @@ Files: `tokens/compies-tokens.css` (all CSS variables, framework-agnostic) and `
 ```html
 <html lang="de" data-theme="light|dark" data-motion="full|reduced">
 ```
-- **Mode:** first visit follows `prefers-color-scheme`, then the user's choice (Hell / Dunkel / System) from settings. Persist in a cookie so SSR renders the right theme (`@nuxtjs/color-mode` with `dataValue: 'theme'`).
+- **Mode:** light only for now. The app ignores `prefers-color-scheme` and stores no theme cookie; nothing sets `data-theme="dark"`, so the light tokens apply everywhere. Later (#43): the user's choice (Hell / Dunkel / System) from settings, persisted in a cookie so SSR renders the right theme, with the dark token set kept in the CSS until then.
 - **Motion:** `data-motion="reduced"` from the in-app toggle; the OS setting is covered by `@media (prefers-reduced-motion)` inside the token file. JS reads `getComputedStyle(document.documentElement).getPropertyValue('--cp-motion')` → `full | reduced`. Tailwind variant: `reduced:`.
 - **Fonts** (self-host in production): Lilita One 400 (display + timers), Bricolage Grotesque 400–800 with optical sizing (UI), Bungee 400 (scores), JetBrains Mono 500/700 (codes, links).
 
@@ -47,7 +47,7 @@ Dark mode has one signature: `--cp-shadow-card` and `--cp-shadow-modal` are **or
 | 7 | Pink | #cc79a7 | #151515 | ◗ | Bögen |
 | 8 | Nacht | #3d2d8f | #fffdf8 | ✦ | Sterne |
 
-Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assigned in join order of teams, never reused within a session. Before any team word exists, a team is named after its colour („Team Rot“). Never put text directly on a pattern.
+Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assigned in join order of teams, never reused within an Event. Before any team word exists, a team is named after its colour („Team Rot“). Never put text directly on a pattern.
 
 ## Type scale
 
@@ -60,6 +60,8 @@ Utilities: `bg-team-N`, `text-team-N-ink`, `pattern-team-N` (16 px tile). Assign
 | num-hero … num-xs | `text-num-*` + `num` | clamp 96–160 … 15 | Bungee, fixed digit slots (`num-slot` .74em, `num-sep` .34em) |
 | timer | `timer` | | Lilita One, slots .6em / .3em |
 
+**Section heading (one style):** „Wer kann wann?“ and „Deine Events“ are h2 in Lilita One, 26 px (22 px on phones). Inside sheets the sub-heading is one step smaller: h3 in Lilita One, 20 px („Vorgeschlagene Termine“). Headings keep their levels.
+
 No „·“ separators in kickers, headers or timers.
 
 ## Space, size, radius, elevation, layers
@@ -68,7 +70,7 @@ No „·“ separators in kickers, headers or timers.
 - Radius: xs 4 · sm 8 · md 12 · lg 14 · xl 20 · pill 999.
 - Borders: `border-memphis` 3 px light / 2.5 px dark, thin 2 px.
 - Shadows (hard, no blur): sm 3/3 · btn 4/4 · card 6/6 · modal 10/10 · lift 9/13 (dragged avatar) · soft (tooltips, toasts only) · sticker (confetti, emotes).
-- Layers (`layer-*`, never raw z-index): decor 1 · content 2 · sticky 10 · dock 30 · sheet 40 · clip 44 · veto 46 · modal 50 · toast 60 · confetti 70. **The veto bar always sits above the clip.**
+- Layers (`layer-*`, never raw z-index): decor 1 · content 2 · sticky 10 · header 20 · dock 30 · sheet 40 · clip 44 · veto 46 · modal 50 · popover 55 · toast 60 · confetti 70. **The veto bar always sits above the clip.**
 - Breakpoints: `sm` 600 (tablet), `md` 980 (desktop shell: side panel + floating dock; below = tab bar + crown button), `lg` 1280 (reference), `xl` 1440 (shell stops growing). Inside stage and panel use **container queries**.
 
 ## Motion tokens

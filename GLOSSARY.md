@@ -13,37 +13,45 @@ The operator, who grants and revokes the host permission and maintains the game 
 _Avoid_: Admin (ambiguous with the session admin role a Host has)
 
 **Host**:
-The User who created a Session and has full rights inside it. Each Session has exactly one Host.
+The User who created an Event and has full rights inside it. Each Event has exactly one Host.
 _Avoid_: Organiser, owner, session admin
 
 **Host permission**:
-The platform-wide right to create Sessions. Losing it does not stop a User from being the Host of Sessions they already created.
+The platform-wide right to create Events and to see the Game library. Losing it does not stop a User from being the Host of Events they already created.
 _Avoid_: Host role, canHost (that is a column, not the concept)
 
 **Display name**:
 The name a User picks for themselves, shown everywhere in the app; not unique, and independent of their Discord or Twitch name.
 _Avoid_: Username, nickname
 
-## Sessions
+## Events
+
+**Event**:
+One competition of a group, from its Date poll to its archive, played over one or more Sessions.
+_Avoid_: Tournament, game night, lobby, match
 
 **Session**:
-One game night of a group, from its date poll to its archive.
-_Avoid_: Event, game night, lobby, match
+One sitting of an Event on one Date. Every Event has at least one; the Host can add and remove Sessions until the Event is finished, and a Session that has started stays. Sessions are numbered in the order of their Dates.
+_Avoid_: Game night, evening, round
+
+**Game count**:
+The number of games an Event runs for, changeable by the Host at any time. The Event finishes after its last Session once that many games (plus a tiebreaker if needed) have been played, never after a set time. The Session that plays the last game becomes the last one, and later Sessions are removed; if the last Session ends short of the count, the Event stays open until the Host adds a Session or lowers the count.
+_Avoid_: Rounds, games per Session
 
 **Phase**:
-The lifecycle stage a Session is in: draft, date poll, date set, running, finished or archived.
+The lifecycle stage an Event is in: draft, date poll, date set, running, finished or archived. Before it runs, an Event is in date poll while any of its Sessions has no Date, and in date set once all have one.
 _Avoid_: Status, state
 
 **Invite link**:
-The only way for a User to become a Member of a Session; the Host can rotate it, which invalidates the old one.
+The only way for a User to become a Member of an Event; the Host can rotate it, which invalidates the old one.
 _Avoid_: Share link, join link
 
-**Session link**:
-The stable address of a Session that only its Members can open; it survives rotating the Invite link.
-_Avoid_: Session URL, permalink
+**Event link**:
+The stable address of an Event that only its Members can open; it survives rotating the Invite link.
+_Avoid_: Session link, Event URL, permalink
 
 **Member**:
-A User who has joined a Session through its Invite link. The Host is a Member of their own Session.
+A User who has joined an Event through its Invite link. The Host is a Member of their own Event.
 _Avoid_: Participant, attendee, guest
 
 **Player**:
@@ -57,19 +65,23 @@ _Avoid_: Viewer, audience
 ## Date poll
 
 **Date poll**:
-The Phase in which members vote on proposed Slots before the Host sets the Date.
+The voting on proposed Slots from which the Host sets the Dates of an Event's Sessions. Each Event has one; it is open while any Session has no Date, also in a running Event, and gives the Phase date poll its name.
 _Avoid_: Terminumfrage (UI copy only), survey, scheduling
 
 **Slot**:
-A proposed date and time for a Session, offered in its Date poll.
+A proposed date and time in an Event's Date poll, from which the Host can set a Session's Date. A Slot is open until it becomes a Date; a Reopen makes it open again.
 _Avoid_: Option, proposal, Termin
 
 **Vote**:
-One User's answer to one Slot: yes, maybe or no (UI: Ja / Wenn nötig / Nein).
+One User's answer to one Slot: yes, maybe or no (UI: Ja / Meh / Nein).
 _Avoid_: Response, availability
 
+**Has voted**:
+A Member has voted once they have a Vote on every open Slot that still lies in the future; Slots that have passed or became a Date do not count, and with no such Slot left nobody has voted.
+_Avoid_: Done, complete, responded
+
 **Best slot**:
-The Slot with the most yes Votes, then the most maybe Votes, then the earliest time.
+The open future Slot with the most yes Votes, then the most maybe Votes, then the earliest time.
 _Avoid_: Winner, recommended slot
 
 **Date**:
@@ -77,17 +89,17 @@ The confirmed start time of a Session, set by the Host from a Slot or directly.
 _Avoid_: Termin (UI copy only), appointment, start date
 
 **Reschedule**:
-The Host moving an already set Date to another fixed time, without a new Date poll.
+The Host moving a Session's set Date to another fixed time, without the Date poll.
 _Avoid_: Move, postpone
 
 **Reopen**:
-The Host withdrawing a set Date so the Session returns to its Date poll (UI: „Neue Terminsuche“).
+The Host withdrawing a Session's set Date so the Session gets its Date from the Date poll again (UI: „Neue Terminsuche“).
 _Avoid_: Un-confirm, cancel date, reset
 
 ## Lobby
 
 **Party**:
-One competing unit in a Session: a team in a team format, a single player in free-for-all. A Session has at most 8.
+One competing unit in an Event: a team in a team format, a single player in free-for-all. An Event has at most 8.
 _Avoid_: Side, group
 
 **Bench**:
@@ -103,3 +115,11 @@ _Avoid_: Audience, spectators
 **Construction page**:
 The placeholder shown for every area not built yet in the MVP (UI: Baustelle).
 _Avoid_: Coming soon page, placeholder
+
+**Game library**:
+The platform-wide collection of games that Hosts fill their Events from; only Users with the Host permission and the Platform admin see it (UI: Bibliothek).
+_Avoid_: Game list, catalogue
+
+**Compibert**:
+The app's mascot; it appears on screen but is never named in UI copy.
+_Avoid_: CompiBeard, Compi, mascot

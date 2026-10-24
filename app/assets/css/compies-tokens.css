@@ -1,7 +1,7 @@
 /* =====================================================================
    COMPIES design tokens · v1.0 · framework-agnostic CSS custom properties
    Light = 3a "Memphis Klassik 3.0" · Dark = 3b "Bühne"
-   Mode:   <html data-theme="light|dark">  (set by @nuxtjs/color-mode: OS default + user toggle)
+   Mode:   <html data-theme="light|dark">  (light only for now; dark and system come with #43)
    Motion: <html data-motion="reduced">    (in-app setting; OS setting handled via media query)
    ===================================================================== */
 
@@ -156,8 +156,8 @@
   /* radii */
   --cp-r-xs: 4px;  --cp-r-sm: 8px;  --cp-r-md: 12px;  --cp-r-lg: 14px;  --cp-r-xl: 20px;  --cp-r-pill: 999px;
   /* layers · the clip overlay sits UNDER the veto bar, always */
-  --cp-z-decor: 1;  --cp-z-content: 2;  --cp-z-sticky: 10;  --cp-z-dock: 30;  --cp-z-sheet: 40;
-  --cp-z-clip: 44;  --cp-z-veto: 46;  --cp-z-modal: 50;  --cp-z-toast: 60;  --cp-z-confetti: 70;
+  --cp-z-decor: 1;  --cp-z-content: 2;  --cp-z-sticky: 10;  --cp-z-header: 20;  --cp-z-dock: 30;  --cp-z-sheet: 40;
+  --cp-z-clip: 44;  --cp-z-veto: 46;  --cp-z-modal: 50;  --cp-z-popover: 55;  --cp-z-toast: 60;  --cp-z-confetti: 70;
   /* motion */
   --cp-dur-instant: 80ms;  --cp-dur-fast: 140ms;  --cp-dur-base: 220ms;  --cp-dur-slow: 360ms;
   --cp-dur-slower: 600ms;  --cp-dur-scene: 1200ms;  --cp-dur-epic: 2400ms;

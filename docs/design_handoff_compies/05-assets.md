@@ -38,7 +38,7 @@ Variants: head · bust · full · emote · tail (coin). Outline: light = hard sh
 | `icons/monochrome.svg` | silhouette for Android themed icons |
 | `icons/manifest.webmanifest` | name, colours, icons; paste into `pwa.manifest` if using `@vite-pwa/nuxt` |
 
-Theme colour: `#fff3df` (light) / `#17121d` (dark) via two `<meta name="theme-color" media=…>`. See `reference/docs/compibert-handoff.md` for the exact `app.head` block.
+Theme colour: `#fff3df`, one `<meta name="theme-color">` without a media query, so the browser bar stays light on every device. The dark value (`#17121d`) returns with dark mode (#43). See `reference/docs/compibert-handoff.md` for the exact `app.head` block.
 
 ## Construction assets [MVP] (new in Phase 5)
 
@@ -74,7 +74,7 @@ Rendered server-side with nuxt-og-image (Satori) at **1200 × 630** (wide, OG/Di
 <div root: flex row, w 1200 h 630, bg #fff3df, border 6px #151515, padding 48>
   <div left: flex column, flex 1, gap 20>
     <div kicker: flex row, gap 10, align center>  [Compibert head still 44px]  "COMPIES"  Lilita 28 </div>
-    <div session: Bricolage 800 22, #5d5650>  "{session}, {date}" </div>
+    <div event: Bricolage 800 22, #5d5650>  "{event}, {date}" </div>
     <div winner block: flex column>
       <div label: Bricolage 800 18 caps +0.08em>  "Sieger"  </div>
       <div name: Lilita, ≤14 chars 96px | ≤34 84px | else 64px (square: 128 / 112 / 88), manual line break at the space nearest the middle for 2 lines, colour #151515 />
@@ -89,7 +89,7 @@ Rendered server-side with nuxt-og-image (Satori) at **1200 × 630** (wide, OG/Di
   </div>
 </div>
 ```
-Square: column layout, Compibert + sunburst on top (h 420), text block below. Team colours as hex. Alt text: „{winner} gewinnt {session}. Platz 2: …“.
+Square: column layout, Compibert + sunburst on top (h 420), text block below. Team colours as hex. Alt text: „{winner} gewinnt {event}. Platz 2: …“.
 
 ## Battle replay storyboard (9a „Wettrennen“) [1.0 – last ticket]
 

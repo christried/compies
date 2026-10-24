@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { isSignInProvider, type SignInProvider } from '~~/shared/auth'
+import type { InvitePreview } from '~/components/SignInCard.vue'
 import { isInviteLinkPath, safeRedirect, SIGN_IN_PATH } from '~/utils/auth-guard'
 
 // Sign-in (screen 02). The OAuth round trip leaves the app: Better Auth comes back to the target
@@ -9,8 +10,21 @@ const { t } = useI18n()
 useHead({ title: () => `${t('auth.title')} | ${t('app.name')}` })
 
 const target = computed(() => safeRedirect(route.query.redirect))
-// The join ticket (#10) loads the Session and Host for an Invite link target into the notice.
-const invited = computed(() => isInviteLinkPath(target.value.split(/[?#]/)[0]!))
+const invitePath = computed(() => {
+  const path = target.value.split(/[?#]/)[0]!
+  return isInviteLinkPath(path) ? path : null
+})
+const invited = computed(() => invitePath.value !== null)
+// The notice names the Event and the Host (#10). The preview answers only for valid links.
+const { data: invite } = await useAsyncData<InvitePreview | null>('sign-in-invite', async () => {
+  if (!invitePath.value) return null
+  try {
+    return await $fetch<InvitePreview>(`/api/invite/${invitePath.value.slice('/e/'.length)}`)
+  }
+  catch {
+    return null
+  }
+}, { watch: [invitePath] })
 
 const busy = ref<SignInProvider | null>(null)
 const failedHere = ref<SignInProvider | null>(null)
@@ -31,7 +45,8 @@ async function signIn(provider: SignInProvider) {
       method: 'POST',
       body: { provider, callbackURL: target.value, errorCallbackURL: `${SIGN_IN_PATH}?${back}`, disableRedirect: true },
     })
-    await navigateTo(url, { external: true })
+    // Not navigateTo: it stops the app scope first, and the page would flash until the provider page replaces ours (#32).
+    window.location.href = url
   }
   catch {
     busy.value = null
@@ -54,7 +69,7 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
   >
     <div class="grid flex-1 md:grid-cols-[1.15fr_1fr]">
       <div
-        class="relative flex flex-col justify-end overflow-hidden border-r-(length:--cp-bw) border-line bg-primary p-10 text-on-primary max-md:hidden"
+        class="relative flex flex-col overflow-hidden border-r-(length:--cp-bw) border-line bg-primary p-10 text-on-primary max-md:hidden"
         aria-hidden="true"
       >
         <img
@@ -62,33 +77,53 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
           alt=""
           class="absolute top-[42%] left-[60%] w-[1100px] max-w-none -translate-1/2 opacity-50"
         >
-        <div class="absolute top-[90px] right-10">
-          <Compibert
-            variant="full"
-            :size="300"
-          />
-        </div>
-        <div class="relative flex max-w-[420px] flex-col gap-2.5">
-          <p class="m-0 font-display text-[64px] leading-[.92]">
+        <!-- Headline and text on a solid sticker card, off the sunburst (#32). -->
+        <div class="relative flex max-w-[420px] flex-col gap-2.5 self-start rounded-xl bg-surface p-6 text-ink outline-memphis shadow-card">
+          <p class="m-0 font-display text-[56px] leading-[.92]">
             {{ t('auth.heroTitle') }}
           </p>
           <p class="m-0 text-[17px] font-semibold">
             {{ t('auth.heroText') }}
           </p>
         </div>
+        <!-- Compibert stands on the bottom edge and is cut off by it, so he peeks up (#32). -->
+        <div class="absolute right-8 bottom-0 translate-y-[14%]">
+          <Compibert
+            variant="full"
+            :size="300"
+          />
+        </div>
       </div>
 
       <div class="flex flex-col items-center justify-center gap-[18px] px-[22px] py-6 md:p-10">
-        <div class="w-[120px] md:hidden">
-          <Compibert variant="bust" />
-        </div>
+        <Compibert
+          variant="bust"
+          :size="120"
+          class="md:hidden"
+        />
         <SignInCard
           :invited="invited"
+          :invite="invite"
           :busy="busy"
           :failed="failed"
           @sign-in="signIn"
         />
       </div>
     </div>
+
+    <footer class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t-(length:--cp-bw) border-line bg-surface px-4 py-3 text-small">
+      <NuxtLink
+        to="/impressum"
+        class="font-bold text-ink"
+      >
+        {{ t('legal.links.impressum') }}
+      </NuxtLink>
+      <NuxtLink
+        to="/datenschutz"
+        class="font-bold text-ink"
+      >
+        {{ t('legal.links.datenschutz') }}
+      </NuxtLink>
+    </footer>
   </AppShell>
 </template>

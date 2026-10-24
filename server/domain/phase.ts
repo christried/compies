@@ -1,0 +1,98 @@
+import { SESSIONS_MAX, sessionsEditable, type Phase } from '../../shared/event'
+import { isPast } from './poll'
+
+// Phase transitions of an Event and the Date changes of its Session (#1 § Domain rules, ADR 0011).
+// Pure: the handlers load the Event, ask the rule, and write the returned values in one transaction
+// that holds the Event row. The .ics SEQUENCE is counted up in SQL by the handlers (`icsSequence + 1`).
+
+export type PhaseRejection = 'wrong_phase' | 'in_past'
+
+/** The Phase an Event has from its Sessions' Dates (#52): the date poll while any Session has no Date, else date set. */
+export function phaseOf(startsAt: (Date | null)[]): 'poll' | 'date_set' {
+  return startsAt.some(date => date === null) ? 'poll' : 'date_set'
+}
+
+/**
+ * The Phase after a change to the Sessions (#55): the Dates decide only while the Event is in the date
+ * poll or date set. A running, finished or archived Event keeps its Phase when a Session is added,
+ * removed or reopened.
+ */
+export function phaseAfterChange(phase: Phase, startsAt: (Date | null)[]): Phase {
+  return phase === 'poll' || phase === 'date_set' ? phaseOf(startsAt) : phase
+}
+
+export type SetDateRejection = PhaseRejection | 'slot_taken' | 'duplicate_date'
+
+/**
+ * Setting a Date from a Slot (#52): the Event is in the poll phase with a Session that waits for a Date
+ * (`undated` counts them), the Slot is not one a Session already has as its Date (`taken`), its time is in
+ * the future, and no other Session has that time (`duplicate`, #49: distinct Dates). Checked in that order.
+ */
+export function setDateRejection(input: { phase: Phase, startsAt: Date, now: Date, taken: boolean, undated: number, duplicate: boolean }): SetDateRejection | null {
+  if (input.phase !== 'poll' || input.undated === 0) return 'wrong_phase'
+  if (input.taken) return 'slot_taken'
+  if (isPast(input.startsAt, input.now)) return 'in_past'
+  return input.duplicate ? 'duplicate_date' : null
+}
+
+/**
+ * What a Set Date writes (#52): the undated Session gets the Date and the Slot it came from (null when no
+ * Slot has that time). The previous Date is forgotten; Votes stay frozen by their own rule (#1, #52).
+ * The Event's Phase follows from the Dates (phaseOf), written by the handler.
+ */
+export function setDateValues(startsAt: Date, slotId: string | null) {
+  return { startsAt, previousStartsAt: null, slotId }
+}
+
+/**
+ * Reschedule (#14, #53): only a Session that has a set Date moves, to a future time that no other Session
+ * has (#49: distinct Dates). The Event's phase does not decide it: while another Session still waits for
+ * a Date, a dated one can move.
+ */
+export function rescheduleRejection(input: { hasDate: boolean, startsAt: Date, now: Date, duplicate: boolean }): PhaseRejection | 'duplicate_date' | null {
+  if (!input.hasDate) return 'wrong_phase'
+  if (isPast(input.startsAt, input.now)) return 'in_past'
+  return input.duplicate ? 'duplicate_date' : null
+}
+
+/** The Session columns a Reschedule writes. The Slot it came from stays taken; the handler adds `icsSequence + 1`. */
+export function rescheduleValues(startsAt: Date) {
+  return { startsAt, previousStartsAt: null }
+}
+
+/**
+ * Reopen (#14, #55): withdraws one Session's set Date. Only a set Date can be withdrawn, in an Event whose
+ * Sessions can still change. Other Sessions keep their Dates, so the Event may stay date set.
+ */
+export function reopenRejection(input: { phase: Phase, hasDate: boolean }): PhaseRejection | null {
+  return sessionsEditable(input.phase) && input.hasDate ? null : 'wrong_phase'
+}
+
+/**
+ * What a Reopen writes to its Session: no Date and no Slot, so the Slot is open again with its Votes (#14).
+ * The handler sets `previousStartsAt = starts_at` in the same statement (the old Date) and raises the
+ * calendar sequence; the Event's Phase follows from the Dates left (phaseOf).
+ */
+export function reopenValues() {
+  return { startsAt: null, slotId: null }
+}
+
+export type SessionRejection = PhaseRejection | 'duplicate_date' | 'sessions_max' | 'last_session'
+
+/**
+ * Adding a Session (#55): in an editable Phase with room for one more (at most SESSIONS_MAX). A given Date
+ * is in the future and not another Session's Date; without a Date the Session waits for the poll.
+ */
+export function addSessionRejection(input: { phase: Phase, count: number, startsAt: Date | null, now: Date, duplicate: boolean }): SessionRejection | null {
+  if (!sessionsEditable(input.phase)) return 'wrong_phase'
+  if (input.count >= SESSIONS_MAX) return 'sessions_max'
+  if (input.startsAt === null) return null
+  if (isPast(input.startsAt, input.now)) return 'in_past'
+  return input.duplicate ? 'duplicate_date' : null
+}
+
+/** Removing a Session (#55, dated or not): in an editable Phase, and never the last Session of the Event. */
+export function removeSessionRejection(input: { phase: Phase, count: number }): SessionRejection | null {
+  if (!sessionsEditable(input.phase)) return 'wrong_phase'
+  return input.count > 1 ? null : 'last_session'
+}

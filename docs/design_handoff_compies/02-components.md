@@ -54,7 +54,7 @@ Common rules for every component:
 - [`MoveToMenu`](#movetomenu) [1.0]
 - [`PlayerList`](#playerlist) [1.0]
 - [`ProfileForm`](#profileform) [MVP] name only · [1.0] full
-- [`SessionStepper`](#sessionstepper) [1.0] (MVP: date step only = M2)
+- [`EventStepper`](#eventstepper) [1.0] (MVP: date step only = M2)
 - [`InfoSheet`](#infosheet) [1.0]
 - [`PointsTableEditor`](#pointstableeditor) [1.0]
 - [`GamePoolPicker`](#gamepoolpicker) [1.0]
@@ -102,7 +102,8 @@ The button. One `primary` per view.
 - **States:** default · hover (lift −2 px, shadow +1) · active (translate by shadow offset, shadow none) · focus-visible · loading (spinner replaces icon, label stays, `aria-busy`) · disabled (dashed border, paper-2 fill, ink-2 text, `aria-disabled="true"`, reason rendered next to it or via `aria-describedby`)
 - **Slots:** default (label), `#icon`
 - **Desktop / mobile:** Same on both. `block` on mobile for sheet/footer CTAs.
-- **Accessibility:** Native `<button>`/`<a>`. Disabled keeps focus (aria-disabled, click handler no-ops). Hot variant is only for destructive actions and is usually wrapped by HoldToConfirmButton.
+- **Card size (#49):** `size: card` is 48 px with 15 px / 700 text, and it is the same set on a Session card: „Verschieben“, „Einladen“, „Session hinzufügen“, „Neue Terminsuche“, „Entfernen“ and „In den Kalender“. Only „In den Kalender“ is filled (primary); the others are secondary. Text size and weight do not depend on the variant at this size.
+- **Accessibility:** Native `<button>`/`<a>`. Disabled keeps focus (aria-disabled, click handler no-ops). Hot variant is only for destructive actions and is usually wrapped by HoldToConfirmButton; no hot button sits on a Session card (#49).
 - **Motion:** hover/press `dur-instant` `ease-snap`. Reduced: no lift, colour change only.
 
 ## IconButton
@@ -120,9 +121,9 @@ Round icon-only button (sound toggle, close, remove slot).
 ## HoldToConfirmButton
 **Scope:** [MVP] · **Ref:** DS Basics, VetoWindow, DS Game
 
-Irreversible or destructive actions: veto, ban, pick, rotate link, end/delete session, remove slot with votes.
+Irreversible or destructive actions: veto, ban, pick, rotate link, end/delete Event, remove a Session, remove slot with votes.
 
-- **Props / variants:** `label`, `holdingLabel?` („Halten …“), `doneLabel?`, `duration = 1000`, `variant: hot | primary`, `disabled`, `disabledReason`, `icon`
+- **Props / variants:** `label`, `holdingLabel?` („Halten …“), `doneLabel?`, `duration = 1000`, `variant: hot | primary | secondary`, `size: card (48 px) | lg (52 px)`, `disabled`, `disabledReason`, `icon`. On a Session card „Entfernen“ and „Neue Terminsuche“ are `secondary` and keep the hold fill while held (#49).
 - **States:** idle · holding (fill sweeps left→right) · released early (fill drains back 200 ms, nothing happens) · confirmed (fill full, icon → check, `doneLabel`, emits `confirm`) · locked (team already used it: dashed + reason, e.g. „Larsi hat schon ein Veto eingelegt“)
 - **Slots:** default (label)
 - **Desktop / mobile:** Desktop pointer hold; mobile touch hold with `drag-longpress` haptic tick (`navigator.vibrate(10)`) at start. Mobile action bar version is full-width 56 px.
@@ -149,8 +150,8 @@ Date + time pair for poll slots and direct date.
 - **Props / variants:** `modelValue: string (ISO, local Europe/Berlin)`, `min`, `error`
 - **States:** default · focus · error („Der Termin liegt in der Vergangenheit.“, „Diesen Termin gibt es schon.“)
 - **Slots:** —
-- **Desktop / mobile:** Native `<input type=date>` + `<input type=time>` styled like TextField (date flex 1, time 108 px, Bungee digits). Mobile uses the native pickers.
-- **Accessibility:** Grouped with `role="group"` + label „Termin 1“ etc.
+- **Desktop / mobile:** Own fields on every device, not native inputs (ADR 0010): date typed as TT.MM.JJJJ with a calendar popover, time typed as four digits (24 h) with a list in 15-minute steps. Styled like TextField (date flex 1, Bungee digits). Escape with the calendar or the time list open closes only that popover and leaves the focus in the field; inside a dialog (Reschedule) the dialog stays open (#46).
+- **Accessibility:** Grouped with `role="group"` + label „Termin 1“ etc. On the create page's direct mode, each row shows its „Termin n“ on screen when there is more than one Session (#49).
 - **Motion:** —
 
 ## ToggleSwitch
@@ -182,8 +183,8 @@ Big choice cards (format, mode, points preset, date mode).
 
 2–4 short exclusive options (Terminumfrage / Direkt festlegen, Desktop filter chips).
 
-- **Props / variants:** `options: {value,label,icon?}[]`, `modelValue`
-- **States:** selected (ink fill, paper text) · focus
+- **Props / variants:** `options: {value,label,icon?,fill?}[]`, `modelValue`, `label`, `disabled?`. An option's `fill` (e.g. success for „Ja“) replaces the ink fill when it is selected; `icon` is drawn before the label.
+- **States:** selected (ink fill, paper text, or the option's own `fill`) · focus · disabled (a past Slot: the options show, none is selected, no pointer and no hover tint)
 - **Slots:** —
 - **Desktop / mobile:** Same; full width on mobile.
 - **Accessibility:** `role="radiogroup"` with radios (or buttons with `aria-pressed` for filters).
@@ -228,7 +229,7 @@ Side sheet (desktop: info sheet, host „Mehr“) and bottom sheet (mobile: host
 ## ConfirmModal
 **Scope:** [MVP] · **Ref:** App Vorbereitung 08 confirm
 
-Short confirm for consequential but reversible actions (confirm date, start session).
+Short confirm for consequential but reversible actions (confirm date, start Session).
 
 - **Props / variants:** `open`, `title`, `icon`, `confirmLabel`, `cancelLabel`
 - **States:** open · loading on confirm
@@ -243,9 +244,9 @@ Short confirm for consequential but reversible actions (confirm date, start sess
 Transient feedback („Link kopiert“, „X war schneller“, vote failed).
 
 - **Props / variants:** `toast({tone: success | info | warning | error, text, action?, duration?})`
-- **States:** enter · visible · leave; max 3 stacked; errors stay until dismissed
+- **States:** enter · visible · leave; max 3 stacked; errors stay until dismissed. Every toast has an ✕ that dismisses it.
 - **Slots:** —
-- **Desktop / mobile:** Desktop bottom centre above the dock; mobile above the tab bar.
+- **Desktop / mobile:** Desktop bottom centre above the dock; mobile above the tab bar. With a Host dock on the page, desktop sits above the dock pill (bottom 96 px) and phones above the crown button (bottom 144 px).
 - **Accessibility:** `role="status"` (errors `role="alert"`); action reachable by keyboard; auto-dismiss pauses on hover/focus.
 - **Motion:** `y 20→0, opacity`, `dur-base ease-out`; leave `dur-fast`. Sound `ui-toast`.
 
@@ -255,7 +256,7 @@ Transient feedback („Link kopiert“, „X war schneller“, vote failed).
 Inline notices (team selection locked, uneven teams, pool warning).
 
 - **Props / variants:** `tone`, `icon`, `hostOnly?: boolean`, `action?`
-- **States:** default · host-only (chip „Nur du siehst das“)
+- **States:** default · host-only (chip „Nur du siehst das“). Every notice has an ✕: it emits `close`, and the page decides what closing means.
 - **Slots:** default, `#action`
 - **Desktop / mobile:** Same.
 - **Accessibility:** `role="status"` when it appears live, else plain text.
@@ -362,31 +363,31 @@ Small tape chip next to nav items that lead to a construction page.
 
 Layout frame: header, stage, side panel, mobile tab bar, host dock slot.
 
-- **Props / variants:** `kind: hub | session | bare`, `panel?: boolean`
+- **Props / variants:** `kind: hub | event | bare`, `panel?: boolean`
 - **States:** —
 - **Slots:** `#header`, default (stage), `#panel`, `#dock`, `#tabs`
-- **Desktop / mobile:** ≥ 980: header 64, stage max 1100 centred, panel 340 right (session only), dock floating. < 980: header 56, content, bottom TabBar, crown button 56 bottom-right for hosts.
+- **Desktop / mobile:** ≥ 980: header 64, stage max 1100 centred, panel 340 right (Event only), dock floating. < 980: header 56, content, bottom TabBar, crown button 56 bottom-right for hosts.
 - **Accessibility:** Landmarks: `header`, `nav`, `main`, `aside`. Skip link „Zur Bühne springen“.
 - **Motion:** —
 
 ## AppHeader
 **Scope:** [MVP] · **Ref:** AppFrame
 
-Logo (Compibert head), hub nav or session title + phase pill, invite button, sound toggle, avatar menu.
+Logo (Compibert head), hub nav or Event title + phase pill, invite button, sound toggle, avatar menu.
 
 - **Props / variants:** `kind`, `title?`, `phase?: draft | poll | date_set | running | finished | archived`, `isHost`
-- **States:** hub · session · bare
+- **States:** hub · event · bare
 - **Slots:** `#actions`
-- **Desktop / mobile:** Desktop shows wordmark + nav. Mobile: head logo only, session title + pill wrap to 2 lines max.
+- **Desktop / mobile:** Desktop shows wordmark + nav. Mobile: head logo only, Event title + pill wrap to 2 lines max.
 - **Accessibility:** Logo links to Home; pill has text (dot is decorative).
 - **Motion:** Logo Compibert reacts (idle → cheer/confused) via CompibertBus.
 
 ## HubNav
 **Scope:** [MVP] · **Ref:** AppFrame
 
-Main navigation: Sessions, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin).
+Main navigation: Events, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin). Bibliothek only for Users with the Host permission and the Platform admin; Admin only for the Platform admin.
 
-- **Props / variants:** `current`, `soon: string[]` (MVP: archiv, bibliothek, profil)
+- **Props / variants:** `current`, `canHost`, `isAdmin`, `soon: string[]` (MVP: archiv, bibliothek, profil)
 - **States:** active (3 px hot underline, offset icon) · soon (NavSoonMarker)
 - **Slots:** —
 - **Desktop / mobile:** Desktop header nav; mobile = bottom TabBar with the same items.
@@ -396,7 +397,7 @@ Main navigation: Sessions, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin)
 ## PhasePill
 **Scope:** [MVP] · **Ref:** AppFrame
 
-Session phase chip in the header and on cards.
+Event phase chip in the header and on cards.
 
 - **Props / variants:** `phase`
 - **States:** Entwurf · Terminumfrage (info dot) · Termin steht (success dot) · Läuft (yellow, hot dot) · Beendet · Archiv
@@ -420,7 +421,7 @@ Host controls, reachable wherever the host sits.
 ## SidePanel
 **Scope:** [1.0] · **Ref:** AppFrame
 
-Session side panel with tabs Chat, Aktivität, Tabelle, Leute.
+Event side panel with tabs Chat, Aktivität, Tabelle, Leute.
 
 - **Props / variants:** `tab`
 - **States:** per tab; unread badges
@@ -444,7 +445,7 @@ Realtime connection state.
 ## FullScreenState
 **Scope:** [MVP] · **Ref:** App Systemzustände 31, App Einstieg 07
 
-Loading, invalid link, deleted session, 404, no permission, generic error.
+Loading, invalid link, deleted Event, 404, no permission, generic error.
 
 - **Props / variants:** `kind`, `errorId?`
 - **States:** one per kind
@@ -597,12 +598,12 @@ Display name, avatar (provider or upload), linked accounts, settings.
 - **Accessibility:** Form semantics; upload button with file input.
 - **Motion:** —
 
-## SessionStepper
+## EventStepper
 **Scope:** [1.0] (MVP: date step only = M2) · **Ref:** App Vorbereitung 05
 
 Guided 8-step setup: Name, Format, Anzahl Spiele, Punktetabelle, Auswahlmodus, Spielepool, Tiebreaker-Pool, Termin.
 
-- **Props / variants:** `session`, `step`
+- **Props / variants:** `event`, `step`
 - **States:** per step; error per step; done
 - **Slots:** one per step, `#info`
 - **Desktop / mobile:** Desktop: step list left (230), form centre, InfoSheet right (340) on format/mode/tie steps. Mobile: progress bar (8 segments), form, info via button + bottom sheet, sticky footer Zurück/Weiter.
@@ -651,7 +652,7 @@ Fill wheel/pick pool and tiebreaker pool from the library with suggestions.
 One proposed date in the poll.
 
 - **Props / variants:** `slot: {startsAt}`, `counts: {yes, maybe, no}`, `total`, `myVote`, `best`, `canPick` (host)
-- **States:** not voted (all options neutral) · voted (selected option filled: Ja success, Nötig warning, Nein ink) · best (3 px focus border, card shadow, „Bester Termin“ chip) · confirmed
+- **States:** not voted (all options neutral) · voted (selected option filled: Ja success with a check, Meh warning text only, no icon (#50), Nein error red with dark text (`bg-error text-on-error`) with an x) · best (3 px focus border, card shadow, „Bester Termin“ chip) · confirmed
 - **Slots:** —
 - **Desktop / mobile:** Desktop 4 columns; mobile 1 column. Host on desktop gets „Diesen festlegen“ in the card.
 - **Accessibility:** Options = `role="radiogroup"` labelled with the slot („Sa 25.10. 20:30“); chip text says best.
@@ -663,9 +664,9 @@ One proposed date in the poll.
 „Wer kann wann?“: everyone × every slot.
 
 - **Props / variants:** `people[]`, `slots[]`, `votes`, `me`
-- **States:** cells: Ja (check, circle, success) · Wenn nötig (minus, circle, warning) · Nein (x, square) · Noch offen (dashed circle)
+- **States:** cells: Ja (check, circle, success) · Meh (minus, circle, warning) · Nein (x, square, error red with dark text) · Noch offen (dashed circle)
 - **Slots:** —
-- **Desktop / mobile:** Desktop name column 200 + equal columns; mobile 130 + 72 px columns, horizontal scroll.
+- **Desktop / mobile:** Desktop name column 200 + equal columns; mobile 130 + 72 px columns, horizontal scroll only when the Slots don't fit. Headers show the day and the time on separate lines, never cut.
 - **Accessibility:** Real `<table>` with row/column headers; cell `title` and text equivalent („Ja“).
 - **Motion:** cell change pop `dur-base ease-pop`.
 
@@ -864,7 +865,7 @@ Announces a tie on 1st place and the tiebreaker wheel.
 ## ChatPanel
 **Scope:** [1.0] · **Ref:** DS Communication
 
-Session chat for everyone incl. bench and stands.
+Event chat for everyone incl. bench and stands.
 
 - **Props / variants:** `messages[]`, `me`, `role`
 - **States:** grouped (2 min) · own (right, yellow) · sending · failed + retry · deleted by host („Vom Host gelöscht“) · empty
@@ -924,7 +925,7 @@ Soft in-app ask before the browser prompt.
 ## PwaInstallHint
 **Scope:** [1.0] · **Ref:** App Systemzustände 29
 
-Install hint on Home after the first session.
+Install hint on Home after the first Event.
 
 - **Props / variants:** —
 - **States:** banner · iOS instruction sheet · installed
@@ -962,7 +963,7 @@ Install hint on Home after the first session.
 
 Server-rendered share image (Satori).
 
-- **Props / variants:** `format: wide (1200×630) | square (1080×1080)`, `session`, `date`, `rows`, `games`, `people`
+- **Props / variants:** `format: wide (1200×630) | square (1080×1080)`, `event`, `date`, `rows`, `games`, `people`
 - **States:** —
 - **Slots:** —
 - **Desktop / mobile:** —
@@ -996,9 +997,9 @@ Download PNG or copy link with preview.
 ## ArchiveList / ArchiveCard / ArchiveDetail
 **Scope:** [1.0] · **Ref:** App Ende & Archiv 21, 22
 
-Past sessions you played in; read-only detail.
+Past Events you played in; read-only detail.
 
-- **Props / variants:** `filter: alle | gewonnen | host`, `sessions[]`
+- **Props / variants:** `filter: alle | gewonnen | host`, `events[]`
 - **States:** list · empty · no results · loading
 - **Slots:** —
 - **Desktop / mobile:** Desktop 3-col grid; mobile 1-col.
@@ -1011,6 +1012,7 @@ Past sessions you played in; read-only detail.
 The mascot: inline SVG rig + GSAP + state machine.
 
 - **Props / variants:** `variant: head | bust | full | emote | tail`, `size`, `state`, `still?: boolean`, `accessory?: "hardhat"` (MVP)
+- **Framed pose:** the bust is a framed upper-body pose with a round sticker frame, and the frame is part of the pose, so every use shows it (empty states, the set Date, sign-in). Head and full have no frame.
 - **States:** 16 states (see 04-motion)
 - **Slots:** —
 - **Desktop / mobile:** Max one animated full body at a time.

@@ -1,0 +1,59 @@
+# Compies MVP review 2
+
+Staging at c7165e5 (spec #30 via #40), checked 2026-10-23 in Chrome (en-US), dark and light, desktop and a 390 px frame. Ticket status: #31, #33, #36 closed; #32, #34, #35, #37 open with findings in their comments; #30 open.
+
+## The user's notes (verbatim)
+
+- Light Mode soll default sein, immer! in dieser APp (nicht system), aber später fügen wir dark mode / system als optionen hinzu wie geplant
+- Terminabstimmung: Nein = Rot, nicht weiß
+- Die Abstimmungspille mit den 3 Optionen ist weiterhin buggy. das "-" clippt links weg und der text verschwindet hinter den anderen Optionen. Lösung: Die Option heißt im Frontend jetzt "meh" und das "-" wird einfach weg gelassen.
+- Neu notwendig: Eine Legende bei der Termin Auswahl: Ja = Ich kann da!, Meh = Krieg ich hin., Nein = Wird nichts bei mir.
+- "Aktualisiert sich von selbst" Hinweis kann weg: interessiert den user nicht.
+- "Wer kann wann" Überschrift zu klein. Sollte etwa so groß sein wie "Spielbrett im Bau" Text und diese Form von Überschrift an anderen Stellen der App soll ebenfalls nicht mehr so klein sein und dadurch untergehen
+
+## From the staging check
+
+### Bugs
+
+1. **Calendar popover is broken (#34).** The weekday header cells are `display: grid`, so all seven letters stack in one column. The popover becomes about 530–600 px tall and opens upward past the top of the screen; the month title and the previous/next buttons can't be reached. Desktop and phone.
+2. **A click into the date or time field steals focus (#34).** The calendar or the list opens and takes focus, so typed digits go nowhere. Typing only works when the field is reached with Tab.
+3. **The Reschedule dialog's calendar allows past days (#34):** no earliest day is set there (the create page has one).
+4. **After Escape, a second click into the time field doesn't reopen the list (#34).**
+5. **Fast arrow keys on the vote options lose a Vote (#35).** Two quick presses move focus two options but save only the first Vote; focus and selection drift apart.
+6. **„Wenn nötig“ is cut off at desktop card width (#35).** Each third is 71 px, the option needs 81 px: the label reads „Wenn nöt“ and the minus sits under the divider. The user's „Meh“ without icon resolves it.
+7. **„Termin festlegen“ is enabled on a poll without Slots** and then shows the error toast „Kein Termin liegt mehr in der Zukunft.“ (wrong message for „no Slots at all“; the button could be disabled with a reason instead).
+8. **Toasts cover the Host dock** at the bottom of the Session page.
+
+### Layout
+
+9. **„Wer kann wann?“ on a phone** scrolls sideways even with one Slot, and the column header is cut („So 01.11. 2…“).
+10. **Targets under 44 px:** date and time fields about 38 px tall; „Termin vorschlagen“ and „Termin hinzufügen“ 22 px.
+11. **Set-Date action row mixes sizes:** „In den Kalender“ and „Neue Terminsuche“ are larger than „Verschieben“ and „Einladen“.
+12. **Hover tint is faint in dark mode** on nav items and the options of the „Termin festlegen?“ dialog.
+13. **The small heading style** the user wants bigger also appears as „Deine Sessions“ (Home), „Vorgeschlagene Termine“ (Termine bearbeiten sheet) and „Link geleakt?“ (Invite sheet).
+
+### Copy
+
+14. „Zur Umfrage“ on the success screen after a directly set Date (there is no poll).
+15. „Alle 1 sehen den Termin sofort hier.“ in the confirm dialog with a single Member.
+16. „<Name> steht!“ as the headline of the success screen of a running poll.
+17. „Bitte alle Termine ausfüllen.“ in direct mode, where there is only one date.
+18. **„Meh“ reaches further than the pill:** the counts („0 Wenn nötig“), the confirm dialog („1 Ja, 0 Wenn nötig“), Home („Noch kein Termin mit Ja oder Wenn nötig.“), the create hint („Abgestimmt wird mit Ja, Wenn nötig oder Nein.“), the Datenschutzerklärung („Ja, Wenn nötig, Nein“), and possibly the glossary. Decide whether only the UI label changes or the domain term too.
+19. **Light mode always:** #32 said „colour mode follows the system, stored in a cookie“, and the Datenschutzerklärung describes the `nuxt-color-mode` cookie as remembering light/dark/system. Both change with the new default.
+
+### Still to check (needs the user)
+
+20. Sign-in: approve the hero, the new copy, the logo at the left edge on sign-in and profile setup, the light flash on the Discord and Twitch round trip including cancel, and Compibert's round frame on the phone sign-in (#32, #35). Staging redirects every cookie-less request, so Claude can't see signed-out pages.
+21. An account without the Host permission: nav, phone tab bar, `/bibliothek` and `/admin` showing the generic page (#37).
+22. Reduced motion live (the CSS rules are in place) and no sticky hover on a real touch device (#33).
+
+## Test data left on staging
+
+Sessions „Claude Check Umfrage“ (poll, one Slot 30.10. 19:00) and „Claude Check Direkt“ (reopened twice, one Slot 01.11. 20:15). Votes on „Claude Direkttermin“ are back to their earlier state.
+
+## Added by the user in the grilling session (verbatim)
+
+- Alle X sehen den Termin sofort hier(oder so, beim Dialog zum sahren des Termins) ist nicht aligned mit dem Auge daneben
+- Problem: Die erste "Session" wird bereits auf zwei Termine aufgeteilt, weil wir schon mit 8+ Games planen. Neue Aufteilung: Es gibt immer ein "Event" und das Event kann mehrere Sessions haben und ist erst nach der letzten Session, wenn die angegebene Anzahl an Games gespielt wurde, beendet (nicht nach 24h oder so). Der Host kann jederzeit beliebig viele Sessions und Game-Anzahlen hinzufügen und die Terminauswahl zeigt dann entsprechend auch, dass man 2 Termine braucht.
+
+Settled in spec #41; the Event and Session split is recorded in ADR 0011.
