@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Behoben
+
+- Du bleibst angemeldet, solange du die App mindestens einmal pro Woche nutzt. Bisher wurdest du nach 7 Tagen abgemeldet. ([#64](https://github.com/christried/compies/issues/64))
+
 ## [1.1.1] - 2026-10-24 – Tab-Titel
 
 ### Behoben
