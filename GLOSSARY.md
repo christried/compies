@@ -69,7 +69,7 @@ The voting on proposed Slots from which the Host sets the Dates of an Event's Se
 _Avoid_: Terminumfrage (UI copy only), survey, scheduling
 
 **Slot**:
-A proposed date and time in an Event's Date poll, from which the Host can set a Session's Date. A Slot is open until it becomes a Date; a Reopen makes it open again.
+A proposed date and time in an Event's Date poll, from which the Host can set a Session's Date. A Slot is open until it becomes a Date; a Reopen makes it open again. The Host can change an open Slot's date and time, and its Votes stay.
 _Avoid_: Option, proposal, Termin
 
 **Vote**:
@@ -119,6 +119,14 @@ _Avoid_: Coming soon page, placeholder
 **Game library**:
 The platform-wide collection of games that Hosts fill their Events from; only Users with the Host permission and the Platform admin see it (UI: Bibliothek).
 _Avoid_: Game list, catalogue
+
+**Release**:
+A version of COMPIES that reaches Users, numbered by semantic versioning: a new feature raises the minor number, fixes alone raise the patch number.
+_Avoid_: Deploy, update, build
+
+**Changelog**:
+The public list of Releases, newest first, saying in plain words what changed for Users; changes Users cannot see are left out (UI: Neuigkeiten).
+_Avoid_: Release notes, news, patch notes
 
 **Compibert**:
 The app's mascot; it appears on screen but is never named in UI copy.
