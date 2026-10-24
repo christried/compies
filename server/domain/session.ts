@@ -59,7 +59,7 @@ function numbersById(sessions: SessionDate[]): Map<string, number | null> {
  * The Sessions whose .ics SEQUENCE goes up when the Event's Sessions change from `before` to `after`
  * (#53, #55): every Session still there whose Date moved or whose number (sessionNumbers) changed, so a
  * re-import replaces its entry with the new time or title. A Session that is new or gone has no entry
- * to replace, so it is left out. Every handler that adds, removes, moves or sets a Date calls this.
+ * to replace, so it is left out. changeSessions calls this for every Session change.
  */
 export function sequenceRaises(before: SessionDate[], after: SessionDate[]): string[] {
   const timeBefore = new Map(before.map(session => [session.id, session.startsAt?.getTime() ?? null]))
