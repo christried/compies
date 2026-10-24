@@ -22,18 +22,20 @@ The cut lands on `staging` through its own PR first, before the Release PR to `m
 
 ## Release PR to `main`
 
+The user approves every merge into `main`. Agents open the Release PR and ask; they never merge it themselves.
+
 Which case applies depends on what `staging` holds after the cut.
 
 **Case A: staging holds nothing for a later Release.** The cut commit is the last commit on `staging`.
 
 - Open the Release PR from `staging` into `main`.
-- Merge it.
+- Ask the user to approve the merge. Merge only after their approval.
 
 **Case B: staging already holds work for a later Release.** Work merged into `staging` after the cut belongs to the next Release, and `staging` must keep taking work.
 
 - Cut a branch `release/x.y.z` from the staging commit that holds the version cut.
 - Open the Release PR from `release/x.y.z` into `main`.
-- Merge it. `staging` is not touched.
+- Ask the user to approve the merge. Merge only after their approval. `staging` is not touched.
 
 **After the merge, in both cases:**
 
