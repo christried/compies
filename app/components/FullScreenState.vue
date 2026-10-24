@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// Full-page system states (screen 31) in the bare shell. Focus goes to the title on mount.
+// Full-page system states (screen 31) in the bare shell. Focus goes to the title on mount, and the
+// tab title names the state, over whatever the page around it set.
 const props = defineProps<{
   kind: 'notFound' | 'noPermission' | 'generic' | 'invalid' | 'deleted'
 }>()
@@ -10,6 +11,8 @@ const heading = useTemplateRef('heading')
 onMounted(() => heading.value?.focus())
 
 const copy = computed(() => `errorPage.${props.kind}`)
+
+useHead({ title: () => `${t(`${copy.value}.title`)} | ${t('app.name')}` })
 </script>
 
 <template>

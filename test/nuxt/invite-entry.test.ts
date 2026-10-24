@@ -22,6 +22,7 @@ describe('the Invite link, signed out', () => {
 
     expect(page.get('h1').text()).toBe('Sanne lädt dich zu Freitags-Zocken ein')
     expect(page.get(`a[href="/anmelden?redirect=${encodeURIComponent(`/e/${path}`)}"]`).text()).toBe('Anmelden und beitreten')
+    await vi.waitFor(() => expect(document.title).toBe('Erst kurz anmelden | Compies'))
   })
 
   it('shows nothing of the Event but its name and the Host, no Slots or counts', async () => {
@@ -48,6 +49,20 @@ describe('the Invite link, signed out', () => {
 
     expect(page.get('h1').text()).toBe('Link ungültig')
   })
+
+  it('names the invalid page in the tab title', async () => {
+    const path = link('Tt3Tt3Tt3Tt3')
+    registerEndpoint(`/api/invite/${path}`, {
+      method: 'GET',
+      handler: () => {
+        throw createError({ statusCode: 404, statusMessage: 'Event not found' })
+      },
+    })
+
+    await mountSuspended(EventPage, { route: `/e/${path}` })
+
+    await vi.waitFor(() => expect(document.title).toBe('Link ungültig | Compies'))
+  })
 })
 
 describe('the Invite link, signed in', () => {
@@ -71,6 +86,22 @@ describe('the Invite link, signed in', () => {
     expect(useToast().toasts.value.map(toast => toast.text)).toContain('Du bist drin! Du sitzt erstmal auf der Bench.')
   })
 
+  it('titles the tab Einladung while joining, not sign-in', async () => {
+    const path = link('Ss2Ss2Ss2Ss2')
+    let answer = (_: { slug: string, joined: boolean }) => {}
+    registerEndpoint(`/api/invite/${path}`, {
+      method: 'POST',
+      handler: () => new Promise<{ slug: string, joined: boolean }>((resolve) => {
+        answer = resolve
+      }),
+    })
+
+    await mountSuspended(EventPage, { route: `/e/${path}` })
+
+    await vi.waitFor(() => expect(document.title).toBe('Einladung | Compies'))
+    answer({ slug: 'freitags-zocken-k7q2', joined: false })
+  })
+
   it('says the Event is deleted to a former Member', async () => {
     const path = link('Ww6Ww6Ww6Ww6')
     registerEndpoint(`/api/invite/${path}`, {
@@ -85,6 +116,20 @@ describe('the Invite link, signed in', () => {
     await vi.waitFor(() => expect(page.get('h1').text()).toBe('Event gelöscht'))
   })
 
+  it('names the deleted page in the tab title once the join fails', async () => {
+    const path = link('Rr1Rr1Rr1Rr1')
+    registerEndpoint(`/api/invite/${path}`, {
+      method: 'POST',
+      handler: () => {
+        throw createError({ statusCode: 410, statusMessage: 'Event deleted' })
+      },
+    })
+
+    await mountSuspended(EventPage, { route: `/e/${path}` })
+
+    await vi.waitFor(() => expect(document.title).toBe('Event gelöscht | Compies'))
+  })
+
   it('shows the generic invalid page when the link no longer leads anywhere', async () => {
     const path = link('Vv5Vv5Vv5Vv5')
     registerEndpoint(`/api/invite/${path}`, {
@@ -97,6 +142,7 @@ describe('the Invite link, signed in', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${path}` })
 
     await vi.waitFor(() => expect(page.get('h1').text()).toBe('Link ungültig'))
+    await vi.waitFor(() => expect(document.title).toBe('Link ungültig | Compies'))
   })
 })
 
@@ -114,6 +160,7 @@ describe('the Event link of a deleted Event', () => {
     const page = await mountSuspended(EventPage, { route: '/e/geloescht-k7q2' })
 
     expect(page.get('h1').text()).toBe('Event gelöscht')
+    await vi.waitFor(() => expect(document.title).toBe('Event gelöscht | Compies'))
   })
 })
 
