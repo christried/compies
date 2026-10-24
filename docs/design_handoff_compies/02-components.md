@@ -676,7 +676,7 @@ One proposed date in the poll.
 Host confirms a slot.
 
 - **Props / variants:** `slot`, `counts`
-- **States:** open · saving
+- **States:** open · saving · selected option (filled radio dot, 3px focus-blue border, light focus-blue wash; unselected options: hollow dot). The option that opened the dialog, else the Best slot, starts selected.
 - **Slots:** —
 - **Desktop / mobile:** ConfirmModal / bottom sheet.
 - **Accessibility:** as ConfirmModal.
