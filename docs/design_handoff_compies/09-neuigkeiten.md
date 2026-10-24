@@ -1,6 +1,6 @@
 # 09 Neuigkeiten (Changelog)
 
-Route `/neuigkeiten`, public (works signed out), `AppShell kind="bare"`. Source: `CHANGELOG.md` (Keep a Changelog + SemVer), parsed at build time (Nuxt Content or a small remark plugin), newest Release first, `[Unreleased]` dropped. **Ref:** `reference/Neuigkeiten.dc.html` (switch Desktop 1440 / Mobil 390, states Standard, Erster Besuch, Reduzierte Bewegung, Versionslabel; Tweak „Musterblöcke“ shows Entfernt, Sicherheit, inline code, nested list, link).
+Route `/neuigkeiten`, public (works signed out), `AppShell kind="bare"`. Source: `CHANGELOG.md` (Keep a Changelog + SemVer), bundled at build time (`?raw` import in `app/utils/changelog.ts`) and parsed by `shared/changelog.ts`, the parser the changelog guard test uses, newest Release first, `[Unreleased]` dropped. **Ref:** `reference/Neuigkeiten.dc.html` (switch Desktop 1440 / Mobil 390, states Standard, Erster Besuch, Reduzierte Bewegung, Versionslabel; Tweak „Musterblöcke“ shows Entfernt, Sicherheit, inline code, nested list, link).
 
 **New tokens: none.** Everything uses existing colour, type, radius, shadow, layer and motion tokens.
 
@@ -110,3 +110,5 @@ Existing avatar menu gets a footer row: Impressum, Datenschutz, Neuigkeiten + Ve
 
 ## i18n keys (new)
 `news.title` „Neuigkeiten“ · `news.intro` „Frisch geschraubt: Hier siehst du, was sich bei COMPIES getan hat.“ · `news.back` „Zurück“ · `news.rail` „Versionen“ · `news.jump` „Springe zu“ · `news.new` „Neu“ · `news.copy` „Link zu Version {v} kopieren“ · `news.copied` „Link kopiert“ · `news.issue` „Issue {n} auf GitHub, öffnet in neuem Tab“ · `news.version` „Version {v}, zu den Neuigkeiten“ · `legal.news` „Neuigkeiten“. Group names come from the changelog itself (German).
+
+**As built (#80):** the intro says „Compies“ (copy rule: never „COMPIES“ in copy). `legal.news` became `legal.links.neuigkeiten` next to the other legal links, and the back link keeps `common.back`. Added: `news.say`, `news.item`, `news.itemNew` (rail link names), `news.copyFailed`, `news.newTab`, `news.versionUnseen`, `legal.nav` „Rechtliches“. Compibert in the hero is the still bust: the CompibertBus (`join` wave, `reveal` cheer) is not built yet, so neither reaction plays.
