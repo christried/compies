@@ -123,16 +123,16 @@ describe('SlotEditSheet', () => {
     expect(endpoint.posted).toEqual([])
   })
 
-  it('hides the add row at 8 Slots and says why', async () => {
-    const eight = Array.from({ length: 8 }, (_, day) => ({
+  it('hides the add row at 16 Slots and says why', async () => {
+    const sixteen = Array.from({ length: 16 }, (_, day) => ({
       id: `slot-${day}`,
       startsAt: new Date(Date.UTC(2030, 5, 10 + day, 18, 0)).toISOString(),
       votes: 0,
     }))
-    await mountSuspended(SlotEditSheet, { props: { open: true, slug: 'full', slots: eight } })
+    await mountSuspended(SlotEditSheet, { props: { open: true, slug: 'full', slots: sixteen } })
 
     expect(document.querySelector('form')).toBeNull()
-    expect(document.body.textContent).toContain('Höchstens 8 Vorschläge.')
+    expect(document.body.textContent).toContain('Höchstens 16 Vorschläge.')
   })
 
   it('shows the reason the server gives when a change is refused', async () => {

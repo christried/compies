@@ -5,7 +5,7 @@ import type { VoteValue } from './poll'
 /** Event name: 1 to this many characters after trimming (emoji count as one). */
 export const EVENT_NAME_MAX = 60
 /** Slots in a Date poll. */
-export const SLOTS_MAX = 8
+export const SLOTS_MAX = 16
 /** Sessions of one Event (ADR 0011, #49). */
 export const SESSIONS_MAX = 8
 
