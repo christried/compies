@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:var(--cp-ink)}a:hover{color:var(--cp-focus)}button{font:inherit;color:inherit}:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}h2:focus:not(:focus-visible){outline:none}@keyframes cpToastIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}@keyframes cpFade{from{opacity:0}to{opacity:1}}</style>
+</helmet>
+<div lang="de" data-theme="light" style="min-height:100vh;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;gap:14px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45">
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 22px">
+    <div style="display:flex;flex-direction:column;gap:2px;margin-right:auto">
+      <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Referenz</span>
+      <span style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:32px;line-height:1">Neuigkeiten</b><code style="font-family:var(--cp-font-mono);font-size:13px;font-weight:700;color:var(--cp-ink-2)">/neuigkeiten</code></span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Ansicht</span>
+      <div role="radiogroup" aria-label="Ansicht" style="display:flex;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;overflow:hidden;background:var(--cp-surface)"><sc-for list="{{ vpOpts }}" as="o" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{ o.on }}" onClick="{{ o.pick }}" style="height:44px;padding:0 16px;border:0;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap">{{ o.n }}</button></sc-for></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Zustand</span>
+      <div role="radiogroup" aria-label="Zustand" style="display:flex;flex-wrap:wrap;border:var(--cp-bw) solid var(--cp-line);border-radius:22px;overflow:hidden;background:var(--cp-surface)"><sc-for list="{{ modeOpts }}" as="o" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{ o.on }}" onClick="{{ o.pick }}" style="height:44px;padding:0 16px;border:0;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap">{{ o.n }}</button></sc-for></div>
+    </div>
+    <sc-if value="{{ isMoment }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ replay }}" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:14px;cursor:pointer"><dc-import name="Icon" icon="rotate-ccw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Moment nochmal</button></sc-if>
+  </div>
+  <p style="margin:0;max-width:900px;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">{{ note }}</p>
+
+  <div ref="{{ stage }}" style="width:100%">
+    <sc-if value="{{ isPage }}" hint-placeholder-val="{{ true }}">
+      <div style="width:{{ boxW }};height:{{ boxH }};margin:0 auto">
+        <div data-motion="{{ motion }}" style="position:relative;width:{{ fwPx }};height:{{ fhPx }};transform:scale({{ sc }});transform-origin:0 0;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ fr }};overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+
+          <header style="flex:none;height:{{ hh }};box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:0 {{ hpad }};border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 32 }}" still="{{ true }}" hint-size="32px,32px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></a>
+            <span style="flex:1"></span>
+            <button type="button" aria-label="Ton aus" title="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);cursor:pointer"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+          </header>
+
+          <div ref="{{ scroller }}" onScroll="{{ spy }}" style="flex:1;min-height:0;overflow-y:auto;position:relative;scrollbar-width:thin">
+            <div style="max-width:1160px;margin:0 auto;box-sizing:border-box;padding:{{ pagePad }};display:flex;flex-direction:column">
+
+              <a href="#" onClick="{{ noop }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;min-height:44px;font-size:14px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink)"><dc-import name="Icon" icon="chevron-left" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Zurück</a>
+
+              <div style="display:flex;align-items:center;gap:{{ heroGap }};margin-bottom:{{ heroMb }}">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+                  <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ h1 }};line-height:.95">Neuigkeiten</h1>
+                  <p style="margin:0;max-width:34ch;font-size:{{ introSize }};font-weight:600;line-height:1.4;color:var(--cp-ink-2);text-wrap:pretty">Frisch geschraubt: Hier siehst du, was sich bei COMPIES getan hat.</p>
+                </div>
+                <sc-if value="{{ cbLiveD }}"><dc-import name="CompibertRig" variant="bust" size="{{ 168 }}" state="{{ cb }}" hint-size="168px,168px"></dc-import></sc-if>
+                <sc-if value="{{ cbStillD }}"><dc-import name="CompibertRig" variant="bust" size="{{ 168 }}" state="idle" still="{{ true }}" hint-size="168px,168px"></dc-import></sc-if>
+                <sc-if value="{{ cbLiveM }}"><dc-import name="CompibertRig" variant="bust" size="{{ 104 }}" state="{{ cb }}" hint-size="104px,104px"></dc-import></sc-if>
+                <sc-if value="{{ cbStillM }}"><dc-import name="CompibertRig" variant="bust" size="{{ 104 }}" state="idle" still="{{ true }}" hint-size="104px,104px"></dc-import></sc-if>
+              </div>
+
+              <sc-if value="{{ mobJump }}" hint-placeholder-val="{{ false }}">
+                <nav aria-label="Versionen" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
+                  <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Springe zu</span>
+                  <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 8px">
+                    <sc-for list="{{ rail }}" as="x" hint-placeholder-count="5"><a href="{{ x.href }}" onClick="{{ x.on }}" aria-label="{{ x.aria }}" style="flex:none;display:inline-flex;align-items:center;height:44px;box-sizing:border-box;padding:0 14px;border:2px solid var(--cp-line);border-radius:999px;background:{{ x.pillBg }};color:var(--cp-ink);box-shadow:var(--cp-shadow-sm);text-decoration:none;font-family:var(--cp-font-num);font-size:14px;line-height:1" style-hover="color:var(--cp-ink)">{{ x.v }}</a></sc-for>
+                  </div>
+                </nav>
+              </sc-if>
+
+              <div style="display:grid;grid-template-columns:{{ cols }};gap:{{ gridGap }};align-items:start">
+                <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+                  <aside style="position:sticky;top:24px">
+                    <nav aria-label="Versionen" style="display:flex;flex-direction:column;gap:2px;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:20px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+                      <span style="padding:8px 12px 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Versionen</span>
+                      <sc-for list="{{ rail }}" as="x" hint-placeholder-count="5">
+                        <sc-if value="{{ x.cur }}"><a href="{{ x.href }}" onClick="{{ x.on }}" aria-current="true" aria-label="{{ x.aria }}" style="display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:58px;box-sizing:border-box;padding:8px 12px;border-radius:14px;background:var(--cp-ink);color:var(--cp-paper);text-decoration:none" style-hover="color:var(--cp-paper)"><span style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="flex:none;font-family:var(--cp-font-num);font-size:15px;line-height:1">{{ x.v }}</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;font-size:14px">{{ x.name }}</span></span><span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600">{{ x.date }}<sc-if value="{{ x.newest }}"><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800;line-height:1">Neu</span></sc-if></span></a></sc-if>
+                        <sc-if value="{{ x.notCur }}"><a href="{{ x.href }}" onClick="{{ x.on }}" aria-label="{{ x.aria }}" style="display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:58px;box-sizing:border-box;padding:8px 12px;border-radius:14px;color:var(--cp-ink);text-decoration:none" style-hover="background:var(--cp-paper-2);color:var(--cp-ink)"><span style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="flex:none;font-family:var(--cp-font-num);font-size:15px;line-height:1">{{ x.v }}</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:14px">{{ x.name }}</span></span><span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--cp-ink-2)">{{ x.date }}<sc-if value="{{ x.newest }}"><span style="display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:999px;border:1.5px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800;line-height:1">Neu</span></sc-if></span></a></sc-if>
+                      </sc-for>
+                    </nav>
+                  </aside>
+                </sc-if>
+
+                <main style="display:flex;flex-direction:column;gap:{{ cardGap }};min-width:0">
+                  <sc-for list="{{ rels }}" as="r" hint-placeholder-count="3">
+                    <section id="{{ r.v }}" data-rel="{{ r.v }}" aria-labelledby="{{ r.hid }}" style="scroll-margin-top:24px">
+                      <article data-card="{{ r.fx }}" style="position:relative;padding:{{ cardPad }};border:var(--cp-bw) solid var(--cp-line);border-radius:20px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+                        <div data-fx="{{ r.fx }}" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:70"></div>
+                        <div data-head="{{ r.fx }}" style="display:flex;align-items:flex-start;gap:14px">
+                          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+                            <h2 id="{{ r.hid }}" tabindex="-1" style="margin:0;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:14px;row-gap:4px;font-weight:400;line-height:1">
+                              <span style="font-size:{{ verSize }};text-shadow:{{ r.verSh }}"><dc-import name="Num" v="{{ r.v }}" say="{{ r.say }}" hint-size="120px,44px"></dc-import></span>
+                              <span style="font-family:var(--cp-font-display);font-size:{{ nameSize }};line-height:1.05;text-wrap:balance">{{ r.name }}</span>
+                            </h2>
+                            <sc-if value="{{ r.newest }}"><span style="position:absolute;top:-19px;left:{{ chipL }};z-index:3;transform:rotate(-6deg)"><span data-stamp="1" style="display:inline-flex;align-items:center;gap:6px;height:34px;box-sizing:border-box;padding:0 14px 0 10px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;line-height:1"><dc-import name="Icon" icon="sparkles" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Neu</span></span></sc-if>
+                            <time datetime="{{ r.iso }}" style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--cp-ink-2)"><dc-import name="Icon" icon="calendar" size="{{ 15 }}" hint-size="15px,15px"></dc-import>{{ r.date }}</time>
+                          </div>
+                          <button type="button" onClick="{{ r.copy }}" aria-label="{{ r.copyAria }}" title="{{ r.copyAria }}" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink);cursor:pointer" style-hover="background:var(--cp-primary)"><dc-import name="Icon" icon="link" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+                        </div>
+
+                        <sc-if value="{{ r.hasIntro }}"><p style="margin:16px 0 0;max-width:62ch;font-size:{{ bodySize }};font-weight:600;line-height:1.5;text-wrap:pretty"><sc-for list="{{ r.intro }}" as="g"><sc-if value="{{ g.isText }}">{{ g.v }}</sc-if><sc-if value="{{ g.isStrong }}"><strong style="font-weight:800">{{ g.v }}</strong></sc-if><sc-if value="{{ g.isCode }}"><code style="padding:1px 6px;border-radius:6px;border:1.5px solid var(--cp-line-soft);background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:.86em;font-weight:700">{{ g.v }}</code></sc-if><sc-if value="{{ g.isLink }}"><a href="{{ g.href }}" target="_blank" rel="noopener noreferrer" title="Öffnet in neuem Tab" style="font-weight:700;color:var(--cp-ink);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px" style-hover="color:var(--cp-focus)">{{ g.v }}</a></sc-if><sc-if value="{{ g.isIssue }}"><a href="{{ g.href }}" target="_blank" rel="noopener noreferrer" aria-label="{{ g.aria }}" title="{{ g.aria }}" style="display:inline-flex;align-items:center;height:22px;box-sizing:border-box;padding:0 7px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface-2);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1;text-decoration:none;vertical-align:2px" style-hover="background:var(--cp-primary);color:var(--cp-on-primary)">{{ g.v }}</a></sc-if></sc-for></p></sc-if>
+
+                        <div style="display:flex;flex-direction:column;gap:24px;margin-top:{{ groupsM }}">
+                          <sc-for list="{{ r.groups }}" as="gr" hint-placeholder-count="2">
+                            <div>
+                              <h3 style="margin:0 0 14px;display:flex;align-items:center;gap:12px">
+                                <span style="flex:none;display:inline-flex;align-items:center;gap:8px;height:36px;box-sizing:border-box;padding:0 14px 0 4px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:{{ gr.bg }};color:{{ gr.fg }};box-shadow:var(--cp-shadow-sm);transform:rotate({{ gr.rot }});font-family:var(--cp-font-display);font-weight:400;font-size:20px;line-height:1"><span aria-hidden="true" style="display:grid;place-items:center;width:24px;height:24px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)"><dc-import name="Icon" icon="{{ gr.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import></span>{{ gr.label }}</span>
+                                <span aria-hidden="true" style="flex:1;height:0;border-top:2px dashed var(--cp-line-soft)"></span>
+                              </h3>
+                              <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px">
+                                <sc-for list="{{ gr.items }}" as="it" hint-placeholder-count="2">
+                                  <li style="display:grid;grid-template-columns:26px minmax(0,1fr);font-size:{{ bodySize }};line-height:1.5">
+                                    <span aria-hidden="true" style="width:{{ gr.bw }};height:{{ gr.bh }};margin-top:{{ gr.bmt }};margin-left:{{ gr.bml }};box-sizing:border-box;border:{{ gr.bb }};border-radius:{{ gr.br }};background:{{ gr.bbg }};transform:rotate({{ gr.brot }})"></span>
+                                    <div style="min-width:0;max-width:64ch;text-wrap:pretty"><sc-for list="{{ it.segs }}" as="g"><sc-if value="{{ g.isText }}">{{ g.v }}</sc-if><sc-if value="{{ g.isStrong }}"><strong style="font-weight:800">{{ g.v }}</strong></sc-if><sc-if value="{{ g.isCode }}"><code style="padding:1px 6px;border-radius:6px;border:1.5px solid var(--cp-line-soft);background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:.86em;font-weight:700">{{ g.v }}</code></sc-if><sc-if value="{{ g.isLink }}"><a href="{{ g.href }}" target="_blank" rel="noopener noreferrer" title="Öffnet in neuem Tab" style="font-weight:700;color:var(--cp-ink);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px" style-hover="color:var(--cp-focus)">{{ g.v }}</a></sc-if><sc-if value="{{ g.isIssue }}"><a href="{{ g.href }}" target="_blank" rel="noopener noreferrer" aria-label="{{ g.aria }}" title="{{ g.aria }}" style="display:inline-flex;align-items:center;height:22px;box-sizing:border-box;padding:0 7px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface-2);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1;text-decoration:none;vertical-align:2px" style-hover="background:var(--cp-primary);color:var(--cp-on-primary)">{{ g.v }}</a></sc-if></sc-for><sc-if value="{{ it.hasKids }}"><ul style="margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px"><sc-for list="{{ it.kids }}" as="kd"><li style="display:grid;grid-template-columns:22px minmax(0,1fr)"><span aria-hidden="true" style="width:{{ gr.kw }};height:{{ gr.kh }};margin-top:{{ gr.kmt }};margin-left:{{ gr.kml }};box-sizing:border-box;border:2px solid var(--cp-line);border-radius:{{ gr.br }};background:{{ gr.kbg }};transform:rotate({{ gr.brot }})"></span><span style="min-width:0"><sc-for list="{{ kd.segs }}" as="g"><sc-if value="{{ g.isText }}">{{ g.v }}</sc-if><sc-if value="{{ g.isStrong }}"><strong style="font-weight:800">{{ g.v }}</strong></sc-if><sc-if value="{{ g.isCode }}"><code style="padding:1px 6px;border-radius:6px;border:1.5px solid var(--cp-line-soft);background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:.86em;font-weight:700">{{ g.v }}</code></sc-if><sc-if value="{{ g.isLink }}"><a href="{{ g.href }}" target="_blank" rel="noopener noreferrer" title="Öffnet in neuem Tab" style="font-weight:700;color:var(--cp-ink);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px" style-hover="color:var(--cp-focus)">{{ g.v }}</a></sc-if><sc-if value="{{ g.isIssue }}"><a href="{{ g.href }}" target="_blank" rel="noopener noreferrer" aria-label="{{ g.aria }}" title="{{ g.aria }}" style="display:inline-flex;align-items:center;height:22px;box-sizing:border-box;padding:0 7px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface-2);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1;text-decoration:none;vertical-align:2px" style-hover="background:var(--cp-primary);color:var(--cp-on-primary)">{{ g.v }}</a></sc-if></sc-for></span></li></sc-for></ul></sc-if></div>
+                                  </li>
+                                </sc-for>
+                              </ul>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </article>
+                    </section>
+                  </sc-for>
+                </main>
+              </div>
+
+              <footer style="margin-top:{{ footM }};padding-top:12px;border-top:2px dashed var(--cp-line-soft);display:flex;flex-wrap:wrap;align-items:center;gap:0 18px">
+                <nav aria-label="Rechtliches" style="display:flex;flex-wrap:wrap;gap:0 18px">
+                  <a href="#" onClick="{{ noop }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink);text-decoration:underline">Impressum</a>
+                  <a href="#" onClick="{{ noop }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink);text-decoration:underline">Datenschutz</a>
+                  <a href="#" onClick="{{ noop }}" aria-current="page" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:800;color:var(--cp-ink);text-decoration:none">Neuigkeiten</a>
+                </nav>
+                <a href="#" onClick="{{ toTop }}" aria-label="Version 1.2.0, zu den Neuigkeiten" style="position:relative;display:inline-flex;align-items:center;height:28px;box-sizing:border-box;padding:0 10px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1;text-decoration:none" style-hover="background:var(--cp-primary);color:var(--cp-on-primary)" style-before="content:'';position:absolute;inset:-9px -4px">v1.2.0</a>
+              </footer>
+            </div>
+          </div>
+
+          <div role="status" aria-live="polite" style="position:absolute;left:0;right:0;bottom:24px;z-index:60;display:flex;justify-content:center;pointer-events:none">
+            <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:10px;padding:8px 18px 8px 8px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-soft);font-weight:800;font-size:15px;animation:{{ toastAnim }}"><span style="flex:none;display:grid;place-items:center;width:30px;height:30px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-success);color:var(--cp-on-success)"><dc-import name="Icon" icon="check" size="{{ 15 }}" sw="{{ 3 }}" hint-size="15px,15px"></dc-import></span>{{ toast }}</div></sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLabels }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:22px;align-items:center">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 28px;padding:14px 20px;border:2px solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:20px;line-height:1">VersionLabel</b>
+          <span style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><span style="display:inline-flex;align-items:center;height:28px;box-sizing:border-box;padding:0 10px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1">v1.2.0</span>Standard</span>
+          <span style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><span style="display:inline-flex;align-items:center;height:28px;box-sizing:border-box;padding:0 10px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1;outline:3px solid var(--cp-focus);outline-offset:3px">v1.2.0</span>Hover, Fokus</span>
+          <span style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;box-sizing:border-box;padding:0 10px 0 8px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1"><span style="width:9px;height:9px;box-sizing:border-box;border-radius:50%;border:1.5px solid var(--cp-line);background:var(--cp-primary)"></span>v1.2.0</span>Noch nicht gesehen</span>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:28px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">UserMenu, angemeldet</span>
+            <div style="width:{{ lBoxW }};height:{{ lBoxHA }}">
+              <div style="position:relative;width:{{ lwPx }};height:{{ lhAPx }};transform:scale({{ lsc }});transform-origin:0 0;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ fr }};overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card)">
+                <header style="height:{{ hh }};box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:0 {{ hpad }};border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+                  <dc-import name="CompibertRig" variant="head" size="{{ 32 }}" still="{{ true }}" hint-size="32px,32px"></dc-import><sc-if value="{{ desk }}"><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></sc-if>
+                  <span style="flex:1"></span>
+                  <span style="display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+                  <span aria-expanded="true" aria-haspopup="menu" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;outline:3px solid var(--cp-focus);outline-offset:-2px"><dc-import name="Avatar" who="Kitty" size="{{ 32 }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></span>
+                </header>
+                <div role="menu" aria-label="Konto" style="position:absolute;top:{{ menuTop }};right:12px;left:{{ menuL }};width:{{ menuW }};box-sizing:border-box;display:flex;flex-direction:column;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+                  <div style="display:flex;align-items:center;gap:10px;padding:6px 10px 12px"><dc-import name="Avatar" who="Kitty" size="{{ 40 }}" dot="{{ false }}" hint-size="40px,40px"></dc-import><div style="display:flex;flex-direction:column;line-height:1.25"><b style="font-size:16px">Kitty</b><span style="font-size:13px;color:var(--cp-ink-2)">Über Discord angemeldet</span></div></div>
+                  <span style="height:0;margin:0 4px 6px;border-top:2px solid var(--cp-line-soft)"></span>
+                  <a role="menuitem" href="#" onClick="{{ noop }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--cp-ink);font-weight:700;font-size:15px;text-decoration:none" style-hover="background:var(--cp-paper-2);color:var(--cp-ink)"><dc-import name="Icon" icon="user" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Profil</a>
+                  <a role="menuitem" href="#" onClick="{{ noop }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--cp-ink);font-weight:700;font-size:15px;text-decoration:none" style-hover="background:var(--cp-paper-2);color:var(--cp-ink)"><dc-import name="Icon" icon="log-out" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Abmelden</a>
+                  <span style="height:0;margin:6px 4px 2px;border-top:2px solid var(--cp-line-soft)"></span>
+                  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;padding:0 10px">
+                    <a role="menuitem" href="#" onClick="{{ noop }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink);text-decoration:underline">Impressum</a>
+                    <a role="menuitem" href="#" onClick="{{ noop }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink);text-decoration:underline">Datenschutz</a>
+                    <a role="menuitem" href="#" onClick="{{ noop }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink);text-decoration:underline">Neuigkeiten</a>
+                    <span style="flex:1"></span>
+                    <a role="menuitem" href="#" onClick="{{ noop }}" aria-label="Version 1.2.0, neu, zu den Neuigkeiten" style="position:relative;display:inline-flex;align-items:center;gap:6px;height:28px;box-sizing:border-box;padding:0 10px 0 8px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1;text-decoration:none" style-hover="background:var(--cp-primary);color:var(--cp-on-primary)" style-before="content:'';position:absolute;inset:-9px -4px"><span aria-hidden="true" style="width:9px;height:9px;box-sizing:border-box;border-radius:50%;border:1.5px solid var(--cp-line);background:var(--cp-primary)"></span>v1.2.0</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Anmelden, abgemeldet</span>
+            <div style="width:{{ lBoxW }};height:{{ lBoxHB }}">
+              <div style="position:relative;width:{{ lwPx }};height:{{ lhBPx }};transform:scale({{ lsc }});transform-origin:0 0;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ fr }};overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+                <header style="flex:none;height:{{ hh }};box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:0 {{ hpad }};border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)"><dc-import name="CompibertRig" variant="head" size="{{ 32 }}" still="{{ true }}" hint-size="32px,32px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></header>
+                <div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px 22px 8px">
+                  <dc-import name="CompibertRig" variant="bust" size="{{ 112 }}" state="idle" still="{{ true }}" hint-size="112px,112px"></dc-import>
+                  <div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--cp-font-display);font-size:{{ loginH }};line-height:1">Anmelden</span><span style="font-size:15px;color:var(--cp-ink-2);text-wrap:pretty">Mit dem Konto, mit dem du eh schon zockst. Wir übernehmen nur Name und Bild.</span></div>
+                    <span style="display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:16px"><dc-import name="Icon" icon="message-square" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mit Discord anmelden</span>
+                    <span style="display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:16px"><dc-import name="Icon" icon="play" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mit Twitch anmelden</span>
+                  </div>
+                </div>
+                <nav aria-label="Rechtliches" style="flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0 16px;padding:4px 16px 14px">
+                  <a href="#" onClick="{{ noop }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink);text-decoration:underline">Impressum</a>
+                  <a href="#" onClick="{{ noop }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink);text-decoration:underline">Datenschutz</a>
+                  <a href="#" onClick="{{ noop }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink);text-decoration:underline">Neuigkeiten</a>
+                  <a href="#" onClick="{{ noop }}" aria-label="Version 1.2.0, zu den Neuigkeiten" style="position:relative;display:inline-flex;align-items:center;height:28px;box-sizing:border-box;padding:0 10px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;line-height:1;text-decoration:none" style-hover="background:var(--cp-primary);color:var(--cp-on-primary)" style-before="content:'';position:absolute;inset:-9px -4px">v1.2.0</a>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showcase&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;label&quot;:&quot;Musterblöcke (Entfernt, Sicherheit, Code, verschachtelt)&quot;},&quot;mobileJump&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;label&quot;:&quot;Mobil: Versions-Sprungleiste&quot;}}">
+const KEY='compies-neuigkeiten-view', SEEN='compies.news.seen', REPO='https://github.com/compies/compies';
+const MON=['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
+const MD=`# Changelog
+
+## [Unreleased]
+### Neu
+- Spielbrett mit Teams.
+
+## [1.2.0] - 2026-11-02 – Mehr Termine
+### Neu
+- Bis zu **16 Termine** pro Terminumfrage.
+- Exportiere die Umfrage als CSV, zum Beispiel für Excel.
+- Der Host kann Datum und Uhrzeit eines Termins in der Umfrage ändern.
+- „In den Kalender“ öffnet Google Kalender, Outlook oder deine Kalender-App.
+- Diese Seite: alle Neuigkeiten auf einen Blick.
+### Geändert
+- Tipp „15“ ins Uhrzeitfeld, und es wird 15:00.
+- „Termin festlegen“ zeigt deutlich, welchen Termin du gewählt hast.
+### Behoben
+- Der „Termin aufgehoben“-Hinweis bleibt, auch wenn der Host die Session entfernt (#65).
+
+## [1.1.2] - 2026-10-27 – Angemeldet bleiben
+### Behoben
+- Du wirst nicht mehr nach 7 Tagen abgemeldet (#64).
+- Läuft deine Anmeldung ab, landest du auf der Anmeldeseite statt bei einer Fehlermeldung (#66).
+
+## [1.1.1] - 2026-10-24 – Tab-Titel
+### Behoben
+- Einladungslinks zeigen im Tab den richtigen Titel.
+
+## [1.1.0] - 2026-10-24 – Feinschliff
+### Neu
+- Events mit mehreren Sessions, jede mit eigenem Termin.
+- Neue Stimme „Meh“ neben Ja und Nein.
+### Geändert
+- Eigene Datums- und Uhrzeitfelder statt der Browser-Auswahl.
+
+## [1.0.0] - 2026-10-22 – Terminfindung
+Der Start: Anmelden, Event anlegen, Termin finden.
+### Neu
+- Anmelden mit Discord oder Twitch.
+- Event anlegen und Freunde per Einladungslink dazuholen.
+- Über Terminvorschläge abstimmen, der Host legt den Termin fest.
+- Den Termin als Kalenderdatei herunterladen.
+`;
+const EXTRA=`### Entfernt
+- Die alte Browser-Auswahl für Datum und Uhrzeit.
+### Sicherheit
+- Einladungslinks laufen nach **30 Tagen** ab, siehe \`INVITE_TTL\`.
+  - Bestehende Links gelten weiter, bis der Host sie erneuert.
+- Mehr dazu im [Sicherheitshinweis](https://github.com/compies/compies/security) (#70).
+`;
+const G={
+  'Neu':{bg:'var(--cp-primary)',fg:'var(--cp-on-primary)',icon:'plus',rot:'-2deg',shape:'circle'},
+  'Geändert':{bg:'var(--cp-info)',fg:'var(--cp-on-info)',icon:'refresh-cw',rot:'1.5deg',shape:'diamond'},
+  'Behoben':{bg:'var(--cp-success)',fg:'var(--cp-on-success)',icon:'check',rot:'-1.5deg',shape:'square'},
+  'Entfernt':{bg:'var(--cp-hot)',fg:'var(--cp-on-hot)',icon:'minus',rot:'2deg',shape:'bar'},
+  'Sicherheit':{bg:'var(--cp-ink)',fg:'var(--cp-paper)',icon:'shield',rot:'-1deg',shape:'ring'}
+};
+const SH={circle:[12,12,'50%',0,7,0],diamond:[10,10,'2px',45,8,1],square:[11,11,'2px',0,7,0],bar:[15,7,'999px',0,9,0],ring:[12,12,'50%',0,7,0]};
+function gstyle(label){
+  const g=G[label]||G['Geändert'], [w,h,r,rot,mt,ml]=SH[g.shape], ring=g.shape==='ring';
+  const kw=Math.round(w*.75), kh=Math.max(5,Math.round(h*.75));
+  return {label,bg:g.bg,fg:g.fg,icon:g.icon,rot:g.rot,bw:w+'px',bh:h+'px',bmt:mt+'px',bml:ml+'px',br:r,brot:rot+'deg',
+    bb:(ring?'3px':'2px')+' solid var(--cp-line)',bbg:ring?'var(--cp-surface)':g.bg,
+    kw:kw+'px',kh:kh+'px',kmt:(mt+1)+'px',kml:(ml+1)+'px',kbg:ring?'var(--cp-ink)':'var(--cp-surface)'};
+}
+function inl(s){
+  const out=[], RX=/\*\*(.+?)\*\*|`([^`]+)`|\[([^\]]+)\]\(([^)\s]+)\)|(^|[\s(])#(\d+)\b/g; let last=0,m;
+  while((m=RX.exec(s))){
+    let st=m.index; if(m[6]!==undefined) st+=m[5].length;
+    if(st>last) out.push({isText:true,v:s.slice(last,st)});
+    if(m[1]!==undefined) out.push({isStrong:true,v:m[1]});
+    else if(m[2]!==undefined) out.push({isCode:true,v:m[2]});
+    else if(m[3]!==undefined) out.push({isLink:true,v:m[3],href:m[4]});
+    else out.push({isIssue:true,v:'#'+m[6],href:REPO+'/issues/'+m[6],aria:'Issue '+m[6]+' auf GitHub, öffnet in neuem Tab'});
+    last=RX.lastIndex;
+  }
+  if(last<s.length) out.push({isText:true,v:s.slice(last)});
+  out.forEach((g,i)=>{ const p=out[i-1], n=out[i+1];
+    if(g.isIssue&&p&&p.isText&&n&&n.isText&&/\($/.test(p.v)&&/^\)/.test(n.v)){ p.v=p.v.replace(/\s*\($/,' '); n.v=n.v.slice(1); } });
+  return out;
+}
+function parse(md){
+  const rels=[]; let rel=null,grp=null,skip=false,para=[];
+  const flush=()=>{ if(rel&&para.length) rel.intro=(rel.intro?rel.intro+' ':'')+para.join(' '); para=[]; };
+  for(const raw of md.split('\n')){
+    const line=raw.replace(/\s+$/,''); let m;
+    if((m=line.match(/^##\s+\[([^\]]+)\](?:\s+-\s+(\d{4}-\d{2}-\d{2}))?(?:\s+[–—-]\s+(.+))?$/))){
+      flush(); grp=null; rel=null; skip=/^unreleased$/i.test(m[1]);
+      if(!skip){ rel={v:m[1],iso:m[2]||'',name:m[3]||'',intro:'',groups:[]}; rels.push(rel); } continue;
+    }
+    if(skip||!rel) continue;
+    if((m=line.match(/^###\s+(.+)$/))){ flush(); grp={label:m[1].trim(),items:[]}; rel.groups.push(grp); continue; }
+    if((m=line.match(/^(\s*)[-*]\s+(.+)$/))&&grp){
+      if(m[1].length>=2&&grp.items.length) grp.items[grp.items.length-1].kids.push(m[2]); else grp.items.push({t:m[2],kids:[]});
+      continue;
+    }
+    if(!line.trim()) flush(); else if(!grp) para.push(line.trim());
+  }
+  flush(); return rels;
+}
+const fmt=iso=>{ if(!iso) return ''; const [y,mo,d]=iso.split('-').map(Number); return d+'. '+MON[mo-1]+' '+y; };
+const rnd=(a,b)=>a+Math.random()*(b-a);
+
+class Component extends DCLogic {
+  state={vp:'desktop',mode:'default',cur:0,avail:1200,toast:null,cb:'idle'};
+  stage=React.createRef(); scroller=React.createRef();
+  componentDidMount(){
+    try{ const s=JSON.parse(localStorage.getItem(KEY)||'{}'); if(s.vp||s.mode) this.setState({vp:s.vp||'desktop',mode:s.mode||'default'}); }catch(e){}
+    const measure=()=>{ const w=this.stage.current&&this.stage.current.clientWidth; if(w&&w!==this.state.avail) this.setState({avail:w}); };
+    this.ro=new ResizeObserver(measure); if(this.stage.current) this.ro.observe(this.stage.current); measure();
+    this.greet(); this.t0=setTimeout(()=>this.arm(),120);
+  }
+  componentDidUpdate(pp,ps){
+    if(ps.mode!==this.state.mode||ps.vp!==this.state.vp||pp.showcase!==this.props.showcase){
+      try{ localStorage.setItem(KEY,JSON.stringify({vp:this.state.vp,mode:this.state.mode})); }catch(e){}
+      clearTimeout(this.t0); this.t0=setTimeout(()=>this.arm(),120);
+      if(ps.vp!==this.state.vp) this.greet();
+    }
+  }
+  componentWillUnmount(){ this.ro&&this.ro.disconnect(); this.io&&this.io.disconnect(); [this.t0,this.t1,this.t2,this.tt].forEach(clearTimeout); }
+  reduced(){ return this.state.mode==='reduced'||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  greet(){ if(this.reduced()) return; this.setState({cb:'wave'}); clearTimeout(this.t1); this.t1=setTimeout(()=>this.setState({cb:'idle'}),2200); }
+  arm(){
+    this.io&&this.io.disconnect(); clearTimeout(this.t2);
+    const sc=this.scroller.current; if(!sc) return;
+    const chip=sc.querySelector('[data-stamp]'), card=sc.querySelector('article[data-card]'), fx=sc.querySelector('[data-fx]');
+    if(!chip) return;
+    if(window.gsap){ gsap.killTweensOf([chip,card]); gsap.set(chip,{clearProps:'opacity,transform'}); card&&gsap.set(card,{clearProps:'transform'}); }
+    if(fx) fx.innerHTML='';
+    if(this.state.mode!=='moment'||this.reduced()||!window.gsap) return;
+    sc.scrollTop=0; this.setState({cur:0});
+    gsap.set(chip,{opacity:0});
+    const head=sc.querySelector('[data-head]');
+    this.io=new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting)){ this.io.disconnect(); this.t2=setTimeout(()=>this.celebrate(),350); } },{root:sc,threshold:.6});
+    this.io.observe(head||chip);
+  }
+  celebrate(){
+    const sc=this.scroller.current; if(!sc||!window.gsap) return;
+    const chip=sc.querySelector('[data-stamp]'), card=sc.querySelector('article[data-card]'), fx=sc.querySelector('[data-fx]');
+    const tl=gsap.timeline();
+    tl.fromTo(chip,{opacity:0,scale:2.2,rotation:-10},{opacity:1,scale:1,rotation:0,duration:.4,ease:'back.out(2)'});
+    tl.to(card,{y:5,duration:.08,yoyo:true,repeat:1,ease:'power1.out'},.3);
+    tl.add(()=>this.confetti(fx,chip.parentNode),.32);
+    tl.add(()=>{ this.setState({cb:'cheer'}); clearTimeout(this.t1); this.t1=setTimeout(()=>this.setState({cb:'idle'}),1600); },.32);
+    try{ localStorage.setItem(SEEN,'1.2.0'); }catch(e){}
+  }
+  confetti(fx,anchor){
+    if(!fx||!anchor) return;
+    const ox=anchor.offsetLeft+anchor.offsetWidth/2, oy=anchor.offsetTop+anchor.offsetHeight/2;
+    const n=this.state.vp==='desktop'?18:10, C=['var(--cp-primary)','var(--cp-hot)','var(--cp-mint)','var(--cp-pop)','var(--cp-cobalt)'], S=['circle','square','diamond','bar'];
+    for(let i=0;i<n;i++){
+      const p=document.createElement('span'), sh=S[i%4], w=sh==='bar'?16:12, h=sh==='bar'?7:12;
+      Object.assign(p.style,{position:'absolute',left:(ox-w/2)+'px',top:(oy-h/2)+'px',width:w+'px',height:h+'px',boxSizing:'border-box',border:'2px solid var(--cp-sticker-rim)',borderRadius:sh==='circle'||sh==='bar'?'999px':'2px',background:C[i%C.length],boxShadow:'var(--cp-sticker-shadow)'});
+      fx.appendChild(p);
+      gsap.set(p,{rotation:sh==='diamond'?45:0});
+      const d2=rnd(1.2,1.7);
+      gsap.timeline({onComplete:()=>p.remove()})
+        .to(p,{x:rnd(-180,180),y:rnd(-170,-60),rotation:'+='+rnd(-360,360),duration:.5,ease:'power2.out'})
+        .to(p,{y:'+='+rnd(260,400),x:'+='+rnd(-50,50),rotation:'+=420',duration:d2,ease:'power1.in'})
+        .to(p,{opacity:0,duration:.35},'-=.35');
+    }
+  }
+  jump(e,i){
+    e&&e.preventDefault(); const sc=this.scroller.current; if(!sc) return;
+    const sec=sc.querySelectorAll('[data-rel]')[i]; if(!sec) return;
+    this.lock=Date.now()+(this.reduced()?50:700);
+    sc.scrollTo({top:Math.max(0,sec.offsetTop-24),behavior:this.reduced()?'auto':'smooth'});
+    this.setState({cur:i});
+    const h=sec.querySelector('h2'); h&&h.focus({preventScroll:true});
+  }
+  spy=()=>{
+    if(Date.now()<(this.lock||0)) return; const sc=this.scroller.current; if(!sc) return;
+    const secs=[...sc.querySelectorAll('[data-rel]')]; let cur=0;
+    secs.forEach((s,i)=>{ if(s.offsetTop-160<=sc.scrollTop) cur=i; });
+    if(sc.scrollTop+sc.clientHeight>=sc.scrollHeight-4) cur=secs.length-1;
+    if(cur!==this.state.cur) this.setState({cur});
+  };
+  copy(v){
+    const url=(location.origin&&location.origin!=='null'?location.origin:'https://compies.app')+'/neuigkeiten#'+v;
+    try{ navigator.clipboard&&navigator.clipboard.writeText(url).catch(()=>{}); }catch(e){}
+    clearTimeout(this.tt); this.setState({toast:null},()=>this.setState({toast:'Link kopiert'}));
+    this.tt=setTimeout(()=>this.setState({toast:null}),2600);
+  }
+  data(){
+    const sc=!!this.props.showcase;
+    if(this._k!==sc){ this._k=sc; let md=MD; if(sc) md=md.replace('- Eigene Datums- und Uhrzeitfelder statt der Browser-Auswahl.\n','- Eigene Datums- und Uhrzeitfelder statt der Browser-Auswahl.\n'+EXTRA); this._d=parse(md); }
+    return this._d;
+  }
+  renderVals(){
+    const st=this.state, desk=st.vp==='desktop', mob=!desk, mode=st.mode, reduced=this.reduced(), isLabels=mode==='labels';
+    const src=this.data();
+    const fw=desk?1440:390, fh=desk?900:844, sc=Math.min(1,(st.avail||fw)/fw);
+    const rels=src.map((r,i)=>({
+      v:r.v, iso:r.iso, date:fmt(r.iso), name:r.name, newest:i===0, fx:i===0?'1':undefined,
+      hid:'v-'+r.v.replace(/\./g,'-'), say:'Version '+r.v, verSh:i===0?'3px 3px 0 var(--cp-primary)':'none',
+      hasIntro:!!r.intro, intro:r.intro?inl(r.intro):[],
+      copy:()=>this.copy(r.v), copyAria:'Link zu Version '+r.v+' kopieren',
+      groups:r.groups.map(g=>({...gstyle(g.label),items:g.items.map(it=>({segs:inl(it.t),hasKids:it.kids.length>0,kids:it.kids.map(k=>({segs:inl(k)}))}))}))
+    }));
+    const rail=rels.map((r,i)=>({v:r.v,name:r.name,date:r.date,newest:r.newest,href:'#'+r.v,cur:i===st.cur,notCur:i!==st.cur,
+      aria:'Version '+r.v+', '+r.name+', '+r.date+(r.newest?', neu':''),pillBg:r.newest?'var(--cp-primary)':'var(--cp-surface)',on:e=>this.jump(e,i)}));
+    const seg=(opts,val,key)=>opts.map(([k,n],i)=>({n,on:val===k,bl:i?'2px solid var(--cp-line)':'0',bg:val===k?'var(--cp-ink)':'transparent',fg:val===k?'var(--cp-paper)':'var(--cp-ink)',
+      pick:()=>this.setState({[key]:k,cur:0},()=>{ const s=this.scroller.current; if(s) s.scrollTop=0; })}));
+    const NOTES={
+      default:'Standard: wiederkehrender Besuch. Der „Neu“-Chip steht einfach da, Compibert winkt einmal zur Begrüßung. Die Leiste links markiert die Version im Blick, Klick springt hin. Kopier-Knopf: Link mit #Version, Toast „Link kopiert“.',
+      moment:'Erster Besuch: Sobald der Kopf der neuesten Version zu 60 % im Blick ist, landet der „Neu“-Stempel, die Karte zuckt kurz, 18 Sticker-Konfetti (mobil 10), Compibert jubelt 1,6 s. Einmal pro Version, danach steht der Chip still da.',
+      reduced:'Reduzierte Bewegung: kein Stempel, kein Konfetti, Compibert steht still, Springen ohne Smooth-Scroll. Der Chip ist einfach da.',
+      labels:'Versionslabel im UserMenu (angemeldet, mit Punkt: neue Version noch nicht gesehen) und auf der Anmeldeseite. Beide führen nach /neuigkeiten.'
+    };
+    const lw=desk?760:390, lhA=desk?440:560, lhB=desk?620:760, lsc=Math.min(1,(st.avail||lw)/lw);
+    return {
+      vpOpts:seg([['desktop','Desktop 1440'],['mobile','Mobil 390']],st.vp,'vp'),
+      modeOpts:seg([['default','Standard'],['moment','Erster Besuch'],['reduced','Reduzierte Bewegung'],['labels','Versionslabel']],mode,'mode'),
+      isMoment:mode==='moment', replay:()=>this.arm(), note:NOTES[mode],
+      stage:this.stage, scroller:this.scroller, spy:this.spy,
+      isPage:!isLabels, isLabels, desk, mobJump:mob&&(this.props.mobileJump??true),
+      boxW:Math.round(fw*sc)+'px', boxH:Math.round(fh*sc)+'px', fwPx:fw+'px', fhPx:fh+'px', sc, fr:desk?'18px':'30px',
+      motion:mode==='reduced'?'reduced':'full',
+      hh:desk?'64px':'56px', hpad:desk?'24px':'14px', pagePad:desk?'20px 40px 48px':'8px 16px 32px',
+      h1:desk?'64px':'44px', introSize:desk?'19px':'16px', heroGap:desk?'32px':'10px', heroMb:desk?'32px':'20px',
+      cbLiveD:desk&&!reduced, cbStillD:desk&&reduced, cbLiveM:mob&&!reduced, cbStillM:mob&&reduced, cb:st.cb,
+      cols:desk?'236px minmax(0,1fr)':'minmax(0,1fr)', gridGap:desk?'40px':'0', cardGap:desk?'44px':'36px',
+      cardPad:desk?'30px 32px 32px':'24px 18px 22px', verSize:desk?'44px':'32px', nameSize:desk?'30px':'24px', bodySize:desk?'17px':'16px',
+      chipL:desk?'26px':'16px', groupsM:desk?'26px':'20px', footM:desk?'56px':'40px',
+      rels, rail, noop:e=>e&&e.preventDefault(), toTop:e=>{ e&&e.preventDefault(); const s=this.scroller.current; s&&s.scrollTo({top:0,behavior:reduced?'auto':'smooth'}); },
+      hasToast:!!st.toast, toast:st.toast, toastAnim:(reduced?'cpFade':'cpToastIn')+' 220ms cubic-bezier(.16,1,.3,1)',
+      lBoxW:Math.round(lw*lsc)+'px', lBoxHA:Math.round(lhA*lsc)+'px', lBoxHB:Math.round(lhB*lsc)+'px', lwPx:lw+'px', lhAPx:lhA+'px', lhBPx:lhB+'px', lsc,
+      menuTop:desk?'70px':'62px', menuL:desk?'auto':'12px', menuW:desk?'340px':'auto', loginH:desk?'46px':'38px'
+    };
+  }
+}
+</script>
+</body>
+</html>
