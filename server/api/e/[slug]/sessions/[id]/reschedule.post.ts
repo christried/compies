@@ -1,33 +1,24 @@
+import { eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
+import { sessions } from '../../../../../db/schema'
+import { parseLocalTime } from '../../../../../domain/event'
 import { rescheduleRejection } from '../../../../../domain/phase'
-import { useDb } from '../../../../../utils/db'
-import { sessionNotFound } from '../../../../../utils/errors'
-import { loadEvent } from '../../../../../utils/event-access'
-import { readNewDate } from '../../../../../utils/new-date'
-import { eventSessions, moveSessionDate } from '../../../../../utils/sessions'
-import { requireUser } from '../../../../../utils/user'
+import { hasDateAt } from '../../../../../domain/session'
+import { apiError } from '../../../../../utils/errors'
+import { changeSessions, findSession } from '../../../../../utils/sessions'
 
 // Reschedule of one Session (#53, ADR 0011): the Host moves that Session's set Date to another future Berlin
 // time. The other Sessions keep their Dates and Slots; the moved Session keeps its Slot taken. Every Session
 // whose number changes gets its calendar SEQUENCE raised (sequenceRaises), so a re-download updates it. The
 // Event row is locked, so a Reschedule that races a Reopen or a confirm cannot write over it.
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const slug = getRouterParam(event, 'slug') ?? ''
-  const sessionId = getRouterParam(event, 'id') ?? ''
+export default defineEventHandler(event => changeSessions(event, async ({ tx, sessions: before, body }) => {
+  const session = findSession(before, getRouterParam(event, 'id'))
+  const startsAt = parseLocalTime(body?.startsAt)
+  if (!startsAt) throw apiError('invalid_time')
 
-  return useDb(event).transaction(async (tx) => {
-    const eventRow = await loadEvent(tx, slug, user.id, { hostOnly: true, lock: 'update' })
-    const before = await eventSessions(tx, eventRow.id)
-    const session = before.find(row => row.id === sessionId)
-    if (!session) throw sessionNotFound()
+  const rejection = rescheduleRejection({ hasDate: session.startsAt !== null, startsAt, now: new Date(), duplicate: hasDateAt(before, startsAt, session.id) })
+  if (rejection) throw apiError(rejection)
 
-    const startsAt = await readNewDate(event, startsAt => rescheduleRejection({
-      hasDate: session.startsAt !== null,
-      startsAt,
-      now: new Date(),
-      duplicate: before.some(row => row.id !== session.id && row.startsAt?.getTime() === startsAt.getTime()),
-    }))
-    return { startsAt: await moveSessionDate(tx, eventRow, before, session.id, startsAt) }
-  })
-})
+  await tx.update(sessions).set({ startsAt, previousStartsAt: null }).where(eq(sessions.id, session.id))
+  return { startsAt }
+}))

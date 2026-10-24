@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { missingDates, openSlots, parseSessionCount, sequenceRaises, sessionNumbers } from '../../server/domain/session'
+import { hasDateAt, missingDates, openSlots, parseSessionCount, sequenceRaises, sessionNumbers } from '../../server/domain/session'
 import { berlinToUtc } from '../../shared/time'
 
 describe('parseSessionCount', () => {
@@ -90,5 +90,21 @@ describe('openSlots', () => {
 
   it('keeps every Slot while no Session has a Date', () => {
     expect(openSlots(slots, [null, null])).toEqual(slots)
+  })
+})
+
+describe('hasDateAt', () => {
+  const sessions = [
+    { id: 'a', startsAt: berlinToUtc('2026-11-07T20:00') },
+    { id: 'b', startsAt: null },
+  ]
+
+  it('finds a Session whose set Date is this instant', () => {
+    expect(hasDateAt(sessions, berlinToUtc('2026-11-07T20:00'))).toBe(true)
+    expect(hasDateAt(sessions, berlinToUtc('2026-11-08T20:00'))).toBe(false)
+  })
+
+  it('ignores the excepted Session, so a Session may keep its own Date', () => {
+    expect(hasDateAt(sessions, berlinToUtc('2026-11-07T20:00'), 'a')).toBe(false)
   })
 })
