@@ -84,11 +84,13 @@ describe('homeAction', () => {
 })
 
 describe('arrangeHome', () => {
-  const item = (name: string, fields: { phase?: Phase, needsVote?: boolean, startsAt?: Date | null, sessionStarts?: (Date | null)[], createdAt?: Date } = {}) => ({
+  /** An Event card; `startsAt` stands for a single Session, `homeDate` names the Session Home shows of several. */
+  const item = (name: string, fields: { phase?: Phase, needsVote?: boolean, startsAt?: Date | null, sessionStarts?: (Date | null)[], homeDate?: Date, createdAt?: Date } = {}) => ({
     name,
     phase: fields.phase ?? 'poll',
     needsVote: fields.needsVote ?? false,
     sessionStarts: fields.sessionStarts ?? [fields.startsAt ?? null],
+    homeDate: fields.homeDate ?? fields.startsAt ?? null,
     createdAt: fields.createdAt ?? hoursAgo(48),
   })
 
@@ -132,9 +134,9 @@ describe('arrangeHome', () => {
     expect(arranged.map(row => row.name)).toEqual(['just-passed'])
   })
 
-  it('orders an Event with several Sessions by its next upcoming Session', () => {
+  it('orders an Event with several Sessions by the Session Home shows', () => {
     const arranged = arrangeHome([
-      item('two-sessions-later', { phase: 'date_set', sessionStarts: [hoursAgo(30), hoursAhead(72)] }),
+      item('two-sessions-later', { phase: 'date_set', sessionStarts: [hoursAgo(30), hoursAhead(72)], homeDate: hoursAhead(72) }),
       item('one-session-sooner', { phase: 'date_set', startsAt: hoursAhead(24) }),
     ], now)
 

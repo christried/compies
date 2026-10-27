@@ -43,12 +43,16 @@ export function missingDates(startsAt: (Date | null)[]): number {
 }
 
 /**
- * The open Slots of an Event (#52): a Slot is open when no Session refers to it, because its Date came
- * from that Slot. `sessionSlotIds` are the Slot ids the Sessions refer to (null for none). Order is kept.
+ * The open Date poll of an Event (#52, #71): its open Slots and the Votes on them. A Slot is open when no
+ * Session refers to it, because its Date came from that Slot; a taken Slot leaves the poll with its Votes.
+ * `sessionSlotIds` are the Slot ids the Sessions refer to (null for none). Order is kept. The Event read and
+ * Home call this before pollStanding, which counts only what it is given.
  */
-export function openSlots<S extends { id: string }>(slots: S[], sessionSlotIds: (string | null)[]): S[] {
+export function openPoll<S extends { id: string }, V extends { slotId: string }>(slots: S[], sessionSlotIds: (string | null)[], votes: V[]): { slots: S[], votes: V[] } {
   const taken = new Set(sessionSlotIds.filter((id): id is string => id !== null))
-  return slots.filter(slot => !taken.has(slot.id))
+  const open = slots.filter(slot => !taken.has(slot.id))
+  const openIds = new Set(open.map(slot => slot.id))
+  return { slots: open, votes: votes.filter(vote => openIds.has(vote.slotId)) }
 }
 
 /** Whether a Session other than `exceptId` has this instant as its set Date (#49: Dates are distinct). */
