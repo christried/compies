@@ -99,6 +99,7 @@ const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
   votes: (data.value?.votes ?? []).filter(vote => vote.slotId === slot.id).length,
 })))
 const inviteOpen = ref(false)
+const calendarOpen = ref(false)
 
 // "Termin festlegen" looks disabled with its reason when no open future Slot can become a Date (#52).
 const hostActions = computed((): DockAction[] => [
@@ -138,6 +139,7 @@ usePollRefresh(() => {
         @remove="removeOne"
         @add="addOpen = true"
         @invite="inviteOpen = true"
+        @calendar="calendarOpen = true"
       />
 
       <EventPoll
@@ -224,6 +226,13 @@ usePollRefresh(() => {
       :url="data.inviteUrl"
       @close="inviteOpen = false"
       @rotated="refresh()"
+    />
+
+    <CalendarSheet
+      v-if="data"
+      :open="calendarOpen"
+      :view="data"
+      @close="calendarOpen = false"
     />
   </AppShell>
 </template>

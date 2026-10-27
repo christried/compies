@@ -70,17 +70,18 @@ describe('setting the Date', () => {
     expect(dialog()).toBeNull()
   })
 
-  it('shows the calendar link to every Member, and Verschieben only to the Host', async () => {
+  it('shows In den Kalender to every Member, and Verschieben only to the Host', async () => {
     const member = serve(s => view(s, [], {
       event: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z' },
       slots: [],
       bestSlotId: null,
     }))
     const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
-    const calendarLink = memberPage.get(`a[href="/api/e/${member.slug}/ics"]`)
-    expect(calendarLink.attributes('download')).toBeDefined()
-    // The control is about the Date, so it is labelled as a calendar entry, not as a file download.
-    expect(calendarLink.text()).toBe('In den Kalender')
+    // The control is about the Date, so it is labelled as a calendar entry, not as a file download. It opens the
+    // calendar sheet (#81, event-calendar.test.ts).
+    const calendarButton = memberPage.findAll('button').filter(button => button.text() === 'In den Kalender')
+    expect(calendarButton).toHaveLength(1)
+    expect(calendarButton[0]!.attributes('aria-haspopup')).toBe('dialog')
     expect(memberPage.text()).not.toContain('Verschieben')
 
     const hostStore = serve(s => view(s, [], {
