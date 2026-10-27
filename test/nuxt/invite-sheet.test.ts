@@ -98,27 +98,36 @@ describe('InviteSheet', () => {
     await vi.waitFor(() => expect(dialog()?.textContent).toContain('Erneuert'))
     expect(dialog()?.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe(fresh)
     expect(dialog()?.textContent).toContain('Neuer Link aktiv. Der alte führt jetzt ins Leere.')
-    expect(page.emitted('rotated')).toEqual([[fresh]])
+    expect(page.emitted('changed')).toHaveLength(1)
   })
 
-  it('keeps the old link and raises an error toast when rotating fails', async () => {
+  it('keeps the old link and raises an error toast when rotating fails, and the hold can be held again', async () => {
     testNumber += 1
     const slug = `freitags-invite-${testNumber}`
     const old = url(slug, 'AbCdEfGhIjKl')
+    let rotations = 0
     registerEndpoint(`/api/e/${slug}/rotate`, {
       method: 'POST',
       handler: () => {
+        rotations += 1
         throw createError({ statusCode: 500, statusMessage: 'boom' })
       },
     })
-    const page = await mountSuspended(InviteSheet, { props: { open: true, slug, url: old } })
+    await mountSuspended(InviteSheet, { props: { open: true, slug, url: old } })
     button('Link erneuern')!.click()
     await vi.waitFor(() => expect(dialog()?.textContent).toContain('Einladungslink erneuern?'))
+    const hold = button('Link erneuern')!
 
-    press(button('Link erneuern')!)
+    press(hold)
     await vi.waitFor(() => expect(useState<{ text: string, tone: string }[]>('toasts').value.map(toast => toast.text)).toContain('Konnte nicht speichern. Nochmal versuchen?'), { timeout: 3000 })
-
     expect(dialog()?.textContent).not.toContain('Erneuert')
-    expect(page.emitted('rotated')).toBeUndefined()
+
+    // The same button, back to idle: the next hold rotates again.
+    expect(button('Link erneuern')).toBe(hold)
+    release(hold)
+    press(hold)
+    await vi.waitFor(() => expect(rotations).toBe(2), { timeout: 3000 })
+    button('Abbrechen')!.click()
+    await vi.waitFor(() => expect(dialog()?.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe(old))
   })
 })

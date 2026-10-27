@@ -5,7 +5,8 @@ import type { RotatedInvite } from '~~/shared/event'
 // The Invite sheet (#16, 02-components § Sheet, screen 06 `App Einstieg ?s=invite`). The Host shares the
 // Invite link here and can rotate it when it leaks. Rotating asks first and needs a one second hold.
 // The old link stops working at once; Members stay in. The page renders this only for the Host, because
-// only the Host's read gets the link (ADR 0006).
+// only the Host's read gets the link (ADR 0006). Rotating goes through the one send (#74); `changed` asks the
+// page to refetch afterwards.
 
 const props = defineProps<{
   open: boolean
@@ -13,15 +14,13 @@ const props = defineProps<{
   url: string
 }>()
 
-const emit = defineEmits<{ close: [], rotated: [url: string] }>()
+const emit = defineEmits<{ close: [], changed: [] }>()
 
 const { t } = useI18n()
-const { toast } = useToast()
+const { send } = useEventMutation(() => props.slug, () => emit('changed'))
 const current = ref(props.url)
 const confirming = ref(false)
 const rotated = ref(false)
-/** Bumped after a failed rotation so the hold button starts again from zero. */
-const attempt = ref(0)
 
 watch(() => props.url, (url) => {
   current.value = url
@@ -33,18 +32,14 @@ watch(() => props.open, (open) => {
   rotated.value = false
 })
 
-async function rotate() {
-  try {
-    const { inviteUrl } = await $fetch<RotatedInvite>(`/api/e/${props.slug}/rotate`, { method: 'POST' })
-    current.value = inviteUrl
-    rotated.value = true
-    confirming.value = false
-    emit('rotated', inviteUrl)
-  }
-  catch {
-    attempt.value += 1
-    toast({ tone: 'error', text: t('error.saveFailed') })
-  }
+function rotate() {
+  return send<RotatedInvite>('POST', 'rotate', {
+    done: ({ inviteUrl }) => {
+      current.value = inviteUrl
+      rotated.value = true
+      confirming.value = false
+    },
+  })
 }
 </script>
 
@@ -125,11 +120,10 @@ async function rotate() {
       </ul>
 
       <HoldToConfirmButton
-        :key="attempt"
         variant="hot"
         :label="t('invite.renew')"
         :icon="RefreshCw"
-        @confirm="rotate"
+        :action="rotate"
       />
 
       <AppButton

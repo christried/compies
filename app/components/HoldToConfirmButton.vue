@@ -5,7 +5,9 @@ import { Check } from '@lucide/vue'
 // Hold to confirm (02-components § HoldToConfirmButton, handoff 1 s). For irreversible actions:
 // the User holds the button, or Space/Enter, for one second. Releasing early does nothing. The fill
 // is information, so reduced motion keeps it and only drops the button's press scale.
-// Once confirmed it stays in the done state; the parent removes or replaces it.
+// With an `action`, the button runs it after the hold and keeps the fill while it runs: it shows done when the
+// action resolves to true and goes back to idle on false, so a refused request can be held again (#74). Without
+// one, it is done at once and the parent acts on `confirm`.
 const props = withDefaults(defineProps<{
   label: string
   holdingLabel?: string
@@ -20,6 +22,8 @@ const props = withDefaults(defineProps<{
   /** Shown with aria-describedby when disabled. */
   disabledReason?: string
   icon?: Component
+  /** Runs after the hold; resolves to whether it worked (e.g. the server took it). */
+  action?: () => Promise<boolean>
 }>(), {
   holdingLabel: undefined,
   doneLabel: undefined,
@@ -29,19 +33,22 @@ const props = withDefaults(defineProps<{
   disabled: false,
   disabledReason: undefined,
   icon: undefined,
+  action: undefined,
 })
 
 const emit = defineEmits<{ confirm: [] }>()
 
 const { t } = useI18n()
 const holding = ref(false)
+/** The action is running: the fill stays full and a new hold waits. */
+const running = ref(false)
 const done = ref(false)
 const announcement = ref('')
 const reasonId = useId()
 let timer: ReturnType<typeof setTimeout> | undefined
 
 function start() {
-  if (props.disabled || done.value || timer !== undefined) return
+  if (props.disabled || running.value || done.value || timer !== undefined) return
   holding.value = true
   timer = setTimeout(complete, props.duration)
 }
@@ -53,12 +60,23 @@ function cancel() {
   holding.value = false
 }
 
-function complete() {
+async function complete() {
   timer = undefined
   holding.value = false
+  emit('confirm')
+  let worked = true
+  if (props.action) {
+    running.value = true
+    try {
+      worked = await props.action()
+    }
+    finally {
+      running.value = false
+    }
+  }
+  if (!worked) return
   done.value = true
   announcement.value = props.doneLabel ?? props.label
-  emit('confirm')
 }
 
 function onPointerDown(event: PointerEvent) {
@@ -82,7 +100,7 @@ function onKeyup(event: KeyboardEvent) {
 
 const visibleLabel = computed(() => {
   if (done.value) return props.doneLabel ?? props.label
-  if (holding.value) return props.holdingLabel ?? props.label
+  if (holding.value || running.value) return props.holdingLabel ?? props.label
   return props.label
 })
 </script>
@@ -107,7 +125,7 @@ const visibleLabel = computed(() => {
         aria-hidden="true"
         class="absolute inset-0 origin-left bg-ink/25"
         :style="{
-          transform: holding || done ? 'scaleX(1)' : 'scaleX(0)',
+          transform: holding || running || done ? 'scaleX(1)' : 'scaleX(0)',
           transitionProperty: 'transform',
           transitionDuration: holding ? `${duration}ms` : 'var(--cp-dur-base)',
           transitionTimingFunction: holding ? 'var(--cp-ease-linear)' : 'var(--cp-ease-out)',
