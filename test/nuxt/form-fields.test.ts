@@ -38,6 +38,42 @@ describe('TextField', () => {
 
     expect(page.get('[aria-live]').text()).toBe('50/60')
   })
+
+  it('counts a family emoji as one character, as the User sees it', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '👨‍👩‍👧', label: 'Name', maxlength: 32 } })
+
+    expect(page.text()).toContain('1/32')
+  })
+
+  it('cuts the input to the maximum with cutAtMax, keeping the input and the model in step', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', maxlength: 3, cutAtMax: true } })
+
+    await page.get('input').setValue('👍🏽👍🏽👍🏽👍🏽')
+
+    expect((page.get('input').element as HTMLInputElement).value).toBe('👍🏽👍🏽👍🏽')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['👍🏽👍🏽👍🏽'])
+  })
+
+  it('keeps all of the input without cutAtMax', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', maxlength: 3 } })
+
+    await page.get('input').setValue('👍🏽👍🏽👍🏽👍🏽')
+
+    expect((page.get('input').element as HTMLInputElement).value).toBe('👍🏽👍🏽👍🏽👍🏽')
+  })
+
+  it('marks the field invalid with the help text as the reason, announced, under the given id', async () => {
+    const page = await mountSuspended(TextField, {
+      props: { modelValue: '', label: 'Name', help: 'Ohne Namen geht’s nicht.', invalid: true, id: 'x' },
+    })
+
+    expect(page.get('input').attributes('id')).toBe('x')
+    expect(page.get('input').attributes('aria-invalid')).toBe('true')
+    const help = page.get('#x-help')
+    expect(help.text()).toBe('Ohne Namen geht’s nicht.')
+    expect(help.attributes('aria-live')).toBe('polite')
+    expect(page.get('label').attributes('for')).toBe('x')
+  })
 })
 
 describe('DateTimeField', () => {
