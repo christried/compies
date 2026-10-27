@@ -146,6 +146,12 @@ export interface CreatedEvent {
   inviteUrl: string
 }
 
+/** What `PATCH /api/e/:slug/slots/:slotId` returns: the Slot the Host moved and its new time, a UTC ISO string (#85). */
+export interface ChangedSlot {
+  slotId: string
+  startsAt: string
+}
+
 /** What `POST /api/e/:slug/rotate` returns: the new Invite link (#16). The old one answers 404 from now on. */
 export interface RotatedInvite {
   inviteUrl: string

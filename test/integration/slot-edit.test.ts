@@ -2,8 +2,10 @@ import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
+import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import addSlot from '../../server/api/e/[slug]/slots/index.post'
 import removeSlot from '../../server/api/e/[slug]/slots/[slotId].delete'
+import changeSlot from '../../server/api/e/[slug]/slots/[slotId].patch'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
 import { createInterleavingDb, createTestDb, createTestServer } from './harness'
@@ -24,8 +26,10 @@ describe('the Host edits Slots', () => {
     request = createTestServer(testDb.db, {
       'POST /api/e': createEvent,
       'GET /api/e/:slug': readEvent,
+      'POST /api/e/:slug/confirm': confirmDate,
       'POST /api/e/:slug/slots': addSlot,
       'DELETE /api/e/:slug/slots/:slotId': removeSlot,
+      'PATCH /api/e/:slug/slots/:slotId': changeSlot,
       'PUT /api/e/:slug/slots/:slotId/vote': putVote,
     })
   })
@@ -86,6 +90,22 @@ describe('the Host edits Slots', () => {
     return request(`/api/e/${slug}/slots/${slotId}`, {
       method: 'DELETE',
       headers: cookie ? { cookie } : {},
+    })
+  }
+
+  function change(cookie: string | undefined, slug: string, slotId: string, body: unknown) {
+    return request(`/api/e/${slug}/slots/${slotId}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+      body: JSON.stringify(body),
+    })
+  }
+
+  function confirm(cookie: string, slug: string, slotId: string) {
+    return request(`/api/e/${slug}/confirm`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ slotId }),
     })
   }
 
@@ -310,6 +330,170 @@ describe('the Host edits Slots', () => {
 
       expect(response.status).toBe(409)
       expect(await slotRows(eventId)).toHaveLength(1)
+    })
+  })
+
+  describe('PATCH /api/e/:slug/slots/:slotId (#85)', () => {
+    it('moves an open Slot to the new Berlin time and keeps its Votes; the Event view follows', async () => {
+      const { cookie, id: hostId } = await signInAs(host, { hostPermission: true })
+      const { cookie: memberCookie, id: memberId } = await signInAs(member)
+      const { slug, eventId } = await createPoll(cookie, ['2090-10-30T19:00', '2090-10-31T20:30'])
+      await testDb.db.insert(eventMembers).values({ eventId, userId: memberId })
+      const [typo, other] = (await slotRows(eventId)).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+      // One Ja on each Slot, so the earlier one is the Best slot until it moves behind the other.
+      await testDb.db.insert(pollVotes).values([
+        { slotId: typo!.id, userId: hostId, value: 'yes' },
+        { slotId: typo!.id, userId: memberId, value: 'no' },
+        { slotId: other!.id, userId: memberId, value: 'yes' },
+      ])
+      expect((await (await read(memberCookie, slug)).json()).bestSlotId).toBe(typo!.id)
+
+      const response = await change(cookie, slug, typo!.id, { startsAt: '2090-11-01T20:00' })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ slotId: typo!.id, startsAt: '2090-11-01T19:00:00.000Z' })
+      expect((await testDb.db.select().from(pollVotes)).filter(vote => vote.slotId === typo!.id)).toHaveLength(2)
+      const view = await (await read(memberCookie, slug)).json()
+      expect(view.slots.map((slot: { id: string, startsAt: string }) => [slot.id, slot.startsAt])).toEqual([
+        [other!.id, '2090-10-31T19:30:00.000Z'],
+        [typo!.id, '2090-11-01T19:00:00.000Z'],
+      ])
+      expect(view.bestSlotId).toBe(other!.id)
+      expect(view.progress).toEqual({ voted: 1, total: 2 })
+    })
+
+    it('refuses a Member who is not the Host with 403, and an outsider with 404', async () => {
+      const { cookie } = await signInAs(host, { hostPermission: true })
+      const { cookie: memberCookie, id: memberId } = await signInAs(member)
+      const { cookie: outsiderCookie } = await signInAs(outsider)
+      const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30'])
+      await testDb.db.insert(eventMembers).values({ eventId, userId: memberId })
+      const [slot] = await slotRows(eventId)
+
+      const response = await change(memberCookie, slug, slot!.id, { startsAt: '2090-11-02T19:00' })
+      const stranger = await change(outsiderCookie, slug, slot!.id, { startsAt: '2090-11-02T19:00' })
+
+      expect(response.status).toBe(403)
+      expect(response.statusText).toBe('not_host')
+      expect(stranger.status).toBe(404)
+      expect((await slotRows(eventId))[0]!.startsAt).toEqual(slot!.startsAt)
+    })
+
+    it('applies the rules for adding: a real time in the future, not another Slot\'s minute; its own minute is fine', async () => {
+      const { cookie } = await signInAs(host, { hostPermission: true })
+      const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30', '2090-10-31T20:30'])
+      const [slot, other] = (await slotRows(eventId)).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+
+      const past = await change(cookie, slug, slot!.id, { startsAt: '2001-01-01T20:00' })
+      const unreal = await change(cookie, slug, slot!.id, { startsAt: '2090-02-30T20:00' })
+      const taken = await change(cookie, slug, slot!.id, { startsAt: '2090-10-31T20:30' })
+      const same = await change(cookie, slug, slot!.id, { startsAt: '2090-10-30T20:30' })
+
+      expect([past.status, (await past.json()).statusMessage]).toEqual([400, 'in_past'])
+      expect([unreal.status, (await unreal.json()).statusMessage]).toEqual([400, 'invalid_time'])
+      expect([taken.status, (await taken.json()).statusMessage]).toEqual([400, 'duplicate_slot'])
+      expect(same.status).toBe(200)
+      const rows = await slotRows(eventId)
+      expect(rows.find(row => row.id === slot!.id)!.startsAt).toEqual(slot!.startsAt)
+      expect(rows.find(row => row.id === other!.id)!.startsAt).toEqual(other!.startsAt)
+    })
+
+    it('refuses a Slot that became a Session\'s Date with 409 slot_taken: it only moves through Reschedule', async () => {
+      const { cookie, id: hostId } = await signInAs(host, { hostPermission: true })
+      const { slug, eventId } = await createEventWith(cookie, { dateMode: 'poll', sessions: 2, slots: ['2090-10-30T20:30', '2090-10-31T20:30'] })
+      const [taken] = (await slotRows(eventId)).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+      await testDb.db.insert(pollVotes).values({ slotId: taken!.id, userId: hostId, value: 'yes' })
+      const [session] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId))
+      await testDb.db.update(sessions).set({ startsAt: taken!.startsAt, slotId: taken!.id }).where(eq(sessions.id, session!.id))
+
+      const response = await change(cookie, slug, taken!.id, { startsAt: '2090-11-01T20:00' })
+
+      expect(response.status).toBe(409)
+      expect((await response.json()).statusMessage).toBe('slot_taken')
+      expect((await slotRows(eventId)).find(row => row.id === taken!.id)!.startsAt).toEqual(taken!.startsAt)
+    })
+
+    it('answers 404 for a Slot that is not in this Event or is not an id', async () => {
+      const { cookie } = await signInAs(host, { hostPermission: true })
+      const { slug } = await createPoll(cookie, ['2090-10-30T20:30'])
+      const { eventId: otherId } = await createPoll(cookie, ['2090-12-30T20:30'])
+      const [foreign] = await slotRows(otherId)
+      const body = { startsAt: '2090-11-02T19:00' }
+
+      expect((await change(cookie, slug, foreign!.id, body)).status).toBe(404)
+      expect((await change(cookie, slug, '00000000-0000-4000-8000-000000000999', body)).status).toBe(404)
+      expect((await change(cookie, slug, 'not-a-slot', body)).status).toBe(404)
+      expect((await slotRows(otherId))[0]!.startsAt).toEqual(foreign!.startsAt)
+    })
+
+    it('refuses once the Date is set, with 409 wrong_phase', async () => {
+      const { cookie } = await signInAs(host, { hostPermission: true })
+      const { slug, eventId } = await createPoll(cookie, ['2090-10-30T20:30', '2090-10-31T20:30'])
+      await testDb.db.update(events).set({ phase: 'date_set' }).where(eq(events.id, eventId))
+      const [slot] = await slotRows(eventId)
+
+      const response = await change(cookie, slug, slot!.id, { startsAt: '2090-11-02T19:00' })
+
+      expect(response.status).toBe(409)
+      expect((await response.json()).statusMessage).toBe('wrong_phase')
+    })
+
+    describe('racing a confirm of the same Slot', () => {
+      async function twoSessionPoll() {
+        const { cookie } = await signInAs(host, { hostPermission: true })
+        const { slug, eventId } = await createEventWith(cookie, { dateMode: 'poll', sessions: 2, slots: ['2090-10-30T20:30', '2090-10-31T20:30'] })
+        const [slot] = (await slotRows(eventId)).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+        return { cookie, slug, eventId, slot: slot! }
+      }
+
+      async function datedSessions(eventId: string) {
+        const rows = await testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId))
+        return rows.filter(row => row.startsAt !== null).map(row => ({ slotId: row.slotId, startsAt: row.startsAt }))
+      }
+
+      it('a confirm that comes in while the change writes waits for it, and the Date gets the new time', async () => {
+        const { cookie, slug, eventId, slot } = await twoSessionPoll()
+        let confirmed: Response | undefined
+        const racingDb = createInterleavingDb(testDb.client, /update "poll_slots"/i, async () => {
+          confirmed = await confirm(cookie, slug, slot.id)
+        })
+        const racingRequest = createTestServer(racingDb, { 'PATCH /api/e/:slug/slots/:slotId': changeSlot })
+
+        const changed = await racingRequest(`/api/e/${slug}/slots/${slot.id}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json', cookie },
+          body: JSON.stringify({ startsAt: '2090-11-01T20:00' }),
+        })
+        await vi.waitFor(() => expect(confirmed).toBeDefined())
+
+        expect(changed.status).toBe(200)
+        expect(confirmed!.status).toBe(200)
+        const moved = new Date('2090-11-01T19:00:00.000Z')
+        expect((await slotRows(eventId)).find(row => row.id === slot.id)!.startsAt).toEqual(moved)
+        expect(await datedSessions(eventId)).toEqual([{ slotId: slot.id, startsAt: moved }])
+      })
+
+      it('a change that comes in while the confirm sets the Date is refused with slot_taken, and the Date keeps its time', async () => {
+        const { cookie, slug, eventId, slot } = await twoSessionPoll()
+        let changed: Response | undefined
+        const racingDb = createInterleavingDb(testDb.client, /update "sessions"/i, async () => {
+          changed = await change(cookie, slug, slot.id, { startsAt: '2090-11-01T20:00' })
+        })
+        const racingRequest = createTestServer(racingDb, { 'POST /api/e/:slug/confirm': confirmDate })
+
+        const confirmed = await racingRequest(`/api/e/${slug}/confirm`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', cookie },
+          body: JSON.stringify({ slotId: slot.id }),
+        })
+        await vi.waitFor(() => expect(changed).toBeDefined())
+
+        expect(confirmed.status).toBe(200)
+        expect(changed!.status).toBe(409)
+        expect((await changed!.json()).statusMessage).toBe('slot_taken')
+        expect((await slotRows(eventId)).find(row => row.id === slot.id)!.startsAt).toEqual(slot.startsAt)
+        expect(await datedSessions(eventId)).toEqual([{ slotId: slot.id, startsAt: slot.startsAt }])
+      })
     })
   })
 })

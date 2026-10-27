@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseAddedSlot, parseNewEvent } from '../../server/domain/event'
+import { parseEditedSlot, parseNewEvent } from '../../server/domain/event'
 import { slotsEditable } from '../../shared/event'
 import { berlinToUtc } from '../../shared/time'
 
@@ -117,31 +117,48 @@ describe('parseNewEvent', () => {
   })
 })
 
-describe('parseAddedSlot', () => {
-  const existing = [berlinToUtc('2026-10-30T20:30')]
+describe('parseEditedSlot', () => {
+  const existing = [{ id: 'a', startsAt: berlinToUtc('2026-10-30T20:30') }]
+  const slotsAt = (locals: string[]) => locals.map((local, index) => ({ id: `slot-${index}`, startsAt: berlinToUtc(local) }))
 
   it('turns a future Berlin time into a UTC Slot', () => {
-    expect(parseAddedSlot('2026-10-31T20:00', existing, now)).toEqual({ ok: true, startsAt: new Date('2026-10-31T19:00:00Z') })
+    expect(parseEditedSlot('2026-10-31T20:00', existing, now)).toEqual({ ok: true, startsAt: new Date('2026-10-31T19:00:00Z') })
   })
 
   it('applies the create rules: a real time, in the future, unique per minute', () => {
-    expect(parseAddedSlot('2026-10-30 20:30', existing, now)).toEqual({ ok: false, error: 'invalid_time' })
-    expect(parseAddedSlot(undefined, existing, now)).toEqual({ ok: false, error: 'invalid_time' })
-    expect(parseAddedSlot('2026-10-22T12:00', existing, now)).toEqual({ ok: false, error: 'in_past' })
-    expect(parseAddedSlot('2026-10-30T20:30', existing, now)).toEqual({ ok: false, error: 'duplicate_slot' })
-    expect(parseAddedSlot('2026-10-30T20:31', existing, now).ok).toBe(true)
+    expect(parseEditedSlot('2026-10-30 20:30', existing, now)).toEqual({ ok: false, error: 'invalid_time' })
+    expect(parseEditedSlot(undefined, existing, now)).toEqual({ ok: false, error: 'invalid_time' })
+    expect(parseEditedSlot('2026-10-22T12:00', existing, now)).toEqual({ ok: false, error: 'in_past' })
+    expect(parseEditedSlot('2026-10-30T20:30', existing, now)).toEqual({ ok: false, error: 'duplicate_slot' })
+    expect(parseEditedSlot('2026-10-30T20:31', existing, now).ok).toBe(true)
   })
 
   it('holds at most 16 Slots per Event', () => {
-    const fifteen = slotsOnDays(15).map(local => berlinToUtc(local))
-    const sixteen = slotsOnDays(16).map(local => berlinToUtc(local))
-    expect(parseAddedSlot('2026-12-01T20:00', fifteen, now).ok).toBe(true)
-    expect(parseAddedSlot('2026-12-01T20:00', sixteen, now)).toEqual({ ok: false, error: 'slots_max' })
+    expect(parseEditedSlot('2026-12-01T20:00', slotsAt(slotsOnDays(15)), now).ok).toBe(true)
+    expect(parseEditedSlot('2026-12-01T20:00', slotsAt(slotsOnDays(16)), now)).toEqual({ ok: false, error: 'slots_max' })
   })
 
   it('does not reject a new Slot because an older Slot has become past', () => {
-    const withPast = [berlinToUtc('2026-10-01T18:00'), ...existing]
-    expect(parseAddedSlot('2026-11-01T20:00', withPast, now).ok).toBe(true)
+    const withPast = [{ id: 'old', startsAt: berlinToUtc('2026-10-01T18:00') }, ...existing]
+    expect(parseEditedSlot('2026-11-01T20:00', withPast, now).ok).toBe(true)
+  })
+
+  describe('changing a Slot (#85)', () => {
+    const two = [...existing, { id: 'b', startsAt: berlinToUtc('2026-10-31T20:00') }]
+
+    it('leaves out the Slot being changed: its own minute is allowed, another Slot\'s is not', () => {
+      expect(parseEditedSlot('2026-10-30T20:30', two, now, 'a')).toEqual({ ok: true, startsAt: new Date('2026-10-30T19:30:00Z') })
+      expect(parseEditedSlot('2026-10-31T20:00', two, now, 'a')).toEqual({ ok: false, error: 'duplicate_slot' })
+    })
+
+    it('moves a Slot of a full poll, since the count stays the same', () => {
+      expect(parseEditedSlot('2026-12-01T20:00', slotsAt(slotsOnDays(16)), now, 'slot-0').ok).toBe(true)
+    })
+
+    it('keeps the other rules: a real time in the future', () => {
+      expect(parseEditedSlot('2026-02-30T20:00', two, now, 'a')).toEqual({ ok: false, error: 'invalid_time' })
+      expect(parseEditedSlot('2026-10-22T12:00', two, now, 'a')).toEqual({ ok: false, error: 'in_past' })
+    })
   })
 })
 
