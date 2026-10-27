@@ -69,6 +69,16 @@ describe('DateTimeField', () => {
     await flushPromises()
   }
 
+  // A keystroke at the selection: replaces what is selected with the char and puts the caret after it.
+  async function typeAt(input: HTMLInputElement, char: string) {
+    const start = input.selectionStart ?? input.value.length
+    const end = input.selectionEnd ?? start
+    input.value = input.value.slice(0, start) + char + input.value.slice(end)
+    input.setSelectionRange(start + char.length, start + char.length)
+    input.dispatchEvent(new Event('input'))
+    await flushPromises()
+  }
+
   it('reports one Berlin wall-clock value once both the date and the time are set', async () => {
     const page = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Termin 1' } })
 
@@ -210,6 +220,49 @@ describe('DateTimeField', () => {
     await type(page.element, 'Uhrzeit', 'ab12:3456')
 
     expect(part(page.element, 'Uhrzeit').value).toBe('12:34')
+  })
+
+  it('keeps the caret after the typed digit when the hour is replaced, so 19:00 with 21 typed is 21:00', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2026-11-02T19:00', label: 'Termin 1' } })
+    const input = part(page.element, 'Uhrzeit')
+
+    input.setSelectionRange(0, 2)
+    await typeAt(input, '2')
+    expect(input.value).toBe('20:0')
+    expect(input.selectionStart).toBe(1)
+
+    await typeAt(input, '1')
+    expect(input.value).toBe('21:00')
+    expect(input.selectionStart).toBe(2)
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2026-11-02T21:00'])
+  })
+
+  it('keeps the caret in the date when the month is replaced, so 30.10.2026 with 11 typed is 30.11.2026', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2026-10-30T19:00', label: 'Termin 1' } })
+    const input = part(page.element, 'Datum')
+    expect(input.value).toBe('30.10.2026')
+
+    input.setSelectionRange(3, 5)
+    await typeAt(input, '1')
+    expect(input.value).toBe('30.12.026')
+    expect(input.selectionStart).toBe(4)
+
+    await typeAt(input, '1')
+    expect(input.value).toBe('30.11.2026')
+    expect(input.selectionStart).toBe(5)
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2026-11-30T19:00'])
+  })
+
+  it('types at the end of an empty time as before, 1-5-3 is 15:3 with the caret at the end', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Termin 1' } })
+    const input = part(page.element, 'Uhrzeit')
+
+    await typeAt(input, '1')
+    await typeAt(input, '5')
+    await typeAt(input, '3')
+
+    expect(input.value).toBe('15:3')
+    expect(input.selectionStart).toBe(4)
   })
 
   it('opens a calendar on a click in the date field, and days before today (Berlin) are disabled', async () => {

@@ -108,17 +108,32 @@ function onPart() {
   emit('update:modelValue', combined())
 }
 
+/**
+ * Writes a part's text back after a keystroke and puts the caret after as many digits as before, so typing in the
+ * middle of a filled date or time edits it in place instead of jumping to the end (#113).
+ */
+function rewrite(input: HTMLInputElement, text: string) {
+  const caret = input.selectionStart ?? input.value.length
+  const digitsBefore = input.value.slice(0, caret).replace(/\D/g, '').length
+  input.value = text
+  let position = 0
+  for (let seen = 0; position < text.length && seen < digitsBefore; position += 1) {
+    if (/\d/.test(text[position]!)) seen += 1
+  }
+  input.setSelectionRange(position, position)
+}
+
 function onDateInput(event: Event) {
   const input = event.target as HTMLInputElement
   dateDigits.value = input.value.replace(/\D/g, '').slice(0, 8)
-  input.value = dateText.value
+  rewrite(input, dateText.value)
   onPart()
 }
 
 function onTimeInput(event: Event) {
   const input = event.target as HTMLInputElement
   timeDigits.value = input.value.replace(/\D/g, '').slice(0, 4)
-  input.value = timeText.value
+  rewrite(input, timeText.value)
   onPart()
 }
 
@@ -383,7 +398,7 @@ function fieldClass(hasError: boolean | undefined) {
         <PopoverAnchor as-child>
           <div
             ref="timeField"
-            class="relative w-36 flex-none"
+            class="relative w-28 flex-none"
             @click="time.show(false)"
             @keydown.esc="time.escape"
           >
