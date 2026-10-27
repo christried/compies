@@ -289,7 +289,7 @@ function fieldClass(hasError: boolean | undefined) {
               autocomplete="off"
               :placeholder="t('mvp.dateTime.datePlaceholder')"
               :aria-invalid="error ? 'true' : undefined"
-              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-12 pl-3 text-[17px] font-semibold text-ink"
+              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-10 pl-3 text-[17px] font-semibold text-ink"
               :class="fieldClass(!!error)"
               @input="onDateInput"
               @keydown.down.prevent="date.show(true)"
@@ -396,9 +396,10 @@ function fieldClass(hasError: boolean | undefined) {
 
       <PopoverRoot v-model:open="timeOpen">
         <PopoverAnchor as-child>
+          <!-- 120 px: „23:59“ in Bungee plus the padding fits, and the date keeps room for „30.12.2026“ in a 290 px row (#113). -->
           <div
             ref="timeField"
-            class="relative w-28 flex-none"
+            class="relative w-30 flex-none"
             @click="time.show(false)"
             @keydown.esc="time.escape"
           >
@@ -415,7 +416,7 @@ function fieldClass(hasError: boolean | undefined) {
               autocomplete="off"
               :placeholder="t('mvp.dateTime.timePlaceholder')"
               :aria-invalid="error || timeInvalid ? 'true' : undefined"
-              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-12 pl-3 font-num text-[17px] text-ink"
+              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-10 pl-3 font-num text-[17px] text-ink"
               :class="fieldClass(!!error || timeInvalid)"
               @input="onTimeInput"
               @blur="commitTime"
