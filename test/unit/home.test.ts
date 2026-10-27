@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { arrangeHome, homeAction, homeSessionIndex, needsVote, staysOnHome } from '../../server/domain/home'
+import { arrangeHome, homeAction, homeSession, needsVote, staysOnHome } from '../../server/domain/home'
 import type { Phase } from '../../shared/event'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Dates older than 24 h before this instant drop off Home.
@@ -32,21 +32,24 @@ describe('staysOnHome', () => {
   })
 })
 
-describe('homeSessionIndex', () => {
+describe('homeSession', () => {
+  /** Sessions named by their position, so a test can say which one Home picks. */
+  const sessions = (...starts: (Date | null)[]) => starts.map((startsAt, index) => ({ id: String(index), startsAt }))
+
   it('picks the next upcoming Session, whatever its position', () => {
-    expect(homeSessionIndex([hoursAhead(72), hoursAhead(24), hoursAhead(120)], now)).toBe(1)
+    expect(homeSession(sessions(hoursAhead(72), hoursAhead(24), hoursAhead(120)), now)).toEqual({ id: '1', startsAt: hoursAhead(24) })
   })
 
   it('skips Sessions without a Date and passed Sessions', () => {
-    expect(homeSessionIndex([hoursAgo(30), null, hoursAhead(48)], now)).toBe(2)
+    expect(homeSession(sessions(hoursAgo(30), null, hoursAhead(48)), now)?.id).toBe('2')
   })
 
   it('falls back to the latest passed Session when none is upcoming', () => {
-    expect(homeSessionIndex([hoursAgo(30), hoursAgo(2), hoursAgo(50), null], now)).toBe(1)
+    expect(homeSession(sessions(hoursAgo(30), hoursAgo(2), hoursAgo(50), null), now)?.id).toBe('1')
   })
 
   it('returns null while no Session has a Date', () => {
-    expect(homeSessionIndex([null, null], now)).toBeNull()
+    expect(homeSession(sessions(null, null), now)).toBeNull()
   })
 })
 

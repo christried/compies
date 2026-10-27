@@ -24,7 +24,8 @@ function view(slug: string, votes: Vote[], overrides: EventOverrides = {}) {
   const { startsAt = null, previousStartsAt = null, ...event } = { ...eventOf(slug), ...overrides.event }
   return {
     event,
-    sessions: [{ id: `session-${slug}`, startsAt, previousStartsAt }],
+    // The Event's one Session, which the server sends without a number (#70).
+    sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt }],
     viewerId: kitty.id,
     slots: overrides.slots ?? [
       { id: 'fri', startsAt: '2026-10-23T18:00:00.000Z', past: false },
@@ -812,7 +813,7 @@ describe('several Sessions on the Event page', () => {
 
   it('opens the Session sheet after the cards, with a Date field or the choice to leave the Date to the poll', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
-      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: null, startsAt: '2026-10-30T19:00:00.000Z' },
     ], 0, { event: { phase: 'date_set', isHost: true }, slots: [], bestSlotId: null }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
@@ -829,7 +830,7 @@ describe('several Sessions on the Event page', () => {
 
   it('offers no Entfernen on the card of the last Session', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
-      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: null, startsAt: '2026-10-30T19:00:00.000Z' },
     ], 0, { event: { phase: 'date_set', isHost: true }, slots: [], bestSlotId: null }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
@@ -855,7 +856,7 @@ describe('several Sessions on the Event page', () => {
 
   it('shows no Session actions to a Member', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
-      { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
+      { number: null, startsAt: '2026-10-30T19:00:00.000Z' },
     ], 0, { event: { phase: 'date_set', isHost: false }, slots: [], bestSlotId: null }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
@@ -1005,8 +1006,8 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).not.toContain('Termine gesucht')
   })
 
-  it('shows no number on the card of an Event with one Session', async () => {
-    const { slug } = serve(s => viewWithSessions(s, [{ number: 1, startsAt: '2026-10-30T19:00:00.000Z' }], 0, { event: { phase: 'date_set' } }))
+  it('shows no number on the card of an Event with one Session, which the server sends without one (#70)', async () => {
+    const { slug } = serve(s => viewWithSessions(s, [{ number: null, startsAt: '2026-10-30T19:00:00.000Z' }], 0, { event: { phase: 'date_set' } }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 

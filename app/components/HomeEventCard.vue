@@ -30,7 +30,8 @@ const whenValue = computed(() => {
   const next = props.event.nextSession
   if (!next) return ''
   const when = formatSlotWhen(new Date(next.startsAt))
-  return hasSeveralSessions.value && next.number !== null
+  // The server sends the number the Session is shown with: none while the Event has one Session (#70).
+  return next.number !== null
     ? `${t('mvp.home.sessionOf', { n: next.number, total: props.event.sessionCount })} · ${when}`
     : when
 })

@@ -219,7 +219,7 @@ describe('GET /api/e (Home)', () => {
     expect(listed.map((row: { name: string }) => row.name)).toEqual(['Gerade eben'])
   })
 
-  it('shows a Date card with the Date and the view action', async () => {
+  it('shows a Date card with the Date and the view action, and no number for the one Session (#70)', async () => {
     const hostUser = await signInAs(host, { hostPermission: true })
     const memberUser = await signInAs(member)
     const date = await createDate(hostUser.cookie, 'Direkt', '2090-11-01T20:00')
@@ -231,7 +231,7 @@ describe('GET /api/e (Home)', () => {
       phase: 'date_set',
       sessionCount: 1,
       missingDates: 0,
-      nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' },
+      nextSession: { number: null, startsAt: '2090-11-01T19:00:00.000Z' },
       action: 'view',
     })
   })

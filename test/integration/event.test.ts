@@ -217,14 +217,14 @@ describe('events', () => {
       expect(slots[0]).toEqual({ id: expect.any(String), startsAt: expect.any(String), past: false })
     })
 
-    it('shows the Date of a direct Event and no Slots', async () => {
+    it('shows the Date of a direct Event and no Slots, and no number for its one Session (#70)', async () => {
       const cookie = await signInAsHost()
       const { slug } = await (await create(cookie, direct({ startsAt: ['2090-11-07T20:00'] }))).json()
 
       const { event, slots, sessions, missingDates } = await (await read(cookie, slug)).json()
 
       expect(event).toMatchObject({ phase: 'date_set' })
-      expect(sessions).toMatchObject([{ number: 1, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null }])
+      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null }])
       expect(missingDates).toBe(0)
       expect(slots).toEqual([])
     })

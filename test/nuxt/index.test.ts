@@ -129,13 +129,15 @@ describe('home page', () => {
   it('shows the Best slot so far for an open poll and the Date for a set Event', async () => {
     homeEvents = [
       card({ slug: 'a-aaaa', name: 'Umfrage', bestSlot: { id: 'x', startsAt: '2090-10-31T18:00:00.000Z' } }),
-      card({ slug: 'b-bbbb', name: 'Fest', phase: 'date_set', missingDates: 0, nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' }, action: 'view', progress: { voted: 0, total: 0 } }),
+      // One Session: the server sends no number for it (#70).
+      card({ slug: 'b-bbbb', name: 'Fest', phase: 'date_set', missingDates: 0, nextSession: { number: null, startsAt: '2090-11-01T19:00:00.000Z' }, action: 'view', progress: { voted: 0, total: 0 } }),
     ]
     const page = await mountSuspended(IndexPage)
     await settle(page)
 
     expect(page.text()).toContain('Bester Termin bisher')
     expect(page.text()).toContain('Termin steht')
+    expect(page.text()).not.toContain('Session 1')
   })
 
   it('shows how many Dates are set while Dates are missing, with the Best slot', async () => {

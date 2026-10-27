@@ -1,9 +1,9 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../db/schema'
-import { arrangeHome, homeAction, homeSessionIndex, needsVote } from '../../domain/home'
+import { arrangeHome, homeAction, homeSession, needsVote } from '../../domain/home'
 import { pollStanding } from '../../domain/poll'
-import { missingDates, openSlots, sessionNumbers } from '../../domain/session'
+import { missingDates, numberedSessions, openSlots } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { requireUser } from '../../utils/user'
 import type { HomeEvent, HomeView } from '../../../shared/event'
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   const eventIds = rows.map(row => row.id)
 
   const sessionRows = await db
-    .select({ eventId: sessions.eventId, startsAt: sessions.startsAt, slotId: sessions.slotId })
+    .select({ id: sessions.id, eventId: sessions.eventId, startsAt: sessions.startsAt, slotId: sessions.slotId })
     .from(sessions)
     .where(inArray(sessions.eventId, eventIds))
 
@@ -61,8 +61,8 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   const cards = rows.map((row) => {
     const eventSessionRows = sessionRows.filter(session => session.eventId === row.id)
     const sessionStarts = eventSessionRows.map(session => session.startsAt)
-    const numbers = sessionNumbers(sessionStarts)
-    const nextIndex = homeSessionIndex(sessionStarts, now)
+    // The card names the number the Session is shown with (#70): none while the Event has one Session.
+    const next = homeSession(numberedSessions(eventSessionRows), now)
     // Only open Slots count for the Best slot, progress and the vote call to action (#52, #54): a Slot that a Session has as its Date is closed.
     const eventSlots = openSlots(slots.filter(slot => slot.eventId === row.id), eventSessionRows.map(session => session.slotId))
     const openIds = new Set(eventSlots.map(slot => slot.id))
@@ -83,7 +83,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       phase: row.phase,
       sessionCount: sessionStarts.length,
       missingDates: missingDates(sessionStarts),
-      nextSession: nextIndex === null ? null : { number: numbers[nextIndex] ?? null, startsAt: sessionStarts[nextIndex]!.toISOString() },
+      nextSession: next && { number: next.number, startsAt: next.startsAt.toISOString() },
       createdAt: row.createdAt.toISOString(),
       bestSlot: standing.bestSlot && { id: standing.bestSlot.id, startsAt: standing.bestSlot.startsAt.toISOString() },
       progress: standing.progress,

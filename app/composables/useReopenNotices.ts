@@ -1,11 +1,14 @@
 import type { ComputedRef } from 'vue'
-import type { SessionView } from '~~/shared/event'
+import type { SessionView, UndatedSessionView } from '~~/shared/event'
 
 // The Reopen notices of an Event's Sessions (#14, #55): a Session whose Date a Reopen withdrew shows a notice
 // until the Member closes it. The closed notice stays closed in this browser, per Session and withdrawn Date,
 // so a later Reopen with another Date shows again. Without storage it returns on reload.
 
 const KEY_PREFIX = 'compies-reopen-closed:'
+
+/** A Session with a Reopen notice: a Reopen withdrew its Date and no new one is set yet. */
+export type NoticeSession = UndatedSessionView & { previousStartsAt: string }
 
 function readStored(sessionId: string): string | null {
   try {
@@ -33,18 +36,16 @@ export function useReopenNotices(sessions: ComputedRef<SessionView[]>) {
   const storageRead = ref(false)
 
   const notices = computed(() => (storageRead.value
-    ? sessions.value.filter(session => session.previousStartsAt && session.previousStartsAt !== closed.value[session.id])
+    ? sessions.value.filter((session): session is NoticeSession => session.previousStartsAt !== null && session.previousStartsAt !== closed.value[session.id])
     : []))
 
   function read() {
     for (const session of sessions.value) closed.value[session.id] = readStored(session.id)
   }
 
-  function close(session: SessionView) {
-    const previous = session.previousStartsAt
-    if (!previous) return
-    closed.value[session.id] = previous
-    writeStored(session.id, previous)
+  function close(session: NoticeSession) {
+    closed.value[session.id] = session.previousStartsAt
+    writeStored(session.id, session.previousStartsAt)
   }
 
   // Storage exists only in the browser, so the closed Dates are read after mount, not during SSR.

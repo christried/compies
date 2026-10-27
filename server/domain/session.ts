@@ -37,23 +37,6 @@ export function numberedSessions<S extends SessionDate>(sessions: S[]): (S & { n
   ]
 }
 
-/**
- * The number of each Session, in the order given. Sessions with a Date get 1…n in Date order
- * ("Session 1" is always the first evening); a Session without a Date gets null and only counts
- * as a missing Date. Equal Dates keep their given order.
- */
-export function sessionNumbers(startsAt: (Date | null)[]): (number | null)[] {
-  const numbers: (number | null)[] = startsAt.map(() => null)
-  const dated = startsAt
-    .map((date, index) => ({ date, index }))
-    .filter((entry): entry is { date: Date, index: number } => entry.date !== null)
-    .sort((a, b) => a.date.getTime() - b.date.getTime() || a.index - b.index)
-  dated.forEach((entry, position) => {
-    numbers[entry.index] = position + 1
-  })
-  return numbers
-}
-
 /** How many Sessions still wait for a Date. */
 export function missingDates(startsAt: (Date | null)[]): number {
   return startsAt.filter(date => date === null).length

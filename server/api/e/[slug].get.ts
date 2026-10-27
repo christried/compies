@@ -2,12 +2,13 @@ import { asc, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes, eventMembers, users } from '../../db/schema'
 import { isPast, pollStanding } from '../../domain/poll'
-import { missingDates, openSlots, sessionNumbers } from '../../domain/session'
+import { missingDates, numberedSessions, openSlots } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
 import { eventSessions } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
+import type { SessionView } from '../../../shared/event'
 
 // The Event link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
 // same 404, so nobody can probe which Events exist. A former Member of a deleted Event gets
@@ -46,13 +47,6 @@ export default defineEventHandler(async (event) => {
 
   const standing = pollStanding({ slots, votes, memberIds: members.map(row => row.id), viewerId: user.id, now })
 
-  // Sessions with a Date come first in Date order and get their number (#49); the Sessions still
-  // waiting for a Date follow and only count as missing Dates.
-  const numbers = sessionNumbers(rows.map(row => row.startsAt))
-  const sessionViews = rows
-    .map((row, index) => ({ row, number: numbers[index] ?? null }))
-    .sort((a, b) => (a.number ?? Number.MAX_SAFE_INTEGER) - (b.number ?? Number.MAX_SAFE_INTEGER))
-
   return {
     event: {
       slug: eventRow.slug,
@@ -60,13 +54,9 @@ export default defineEventHandler(async (event) => {
       phase: eventRow.phase,
       isHost,
     },
-    // Each Session's Date; a Session's previousStartsAt is set while a Reopen notice is due (#14).
-    sessions: sessionViews.map(({ row, number }) => ({
-      id: row.id,
-      number,
-      startsAt: row.startsAt?.toISOString() ?? null,
-      previousStartsAt: row.previousStartsAt?.toISOString() ?? null,
-    })),
+    // Sessions with a Date come first in Date order, with the number they are shown with (#49, #70); the
+    // Sessions still waiting for a Date follow and only count as missing Dates.
+    sessions: numberedSessions(rows).map(sessionView),
     missingDates: missingDates(rows.map(row => row.startsAt)),
     // The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on.
     inviteUrl: isHost ? inviteUrl(event, eventRow.slug, eventRow.inviteToken) : null,
@@ -87,3 +77,13 @@ export default defineEventHandler(async (event) => {
     progress: standing.progress,
   }
 })
+
+/**
+ * A Session as the Event page gets it (#14, #70): a dated one with its Date and the number it is shown with, an
+ * undated one with the Date a Reopen withdrew while that notice is due.
+ */
+function sessionView(session: { id: string, number: number | null, startsAt: Date | null, previousStartsAt: Date | null }): SessionView {
+  return session.startsAt === null
+    ? { id: session.id, number: null, startsAt: null, previousStartsAt: session.previousStartsAt?.toISOString() ?? null }
+    : { id: session.id, number: session.number, startsAt: session.startsAt.toISOString(), previousStartsAt: null }
+}

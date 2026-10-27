@@ -4,14 +4,14 @@ import { apiFailure } from '~/utils/api-error'
 import { formatSetDay, formatSlotDay, formatSlotTime, formatSlotWhen } from '~/utils/berlin-time'
 import { isInviteLinkPath } from '~/utils/auth-guard'
 import type { VoteValue } from '~~/shared/poll'
-import { SESSIONS_MAX, sessionsEditable, type EventView } from '~~/shared/event'
+import { SESSIONS_MAX, sessionsEditable, type DatedSessionView, type EventView } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). Members see the poll:
 // Slot cards, "Wer kann wann?", the Best slot and the vote count. Votes show at once and roll back
 // with a toast when saving fails (ADR 0001). The page refetches every 15 s while the tab is visible.
 // The Date is set in the confirm dialog (#13): from a Slot card ("Diesen festlegen") or the host dock.
 // The Host picks only the Slot; its time goes to the next Session without a Date (#52). Each Session with
-// a Date gets a DateSetCard at the top, numbered when the Event has several Sessions (#49). The Host acts on
+// a Date gets a DateSetCard at the top, with the number the server sends for it (#49, #70). The Host acts on
 // each card: Verschieben, Neue Terminsuche and Entfernen (#55). "Session hinzufügen" sits after the cards,
 // and the "−" next to "N Termine gesucht" removes an undated Session. Termine bearbeiten opens
 // SlotEditSheet (#15).
@@ -139,7 +139,7 @@ const confirmOptions = computed(() => slots.value
 
 /** The Event's Sessions (#49): dated ones in Date order with their numbers, then those still waiting for a Date. */
 const sessions = computed(() => data.value?.sessions ?? [])
-const datedSessions = computed(() => sessions.value.filter(session => session.startsAt !== null))
+const datedSessions = computed(() => sessions.value.filter((session): session is DatedSessionView => session.startsAt !== null))
 const missing = computed(() => data.value?.missingDates ?? 0)
 /** The Dates still missing after the one the Host sets now (#52): the dialog says so. */
 const missingAfterSet = computed(() => Math.max(missing.value - 1, 0))
@@ -163,7 +163,7 @@ function openConfirm(slotId?: string) {
 }
 
 /** The Session the reschedule dialog moves, while it still has its Date (#55). */
-const rescheduleSession = computed(() => sessions.value.find(session => session.id === rescheduleSessionId.value && session.startsAt !== null) ?? null)
+const rescheduleSession = computed(() => datedSessions.value.find(session => session.id === rescheduleSessionId.value) ?? null)
 
 /** Sessions can be added, removed and reopened in every Phase before the Event finishes (#55, sessionsEditable). */
 const canChangeSessions = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
@@ -244,15 +244,15 @@ usePollRefresh(() => {
         :icon="CircleAlert"
         @close="closeReopenNotice(session)"
       >
-        {{ t('mvp.reopen.notice', { when: whenOf(session.previousStartsAt ?? '') }) }}
+        {{ t('mvp.reopen.notice', { when: whenOf(session.previousStartsAt) }) }}
       </NoticeBanner>
 
       <template v-if="datedSessions.length > 0">
         <DateSetCard
           v-for="session in datedSessions"
           :key="session.id"
-          :starts-at="session.startsAt ?? ''"
-          :number="sessions.length > 1 ? session.number : null"
+          :starts-at="session.startsAt"
+          :number="session.number"
           :is-host="data.event.isHost"
           @reschedule="openReschedule(session.id)"
         >
@@ -486,7 +486,7 @@ usePollRefresh(() => {
     <DateRescheduleDialog
       v-if="data?.event.isHost && rescheduleSession"
       :open="rescheduleOpen"
-      :starts-at="rescheduleSession.startsAt ?? ''"
+      :starts-at="rescheduleSession.startsAt"
       :loading="rescheduling"
       @confirm="rescheduleDate"
       @cancel="rescheduleOpen = false"
