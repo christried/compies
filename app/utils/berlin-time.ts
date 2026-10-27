@@ -1,12 +1,11 @@
 // Display helpers for Europe/Berlin (ADR 0003). Times are UTC on the wire; the browser shows Berlin
 // wall-clock time whatever its own zone is. The conversion for form values is shared/time.ts.
+import { BERLIN_ZONE } from '~~/shared/time'
 
-const ZONE = 'Europe/Berlin'
-
-const dayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: ZONE, weekday: 'short', day: '2-digit', month: '2-digit' })
-const timeFormat = new Intl.DateTimeFormat('de-DE', { timeZone: ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-const longDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: ZONE, weekday: 'long', day: 'numeric', month: 'long' })
-const tileFormat = new Intl.DateTimeFormat('de-DE', { timeZone: ZONE, weekday: 'short', day: '2-digit', month: 'short' })
+const dayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'short', day: '2-digit', month: '2-digit' })
+const timeFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+const longDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'long', day: 'numeric', month: 'long' })
+const tileFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'short', day: '2-digit', month: 'short' })
 
 /** A Slot's day as `Sa 24.10.` (Berlin). */
 export function formatSlotDay(instant: Date): string {
