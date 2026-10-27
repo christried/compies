@@ -2,7 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes, eventMembers, users } from '../../db/schema'
 import { isPast, pollStanding } from '../../domain/poll'
-import { missingDates, numberedSessions, openSlots } from '../../domain/session'
+import { missingDates, numberedSessions, openPoll } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
@@ -30,14 +30,12 @@ export default defineEventHandler(async (event) => {
     .from(pollSlots)
     .where(eq(pollSlots.eventId, eventRow.id))
     .orderBy(asc(pollSlots.startsAt))
-  const slots = openSlots(allSlots, rows.map(row => row.slotId))
-  const openIds = new Set(slots.map(slot => slot.id))
-
-  const votes = (await db
+  const allVotes = await db
     .select({ slotId: pollVotes.slotId, userId: pollVotes.userId, value: pollVotes.value })
     .from(pollVotes)
     .innerJoin(pollSlots, eq(pollVotes.slotId, pollSlots.id))
-    .where(eq(pollSlots.eventId, eventRow.id))).filter(vote => openIds.has(vote.slotId))
+    .where(eq(pollSlots.eventId, eventRow.id))
+  const { slots, votes } = openPoll(allSlots, rows.map(row => row.slotId), allVotes)
 
   const members = await db
     .select({ id: users.id, name: users.name, displayName: users.displayName, image: users.image })

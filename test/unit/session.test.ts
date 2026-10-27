@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasDateAt, missingDates, numberedSessions, openSlots, parseSessionCount, sequenceRaises } from '../../server/domain/session'
+import { hasDateAt, missingDates, numberedSessions, openPoll, parseSessionCount, sequenceRaises } from '../../server/domain/session'
 import { berlinToUtc } from '../../shared/time'
 
 describe('parseSessionCount', () => {
@@ -122,15 +122,23 @@ describe('missingDates', () => {
   })
 })
 
-describe('openSlots', () => {
+describe('openPoll', () => {
   const slots = [{ id: 'fri' }, { id: 'sat' }, { id: 'sun' }]
+  const annFri = { slotId: 'fri', userId: 'ann', value: 'yes' as const }
+  const annSat = { slotId: 'sat', userId: 'ann', value: 'no' as const }
+  const benSat = { slotId: 'sat', userId: 'ben', value: 'maybe' as const }
+  const benSun = { slotId: 'sun', userId: 'ben', value: 'yes' as const }
+  const votes = [annFri, annSat, benSat, benSun]
 
-  it('leaves out the Slots that a Session refers to, and keeps the order', () => {
-    expect(openSlots(slots, ['sat', null])).toEqual([{ id: 'fri' }, { id: 'sun' }])
+  it('leaves out the Slots that a Session refers to with their Votes, and keeps the order', () => {
+    expect(openPoll(slots, ['sat', null], votes)).toEqual({
+      slots: [{ id: 'fri' }, { id: 'sun' }],
+      votes: [annFri, benSun],
+    })
   })
 
-  it('keeps every Slot while no Session has a Date', () => {
-    expect(openSlots(slots, [null, null])).toEqual(slots)
+  it('keeps every Slot and Vote while no Session has a Date', () => {
+    expect(openPoll(slots, [null, null], votes)).toEqual({ slots, votes })
   })
 })
 

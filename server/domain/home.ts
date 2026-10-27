@@ -49,23 +49,19 @@ export interface HomeOrderable {
   needsVote: boolean
   /** Each Session's Date, null while it waits for one. */
   sessionStarts: (Date | null)[]
+  /** The Date of the Session Home shows (homeSession), null while no Session has a Date. */
+  homeDate: Date | null
   createdAt: Date
 }
 
 /** Group order: open polls to vote on, other open polls, upcoming Dates, then Dates that just passed. */
 const GROUP = { toVote: 0, otherPoll: 1, upcomingDate: 2, passedDate: 3 } as const
 
-/** The Date of the Session Home shows, or null (see homeSession). */
-function homeDate(item: HomeOrderable, now: Date): Date | null {
-  return homeSession(item.sessionStarts.map(startsAt => ({ startsAt })), now)?.startsAt ?? null
-}
-
 /** The sort bucket of an item: one of GROUP. */
 function orderGroup(item: HomeOrderable, now: Date): number {
   if (item.needsVote) return GROUP.toVote
   if (item.phase === 'poll') return GROUP.otherPoll
-  const startsAt = homeDate(item, now)
-  return startsAt && isPast(startsAt, now) ? GROUP.passedDate : GROUP.upcomingDate
+  return item.homeDate && isPast(item.homeDate, now) ? GROUP.passedDate : GROUP.upcomingDate
 }
 
 /**
@@ -74,7 +70,7 @@ function orderGroup(item: HomeOrderable, now: Date): number {
  * Session; a Date that passed within the last 24 h comes after them, the most recent one first.
  */
 export function arrangeHome<T extends HomeOrderable>(items: T[], now: Date): T[] {
-  const time = (item: T) => homeDate(item, now)?.getTime() ?? 0
+  const time = (item: T) => item.homeDate?.getTime() ?? 0
   return items
     .filter(item => staysOnHome(item.sessionStarts, now))
     .sort((a, b) => {
