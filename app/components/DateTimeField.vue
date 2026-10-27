@@ -93,12 +93,13 @@ function parseTimeDigits(digits: string) {
 const initial = splitBerlinLocal(props.modelValue)
 const dateDigits = ref(isoToDigits(initial.date))
 const timeDigits = ref(initial.time.replace(':', ''))
+const timeLeft = ref(false)
 const dateText = computed(() => formatDateDigits(dateDigits.value))
 const dateValue = computed(() => parseDateDigits(dateDigits.value))
 const timeText = computed(() => formatTimeDigits(timeDigits.value))
 const timeValue = computed(() => parseTimeDigits(timeDigits.value))
-// Invalid once it cannot be completed: an impossible hour (25), or four digits that are no time (2460).
-const timeInvalid = computed(() => (timeDigits.value.length === 2 && Number(timeDigits.value) > 23) || (timeDigits.value.length === 4 && !timeValue.value))
+// Invalid once it cannot be completed: an impossible hour (25) after leaving the field, or four digits that are no time (2460).
+const timeInvalid = computed(() => (timeLeft.value && timeDigits.value.length === 2 && Number(timeDigits.value) > 23) || (timeDigits.value.length === 4 && !timeValue.value))
 
 function combined() {
   return dateValue.value && timeValue.value ? joinBerlinLocal(dateValue.value, timeValue.value) : ''
@@ -132,6 +133,7 @@ function onDateInput(event: Event) {
 
 function onTimeInput(event: Event) {
   const input = event.target as HTMLInputElement
+  timeLeft.value = false
   timeDigits.value = input.value.replace(/\D/g, '').slice(0, 4)
   rewrite(input, timeText.value)
   onPart()
@@ -140,6 +142,7 @@ function onTimeInput(event: Event) {
 // Leaving the time (blur or Enter) completes it: 9 is 09:00, 15 is 15:00, 153 is 15:30, 930 is 09:30.
 // An impossible hour such as 25 stays as typed and invalid.
 function commitTime() {
+  timeLeft.value = true
   const digits = timeDigits.value
   if (digits.length === 1 || digits.length === 2) {
     if (Number(digits) > 23) return

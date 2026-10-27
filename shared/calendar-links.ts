@@ -17,7 +17,7 @@ export interface CalendarLinks {
 
 /** An instant as the UTC form `YYYYMMDDTHHmmssZ`. */
 function compactUtc(instant: Date): string {
-  return instant.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+  return isoUtc(instant).replace(/[-:]/g, '')
 }
 
 /** An instant as the UTC form `YYYY-MM-DDTHH:mm:ssZ`. */
@@ -30,6 +30,7 @@ function query(params: Record<string, string>): string {
   return Object.entries(params).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&')
 }
 
+/** The Google and Outlook.com addresses that open a new, pre-filled event for this calendar entry, ending SESSION_DURATION_MS after its start. */
 export function calendarLinks(entry: CalendarEntry): CalendarLinks {
   const end = new Date(entry.startsAt.getTime() + SESSION_DURATION_MS)
   const google = query({

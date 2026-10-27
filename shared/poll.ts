@@ -6,3 +6,6 @@ export const VOTE_VALUES = ['yes', 'maybe', 'no'] as const
 export const NOTE_MAX = 80
 
 export type VoteValue = (typeof VOTE_VALUES)[number]
+
+/** One Vote as the Event read sends it (#102): who voted what on which Slot, with the Note or null. */
+export interface VoteRow { slotId: string, userId: string, value: VoteValue, note: string | null }

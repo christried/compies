@@ -32,7 +32,7 @@ const emit = defineEmits<{ vote: [value: VoteValue], pick: [], note: [text: stri
 
 const { t } = useI18n()
 
-const editor = useTemplateRef<{ open: (focus?: boolean) => void }>('editor')
+const editor = useTemplateRef<{ open: (focus?: boolean) => void, closeIfUntouched: () => void }>('editor')
 
 const label = computed(() => `${props.timeslot.day} ${props.timeslot.time}`)
 const share = (count: number) => (props.total > 0 ? `${(count / props.total) * 100}%` : '0%')
@@ -46,6 +46,7 @@ function choose(value: string) {
   emit('vote', vote)
   // Meh is often a counter-offer, so its Note field opens by itself, without taking the focus (#102).
   if (vote === 'maybe' && !props.myNote) editor.value?.open(false)
+  else if (vote !== 'maybe') editor.value?.closeIfUntouched()
 }
 </script>
 

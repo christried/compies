@@ -2,6 +2,7 @@
 // celebrates once per Release, and the version label in the user menu carries a dot until then.
 const STORAGE_KEY = 'compies.news.seen'
 
+/** Returns the newest Release this device has seen on Neuigkeiten (`seen`: undefined until read, then its version or null) and `markSeen`, stored in localStorage under `compies.news.seen`. */
 export function useNewsSeen() {
   // Undefined until read: storage exists only in the browser, so it is read after mount.
   const seen = useState<string | null | undefined>('news-seen', () => undefined)

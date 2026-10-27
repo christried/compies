@@ -6,11 +6,12 @@ import { apiError } from '../../../../utils/errors'
 import { lockEventForSlotEdit } from '../../../../utils/host-event'
 import { eventSlots } from '../../../../utils/slots'
 import { requireUser } from '../../../../utils/user'
+import type { SlotAdded } from '../../../../../shared/event'
 
 // Add a Slot to a Date poll (#15, #1 § Domain rules). Host only, Phase `poll`. The Slot must be in the
 // future, unique per minute and leave at most 16 Slots in the Event. The Event is locked for the
 // whole write, so two adds cannot both pass the limit. Members see the Slot on their next read.
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<SlotAdded> => {
   const user = await requireUser(event)
   const slug = getRouterParam(event, 'slug') ?? ''
   const body = await readBody<{ startsAt?: unknown } | null>(event)
@@ -26,6 +27,6 @@ export default defineEventHandler(async (event) => {
       .insert(pollSlots)
       .values({ eventId: eventRow.id, startsAt: parsed.startsAt })
       .returning({ id: pollSlots.id, startsAt: pollSlots.startsAt })
-    return { slotId: slot!.id, startsAt: slot!.startsAt }
+    return { slotId: slot!.id, startsAt: slot!.startsAt.toISOString() }
   })
 })

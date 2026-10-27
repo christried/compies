@@ -9,7 +9,7 @@ import { loadEvent } from '../../utils/event-access'
 import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 import type { EventView, SessionNote, SessionView } from '../../../shared/event'
-import type { VoteValue } from '../../../shared/poll'
+import type { VoteRow } from '../../../shared/poll'
 
 // The Event link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
 // same 404, so nobody can probe which Events exist. A former Member of a deleted Event gets
@@ -86,7 +86,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
  */
 function sessionView(
   session: { id: string, number: number | null, startsAt: Date | null, previousStartsAt: Date | null, slotId: string | null },
-  votes: { slotId: string, userId: string, value: VoteValue, note: string | null }[],
+  votes: VoteRow[],
 ): SessionView {
   return session.startsAt === null
     ? { id: session.id, number: null, startsAt: null, previousStartsAt: session.previousStartsAt?.toISOString() ?? null }
@@ -94,6 +94,6 @@ function sessionView(
 }
 
 /** The Notes on a Slot (#102), for the Session whose Date came from it. */
-function notesOn(slotId: string | null, votes: { slotId: string, userId: string, value: VoteValue, note: string | null }[]): SessionNote[] {
+function notesOn(slotId: string | null, votes: VoteRow[]): SessionNote[] {
   return votes.flatMap(vote => vote.slotId === slotId && vote.note !== null ? [{ userId: vote.userId, value: vote.value, note: vote.note }] : [])
 }

@@ -6,12 +6,13 @@ import { rescheduleRejection } from '../../../../../domain/phase'
 import { hasDateAt } from '../../../../../domain/session'
 import { apiError } from '../../../../../utils/errors'
 import { changeSessions, findSession } from '../../../../../utils/sessions'
+import type { SessionRescheduled } from '../../../../../../shared/event'
 
 // Reschedule of one Session (#53, ADR 0011): the Host moves that Session's set Date to another future Berlin
 // time. The other Sessions keep their Dates and Slots; the moved Session keeps its Slot taken. Every Session
 // whose number changes gets its calendar SEQUENCE raised (sequenceRaises), so a re-download updates it. The
 // Event row is locked, so a Reschedule that races a Reopen or a confirm cannot write over it.
-export default defineEventHandler(event => changeSessions(event, async ({ tx, sessions: before, body }) => {
+export default defineEventHandler((event): Promise<SessionRescheduled> => changeSessions(event, async ({ tx, sessions: before, body }) => {
   const session = findSession(before, getRouterParam(event, 'id'))
   const startsAt = parseLocalTime(body?.startsAt)
   if (!startsAt) throw apiError('invalid_time')
@@ -20,5 +21,5 @@ export default defineEventHandler(event => changeSessions(event, async ({ tx, se
   if (rejection) throw apiError(rejection)
 
   await tx.update(sessions).set({ startsAt, previousStartsAt: null }).where(eq(sessions.id, session.id))
-  return { startsAt }
+  return { startsAt: startsAt.toISOString() }
 }))

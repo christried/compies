@@ -7,11 +7,12 @@ import { lockEventForSlotEdit } from '../../../../utils/host-event'
 import { isSlotTaken } from '../../../../utils/sessions'
 import { findSlot } from '../../../../utils/slots'
 import { requireUser } from '../../../../utils/user'
+import type { SlotRemoved } from '../../../../../shared/event'
 
 // Remove a Slot from a Date poll (#15, #1 § Domain rules). Host only, Phase `poll`. The Slot's Votes
 // are deleted in the same transaction as the Slot. The UI asks for a 1 s hold when there are Votes;
 // the server does not need to know about the hold.
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<SlotRemoved> => {
   const user = await requireUser(event)
   const slug = getRouterParam(event, 'slug') ?? ''
   const slotId = getRouterParam(event, 'slotId') ?? ''

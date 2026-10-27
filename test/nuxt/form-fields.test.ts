@@ -232,6 +232,19 @@ describe('DateTimeField', () => {
     expect(page.emitted('update:modelValue')?.at(-1)).toEqual([''])
   })
 
+  it('does not mark 25 invalid while the time is still being typed, so 253 can be typed on to 02:53', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '25')
+    expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBeNull()
+
+    await typeKeys(page.element, 'Uhrzeit', '3')
+    await leave(page.element, 'Uhrzeit')
+
+    expect(part(page.element, 'Uhrzeit').value).toBe('02:53')
+    expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBeNull()
+  })
+
   it('rejects an impossible time such as 24:60', async () => {
     const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
 
