@@ -5,9 +5,10 @@ import { SESSIONS_MAX, sessionsEditable, type DatedSessionView, type EventView }
 
 // The Sessions part of the Event page (#49, #55). On top, the notice of every Date that was withdrawn, by a
 // Reopen or with a removed Session (#14, #65). Each Session with a Date gets a DateSetCard, with the number the
-// server sends for it (#70), then one calendar link and one "Einladen" for the whole Event. The Host acts on
-// each card: Verschieben, Neue Terminsuche and Entfernen. "Session hinzufügen" sits after the cards. The Event
-// page runs the actions and opens the dialogs. The two holds get their action, so a refused one starts again (#74).
+// server sends for it (#70), then one "In den Kalender" (the calendar sheet, #81) and one "Einladen" for the
+// whole Event. The Host acts on each card: Verschieben, Neue Terminsuche and Entfernen. "Session hinzufügen"
+// sits after the cards. The Event page runs the actions and opens the dialogs and sheets. The two holds get
+// their action, so a refused one starts again (#74).
 const props = defineProps<{
   view: EventView
   slug: string
@@ -20,6 +21,7 @@ const emit = defineEmits<{
   reschedule: [sessionId: string]
   add: []
   invite: []
+  calendar: []
 }>()
 
 const { t } = useI18n()
@@ -83,17 +85,17 @@ const { notices: reopenNotices, close: closeReopenNotice } = useReopenNotices(no
     </DateSetCard>
 
     <div class="flex flex-wrap gap-2">
-      <a
-        :href="`/api/e/${slug}/ics`"
-        download
-        class="outline-memphis inline-flex h-12 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-primary px-4.5 text-body font-bold whitespace-nowrap text-on-primary no-underline shadow-btn lift"
+      <AppButton
+        size="card"
+        aria-haspopup="dialog"
+        @click="emit('calendar')"
       >
         <AppIcon
           :icon="CalendarPlus"
           :size="18"
         />
         {{ t('mvp.set.ics') }}
-      </a>
+      </AppButton>
       <AppButton
         v-if="view.event.isHost"
         variant="secondary"

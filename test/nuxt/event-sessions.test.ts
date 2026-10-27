@@ -12,7 +12,7 @@ describe('several Sessions on the Event page', () => {
     document.body.innerHTML = ''
   })
 
-  it('shows a numbered card per dated Session with the Host actions on each, and one calendar link and one Einladen for the whole Event', async () => {
+  it('shows a numbered card per dated Session with the Host actions on each, and one In den Kalender and one Einladen for the whole Event', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
       { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
       { number: 2, startsAt: '2026-10-31T19:00:00.000Z' },
@@ -22,7 +22,7 @@ describe('several Sessions on the Event page', () => {
 
     expect(page.text()).toContain('Session 1')
     expect(page.text()).toContain('Session 2')
-    expect(page.findAll(`a[href="/api/e/${slug}/ics"]`)).toHaveLength(1)
+    expect(page.findAll('button').filter(button => button.text() === 'In den Kalender')).toHaveLength(1)
     expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
     expect(page.findAll('button').filter(button => button.text() === 'Verschieben')).toHaveLength(2)
     expect(page.findAll('button').filter(button => button.text() === 'Neue Terminsuche')).toHaveLength(2)
