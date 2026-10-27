@@ -1,4 +1,4 @@
-import type { VoteValue } from './poll'
+import type { VoteRow, VoteValue } from './poll'
 
 // The "Wer kann wann?" matrix as CSV (#84). Pure: the caller passes what the matrix already shows and
 // the translated labels. German Excel reads it on a double-click: BOM, semicolons, CRLF.
@@ -7,7 +7,7 @@ export interface PollCsvInput {
   labels: { name: string, past: string, yes: string, maybe: string, no: string }
   people: { id: string, name: string }[]
   slots: { id: string, day: string, time: string, past: boolean }[]
-  votes: { slotId: string, userId: string, value: VoteValue, note?: string | null }[]
+  votes: (Omit<VoteRow, 'note'> & { note?: VoteRow['note'] })[]
 }
 
 const BOM = String.fromCharCode(0xFEFF)

@@ -3,7 +3,7 @@ import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { useOptimisticVotes } from '~/composables/useOptimisticVotes'
-import type { VoteValue } from '~~/shared/poll'
+import type { VoteRow, VoteValue } from '~~/shared/poll'
 
 // The Votes as the poll draws them (#50): a press shows at once, quick presses send only the newest, and a
 // failed save falls back to the saved Vote. Each test gets its own slug: registerEndpoint keeps the first
@@ -12,7 +12,7 @@ let testNumber = 0
 const ME = '00000000-0000-4000-8000-000000000001'
 const LARSI = '00000000-0000-4000-8000-000000000002'
 
-type Vote = { slotId: string, userId: string, value: VoteValue, note: string | null }
+type Vote = VoteRow
 
 /**
  * The Event's Votes on the server, what its vote endpoint received, and the composable for one test. The endpoint

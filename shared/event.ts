@@ -1,4 +1,4 @@
-import type { VoteValue } from './poll'
+import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
@@ -106,7 +106,7 @@ export interface EventView {
   viewerId: string
   /** The open Slots only (#52): a Slot that became a Session's Date is left out, with its Votes. */
   slots: { id: string, startsAt: string, past: boolean }[]
-  votes: { slotId: string, userId: string, value: VoteValue, note: string | null }[]
+  votes: VoteRow[]
   members: { id: string, name: string, image: string | null, isHost: boolean }[]
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
