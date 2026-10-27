@@ -21,6 +21,7 @@ function field(value: string): string {
   return /[;"\r\n]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded
 }
 
+/** „Wer kann wann?“ as a CSV for German Excel: one row per person, one column per Slot, a Note after its label. */
 export function buildPollCsv(input: PollCsvInput): string {
   const { labels } = input
   const voteOf = new Map(input.votes.map(vote => [`${vote.userId}|${vote.slotId}`, vote]))
