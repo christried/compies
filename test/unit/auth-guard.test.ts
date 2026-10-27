@@ -20,11 +20,12 @@ describe('guardRoute', () => {
       expect(guardRoute(route('/'), null)).toBe('/anmelden')
     })
 
-    it('lets the visitor open sign-in, the invite preview and the legal pages', () => {
+    it('lets the visitor open sign-in, the invite preview, the legal pages and Neuigkeiten', () => {
       expect(guardRoute(route('/anmelden?redirect=%2Farchiv'), null)).toBeNull()
       expect(guardRoute(route('/e/freitags-zocken-k7q2-Ab3dE6gH9jK1'), null)).toBeNull()
       expect(guardRoute(route('/impressum'), null)).toBeNull()
       expect(guardRoute(route('/datenschutz'), null)).toBeNull()
+      expect(guardRoute(route('/neuigkeiten'), null)).toBeNull()
     })
 
     it('sends profile setup to sign-in', () => {
@@ -47,9 +48,10 @@ describe('guardRoute', () => {
       expect(guardRoute(route('/anmelden?redirect=%2Farchiv'), newUser)).toBe('/einrichten?redirect=%2Farchiv')
     })
 
-    it('lets the User open profile setup and the legal pages', () => {
+    it('lets the User open profile setup, the legal pages and Neuigkeiten', () => {
       expect(guardRoute(route('/einrichten?redirect=%2Farchiv'), newUser)).toBeNull()
       expect(guardRoute(route('/impressum'), newUser)).toBeNull()
+      expect(guardRoute(route('/neuigkeiten'), newUser)).toBeNull()
     })
   })
 

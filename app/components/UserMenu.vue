@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { LogOut } from '@lucide/vue'
+import { RELEASES } from '~/utils/changelog'
 
-// Avatar menu in the header: who is signed in, the legal pages (#8), and „Abmelden“.
+// Avatar menu in the header: who is signed in and „Abmelden“, then a last row with the legal pages (#8),
+// Neuigkeiten and the version label, dotted until this device has seen the newest Release (09 § UserMenu).
 const { t } = useI18n()
 const user = useAuthUser()
 const signOut = useSignOut()
+const { seen } = useNewsSeen()
 
-const legalPages = ['impressum', 'datenschutz'] as const
+const unseen = computed(() => seen.value !== undefined && seen.value !== RELEASES[0]?.version)
 const open = ref(false)
 const root = useTemplateRef('root')
 const name = computed(() => user.value?.displayName ?? user.value?.name ?? '')
@@ -58,21 +61,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
       v-if="open"
       role="menu"
       :aria-label="t('auth.accountMenu', { name })"
-      class="outline-memphis absolute top-full right-0 mt-2.5 flex min-w-[220px] flex-col rounded-lg bg-surface p-1.5 shadow-card"
+      class="outline-memphis absolute top-full right-0 mt-2.5 flex w-[340px] max-w-[calc(100vw-28px)] flex-col rounded-lg bg-surface p-1.5 shadow-card"
     >
       <p class="m-0 truncate px-3 pt-2 pb-1.5 text-small font-bold text-ink-2">
         {{ name }}
       </p>
-      <NuxtLink
-        v-for="page in legalPages"
-        :key="page"
-        :to="`/${page}`"
-        role="menuitem"
-        class="flex h-control-md items-center rounded-md px-3 font-bold text-ink no-underline hover:tint"
-        @click="open = false"
-      >
-        {{ t(`legal.links.${page}`) }}
-      </NuxtLink>
       <button
         type="button"
         role="menuitem"
@@ -82,6 +75,19 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
         <AppIcon :icon="LogOut" />
         {{ t('auth.logout') }}
       </button>
+      <span class="mx-1 mt-1.5 mb-0.5 border-t-2 border-line-soft" />
+      <!-- A click on any link in the row closes the menu. -->
+      <div
+        class="flex flex-wrap items-center gap-x-3.5 px-2.5"
+        @click="open = false"
+      >
+        <LegalLinks role="menuitem" />
+        <VersionLabel
+          role="menuitem"
+          :unseen="unseen"
+          class="ml-auto"
+        />
+      </div>
     </div>
   </div>
 </template>
