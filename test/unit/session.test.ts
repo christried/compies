@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasDateAt, missingDates, openSlots, parseSessionCount, sequenceRaises, sessionNumbers } from '../../server/domain/session'
+import { hasDateAt, missingDates, numberedSessions, openSlots, parseSessionCount, sequenceRaises } from '../../server/domain/session'
 import { berlinToUtc } from '../../shared/time'
 
 describe('parseSessionCount', () => {
@@ -12,25 +12,50 @@ describe('parseSessionCount', () => {
   })
 })
 
-describe('sessionNumbers', () => {
+describe('numberedSessions', () => {
   const at = (local: string) => berlinToUtc(local)
+  const shown = (sessions: { id: string, startsAt: Date | null }[]) => numberedSessions(sessions).map(session => [session.id, session.number])
 
-  it('numbers the dated Sessions 1…n in Date order', () => {
-    const dates = [at('2026-11-08T19:00'), at('2026-11-07T20:00'), at('2026-11-09T18:00')]
-    expect(sessionNumbers(dates)).toEqual([2, 1, 3])
+  it('numbers the dated Sessions 1…n in Date order and puts them in that order', () => {
+    expect(shown([
+      { id: 'a', startsAt: at('2026-11-08T19:00') },
+      { id: 'b', startsAt: at('2026-11-07T20:00') },
+      { id: 'c', startsAt: at('2026-11-09T18:00') },
+    ])).toEqual([['b', 1], ['a', 2], ['c', 3]])
   })
 
-  it('leaves Sessions without a Date unnumbered and does not count them in the order', () => {
-    expect(sessionNumbers([null, at('2026-11-08T19:00'), null, at('2026-11-07T20:00')])).toEqual([null, 2, null, 1])
+  it('puts the Sessions without a Date after the dated ones, in the given order, with no number', () => {
+    expect(shown([
+      { id: 'a', startsAt: null },
+      { id: 'b', startsAt: at('2026-11-08T19:00') },
+      { id: 'c', startsAt: null },
+      { id: 'd', startsAt: at('2026-11-07T20:00') },
+    ])).toEqual([['d', 1], ['b', 2], ['a', null], ['c', null]])
   })
 
   it('keeps the given order for equal Dates', () => {
-    expect(sessionNumbers([at('2026-11-07T20:00'), at('2026-11-07T20:00')])).toEqual([1, 2])
+    expect(shown([
+      { id: 'a', startsAt: at('2026-11-07T20:00') },
+      { id: 'b', startsAt: at('2026-11-07T20:00') },
+    ])).toEqual([['a', 1], ['b', 2]])
+  })
+
+  it('gives the Session of an Event with one Session no number, since there is nothing to tell apart', () => {
+    expect(shown([{ id: 'a', startsAt: at('2026-11-07T20:00') }])).toEqual([['a', null]])
+  })
+
+  it('numbers a single dated Session once the Event has several Sessions', () => {
+    expect(shown([{ id: 'a', startsAt: at('2026-11-07T20:00') }, { id: 'b', startsAt: null }])).toEqual([['a', 1], ['b', null]])
   })
 
   it('gives no numbers when no Session has a Date', () => {
-    expect(sessionNumbers([null, null])).toEqual([null, null])
-    expect(sessionNumbers([])).toEqual([])
+    expect(shown([{ id: 'a', startsAt: null }, { id: 'b', startsAt: null }])).toEqual([['a', null], ['b', null]])
+    expect(shown([])).toEqual([])
+  })
+
+  it('keeps the other fields of each Session', () => {
+    const [session] = numberedSessions([{ id: 'a', startsAt: null, slotId: 'fri' }])
+    expect(session).toEqual({ id: 'a', startsAt: null, slotId: 'fri', number: null })
   })
 })
 
@@ -47,9 +72,9 @@ describe('sequenceRaises', () => {
 
   it('raises the Session that moved and every Session whose number changed with it', () => {
     const before = [{ id: 'a', startsAt: day1 }, { id: 'b', startsAt: day2 }, { id: 'c', startsAt: day3 }]
-    // a moves after c: it goes from 1 to 3, b and c each move up one number.
+    // a moves after c: it goes from 1 to 3, b and c each move up one number. They come in their new order.
     const after = [{ id: 'a', startsAt: at('2026-11-10T20:00') }, { id: 'b', startsAt: day2 }, { id: 'c', startsAt: day3 }]
-    expect(sequenceRaises(before, after)).toEqual(['a', 'b', 'c'])
+    expect(sequenceRaises(before, after)).toEqual(['b', 'c', 'a'])
   })
 
   it('raises only the moved Session when it keeps its place in the order', () => {
@@ -68,8 +93,24 @@ describe('sequenceRaises', () => {
   it('raises a Session that gets a Date after it was undated, and never an undated one', () => {
     const before = [{ id: 'a', startsAt: day2 }, { id: 'b', startsAt: null }]
     const after = [{ id: 'a', startsAt: day2 }, { id: 'b', startsAt: day1 }]
-    expect(sequenceRaises(before, after)).toEqual(['a', 'b'])
+    expect(sequenceRaises(before, after)).toEqual(['b', 'a'])
     expect(sequenceRaises([{ id: 'a', startsAt: null }], [{ id: 'a', startsAt: null }])).toEqual([])
+  })
+
+  // The calendar title names the number only while the Event has several Sessions (#67), so crossing from one
+  // Session to two, or back, changes the title of the dated Session, and a re-import must replace it.
+  it('raises the dated Session when a second Session joins, since its title gains the number', () => {
+    expect(sequenceRaises([{ id: 'a', startsAt: day1 }], [{ id: 'a', startsAt: day1 }, { id: 'b', startsAt: null }])).toEqual(['a'])
+    expect(sequenceRaises([{ id: 'a', startsAt: day1 }], [{ id: 'a', startsAt: day1 }, { id: 'b', startsAt: day2 }])).toEqual(['a'])
+  })
+
+  it('raises the Session that stays when the Event goes back to one Session, since its title loses the number', () => {
+    expect(sequenceRaises([{ id: 'a', startsAt: day1 }, { id: 'b', startsAt: day2 }], [{ id: 'a', startsAt: day1 }])).toEqual(['a'])
+    expect(sequenceRaises([{ id: 'a', startsAt: day1 }, { id: 'b', startsAt: null }], [{ id: 'a', startsAt: day1 }])).toEqual(['a'])
+  })
+
+  it('raises nothing when the only Session is undated on both sides of the change', () => {
+    expect(sequenceRaises([{ id: 'a', startsAt: null }], [{ id: 'a', startsAt: null }, { id: 'b', startsAt: day1 }])).toEqual([])
   })
 })
 

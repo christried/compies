@@ -46,16 +46,30 @@ export function slotsEditable(phase: Phase): boolean {
   return phase === 'poll'
 }
 
-/** One Session of an Event (#48, #49). Times are UTC ISO strings. */
-export interface SessionView {
+/** A Session with its Date (#48, #49). Times are UTC ISO strings. */
+export interface DatedSessionView {
   id: string
-  /** 1…n in Date order for a Session with a Date; null while it waits for one (server/domain/session.ts). */
+  /**
+   * The number the Session is shown with: 1…n in Date order while the Event has several Sessions, null for the
+   * one Session of an Event (numberedSessions in server/domain/session.ts, #70). The client shows it as it is.
+   */
   number: number | null
-  /** The Date, or null while the Session waits for one from the Date poll. */
-  startsAt: string | null
+  startsAt: string
+  /** Set Date and Reschedule clear the Date a Reopen withdrew. */
+  previousStartsAt: null
+}
+
+/** A Session still waiting for a Date from the Date poll. Times are UTC ISO strings. */
+export interface UndatedSessionView {
+  id: string
+  number: null
+  startsAt: null
   /** The Date a Reopen withdrew, until the next Date is set. Members see a notice for it. */
   previousStartsAt: string | null
 }
+
+/** One Session of an Event (#48, #49): it has its Date, or it waits for one. */
+export type SessionView = DatedSessionView | UndatedSessionView
 
 /** A Session the Host removed while it had, or had had, a Date (#65). Members see a notice for that Date. */
 export interface RemovedSessionView {
@@ -76,7 +90,7 @@ export interface EventView {
   sessions: SessionView[]
   /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */
   removedSessions: RemovedSessionView[]
-  /** How many Sessions still wait for a Date. */
+  /** How many Sessions still wait for a Date: the undated ones in `sessions`, counted by the server. */
   missingDates: number
   viewerId: string
   /** The open Slots only (#52): a Slot that became a Session's Date is left out, with its Votes. */
@@ -104,7 +118,10 @@ export interface HomeEvent {
   sessionCount: number
   /** How many Sessions still wait for a Date. */
   missingDates: number
-  /** The next upcoming Session, else the latest passed one; null while no Session has a Date. */
+  /**
+   * The next upcoming Session, else the latest passed one; null while no Session has a Date. Its number is the one
+   * it is shown with: null for the one Session of an Event (as in DatedSessionView, #70).
+   */
   nextSession: { number: number | null, startsAt: string } | null
   /** When the Event was created; picks the latest open poll for the Construction page (#12). */
   createdAt: string

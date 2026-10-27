@@ -3,7 +3,7 @@
 // Reschedule updates the same entry in the calendar. Times are UTC. The builders are pure: the endpoint
 // passes in the copy (from de.json) and the current time.
 
-import { sessionNumbers } from './session'
+import { isDated, numberedSessions } from './session'
 
 /** The event lasts 7 h (code constant, #1). */
 export const ICS_DURATION_MS = 7 * 60 * 60_000
@@ -119,24 +119,22 @@ export interface CalendarCopy {
 }
 
 /**
- * One entry per Session with a Date, in Date order (#53). The title names the Session's number only when
- * the Event has more than one Session. Undated Sessions get no entry, so an Event with no Date has none.
+ * One entry per Session with a Date, in Date order (#53). The title names the number the Session is shown with
+ * (numberedSessions: only an Event with several Sessions numbers them). Undated Sessions get no entry, so an
+ * Event with no Date has none.
  */
 export function sessionEntries(input: { eventName: string, url: string, sessions: CalendarSession[], copy: CalendarCopy }): IcsEntry[] {
-  const numbers = sessionNumbers(input.sessions.map(session => session.startsAt))
   const description = fillCopy(input.copy.description, { url: input.url })
   const alarm = fillCopy(input.copy.alarm, { event: input.eventName })
-  return input.sessions
-    .map((session, index) => ({ session, number: numbers[index] ?? null }))
-    .filter((entry): entry is { session: CalendarSession & { startsAt: Date }, number: number } => entry.session.startsAt !== null && entry.number !== null)
-    .sort((a, b) => a.number - b.number)
-    .map(({ session, number }) => ({
+  return numberedSessions(input.sessions)
+    .filter(isDated)
+    .map(session => ({
       uid: `${session.id}@compies`,
       sequence: session.icsSequence,
       startsAt: session.startsAt,
-      summary: input.sessions.length === 1
+      summary: session.number === null
         ? fillCopy(input.copy.summary, { event: input.eventName })
-        : fillCopy(input.copy.sessionSummary, { event: input.eventName, n: String(number) }),
+        : fillCopy(input.copy.sessionSummary, { event: input.eventName, n: String(session.number) }),
       description,
       alarm,
       url: input.url,

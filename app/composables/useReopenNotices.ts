@@ -29,6 +29,8 @@ function writeStored(sessionId: string, previous: string) {
 
 /** A Session as its notice needs it: its id and the Date that was withdrawn, if any. */
 type NoticeSession = Pick<SessionView, 'id' | 'previousStartsAt'>
+/** A Session whose notice shows: a Reopen or a removal (#65) withdrew its Date. */
+type ShownNotice = NoticeSession & { previousStartsAt: string }
 
 export function useReopenNotices(sessions: ComputedRef<NoticeSession[]>) {
   /** The withdrawn Date each Session's notice was closed at, by Session id. */
@@ -37,18 +39,16 @@ export function useReopenNotices(sessions: ComputedRef<NoticeSession[]>) {
   const storageRead = ref(false)
 
   const notices = computed(() => (storageRead.value
-    ? sessions.value.filter(session => session.previousStartsAt && session.previousStartsAt !== closed.value[session.id])
+    ? sessions.value.filter((session): session is ShownNotice => session.previousStartsAt !== null && session.previousStartsAt !== closed.value[session.id])
     : []))
 
   function read() {
     for (const session of sessions.value) closed.value[session.id] = readStored(session.id)
   }
 
-  function close(session: NoticeSession) {
-    const previous = session.previousStartsAt
-    if (!previous) return
-    closed.value[session.id] = previous
-    writeStored(session.id, previous)
+  function close(session: ShownNotice) {
+    closed.value[session.id] = session.previousStartsAt
+    writeStored(session.id, session.previousStartsAt)
   }
 
   // Storage exists only in the browser, so the closed Dates are read after mount, not during SSR.
