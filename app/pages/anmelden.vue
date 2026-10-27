@@ -7,7 +7,7 @@ import { isInviteLinkPath, safeRedirect, SIGN_IN_PATH } from '~/utils/auth-guard
 // in `redirect`, or here with `error` (and the `provider` we sent along) when it did not work.
 const route = useRoute()
 const { t } = useI18n()
-useHead({ title: () => `${t('auth.title')} | ${t('app.name')}` })
+useHead({ title: () => t('auth.title') })
 
 const target = computed(() => safeRedirect(route.query.redirect))
 const invitePath = computed(() => {

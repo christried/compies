@@ -10,7 +10,7 @@ import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 // wall-clock values; the server is the final judge.
 
 const { t } = useI18n()
-useHead({ title: () => `${t('mvp.create.kicker')} | ${t('app.name')}` })
+useHead({ title: () => t('mvp.create.kicker') })
 const user = useAuthUser()
 
 const name = ref('')

@@ -6,7 +6,7 @@ import { reducedMotion } from '~/utils/motion'
 // first. Public like the legal pages, in the bare shell. Opening `/neuigkeiten#1.2.0` scrolls to that
 // Release through the router's hash scrolling (ids are found with getElementById, so the digits are fine).
 const { t } = useI18n()
-useHead({ title: () => `${t('news.title')} | ${t('app.name')}` })
+useHead({ title: () => t('news.title') })
 
 // The rail marks the last Release whose top has passed this line: 160 px under the 64 px sticky header.
 const SPY_LINE = 224

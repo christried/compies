@@ -17,7 +17,7 @@ const { toast } = useToast()
 const user = useAuthUser()
 const signedIn = user.value !== null
 
-useHead({ title: () => `${t(signedIn ? 'invite.kicker' : 'auth.titleInvite')} | ${t('app.name')}` })
+useHead({ title: () => t(signedIn ? 'invite.kicker' : 'auth.titleInvite') })
 
 const { data: preview, error: previewError } = await useFetch<InvitePreview>(`/api/invite/${props.invite}`, { immediate: !signedIn })
 const previewFailed = computed(() => !signedIn && !!previewError.value)

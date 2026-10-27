@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Impressum (#8): public, reachable without sign-in.
 const { t } = useI18n()
-useHead({ title: () => `${t('legal.impressum.title')} | ${t('app.name')}` })
+useHead({ title: () => t('legal.impressum.title') })
 </script>
 
 <template>

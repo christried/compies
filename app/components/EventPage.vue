@@ -21,7 +21,7 @@ const notFound = computed(() => error.value?.statusCode === 404)
 const deleted = computed(() => error.value?.statusCode === 410)
 const failed = computed(() => error.value !== null && !notFound.value && !deleted.value)
 
-useHead({ title: () => `${data.value?.event.name ?? t('app.name')} | ${t('app.name')}` })
+useHead({ title: () => data.value?.event.name })
 
 const votes = useOptimisticVotes(slug, data, refresh)
 
