@@ -71,4 +71,32 @@ describe('buildPollCsv', () => {
 
     expect(lines(csv)[1]).toBe('Jörg Müller;;')
   })
+
+  it('writes a cell with a Note as the label, a colon and the Note (#102)', () => {
+    const csv = buildPollCsv({
+      ...input,
+      votes: [
+        { slotId: 's1', userId: 'u1', value: 'yes', note: null },
+        { slotId: 's2', userId: 'u1', value: 'no', note: 'lass 14:30 anfangen' },
+        { slotId: 's1', userId: 'u2', value: 'maybe', note: 'kann maximal bis 20:30' },
+      ],
+    })
+
+    expect(lines(csv).slice(1)).toEqual([
+      'Anna;Ja;Nein: lass 14:30 anfangen',
+      'Bo;Meh: kann maximal bis 20:30;',
+    ])
+  })
+
+  it('quotes a Note with a semicolon or a quote, and a Note starting with = stays text behind its label', () => {
+    const csv = buildPollCsv({
+      ...input,
+      votes: [
+        { slotId: 's1', userId: 'u1', value: 'maybe', note: 'bis 20:30; dann "Schluss"' },
+        { slotId: 's2', userId: 'u1', value: 'yes', note: '=1+1' },
+      ],
+    })
+
+    expect(lines(csv)[1]).toBe('Anna;"Meh: bis 20:30; dann ""Schluss""";Ja: =1+1')
+  })
 })

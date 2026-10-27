@@ -662,8 +662,9 @@ Fill wheel/pick pool and tiebreaker pool from the library with suggestions.
 
 One proposed date in the poll.
 
-- **Props / variants:** `slot: {startsAt}`, `counts: {yes, maybe, no}`, `total`, `myVote`, `best`, `canPick` (host)
+- **Props / variants:** `slot: {startsAt}`, `counts: {yes, maybe, no}`, `total`, `myVote`, `best`, `canPick` (host), `notes` (NoteRow[]), `myNote`; emits `note(text)`
 - **States:** not voted (all options neutral) · voted (selected option filled: Ja success with a check, Meh warning text only, no icon (#50), Nein error red with dark text (`bg-error text-on-error`) with an x) · best (3 px focus border, card shadow, „Bester Termin“ chip) · confirmed
+- **Notes (#102):** an „Anmerkungen“ NoteList sits under the counts (also on a past card). Under Ja / Meh / Nein a NoteEditor offers the User's own Note once voted; choosing Meh opens its field by itself, unfocused. A past card has the list but no button.
 - **Slots:** —
 - **Desktop / mobile:** Desktop 4 columns; mobile 1 column. Host on desktop gets „Diesen festlegen“ in the card.
 - **Accessibility:** Options = `role="radiogroup"` labelled with the slot („Sa 25.10. 20:30“); chip text says best.
@@ -674,8 +675,9 @@ One proposed date in the poll.
 
 „Wer kann wann?“: everyone × every slot.
 
-- **Props / variants:** `people[]`, `slots[]`, `votes`, `me`
+- **Props / variants:** `people[]`, `slots[]`, `votes` (each may carry a `note`), `me`
 - **States:** cells: Ja (check, circle, success) · Meh (minus, circle, warning) · Nein (x, square, error red with dark text) · Noch offen (dashed circle)
+- **Notes (#102):** a cell with a Note gets a 10 px `primary` dot with an ink border at its top-right corner (`aria-hidden`). The cell's `title` and its screen-reader text read „Meh: kann maximal bis 20:30“. The CSV export writes the same text in the cell.
 - **Slots:** —
 - **Desktop / mobile:** Desktop name column 200 + equal columns; mobile 130 + 72 px columns, horizontal scroll only when the Slots don't fit. Headers show the day and the time on separate lines, never cut.
 - **Accessibility:** Real `<table>` with row/column headers; cell `title` and text equivalent („Ja“).
@@ -686,7 +688,8 @@ One proposed date in the poll.
 
 Host confirms a slot.
 
-- **Props / variants:** `slot`, `counts`
+- **Props / variants:** `slot`, `counts`, `notes` (NoteRow[])
+- **Notes (#102):** each option lists its Notes (NoteList) under its counts.
 - **States:** open · saving · selected option (filled radio dot, 3px focus-blue border, light focus-blue wash; unselected options: hollow dot). The option that opened the dialog, else the Best slot, starts selected.
 - **Slots:** —
 - **Desktop / mobile:** ConfirmModal / bottom sheet.
@@ -698,12 +701,37 @@ Host confirms a slot.
 
 Confirmed date with calendar tile, .ics download, reschedule (host).
 
-- **Props / variants:** `startsAt`, `isHost`, `icsUrl`
+- **Props / variants:** `startsAt`, `isHost`, `icsUrl`, `notes` (NoteRow[], read-only)
+- **Notes (#102):** an „Anmerkungen“ NoteList with the Notes of the Slot the Date came from, also after a Reschedule. None for a Date set directly.
 - **States:** player · host
 - **Slots:** —
 - **Desktop / mobile:** Desktop row; mobile stacked.
 - **Accessibility:** Date as `<time datetime>`.
 - **Motion:** tile drops in `y −20→0` 0.45 s `back.out(2)`, once.
+
+## NoteList
+**Scope:** [MVP] · **Ref:** — (#102, built from existing parts, no design of its own)
+
+The Notes on the Votes of one Slot.
+
+- **Props / variants:** `notes: NoteRow[]` (`userId`, `name`, `isMe`, `value`, `note`), in the order of the rows in „Wer kann wann?“.
+- **States:** empty (renders nothing) · list: a small bold „Anmerkungen“ heading, then one row per Note: the name (your own as „Name (du)“), a 10 px dot in the Vote's colour with a 2 px line border, the text.
+- **Slots:** —
+- **Desktop / mobile:** same; long text wraps.
+- **Accessibility:** a real list. The dot is `aria-hidden`; the Vote's label („Meh“) follows the name as screen-reader text, so the colour is not the only signal.
+- **Motion:** —
+
+## NoteEditor
+**Scope:** [MVP] · **Ref:** — (#102, built from existing parts, no design of its own)
+
+The User's own Note on their Vote, inside a PollSlotCard.
+
+- **Props / variants:** `note`, `voted`, `past`; emits `save(text)`; exposes `open(focus)`.
+- **States:** no Vote or past (nothing) · voted without Note (secondary „Anmerkung“ button with a speech-bubble icon) · voted with Note (the text and a pencil IconButton „Anmerkung bearbeiten“) · editing (a TextField: label „Anmerkung“, help „Sehen alle im Event. Zum Beispiel: kann maximal bis 20:30“, 80 characters, counter from 80 %, with „Speichern“ and „Abbrechen“).
+- **Slots:** —
+- **Desktop / mobile:** same, inline in the card.
+- **Accessibility:** Enter saves, Escape cancels. Opened by the button it focuses the field; opened by choosing Meh it does not take the focus. Saving an empty field removes the Note.
+- **Motion:** —
 
 ## CalendarSheet
 **Scope:** [MVP] · **Ref:** Sheet (#81, built from existing parts, no design of its own)

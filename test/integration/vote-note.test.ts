@@ -185,7 +185,7 @@ describe('Notes on Votes', () => {
       await put(guestCookie, slug, slotIds[1]!, { value: 'maybe', note: 'bis 20:30' })
       await request(`/api/e/${slug}/confirm`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', cookie: hostCookie },
+        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
         body: JSON.stringify({ slotId: slotIds[1] }),
       })
 
@@ -229,7 +229,7 @@ describe('Notes on Votes', () => {
       await put(created.guestCookie, created.slug, created.slotIds[2]!, { value: 'yes', note: 'andere Note' })
       await request(`/api/e/${created.slug}/confirm`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', cookie: created.hostCookie },
+        headers: { 'content-type': 'application/json', 'cookie': created.hostCookie },
         body: JSON.stringify({ slotId: created.slotIds[1] }),
       })
       return created
@@ -250,7 +250,7 @@ describe('Notes on Votes', () => {
 
       const rescheduled = await request(`/api/e/${slug}/sessions/${session!.id}/reschedule`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', cookie: hostCookie },
+        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
         body: JSON.stringify({ startsAt: '2090-11-05T20:00' }),
       })
 

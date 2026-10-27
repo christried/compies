@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 // The page keeps the same votes for its whole life, so its parts are taken once.
-const { shown, savedNote, countsFor, myVoteFor, vote } = props.votes
+const { shown, savedNote, countsFor, myVoteFor, myNoteFor, notesFor, vote, saveNote } = props.votes
 
 const missing = computed(() => props.view.missingDates)
 
@@ -102,8 +102,11 @@ function removeMissing() {
         :my-vote="myVoteFor(slot.id)"
         :best="view.bestSlotId === slot.id"
         :can-pick="view.event.isHost"
+        :notes="notesFor(slot.id, view.members)"
+        :my-note="myNoteFor(slot.id)"
         @vote="value => vote(slot.id, value)"
         @pick="emit('pick', slot.id)"
+        @note="text => saveNote(slot.id, text)"
       />
     </li>
   </ol>

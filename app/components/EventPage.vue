@@ -49,7 +49,7 @@ const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionI
 /** The open Slots the Host can still confirm, in time order, with their counts for the dialog (#52). */
 const confirmOptions = computed(() => slots.value
   .filter(slot => !slot.past)
-  .map(slot => ({ id: slot.id, day: slot.day, time: slot.time, ...votes.countsFor(slot.id) })))
+  .map(slot => ({ id: slot.id, day: slot.day, time: slot.time, ...votes.countsFor(slot.id), notes: votes.notesFor(slot.id, data.value?.members ?? []) })))
 
 /** The Dates still missing after the one the Host sets now (#52): the dialog says so. */
 const missingAfterSet = computed(() => Math.max((data.value?.missingDates ?? 0) - 1, 0))

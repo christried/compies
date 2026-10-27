@@ -12,7 +12,7 @@ let testNumber = 0
 const ME = '00000000-0000-4000-8000-000000000001'
 const LARSI = '00000000-0000-4000-8000-000000000002'
 
-type Vote = { slotId: string, userId: string, value: VoteValue }
+type Vote = { slotId: string, userId: string, value: VoteValue, note: string | null }
 
 /**
  * The Event's Votes on the server, what its vote endpoint received, and the composable for one test. The endpoint
@@ -21,15 +21,18 @@ type Vote = { slotId: string, userId: string, value: VoteValue }
 async function setUp(saved: Vote[], before: (value: VoteValue) => unknown = () => undefined) {
   testNumber += 1
   const slug = `freitags-zocken-${testNumber}`
-  const server = { votes: saved, received: [] as VoteValue[] }
+  const server = { votes: saved, received: [] as VoteValue[], notes: [] as unknown[] }
   registerEndpoint(`/api/e/${slug}/slots/sat/vote`, {
     method: 'PUT',
     handler: async (event) => {
-      const { value } = await readBody<{ value: VoteValue }>(event)
+      const { value, note } = await readBody<{ value: VoteValue, note?: string }>(event)
       server.received.push(value)
+      server.notes.push(note)
       await before(value)
-      server.votes = [...server.votes.filter(vote => !(vote.slotId === 'sat' && vote.userId === ME)), { slotId: 'sat', userId: ME, value }]
-      return { slotId: 'sat', value }
+      const kept = server.votes.find(vote => vote.slotId === 'sat' && vote.userId === ME)?.note ?? null
+      const answer = { slotId: 'sat', userId: ME, value, note: note === undefined ? kept : (note.trim() || null) }
+      server.votes = [...server.votes.filter(vote => !(vote.slotId === 'sat' && vote.userId === ME)), answer]
+      return answer
     },
   })
   const data = ref({ viewerId: ME, votes: server.votes })
@@ -56,7 +59,7 @@ describe('useOptimisticVotes', () => {
   })
 
   it('draws a press at once with its counts, then saves it and says so', async () => {
-    const { server, votes, refresh } = await setUp([{ slotId: 'sat', userId: LARSI, value: 'yes' }])
+    const { server, votes, refresh } = await setUp([{ slotId: 'sat', userId: LARSI, value: 'yes', note: null }])
 
     const saving = votes.vote('sat', 'maybe')
 
@@ -69,8 +72,8 @@ describe('useOptimisticVotes', () => {
     expect(refresh).toHaveBeenCalledTimes(1)
     expect(votes.myVoteFor('sat')).toBe('maybe')
     expect(votes.shown.value).toEqual([
-      { slotId: 'sat', userId: LARSI, value: 'yes' },
-      { slotId: 'sat', userId: ME, value: 'maybe' },
+      { slotId: 'sat', userId: LARSI, value: 'yes', note: null },
+      { slotId: 'sat', userId: ME, value: 'maybe', note: null },
     ])
   })
 
@@ -96,7 +99,7 @@ describe('useOptimisticVotes', () => {
   })
 
   it('falls back to the saved Vote and raises the error toast when saving fails', async () => {
-    const { votes } = await setUp([{ slotId: 'sat', userId: ME, value: 'yes' }], () => {
+    const { votes } = await setUp([{ slotId: 'sat', userId: ME, value: 'yes', note: null }], () => {
       throw createError({ statusCode: 500, statusMessage: 'boom' })
     })
 
@@ -127,5 +130,59 @@ describe('useOptimisticVotes', () => {
 
     expect(votes.myVoteFor('sat')).toBeNull()
     expect(shownToasts()).toEqual([expect.objectContaining({ tone: 'error', text: 'Dieser Termin steht schon fest.' })])
+  })
+
+  describe('saveNote (#102)', () => {
+    it('shows a Note at once, then keeps the Vote and the saved Note', async () => {
+      const { server, votes } = await setUp([{ slotId: 'sat', userId: ME, value: 'maybe', note: null }])
+
+      const saving = votes.saveNote('sat', 'kann maximal bis 20:30')
+
+      expect(votes.myNoteFor('sat')).toBe('kann maximal bis 20:30')
+      expect(votes.shown.value.find(vote => vote.userId === ME)).toEqual({ slotId: 'sat', userId: ME, value: 'maybe', note: 'kann maximal bis 20:30' })
+      expect(await saving).toBe(true)
+      expect(server.received).toEqual(['maybe'])
+      expect(server.notes).toEqual(['kann maximal bis 20:30'])
+      expect(votes.myNoteFor('sat')).toBe('kann maximal bis 20:30')
+    })
+
+    it('shows an emptied Note as gone at once', async () => {
+      const { votes } = await setUp([{ slotId: 'sat', userId: ME, value: 'maybe', note: 'bis 20:30' }])
+
+      const saving = votes.saveNote('sat', '')
+
+      expect(votes.myNoteFor('sat')).toBeNull()
+      await saving
+      expect(votes.myNoteFor('sat')).toBeNull()
+    })
+
+    it('keeps the Note when only the value changes', async () => {
+      const { server, votes } = await setUp([{ slotId: 'sat', userId: ME, value: 'maybe', note: 'bis 20:30' }])
+
+      await votes.vote('sat', 'no')
+
+      expect(server.notes).toEqual([undefined])
+      expect(votes.myNoteFor('sat')).toBe('bis 20:30')
+    })
+
+    it('rolls back with the failed-vote toast when saving fails', async () => {
+      const { votes } = await setUp([{ slotId: 'sat', userId: ME, value: 'maybe', note: 'bis 20:30' }], () => {
+        throw createError({ statusCode: 500, statusMessage: 'boom' })
+      })
+
+      expect(await votes.saveNote('sat', 'neu')).toBe(false)
+
+      expect(votes.myNoteFor('sat')).toBe('bis 20:30')
+      expect(shownToasts()).toEqual([expect.objectContaining({ tone: 'error', text: 'Deine Stimme ist nicht angekommen' })])
+    })
+
+    it('does nothing without a Vote', async () => {
+      const { server, votes } = await setUp([])
+
+      expect(await votes.saveNote('sat', 'hallo')).toBe(false)
+
+      expect(server.received).toEqual([])
+      expect(votes.myNoteFor('sat')).toBeNull()
+    })
   })
 })

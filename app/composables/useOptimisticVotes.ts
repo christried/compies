@@ -1,10 +1,13 @@
 import { apiErrorKey } from '~/utils/api-error'
-import type { EventView } from '~~/shared/event'
+import { useEventMutation } from '~/composables/useEventMutation'
+import { noteRows } from '~/utils/notes'
+import type { EventView, SavedVote } from '~~/shared/event'
 import type { VoteValue } from '~~/shared/poll'
 
 // The Votes as the poll draws them (ADR 0001, #50): a press shows at once and rolls back with a toast when
 // saving fails. While a Vote is in flight, the later presses on that Slot wait and only the newest of them is
-// sent. After each save the Event is refetched, and the server's answer replaces the drawn Vote.
+// sent. After each save the Event is refetched, and the server's answer replaces the drawn Vote. A Note on a
+// Vote (#102) is drawn the same way and rolls back with the same toast.
 
 export function useOptimisticVotes(
   slug: Readonly<Ref<string>>,
@@ -13,21 +16,32 @@ export function useOptimisticVotes(
 ) {
   const { t } = useI18n()
   const { toast } = useToast()
+  const { send } = useEventMutation(slug, refresh)
 
   /** Votes that are being saved, by Slot. They are drawn at once and dropped when the server has answered. */
   const pending = ref<Partial<Record<string, VoteValue>>>({})
+  /** Notes that are being saved, by Slot (null: removed). Drawn at once and dropped when the server has answered. */
+  const pendingNotes = ref<Partial<Record<string, string | null>>>({})
   /** Whether the „Gespeichert.“ notice shows: set by each saved Vote, cleared when the User closes it. */
   const savedNote = ref(false)
 
   const viewerId = computed(() => data.value?.viewerId ?? '')
 
-  /** The server's Votes with this User's pending Votes laid over them. */
+  /** The server's Votes with this User's pending Votes and Notes laid over them. A pending Vote keeps the server's Note. */
   const shown = computed(() => {
-    const overlaid = (data.value?.votes ?? []).filter(vote => vote.userId !== viewerId.value || pending.value[vote.slotId] === undefined)
-    const mine = Object.entries(pending.value)
-      .filter((entry): entry is [string, VoteValue] => entry[1] !== undefined)
-      .map(([slotId, value]) => ({ slotId, userId: viewerId.value, value }))
-    return [...overlaid, ...mine]
+    const votes = data.value?.votes ?? []
+    const isMine = (vote: { userId: string }) => vote.userId === viewerId.value
+    const mineOn = (slotId: string) => votes.find(vote => isMine(vote) && vote.slotId === slotId)
+    const others = votes.filter(vote => !isMine(vote) || (pending.value[vote.slotId] === undefined && pendingNotes.value[vote.slotId] === undefined))
+    const slotIds = new Set([...Object.keys(pending.value), ...Object.keys(pendingNotes.value)])
+    const mine = [...slotIds].flatMap((slotId) => {
+      const saved = mineOn(slotId)
+      const value = pending.value[slotId] ?? saved?.value
+      if (value === undefined) return []
+      const note = pendingNotes.value[slotId] === undefined ? (saved?.note ?? null) : pendingNotes.value[slotId]
+      return [{ slotId, userId: viewerId.value, value, note }]
+    })
+    return [...others, ...mine]
   })
 
   function countsFor(slotId: string) {
@@ -40,6 +54,15 @@ export function useOptimisticVotes(
 
   function myVoteFor(slotId: string): VoteValue | null {
     return shown.value.find(vote => vote.slotId === slotId && vote.userId === viewerId.value)?.value ?? null
+  }
+
+  function myNoteFor(slotId: string): string | null {
+    return shown.value.find(vote => vote.slotId === slotId && vote.userId === viewerId.value)?.note ?? null
+  }
+
+  /** The Notes on a Slot, in the order of `members` (the rows of „Wer kann wann?“), with this User's pending one (#102). */
+  function notesFor(slotId: string, members: { id: string, name: string }[]) {
+    return noteRows(shown.value.filter(vote => vote.slotId === slotId), members, viewerId.value)
   }
 
   function dropPending(slotId: string) {
@@ -78,7 +101,18 @@ export function useOptimisticVotes(
     }
   }
 
-  return { shown, savedNote, countsFor, myVoteFor, vote }
+  /** Saves this User's Note on a Slot they voted on (#102): shown at once, rolled back with the failed-vote toast. */
+  async function saveNote(slotId: string, text: string): Promise<boolean> {
+    const value = myVoteFor(slotId)
+    if (value === null) return false
+    // The server's rules, so the drawn Note is the one it will answer with: line breaks are spaces, trimmed, empty is none.
+    pendingNotes.value = { ...pendingNotes.value, [slotId]: text.replace(/\r\n|[\r\n]/g, ' ').trim() || null }
+    const taken = await send<SavedVote>('PUT', `slots/${slotId}/vote`, { body: { value, note: text }, fallback: 'error.voteFailed' })
+    pendingNotes.value = Object.fromEntries(Object.entries(pendingNotes.value).filter(([key]) => key !== slotId))
+    return taken
+  }
+
+  return { shown, savedNote, countsFor, myVoteFor, myNoteFor, notesFor, vote, saveNote }
 }
 
 /** The Votes of one Event as the poll draws them, and how a press saves one (useOptimisticVotes). */

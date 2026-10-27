@@ -15,6 +15,8 @@ export interface SendOptions<Answer> {
   errorKeys?: Partial<Record<ApiErrorCode, string>>
   /** Runs with the server's answer when it took the change, before the refetch, e.g. to close a dialog. */
   done?: (answer: Answer) => void
+  /** The toast copy for a refusal that has no copy of its own; `error.saveFailed` by default. */
+  fallback?: string
 }
 
 /** `refresh` refetches the Event, or asks the page to (a sheet emits `changed`). */
@@ -23,8 +25,8 @@ export function useEventMutation(slug: MaybeRefOrGetter<string>, refresh: () => 
   const { toast } = useToast()
 
   /** Sends one change to `/api/e/<slug>/<path>` and resolves to whether the server took it. Never throws. */
-  async function send<Answer = unknown>(method: 'POST' | 'PATCH' | 'DELETE', path: string, options: SendOptions<Answer> = {}) {
-    const { body, busy, errorKeys, done } = options
+  async function send<Answer = unknown>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, options: SendOptions<Answer> = {}) {
+    const { body, busy, errorKeys, done, fallback = 'error.saveFailed' } = options
     if (busy) busy.value = true
     let taken = false
     try {
@@ -35,7 +37,7 @@ export function useEventMutation(slug: MaybeRefOrGetter<string>, refresh: () => 
     }
     catch (failure) {
       // `{max}` is the one placeholder in the shared error copy (slots_max).
-      toast({ tone: 'error', text: t(apiErrorKey(failure, 'error.saveFailed', errorKeys), { max: SLOTS_MAX }) })
+      toast({ tone: 'error', text: t(apiErrorKey(failure, fallback, errorKeys), { max: SLOTS_MAX }) })
     }
     finally {
       if (busy) busy.value = false

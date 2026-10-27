@@ -70,7 +70,7 @@ describe('ConfirmModal', () => {
 })
 
 describe('DateConfirmDialog', () => {
-  const options = Array.from({ length: 16 }, (_, index) => ({ id: `s${index + 1}`, day: `Tag ${index + 1}`, time: '20:00', yes: 1, maybe: 0 }))
+  const options = Array.from({ length: 16 }, (_, index) => ({ id: `s${index + 1}`, day: `Tag ${index + 1}`, time: '20:00', yes: 1, maybe: 0, notes: [] }))
 
   it('checks the Slot the card opened it with, and a click moves the selection', async () => {
     const scrolled: string[] = []

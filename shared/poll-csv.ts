@@ -7,7 +7,7 @@ export interface PollCsvInput {
   labels: { name: string, past: string, yes: string, maybe: string, no: string }
   people: { id: string, name: string }[]
   slots: { id: string, day: string, time: string, past: boolean }[]
-  votes: { slotId: string, userId: string, value: VoteValue }[]
+  votes: { slotId: string, userId: string, value: VoteValue, note?: string | null }[]
 }
 
 const BOM = String.fromCharCode(0xFEFF)
@@ -23,7 +23,7 @@ function field(value: string): string {
 
 export function buildPollCsv(input: PollCsvInput): string {
   const { labels } = input
-  const voteOf = new Map(input.votes.map(vote => [`${vote.userId}|${vote.slotId}`, vote.value]))
+  const voteOf = new Map(input.votes.map(vote => [`${vote.userId}|${vote.slotId}`, vote]))
 
   const header = [
     labels.name,
@@ -31,8 +31,11 @@ export function buildPollCsv(input: PollCsvInput): string {
   ]
   const rows = input.people.map((person) => {
     const cells = input.slots.map((slot) => {
-      const value = voteOf.get(`${person.id}|${slot.id}`)
-      return value ? labels[VOTE_KEY[value]] : ''
+      const vote = voteOf.get(`${person.id}|${slot.id}`)
+      if (!vote) return ''
+      const label = labels[VOTE_KEY[vote.value]]
+      // A Note follows its label (#102), so a Note starting with = is not a formula.
+      return vote.note ? `${label}: ${vote.note}` : label
     })
     return [person.name, ...cells]
   })

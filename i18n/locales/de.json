@@ -969,6 +969,13 @@
       "prevMonth": "Vorheriger Monat",
       "nextMonth": "Nächster Monat"
     },
+    "notes": {
+      "add": "Anmerkung",
+      "edit": "Anmerkung bearbeiten",
+      "label": "Anmerkung",
+      "help": "Sehen alle im Event. Zum Beispiel: kann maximal bis 20:30",
+      "heading": "Anmerkungen"
+    },
     "poll": {
       "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
       "missingDates": "{n} Termin gesucht | {n} Termine gesucht",
@@ -1098,6 +1105,7 @@
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
     "voteFailed": "Deine Stimme ist nicht angekommen",
+    "noteTooLong": "Die Anmerkung ist zu lang.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",
