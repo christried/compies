@@ -1035,6 +1035,8 @@
       "empty": "Noch keine Termine. Schlag einen vor, dann kann abgestimmt werden.",
       "remove": "Termin entfernen",
       "votesLost": "{n} Stimme geht verloren | {n} Stimmen gehen verloren",
+      "change": "Ändern",
+      "votesKept": "Die Stimmen bleiben erhalten – sag der Gruppe Bescheid.",
       "newLabel": "Neuer Termin",
       "add": "Termin hinzufügen",
       "addHelp": "Die Zeit gilt für alle (Europe/Berlin). Bis zu {max} Termine.",
