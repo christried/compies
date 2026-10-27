@@ -139,3 +139,29 @@ export interface HomeEvent {
 export interface HomeView {
   events: HomeEvent[]
 }
+
+/** What `POST /api/e` returns: the new Event's link and its Invite link (#1, #16). */
+export interface CreatedEvent {
+  slug: string
+  inviteUrl: string
+}
+
+/** What `POST /api/e/:slug/rotate` returns: the new Invite link (#16). The old one answers 404 from now on. */
+export interface RotatedInvite {
+  inviteUrl: string
+}
+
+/**
+ * What `GET /api/invite/:invite` returns to anyone, signed out too (screen 07, ADR 0006): the Event name and the
+ * Host's Display name and avatar, nothing else.
+ */
+export interface InvitePreview {
+  eventName: string
+  host: { name: string, image: string | null }
+}
+
+/** What `POST /api/invite/:invite` returns: the Event the User is a Member of now, and whether this call added them (#10). */
+export interface JoinedEvent {
+  slug: string
+  joined: boolean
+}

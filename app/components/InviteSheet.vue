@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Check, RefreshCw, X } from '@lucide/vue'
+import type { RotatedInvite } from '~~/shared/event'
 
 // The Invite sheet (#16, 02-components § Sheet, screen 06 `App Einstieg ?s=invite`). The Host shares the
 // Invite link here and can rotate it when it leaks. Rotating asks first and needs a one second hold.
@@ -34,7 +35,7 @@ watch(() => props.open, (open) => {
 
 async function rotate() {
   try {
-    const { inviteUrl } = await $fetch<{ inviteUrl: string }>(`/api/e/${props.slug}/rotate`, { method: 'POST' })
+    const { inviteUrl } = await $fetch<RotatedInvite>(`/api/e/${props.slug}/rotate`, { method: 'POST' })
     current.value = inviteUrl
     rotated.value = true
     confirming.value = false
