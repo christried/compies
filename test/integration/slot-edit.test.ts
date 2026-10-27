@@ -240,7 +240,7 @@ describe('the Host edits Slots', () => {
       expect(await response.json()).toEqual({ slotId: doomed!.id, votesDeleted: 2 })
       expect((await slotRows(eventId)).map(row => row.id)).toEqual([kept!.id])
       const votes = await testDb.db.select().from(pollVotes)
-      expect(votes).toEqual([{ slotId: kept!.id, userId: memberId, value: 'no', updatedAt: expect.any(Date) }])
+      expect(votes).toEqual([{ slotId: kept!.id, userId: memberId, value: 'no', note: null, updatedAt: expect.any(Date) }])
     })
 
     it('removes a Slot without Votes', async () => {
