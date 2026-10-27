@@ -5,6 +5,7 @@ import { arrangeHome, homeAction, homeSessionIndex, needsVote } from '../../doma
 import { pollStanding } from '../../domain/poll'
 import { missingDates, openSlots, sessionNumbers } from '../../domain/session'
 import { useDb } from '../../utils/db'
+import { sessionNotRemoved } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 import type { HomeEvent, HomeView } from '../../../shared/event'
 
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   const sessionRows = await db
     .select({ eventId: sessions.eventId, startsAt: sessions.startsAt, slotId: sessions.slotId })
     .from(sessions)
-    .where(inArray(sessions.eventId, eventIds))
+    .where(and(inArray(sessions.eventId, eventIds), sessionNotRemoved))
 
   const slots = await db
     .select({ id: pollSlots.id, eventId: pollSlots.eventId, startsAt: pollSlots.startsAt })

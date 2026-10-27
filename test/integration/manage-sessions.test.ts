@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import getMe from '../../server/api/me.get'
+import listHome from '../../server/api/e/index.get'
 import createEvent from '../../server/api/e/index.post'
 import getEvent from '../../server/api/e/[slug].get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
@@ -28,6 +29,7 @@ describe('managing each Session', () => {
     testDb = await createTestDb()
     request = createTestServer(testDb.db, {
       'GET /api/me': getMe,
+      'GET /api/e': listHome,
       'POST /api/e': createEvent,
       'GET /api/e/:slug': getEvent,
       'POST /api/e/:slug/confirm': confirmDate,
@@ -133,14 +135,22 @@ describe('managing each Session', () => {
     return request(`/api/e/${slug}`, { headers: { cookie } })
   }
 
+  function ics(cookie: string, slug: string) {
+    return request(`/api/e/${slug}/ics`, { headers: { cookie } })
+  }
+
+  function home(cookie: string) {
+    return request('/api/e', { headers: { cookie } })
+  }
+
   async function eventRow(eventId: string) {
     const [row] = await testDb.db.select().from(events).where(eq(events.id, eventId))
     return row!
   }
 
-  /** All Sessions of an Event, earliest Date first (undated last). */
+  /** The Sessions of an Event, earliest Date first (undated last). A removed Session is not one of them (#65). */
   async function sessionRowsOf(eventId: string) {
-    return testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId)).orderBy(sessions.startsAt)
+    return testDb.db.select().from(sessions).where(and(eq(sessions.eventId, eventId), isNull(sessions.removedAt))).orderBy(sessions.startsAt)
   }
 
   describe('POST /api/e/:slug/sessions (add)', () => {
@@ -425,6 +435,87 @@ describe('managing each Session', () => {
       await reopen(cookie, slug, first!.id)
 
       expect((await reopen(cookie, slug, first!.id)).status).toBe(409)
+    })
+  })
+
+  describe('a removed Session (#65)', () => {
+    type View = { event: { phase: string }, sessions: { id: string, number: number | null, startsAt: string | null }[], removedSessions: { id: string, previousStartsAt: string }[] }
+
+    it('keeps the notice of a removed dated Session for every Member, with its Date', async () => {
+      const hostCookie = await signInAsHost()
+      const { slug, eventId } = await createDirect(hostCookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+      const { cookie } = await signIn(testDb.db, member)
+      await addMember(eventId, cookie)
+      const [first, second] = await sessionRowsOf(eventId)
+
+      // „Entfernen“ on the card of the second evening.
+      expect((await remove(hostCookie, slug, second!.id)).status).toBe(200)
+
+      const body = await (await view(cookie, slug)).json() as View
+      expect(body.removedSessions).toEqual([{ id: second!.id, previousStartsAt: '2090-11-08T19:00:00.000Z' }])
+      expect(body.sessions.map(session => session.id)).toEqual([first!.id])
+    })
+
+    it('keeps the notice of a reopened Session the Host then removes with „−“, and the Event follows the Dates left', async () => {
+      const hostCookie = await signInAsHost()
+      const { slug, eventId, slotIds } = await createPoll(hostCookie, 2, 2)
+      const { cookie } = await signIn(testDb.db, member)
+      await addMember(eventId, cookie)
+      await confirm(hostCookie, slug, slotIds[0]!)
+      await confirm(hostCookie, slug, slotIds[1]!)
+      const second = (await sessionRowsOf(eventId)).find(row => row.slotId === slotIds[1])!
+      await reopen(hostCookie, slug, second.id)
+
+      // „−“ next to „1 Termin gesucht“ removes the last Session without a Date: the reopened one with the notice.
+      expect((await remove(hostCookie, slug, second.id)).status).toBe(200)
+
+      const body = await (await view(cookie, slug)).json() as View
+      expect(body.removedSessions).toEqual([{ id: second.id, previousStartsAt: second.startsAt!.toISOString() }])
+      expect(body.sessions.map(session => session.startsAt)).toEqual([expect.any(String)])
+      expect(body.event.phase).toBe('date_set')
+    })
+
+    it('is not in the .ics and not counted: Session numbers, missing Dates and Home', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId } = await createDirect(cookie, ['2090-11-07T20:00', '2090-11-08T20:00', '2090-11-09T20:00'])
+      const [first] = await sessionRowsOf(eventId)
+
+      await remove(cookie, slug, first!.id)
+
+      const file = await (await ics(cookie, slug)).text()
+      expect(file).not.toContain(first!.id)
+      expect(file.match(/BEGIN:VEVENT/g)).toHaveLength(2)
+      const body = await (await view(cookie, slug)).json() as View & { missingDates: number }
+      expect(body.sessions.map(session => [session.number, session.startsAt])).toEqual([
+        [1, '2090-11-08T19:00:00.000Z'],
+        [2, '2090-11-09T19:00:00.000Z'],
+      ])
+      expect(body.missingDates).toBe(0)
+      const { events: [card] } = await (await home(cookie)).json() as { events: { sessionCount: number, missingDates: number, nextSession: unknown }[] }
+      expect(card).toMatchObject({ sessionCount: 2, missingDates: 0, nextSession: { number: 1, startsAt: '2090-11-08T19:00:00.000Z' } })
+    })
+
+    it('frees its place under the 8-Session limit', async () => {
+      const cookie = await signInAsHost()
+      const dates = Array.from({ length: 8 }, (_, index) => `2090-11-0${index + 1}T20:00`)
+      const { slug, eventId } = await createDirect(cookie, dates)
+      const [first] = await sessionRowsOf(eventId)
+      await remove(cookie, slug, first!.id)
+
+      expect((await add(cookie, slug, { startsAt: '2090-11-10T20:00' })).status).toBe(200)
+      expect(await (await add(cookie, slug, {})).json()).toMatchObject({ statusMessage: 'sessions_max' })
+    })
+
+    it('really deletes a Session that never had a Date, so no notice is left', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId } = await createPoll(cookie, 2, 2)
+      const [undated] = await sessionRowsOf(eventId)
+
+      await remove(cookie, slug, undated!.id)
+
+      expect(await testDb.db.select().from(sessions).where(eq(sessions.id, undated!.id))).toEqual([])
+      const body = await (await view(cookie, slug)).json() as View
+      expect(body.removedSessions).toEqual([])
     })
   })
 

@@ -99,7 +99,7 @@ describe('events', () => {
         hostId: host!.id,
         deletedAt: null,
       })
-      expect(await sessionRows(event!.id)).toEqual([{ id: expect.any(String), eventId: event!.id, startsAt: null, previousStartsAt: null, slotId: null, icsSequence: 0 }])
+      expect(await sessionRows(event!.id)).toEqual([{ id: expect.any(String), eventId: event!.id, startsAt: null, previousStartsAt: null, slotId: null, icsSequence: 0, removedAt: null }])
       expect(inviteUrl.endsWith(`${slug}-${event!.inviteToken}`)).toBe(true)
       expect(event!.inviteToken).toMatch(/^[A-Za-z0-9]{12}$/)
 

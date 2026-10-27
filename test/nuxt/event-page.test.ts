@@ -13,7 +13,7 @@ const LARSI = '00000000-0000-4000-8000-000000000002'
 type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no' }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null }
+type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, removedSessions?: { id: string, previousStartsAt: string }[] }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
@@ -25,6 +25,7 @@ function view(slug: string, votes: Vote[], overrides: EventOverrides = {}) {
   return {
     event,
     sessions: [{ id: `session-${slug}`, startsAt, previousStartsAt }],
+    removedSessions: overrides.removedSessions ?? [],
     viewerId: kitty.id,
     slots: overrides.slots ?? [
       { id: 'fri', startsAt: '2026-10-23T18:00:00.000Z', past: false },
@@ -589,6 +590,19 @@ describe('rescheduling and reopening the Date', () => {
   it('shows every Member the notice with the withdrawn Date while the poll is open again', async () => {
     const member = serve(s => view(s, [], {
       event: { phase: 'poll', previousStartsAt: '2026-10-24T18:00:00.000Z' },
+    }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
+
+    expect(page.text()).toContain('Der Termin Samstag, 24. Oktober, 20:00 Uhr wurde aufgehoben, bitte aus deinem Kalender löschen')
+  })
+
+  it('shows every Member the notice of a Session the Host removed with its Date (#65)', async () => {
+    const member = serve(s => view(s, [], {
+      event: { phase: 'date_set', startsAt: '2026-10-23T18:00:00.000Z' },
+      slots: [],
+      bestSlotId: null,
+      removedSessions: [{ id: 'removed', previousStartsAt: '2026-10-24T18:00:00.000Z' }],
     }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
