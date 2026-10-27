@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Minus, Plus, X } from '@lucide/vue'
-import { apiErrorKey } from '~/utils/api-error'
-import { EVENT_NAME_MAX, SESSIONS_MAX, SLOTS_MAX, eventNameLength, slotProblems as slotRuleProblems, type CreatedEvent } from '~~/shared/event'
+import { apiErrorKey, errorCopyKey } from '~/utils/api-error'
+import { EVENT_NAME_MAX, SESSIONS_MAX, SLOTS_MAX, eventNameLength, slotProblems as slotRuleProblems, type CreatedEvent, type SlotProblem } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // Create an Event (screen M2, `?s=create`): a name, the Session count (1 to 8), then a Date poll with
@@ -48,17 +48,17 @@ function rowProblems(values: string[]) {
   return instants.map(instant => (instant === null ? null : problems[next++] ?? null))
 }
 const slotProblems = computed(() => rowProblems(slots.value))
-const slotErrors = computed(() => slotProblems.value.map((problem) => {
-  if (problem === 'in_past') return t('error.slotPast')
-  if (problem === 'duplicate_slot') return t('error.slotDuplicate')
-  return undefined
-}))
+const slotErrors = computed(() => slotProblems.value.map(problem => (problem ? t(errorCopyKey(problem)) : undefined)))
+// Direct mode: two Sessions on one Date is the Date rule, not a duplicate Slot.
+const DIRECT_COPY = { duplicate_slot: 'error.dateDuplicate' }
 const directProblems = computed(() => rowProblems(direct.value))
-const directErrors = computed(() => directProblems.value.map((problem) => {
-  if (problem === 'in_past') return t('error.slotPast')
-  if (problem === 'duplicate_slot') return t('error.dateDuplicate')
-  return undefined
-}))
+const directErrors = computed(() => directProblems.value.map(problem => (problem ? t(errorCopyKey(problem, DIRECT_COPY)) : undefined)))
+
+/** A past row blocks with its own call to action; any other row error blocks with that row's text. */
+function rowBlocker(problems: (SlotProblem | null)[], errors: (string | undefined)[]): string | null {
+  if (problems.includes('in_past')) return t('mvp.create.blockedPast')
+  return errors.find(error => error !== undefined) ?? null
+}
 
 /** Why the CTA is blocked, or null when the form can be sent. */
 const blocker = computed<string | null>(() => {
@@ -66,15 +66,11 @@ const blocker = computed<string | null>(() => {
   if (nameTooLong.value) return t('error.nameTooLong', { max: EVENT_NAME_MAX })
   if (mode.value === 'direct') {
     if (direct.value.includes('')) return t('mvp.create.directEmpty')
-    if (directProblems.value.includes('in_past')) return t('mvp.create.blockedPast')
-    if (directProblems.value.includes('duplicate_slot')) return t('error.dateDuplicate')
-    return null
+    return rowBlocker(directProblems.value, directErrors.value)
   }
   if (slots.value.includes('')) return t('mvp.create.slotEmpty')
   if (slots.value.length < sessionCount.value) return t('mvp.create.minSlots', { n: sessionCount.value })
-  if (slotProblems.value.includes('in_past')) return t('mvp.create.blockedPast')
-  if (slotProblems.value.includes('duplicate_slot')) return t('error.slotDuplicate')
-  return null
+  return rowBlocker(slotProblems.value, slotErrors.value)
 })
 
 const ctaLabel = computed(() => {
