@@ -102,6 +102,15 @@ describe('the signed-in User and profile setup', () => {
       expect((await setup(cookie, '🎮'.repeat(32))).status).toBe(200)
     })
 
+    it('counts a skin-toned emoji as one, so 32 of them are saved and 33 refused', async () => {
+      const { cookie } = await signIn(testDb.db, kitty)
+
+      const saved = await setup(cookie, '👍🏽'.repeat(32))
+      expect(saved.status).toBe(200)
+      expect((await saved.json()).user.displayName).toBe('👍🏽'.repeat(32))
+      expect((await setup(cookie, '👍🏽'.repeat(33))).status).toBe(400)
+    })
+
     it('rejects an empty, blank, too long or missing name', async () => {
       const { cookie } = await signIn(testDb.db, kitty)
 
