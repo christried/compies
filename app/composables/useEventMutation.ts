@@ -23,7 +23,7 @@ export function useEventMutation(slug: MaybeRefOrGetter<string>, refresh: () => 
   const { toast } = useToast()
 
   /** Sends one change to `/api/e/<slug>/<path>` and resolves to whether the server took it. Never throws. */
-  async function send<Answer = unknown>(method: 'POST' | 'DELETE', path: string, options: SendOptions<Answer> = {}) {
+  async function send<Answer = unknown>(method: 'POST' | 'PATCH' | 'DELETE', path: string, options: SendOptions<Answer> = {}) {
     const { body, busy, errorKeys, done } = options
     if (busy) busy.value = true
     let taken = false

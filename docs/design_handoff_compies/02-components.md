@@ -64,6 +64,7 @@ Common rules for every component:
 - [`DateSetCard`](#datesetcard) [MVP]
 - [`CalendarSheet`](#calendarsheet) [MVP]
 - [`InviteLinkCard`](#invitelinkcard) [MVP]
+- [`SlotEditSheet`](#sloteditsheet) [MVP]
 - [`GameCard`](#gamecard) [1.0]
 - [`LuckyWheel`](#luckywheel) [1.0]
 - [`ClipPlayer`](#clipplayer) [1.0]
@@ -724,6 +725,21 @@ Show, copy and rotate the invite link.
 - **Desktop / mobile:** Desktop dock „Einladen“ sheet; mobile bottom sheet.
 - **Accessibility:** Copy button announces „Link kopiert“.
 - **Motion:** —
+
+## SlotEditSheet
+**Scope:** [MVP] · **Ref:** — (the create form's Slot row, in a Sheet; #15, #85)
+
+The Host's „Termine bearbeiten“, from the host dock while the Date poll is open: the open Slots, changed, removed and added.
+
+- **Props / variants:** `open`, `slug`, `slots: {id, startsAt, votes}[]`
+- **States:**
+  - list: each open Slot in time order with „Ändern“ and remove. Without Votes, remove is an IconButton; with Votes, a HoldToConfirmButton under „N Stimmen gehen verloren“.
+  - changing (one row at a time): „Ändern“ turns the row into the DateTimeField, prefilled with the Slot's time, with „Speichern“ and „Abbrechen“. The rules and messages of adding apply (in the future, not another Slot's minute; the Slot's own minute is fine). A Slot with Votes says „Die Stimmen bleiben erhalten – sag der Gruppe Bescheid.“: the Votes stay and Members are not told. Saved, the row closes and the list re-sorts, so the Slot may move. A Slot that became a Date meanwhile is refused with „Dieser Termin steht schon fest.“
+  - adding: DateTimeField + „Termin hinzufügen“ (dashed). Full at 16 Slots: „Höchstens 16 Vorschläge.“ instead.
+- **Slots:** —
+- **Desktop / mobile:** Sheet.
+- **Accessibility:** The changing field is named by the Slot's current time. „Speichern“ and „Termin hinzufügen“ stay focusable while blocked (`aria-disabled`), with the rule's message on the field.
+- **Motion:** as Sheet.
 
 ## GameCard
 **Scope:** [1.0] · **Ref:** GameCard
