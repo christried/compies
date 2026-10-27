@@ -1,7 +1,7 @@
 // Sign-in route guard (#1 § Auth and permissions). Every app route needs a signed-in User who has
 // finished profile setup, except sign-in itself, the invite preview, the legal pages and Neuigkeiten.
 
-import { parseEventPath } from '~~/shared/links'
+import { eventPathSegment, parseEventPath } from '~~/shared/links'
 
 export const SIGN_IN_PATH = '/anmelden'
 export const SETUP_PATH = '/einrichten'
@@ -19,7 +19,8 @@ interface GuardRoute {
 
 /** An Invite link is `/e/<slug>-<token>` with a 12-character base62 token (ADR 0006, shared/links.ts). */
 export function isInviteLinkPath(path: string) {
-  return path.startsWith('/e/') && parseEventPath(path.slice('/e/'.length))?.kind === 'invite'
+  const segment = eventPathSegment(path)
+  return segment !== null && parseEventPath(segment)?.kind === 'invite'
 }
 
 /** A redirect target from the query, if it stays on this site; Home otherwise. */

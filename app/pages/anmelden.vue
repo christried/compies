@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { isSignInProvider, type SignInProvider } from '~~/shared/auth'
 import type { InvitePreview } from '~~/shared/event'
+import { eventPathSegment } from '~~/shared/links'
 import { isInviteLinkPath, safeRedirect, SIGN_IN_PATH } from '~/utils/auth-guard'
 
 // Sign-in (screen 02). The OAuth round trip leaves the app: Better Auth comes back to the target
@@ -19,7 +20,7 @@ const invited = computed(() => invitePath.value !== null)
 const { data: invite } = await useAsyncData<InvitePreview | null>('sign-in-invite', async () => {
   if (!invitePath.value) return null
   try {
-    return await $fetch<InvitePreview>(`/api/invite/${invitePath.value.slice('/e/'.length)}`)
+    return await $fetch<InvitePreview>(`/api/invite/${eventPathSegment(invitePath.value)}`)
   }
   catch {
     return null

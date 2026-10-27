@@ -22,6 +22,11 @@ export function eventPath(slug: string): string {
   return `/e/${slug}`
 }
 
+/** The `<segment>` of a `/e/<segment>` path, or null for any other path. */
+export function eventPathSegment(path: string): string | null {
+  return path.startsWith('/e/') ? path.slice('/e/'.length) : null
+}
+
 /** The Invite link's path. */
 export function invitePath(slug: string, token: string): string {
   return `/e/${slug}-${token}`

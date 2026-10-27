@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createInviteToken, createSlug } from '../../server/domain/slug'
-import { parseEventPath } from '../../shared/links'
+import { eventPathSegment, parseEventPath } from '../../shared/links'
 
 describe('createSlug', () => {
   it('kebab-cases the name and appends the suffix', () => {
@@ -47,5 +47,19 @@ describe('parseEventPath', () => {
     for (const segment of ['', 'Freitags-k7q2', 'a--b-k7q2', 'abc-', '-k7q2', 'abc-AbCdEf12345']) {
       expect(parseEventPath(segment)).toBeNull()
     }
+  })
+})
+
+describe('eventPathSegment', () => {
+  it('returns what follows /e/', () => {
+    expect(eventPathSegment('/e/abc-k7q2')).toBe('abc-k7q2')
+  })
+
+  it('returns null for any other path', () => {
+    expect(eventPathSegment('/archiv')).toBeNull()
+  })
+
+  it('returns an empty segment for a bare /e/', () => {
+    expect(eventPathSegment('/e/')).toBe('')
   })
 })

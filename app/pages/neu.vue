@@ -2,6 +2,7 @@
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Minus, Plus, X } from '@lucide/vue'
 import { apiErrorKey, errorCopyKey } from '~/utils/api-error'
 import { EVENT_NAME_MAX, SESSIONS_MAX, SLOTS_MAX, eventNameLength, slotProblems as slotRuleProblems, type CreatedEvent, type SlotProblem } from '~~/shared/event'
+import { eventPath } from '~~/shared/links'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // Create an Event (screen M2, `?s=create`): a name, the Session count (1 to 8), then a Date poll with
@@ -161,7 +162,7 @@ const MODES = computed(() => [
           </p>
           <InviteLinkCard :url="created.inviteUrl" />
           <NuxtLink
-            :to="`/e/${created.slug}`"
+            :to="eventPath(created.slug)"
             class="inline-flex items-center gap-1 self-start font-extrabold no-underline"
           >
             {{ mode === 'poll' ? t('mvp.create.toPoll') : t('mvp.create.toEvent') }}
