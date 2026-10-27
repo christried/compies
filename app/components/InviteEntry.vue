@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ChevronRight, LoaderCircle } from '@lucide/vue'
-import type { InvitePreview } from '~/components/SignInCard.vue'
 import { apiFailure } from '~/utils/api-error'
 import { SIGN_IN_PATH } from '~/utils/auth-guard'
+import type { InvitePreview, JoinedEvent } from '~~/shared/event'
 
 // The Invite link `/e/<slug>-<token>` (#10, ADR 0006, screen 07 `App Einstieg ?s=open`). A signed-out
 // visitor sees the Event name and the Host's Display name and avatar, nothing else, and is sent to
@@ -27,7 +27,7 @@ const failure = ref<'invalid' | 'deleted' | null>(null)
 
 async function join() {
   try {
-    const { slug, joined } = await $fetch<{ slug: string, joined: boolean }>(`/api/invite/${props.invite}`, { method: 'POST' })
+    const { slug, joined } = await $fetch<JoinedEvent>(`/api/invite/${props.invite}`, { method: 'POST' })
     if (joined) toast({ tone: 'success', text: t('invite.joinedToast') })
     await navigateTo(`/e/${slug}`, { replace: true })
   }

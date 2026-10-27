@@ -1,5 +1,5 @@
 import { appendResponseHeader } from 'h3'
-import type { AuthUser } from '~/composables/useAuthUser'
+import type { AuthUser, MeView } from '~~/shared/auth'
 import { guardRoute } from '~/utils/auth-guard'
 
 // Loads the signed-in User once per page load (server-side on the first request), then guards
@@ -16,10 +16,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
 })
 
 async function loadUser(): Promise<AuthUser | null> {
-  if (import.meta.client) return (await $fetch<{ user: AuthUser | null }>('/api/me')).user
+  if (import.meta.client) return (await $fetch<MeView>('/api/me')).user
   // Better Auth may extend the login session while reading it; pass its cookie on to the browser.
   const event = useRequestEvent()!
-  const response = await $fetch.raw<{ user: AuthUser | null }>('/api/me', { headers: useRequestHeaders(['cookie']) })
+  const response = await $fetch.raw<MeView>('/api/me', { headers: useRequestHeaders(['cookie']) })
   for (const cookie of response.headers.getSetCookie()) appendResponseHeader(event, 'set-cookie', cookie)
   return response._data!.user
 }

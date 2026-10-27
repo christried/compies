@@ -4,14 +4,16 @@ import { users } from '../../db/schema'
 import { parseDisplayName } from '../../domain/profile'
 import { useDb } from '../../utils/db'
 import { requireUser, userColumns } from '../../utils/user'
+import type { SavedProfile } from '../../../shared/auth'
 
 // Profile setup (screen 03): the Display name. Better Auth never writes this column (ADR 0004).
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<SavedProfile> => {
   const { id } = await requireUser(event)
   const body = await readBody<{ displayName?: unknown } | null>(event)
   const displayName = parseDisplayName(body?.displayName)
   if (!displayName) throw createError({ statusCode: 400, statusMessage: 'Display name must be 1–32 characters' })
 
+  // requireUser has just read this row, so the update returns it.
   const [user] = await useDb(event).update(users).set({ displayName }).where(eq(users.id, id)).returning(userColumns)
-  return { user }
+  return { user: user! }
 })

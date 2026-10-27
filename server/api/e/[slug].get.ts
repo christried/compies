@@ -8,7 +8,7 @@ import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
 import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
-import type { SessionView } from '../../../shared/event'
+import type { EventView, SessionView } from '../../../shared/event'
 
 // The Event link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
 // same 404, so nobody can probe which Events exist. A former Member of a deleted Event gets
@@ -16,7 +16,7 @@ import type { SessionView } from '../../../shared/event'
 // Members see the open Slots only (#52): a Slot that became a Session's Date is gone from the poll, with
 // its Votes. The Best slot and how many Members have voted on every votable Slot count open future Slots.
 // The poll UI refetches this every 15 s (ADR 0001).
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<EventView> => {
   const user = await requireUser(event)
   const db = useDb(event)
   const eventRow = await loadEvent(db, getRouterParam(event, 'slug') ?? '', user.id)
@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
     viewerId: user.id,
     slots: slots.map(slot => ({
       id: slot.id,
-      startsAt: slot.startsAt,
+      startsAt: slot.startsAt.toISOString(),
       past: isPast(slot.startsAt, now),
     })),
     votes,

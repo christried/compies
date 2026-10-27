@@ -1,14 +1,5 @@
 import { SIGN_IN_PATH } from '~/utils/auth-guard'
-
-/** The signed-in User as `GET /api/me` returns it. */
-export interface AuthUser {
-  id: string
-  name: string
-  image: string | null
-  displayName: string | null
-  canHost: boolean
-  isAdmin: boolean
-}
+import type { AuthUser } from '~~/shared/auth'
 
 /** The signed-in User, null when signed out. The auth middleware loads it once per page load. */
 export function useAuthUser() {

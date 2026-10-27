@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Minus, Plus, X } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
-import { EVENT_NAME_MAX, SESSIONS_MAX, SLOTS_MAX, eventNameLength, slotProblems as slotRuleProblems } from '~~/shared/event'
+import { EVENT_NAME_MAX, SESSIONS_MAX, SLOTS_MAX, eventNameLength, slotProblems as slotRuleProblems, type CreatedEvent } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // Create an Event (screen M2, `?s=create`): a name, the Session count (1 to 8), then a Date poll with
@@ -24,7 +24,7 @@ const now = ref(utcToBerlin(new Date()))
 const attempted = ref(false)
 const saving = ref(false)
 const failure = ref<string | null>(null)
-const created = ref<{ slug: string, inviteUrl: string } | null>(null)
+const created = ref<CreatedEvent | null>(null)
 const doneHeading = useTemplateRef('doneHeading')
 
 watch(sessionCount, (count) => {
@@ -101,7 +101,7 @@ async function submit() {
   saving.value = true
   failure.value = null
   try {
-    created.value = await $fetch<{ slug: string, inviteUrl: string }>('/api/e', { method: 'POST', body })
+    created.value = await $fetch<CreatedEvent>('/api/e', { method: 'POST', body })
     await nextTick()
     doneHeading.value?.focus()
   }

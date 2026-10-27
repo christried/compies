@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
 import { safeRedirect } from '~/utils/auth-guard'
-import { DISPLAY_NAME_MAX } from '~~/shared/auth'
+import { DISPLAY_NAME_MAX, type SavedProfile } from '~~/shared/auth'
 
 // Profile setup (screen 03), once after the first sign-in: the Display name, prefilled from the
 // provider. The avatar is the provider image in the MVP; upload arrives with T2b.
@@ -31,7 +31,7 @@ async function save() {
   saving.value = true
   saveFailed.value = false
   try {
-    const response = await $fetch<{ user: AuthUser }>('/api/profile/setup', { method: 'POST', body: { displayName: displayName.value } })
+    const response = await $fetch<SavedProfile>('/api/profile/setup', { method: 'POST', body: { displayName: displayName.value } })
     user.value = response.user
     await navigateTo(safeRedirect(route.query.redirect), { replace: true })
   }

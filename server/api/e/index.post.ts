@@ -8,12 +8,13 @@ import { useDb, type Db } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { inviteUrl } from '../../utils/links'
 import { requireUser } from '../../utils/user'
+import type { CreatedEvent } from '../../../shared/event'
 
 const SLUG_ATTEMPTS = 5
 
 // Create an Event (screen M2). Only Users with the Host permission may create one (ADR 0002).
 // The Event, its Sessions, its Slots and the Host's membership are written in one transaction.
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const user = await requireUser(event)
   if (!user.canHost) throw apiError('no_host_permission')
 
