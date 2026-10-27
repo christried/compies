@@ -73,8 +73,12 @@ A proposed date and time in an Event's Date poll, from which the Host can set a 
 _Avoid_: Option, proposal, Termin
 
 **Vote**:
-One User's answer to one Slot: yes, maybe or no (UI: Ja / Meh / Nein).
+One User's answer to one Slot: yes, maybe or no (UI: Ja / Meh / Nein), optionally with a Note.
 _Avoid_: Response, availability
+
+**Note**:
+A short free text a Member adds to their Vote, such as a time limit or a counter-offer; it belongs to the Vote, lives and dies with it, and every Member can read it (UI: Anmerkung).
+_Avoid_: Comment, remark, reason
 
 **Has voted**:
 A Member has voted once they have a Vote on every open Slot that still lies in the future; Slots that have passed or became a Date do not count, and with no such Slot left nobody has voted.
