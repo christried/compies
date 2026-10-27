@@ -1,4 +1,4 @@
-import { apiFailure } from '~/utils/api-error'
+import { apiErrorKey } from '~/utils/api-error'
 import type { EventView } from '~~/shared/event'
 import type { VoteValue } from '~~/shared/poll'
 
@@ -65,9 +65,9 @@ export function useOptimisticVotes(
       }
     }
     catch (failure) {
-      // Only a rate limit gets its own copy; any other refusal is the plain "did not arrive" (#11).
-      const rateLimited = apiFailure(failure).code === 'rate_limited'
-      toast({ tone: 'error', text: t(rateLimited ? 'error.rateLimited' : 'error.voteFailed') })
+      // The shared error copy, as for every Event change (#74); a reason it has no copy for is the plain
+      // "did not arrive" (#11).
+      toast({ tone: 'error', text: t(apiErrorKey(failure, 'error.voteFailed')) })
       dropPending(slotId)
     }
     finally {

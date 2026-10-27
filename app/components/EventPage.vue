@@ -31,33 +31,20 @@ const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
   return { id: slot.id, day: formatSlotDay(instant), time: formatSlotTime(instant), past: slot.past }
 }))
 
-const {
-  confirmOpen,
-  confirming,
-  rescheduleOpen,
-  rescheduling,
-  rescheduleSessionId,
-  addOpen,
-  adding,
-  confirmDate,
-  openReschedule,
-  rescheduleDate,
-  reopenSession,
-  removeSession,
-  addSession,
-} = useHostActions(slug, refresh)
+// The Host's changes go through the one send (#74); the dialogs and the sheet close only when the server took it.
+const { send } = useEventMutation(slug, refresh)
+const confirmOpen = ref(false)
+const confirming = ref(false)
 const confirmPreset = ref<string | null>(null)
 
-/** Bumped when a Reopen or a removal is refused, so its hold button starts again from zero (#55). */
-const holdEpoch = ref(0)
-
-async function reopenOne(sessionId: string) {
-  if (!(await reopenSession(sessionId))) holdEpoch.value += 1
+/** Sets the Date of the next undated Session from the Slot the Host picked (#52). */
+function confirmDate(slotId: string) {
+  return send('POST', 'confirm', { body: { slotId }, busy: confirming, done: () => (confirmOpen.value = false) })
 }
 
-async function removeOne(sessionId: string) {
-  if (!(await removeSession(sessionId))) holdEpoch.value += 1
-}
+/** Withdraws one Session's Date and frees its Slot; removes a Session, whose Slot goes back to the poll (#55). */
+const reopenSession = (sessionId: string) => send('POST', `sessions/${sessionId}/reopen`)
+const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
 /** The open Slots the Host can still confirm, in time order, with their counts for the dialog (#52). */
 const confirmOptions = computed(() => slots.value
@@ -85,12 +72,33 @@ function openConfirm(slotId?: string) {
   confirmOpen.value = true
 }
 
+const rescheduleOpen = ref(false)
+const rescheduling = ref(false)
+const rescheduleSessionId = ref<string | null>(null)
+
+function openReschedule(sessionId: string) {
+  rescheduleSessionId.value = sessionId
+  rescheduleOpen.value = true
+}
+
 /** The Session the reschedule dialog moves, while it still has its Date (#55). */
 const rescheduleSession = computed(() => data.value?.sessions
   .find((session): session is DatedSessionView => session.id === rescheduleSessionId.value && session.startsAt !== null) ?? null)
 
+/** Moves that Session's Date to a new Berlin time (`YYYY-MM-DDTHH:mm`); the dialog shows only while it has one. */
+function rescheduleDate(startsAt: string) {
+  return send('POST', `sessions/${rescheduleSessionId.value}/reschedule`, { body: { startsAt }, busy: rescheduling, done: () => (rescheduleOpen.value = false) })
+}
+
 /** Sessions can be added in every Phase before the Event finishes (#55, sessionsEditable). */
 const canChangeSessions = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
+const addOpen = ref(false)
+const adding = ref(false)
+
+/** Adds a Session with this Berlin time, or without one (null) to leave its Date to the poll (#55). */
+function addSession(startsAt: string | null) {
+  return send('POST', 'sessions', { body: startsAt === null ? {} : { startsAt }, busy: adding, done: () => (addOpen.value = false) })
+}
 
 const editing = ref(false)
 const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
@@ -133,10 +141,9 @@ usePollRefresh(() => {
       <EventSessions
         :view="data"
         :slug="slug"
-        :hold-epoch="holdEpoch"
+        :reopen="reopenSession"
+        :remove="removeSession"
         @reschedule="openReschedule"
-        @reopen="reopenOne"
-        @remove="removeOne"
         @add="addOpen = true"
         @invite="inviteOpen = true"
         @calendar="calendarOpen = true"
@@ -148,7 +155,7 @@ usePollRefresh(() => {
         :slots="slots"
         :votes="votes"
         @pick="openConfirm"
-        @remove-session="removeOne"
+        @remove-session="removeSession"
       />
 
       <BaustelleZone
@@ -225,7 +232,7 @@ usePollRefresh(() => {
       :slug="slug"
       :url="data.inviteUrl"
       @close="inviteOpen = false"
-      @rotated="refresh()"
+      @changed="refresh"
     />
 
     <CalendarSheet
