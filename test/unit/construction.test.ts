@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { constructionSite } from '../../app/utils/construction'
 
-const visitor = { hasHostPermission: false, isAdmin: false }
-const host = { hasHostPermission: true, isAdmin: false }
-const admin = { hasHostPermission: true, isAdmin: true }
+const visitor = { canHost: false, isAdmin: false }
+const host = { canHost: true, isAdmin: false }
+const admin = { canHost: true, isAdmin: true }
 
 describe('constructionSite', () => {
   it('maps each unbuilt hub area to its own Construction page in the hub shell for those who may see it', () => {
@@ -24,7 +24,7 @@ describe('constructionSite', () => {
   })
 
   it('shows Bibliothek to the Platform admin even without a Host permission flag', () => {
-    expect(constructionSite('/bibliothek', { hasHostPermission: false, isAdmin: true })).toEqual({ area: 'bibliothek', shell: 'hub' })
+    expect(constructionSite('/bibliothek', { canHost: false, isAdmin: true })).toEqual({ area: 'bibliothek', shell: 'hub' })
   })
 
   it('shows the generic state for Admin to everyone but the Platform admin', () => {

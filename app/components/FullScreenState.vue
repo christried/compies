@@ -12,7 +12,7 @@ onMounted(() => heading.value?.focus())
 
 const copy = computed(() => `errorPage.${props.kind}`)
 
-useHead({ title: () => `${t(`${copy.value}.title`)} | ${t('app.name')}` })
+useHead({ title: () => t(`${copy.value}.title`) })
 </script>
 
 <template>

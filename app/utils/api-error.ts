@@ -30,12 +30,16 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   rate_limited: 'error.rateLimited',
 }
 
+/** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */
+export function errorCopyKey(code: ApiErrorCode, overrides: Partial<Record<ApiErrorCode, string>> = {}, fallback = 'error.saveFailed'): string {
+  return overrides[code] ?? CODE_COPY[code] ?? fallback
+}
+
 /**
  * The i18n key for a failed call: the screen's own key for a code if it has one, else the shared one,
  * else `fallback`. Placeholders such as `{max}` are the caller's to fill.
  */
 export function apiErrorKey(failure: unknown, fallback = 'error.saveFailed', overrides: Partial<Record<ApiErrorCode, string>> = {}): string {
   const code = apiFailure(failure).code as ApiErrorCode | undefined
-  if (!code) return fallback
-  return overrides[code] ?? CODE_COPY[code] ?? fallback
+  return code ? errorCopyKey(code, overrides, fallback) : fallback
 }

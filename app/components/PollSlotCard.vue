@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { CalendarCheck, Check, Sparkles, X } from '@lucide/vue'
+import { CalendarCheck, Sparkles } from '@lucide/vue'
 import { VOTE_VALUES, type VoteValue } from '~~/shared/poll'
+import { VOTE_LOOK } from '~/utils/vote-look'
 
 // One proposed Slot in the poll (02-components § PollSlotCard, screen M3). The three vote options are
 // a radiogroup labelled with the Slot. A past Slot is marked vorbei and cannot be voted on. The
@@ -29,11 +30,7 @@ const { t } = useI18n()
 const label = computed(() => `${props.timeslot.day} ${props.timeslot.time}`)
 const share = (count: number) => (props.total > 0 ? `${(count / props.total) * 100}%` : '0%')
 
-const options = computed(() => [
-  { value: 'yes', label: t('poll.yes'), icon: Check, fill: 'bg-success text-on-success' },
-  { value: 'maybe', label: t('poll.maybe'), fill: 'bg-warning text-on-warning' },
-  { value: 'no', label: t('poll.no'), icon: X, fill: 'bg-error text-on-error' },
-])
+const options = computed(() => VOTE_VALUES.map(value => ({ value, label: t(VOTE_LOOK[value].labelKey), icon: VOTE_LOOK[value].icon, fill: VOTE_LOOK[value].fill })))
 
 // The control reports a string; only a known vote value is emitted, so no cast is needed.
 function choose(value: string) {

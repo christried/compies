@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Archive, Gamepad2, House, Shield, User } from '@lucide/vue'
 import type { Component } from 'vue'
-import { canSeeAdmin, canSeeLibrary, type ConstructionViewer, HUB_SITES } from '~/utils/construction'
+import { canSeeAdmin, canSeeLibrary, HUB_SITES, type Viewer } from '~/utils/construction'
 
 // Main navigation: the header nav on desktop, the bottom tab bar below md.
 const props = withDefaults(defineProps<{
   layout: 'header' | 'tabs'
   /** Who sees the hidden areas (Bibliothek, Admin); null when signed out. The rules live in construction.ts. */
-  viewer?: ConstructionViewer | null
+  viewer?: Viewer
 }>(), { viewer: null })
 
 const { t } = useI18n()

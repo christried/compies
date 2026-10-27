@@ -1,11 +1,11 @@
 // Every time a User enters or reads is Europe/Berlin, hard-coded; storage is UTC (ADR 0003). The one
 // conversion between the two, shared by the server and the forms in the app.
-const ZONE = 'Europe/Berlin'
+export const BERLIN_ZONE = 'Europe/Berlin'
 // Far enough from a DST change to read the offset in force on either side of it.
 const DST_PROBE_MS = 6 * 60 * 60_000
 
 const wallClockFormat = new Intl.DateTimeFormat('en-CA', {
-  timeZone: ZONE,
+  timeZone: BERLIN_ZONE,
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',

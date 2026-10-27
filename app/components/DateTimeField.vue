@@ -24,7 +24,7 @@ import {
   PopoverRoot,
 } from 'reka-ui'
 import type { Ref } from 'vue'
-import { joinBerlinLocal, splitBerlinLocal } from '~~/shared/time'
+import { joinBerlinLocal, splitBerlinLocal, utcToBerlin } from '~~/shared/time'
 
 // A Berlin date and time in two own fields (ADR 0010, 02-components § DateTimeField). The value is
 // `YYYY-MM-DDTHH:mm` in Europe/Berlin, or empty until both parts are set and valid (ADR 0003).
@@ -149,7 +149,7 @@ watch(() => props.modelValue, (value) => {
 
 // The earliest selectable day is today in Berlin, in every date field: the field owns it, so no caller
 // has to pass it (ADR 0003, spec #41).
-const berlinToday = parseDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date()))
+const berlinToday = parseDate(splitBerlinLocal(utcToBerlin(new Date())).date)
 const calendarValue = computed(() => (dateValue.value ? parseDate(dateValue.value) : undefined))
 const calendarPlaceholder = computed(() => calendarValue.value ?? berlinToday)
 

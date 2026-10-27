@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
+import { errorCopyKey } from '~/utils/api-error'
 import { formatSlotWhen } from '~/utils/berlin-time'
 import { SLOTS_MAX, slotProblems, type ChangedSlot } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
@@ -57,9 +58,7 @@ function problemText(value: string, changing: string | null = null) {
   if (value === '') return undefined
   const existing = props.slots.filter(slot => slot.id !== changing).map(slot => new Date(slot.startsAt))
   const problem = slotProblems([berlinToUtc(value)], existing, berlinToUtc(now.value))[0]
-  if (problem === 'in_past') return t('error.slotPast')
-  if (problem === 'duplicate_slot') return t('error.slotDuplicate')
-  return undefined
+  return problem ? t(errorCopyKey(problem)) : undefined
 }
 
 const addProblem = computed(() => problemText(newSlot.value))

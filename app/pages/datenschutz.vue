@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Datenschutzerklärung (#8): public, reachable without sign-in.
 const { t } = useI18n()
-useHead({ title: () => `${t('legal.datenschutz.title')} | ${t('app.name')}` })
+useHead({ title: () => t('legal.datenschutz.title') })
 </script>
 
 <template>

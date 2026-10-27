@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { Check, X } from '@lucide/vue'
+import { VOTE_VALUES } from '~~/shared/poll'
+import { VOTE_LOOK } from '~/utils/vote-look'
 
 // What the three vote options promise (#50): shown above the Slot cards during the Date poll, each
 // in the option's own look. One line on desktop, stacked on phones. Meh is text only, no icon.
 const { t } = useI18n()
 
-const items = computed(() => [
-  { key: 'yes', label: t('poll.yes'), promise: t('poll.legend.yes'), icon: Check, look: 'bg-success text-on-success' },
-  { key: 'maybe', label: t('poll.maybe'), promise: t('poll.legend.maybe'), icon: undefined, look: 'bg-warning text-on-warning' },
-  { key: 'no', label: t('poll.no'), promise: t('poll.legend.no'), icon: X, look: 'bg-error text-on-error' },
-])
+const items = computed(() => VOTE_VALUES.map(value => ({ key: value, label: t(VOTE_LOOK[value].labelKey), promise: t(`poll.legend.${value}`), icon: VOTE_LOOK[value].icon, look: VOTE_LOOK[value].fill })))
 </script>
 
 <template>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Check, Minus, X } from '@lucide/vue'
-import type { VoteValue } from '~~/shared/poll'
+import type { Component } from 'vue'
+import { VOTE_VALUES, type VoteValue } from '~~/shared/poll'
 import { buildPollCsv } from '~~/shared/poll-csv'
+import { VOTE_LOOK } from '~/utils/vote-look'
 
 // "Wer kann wann?": everyone in the Event against every Slot (02-components § PollMatrix). A real
 // table with row and column headers. "noch nicht abgestimmt" (no Vote yet) is drawn dashed and is
@@ -55,11 +56,11 @@ const valueOf = computed(() => {
   return (userId: string, slotId: string) => map.get(`${userId}|${slotId}`) ?? null
 })
 
-// One look per Vote value (#11 § Acceptance: yes, maybe, no and the dashed "not voted yet").
-const LOOK: Record<VoteValue | 'open', { key: string, icon?: typeof Check, cell: string }> = {
-  yes: { key: 'poll.yes', icon: Check, cell: 'bg-success text-on-success border-solid rounded-full' },
-  maybe: { key: 'poll.maybe', icon: Minus, cell: 'bg-warning text-on-warning border-solid rounded-full' },
-  no: { key: 'poll.no', icon: X, cell: 'bg-error text-on-error border-solid rounded-[6px]' },
+// The matrix cell per Vote value (#11 § Acceptance: yes, maybe, no and the dashed "not voted yet"): the shared
+// vote look plus the cell's shape.
+const SHAPE: Record<VoteValue, string> = { yes: 'rounded-full', maybe: 'rounded-full', no: 'rounded-[6px]' }
+const LOOK: Record<VoteValue | 'open', { key: string, icon?: Component, cell: string }> = {
+  ...Object.fromEntries(VOTE_VALUES.map(value => [value, { key: VOTE_LOOK[value].labelKey, icon: VOTE_LOOK[value].cellIcon, cell: `${VOTE_LOOK[value].fill} border-solid ${SHAPE[value]}` }])) as Record<VoteValue, { key: string, icon?: Component, cell: string }>,
   open: { key: 'mvp.poll.notVoted', cell: 'bg-transparent text-ink-3 border-dashed rounded-full' },
 }
 

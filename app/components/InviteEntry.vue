@@ -3,6 +3,7 @@ import { ChevronRight, LoaderCircle } from '@lucide/vue'
 import { apiFailure } from '~/utils/api-error'
 import { SIGN_IN_PATH } from '~/utils/auth-guard'
 import type { InvitePreview, JoinedEvent } from '~~/shared/event'
+import { eventPath } from '~~/shared/links'
 
 // The Invite link `/e/<slug>-<token>` (#10, ADR 0006, screen 07 `App Einstieg ?s=open`). A signed-out
 // visitor sees the Event name and the Host's Display name and avatar, nothing else, and is sent to
@@ -17,11 +18,12 @@ const { toast } = useToast()
 const user = useAuthUser()
 const signedIn = user.value !== null
 
-useHead({ title: () => `${t(signedIn ? 'invite.kicker' : 'auth.titleInvite')} | ${t('app.name')}` })
+useHead({ title: () => t(signedIn ? 'invite.kicker' : 'auth.titleInvite') })
 
 const { data: preview, error: previewError } = await useFetch<InvitePreview>(`/api/invite/${props.invite}`, { immediate: !signedIn })
 const previewFailed = computed(() => !signedIn && !!previewError.value)
-const signInPath = `${SIGN_IN_PATH}?redirect=${encodeURIComponent(`/e/${props.invite}`)}`
+// The sign-in returns to this Invite link, which is the current route.
+const signInPath = `${SIGN_IN_PATH}?redirect=${encodeURIComponent(useRoute().path)}`
 
 const failure = ref<'invalid' | 'deleted' | null>(null)
 
@@ -29,7 +31,7 @@ async function join() {
   try {
     const { slug, joined } = await $fetch<JoinedEvent>(`/api/invite/${props.invite}`, { method: 'POST' })
     if (joined) toast({ tone: 'success', text: t('invite.joinedToast') })
-    await navigateTo(`/e/${slug}`, { replace: true })
+    await navigateTo(eventPath(slug), { replace: true })
   }
   catch (error) {
     failure.value = apiFailure(error).status === 410 ? 'deleted' : 'invalid'

@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { Phase } from '~~/shared/event'
+
 // Phase chip in the Event header and on cards (02-components § PhasePill). The text carries the
 // meaning; the dot only adds colour. Phases beyond the MVP (running, finished, archived) are styled
 // too, so 1.0 needs no change here.
-type Phase = 'draft' | 'poll' | 'date_set' | 'running' | 'finished' | 'archived'
-
 defineProps<{ phase: Phase }>()
 
 const { t } = useI18n()

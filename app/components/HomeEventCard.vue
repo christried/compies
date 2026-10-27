@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { formatSlotWhen } from '~/utils/berlin-time'
 import type { HomeEvent } from '~~/shared/event'
+import { eventPath } from '~~/shared/links'
 
 // One Event on Home (screen M1, 02-components). Shows the name and the Host, the phase, the Best
 // slot so far while Dates are missing (or the Date of an open poll) or the next Session once all
@@ -78,7 +79,7 @@ const ctaLabel = computed(() => t(CTA_LABEL[props.event.action]))
 
     <div class="mt-auto pt-1">
       <AppButton
-        :to="`/e/${event.slug}`"
+        :to="eventPath(event.slug)"
         :variant="event.action === 'vote' ? 'primary' : 'secondary'"
       >
         {{ ctaLabel }}

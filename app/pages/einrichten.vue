@@ -8,7 +8,7 @@ import { DISPLAY_NAME_MAX, type SavedProfile } from '~~/shared/auth'
 
 const route = useRoute()
 const { t } = useI18n()
-useHead({ title: () => `${t('onboarding.title')} | ${t('app.name')}` })
+useHead({ title: () => t('onboarding.title') })
 const user = useAuthUser()
 
 // Counted in characters, as the server does: maxlength would count an emoji as two.
