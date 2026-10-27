@@ -6,7 +6,7 @@ import { missingDates, openSlots, sessionNumbers } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
-import { eventSessions } from '../../utils/sessions'
+import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 
 // The Event link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
@@ -23,6 +23,7 @@ export default defineEventHandler(async (event) => {
   const now = new Date()
   const isHost = eventRow.hostId === user.id
   const rows = await eventSessions(db, eventRow.id)
+  const removed = await removedSessionNotices(db, eventRow.id)
   const allSlots = await db
     .select({ id: pollSlots.id, startsAt: pollSlots.startsAt })
     .from(pollSlots)
@@ -67,6 +68,8 @@ export default defineEventHandler(async (event) => {
       startsAt: row.startsAt?.toISOString() ?? null,
       previousStartsAt: row.previousStartsAt?.toISOString() ?? null,
     })),
+    // Removed Sessions that had a Date, only for their notice (#65); they count nowhere else.
+    removedSessions: removed.map(row => ({ id: row.id, previousStartsAt: row.previousStartsAt.toISOString() })),
     missingDates: missingDates(rows.map(row => row.startsAt)),
     // The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on.
     inviteUrl: isHost ? inviteUrl(event, eventRow.slug, eventRow.inviteToken) : null,

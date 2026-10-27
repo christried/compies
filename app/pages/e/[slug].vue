@@ -183,8 +183,9 @@ function whenOf(iso: string) {
   return t('mvp.set.dateTime', { date: formatSetDay(instant), time: formatSlotTime(instant) })
 }
 
-/** The Reopen notices of the Sessions, and how a Member closes one (#14, useReopenNotices). */
-const { notices: reopenNotices, close: closeReopenNotice } = useReopenNotices(sessions)
+/** The Reopen notices of the Sessions and of the removed ones (#65), and how a Member closes one (#14, useReopenNotices). */
+const noticeSessions = computed(() => [...sessions.value, ...(data.value?.removedSessions ?? [])])
+const { notices: reopenNotices, close: closeReopenNotice } = useReopenNotices(noticeSessions)
 
 const editing = ref(false)
 const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({

@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { getRouterParam, readBody, type H3Event } from 'h3'
 import { events, pollSlots, sessions } from '../db/schema'
 import { phaseAfterChange } from '../domain/phase'
@@ -21,7 +21,7 @@ export type SessionChangeBody = { startsAt?: unknown, slotId?: unknown } | null
 /**
  * One Host change to an Event's Sessions (#69). `before` and `after` are read from the database under the
  * Event lock, so the calendar sequence and the Phase never come from a hand-built copy of what was written.
- * The Session read is `eventSessions` (below); #65's removed-Session filter goes there.
+ * The Session read is `eventSessions` (below), which leaves removed Sessions out (#65).
  */
 export async function changeSessions<T extends object>(
   event: H3Event,
@@ -42,9 +42,28 @@ export async function changeSessions<T extends object>(
   })
 }
 
-/** The Sessions of an Event. */
+/**
+ * A Session the Host has not removed (#65). A removed Session only lives on in its notice, so it counts
+ * nowhere else: every read of an Event's Sessions (here and Home) filters with this.
+ */
+export const sessionNotRemoved = isNull(sessions.removedAt)
+
+/** The Sessions of an Event. A removed Session is not one of them (#65). */
 export function eventSessions(db: Db, eventId: string): Promise<SessionRow[]> {
-  return db.select().from(sessions).where(eq(sessions.eventId, eventId))
+  return db.select().from(sessions).where(and(eq(sessions.eventId, eventId), sessionNotRemoved))
+}
+
+/**
+ * The removed Sessions of an Event that had a Date, with that Date (#65): only for the notice that tells
+ * every Member to delete the evening from their calendar. Earliest Date first.
+ */
+export async function removedSessionNotices(db: Db, eventId: string): Promise<{ id: string, previousStartsAt: Date }[]> {
+  const rows = await db
+    .select({ id: sessions.id, previousStartsAt: sessions.previousStartsAt })
+    .from(sessions)
+    .where(and(eq(sessions.eventId, eventId), isNotNull(sessions.removedAt), isNotNull(sessions.previousStartsAt)))
+    .orderBy(asc(sessions.previousStartsAt))
+  return rows.filter((row): row is { id: string, previousStartsAt: Date } => row.previousStartsAt !== null)
 }
 
 /** The Session with this id, or 404 (#69). */
