@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildIcs, ICS_DURATION_MS, sessionEntries, type CalendarCopy, type IcsEntry } from '../../server/domain/ics'
+import { buildIcs, sessionEntries, type CalendarCopy, type IcsEntry } from '../../server/domain/ics'
+import { SESSION_DURATION_MS } from '../../shared/event'
 import { berlinToUtc } from '../../shared/time'
 
 // The .ics a Member downloads (#1 § Domain rules, #53): one entry per Session with a Date, stable UID,
@@ -63,7 +64,7 @@ describe('buildIcs', () => {
 
     expect(lines).toContain('DTSTART:20261024T180000Z')
     expect(lines).toContain('DTEND:20261025T010000Z')
-    expect(ICS_DURATION_MS).toBe(7 * 60 * 60_000)
+    expect(SESSION_DURATION_MS).toBe(7 * 60 * 60_000)
   })
 
   it('stamps the file with the moment it was made, in UTC', () => {

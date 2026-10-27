@@ -1,12 +1,11 @@
 // The calendar file a Member downloads for an Event (#1 § Domain rules, ADR 0003, #53). One VEVENT per
 // Session with a Date: the UID is stable per Session and SEQUENCE is the Session's icsSequence, so a
-// Reschedule updates the same entry in the calendar. Times are UTC. The builders are pure: the endpoint
-// passes in the copy (from de.json) and the current time.
+// Reschedule updates the same entry in the calendar. Times are UTC, and an entry lasts SESSION_DURATION_MS,
+// as the Google and Outlook links do (#81). The builders are pure: the endpoint passes in the copy (from
+// de.json) and the current time.
 
+import { SESSION_DURATION_MS } from '../../shared/event'
 import { isDated, numberedSessions } from './session'
-
-/** The event lasts 7 h (code constant, #1). */
-export const ICS_DURATION_MS = 7 * 60 * 60_000
 
 export interface IcsEntry {
   /** Stable per Session. */
@@ -69,7 +68,7 @@ function fold(line: string): string[] {
 
 /** The VEVENT lines of one entry, with a display alarm one hour before the start. */
 function eventLines(entry: IcsEntry, now: Date): string[] {
-  const end = new Date(entry.startsAt.getTime() + ICS_DURATION_MS)
+  const end = new Date(entry.startsAt.getTime() + SESSION_DURATION_MS)
   return [
     'BEGIN:VEVENT',
     `UID:${entry.uid}`,
