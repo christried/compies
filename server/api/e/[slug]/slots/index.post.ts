@@ -1,10 +1,10 @@
-import { eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam, readBody } from 'h3'
 import { pollSlots } from '../../../../db/schema'
-import { parseAddedSlot } from '../../../../domain/event'
+import { parseEditedSlot } from '../../../../domain/event'
 import { useDb } from '../../../../utils/db'
 import { apiError } from '../../../../utils/errors'
 import { lockEventForSlotEdit } from '../../../../utils/host-event'
+import { eventSlots } from '../../../../utils/slots'
 import { requireUser } from '../../../../utils/user'
 
 // Add a Slot to a Date poll (#15, #1 § Domain rules). Host only, Phase `poll`. The Slot must be in the
@@ -17,12 +17,9 @@ export default defineEventHandler(async (event) => {
 
   return useDb(event).transaction(async (tx) => {
     const eventRow = await lockEventForSlotEdit(tx, slug, user.id)
-    const existing = await tx
-      .select({ startsAt: pollSlots.startsAt })
-      .from(pollSlots)
-      .where(eq(pollSlots.eventId, eventRow.id))
+    const existing = await eventSlots(tx, eventRow.id)
 
-    const parsed = parseAddedSlot(body?.startsAt, existing.map(row => row.startsAt), new Date())
+    const parsed = parseEditedSlot(body?.startsAt, existing, new Date())
     if (!parsed.ok) throw apiError(parsed.error)
 
     const [slot] = await tx
