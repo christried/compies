@@ -1,4 +1,4 @@
-﻿import { SESSION_DURATION_MS } from './event'
+import { SESSION_DURATION_MS } from './event'
 
 // „Google Kalender“ and „Outlook“ in the calendar sheet (#81): addresses that open a new, pre-filled event in that
 // calendar. Pure: the sheet passes in the calendar file's own title and description and the Session's Date. The
