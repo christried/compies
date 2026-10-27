@@ -169,7 +169,7 @@ describe('managing each Session', () => {
       expect(await sessionRowsOf(eventId)).toHaveLength(1)
     })
 
-    it('adds an undated Session: the Event goes back to the date poll and the dated Session keeps its Date', async () => {
+    it('adds an undated Session: the Event goes back to the date poll, and the dated Session keeps its Date and gets a higher sequence, since its title now names its number (#67)', async () => {
       const cookie = await signInAsHost()
       const { slug, eventId } = await createDirect(cookie, ['2090-11-07T20:00'])
 
@@ -179,7 +179,7 @@ describe('managing each Session', () => {
       expect(await eventRow(eventId)).toMatchObject({ phase: 'poll' })
       const rows = await sessionRowsOf(eventId)
       expect(rows.map(row => row.startsAt)).toEqual([new Date('2090-11-07T19:00:00.000Z'), null])
-      expect(rows[0]).toMatchObject({ icsSequence: 0 })
+      expect(rows[0]).toMatchObject({ icsSequence: 1 })
     })
 
     it('adds a dated Session: the Date is stored in UTC, the Event stays set, and the Sessions whose number changes get a higher sequence', async () => {
@@ -326,6 +326,17 @@ describe('managing each Session', () => {
       expect(response.status).toBe(409)
       expect(await response.json()).toMatchObject({ statusMessage: 'last_session' })
       expect(await sessionRowsOf(eventId)).toHaveLength(1)
+    })
+
+    it('raises the sequence of the Session left alone, since its title no longer names its number (#67)', async () => {
+      const cookie = await signInAsHost()
+      const { slug, eventId } = await createDirect(cookie, ['2090-11-07T20:00', '2090-11-08T20:00'])
+      const [first, second] = await sessionRowsOf(eventId)
+
+      await remove(cookie, slug, second!.id)
+
+      const left = (await sessionRowsOf(eventId)).find(row => row.id === first!.id)
+      expect(left).toMatchObject({ startsAt: new Date('2090-11-07T19:00:00.000Z'), icsSequence: 1 })
     })
 
     it('raises the sequence of the later Sessions whose number changes', async () => {
