@@ -70,7 +70,8 @@ function lookFor(userId: string, slotId: string) {
 
 <template>
   <div class="grid gap-3">
-    <div class="overflow-x-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface">
+    <!-- relative: the cells' sr-only texts are absolute and would otherwise widen the whole page on phones. -->
+    <div class="relative overflow-x-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface">
       <table class="w-full border-collapse">
         <caption class="sr-only">
           {{ t('mvp.poll.whoWhen') }}
