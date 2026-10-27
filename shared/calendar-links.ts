@@ -17,7 +17,7 @@ export interface CalendarLinks {
 
 /** An instant as the UTC form `YYYYMMDDTHHmmssZ`. */
 function compactUtc(instant: Date): string {
-  return instant.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+  return isoUtc(instant).replace(/[-:]/g, '')
 }
 
 /** An instant as the UTC form `YYYY-MM-DDTHH:mm:ssZ`. */
