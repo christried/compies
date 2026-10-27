@@ -163,6 +163,21 @@ export interface ChangedSlot {
   startsAt: string
 }
 
+/** What `POST /api/e/:slug/confirm` returns: the Date the Session took from its Slot, a UTC ISO string, and the Phase (#52). */
+export interface DateConfirmed { startsAt: string, phase: Phase }
+/** What `POST /api/e/:slug/sessions` returns: the new Session's id and the Phase (#55). */
+export interface SessionAdded { id: string, phase: Phase }
+/** What `DELETE /api/e/:slug/sessions/:id` returns: the removed Session's id and the Phase (#55). */
+export interface SessionRemoved { id: string, phase: Phase }
+/** What `POST /api/e/:slug/sessions/:id/reopen` returns: the Phase only (#14, #55). */
+export interface SessionReopened { phase: Phase }
+/** What `POST /api/e/:slug/sessions/:id/reschedule` returns: the Session's new Date, a UTC ISO string, and the Phase (#53). */
+export interface SessionRescheduled { startsAt: string, phase: Phase }
+/** What `POST /api/e/:slug/slots` returns: the new Slot's id and its time, a UTC ISO string (#15). */
+export interface SlotAdded { slotId: string, startsAt: string }
+/** What `DELETE /api/e/:slug/slots/:slotId` returns: the removed Slot's id and how many Votes went with it (#15). */
+export interface SlotRemoved { slotId: string, votesDeleted: number }
+
 /** What `POST /api/e/:slug/rotate` returns: the new Invite link (#16). The old one answers 404 from now on. */
 export interface RotatedInvite {
   inviteUrl: string
