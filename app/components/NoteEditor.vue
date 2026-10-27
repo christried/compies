@@ -18,11 +18,13 @@ const emit = defineEmits<{ save: [text: string] }>()
 const { t } = useI18n()
 const editing = ref(false)
 const draft = ref('')
+const openedByMeh = ref(false)
 const field = useTemplateRef<{ focus: () => void }>('field')
 
 async function open(focus = true) {
   draft.value = props.note ?? ''
   editing.value = true
+  openedByMeh.value = !focus
   if (focus) {
     await nextTick()
     field.value?.focus()
@@ -41,7 +43,12 @@ function save() {
 // A Vote that did not arrive takes the open field with it.
 watch(() => props.voted, voted => !voted && cancel())
 
-defineExpose({ open })
+/** Closes the field Meh opened, if nothing was typed into it, when the Vote moves on from Meh. */
+function closeIfUntouched() {
+  if (editing.value && openedByMeh.value && draft.value === (props.note ?? '')) editing.value = false
+}
+
+defineExpose({ open, closeIfUntouched })
 </script>
 
 <template>

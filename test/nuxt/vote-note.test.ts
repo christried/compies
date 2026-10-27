@@ -76,6 +76,69 @@ describe('Notes on Votes', () => {
       expect(card(page, 'sat').find('input').exists()).toBe(false)
     })
 
+    it('closes the field Meh opened when the Vote moves on to Nein, if nothing was typed into it', async () => {
+      const store = serve(s => view(s, []))
+      registerEndpoint(`/api/e/${store.slug}/slots/sat/vote`, {
+        method: 'PUT',
+        handler: async (event) => {
+          const { value } = await readBody<{ value: Vote['value'] }>(event)
+          store.set(view(store.slug, [{ slotId: 'sat', userId: kitty.id, value }]))
+          return { slotId: 'sat', value, note: null }
+        },
+      })
+      const page = await mountSuspended(EventPage, { route: `/e/${store.slug}`, attachTo: document.body })
+
+      await radio(page, 'Sa 24.10. 20:00', 'Meh').trigger('click')
+      await vi.waitFor(() => expect(card(page, 'sat').find('input').exists()).toBe(true))
+
+      await radio(page, 'Sa 24.10. 20:00', 'Nein').trigger('click')
+      await vi.waitFor(() => expect(card(page, 'sat').find('input').exists()).toBe(false))
+    })
+
+    it('leaves the field Meh opened open once something was typed into it', async () => {
+      const sent: string[] = []
+      const store = serve(s => view(s, []))
+      registerEndpoint(`/api/e/${store.slug}/slots/sat/vote`, {
+        method: 'PUT',
+        handler: async (event) => {
+          const { value } = await readBody<{ value: Vote['value'] }>(event)
+          sent.push(value)
+          store.set(view(store.slug, [{ slotId: 'sat', userId: kitty.id, value }]))
+          return { slotId: 'sat', value, note: null }
+        },
+      })
+      const page = await mountSuspended(EventPage, { route: `/e/${store.slug}`, attachTo: document.body })
+
+      await radio(page, 'Sa 24.10. 20:00', 'Meh').trigger('click')
+      await vi.waitFor(() => expect(card(page, 'sat').find('input').exists()).toBe(true))
+      await card(page, 'sat').get('input').setValue('halb')
+
+      await radio(page, 'Sa 24.10. 20:00', 'Nein').trigger('click')
+      await vi.waitFor(() => expect(sent).toEqual(['maybe', 'no']))
+      expect(card(page, 'sat').get('input').element.value).toBe('halb')
+    })
+
+    it('keeps a field opened with the Anmerkung button open when the Vote changes', async () => {
+      const sent: string[] = []
+      const store = serve(s => view(s, [kittyMaybe]))
+      registerEndpoint(`/api/e/${store.slug}/slots/fri/vote`, {
+        method: 'PUT',
+        handler: async (event) => {
+          const { value } = await readBody<{ value: Vote['value'] }>(event)
+          sent.push(value)
+          store.set(view(store.slug, [{ slotId: 'fri', userId: kitty.id, value }]))
+          return { slotId: 'fri', value, note: null }
+        },
+      })
+      const page = await mountSuspended(EventPage, { route: `/e/${store.slug}`, attachTo: document.body })
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      await radio(page, 'Fr 23.10. 20:00', 'Nein').trigger('click')
+
+      await vi.waitFor(() => expect(sent).toEqual(['no']))
+      expect(card(page, 'fri').find('input').exists()).toBe(true)
+    })
+
     it('saves a Note with the Vote, shows it at once and lists it under Anmerkungen', async () => {
       let sent: unknown = null
       const store = serve(s => view(s, [kittyMaybe]))
