@@ -49,6 +49,12 @@ export function slotsEditable(phase: Phase): boolean {
   return phase === 'poll'
 }
 
+/** What `PUT /api/e/:slug/slots/:slotId/vote` returns: the Vote as saved, with its Note or null (#102). */
+export interface SavedVote { slotId: string, value: VoteValue, note: string | null }
+
+/** A Note on a Vote, as listed with the Slot it belongs to (#102). */
+export interface SessionNote { userId: string, value: VoteValue, note: string }
+
 /** A Session with its Date (#48, #49). Times are UTC ISO strings. */
 export interface DatedSessionView {
   id: string
@@ -60,6 +66,8 @@ export interface DatedSessionView {
   startsAt: string
   /** Set Date and Reschedule clear the Date a Reopen withdrew. */
   previousStartsAt: null
+  /** The Notes on the Slot this Session's Date came from (#102); none for a Date set directly. */
+  notes: SessionNote[]
 }
 
 /** A Session still waiting for a Date from the Date poll. Times are UTC ISO strings. */
@@ -98,7 +106,7 @@ export interface EventView {
   viewerId: string
   /** The open Slots only (#52): a Slot that became a Session's Date is left out, with its Votes. */
   slots: { id: string, startsAt: string, past: boolean }[]
-  votes: { slotId: string, userId: string, value: VoteValue }[]
+  votes: { slotId: string, userId: string, value: VoteValue, note: string | null }[]
   members: { id: string, name: string, image: string | null, isHost: boolean }[]
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null

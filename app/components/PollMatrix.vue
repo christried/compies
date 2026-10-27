@@ -27,7 +27,7 @@ export interface MatrixSlot {
 const props = defineProps<{
   people: MatrixPerson[]
   slots: MatrixSlot[]
-  votes: { slotId: string, userId: string, value: VoteValue }[]
+  votes: { slotId: string, userId: string, value: VoteValue, note?: string | null }[]
   meId: string
 }>()
 
@@ -50,10 +50,9 @@ function exportCsv() {
   setTimeout(() => URL.revokeObjectURL(url))
 }
 
-const valueOf = computed(() => {
-  const map = new Map<string, VoteValue>()
-  for (const vote of props.votes) map.set(`${vote.userId}|${vote.slotId}`, vote.value)
-  return (userId: string, slotId: string) => map.get(`${userId}|${slotId}`) ?? null
+const voteOf = computed(() => {
+  const map = new Map(props.votes.map(vote => [`${vote.userId}|${vote.slotId}`, vote]))
+  return (userId: string, slotId: string) => map.get(`${userId}|${slotId}`)
 })
 
 // The matrix cell per Vote value (#11 § Acceptance: yes, maybe, no and the dashed "not voted yet"): the shared
@@ -65,7 +64,14 @@ const LOOK: Record<VoteValue | 'open', { key: string, icon?: Component, cell: st
 }
 
 function lookFor(userId: string, slotId: string) {
-  return LOOK[valueOf.value(userId, slotId) ?? 'open']
+  return LOOK[voteOf.value(userId, slotId)?.value ?? 'open']
+}
+
+/** What a cell says in words (#102): the Vote, followed by its Note when there is one. */
+function textFor(userId: string, slotId: string) {
+  const note = voteOf.value(userId, slotId)?.note
+  const label = t(lookFor(userId, slotId).key)
+  return note ? `${label}: ${note}` : label
 }
 </script>
 
@@ -122,10 +128,10 @@ function lookFor(userId: string, slotId: string) {
               v-for="slot in slots"
               :key="slot.id"
               class="border-b-[1.5px] border-line-soft text-center"
-              :title="t(lookFor(person.id, slot.id).key)"
+              :title="textFor(person.id, slot.id)"
             >
               <span
-                class="inline-grid size-[26px] place-items-center border-2 border-line"
+                class="relative inline-grid size-[26px] place-items-center border-2 border-line"
                 :class="lookFor(person.id, slot.id).cell"
               >
                 <AppIcon
@@ -133,8 +139,14 @@ function lookFor(userId: string, slotId: string) {
                   :icon="lookFor(person.id, slot.id).icon!"
                   :size="13"
                 />
+                <!-- A Note is marked with a dot at the corner (#102); its text is in the title and the sr-only text. -->
+                <span
+                  v-if="voteOf(person.id, slot.id)?.note"
+                  aria-hidden="true"
+                  class="absolute -top-1 -right-1 size-2.5 rounded-full border-2 border-ink bg-primary"
+                />
               </span>
-              <span class="sr-only">{{ t(lookFor(person.id, slot.id).key) }}</span>
+              <span class="sr-only">{{ textFor(person.id, slot.id) }}</span>
             </td>
           </tr>
         </tbody>

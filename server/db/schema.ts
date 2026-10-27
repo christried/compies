@@ -111,5 +111,7 @@ export const pollVotes = pgTable('poll_votes', {
   slotId: uuid('slot_id').notNull().references(() => pollSlots.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull().references(() => users.id),
   value: voteValue('value').notNull(),
+  /** A short remark on the Vote, read by every Member (#102). */
+  note: text('note'),
   updatedAt: updatedAt(),
 }, table => [primaryKey({ columns: [table.slotId, table.userId] })])

@@ -224,7 +224,7 @@ describe('events', () => {
       const { event, slots, sessions, missingDates } = await (await read(cookie, slug)).json()
 
       expect(event).toMatchObject({ phase: 'date_set' })
-      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null }])
+      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null, notes: [] }])
       expect(missingDates).toBe(0)
       expect(slots).toEqual([])
     })

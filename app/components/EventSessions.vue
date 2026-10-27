@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CalendarPlus, CircleAlert, Link as LinkIcon, Plus, Search, Trash2 } from '@lucide/vue'
 import { formatSetDay, formatSlotTime } from '~/utils/berlin-time'
+import { noteRows } from '~/utils/notes'
 import { SESSIONS_MAX, sessionsEditable, type DatedSessionView, type EventView } from '~~/shared/event'
 
 // The Sessions part of the Event page (#49, #55). On top, the notice of every Date that was withdrawn, by a
@@ -61,6 +62,7 @@ const { notices: reopenNotices, close: closeReopenNotice } = useReopenNotices(no
       :key="session.id"
       :starts-at="session.startsAt"
       :number="session.number"
+      :notes="noteRows(session.notes, view.members, view.viewerId)"
       :is-host="view.event.isHost"
       @reschedule="emit('reschedule', session.id)"
     >

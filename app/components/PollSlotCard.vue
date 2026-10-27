@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CalendarCheck, Sparkles } from '@lucide/vue'
 import { VOTE_VALUES, type VoteValue } from '~~/shared/poll'
+import type { NoteRow } from '~/utils/notes'
 import { VOTE_LOOK } from '~/utils/vote-look'
 
 // One proposed Slot in the poll (02-components § PollSlotCard, screen M3). The three vote options are
@@ -21,11 +22,17 @@ const props = defineProps<{
   myVote: VoteValue | null
   best: boolean
   canPick?: boolean
+  /** Everyone's Notes on this Slot, in the matrix's order (#102). */
+  notes: NoteRow[]
+  /** This User's own Note on the Slot. */
+  myNote: string | null
 }>()
 
-const emit = defineEmits<{ vote: [value: VoteValue], pick: [] }>()
+const emit = defineEmits<{ vote: [value: VoteValue], pick: [], note: [text: string] }>()
 
 const { t } = useI18n()
+
+const editor = useTemplateRef<{ open: (focus?: boolean) => void }>('editor')
 
 const label = computed(() => `${props.timeslot.day} ${props.timeslot.time}`)
 const share = (count: number) => (props.total > 0 ? `${(count / props.total) * 100}%` : '0%')
@@ -37,6 +44,8 @@ function choose(value: string) {
   const vote = VOTE_VALUES.find(known => known === value)
   if (!vote || props.timeslot.past) return
   emit('vote', vote)
+  // Meh is often a counter-offer, so its Note field opens by itself, without taking the focus (#102).
+  if (vote === 'maybe' && !props.myNote) editor.value?.open(false)
 }
 </script>
 
@@ -83,12 +92,20 @@ function choose(value: string) {
       <CpNum :value="counts.maybe" /> {{ t('poll.maybe') }},
       <CpNum :value="counts.no" /> {{ t('poll.no') }}
     </span>
+    <NoteList :notes="notes" />
     <SegmentedControl
       :model-value="myVote ?? ''"
       :options="options"
       :label="label"
       :disabled="timeslot.past"
       @update:model-value="choose"
+    />
+    <NoteEditor
+      ref="editor"
+      :note="myNote"
+      :voted="myVote !== null"
+      :past="timeslot.past"
+      @save="text => emit('note', text)"
     />
     <AppButton
       v-if="canPick && !timeslot.past"

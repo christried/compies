@@ -1,4 +1,5 @@
-import { VOTE_VALUES, type VoteValue } from '../../shared/poll'
+import { NOTE_MAX, VOTE_VALUES, type VoteValue } from '../../shared/poll'
+import { characterCount } from '../../shared/text'
 import type { Phase } from '../../shared/event'
 
 // Date poll rules (#1 § Domain rules, ADR 0001). Pure functions: the handlers load the rows and
@@ -89,6 +90,19 @@ export function voteRejection(input: { phase: Phase, startsAt: Date, now: Date, 
   if (input.taken) return 'slot_taken'
   if (isPast(input.startsAt, input.now)) return 'slot_past'
   return null
+}
+
+/**
+ * A Note as sent with a Vote (#102): undefined keeps the current Note; otherwise line breaks become spaces, it is
+ * trimmed, empty means no Note (null), and more than NOTE_MAX characters (characterCount) is refused.
+ */
+export function parseNote(raw: unknown): { ok: true, note: string | null | undefined } | { ok: false, error: 'invalid_value' | 'note_too_long' } {
+  if (raw === undefined) return { ok: true, note: undefined }
+  if (raw === null) return { ok: true, note: null }
+  if (typeof raw !== 'string') return { ok: false, error: 'invalid_value' }
+  const note = raw.replace(/\r\n|[\r\n]/g, ' ').trim()
+  if (characterCount(note) > NOTE_MAX) return { ok: false, error: 'note_too_long' }
+  return { ok: true, note: note === '' ? null : note }
 }
 
 /** The vote value from a request body, or null when it is not one of the three. */

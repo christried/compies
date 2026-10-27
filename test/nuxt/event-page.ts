@@ -1,5 +1,6 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
+import type { SessionNote } from '~~/shared/event'
 import { kitty } from './auth'
 
 // Fixtures for the Event page tests (event-*.test.ts): the `GET /api/e/:slug` body and a fresh Event link per test.
@@ -8,7 +9,7 @@ let testNumber = 0
 export const SANNE = '00000000-0000-4000-8000-000000000003'
 export const LARSI = '00000000-0000-4000-8000-000000000002'
 
-export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no' }
+export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
 export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, removedSessions?: { id: string, previousStartsAt: string }[] }
@@ -23,7 +24,7 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
   return {
     event,
     // The Event's one Session, which the server sends without a number (#70).
-    sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt }],
+    sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[] }],
     removedSessions: overrides.removedSessions ?? [],
     viewerId: kitty.id,
     slots: overrides.slots ?? [
@@ -31,7 +32,7 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
       { id: 'sat', startsAt: '2026-10-24T18:00:00.000Z', past: false },
       { id: 'old', startsAt: '2026-10-20T18:00:00.000Z', past: true },
     ],
-    votes,
+    votes: votes.map(vote => ({ note: null, ...vote })),
     members: [
       { id: kitty.id, name: 'Kitty', image: null, isHost: false },
       { id: LARSI, name: 'Larsi', image: null, isHost: false },
@@ -47,7 +48,7 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
 export function viewWithSessions(slug: string, sessions: { startsAt: string | null, number: number | null }[], missingDates: number, overrides: EventOverrides = {}) {
   return {
     ...view(slug, [], overrides),
-    sessions: sessions.map((session, index) => ({ id: `session-${slug}-${index}`, previousStartsAt: null, ...session })),
+    sessions: sessions.map((session, index) => ({ id: `session-${slug}-${index}`, previousStartsAt: null, notes: [], ...session })),
     missingDates,
   } as ReturnType<typeof view>
 }
