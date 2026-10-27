@@ -129,8 +129,8 @@ Round icon-only button (sound toggle, close, remove slot).
 
 Irreversible or destructive actions: veto, ban, pick, rotate link, end/delete Event, remove a Session, remove slot with votes.
 
-- **Props / variants:** `label`, `holdingLabel?` („Halten …“), `doneLabel?`, `duration = 1000`, `variant: hot | primary | secondary`, `size: card (48 px) | lg (52 px)`, `disabled`, `disabledReason`, `icon`. On a Session card „Entfernen“ and „Neue Terminsuche“ are `secondary` and keep the hold fill while held (#49).
-- **States:** idle · holding (fill sweeps left→right) · released early (fill drains back 200 ms, nothing happens) · confirmed (fill full, icon → check, `doneLabel`, emits `confirm`) · locked (team already used it: dashed + reason, e.g. „Larsi hat schon ein Veto eingelegt“)
+- **Props / variants:** `label`, `holdingLabel?` („Halten …“), `doneLabel?`, `duration = 1000`, `variant: hot | primary | secondary`, `size: card (48 px) | lg (52 px)`, `disabled`, `disabledReason`, `icon`, `action?: () => Promise<boolean>` (runs after the hold; without it the parent acts on `confirm`). On a Session card „Entfernen“ and „Neue Terminsuche“ are `secondary` and keep the hold fill while held (#49).
+- **States:** idle · holding (fill sweeps left→right) · released early (fill drains back 200 ms, nothing happens) · confirmed (emits `confirm`; with an `action`, the fill stays full while it runs) · done (fill full, icon → check, `doneLabel`; with an `action`, only when it resolves to true) · refused (the `action` resolved to false: fill drains back, idle again, the caller shows why; #74) · locked (team already used it: dashed + reason, e.g. „Larsi hat schon ein Veto eingelegt“)
 - **Slots:** default (label)
 - **Desktop / mobile:** Desktop pointer hold; mobile touch hold with `drag-longpress` haptic tick (`navigator.vibrate(10)`) at start. Mobile action bar version is full-width 56 px.
 - **Accessibility:** `<button>`; Space/Enter **held** for 1 s works the same (keydown starts, keyup cancels; ignore key repeat). Live region announces „Veto eingelegt“. Help text „1 Sekunde halten“ always visible on first use.
