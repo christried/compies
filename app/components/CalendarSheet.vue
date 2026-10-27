@@ -34,12 +34,14 @@ const entries = computed(() => {
       const title = session.number === null
         ? t('mvp.ics.summary', { event })
         : t('mvp.ics.sessionSummary', { event, n: session.number })
-      return {
-        id: session.id,
-        label: t('mvp.calendar.session', { n: session.number ?? 1, day: formatSlotDay(startsAt) }),
-        ...calendarLinks({ title, description, startsAt }),
-      }
+      return { id: session.id, number: session.number, day: formatSlotDay(startsAt), ...calendarLinks({ title, description, startsAt }) }
     })
+})
+
+// A Reopen of the last Date while the sheet is open leaves nothing to add: the sheet hides and tells the page,
+// so it does not open again by itself once a new Date is set.
+watch(() => entries.value.length === 0, (empty) => {
+  if (empty && props.open) emit('close')
 })
 </script>
 
@@ -105,7 +107,7 @@ const entries = computed(() => {
         <span
           :id="`${rowId}-${entry.id}`"
           class="text-body font-extrabold"
-        >{{ entry.label }}</span>
+        >{{ t('mvp.calendar.session', { n: entry.number, day: entry.day }) }}</span>
         <div class="flex flex-wrap gap-2">
           <AppButton
             variant="secondary"
