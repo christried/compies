@@ -7,18 +7,17 @@ import { SESSIONS_MAX, sessionsEditable, type DatedSessionView, type EventView }
 // Reopen or with a removed Session (#14, #65). Each Session with a Date gets a DateSetCard, with the number the
 // server sends for it (#70), then one calendar link and one "Einladen" for the whole Event. The Host acts on
 // each card: Verschieben, Neue Terminsuche and Entfernen. "Session hinzufügen" sits after the cards. The Event
-// page runs the actions and opens the dialogs.
+// page runs the actions and opens the dialogs. The two holds get their action, so a refused one starts again (#74).
 const props = defineProps<{
   view: EventView
   slug: string
-  /** Bumped by the page when a Reopen or a removal is refused, so its hold button starts again from zero. */
-  holdEpoch: number
+  /** Neue Terminsuche and Entfernen: each resolves to whether the server took it. */
+  reopen: (sessionId: string) => Promise<boolean>
+  remove: (sessionId: string) => Promise<boolean>
 }>()
 
 const emit = defineEmits<{
   reschedule: [sessionId: string]
-  reopen: [sessionId: string]
-  remove: [sessionId: string]
   add: []
   invite: []
 }>()
@@ -66,21 +65,19 @@ const { notices: reopenNotices, close: closeReopenNotice } = useReopenNotices(no
       <template #host-actions>
         <HoldToConfirmButton
           v-if="canChangeSessions"
-          :key="`reopen-${session.id}-${holdEpoch}`"
           variant="secondary"
           size="card"
           :label="t('mvp.reopen.cta')"
           :icon="Search"
-          @confirm="emit('reopen', session.id)"
+          :action="() => reopen(session.id)"
         />
         <HoldToConfirmButton
           v-if="canChangeSessions && view.sessions.length > 1"
-          :key="`remove-${session.id}-${holdEpoch}`"
           variant="secondary"
           size="card"
           :label="t('mvp.sessions.remove')"
           :icon="Trash2"
-          @confirm="emit('remove', session.id)"
+          :action="() => remove(session.id)"
         />
       </template>
     </DateSetCard>

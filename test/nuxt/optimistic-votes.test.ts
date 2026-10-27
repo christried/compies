@@ -117,4 +117,15 @@ describe('useOptimisticVotes', () => {
     expect(votes.myVoteFor('sat')).toBeNull()
     expect(shownToasts()).toEqual([expect.objectContaining({ tone: 'error', text: 'Langsam, langsam. Versuch es in ein paar Sekunden.' })])
   })
+
+  it('says why in the shared error copy when the Slot became a Date meanwhile (#74)', async () => {
+    const { votes } = await setUp([], () => {
+      throw createError({ statusCode: 409, statusMessage: 'slot_taken' })
+    })
+
+    await votes.vote('sat', 'yes')
+
+    expect(votes.myVoteFor('sat')).toBeNull()
+    expect(shownToasts()).toEqual([expect.objectContaining({ tone: 'error', text: 'Dieser Termin steht schon fest.' })])
+  })
 })

@@ -135,18 +135,55 @@ describe('SlotEditSheet', () => {
     expect(document.body.textContent).toContain('Höchstens 16 Vorschläge.')
   })
 
-  it('shows the reason the server gives when a change is refused', async () => {
+  it('shows the reason the server gives when a change is refused, and still asks the page to refresh', async () => {
     const endpoint = serve()
     endpoint.remove(JUNE_10.id, () => {
       throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
     })
-    await mountSuspended(SlotEditSheet, {
+    const page = await mountSuspended(SlotEditSheet, {
       props: { open: true, slug: endpoint.slug, slots: [JUNE_10] },
     })
 
     document.querySelector<HTMLButtonElement>('button[aria-label="Termin entfernen"]')?.click()
 
     await vi.waitFor(() => expect(shownToasts()).toContain('Termine lassen sich nur ändern, solange noch kein Termin festliegt.'))
+    await vi.waitFor(() => expect(page.emitted('changed')).toHaveLength(1))
+  })
+
+  it('names the limit when the server refuses a Slot over it', async () => {
+    const endpoint = serve()
+    endpoint.add(() => {
+      throw createError({ statusCode: 400, statusMessage: 'slots_max' })
+    })
+    const page = await mountSuspended(SlotEditSheet, {
+      props: { open: true, slug: endpoint.slug, slots: [JUNE_10] },
+    })
+
+    page.findComponent(DateTimeField).vm.$emit('update:modelValue', '2030-06-12T20:00')
+    await vi.waitFor(() => expect(buttonWithText('Termin hinzufügen')?.getAttribute('aria-disabled')).toBeNull())
+    buttonWithText('Termin hinzufügen')?.click()
+
+    await vi.waitFor(() => expect(shownToasts()).toContain('Höchstens 16 Vorschläge.'))
+  })
+
+  it('lets the hold be held again when removing a Slot with Votes is refused, without remounting it', async () => {
+    const endpoint = serve()
+    endpoint.remove(JUNE_10.id, () => {
+      throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
+    })
+    await mountSuspended(SlotEditSheet, {
+      props: { open: true, slug: endpoint.slug, slots: [{ ...JUNE_10, votes: 2 }] },
+    })
+    const hold = buttonWithText('Termin entfernen')!
+
+    hold.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await vi.waitFor(() => expect(endpoint.deleted).toEqual([JUNE_10.id]), { timeout: 3000 })
+    await vi.waitFor(() => expect(shownToasts()).toContain('Termine lassen sich nur ändern, solange noch kein Termin festliegt.'))
+
+    expect(buttonWithText('Termin entfernen')).toBe(hold)
+    hold.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }))
+    hold.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await vi.waitFor(() => expect(endpoint.deleted).toEqual([JUNE_10.id, JUNE_10.id]), { timeout: 3000 })
   })
 
   it('renders nothing while closed', async () => {
