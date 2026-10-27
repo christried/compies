@@ -71,6 +71,13 @@ export interface UndatedSessionView {
 /** One Session of an Event (#48, #49): it has its Date, or it waits for one. */
 export type SessionView = DatedSessionView | UndatedSessionView
 
+/** A Session the Host removed while it had, or had had, a Date (#65). Members see a notice for that Date. */
+export interface RemovedSessionView {
+  id: string
+  /** The Date the removal (or an earlier Reopen) withdrew. */
+  previousStartsAt: string
+}
+
 /** What `GET /api/e/:slug` returns to a Member (#11). Times are UTC ISO strings. */
 export interface EventView {
   event: {
@@ -81,6 +88,8 @@ export interface EventView {
   }
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
+  /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */
+  removedSessions: RemovedSessionView[]
   /** How many Sessions still wait for a Date: the undated ones in `sessions`, counted by the server. */
   missingDates: number
   viewerId: string
