@@ -2,6 +2,7 @@
 import { ChevronRight } from '@lucide/vue'
 import { safeRedirect } from '~/utils/auth-guard'
 import { DISPLAY_NAME_MAX, type SavedProfile } from '~~/shared/auth'
+import { cutToCharacters } from '~~/shared/text'
 
 // Profile setup (screen 03), once after the first sign-in: the Display name, prefilled from the
 // provider. The avatar is the provider image in the MVP; upload arrives with T2b.
@@ -11,20 +12,15 @@ const { t } = useI18n()
 useHead({ title: () => t('onboarding.title') })
 const user = useAuthUser()
 
-// Counted in characters, as the server does: maxlength would count an emoji as two.
-const characters = (value: string) => [...value]
-const displayName = ref(characters(user.value?.name ?? '').slice(0, DISPLAY_NAME_MAX).join(''))
-watch(displayName, (value) => {
-  if (characters(value).length > DISPLAY_NAME_MAX) displayName.value = characters(value).slice(0, DISPLAY_NAME_MAX).join('')
-})
+const displayName = ref(cutToCharacters(user.value?.name ?? '', DISPLAY_NAME_MAX))
 const missing = computed(() => displayName.value.trim() === '')
 const saving = ref(false)
 const saveFailed = ref(false)
-const input = useTemplateRef('input')
+const field = useTemplateRef('field')
 
 async function save() {
   if (missing.value) {
-    input.value?.focus()
+    field.value?.focus()
     return
   }
   if (saving.value) return
@@ -82,35 +78,17 @@ async function save() {
           </div>
         </div>
 
-        <div class="flex flex-col gap-1.5">
-          <label
-            for="display-name"
-            class="text-[14px] font-bold"
-          >{{ t('profile.displayName') }}</label>
-          <input
-            id="display-name"
-            ref="input"
-            v-model="displayName"
-            type="text"
-            autocomplete="nickname"
-            :aria-invalid="missing"
-            aria-describedby="display-name-help"
-            class="h-control-lg rounded-md bg-surface px-3.5 text-[17px] text-ink"
-            :class="missing ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'"
-          >
-          <div class="flex gap-3 text-small">
-            <span
-              id="display-name-help"
-              class="flex-1"
-              :class="missing ? 'font-bold text-error-fg' : 'text-ink-2'"
-              :aria-live="missing ? 'polite' : undefined"
-            >{{ missing ? t('onboarding.nameMissing') : t('onboarding.nameHint') }}</span>
-            <span
-              class="font-mono text-ink-2"
-              aria-hidden="true"
-            >{{ t('common.counter', { n: characters(displayName).length, max: DISPLAY_NAME_MAX }) }}</span>
-          </div>
-        </div>
+        <TextField
+          id="display-name"
+          ref="field"
+          v-model="displayName"
+          :label="t('profile.displayName')"
+          :help="missing ? t('onboarding.nameMissing') : t('onboarding.nameHint')"
+          :invalid="missing"
+          :maxlength="DISPLAY_NAME_MAX"
+          cut-at-max
+          autocomplete="nickname"
+        />
 
         <p
           v-if="saveFailed"

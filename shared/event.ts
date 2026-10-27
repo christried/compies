@@ -1,8 +1,9 @@
 import type { VoteValue } from './poll'
+import { characterCount } from './text'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
-/** Event name: 1 to this many characters after trimming (emoji count as one). */
+/** Event name: 1 to this many characters after trimming (an emoji counts as one, as the User sees it (characterCount)). */
 export const EVENT_NAME_MAX = 60
 /** Slots in a Date poll. */
 export const SLOTS_MAX = 16
@@ -11,9 +12,9 @@ export const SESSIONS_MAX = 8
 /** How long a Session lasts in a calendar: 7 h (#1). The calendar file and the Google and Outlook links use it (#81). */
 export const SESSION_DURATION_MS = 7 * 60 * 60_000
 
-/** An Event name's length as the rules count it: trimmed, an emoji counts as one. */
+/** An Event name's length as the rules count it: trimmed, an emoji counts as one, as the User sees it (characterCount). */
 export function eventNameLength(raw: string): number {
-  return [...raw.trim()].length
+  return characterCount(raw.trim())
 }
 
 export type SlotProblem = 'in_past' | 'duplicate_slot'

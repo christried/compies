@@ -148,6 +148,9 @@ Input / textarea with label, help, error, counter.
 - **Slots:** `#prefix`, `#suffix`
 - **Desktop / mobile:** Height 56 for primary fields, 48 for rows (date/time).
 - **Accessibility:** Real `<label for>`; help + error linked via `aria-describedby`; counter in a polite live region only when ≥ 80 % of max.
+- **`invalid`** (bool): the help text becomes the reason: bold, error colour, announced (polite live region), field marked `aria-invalid`. For a field whose help turns into the error (profile setup).
+- **`cutAtMax`** (bool, with `maxlength`): longer input is cut to the maximum instead of shown with an error.
+- **Counter:** counts characters as the User sees them (an emoji such as 👍🏽 or 👨‍👩‍👧 is one), via `characterCount` in `shared/text.ts` (#76).
 - **Motion:** border colour `dur-fast`. Error shake: none (never).
 
 ## DateTimeField
