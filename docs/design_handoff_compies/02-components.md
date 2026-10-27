@@ -62,6 +62,7 @@ Common rules for every component:
 - [`PollMatrix`](#pollmatrix) [MVP]
 - [`DateConfirmDialog`](#dateconfirmdialog) [MVP]
 - [`DateSetCard`](#datesetcard) [MVP]
+- [`CalendarSheet`](#calendarsheet) [MVP]
 - [`InviteLinkCard`](#invitelinkcard) [MVP]
 - [`SlotEditSheet`](#sloteditsheet) [MVP]
 - [`GameCard`](#gamecard) [1.0]
@@ -700,6 +701,18 @@ Confirmed date with calendar tile, .ics download, reschedule (host).
 - **Desktop / mobile:** Desktop row; mobile stacked.
 - **Accessibility:** Date as `<time datetime>`.
 - **Motion:** tile drops in `y −20→0` 0.45 s `back.out(2)`, once.
+
+## CalendarSheet
+**Scope:** [MVP] · **Ref:** Sheet (#81, built from existing parts, no design of its own)
+
+The choice behind „In den Kalender“, the one calendar button of the Event. Every Member can open it. Google and Outlook open a new, pre-filled event in that calendar; the file is the calendar file download.
+
+- **Props / variants:** `open`, `view` (the Event view). One dated Session: „Google Kalender“, „Outlook“, „Apple & andere (.ics)“. Several dated Sessions: „Apple & andere (.ics) – alle Termine“ first, then one row per dated Session („Session 2 · Sa 24.10.“) with „Google“ and „Outlook“.
+- **States:** closed · open. Stays closed while no Session has a Date.
+- **Slots:** —
+- **Desktop / mobile:** the Sheet (right on desktop, bottom on phones). Every button is `AppButton` secondary, size card (48 px). A Session row is the Slot editor's row card, with its two buttons side by side.
+- **Accessibility:** as Sheet. Google and Outlook are links that open a new tab (`rel="noopener noreferrer"`, trailing external-link icon); the file is a `download` link. Each Session row is a `role="group"` named by its label. The trigger carries `aria-haspopup="dialog"`.
+- **Motion:** as Sheet.
 
 ## InviteLinkCard
 **Scope:** [MVP] · **Ref:** App Einstieg 06, M2 done

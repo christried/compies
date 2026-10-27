@@ -857,7 +857,7 @@
       },
       "calendar": {
         "heading": "10. Kalenderdatei",
-        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link des Events herunterladen. Sie wird von Compies selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link des Events herunterladen. Sie wird von Compies selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters.\n\nWählst du stattdessen „Google Kalender“ oder „Outlook“, öffnet sich in einem neuen Tab die Website von Google (Google Ireland Limited, Dublin, Irland) bzw. Microsoft (Microsoft Ireland Operations Limited, Dublin, Irland). Name, Termin und Link des Events stehen dabei in der Adresse, damit dort ein neuer Termin vorausgefüllt ist; wie bei jedem Website-Aufruf erhält der Anbieter außerdem deine IP-Adresse und übliche Browserangaben. Compies selbst übermittelt dabei nichts an diese Anbieter. Ab dem Aufruf gelten die Datenschutzbestimmungen von Google bzw. Microsoft; ob du den Termin dort speicherst, entscheidest du.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "fonts": {
         "heading": "11. Schriftarten, Symbole und Tracking",
@@ -1048,6 +1048,15 @@
       "sessionSummary": "{event} · Session {n} (Compies)",
       "description": "Zum Event: {url}",
       "alarm": "{event} startet in 1 Stunde"
+    },
+    "calendar": {
+      "title": "In welchen Kalender?",
+      "google": "Google Kalender",
+      "googleShort": "Google",
+      "outlook": "Outlook",
+      "file": "Apple & andere (.ics)",
+      "fileAll": "Apple & andere (.ics) – alle Termine",
+      "session": "Session {n} · {day}"
     },
     "set": {
       "confirmTitle": "Termin festlegen?",
