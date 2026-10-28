@@ -1,28 +1,21 @@
 <script setup lang="ts">
 import { Lock } from '@lucide/vue'
-import { apiFailure } from '~/utils/api-error'
-import { canSeeLibrary, type GameView } from '~~/shared/game'
+import type { GameView } from '~~/shared/game'
 
 // Edit one game of the library (screen 24, `?s=editing`, #142). Only the creator and the Platform admin get the
 // form; any other Host reads the reason the detail page gives. A game that does not exist, or a page for Users
 // who may not see the library, looks like any missing page. After saving, the game's detail opens.
 const { t } = useI18n()
 const route = useRoute()
-const user = useAuthUser()
 const { toast } = useToast()
-const viewer = computed(() => canSeeLibrary(user.value))
 const id = computed(() => String(route.params.id))
 
-const { data: game, status, error, refresh } = useFetch<GameView>(() => `/api/games/${id.value}`, {
-  key: `game-${id.value}`,
-  immediate: viewer.value,
-})
-const missing = computed(() => apiFailure(error.value).status === 404)
+const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
 useHead({ title: () => game.value?.name ?? t('gameEdit.editKicker') })
 
 async function onSaved(saved: GameView) {
   toast({ tone: 'success', text: t('library.saveDone') })
-  await Promise.all([refreshGameLibrary(), refreshNuxtData(`game-${id.value}`)])
+  await Promise.all([refreshGameLibrary(), refreshNuxtData(libraryGameKey(id.value))])
   await navigateTo(`/bibliothek/${saved.id}`)
 }
 </script>

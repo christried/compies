@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
-import { apiFailure } from '~/utils/api-error'
-import { canSeeLibrary, type GameView } from '~~/shared/game'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
 // set length, the facts (player count, Suitabilities, clip length) and who created it. The creator and the Platform
@@ -9,15 +7,9 @@ import { canSeeLibrary, type GameView } from '~~/shared/game'
 // looks like any missing page; so does the page for Users who may not see the library.
 const { t } = useI18n()
 const route = useRoute()
-const user = useAuthUser()
-const viewer = computed(() => canSeeLibrary(user.value))
 const id = computed(() => String(route.params.id))
 
-const { data: game, status, error, refresh } = useFetch<GameView>(() => `/api/games/${id.value}`, {
-  key: `game-${id.value}`,
-  immediate: viewer.value,
-})
-const missing = computed(() => apiFailure(error.value).status === 404)
+const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
 useHead({ title: () => game.value?.name ?? t('nav.library') })
 
 // Month and year in Berlin time, like the rest of the app (ADR 0003).
