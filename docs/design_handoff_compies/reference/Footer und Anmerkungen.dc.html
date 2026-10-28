@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:var(--cp-ink)}a:hover{color:var(--cp-focus)}button,textarea{font:inherit;color:inherit}:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}textarea::placeholder{color:var(--cp-ink-2);opacity:1}[data-motion="reduced"] *{transition:none!important}@media (prefers-reduced-motion: reduce){*{transition:none!important}}</style>
+</helmet>
+<div lang="de" data-theme="light" data-motion="{{ motion }}" style="display:inline-flex;flex-direction:column;gap:140px;padding:96px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1320px">
+    <span style="font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">COMPIES · Entwurf · nur hell</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:88px;line-height:.95">Footer und Anmerkungen</h1>
+    <p style="margin:0;max-width:60ch;font-size:22px;font-weight:600;line-height:1.4;color:var(--cp-ink-2);text-wrap:pretty">Vier kleine Änderungen aus vorhandenen Bausteinen und Tokens: eine Fußzeile mit „NEU“-Chip, ein schlankeres Profilmenü, Anmerkungen in „Wer kann wann?“ und der neue Anmerkungs-Editor auf der Terminkarte. Keine neuen Tokens. Übergabe: <code style="font-family:var(--cp-font-mono);font-size:.8em;font-weight:700">design_handoff_compies/10-footer-und-anmerkungen.md</code></p>
+    <nav aria-label="Abschnitte" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+      <a href="#s1" style="display:inline-flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 16px 0 6px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:16px;text-decoration:none" style-hover="color:var(--cp-ink);background:var(--cp-primary)"><span style="display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);box-sizing:border-box;font-family:var(--cp-font-num);font-weight:400;font-size:13px">1</span>Fußzeile</a>
+      <a href="#s2" style="display:inline-flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 16px 0 6px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:16px;text-decoration:none" style-hover="color:var(--cp-ink);background:var(--cp-primary)"><span style="display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);box-sizing:border-box;font-family:var(--cp-font-num);font-weight:400;font-size:13px">2</span>„NEU“-Chip</a>
+      <a href="#s3" style="display:inline-flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 16px 0 6px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:16px;text-decoration:none" style-hover="color:var(--cp-ink);background:var(--cp-primary)"><span style="display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);box-sizing:border-box;font-family:var(--cp-font-num);font-weight:400;font-size:13px">3</span>Profilmenü</a>
+      <a href="#s4" style="display:inline-flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 16px 0 6px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:16px;text-decoration:none" style-hover="color:var(--cp-ink);background:var(--cp-primary)"><span style="display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);box-sizing:border-box;font-family:var(--cp-font-num);font-weight:400;font-size:13px">4</span>Anmerkung in der Matrix</a>
+      <a href="#s5" style="display:inline-flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 16px 0 6px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:16px;text-decoration:none" style-hover="color:var(--cp-ink);background:var(--cp-primary)"><span style="display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--cp-line);box-sizing:border-box;font-family:var(--cp-font-num);font-weight:400;font-size:13px">5</span>Anmerkungs-Editor</a>
+    </nav>
+  </header>
+
+  <!-- 1 FOOTER -->
+  <section id="s1" style="display:flex;flex-direction:column;gap:48px">
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <span style="flex:none;display:grid;place-items:center;width:64px;height:64px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:50%;background:var(--cp-primary);box-shadow:var(--cp-shadow-sm);font-family:var(--cp-font-num);font-size:26px">1</span>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:52px;line-height:1">Fußzeile <span style="font-family:var(--cp-font-mono);font-size:20px;color:var(--cp-ink-2)">PageFooter · neu</span></h2>
+        <ul style="margin:0;padding-left:22px;max-width:1080px;font-size:19px;line-height:1.5;display:flex;flex-direction:column;gap:4px;text-wrap:pretty">
+          <li>Eine Fußzeile für alle Seiten, sonst nichts: „Impressum ◆ Datenschutz ● Version 1.2.0“. Die Versionspille (VersionLabel) entfällt überall. „Version …“ zeigt immer das neueste Release und öffnet /neuigkeiten.</li>
+          <li>Angemeldet ab md (768 px). Abgemeldet (Anmelden, Impressum, Datenschutz, Neuigkeiten) in jeder Breite, auch 390.</li>
+          <li>Links unterstrichen in line-soft; Hover zieht einen Sonne-Textmarker von links durch (dur-base, ease-out). Die aktuelle Seite trägt den Marker fest und aria-current="page". Trenner sind Memphis-Formen statt Punkten.</li>
+          <li>Event-Seite mit HostDock: der Footer reserviert unten 96 px, das Dock parkt im Band unter den Links. Nichts liegt je unter dem Dock.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:80px;align-items:flex-start">
+      <div id="1a" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#1a" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">1a</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Hub-Seite · 1440</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">Angemeldet. Chip folgt dem Tweak „neue Version ungesehen“.</span></div>
+        <div data-frame="1a" style="position:relative;width:1440px;height:900px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;position:relative;z-index:10;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 34 }}" still="{{ true }}" hint-size="34px,34px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></a>
+            <nav aria-label="Hauptnavigation" style="display:flex;gap:2px;margin-left:14px"><sc-for list="{{ nav }}" as="t" hint-placeholder-count="4"><a href="#" onClick="{{ noop }}" aria-current="{{ t.cur }}" style="display:flex;align-items:center;gap:6px;height:61px;padding:0 11px;box-sizing:border-box;border-bottom:3px solid {{ t.bar }};color:{{ t.c }};font-weight:{{ t.w }};font-size:14px;text-decoration:none" style-hover="color:var(--cp-ink)"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ t.n }}<sc-if value="{{ t.soon }}"><span title="Baustelle" style="flex:none;width:16px;height:10px;box-sizing:border-box;border-radius:2px;border:1.5px solid var(--cp-line);background:repeating-linear-gradient(-45deg,var(--cp-hot) 0 3px,var(--cp-surface) 3px 6px)"></span></sc-if></a></sc-for></nav>
+            <span style="flex:1"></span>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+            <button type="button" aria-label="Konto von Kitty" aria-haspopup="menu" aria-expanded="false" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><dc-import name="Avatar" who="Kitty" size="{{ 32 }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></button>
+          </header>
+          <div data-scroll="1" style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;display:flex;flex-direction:column">
+            <main style="flex:1 0 auto;width:100%;max-width:1100px;margin:0 auto;box-sizing:border-box;padding:24px 24px 48px;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Hallo Kitty</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Was steht an?</h1></div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <b style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Deine Sessions</b>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                  <sc-for list="{{ homeCards }}" as="c" hint-placeholder-count="2">
+                    <div style="display:flex;flex-direction:column;gap:12px;padding:18px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+                      <div style="display:flex;align-items:flex-start;gap:10px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1.05">{{ c.name }}</b><span style="font-size:13px;color:var(--cp-ink-2)">{{ c.host }}</span></div><span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid var(--cp-line);background:{{ c.dot }}"></span>{{ c.pill }}</span></div>
+                      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--cp-paper-2)"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 18 }}" hint-size="18px,18px"></dc-import><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">{{ c.slotLabel }}</span><b>{{ c.slot }}</b></div></div>
+                      <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:{{ c.meFg }}"><dc-import name="Icon" icon="{{ c.meIcon }}" size="{{ 15 }}" hint-size="15px,15px"></dc-import>{{ c.me }}</span><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ c.ctaBg }};box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:14px">{{ c.cta }}<dc-import name="Icon" icon="chevron-right" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <dc-import name="BaustelleZone" title="Der Rest ist noch Rohbau." text="Spielbrett, Glücksrad, Live-Tabelle und Siegerehrung bauen wir gerade. Die Terminumfrage funktioniert schon." hint-size="100%,250px"></dc-import>
+            </main>
+            <dc-import name="PageFooter" unseen="{{ unseen }}" look="{{ look }}" reduced="{{ reduced }}" hint-size="100%,58px"></dc-import>
+          </div>
+        </div>
+      </div>
+
+      <sc-for list="{{ dMx1f }}" as="f" hint-placeholder-count="1">
+      <div id="1f" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#1f" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">1f</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Event-Seite mit HostDock · 1440</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">Ganz nach unten gescrollt. Das Dock parkt unter den Links.</span></div>
+        <div data-frame="1f" style="position:relative;width:1440px;height:900px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;position:relative;z-index:10;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 34 }}" still="{{ true }}" hint-size="34px,34px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></a>
+            <span aria-hidden="true" style="flex:none;width:2px;height:28px;background:var(--cp-line-soft)"></span>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px"><b style="font-size:15px;white-space:nowrap">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:var(--cp-info);border:1.5px solid var(--cp-line)"></span>Terminumfrage</span></div>
+            <button type="button" style="flex:none;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</button>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+            <button type="button" aria-label="Konto von Sanne" aria-haspopup="menu" aria-expanded="false" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></button>
+          </header>
+          <div data-scroll="1" style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;display:flex;flex-direction:column">
+            <main style="flex:1 0 auto;width:100%;max-width:1100px;margin:0 auto;box-sizing:border-box;padding:20px 24px 48px;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Terminumfrage läuft, 6 von 7 haben abgestimmt</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Wann zocken wir?</h1></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <h2 style="margin:0;font-size:17px;font-weight:800">Wer kann wann?</h2>
+                <div data-mx="1" style="overflow-x:auto;scrollbar-width:none;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+                  <table style="width:100%;border-collapse:separate;border-spacing:0">
+                    <thead><tr><th scope="col" style="position:sticky;left:0;z-index:2;width:200px;min-width:200px;padding:8px 12px;border-bottom:2px solid var(--cp-line-soft);border-right:2px solid var(--cp-line-soft);background:var(--cp-surface);text-align:left;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Wer</th><sc-for list="{{ f.head }}" as="h" hint-placeholder-count="6"><th scope="col" style="min-width:96px;padding:8px 4px;border-bottom:2px solid var(--cp-line-soft);text-align:center;line-height:1.2"><span style="display:block;font-size:12px;font-weight:800">{{ h.d }}</span><span style="display:block;margin-top:3px;font-family:var(--cp-font-num);font-weight:400;font-size:13px">{{ h.t }}</span></th></sc-for></tr></thead>
+                    <tbody><sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="7"><tr><th scope="row" style="position:sticky;left:0;z-index:2;padding:2px 12px;border-bottom:1.5px solid var(--cp-line-soft);border-right:2px solid var(--cp-line-soft);background:var(--cp-surface);text-align:left;font-size:13px;font-weight:{{ r.w }}"><span style="display:flex;align-items:center;gap:8px;white-space:nowrap"><dc-import name="Avatar" who="{{ r.n }}" size="{{ 24 }}" host="{{ r.host }}" dot="{{ false }}" hint-size="24px,24px"></dc-import>{{ r.label }}</span></th><sc-for list="{{ r.c }}" as="c" hint-placeholder-count="6"><td style="padding:2px 0;border-bottom:1.5px solid var(--cp-line-soft);text-align:center"><span role="img" aria-label="{{ c.aria }}" style="position:relative;display:inline-grid;place-items:center;width:44px;height:44px;vertical-align:middle"><span aria-hidden="true" style="display:grid;place-items:center;width:26px;height:26px;box-sizing:border-box;border-radius:{{ c.r }};border:2px {{ c.bs }} var(--cp-line);background:{{ c.bg }};color:{{ c.fg }}"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import></span><sc-if value="{{ c.dot }}"><span aria-hidden="true" style="position:absolute;top:4px;right:4px;width:10px;height:10px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary)"></span></sc-if></span></td></sc-for></tr></sc-for></tbody>
+                  </table>
+                </div>
+              </div>
+              <dc-import name="BaustelleZone" title="Spielbrett, Chat und Teamwahl kommen noch." text="Bis dahin: abstimmen, Termin festlegen, in den Kalender." hint-size="100%,250px"></dc-import>
+            </main>
+            <dc-import name="PageFooter" unseen="{{ false }}" dock="{{ true }}" look="{{ look }}" reduced="{{ reduced }}" hint-size="100%,154px"></dc-import>
+          </div>
+          <div role="toolbar" aria-label="Host-Steuerung" style="position:absolute;left:50%;bottom:24px;z-index:30;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);white-space:nowrap">
+            <span aria-hidden="true" style="display:grid;place-items:center;width:44px;height:44px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+            <button type="button" style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;cursor:pointer"><dc-import name="Icon" icon="calendar-check" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Termin festlegen</button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:14px;cursor:pointer"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px;border:0;border-radius:999px;background:transparent;font-weight:700;font-size:14px;cursor:pointer"><dc-import name="Icon" icon="ellipsis" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mehr</button>
+          </div>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;gap:80px;align-items:flex-start">
+      <div id="1c" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#1c" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">1c</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Anmelden · 1440</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">Abgemeldet: nie ein Chip.</span></div>
+        <div data-frame="1c" style="position:relative;width:1440px;height:900px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)"><a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 34 }}" still="{{ true }}" hint-size="34px,34px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></a></header>
+          <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+            <main style="flex:1 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:40px 24px">
+              <dc-import name="CompibertRig" variant="bust" size="{{ 160 }}" state="idle" still="{{ true }}" hint-size="160px,160px"></dc-import>
+              <div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px">
+                <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:46px;line-height:1">Anmelden</h1>
+                <p style="margin:0;font-size:15px;color:var(--cp-ink-2);text-wrap:pretty">Mit dem Konto, mit dem du eh schon zockst. Wir übernehmen nur Name und Bild.</p>
+                <button type="button" style="display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:16px;cursor:pointer"><dc-import name="Icon" icon="message-square" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mit Discord anmelden</button>
+                <button type="button" style="display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:16px;cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mit Twitch anmelden</button>
+              </div>
+            </main>
+            <dc-import name="PageFooter" unseen="{{ false }}" look="{{ look }}" reduced="{{ reduced }}" hint-size="100%,58px"></dc-import>
+          </div>
+        </div>
+      </div>
+
+      <div id="1d" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#1d" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">1d</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Anmelden · 390</b></div>
+        <div data-frame="1d" style="position:relative;width:390px;height:844px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:30px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;height:56px;box-sizing:border-box;display:flex;align-items:center;padding:0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)"><a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 30 }}" still="{{ true }}" hint-size="30px,30px"></dc-import><span style="font-family:var(--cp-font-display);font-size:20px;text-transform:uppercase;line-height:1">Compies</span></a></header>
+          <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column">
+            <main style="flex:1 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 20px">
+              <dc-import name="CompibertRig" variant="bust" size="{{ 120 }}" state="idle" still="{{ true }}" hint-size="120px,120px"></dc-import>
+              <div style="width:100%;display:flex;flex-direction:column;gap:14px">
+                <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:38px;line-height:1">Anmelden</h1>
+                <p style="margin:0;font-size:15px;color:var(--cp-ink-2);text-wrap:pretty">Mit dem Konto, mit dem du eh schon zockst. Wir übernehmen nur Name und Bild.</p>
+                <button type="button" style="display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:16px;cursor:pointer"><dc-import name="Icon" icon="message-square" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mit Discord anmelden</button>
+                <button type="button" style="display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:16px;cursor:pointer"><dc-import name="Icon" icon="play" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mit Twitch anmelden</button>
+              </div>
+            </main>
+            <dc-import name="PageFooter" unseen="{{ false }}" look="{{ look }}" reduced="{{ reduced }}" hint-size="100%,58px"></dc-import>
+          </div>
+        </div>
+      </div>
+
+      <div id="1e" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#1e" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">1e</a><b style="white-space:nowrap;font-size:24px;font-weight:800">/impressum · 390</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">aria-current</span></div>
+        <div data-frame="1e" style="position:relative;width:390px;height:844px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:30px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;height:56px;box-sizing:border-box;display:flex;align-items:center;padding:0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)"><a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 30 }}" still="{{ true }}" hint-size="30px,30px"></dc-import><span style="font-family:var(--cp-font-display);font-size:20px;text-transform:uppercase;line-height:1">Compies</span></a></header>
+          <div style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column">
+            <main style="flex:1 0 auto;box-sizing:border-box;padding:8px 16px 32px;display:flex;flex-direction:column;gap:16px">
+              <a href="#" onClick="{{ noop }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:4px;min-height:44px;font-size:14px;font-weight:700;color:var(--cp-ink-2);text-decoration:none" style-hover="color:var(--cp-ink)"><dc-import name="Icon" icon="chevron-left" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Zurück</a>
+              <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:.95">Impressum</h1>
+              <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:17px;font-weight:800">Angaben gemäß § 5 DDG</h2><span style="font-size:15px">[Name des Betreibers]</span><span style="font-size:15px">[Straße und Hausnummer]</span><span style="font-size:15px">[PLZ und Ort]</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:17px;font-weight:800">Kontakt</h2><span style="font-size:15px">[E-Mail-Adresse]</span></div>
+            </main>
+            <dc-import name="PageFooter" current="impressum" unseen="{{ false }}" look="{{ look }}" reduced="{{ reduced }}" hint-size="100%,58px"></dc-import>
+          </div>
+        </div>
+      </div>
+
+      <div id="1b" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#1b" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">1b</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Zustände</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">1:1, live (Hover, Tab)</span></div>
+        <div style="width:760px;box-sizing:border-box;display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card)">
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:22px"><span style="padding:0 24px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Angemeldet · neues Release noch nicht gesehen</span><dc-import name="PageFooter" unseen="{{ true }}" look="{{ look }}" reduced="{{ reduced }}" replay="{{ replay }}" hint-size="100%,58px"></dc-import></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:22px"><span style="padding:0 24px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Angemeldet und gesehen · oder abgemeldet</span><dc-import name="PageFooter" unseen="{{ false }}" look="{{ look }}" reduced="{{ reduced }}" hint-size="100%,58px"></dc-import></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:22px"><span style="padding:0 24px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Auf /impressum · aria-current="page"</span><dc-import name="PageFooter" current="impressum" unseen="{{ false }}" look="{{ look }}" reduced="{{ reduced }}" hint-size="100%,58px"></dc-import></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:22px"><span style="padding:0 24px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Auf /neuigkeiten · Chip ist dort schon weg</span><dc-import name="PageFooter" current="neuigkeiten" unseen="{{ false }}" look="{{ look }}" reduced="{{ reduced }}" hint-size="100%,58px"></dc-import></div>
+          <div style="display:flex;flex-direction:column;gap:14px;padding:26px 24px 26px;background:var(--cp-surface);border-top:var(--cp-bw) solid var(--cp-line);margin-top:28px">
+            <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Link-Zustände</span>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px"><span style="display:inline-block;padding:12px 2px;font-size:14px;font-weight:700;line-height:20px;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--cp-line-soft);text-underline-offset:5px">Datenschutz</span><span style="font-size:13px;font-weight:700">Standard</span><span style="font-size:13px;color:var(--cp-ink-2)">ink, 700, Unterstrich line-soft 2 px</span></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px"><span style="display:inline-block;padding:12px 2px;font-size:14px;font-weight:700;line-height:20px;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--cp-line);text-underline-offset:5px;background-image:linear-gradient(transparent 55%,var(--cp-primary) 55%);background-origin:content-box;background-clip:content-box">Datenschutz</span><span style="font-size:13px;font-weight:700">Hover</span><span style="font-size:13px;color:var(--cp-ink-2)">Marker von links, dur-base ease-out</span></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px"><span style="display:inline-block;padding:12px 2px;border-radius:8px;outline:3px solid var(--cp-focus);outline-offset:3px;font-size:14px;font-weight:700;line-height:20px;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--cp-line-soft);text-underline-offset:5px">Datenschutz</span><span style="font-size:13px;font-weight:700">Fokus</span><span style="font-size:13px;color:var(--cp-ink-2)">Fokusring 3 px focus, um die 44-px-Fläche</span></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px"><span style="display:inline-block;padding:12px 2px;font-size:14px;font-weight:800;line-height:20px;background-image:linear-gradient(transparent 55%,var(--cp-primary) 55%);background-origin:content-box;background-clip:content-box">Datenschutz</span><span style="font-size:13px;font-weight:700">Aktuelle Seite</span><span style="font-size:13px;color:var(--cp-ink-2)">Marker fest, 800, kein Unterstrich</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 NEU CHIP -->
+  <section id="s2" style="display:flex;flex-direction:column;gap:48px">
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <span style="flex:none;display:grid;place-items:center;width:64px;height:64px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:50%;background:var(--cp-primary);box-shadow:var(--cp-shadow-sm);font-family:var(--cp-font-num);font-size:26px">2</span>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:52px;line-height:1">„NEU“-Chip <span style="font-family:var(--cp-font-mono);font-size:20px;color:var(--cp-ink-2)">NewChip · neu</span></h2>
+        <ul style="margin:0;padding-left:22px;max-width:1080px;font-size:19px;line-height:1.5;display:flex;flex-direction:column;gap:4px;text-wrap:pretty">
+          <li>Kleiner Bruder des „Neu“-Stempels der Neuigkeiten-Seite: gleiche Sonne, gleiche Neigung (−6°), gleiche Großbuchstaben. Aber 20 px hoch, ohne Icon, ohne Schatten.</li>
+          <li>Nur für Angemeldete, bis dieses Gerät /neuigkeiten seit dem neuesten Release geöffnet hat. Ersetzt den Punkt an der alten Pille. Kein Hinweis am Avatar.</li>
+          <li>Ein einziger kleiner Einstieg pro Seitenaufruf, danach steht er still. Reduzierte Bewegung: kein Einstieg.</li>
+        </ul>
+      </div>
+    </div>
+    <div id="2a" style="flex:none;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#2a" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">2a</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Stempel und Chip</b></div>
+      <div style="width:1200px;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <div style="display:flex;flex-direction:column;gap:22px;padding:32px;border-right:var(--cp-bw) solid var(--cp-line);background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size)">
+          <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Vorbild · NewStamp auf /neuigkeiten</span>
+          <div style="display:grid;place-items:center;height:180px"><span style="transform:rotate(-6deg)"><span style="display:inline-flex;align-items:center;gap:6px;height:34px;box-sizing:border-box;padding:0 14px 0 10px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;line-height:1"><dc-import name="Icon" icon="sparkles" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Neu</span></span></div>
+          <ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.5"><li>34 px, Rand 3 px, shadow-sm, Glitzer-Icon</li><li>Einschlag mit Konfetti, einmal pro Release</li></ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:22px;padding:32px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="flex:1;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">NewChip · Fußzeile und Profilmenü</span><button type="button" onClick="{{ doReplay }}" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:14px;cursor:pointer" style-hover="background:var(--cp-primary)"><dc-import name="Icon" icon="rotate-ccw" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einstieg abspielen</button></div>
+          <div style="display:flex;align-items:center;gap:48px;height:180px">
+            <div style="flex:none;display:grid;place-items:center;width:200px;height:150px;border-radius:14px;background:var(--cp-paper-2)"><span style="transform:scale(3)"><span style="display:inline-flex;align-items:center;height:20px;box-sizing:border-box;padding:0 6px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1;transform:rotate(-6deg)">Neu</span></span></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45"><b style="font-size:13px;color:var(--cp-ink-2)">3× vergrößert</b><span>Höhe 20 · Rand 2 px line · Radius pill</span><span>12 px, 800, +0.06em, Großbuchstaben</span><span>primary / on-primary (AA: 13,6:1)</span><span>Neigung −6°, 8 px Abstand zur Zahl</span></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;border:2px solid var(--cp-line-soft)"><dc-import name="PageFooter" unseen="{{ true }}" look="band" reduced="{{ reduced }}" replay="{{ replay }}" hint-size="100%,58px"></dc-import></div>
+          <ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.5"><li>Einstieg: scale .5→1 + opacity 0→1, <code style="font-family:var(--cp-font-mono);font-size:.9em">dur-base</code>, <code style="font-family:var(--cp-font-mono);font-size:.9em">ease-out</code>, 360 ms nach dem Laden, einmal pro Seitenaufruf. Kein Puls, keine Schleife.</li><li>Reduzierte Bewegung: der Chip ist einfach da.</li><li>Screenreader: der Link heißt „Version 1.2.0, neu“; der Chip selbst ist aria-hidden.</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 PROFILMENÜ -->
+  <section id="s3" style="display:flex;flex-direction:column;gap:48px">
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <span style="flex:none;display:grid;place-items:center;width:64px;height:64px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:50%;background:var(--cp-primary);box-shadow:var(--cp-shadow-sm);font-family:var(--cp-font-num);font-size:26px">3</span>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:52px;line-height:1">Profilmenü <span style="font-family:var(--cp-font-mono);font-size:20px;color:var(--cp-ink-2)">UserMenu · geändert</span></h2>
+        <ul style="margin:0;padding-left:22px;max-width:1080px;font-size:19px;line-height:1.5;display:flex;flex-direction:column;gap:4px;text-wrap:pretty">
+          <li>Desktop: nur die Zeile mit dem Anzeigenamen und „Abmelden“. Profil, Anmeldeweg, Rechtliches und die Pille fliegen raus.</li>
+          <li>Telefon (unter 768): dasselbe, darunter nach einer Linie die Fußzeilen-Inhalte mit „NEU“-Chip. Angemeldet gibt es am Telefon keinen Seiten-Footer, hier liegen die Links.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;gap:80px;align-items:flex-start">
+      <div id="3a" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#3a" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">3a</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Desktop · 1440</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">Name + Abmelden, sonst nichts</span></div>
+        <div data-frame="3a" style="position:relative;width:1440px;height:440px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;position:relative;z-index:10;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 34 }}" still="{{ true }}" hint-size="34px,34px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></a>
+            <nav aria-label="Hauptnavigation" style="display:flex;gap:2px;margin-left:14px"><sc-for list="{{ nav }}" as="t" hint-placeholder-count="4"><a href="#" onClick="{{ noop }}" aria-current="{{ t.cur }}" style="display:flex;align-items:center;gap:6px;height:61px;padding:0 11px;box-sizing:border-box;border-bottom:3px solid {{ t.bar }};color:{{ t.c }};font-weight:{{ t.w }};font-size:14px;text-decoration:none" style-hover="color:var(--cp-ink)"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ t.n }}<sc-if value="{{ t.soon }}"><span title="Baustelle" style="flex:none;width:16px;height:10px;box-sizing:border-box;border-radius:2px;border:1.5px solid var(--cp-line);background:repeating-linear-gradient(-45deg,var(--cp-hot) 0 3px,var(--cp-surface) 3px 6px)"></span></sc-if></a></sc-for></nav>
+            <span style="flex:1"></span>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+            <button type="button" aria-label="Konto von Kitty" aria-haspopup="menu" aria-expanded="true" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:var(--cp-paper-2);box-shadow:0 0 0 2px var(--cp-line);cursor:pointer"><dc-import name="Avatar" who="Kitty" size="{{ 32 }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></button>
+          </header>
+          <main style="flex:1;width:100%;max-width:1100px;margin:0 auto;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Hallo Kitty</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Was steht an?</h1></main>
+          <div role="menu" aria-label="Konto" style="position:absolute;top:70px;right:16px;z-index:20;width:280px;box-sizing:border-box;display:flex;flex-direction:column;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+            <div role="none" style="display:flex;align-items:center;gap:10px;padding:6px 10px 12px"><dc-import name="Avatar" who="Kitty" size="{{ 40 }}" dot="{{ false }}" hint-size="40px,40px"></dc-import><b style="flex:1;min-width:0;font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Kitty</b></div>
+            <span role="separator" style="height:0;margin:0 4px 6px;border-top:2px solid var(--cp-line-soft)"></span>
+            <a role="menuitem" href="#" onClick="{{ noop }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--cp-ink);font-weight:700;font-size:15px;text-decoration:none" style-hover="background:var(--cp-paper-2);color:var(--cp-ink)"><dc-import name="Icon" icon="log-out" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Abmelden</a>
+          </div>
+        </div>
+      </div>
+
+      <div id="3b" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#3b" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">3b</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Telefon · 390</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">mit Links und „NEU“</span></div>
+        <div data-frame="3b" style="position:relative;width:390px;height:640px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:30px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;position:relative;z-index:10;height:56px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 10px 0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;min-height:44px"><dc-import name="CompibertRig" variant="head" size="{{ 30 }}" still="{{ true }}" hint-size="30px,30px"></dc-import></a>
+            <span style="flex:1"></span>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+            <button type="button" aria-label="Konto von Kitty" aria-haspopup="menu" aria-expanded="true" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:var(--cp-paper-2);box-shadow:0 0 0 2px var(--cp-line);cursor:pointer"><dc-import name="Avatar" who="Kitty" size="{{ 32 }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></button>
+          </header>
+          <main style="flex:1;box-sizing:border-box;padding:16px 14px;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Hallo Kitty</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:38px;line-height:1">Was steht an?</h1></main>
+          <div role="menu" aria-label="Konto" style="position:absolute;top:62px;left:12px;right:12px;z-index:20;box-sizing:border-box;display:flex;flex-direction:column;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+            <div role="none" style="display:flex;align-items:center;gap:10px;padding:6px 10px 12px"><dc-import name="Avatar" who="Kitty" size="{{ 40 }}" dot="{{ false }}" hint-size="40px,40px"></dc-import><b style="flex:1;min-width:0;font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Kitty</b></div>
+            <span role="separator" style="height:0;margin:0 4px 6px;border-top:2px solid var(--cp-line-soft)"></span>
+            <a role="menuitem" href="#" onClick="{{ noop }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--cp-ink);font-weight:700;font-size:15px;text-decoration:none" style-hover="background:var(--cp-paper-2);color:var(--cp-ink)"><dc-import name="Icon" icon="log-out" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Abmelden</a>
+            <span role="separator" style="height:0;margin:6px 4px 2px;border-top:2px solid var(--cp-line-soft)"></span>
+            <dc-import name="PageFooter" variant="menu" unseen="{{ unseen }}" reduced="{{ reduced }}" hint-size="100%,44px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 MATRIX -->
+  <section id="s4" style="display:flex;flex-direction:column;gap:48px">
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <span style="flex:none;display:grid;place-items:center;width:64px;height:64px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:50%;background:var(--cp-primary);box-shadow:var(--cp-shadow-sm);font-family:var(--cp-font-num);font-size:26px">4</span>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:52px;line-height:1">Anmerkung in der Matrix <span style="font-family:var(--cp-font-mono);font-size:20px;color:var(--cp-ink-2)">PollMatrix · NotePopover · NoteDialog</span></h2>
+        <ul style="margin:0;padding-left:22px;max-width:1080px;font-size:19px;line-height:1.5;display:flex;flex-direction:column;gap:4px;text-wrap:pretty">
+          <li>Zelle mit Anmerkung = Knopf mit 44-px-Fläche und dem 10-px-Sonnenpunkt oben rechts. Zellen ohne Anmerkung bleiben, was sie sind: kein Knopf, kein Popover.</li>
+          <li>Maus und Tastatur: Popover über der Zelle bei Hover oder Fokus, Esc schließt. Er hängt am body (Teleport), also schneiden ihn weder der Seitwärts-Scroll noch die klebende Namensspalte ab. Er bleibt 12 px vom Rand, der Pfeil zeigt weiter auf die Zelle.</li>
+          <li>Touch: Tippen öffnet einen kleinen Dialog in der Mitte. ✗ „Schließen“, Tippen daneben oder Esc schließt, der Fokus bleibt drin und geht danach zurück auf die Zelle.</li>
+          <li>Ausprobieren: in <a href="#4a">4a</a> über die gepunkteten Zellen fahren oder mit Tab hineinspringen; in <a href="#4b">4b</a> und <a href="#4c">4c</a> tippen (klicken).</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;gap:80px;align-items:flex-start">
+      <sc-for list="{{ dMx4a }}" as="f" hint-placeholder-count="1">
+      <div id="4a" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#4a" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">4a</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Popover · 1440</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">Hover auf Beas Meh-Zelle</span></div>
+        <div data-frame="4a" style="position:relative;width:1440px;height:720px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;position:relative;z-index:10;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 34 }}" still="{{ true }}" hint-size="34px,34px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></a>
+            <span aria-hidden="true" style="flex:none;width:2px;height:28px;background:var(--cp-line-soft)"></span>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px"><b style="font-size:15px;white-space:nowrap">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:var(--cp-info);border:1.5px solid var(--cp-line)"></span>Terminumfrage</span></div>
+            <button type="button" style="flex:none;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</button>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+            <button type="button" aria-label="Konto von Kitty" aria-haspopup="menu" aria-expanded="false" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><dc-import name="Avatar" who="Kitty" size="{{ 32 }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></button>
+          </header>
+          <main style="flex:1;min-height:0;width:100%;max-width:1100px;margin:0 auto;box-sizing:border-box;padding:20px 24px;display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Terminumfrage läuft, 6 von 7 haben abgestimmt</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Wann zocken wir?</h1></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h2 style="margin:0;font-size:17px;font-weight:800">Wer kann wann?</h2>
+              <div data-mx="1" onScroll="{{ f.onScroll }}" style="overflow-x:auto;scrollbar-width:none;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+                <table style="width:100%;border-collapse:separate;border-spacing:0">
+                  <thead><tr><th scope="col" style="position:sticky;left:0;z-index:2;width:200px;min-width:200px;padding:8px 12px;border-bottom:2px solid var(--cp-line-soft);border-right:2px solid var(--cp-line-soft);background:var(--cp-surface);text-align:left;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Wer</th><sc-for list="{{ f.head }}" as="h" hint-placeholder-count="6"><th scope="col" style="min-width:96px;padding:8px 4px;border-bottom:2px solid var(--cp-line-soft);text-align:center;line-height:1.2"><span style="display:block;font-size:12px;font-weight:800">{{ h.d }}</span><span style="display:block;margin-top:3px;font-family:var(--cp-font-num);font-weight:400;font-size:13px">{{ h.t }}</span></th></sc-for></tr></thead>
+                  <tbody><sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="7"><tr><th scope="row" style="position:sticky;left:0;z-index:2;padding:2px 12px;border-bottom:1.5px solid var(--cp-line-soft);border-right:2px solid var(--cp-line-soft);background:var(--cp-surface);text-align:left;font-size:13px;font-weight:{{ r.w }}"><span style="display:flex;align-items:center;gap:8px;white-space:nowrap"><dc-import name="Avatar" who="{{ r.n }}" size="{{ 24 }}" host="{{ r.host }}" dot="{{ false }}" hint-size="24px,24px"></dc-import>{{ r.label }}</span></th><sc-for list="{{ r.c }}" as="c" hint-placeholder-count="6"><td style="padding:2px 0;border-bottom:1.5px solid var(--cp-line-soft);text-align:center"><sc-if value="{{ c.btn }}"><button type="button" data-cell="{{ c.id }}" aria-label="{{ c.aria }}" aria-describedby="{{ c.did }}" aria-haspopup="{{ c.hp }}" onMouseEnter="{{ c.enter }}" onMouseLeave="{{ c.leave }}" onFocus="{{ c.focus }}" onBlur="{{ c.blur }}" onClick="{{ c.click }}" onPointerDown="{{ c.down }}" onKeyDown="{{ c.key }}" style="position:relative;display:inline-grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:12px;background:{{ c.hl }};box-shadow:{{ c.ring }};cursor:pointer;vertical-align:middle" style-hover="background:var(--cp-paper-2)"><span aria-hidden="true" style="display:grid;place-items:center;width:26px;height:26px;box-sizing:border-box;border-radius:{{ c.r }};border:2px {{ c.bs }} var(--cp-line);background:{{ c.bg }};color:{{ c.fg }}"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import></span><span aria-hidden="true" style="position:absolute;top:4px;right:4px;width:10px;height:10px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary)"></span><span id="{{ c.did }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Anmerkung: {{ c.note }}</span></button></sc-if><sc-if value="{{ c.plain }}" hint-placeholder-val="{{ true }}"><span role="img" aria-label="{{ c.aria }}" style="position:relative;display:inline-grid;place-items:center;width:44px;height:44px;vertical-align:middle"><span aria-hidden="true" style="display:grid;place-items:center;width:26px;height:26px;box-sizing:border-box;border-radius:{{ c.r }};border:2px {{ c.bs }} var(--cp-line);background:{{ c.bg }};color:{{ c.fg }}"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import></span></span></sc-if></td></sc-for></tr></sc-for></tbody>
+                </table>
+              </div>
+            </div>
+          </main>
+          <sc-if value="{{ f.hasPop }}"><div data-pop="1" aria-hidden="true" onMouseEnter="{{ f.popEnter }}" onMouseLeave="{{ f.popLeave }}" style="position:absolute;left:{{ f.p.x }};top:{{ f.p.y }};z-index:40;width:{{ f.p.w }};box-sizing:border-box;display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-soft);opacity:{{ f.p.op }}"><div style="display:flex;align-items:center;gap:8px"><dc-import name="Avatar" who="{{ f.p.who }}" size="{{ 24 }}" dot="{{ false }}" hint-size="24px,24px"></dc-import><b style="flex:1;min-width:0;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.p.who }}</b><span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:24px;box-sizing:border-box;padding:0 9px 0 3px;border:2px solid var(--cp-line);border-radius:999px;background:{{ f.p.vbg }};color:{{ f.p.vfg }};font-size:12px;font-weight:800;line-height:1"><span style="display:grid;place-items:center;width:16px;height:16px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)"><dc-import name="Icon" icon="{{ f.p.vicon }}" size="{{ 9 }}" sw="{{ 3.5 }}" hint-size="9px,9px"></dc-import></span>{{ f.p.vl }}</span></div><p style="margin:0;font-size:14px;font-weight:600;line-height:1.4;text-wrap:pretty;overflow-wrap:anywhere">„{{ f.p.note }}“</p><sc-if value="{{ f.p.up }}"><span aria-hidden="true" style="position:absolute;left:{{ f.p.ax }};bottom:-9px;width:14px;height:14px;box-sizing:border-box;border-right:var(--cp-bw) solid var(--cp-line);border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);transform:rotate(45deg)"></span></sc-if><sc-if value="{{ f.p.down }}"><span aria-hidden="true" style="position:absolute;left:{{ f.p.ax }};top:-9px;width:14px;height:14px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);transform:rotate(45deg)"></span></sc-if></div></sc-if>
+        </div>
+      </div>
+      </sc-for>
+
+      <sc-for list="{{ mobMx }}" as="f" hint-placeholder-count="2">
+      <div id="{{ f.key }}" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="{{ f.href }}" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">{{ f.key }}</a><b style="white-space:nowrap;font-size:24px;font-weight:800">{{ f.title }}</b></div>
+        <span style="max-width:390px;margin-top:-8px;font-size:16px;color:var(--cp-ink-2);text-wrap:pretty">{{ f.sub }}</span>
+        <div data-frame="{{ f.key }}" style="position:relative;width:390px;height:720px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:30px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;position:relative;z-index:10;height:56px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 10px 0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;min-height:44px"><dc-import name="CompibertRig" variant="head" size="{{ 30 }}" still="{{ true }}" hint-size="30px,30px"></dc-import></a>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-left:4px"><b style="max-width:100%;font-size:14px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:var(--cp-info);border:1.5px solid var(--cp-line)"></span>Terminumfrage</span></div>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+            <button type="button" aria-label="Konto von Kitty" aria-haspopup="menu" aria-expanded="false" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><dc-import name="Avatar" who="Kitty" size="{{ 32 }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></button>
+          </header>
+          <main style="flex:1;min-height:0;box-sizing:border-box;padding:16px 14px;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">6 von 7 haben abgestimmt</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:36px;line-height:1">Wann zocken wir?</h1></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h2 style="margin:0;font-size:17px;font-weight:800">Wer kann wann?</h2>
+              <div data-mx="1" onScroll="{{ f.onScroll }}" style="overflow-x:auto;scrollbar-width:none;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+                <table style="border-collapse:separate;border-spacing:0">
+                  <thead><tr><th scope="col" style="position:sticky;left:0;z-index:2;width:130px;min-width:130px;max-width:130px;box-sizing:border-box;padding:8px 10px;border-bottom:2px solid var(--cp-line-soft);border-right:2px solid var(--cp-line-soft);background:var(--cp-surface);text-align:left;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Wer</th><sc-for list="{{ f.head }}" as="h" hint-placeholder-count="6"><th scope="col" style="width:72px;min-width:72px;padding:8px 2px;border-bottom:2px solid var(--cp-line-soft);text-align:center;line-height:1.2"><span style="display:block;font-size:12px;font-weight:800">{{ h.d }}</span><span style="display:block;margin-top:3px;font-family:var(--cp-font-num);font-weight:400;font-size:12px">{{ h.t }}</span></th></sc-for></tr></thead>
+                  <tbody><sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="7"><tr><th scope="row" style="position:sticky;left:0;z-index:2;width:130px;max-width:130px;box-sizing:border-box;padding:2px 10px;border-bottom:1.5px solid var(--cp-line-soft);border-right:2px solid var(--cp-line-soft);background:var(--cp-surface);text-align:left;font-size:13px;font-weight:{{ r.w }}"><span style="display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden"><dc-import name="Avatar" who="{{ r.n }}" size="{{ 24 }}" host="{{ r.host }}" dot="{{ false }}" hint-size="24px,24px"></dc-import>{{ r.label }}</span></th><sc-for list="{{ r.c }}" as="c" hint-placeholder-count="6"><td style="padding:2px 0;border-bottom:1.5px solid var(--cp-line-soft);text-align:center"><sc-if value="{{ c.btn }}"><button type="button" data-cell="{{ c.id }}" aria-label="{{ c.aria }}" aria-describedby="{{ c.did }}" aria-haspopup="{{ c.hp }}" onMouseEnter="{{ c.enter }}" onMouseLeave="{{ c.leave }}" onFocus="{{ c.focus }}" onBlur="{{ c.blur }}" onClick="{{ c.click }}" onPointerDown="{{ c.down }}" onKeyDown="{{ c.key }}" style="position:relative;display:inline-grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:12px;background:{{ c.hl }};box-shadow:{{ c.ring }};cursor:pointer;vertical-align:middle"><span aria-hidden="true" style="display:grid;place-items:center;width:26px;height:26px;box-sizing:border-box;border-radius:{{ c.r }};border:2px {{ c.bs }} var(--cp-line);background:{{ c.bg }};color:{{ c.fg }}"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import></span><span aria-hidden="true" style="position:absolute;top:4px;right:4px;width:10px;height:10px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary)"></span><span id="{{ c.did }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Anmerkung: {{ c.note }}</span></button></sc-if><sc-if value="{{ c.plain }}" hint-placeholder-val="{{ true }}"><span role="img" aria-label="{{ c.aria }}" style="position:relative;display:inline-grid;place-items:center;width:44px;height:44px;vertical-align:middle"><span aria-hidden="true" style="display:grid;place-items:center;width:26px;height:26px;box-sizing:border-box;border-radius:{{ c.r }};border:2px {{ c.bs }} var(--cp-line);background:{{ c.bg }};color:{{ c.fg }}"><dc-import name="Icon" icon="{{ c.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import></span></span></sc-if></td></sc-for></tr></sc-for></tbody>
+                </table>
+              </div>
+              <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--cp-ink-2)"><span aria-hidden="true" style="flex:none;width:10px;height:10px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary)"></span>Punkt = Anmerkung. Antippen zum Lesen.</span>
+            </div>
+          </main>
+          <sc-if value="{{ f.hasPop }}"><div data-pop="1" aria-hidden="true" onMouseEnter="{{ f.popEnter }}" onMouseLeave="{{ f.popLeave }}" style="position:absolute;left:{{ f.p.x }};top:{{ f.p.y }};z-index:40;width:{{ f.p.w }};box-sizing:border-box;display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-soft);opacity:{{ f.p.op }}"><div style="display:flex;align-items:center;gap:8px"><dc-import name="Avatar" who="{{ f.p.who }}" size="{{ 24 }}" dot="{{ false }}" hint-size="24px,24px"></dc-import><b style="flex:1;min-width:0;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.p.who }}</b><span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:24px;box-sizing:border-box;padding:0 9px 0 3px;border:2px solid var(--cp-line);border-radius:999px;background:{{ f.p.vbg }};color:{{ f.p.vfg }};font-size:12px;font-weight:800;line-height:1"><span style="display:grid;place-items:center;width:16px;height:16px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)"><dc-import name="Icon" icon="{{ f.p.vicon }}" size="{{ 9 }}" sw="{{ 3.5 }}" hint-size="9px,9px"></dc-import></span>{{ f.p.vl }}</span></div><p style="margin:0;font-size:14px;font-weight:600;line-height:1.4;text-wrap:pretty;overflow-wrap:anywhere">„{{ f.p.note }}“</p><sc-if value="{{ f.p.up }}"><span aria-hidden="true" style="position:absolute;left:{{ f.p.ax }};bottom:-9px;width:14px;height:14px;box-sizing:border-box;border-right:var(--cp-bw) solid var(--cp-line);border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);transform:rotate(45deg)"></span></sc-if><sc-if value="{{ f.p.down }}"><span aria-hidden="true" style="position:absolute;left:{{ f.p.ax }};top:-9px;width:14px;height:14px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);transform:rotate(45deg)"></span></sc-if></div></sc-if>
+          <sc-if value="{{ f.hasDlg }}">
+            <div onClick="{{ f.closeDlg }}" style="position:absolute;inset:0;z-index:50;display:grid;place-items:center;padding:24px;background:var(--cp-overlay)">
+              <div data-dlg="1" role="dialog" aria-modal="true" aria-labelledby="{{ f.d.tid }}" onClick="{{ f.stop }}" onKeyDown="{{ f.dlgKey }}" style="width:100%;max-width:320px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding:14px 12px 20px 18px;border:var(--cp-bw) solid var(--cp-line);border-radius:20px;background:var(--cp-surface);box-shadow:var(--cp-shadow-modal)">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <dc-import name="Avatar" who="{{ f.d.who }}" size="{{ 32 }}" dot="{{ false }}" hint-size="32px,32px"></dc-import>
+                  <h2 id="{{ f.d.tid }}" style="flex:1;min-width:0;margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.d.who }}</h2>
+                  <button type="button" data-close="1" aria-label="Schließen" onClick="{{ f.closeDlg }}" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="x" size="{{ 16 }}" sw="{{ 3 }}" hint-size="16px,16px"></dc-import></span></button>
+                </div>
+                <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:30px;box-sizing:border-box;padding:0 12px 0 4px;border:2px solid var(--cp-line);border-radius:999px;background:{{ f.d.vbg }};color:{{ f.d.vfg }};font-size:14px;font-weight:800;line-height:1"><span style="display:grid;place-items:center;width:20px;height:20px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)"><dc-import name="Icon" icon="{{ f.d.vicon }}" size="{{ 11 }}" sw="{{ 3.5 }}" hint-size="11px,11px"></dc-import></span>{{ f.d.vl }}</span>
+                <p style="margin:0;font-size:16px;font-weight:600;line-height:1.45;text-wrap:pretty;overflow-wrap:anywhere">„{{ f.d.note }}“</p>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- 5 EDITOR -->
+  <section id="s5" style="display:flex;flex-direction:column;gap:48px">
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <span style="flex:none;display:grid;place-items:center;width:64px;height:64px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:50%;background:var(--cp-primary);box-shadow:var(--cp-shadow-sm);font-family:var(--cp-font-num);font-size:26px">5</span>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:52px;line-height:1">Anmerkungs-Editor <span style="font-family:var(--cp-font-mono);font-size:20px;color:var(--cp-ink-2)">NoteEditor in PollSlotCard · geändert</span></h2>
+        <ul style="margin:0;padding-left:22px;max-width:1080px;font-size:19px;line-height:1.5;display:flex;flex-direction:column;gap:4px;text-wrap:pretty">
+          <li>Kopfzeile: „Anmerkung“ und leiser „sehen alle“, rechts der Zähler, immer sichtbar (ab 72 Zeichen in warning-fg).</li>
+          <li>Das Textfeld wächst mit dem Text, 13 px wie die gespeicherte Anmerkung, nie eine innere Scrollleiste. Enter speichert, Esc bricht ab, eingefügte Zeilenumbrüche werden Leerzeichen.</li>
+          <li>Darunter rechts nur ✓ (Speichern, success) und ✗ (Abbrechen, error): 36 px sichtbar, 44 px Fläche, mit Namen für Screenreader. „Termin festlegen“ bleibt die breite Pille darunter: drei Aktionen, drei Formen.</li>
+          <li>Ausprobieren: tippen, Enter oder ✓, dann den Stift zum Bearbeiten.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;gap:80px;align-items:flex-start">
+      <div id="5a" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#5a" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">5a</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Terminkarten des Hosts · 1440</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">Von links: leer mit Platzhalter · kurz (12/80) · 80 Zeichen, bricht um · kurz vorm Limit (76/80)</span></div>
+        <div data-frame="5a" style="position:relative;width:1440px;height:780px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;position:relative;z-index:10;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><dc-import name="CompibertRig" variant="head" size="{{ 34 }}" still="{{ true }}" hint-size="34px,34px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></a>
+            <span aria-hidden="true" style="flex:none;width:2px;height:28px;background:var(--cp-line-soft)"></span>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px"><b style="font-size:15px;white-space:nowrap">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:var(--cp-info);border:1.5px solid var(--cp-line)"></span>Terminumfrage</span></div>
+            <button type="button" style="flex:none;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</button>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+            <button type="button" aria-label="Konto von Sanne" aria-haspopup="menu" aria-expanded="false" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></button>
+          </header>
+          <main style="flex:1;min-height:0;width:100%;max-width:1100px;margin:0 auto;box-sizing:border-box;padding:20px 24px;display:flex;flex-direction:column;gap:24px">
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Terminumfrage läuft, 6 von 7 haben abgestimmt</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Wann zocken wir?</h1></div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start">
+              <sc-for list="{{ cardsD }}" as="p" hint-placeholder-count="4">
+                <article aria-label="{{ p.aria }}" style="position:relative;display:flex;flex-direction:column;gap:10px;padding:16px 14px 14px;border:{{ p.bd }};border-radius:14px;background:var(--cp-surface);box-shadow:{{ p.sh }}">
+                  <sc-if value="{{ p.best }}"><span style="position:absolute;top:-13px;left:12px;display:inline-flex;align-items:center;gap:4px;height:24px;box-sizing:border-box;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800"><dc-import name="Icon" icon="sparkles" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Bester Termin</span></sc-if>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b style="font-size:15px">{{ p.day }}</b><span style="font-family:var(--cp-font-num);font-size:24px;line-height:1">{{ p.time }}</span></div>
+                  <div aria-hidden="true" style="display:flex;height:10px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--cp-line);overflow:hidden;background:var(--cp-paper-2)"><span style="width:{{ p.yW }};background:var(--cp-success)"></span><span style="width:{{ p.mW }};background:var(--cp-warning)"></span></div>
+                  <span style="font-size:13px"><b>{{ p.y }} Ja</b>, {{ p.m }} Meh, {{ p.n }} Nein</span>
+                  <div role="radiogroup" aria-label="{{ p.rgAria }}" style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ p.opts }}" as="o" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{ o.on }}" onClick="{{ o.pick }}" style="display:flex;align-items:center;justify-content:center;gap:4px;height:44px;padding:0;border:0;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-size:13px;font-weight:700;cursor:pointer"><dc-import name="Icon" icon="{{ o.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import>{{ o.n }}</button></sc-for></div>
+                  <sc-if value="{{ p.showAdd }}"><button type="button" data-edit="{{ p.i }}" onClick="{{ p.edit }}" aria-label="Anmerkung hinzufügen" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 4px;border:0;background:transparent;font-size:13px;font-weight:700;color:var(--cp-ink);cursor:pointer;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--cp-line-soft);text-underline-offset:4px" style-hover="text-decoration-color:var(--cp-line)"><dc-import name="Icon" icon="plus" size="{{ 14 }}" sw="{{ 3 }}" hint-size="14px,14px"></dc-import>Anmerkung</button></sc-if>
+                  <sc-if value="{{ p.showSaved }}"><div style="display:flex;align-items:flex-start;gap:6px;padding-top:10px;border-top:2px dashed var(--cp-line-soft)"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;padding-top:2px"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">Deine Anmerkung · sehen alle</span><span style="font-size:13px;font-weight:600;line-height:1.4;text-wrap:pretty;overflow-wrap:anywhere">{{ p.note }}</span></div><button type="button" data-edit="{{ p.i }}" onClick="{{ p.edit }}" aria-label="Anmerkung bearbeiten" title="Bearbeiten" style="flex:none;display:grid;place-items:center;width:44px;height:44px;margin:-4px -6px 0 0;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="pencil" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></button></div></sc-if>
+                  <sc-if value="{{ p.editing }}" hint-placeholder-val="{{ true }}">
+                    <div role="group" aria-labelledby="{{ p.lid }}" style="display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:2px dashed var(--cp-line-soft)">
+                      <div style="display:flex;align-items:baseline;gap:8px"><label id="{{ p.lid }}" for="{{ p.tid }}" style="flex:none;white-space:nowrap;font-size:13px;font-weight:800">Anmerkung</label><span id="{{ p.hid }}" style="flex:none;white-space:nowrap;font-size:12px;font-weight:600;color:var(--cp-ink-2)">sehen alle</span><span aria-hidden="true" style="flex:none;margin-left:auto;white-space:nowrap;font-family:var(--cp-font-mono);font-size:12px;font-weight:700;color:{{ p.cntFg }}">{{ p.cnt }}</span><span aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">{{ p.live }}</span></div>
+                      <textarea id="{{ p.tid }}" data-grow="1" rows="1" maxLength="80" enterKeyHint="done" aria-describedby="{{ p.hid }}" placeholder="z. B. kann maximal bis 20:30" value="{{ p.draft }}" onChange="{{ p.onChange }}" onKeyDown="{{ p.onKey }}" style="display:block;width:100%;min-height:40px;box-sizing:border-box;margin:0;padding:9px 11px;border:2px solid var(--cp-line);border-radius:10px;background:var(--cp-surface-2);color:var(--cp-ink);font-family:var(--cp-font-sans);font-size:13px;font-weight:600;line-height:1.4;resize:none;overflow:hidden;field-sizing:content;outline:none;transition:border-color var(--cp-dur-fast) var(--cp-ease-out)" style-focus="border-color:var(--cp-focus);box-shadow:0 0 0 1px var(--cp-focus)"></textarea>
+                      <div style="display:flex;justify-content:flex-end;margin-right:-4px">
+                        <button type="button" onClick="{{ p.save }}" aria-label="Anmerkung speichern" title="Speichern" style="display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-success);color:var(--cp-on-success);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="check" size="{{ 18 }}" sw="{{ 3 }}" hint-size="18px,18px"></dc-import></span></button>
+                        <button type="button" onClick="{{ p.cancel }}" aria-label="Abbrechen" title="Abbrechen" style="display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-error);color:var(--cp-on-error);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="x" size="{{ 18 }}" sw="{{ 3 }}" hint-size="18px,18px"></dc-import></span></button>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <button type="button" onClick="{{ noop }}" style="display:flex;align-items:center;justify-content:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ p.hpBg }};color:var(--cp-ink);box-shadow:var(--cp-shadow-sm);font-weight:800;font-size:14px;cursor:pointer;transition:transform var(--cp-dur-instant) var(--cp-ease-snap)" style-hover="transform:translateY(-2px)"><dc-import name="Icon" icon="calendar-check" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Termin festlegen</button>
+                </article>
+              </sc-for>
+            </div>
+          </main>
+          <div role="toolbar" aria-label="Host-Steuerung" style="position:absolute;left:50%;bottom:24px;z-index:30;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);white-space:nowrap">
+            <span aria-hidden="true" style="display:grid;place-items:center;width:44px;height:44px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+            <button type="button" style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;cursor:pointer"><dc-import name="Icon" icon="calendar-check" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Termin festlegen</button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:14px;cursor:pointer"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px;border:0;border-radius:999px;background:transparent;font-weight:700;font-size:14px;cursor:pointer"><dc-import name="Icon" icon="ellipsis" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Mehr</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="5b" style="flex:none;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="#5b" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">5b</a><b style="white-space:nowrap;font-size:24px;font-weight:800">Telefon · 390</b><span style="flex-basis:100%;font-size:18px;color:var(--cp-ink-2)">Host, live</span></div>
+        <div data-frame="5b" style="position:relative;width:390px;height:844px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:30px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);display:flex;flex-direction:column">
+          <header style="flex:none;position:relative;z-index:10;height:56px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 10px 0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;min-height:44px"><dc-import name="CompibertRig" variant="head" size="{{ 30 }}" still="{{ true }}" hint-size="30px,30px"></dc-import></a>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-left:4px"><b style="max-width:100%;font-size:14px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:var(--cp-info);border:1.5px solid var(--cp-line)"></span>Terminumfrage</span></div>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+            <button type="button" aria-label="Konto von Sanne" aria-haspopup="menu" aria-expanded="false" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" dot="{{ false }}" hint-size="32px,32px"></dc-import></button>
+          </header>
+          <main style="flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;box-sizing:border-box;padding:16px 14px 96px;display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">6 von 7 haben abgestimmt</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:36px;line-height:1">Wann zocken wir?</h1></div>
+            <sc-for list="{{ cardsM }}" as="p" hint-placeholder-count="1">
+              <article aria-label="{{ p.aria }}" style="position:relative;display:flex;flex-direction:column;gap:10px;padding:16px 14px 14px;border:{{ p.bd }};border-radius:14px;background:var(--cp-surface);box-shadow:{{ p.sh }}">
+                <sc-if value="{{ p.best }}"><span style="position:absolute;top:-13px;left:12px;display:inline-flex;align-items:center;gap:4px;height:24px;box-sizing:border-box;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800"><dc-import name="Icon" icon="sparkles" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Bester Termin</span></sc-if>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b style="font-size:15px">{{ p.day }}</b><span style="font-family:var(--cp-font-num);font-size:24px;line-height:1">{{ p.time }}</span></div>
+                <div aria-hidden="true" style="display:flex;height:10px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--cp-line);overflow:hidden;background:var(--cp-paper-2)"><span style="width:{{ p.yW }};background:var(--cp-success)"></span><span style="width:{{ p.mW }};background:var(--cp-warning)"></span></div>
+                <span style="font-size:13px"><b>{{ p.y }} Ja</b>, {{ p.m }} Meh, {{ p.n }} Nein</span>
+                <div role="radiogroup" aria-label="{{ p.rgAria }}" style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ p.opts }}" as="o" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{ o.on }}" onClick="{{ o.pick }}" style="display:flex;align-items:center;justify-content:center;gap:4px;height:44px;padding:0;border:0;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-size:13px;font-weight:700;cursor:pointer"><dc-import name="Icon" icon="{{ o.icon }}" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import>{{ o.n }}</button></sc-for></div>
+                <sc-if value="{{ p.showAdd }}"><button type="button" data-edit="{{ p.i }}" onClick="{{ p.edit }}" aria-label="Anmerkung hinzufügen" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 4px;border:0;background:transparent;font-size:13px;font-weight:700;color:var(--cp-ink);cursor:pointer;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--cp-line-soft);text-underline-offset:4px"><dc-import name="Icon" icon="plus" size="{{ 14 }}" sw="{{ 3 }}" hint-size="14px,14px"></dc-import>Anmerkung</button></sc-if>
+                <sc-if value="{{ p.showSaved }}"><div style="display:flex;align-items:flex-start;gap:6px;padding-top:10px;border-top:2px dashed var(--cp-line-soft)"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;padding-top:2px"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">Deine Anmerkung · sehen alle</span><span style="font-size:13px;font-weight:600;line-height:1.4;text-wrap:pretty;overflow-wrap:anywhere">{{ p.note }}</span></div><button type="button" data-edit="{{ p.i }}" onClick="{{ p.edit }}" aria-label="Anmerkung bearbeiten" title="Bearbeiten" style="flex:none;display:grid;place-items:center;width:44px;height:44px;margin:-4px -6px 0 0;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="pencil" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span></button></div></sc-if>
+                <sc-if value="{{ p.editing }}" hint-placeholder-val="{{ true }}">
+                  <div role="group" aria-labelledby="{{ p.lid }}" style="display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:2px dashed var(--cp-line-soft)">
+                    <div style="display:flex;align-items:baseline;gap:8px"><label id="{{ p.lid }}" for="{{ p.tid }}" style="flex:none;white-space:nowrap;font-size:13px;font-weight:800">Anmerkung</label><span id="{{ p.hid }}" style="flex:none;white-space:nowrap;font-size:12px;font-weight:600;color:var(--cp-ink-2)">sehen alle</span><span aria-hidden="true" style="flex:none;margin-left:auto;white-space:nowrap;font-family:var(--cp-font-mono);font-size:12px;font-weight:700;color:{{ p.cntFg }}">{{ p.cnt }}</span><span aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">{{ p.live }}</span></div>
+                    <textarea id="{{ p.tid }}" data-grow="1" rows="1" maxLength="80" enterKeyHint="done" aria-describedby="{{ p.hid }}" placeholder="z. B. kann maximal bis 20:30" value="{{ p.draft }}" onChange="{{ p.onChange }}" onKeyDown="{{ p.onKey }}" style="display:block;width:100%;min-height:40px;box-sizing:border-box;margin:0;padding:9px 11px;border:2px solid var(--cp-line);border-radius:10px;background:var(--cp-surface-2);color:var(--cp-ink);font-family:var(--cp-font-sans);font-size:13px;font-weight:600;line-height:1.4;resize:none;overflow:hidden;field-sizing:content;outline:none;transition:border-color var(--cp-dur-fast) var(--cp-ease-out)" style-focus="border-color:var(--cp-focus);box-shadow:0 0 0 1px var(--cp-focus)"></textarea>
+                    <div style="display:flex;justify-content:flex-end;margin-right:-4px">
+                      <button type="button" onClick="{{ p.save }}" aria-label="Anmerkung speichern" title="Speichern" style="display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-success);color:var(--cp-on-success);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="check" size="{{ 18 }}" sw="{{ 3 }}" hint-size="18px,18px"></dc-import></span></button>
+                      <button type="button" onClick="{{ p.cancel }}" aria-label="Abbrechen" title="Abbrechen" style="display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-error);color:var(--cp-on-error);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="x" size="{{ 18 }}" sw="{{ 3 }}" hint-size="18px,18px"></dc-import></span></button>
+                    </div>
+                  </div>
+                </sc-if>
+                <span style="font-size:12px;font-weight:600;color:var(--cp-ink-2)">Mobil legt der Host über die Krone fest, nicht in der Karte.</span>
+              </article>
+            </sc-for>
+          </main>
+          <button type="button" aria-label="Host-Steuerung" style="position:absolute;right:14px;bottom:24px;z-index:30;display:grid;place-items:center;width:56px;height:56px;padding:0;border-radius:50%;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);cursor:pointer"><dc-import name="Icon" icon="crown" size="{{ 24 }}" hint-size="24px,24px"></dc-import></button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;unseen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;label&quot;:&quot;Neues Release noch nicht gesehen (NEU-Chip in 1a, 3b)&quot;},&quot;footerLook&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;band&quot;,&quot;rule&quot;],&quot;default&quot;:&quot;band&quot;,&quot;tsType&quot;:&quot;'band' | 'rule'&quot;,&quot;label&quot;:&quot;Fußzeile: Band oder gestrichelte Linie&quot;},&quot;reduceMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;label&quot;:&quot;Reduzierte Bewegung&quot;}}">
+const SL=[['Fr 24.10.','20:00'],['Sa 25.10.','18:00'],['Sa 25.10.','20:30'],['So 26.10.','15:00'],['Fr 31.10.','20:00'],['Sa 1.11.','19:30']];
+const PP=['Sanne','Kitty','Larsi','Olli','Bea','Mia','Tom'];
+const VV={Sanne:'yyymny',Kitty:'ymyyym',Larsi:'nyymy?',Olli:'ymynmy',Bea:'mymyny',Mia:'ynyymy',Tom:'?yymyn'};
+const NT={'Larsi-0':'Geburtstag meiner Oma','Olli-1':'erst ab 19 Uhr, komme direkt vom Training','Bea-2':'kann maximal bis 22 Uhr, muss Sonntag früh raus','Tom-3':'nur wenn wir pünktlich anfangen','Sanne-3':'Familienessen, eventuell später','Kitty-4':'passt perfekt, da hab ich frei','Mia-5':'bring Snacks mit!'};
+const VT={y:{l:'Ja',icon:'check',bg:'var(--cp-success)',fg:'var(--cp-on-success)',r:'50%',bs:'solid'},m:{l:'Meh',icon:'minus',bg:'var(--cp-warning)',fg:'var(--cp-on-warning)',r:'50%',bs:'solid'},n:{l:'Nein',icon:'x',bg:'var(--cp-surface)',fg:'var(--cp-ink)',r:'6px',bs:'solid'},'?':{l:'Noch offen',icon:'',bg:'transparent',fg:'var(--cp-ink)',r:'50%',bs:'dashed'}};
+const CHIP={y:['var(--cp-success)','var(--cp-on-success)'],m:['var(--cp-warning)','var(--cp-on-warning)'],n:['var(--cp-ink)','var(--cp-paper)'],'?':['var(--cp-surface)','var(--cp-ink)']};
+const N80='Ich kann erst ab 21 Uhr, weil vorher Training ist. Dann aber gerne bis open end!';
+const N76='Komme direkt von der Arbeit, also frühestens 20:15. Fangt gern ohne mich an!';
+const CS=[['Fr 24.10.','20:00',2,3,2,false],['Sa 25.10.','18:00',3,3,1,false],['Sa 25.10.','20:30',6,1,0,true],['So 26.10.','15:00',4,2,1,false]];
+const NAV=[['Sessions','gamepad-2',1,0],['Archiv','archive',0,1],['Bibliothek','layout-grid',0,1],['Profil','user',0,1]];
+const HOME=[
+  {name:'Freitags-Zocken',host:'Host: Sanne',pill:'Terminumfrage',dot:'var(--cp-info)',slotLabel:'Bester Termin bisher',slot:'Sa 25.10., 20:30',icon:'calendar',me:'Du hast noch nicht abgestimmt',meFg:'var(--cp-warning-fg)',meIcon:'triangle-alert',cta:'Abstimmen',ctaBg:'var(--cp-primary)'},
+  {name:'Mario-Kart-Liga',host:'Host: Olli',pill:'Termin steht',dot:'var(--cp-success)',slotLabel:'Termin',slot:'Sa 1.11., 19:30',icon:'calendar-check',me:'Du bist dabei',meFg:'var(--cp-success-fg)',meIcon:'circle-check',cta:'Ansehen',ctaBg:'var(--cp-surface)'}
+];
+const EASE='cubic-bezier(.16,1,.3,1)';
+
+class Component extends DCLogic {
+  state={pops:{},dlg:{},replay:0,cards:[
+    {v:'y',ed:true,dr:'',nt:''},{v:'m',ed:true,dr:'ab 21 Uhr da',nt:''},{v:'y',ed:true,dr:N80,nt:''},{v:'m',ed:true,dr:N76,nt:''},{v:'m',ed:true,dr:'kann maximal bis 22:30',nt:''}]};
+  ct={}; pd=0; ign=0;
+  componentDidMount(){
+    this.onKey=e=>{ if(e.key==='Escape'&&Object.values(this.state.pops).some(Boolean)) this.setState({pops:{}}); };
+    window.addEventListener('keydown',this.onKey);
+    const ready=(document.fonts&&document.fonts.ready)||Promise.resolve();
+    ready.then(()=>{ this.t=setTimeout(()=>this.pin(),600); });
+    this.grow();
+  }
+  componentWillUnmount(){ window.removeEventListener('keydown',this.onKey); clearTimeout(this.t); clearTimeout(this.t2); Object.values(this.ct).forEach(clearTimeout); }
+  componentDidUpdate(){
+    const P=this.state.pops; let n=null; const placed=[];
+    for(const k in P){ const p=P[k]; if(!p||p.y!=null) continue;
+      const fr=this.q(k), el=fr&&fr.querySelector('[data-pop]'); if(!el) continue;
+      const h=el.offsetHeight, fh=fr.offsetHeight, up=(p.top-h-12>=8)||(p.bot+12+h>fh-8);
+      n=n||{...P}; n[k]={...p,up,y:up?Math.max(8,p.top-h-12):p.bot+12}; placed.push([k,up]); }
+    if(n) this.setState({pops:n},()=>placed.forEach(([k,up])=>{ const fr=this.q(k); this.anim(fr&&fr.querySelector('[data-pop]'),up?4:-4,140); }));
+    this.grow();
+  }
+  q(k){ return document.querySelector('[data-frame="'+k+'"]'); }
+  red(){ return !!this.props.reduceMotion||!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  anim(el,dy,d,scale){ if(!el||!el.animate) return; const r=this.red();
+    el.animate(r?[{opacity:0},{opacity:1}]:[{opacity:0,transform:scale?'scale(.96)':'translateY('+dy+'px)'},{opacity:1,transform:'none'}],{duration:d,easing:EASE}); }
+  grow(){ if(window.CSS&&CSS.supports&&CSS.supports('field-sizing','content')) return;
+    document.querySelectorAll('textarea[data-grow]').forEach(el=>{ el.style.height='auto'; el.style.height=(el.scrollHeight+4)+'px'; }); }
+  pin(){
+    const a=this.q('1f'), sc=a&&a.querySelector('[data-scroll]'); if(sc) sc.scrollTop=sc.scrollHeight;
+    const c=this.q('4c'), mx=c&&c.querySelector('[data-mx]'); this.ign=Date.now()+500; if(mx) mx.scrollLeft=mx.scrollWidth;
+    this.t2=setTimeout(()=>{ this.openPop('4a','Bea-2'); this.openPop('4c','Mia-5',true); this.setState(s=>({dlg:{...s.dlg,'4b':'Larsi-0'}})); },150);
+  }
+  openPop(k,id,kb){
+    clearTimeout(this.ct[k]);
+    const cur=this.state.pops[k]; if(cur&&cur.id===id&&cur.y!=null&&cur.kb===!!kb) return;
+    const fr=this.q(k), cell=fr&&fr.querySelector('[data-cell="'+id+'"]'); if(!cell) return;
+    const R=fr.getBoundingClientRect(), s=(R.width/fr.offsetWidth)||1, C=cell.getBoundingClientRect(), fw=fr.offsetWidth;
+    const W=Math.min(280,fw-24), cx=(C.left+C.width/2-R.left)/s, x=Math.max(12,Math.min(fw-12-W,cx-W/2));
+    this.setState(st=>({pops:{...st.pops,[k]:{id,kb:!!kb,W,x,cx,top:(C.top-R.top)/s,bot:(C.bottom-R.top)/s,y:null}}}));
+  }
+  closePop(k){ clearTimeout(this.ct[k]); if(this.state.pops[k]) this.setState(st=>({pops:{...st.pops,[k]:null}})); }
+  later(k){ clearTimeout(this.ct[k]); this.ct[k]=setTimeout(()=>this.closePop(k),120); }
+  focusCell(k,id,touch,e){
+    if(touch&&Date.now()-this.pd<800) return;
+    const kb=!!(e&&e.target&&e.target.matches&&e.target.matches(':focus-visible'));
+    const fr=this.q(k), cell=fr&&fr.querySelector('[data-cell="'+id+'"]'), mx=cell&&cell.closest('[data-mx]');
+    if(mx){ const th=mx.querySelector('th'), m=mx.getBoundingClientRect(), c=cell.getBoundingClientRect(), s=(m.width/mx.offsetWidth)||1, stick=th?th.offsetWidth:0;
+      const l=(c.left-m.left)/s, r=(c.right-m.left)/s; let d=0;
+      if(l<stick+4) d=l-stick-8; else if(r>mx.clientWidth-4) d=r-mx.clientWidth+8;
+      if(d){ this.ign=Date.now()+300; mx.scrollLeft+=d; } }
+    requestAnimationFrame(()=>this.openPop(k,id,kb));
+  }
+  openDlg(k,id){
+    this.closePop(k);
+    this.setState(st=>({dlg:{...st.dlg,[k]:id}}),()=>{ const fr=this.q(k), card=fr&&fr.querySelector('[data-dlg]'), b=card&&card.querySelector('[data-close]');
+      b&&b.focus({preventScroll:true}); this.anim(card,0,220,true); });
+  }
+  closeDlg(k){
+    const id=this.state.dlg[k];
+    this.setState(st=>({dlg:{...st.dlg,[k]:null}}),()=>{ const fr=this.q(k), c=fr&&fr.querySelector('[data-cell="'+id+'"]'); if(c){ this.pd=Date.now(); c.focus({preventScroll:true}); } });
+  }
+  dlgKey(k,e){
+    if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); this.closeDlg(k); }
+    else if(e.key==='Tab'){ e.preventDefault(); const fr=this.q(k), b=fr&&fr.querySelector('[data-dlg] [data-close]'); b&&b.focus(); }
+  }
+  person(id){ const [n,j]=id.split('-'), ch=VV[n][+j], v=VT[ch], c=CHIP[ch]; return {who:n,note:NT[id]||'',vl:v.l,vicon:v.icon||'circle-help',vbg:c[0],vfg:c[1]}; }
+  mx(k,mode,me){
+    const P=this.state.pops[k], D=this.state.dlg[k], touch=mode==='touch';
+    const rows=PP.map(n=>({n,host:n==='Sanne',label:n===me?n+' (du)':n,w:n===me?'800':'600',c:SL.map((s,j)=>{
+      const id=n+'-'+j, ch=VV[n][j], v=VT[ch], note=NT[id]||'', live=!!note&&mode!=='static', open=(P&&P.id===id)||D===id;
+      return {id,icon:v.icon,bg:v.bg,fg:v.fg,r:v.r,bs:v.bs,note,did:k+'-n-'+id,btn:live,plain:!live,dot:!!note,
+        aria:n+', '+s[0]+' '+s[1]+': '+v.l+(note?', mit Anmerkung':''),
+        hl:open?'var(--cp-paper-2)':'transparent', ring:P&&P.id===id&&P.kb?'0 0 0 3px var(--cp-focus)':'none', hp:touch?'dialog':undefined,
+        enter:touch?undefined:()=>this.openPop(k,id), leave:touch?undefined:()=>this.later(k),
+        focus:e=>this.focusCell(k,id,touch,e), blur:()=>this.later(k),
+        click:touch?()=>this.openDlg(k,id):undefined, down:touch?()=>{ this.pd=Date.now(); }:undefined,
+        key:e=>{ if(e.key==='Escape') this.closePop(k); }};
+    })}));
+    const pv=P?this.person(P.id):null, dv=D?this.person(D):null;
+    return {key:k,href:'#'+k,head:SL.map(([d,t])=>({d,t})),rows,hasPop:!!P,hasDlg:!!D,
+      p:P?{...pv,x:P.x+'px',y:(P.y==null?0:P.y)+'px',w:P.W+'px',op:P.y==null?0:1,up:P.up===true,down:P.up===false,ax:(Math.max(20,Math.min(P.W-20,P.cx-P.x))-7)+'px'}:{},
+      d:dv?{...dv,tid:k+'-dlg-t'}:{},
+      onScroll:()=>{ if(Date.now()<this.ign) return; this.closePop(k); },
+      popEnter:()=>clearTimeout(this.ct[k]), popLeave:()=>this.later(k),
+      closeDlg:()=>this.closeDlg(k), dlgKey:e=>this.dlgKey(k,e), stop:e=>e.stopPropagation()};
+  }
+  setCard(i,patch,cb){ this.setState(st=>({cards:st.cards.map((c,j)=>j===i?{...c,...patch}:c)}),cb); }
+  focusSel(sel){ setTimeout(()=>{ const el=document.querySelector(sel); el&&el.focus({preventScroll:true}); },30); }
+  save(i){ const c=this.state.cards[i]; this.setCard(i,{nt:c.dr.trim(),ed:false},()=>this.focusSel('[data-edit="'+i+'"]')); }
+  cancel(i){ const c=this.state.cards[i]; this.setCard(i,{ed:false,dr:c.nt},()=>this.focusSel('[data-edit="'+i+'"]')); }
+  edit(i){ const c=this.state.cards[i]; this.setCard(i,{ed:true,dr:c.nt},()=>this.focusSel('#note-'+i)); }
+  card(i,si){
+    const c=this.state.cards[i], [day,time,y,m,n,best]=CS[si], len=c.dr.length;
+    return {i:String(i),day,time,best,y:String(y),m:String(m),n:String(n),yW:(y/7*100)+'%',mW:(m/7*100)+'%',
+      aria:'Termin '+day+' '+time, rgAria:'Deine Stimme für '+day+' '+time,
+      bd:best?'3px solid var(--cp-focus)':'var(--cp-bw) solid var(--cp-line)', sh:best?'var(--cp-shadow-card)':'none',
+      opts:[['y','Ja','check'],['m','Meh','minus'],['n','Nein','x']].map(([k,l,icon],j)=>({n:l,icon,on:c.v===k,bl:j?'2px solid var(--cp-line)':'0',
+        bg:c.v===k?(k==='y'?'var(--cp-success)':k==='m'?'var(--cp-warning)':'var(--cp-ink)'):'transparent',
+        fg:c.v===k?(k==='n'?'var(--cp-paper)':'var(--cp-ink)'):'var(--cp-ink-2)', pick:()=>this.setCard(i,{v:k})})),
+      showAdd:!c.ed&&!c.nt, showSaved:!c.ed&&!!c.nt, editing:c.ed, note:c.nt, draft:c.dr,
+      cnt:len+'/80', cntFg:len>=72?'var(--cp-warning-fg)':'var(--cp-ink-2)', live:len>=64?'Noch '+(80-len)+' Zeichen':'',
+      tid:'note-'+i, hid:'note-h-'+i, lid:'note-l-'+i, hpBg:best?'var(--cp-primary)':'var(--cp-surface)',
+      onChange:e=>this.setCard(i,{dr:e.target.value.replace(/[\r\n]+/g,' ').slice(0,80)}),
+      onKey:e=>{ if(e.key==='Enter'&&!(e.nativeEvent&&e.nativeEvent.isComposing)){ e.preventDefault(); this.save(i); } else if(e.key==='Escape'){ e.preventDefault(); this.cancel(i); } },
+      save:()=>this.save(i), cancel:()=>this.cancel(i), edit:()=>this.edit(i)};
+  }
+  renderVals(){
+    const red=this.red();
+    return {
+      motion:red?'reduced':'full', reduced:red, unseen:this.props.unseen??true, look:this.props.footerLook||'band',
+      nav:NAV.map(([n,icon,cur,soon])=>({n,icon,cur:cur?'page':undefined,bar:cur?'var(--cp-hot)':'transparent',c:cur?'var(--cp-ink)':'var(--cp-ink-2)',w:cur?'800':'700',soon:!!soon})),
+      homeCards:HOME, noop:e=>e&&e.preventDefault(),
+      dMx1f:[this.mx('1f','static','Sanne')], dMx4a:[this.mx('4a','mouse','Kitty')],
+      mobMx:[{...this.mx('4b','touch','Kitty'),title:'Dialog nach Tippen · 390',sub:'Tippen auf Larsis Nein-Zelle. Fokus im Dialog, danach zurück auf die Zelle.'},
+             {...this.mx('4c','touch','Kitty'),title:'Rechter Rand · 390',sub:'Tastaturfokus auf der letzten Spalte: der Popover rückt nach innen, der Pfeil bleibt an der Zelle.'}],
+      cardsD:[0,1,2,3].map(i=>this.card(i,i)), cardsM:[this.card(4,2)],
+      replay:this.state.replay, doReplay:()=>this.setState(s=>({replay:s.replay+1}))
+    };
+  }
+}
+</script>
+</body>
+</html>

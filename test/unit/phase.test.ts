@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addSessionRejection, phaseAfterChange, phaseOf, removeSessionRejection, reopenRejection, reopenValues, rescheduleRejection, rescheduleValues, setDateRejection, setDateValues } from '../../server/domain/phase'
+import { addSessionRejection, phaseAfterChange, phaseOf, removeSessionRejection, reopenRejection, rescheduleRejection, setDateRejection } from '../../server/domain/phase'
 
 // Phase transitions (#1 § Domain rules). Each transition is a pure rule next to the others: the
 // handlers load the Event, ask the rule, and write the returned values with a conditional update.
@@ -40,16 +40,6 @@ describe('setDateRejection', () => {
     expect(setDateRejection({ ...open, phase: 'date_set', taken: true, startsAt: now })).toBe('wrong_phase')
     expect(setDateRejection({ ...open, undated: 0, taken: true })).toBe('wrong_phase')
     expect(setDateRejection({ ...open, taken: true, startsAt: now })).toBe('slot_taken')
-  })
-})
-
-describe('setDateValues', () => {
-  it('gives the undated Session the Date and the Slot it came from, forgetting the previous Date', () => {
-    expect(setDateValues(later, 'slot-1')).toEqual({ startsAt: later, previousStartsAt: null, slotId: 'slot-1' })
-  })
-
-  it('leaves the Slot empty when the Date matches no Slot', () => {
-    expect(setDateValues(later, null).slotId).toBeNull()
   })
 })
 
@@ -98,12 +88,6 @@ describe('rescheduleRejection', () => {
   })
 })
 
-describe('rescheduleValues', () => {
-  it('sets the new Date and forgets the previous one; the .ics sequence is counted in SQL by the handler', () => {
-    expect(rescheduleValues(later)).toEqual({ startsAt: later, previousStartsAt: null })
-  })
-})
-
 describe('reopenRejection', () => {
   it('lets the Host reopen one set Date in every Phase before finished, also while running', () => {
     expect(reopenRejection({ phase: 'date_set', hasDate: true })).toBeNull()
@@ -114,12 +98,6 @@ describe('reopenRejection', () => {
   it('refuses a Session that has no Date, and any phase that is not editable', () => {
     expect(reopenRejection({ phase: 'poll', hasDate: false })).toBe('wrong_phase')
     expect(reopenRejection({ phase: 'finished', hasDate: true })).toBe('wrong_phase')
-  })
-})
-
-describe('reopenValues', () => {
-  it('frees the Session of its Date and Slot; the handler keeps the old Date as previousStartsAt', () => {
-    expect(reopenValues()).toEqual({ startsAt: null, slotId: null })
   })
 })
 

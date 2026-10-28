@@ -10,6 +10,8 @@ export const API_ERROR_STATUS = {
   invalid_slots: 400,
   invalid_time: 400,
   invalid_value: 400,
+  /** A Note on a Vote is longer than NOTE_MAX characters (#102). */
+  note_too_long: 400,
   too_few_slots: 400,
   in_past: 400,
   slot_past: 400,

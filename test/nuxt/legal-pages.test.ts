@@ -4,10 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import UserMenu from '~/components/UserMenu.vue'
 import ImpressumPage from '~/pages/impressum.vue'
 import DatenschutzPage from '~/pages/datenschutz.vue'
-import SignInPage from '~/pages/anmelden.vue'
 import { kitty, signInAs } from './auth'
 
-const link = (wrapper: VueWrapper, href: string) => wrapper.findAll('a').find(a => a.attributes('href') === href)
 // The back link reads the in-app history entry at click time; a direct visit has none.
 const setHistoryBack = (back: string | null) => window.history.replaceState({ ...window.history.state, back }, '')
 const backLink = (page: VueWrapper) => page.findAll('a').find(a => a.text().includes('Zurück'))!
@@ -49,22 +47,43 @@ describe('legal pages', () => {
     expect(controller.get('p').element.textContent).toContain('Gilges\nAugust-Thyssen-Str. 16\n52249 Eschweiler')
   })
 
-  it('link both pages from the sign-in footer', async () => {
-    signInAs(null)
-    const page = await mountSuspended(SignInPage, { route: '/anmelden' })
-
-    expect(page.get('footer').element.contains(link(page, '/impressum')!.element)).toBe(true)
-    expect(page.get('footer').element.contains(link(page, '/datenschutz')!.element)).toBe(true)
-  })
-
-  it('link both pages from the avatar menu', async () => {
+  it('puts Impressum, Datenschutz and the version in the avatar menu, not a version pill', async () => {
     signInAs(kitty)
     const menu = await mountSuspended(UserMenu)
 
     await menu.get('button[aria-haspopup="menu"]').trigger('click')
 
-    expect(link(menu, '/impressum')?.attributes('role')).toBe('menuitem')
-    expect(link(menu, '/datenschutz')?.attributes('role')).toBe('menuitem')
+    const items = menu.findAll('[role="menuitem"]')
+    expect(items.map(item => item.text())).toEqual(['Abmelden', 'Impressum', 'Datenschutz', expect.stringMatching(/^Version \d+\.\d+\.\d+/)])
+    expect(items.slice(1).map(item => item.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten'])
+    expect(menu.get('[role="none"]').text()).toContain('Kitty')
+    expect(menu.findAll('*').filter(el => /^v\d+\.\d+\.\d+$/.test(el.text().trim()))).toHaveLength(0)
+  })
+
+  it('closes the menu on Esc and gives focus back to the avatar button', async () => {
+    signInAs(kitty)
+    const menu = await mountSuspended(UserMenu, { attachTo: document.body })
+    const avatar = menu.get('button[aria-haspopup="menu"]')
+    await avatar.trigger('click')
+
+    await menu.get('[role="menu"]').trigger('keydown', { key: 'Escape' })
+
+    expect(menu.find('[role="menu"]').exists()).toBe(false)
+    expect(document.activeElement).toBe(avatar.element)
+    menu.unmount()
+  })
+
+  it('moves focus to the next menu item on ArrowDown', async () => {
+    signInAs(kitty)
+    const menu = await mountSuspended(UserMenu, { attachTo: document.body })
+    await menu.get('button[aria-haspopup="menu"]').trigger('click')
+    const abmelden = menu.get('[role="menuitem"]')
+    expect(document.activeElement).toBe(abmelden.element)
+
+    await abmelden.trigger('keydown', { key: 'ArrowDown' })
+
+    expect(document.activeElement).toBe(menu.findAll('[role="menuitem"]')[1]!.element)
+    menu.unmount()
   })
 
   it('shows the reduced-motion hover on an overlay above the avatar, not on the covered button', async () => {

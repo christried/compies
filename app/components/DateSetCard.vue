@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CalendarClock } from '@lucide/vue'
+import type { NoteRow } from '~/utils/notes'
 import { formatDateTile, formatSetDay, formatSlotTime } from '~/utils/berlin-time'
 
 // The card of one Session with its Date (02-components § DateSetCard, screen M3 set / sethost). It
@@ -13,6 +14,8 @@ const props = defineProps<{
   /** The Session's number, shown when the Event has several Sessions. */
   number?: number | null
   isHost: boolean
+  /** The Notes on the Slot this Date came from (#102), read-only. */
+  notes?: NoteRow[]
 }>()
 
 const emit = defineEmits<{ reschedule: [] }>()
@@ -50,6 +53,7 @@ const headline = computed(() => t('mvp.set.dateTime', { date: formatSetDay(insta
       <p class="m-0 text-pretty text-ink-2">
         {{ t('mvp.poll.setText') }}
       </p>
+      <NoteList :notes="notes ?? []" />
       <div
         v-if="isHost"
         class="flex flex-wrap gap-2"

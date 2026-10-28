@@ -765,11 +765,29 @@
       "note": "Erst nach deiner Bestätigung zählt es und die Tabelle bewegt sich."
     }
   },
+  "news": {
+    "title": "Neuigkeiten",
+    "intro": "Frisch geschraubt: Hier siehst du, was sich bei Compies getan hat.",
+    "rail": "Versionen",
+    "jump": "Springe zu",
+    "new": "Neu",
+    "say": "Version {v}",
+    "item": "Version {v}, {name}, {date}",
+    "itemNew": "Version {v}, {name}, {date}, neu",
+    "copy": "Link zu Version {v} kopieren",
+    "copied": "Link kopiert",
+    "copyFailed": "Kopieren ging nicht. Link: {url}",
+    "issue": "Issue {n} auf GitHub, öffnet in neuem Tab",
+    "newTab": "Öffnet in neuem Tab",
+    "versionUnseen": "Version {v}, neu"
+  },
   "legal": {
     "_scope": "Impressum und Datenschutzerklärung von Compies. Jeder Abschnitt hat eine Überschrift und einen Text; Absätze sind durch eine Leerzeile getrennt. Bei Änderungen an der App (neue Dienste, Cookies, Daten) hier nachziehen und den Stand anpassen.",
+    "nav": "Rechtliches und Version",
     "links": {
       "impressum": "Impressum",
-      "datenschutz": "Datenschutz"
+      "datenschutz": "Datenschutz",
+      "version": "Version {v}"
     },
     "impressum": {
       "title": "Impressum",
@@ -814,7 +832,7 @@
       },
       "database": {
         "heading": "4. Datenbank (Neon)",
-        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 5), Sitzungs- und Sicherheitsdaten (Abschnitt 8) sowie deine Events, Terminvorschläge und Stimmen (Abschnitt 9). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
+        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 5), Sitzungs- und Sicherheitsdaten (Abschnitt 8) sowie deine Events, Terminvorschläge, Stimmen und Anmerkungen (Abschnitt 9). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
       },
       "signIn": {
         "heading": "5. Anmeldung über Discord oder Twitch und Anzeigename",
@@ -834,11 +852,11 @@
       },
       "events": {
         "heading": "9. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast.\n\nName, Terminvorschläge und die Termine der Sessions eines Events sowie Anzeigename, Profilbild und Stimmen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nName, Terminvorschläge und die Termine der Sessions eines Events sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "10. Kalenderdatei",
-        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link des Events herunterladen. Sie wird von Compies selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link des Events herunterladen. Sie wird von Compies selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters.\n\nWählst du stattdessen „Google Kalender“ oder „Outlook“, öffnet sich in einem neuen Tab die Website von Google (Google Ireland Limited, Dublin, Irland) bzw. Microsoft (Microsoft Ireland Operations Limited, Dublin, Irland). Name, Termin und Link des Events stehen dabei in der Adresse, damit dort ein neuer Termin vorausgefüllt ist; wie bei jedem Website-Aufruf erhält der Anbieter außerdem deine IP-Adresse und übliche Browserangaben. Compies selbst übermittelt dabei nichts an diese Anbieter. Ab dem Aufruf gelten die Datenschutzbestimmungen von Google bzw. Microsoft; ob du den Termin dort speicherst, entscheidest du.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "fonts": {
         "heading": "11. Schriftarten, Symbole und Tracking",
@@ -854,7 +872,7 @@
       },
       "retention": {
         "heading": "14. Speicherdauer",
-        "text": "Kontodaten, Events, Terminvorschläge und Stimmen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Entfernt ein Host einen Terminvorschlag, werden die Stimmen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 8). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
+        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 8). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
       },
       "obligation": {
         "heading": "15. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
@@ -915,7 +933,7 @@
       "slotsTitle": "Vorschläge für die Umfrage",
       "addSlot": "Termin vorschlagen",
       "removeSlot": "Vorschlag entfernen",
-      "slotsHelp": "Abgestimmt wird mit Ja, Meh oder Nein. Bis zu 8 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
+      "slotsHelp": "Abgestimmt wird mit Ja, Meh oder Nein. Bis zu 16 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
       "submit": "Umfrage starten",
       "submitDirect": "Event anlegen",
       "blockedPast": "Erst den Termin in der Vergangenheit ändern.",
@@ -950,6 +968,19 @@
       "prevMonth": "Vorheriger Monat",
       "nextMonth": "Nächster Monat"
     },
+    "notes": {
+      "add": "Anmerkung",
+      "addA11y": "Anmerkung hinzufügen",
+      "edit": "Anmerkung bearbeiten",
+      "label": "Anmerkung",
+      "audience": "sehen alle",
+      "placeholder": "z. B. kann maximal bis 20:30",
+      "quoted": "„{note}“",
+      "remaining": "Noch {n} Zeichen",
+      "save": "Anmerkung speichern",
+      "savedLabel": "Deine Anmerkung · sehen alle",
+      "heading": "Anmerkungen"
+    },
     "poll": {
       "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
       "missingDates": "{n} Termin gesucht | {n} Termine gesucht",
@@ -957,8 +988,10 @@
       "past": "vorbei",
       "notVoted": "noch nicht abgestimmt",
       "savedNote": "Gespeichert. Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.",
-      "pickThis": "Diesen festlegen",
+      "pickThis": "Termin festlegen",
       "whoWhen": "Wer kann wann?",
+      "exportCsv": "Als CSV exportieren",
+      "csvName": "Name",
       "you": "{name} (du)",
       "confirmSeeAll": "Alle sehen den Termin sofort hier.",
       "confirmCta": "Festlegen",
@@ -1014,6 +1047,8 @@
       "empty": "Noch keine Termine. Schlag einen vor, dann kann abgestimmt werden.",
       "remove": "Termin entfernen",
       "votesLost": "{n} Stimme geht verloren | {n} Stimmen gehen verloren",
+      "change": "Ändern",
+      "votesKept": "Die Stimmen bleiben erhalten – sag der Gruppe Bescheid.",
       "newLabel": "Neuer Termin",
       "add": "Termin hinzufügen",
       "addHelp": "Die Zeit gilt für alle (Europe/Berlin). Bis zu {max} Termine.",
@@ -1025,6 +1060,15 @@
       "sessionSummary": "{event} · Session {n} (Compies)",
       "description": "Zum Event: {url}",
       "alarm": "{event} startet in 1 Stunde"
+    },
+    "calendar": {
+      "title": "In welchen Kalender?",
+      "google": "Google Kalender",
+      "googleShort": "Google",
+      "outlook": "Outlook",
+      "file": "Apple & andere (.ics)",
+      "fileAll": "Apple & andere (.ics) – alle Termine",
+      "session": "Session {n} · {day}"
     },
     "set": {
       "confirmTitle": "Termin festlegen?",
@@ -1066,6 +1110,7 @@
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
     "voteFailed": "Deine Stimme ist nicht angekommen",
+    "noteTooLong": "Die Anmerkung ist zu lang.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

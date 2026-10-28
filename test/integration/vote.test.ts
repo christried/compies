@@ -106,7 +106,7 @@ describe('poll votes and the Event read', () => {
         { id: sat, startsAt: '2090-10-31T18:00:00.000Z', past: false },
       ])
       expect(body.votes).toHaveLength(4)
-      expect(body.votes).toContainEqual({ slotId: fri, userId: hostId, value: 'yes' })
+      expect(body.votes).toContainEqual({ slotId: fri, userId: hostId, value: 'yes', note: null })
       expect(body.members).toEqual([
         { id: hostId, name: 'Hostess', image: expect.any(String), isHost: true },
         { id: memberId, name: 'Gast', image: expect.any(String), isHost: false },
@@ -227,7 +227,7 @@ describe('poll votes and the Event read', () => {
 
       const first = await vote(hostCookie, slug, fri, 'yes')
       expect(first.status).toBe(200)
-      expect(await first.json()).toEqual({ slotId: fri, value: 'yes' })
+      expect(await first.json()).toEqual({ slotId: fri, value: 'yes', note: null })
 
       const second = await vote(hostCookie, slug, fri, 'no')
       expect(second.status).toBe(200)

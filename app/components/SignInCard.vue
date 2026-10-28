@@ -2,11 +2,7 @@
 import { CircleAlert, LoaderCircle, MessageSquare, Play } from '@lucide/vue'
 import type { Component } from 'vue'
 import type { SignInProvider } from '~~/shared/auth'
-
-export interface InvitePreview {
-  eventName: string
-  host: { name: string, image: string | null }
-}
+import type { InvitePreview } from '~~/shared/event'
 
 // Sign-in card (screen 02, `App Einstieg ?s=login`): Standard, Über Einladung, Weiterleitung,
 // Abgebrochen. Discord is primary, Twitch secondary; neutral icons instead of brand logos.

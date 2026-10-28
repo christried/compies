@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bestSlotId, hasVoted, parseVoteValue, voteRejection } from '../../server/domain/poll'
+import { bestSlotId, hasVoted, parseNote, parseVoteValue, voteRejection } from '../../server/domain/poll'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Slots before this instant are past.
 const now = new Date('2026-10-22T10:00:00Z')
@@ -102,5 +102,30 @@ describe('parseVoteValue', () => {
     expect(parseVoteValue('Ja')).toBeNull()
     expect(parseVoteValue('')).toBeNull()
     expect(parseVoteValue(undefined)).toBeNull()
+  })
+})
+
+describe('parseNote', () => {
+  it('keeps the current Note when none is sent', () => {
+    expect(parseNote(undefined)).toEqual({ ok: true, note: undefined })
+  })
+
+  it('treats null and blank text as no Note', () => {
+    expect(parseNote(null)).toEqual({ ok: true, note: null })
+    expect(parseNote('  ')).toEqual({ ok: true, note: null })
+  })
+
+  it('turns line breaks into spaces and trims', () => {
+    expect(parseNote('a\r\nb')).toEqual({ ok: true, note: 'a b' })
+    expect(parseNote('  bis 20:30 ')).toEqual({ ok: true, note: 'bis 20:30' })
+  })
+
+  it('counts characters as the User sees them', () => {
+    expect(parseNote('👍🏽'.repeat(80))).toEqual({ ok: true, note: '👍🏽'.repeat(80) })
+    expect(parseNote('a'.repeat(81))).toEqual({ ok: false, error: 'note_too_long' })
+  })
+
+  it('refuses anything but text', () => {
+    expect(parseNote(42)).toEqual({ ok: false, error: 'invalid_value' })
   })
 })

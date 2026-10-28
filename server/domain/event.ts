@@ -42,18 +42,23 @@ function slotRuleError(proposed: Date[], existing: Date[], now: Date): SlotProbl
   return problems.includes('duplicate_slot') ? 'duplicate_slot' : null
 }
 
-/** Validates a Slot the Host adds to a Date poll. `existing` are the Event's Slots as they are now. */
-export function parseAddedSlot(raw: unknown, existing: Date[], now: Date): { ok: true, startsAt: Date } | { ok: false, error: SlotError } {
-  if (existing.length >= SLOTS_MAX) return { ok: false, error: 'slots_max' }
+/**
+ * Validates the time of a Slot the Host adds to a Date poll, or moves to (#85). `existing` are the Event's Slots
+ * as they are now; `changingId` leaves out the Slot being changed, so its own minute is no duplicate and it does
+ * not count toward the limit.
+ */
+export function parseEditedSlot(raw: unknown, existing: { id: string, startsAt: Date }[], now: Date, changingId?: string): { ok: true, startsAt: Date } | { ok: false, error: SlotError } {
+  const others = existing.filter(slot => slot.id !== changingId)
+  if (others.length >= SLOTS_MAX) return { ok: false, error: 'slots_max' }
   const startsAt = parseLocalTime(raw)
   if (!startsAt) return { ok: false, error: 'invalid_time' }
-  const problem = slotRuleError([startsAt], existing, now)
+  const problem = slotRuleError([startsAt], others.map(slot => slot.startsAt), now)
   return problem ? { ok: false, error: problem } : { ok: true, startsAt }
 }
 
 /**
  * Validates what the create form sends (#49): a name, the date mode, the Session count (1 to 8) and
- * either the Slots (at least one per Session, at most 8, all in the future and unique per minute) or
+ * either the Slots (at least one per Session, at most 16, all in the future and unique per minute) or
  * one Date per Session (in the future and distinct). `now` is injected so the rules can be tested.
  */
 export function parseNewEvent(input: unknown, now: Date): { ok: true, event: NewEvent } | { ok: false, error: EventInputError } {

@@ -1,4 +1,4 @@
-import type { AuthUser } from '~/composables/useAuthUser'
+import type { AuthUser } from '~~/shared/auth'
 
 export const kitty: AuthUser = {
   id: '00000000-0000-4000-8000-000000000001',

@@ -24,7 +24,7 @@ import {
   PopoverRoot,
 } from 'reka-ui'
 import type { Ref } from 'vue'
-import { joinBerlinLocal, splitBerlinLocal } from '~~/shared/time'
+import { joinBerlinLocal, splitBerlinLocal, utcToBerlin } from '~~/shared/time'
 
 // A Berlin date and time in two own fields (ADR 0010, 02-components § DateTimeField). The value is
 // `YYYY-MM-DDTHH:mm` in Europe/Berlin, or empty until both parts are set and valid (ADR 0003).
@@ -93,11 +93,13 @@ function parseTimeDigits(digits: string) {
 const initial = splitBerlinLocal(props.modelValue)
 const dateDigits = ref(isoToDigits(initial.date))
 const timeDigits = ref(initial.time.replace(':', ''))
+const timeLeft = ref(false)
 const dateText = computed(() => formatDateDigits(dateDigits.value))
 const dateValue = computed(() => parseDateDigits(dateDigits.value))
 const timeText = computed(() => formatTimeDigits(timeDigits.value))
 const timeValue = computed(() => parseTimeDigits(timeDigits.value))
-const timeInvalid = computed(() => timeDigits.value.length === 4 && !timeValue.value)
+// Invalid once it cannot be completed: an impossible hour (25) after leaving the field, or four digits that are no time (2460).
+const timeInvalid = computed(() => (timeLeft.value && timeDigits.value.length === 2 && Number(timeDigits.value) > 23) || (timeDigits.value.length === 4 && !timeValue.value))
 
 function combined() {
   return dateValue.value && timeValue.value ? joinBerlinLocal(dateValue.value, timeValue.value) : ''
@@ -107,24 +109,51 @@ function onPart() {
   emit('update:modelValue', combined())
 }
 
+/**
+ * Writes a part's text back after a keystroke and puts the caret after as many digits as before, so typing in the
+ * middle of a filled date or time edits it in place instead of jumping to the end (#113).
+ */
+function rewrite(input: HTMLInputElement, text: string) {
+  const caret = input.selectionStart ?? input.value.length
+  const digitsBefore = input.value.slice(0, caret).replace(/\D/g, '').length
+  input.value = text
+  let position = 0
+  for (let seen = 0; position < text.length && seen < digitsBefore; position += 1) {
+    if (/\d/.test(text[position]!)) seen += 1
+  }
+  input.setSelectionRange(position, position)
+}
+
 function onDateInput(event: Event) {
   const input = event.target as HTMLInputElement
   dateDigits.value = input.value.replace(/\D/g, '').slice(0, 8)
-  input.value = dateText.value
+  rewrite(input, dateText.value)
   onPart()
 }
 
 function onTimeInput(event: Event) {
   const input = event.target as HTMLInputElement
+  timeLeft.value = false
   timeDigits.value = input.value.replace(/\D/g, '').slice(0, 4)
-  input.value = timeText.value
+  rewrite(input, timeText.value)
   onPart()
 }
 
-// Leaving the time (blur or Enter) reads a three-digit entry as H MM: 930 is 09:30.
+// Leaving the time (blur or Enter) completes it: 9 is 09:00, 15 is 15:00, 153 is 15:30, 930 is 09:30.
+// An impossible hour such as 25 stays as typed and invalid.
 function commitTime() {
-  if (timeDigits.value.length !== 3) return
-  timeDigits.value = `0${timeDigits.value}`
+  timeLeft.value = true
+  const digits = timeDigits.value
+  if (digits.length === 1 || digits.length === 2) {
+    if (Number(digits) > 23) return
+    timeDigits.value = `${pad(Number(digits))}00`
+  }
+  else if (digits.length === 3) {
+    timeDigits.value = Number(digits.slice(0, 2)) <= 23 ? `${digits}0` : `0${digits}`
+  }
+  else {
+    return
+  }
   onPart()
 }
 
@@ -138,7 +167,7 @@ watch(() => props.modelValue, (value) => {
 
 // The earliest selectable day is today in Berlin, in every date field: the field owns it, so no caller
 // has to pass it (ADR 0003, spec #41).
-const berlinToday = parseDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date()))
+const berlinToday = parseDate(splitBerlinLocal(utcToBerlin(new Date())).date)
 const calendarValue = computed(() => (dateValue.value ? parseDate(dateValue.value) : undefined))
 const calendarPlaceholder = computed(() => calendarValue.value ?? berlinToday)
 
@@ -263,7 +292,7 @@ function fieldClass(hasError: boolean | undefined) {
               autocomplete="off"
               :placeholder="t('mvp.dateTime.datePlaceholder')"
               :aria-invalid="error ? 'true' : undefined"
-              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-12 pl-3 text-[17px] font-semibold text-ink"
+              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-10 pl-3 text-[17px] font-semibold text-ink"
               :class="fieldClass(!!error)"
               @input="onDateInput"
               @keydown.down.prevent="date.show(true)"
@@ -370,9 +399,10 @@ function fieldClass(hasError: boolean | undefined) {
 
       <PopoverRoot v-model:open="timeOpen">
         <PopoverAnchor as-child>
+          <!-- 120 px: „23:59“ in Bungee plus the padding fits, and the date keeps room for „30.12.2026“ in a 290 px row (#113). -->
           <div
             ref="timeField"
-            class="relative w-36 flex-none"
+            class="relative w-30 flex-none"
             @click="time.show(false)"
             @keydown.esc="time.escape"
           >
@@ -389,7 +419,7 @@ function fieldClass(hasError: boolean | undefined) {
               autocomplete="off"
               :placeholder="t('mvp.dateTime.timePlaceholder')"
               :aria-invalid="error || timeInvalid ? 'true' : undefined"
-              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-12 pl-3 font-num text-[17px] text-ink"
+              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-10 pl-3 font-num text-[17px] text-ink"
               :class="fieldClass(!!error || timeInvalid)"
               @input="onTimeInput"
               @blur="commitTime"
@@ -429,7 +459,7 @@ function fieldClass(hasError: boolean | undefined) {
                 <ListboxContent>
                   <div
                     ref="timeScroll"
-                    class="relative max-h-72 overflow-y-auto"
+                    class="relative max-h-72 overflow-y-auto p-1.5"
                   >
                     <ListboxItem
                       v-for="step in TIME_STEPS"

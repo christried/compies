@@ -133,7 +133,7 @@ describe('setting the Dates from the shared Date poll', () => {
       const response = await confirm(cookie, slug, slotIds[1])
 
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ startsAt: '2090-10-31T18:00:00.000Z' })
+      expect(await response.json()).toMatchObject({ startsAt: '2090-10-31T18:00:00.000Z' })
       expect(await eventRow(eventId)).toMatchObject({ phase: 'date_set' })
       expect(await sessionOf(eventId)).toMatchObject({
         startsAt: new Date('2090-10-31T18:00:00.000Z'),

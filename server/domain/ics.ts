@@ -1,12 +1,11 @@
 // The calendar file a Member downloads for an Event (#1 § Domain rules, ADR 0003, #53). One VEVENT per
 // Session with a Date: the UID is stable per Session and SEQUENCE is the Session's icsSequence, so a
-// Reschedule updates the same entry in the calendar. Times are UTC. The builders are pure: the endpoint
-// passes in the copy (from de.json) and the current time.
+// Reschedule updates the same entry in the calendar. Times are UTC, and an entry lasts SESSION_DURATION_MS,
+// as the Google and Outlook links do (#81). The builders are pure: the endpoint passes in the copy (from
+// de.json) and the current time.
 
-import { sessionNumbers } from './session'
-
-/** The event lasts 7 h (code constant, #1). */
-export const ICS_DURATION_MS = 7 * 60 * 60_000
+import { SESSION_DURATION_MS } from '../../shared/event'
+import { isDated, numberedSessions } from './session'
 
 export interface IcsEntry {
   /** Stable per Session. */
@@ -69,7 +68,7 @@ function fold(line: string): string[] {
 
 /** The VEVENT lines of one entry, with a display alarm one hour before the start. */
 function eventLines(entry: IcsEntry, now: Date): string[] {
-  const end = new Date(entry.startsAt.getTime() + ICS_DURATION_MS)
+  const end = new Date(entry.startsAt.getTime() + SESSION_DURATION_MS)
   return [
     'BEGIN:VEVENT',
     `UID:${entry.uid}`,
@@ -119,24 +118,22 @@ export interface CalendarCopy {
 }
 
 /**
- * One entry per Session with a Date, in Date order (#53). The title names the Session's number only when
- * the Event has more than one Session. Undated Sessions get no entry, so an Event with no Date has none.
+ * One entry per Session with a Date, in Date order (#53). The title names the number the Session is shown with
+ * (numberedSessions: only an Event with several Sessions numbers them). Undated Sessions get no entry, so an
+ * Event with no Date has none.
  */
 export function sessionEntries(input: { eventName: string, url: string, sessions: CalendarSession[], copy: CalendarCopy }): IcsEntry[] {
-  const numbers = sessionNumbers(input.sessions.map(session => session.startsAt))
   const description = fillCopy(input.copy.description, { url: input.url })
   const alarm = fillCopy(input.copy.alarm, { event: input.eventName })
-  return input.sessions
-    .map((session, index) => ({ session, number: numbers[index] ?? null }))
-    .filter((entry): entry is { session: CalendarSession & { startsAt: Date }, number: number } => entry.session.startsAt !== null && entry.number !== null)
-    .sort((a, b) => a.number - b.number)
-    .map(({ session, number }) => ({
+  return numberedSessions(input.sessions)
+    .filter(isDated)
+    .map(session => ({
       uid: `${session.id}@compies`,
       sequence: session.icsSequence,
       startsAt: session.startsAt,
-      summary: input.sessions.length === 1
+      summary: session.number === null
         ? fillCopy(input.copy.summary, { event: input.eventName })
-        : fillCopy(input.copy.sessionSummary, { event: input.eventName, n: String(number) }),
+        : fillCopy(input.copy.sessionSummary, { event: input.eventName, n: String(session.number) }),
       description,
       alarm,
       url: input.url,

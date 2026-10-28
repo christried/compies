@@ -76,8 +76,9 @@ export const events = pgTable('events', {
 
 // A sitting of an Event on one Date (ADR 0011, #48). The Date lives here, not on the Event.
 // `slotId` is the Slot the Date came from, if any: a Slot a Session refers to is no longer open.
-// `previousStartsAt` is the Date the last Reopen withdrew (for the notice); `icsSequence` is this
-// Session's own calendar SEQUENCE.
+// `previousStartsAt` is the Date the last Reopen or removal withdrew (for the notice); `icsSequence` is this
+// Session's own calendar SEQUENCE. `removedAt` is set when the Host removed a Session that has, or had, a
+// Date (#65): the row stays only for its notice and counts nowhere else.
 export const sessions = pgTable('sessions', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -85,6 +86,7 @@ export const sessions = pgTable('sessions', {
   previousStartsAt: timestamp('previous_starts_at', { withTimezone: true }),
   slotId: uuid('slot_id').references(() => pollSlots.id, { onDelete: 'set null' }),
   icsSequence: integer('ics_sequence').default(0).notNull(),
+  removedAt: timestamp('removed_at', { withTimezone: true }),
 })
 
 export const memberZone = pgEnum('member_zone', ['bench', 'stands', 'team'])
@@ -109,5 +111,7 @@ export const pollVotes = pgTable('poll_votes', {
   slotId: uuid('slot_id').notNull().references(() => pollSlots.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull().references(() => users.id),
   value: voteValue('value').notNull(),
+  /** A short remark on the Vote, read by every Member (#102). */
+  note: text('note'),
   updatedAt: updatedAt(),
 }, table => [primaryKey({ columns: [table.slotId, table.userId] })])

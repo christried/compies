@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { isSignInProvider, type SignInProvider } from '~~/shared/auth'
-import type { InvitePreview } from '~/components/SignInCard.vue'
+import type { InvitePreview } from '~~/shared/event'
+import { eventPathSegment } from '~~/shared/links'
 import { isInviteLinkPath, safeRedirect, SIGN_IN_PATH } from '~/utils/auth-guard'
 
 // Sign-in (screen 02). The OAuth round trip leaves the app: Better Auth comes back to the target
 // in `redirect`, or here with `error` (and the `provider` we sent along) when it did not work.
 const route = useRoute()
 const { t } = useI18n()
-useHead({ title: () => `${t('auth.title')} | ${t('app.name')}` })
+useHead({ title: () => t('auth.title') })
 
 const target = computed(() => safeRedirect(route.query.redirect))
 const invitePath = computed(() => {
@@ -19,7 +20,7 @@ const invited = computed(() => invitePath.value !== null)
 const { data: invite } = await useAsyncData<InvitePreview | null>('sign-in-invite', async () => {
   if (!invitePath.value) return null
   try {
-    return await $fetch<InvitePreview>(`/api/invite/${invitePath.value.slice('/e/'.length)}`)
+    return await $fetch<InvitePreview>(`/api/invite/${eventPathSegment(invitePath.value)}`)
   }
   catch {
     return null
@@ -110,20 +111,5 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
         />
       </div>
     </div>
-
-    <footer class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t-(length:--cp-bw) border-line bg-surface px-4 py-3 text-small">
-      <NuxtLink
-        to="/impressum"
-        class="font-bold text-ink"
-      >
-        {{ t('legal.links.impressum') }}
-      </NuxtLink>
-      <NuxtLink
-        to="/datenschutz"
-        class="font-bold text-ink"
-      >
-        {{ t('legal.links.datenschutz') }}
-      </NuxtLink>
-    </footer>
   </AppShell>
 </template>

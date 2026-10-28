@@ -99,7 +99,7 @@ describe('events', () => {
         hostId: host!.id,
         deletedAt: null,
       })
-      expect(await sessionRows(event!.id)).toEqual([{ id: expect.any(String), eventId: event!.id, startsAt: null, previousStartsAt: null, slotId: null, icsSequence: 0 }])
+      expect(await sessionRows(event!.id)).toEqual([{ id: expect.any(String), eventId: event!.id, startsAt: null, previousStartsAt: null, slotId: null, icsSequence: 0, removedAt: null }])
       expect(inviteUrl.endsWith(`${slug}-${event!.inviteToken}`)).toBe(true)
       expect(event!.inviteToken).toMatch(/^[A-Za-z0-9]{12}$/)
 
@@ -123,6 +123,16 @@ describe('events', () => {
       expect(event).toMatchObject({ phase: 'date_set' })
       expect(await sessionRows(event!.id)).toMatchObject([{ startsAt: new Date('2090-11-07T19:00:00Z'), slotId: null }])
       expect(await testDb.db.select().from(pollSlots)).toEqual([])
+    })
+
+    it('accepts 16 Slots at create', async () => {
+      const cookie = await signInAsHost()
+
+      const response = await create(cookie, poll({ slots: slotsOnDays(16) }))
+
+      expect(response.status).toBe(200)
+      const [event] = await eventRows()
+      expect(await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, event!.id))).toHaveLength(16)
     })
 
     it('creates an Event with several Sessions by poll: one undated Session per Session, Slots for all of them', async () => {
@@ -160,7 +170,7 @@ describe('events', () => {
         [poll({ sessions: 0 }), 'invalid_sessions'],
         [poll({ sessions: 9, slots: slotsOnDays(9) }), 'invalid_sessions'],
         [poll({ slots: [] }), 'invalid_slots'],
-        [poll({ slots: slotsOnDays(9) }), 'invalid_slots'],
+        [poll({ slots: slotsOnDays(17) }), 'invalid_slots'],
         [poll({ sessions: 2, slots: ['2090-10-30T20:30'] }), 'too_few_slots'],
         [poll({ slots: ['2090-10-30 20:30'] }), 'invalid_time'],
         [poll({ slots: ['2001-10-30T20:30'] }), 'in_past'],
@@ -207,14 +217,14 @@ describe('events', () => {
       expect(slots[0]).toEqual({ id: expect.any(String), startsAt: expect.any(String), past: false })
     })
 
-    it('shows the Date of a direct Event and no Slots', async () => {
+    it('shows the Date of a direct Event and no Slots, and no number for its one Session (#70)', async () => {
       const cookie = await signInAsHost()
       const { slug } = await (await create(cookie, direct({ startsAt: ['2090-11-07T20:00'] }))).json()
 
       const { event, slots, sessions, missingDates } = await (await read(cookie, slug)).json()
 
       expect(event).toMatchObject({ phase: 'date_set' })
-      expect(sessions).toMatchObject([{ number: 1, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null }])
+      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null, notes: [] }])
       expect(missingDates).toBe(0)
       expect(slots).toEqual([])
     })

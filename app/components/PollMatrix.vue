@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { Check, Minus, X } from '@lucide/vue'
-import type { VoteValue } from '~~/shared/poll'
+import type { Component } from 'vue'
+import { VOTE_VALUES, type VoteValue } from '~~/shared/poll'
+import { buildPollCsv } from '~~/shared/poll-csv'
+import { VOTE_LOOK } from '~/utils/vote-look'
 
 // "Wer kann wann?": everyone in the Event against every Slot (02-components § PollMatrix). A real
 // table with row and column headers. "noch nicht abgestimmt" (no Vote yet) is drawn dashed and is
@@ -25,98 +27,189 @@ export interface MatrixSlot {
 const props = defineProps<{
   people: MatrixPerson[]
   slots: MatrixSlot[]
-  votes: { slotId: string, userId: string, value: VoteValue }[]
+  votes: { slotId: string, userId: string, value: VoteValue, note?: string | null }[]
   meId: string
 }>()
 
 const { t } = useI18n()
+const route = useRoute()
 
-const valueOf = computed(() => {
-  const map = new Map<string, VoteValue>()
-  for (const vote of props.votes) map.set(`${vote.userId}|${vote.slotId}`, vote.value)
-  return (userId: string, slotId: string) => map.get(`${userId}|${slotId}`) ?? null
+// The file is built here from what the matrix shows, so it needs no request (#84).
+function exportCsv() {
+  const csv = buildPollCsv({
+    labels: { name: t('mvp.poll.csvName'), past: t('mvp.poll.past'), yes: t('poll.yes'), maybe: t('poll.maybe'), no: t('poll.no') },
+    people: props.people,
+    slots: props.slots,
+    votes: props.votes,
+  })
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${route.params.slug}-terminumfrage.csv`
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url))
+}
+
+const voteOf = computed(() => {
+  const map = new Map(props.votes.map(vote => [`${vote.userId}|${vote.slotId}`, vote]))
+  return (userId: string, slotId: string) => map.get(`${userId}|${slotId}`)
 })
 
-// One look per Vote value (#11 § Acceptance: yes, maybe, no and the dashed "not voted yet").
-const LOOK: Record<VoteValue | 'open', { key: string, icon?: typeof Check, cell: string }> = {
-  yes: { key: 'poll.yes', icon: Check, cell: 'bg-success text-on-success border-solid rounded-full' },
-  maybe: { key: 'poll.maybe', icon: Minus, cell: 'bg-warning text-on-warning border-solid rounded-full' },
-  no: { key: 'poll.no', icon: X, cell: 'bg-error text-on-error border-solid rounded-[6px]' },
+// The matrix cell per Vote value (#11 § Acceptance: yes, maybe, no and the dashed "not voted yet"): the shared
+// vote look plus the cell's shape.
+const SHAPE: Record<VoteValue, string> = { yes: 'rounded-full', maybe: 'rounded-full', no: 'rounded-[6px]' }
+const LOOK: Record<VoteValue | 'open', { key: string, icon?: Component, cell: string }> = {
+  ...Object.fromEntries(VOTE_VALUES.map(value => [value, { key: VOTE_LOOK[value].labelKey, icon: VOTE_LOOK[value].cellIcon, cell: `${VOTE_LOOK[value].fill} border-solid ${SHAPE[value]}` }])) as Record<VoteValue, { key: string, icon?: Component, cell: string }>,
   open: { key: 'mvp.poll.notVoted', cell: 'bg-transparent text-ink-3 border-dashed rounded-full' },
 }
 
 function lookFor(userId: string, slotId: string) {
-  return LOOK[valueOf.value(userId, slotId) ?? 'open']
+  return LOOK[voteOf.value(userId, slotId)?.value ?? 'open']
 }
+
+/** What a cell says in words (#102): the Vote, followed by its Note when there is one. */
+function textFor(userId: string, slotId: string) {
+  const note = voteOf.value(userId, slotId)?.note
+  const label = t(lookFor(userId, slotId).key)
+  return note ? `${label}: ${note}` : label
+}
+
+// A Note opens in COMPIES style instead of a native tooltip (#125); the input rules live in useNoteReveal.
+const scrollBox = useTemplateRef<HTMLElement>('scrollBox')
+const { active, mode, handlersFor, cancelClose, closePopoverSoon, closeDialog } = useNoteReveal(scrollBox)
+
+const keyOf = (userId: string, slotId: string) => `${userId}|${slotId}`
+
+// Every cell is worked out once per change, not once per use in the template.
+const cells = computed(() => {
+  const map = new Map<string, { key: string, slotId: string, vote: VoteValue | undefined, note: string | null, look: (typeof LOOK)[VoteValue | 'open'], text: string }>()
+  for (const person of props.people) {
+    for (const slot of props.slots) {
+      const key = keyOf(person.id, slot.id)
+      const vote = voteOf.value(person.id, slot.id)
+      map.set(key, { key, slotId: slot.id, vote: vote?.value, note: vote?.note || null, look: lookFor(person.id, slot.id), text: textFor(person.id, slot.id) })
+    }
+  }
+  return map
+})
+const cellsOf = (person: MatrixPerson) => props.slots.map(slot => cells.value.get(keyOf(person.id, slot.id))!)
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface">
-    <table class="w-full border-collapse">
-      <caption class="sr-only">
-        {{ t('mvp.poll.whoWhen') }}
-      </caption>
-      <thead>
-        <tr>
-          <th
-            scope="col"
-            class="border-b-2 border-line-soft px-3 py-2"
-          />
-          <th
-            v-for="slot in slots"
-            :key="slot.id"
-            scope="col"
-            class="border-b-2 border-line-soft px-1 py-2 text-center text-[12px] leading-tight font-extrabold whitespace-nowrap"
-            :class="slot.past && 'text-ink-3'"
-          >
-            <span class="block">{{ slot.day }}</span>
-            <span class="block">{{ slot.time }}</span>
-            <span
-              v-if="slot.past"
-              class="block text-[11px] font-bold"
-            >{{ t('mvp.poll.past') }}</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="person in people"
-          :key="person.id"
-        >
-          <th
-            scope="row"
-            class="min-w-[120px] border-b-[1.5px] border-line-soft px-3 py-1.5 text-left text-[13px]"
-            :class="person.id === meId ? 'font-extrabold' : 'font-semibold'"
-          >
-            <span class="flex items-center gap-2">
-              <UserAvatar
-                :name="person.name"
-                :image="person.image"
-                :size="24"
-              />
-              {{ person.id === meId ? t('mvp.poll.you', { name: person.name }) : person.name }}
-            </span>
-          </th>
-          <td
-            v-for="slot in slots"
-            :key="slot.id"
-            class="border-b-[1.5px] border-line-soft text-center"
-            :title="t(lookFor(person.id, slot.id).key)"
-          >
-            <span
-              class="inline-grid size-[26px] place-items-center border-2 border-line"
-              :class="lookFor(person.id, slot.id).cell"
+  <div class="grid gap-3">
+    <!-- relative: the cells' sr-only texts are absolute and would otherwise widen the whole page on phones. -->
+    <div
+      ref="scrollBox"
+      class="relative overflow-x-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface"
+    >
+      <table class="w-full border-collapse">
+        <caption class="sr-only">
+          {{ t('mvp.poll.whoWhen') }}
+        </caption>
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              class="sticky left-0 z-[1] border-b-2 border-line-soft bg-surface px-3 py-2"
+            />
+            <th
+              v-for="slot in slots"
+              :key="slot.id"
+              scope="col"
+              class="border-b-2 border-line-soft px-1 py-2 text-center text-[12px] leading-tight font-extrabold whitespace-nowrap"
+              :class="slot.past && 'text-ink-3'"
             >
-              <AppIcon
-                v-if="lookFor(person.id, slot.id).icon"
-                :icon="lookFor(person.id, slot.id).icon!"
-                :size="13"
-              />
-            </span>
-            <span class="sr-only">{{ t(lookFor(person.id, slot.id).key) }}</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+              <span class="block">{{ slot.day }}</span>
+              <span class="block">{{ slot.time }}</span>
+              <span
+                v-if="slot.past"
+                class="block text-[11px] font-bold"
+              >{{ t('mvp.poll.past') }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="person in people"
+            :key="person.id"
+          >
+            <th
+              scope="row"
+              class="sticky left-0 z-[1] min-w-[120px] border-b-[1.5px] border-line-soft bg-surface px-3 py-1.5 text-left text-[13px]"
+              :class="person.id === meId ? 'font-extrabold' : 'font-semibold'"
+            >
+              <span class="flex items-center gap-2">
+                <UserAvatar
+                  :name="person.name"
+                  :image="person.image"
+                  :size="24"
+                />
+                {{ person.id === meId ? t('mvp.poll.you', { name: person.name }) : person.name }}
+              </span>
+            </th>
+            <td
+              v-for="cell in cellsOf(person)"
+              :key="cell.slotId"
+              class="border-b-[1.5px] border-line-soft text-center"
+            >
+              <!-- A cell with a Note is one 44 px button (#125), named by its sr-only text. Others keep the box but aren't focusable. -->
+              <component
+                :is="cell.note ? 'button' : 'div'"
+                :type="cell.note ? 'button' : undefined"
+                :aria-haspopup="cell.note ? 'dialog' : undefined"
+                class="relative mx-auto grid size-11 place-items-center rounded-[12px]"
+                :class="cell.note && ['hover:bg-paper-2', active?.key === cell.key && 'bg-paper-2']"
+                v-on="cell.note ? handlersFor(person, cell.slotId, cell.vote!, cell.note) : {}"
+              >
+                <span
+                  class="inline-grid size-[26px] place-items-center border-2 border-line"
+                  :class="cell.look.cell"
+                >
+                  <AppIcon
+                    v-if="cell.look.icon"
+                    :icon="cell.look.icon"
+                    :size="13"
+                  />
+                </span>
+                <!-- The dot marks a Note (#102); its text is in the sr-only span. -->
+                <span
+                  v-if="cell.note"
+                  aria-hidden="true"
+                  class="absolute top-1 right-1 size-2.5 rounded-full border-2 border-line bg-primary"
+                />
+                <span class="sr-only">{{ cell.text }}</span>
+              </component>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <NotePopover
+      :open="mode === 'popover'"
+      :anchor="active?.el ?? null"
+      :name="active?.person.name ?? ''"
+      :image="active?.person.image ?? null"
+      :value="active?.vote ?? 'yes'"
+      :note="active?.note ?? ''"
+      @pointerenter="cancelClose"
+      @pointerleave="closePopoverSoon"
+    />
+    <NoteDialog
+      :open="mode === 'dialog'"
+      :name="active?.person.name ?? ''"
+      :image="active?.person.image ?? null"
+      :value="active?.vote ?? 'yes'"
+      :note="active?.note ?? ''"
+      @close="closeDialog"
+    />
+    <div>
+      <AppButton
+        variant="secondary"
+        size="md"
+        @click="exportCsv"
+      >
+        {{ t('mvp.poll.exportCsv') }}
+      </AppButton>
+    </div>
   </div>
 </template>

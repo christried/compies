@@ -60,9 +60,13 @@ Common rules for every component:
 - [`GamePoolPicker`](#gamepoolpicker) [1.0]
 - [`PollSlotCard`](#pollslotcard) [MVP]
 - [`PollMatrix`](#pollmatrix) [MVP]
+- [`NotePopover`](#notepopover) [MVP]
+- [`NoteDialog`](#notedialog) [MVP]
 - [`DateConfirmDialog`](#dateconfirmdialog) [MVP]
 - [`DateSetCard`](#datesetcard) [MVP]
+- [`CalendarSheet`](#calendarsheet) [MVP]
 - [`InviteLinkCard`](#invitelinkcard) [MVP]
+- [`SlotEditSheet`](#sloteditsheet) [MVP]
 - [`GameCard`](#gamecard) [1.0]
 - [`LuckyWheel`](#luckywheel) [1.0]
 - [`ClipPlayer`](#clipplayer) [1.0]
@@ -92,6 +96,12 @@ Common rules for every component:
 - [`GameLibrary / GameForm`](#gamelibrary-gameform) [1.0]
 - [`AdminUserTable`](#adminusertable) [1.0]
 - [`Confetti`](#confetti) [1.0]
+- [`ReleaseCard`](#releasecard) [1.x] (with CopyLinkButton and NewStamp)
+- [`ChangeGroup`](#changegroup) [1.x]
+- [`ChangelogInline`](#changeloginline) [1.x] (with IssueChip)
+- [`ReleaseNav`](#releasenav) [1.x] (ReleaseRail and ReleaseJumpStrip)
+- [`PageFooter`](#pagefooter) [1.x] (Impressum, Datenschutz, Version; in UserMenu below md)
+- [`NewChip`](#newchip) [1.x]
 
 ## AppButton
 **Scope:** [MVP] · **Ref:** DS Basics
@@ -111,10 +121,10 @@ The button. One `primary` per view.
 
 Round icon-only button (sound toggle, close, remove slot).
 
-- **Props / variants:** `icon`, `label` (required → `aria-label`), `size: 32 | 40 | 44`, `variant: outline | solid | ghost`, `pressed?: boolean`
+- **Props / variants:** `icon`, `label` (required → `aria-label`), `size: 32 | 36 | 40` (default 40), `tone?: success | error` (solid fill: `bg-success text-on-success` / `bg-error text-on-error`, `shadow-sm`; none = surface), `variant: outline | solid | ghost`, `pressed?: boolean`
 - **States:** as AppButton; `pressed` shows ink fill (toggle)
 - **Slots:** —
-- **Desktop / mobile:** Visual 32–40 px, hit area always ≥ 44 (`hit-44`).
+- **Desktop / mobile:** Visual 32–40 px, hit area always ≥ 44 (`hit-44`). The Note editor's ✓ and ✗ are 36 px with an 8 px gap, so their 44 px hit areas touch (#124).
 - **Accessibility:** `aria-label` required; toggles use `aria-pressed`. Tooltip on hover/focus (desktop) with the same label.
 - **Motion:** as AppButton.
 
@@ -123,8 +133,8 @@ Round icon-only button (sound toggle, close, remove slot).
 
 Irreversible or destructive actions: veto, ban, pick, rotate link, end/delete Event, remove a Session, remove slot with votes.
 
-- **Props / variants:** `label`, `holdingLabel?` („Halten …“), `doneLabel?`, `duration = 1000`, `variant: hot | primary | secondary`, `size: card (48 px) | lg (52 px)`, `disabled`, `disabledReason`, `icon`. On a Session card „Entfernen“ and „Neue Terminsuche“ are `secondary` and keep the hold fill while held (#49).
-- **States:** idle · holding (fill sweeps left→right) · released early (fill drains back 200 ms, nothing happens) · confirmed (fill full, icon → check, `doneLabel`, emits `confirm`) · locked (team already used it: dashed + reason, e.g. „Larsi hat schon ein Veto eingelegt“)
+- **Props / variants:** `label`, `holdingLabel?` („Halten …“), `doneLabel?`, `duration = 1000`, `variant: hot | primary | secondary`, `size: card (48 px) | lg (52 px)`, `disabled`, `disabledReason`, `icon`, `action?: () => Promise<boolean>` (runs after the hold; without it the parent acts on `confirm`). On a Session card „Entfernen“ and „Neue Terminsuche“ are `secondary` and keep the hold fill while held (#49).
+- **States:** idle · holding (fill sweeps left→right) · released early (fill drains back 200 ms, nothing happens) · confirmed (emits `confirm`; with an `action`, the fill stays full while it runs) · done (fill full, icon → check, `doneLabel`; with an `action`, only when it resolves to true) · refused (the `action` resolved to false: fill drains back, idle again, the caller shows why; #74) · locked (team already used it: dashed + reason, e.g. „Larsi hat schon ein Veto eingelegt“)
 - **Slots:** default (label)
 - **Desktop / mobile:** Desktop pointer hold; mobile touch hold with `drag-longpress` haptic tick (`navigator.vibrate(10)`) at start. Mobile action bar version is full-width 56 px.
 - **Accessibility:** `<button>`; Space/Enter **held** for 1 s works the same (keydown starts, keyup cancels; ignore key repeat). Live region announces „Veto eingelegt“. Help text „1 Sekunde halten“ always visible on first use.
@@ -140,6 +150,9 @@ Input / textarea with label, help, error, counter.
 - **Slots:** `#prefix`, `#suffix`
 - **Desktop / mobile:** Height 56 for primary fields, 48 for rows (date/time).
 - **Accessibility:** Real `<label for>`; help + error linked via `aria-describedby`; counter in a polite live region only when ≥ 80 % of max.
+- **`invalid`** (bool): the help text becomes the reason: bold, error colour, announced (polite live region), field marked `aria-invalid`. For a field whose help turns into the error (profile setup).
+- **`cutAtMax`** (bool, with `maxlength`): longer input is cut to the maximum instead of shown with an error.
+- **Counter:** counts characters as the User sees them (an emoji such as 👍🏽 or 👨‍👩‍👧 is one), via `characterCount` in `shared/text.ts` (#76).
 - **Motion:** border colour `dur-fast`. Error shake: none (never).
 
 ## DateTimeField
@@ -366,6 +379,7 @@ Layout frame: header, stage, side panel, mobile tab bar, host dock slot.
 - **Props / variants:** `kind: hub | event | bare`, `panel?: boolean`
 - **States:** —
 - **Slots:** `#header`, default (stage), `#panel`, `#dock`, `#tabs`
+- **Footer:** the PageFooter is the last child after the stage, on every page. Signed in it shows from md up (below md the user menu holds the links); signed out it shows at every width. While a Host dock is attached, the footer keeps 96 px of room under its links.
 - **Desktop / mobile:** ≥ 980: header 64, stage max 1100 centred, panel 340 right (Event only), dock floating. < 980: header 56, content, bottom TabBar, crown button 56 bottom-right for hosts.
 - **Accessibility:** Landmarks: `header`, `nav`, `main`, `aside`. Skip link „Zur Bühne springen“.
 - **Motion:** —
@@ -651,10 +665,11 @@ Fill wheel/pick pool and tiebreaker pool from the library with suggestions.
 
 One proposed date in the poll.
 
-- **Props / variants:** `slot: {startsAt}`, `counts: {yes, maybe, no}`, `total`, `myVote`, `best`, `canPick` (host)
+- **Props / variants:** `slot: {startsAt}`, `counts: {yes, maybe, no}`, `total`, `myVote`, `best`, `canPick` (host), `notes` (NoteRow[]), `myNote`; emits `note(text)`
 - **States:** not voted (all options neutral) · voted (selected option filled: Ja success with a check, Meh warning text only, no icon (#50), Nein error red with dark text (`bg-error text-on-error`) with an x) · best (3 px focus border, card shadow, „Bester Termin“ chip) · confirmed
+- **Notes (#102):** an „Anmerkungen“ NoteList sits under the counts (also on a past card). Under Ja / Meh / Nein a NoteEditor offers the User's own Note once voted: „+ Anmerkung“ without a Note, „Deine Anmerkung · sehen alle“ with the Note text and a pencil, and the editor (#124); choosing Meh opens its field by itself, unfocused. A past card has the list but no button.
 - **Slots:** —
-- **Desktop / mobile:** Desktop 4 columns; mobile 1 column. Host on desktop gets „Diesen festlegen“ in the card.
+- **Desktop / mobile:** Desktop 4 columns; mobile 1 column. Host on desktop gets „Termin festlegen“ in the card.
 - **Accessibility:** Options = `role="radiogroup"` labelled with the slot („Sa 25.10. 20:30“); chip text says best.
 - **Motion:** bar widths tween `dur-slow ease-out` on new votes; best chip pops `ease-pop`. Reduced: instant.
 
@@ -663,20 +678,51 @@ One proposed date in the poll.
 
 „Wer kann wann?“: everyone × every slot.
 
-- **Props / variants:** `people[]`, `slots[]`, `votes`, `me`
+- **Props / variants:** `people[]`, `slots[]`, `votes` (each may carry a `note`), `me`
 - **States:** cells: Ja (check, circle, success) · Meh (minus, circle, warning) · Nein (x, square, error red with dark text) · Noch offen (dashed circle)
+- **Notes (#102, #125):**
+  - A cell with a Note is a `<button type="button" aria-haspopup="dialog">`, 44 × 44, radius 12, `paper-2` on hover and while its popover or dialog is open. The 26 px vote mark sits inside; a 10 px `primary` dot with a `line` border sits at its top-right corner (`aria-hidden`). Every vote cell has the same 44 px box, so rows are even.
+  - **Input type decides, not width:** a mouse gets the NotePopover on hover and on focus; touch and pen get the NoteDialog from a tap; the keyboard gets the popover on focus and the dialog on Enter or Space. A mouse click opens nothing more, its popover is already open. Focus that follows a tap is ignored. The last pointer type is read from a `pointerdown` on the document, a `keydown` resets it.
+  - Leaving the cell closes the popover after 120 ms; entering the cell or the popover cancels that (WCAG 1.4.13). Blur and Esc close it, focus stays. Scrolling the matrix or the page closes it. On keyboard focus the matrix first scrolls a cell that is under the sticky column or past the right edge by the overlap + 8 px, and that scroll doesn't close the popover. Any open by focus (also the browser's own scroll into view) ignores scroll-close for two animation frames. The state machine lives in `useNoteReveal` (`app/composables`); PollMatrix keeps the table, the CSV and the wiring.
+  - One popover and one dialog per matrix, not one per cell.
+  - **No `title` anywhere in the matrix.** The cell's name is its sr-only text, „Meh: kann maximal bis 20:30“ (the row header gives the Member). The popover is visual only (`aria-hidden`, no `aria-describedby`), since the button's name already says everything and a link would read the Note twice. The dialog is a real dialog. The CSV export writes the same text in the cell.
 - **Slots:** —
 - **Desktop / mobile:** Desktop name column 200 + equal columns; mobile 130 + 72 px columns, horizontal scroll only when the Slots don't fit. Headers show the day and the time on separate lines, never cut.
-- **Accessibility:** Real `<table>` with row/column headers; cell `title` and text equivalent („Ja“).
+- **Accessibility:** Real `<table>` with row/column headers; every cell has its text equivalent („Ja“) as sr-only text, no `title`.
 - **Motion:** cell change pop `dur-base ease-pop`.
+
+## NotePopover
+**Scope:** [MVP] · **Ref:** Footer und Anmerkungen 4a · **Spec:** 10-footer-und-anmerkungen § NotePopover
+
+The Note of a matrix cell on mouse hover or keyboard focus (#125).
+
+- **Props / variants:** `open`, `anchor: HTMLElement | null`, `name`, `image`, `value: yes | maybe | no`, `note`
+- **States:** closed · open (hover) · open (focus)
+- **Slots:** —
+- **Desktop / mobile:** `<Teleport to="body">`, `position: fixed`, `layer-sheet`: above the sticky column and the HostDock, below modals. Width `min(280px, 100vw − 24px)`. Prefers above the cell (12 px gap), flips below when there is no room; centred on the cell and clamped 12 px from the viewport edges, the arrow stays 20 px inside the box and points at the cell (`placeNotePopover`, `app/utils/note-popover.ts`). The vote chip uses the cell's fill (Nein stays `error`).
+- **Accessibility:** `aria-hidden`, no role, not linked: the cell's sr-only text already says it. Pointer can move onto it (close delay 120 ms).
+- **Motion:** enter `opacity 0→1` + `y 4→0` (from below `−4→0`), `dur-fast`, `ease-out`. Reduced: fade only.
+
+## NoteDialog
+**Scope:** [MVP] · **Ref:** Footer und Anmerkungen 4a (touch) · **Spec:** 10-footer-und-anmerkungen § NoteDialog
+
+The same content as a small centred dialog for touch and pen (#125). Not a bottom sheet.
+
+- **Props / variants:** `open`, `name`, `image`, `value`, `note`; emits `close`
+- **States:** open · closed
+- **Slots:** —
+- **Desktop / mobile:** the same at every width: card `max-width: 320px`, 24 px from the edges, `layer-modal`.
+- **Accessibility:** `role="dialog"`, `aria-modal="true"`, labelled by the Display name. Focus lands on „Schließen“ and stays inside (`useDialog`). The ✗, a tap on the overlay and Esc close it; focus returns to the cell.
+- **Motion:** as ConfirmModal.
 
 ## DateConfirmDialog
 **Scope:** [MVP] · **Ref:** M3 confirm
 
 Host confirms a slot.
 
-- **Props / variants:** `slot`, `counts`
-- **States:** open · saving
+- **Props / variants:** `slot`, `counts`, `notes` (NoteRow[])
+- **Notes (#102):** each option lists its Notes (NoteList) under its counts.
+- **States:** open · saving · selected option (filled radio dot, 3px focus-blue border, light focus-blue wash; unselected options: hollow dot). The option that opened the dialog, else the Best slot, starts selected.
 - **Slots:** —
 - **Desktop / mobile:** ConfirmModal / bottom sheet.
 - **Accessibility:** as ConfirmModal.
@@ -687,12 +733,56 @@ Host confirms a slot.
 
 Confirmed date with calendar tile, .ics download, reschedule (host).
 
-- **Props / variants:** `startsAt`, `isHost`, `icsUrl`
+- **Props / variants:** `startsAt`, `isHost`, `icsUrl`, `notes` (NoteRow[], read-only)
+- **Notes (#102):** an „Anmerkungen“ NoteList with the Notes of the Slot the Date came from, also after a Reschedule. None for a Date set directly.
 - **States:** player · host
 - **Slots:** —
 - **Desktop / mobile:** Desktop row; mobile stacked.
 - **Accessibility:** Date as `<time datetime>`.
 - **Motion:** tile drops in `y −20→0` 0.45 s `back.out(2)`, once.
+
+## NoteList
+**Scope:** [MVP] · **Ref:** — (#102, built from existing parts, no design of its own)
+
+The Notes on the Votes of one Slot.
+
+- **Props / variants:** `notes: NoteRow[]` (`userId`, `name`, `isMe`, `value`, `note`), in the order of the rows in „Wer kann wann?“.
+- **States:** empty (renders nothing) · list: a small bold „Anmerkungen“ heading, then one row per Note: the name (your own as „Name (du)“), a 10 px dot in the Vote's colour with a 2 px line border, the text.
+- **Slots:** —
+- **Desktop / mobile:** same; long text wraps.
+- **Accessibility:** a real list. The dot is `aria-hidden`; the Vote's label („Meh“) follows the name as screen-reader text, so the colour is not the only signal.
+- **Motion:** —
+
+## NoteEditor
+**Scope:** [MVP] · **Ref:** — (#102, built from existing parts, no design of its own)
+
+The User's own Note on their Vote, inside a PollSlotCard.
+
+- **Props / variants:** `note`, `voted`, `past`; emits `save(text)`; exposes `open(focus)`, `closeIfUntouched()`. Ref: Footer und Anmerkungen 5a, 5b (spec `10-footer-und-anmerkungen § NoteEditor`, #124).
+- **States:**
+  - no Vote or past: nothing;
+  - voted without Note: text button „+ Anmerkung“ (13 / 700, 44 px hit area, `aria-label` „Anmerkung hinzufügen“);
+  - voted with Note: „Deine Anmerkung · sehen alle“ (12 / 700 ink-2) and the Note (13 / 600), with a pencil IconButton „Anmerkung bearbeiten“ (32 px);
+  - editing: a top row („Anmerkung“ label 13 / 800, „sehen alle“ 12 / 600 ink-2, and the counter `n/80` in mono on the right, `warning-fg` from 72, otherwise ink-2); below it a text area (`rows=1`, grows with its text via `field-sizing: content`, with a height fallback on input, no inner scrollbar, `resize: none`; placeholder „z. B. kann maximal bis 20:30“); below that ✓ IconButton „Anmerkung speichern“ (`tone="success"`, 36 px) and ✗ IconButton „Abbrechen“ (`tone="error"`, 36 px), right-aligned, nothing else. No help text.
+  - The root has a 2 px dashed `line-soft` rule above it while voted or editing.
+- **Slots:** —
+- **Desktop / mobile:** same, inline in the card; the text area takes the card's width at 390 px.
+- **Behaviour:** line breaks are not allowed: Enter saves (not while IME composing, never a line break, Shift+Enter saves too); pasted line breaks become spaces (as the server stores them); a rewrite (line break, cut) keeps the caret where it was; input stops at 80 characters as the User sees them (`characterCount` / `cutToCharacters`, no native `maxlength`).
+- **Accessibility:** the label belongs to the text area; „sehen alle“ is its `aria-describedby`. The counter is `aria-hidden`; a polite live region announces „Noch {n} Zeichen“ from 64 characters (80 %, as the TextField). Enter and ✓ save, Escape and ✗ cancel. Opened by the button or the pencil it focuses the text area; opened by choosing Meh it does not take the focus. After closing by the User, focus moves to the pencil (saved) or „+ Anmerkung“ (empty or cancelled). Saving an empty field removes the Note.
+- **Not built:** a saving spinner and an error state in the editor. Saving stays optimistic: the editor closes at once, and a failed Vote rolls back with its toast (as before).
+- **Motion:** border colour `dur-fast` is not built; nothing animates.
+
+## CalendarSheet
+**Scope:** [MVP] · **Ref:** Sheet (#81, built from existing parts, no design of its own)
+
+The choice behind „In den Kalender“, the one calendar button of the Event. Every Member can open it. Google and Outlook open a new, pre-filled event in that calendar; the file is the calendar file download.
+
+- **Props / variants:** `open`, `view` (the Event view). One dated Session: „Google Kalender“, „Outlook“, „Apple & andere (.ics)“. Several dated Sessions: „Apple & andere (.ics) – alle Termine“ first, then one row per dated Session („Session 2 · Sa 24.10.“) with „Google“ and „Outlook“.
+- **States:** closed · open. Stays closed while no Session has a Date.
+- **Slots:** —
+- **Desktop / mobile:** the Sheet (right on desktop, bottom on phones). Every button is `AppButton` secondary, size card (48 px). A Session row is the Slot editor's row card, with its two buttons side by side.
+- **Accessibility:** as Sheet. Google and Outlook are links that open a new tab (`rel="noopener noreferrer"`, trailing external-link icon); the file is a `download` link. Each Session row is a `role="group"` named by its label. The trigger carries `aria-haspopup="dialog"`.
+- **Motion:** as Sheet.
 
 ## InviteLinkCard
 **Scope:** [MVP] · **Ref:** App Einstieg 06, M2 done
@@ -705,6 +795,21 @@ Show, copy and rotate the invite link.
 - **Desktop / mobile:** Desktop dock „Einladen“ sheet; mobile bottom sheet.
 - **Accessibility:** Copy button announces „Link kopiert“.
 - **Motion:** —
+
+## SlotEditSheet
+**Scope:** [MVP] · **Ref:** — (the create form's Slot row, in a Sheet; #15, #85)
+
+The Host's „Termine bearbeiten“, from the host dock while the Date poll is open: the open Slots, changed, removed and added.
+
+- **Props / variants:** `open`, `slug`, `slots: {id, startsAt, votes}[]`
+- **States:**
+  - list: each open Slot in time order with „Ändern“ and remove. Without Votes, remove is an IconButton; with Votes, a HoldToConfirmButton under „N Stimmen gehen verloren“.
+  - changing (one row at a time): „Ändern“ turns the row into the DateTimeField, prefilled with the Slot's time, with „Speichern“ and „Abbrechen“. The rules and messages of adding apply (in the future, not another Slot's minute; the Slot's own minute is fine). A Slot with Votes says „Die Stimmen bleiben erhalten – sag der Gruppe Bescheid.“: the Votes stay and Members are not told. Saved, the row closes and the list re-sorts, so the Slot may move. A Slot that became a Date meanwhile is refused with „Dieser Termin steht schon fest.“
+  - adding: DateTimeField + „Termin hinzufügen“ (dashed). Full at 16 Slots: „Höchstens 16 Vorschläge.“ instead.
+- **Slots:** —
+- **Desktop / mobile:** Sheet.
+- **Accessibility:** The changing field is named by the Slot's current time. „Speichern“ and „Termin hinzufügen“ stay focusable while blocked (`aria-disabled`), with the rule's message on the field.
+- **Motion:** as Sheet.
 
 ## GameCard
 **Scope:** [1.0] · **Ref:** GameCard
@@ -1054,4 +1159,77 @@ Sticker confetti (white rim, hard shadow).
 - **Desktop / mobile:** count halves on mobile.
 - **Accessibility:** `aria-hidden`, `pointer-events:none`, `layer-confetti`.
 - **Motion:** see 04-motion § Confetti; skipped on reduced motion.
+- **Built (#80):** `confetti(layer, x, y, count)` in `app/utils/confetti.ts`, on the Web Animations API (the app ships no GSAP). First user: the „Neu“ stamp on Neuigkeiten, with its smaller burst (18 desktop, 10 mobile).
+
+## ReleaseCard
+**Scope:** [1.x] · **Ref:** Neuigkeiten · **Spec:** 09-neuigkeiten § ReleaseCard, § CopyLinkButton, § NewStamp
+
+One Release from `CHANGELOG.md` on `/neuigkeiten`: version, name, date, copy-link button, intro, groups. CopyLinkButton and NewStamp are built into it, not as components of their own.
+
+- **Props / variants:** `release: Release` (from `shared/changelog.ts`), `newest?: boolean`
+- **States:** default · newest (NewStamp, version with the `primary` offset shadow) · newest first view (stamp lands once per device: `localStorage["compies.news.seen"]` through `useNewsSeen`)
+- **Slots:** —
+- **Desktop / mobile:** Surface card, `border-memphis`, radius 20, `shadow-card`; version 44 / 32, name 30 / 24.
+- **Accessibility:** `<section id="1.2.0" aria-labelledby>`, `h2` with `tabindex="-1"`, version read as „Version 1.2.0“. Copy button: IconButton with „Link zu Version 1.2.0 kopieren“, toast „Link kopiert“ or the error toast with the link.
+- **Motion:** NewStamp timeline on the Web Animations API. Compibert does not cheer yet: the CompibertBus (`reveal`) is still to come.
+
+## ChangeGroup
+**Scope:** [1.x] · **Ref:** Neuigkeiten · **Spec:** 09-neuigkeiten § ChangeGroup
+
+`h3` label pill and list for one of the five groups, with one nested level. Colour, icon and bullet shape per group.
+
+- **Props / variants:** `group: ChangeGroup` (`type: neu | geaendert | behoben | entfernt | sicherheit`)
+- **States:** —
+- **Slots:** —
+- **Desktop / mobile:** Body 17 / 16.
+- **Accessibility:** Real `h3`, `ul > li`; bullets and icon `aria-hidden`. The parser refuses unknown group names, so there is no fallback group.
+- **Motion:** —
+
+## ChangelogInline
+**Scope:** [1.x] · **Ref:** Neuigkeiten · **Spec:** 09-neuigkeiten § ChangelogInline
+
+Renders the parser's inline nodes: text, bold, code, links. A link named `#64` becomes the IssueChip; parentheses that only wrap Issue chips are dropped.
+
+- **Props / variants:** `nodes: Inline[]`
+- **States:** —
+- **Slots:** —
+- **Desktop / mobile:** Same.
+- **Accessibility:** Links `target="_blank" rel="noopener noreferrer"`, title „Öffnet in neuem Tab“; IssueChip `aria-label` „Issue 64 auf GitHub, öffnet in neuem Tab“.
+- **Motion:** colour `dur-fast`.
+
+## ReleaseNav
+**Scope:** [1.x] · **Ref:** Neuigkeiten · **Spec:** 09-neuigkeiten § ReleaseRail, § ReleaseJumpStrip
+
+All Releases as links to `#<version>`. `variant="rail"`: the sticky card from `md` up, the Release in view marked with `aria-current`. `variant="strip"`: the „Springe zu“ pill row below `md`. The page does the scroll-spy and the jump (scroll, focus the `h2`, `history.replaceState`).
+
+- **Props / variants:** `variant: rail | strip`, `current?: version`; emits `jump(version)`
+- **States:** item default · hover · current (rail) · newest (mini „Neu“ chip in the rail, `primary` pill in the strip)
+- **Slots:** —
+- **Desktop / mobile:** Rail only from `md`, strip only below.
+- **Accessibility:** `<nav aria-label="Versionen">`; link names „Version 1.2.0, Mehr Termine, 2. Nov. 2026, neu“.
+- **Motion:** jump scroll smooth, `auto` under reduced motion; spy paused for 700 ms after a jump.
+
+## PageFooter
+**Scope:** [1.x] · **Ref:** Footer und Anmerkungen 1a–1f, 3a, 3b; PageFooter · **Spec:** 10-footer-und-anmerkungen § PageFooter
+
+„Impressum ◆ Datenschutz ● Version 1.2.0“ in one band at the bottom of every page. The version is the newest Release in `CHANGELOG.md` (the changelog guard test keeps `package.json` at the same version); the version link opens `/neuigkeiten`, and there it scrolls to the top.
+
+- **Props / variants:** `variant?: 'page' | 'menu'` (default `page`). Everything else is read inside: the route for `aria-current`, the signed-in User and `useNewsSeen` for the chip, `useHostDock` for the 96 px spacer.
+- **States:** default (underline `line-soft`) · hover (highlighter grows from the left, underline `line`) · focus-visible (focus ring) · current page (`aria-current="page"`, marker full, 800, no underline) · unseen (NewChip after the number, name „Version 1.2.0, neu“) · dock (96 px spacer under the links)
+- **Slots:** —
+- **Desktop / mobile:** `page`: `surface` band, `border-top` line, padding 6 / 16, links 14 px, wraps when narrow. `menu`: inside UserMenu below md only, 13 px, left-aligned, no band. Signed in, the page variant has `max-md:hidden`, set by AppShell.
+- **Accessibility:** `<footer>` with `<nav aria-label="Rechtliches und Version">`. The separators are `aria-hidden`. `menu` is a `role="group"` with `role="menuitem"` links; a click on a link closes the menu.
+- **Motion:** highlighter `dur-base` `ease-out`, underline colour `dur-base`. Reduced motion: no transition.
+
+## NewChip
+**Scope:** [1.x] · **Ref:** Footer und Anmerkungen 2a · **Spec:** 10-footer-und-anmerkungen § NewChip
+
+Small „Neu“ chip after the version number: the NewStamp's sibling, tilted −6°, `primary` fill, 12 / 800 uppercase. It shows for a signed-in User while this device has not opened Neuigkeiten since the newest Release (the `compies.news.seen` rule). Never signed out.
+
+- **Props / variants:** —
+- **States:** visible · gone
+- **Slots:** —
+- **Desktop / mobile:** identical.
+- **Accessibility:** `aria-hidden="true"`; the link's name carries „neu“.
+- **Motion:** one entrance per mount (scale .5 → 1, fade in, 360 ms delay). No loop. Reduced motion: no entrance.
 

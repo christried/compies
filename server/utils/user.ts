@@ -1,10 +1,15 @@
 import { eq } from 'drizzle-orm'
+import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import { appendResponseHeader, createError, type H3Event } from 'h3'
 import { users } from '../db/schema'
+import type { AuthUser } from '../../shared/auth'
 import { useAuth } from './auth'
 import { useDb } from './db'
 
-/** What the app knows about the signed-in User. The email is never exposed (ADR 0008). */
+/**
+ * What the app knows about the signed-in User: the columns of AuthUser, no more and no fewer, so a new
+ * column (the email above all) cannot slip into an answer (ADR 0008).
+ */
 export const userColumns = {
   id: users.id,
   name: users.name,
@@ -12,13 +17,13 @@ export const userColumns = {
   displayName: users.displayName,
   canHost: users.canHost,
   isAdmin: users.isAdmin,
-}
+} satisfies Record<keyof AuthUser, AnyPgColumn>
 
 /**
  * The signed-in User, or null. Permissions are read from the database on every call, never from
  * the login session, so a revoked right applies immediately (ADR 0002).
  */
-export async function getUser(event: H3Event) {
+export async function getUser(event: H3Event): Promise<AuthUser | null> {
   // Better Auth renews an older login session here and returns the new cookie only with returnHeaders.
   const { headers, response: authSession } = await useAuth(event).api.getSession({ headers: event.headers, returnHeaders: true })
   for (const cookie of headers.getSetCookie()) appendResponseHeader(event, 'set-cookie', cookie)

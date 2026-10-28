@@ -5,8 +5,23 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import DateTimeField from '~/components/DateTimeField.vue'
+import IconButton from '~/components/IconButton.vue'
 import SegmentedControl from '~/components/SegmentedControl.vue'
 import TextField from '~/components/TextField.vue'
+
+describe('IconButton', () => {
+  it('renders the 40 px surface button by default', async () => {
+    const page = await mountSuspended(IconButton, { props: { icon: Check, label: 'Schließen' } })
+
+    expect(page.classes()).toEqual(expect.arrayContaining(['size-10', 'bg-surface']))
+  })
+
+  it('renders a 36 px success button with a shadow for tone="success"', async () => {
+    const page = await mountSuspended(IconButton, { props: { icon: Check, label: 'Speichern', tone: 'success', size: 36 } })
+
+    expect(page.classes()).toEqual(expect.arrayContaining(['size-9', 'bg-success', 'shadow-sm']))
+  })
+})
 
 describe('TextField', () => {
   it('labels the input and links the error and the help text to it', async () => {
@@ -38,6 +53,42 @@ describe('TextField', () => {
 
     expect(page.get('[aria-live]').text()).toBe('50/60')
   })
+
+  it('counts a family emoji as one character, as the User sees it', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '👨‍👩‍👧', label: 'Name', maxlength: 32 } })
+
+    expect(page.text()).toContain('1/32')
+  })
+
+  it('cuts the input to the maximum with cutAtMax, keeping the input and the model in step', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', maxlength: 3, cutAtMax: true } })
+
+    await page.get('input').setValue('👍🏽👍🏽👍🏽👍🏽')
+
+    expect((page.get('input').element as HTMLInputElement).value).toBe('👍🏽👍🏽👍🏽')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['👍🏽👍🏽👍🏽'])
+  })
+
+  it('keeps all of the input without cutAtMax', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', maxlength: 3 } })
+
+    await page.get('input').setValue('👍🏽👍🏽👍🏽👍🏽')
+
+    expect((page.get('input').element as HTMLInputElement).value).toBe('👍🏽👍🏽👍🏽👍🏽')
+  })
+
+  it('marks the field invalid with the help text as the reason, announced, under the given id', async () => {
+    const page = await mountSuspended(TextField, {
+      props: { modelValue: '', label: 'Name', help: 'Ohne Namen geht’s nicht.', invalid: true, id: 'x' },
+    })
+
+    expect(page.get('input').attributes('id')).toBe('x')
+    expect(page.get('input').attributes('aria-invalid')).toBe('true')
+    const help = page.get('#x-help')
+    expect(help.text()).toBe('Ohne Namen geht’s nicht.')
+    expect(help.attributes('aria-live')).toBe('polite')
+    expect(page.get('label').attributes('for')).toBe('x')
+  })
 })
 
 describe('DateTimeField', () => {
@@ -66,6 +117,16 @@ describe('DateTimeField', () => {
 
   async function leave(root: Element, name: 'Datum' | 'Uhrzeit') {
     part(root, name).dispatchEvent(new Event('blur'))
+    await flushPromises()
+  }
+
+  // A keystroke at the selection: replaces what is selected with the char and puts the caret after it.
+  async function typeAt(input: HTMLInputElement, char: string) {
+    const start = input.selectionStart ?? input.value.length
+    const end = input.selectionEnd ?? start
+    input.value = input.value.slice(0, start) + char + input.value.slice(end)
+    input.setSelectionRange(start + char.length, start + char.length)
+    input.dispatchEvent(new Event('input'))
     await flushPromises()
   }
 
@@ -149,6 +210,56 @@ describe('DateTimeField', () => {
     expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T09:30'])
   })
 
+  it('completes one or two digits that form an hour to :00 once the field is left', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '9')
+    await leave(page.element, 'Uhrzeit')
+    expect(part(page.element, 'Uhrzeit').value).toBe('09:00')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T09:00'])
+
+    await type(page.element, 'Uhrzeit', '15')
+    part(page.element, 'Uhrzeit').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    await flushPromises()
+    expect(part(page.element, 'Uhrzeit').value).toBe('15:00')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T15:00'])
+  })
+
+  it('completes three digits whose first two form an hour to HH:M0, so 153 is 15:30', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '153')
+    expect(part(page.element, 'Uhrzeit').value).toBe('15:3')
+    await leave(page.element, 'Uhrzeit')
+
+    expect(part(page.element, 'Uhrzeit').value).toBe('15:30')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2090-10-30T15:30'])
+  })
+
+  it('leaves an impossible hour such as 25 as typed and invalid once the field is left', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '25')
+    await leave(page.element, 'Uhrzeit')
+
+    expect(part(page.element, 'Uhrzeit').value).toBe('25')
+    expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBe('true')
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual([''])
+  })
+
+  it('does not mark 25 invalid while the time is still being typed, so 253 can be typed on to 02:53', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+    await typeKeys(page.element, 'Uhrzeit', '25')
+    expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBeNull()
+
+    await typeKeys(page.element, 'Uhrzeit', '3')
+    await leave(page.element, 'Uhrzeit')
+
+    expect(part(page.element, 'Uhrzeit').value).toBe('02:53')
+    expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBeNull()
+  })
+
   it('rejects an impossible time such as 24:60', async () => {
     const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
 
@@ -175,6 +286,49 @@ describe('DateTimeField', () => {
     expect(part(page.element, 'Uhrzeit').value).toBe('12:34')
   })
 
+  it('keeps the caret after the typed digit when the hour is replaced, so 19:00 with 21 typed is 21:00', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2026-11-02T19:00', label: 'Termin 1' } })
+    const input = part(page.element, 'Uhrzeit')
+
+    input.setSelectionRange(0, 2)
+    await typeAt(input, '2')
+    expect(input.value).toBe('20:0')
+    expect(input.selectionStart).toBe(1)
+
+    await typeAt(input, '1')
+    expect(input.value).toBe('21:00')
+    expect(input.selectionStart).toBe(2)
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2026-11-02T21:00'])
+  })
+
+  it('keeps the caret in the date when the month is replaced, so 30.10.2026 with 11 typed is 30.11.2026', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '2026-10-30T19:00', label: 'Termin 1' } })
+    const input = part(page.element, 'Datum')
+    expect(input.value).toBe('30.10.2026')
+
+    input.setSelectionRange(3, 5)
+    await typeAt(input, '1')
+    expect(input.value).toBe('30.12.026')
+    expect(input.selectionStart).toBe(4)
+
+    await typeAt(input, '1')
+    expect(input.value).toBe('30.11.2026')
+    expect(input.selectionStart).toBe(5)
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['2026-11-30T19:00'])
+  })
+
+  it('types at the end of an empty time as before, 1-5-3 is 15:3 with the caret at the end', async () => {
+    const page = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Termin 1' } })
+    const input = part(page.element, 'Uhrzeit')
+
+    await typeAt(input, '1')
+    await typeAt(input, '5')
+    await typeAt(input, '3')
+
+    expect(input.value).toBe('15:3')
+    expect(input.selectionStart).toBe(4)
+  })
+
   it('opens a calendar on a click in the date field, and days before today (Berlin) are disabled', async () => {
     const page = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Termin 1' }, attachTo: document.body })
 
@@ -182,10 +336,12 @@ describe('DateTimeField', () => {
     await flushPromises()
 
     const today = parseDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date()))
-    const cells = [...document.querySelectorAll('[role="gridcell"]')]
-    const day = (value: DateValue) => cells.find(cell => cell.textContent?.trim() === String(value.day))!
-    expect(day(today.subtract({ days: 1 })).getAttribute('aria-disabled')).toBe('true')
-    expect(day(today).getAttribute('aria-disabled')).not.toBe('true')
+    // By date, not by number: the grid also shows the neighbouring months' days (28.–30.9. in October).
+    const day = (value: DateValue) => document.querySelector(`[data-value="${value}"]`)?.closest('[role="gridcell"]')
+    expect(day(today)!.getAttribute('aria-disabled')).not.toBe('true')
+    // On the 1st, yesterday is in the grid only when the month does not start on a Monday.
+    const yesterday = day(today.subtract({ days: 1 }))
+    if (yesterday) expect(yesterday.getAttribute('aria-disabled')).toBe('true')
     page.unmount()
   })
 

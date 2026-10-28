@@ -28,6 +28,12 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   not_host: 'error.forbidden',
   no_host_permission: 'error.noHostRight',
   rate_limited: 'error.rateLimited',
+  note_too_long: 'error.noteTooLong',
+}
+
+/** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */
+export function errorCopyKey(code: ApiErrorCode, overrides: Partial<Record<ApiErrorCode, string>> = {}, fallback = 'error.saveFailed'): string {
+  return overrides[code] ?? CODE_COPY[code] ?? fallback
 }
 
 /**
@@ -36,6 +42,5 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
  */
 export function apiErrorKey(failure: unknown, fallback = 'error.saveFailed', overrides: Partial<Record<ApiErrorCode, string>> = {}): string {
   const code = apiFailure(failure).code as ApiErrorCode | undefined
-  if (!code) return fallback
-  return overrides[code] ?? CODE_COPY[code] ?? fallback
+  return code ? errorCopyKey(code, overrides, fallback) : fallback
 }

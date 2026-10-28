@@ -1,5 +1,6 @@
 import type { HomeAction, Phase } from '../../shared/event'
 import { hasVoted, isPast, type PollVote } from './poll'
+import { isDated } from './session'
 
 // Home rules (#1 user stories 15–24, #12). Pure functions: the list handler loads the rows and
 // passes them in; `now` is injected so the rules can be tested at a fixed moment.
@@ -15,22 +16,21 @@ export function staysOnHome(sessionStarts: (Date | null)[], now: Date): boolean 
 }
 
 /**
- * The Session Home shows (#54): the next upcoming one by Date, else the latest passed one. Returns its
- * index in `sessionStarts`, or null while no Session has a Date.
+ * The Session Home shows (#54): the next upcoming one by Date, else the latest passed one. Null while no
+ * Session has a Date.
  */
-export function homeSessionIndex(sessionStarts: (Date | null)[], now: Date): number | null {
-  let upcoming = -1
-  let latestPassed = -1
-  sessionStarts.forEach((startsAt, index) => {
-    if (startsAt === null) return
-    if (!isPast(startsAt, now)) {
-      if (upcoming < 0 || startsAt.getTime() < sessionStarts[upcoming]!.getTime()) upcoming = index
-      return
+export function homeSession<S extends { startsAt: Date | null }>(sessions: S[], now: Date): (S & { startsAt: Date }) | null {
+  let upcoming: (S & { startsAt: Date }) | null = null
+  let latestPassed: (S & { startsAt: Date }) | null = null
+  for (const session of sessions.filter(isDated)) {
+    const time = session.startsAt.getTime()
+    if (isPast(session.startsAt, now)) {
+      if (!latestPassed || time > latestPassed.startsAt.getTime()) latestPassed = session
+      continue
     }
-    if (latestPassed < 0 || startsAt.getTime() > sessionStarts[latestPassed]!.getTime()) latestPassed = index
-  })
-  if (upcoming >= 0) return upcoming
-  return latestPassed >= 0 ? latestPassed : null
+    if (!upcoming || time < upcoming.startsAt.getTime()) upcoming = session
+  }
+  return upcoming ?? latestPassed
 }
 
 /** The User still has to vote: an open poll with Slots left to vote on and no full set of Votes. */
@@ -49,24 +49,19 @@ export interface HomeOrderable {
   needsVote: boolean
   /** Each Session's Date, null while it waits for one. */
   sessionStarts: (Date | null)[]
+  /** The Date of the Session Home shows (homeSession), null while no Session has a Date. */
+  homeDate: Date | null
   createdAt: Date
 }
 
 /** Group order: open polls to vote on, other open polls, upcoming Dates, then Dates that just passed. */
 const GROUP = { toVote: 0, otherPoll: 1, upcomingDate: 2, passedDate: 3 } as const
 
-/** The Date of the Session Home shows, or null (see homeSessionIndex). */
-function homeDate(item: HomeOrderable, now: Date): Date | null {
-  const index = homeSessionIndex(item.sessionStarts, now)
-  return index === null ? null : item.sessionStarts[index] ?? null
-}
-
 /** The sort bucket of an item: one of GROUP. */
 function orderGroup(item: HomeOrderable, now: Date): number {
   if (item.needsVote) return GROUP.toVote
   if (item.phase === 'poll') return GROUP.otherPoll
-  const startsAt = homeDate(item, now)
-  return startsAt && isPast(startsAt, now) ? GROUP.passedDate : GROUP.upcomingDate
+  return item.homeDate && isPast(item.homeDate, now) ? GROUP.passedDate : GROUP.upcomingDate
 }
 
 /**
@@ -75,7 +70,7 @@ function orderGroup(item: HomeOrderable, now: Date): number {
  * Session; a Date that passed within the last 24 h comes after them, the most recent one first.
  */
 export function arrangeHome<T extends HomeOrderable>(items: T[], now: Date): T[] {
-  const time = (item: T) => homeDate(item, now)?.getTime() ?? 0
+  const time = (item: T) => item.homeDate?.getTime() ?? 0
   return items
     .filter(item => staysOnHome(item.sessionStarts, now))
     .sort((a, b) => {

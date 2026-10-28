@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
-import { apiErrorKey } from '~/utils/api-error'
+import { errorCopyKey } from '~/utils/api-error'
 import { formatSlotWhen } from '~/utils/berlin-time'
-import { SLOTS_MAX, slotProblems } from '~~/shared/event'
+import { SLOTS_MAX, slotProblems, type ChangedSlot } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // The Host's Slot editor (#15), opened from the host dock while the Date poll is open. Lists the
 // Slots with their Votes and adds one with the create form's Slot row. A Slot without Votes goes at
-// once; with Votes it needs HoldToConfirmButton and says how many Votes go with it. The server
-// checks every rule again (#1 § Domain rules); the checks here only save a round trip.
+// once; with Votes it needs HoldToConfirmButton and says how many Votes go with it. „Ändern“ turns a
+// row into the date and time field (#85); the Slot keeps its Votes, and Members are not told. The server
+// checks every rule again (#1 § Domain rules); the checks here only save a round trip. Changes go
+// through the one send (#74), and `changed` asks the page to refetch after each, taken or not.
 
 export interface EditableSlot {
   id: string
@@ -27,68 +29,65 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [], changed: [] }>()
 
 const { t } = useI18n()
-const { toast } = useToast()
+const { send } = useEventMutation(() => props.slug, () => emit('changed'))
 const blockerId = useId()
 const newSlot = ref('')
 /** Berlin wall-clock now, minute precision, as the field's lower bound (ADR 0003). */
 const now = ref(utcToBerlin(new Date()))
 const busy = ref(false)
-// Bumped after a failed removal so the hold buttons start again from zero.
-const epoch = ref(0)
+/** The Slot whose row shows the date and time field (#85), one at a time, and the Berlin time in it. */
+const changingId = ref<string | null>(null)
+const changedTime = ref('')
+const saving = ref(false)
 
 watch(() => props.open, (open) => {
-  if (open) now.value = utcToBerlin(new Date())
+  if (!open) return
+  now.value = utcToBerlin(new Date())
+  changingId.value = null
 })
 
 const rows = computed(() => props.slots.map(slot => ({ ...slot, label: formatSlotWhen(new Date(slot.startsAt)) })))
 
 const full = computed(() => props.slots.length >= SLOTS_MAX)
 
-/** The Slot rule the new time breaks, as the server would judge it (shared/event.ts). */
-const problem = computed(() => {
-  if (newSlot.value === '') return null
-  const existing = props.slots.map(slot => new Date(slot.startsAt))
-  return slotProblems([berlinToUtc(newSlot.value)], existing, berlinToUtc(now.value))[0] ?? null
-})
-
-const problemText = computed(() => {
-  if (problem.value === 'in_past') return t('error.slotPast')
-  if (problem.value === 'duplicate_slot') return t('error.slotDuplicate')
-  return undefined
-})
-
-const addBlocked = computed(() => newSlot.value === '' || problem.value !== null)
-
-/** What a failed save says, from the reason the server gives. */
-function failureText(failure: unknown): string {
-  return t(apiErrorKey(failure, 'error.saveFailed', { invalid_time: 'mvp.slots.incomplete', wrong_phase: 'mvp.slots.locked' }), { max: SLOTS_MAX })
+/**
+ * The Slot rule a Berlin time breaks, as the server would judge it (shared/event.ts), as copy. A Slot being
+ * changed is left out, so its own minute is fine (#85).
+ */
+function problemText(value: string, changing: string | null = null) {
+  if (value === '') return undefined
+  const existing = props.slots.filter(slot => slot.id !== changing).map(slot => new Date(slot.startsAt))
+  const problem = slotProblems([berlinToUtc(value)], existing, berlinToUtc(now.value))[0]
+  return problem ? t(errorCopyKey(problem)) : undefined
 }
 
-async function add() {
+const addProblem = computed(() => problemText(newSlot.value))
+const addBlocked = computed(() => newSlot.value === '' || addProblem.value !== undefined)
+const changeProblem = computed(() => problemText(changedTime.value, changingId.value))
+const changeBlocked = computed(() => changedTime.value === '' || changeProblem.value !== undefined)
+
+/** The editor's own copy for two refusals; the rest is the shared error copy. */
+const errorKeys = { invalid_time: 'mvp.slots.incomplete', wrong_phase: 'mvp.slots.locked' }
+
+function add() {
   if (addBlocked.value || busy.value) return
-  busy.value = true
-  try {
-    await $fetch(`/api/e/${props.slug}/slots`, { method: 'POST', body: { startsAt: newSlot.value } })
-    newSlot.value = ''
-    emit('changed')
-  }
-  catch (failure) {
-    toast({ tone: 'error', text: failureText(failure) })
-  }
-  finally {
-    busy.value = false
-  }
+  send('POST', 'slots', { body: { startsAt: newSlot.value }, busy, errorKeys, done: () => (newSlot.value = '') })
 }
 
-async function remove(slotId: string) {
-  try {
-    await $fetch(`/api/e/${props.slug}/slots/${slotId}`, { method: 'DELETE' })
-    emit('changed')
-  }
-  catch (failure) {
-    epoch.value += 1
-    toast({ tone: 'error', text: failureText(failure) })
-  }
+function startChange(slot: EditableSlot) {
+  changingId.value = slot.id
+  changedTime.value = utcToBerlin(new Date(slot.startsAt))
+}
+
+/** Moves the Slot to the new time (#85). The row closes once the server took it; a Slot taken meanwhile says so. */
+function saveChange() {
+  if (changeBlocked.value || saving.value) return
+  const body = { startsAt: changedTime.value }
+  send<ChangedSlot>('PATCH', `slots/${changingId.value}`, { body, busy: saving, errorKeys, done: () => (changingId.value = null) })
+}
+
+function remove(slotId: string) {
+  return send('DELETE', `slots/${slotId}`, { errorKeys })
 }
 </script>
 
@@ -117,26 +116,65 @@ async function remove(slotId: string) {
           :key="row.id"
           class="flex flex-col gap-2 rounded-xl border-(length:--cp-bw) border-line bg-surface p-3"
         >
-          <div class="flex items-center gap-3">
-            <span class="flex-1 font-num text-[16px] font-bold">{{ row.label }}</span>
-            <IconButton
-              v-if="row.votes === 0"
-              :icon="X"
-              :label="t('mvp.slots.remove')"
-              @click="remove(row.id)"
+          <form
+            v-if="row.id === changingId"
+            novalidate
+            class="flex flex-col gap-3"
+            @submit.prevent="saveChange"
+          >
+            <DateTimeField
+              v-model="changedTime"
+              :label="row.label"
+              :error="changeProblem"
             />
-          </div>
-          <template v-if="row.votes > 0">
-            <p class="m-0 text-small font-bold text-ink-2">
-              {{ t('mvp.slots.votesLost', { n: row.votes }, row.votes) }}
+            <p
+              v-if="row.votes > 0"
+              class="m-0 text-small font-bold text-pretty text-ink-2"
+            >
+              {{ t('mvp.slots.votesKept') }}
             </p>
-            <HoldToConfirmButton
-              :key="`${row.id}-${epoch}`"
-              variant="hot"
-              :label="t('mvp.slots.remove')"
-              :icon="X"
-              @confirm="remove(row.id)"
-            />
+            <div class="flex flex-wrap items-center gap-3">
+              <AppButton
+                type="submit"
+                :aria-disabled="changeBlocked || saving ? 'true' : undefined"
+              >
+                {{ t('common.save') }}
+              </AppButton>
+              <AppButton
+                variant="secondary"
+                @click="changingId = null"
+              >
+                {{ t('common.cancel') }}
+              </AppButton>
+            </div>
+          </form>
+          <template v-else>
+            <div class="flex items-center gap-3">
+              <span class="flex-1 font-num text-[16px] font-bold">{{ row.label }}</span>
+              <AppButton
+                variant="secondary"
+                @click="startChange(row)"
+              >
+                {{ t('mvp.slots.change') }}
+              </AppButton>
+              <IconButton
+                v-if="row.votes === 0"
+                :icon="X"
+                :label="t('mvp.slots.remove')"
+                @click="remove(row.id)"
+              />
+            </div>
+            <template v-if="row.votes > 0">
+              <p class="m-0 text-small font-bold text-ink-2">
+                {{ t('mvp.slots.votesLost', { n: row.votes }, row.votes) }}
+              </p>
+              <HoldToConfirmButton
+                variant="hot"
+                :label="t('mvp.slots.remove')"
+                :icon="X"
+                :action="() => remove(row.id)"
+              />
+            </template>
           </template>
         </li>
       </ul>
@@ -151,7 +189,7 @@ async function remove(slotId: string) {
       <DateTimeField
         v-model="newSlot"
         :label="t('mvp.slots.newLabel')"
-        :error="problemText"
+        :error="addProblem"
       />
       <p class="m-0 text-small text-pretty text-ink-2">
         {{ t('mvp.slots.addHelp', { max: SLOTS_MAX }) }}

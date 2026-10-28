@@ -1,17 +1,20 @@
-import type { VoteValue } from './poll'
+import type { VoteRow, VoteValue } from './poll'
+import { characterCount } from './text'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
-/** Event name: 1 to this many characters after trimming (emoji count as one). */
+/** Event name: 1 to this many characters after trimming (an emoji counts as one, as the User sees it (characterCount)). */
 export const EVENT_NAME_MAX = 60
 /** Slots in a Date poll. */
-export const SLOTS_MAX = 8
+export const SLOTS_MAX = 16
 /** Sessions of one Event (ADR 0011, #49). */
 export const SESSIONS_MAX = 8
+/** How long a Session lasts in a calendar: 7 h (#1). The calendar file and the Google and Outlook links use it (#81). */
+export const SESSION_DURATION_MS = 7 * 60 * 60_000
 
-/** An Event name's length as the rules count it: trimmed, an emoji counts as one. */
+/** An Event name's length as the rules count it: trimmed, an emoji counts as one, as the User sees it (characterCount). */
 export function eventNameLength(raw: string): number {
-  return [...raw.trim()].length
+  return characterCount(raw.trim())
 }
 
 export type SlotProblem = 'in_past' | 'duplicate_slot'
@@ -46,15 +49,44 @@ export function slotsEditable(phase: Phase): boolean {
   return phase === 'poll'
 }
 
-/** One Session of an Event (#48, #49). Times are UTC ISO strings. */
-export interface SessionView {
+/** What `PUT /api/e/:slug/slots/:slotId/vote` returns: the Vote as saved, with its Note or null (#102). */
+export interface SavedVote { slotId: string, value: VoteValue, note: string | null }
+
+/** A Note on a Vote, as listed with the Slot it belongs to (#102). */
+export interface SessionNote { userId: string, value: VoteValue, note: string }
+
+/** A Session with its Date (#48, #49). Times are UTC ISO strings. */
+export interface DatedSessionView {
   id: string
-  /** 1…n in Date order for a Session with a Date; null while it waits for one (server/domain/session.ts). */
+  /**
+   * The number the Session is shown with: 1…n in Date order while the Event has several Sessions, null for the
+   * one Session of an Event (numberedSessions in server/domain/session.ts, #70). The client shows it as it is.
+   */
   number: number | null
-  /** The Date, or null while the Session waits for one from the Date poll. */
-  startsAt: string | null
+  startsAt: string
+  /** Set Date and Reschedule clear the Date a Reopen withdrew. */
+  previousStartsAt: null
+  /** The Notes on the Slot this Session's Date came from (#102); none for a Date set directly. */
+  notes: SessionNote[]
+}
+
+/** A Session still waiting for a Date from the Date poll. Times are UTC ISO strings. */
+export interface UndatedSessionView {
+  id: string
+  number: null
+  startsAt: null
   /** The Date a Reopen withdrew, until the next Date is set. Members see a notice for it. */
   previousStartsAt: string | null
+}
+
+/** One Session of an Event (#48, #49): it has its Date, or it waits for one. */
+export type SessionView = DatedSessionView | UndatedSessionView
+
+/** A Session the Host removed while it had, or had had, a Date (#65). Members see a notice for that Date. */
+export interface RemovedSessionView {
+  id: string
+  /** The Date the removal (or an earlier Reopen) withdrew. */
+  previousStartsAt: string
 }
 
 /** What `GET /api/e/:slug` returns to a Member (#11). Times are UTC ISO strings. */
@@ -67,12 +99,14 @@ export interface EventView {
   }
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
-  /** How many Sessions still wait for a Date. */
+  /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */
+  removedSessions: RemovedSessionView[]
+  /** How many Sessions still wait for a Date: the undated ones in `sessions`, counted by the server. */
   missingDates: number
   viewerId: string
   /** The open Slots only (#52): a Slot that became a Session's Date is left out, with its Votes. */
   slots: { id: string, startsAt: string, past: boolean }[]
-  votes: { slotId: string, userId: string, value: VoteValue }[]
+  votes: VoteRow[]
   members: { id: string, name: string, image: string | null, isHost: boolean }[]
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
@@ -95,7 +129,10 @@ export interface HomeEvent {
   sessionCount: number
   /** How many Sessions still wait for a Date. */
   missingDates: number
-  /** The next upcoming Session, else the latest passed one; null while no Session has a Date. */
+  /**
+   * The next upcoming Session, else the latest passed one; null while no Session has a Date. Its number is the one
+   * it is shown with: null for the one Session of an Event (as in DatedSessionView, #70).
+   */
   nextSession: { number: number | null, startsAt: string } | null
   /** When the Event was created; picks the latest open poll for the Construction page (#12). */
   createdAt: string
@@ -112,4 +149,51 @@ export interface HomeEvent {
 /** What `GET /api/e` returns, already in Home order (open polls to vote on, other open polls, Dates upcoming first). */
 export interface HomeView {
   events: HomeEvent[]
+}
+
+/** What `POST /api/e` returns: the new Event's link and its Invite link (#1, #16). */
+export interface CreatedEvent {
+  slug: string
+  inviteUrl: string
+}
+
+/** What `PATCH /api/e/:slug/slots/:slotId` returns: the Slot the Host moved and its new time, a UTC ISO string (#85). */
+export interface ChangedSlot {
+  slotId: string
+  startsAt: string
+}
+
+/** What `POST /api/e/:slug/confirm` returns: the Date the Session took from its Slot, a UTC ISO string, and the Phase (#52). */
+export interface DateConfirmed { startsAt: string, phase: Phase }
+/** What `POST /api/e/:slug/sessions` returns: the new Session's id and the Phase (#55). */
+export interface SessionAdded { id: string, phase: Phase }
+/** What `DELETE /api/e/:slug/sessions/:id` returns: the removed Session's id and the Phase (#55). */
+export interface SessionRemoved { id: string, phase: Phase }
+/** What `POST /api/e/:slug/sessions/:id/reopen` returns: the Phase only (#14, #55). */
+export interface SessionReopened { phase: Phase }
+/** What `POST /api/e/:slug/sessions/:id/reschedule` returns: the Session's new Date, a UTC ISO string, and the Phase (#53). */
+export interface SessionRescheduled { startsAt: string, phase: Phase }
+/** What `POST /api/e/:slug/slots` returns: the new Slot's id and its time, a UTC ISO string (#15). */
+export interface SlotAdded { slotId: string, startsAt: string }
+/** What `DELETE /api/e/:slug/slots/:slotId` returns: the removed Slot's id and how many Votes went with it (#15). */
+export interface SlotRemoved { slotId: string, votesDeleted: number }
+
+/** What `POST /api/e/:slug/rotate` returns: the new Invite link (#16). The old one answers 404 from now on. */
+export interface RotatedInvite {
+  inviteUrl: string
+}
+
+/**
+ * What `GET /api/invite/:invite` returns to anyone, signed out too (screen 07, ADR 0006): the Event name and the
+ * Host's Display name and avatar, nothing else.
+ */
+export interface InvitePreview {
+  eventName: string
+  host: { name: string, image: string | null }
+}
+
+/** What `POST /api/invite/:invite` returns: the Event the User is a Member of now, and whether this call added them (#10). */
+export interface JoinedEvent {
+  slug: string
+  joined: boolean
 }

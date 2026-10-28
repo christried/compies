@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { CalendarCheck, Check, Sparkles, X } from '@lucide/vue'
+import { CalendarCheck, Sparkles } from '@lucide/vue'
 import { VOTE_VALUES, type VoteValue } from '~~/shared/poll'
+import type { NoteRow } from '~/utils/notes'
+import { VOTE_LOOK } from '~/utils/vote-look'
 
 // One proposed Slot in the poll (02-components § PollSlotCard, screen M3). The three vote options are
 // a radiogroup labelled with the Slot. A past Slot is marked vorbei and cannot be voted on. The
@@ -20,26 +22,31 @@ const props = defineProps<{
   myVote: VoteValue | null
   best: boolean
   canPick?: boolean
+  /** Everyone's Notes on this Slot, in the matrix's order (#102). */
+  notes: NoteRow[]
+  /** This User's own Note on the Slot. */
+  myNote: string | null
 }>()
 
-const emit = defineEmits<{ vote: [value: VoteValue], pick: [] }>()
+const emit = defineEmits<{ vote: [value: VoteValue], pick: [], note: [text: string] }>()
 
 const { t } = useI18n()
+
+const editor = useTemplateRef<{ open: (focus?: boolean) => void, closeIfUntouched: () => void }>('editor')
 
 const label = computed(() => `${props.timeslot.day} ${props.timeslot.time}`)
 const share = (count: number) => (props.total > 0 ? `${(count / props.total) * 100}%` : '0%')
 
-const options = computed(() => [
-  { value: 'yes', label: t('poll.yes'), icon: Check, fill: 'bg-success text-on-success' },
-  { value: 'maybe', label: t('poll.maybe'), fill: 'bg-warning text-on-warning' },
-  { value: 'no', label: t('poll.no'), icon: X, fill: 'bg-error text-on-error' },
-])
+const options = computed(() => VOTE_VALUES.map(value => ({ value, label: t(VOTE_LOOK[value].labelKey), icon: VOTE_LOOK[value].icon, fill: VOTE_LOOK[value].fill })))
 
 // The control reports a string; only a known vote value is emitted, so no cast is needed.
 function choose(value: string) {
   const vote = VOTE_VALUES.find(known => known === value)
   if (!vote || props.timeslot.past) return
   emit('vote', vote)
+  // Meh is often a counter-offer, so its Note field opens by itself, without taking the focus (#102).
+  if (vote === 'maybe' && !props.myNote) editor.value?.open(false)
+  else if (vote !== 'maybe') editor.value?.closeIfUntouched()
 }
 </script>
 
@@ -86,12 +93,20 @@ function choose(value: string) {
       <CpNum :value="counts.maybe" /> {{ t('poll.maybe') }},
       <CpNum :value="counts.no" /> {{ t('poll.no') }}
     </span>
+    <NoteList :notes="notes" />
     <SegmentedControl
       :model-value="myVote ?? ''"
       :options="options"
       :label="label"
       :disabled="timeslot.past"
       @update:model-value="choose"
+    />
+    <NoteEditor
+      ref="editor"
+      :note="myNote"
+      :voted="myVote !== null"
+      :past="timeslot.past"
+      @save="text => emit('note', text)"
     />
     <AppButton
       v-if="canPick && !timeslot.past"

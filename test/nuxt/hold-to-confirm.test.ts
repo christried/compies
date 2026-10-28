@@ -1,4 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import HoldToConfirmButton from '~/components/HoldToConfirmButton.vue'
 
@@ -46,6 +47,46 @@ describe('HoldToConfirmButton', () => {
     await page.get('button').trigger('keydown', { key: ' ', repeat: true })
     vi.advanceTimersByTime(1000)
     expect(page.emitted('confirm')).toHaveLength(1)
+  })
+
+  it('runs its action after the hold and shows done once the action succeeds', async () => {
+    let succeed: (saved: boolean) => void = () => {}
+    const action = vi.fn(() => new Promise<boolean>(resolve => (succeed = resolve)))
+    const page = await mountSuspended(HoldToConfirmButton, { props: { label: 'Erneuern', doneLabel: 'Erneuert', action } })
+
+    await page.get('button').trigger('pointerdown')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(action).toHaveBeenCalledTimes(1)
+    expect(page.emitted('confirm')).toHaveLength(1)
+    expect(page.text()).not.toContain('Erneuert')
+
+    // While the action runs, another hold starts nothing.
+    await page.get('button').trigger('pointerup')
+    await page.get('button').trigger('pointerdown')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(action).toHaveBeenCalledTimes(1)
+
+    succeed(true)
+    await flushPromises()
+    expect(page.get('button').text()).toBe('Erneuert')
+    expect(page.get('[role="status"]').text()).toBe('Erneuert')
+  })
+
+  it('goes back to idle when its action fails, so the next hold runs it again', async () => {
+    const action = vi.fn(() => Promise.resolve(false))
+    const page = await mountSuspended(HoldToConfirmButton, { props: { label: 'Erneuern', doneLabel: 'Erneuert', action } })
+
+    await page.get('button').trigger('pointerdown')
+    await vi.advanceTimersByTimeAsync(1000)
+    await flushPromises()
+
+    expect(page.get('button').text()).toBe('Erneuern')
+    expect(page.get('[role="status"]').text()).toBe('')
+
+    await page.get('button').trigger('pointerup')
+    await page.get('button').trigger('pointerdown')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(action).toHaveBeenCalledTimes(2)
   })
 
   it('does not respond while disabled, and says why', async () => {
