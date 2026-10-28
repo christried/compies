@@ -133,7 +133,7 @@ The Selection mode in which the Host spins a wheel of games from the Game pool; 
 _Avoid_: Wheel of fortune, roulette, random pick
 
 **Hidden wheel**:
-A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else sees placeholder names until a game is drawn.
+A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else sees placeholder names until a game is drawn, and never learns the games that were not drawn.
 _Avoid_: Blind wheel, secret wheel
 
 **Veto**:
@@ -143,6 +143,18 @@ _Avoid_: Ban (a ban removes a game before it is drawn), skip, reject
 **Veto allowance**:
 The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host.
 _Avoid_: Vetoes per player, veto budget
+
+**Tiebreaker**:
+An extra game after the Game count, played only by the Parties tied for first place and drawn by a Lucky Wheel from the Tiebreaker pool; it repeats until one Party wins.
+_Avoid_: Decider, overtime, sudden death
+
+**Tiebreaker pool**:
+The games an Event keeps apart for the Tiebreaker only.
+_Avoid_: Backup pool
+
+**Award ceremony**:
+The show that closes a finished Event, started by the Host and seen by every Member at the same moment; the Host can start it again (UI: Siegerehrung).
+_Avoid_: Ceremony screen, finale, results screen
 
 ## App
 
