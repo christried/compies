@@ -33,10 +33,15 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(400, 'invalid_clip'))).toBe('error.clipInvalid')
   })
 
+  it('explains the player count, the Formats and the edit refusal (#142)', () => {
+    expect(apiErrorKey(refusal(400, 'invalid_players'))).toBe('error.playersInvalid')
+    expect(apiErrorKey(refusal(400, 'invalid_formats'))).toBe('error.formatsInvalid')
+    expect(apiErrorKey(refusal(403, 'not_game_editor'))).toBe('error.notGameEditor')
+  })
+
   it('explains the refusals of a game image (#143)', () => {
     expect(apiErrorKey(refusal(413, 'image_too_large'))).toBe('error.imageTooLarge')
     expect(apiErrorKey(refusal(415, 'image_not_webp'))).toBe('error.imageNotWebp')
-    expect(apiErrorKey(refusal(403, 'not_game_editor'))).toBe('error.notGameEditor')
   })
 
   it('falls back for reasons it cannot explain, so a 400 is not always a past Slot', () => {

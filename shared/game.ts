@@ -9,6 +9,16 @@ export const CLIP_LENGTH_MIN = 5
 export const CLIP_LENGTH_MAX = 60
 /** Latest clip start: 11:59:59. */
 export const CLIP_START_MAX = 43_199
+/** The most players a recommended count can name (#142). */
+export const PLAYERS_MAX = 99
+
+/** A recommended player count as the User types it: a whole number from 1 to PLAYERS_MAX. Null for anything else. */
+export function parsePlayerCount(text: string): number | null {
+  const trimmed = text.trim()
+  if (!/^\d{1,2}$/.test(trimmed)) return null
+  const players = Number(trimmed)
+  return players >= 1 && players <= PLAYERS_MAX ? players : null
+}
 
 /** A game image is one WebP of the card's 16:10 cover, 512 px wide, up to about 200 kB (#143). */
 export const GAME_IMAGE_MAX_BYTES = 200_000
@@ -44,7 +54,11 @@ export interface GameView {
   canEdit: boolean
 }
 
-export interface GameList { games: GameView[] }
+/** The games the filters keep, and `total`: every game in the library, whatever the filters (#142, for the search placeholder). */
+export interface GameList {
+  games: GameView[]
+  total: number
+}
 
 /** A clip start as the User types it: seconds (`72`), `m:ss` (`1:12`) or `h:mm:ss`, up to CLIP_START_MAX. Null for anything else. */
 export function parseClipTime(text: string): number | null {

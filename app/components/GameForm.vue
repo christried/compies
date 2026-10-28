@@ -2,18 +2,20 @@
 import { ChevronRight } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
 import {
-  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, GAME_NAME_MAX, clipTime, parseClipTime, type GameView,
+  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, GAME_NAME_MAX, clipTime, parseClipTime, parsePlayerCount, type GameView,
 } from '~~/shared/game'
+import { FORMATS, type Format } from '~~/shared/settings'
 import { characterCount } from '~~/shared/text'
 import { parseYouTubeId } from '~~/shared/youtube'
 
-// Create a game (screen 24, `?s=edit`, #141): name, YouTube link, start and length, with a live preview that
-// plays the clip as a Session will. An empty link is fine (a game without a clip); a link that is no
-// YouTube link, or that the player cannot play, is „YouTube-Link kaputt“ and blocks saving. The server is the
+// Create or edit a game (screen 24, `?s=edit`, #141, #142): name, YouTube link, start and length, with a live
+// preview that plays the clip as a Session will, and the recommended player count and suitable Formats. An
+// empty link is fine (a game without a clip); a link that is no YouTube link, or that the player cannot play,
+// is „YouTube-Link kaputt“ and blocks saving. With `game` the form edits that game (PATCH). The server is the
 // final judge. No page chrome, so a sheet can hold it (#146); the two columns follow the width of the
 // form itself, not the viewport.
 const props = defineProps<{
-  /** Prefill (#142 adds the edit mode). */
+  /** The game to edit (#142); without it the form creates one. */
   game?: GameView
 }>()
 
@@ -30,6 +32,9 @@ const name = ref(props.game?.name ?? '')
 const link = ref(props.game?.youtubeId ? `https://youtu.be/${props.game.youtubeId}` : '')
 const startText = ref(clipTime(props.game?.clipStart ?? 0))
 const lengthText = ref(String(props.game?.clipLength ?? CLIP_LENGTH_DEFAULT))
+const playersFromText = ref(props.game?.playersMin == null ? '' : String(props.game.playersMin))
+const playersToText = ref(props.game?.playersMax == null ? '' : String(props.game.playersMax))
+const formats = ref<Format[]>([...(props.game?.formats ?? [])])
 const attempted = ref(false)
 const saving = ref(false)
 const failure = ref<string | null>(null)
@@ -71,13 +76,31 @@ const length = computed(() => {
 })
 const lengthError = computed(() => (length.value === null ? t('gameEdit.lengthInvalid') : undefined))
 
+// The player count: both bounds optional; an empty field is open, anything that is no whole number from 1 to 99,
+// or a minimum above the maximum, is invalid (#142). The server checks the same rule.
+const fromInvalid = computed(() => playersFromText.value.trim() !== '' && parsePlayerCount(playersFromText.value) === null)
+const toInvalid = computed(() => playersToText.value.trim() !== '' && parsePlayerCount(playersToText.value) === null)
+const rangeInverted = computed(() => {
+  const min = parsePlayerCount(playersFromText.value)
+  const max = parsePlayerCount(playersToText.value)
+  return min !== null && max !== null && min > max
+})
+const fromError = computed(() => (fromInvalid.value ? t('error.playersInvalid') : undefined))
+const toError = computed(() => (toInvalid.value || rangeInverted.value ? t('error.playersInvalid') : undefined))
+
 /** Why the CTA is blocked, or null when the form can be sent. */
 const blocker = computed<string | null>(() => {
   if (trimmedName.value === '') return t('gameEdit.nameRequired')
   if (nameTooLong.value) return t('error.nameTooLong', { max: GAME_NAME_MAX })
   if (linkError.value) return t('gameEdit.linkRequired')
+  if (fromError.value || toError.value) return t('error.playersInvalid')
   return startError.value ?? lengthError.value ?? null
 })
+
+function toggleFormat(format: Format) {
+  // Kept in FORMATS order, like the server stores them.
+  formats.value = FORMATS.filter(option => (option === format ? !formats.value.includes(option) : formats.value.includes(option)))
+}
 
 /**
  * Sends the cropped image once the game exists (#143). A failed upload does not undo the game: it is saved, the
@@ -107,11 +130,20 @@ async function submit() {
   if (blocker.value || saving.value || start.value === null || length.value === null) return
   saving.value = true
   failure.value = null
+  const body = {
+    name: trimmedName.value,
+    youtubeUrl: link.value.trim(),
+    clipStart: start.value,
+    clipLength: length.value,
+    playersMin: parsePlayerCount(playersFromText.value),
+    playersMax: parsePlayerCount(playersToText.value),
+    formats: FORMATS.filter(format => formats.value.includes(format)),
+  }
   try {
-    const game = await $fetch<GameView>('/api/games', {
-      method: 'POST',
-      body: { name: trimmedName.value, youtubeUrl: link.value.trim(), clipStart: start.value, clipLength: length.value },
-    })
+    // An image picked while editing is uploaded too, once the game has been saved (#143).
+    const game = props.game
+      ? await $fetch<GameView>(`/api/games/${props.game.id}`, { method: 'PATCH', body })
+      : await $fetch<GameView>('/api/games', { method: 'POST', body })
     emit('saved', await uploadImage(game))
   }
   catch (error) {
@@ -168,6 +200,48 @@ async function submit() {
             autocomplete="off"
           />
         </div>
+
+        <fieldset class="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
+          <legend class="mb-1.5 text-[14px] font-bold">
+            {{ t('gameEdit.players') }}
+          </legend>
+          <div class="grid grid-cols-2 gap-2.5">
+            <TextField
+              v-model="playersFromText"
+              :label="t('gameEdit.playersFrom')"
+              :error="fromError"
+              inputmode="numeric"
+              autocomplete="off"
+            />
+            <TextField
+              v-model="playersToText"
+              :label="t('gameEdit.playersTo')"
+              :error="toError"
+              inputmode="numeric"
+              autocomplete="off"
+            />
+          </div>
+        </fieldset>
+
+        <div class="flex flex-col gap-2">
+          <span class="text-[14px] font-bold">{{ t('gameEdit.formats') }}</span>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="format in FORMATS"
+              :key="format"
+              type="button"
+              :aria-pressed="formats.includes(format) ? 'true' : 'false'"
+              class="outline-memphis inline-flex h-11 items-center rounded-pill border-(length:--cp-bw) px-4 text-small font-bold transition-colors"
+              :class="formats.includes(format) ? 'border-line bg-ink text-paper' : 'border-line bg-surface text-ink hover:bg-paper-2'"
+              @click="toggleFormat(format)"
+            >
+              {{ t(`library.format.${format}`) }}
+            </button>
+          </div>
+        </div>
+        <p class="m-0 text-small text-ink-2">
+          {{ t('gameEdit.playersNote') }}
+        </p>
       </div>
 
       <div class="flex min-w-0 flex-col gap-2.5">
@@ -207,7 +281,7 @@ async function submit() {
             :aria-disabled="blocker !== null || saving"
             :aria-describedby="blocker ? 'game-blocker' : undefined"
           >
-            {{ saving ? t('gameEdit.saving') : t('library.create') }}
+            {{ saving ? t('gameEdit.saving') : game ? t('gameEdit.saveChanges') : t('library.create') }}
             <AppIcon
               :icon="ChevronRight"
               :size="18"

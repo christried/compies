@@ -97,7 +97,7 @@ describe('parseGameInput', () => {
     it.each([[undefined], [null], ['']])('gives a game without a clip for %j', (youtubeUrl) => {
       expect(parseGameInput({ ...valid, youtubeUrl })).toEqual({
         ok: true,
-        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30 },
+        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] },
       })
     })
 
@@ -139,6 +139,51 @@ describe('parseGameInput', () => {
       [{ clipLength: '30' }],
     ])('refuses %j', (clip) => {
       expect(parseGameInput({ ...valid, ...clip })).toEqual({ ok: false, error: 'invalid_clip' })
+    })
+  })
+
+  describe('player count (#142)', () => {
+    it.each([
+      [{ playersMin: 2, playersMax: 10 }, 2, 10],
+      [{ playersMin: 2 }, 2, null],
+      [{ playersMax: 10 }, null, 10],
+      [{ playersMin: null, playersMax: 10 }, null, 10],
+      [{ playersMin: 1, playersMax: 1 }, 1, 1],
+      [{ playersMin: 1, playersMax: 99 }, 1, 99],
+      [{}, null, null],
+    ])('reads %j as %s to %s', (fields, min, max) => {
+      expect(parseGameInput({ ...valid, ...fields })).toMatchObject({ ok: true, game: { playersMin: min, playersMax: max } })
+    })
+
+    it.each([
+      [{ playersMin: 0 }],
+      [{ playersMax: 100 }],
+      [{ playersMin: 2.5 }],
+      [{ playersMax: '10' }],
+      [{ playersMin: 5, playersMax: 4 }],
+    ])('refuses %j with invalid_players', (fields) => {
+      expect(parseGameInput({ ...valid, ...fields })).toEqual({ ok: false, error: 'invalid_players' })
+    })
+  })
+
+  describe('Formats (#142)', () => {
+    it('stores no Format when none is sent', () => {
+      expect(parseGameInput(valid)).toMatchObject({ ok: true, game: { formats: [] } })
+    })
+
+    it('stores the Formats in FORMATS order, whatever the order sent', () => {
+      expect(parseGameInput({ ...valid, formats: ['ffa', 'teams'] })).toMatchObject({ ok: true, game: { formats: ['teams', 'ffa'] } })
+      expect(parseGameInput({ ...valid, formats: ['teams', 'ffa'] })).toMatchObject({ ok: true, game: { formats: ['teams', 'ffa'] } })
+    })
+
+    it.each([
+      [['teams', 'teams']],
+      [['wild']],
+      ['teams'],
+      [null],
+      [[1]],
+    ])('refuses %j with invalid_formats', (formats) => {
+      expect(parseGameInput({ ...valid, formats })).toEqual({ ok: false, error: 'invalid_formats' })
     })
   })
 })
