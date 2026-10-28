@@ -6,11 +6,13 @@ import { POINTS_MAX, pointsFor, risingPlace, type PointsPreset, type PointsTable
 // really have at this team count, one row per team, and for a custom table a NumberStepper per row. A place
 // that would earn more than the place above gets the error on its own row (aria-describedby) — the step
 // that holds this editor blocks Weiter for it, the server refuses it (points_rising).
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   modelValue: PointsTable
   /** One row per team. */
   teamCount: number
-}>()
+  /** Why the table cannot change now (#147): the preset cards and the places are locked, the chosen preset stays. */
+  lockedReason?: string
+}>(), { lockedReason: undefined })
 
 const emit = defineEmits<{ 'update:modelValue': [value: PointsTable] }>()
 
@@ -46,6 +48,7 @@ const rising = computed(() => (custom.value ? risingPlace(props.modelValue.value
       :options="options"
       :label="t('stepper.points.label')"
       :columns="3"
+      :locked-reason="lockedReason"
       @update:model-value="choose"
     />
 
@@ -68,6 +71,7 @@ const rising = computed(() => (custom.value ? risingPlace(props.modelValue.value
           :min="0"
           :max="POINTS_MAX"
           :label="t('stepper.points.stepper', { n: index + 1 })"
+          :locked-reason="lockedReason"
           :aria-describedby="rising === index + 1 ? errorId : undefined"
           @update:model-value="setPlace(index, $event)"
         />

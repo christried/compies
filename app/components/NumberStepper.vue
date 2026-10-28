@@ -5,7 +5,7 @@ import { Minus, Plus } from '@lucide/vue'
 // points per place, Veto allowance. The group is a spinbutton (ArrowUp/ArrowDown count); the value sits in an
 // <output>. At a limit the button stays focusable but is aria-disabled, does nothing and says why: as its
 // title and as a visually hidden description. A parent that has a tighter limit than `max` (24 Players in
-// teams) just passes the lower `max` with its own reason.
+// teams) just passes the lower `max` with its own reason. `lockedReason` locks both buttons with that reason (#147).
 const props = withDefaults(defineProps<{
   modelValue: number
   min: number
@@ -17,9 +17,11 @@ const props = withDefaults(defineProps<{
   label: string
   minReason?: string
   maxReason?: string
+  /** Both buttons are aria-disabled and say this: the value cannot change now. */
+  lockedReason?: string
   /** lg = the big Game count stepper (56 px buttons, 72 px number). */
   size?: 'md' | 'lg'
-}>(), { step: 1, unit: undefined, minReason: undefined, maxReason: undefined, size: 'md' })
+}>(), { step: 1, unit: undefined, minReason: undefined, maxReason: undefined, lockedReason: undefined, size: 'md' })
 
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 
@@ -27,8 +29,10 @@ const { t } = useI18n()
 const minId = useId()
 const maxId = useId()
 
-const atMin = computed(() => props.modelValue - props.step < props.min)
-const atMax = computed(() => props.modelValue + props.step > props.max)
+const atMin = computed(() => Boolean(props.lockedReason) || props.modelValue - props.step < props.min)
+const atMax = computed(() => Boolean(props.lockedReason) || props.modelValue + props.step > props.max)
+const minText = computed(() => props.lockedReason ?? props.minReason)
+const maxText = computed(() => props.lockedReason ?? props.maxReason)
 
 function change(direction: 1 | -1) {
   if (direction === 1 ? atMax.value : atMin.value) return
@@ -60,8 +64,8 @@ const VALUE = { md: 'min-w-11 text-[28px]', lg: 'min-w-[90px] text-[72px]' }
       type="button"
       :aria-label="t('stepper.number.less', { label })"
       :aria-disabled="atMin ? 'true' : undefined"
-      :aria-describedby="atMin && minReason ? minId : undefined"
-      :title="atMin ? minReason : undefined"
+      :aria-describedby="atMin && minText ? minId : undefined"
+      :title="atMin ? minText : undefined"
       class="grid flex-none place-items-center rounded-pill border-(length:--cp-bw) border-line bg-surface shadow-sm lift focus-visible:focus-ring aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0"
       :class="BUTTON[size]"
       @click="change(-1)"
@@ -72,10 +76,10 @@ const VALUE = { md: 'min-w-11 text-[28px]', lg: 'min-w-[90px] text-[72px]' }
       />
     </button>
     <span
-      v-if="atMin && minReason"
+      v-if="atMin && minText"
       :id="minId"
       class="sr-only"
-    >{{ minReason }}</span>
+    >{{ minText }}</span>
     <output
       :key="modelValue"
       class="animate-tick text-center font-num leading-none"
@@ -89,8 +93,8 @@ const VALUE = { md: 'min-w-11 text-[28px]', lg: 'min-w-[90px] text-[72px]' }
       type="button"
       :aria-label="t('stepper.number.more', { label })"
       :aria-disabled="atMax ? 'true' : undefined"
-      :aria-describedby="atMax && maxReason ? maxId : undefined"
-      :title="atMax ? maxReason : undefined"
+      :aria-describedby="atMax && maxText ? maxId : undefined"
+      :title="atMax ? maxText : undefined"
       class="grid flex-none place-items-center rounded-pill border-(length:--cp-bw) border-line bg-surface shadow-sm lift focus-visible:focus-ring aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0"
       :class="BUTTON[size]"
       @click="change(1)"
@@ -101,9 +105,9 @@ const VALUE = { md: 'min-w-11 text-[28px]', lg: 'min-w-[90px] text-[72px]' }
       />
     </button>
     <span
-      v-if="atMax && maxReason"
+      v-if="atMax && maxText"
       :id="maxId"
       class="sr-only"
-    >{{ maxReason }}</span>
+    >{{ maxText }}</span>
   </div>
 </template>

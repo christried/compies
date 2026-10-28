@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { Crown, FerrisWheel, Hand, Scale, Swords } from '@lucide/vue'
 import { chooseMode, setHiddenWheel, setVetoAllowance, type EventDraft } from '~/utils/event-draft'
-import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN } from '~~/shared/settings'
+import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, type SettingsFloors } from '~~/shared/settings'
 
 // Step 5: the Selection mode (#145). Lucky Wheel and Admin-Wahl are open; the other three are shown as „Bald
 // verfügbar“ so the Host knows what is coming. With the Lucky Wheel: Rad verdecken and the Veto allowance,
-// both kept in the draft's wheel options while Admin-Wahl is chosen. The step never blocks.
+// both kept in the draft's wheel options while Admin-Wahl is chosen. The step never blocks. In the settings editor
+// (#147) `lockedReason` locks the mode (the Event is running; Rad verdecken and the Veto allowance stay open) and
+// `floors` keeps the Veto allowance from going below what a Party has spent.
+const props = defineProps<{
+  lockedReason?: string
+  floors?: SettingsFloors
+}>()
 const draft = defineModel<EventDraft>({ required: true })
 const blocker = defineModel<string | null>('blocker', { default: null })
 
@@ -27,15 +33,23 @@ function choose(value: string) {
   if (value === 'lucky_wheel' || value === 'admin_pick') draft.value = chooseMode(draft.value, value)
 }
 
+const vetoMin = computed(() => Math.max(VETO_ALLOWANCE_MIN, props.floors?.vetoAllowance ?? VETO_ALLOWANCE_MIN))
+const vetoMinReason = computed(() => (vetoMin.value > VETO_ALLOWANCE_MIN ? t('setup.mode.vetoesFloor', { n: vetoMin.value }) : t('setup.mode.vetoesMin')))
+
 const wheel = computed(() => draft.value.settings.selectionMode === 'lucky_wheel')
 </script>
 
 <template>
   <div class="flex flex-col gap-[18px]">
+    <SettingLockedNote
+      v-if="lockedReason"
+      :reason="lockedReason"
+    />
     <RadioCardGroup
       :model-value="draft.settings.selectionMode"
       :options="options"
       :label="t('setup.mode.title')"
+      :locked-reason="lockedReason"
       @update:model-value="choose"
     />
     <p class="m-0 text-[14px] text-pretty text-ink-2">
@@ -59,10 +73,10 @@ const wheel = computed(() => draft.value.settings.selectionMode === 'lucky_wheel
         </div>
         <NumberStepper
           :model-value="draft.wheel.vetoAllowance"
-          :min="VETO_ALLOWANCE_MIN"
+          :min="vetoMin"
           :max="VETO_ALLOWANCE_MAX"
           :label="t('setup.mode.vetoes')"
-          :min-reason="t('setup.mode.vetoesMin')"
+          :min-reason="vetoMinReason"
           :max-reason="t('setup.mode.vetoesMax')"
           @update:model-value="draft = setVetoAllowance(draft, $event)"
         />

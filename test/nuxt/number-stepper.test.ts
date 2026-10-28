@@ -80,3 +80,18 @@ describe('NumberStepper', () => {
     expect(page.get('[role="spinbutton"]').attributes('aria-valuemax')).toBe('3')
   })
 })
+
+describe('NumberStepper with a lockedReason', () => {
+  it('locks both buttons with the reason and changes nothing', async () => {
+    const page = await mountStepper({ lockedReason: 'Gesperrt, weil es läuft.' })
+
+    await plus(page).trigger('click')
+    await minus(page).trigger('click')
+
+    expect(plus(page).attributes('aria-disabled')).toBe('true')
+    expect(minus(page).attributes('aria-disabled')).toBe('true')
+    expect(plus(page).attributes('title')).toBe('Gesperrt, weil es läuft.')
+    expect(minus(page).attributes('title')).toBe('Gesperrt, weil es läuft.')
+    expect(page.emitted('update:modelValue')).toBeUndefined()
+  })
+})
