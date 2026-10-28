@@ -29,16 +29,42 @@ describe('imageKey', () => {
   })
 })
 
-describe('canSeeImage (#143)', () => {
+describe('canSeeImage (#143, #148)', () => {
   const game = { id: 'g1', createdBy: 'u1' }
+  const libraryViewer = { canHost: true, isAdmin: false }
+  const nobody = { canHost: false, isAdmin: false }
 
   it('lets library viewers see it', () => {
-    expect(canSeeImage({ viewer: { canHost: true, isAdmin: false }, game })).toBe(true)
-    expect(canSeeImage({ viewer: { canHost: false, isAdmin: true }, game })).toBe(true)
+    expect(canSeeImage({ viewer: libraryViewer, game, poolEvents: [] })).toBe(true)
+    expect(canSeeImage({ viewer: { canHost: false, isAdmin: true }, game, poolEvents: [] })).toBe(true)
+    expect(canSeeImage({ viewer: libraryViewer, game, poolEvents: [{ isHost: false, hiddenWheel: true }] })).toBe(true)
   })
 
-  it('refuses everyone else', () => {
-    expect(canSeeImage({ viewer: { canHost: false, isAdmin: false }, game })).toBe(false)
-    expect(canSeeImage({ viewer: null, game })).toBe(false)
+  it('lets a Member of an Event whose pool holds the game see it while that wheel is not hidden', () => {
+    expect(canSeeImage({ viewer: nobody, game, poolEvents: [{ isHost: false, hiddenWheel: false }] })).toBe(true)
+  })
+
+  it('lets a Member see it when only one of several Events has a visible wheel', () => {
+    const poolEvents = [{ isHost: false, hiddenWheel: true }, { isHost: false, hiddenWheel: false }]
+
+    expect(canSeeImage({ viewer: nobody, game, poolEvents })).toBe(true)
+  })
+
+  it('refuses a Member who is in hidden-wheel Events only', () => {
+    expect(canSeeImage({ viewer: nobody, game, poolEvents: [{ isHost: false, hiddenWheel: true }] })).toBe(false)
+    expect(canSeeImage({ viewer: nobody, game, poolEvents: [{ isHost: false, hiddenWheel: true }, { isHost: false, hiddenWheel: true }] })).toBe(false)
+  })
+
+  it('lets the Host of a hidden-wheel Event see it even without the library permission', () => {
+    expect(canSeeImage({ viewer: nobody, game, poolEvents: [{ isHost: true, hiddenWheel: true }] })).toBe(true)
+  })
+
+  it('refuses everyone else: no pool Event, or signed out', () => {
+    expect(canSeeImage({ viewer: nobody, game, poolEvents: [] })).toBe(false)
+    expect(canSeeImage({ viewer: null, game, poolEvents: [] })).toBe(false)
+  })
+
+  it('refuses a signed-out viewer whatever the Events say', () => {
+    expect(canSeeImage({ viewer: null, game, poolEvents: [{ isHost: true, hiddenWheel: false }] })).toBe(false)
   })
 })
