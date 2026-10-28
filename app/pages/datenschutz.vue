@@ -12,7 +12,7 @@ useHead({ title: () => t('legal.datenschutz.title') })
     <LegalDocument
       doc="datenschutz"
       :sections="[
-        'intro', 'controller', 'overview', 'hosting', 'database', 'signIn', 'avatar', 'cookies',
+        'intro', 'controller', 'overview', 'hosting', 'database', 'storage', 'signIn', 'avatar', 'youtube', 'cookies',
         'security', 'events', 'calendar', 'fonts', 'recipients', 'transfer', 'retention',
         'obligation', 'rights', 'complaint', 'dataSecurity', 'changes',
       ]"

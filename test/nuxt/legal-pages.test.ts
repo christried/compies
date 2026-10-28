@@ -31,6 +31,14 @@ describe('legal pages', () => {
     expect(page.get('main').text()).toContain('Twitch')
   })
 
+  it('name the YouTube player and the Cloudflare R2 image storage', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+
+    expect(page.get('main').text()).toContain('YouTube')
+    expect(page.get('main').text()).toContain('youtube-nocookie')
+    expect(page.get('main').text()).toContain('Cloudflare')
+  })
+
   it('ship no placeholder text', async () => {
     for (const [Page, route] of [[ImpressumPage, '/impressum'], [DatenschutzPage, '/datenschutz']] as const) {
       const page = await mountSuspended(Page, { route })
