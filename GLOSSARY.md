@@ -164,6 +164,10 @@ _Avoid_: Format, draw mode
 The Selection mode in which the Host spins a wheel of games from the Game pool; every game the wheel draws leaves it, whether it is played or vetoed (UI: Glücksrad).
 _Avoid_: Wheel of fortune, roulette, random pick
 
+**Host pick**:
+The Selection mode in which the Host sets every next game (UI: Host-Wahl).
+_Avoid_: Admin pick, Admin-Wahl (Admin means the Platform admin)
+
 **Hidden wheel**:
 A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else sees placeholder names until a game is drawn, and never learns the games that were not drawn.
 _Avoid_: Blind wheel, secret wheel
