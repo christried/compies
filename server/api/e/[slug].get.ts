@@ -59,7 +59,10 @@ export default defineEventHandler(async (event): Promise<EventView> => {
       isHost,
     },
     settings,
-    // The Host sees the games of both pools; every other Member only how many there are (#146, #148).
+    // The Host sees the games of both pools; every other Member only while the wheel is not hidden, else how many
+    // there are (#146, #148). Under a Hidden wheel NO other field of this response may carry a pool game (name, id,
+    // image key, video id): the Members, Sessions and Votes above and below must stay free of them. The test
+    // hidden-wheel.test.ts reads the raw response to keep it so.
     pools: await eventPools(db, eventRow.id, poolsVisibleTo({ isHost, settings })),
     // Sessions with a Date come first in Date order, with the number they are shown with (#49, #70); the
     // Sessions still waiting for a Date follow and only count as missing Dates.

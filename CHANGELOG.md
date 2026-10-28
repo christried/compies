@@ -10,6 +10,11 @@
 - Beim Anlegen wählst du jetzt den Auswahlmodus: Admin-Wahl oder Lucky Wheel. Beim Lucky Wheel kannst du das Rad verdecken und festlegen, wie viele Vetos jede Partei hat. ([#145](https://github.com/christried/compies/issues/145))
 - In der Bibliothek suchst du jetzt nach Namen und filterst nach Spielerzahl, Format oder deinen eigenen Spielen. Spiele, die du angelegt hast, kannst du bearbeiten und ihnen eine Spielerzahl und passende Formate geben. ([#142](https://github.com/christried/compies/issues/142))
 - Beim Anlegen füllst du jetzt den Spielepool und einen eigenen Tiebreaker-Pool aus der Bibliothek. Fehlt ein Spiel, legst du es direkt dort an. Wird der Pool knapp, sagt dir die App Bescheid. ([#146](https://github.com/christried/compies/issues/146))
+- Auf der Event-Seite siehst du jetzt unter „So wird gespielt“, wie das Event läuft: Format, Anzahl Spiele, Punkte, Auswahlmodus, Vetos und die Spiele im Pool. Ist das Rad verdeckt, siehst du nur, wie viele Spiele drin sind. ([#148](https://github.com/christried/compies/issues/148))
+
+### Sicherheit
+
+- Bei verdecktem Rad erfährt niemand außer dem Host, welche Spiele im Pool sind, auch nicht über die Netzwerkdaten. ([#148](https://github.com/christried/compies/issues/148))
 
 ## [1.2.0] - 2026-10-28 – Mehr Termine
 

@@ -149,6 +149,12 @@ usePollRefresh(() => {
         @calendar="calendarOpen = true"
       />
 
+      <HowWePlayCard
+        :settings="data.settings"
+        :pools="data.pools"
+        :is-host="data.event.isHost"
+      />
+
       <EventPoll
         v-if="data.event.phase === 'poll'"
         :view="data"

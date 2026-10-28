@@ -1,6 +1,7 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
-import type { SessionNote } from '~~/shared/event'
+import type { EventPools, SessionNote } from '~~/shared/event'
+import type { EventSettings } from '~~/shared/settings'
 import { kitty } from './auth'
 
 // Fixtures for the Event page tests (event-*.test.ts): the `GET /api/e/:slug` body and a fresh Event link per test.
@@ -23,6 +24,9 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
   const { startsAt = null, previousStartsAt = null, ...event } = { ...eventOf(slug), ...overrides.event }
   return {
     event,
+    // An Event that was never set up (#144): no settings, empty pools. Tests of the card override both (#148).
+    settings: null as EventSettings | null,
+    pools: { hidden: true, mainCount: 0, tiebreakerCount: 0 } as EventPools,
     // The Event's one Session, which the server sends without a number (#70).
     sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[] }],
     removedSessions: overrides.removedSessions ?? [],
