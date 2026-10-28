@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { TriangleAlert } from '@lucide/vue'
+import { noticeClasses } from '~/utils/notice'
 
 // What a Format or Selection mode means (02-components § InfoSheet), from the product brief §17 (copy in
 // `setup.info.<topic>`): „So läuft’s“, the Lucky Wheel's hidden wheel option, „Gut für“ and „Achtung“.
@@ -29,7 +30,7 @@ const sections = computed(() => [
       v-for="section in sections"
       :key="section.key"
       class="flex flex-col gap-0.5"
-      :class="section.key === 'warn' && 'rounded-xl border-2 border-line bg-surface-2 px-3 py-2.5'"
+      :class="section.key === 'warn' ? [noticeClasses('warning'), 'px-3 py-2.5'] : undefined"
     >
       <h3 class="m-0 flex items-center gap-1.5 font-display text-[18px] font-normal">
         <AppIcon

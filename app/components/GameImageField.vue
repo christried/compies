@@ -105,13 +105,12 @@ async function onPick(event: Event) {
         >{{ t('gameEdit.imageHelp') }}</span>
       </div>
     </div>
-    <p
+    <NoticeBanner
       v-if="failure"
-      role="alert"
-      class="m-0 text-small font-bold text-error-fg"
+      tone="critical"
     >
       {{ failure }}
-    </p>
+    </NoticeBanner>
     <input
       ref="input"
       type="file"

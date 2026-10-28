@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus, TriangleAlert, X } from '@lucide/vue'
+import { Plus, X } from '@lucide/vue'
 import { addPoolGame, settingsOf, togglePoolGame, type EventDraft, type StepLocks } from '~/utils/event-draft'
 import type { PoolGame } from '~~/shared/event'
 import type { GameView } from '~~/shared/game'
@@ -57,24 +57,12 @@ async function onSaved(game: GameView) {
 
 <template>
   <div class="flex flex-col gap-[18px]">
-    <div
+    <NoticeBanner
       v-if="hint"
-      role="status"
-      class="flex items-start gap-2.5 rounded-[12px] border-2 border-line bg-surface px-3.5 py-3"
+      tone="warning"
     >
-      <span
-        class="grid size-7 flex-none place-items-center rounded-pill border-2 border-line bg-warning text-on-warning"
-        aria-hidden="true"
-      >
-        <AppIcon
-          :icon="TriangleAlert"
-          :size="14"
-        />
-      </span>
-      <p class="m-0 text-[14px] text-pretty">
-        <b>{{ t('stepper.pool.hintTitle') }}</b> {{ hintText }}
-      </p>
-    </div>
+      <b>{{ t('stepper.pool.hintTitle') }}</b> {{ hintText }}
+    </NoticeBanner>
 
     <section class="flex flex-col gap-2">
       <h2 class="m-0 font-display text-[22px] leading-tight font-normal">

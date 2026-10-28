@@ -266,13 +266,12 @@ async function submit() {
           </span>
         </div>
 
-        <p
+        <NoticeBanner
           v-if="failure"
-          role="alert"
-          class="m-0 font-bold text-error-fg"
+          tone="critical"
         >
           {{ failure }}
-        </p>
+        </NoticeBanner>
 
         <div class="mt-1.5 flex flex-wrap items-center gap-3">
           <AppButton

@@ -90,13 +90,12 @@ async function save() {
           autocomplete="nickname"
         />
 
-        <p
+        <NoticeBanner
           v-if="saveFailed"
-          role="alert"
-          class="m-0 text-[14px] font-bold text-error-fg"
+          tone="critical"
         >
           {{ t('onboarding.saveFailed') }}
-        </p>
+        </NoticeBanner>
 
         <AppButton
           type="submit"

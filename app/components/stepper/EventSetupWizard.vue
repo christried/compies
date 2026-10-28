@@ -130,13 +130,12 @@ async function next() {
       v-model:blocker="blocker"
       :locks="locks"
     />
-    <p
+    <NoticeBanner
       v-if="failure"
-      role="alert"
-      class="m-0 font-bold text-error-fg"
+      tone="critical"
     >
       {{ failure }}
-    </p>
+    </NoticeBanner>
 
     <template
       v-if="infoTopic"

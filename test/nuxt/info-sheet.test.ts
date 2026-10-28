@@ -13,6 +13,14 @@ describe('InfoSheet', () => {
     expect(page.text()).toContain('1v1 bis 6v6')
   })
 
+  it('gives „Achtung“ the Hinweis tint, so the warning stands out from the page (#172)', async () => {
+    const page = await mountSuspended(InfoSheet, { props: { topic: 'teams' } })
+
+    const warn = page.findAll('section').find(section => section.find('h3').text() === 'Achtung')!
+    expect(warn.classes()).toContain('bg-warning-tint')
+    expect(warn.classes()).not.toContain('bg-surface-2')
+  })
+
   it('leaves out the sections a topic does not have', async () => {
     const page = await mountSuspended(InfoSheet, { props: { topic: 'tiebreaker' } })
 
