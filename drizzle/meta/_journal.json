@@ -43,6 +43,13 @@
       "when": 1793124731134,
       "tag": "0005_glossy_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793188793732,
+      "tag": "0006_game_library_and_event_settings",
+      "breakpoints": true
     }
   ]
 }

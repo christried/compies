@@ -1,7 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import EventPage from '~/pages/e/[slug].vue'
+import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
 import { closeNotice, radio, sanneAndLarsi, serve, shownToasts, view, type Wrapper } from './event-page'
 
@@ -31,7 +31,7 @@ describe('the Event poll', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(page.text()).not.toContain('Aktualisiert sich von selbst')
-    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Wann zocken wir?', 'Wer kann wann?'])
+    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['So wird gespielt', 'Wann zocken wir?', 'Wer kann wann?'])
   })
 
   it('writes each matrix column header as the day and the time on separate lines', async () => {

@@ -20,9 +20,11 @@ const props = withDefaults(defineProps<{
   /** Marks the field invalid with the help text as the reason: bold, in the error colour, announced. For a field whose help turns into the error (profile setup). */
   invalid?: boolean
   autocomplete?: string
+  /** The on-screen keyboard to offer, e.g. `numeric` (#141). */
+  inputmode?: 'numeric' | 'text' | 'url'
   /** With `maxlength`: longer input is cut to the maximum instead of being shown with an error. */
   cutAtMax?: boolean
-}>(), { help: undefined, error: undefined, type: 'text', maxlength: undefined, id: undefined, invalid: false, autocomplete: undefined, cutAtMax: false })
+}>(), { help: undefined, error: undefined, type: 'text', maxlength: undefined, id: undefined, invalid: false, autocomplete: undefined, inputmode: undefined, cutAtMax: false })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
@@ -62,6 +64,7 @@ defineExpose({ focus: () => inputEl.value?.focus() })
       :value="modelValue"
       :type="type"
       :autocomplete="autocomplete"
+      :inputmode="inputmode"
       :aria-invalid="error || invalid ? 'true' : undefined"
       :aria-describedby="describedBy"
       class="h-control-lg rounded-md bg-surface px-3.5 text-[17px] text-ink"

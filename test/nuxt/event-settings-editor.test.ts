@@ -1,0 +1,316 @@
+import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import type { VueWrapper } from '@vue/test-utils'
+import { createError, readBody } from 'h3'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import EditorPage from '~/pages/e/[slug]/einstellungen.vue'
+import type { PoolGame } from '~~/shared/event'
+import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
+import { kitty, signInAs } from './auth'
+import { serve, shownToasts, view } from './event-page'
+
+// The settings editor (#147): the stepper's steps 2 to 7 on an Event that exists, prefilled, with the settings
+// that stay fixed once the Event runs shown locked with their reason.
+
+const LOCKED = 'Gesperrt, seit die erste Session läuft: Schon gespielte Spiele behalten ihre Regeln.'
+
+const kart = poolGame(1, 'Mario Kart')
+const pong = poolGame(2, 'Pong')
+
+function poolGame(n: number, name: string): PoolGame {
+  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] }
+}
+
+// The library the pool steps pick from.
+registerEndpoint('/api/games', {
+  method: 'GET',
+  handler: () => ({ games: [kart, pong].map(game => ({ ...game, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true })), total: 2 }),
+})
+
+type Page = VueWrapper
+const mounted: Page[] = []
+afterEach(() => {
+  mounted.splice(0).forEach(page => page.unmount())
+})
+
+interface Setup {
+  settings?: EventSettings | null
+  phase?: string
+  isHost?: boolean
+  floors?: SettingsFloors | null
+  pools?: { main: PoolGame[], tiebreaker: PoolGame[] }
+  /** The refusal the PATCH answers with, or null to accept. */
+  refuse?: { statusCode: number, statusMessage: string } | null
+}
+
+/** A fresh Event for one test with its GET and PATCH endpoints; `patched` collects the PATCH bodies. */
+function setUp(setup: Setup = {}) {
+  const patched = vi.fn()
+  const { slug } = serve(s => view(s, [], {
+    event: { isHost: setup.isHost ?? true, phase: setup.phase ?? 'poll' },
+    settings: setup.settings === undefined ? defaultSettings() : setup.settings,
+    settingsFloors: setup.floors,
+    pools: { hidden: false, ...(setup.pools ?? { main: [], tiebreaker: [] }) },
+  }))
+  registerEndpoint(`/api/e/${slug}/settings`, {
+    method: 'PATCH',
+    handler: async (event) => {
+      const body = await readBody(event)
+      patched(body)
+      if (setup.refuse) throw createError(setup.refuse)
+      return { settings: body.settings }
+    },
+  })
+  return { slug, patched }
+}
+
+async function mountEditor(slug: string): Promise<Page> {
+  signInAs({ ...kitty, canHost: true })
+  const page = await mountSuspended(EditorPage, { route: `/e/${slug}/einstellungen`, attachTo: document.body })
+  mounted.push(page)
+  return page
+}
+
+const cta = (page: Page) => page.get('button[type="submit"]')
+const stepItems = (page: Page) => page.get('nav[aria-label="Schritte"]').findAll('li')
+const spin = (page: Page, label: string) => page.findAll('[role="spinbutton"]').find(stepper => stepper.attributes('aria-label') === label)!
+const button = (page: Page, label: string) => page.get(`button[aria-label="${label}"]`)
+const checked = (page: Page) => page.findAll('[role="radio"]').filter(radio => radio.attributes('aria-checked') === 'true').map(radio => radio.get('b').text())
+
+async function goTo(page: Page, label: string) {
+  const link = stepItems(page).find(item => item.text().endsWith(label))!.get('button')
+  await link.trigger('click')
+}
+
+async function settle(page: Page) {
+  await vi.waitFor(() => expect(page.find('[aria-busy="true"]').exists()).toBe(false))
+  await vi.waitFor(() => expect(page.find('ul[aria-label="Bibliothek"]').exists()).toBe(true))
+}
+
+const wheel: EventSettings = { ...defaultSettings(), teamSize: 4, gameCount: 7, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 }
+
+describe('the settings editor', () => {
+  beforeEach(() => {
+    useState('toasts').value = []
+  })
+
+  it('shows the Construction page to a Member, like any page of an Event that does not exist', async () => {
+    const { slug } = setUp({ isHost: false })
+
+    const page = await mountEditor(slug)
+
+    expect(page.get('h1').text()).toBe('Hier wird noch gebaut.')
+    expect(page.find('form').exists()).toBe(false)
+  })
+
+  it('has the six steps of an Event, every one of them a link from the start, and calls itself Einstellungen', async () => {
+    const { slug } = setUp()
+
+    const page = await mountEditor(slug)
+
+    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Tiebreaker-Pool'])
+    expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
+    expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
+    expect(page.get('h1').text()).toContain('Wer gegen wen?')
+  })
+
+  it('calls itself Event einrichten while the Event has no settings, and starts from the defaults', async () => {
+    const { slug } = setUp({ settings: null })
+
+    const page = await mountEditor(slug)
+
+    expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Event einrichten')
+    expect(spin(page, 'Spieler pro Team').get('output').text()).toBe('3')
+  })
+
+  it('starts from the Event: Team size, Game count, Selection mode with its wheel options, and the pools', async () => {
+    const { slug } = setUp({ settings: wheel, pools: { main: [kart, pong], tiebreaker: [pong] } })
+
+    const page = await mountEditor(slug)
+    expect(spin(page, 'Spieler pro Team').get('output').text()).toBe('4')
+
+    await goTo(page, 'Spiele')
+    expect(page.get('output').text()).toBe('7')
+
+    await goTo(page, 'Auswahlmodus')
+    expect(checked(page)).toEqual(['Lucky Wheel'])
+    expect(page.get('[role="switch"]').attributes('aria-checked')).toBe('true')
+    expect(spin(page, 'Vetos pro Partei').get('output').text()).toBe('2')
+
+    await goTo(page, 'Spielepool')
+    await settle(page)
+    expect(page.text()).toContain('Im Pool: 2 Spiele')
+
+    await goTo(page, 'Tiebreaker-Pool')
+    await settle(page)
+    expect(page.text()).toContain('Tiebreaker-Pool: 1 Spiel')
+  })
+
+  it('saves what the Host changed, from the last step, and goes back to the Event with a toast', async () => {
+    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart], tiebreaker: [] } })
+    const page = await mountEditor(slug)
+    await goTo(page, 'Spiele')
+    await button(page, 'Anzahl Spiele: mehr').trigger('click')
+    await goTo(page, 'Tiebreaker-Pool')
+    await settle(page)
+    await page.get('ul[aria-label="Bibliothek"]').get('button[aria-label="Pong in den Pool"]').trigger('click')
+
+    expect(cta(page).text()).toBe('Speichern')
+    await cta(page).trigger('click')
+
+    await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
+    expect(patched).toHaveBeenCalledWith({
+      settings: { ...wheel, gameCount: 8 },
+      pools: { main: [kart.id], tiebreaker: [pong.id] },
+    })
+    await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}`))
+    expect(shownToasts().map(toast => toast.text)).toContain('Gespeichert.')
+  })
+
+  it('goes on with Weiter until the last step, where it saves', async () => {
+    const { slug } = setUp()
+    const page = await mountEditor(slug)
+
+    expect(cta(page).text()).toContain('Weiter')
+    for (let step = 0; step < 5; step++) {
+      await cta(page).trigger('click')
+      await vi.waitFor(() => expect(page.find('[aria-busy="true"]').exists()).toBe(false))
+    }
+
+    expect(page.get('h1').text()).toContain('Und falls es knapp wird?')
+    expect(cta(page).text()).toContain('Speichern')
+  })
+
+  it('shows the reason of a refusal in the page and stays', async () => {
+    const { slug } = setUp({ refuse: { statusCode: 409, statusMessage: 'setting_locked' } })
+    const page = await mountEditor(slug)
+    await goTo(page, 'Tiebreaker-Pool')
+    await settle(page)
+
+    await cta(page).trigger('click')
+
+    await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Das lässt sich nicht mehr ändern, seit die erste Session läuft.'))
+    expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}/einstellungen`)
+    expect(shownToasts().map(toast => toast.text)).not.toContain('Gespeichert.')
+  })
+
+  it('names a finished Event as the reason when the server refuses with wrong_phase', async () => {
+    const { slug } = setUp({ refuse: { statusCode: 409, statusMessage: 'wrong_phase' } })
+    const page = await mountEditor(slug)
+    await goTo(page, 'Tiebreaker-Pool')
+    await settle(page)
+
+    await cta(page).trigger('click')
+
+    await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Das Event ist beendet. Die Einstellungen lassen sich nicht mehr ändern.'))
+  })
+
+  describe('floors', () => {
+    it('keeps the Team size from going below the fullest team, and says why', async () => {
+      const { slug } = setUp({ settings: { ...defaultSettings(), teamSize: 4 }, floors: { teamSize: 4, vetoAllowance: 0 } })
+
+      const page = await mountEditor(slug)
+
+      const less = button(page, 'Spieler pro Team: weniger')
+      expect(less.attributes('aria-disabled')).toBe('true')
+      expect(less.attributes('title')).toBe('Im vollsten Team sind schon 4.')
+      await less.trigger('click')
+      expect(spin(page, 'Spieler pro Team').get('output').text()).toBe('4')
+    })
+
+    it('keeps the Veto allowance from going below the most Vetoes a Party has spent, and says why', async () => {
+      const { slug } = setUp({ settings: wheel, floors: { teamSize: 1, vetoAllowance: 2 } })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Auswahlmodus')
+
+      const less = button(page, 'Vetos pro Partei: weniger')
+
+      expect(less.attributes('aria-disabled')).toBe('true')
+      expect(less.attributes('title')).toBe('Eine Partei hat schon 2 Vetos eingesetzt.')
+    })
+
+    it('has the usual limits when nothing is spent yet', async () => {
+      const { slug } = setUp({ settings: { ...wheel, teamSize: 1 }, floors: { teamSize: 1, vetoAllowance: 0 } })
+      const page = await mountEditor(slug)
+      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
+    })
+  })
+
+  describe('while the Event is running', () => {
+    it('shows Format and the team count locked with the reason, but lets the Team size change', async () => {
+      const { slug } = setUp({ settings: wheel, phase: 'running' })
+
+      const page = await mountEditor(slug)
+
+      expect(page.text()).toContain(LOCKED)
+      expect(checked(page)).toEqual(['Teams'])
+      expect(page.findAll('[role="radio"]').every(radio => radio.attributes('aria-disabled') === 'true')).toBe(true)
+      expect(button(page, 'Anzahl Teams: mehr').attributes('aria-disabled')).toBe('true')
+      expect(button(page, 'Anzahl Teams: weniger').attributes('aria-disabled')).toBe('true')
+      expect(button(page, 'Spieler pro Team: mehr').attributes('aria-disabled')).toBeUndefined()
+      await button(page, 'Spieler pro Team: mehr').trigger('click')
+      expect(spin(page, 'Spieler pro Team').get('output').text()).toBe('5')
+    })
+
+    it('does not change the Format when a locked card is clicked', async () => {
+      const { slug } = setUp({ phase: 'running' })
+      const page = await mountEditor(slug)
+
+      await page.get('[role="radio"][aria-checked="false"]').trigger('click')
+
+      expect(checked(page)).toEqual(['Teams'])
+    })
+
+    it('shows the points table locked: the preset cards and the places of a custom table', async () => {
+      const custom = { ...defaultSettings(), pointsTable: { preset: 'custom' as const, values: [3, 1] } }
+      const { slug } = setUp({ settings: custom, phase: 'running' })
+      const page = await mountEditor(slug)
+
+      await goTo(page, 'Punkte')
+
+      expect(page.text()).toContain(LOCKED)
+      expect(page.findAll('[role="radio"]').every(radio => radio.attributes('aria-disabled') === 'true')).toBe(true)
+      expect(checked(page)).toEqual(['Eigene Tabelle'])
+      expect(button(page, 'Punkte für Platz 1: mehr').attributes('aria-disabled')).toBe('true')
+      await button(page, 'Punkte für Platz 1: mehr').trigger('click')
+      expect(page.findAll('[data-testid="points-row"] output').map(output => output.text())).toEqual(['3', '1'])
+    })
+
+    it('shows the Selection mode locked, but lets Rad verdecken and the Veto allowance change', async () => {
+      const { slug } = setUp({ settings: wheel, phase: 'running' })
+      const page = await mountEditor(slug)
+
+      await goTo(page, 'Auswahlmodus')
+
+      expect(page.text()).toContain(LOCKED)
+      expect(checked(page)).toEqual(['Lucky Wheel'])
+      expect(page.findAll('[role="radio"]').every(radio => radio.attributes('aria-disabled') === 'true')).toBe(true)
+      await page.get('[role="switch"]').trigger('click')
+      expect(page.get('[role="switch"]').attributes('aria-checked')).toBe('false')
+      await button(page, 'Vetos pro Partei: mehr').trigger('click')
+      expect(spin(page, 'Vetos pro Partei').get('output').text()).toBe('3')
+    })
+
+    it('lets the Game count change and shows no lock on that step', async () => {
+      const { slug, patched } = setUp({ settings: wheel, phase: 'running' })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spiele')
+
+      expect(page.text()).not.toContain(LOCKED)
+      await button(page, 'Anzahl Spiele: weniger').trigger('click')
+      await goTo(page, 'Tiebreaker-Pool')
+      await settle(page)
+      await cta(page).trigger('click')
+
+      await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
+      expect(patched.mock.calls[0]![0].settings).toEqual({ ...wheel, gameCount: 6 })
+    })
+
+    it('shows no lock before the first Session', async () => {
+      const { slug } = setUp({ settings: wheel })
+      const page = await mountEditor(slug)
+
+      expect(page.text()).not.toContain(LOCKED)
+      expect(button(page, 'Anzahl Teams: mehr').attributes('aria-disabled')).toBeUndefined()
+    })
+  })
+})

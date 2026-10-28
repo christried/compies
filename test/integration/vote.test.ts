@@ -4,6 +4,7 @@ import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -60,7 +61,7 @@ describe('poll votes and the Event read', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots, settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json()
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))

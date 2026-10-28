@@ -12,6 +12,7 @@ import reopenSession from '../../server/api/e/[slug]/sessions/[id]/reopen.post'
 import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { eventMembers, events, pollSlots, pollVotes, sessions, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -79,7 +80,7 @@ describe('managing each Session', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: sessionCount, slots }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: sessionCount, slots, settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json() as { slug: string }
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
@@ -92,7 +93,7 @@ describe('managing each Session', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name: 'Mehrere Abende', dateMode: 'direct', sessions: dates.length, startsAt: dates }),
+      body: JSON.stringify({ name: 'Mehrere Abende', dateMode: 'direct', sessions: dates.length, startsAt: dates, settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json() as { slug: string }
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))

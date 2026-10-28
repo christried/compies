@@ -8,6 +8,7 @@ import removeSlot from '../../server/api/e/[slug]/slots/[slotId].delete'
 import changeSlot from '../../server/api/e/[slug]/slots/[slotId].patch'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -62,7 +63,7 @@ describe('the Host edits Slots', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', ...body }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', settings: TEST_SETTINGS, ...body }),
     })
     expect(response.status).toBe(200)
     const { slug } = await response.json()
