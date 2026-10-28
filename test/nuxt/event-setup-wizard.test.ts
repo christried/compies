@@ -76,7 +76,7 @@ describe('the entry pages', () => {
 })
 
 describe('the Veto allowance in the editor', () => {
-  it('follows the Team size of an Admin pick Event until the Host sets it, and is sent as it stands', async () => {
+  it('follows the Team size of a Host pick Event until the Host sets it, and is sent as it stands', async () => {
     const { page, patched } = await mountEditor({ ...defaultSettings(), teamSize: 2 })
     await button(page, 'Spieler pro Team: mehr').trigger('click')
     await button(page, 'Spieler pro Team: mehr').trigger('click')

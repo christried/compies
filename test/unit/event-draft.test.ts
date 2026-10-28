@@ -118,7 +118,7 @@ describe('the pools', () => {
   })
 })
 
-// The Selection mode step (#145): the Glücksrad's options live in the draft while Admin pick is chosen, and
+// The Selection mode step (#145): the Glücksrad's options live in the draft while Host pick is chosen, and
 // `settingsOf` is the one place that derives the stored settings from them.
 describe('the stored settings', () => {
   const wheelDraft = (patch: Partial<EventDraft> = {}, mode: EventSettings['selectionMode'] = 'lucky_wheel'): EventDraft => {
@@ -151,7 +151,7 @@ describe('the stored settings', () => {
     expect(settingsOf({ ...atDefault, settings: { ...atDefault.settings, teamSize: 5 } }).vetoAllowance).toBe(3)
   })
 
-  it('have no wheel options with Admin pick, while the draft keeps them so the Glücksrad gets them back', () => {
+  it('have no wheel options with Host pick, while the draft keeps them so the Glücksrad gets them back', () => {
     const draft = wheelDraft({ hiddenWheel: true, vetoAllowance: 5 }, 'admin_pick')
 
     expect(settingsOf(draft)).toMatchObject({ selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null })
@@ -212,7 +212,7 @@ describe('the editor draft', () => {
     expect(settingsOf(draft)).toEqual(stored)
   })
 
-  it('does not count an Admin pick Event’s missing Veto allowance as chosen: the Glücksrad then follows the Team size', () => {
+  it('does not count a Host pick Event’s missing Veto allowance as chosen: the Glücksrad then follows the Team size', () => {
     const draft = draftFromEvent(view({ ...defaultSettings(), teamSize: 2 }))
     expect(draft.vetoAllowance).toBeNull()
 

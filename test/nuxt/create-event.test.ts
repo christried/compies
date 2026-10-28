@@ -8,7 +8,7 @@ import { kitty, signInAs } from './auth'
 const host = { ...kitty, canHost: true }
 const created = { slug: 'freitags-zocken-k7q2', inviteUrl: 'http://localhost/e/freitags-zocken-k7q2-AbCdEfGhIjKl' }
 
-/** What the stepper sends for settings when the Host leaves every default: a 3v3, linear, 10 Games, Admin pick. */
+/** What the stepper sends for settings when the Host leaves every default: a 3v3, linear, 10 Games, Host pick. */
 const DEFAULT_SETTINGS = {
   format: 'teams',
   teamCount: 2,

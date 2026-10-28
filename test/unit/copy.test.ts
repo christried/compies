@@ -55,7 +55,7 @@ describe('copy rules', () => {
   })
 })
 
-// The words of GLOSSARY.md (#175): the whole Event is an Event, the Lucky Wheel is the Glücksrad, the Admin pick the Host-Wahl.
+// The words of GLOSSARY.md (#175): the whole Event is an Event, the Lucky Wheel is the Glücksrad, the Host pick the Host-Wahl.
 describe('glossary words in the copy', () => {
   const byKey = new Map(entries.map(e => [e.key, e.value]))
 
