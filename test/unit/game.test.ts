@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { parseGameInput } from '../../server/domain/game'
-import { CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, canEditGame, canSeeLibrary, clipTime, parseClipTime } from '../../shared/game'
+import {
+  CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, gameNameProblem, isClipLength,
+  parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
+} from '../../shared/game'
 
 describe('clipTime', () => {
   it.each([
@@ -66,6 +68,52 @@ describe('canEditGame', () => {
   })
 })
 
+// The rules the form and the server share (#171): one set of numbers and one name check, tested once here.
+describe('parsePlayerCount', () => {
+  it.each([['1', 1], ['99', 99], [' 12 ', 12], ['007', 7]])('reads %j as %i', (text, players) => {
+    expect(parsePlayerCount(text)).toBe(players)
+  })
+
+  it.each([['0'], ['100'], ['1.5'], ['abc'], ['-1'], ['1e1'], [''], ['   ']])('refuses %j', (text) => {
+    expect(parsePlayerCount(text)).toBeNull()
+  })
+})
+
+describe('clip length', () => {
+  it.each([[CLIP_LENGTH_MIN], [30], [CLIP_LENGTH_MAX]])('accepts %i seconds', (seconds) => {
+    expect(isClipLength(seconds)).toBe(true)
+  })
+
+  it.each([[CLIP_LENGTH_MIN - 1], [CLIP_LENGTH_MAX + 1], [30.5], ['30'], [null], [undefined]])('refuses %j', (seconds) => {
+    expect(isClipLength(seconds)).toBe(false)
+  })
+
+  it.each([['5', 5], [' 60 ', 60], ['030', 30]])('reads %j as %i seconds', (text, seconds) => {
+    expect(parseClipLength(text)).toBe(seconds)
+  })
+
+  it.each([[''], ['4'], ['61'], ['30.5'], ['1e1'], ['bald']])('refuses %j', (text) => {
+    expect(parseClipLength(text)).toBeNull()
+  })
+})
+
+describe('gameNameProblem', () => {
+  it.each([[''], ['   ']])('says the name is empty for %j', (name) => {
+    expect(gameNameProblem(name)).toBe('empty')
+  })
+
+  it('says the name is too long past GAME_NAME_MAX, counting an emoji as one character', () => {
+    expect(gameNameProblem('a'.repeat(GAME_NAME_MAX))).toBeNull()
+    expect(gameNameProblem('a'.repeat(GAME_NAME_MAX + 1))).toBe('too_long')
+    expect(gameNameProblem('🎮'.repeat(GAME_NAME_MAX))).toBeNull()
+    expect(gameNameProblem('🎮'.repeat(GAME_NAME_MAX + 1))).toBe('too_long')
+  })
+
+  it('does not count surrounding spaces', () => {
+    expect(gameNameProblem(`${' '.repeat(5)}${'a'.repeat(GAME_NAME_MAX)}${' '.repeat(5)}`)).toBeNull()
+  })
+})
+
 describe('parseGameInput', () => {
   const valid = { name: 'Mario Kart' }
 
@@ -97,7 +145,7 @@ describe('parseGameInput', () => {
     it.each([[undefined], [null], ['']])('gives a game without a clip for %j', (youtubeUrl) => {
       expect(parseGameInput({ ...valid, youtubeUrl })).toEqual({
         ok: true,
-        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] },
+        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] },
       })
     })
 
@@ -166,24 +214,39 @@ describe('parseGameInput', () => {
     })
   })
 
-  describe('Formats (#142)', () => {
-    it('stores no Format when none is sent', () => {
-      expect(parseGameInput(valid)).toMatchObject({ ok: true, game: { formats: [] } })
+  describe('Suitabilities (#171)', () => {
+    it('stores no Suitability when none is sent', () => {
+      expect(parseGameInput(valid)).toMatchObject({ ok: true, game: { suitabilities: [] } })
     })
 
-    it('stores the Formats in FORMATS order, whatever the order sent', () => {
-      expect(parseGameInput({ ...valid, formats: ['ffa', 'teams'] })).toMatchObject({ ok: true, game: { formats: ['teams', 'ffa'] } })
-      expect(parseGameInput({ ...valid, formats: ['teams', 'ffa'] })).toMatchObject({ ok: true, game: { formats: ['teams', 'ffa'] } })
+    it.each([
+      [[]],
+      [['teams']],
+      [['ffa']],
+      [['one_v_one']],
+      [['teams', 'ffa']],
+      [['teams', 'one_v_one']],
+      [['ffa', 'one_v_one']],
+      [['teams', 'ffa', 'one_v_one']],
+    ])('stores %j as sent', (suitabilities) => {
+      expect(parseGameInput({ ...valid, suitabilities })).toMatchObject({ ok: true, game: { suitabilities } })
+    })
+
+    it('stores the Suitabilities in SUITABILITIES order, whatever the order sent', () => {
+      expect(parseGameInput({ ...valid, suitabilities: ['one_v_one', 'ffa', 'teams'] })).toMatchObject({ ok: true, game: { suitabilities: ['teams', 'ffa', 'one_v_one'] } })
+      expect(SUITABILITIES).toEqual(['teams', 'ffa', 'one_v_one'])
     })
 
     it.each([
       [['teams', 'teams']],
+      [['one_v_one', 'one_v_one']],
       [['wild']],
+      [['one-v-one']],
       ['teams'],
       [null],
       [[1]],
-    ])('refuses %j with invalid_formats', (formats) => {
-      expect(parseGameInput({ ...valid, formats })).toEqual({ ok: false, error: 'invalid_formats' })
+    ])('refuses %j with invalid_suitabilities', (suitabilities) => {
+      expect(parseGameInput({ ...valid, suitabilities })).toEqual({ ok: false, error: 'invalid_suitabilities' })
     })
   })
 })

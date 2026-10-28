@@ -138,7 +138,7 @@ describe('the pools of an Event (#146)', () => {
   describe('GET /api/e/:slug', () => {
     it('gives the Host both pools in full, each sorted by name', async () => {
       const zebra = await newGame('Zebra Rennen')
-      const alpha = await newGame('alpha Quest', { playersMin: 2, playersMax: 4, formats: ['teams'] })
+      const alpha = await newGame('alpha Quest', { playersMin: 2, playersMax: 4, suitabilities: ['teams'] })
       const beta = await newGame('Beta Bowl', { youtubeId: undefined })
       const { slug } = await createdEvent({ pools: { main: [zebra.id, beta.id, alpha.id], tiebreaker: [zebra.id] } })
 
@@ -147,9 +147,9 @@ describe('the pools of an Event (#146)', () => {
       expect(view.pools).toEqual({
         hidden: false,
         main: [
-          { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, formats: ['teams'] },
-          { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] },
-          { id: zebra.id, name: 'Zebra Rennen', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] },
+          { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'] },
+          { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] },
+          { id: zebra.id, name: 'Zebra Rennen', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] },
         ],
         tiebreaker: [expect.objectContaining({ id: zebra.id, name: 'Zebra Rennen' })],
       })

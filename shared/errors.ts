@@ -20,8 +20,8 @@ export const API_ERROR_STATUS = {
   invalid_clip: 400,
   /** A game's player count is not a whole number from 1 to 99, or min is above max (#142). */
   invalid_players: 400,
-  /** A game's Formats are unknown or repeated (#142). */
-  invalid_formats: 400,
+  /** A game's Suitabilities are unknown or repeated (#171). */
+  invalid_suitabilities: 400,
   /** Only the creator of a game and the Platform admin may edit it (#142). */
   not_game_editor: 403,
   /** A game image is larger than GAME_IMAGE_MAX_BYTES (#143). */

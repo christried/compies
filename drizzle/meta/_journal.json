@@ -50,6 +50,13 @@
       "when": 1793188793732,
       "tag": "0006_game_library_and_event_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793219084899,
+      "tag": "0007_game_suitability",
+      "breakpoints": true
     }
   ]
 }

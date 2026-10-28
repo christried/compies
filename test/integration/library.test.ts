@@ -119,7 +119,7 @@ describe('the Game library API (#141)', () => {
       expect(row).toMatchObject({ name: 'Mario Kart', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, imageKey: null })
       expect(game).toEqual({
         id: row!.id, name: 'Mario Kart', imageUrl: null, youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45,
-        playersMin: null, playersMax: null, formats: [],
+        playersMin: null, playersMax: null, suitabilities: [],
         createdBy: { id: row!.createdBy, name: 'Hostess' }, createdAt: row!.createdAt.toISOString(), canEdit: true,
       })
     })
@@ -235,15 +235,55 @@ describe('the Game library API (#141)', () => {
     })
   })
 
-  describe('player count and Formats (#142)', () => {
-    it('stores and answers the player count and the Formats in FORMATS order', async () => {
+  describe('player count and Suitabilities (#142, #171)', () => {
+    it('stores and answers the player count and the Suitabilities in SUITABILITIES order', async () => {
       const cookie = await cookieOf(host)
 
-      const game = await created(cookie, { name: 'Mario Kart', playersMin: 1, playersMax: 12, formats: ['ffa', 'teams'] })
+      const game = await created(cookie, { name: 'Mario Kart', playersMin: 1, playersMax: 12, suitabilities: ['ffa', 'teams'] })
 
       const [row] = await testDb.db.select().from(games)
-      expect(row).toMatchObject({ playersMin: 1, playersMax: 12, formats: ['teams', 'ffa'] })
-      expect(game).toMatchObject({ playersMin: 1, playersMax: 12, formats: ['teams', 'ffa'] })
+      expect(row).toMatchObject({ playersMin: 1, playersMax: 12, suitabilities: ['teams', 'ffa'] })
+      expect(game).toMatchObject({ playersMin: 1, playersMax: 12, suitabilities: ['teams', 'ffa'] })
+    })
+
+    it.each([
+      [['teams']],
+      [['ffa']],
+      [['one_v_one']],
+      [['teams', 'one_v_one']],
+      [['ffa', 'one_v_one']],
+      [['teams', 'ffa', 'one_v_one']],
+    ])('stores and answers the Suitabilities %j, one_v_one included', async (suitabilities) => {
+      const cookie = await cookieOf(host)
+
+      const game = await created(cookie, { name: 'Mario Kart', suitabilities })
+
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.suitabilities).toEqual(suitabilities)
+      expect(game.suitabilities).toEqual(suitabilities)
+    })
+
+    it('stores a game that is 1 gegen 1 when it is edited, and answers the new Suitabilities', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', suitabilities: ['teams'] })
+
+      const response = await request(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ name: 'Mario Kart', suitabilities: ['one_v_one', 'teams'] }),
+      })
+
+      expect(await response.json()).toMatchObject({ id, suitabilities: ['teams', 'one_v_one'] })
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.suitabilities).toEqual(['teams', 'one_v_one'])
+    })
+
+    it('refuses a Suitability that is not one of the three, with invalid_suitabilities', async () => {
+      const response = await create(await cookieOf(host), { name: 'Mario Kart', suitabilities: ['one-v-one'] })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_suitabilities')
+      expect(await testDb.db.select().from(games)).toHaveLength(0)
     })
 
     it('refuses a player count with min above max and stores nothing', async () => {
@@ -256,7 +296,7 @@ describe('the Game library API (#141)', () => {
   })
 
   describe('PATCH /api/games/:id (#142)', () => {
-    const edited = { name: 'Mario Kart 8', youtubeUrl: 'https://youtu.be/dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, formats: ['teams'] }
+    const edited = { name: 'Mario Kart 8', youtubeUrl: 'https://youtu.be/dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, suitabilities: ['teams'] }
 
     function edit(cookie: string | undefined, id: string, body: unknown) {
       return request(`/api/games/${id}`, {
@@ -273,9 +313,9 @@ describe('the Game library API (#141)', () => {
       const response = await edit(cookie, id, edited)
 
       expect(response.status).toBe(200)
-      expect(await response.json()).toMatchObject({ id, name: 'Mario Kart 8', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, formats: ['teams'], canEdit: true })
+      expect(await response.json()).toMatchObject({ id, name: 'Mario Kart 8', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, suitabilities: ['teams'], canEdit: true })
       const [row] = await testDb.db.select().from(games)
-      expect(row).toMatchObject({ name: 'Mario Kart 8', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, formats: ['teams'] })
+      expect(row).toMatchObject({ name: 'Mario Kart 8', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, suitabilities: ['teams'] })
       expect(row!.createdBy).toBe(createdBy.id)
     })
 
@@ -345,24 +385,24 @@ describe('the Game library API (#141)', () => {
       expect(row!.name).toBe('Mario Kart')
     })
 
-    it('clears the player count and the Formats when they are sent empty', async () => {
+    it('clears the player count and the Suitabilities when they are sent empty', async () => {
       const cookie = await cookieOf(host)
-      const { id } = await created(cookie, { name: 'Mario Kart', playersMin: 2, playersMax: 8, formats: ['teams'] })
+      const { id } = await created(cookie, { name: 'Mario Kart', playersMin: 2, playersMax: 8, suitabilities: ['teams'] })
 
-      await edit(cookie, id, { ...edited, playersMin: null, playersMax: null, formats: [] })
+      await edit(cookie, id, { ...edited, playersMin: null, playersMax: null, suitabilities: [] })
 
       const [row] = await testDb.db.select().from(games)
-      expect(row).toMatchObject({ playersMin: null, playersMax: null, formats: [] })
+      expect(row).toMatchObject({ playersMin: null, playersMax: null, suitabilities: [] })
     })
   })
 
   describe('filters on GET /api/games (#142)', () => {
-    // Five games: names, counts and Formats chosen so every filter has something to keep and something to drop.
+    // Five games: names, counts and Suitabilities chosen so every filter has something to keep and something to drop.
     async function seed() {
       const hostCookie = await cookieOf(host)
-      await created(hostCookie, { name: 'Mario Kart', playersMin: 1, playersMax: 12, formats: ['teams', 'ffa'] })
-      await created(hostCookie, { name: 'Counter-Strike 2', playersMin: 2, playersMax: 10, formats: ['teams'] })
-      await created(hostCookie, { name: 'Halo', playersMax: 4, formats: ['ffa'] })
+      await created(hostCookie, { name: 'Mario Kart', playersMin: 1, playersMax: 12, suitabilities: ['teams', 'ffa'] })
+      await created(hostCookie, { name: 'Counter-Strike 2', playersMin: 2, playersMax: 10, suitabilities: ['teams'] })
+      await created(hostCookie, { name: 'Halo', playersMax: 4, suitabilities: ['ffa'] })
       await created(hostCookie, { name: 'Offen', playersMin: 6 })
       await created(await cookieOf(otherHost), { name: 'Brettspiel' })
     }
@@ -421,14 +461,25 @@ describe('the Game library API (#141)', () => {
       }
     })
 
-    it('keeps the games that suit the Format, and ignores an unknown one', async () => {
+    it('keeps the games with the Suitability, and ignores an unknown one', async () => {
       await seed()
       const cookie = await cookieOf(host)
       const by = async (query: string) => (await (await request(`/api/games?${query}`, { headers: { cookie } })).json() as GameList).games.map(game => game.name).sort()
 
-      expect(await by('format=teams')).toEqual(['Counter-Strike 2', 'Mario Kart'])
-      expect(await by('format=ffa')).toEqual(['Halo', 'Mario Kart'])
-      expect(await by('format=wild')).toHaveLength(5)
+      expect(await by('suitability=teams')).toEqual(['Counter-Strike 2', 'Mario Kart'])
+      expect(await by('suitability=ffa')).toEqual(['Halo', 'Mario Kart'])
+      expect(await by('suitability=wild')).toHaveLength(5)
+    })
+
+    it('keeps the games marked 1 gegen 1 with suitability=one_v_one, and no others', async () => {
+      const cookie = await cookieOf(host)
+      await created(cookie, { name: 'Street Fighter', suitabilities: ['one_v_one'] })
+      await created(cookie, { name: 'Tekken', suitabilities: ['teams', 'one_v_one'] })
+      await created(cookie, { name: 'Catan', suitabilities: ['teams', 'ffa'] })
+
+      const { games: found } = await (await request('/api/games?suitability=one_v_one', { headers: { cookie } })).json() as GameList
+
+      expect(found.map(game => game.name)).toEqual(['Street Fighter', 'Tekken'])
     })
 
     it('keeps the games the viewer created with mine=1', async () => {
@@ -445,8 +496,8 @@ describe('the Game library API (#141)', () => {
       await seed()
       const cookie = await cookieOf(host)
 
-      const { games: found } = await (await request('/api/games?players=3&format=teams&mine=1&q=counter', { headers: { cookie } })).json() as GameList
-      const { games: none } = await (await request('/api/games?players=3&format=ffa&q=counter', { headers: { cookie } })).json() as GameList
+      const { games: found } = await (await request('/api/games?players=3&suitability=teams&mine=1&q=counter', { headers: { cookie } })).json() as GameList
+      const { games: none } = await (await request('/api/games?players=3&suitability=ffa&q=counter', { headers: { cookie } })).json() as GameList
 
       expect(found.map(game => game.name)).toEqual(['Counter-Strike 2'])
       expect(none).toEqual([])
