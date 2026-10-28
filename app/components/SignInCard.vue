@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleAlert, LoaderCircle, MessageSquare, Play } from '@lucide/vue'
+import { LoaderCircle, MessageSquare, Play } from '@lucide/vue'
 import type { Component } from 'vue'
 import type { SignInProvider } from '~~/shared/auth'
 import type { InvitePreview } from '~~/shared/event'
@@ -64,27 +64,16 @@ const providerName = (provider: SignInProvider) => t(`auth.provider.${provider}`
       </p>
     </div>
 
-    <div
+    <NoticeBanner
       v-if="failed"
-      role="alert"
-      class="flex items-start gap-2.5 rounded-md border-2 border-line bg-surface px-3.5 py-3"
+      tone="critical"
     >
-      <span class="grid size-7 flex-none place-items-center rounded-pill border-2 border-line bg-error text-on-error">
-        <AppIcon
-          :icon="CircleAlert"
-          :size="14"
-        />
-      </span>
-      <span
-        v-if="failed === true"
-        class="text-[14px] text-pretty"
-      >{{ t('auth.cancelled') }}</span>
+      <span v-if="failed === true">{{ t('auth.cancelled') }}</span>
       <i18n-t
         v-else
         keypath="auth.cancelledProvider"
         tag="span"
         scope="global"
-        class="text-[14px] text-pretty"
       >
         <template #headline>
           <b>{{ t('auth.cancelledTitle') }}</b>
@@ -93,7 +82,7 @@ const providerName = (provider: SignInProvider) => t(`auth.provider.${provider}`
           {{ providerName(failed) }}
         </template>
       </i18n-t>
-    </div>
+    </NoticeBanner>
 
     <AppButton
       v-for="button in buttons"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Lock } from '@lucide/vue'
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
 import { risingPlace } from '~~/shared/settings'
 
@@ -19,10 +20,13 @@ watchEffect(() => {
 
 <template>
   <div class="flex flex-col gap-[18px]">
-    <SettingLockedNote
+    <NoticeBanner
       v-if="locks?.reason"
-      :reason="locks.reason"
-    />
+      tone="info"
+      :icon="Lock"
+    >
+      {{ locks.reason }}
+    </NoticeBanner>
     <PointsTableEditor
       :model-value="settings.pointsTable"
       :team-count="settings.teamCount"

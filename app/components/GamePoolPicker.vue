@@ -39,19 +39,20 @@ const pending = computed(() => status.value === 'pending' && !data.value)
       <slot name="actions" />
     </div>
 
-    <p
+    <NoticeBanner
       v-if="error"
-      role="alert"
-      class="m-0 flex flex-wrap items-center gap-3 font-bold text-error-fg"
+      tone="critical"
     >
       {{ t('library.listFailed') }}
-      <AppButton
-        variant="secondary"
-        @click="refresh()"
-      >
-        {{ t('errorPage.generic.retry') }}
-      </AppButton>
-    </p>
+      <template #action>
+        <AppButton
+          variant="secondary"
+          @click="refresh()"
+        >
+          {{ t('errorPage.generic.retry') }}
+        </AppButton>
+      </template>
+    </NoticeBanner>
 
     <div
       v-else-if="pending"

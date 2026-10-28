@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ListOrdered, Swords, User, Users } from '@lucide/vue'
+import { ListOrdered, Lock, Swords, User, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
 import { AVAILABLE_FORMATS, TEAM_COUNT_MAX, TEAM_COUNT_MIN, TEAM_PLAYERS_MAX, TEAM_SIZE_MAX, TEAM_SIZE_MIN, withTeams, type Format } from '~~/shared/settings'
@@ -47,10 +47,13 @@ const players = computed(() => settings.value.teamCount * settings.value.teamSiz
 
 <template>
   <div class="flex flex-col gap-[18px]">
-    <SettingLockedNote
+    <NoticeBanner
       v-if="locks?.reason"
-      :reason="locks.reason"
-    />
+      tone="info"
+      :icon="Lock"
+    >
+      {{ locks.reason }}
+    </NoticeBanner>
     <RadioCardGroup
       :model-value="settings.format"
       :options="options"

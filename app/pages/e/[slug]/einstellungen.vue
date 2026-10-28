@@ -70,13 +70,12 @@ async function save(sent: EventDraft) {
         {{ t('eventSettings.back') }}
       </NuxtLink>
 
-      <p
+      <NoticeBanner
         v-if="!editable"
-        role="status"
-        class="m-0 font-bold"
+        tone="warning"
       >
         {{ t('eventSettings.wrongPhase') }}
-      </p>
+      </NoticeBanner>
 
       <EventSetupWizard
         v-else

@@ -64,16 +64,14 @@ const lists = computed(() => (props.pools.hidden
       </p>
 
       <template v-else>
-        <p
+        <NoticeBanner
           v-if="isHost && settings.hiddenWheel"
-          class="m-0 inline-flex items-center gap-2 text-[14px] font-semibold text-ink-2"
+          tone="info"
+          :icon="EyeOff"
+          host-only
         >
-          <AppIcon
-            :icon="EyeOff"
-            :size="18"
-          />
           {{ t('howWePlay.hostOnly') }}
-        </p>
+        </NoticeBanner>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div

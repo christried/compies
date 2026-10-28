@@ -56,21 +56,13 @@ function rotate() {
 
       <InviteLinkCard :url="current" />
 
-      <div
+      <NoticeBanner
         v-if="rotated"
-        role="status"
-        class="flex items-center gap-2.5 rounded-[12px] border-2 border-line bg-paper-2 p-3 text-[14px]"
+        tone="success"
+        :icon="Check"
       >
-        <span class="grid size-[26px] flex-none place-items-center rounded-full border-2 border-line bg-success text-on-success">
-          <AppIcon
-            :icon="Check"
-            :size="13"
-          />
-        </span>
-        <span>
-          <b>{{ t('invite.renewed') }}</b> {{ t('invite.renewedText') }}
-        </span>
-      </div>
+        <b>{{ t('invite.renewed') }}</b> {{ t('invite.renewedText') }}
+      </NoticeBanner>
 
       <div class="flex flex-wrap items-center gap-3 border-t-2 border-line-soft pt-3">
         <div class="flex min-w-[180px] flex-1 flex-col gap-0.5 text-[13px] leading-snug">

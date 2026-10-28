@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Crown, FerrisWheel, Hand, Scale, Swords } from '@lucide/vue'
+import { Crown, FerrisWheel, Hand, Lock, Scale, Swords } from '@lucide/vue'
 import type { Component } from 'vue'
 import { vetoAllowanceOf, type EventDraft, type StepLocks } from '~/utils/event-draft'
 import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, type SelectionMode } from '~~/shared/settings'
@@ -41,10 +41,13 @@ const veto = computed(() => vetoAllowanceOf(draft.value))
 
 <template>
   <div class="flex flex-col gap-[18px]">
-    <SettingLockedNote
+    <NoticeBanner
       v-if="locks?.reason"
-      :reason="locks.reason"
-    />
+      tone="info"
+      :icon="Lock"
+    >
+      {{ locks.reason }}
+    </NoticeBanner>
     <RadioCardGroup
       :model-value="draft.settings.selectionMode"
       :options="options"
