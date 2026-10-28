@@ -1,11 +1,11 @@
 <script setup lang="ts">
 // An on/off setting (02-components § ToggleSwitch): „Rad verdecken“ in the Lucky Wheel's options (#145). The
-// whole row is the switch, so the label is clickable; the help is its description. The knob slides with the
+// whole row is the switch, so the label is clickable; the optional help is its description. The knob slides with the
 // same ease as the other motion, and not at all with reduced motion.
 defineProps<{
   modelValue: boolean
   label: string
-  help: string
+  help?: string
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
@@ -21,7 +21,7 @@ const helpId = `${uid}-help`
     role="switch"
     :aria-checked="modelValue ? 'true' : 'false'"
     :aria-labelledby="labelId"
-    :aria-describedby="helpId"
+    :aria-describedby="help ? helpId : undefined"
     class="flex min-h-11 w-full items-center gap-3 text-left focus-visible:focus-ring"
     @click="emit('update:modelValue', !modelValue)"
   >
@@ -41,6 +41,7 @@ const helpId = `${uid}-help`
         class="text-[15px]"
       >{{ label }}</b>
       <span
+        v-if="help"
         :id="helpId"
         class="text-[12px] text-ink-2"
       >{{ help }}</span>
