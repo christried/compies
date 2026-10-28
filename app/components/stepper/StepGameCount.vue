@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { GAME_COUNT_MAX, GAME_COUNT_MIN, type EventSettings } from '~~/shared/settings'
+import type { EventDraft, StepLocks } from '~/utils/event-draft'
+import { GAME_COUNT_MAX, GAME_COUNT_MIN } from '~~/shared/settings'
 
 // Step 3: how many Games are played (#144), 1 to 30.
-const settings = defineModel<EventSettings>({ required: true })
+defineProps<{ locks?: StepLocks }>()
+const draft = defineModel<EventDraft>({ required: true })
+const settings = useDraftSettings(draft)
 const blocker = defineModel<string | null>('blocker', { default: null })
 
 const { t } = useI18n()
