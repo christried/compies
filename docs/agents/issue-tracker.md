@@ -14,6 +14,19 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
+## In a cloud session
+
+Cloud sessions (`CLAUDE_CODE_REMOTE=true`) refuse GraphQL, so every `gh issue …` command above fails with a 403. Use the session's built-in GitHub tools where they cover the operation, or these REST calls (`-F body=@file` reads a multi-line body from a file):
+
+- **Create**: `gh api repos/christried/compies/issues -f title="..." -F body=@body.md -f "labels[]=ready-for-agent"`
+- **Read**: `gh api repos/christried/compies/issues/<n>`, comments via `gh api repos/christried/compies/issues/<n>/comments --jq '[.[].body]'`
+- **List**: `gh api 'repos/christried/compies/issues?state=open&labels=<label>&per_page=100' --jq '[.[] | select(.pull_request | not) | {number, title, labels: [.labels[].name]}]'` (this endpoint also returns PRs; the `select` drops them)
+- **Sub-issue**: the REST call in **Make an issue a sub-issue of a parent** above
+- **Comment**: `gh api repos/christried/compies/issues/<n>/comments -F body=@comment.md`
+- **Apply / remove a label**: `gh api repos/christried/compies/issues/<n>/labels -f "labels[]=<label>"` / `gh api -X DELETE repos/christried/compies/issues/<n>/labels/<label>`
+- **Close**: comment first, then `gh api -X PATCH repos/christried/compies/issues/<n> -f state=closed -f state_reason=completed`
+- **Claim**: `gh api repos/christried/compies/issues/<n>/assignees -f "assignees[]=$(gh api user --jq .login)"`
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
