@@ -23,7 +23,7 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     clipLength: 30,
     playersMin: null,
     playersMax: null,
-    formats: [],
+    suitabilities: [],
     createdBy: { id: kitty.id, name: 'Kitty' },
     createdAt: '2026-01-15T10:00:00.000Z',
     canEdit: true,
