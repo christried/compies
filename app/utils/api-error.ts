@@ -32,6 +32,9 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   invalid_game_name: 'error.gameNameInvalid',
   invalid_youtube: 'gameEdit.badLink',
   invalid_clip: 'error.clipInvalid',
+  invalid_players: 'error.playersInvalid',
+  invalid_formats: 'error.formatsInvalid',
+  not_game_editor: 'error.gameNotEditor',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

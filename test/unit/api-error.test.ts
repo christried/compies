@@ -26,6 +26,12 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(400, 'invalid_clip'))).toBe('error.clipInvalid')
   })
 
+  it('explains the player count, the Formats and the edit refusal (#142)', () => {
+    expect(apiErrorKey(refusal(400, 'invalid_players'))).toBe('error.playersInvalid')
+    expect(apiErrorKey(refusal(400, 'invalid_formats'))).toBe('error.formatsInvalid')
+    expect(apiErrorKey(refusal(403, 'not_game_editor'))).toBe('error.gameNotEditor')
+  })
+
   it('falls back for reasons it cannot explain, so a 400 is not always a past Slot', () => {
     expect(apiErrorKey(refusal(400, 'invalid_time'))).toBe('error.saveFailed')
     expect(apiErrorKey(refusal(500, 'boom'), 'error.voteFailed')).toBe('error.voteFailed')

@@ -39,7 +39,11 @@ export interface GameView {
   canEdit: boolean
 }
 
-export interface GameList { games: GameView[] }
+/** The games the filters keep, and `total`: every game in the library, whatever the filters (#142, for the search placeholder). */
+export interface GameList {
+  games: GameView[]
+  total: number
+}
 
 /** A clip start as the User types it: seconds (`72`), `m:ss` (`1:12`) or `h:mm:ss`, up to CLIP_START_MAX. Null for anything else. */
 export function parseClipTime(text: string): number | null {
