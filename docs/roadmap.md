@@ -6,7 +6,7 @@ Each release is one spec and usable on its own. Only the next release is specced
 
 | Release | Name | Status |
 |---|---|---|
-| 1.3 | Spielvorbereitung | grilled, next to spec |
+| 1.3 | Spielvorbereitung | specced: [#138](https://github.com/christried/compies/issues/138) |
 | 1.4 | Teams | outline |
 | 1.5 | Glücksrad | outline |
 | 1.6 | Punkte | outline |
