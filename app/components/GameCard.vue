@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Gamepad2, Users } from '@lucide/vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { describeGame } from '~/utils/describe-game'
 import type { GameView } from '~~/shared/game'
 import { youTubeThumbnail } from '~~/shared/youtube'
 
@@ -19,13 +20,10 @@ const { t } = useI18n()
 const NuxtLink = resolveComponent('NuxtLink')
 
 const cover = computed(() => props.game.imageUrl ?? (props.game.youtubeId ? youTubeThumbnail(props.game.youtubeId) : null))
-const players = computed(() => {
-  const { playersMin: min, playersMax: max } = props.game
-  if (min === null && max === null) return null
-  return min === max || min === null || max === null ? String(min ?? max) : `${min}–${max}`
-})
-// The Suitabilities („Passt zu“, #171) as a list, in SUITABILITIES order: „Teams, 1 gegen 1“.
-const suitabilities = computed(() => props.game.suitabilities.map(suitability => t(`library.suitability.${suitability}`)).join(', '))
+// The compact player count and the Suitabilities („Passt zu“, #171: „Teams, 1 gegen 1“).
+const description = computed(() => describeGame(props.game, t))
+const players = computed(() => description.value.playersCompact)
+const suitabilities = computed(() => description.value.suitabilities)
 
 // One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.
 const LAYOUT = {
