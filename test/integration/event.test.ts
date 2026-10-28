@@ -236,7 +236,7 @@ describe('events', () => {
       expect((await eventRows())[0]).toMatchObject({ selectionMode: 'lucky_wheel', vetoAllowance: 0 })
     })
 
-    it('refuses a Veto allowance outside 0 to 9, and the wheel options with Admin pick, and writes nothing (#145)', async () => {
+    it('refuses a Veto allowance outside 0 to 9, and the wheel options with Host pick, and writes nothing (#145)', async () => {
       const cookie = await signInAsHost()
       const cases: [Record<string, unknown>, string][] = [
         [{ selectionMode: 'lucky_wheel', vetoAllowance: 10 }, 'veto_allowance_range'],

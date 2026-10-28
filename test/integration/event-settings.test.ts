@@ -127,7 +127,7 @@ describe('changing the settings of an Event (#147)', () => {
       expect(settingsFromRow(await row(slug))).toMatchObject({ teamCount: 3, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 })
     })
 
-    it('refuses wheel options sent to an Admin pick Event instead of answering 200 and storing false', async () => {
+    it('refuses wheel options sent to a Host pick Event instead of answering 200 and storing false', async () => {
       const slug = await createdEvent()
 
       for (const settings of [{ hiddenWheel: true }, { vetoAllowance: 3 }]) {
@@ -138,7 +138,7 @@ describe('changing the settings of an Event (#147)', () => {
       expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
     })
 
-    it('switches a Glücksrad Event to Admin pick without wheel keys and drops its wheel options', async () => {
+    it('switches a Glücksrad Event to Host pick without wheel keys and drops its wheel options', async () => {
       const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true } })
 
       const response = await patch(slug, { settings: { selectionMode: 'admin_pick' } })

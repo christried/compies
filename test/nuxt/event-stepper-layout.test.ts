@@ -156,15 +156,15 @@ describe('EventStepper', () => {
     })
 
     it('keeps the blocker reason out of the dock, right above it, and still describes Weiter with it', async () => {
-      const page = await mountStepper({ nextBlocked: 'Gib der Session einen Namen.' })
+      const page = await mountStepper({ nextBlocked: 'Gib dem Event einen Namen.' })
 
       const dock = page.get('[data-testid="stepper-footer"]')
       const next = dock.findAll('button').find(button => button.text().includes('Weiter'))!
       const reason = page.get(`[id="${next.attributes('aria-describedby')}"]`)
-      expect(reason.text()).toBe('Gib der Session einen Namen.')
+      expect(reason.text()).toBe('Gib dem Event einen Namen.')
       expect(reason.classes()).toEqual(expect.arrayContaining(['text-right', 'text-ink-2']))
       expect(dock.element.contains(reason.element)).toBe(false)
-      expect(dock.text()).not.toContain('Gib der Session einen Namen.')
+      expect(dock.text()).not.toContain('Gib dem Event einen Namen.')
       expect(reason.element.compareDocumentPosition(dock.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 

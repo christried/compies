@@ -29,20 +29,22 @@ export function isPlayerCount(players: unknown): players is number {
   return typeof players === 'number' && Number.isInteger(players) && players >= 1 && players <= PLAYERS_MAX
 }
 
-/** A recommended player count as the User types it: digits, then a count from 1 to PLAYERS_MAX. Null for anything else. */
-export function parsePlayerCount(text: string): number | null {
+/** Digits as the User types them, trimmed, then the number when `isValid` takes it. Null for anything else. */
+function parseDigits(text: string, isValid: (value: number) => boolean): number | null {
   const trimmed = text.trim()
   if (!/^\d+$/.test(trimmed)) return null
-  const players = Number(trimmed)
-  return isPlayerCount(players) ? players : null
+  const value = Number(trimmed)
+  return isValid(value) ? value : null
+}
+
+/** A recommended player count as the User types it: digits, then a count from 1 to PLAYERS_MAX. Null for anything else. */
+export function parsePlayerCount(text: string): number | null {
+  return parseDigits(text, isPlayerCount)
 }
 
 /** A clip length as the User types it (`30`): digits, then a length from CLIP_LENGTH_MIN to CLIP_LENGTH_MAX. Null for anything else. */
 export function parseClipLength(text: string): number | null {
-  const trimmed = text.trim()
-  if (!/^\d+$/.test(trimmed)) return null
-  const seconds = Number(trimmed)
-  return isClipLength(seconds) ? seconds : null
+  return parseDigits(text, isClipLength)
 }
 
 /** A game image is one WebP of the card's 16:10 cover, 512 px wide, up to about 200 kB (#143). */
@@ -148,12 +150,6 @@ function parseWholeNumber(raw: unknown, min: number, max: number, fallback: numb
   return typeof raw === 'number' && Number.isInteger(raw) && raw >= min && raw <= max ? raw : undefined
 }
 
-/** A clip length of the body: absent is the default; else a whole number from CLIP_LENGTH_MIN to CLIP_LENGTH_MAX. Undefined when it is anything else. */
-function parseClipLengthField(raw: unknown): number | undefined {
-  if (raw === undefined) return CLIP_LENGTH_DEFAULT
-  return isClipLength(raw) ? raw : undefined
-}
-
 /** A recommended player count: absent or null is open, else a whole number 1 to 99. Undefined when it is anything else. */
 function parsePlayerBound(raw: unknown): number | null | undefined {
   if (raw === undefined || raw === null) return null
@@ -203,7 +199,7 @@ export function parseGameInput(input: unknown): { ok: true, game: GameInput } | 
   if (youtubeId === undefined) return { ok: false, error: 'invalid_youtube' }
 
   const clipStart = parseWholeNumber(body.clipStart, 0, CLIP_START_MAX, 0)
-  const clipLength = parseClipLengthField(body.clipLength)
+  const clipLength = parseWholeNumber(body.clipLength, CLIP_LENGTH_MIN, CLIP_LENGTH_MAX, CLIP_LENGTH_DEFAULT)
   if (clipStart === undefined || clipLength === undefined) return { ok: false, error: 'invalid_clip' }
 
   const players = parsePlayers(body)
