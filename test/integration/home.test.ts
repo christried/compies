@@ -4,6 +4,7 @@ import createEvent from '../../server/api/e/index.post'
 import listHome from '../../server/api/e/index.get'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -58,7 +59,7 @@ describe('GET /api/e (Home)', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name, dateMode: 'poll', slots }),
+      body: JSON.stringify({ name, dateMode: 'poll', slots, settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json()
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
@@ -71,7 +72,7 @@ describe('GET /api/e (Home)', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name, dateMode: 'direct', startsAt: [startsAt] }),
+      body: JSON.stringify({ name, dateMode: 'direct', startsAt: [startsAt], settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json()
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
@@ -83,7 +84,7 @@ describe('GET /api/e (Home)', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name, dateMode: 'poll', sessions: 2, slots }),
+      body: JSON.stringify({ name, dateMode: 'poll', sessions: 2, slots, settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json()
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
@@ -95,7 +96,7 @@ describe('GET /api/e (Home)', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name, dateMode: 'direct', sessions: startsAt.length, startsAt }),
+      body: JSON.stringify({ name, dateMode: 'direct', sessions: startsAt.length, startsAt, settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json()
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))

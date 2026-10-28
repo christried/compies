@@ -9,18 +9,24 @@ import { apiError } from '../../utils/errors'
 import { inviteUrl } from '../../utils/links'
 import { requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
+import { parseSettings } from '../../../shared/settings'
 
 const SLUG_ATTEMPTS = 5
 
 // Create an Event (screen M2). Only Users with the Host permission may create one (ADR 0002).
-// The Event, its Sessions, its Slots and the Host's membership are written in one transaction.
+// The Event with its settings, its Sessions, its Slots and the Host's membership are written in one transaction.
+// Settings are required (#144): an Event without them is one from before 1.3.
 export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const user = await requireUser(event)
   if (!user.canHost) throw apiError('no_host_permission')
 
-  const parsed = parseNewEvent(await readBody(event), new Date())
+  const body = await readBody(event)
+  const parsed = parseNewEvent(body, new Date())
   if (!parsed.ok) throw apiError(parsed.error)
   const input = parsed.event
+  const parsedSettings = parseSettings((body as { settings?: unknown } | null)?.settings)
+  if (!parsedSettings.ok) throw apiError(parsedSettings.error)
+  const { settings } = parsedSettings
 
   const db = useDb(event)
   const slug = await freeSlug(db, input.name)
@@ -35,9 +41,10 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .insert(events)
-      .values({ slug, inviteToken, hostId: user.id, name: input.name, phase })
+      .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })
       .returning({ id: events.id })
     await tx.insert(sessions).values(startsAt.map(date => ({ eventId: row!.id, startsAt: date })))
+    // The Game pools get their own insert here (#146).
     await tx.insert(eventMembers).values({ eventId: row!.id, userId: user.id })
     if (input.dateMode === 'poll') {
       await tx.insert(pollSlots).values(input.slots.map(startsAt => ({ eventId: row!.id, startsAt })))
