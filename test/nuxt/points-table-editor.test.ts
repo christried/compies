@@ -60,7 +60,7 @@ describe('PointsTableEditor', () => {
   })
 
   it('stops the points at 0 and 99', async () => {
-    const page = await mountEditor({ preset: 'custom', values: [99, 0], }, 2)
+    const page = await mountEditor({ preset: 'custom', values: [99, 0] }, 2)
 
     expect(page.get('button[aria-label="Punkte für Platz 1: mehr"]').attributes('aria-disabled')).toBe('true')
     expect(page.get('button[aria-label="Punkte für Platz 2: weniger"]').attributes('aria-disabled')).toBe('true')
@@ -77,7 +77,7 @@ describe('PointsTableEditor', () => {
   })
 
   it('shows no error for equal places or a preset', async () => {
-    expect((await mountEditor({ preset: 'custom', values: [2, 2, 2], }, 3)).find('[role="alert"]').exists()).toBe(false)
+    expect((await mountEditor({ preset: 'custom', values: [2, 2, 2] }, 3)).find('[role="alert"]').exists()).toBe(false)
     expect((await mountEditor({ preset: 'linear', values: [2, 1, 0] }, 3)).find('[role="alert"]').exists()).toBe(false)
   })
 })

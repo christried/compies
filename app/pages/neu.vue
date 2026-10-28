@@ -76,7 +76,7 @@ const name = computed(() => draft.value.name.trim())
 const poll = computed(() => draft.value.dates.mode === 'poll')
 const sessionCount = computed(() => draft.value.dates.sessionCount)
 const datesLine = computed(() => (poll.value
-  ? t('stepper.done.datesPoll', { n: draft.value.dates.slots.length })
+  ? t('stepper.done.datesPoll', { n: draft.value.dates.slots.length }, draft.value.dates.slots.length)
   : t('stepper.done.datesDirect', { n: sessionCount.value }, sessionCount.value)))
 </script>
 

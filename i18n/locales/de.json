@@ -923,10 +923,6 @@
     },
     "create": {
       "back": "Zurück",
-      "kicker": "Neues Event",
-      "title": "Erst mal: Wann zocken wir?",
-      "nameLabel": "Name des Events",
-      "nameHelp": "Sehen alle in der Einladung.",
       "dateLabel": "Termin",
       "modePoll": "Terminumfrage",
       "modeDirect": "Direkt festlegen",
@@ -934,13 +930,7 @@
       "addSlot": "Termin vorschlagen",
       "removeSlot": "Vorschlag entfernen",
       "slotsHelp": "Abgestimmt wird mit Ja, Meh oder Nein. Bis zu 16 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
-      "submit": "Umfrage starten",
-      "submitDirect": "Event anlegen",
       "blockedPast": "Erst den Termin in der Vergangenheit ändern.",
-      "laterTitle": "Format, Modus und Spiele kommen später.",
-      "laterText": "Sobald das Update da ist, trägst du sie in diesem Event nach. Umfrage und Stimmen bleiben, wie sie sind.",
-      "doneTitle": "Umfrage für {name} läuft!",
-      "doneTitleDirect": "{name} steht!",
       "doneText": "Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.",
       "doneDirectTextPlural": "Die Termine stehen. Schick den Link an deine Freunde, dann können sie sich hier anmelden.",
       "toEvent": "Zum Event",
@@ -1120,7 +1110,7 @@
       "kicker": "Geschafft",
       "title": "Session erstellt",
       "heading": "{name} steht!",
-      "datesPoll": "Umfrage, {n} Vorschläge",
+      "datesPoll": "Umfrage, {n} Vorschlag | Umfrage, {n} Vorschläge",
       "datesDirect": "Direkt festgelegt | {n} Termine festgelegt"
     },
     "name": {

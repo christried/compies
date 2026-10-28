@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Eine neue Session legst du jetzt Schritt für Schritt an: Name, Format (Teams mit Anzahl und Größe), Anzahl Spiele, Punktetabelle und Termin. Am Ende siehst du alles auf einen Blick. ([#144](https://github.com/christried/compies/issues/144))
+
 ## [1.2.0] - 2026-10-28 – Mehr Termine
 
 Bis zu 16 Termine pro Umfrage, eine Anmerkung zu deiner Stimme, Google Kalender oder Outlook mit einem Klick und eine Seite, auf der du siehst, was neu ist.

@@ -68,11 +68,11 @@ describe('EventStepper', () => {
       expect(page.emitted('go')).toEqual([[1]])
     })
 
-    it('keeps the steps after the current one clickable when the Host went back', async () => {
+    it('keeps the steps up to the one reached clickable when the Host went back', async () => {
       const page = await mountStepper({ current: 1, reached: 3 })
 
       const items = page.get('nav[aria-label="Schritte"]').findAll('li')
-      expect(items.map(item => item.find('button').exists())).toEqual([true, false, true, false, false])
+      expect(items.map(item => item.find('button').exists())).toEqual([true, false, true, true, false])
     })
 
     it('shows the info slot as a column beside the form, and none without it', async () => {

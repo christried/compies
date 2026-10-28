@@ -1,4 +1,5 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import type { VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CreatePage from '~/pages/neu.vue'
@@ -19,7 +20,7 @@ const DEFAULT_SETTINGS = {
   vetoAllowance: null,
 }
 
-type Page = Awaited<ReturnType<typeof mountSuspended>>
+type Page = VueWrapper
 
 // Attached to the document: Weiter is a submit button, which only submits a form that is in it.
 const mounted: Page[] = []

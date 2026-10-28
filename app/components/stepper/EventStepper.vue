@@ -31,10 +31,11 @@ const heading = useTemplateRef<HTMLElement>('heading')
 const infoOpen = ref(false)
 const blockedId = useId()
 
-// A step is finished once the Host has been past it; the current one is never a link to itself.
+// A step is finished (✓) once the Host has been past it. Every step up to the highest one reached is a link,
+// the current one never to itself, so after going back the Host can jump straight to where they were.
 const finishedUpTo = computed(() => Math.max(props.current, props.reached))
 const isFinished = (index: number) => index < finishedUpTo.value
-const isLink = (index: number) => isFinished(index) && index !== props.current
+const isLink = (index: number) => index <= props.reached && index !== props.current
 
 // Screen readers hear the new step: the heading takes the focus when the step changes (not on first show).
 watch(() => props.current, async () => {
