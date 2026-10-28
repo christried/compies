@@ -62,6 +62,12 @@ describe('summaryRows', () => {
     expect(admin.map(row => row.key)).toEqual(['format', 'games', 'points', 'mode'])
   })
 
+  it('says „1 Spiel“ for a pool of one game', () => {
+    const rows = summaryRows(settings(), t, { pools: { main: 1, tiebreaker: 0 } })
+
+    expect(rows.at(-1)).toEqual({ key: 'pool', label: 'Pool', value: '1 Spiel, Tiebreaker 0' })
+  })
+
   it('adds the Game pool and the Date when it is given them', () => {
     const rows = summaryRows(settings(), t, { pools: { main: 9, tiebreaker: 3 }, dates: 'Umfrage, 4 Vorschläge' })
 

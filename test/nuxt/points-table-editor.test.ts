@@ -20,7 +20,7 @@ describe('PointsTableEditor', () => {
     expect(radios(page)[0]!.text()).toContain('Linear')
     expect(radios(page)[0]!.text()).toContain('3 / 2 / 1 / 0')
     expect(radios(page)[1]!.text()).toContain('Winner takes all')
-    expect(radios(page)[1]!.text()).toContain('3 / 0 / 0 / 0')
+    expect(radios(page)[1]!.text()).toContain('3 / 0 / 0 / 0. Nur der Sieg zählt.')
     expect(radios(page)[2]!.text()).toContain('Eigene Tabelle')
   })
 

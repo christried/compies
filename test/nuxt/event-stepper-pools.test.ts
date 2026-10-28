@@ -280,6 +280,49 @@ describe('the pool steps', () => {
         expect(hint(page)).toBeUndefined()
       })
 
+      /** Names the Session, sets the Game count and walks on to the Selection mode step. */
+      async function toModeStepWith(page: Page, gameCount: number) {
+        await page.get('input[type="text"]').setValue('Freitags-Zocken')
+        await next(page, 2)
+        for (let n = 10; n > gameCount; n--) await page.get('button[aria-label="Anzahl Spiele: weniger"]').trigger('click')
+        await next(page, 2)
+      }
+
+      it('reads right for one Game and one game in the pool with Admin-Wahl', async () => {
+        library = sixteen
+        const page = await mountCreate()
+        await toModeStepWith(page, 1)
+        await next(page, 1)
+        await settle(page)
+
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+      })
+
+      it('says „ist 1“ for a single game in the pool', async () => {
+        library = sixteen
+        const page = await mountCreate()
+        await toModeStepWith(page, 2)
+        await next(page, 1)
+        await settle(page)
+        await toggle(page, 'Spiel 01 in den Pool').trigger('click')
+
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 2 Spiele brauchst du 2 Spiele im Pool, im Pool ist 1. Blockiert nichts, nur damit du’s weißt.')
+      })
+
+      it('reads right for one Game with the Lucky Wheel', async () => {
+        library = sixteen
+        const page = await mountCreate()
+        await toModeStepWith(page, 1)
+        await radios(page)[1]!.trigger('click')
+        await next(page)
+        await settle(page)
+
+        expect(hint(page)!.text()).toBe('Wird knapp. 1 Spiel plus bis zu 6 Vetos: Im schlimmsten Fall brauchst du 7 Spiele, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+
+        await toggle(page, 'Spiel 01 in den Pool').trigger('click')
+        expect(hint(page)!.text()).toContain('im Pool ist 1.')
+      })
+
       it('is a status, not an error, and never blocks Weiter', async () => {
         const page = await mountCreate()
         await toPoolStep(page)
