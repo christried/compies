@@ -47,7 +47,7 @@ export function settingsSentence(settings: EventSettings, t: Translate): string 
 
 export interface SummaryRow { key: string, label: string, value: string }
 
-/** The key/value list: Format, Spiele, Punkte, Modus, then Pool and Termin when the caller has them. */
+/** The key/value list: Format, Spiele, Punkte, Modus, Vetos with the Lucky Wheel, then Pool and Termin when the caller has them. */
 export function summaryRows(
   settings: EventSettings,
   t: Translate,
@@ -59,6 +59,10 @@ export function summaryRows(
     { key: 'points', label: t('stepper.summary.points'), value: pointsText(settings.pointsTable, t) },
     { key: 'mode', label: t('stepper.summary.mode'), value: modeText(settings, t) },
   ]
+  // Only the Lucky Wheel has vetoes (#145).
+  if (settings.selectionMode === 'lucky_wheel') {
+    rows.push({ key: 'vetoes', label: t('stepper.summary.vetoes'), value: t('stepper.summary.vetoValue', { n: settings.vetoAllowance }) })
+  }
   if (extra.pools) rows.push({ key: 'pool', label: t('stepper.summary.pool'), value: t('stepper.summary.poolValue', extra.pools) })
   if (extra.dates) rows.push({ key: 'dates', label: t('stepper.summary.dates'), value: extra.dates })
   return rows

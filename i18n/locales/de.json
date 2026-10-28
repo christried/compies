@@ -192,10 +192,14 @@
         "desc": "Wer hinten liegt, sucht aus."
       },
       "loserAdv": {
-        "name": "Loser’s Advantage",
+        "name": "Lucky Wheel – Loser’s Advantage",
         "desc": "Der Letzte bannt vor jedem Dreh."
       },
-      "plannedNote": "Loser’s Pick und Loser’s Advantage kommen bald. Sie sind schon sichtbar, damit Hosts wissen, was kommt, lassen sich aber noch nicht wählen.",
+      "plannedNote": "Pick & Ban, Loser’s Pick und Loser’s Advantage kommen bald. Sie sind schon sichtbar, damit du weißt, was kommt, lassen sich aber noch nicht wählen.",
+      "vetoes": "Vetos pro Partei",
+      "vetoesHelp": "Jede Partei hat gleich viele Vetos für das ganze Event.",
+      "vetoesMin": "Mindestens 0 Vetos.",
+      "vetoesMax": "Höchstens 9 Vetos pro Partei.",
       "howItWorks": "So läuft's",
       "goodFor": "Gut für",
       "hideWheel": "Rad verdecken",
@@ -251,8 +255,9 @@
       },
       "wheel": {
         "title": "Lucky Wheel",
-        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jeder Spieler bringt 1 Veto mit, im Team werden sie zusammengelegt, und jedes Mitglied darf sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
+        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
         "hideWheel": "Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.",
+        "hostSees": "Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.",
         "good": "Maximale Spannung und Chaos.",
         "warn": "Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon."
       },
@@ -1137,6 +1142,7 @@
       "format": { "label": "Format", "title": "Wer gegen wen?" },
       "games": { "label": "Spiele", "title": "Wie viele Spiele?" },
       "points": { "label": "Punkte", "title": "Wer kriegt wie viele Punkte?" },
+      "mode": { "label": "Auswahlmodus", "title": "Wie wird das nächste Spiel bestimmt?" },
       "sessions": { "label": "Termin", "title": "Wann zocken wir?" }
     },
     "create": "Session erstellen",
@@ -1198,6 +1204,8 @@
       "gamesLabel": "Spiele",
       "points": "Punkte",
       "mode": "Modus",
+      "vetoes": "Vetos",
+      "vetoValue": "{n} pro Partei",
       "pool": "Pool",
       "poolValue": "{main} Spiele, Tiebreaker {tiebreaker}",
       "dates": "Termin"
