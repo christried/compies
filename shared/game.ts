@@ -138,7 +138,7 @@ export function parseYoutubeField(raw: unknown): string | null | undefined {
 }
 
 /** A whole number from `min` to `max`; `fallback` when the field is absent. Undefined when it is anything else. */
-export function parseWholeNumber(raw: unknown, min: number, max: number, fallback: number): number | undefined {
+function parseWholeNumber(raw: unknown, min: number, max: number, fallback: number): number | undefined {
   if (raw === undefined) return fallback
   return typeof raw === 'number' && Number.isInteger(raw) && raw >= min && raw <= max ? raw : undefined
 }
@@ -156,7 +156,7 @@ function parsePlayerBound(raw: unknown): number | null | undefined {
 }
 
 /** The recommended player count, both bounds optional and min ≤ max when both are set. Null bounds when absent. */
-export function parsePlayers(body: Record<string, unknown>): { min: number | null, max: number | null } | undefined {
+function parsePlayers(body: Record<string, unknown>): { min: number | null, max: number | null } | undefined {
   const min = parsePlayerBound(body.playersMin)
   const max = parsePlayerBound(body.playersMax)
   if (min === undefined || max === undefined) return undefined
