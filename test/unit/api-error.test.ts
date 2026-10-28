@@ -20,6 +20,12 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(429, 'rate_limited'))).toBe('error.rateLimited')
   })
 
+  it('explains the refusals of the Game library (#141)', () => {
+    expect(apiErrorKey(refusal(400, 'invalid_game_name'))).toBe('error.gameNameInvalid')
+    expect(apiErrorKey(refusal(400, 'invalid_youtube'))).toBe('gameEdit.badLink')
+    expect(apiErrorKey(refusal(400, 'invalid_clip'))).toBe('error.clipInvalid')
+  })
+
   it('falls back for reasons it cannot explain, so a 400 is not always a past Slot', () => {
     expect(apiErrorKey(refusal(400, 'invalid_time'))).toBe('error.saveFailed')
     expect(apiErrorKey(refusal(500, 'boom'), 'error.voteFailed')).toBe('error.voteFailed')

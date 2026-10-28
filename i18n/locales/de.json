@@ -1111,6 +1111,8 @@
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
     "voteFailed": "Deine Stimme ist nicht angekommen",
     "noteTooLong": "Die Anmerkung ist zu lang.",
+    "gameNameInvalid": "Gib dem Spiel einen Namen, höchstens 60 Zeichen.",
+    "clipInvalid": "Der Clip passt nicht: Die Länge liegt zwischen 5 und 60 Sekunden.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",
