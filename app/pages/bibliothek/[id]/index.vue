@@ -1,43 +1,25 @@
 <script setup lang="ts">
-import { ChevronLeft, Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
-import { apiFailure } from '~/utils/api-error'
-import { canSeeLibrary, type GameView } from '~~/shared/game'
+import { Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
+import { formatMonthYear } from '~/utils/berlin-time'
+import { describeGame } from '~/utils/describe-game'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
-// set length, the facts (player count, Formats, clip length) and who created it. The creator and the Platform
+// set length, the facts (player count, Suitabilities, clip length) and who created it. The creator and the Platform
 // admin get „Bearbeiten“; everyone else gets the reason instead of a dead button. A game that does not exist
 // looks like any missing page; so does the page for Users who may not see the library.
 const { t } = useI18n()
 const route = useRoute()
-const user = useAuthUser()
-const viewer = computed(() => canSeeLibrary(user.value))
 const id = computed(() => String(route.params.id))
 
-const { data: game, status, error, refresh } = useFetch<GameView>(() => `/api/games/${id.value}`, {
-  key: `game-${id.value}`,
-  immediate: viewer.value,
-})
-const missing = computed(() => apiFailure(error.value).status === 404)
+const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
 useHead({ title: () => game.value?.name ?? t('nav.library') })
 
-// Month and year in Berlin time, like the rest of the app (ADR 0003).
-const month = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' })
-const createdMonth = computed(() => (game.value ? month.format(new Date(game.value.createdAt)) : ''))
+const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.value.createdAt)) : ''))
 
-// The player count as a fact: „2 bis 10“, „ab 2“, „bis 10“, or „2 Spieler“ for one count (#142).
-const players = computed(() => {
-  const { playersMin: min, playersMax: max } = game.value ?? { playersMin: null, playersMax: null }
-  if (min === null && max === null) return null
-  if (min === max) return t('library.players', { n: min })
-  if (max === null) return t('library.playersFrom', { min })
-  if (min === null) return t('library.playersUpTo', { max })
-  return t('library.playersBetween', { min, max })
-})
-const formats = computed(() => {
-  const list = game.value?.formats ?? []
-  if (list.length === 0) return null
-  return list.length > 1 ? t('library.formatBoth') : t(`library.format.${list[0]}`)
-})
+// The player count (spelled out) and the Suitabilities as facts (#142, #171).
+const description = computed(() => (game.value ? describeGame(game.value, t) : null))
+const players = computed(() => description.value?.players ?? null)
+const suitabilities = computed(() => description.value?.suitabilities ?? null)
 </script>
 
 <template>
@@ -53,16 +35,10 @@ const formats = computed(() => {
     kind="hub"
   >
     <div class="mx-auto flex w-full max-w-[1040px] flex-col gap-[14px]">
-      <NuxtLink
+      <BackLink
         to="/bibliothek"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('nav.library') }}
-      </NuxtLink>
+        :label="t('nav.library')"
+      />
 
       <FullScreenState
         v-if="error"
@@ -119,7 +95,7 @@ const formats = computed(() => {
             {{ game.name }}
           </h1>
           <ul
-            v-if="players || formats || game.youtubeId"
+            v-if="players || suitabilities || game.youtubeId"
             class="m-0 flex list-none flex-wrap gap-2 p-0"
           >
             <li
@@ -133,14 +109,14 @@ const formats = computed(() => {
               {{ players }}
             </li>
             <li
-              v-if="formats"
+              v-if="suitabilities"
               class="inline-flex h-8 items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-3 text-[13px] font-bold"
             >
               <AppIcon
                 :icon="Swords"
                 :size="14"
               />
-              {{ formats }}
+              {{ suitabilities }}
             </li>
             <li
               v-if="game.youtubeId"

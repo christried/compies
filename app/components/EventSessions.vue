@@ -51,6 +51,7 @@ const { notices: reopenNotices, close: closeReopenNotice } = useReopenNotices(no
     :key="session.id"
     tone="warning"
     :icon="CircleAlert"
+    closable
     @close="closeReopenNotice(session)"
   >
     {{ t('mvp.reopen.notice', { when: whenOf(session.previousStartsAt) }) }}

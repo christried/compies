@@ -1,66 +1,36 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import EventStepper from '~/components/stepper/EventStepper.vue'
-import StepFormat from '~/components/stepper/StepFormat.vue'
-import StepGameCount from '~/components/stepper/StepGameCount.vue'
-import StepMode from '~/components/stepper/StepMode.vue'
-import StepName from '~/components/stepper/StepName.vue'
-import StepPool from '~/components/stepper/StepPool.vue'
-import StepPoints from '~/components/stepper/StepPoints.vue'
-import StepSessions from '~/components/stepper/StepSessions.vue'
-import { apiErrorKey } from '~/utils/api-error'
-import { draftBody, newDraft } from '~/utils/event-draft'
+import { ChevronRight } from '@lucide/vue'
+import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
+import { draftBody, newDraft, settingsOf, type EventDraft, type StepKey } from '~/utils/event-draft'
 import { settingsSentence } from '~/utils/settings-summary'
-import { SLOTS_MAX, type CreatedEvent } from '~~/shared/event'
+import type { CreatedEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
 
-// Create an Event (screen 05, `?s=create`): the guided stepper (#144) — name, Format with team layout, Game
+// Create an Event (screen 05, `?s=create`): the guided wizard (#144, #170) — name, Format with team layout, Game
 // count, points table, the Selection mode with the Lucky Wheel's options (#145), the Game pool and the Tiebreaker
-// pool (#146), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Session erstellen“; then the Fertig screen shows the
+// pool (#146), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Event erstellen“; then the Fertig screen shows the
 // summary and the Invite link. Only Users with the Host permission get it (ADR 0002); everyone else sees the
-// Construction page. The server is the final judge. A step goes into STEP_KEYS and the step list below. The
-// stepper's components are imported, not auto-imported: Nuxt would name those in `stepper/` with
-// a folder prefix.
+// Construction page. The server is the final judge. A step goes into STEP_KEYS here and into the wizard's step map.
 
 const { t } = useI18n()
 const user = useAuthUser()
 
-const STEP_KEYS = ['name', 'format', 'games', 'points', 'mode', 'pool', 'tiebreaker', 'sessions'] as const
+const STEP_KEYS: StepKey[] = ['name', 'format', 'games', 'points', 'mode', 'pool', 'tiebreaker', 'sessions']
 
 const draft = ref(newDraft())
-// Holds the library across the two pool steps, whose pickers mount and unmount (useGameLibrary).
-if (user.value?.canHost) useGameLibrary()
-const { current, reached, blocker, failure, steps, stepKey, infoTopic, infoTitle, isLast, go, advance } = useEventStepper(STEP_KEYS, draft)
-const saving = ref(false)
 const created = ref<CreatedEvent | null>(null)
 const doneHeading = useTemplateRef('doneHeading')
 
 useHead({ title: () => (created.value ? t('stepper.done.title') : t('stepper.heading')) })
 
-const nextLabel = computed(() => {
-  if (saving.value) return t('mvp.create.saving')
-  return isLast.value ? t('stepper.create') : t('stepper.next')
-})
-
-async function next() {
-  if (blocker.value || saving.value) return
-  if (!isLast.value) return advance()
-  saving.value = true
-  failure.value = null
-  try {
-    created.value = await $fetch<CreatedEvent>('/api/e', { method: 'POST', body: draftBody(draft.value) })
-    await nextTick()
-    doneHeading.value?.focus()
-  }
-  catch (error) {
-    failure.value = t(apiErrorKey(error), { max: SLOTS_MAX })
-  }
-  finally {
-    saving.value = false
-  }
+async function create(sent: EventDraft) {
+  created.value = await $fetch<CreatedEvent>('/api/e', { method: 'POST', body: draftBody(sent) })
+  await nextTick()
+  doneHeading.value?.focus()
 }
 
 const name = computed(() => draft.value.name.trim())
+const settings = computed(() => settingsOf(draft.value))
 const poll = computed(() => draft.value.dates.mode === 'poll')
 const sessionCount = computed(() => draft.value.dates.sessionCount)
 const datesLine = computed(() => (poll.value
@@ -82,16 +52,10 @@ const datesLine = computed(() => (poll.value
     no-tabs
   >
     <div class="mx-auto flex w-full flex-col gap-[18px] px-1">
-      <NuxtLink
+      <BackLink
         to="/"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('mvp.create.back') }}
-      </NuxtLink>
+        :label="t('mvp.create.back')"
+      />
 
       <div
         v-if="created"
@@ -112,7 +76,7 @@ const datesLine = computed(() => (poll.value
               {{ t('stepper.done.heading', { name }) }}
             </h1>
             <p class="m-0 font-semibold text-pretty">
-              {{ settingsSentence(draft.settings, t) }}
+              {{ settingsSentence(settings, t) }}
               {{ poll ? t('mvp.create.doneText') : sessionCount > 1 ? t('mvp.create.doneDirectTextPlural') : t('mvp.create.doneDirectText') }}
             </p>
             <InviteLinkCard :url="created.inviteUrl" />
@@ -129,83 +93,20 @@ const datesLine = computed(() => (poll.value
           </div>
         </section>
         <EventSettingsSummary
-          :settings="draft.settings"
+          :settings="settings"
           :pools="{ main: draft.pools.main.length, tiebreaker: draft.pools.tiebreaker.length }"
           :dates="datesLine"
         />
       </div>
 
-      <EventStepper
+      <EventSetupWizard
         v-else
-        :steps="steps"
-        :current="current"
-        :reached="reached"
-        :title="t(`stepper.steps.${stepKey}.title`)"
-        :info-title="infoTitle"
-        :next-label="nextLabel"
-        :next-blocked="blocker"
-        :busy="saving"
-        @go="go"
-        @next="next"
-        @back="go(current - 1)"
-      >
-        <StepName
-          v-if="stepKey === 'name'"
-          v-model="draft.name"
-          v-model:blocker="blocker"
-        />
-        <StepFormat
-          v-else-if="stepKey === 'format'"
-          v-model="draft.settings"
-          v-model:blocker="blocker"
-        />
-        <StepGameCount
-          v-else-if="stepKey === 'games'"
-          v-model="draft.settings"
-          v-model:blocker="blocker"
-        />
-        <StepPoints
-          v-else-if="stepKey === 'points'"
-          v-model="draft.settings"
-          v-model:blocker="blocker"
-        />
-        <StepMode
-          v-else-if="stepKey === 'mode'"
-          v-model="draft"
-          v-model:blocker="blocker"
-        />
-        <StepPool
-          v-else-if="stepKey === 'pool'"
-          v-model="draft"
-          v-model:blocker="blocker"
-          kind="main"
-        />
-        <StepPool
-          v-else-if="stepKey === 'tiebreaker'"
-          v-model="draft"
-          v-model:blocker="blocker"
-          kind="tiebreaker"
-        />
-        <StepSessions
-          v-else
-          v-model="draft.dates"
-          v-model:blocker="blocker"
-        />
-        <p
-          v-if="failure"
-          role="alert"
-          class="m-0 font-bold text-error-fg"
-        >
-          {{ failure }}
-        </p>
-
-        <template
-          v-if="infoTopic"
-          #info
-        >
-          <InfoSheet :topic="infoTopic" />
-        </template>
-      </EventStepper>
+        v-model="draft"
+        :steps="STEP_KEYS"
+        :last-label="t('stepper.create')"
+        :saving-label="t('common.saving')"
+        :submit="create"
+      />
     </div>
   </AppShell>
 </template>

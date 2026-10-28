@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CreatePage from '~/pages/neu.vue'
 import { kitty, signInAs } from './auth'
 
-// Step 5 of the stepper, the Selection mode (#145): the two open modes, the locked ones, the Lucky Wheel's
+// Step 5 of the stepper, the Selection mode (#145): the two open modes, the locked ones, the Glücksrad's
 // options (Rad verdecken, Vetos pro Partei) that follow the Team size until the Host sets them, and the
 // Fertig summary. The other steps have their own cases in event-stepper.test.ts and create-event.test.ts.
 
@@ -48,7 +48,7 @@ async function toModeStep(page: Page) {
   await next(page, 4)
 }
 
-/** Goes from the Selection mode step to the Sessions step (past the two pools) and fills the one Date, so „Session erstellen“ is ready. */
+/** Goes from the Selection mode step to the Sessions step (past the two pools) and fills the one Date, so „Event erstellen“ is ready. */
 async function toLastStep(page: Page) {
   await next(page, 3)
   await page.get('[role="group"]').findAll('input')[0]!.setValue('30.10.2090')
@@ -81,16 +81,16 @@ describe('the Selection mode step', () => {
     expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Tiebreaker-Pool', '8 Termin'])
   })
 
-  it('offers all five modes in the design’s order, with Admin-Wahl chosen', async () => {
+  it('offers all five modes in the design’s order, with Host-Wahl chosen', async () => {
     const page = await mountCreate()
     await toModeStep(page)
 
     expect(radios(page).map(radio => radio.get('b').text())).toEqual([
-      'Admin-Wahl',
-      'Lucky Wheel',
+      'Host-Wahl',
+      'Glücksrad',
       'Pick & Ban',
       'Loser’s Pick',
-      'Lucky Wheel – Loser’s Advantage',
+      'Glücksrad – Loser’s Advantage',
     ])
     expect(checked(page)).toEqual(['true', 'false', 'false', 'false', 'false'])
   })
@@ -118,14 +118,16 @@ describe('the Selection mode step', () => {
     expect(checked(page)).toEqual(['true', 'false', 'false', 'false', 'false'])
   })
 
-  it('says which modes are coming, in one note under the group', async () => {
+  // The locked modes carry „Bald verfügbar“ on their cards; the note that explained them is gone (#174).
+  it('has no note under the group about the modes that are coming', async () => {
     const page = await mountCreate()
     await toModeStep(page)
 
-    expect(page.text()).toContain('Pick & Ban, Loser’s Pick und Loser’s Advantage kommen bald.')
+    expect(page.text()).not.toContain('kommen bald')
+    expect(page.text()).not.toContain('noch nicht wählen')
   })
 
-  it('shows the hidden wheel switch and the Veto allowance only with the Lucky Wheel', async () => {
+  it('shows the hidden wheel switch and the Veto allowance only with the Glücksrad', async () => {
     const page = await mountCreate()
     await toModeStep(page)
 
@@ -153,19 +155,19 @@ describe('the Selection mode step', () => {
     await radios(page)[1]!.trigger('click')
 
     const aside = page.get('aside[aria-label="Erklärung"]')
-    expect(aside.text()).toContain('Lucky Wheel')
+    expect(aside.text()).toContain('Glücksrad')
     expect(aside.text()).toContain('Du legst Spiele auf das Glücksrad und drehst es.')
     expect(aside.text()).toContain('Option „Rad verdecken“')
     expect(aside.text()).toContain('Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.')
   })
 
-  it('keeps the Lucky Wheel options while Admin-Wahl is chosen, and restores them when the Lucky Wheel comes back', async () => {
+  it('keeps the Glücksrad options while Host-Wahl is chosen, and restores them when the Glücksrad comes back', async () => {
     const page = await mountCreate()
     await toModeStep(page)
     await radios(page)[1]!.trigger('click')
     await hideSwitch(page).trigger('click')
-    await vetoStepper(page)!.findAll('button')[0]!.trigger('click')
-    await vetoStepper(page)!.findAll('button')[0]!.trigger('click')
+    await page.get('button[aria-label="Vetos pro Partei: weniger"]').trigger('click')
+    await page.get('button[aria-label="Vetos pro Partei: weniger"]').trigger('click')
 
     await radios(page)[0]!.trigger('click')
     await radios(page)[1]!.trigger('click')
@@ -223,8 +225,8 @@ describe('the Selection mode step', () => {
     })
   })
 
-  describe('Session erstellen', () => {
-    it('sends the Lucky Wheel with the hidden wheel and the Veto allowance the Host set', async () => {
+  describe('Event erstellen', () => {
+    it('sends the Glücksrad with the hidden wheel and the Veto allowance the Host set', async () => {
       const saved = recordPost()
       const page = await mountCreate()
       await toModeStep(page)
@@ -239,21 +241,21 @@ describe('the Selection mode step', () => {
       expect(saved).toHaveBeenCalledWith(expect.objectContaining({
         settings: expect.objectContaining({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 }),
       }))
-      expect(page.text()).toContain('2 Teams à 3, Lucky Wheel (verdeckt), 10 Spiele.')
+      expect(page.text()).toContain('2 Teams à 3, Glücksrad (verdeckt), 10 Spiele.')
       const list = page.get('dl')
       expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Punkte', 'Modus', 'Vetos', 'Pool', 'Termin'])
       expect(list.findAll('dd').map(value => value.text())).toEqual([
         '2 Teams à 3',
         '10',
         'Linear 1 / 0',
-        'Lucky Wheel (verdeckt)',
+        'Glücksrad (verdeckt)',
         '2 pro Partei',
         '0 Spiele, Tiebreaker 0',
         'Umfrage, 1 Vorschlag',
       ])
     })
 
-    it('sends Admin-Wahl without the wheel options', async () => {
+    it('sends Host-Wahl without the wheel options', async () => {
       const saved = recordPost()
       const page = await mountCreate()
       await toModeStep(page)

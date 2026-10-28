@@ -1,6 +1,6 @@
 import type { EventSettings } from '../../shared/settings'
 
-/** A valid settings payload for POST /api/e (#144): 2 teams of 3, linear points, Admin pick, 10 Games. */
+/** A valid settings payload for POST /api/e (#144): 2 teams of 3, linear points, Host pick, 10 Games. */
 export const TEST_SETTINGS: EventSettings = {
   format: 'teams',
   teamCount: 2,

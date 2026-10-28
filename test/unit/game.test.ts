@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parseGameInput } from '../../server/domain/game'
-import { CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, canEditGame, canSeeLibrary, clipTime, parseClipTime } from '../../shared/game'
+import {
+  CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
+  isClipLength, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
+  type GameFilters, type GameView, type Suitability,
+} from '../../shared/game'
 
 describe('clipTime', () => {
   it.each([
@@ -66,6 +69,52 @@ describe('canEditGame', () => {
   })
 })
 
+// The rules the form and the server share (#171): one set of numbers and one name check, tested once here.
+describe('parsePlayerCount', () => {
+  it.each([['1', 1], ['99', 99], [' 12 ', 12], ['007', 7]])('reads %j as %i', (text, players) => {
+    expect(parsePlayerCount(text)).toBe(players)
+  })
+
+  it.each([['0'], ['100'], ['1.5'], ['abc'], ['-1'], ['1e1'], [''], ['   ']])('refuses %j', (text) => {
+    expect(parsePlayerCount(text)).toBeNull()
+  })
+})
+
+describe('clip length', () => {
+  it.each([[CLIP_LENGTH_MIN], [30], [CLIP_LENGTH_MAX]])('accepts %i seconds', (seconds) => {
+    expect(isClipLength(seconds)).toBe(true)
+  })
+
+  it.each([[CLIP_LENGTH_MIN - 1], [CLIP_LENGTH_MAX + 1], [30.5], ['30'], [null], [undefined]])('refuses %j', (seconds) => {
+    expect(isClipLength(seconds)).toBe(false)
+  })
+
+  it.each([['5', 5], [' 60 ', 60], ['030', 30]])('reads %j as %i seconds', (text, seconds) => {
+    expect(parseClipLength(text)).toBe(seconds)
+  })
+
+  it.each([[''], ['4'], ['61'], ['30.5'], ['1e1'], ['bald']])('refuses %j', (text) => {
+    expect(parseClipLength(text)).toBeNull()
+  })
+})
+
+describe('gameNameProblem', () => {
+  it.each([[''], ['   ']])('says the name is empty for %j', (name) => {
+    expect(gameNameProblem(name)).toBe('empty')
+  })
+
+  it('says the name is too long past GAME_NAME_MAX, counting an emoji as one character', () => {
+    expect(gameNameProblem('a'.repeat(GAME_NAME_MAX))).toBeNull()
+    expect(gameNameProblem('a'.repeat(GAME_NAME_MAX + 1))).toBe('too_long')
+    expect(gameNameProblem('🎮'.repeat(GAME_NAME_MAX))).toBeNull()
+    expect(gameNameProblem('🎮'.repeat(GAME_NAME_MAX + 1))).toBe('too_long')
+  })
+
+  it('does not count surrounding spaces', () => {
+    expect(gameNameProblem(`${' '.repeat(5)}${'a'.repeat(GAME_NAME_MAX)}${' '.repeat(5)}`)).toBeNull()
+  })
+})
+
 describe('parseGameInput', () => {
   const valid = { name: 'Mario Kart' }
 
@@ -97,7 +146,7 @@ describe('parseGameInput', () => {
     it.each([[undefined], [null], ['']])('gives a game without a clip for %j', (youtubeUrl) => {
       expect(parseGameInput({ ...valid, youtubeUrl })).toEqual({
         ok: true,
-        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] },
+        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] },
       })
     })
 
@@ -166,24 +215,123 @@ describe('parseGameInput', () => {
     })
   })
 
-  describe('Formats (#142)', () => {
-    it('stores no Format when none is sent', () => {
-      expect(parseGameInput(valid)).toMatchObject({ ok: true, game: { formats: [] } })
+  describe('Suitabilities (#171)', () => {
+    it('stores no Suitability when none is sent', () => {
+      expect(parseGameInput(valid)).toMatchObject({ ok: true, game: { suitabilities: [] } })
     })
 
-    it('stores the Formats in FORMATS order, whatever the order sent', () => {
-      expect(parseGameInput({ ...valid, formats: ['ffa', 'teams'] })).toMatchObject({ ok: true, game: { formats: ['teams', 'ffa'] } })
-      expect(parseGameInput({ ...valid, formats: ['teams', 'ffa'] })).toMatchObject({ ok: true, game: { formats: ['teams', 'ffa'] } })
+    it.each([
+      [[]],
+      [['teams']],
+      [['ffa']],
+      [['one_v_one']],
+      [['teams', 'ffa']],
+      [['teams', 'one_v_one']],
+      [['ffa', 'one_v_one']],
+      [['teams', 'ffa', 'one_v_one']],
+    ])('stores %j as sent', (suitabilities) => {
+      expect(parseGameInput({ ...valid, suitabilities })).toMatchObject({ ok: true, game: { suitabilities } })
+    })
+
+    it('stores the Suitabilities in SUITABILITIES order, whatever the order sent', () => {
+      expect(parseGameInput({ ...valid, suitabilities: ['one_v_one', 'ffa', 'teams'] })).toMatchObject({ ok: true, game: { suitabilities: ['teams', 'ffa', 'one_v_one'] } })
+      expect(SUITABILITIES).toEqual(['teams', 'ffa', 'one_v_one'])
     })
 
     it.each([
       [['teams', 'teams']],
+      [['one_v_one', 'one_v_one']],
       [['wild']],
+      [['one-v-one']],
       ['teams'],
       [null],
       [[1]],
-    ])('refuses %j with invalid_formats', (formats) => {
-      expect(parseGameInput({ ...valid, formats })).toEqual({ ok: false, error: 'invalid_formats' })
+    ])('refuses %j with invalid_suitabilities', (suitabilities) => {
+      expect(parseGameInput({ ...valid, suitabilities })).toEqual({ ok: false, error: 'invalid_suitabilities' })
     })
+  })
+})
+
+describe('filterGames (#173)', () => {
+  function game(name: string, overrides: Partial<GameView> = {}): GameView {
+    return {
+      id: name,
+      name,
+      imageUrl: null,
+      youtubeId: null,
+      clipStart: 0,
+      clipLength: 30,
+      playersMin: null,
+      playersMax: null,
+      suitabilities: [],
+      createdBy: { id: 'me', name: 'Ich' },
+      createdAt: '2026-01-15T10:00:00.000Z',
+      canEdit: true,
+      ...overrides,
+    }
+  }
+
+  // Five games: names, counts and Suitabilities chosen so every filter has something to keep and something to drop.
+  const mario = game('Mario Kart', { playersMin: 1, playersMax: 12, suitabilities: ['teams', 'ffa'] })
+  const counter = game('Counter-Strike 2', { playersMin: 2, playersMax: 10, suitabilities: ['teams'] })
+  const halo = game('Halo', { playersMax: 4, suitabilities: ['ffa'] })
+  const open = game('Offen', { playersMin: 6 })
+  const board = game('Brettspiel', { createdBy: { id: 'other', name: 'Anna' } })
+  const library = [mario, counter, halo, open, board]
+
+  const by = (filters: Partial<GameFilters>, viewerId = 'me') => filterGames(library, { ...NO_FILTERS, ...filters }, viewerId).map(found => found.name)
+
+  it('keeps every game without filters, in the given order', () => {
+    expect(by({})).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo', 'Offen', 'Brettspiel'])
+  })
+
+  it('keeps the games whose name contains the search, ignoring case and surrounding spaces', () => {
+    expect(by({ q: 'mario' })).toEqual(['Mario Kart'])
+    expect(by({ q: ' KART ' })).toEqual(['Mario Kart'])
+    expect(by({ q: '  ' })).toHaveLength(5)
+  })
+
+  it('reads % and _ in the search as plain characters', () => {
+    const named = [game('Rocket 100%'), game('Rocket 1000'), game('Die_Siedler'), game('Die Siedler')]
+    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }, 'me').map(item => item.name)
+
+    expect(found('%')).toEqual(['Rocket 100%'])
+    expect(found('_')).toEqual(['Die_Siedler'])
+  })
+
+  it('matches umlauts whatever their case', () => {
+    const named = [game('Äpfel Spiel'), game('Würfeln')]
+    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }, 'me').map(item => item.name)
+
+    expect(found('ä')).toEqual(['Äpfel Spiel'])
+    expect(found('Ä')).toEqual(['Äpfel Spiel'])
+    expect(found('WÜR')).toEqual(['Würfeln'])
+  })
+
+  it('keeps the games whose recommended range covers the player count, open bounds included', () => {
+    expect(by({ players: 3 })).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo'])
+    expect(by({ players: 5 })).toEqual(['Mario Kart', 'Counter-Strike 2'])
+    expect(by({ players: 11 })).toEqual(['Mario Kart', 'Offen'])
+    expect(by({ players: 50 })).toEqual(['Offen'])
+  })
+
+  it('leaves out a game without any player count when the player count is filtered', () => {
+    expect(by({ players: 3 })).not.toContain('Brettspiel')
+  })
+
+  it('keeps the games with the Suitability', () => {
+    expect(by({ suitability: 'teams' })).toEqual(['Mario Kart', 'Counter-Strike 2'])
+    expect(by({ suitability: 'ffa' })).toEqual(['Mario Kart', 'Halo'])
+    expect(by({ suitability: 'one_v_one' as Suitability })).toEqual([])
+  })
+
+  it('keeps the games the viewer created with „Von mir“', () => {
+    expect(by({ mine: true })).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo', 'Offen'])
+    expect(by({ mine: true }, 'other')).toEqual(['Brettspiel'])
+  })
+
+  it('combines the filters with AND', () => {
+    expect(by({ players: 3, suitability: 'teams', mine: true, q: 'counter' })).toEqual(['Counter-Strike 2'])
+    expect(by({ players: 3, suitability: 'ffa', q: 'counter' })).toEqual([])
   })
 })

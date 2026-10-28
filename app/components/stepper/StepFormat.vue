@@ -1,34 +1,34 @@
 <script setup lang="ts">
-import { ListOrdered, Swords, User, Users } from '@lucide/vue'
-import { AVAILABLE_FORMATS, TEAM_COUNT_MAX, TEAM_COUNT_MIN, TEAM_PLAYERS_MAX, TEAM_SIZE_MAX, TEAM_SIZE_MIN, withTeams, type EventSettings, type Format, type SettingsFloors } from '~~/shared/settings'
+import { ListOrdered, Lock, Swords, User, Users } from '@lucide/vue'
+import type { Component } from 'vue'
+import type { EventDraft, StepLocks } from '~/utils/event-draft'
+import { AVAILABLE_FORMATS, TEAM_COUNT_MAX, TEAM_COUNT_MIN, TEAM_PLAYERS_MAX, TEAM_SIZE_MAX, TEAM_SIZE_MIN, withTeams, type Format } from '~~/shared/settings'
 
-// Step 2: Format and team layout (#144). Free-for-all, bracket and league show as „Bald verfügbar“. With
+// Format and team layout (#144). Free-for-all, bracket and league show as „Bald verfügbar“. With
 // Teams: how many teams and how many Players per team, at most 24 Players in all; a plus button at the
-// limit says which limit it is. In the settings editor (#147) `lockedReason` locks the Format and the team count
-// (the Event is running), and `floors` keeps the Team size from going below the fullest team.
-const props = defineProps<{
-  lockedReason?: string
-  floors?: SettingsFloors
-}>()
-const settings = defineModel<EventSettings>({ required: true })
+// limit says which limit it is. In the settings editor (#147) `locks.reason` locks the Format and the team count
+// (the Event is running), and `locks.floors` keeps the Team size from going below the fullest team.
+const props = defineProps<{ locks?: StepLocks }>()
+const draft = defineModel<EventDraft>({ required: true })
+const settings = useDraftSettings(draft)
 const blocker = defineModel<string | null>('blocker', { default: null })
 
 const { t } = useI18n()
 
 // Every value this step can produce is valid, so it never blocks.
-watchEffect(() => {
-  blocker.value = null
-})
+useStepBlocker(blocker)
 
-const options = computed(() => [
+// bracket and league are not a Format yet, so the cards carry more values than Format (#144).
+const options = computed<{ value: Format | 'bracket' | 'league', label: string, desc: string, icon: Component, locked: boolean }[]>(() => ([
   { value: 'ffa', label: t('stepper.format.ffa.name'), desc: t('stepper.format.ffa.desc'), icon: User },
   { value: 'teams', label: t('stepper.format.teams.name'), desc: t('stepper.format.teams.desc'), icon: Users },
   { value: 'bracket', label: t('stepper.format.bracket.name'), desc: t('stepper.format.bracket.desc'), icon: Swords },
   { value: 'league', label: t('stepper.format.league.name'), desc: t('stepper.format.league.desc'), icon: ListOrdered },
-].map(option => ({ ...option, locked: !(AVAILABLE_FORMATS as readonly string[]).includes(option.value) })))
+] as const).map(option => ({ ...option, locked: !AVAILABLE_FORMATS.some(format => format === option.value) })))
 
-function chooseFormat(value: string) {
-  settings.value = { ...settings.value, format: value as Format }
+// Only a Format can be chosen; the coming cards are locked, so they never get here.
+function chooseFormat(value: Format | 'bracket' | 'league') {
+  if (value === 'teams' || value === 'ffa') settings.value = { ...settings.value, format: value }
 }
 
 // Each stepper's top is the lower of its own limit and what is left of the 24 Players.
@@ -37,7 +37,7 @@ const teamSizeMax = computed(() => Math.min(TEAM_SIZE_MAX, Math.floor(TEAM_PLAYE
 const teamCountMaxReason = computed(() => (teamCountMax.value < TEAM_COUNT_MAX ? t('stepper.format.playersMax') : t('stepper.format.teamCountMax')))
 const teamSizeMaxReason = computed(() => (teamSizeMax.value < TEAM_SIZE_MAX ? t('stepper.format.playersMax') : t('stepper.format.teamSizeMax')))
 
-const teamSizeMin = computed(() => Math.max(TEAM_SIZE_MIN, props.floors?.teamSize ?? TEAM_SIZE_MIN))
+const teamSizeMin = computed(() => Math.max(TEAM_SIZE_MIN, props.locks?.floors?.teamSize ?? TEAM_SIZE_MIN))
 const teamSizeMinReason = computed(() => (teamSizeMin.value > TEAM_SIZE_MIN ? t('stepper.format.teamSizeFloor', { n: teamSizeMin.value }) : t('stepper.format.teamSizeMin')))
 
 const players = computed(() => settings.value.teamCount * settings.value.teamSize)
@@ -45,15 +45,18 @@ const players = computed(() => settings.value.teamCount * settings.value.teamSiz
 
 <template>
   <div class="flex flex-col gap-[18px]">
-    <SettingLockedNote
-      v-if="lockedReason"
-      :reason="lockedReason"
-    />
+    <NoticeBanner
+      v-if="locks?.reason"
+      tone="info"
+      :icon="Lock"
+    >
+      {{ locks.reason }}
+    </NoticeBanner>
     <RadioCardGroup
       :model-value="settings.format"
       :options="options"
       :label="t('stepper.format.label')"
-      :locked-reason="lockedReason"
+      :locked-reason="locks?.reason"
       @update:model-value="chooseFormat"
     />
 
@@ -72,7 +75,7 @@ const players = computed(() => settings.value.teamCount * settings.value.teamSiz
           :max="teamCountMax"
           :label="t('stepper.format.teamCount')"
           :min-reason="t('stepper.format.teamCountMin')"
-          :locked-reason="lockedReason"
+          :locked-reason="locks?.reason"
           :max-reason="teamCountMaxReason"
           @update:model-value="settings = withTeams(settings, $event, settings.teamSize)"
         />

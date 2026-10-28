@@ -1,69 +1,46 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
-import EventStepper from '~/components/stepper/EventStepper.vue'
-import StepFormat from '~/components/stepper/StepFormat.vue'
-import StepGameCount from '~/components/stepper/StepGameCount.vue'
-import StepMode from '~/components/stepper/StepMode.vue'
-import StepPool from '~/components/stepper/StepPool.vue'
-import StepPoints from '~/components/stepper/StepPoints.vue'
-import { apiErrorKey } from '~/utils/api-error'
-import { draftFromEvent, settingsBody } from '~/utils/event-draft'
+import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
+import { eventDataKey } from '~/utils/event-data'
+import { draftFromEvent, settingsBody, type EventDraft, type StepKey } from '~/utils/event-draft'
 import type { EventView } from '~~/shared/event'
+import { canSeeLibrary } from '~~/shared/game'
 import { eventPath } from '~~/shared/links'
 import { settingsEditable, settingsLocked } from '~~/shared/settings'
 
-// The settings editor (`/e/<slug>/einstellungen`, #147): the stepper's steps 2 to 7 on an Event that exists,
+// The settings editor (`/e/<slug>/einstellungen`, #147): the setup wizard's steps 2 to 7 (#170) on an Event that exists,
 // prefilled from it. Only the Host gets it; everyone else (and a link that leads nowhere) sees the generic
 // Construction page, like any other address below an Event. Every step is a link from the start, because this
 // is an editor, and the last step saves. Once the Event is running, Format, team count, points table and
 // Selection mode show locked with their reason; the server refuses a change to them too (setting_locked).
-// The step components are imported, not auto-imported (see neu.vue).
 
 const { t } = useI18n()
 const { toast } = useToast()
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
-const { data } = await useFetch<EventView>(() => `/api/e/${slug.value}`)
+const { data } = await useFetch<EventView>(() => `/api/e/${slug.value}`, { key: () => eventDataKey(slug.value) })
 
-const STEP_KEYS = ['format', 'games', 'points', 'mode', 'pool', 'tiebreaker'] as const
+const STEP_KEYS: StepKey[] = ['format', 'games', 'points', 'mode', 'pool', 'tiebreaker']
 
 const view = computed(() => (data.value?.event.isHost ? data.value : null))
 const editable = computed(() => (view.value ? settingsEditable(view.value.event.phase) : false))
 const notSetUp = computed(() => view.value?.settings === null)
 // Nothing is locked on an Event that was never set up: it has no rules yet that played games could rely on.
 const lockedReason = computed(() => (view.value && !notSetUp.value && settingsLocked(view.value.event.phase) ? t('eventSettings.locked') : undefined))
-const floors = computed(() => view.value?.settingsFloors ?? undefined)
+// A Host whose Host permission was revoked keeps the games in the pools but may not browse the library (#173).
+const user = useAuthUser()
+const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value) }))
 
 const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { hidden: false, main: [], tiebreaker: [] } }))
-// Holds the library across the two pool steps, whose pickers mount and unmount (useGameLibrary).
-if (view.value) useGameLibrary()
-const { current, blocker, failure, steps, stepKey, infoTopic, infoTitle, isLast, go, advance } = useEventStepper(STEP_KEYS, draft)
-const saving = ref(false)
 
 const heading = computed(() => t(notSetUp.value ? 'eventSettings.setupHeading' : 'eventSettings.heading'))
 useHead({ title: () => `${heading.value} · ${data.value?.event.name ?? ''}` })
 
-const nextLabel = computed(() => {
-  if (saving.value) return t('eventSettings.saving')
-  return isLast.value ? t('eventSettings.save') : t('stepper.next')
-})
-
-async function next() {
-  if (blocker.value || saving.value) return
-  if (!isLast.value) return advance()
-  saving.value = true
-  failure.value = null
-  try {
-    await $fetch(`/api/e/${slug.value}/settings`, { method: 'PATCH', body: settingsBody(draft.value) })
-    toast({ tone: 'success', text: t('eventSettings.saved') })
-    await navigateTo(eventPath(slug.value))
-  }
-  catch (error) {
-    failure.value = t(apiErrorKey(error, 'error.saveFailed', { wrong_phase: 'eventSettings.wrongPhase' }))
-  }
-  finally {
-    saving.value = false
-  }
+async function save(sent: EventDraft) {
+  await $fetch(`/api/e/${slug.value}/settings`, { method: 'PATCH', body: settingsBody(sent) })
+  // The Event page reads the same key: refresh it now, so it shows the saved settings at once, not after the next poll (#174).
+  await refreshNuxtData(eventDataKey(slug.value))
+  toast({ tone: 'success', text: t('eventSettings.saved') })
+  await navigateTo(eventPath(slug.value))
 }
 </script>
 
@@ -84,93 +61,31 @@ async function next() {
     </template>
 
     <div class="mx-auto flex w-full flex-col gap-[18px] px-1">
-      <NuxtLink
+      <BackLink
         :to="eventPath(slug)"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('eventSettings.back') }}
-      </NuxtLink>
+        :label="t('eventSettings.back')"
+      />
 
-      <p
+      <NoticeBanner
         v-if="!editable"
-        role="status"
-        class="m-0 font-bold"
+        tone="warning"
       >
         {{ t('eventSettings.wrongPhase') }}
-      </p>
+      </NoticeBanner>
 
-      <EventStepper
+      <EventSetupWizard
         v-else
-        :steps="steps"
-        :current="current"
-        :reached="STEP_KEYS.length - 1"
+        v-model="draft"
+        :steps="STEP_KEYS"
+        :locks="locks"
+        reach-all
         :nav-title="heading"
         :kicker="t('eventSettings.kicker')"
-        :title="t(`stepper.steps.${stepKey}.title`)"
-        :info-title="infoTitle"
-        :next-label="nextLabel"
-        :next-blocked="blocker"
-        :busy="saving"
-        @go="go"
-        @next="next"
-        @back="go(current - 1)"
-      >
-        <StepFormat
-          v-if="stepKey === 'format'"
-          v-model="draft.settings"
-          v-model:blocker="blocker"
-          :locked-reason="lockedReason"
-          :floors="floors"
-        />
-        <StepGameCount
-          v-else-if="stepKey === 'games'"
-          v-model="draft.settings"
-          v-model:blocker="blocker"
-        />
-        <StepPoints
-          v-else-if="stepKey === 'points'"
-          v-model="draft.settings"
-          v-model:blocker="blocker"
-          :locked-reason="lockedReason"
-        />
-        <StepMode
-          v-else-if="stepKey === 'mode'"
-          v-model="draft"
-          v-model:blocker="blocker"
-          :locked-reason="lockedReason"
-          :floors="floors"
-        />
-        <StepPool
-          v-else-if="stepKey === 'pool'"
-          v-model="draft"
-          v-model:blocker="blocker"
-          kind="main"
-        />
-        <StepPool
-          v-else
-          v-model="draft"
-          v-model:blocker="blocker"
-          kind="tiebreaker"
-        />
-        <p
-          v-if="failure"
-          role="alert"
-          class="m-0 font-bold text-error-fg"
-        >
-          {{ failure }}
-        </p>
-
-        <template
-          v-if="infoTopic"
-          #info
-        >
-          <InfoSheet :topic="infoTopic" />
-        </template>
-      </EventStepper>
+        :last-label="t('eventSettings.save')"
+        :saving-label="t('common.saving')"
+        :error-copy="{ wrong_phase: 'eventSettings.wrongPhase' }"
+        :submit="save"
+      />
     </div>
   </AppShell>
 </template>

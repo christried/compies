@@ -13,13 +13,21 @@ describe('InfoSheet', () => {
     expect(page.text()).toContain('1v1 bis 6v6')
   })
 
-  it('leaves out the sections a topic does not have', async () => {
-    const page = await mountSuspended(InfoSheet, { props: { topic: 'tiebreaker' } })
+  it('gives „Achtung“ the Hinweis tint, so the warning stands out from the page (#172)', async () => {
+    const page = await mountSuspended(InfoSheet, { props: { topic: 'teams' } })
 
-    expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s'])
+    const warn = page.findAll('section').find(section => section.find('h3').text() === 'Achtung')!
+    expect(warn.classes()).toContain('bg-warning-tint')
+    expect(warn.classes()).not.toContain('bg-surface-2')
   })
 
-  it('adds the hidden wheel option for the Lucky Wheel', async () => {
+  it('leaves out the sections a topic does not have', async () => {
+    const page = await mountSuspended(InfoSheet, { props: { topic: 'admin' } })
+
+    expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s', 'Gut für', 'Achtung'])
+  })
+
+  it('adds the hidden wheel option for the Glücksrad', async () => {
     const page = await mountSuspended(InfoSheet, { props: { topic: 'wheel' } })
 
     expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s', 'Option „Rad verdecken“', 'Gut für', 'Achtung'])

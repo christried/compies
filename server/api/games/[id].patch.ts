@@ -1,11 +1,10 @@
 import { eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam, readBody } from 'h3'
 import { games } from '../../db/schema'
-import { parseGameInput } from '../../domain/game'
 import { useDb } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { gameView, loadGame, requireLibraryViewer } from '../../utils/library'
-import { canEditGame, type GameView } from '../../../shared/game'
+import { canEditGame, parseGameInput, type GameView } from '../../../shared/game'
 
 // Edits a game of the library (#142). The body is the whole game, as the form sends it. Only the creator and
 // the Platform admin may edit; another Host gets not_game_editor, and a Member or an unknown game the

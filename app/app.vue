@@ -9,4 +9,5 @@ setLucideProps({ strokeWidth: 2.5 })
   <NuxtPwaManifest />
   <NuxtPage />
   <ToastStack />
+  <StagingBadge />
 </template>

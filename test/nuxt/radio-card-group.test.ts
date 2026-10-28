@@ -101,3 +101,33 @@ describe('RadioCardGroup with a lockedReason', () => {
     expect(page.emitted('update:modelValue')).toBeUndefined()
   })
 })
+
+// The „Bald verfügbar“ chip sits on the title line, so on a narrow card it wraps under the title and the
+// description keeps the full text width (#174).
+describe('RadioCardGroup chip placement (#174)', () => {
+  it('puts the chip on the title line, next to the label', async () => {
+    const page = await mountGroup()
+
+    const locked = radios(page)[0]!
+    const chip = page.get(`[id="${locked.attributes('aria-describedby')}"]`)
+    const title = locked.get('b')
+    expect(chip.element.parentElement).toBe(title.element.parentElement)
+    expect(chip.text()).toContain('Bald verfügbar')
+  })
+
+  it('gives the description the whole text column, not a column beside the chip', async () => {
+    const page = await mountGroup()
+
+    const locked = radios(page)[0]!
+    const title = locked.get('b').element.parentElement!
+    const description = locked.findAll('span').find(span => span.text() === 'Jede Person ist eine eigene Partei.')!
+    expect(description.element.parentElement).toBe(title.parentElement)
+  })
+
+  it('leaves no chip on a card that is open', async () => {
+    const page = await mountGroup()
+
+    const open = radios(page)[1]!
+    expect(open.findAll('span').some(span => span.text() === 'Bald verfügbar')).toBe(false)
+  })
+})

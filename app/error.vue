@@ -25,5 +25,7 @@ const kind = computed(() => props.error.statusCode === 404 ? 'notFound' : props.
         </AppButton>
       </template>
     </FullScreenState>
+    <!-- app.vue is not rendered on an error, so the staging label is mounted here too (#178). -->
+    <StagingBadge />
   </AppShell>
 </template>

@@ -15,7 +15,7 @@ const saved: GameView = {
   clipLength: 30,
   playersMin: null,
   playersMax: null,
-  formats: [],
+  suitabilities: [],
   createdBy: { id: kitty.id, name: 'Kitty' },
   createdAt: '2026-10-28T10:00:00.000Z',
   canEdit: true,
@@ -39,7 +39,7 @@ registerEndpoint(`/api/games/${saved.id}`, {
   handler: async (event) => {
     const body = await readBody(event)
     patchedWith(body)
-    return { ...saved, name: body.name, playersMin: body.playersMin, playersMax: body.playersMax, formats: body.formats }
+    return { ...saved, name: body.name, playersMin: body.playersMin, playersMax: body.playersMax, suitabilities: body.suitabilities }
   },
 })
 
@@ -149,6 +149,35 @@ describe('the game form', () => {
     expect(posted).not.toHaveBeenCalled()
   })
 
+  it('drops the hints of the link, the start and the length, and says the length is at most 60 seconds', async () => {
+    const page = await mountSuspended(GameForm)
+
+    expect(page.text()).not.toContain('Watch-, youtu.be-, Shorts- oder Embed-Link')
+    expect(page.text()).not.toContain('Minuten:Sekunden, zum Beispiel 1:12.')
+    expect(page.text()).not.toContain('In Sekunden, 5 bis 60.')
+    expect(page.text()).toContain('Maximal 60 Sekunden')
+  })
+
+  it('shows the length error instead of the maximum while the length is invalid', async () => {
+    const page = await mountSuspended(GameForm)
+
+    await field(page, 'Länge').setValue('61')
+
+    expect(page.text()).toContain('Die Länge liegt zwischen 5 und 60 Sekunden.')
+    expect(page.text()).not.toContain('Maximal 60 Sekunden')
+  })
+
+  it('says why the game cannot be saved in the error colour', async () => {
+    const page = await mountSuspended(GameForm)
+
+    await page.get('form').trigger('submit')
+
+    const blocker = page.get('#game-blocker')
+    expect(blocker.text()).toBe('Gib dem Spiel einen Namen.')
+    expect(blocker.classes()).toContain('text-error-fg')
+    expect(blocker.classes()).not.toContain('text-ink-2')
+  })
+
   it('posts the game and says it is saved', async () => {
     const page = await mountSuspended(GameForm)
     await field(page, 'Name').setValue('  Mario Kart ')
@@ -158,7 +187,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
-    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, formats: [] })
+    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] })
   })
 
   it('saves a game without a link and without a clip', async () => {
@@ -168,17 +197,17 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(posted).toHaveBeenCalled())
-    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] })
+    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] })
   })
 
-  describe('player count and Formats (#142)', () => {
-    it('says what the player count and the Formats are for', async () => {
+  describe('player count and Suitabilities (#142, #171)', () => {
+    it('does not promise pool suggestions from the player count and the Suitabilities (#175)', async () => {
       const page = await mountSuspended(GameForm)
 
-      expect(page.text()).toContain('Spielerzahl und Formate nutzen wir nur für Vorschläge beim Pool-Füllen. Aussortiert wird nie automatisch.')
+      expect(page.text()).not.toContain('nur für Vorschläge beim Pool-Füllen')
     })
 
-    it('posts the player count and the Formats the User picked', async () => {
+    it('posts the player count and the Suitabilities the User picked', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
       await field(page, 'von').setValue('2')
@@ -188,7 +217,7 @@ describe('the game form', () => {
       await page.get('form').trigger('submit')
 
       await vi.waitFor(() => expect(posted).toHaveBeenCalled())
-      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ playersMin: 2, playersMax: 10, formats: ['teams'] }))
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ playersMin: 2, playersMax: 10, suitabilities: ['teams'] }))
     })
 
     it('takes one bound alone and leaves both empty as no count', async () => {
@@ -215,17 +244,31 @@ describe('the game form', () => {
       expect(posted).not.toHaveBeenCalled()
     })
 
-    it('shows the Formats as toggles that say whether they are on', async () => {
+    it('shows „Passt zu“ as three toggles that say whether they are on', async () => {
       const page = await mountSuspended(GameForm)
-      const teams = page.findAll('button').find(button => button.text() === 'Teams')!
-      const ffa = page.findAll('button').find(button => button.text() === 'Jeder gegen jeden')!
+      const toggle = (label: string) => page.findAll('button').find(button => button.text() === label)!
+      expect(page.text()).toContain('Passt zu')
 
-      expect(teams.attributes('aria-pressed')).toBe('false')
-      await teams.trigger('click')
-      await ffa.trigger('click')
+      expect(toggle('Teams').attributes('aria-pressed')).toBe('false')
+      await toggle('Teams').trigger('click')
+      await toggle('Jeder gegen jeden').trigger('click')
+      await toggle('1 gegen 1').trigger('click')
+      await toggle('Jeder gegen jeden').trigger('click')
 
-      expect(page.findAll('button').find(button => button.text() === 'Teams')!.attributes('aria-pressed')).toBe('true')
-      expect(page.findAll('button').find(button => button.text() === 'Jeder gegen jeden')!.attributes('aria-pressed')).toBe('true')
+      expect(toggle('Teams').attributes('aria-pressed')).toBe('true')
+      expect(toggle('Jeder gegen jeden').attributes('aria-pressed')).toBe('false')
+      expect(toggle('1 gegen 1').attributes('aria-pressed')).toBe('true')
+    })
+
+    it('posts a game that is 1 gegen 1 with one_v_one', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Street Fighter')
+      await page.findAll('button').find(button => button.text() === '1 gegen 1')!.trigger('click')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalled())
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ suitabilities: ['one_v_one'] }))
     })
   })
 
@@ -235,7 +278,7 @@ describe('the game form', () => {
       name: 'Counter-Strike 2',
       playersMin: 2,
       playersMax: 10,
-      formats: ['teams'],
+      suitabilities: ['teams'],
     }
 
     it('prefills every field from the game and saves with PATCH to that game', async () => {
@@ -251,7 +294,7 @@ describe('the game form', () => {
       await page.get('form').trigger('submit')
 
       await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[{ ...existing, name: 'Counter-Strike 2' }]]))
-      expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2', playersMin: 2, playersMax: 10, formats: ['teams'] }))
+      expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2', playersMin: 2, playersMax: 10, suitabilities: ['teams'] }))
       expect(posted).not.toHaveBeenCalled()
     })
   })

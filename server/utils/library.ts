@@ -1,18 +1,18 @@
 import { eq } from 'drizzle-orm'
-import { createError, type H3Event } from 'h3'
-import type { PoolGame } from '../../shared/event'
-import { canEditGame, canSeeLibrary, type GameView } from '../../shared/game'
-import type { AuthUser } from '../../shared/auth'
+import type { H3Event } from 'h3'
+import { canEditGame, canSeeLibrary, type GameView, type PoolGame } from '../../shared/game'
+import { shownName, type AuthUser } from '../../shared/auth'
 import { games, users } from '../db/schema'
 import { isUuid } from '../domain/uuid'
 import type { Db } from './db'
+import { apiNotFound } from './errors'
 import { getUser } from './user'
 
 // Shared parts of the Game library routes (#141).
 
 /** The answer a missing route gets; the library gives it to everyone who may not see it (spec #138). */
 export function libraryNotFound() {
-  return createError({ statusCode: 404, statusMessage: 'Not Found' })
+  return apiNotFound()
 }
 
 /** The signed-in User who may see the library: a Host or the Platform admin. Everyone else gets libraryNotFound. */
@@ -27,7 +27,7 @@ export const gameWithCreator = { game: games, creatorName: users.name, creatorDi
 
 /** The creator's name as the library shows it: the display name when they set one. */
 export function creatorNameOf({ creatorName, creatorDisplayName }: { creatorName: string, creatorDisplayName: string | null | undefined }): string {
-  return creatorDisplayName ?? creatorName
+  return shownName({ name: creatorName, displayName: creatorDisplayName })
 }
 
 /** One game with its creator's name; libraryNotFound for text that is no uuid (it never reaches the database) and for an unknown id. */
@@ -54,7 +54,7 @@ export function poolGameView(row: typeof games.$inferSelect): PoolGame {
     clipLength: row.clipLength,
     playersMin: row.playersMin,
     playersMax: row.playersMax,
-    formats: row.formats,
+    suitabilities: row.suitabilities,
   }
 }
 

@@ -4,7 +4,9 @@ import { r2ImageStore } from './r2-store'
 /** Where game images live (#143). R2 in production and on staging; tests inject the in-memory store. */
 export interface ImageStore {
   put(key: string, body: Uint8Array, contentType: string): Promise<void>
-  get(key: string): Promise<{ body: Uint8Array, contentType: string } | null>
+  get(key: string): Promise<Uint8Array | null>
+  /** Removes an object; an object that is already gone is not an error. */
+  delete(key: string): Promise<void>
 }
 
 declare module 'h3' {
@@ -15,13 +17,16 @@ declare module 'h3' {
 
 /** A Map-backed store, for tests. */
 export function memoryImageStore(): ImageStore & { keys(): string[], clear(): void } {
-  const objects = new Map<string, { body: Uint8Array, contentType: string }>()
+  const objects = new Map<string, Uint8Array>()
   return {
-    async put(key, body, contentType) {
-      objects.set(key, { body, contentType })
+    async put(key, body) {
+      objects.set(key, body)
     },
     async get(key) {
       return objects.get(key) ?? null
+    },
+    async delete(key) {
+      objects.delete(key)
     },
     keys: () => [...objects.keys()],
     clear: () => objects.clear(),

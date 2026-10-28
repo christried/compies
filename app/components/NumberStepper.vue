@@ -2,10 +2,12 @@
 import { Minus, Plus } from '@lucide/vue'
 
 // A whole number with a minus and a plus button (02-components § NumberStepper): teams, Team size, Game count,
-// points per place, Veto allowance. The group is a spinbutton (ArrowUp/ArrowDown count); the value sits in an
-// <output>. At a limit the button stays focusable but is aria-disabled, does nothing and says why: as its
-// title and as a visually hidden description. A parent that has a tighter limit than `max` (24 Players in
-// teams) just passes the lower `max` with its own reason. `lockedReason` locks both buttons with that reason (#147).
+// points per place, Veto allowance. The value is the spinbutton (#174, review S8): focusable, moved with the arrow
+// keys (ArrowUp/ArrowRight count up, ArrowDown/ArrowLeft down) and Home/End for the limits, and it announces its
+// value. The buttons sit outside it. At a limit the button stays focusable but is aria-disabled, does nothing and
+// says why: as its title and as a visually hidden description. A parent that has a tighter limit than `max` (24
+// Players in teams) just passes the lower `max` with its own reason. `lockedReason` locks both buttons and the
+// value with that reason (#147).
 const props = withDefaults(defineProps<{
   modelValue: number
   min: number
@@ -13,15 +15,17 @@ const props = withDefaults(defineProps<{
   step?: number
   /** Shown after the value, e.g. „Teams“. */
   unit?: string
-  /** The group's accessible name. */
+  /** The group's accessible name, and the value's. */
   label: string
   minReason?: string
   maxReason?: string
   /** Both buttons are aria-disabled and say this: the value cannot change now. */
   lockedReason?: string
+  /** The id of what describes the value, e.g. the error of a row that rises (PointsTableEditor). */
+  describedBy?: string
   /** lg = the big Game count stepper (56 px buttons, 72 px number). */
   size?: 'md' | 'lg'
-}>(), { step: 1, unit: undefined, minReason: undefined, maxReason: undefined, lockedReason: undefined, size: 'md' })
+}>(), { step: 1, unit: undefined, minReason: undefined, maxReason: undefined, lockedReason: undefined, describedBy: undefined, size: 'md' })
 
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 
@@ -34,13 +38,24 @@ const atMax = computed(() => Boolean(props.lockedReason) || props.modelValue + p
 const minText = computed(() => props.lockedReason ?? props.minReason)
 const maxText = computed(() => props.lockedReason ?? props.maxReason)
 
+// Nothing is emitted for a value that is already there, and nothing at all while the value is locked.
+function setTo(value: number) {
+  if (props.lockedReason || value === props.modelValue) return
+  emit('update:modelValue', value)
+}
+
 function change(direction: 1 | -1) {
   if (direction === 1 ? atMax.value : atMin.value) return
-  emit('update:modelValue', props.modelValue + direction * props.step)
+  setTo(props.modelValue + direction * props.step)
 }
 
 function onKeydown(event: KeyboardEvent) {
-  const direction = { ArrowUp: 1, ArrowDown: -1 }[event.key] as 1 | -1 | undefined
+  if (event.key === 'Home' || event.key === 'End') {
+    event.preventDefault()
+    setTo(event.key === 'Home' ? props.min : props.max)
+    return
+  }
+  const direction = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[event.key] as 1 | -1 | undefined
   if (direction === undefined) return
   event.preventDefault()
   change(direction)
@@ -52,13 +67,9 @@ const VALUE = { md: 'min-w-11 text-[28px]', lg: 'min-w-[90px] text-[72px]' }
 
 <template>
   <div
-    role="spinbutton"
+    role="group"
     :aria-label="label"
-    :aria-valuenow="modelValue"
-    :aria-valuemin="min"
-    :aria-valuemax="max"
     class="flex items-center gap-2.5"
-    @keydown="onKeydown"
   >
     <button
       type="button"
@@ -81,10 +92,24 @@ const VALUE = { md: 'min-w-11 text-[28px]', lg: 'min-w-[90px] text-[72px]' }
       class="sr-only"
     >{{ minText }}</span>
     <output
-      :key="modelValue"
-      class="animate-tick text-center font-num leading-none"
+      role="spinbutton"
+      :tabindex="lockedReason ? -1 : 0"
+      :aria-label="label"
+      :aria-valuenow="modelValue"
+      :aria-valuemin="min"
+      :aria-valuemax="max"
+      :aria-valuetext="unit ? `${modelValue} ${unit}` : undefined"
+      :aria-disabled="lockedReason ? 'true' : undefined"
+      :aria-describedby="describedBy"
+      class="inline-flex items-center justify-center rounded-xl text-center font-num leading-none focus-visible:focus-ring"
       :class="VALUE[size]"
-    >{{ modelValue }}</output>
+      @keydown="onKeydown"
+    >
+      <span
+        :key="modelValue"
+        class="animate-tick"
+      >{{ modelValue }}</span>
+    </output>
     <span
       v-if="unit"
       class="text-small font-bold text-ink-2"

@@ -23,6 +23,7 @@ describe('apiErrorKey', () => {
   it('explains the settings refusals (#144)', () => {
     expect(apiErrorKey(refusal(400, 'too_many_players'))).toBe('error.tooManyPlayers')
     expect(apiErrorKey(refusal(400, 'points_rising'))).toBe('error.pointsOrder')
+    expect(apiErrorKey(refusal(400, 'points_flat'))).toBe('error.pointsFlat')
     expect(apiErrorKey(refusal(400, 'team_count_range'))).toBe('error.teamCountRange')
     expect(apiErrorKey(refusal(400, 'invalid_settings'))).toBe('error.saveFailed')
   })
@@ -35,7 +36,7 @@ describe('apiErrorKey', () => {
 
   it('explains the player count, the Formats and the edit refusal (#142)', () => {
     expect(apiErrorKey(refusal(400, 'invalid_players'))).toBe('error.playersInvalid')
-    expect(apiErrorKey(refusal(400, 'invalid_formats'))).toBe('error.formatsInvalid')
+    expect(apiErrorKey(refusal(400, 'invalid_suitabilities'))).toBe('error.suitabilitiesInvalid')
     expect(apiErrorKey(refusal(403, 'not_game_editor'))).toBe('error.notGameEditor')
   })
 

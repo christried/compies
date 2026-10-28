@@ -96,6 +96,7 @@ describe('game images (#143)', () => {
       expect(image.status).toBe(200)
       expect(image.headers.get('content-type')).toBe('image/webp')
       expect(image.headers.get('cache-control')).toBe('private, max-age=31536000, immutable')
+      expect(image.headers.get('x-content-type-options')).toBe('nosniff')
       expect(new Uint8Array(await image.arrayBuffer())).toEqual(webp())
     }
   })
@@ -148,6 +149,32 @@ describe('game images (#143)', () => {
     expect(new Uint8Array(await image.arrayBuffer())).toEqual(webp('second'))
   })
 
+  it('removes the replaced image from the store, so no old object is left behind', async () => {
+    const creator = await cookieOf(host)
+    const { id } = await newGame(creator)
+    const first = await (await upload(id, creator, webp('first'))).json() as GameView
+    const firstKey = first.imageUrl!.replace('/api/images/', '')
+
+    const second = await (await upload(id, creator, webp('second'))).json() as GameView
+
+    expect(store.keys()).toEqual([second.imageUrl!.replace('/api/images/', '')])
+    expect(store.keys()).not.toContain(firstKey)
+  })
+
+  it('still answers 200 with the new image when deleting the old object fails', async () => {
+    const creator = await cookieOf(host)
+    const { id } = await newGame(creator)
+    await upload(id, creator, webp('first'))
+    const failure = vi.spyOn(store, 'delete').mockRejectedValueOnce(new Error('R2 down'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const response = await upload(id, creator, webp('second'))
+
+    expect(response.status).toBe(200)
+    expect(failure).toHaveBeenCalledOnce()
+    vi.restoreAllMocks()
+  })
+
   it('lets the Platform admin replace the image of a game someone else made', async () => {
     const { id } = await newGame(await cookieOf(host))
 
@@ -179,6 +206,28 @@ describe('game images (#143)', () => {
       await refusal(await upload(id, creator, webp('big', 200_001)), 413, 'image_too_large')
 
       expect((await upload(id, creator, webp('exact', 200_000))).status).toBe(200)
+    })
+
+    it('refuses more than the maximum when the body arrives without a content-length', async () => {
+      const creator = await cookieOf(host)
+      const { id } = await newGame(creator)
+      const bytes = webp('big', 200_001)
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(bytes.subarray(0, 100_000))
+          controller.enqueue(bytes.subarray(100_000))
+          controller.close()
+        },
+      })
+
+      const response = await request(`/api/games/${id}/image`, {
+        method: 'PUT',
+        headers: { 'content-type': 'image/webp', 'cookie': creator },
+        body: stream,
+        duplex: 'half',
+      } as RequestInit)
+
+      await refusal(response, 413, 'image_too_large')
     })
 
     it('refuses another Host, who may see the game but not edit it', async () => {
