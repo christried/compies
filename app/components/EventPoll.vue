@@ -53,6 +53,7 @@ function removeMissing() {
     v-if="savedNote"
     tone="success"
     :icon="Check"
+    closable
     @close="savedNote = false"
   >
     {{ t('mvp.poll.savedNote') }}

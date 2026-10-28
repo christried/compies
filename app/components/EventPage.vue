@@ -157,6 +157,7 @@ usePollRefresh(() => {
         tone="info"
         :icon="Settings2"
         host-only
+        closable
         @close="setupNoticeClosed = true"
       >
         <b>{{ t('eventSettings.notice.title') }}</b>
