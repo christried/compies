@@ -5,6 +5,7 @@ import { BERLIN_ZONE } from '~~/shared/time'
 const dayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'short', day: '2-digit', month: '2-digit' })
 const timeFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 const longDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'long', day: 'numeric', month: 'long' })
+const monthFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, month: 'long', year: 'numeric' })
 const tileFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'short', day: '2-digit', month: 'short' })
 
 /** A Slot's day as `Sa 24.10.` (Berlin). */
@@ -12,6 +13,11 @@ export function formatSlotDay(instant: Date): string {
   const parts = Object.fromEntries(dayFormat.formatToParts(instant).map(part => [part.type, part.value]))
   // de-DE abbreviates the weekday with a period ("Sa."); the design shows it without.
   return `${(parts.weekday ?? '').replace(/\.$/, '')} ${parts.day}.${parts.month}.`
+}
+
+/** A month and year as `Oktober 2026` (Berlin), for „angelegt im …“. */
+export function formatMonthYear(instant: Date): string {
+  return monthFormat.format(instant)
 }
 
 /** A Slot's time as `20:30` (Berlin). */

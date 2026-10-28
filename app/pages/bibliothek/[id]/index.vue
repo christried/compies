@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
+import { formatMonthYear } from '~/utils/berlin-time'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
 // set length, the facts (player count, Suitabilities, clip length) and who created it. The creator and the Platform
@@ -12,9 +13,7 @@ const id = computed(() => String(route.params.id))
 const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
 useHead({ title: () => game.value?.name ?? t('nav.library') })
 
-// Month and year in Berlin time, like the rest of the app (ADR 0003).
-const month = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' })
-const createdMonth = computed(() => (game.value ? month.format(new Date(game.value.createdAt)) : ''))
+const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.value.createdAt)) : ''))
 
 // The player count as a fact: „2 bis 10“, „ab 2“, „bis 10“, or „2 Spieler“ for one count (#142).
 const players = computed(() => {
