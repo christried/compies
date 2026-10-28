@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Check, Plus } from '@lucide/vue'
-import type { GameList, GameView } from '~~/shared/game'
+import type { GameView } from '~~/shared/game'
 
 // The library as a picker for a pool (#146, 02-components § GameCard): search by name, a card per game with a
 // toggle button named after the game. It only reports the click (`toggle`); the pool is the parent's. The
-// library is fetched here (`/api/games`, key `games`), the same list the library page shows. The `actions`
+// library comes from `useGameLibrary` (the same list the library page shows); the page that hosts the
+// picker holds it too, so it stays across steps. The `actions`
 // slot sits next to the search, for „Neues Spiel anlegen“. #147 reuses it for the Event editor.
 defineProps<{
   /** Ids of the games that are in the pool. */
@@ -14,7 +15,7 @@ defineProps<{
 const emit = defineEmits<{ toggle: [game: GameView] }>()
 
 const { t } = useI18n()
-const { data, status, error, refresh } = useFetch<GameList>('/api/games', { key: 'games' })
+const { data, status, error, refresh } = useGameLibrary()
 
 const search = ref('')
 const games = computed(() => {

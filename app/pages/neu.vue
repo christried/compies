@@ -28,6 +28,8 @@ const user = useAuthUser()
 const STEP_KEYS = ['name', 'format', 'games', 'points', 'mode', 'pool', 'tiebreaker', 'sessions'] as const
 
 const draft = ref(newDraft())
+// Holds the library across the two pool steps, whose pickers mount and unmount (useGameLibrary).
+if (user.value?.canHost) useGameLibrary()
 const { current, reached, blocker, failure, steps, stepKey, infoTopic, infoTitle, isLast, go, advance } = useEventStepper(STEP_KEYS, draft)
 const saving = ref(false)
 const created = ref<CreatedEvent | null>(null)

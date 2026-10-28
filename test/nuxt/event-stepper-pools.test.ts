@@ -338,6 +338,17 @@ describe('the pool steps', () => {
     })
   })
 
+  it('keeps the library on screen when going from the Game pool to the Tiebreaker pool, without the skeleton', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    await next(page)
+
+    // No settle: the cards must be there at once, not after a second load.
+    expect(page.find('[aria-busy="true"]').exists()).toBe(false)
+    expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Mario Kart', 'Pong', 'Schach'])
+  })
+
   describe('the Tiebreaker pool', () => {
     it('has its own games, apart from the Game pool, and a game may be in both', async () => {
       const page = await mountCreate()

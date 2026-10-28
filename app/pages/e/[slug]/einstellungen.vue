@@ -35,6 +35,8 @@ const lockedReason = computed(() => (view.value && !notSetUp.value && settingsLo
 const floors = computed(() => view.value?.settingsFloors ?? undefined)
 
 const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { hidden: false, main: [], tiebreaker: [] } }))
+// Holds the library across the two pool steps, whose pickers mount and unmount (useGameLibrary).
+if (view.value) useGameLibrary()
 const { current, blocker, failure, steps, stepKey, infoTopic, infoTitle, isLast, go, advance } = useEventStepper(STEP_KEYS, draft)
 const saving = ref(false)
 
