@@ -28,6 +28,28 @@ export const API_ERROR_STATUS = {
   not_host: 403,
   /** Creating an Event needs the Host permission (ADR 0002). */
   no_host_permission: 403,
+  /** The settings are missing, of the wrong type or malformed (#144). */
+  invalid_settings: 400,
+  /** A known Format that 1.3 cannot run yet: free-for-all (#144). */
+  format_unavailable: 400,
+  /** 2 to 8 teams. */
+  team_count_range: 400,
+  /** 1 to 6 Players per team. */
+  team_size_range: 400,
+  /** At most 24 Players in teams. */
+  too_many_players: 400,
+  /** 1 to 30 Games. */
+  game_count_range: 400,
+  /** The points table has the wrong length, bad values, or values that are not its preset. */
+  invalid_points: 400,
+  /** A place earns more points than the place above it. */
+  points_rising: 400,
+  /** A Selection mode that 1.3 cannot run yet. */
+  mode_unavailable: 400,
+  /** 0 to 9 Vetos per Party. */
+  veto_allowance_range: 400,
+  /** A hidden wheel or a Veto allowance with a Selection mode that has no wheel. */
+  wheel_options_without_wheel: 400,
   wrong_phase: 409,
   rate_limited: 429,
 } as const
