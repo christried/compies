@@ -53,6 +53,7 @@ Everyone in the lobby live; teams formed; a Session can start. (T6, T8, activity
 - Lobby game board: zones, drag and drop, online indicator, team names (open question 10 as designed), team colours.
 - Starting a Session; the Event goes to running.
 - Activity feed.
+- „Was ist neu“ pop-up: after a new Release, every Release newer than the one the User last saw, newest first, with a link to Neuigkeiten. „Gesehen“ is stored per User on the server, not per device. New Users get none; Users who never saw anything see only the newest Release. Static Compibert bust at most. (Agreed 2026-10-28 in the 1.3 review grilling.)
 - Grilled on 2026-10-28 (ADR 0013, `GLOSSARY.md`): Nuxt decides and the room only relays; no Worker deploy or Release merge on a day with a Session Date or while a Session runs; rooms in the EU jurisdiction; ≤ 50 ms for server-timed moments, the clip best effort; staging and production Workers on `*.workers.dev`, set up by a wizard. Facts: `docs/research/realtime-hosting.md`.
 
 ## 1.5 Glücksrad
@@ -64,6 +65,9 @@ The game round up to „wird gespielt“. (T10; screens 11, 15, 30.)
 - Synced 30 s clip.
 - Vetoes: Veto allowance per Party, at most one per Party per drawn game, 60 s window, sealed until the simultaneous reveal; with an allowance of 0, no veto window.
 - Host-only pool warning. The Hidden wheel can't be switched during a spin or veto window.
+- Bonus Veto: the Host grants one Party a Veto on top of the Veto allowance; nobody ever takes a Veto away, and the allowance stays the same for every Party. Details (before the Event runs, upper limit, Activity feed) are grilled with 1.5.
+- Coin flip: the Host tosses it any time during a running Session; the server decides, and every Member sees the same toss (`Coin3D` animation) at the same moment.
+- Countdown: the Host sets a time and starts, pauses or resets it; it runs down for every Member at the same moment. Needed for the first Event, so it ships in a plain look; the motion and graphics wait for „Nach dem ersten Event“.
 
 ## 1.6 Punkte
 
@@ -79,6 +83,14 @@ The Award ceremony. (T15; screen 19.)
 
 - Started by the Host, seen by every Member at the same moment; late joiners jump in; the Host can start it again any time after the Event finished.
 - 2D podium, confetti, Compibert dancing, server-picked gag, share image in landscape and square.
+
+## Nach dem ersten Event
+
+Picked up right after the first Event played in the app; the issues are opened then, not before.
+
+- Countdown motion and graphics: a _Claude Design hand-off_ (`docs/agents/design-handoff.md`).
+- Mockup vs. live app: the user compares the reference designs with the live app and names every difference (`ready-for-human`); the differences become tickets.
+- Wording sweep: the user goes over all copy in the app (`ready-for-human`), after every other ticket of this list.
 
 ## Out of scope for this roadmap
 
