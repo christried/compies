@@ -321,10 +321,12 @@ describe('DateTimeField', () => {
     await flushPromises()
 
     const today = parseDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date()))
-    const cells = [...document.querySelectorAll('[role="gridcell"]')]
-    const day = (value: DateValue) => cells.find(cell => cell.textContent?.trim() === String(value.day))!
-    expect(day(today.subtract({ days: 1 })).getAttribute('aria-disabled')).toBe('true')
-    expect(day(today).getAttribute('aria-disabled')).not.toBe('true')
+    // By date, not by number: the grid also shows the neighbouring months' days (28.–30.9. in October).
+    const day = (value: DateValue) => document.querySelector(`[data-value="${value}"]`)?.closest('[role="gridcell"]')
+    expect(day(today)!.getAttribute('aria-disabled')).not.toBe('true')
+    // On the 1st, yesterday is in the grid only when the month does not start on a Monday.
+    const yesterday = day(today.subtract({ days: 1 }))
+    if (yesterday) expect(yesterday.getAttribute('aria-disabled')).toBe('true')
     page.unmount()
   })
 
