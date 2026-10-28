@@ -2,6 +2,8 @@ import type { GameList, GameView } from '~~/shared/game'
 
 /** The last library list the browser showed, kept while no browser is mounted (see `useGameLibrary`). */
 const STALE_KEY = 'game-library'
+/** The fetch key of the library list; `refreshGameLibrary` refreshes it by this key. */
+const GAMES_KEY = 'games'
 
 /**
  * The library list (`/api/games`: every game the viewer may see, #173), for the game browser and nobody else. Stale
@@ -11,7 +13,7 @@ const STALE_KEY = 'game-library'
  */
 export function useGameLibrary() {
   const stale = useState<GameView[] | null>(STALE_KEY, () => null)
-  const { data, status, error, refresh } = useFetch<GameList>('/api/games', { key: 'games' })
+  const { data, status, error, refresh } = useFetch<GameList>('/api/games', { key: GAMES_KEY })
   watch(data, (list) => {
     if (list) stale.value = list.games
   }, { immediate: true })
@@ -27,5 +29,5 @@ export function useGameLibrary() {
 /** After a game was made or edited: the list in a mounted browser reloads in place, and one that mounts later starts from a fresh load. */
 export async function refreshGameLibrary() {
   useState<GameView[] | null>(STALE_KEY, () => null).value = null
-  await refreshNuxtData('games')
+  await refreshNuxtData(GAMES_KEY)
 }
