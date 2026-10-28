@@ -19,7 +19,7 @@ describe('InfoSheet', () => {
     expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s'])
   })
 
-  it('adds the hidden wheel option for the Lucky Wheel', async () => {
+  it('adds the hidden wheel option for the Glücksrad', async () => {
     const page = await mountSuspended(InfoSheet, { props: { topic: 'wheel' } })
 
     expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s', 'Option „Rad verdecken“', 'Gut für', 'Achtung'])

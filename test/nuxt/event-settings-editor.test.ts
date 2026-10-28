@@ -132,7 +132,7 @@ describe('the settings editor', () => {
     expect(page.get('output').text()).toBe('7')
 
     await goTo(page, 'Auswahlmodus')
-    expect(checked(page)).toEqual(['Lucky Wheel'])
+    expect(checked(page)).toEqual(['Glücksrad'])
     expect(page.get('[role="switch"]').attributes('aria-checked')).toBe('true')
     expect(spin(page, 'Vetos pro Partei').get('output').text()).toBe('2')
 
@@ -282,7 +282,7 @@ describe('the settings editor', () => {
       await goTo(page, 'Auswahlmodus')
 
       expect(page.text()).toContain(LOCKED)
-      expect(checked(page)).toEqual(['Lucky Wheel'])
+      expect(checked(page)).toEqual(['Glücksrad'])
       expect(page.findAll('[role="radio"]').every(radio => radio.attributes('aria-disabled') === 'true')).toBe(true)
       await page.get('[role="switch"]').trigger('click')
       expect(page.get('[role="switch"]').attributes('aria-checked')).toBe('false')

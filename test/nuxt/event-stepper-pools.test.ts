@@ -245,7 +245,7 @@ describe('the pool steps', () => {
         await settle(page)
       }
 
-      it('shows the numbers of the worst case with the Lucky Wheel, and goes away at the recommended size', async () => {
+      it('shows the numbers of the worst case with the Glücksrad, and goes away at the recommended size', async () => {
         library = sixteen
         const page = await mountCreate()
         await chooseLuckyWheel(page)
@@ -266,7 +266,7 @@ describe('the pool steps', () => {
         expect(hint(page)!.text()).toContain('im Pool sind 15.')
       })
 
-      it('asks only for the Game count with Admin-Wahl', async () => {
+      it('asks only for the Game count with Host-Wahl', async () => {
         library = sixteen
         const page = await mountCreate()
         await toPoolStep(page)
@@ -288,7 +288,7 @@ describe('the pool steps', () => {
         await next(page, 2)
       }
 
-      it('reads right for one Game and one game in the pool with Admin-Wahl', async () => {
+      it('reads right for one Game and one game in the pool with Host-Wahl', async () => {
         library = sixteen
         const page = await mountCreate()
         await toModeStepWith(page, 1)
@@ -309,7 +309,7 @@ describe('the pool steps', () => {
         expect(hint(page)!.text()).toBe('Wird knapp. Für 2 Spiele brauchst du 2 Spiele im Pool, im Pool ist 1. Blockiert nichts, nur damit du’s weißt.')
       })
 
-      it('reads right for one Game with the Lucky Wheel', async () => {
+      it('reads right for one Game with the Glücksrad', async () => {
         library = sixteen
         const page = await mountCreate()
         await toModeStepWith(page, 1)
@@ -443,7 +443,7 @@ describe('the pool steps', () => {
     })
   })
 
-  describe('Session erstellen', () => {
+  describe('Event erstellen', () => {
     it('sends the ids of both pools and shows their counts on the Fertig screen', async () => {
       const page = await mountCreate()
       await toPoolStep(page)

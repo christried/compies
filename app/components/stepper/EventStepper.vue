@@ -15,7 +15,7 @@ const props = defineProps<{
   reached: number
   /** The title of the current step („Wer gegen wen?“). */
   title: string
-  /** The step list's heading; „Neue Session“ by default. */
+  /** The step list's heading; „Neues Event“ by default. */
   navTitle?: string
   /** Replaces „Schritt n von m“ above the title (the settings editor, #147). */
   kicker?: string

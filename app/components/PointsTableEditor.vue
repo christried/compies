@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { CircleAlert, ListOrdered, Pencil, Trophy } from '@lucide/vue'
-import { POINTS_MAX, pointsFor, risingPlace, type PointsPreset, type PointsTable } from '~~/shared/settings'
+import { POINTS_MAX, isFlat, pointsFor, risingPlace, type PointsPreset, type PointsTable } from '~~/shared/settings'
 
 // Points per place (02-components § PointsTableEditor): the three presets as cards with the values they
 // really have at this team count, one row per team, and for a custom table a NumberStepper per row. A place
 // that would earn more than the place above gets the error on its own row (aria-describedby) — the step
-// that holds this editor blocks Weiter for it, the server refuses it (points_rising).
+// that holds this editor blocks Weiter for it, the server refuses it (points_rising). A table where every
+// place earns the same (#175) gets its error on the last row, the one that has to fall below first place.
 const props = withDefaults(defineProps<{
   modelValue: PointsTable
   /** One row per team. */
@@ -39,6 +40,9 @@ function setPlace(index: number, value: number) {
 
 const custom = computed(() => props.modelValue.preset === 'custom')
 const rising = computed(() => (custom.value ? risingPlace(props.modelValue.values) : null))
+const flat = computed(() => custom.value && isFlat(props.modelValue.values))
+// Rising and flat cannot both hold (a flat table never rises), so one message and one row describe the problem.
+const errorPlace = computed(() => rising.value ?? (flat.value ? props.modelValue.values.length : null))
 </script>
 
 <template>
@@ -72,7 +76,7 @@ const rising = computed(() => (custom.value ? risingPlace(props.modelValue.value
           :max="POINTS_MAX"
           :label="t('stepper.points.stepper', { n: index + 1 })"
           :locked-reason="lockedReason"
-          :aria-describedby="rising === index + 1 ? errorId : undefined"
+          :aria-describedby="errorPlace === index + 1 ? errorId : undefined"
           @update:model-value="setPlace(index, $event)"
         />
         <span
@@ -81,7 +85,7 @@ const rising = computed(() => (custom.value ? risingPlace(props.modelValue.value
         >{{ points }}</span>
       </div>
       <span
-        v-if="rising"
+        v-if="errorPlace !== null"
         :id="errorId"
         role="alert"
         class="flex items-center gap-1.5 text-[13px] font-bold text-error-fg"
@@ -90,7 +94,7 @@ const rising = computed(() => (custom.value ? risingPlace(props.modelValue.value
           :icon="CircleAlert"
           :size="15"
         />
-        {{ t('stepper.points.rising', { n: rising, above: rising - 1 }) }}
+        {{ rising ? t('stepper.points.rising', { n: rising, above: rising - 1 }) : t('stepper.points.flat') }}
       </span>
       <span class="text-[12px] text-ink-2">{{ t('stepper.points.tie') }}</span>
     </div>

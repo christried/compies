@@ -3,7 +3,7 @@ import { addPoolGame, draftBody, draftFromEvent, newDraft, settingsBody, setting
 import type { EventView, PoolGame } from '../../shared/event'
 import { defaultSettings, parseSettings, type EventSettings } from '../../shared/settings'
 
-// The stepper's draft (#144): what the Host has entered so far, and the body that „Session erstellen“ sends.
+// The stepper's draft (#144): what the Host has entered so far, and the body that „Event erstellen“ sends.
 
 describe('newDraft', () => {
   it('starts with no name, the default settings and one empty Slot in a Date poll', () => {
@@ -117,7 +117,7 @@ describe('the pools', () => {
   })
 })
 
-// The Selection mode step (#145): the Lucky Wheel's options live in the draft while Admin pick is chosen, and
+// The Selection mode step (#145): the Glücksrad's options live in the draft while Admin pick is chosen, and
 // `settingsOf` is the one place that derives the stored settings from them.
 describe('the stored settings', () => {
   const wheelDraft = (patch: Partial<EventDraft> = {}, mode: EventSettings['selectionMode'] = 'lucky_wheel'): EventDraft => {
@@ -129,7 +129,7 @@ describe('the stored settings', () => {
     expect(settingsOf(newDraft())).toEqual(defaultSettings())
   })
 
-  it('give the Lucky Wheel the Host’s hidden wheel and Veto allowance', () => {
+  it('give the Glücksrad the Host’s hidden wheel and Veto allowance', () => {
     expect(settingsOf(wheelDraft({ hiddenWheel: true, vetoAllowance: 5 }))).toMatchObject({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 5 })
   })
 
@@ -150,7 +150,7 @@ describe('the stored settings', () => {
     expect(settingsOf({ ...atDefault, settings: { ...atDefault.settings, teamSize: 5 } }).vetoAllowance).toBe(3)
   })
 
-  it('have no wheel options with Admin pick, while the draft keeps them so the Lucky Wheel gets them back', () => {
+  it('have no wheel options with Admin pick, while the draft keeps them so the Glücksrad gets them back', () => {
     const draft = wheelDraft({ hiddenWheel: true, vetoAllowance: 5 }, 'admin_pick')
 
     expect(settingsOf(draft)).toMatchObject({ selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null })
@@ -211,7 +211,7 @@ describe('the editor draft', () => {
     expect(settingsOf(draft)).toEqual(stored)
   })
 
-  it('does not count an Admin pick Event’s missing Veto allowance as chosen: the Lucky Wheel then follows the Team size', () => {
+  it('does not count an Admin pick Event’s missing Veto allowance as chosen: the Glücksrad then follows the Team size', () => {
     const draft = draftFromEvent(view({ ...defaultSettings(), teamSize: 2 }))
     expect(draft.vetoAllowance).toBeNull()
 

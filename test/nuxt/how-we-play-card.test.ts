@@ -37,7 +37,7 @@ describe('HowWePlayCard (#148)', () => {
 
     expect(card.get('h2').text()).toBe('So wird gespielt')
     const text = card.text()
-    expect(text).toContain('4 Teams à 2, Lucky Wheel, 6 Spiele.')
+    expect(text).toContain('4 Teams à 2, Glücksrad, 6 Spiele.')
     for (const row of ['Format', 'Spiele', 'Punkte', 'Modus', 'Vetos', 'Pool']) expect(card.findAll('dt').map(dt => dt.text())).toContain(row)
     expect(text).toContain('Linear 3 / 2 / 1 / 0')
     expect(text).toContain('3 pro Partei')
@@ -68,7 +68,7 @@ describe('HowWePlayCard (#148)', () => {
     const card = await mountCard({ settings: hiddenWheel, pools: { hidden: true, mainCount: 2, tiebreakerCount: 3 } })
 
     expect(card.text()).toContain('2 Spiele im Spielepool, 3 im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen.')
-    expect(card.text()).toContain('Lucky Wheel (verdeckt)')
+    expect(card.text()).toContain('Glücksrad (verdeckt)')
     expect(card.find('ul').exists()).toBe(false)
     expect(card.text()).not.toContain('Das Rad ist verdeckt')
   })

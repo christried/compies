@@ -65,6 +65,7 @@ export type SettingsError
     | 'game_count_range'
     | 'invalid_points' // wrong length (≠ team count), non-integer, negative, > POINTS_MAX, preset values don't match the preset
     | 'points_rising' // a place earns more than the place above
+    | 'points_flat' // every place earns the same (#175)
     | 'mode_unavailable' // pick_ban, losers_pick, losers_advantage
     | 'veto_allowance_range'
     | 'wheel_options_without_wheel' // hiddenWheel true or vetoAllowance set with a mode other than lucky_wheel
@@ -97,6 +98,11 @@ export function risingPlace(values: number[]): number | null {
     if (values[place]! > values[place - 1]!) return place + 1
   }
   return null
+}
+
+/** Two or more places and every one earns what the first place earns: the table does not rank anyone (#175). */
+export function isFlat(values: number[]): boolean {
+  return values.length >= 2 && values.every(value => value === values[0])
 }
 
 /** Defaults for a new Event: 2 teams × 3 (a 3v3), Game count 10, linear, Admin pick, visible wheel, no Veto allowance. */
@@ -184,6 +190,8 @@ export function parseSettings(input: unknown): Parsed {
   const points = values as number[]
   if (preset === 'custom') {
     if (risingPlace(points) !== null) return fail('points_rising')
+    // Presets always give first place more than last, so only a custom table can be flat (#175).
+    if (isFlat(points)) return fail('points_flat')
   }
   else if (points.some((value, place) => value !== pointsFor(preset, teamCount)[place])) {
     return fail('invalid_points')

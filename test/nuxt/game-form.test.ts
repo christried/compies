@@ -172,10 +172,10 @@ describe('the game form', () => {
   })
 
   describe('player count and Formats (#142)', () => {
-    it('says what the player count and the Formats are for', async () => {
+    it('does not promise pool suggestions from the player count and the Formats (#175)', async () => {
       const page = await mountSuspended(GameForm)
 
-      expect(page.text()).toContain('Spielerzahl und Formate nutzen wir nur für Vorschläge beim Pool-Füllen. Aussortiert wird nie automatisch.')
+      expect(page.text()).not.toContain('nur für Vorschläge beim Pool-Füllen')
     })
 
     it('posts the player count and the Formats the User picked', async () => {

@@ -34,7 +34,7 @@ async function mountCreate(): Promise<Page> {
   return page
 }
 
-/** Weiter, or „Session erstellen“ on the last step. */
+/** Weiter, or „Event erstellen“ on the last step. */
 const cta = (page: Page) => page.get('button[type="submit"]')
 
 /** Names the Session and goes on to the Sessions and Dates step (step 8 of 8), leaving the other steps as they are. */
@@ -139,7 +139,7 @@ describe('create an Event: the Sessions and Dates step', () => {
     const page = await mountCreate()
     await toSessionsStep(page)
     await fillSlot(page, 0, '2090-10-30', '20:30')
-    expect(cta(page).text()).toContain('Session erstellen')
+    expect(cta(page).text()).toContain('Event erstellen')
 
     await cta(page).trigger('click')
 
@@ -285,6 +285,6 @@ describe('create an Event: the Sessions and Dates step', () => {
     await cta(page).trigger('click')
 
     await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Höchstens 24 Leute in Teams.'))
-    expect(cta(page).text()).toContain('Session erstellen')
+    expect(cta(page).text()).toContain('Event erstellen')
   })
 })

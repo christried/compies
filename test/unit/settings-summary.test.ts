@@ -20,16 +20,16 @@ function settings(overrides: Partial<EventSettings> = {}): EventSettings {
 
 describe('settingsSentence', () => {
   it('names the teams, the Selection mode and the Game count', () => {
-    expect(settingsSentence(settings({ teamCount: 4, teamSize: 2, gameCount: 6 }), t)).toBe('4 Teams à 2, Admin-Wahl, 6 Spiele.')
+    expect(settingsSentence(settings({ teamCount: 4, teamSize: 2, gameCount: 6 }), t)).toBe('4 Teams à 2, Host-Wahl, 6 Spiele.')
   })
 
   it('says „1 Spiel“ for one Game', () => {
-    expect(settingsSentence(settings({ gameCount: 1 }), t)).toBe('2 Teams à 3, Admin-Wahl, 1 Spiel.')
+    expect(settingsSentence(settings({ gameCount: 1 }), t)).toBe('2 Teams à 3, Host-Wahl, 1 Spiel.')
   })
 
-  it('names the Lucky Wheel, and says when it is hidden', () => {
-    expect(settingsSentence(settings({ selectionMode: 'lucky_wheel', vetoAllowance: 3 }), t)).toBe('2 Teams à 3, Lucky Wheel, 10 Spiele.')
-    expect(settingsSentence(settings({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 }), t)).toBe('2 Teams à 3, Lucky Wheel (verdeckt), 10 Spiele.')
+  it('names the Glücksrad, and says when it is hidden', () => {
+    expect(settingsSentence(settings({ selectionMode: 'lucky_wheel', vetoAllowance: 3 }), t)).toBe('2 Teams à 3, Glücksrad, 10 Spiele.')
+    expect(settingsSentence(settings({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 }), t)).toBe('2 Teams à 3, Glücksrad (verdeckt), 10 Spiele.')
   })
 })
 
@@ -49,11 +49,11 @@ describe('summaryRows', () => {
       { key: 'format', label: 'Format', value: '4 Teams à 2' },
       { key: 'games', label: 'Spiele', value: '6' },
       { key: 'points', label: 'Punkte', value: 'Linear 3 / 2 / 1 / 0' },
-      { key: 'mode', label: 'Modus', value: 'Admin-Wahl' },
+      { key: 'mode', label: 'Modus', value: 'Host-Wahl' },
     ])
   })
 
-  it('adds the Veto allowance after the mode with the Lucky Wheel, and only then (#145)', () => {
+  it('adds the Veto allowance after the mode with the Glücksrad, and only then (#145)', () => {
     const wheel = summaryRows(settings({ selectionMode: 'lucky_wheel', vetoAllowance: 2 }), t)
     expect(wheel.map(row => row.key)).toEqual(['format', 'games', 'points', 'mode', 'vetoes'])
     expect(wheel[4]).toEqual({ key: 'vetoes', label: 'Vetos', value: '2 pro Partei' })
