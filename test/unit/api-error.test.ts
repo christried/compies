@@ -20,6 +20,13 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(429, 'rate_limited'))).toBe('error.rateLimited')
   })
 
+  it('explains the settings refusals (#144)', () => {
+    expect(apiErrorKey(refusal(400, 'too_many_players'))).toBe('error.tooManyPlayers')
+    expect(apiErrorKey(refusal(400, 'points_rising'))).toBe('error.pointsOrder')
+    expect(apiErrorKey(refusal(400, 'team_count_range'))).toBe('error.teamCountRange')
+    expect(apiErrorKey(refusal(400, 'invalid_settings'))).toBe('error.saveFailed')
+  })
+
   it('explains the refusals of the Game library (#141)', () => {
     expect(apiErrorKey(refusal(400, 'invalid_game_name'))).toBe('error.gameNameInvalid')
     expect(apiErrorKey(refusal(400, 'invalid_youtube'))).toBe('gameEdit.badLink')

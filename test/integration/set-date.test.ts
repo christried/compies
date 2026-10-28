@@ -8,6 +8,7 @@ import downloadIcs from '../../server/api/e/[slug]/ics.get'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -65,7 +66,7 @@ describe('setting the Dates from the shared Date poll', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: sessionCount, slots }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: sessionCount, slots, settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json() as { slug: string }
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
@@ -416,7 +417,7 @@ describe('setting the Dates from the shared Date poll', () => {
       const created = await request('/api/e', {
         method: 'POST',
         headers: { 'content-type': 'application/json', cookie },
-        body: JSON.stringify({ name: 'Abend', dateMode: 'direct', startsAt: ['2090-11-07T20:00'] }),
+        body: JSON.stringify({ name: 'Abend', dateMode: 'direct', startsAt: ['2090-11-07T20:00'], settings: TEST_SETTINGS }),
       })
       const { slug } = await created.json() as { slug: string }
 
@@ -431,7 +432,7 @@ describe('setting the Dates from the shared Date poll', () => {
       const created = await request('/api/e', {
         method: 'POST',
         headers: { 'content-type': 'application/json', cookie },
-        body: JSON.stringify({ name: 'Pay $& $\' $$ night', dateMode: 'direct', startsAt: ['2090-11-07T20:00'] }),
+        body: JSON.stringify({ name: 'Pay $& $\' $$ night', dateMode: 'direct', startsAt: ['2090-11-07T20:00'], settings: TEST_SETTINGS }),
       })
       const { slug } = await created.json() as { slug: string }
 

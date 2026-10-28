@@ -1,5 +1,6 @@
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
+import type { EventSettings } from './settings'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -97,6 +98,8 @@ export interface EventView {
     phase: Phase
     isHost: boolean
   }
+  /** The Event's settings (#144); null for an Event from before 1.3 that was never set up. Not secret: Members get them too. */
+  settings: EventSettings | null
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
   /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */

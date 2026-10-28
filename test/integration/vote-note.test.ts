@@ -8,6 +8,7 @@ import removeSlot from '../../server/api/e/[slug]/slots/[slotId].delete'
 import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import previewInvite from '../../server/api/invite/[invite].get'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -62,7 +63,7 @@ describe('Notes on Votes', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30', '2090-10-31T19:00', '2090-11-01T19:00'] }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30', '2090-10-31T19:00', '2090-11-01T19:00'], settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json()
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
@@ -265,7 +266,7 @@ describe('Notes on Votes', () => {
       const created = await request('/api/e', {
         method: 'POST',
         headers: { 'content-type': 'application/json', cookie },
-        body: JSON.stringify({ name: 'Abend', dateMode: 'direct', startsAt: ['2090-11-07T20:00'] }),
+        body: JSON.stringify({ name: 'Abend', dateMode: 'direct', startsAt: ['2090-11-07T20:00'], settings: TEST_SETTINGS }),
       })
       const { slug } = await created.json()
 

@@ -10,6 +10,7 @@ import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 import type { EventView, SessionNote, SessionView } from '../../../shared/event'
 import type { VoteRow } from '../../../shared/poll'
+import { settingsFromRow } from '../../../shared/settings'
 
 // The Event link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
 // same 404, so nobody can probe which Events exist. A former Member of a deleted Event gets
@@ -54,6 +55,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
       phase: eventRow.phase,
       isHost,
     },
+    settings: settingsFromRow(eventRow),
     // Sessions with a Date come first in Date order, with the number they are shown with (#49, #70); the
     // Sessions still waiting for a Date follow and only count as missing Dates.
     sessions: numberedSessions(rows).map(row => sessionView(row, allVotes)),

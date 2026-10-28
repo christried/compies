@@ -5,6 +5,7 @@ import createEvent from '../../server/api/e/index.post'
 import downloadIcs from '../../server/api/e/[slug]/ics.get'
 import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -54,7 +55,7 @@ describe('the calendar file for several Sessions', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name, dateMode: 'direct', sessions: dates.length, startsAt: dates }),
+      body: JSON.stringify({ name, dateMode: 'direct', sessions: dates.length, startsAt: dates, settings: TEST_SETTINGS }),
     })
     const { slug } = await response.json() as { slug: string }
     const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
