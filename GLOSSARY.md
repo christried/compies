@@ -31,7 +31,11 @@ One competition of a group, from its Date poll to its archive, played over one o
 _Avoid_: Tournament, game night, lobby, match
 
 **Session**:
-One sitting of an Event on one Date. Every Event has at least one; the Host can add and remove Sessions until the Event is finished, and a Session that has started stays. Sessions are numbered in the order of their Dates.
+One sitting of an Event on one Date. Every Event has at least one; the Host can add and remove Sessions until the Event is finished, and a Session that has started stays and keeps its Date. Sessions are numbered in the order of their Dates.
+
+**Running Session**:
+The Session the Host has started and not yet ended; an Event has at most one. The Host starts the earliest dated Session that has not started, and the first start makes the Event running (UI: „Session starten“, „Session beenden“).
+_Avoid_: Active session, live session, game night
 _Avoid_: Game night, evening, round
 
 **Game count**:
@@ -103,12 +107,36 @@ _Avoid_: Un-confirm, cancel date, reset
 ## Lobby
 
 **Party**:
-One competing unit in an Event: a team in a team format, a single player in free-for-all. An Event has at most 8.
+One competing unit in an Event: a team in a team format, a single player in free-for-all. An Event has at most 8, and a Party lasts for the whole Event, across all its Sessions.
 _Avoid_: Side, group
 
 **Team size**:
 The number of slots per team in the Teams format, set by the Host and changeable while the Event runs, but never below the number of Players in the fullest team. A team may have fewer Players than its Team size; a game starts only when all teams have the same number of Players.
 _Avoid_: Team capacity, players per team
+
+**Game board**:
+The view of an Event's teams, Bench and Stands, where Members take their place; Players move only themselves, the Host moves everyone (UI: Spielbrett).
+_Avoid_: Lobby, board view, waiting room
+
+**Team choice**:
+The time in which Players may join and leave teams themselves: from when the Event has its settings and a Session has a Date until the first Session starts. After that only the Host moves people into or out of teams; Bench and Stands stay free for everyone.
+_Avoid_: Team selection, draft, lock-in
+
+**Team colour**:
+The colour, symbol and pattern a team has by its position in the Event, never chosen.
+_Avoid_: Team theme
+
+**Team word**:
+The one word (at most 12 characters, no spaces) a Player adds to their team's name; it leaves the name when the Player leaves the team (UI: Teamwort).
+_Avoid_: Nickname, tag
+
+**Team name**:
+A team's Team words in the order their Players joined the team, or its Team colour's name while it has none. It freezes when the first Session starts; afterwards the Host can only reset it to the colour name.
+_Avoid_: Team title, label
+
+**Online**:
+A Member is online while they have the Event open in at least one tab.
+_Avoid_: Present, active, connected
 
 **Bench**:
 The zone for members who are not in a Party but may be pulled in. Everyone arriving via the Invite link lands here.
@@ -155,6 +183,10 @@ _Avoid_: Decider, overtime, sudden death
 **Tiebreaker pool**:
 The games an Event keeps apart for the Tiebreaker only.
 _Avoid_: Backup pool
+
+**Activity feed**:
+The Event's automatic log of what happened, with times, readable by every Member; it never names a game before everyone may know it (UI: Aktivität).
+_Avoid_: History, log, timeline
 
 **Award ceremony**:
 The show that closes a finished Event, started by the Host and seen by every Member at the same moment; the Host can start it again (UI: Siegerehrung).
