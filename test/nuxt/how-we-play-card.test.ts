@@ -84,7 +84,7 @@ describe('HowWePlayCard (#148)', () => {
     const card = await mountCard({ settings: hiddenWheel, pools: visiblePools, isHost: true })
 
     expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong', 'Schach'])
-    expect(card.text()).toContain('Das Rad ist verdeckt. Nur du siehst diese Spiele.')
+    expect(card.text()).toContain('Das Rad ist verdeckt: Die anderen sehen nur, wie viele Spiele im Pool sind.')
   })
 
   it('does not add the note for the Host while the wheel is visible', async () => {
