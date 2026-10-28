@@ -1,23 +1,23 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string">
 import type { Component } from 'vue'
 
 // Two to four exclusive options as a radio group (02-components § SegmentedControl). Arrow keys
 // move and select, with the focus following; the selected option is the only tab stop. Options can
 // carry their own selected fill and icon (the Slot card's vote options); a disabled group shows its
-// options but does not select.
+// options but does not select. Typed by its values (T), so a caller gets back the value type it passed in (review D1).
 const props = defineProps<{
-  modelValue: string
-  options: { value: string, label: string, icon?: Component, fill?: string }[]
+  modelValue: T
+  options: { value: T, label: string, icon?: Component, fill?: string }[]
   /** The group's accessible name. */
   label: string
   disabled?: boolean
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: T] }>()
 
 const group = useTemplateRef('group')
 
-function select(value: string) {
+function select(value: T) {
   if (props.disabled) return
   emit('update:modelValue', value)
 }

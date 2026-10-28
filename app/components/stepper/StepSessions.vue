@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarDays, Minus, Plus, X } from '@lucide/vue'
+import type { Component } from 'vue'
 import { errorCopyKey } from '~/utils/api-error'
 import type { EventDraft, SessionsDraft, StepLocks } from '~/utils/event-draft'
 import { SESSIONS_MAX, SLOTS_MAX, slotProblems as slotRuleProblems, type SlotProblem } from '~~/shared/event'
@@ -73,7 +74,7 @@ useStepBlocker(blocker, () => {
   return rowBlocker(slotProblems.value, slotErrors.value)
 })
 
-const MODES = computed(() => [
+const MODES = computed<{ value: SessionsDraft['mode'], label: string, icon: Component }[]>(() => [
   { value: 'poll', label: t('mvp.create.modePoll'), icon: CalendarDays },
   { value: 'direct', label: t('mvp.create.modeDirect'), icon: CalendarCheck },
 ])
@@ -110,7 +111,7 @@ const MODES = computed(() => [
       :model-value="dates.mode"
       :label="t('mvp.create.dateLabel')"
       :options="MODES"
-      @update:model-value="update({ mode: $event as SessionsDraft['mode'] })"
+      @update:model-value="update({ mode: $event })"
     />
 
     <div
