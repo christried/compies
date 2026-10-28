@@ -9,6 +9,7 @@
 - Du kannst einem Spiel in der Bibliothek ein Bild geben. Es wird direkt im Browser passend zugeschnitten. ([#143](https://github.com/christried/compies/issues/143))
 - Beim Anlegen wählst du jetzt den Auswahlmodus: Admin-Wahl oder Lucky Wheel. Beim Lucky Wheel kannst du das Rad verdecken und festlegen, wie viele Vetos jede Partei hat. ([#145](https://github.com/christried/compies/issues/145))
 - In der Bibliothek suchst du jetzt nach Namen und filterst nach Spielerzahl, Format oder deinen eigenen Spielen. Spiele, die du angelegt hast, kannst du bearbeiten und ihnen eine Spielerzahl und passende Formate geben. ([#142](https://github.com/christried/compies/issues/142))
+- Beim Anlegen füllst du jetzt den Spielepool und einen eigenen Tiebreaker-Pool aus der Bibliothek. Fehlt ein Spiel, legst du es direkt dort an. Wird der Pool knapp, sagt dir die App Bescheid. ([#146](https://github.com/christried/compies/issues/146))
 
 ## [1.2.0] - 2026-10-28 – Mehr Termine
 

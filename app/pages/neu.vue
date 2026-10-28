@@ -5,6 +5,7 @@ import StepFormat from '~/components/stepper/StepFormat.vue'
 import StepGameCount from '~/components/stepper/StepGameCount.vue'
 import StepMode from '~/components/stepper/StepMode.vue'
 import StepName from '~/components/stepper/StepName.vue'
+import StepPool from '~/components/stepper/StepPool.vue'
 import StepPoints from '~/components/stepper/StepPoints.vue'
 import StepSessions from '~/components/stepper/StepSessions.vue'
 import { apiErrorKey } from '~/utils/api-error'
@@ -14,17 +15,17 @@ import { SLOTS_MAX, type CreatedEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
 
 // Create an Event (screen 05, `?s=create`): the guided stepper (#144) — name, Format with team layout, Game
-// count, points table, the Selection mode with the Lucky Wheel's options (#145), then the Sessions and their
-// Dates (the old create form, #49). Nothing is sent until „Session erstellen“; then the Fertig screen shows the
+// count, points table, the Selection mode with the Lucky Wheel's options (#145), the Game pool and the Tiebreaker
+// pool (#146), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Session erstellen“; then the Fertig screen shows the
 // summary and the Invite link. Only Users with the Host permission get it (ADR 0002); everyone else sees the
-// Construction page. The server is the final judge. More steps (#146 Game pools) go into STEP_KEYS and the step
-// list below. The stepper's components are imported, not auto-imported: Nuxt would name those in `stepper/` with
+// Construction page. The server is the final judge. A step goes into STEP_KEYS and the step list below. The
+// stepper's components are imported, not auto-imported: Nuxt would name those in `stepper/` with
 // a folder prefix.
 
 const { t } = useI18n()
 const user = useAuthUser()
 
-const STEP_KEYS = ['name', 'format', 'games', 'points', 'mode', 'sessions'] as const
+const STEP_KEYS = ['name', 'format', 'games', 'points', 'mode', 'pool', 'tiebreaker', 'sessions'] as const
 type StepKey = (typeof STEP_KEYS)[number]
 
 const draft = ref(newDraft())
@@ -49,6 +50,7 @@ const stepKey = computed<StepKey>(() => STEP_KEYS[current.value]!)
 const infoTopic = computed(() => {
   if (stepKey.value === 'format') return draft.value.settings.format
   if (stepKey.value === 'mode') return draft.value.settings.selectionMode === 'lucky_wheel' ? 'wheel' : 'admin'
+  if (stepKey.value === 'tiebreaker') return 'tiebreaker'
   return null
 })
 const infoTitle = computed(() => (infoTopic.value ? t(`setup.info.${infoTopic.value}.title`) : undefined))
@@ -155,6 +157,7 @@ const datesLine = computed(() => (poll.value
         </section>
         <EventSettingsSummary
           :settings="draft.settings"
+          :pools="{ main: draft.pools.main.length, tiebreaker: draft.pools.tiebreaker.length }"
           :dates="datesLine"
         />
       </div>
@@ -197,6 +200,18 @@ const datesLine = computed(() => (poll.value
           v-else-if="stepKey === 'mode'"
           v-model="draft"
           v-model:blocker="blocker"
+        />
+        <StepPool
+          v-else-if="stepKey === 'pool'"
+          v-model="draft"
+          v-model:blocker="blocker"
+          kind="main"
+        />
+        <StepPool
+          v-else-if="stepKey === 'tiebreaker'"
+          v-model="draft"
+          v-model:blocker="blocker"
+          kind="tiebreaker"
         />
         <StepSessions
           v-else
