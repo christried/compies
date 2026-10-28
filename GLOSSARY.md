@@ -106,6 +106,10 @@ _Avoid_: Un-confirm, cancel date, reset
 One competing unit in an Event: a team in a team format, a single player in free-for-all. An Event has at most 8.
 _Avoid_: Side, group
 
+**Team size**:
+The number of slots per team in the Teams format, set by the Host and changeable while the Event runs, but never below the number of Players in the fullest team. A team may have fewer Players than its Team size; a game starts only when all teams have the same number of Players.
+_Avoid_: Team capacity, players per team
+
 **Bench**:
 The zone for members who are not in a Party but may be pulled in. Everyone arriving via the Invite link lands here.
 _Avoid_: Waiting room, reserve
