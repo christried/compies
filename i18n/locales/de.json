@@ -1106,6 +1106,26 @@
       "removeMissing": "Session ohne Termin entfernen"
     }
   },
+  "stepper": {
+    "locked": "Bald verfügbar",
+    "summary": {
+      "teams": "{n} Teams à {s}",
+      "games": "{n} Spiel | {n} Spiele",
+      "hidden": "{mode} (verdeckt)",
+      "sentence": "{teams}, {mode}, {games}.",
+      "format": "Format",
+      "gamesLabel": "Spiele",
+      "points": "Punkte",
+      "mode": "Modus",
+      "pool": "Pool",
+      "poolValue": "{main} Spiele, Tiebreaker {tiebreaker}",
+      "dates": "Termin"
+    },
+    "number": {
+      "less": "{label}: weniger",
+      "more": "{label}: mehr"
+    }
+  },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
