@@ -1272,8 +1272,17 @@
       "more": "{label}: mehr"
     }
   },
+  "howWePlay": {
+    "title": "So wird gespielt",
+    "notSetUp": "Der Host hat das Event noch nicht eingerichtet.",
+    "mainPool": "Spielepool",
+    "tiebreakerPool": "Tiebreaker-Pool",
+    "emptyPool": "Noch keine Spiele.",
+    "hostOnly": "Das Rad ist verdeckt. Nur du siehst diese Spiele.",
+    "counts": "{main} im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen."
+  },
   "error": {
-    "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
+    "network":"Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
     "voteFailed": "Deine Stimme ist nicht angekommen",
     "noteTooLong": "Die Anmerkung ist zu lang.",

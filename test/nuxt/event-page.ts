@@ -24,10 +24,10 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
   const { startsAt = null, previousStartsAt = null, ...event } = { ...eventOf(slug), ...overrides.event }
   return {
     event,
-    // Set up with the defaults unless a test says otherwise (#147: null is an Event from before 1.3).
-    settings: overrides.settings === undefined ? defaultSettings() : overrides.settings,
+    // An Event that was never set up (#144) unless a test says otherwise: no settings, hidden empty pools (#148, #147).
+    settings: overrides.settings === undefined ? null as EventSettings | null : overrides.settings,
     settingsFloors: overrides.settingsFloors === undefined ? (event.isHost ? { teamSize: 1, vetoAllowance: 0 } : null) : overrides.settingsFloors,
-    pools: overrides.pools ?? { hidden: false, main: [], tiebreaker: [] } as EventPools,
+    pools: overrides.pools ?? { hidden: true, mainCount: 0, tiebreakerCount: 0 } as EventPools,
     // The Event's one Session, which the server sends without a number (#70).
     sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[] }],
     removedSessions: overrides.removedSessions ?? [],

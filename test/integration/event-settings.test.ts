@@ -193,6 +193,24 @@ describe('changing the settings of an Event (#147)', () => {
       expect((await row(slug)).gameCount).toBe(10)
     })
 
+    it('shows the games to a Member once the Hidden wheel is switched off, and hides them again when it is switched on', async () => {
+      const kart = await newGame('Mario Kart')
+      const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true }, pools: { main: [kart.id], tiebreaker: [] } })
+      expect((await read(slug, memberCookie)).pools).toEqual({ hidden: true, mainCount: 1, tiebreakerCount: 0 })
+
+      expect((await patch(slug, { settings: { hiddenWheel: false } })).status).toBe(200)
+      const revealed = (await read(slug, memberCookie)).pools
+      expect(revealed.hidden).toBe(false)
+      expect(JSON.stringify(revealed)).toContain('Mario Kart')
+
+      expect((await patch(slug, { settings: { hiddenWheel: true } })).status).toBe(200)
+      const hiddenAgain = await request(`/api/e/${slug}`, { headers: { cookie: memberCookie } })
+      const raw = await hiddenAgain.text()
+      expect(JSON.parse(raw).pools).toEqual({ hidden: true, mainCount: 1, tiebreakerCount: 0 })
+      expect(raw).not.toContain('Mario Kart')
+      expect(raw).not.toContain(kart.id)
+    })
+
     it('refuses a malformed pool with invalid_pools', async () => {
       const slug = await createdEvent()
 

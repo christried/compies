@@ -1,5 +1,6 @@
-import { asc, eq, inArray, sql } from 'drizzle-orm'
-import { eventPoolGames, games } from '../db/schema'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { eventMembers, eventPoolGames, events, games } from '../db/schema'
+import type { PoolEvent } from '../domain/image-access'
 import type { Db } from './db'
 import { apiError } from './errors'
 import { poolGameView } from './library'
@@ -37,4 +38,17 @@ export async function assertGamesExist(tx: Db, ...lists: string[][]): Promise<vo
   if (ids.length === 0) return
   const known = await tx.select({ id: games.id }).from(games).where(inArray(games.id, ids))
   if (known.length !== ids.length) throw apiError('unknown_game')
+}
+
+/**
+ * The live Events `userId` is a Member of whose Game pool or Tiebreaker pool holds the game, with whether they host
+ * it and whether its wheel is hidden: what the image route needs (#148). One query, deleted Events left out.
+ */
+export async function poolEventsOf(db: Db, userId: string, gameId: string): Promise<PoolEvent[]> {
+  return await db
+    .selectDistinct({ isHost: sql<boolean>`${events.hostId} = ${userId}`, hiddenWheel: sql<boolean>`coalesce(${events.hiddenWheel}, true)` })
+    .from(eventPoolGames)
+    .innerJoin(events, eq(eventPoolGames.eventId, events.id))
+    .innerJoin(eventMembers, and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)))
+    .where(and(eq(eventPoolGames.gameId, gameId), isNull(events.deletedAt)))
 }

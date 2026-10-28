@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
+import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { clickButton, sanneAndLarsi, serve, view } from './event-page'
 
@@ -37,7 +38,7 @@ describe('the „Event einrichten“ notice', () => {
   })
 
   it('stays away once the Event is set up', async () => {
-    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
+    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true }, settings: defaultSettings() }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
@@ -70,7 +71,7 @@ describe('Einstellungen in the Host controls', () => {
   const toolbarLabels = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.get('[role="toolbar"]').findAll('button').map((button: { text: () => string }) => button.text())
 
   it('is the fourth action of the poll Phase, after Einladen', async () => {
-    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
+    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true }, settings: defaultSettings() }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
@@ -78,7 +79,7 @@ describe('Einstellungen in the Host controls', () => {
   })
 
   it('is there once the Date is set, next to Einladen', async () => {
-    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'date_set', startsAt: '2090-10-24T18:00:00.000Z' } }))
+    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'date_set', startsAt: '2090-10-24T18:00:00.000Z' }, settings: defaultSettings() }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
@@ -86,11 +87,11 @@ describe('Einstellungen in the Host controls', () => {
   })
 
   it('is there while the Event is running, and gone when it is finished', async () => {
-    const running = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'running' } }))
+    const running = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'running' }, settings: defaultSettings() }))
     const runningPage = await mountSuspended(EventPage, { route: `/e/${running.slug}` })
     expect(toolbarLabels(runningPage)).toEqual(['Einstellungen', 'Einladen'])
 
-    const finished = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'finished' } }))
+    const finished = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'finished' }, settings: defaultSettings() }))
     const finishedPage = await mountSuspended(EventPage, { route: `/e/${finished.slug}` })
     expect(finishedPage.find('[role="toolbar"]').exists()).toBe(false)
   })
@@ -104,7 +105,7 @@ describe('Einstellungen in the Host controls', () => {
   })
 
   it('opens the editor', async () => {
-    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
+    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true }, settings: defaultSettings() }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     await clickButton(page.get('[role="toolbar"]').element, 'Einstellungen')
@@ -113,7 +114,7 @@ describe('Einstellungen in the Host controls', () => {
   })
 
   it('is not offered to a Member', async () => {
-    const { slug } = serve(s => view(s, sanneAndLarsi))
+    const { slug } = serve(s => view(s, sanneAndLarsi, { settings: defaultSettings() }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 

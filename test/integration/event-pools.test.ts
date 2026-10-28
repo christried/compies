@@ -161,10 +161,11 @@ describe('the pools of an Event (#146)', () => {
       expect((await read(hostCookie, slug)).pools).toEqual({ hidden: false, main: [], tiebreaker: [] })
     })
 
-    it('gives every other Member only the counts, and not a trace of the games', async () => {
+    it('gives every other Member only the counts under a Hidden wheel, and not a trace of the games (the full test is hidden-wheel.test.ts, #148)', async () => {
       const secret = await newGame('Geheimes Spiel')
       const other = await newGame('Anderes Spiel')
-      const { slug, inviteUrl } = await createdEvent({ pools: { main: [secret.id, other.id], tiebreaker: [secret.id] } })
+      const settings = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 }
+      const { slug, inviteUrl } = await createdEvent({ settings, pools: { main: [secret.id, other.id], tiebreaker: [secret.id] } })
       const { cookie } = await signIn(testDb.db, member)
       const invite = new URL(inviteUrl).pathname.slice('/e/'.length)
       expect((await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
