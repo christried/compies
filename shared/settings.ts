@@ -264,6 +264,19 @@ export interface SettingsFloors {
 export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'wrong_phase'
 
 /**
+ * The change put over the current settings, ready for parseSettings. Wheel values left over from the Lucky Wheel (from
+ * `current`) never fail an Admin pick Event, so they are dropped; ones the change itself sends stay and do fail, as on create.
+ */
+export function mergeSettings(current: EventSettings, change: Record<string, unknown>): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...current, ...change }
+  if (merged.selectionMode === 'admin_pick') {
+    if (!('hiddenWheel' in change)) delete merged.hiddenWheel
+    if (!('vetoAllowance' in change)) delete merged.vetoAllowance
+  }
+  return merged
+}
+
+/**
  * Checks a change of an Event's settings. `current` null = not set up: the change must then be a full payload (parseSettings).
  * Otherwise the change is merged over `current` (only keys present in `change`), then: wrong_phase when the Phase is not
  * settingsEditable; in a settingsLocked Phase any LOCKED_WHEN_RUNNING key whose value differs → setting_locked; then
@@ -282,12 +295,7 @@ export function checkSettingsChange(
     if (settingsLocked(context.phase) && LOCKED_WHEN_RUNNING.some(key => key in change && !sameValue(change[key], current[key]))) {
       return { ok: false, error: 'setting_locked' }
     }
-    merged = { ...current, ...change }
-    // Wheel values left over from the Lucky Wheel (from `current`) never fail an Admin pick Event; ones the change sends do, as on create.
-    if (merged.selectionMode === 'admin_pick') {
-      if (!('hiddenWheel' in change)) delete merged.hiddenWheel
-      if (!('vetoAllowance' in change)) delete merged.vetoAllowance
-    }
+    merged = mergeSettings(current, change)
   }
 
   const parsed = parseSettings(merged)
