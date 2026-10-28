@@ -4,9 +4,9 @@ import type { Component } from 'vue'
 import { vetoAllowanceOf, type EventDraft, type StepLocks } from '~/utils/event-draft'
 import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, hasWheel, type SelectionMode } from '~~/shared/settings'
 
-// Step 5: the Selection mode (#145). Lucky Wheel and Admin-Wahl are open; the other three are shown as „Bald
+// The Selection mode (#145). The Lucky Wheel (Glücksrad) and Host-Wahl are open; the other three are shown as „Bald
 // verfügbar“ on their cards, so the Host knows what is coming (no note under them, #174). With the Lucky Wheel:
-// Rad verdecken and the Veto allowance, both kept in the draft while Admin-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
+// Rad verdecken and the Veto allowance, both kept in the draft while Host-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
 // it (`vetoAllowanceOf`). The step never blocks. In the settings editor (#147) `locks.reason` locks the mode (the Event
 // is running; Rad verdecken and the Veto allowance stay open) and `locks.floors` keeps the Veto allowance from going
 // below what a Party has spent.

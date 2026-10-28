@@ -2,7 +2,7 @@
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
 import { EVENT_NAME_MAX, eventNameLength } from '~~/shared/event'
 
-// Step 1: the Session's name (#144). Every step v-models the whole draft, reports why Weiter is blocked through
+// The Event's name (#144). Every step v-models the whole draft, reports why Weiter is blocked through
 // `v-model:blocker` (null = it can go on; the wizard reads that to block Weiter) and takes `locks`, which it may ignore.
 defineProps<{ locks?: StepLocks }>()
 const draft = defineModel<EventDraft>({ required: true })

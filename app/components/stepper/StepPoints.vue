@@ -3,7 +3,7 @@ import { Lock } from '@lucide/vue'
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
 import { isFlat, risingPlace } from '~~/shared/settings'
 
-// Step 4: the points table (#144). A custom table in which a place earns more than the place above blocks
+// The points table (#144). A custom table in which a place earns more than the place above blocks
 // Weiter with the same message the table shows on that row, and so does one in which every place earns the
 // same (#175). `locks.reason` (settings editor, #147) shows the table locked.
 defineProps<{ locks?: StepLocks }>()

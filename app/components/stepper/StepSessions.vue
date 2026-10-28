@@ -5,7 +5,7 @@ import type { EventDraft, SessionsDraft, StepLocks } from '~/utils/event-draft'
 import { SESSIONS_MAX, SLOTS_MAX, slotProblems as slotRuleProblems, type SlotProblem } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
-// The last step: the Sessions and their Dates (#144; the form of the old create page, moved as it was, #49).
+// The Sessions and their Dates (#144; the form of the old create page, moved as it was, #49).
 // The Session count (1 to 8), then a Date poll with up to 16 Slots (at least one per Session) or one direct
 // Date per Session. Times are Berlin wall-clock values; the server is the final judge.
 defineProps<{ locks?: StepLocks }>()

@@ -111,7 +111,7 @@ export function isFlat(values: number[]): boolean {
   return values.length >= 2 && values.every(value => value === values[0])
 }
 
-/** Defaults for a new Event: 2 teams × 3 (a 3v3), Game count 10, linear, Admin pick, visible wheel, no Veto allowance. */
+/** Defaults for a new Event: 2 teams × 3 (a 3v3), Game count 10, linear, Host pick (`admin_pick`), visible wheel, no Veto allowance. */
 export function defaultSettings(): EventSettings {
   return {
     format: 'teams',
@@ -265,7 +265,7 @@ export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_
 
 /**
  * The change put over the current settings, ready for parseSettings. Wheel values left over from the Lucky Wheel (from
- * `current`) never fail an Admin pick Event, so they are dropped; ones the change itself sends stay and do fail, as on create.
+ * `current`) never fail a Host pick Event, so they are dropped; ones the change itself sends stay and do fail, as on create.
  */
 export function mergeSettings(current: EventSettings, change: Record<string, unknown>): Record<string, unknown> {
   const merged: Record<string, unknown> = { ...current, ...change }

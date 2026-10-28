@@ -8,7 +8,7 @@ import { eventPath } from '~~/shared/links'
 
 // Create an Event (screen 05, `?s=create`): the guided wizard (#144, #170) — name, Format with team layout, Game
 // count, points table, the Selection mode with the Lucky Wheel's options (#145), the Game pool and the Tiebreaker
-// pool (#146), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Session erstellen“; then the Fertig screen shows the
+// pool (#146), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Event erstellen“; then the Fertig screen shows the
 // summary and the Invite link. Only Users with the Host permission get it (ADR 0002); everyone else sees the
 // Construction page. The server is the final judge. A step goes into STEP_KEYS here and into the wizard's step map.
 

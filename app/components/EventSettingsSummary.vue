@@ -2,7 +2,7 @@
 import { settingsSentence, summaryRows } from '~/utils/settings-summary'
 import type { EventSettings } from '~~/shared/settings'
 
-// An Event's settings at a glance (#144): optionally the sentence („4 Teams à 2, Admin-Wahl, 6 Spiele.“), then
+// An Event's settings at a glance (#144): optionally the sentence („4 Teams à 2, Host-Wahl, 6 Spiele.“), then
 // the key/value list (Format, Spiele, Punkte, Modus, later Pool and Termin). The Fertig screen shows it, and
 // the Event page reuses it as „So wird gespielt“ (#148). The words come from app/utils/settings-summary.ts.
 const props = withDefaults(defineProps<{

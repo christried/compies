@@ -2,7 +2,7 @@
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
 import { GAME_COUNT_MAX, GAME_COUNT_MIN } from '~~/shared/settings'
 
-// Step 3: how many Games are played (#144), 1 to 30.
+// How many Games are played (#144), 1 to 30.
 defineProps<{ locks?: StepLocks }>()
 const draft = defineModel<EventDraft>({ required: true })
 const settings = useDraftSettings(draft)

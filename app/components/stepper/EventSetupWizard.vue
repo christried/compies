@@ -29,7 +29,7 @@ const props = defineProps<{
   navTitle?: string
   /** Replaces „Schritt n von m“ above the step's title. */
   kicker?: string
-  /** Weiter on the last step („Session erstellen“, „Speichern“) and while `submit` is running. */
+  /** Weiter on the last step („Event erstellen“, „Speichern“) and while `submit` is running. */
   lastLabel: string
   savingLabel: string
   /** Every step is a link from the start (the editor), instead of those the Host has been to. */

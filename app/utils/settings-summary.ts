@@ -1,8 +1,8 @@
 import { hasWheel, type EventSettings, type PointsPreset, type PointsTable, type SelectionMode } from '~~/shared/settings'
 
-// The words for an Event's settings (#144): the sentence of the Fertig screen („4 Teams à 2, Lucky Wheel
-// (verdeckt), 6 Spiele.“) and the key/value list under it. Pure, with vue-i18n's `t` passed in; #145 adds
-// the Lucky Wheel's veto allowance, #146 the pools, #148 shows both on the Event page.
+// The words for an Event's settings (#144): the sentence of the Fertig screen („4 Teams à 2, Glücksrad
+// (verdeckt), 6 Spiele.“) and the key/value list under it (Format, Spiele, Punkte, Modus, Vetos, Pool, Termin).
+// Pure, with vue-i18n's `t` passed in. The Fertig screen and the Event page (#148) show both.
 
 export type Translate = (key: string, named?: Record<string, unknown>, plural?: number) => string
 
@@ -25,7 +25,7 @@ export function teamsText(settings: Pick<EventSettings, 'teamCount' | 'teamSize'
   return t('stepper.summary.teams', { n: settings.teamCount, s: settings.teamSize })
 }
 
-/** „Lucky Wheel (verdeckt)“, „Admin-Wahl“. */
+/** „Glücksrad (verdeckt)“, „Host-Wahl“. */
 export function modeText(settings: Pick<EventSettings, 'selectionMode' | 'hiddenWheel'>, t: Translate): string {
   const mode = t(MODE_NAME[settings.selectionMode])
   return hasWheel(settings.selectionMode) && settings.hiddenWheel ? t('stepper.summary.hidden', { mode }) : mode
@@ -36,7 +36,7 @@ export function pointsText(table: PointsTable, t: Translate): string {
   return t('stepper.summary.pointsValue', { preset: t(PRESET_NAME[table.preset]), values: table.values.join(' / ') })
 }
 
-/** „4 Teams à 2, Lucky Wheel (verdeckt), 6 Spiele.“ */
+/** „4 Teams à 2, Glücksrad (verdeckt), 6 Spiele.“ */
 export function settingsSentence(settings: EventSettings, t: Translate): string {
   return t('stepper.summary.sentence', {
     teams: teamsText(settings, t),
