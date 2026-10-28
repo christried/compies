@@ -197,7 +197,6 @@
         "name": "Lucky Wheel – Loser’s Advantage",
         "desc": "Der Letzte bannt vor jedem Dreh."
       },
-      "plannedNote": "Pick & Ban, Loser’s Pick und Loser’s Advantage kommen bald. Sie sind schon sichtbar, damit du weißt, was kommt, lassen sich aber noch nicht wählen.",
       "vetoes": "Vetos pro Partei",
       "vetoesHelp": "Jede Partei hat gleich viele Vetos für das ganze Event.",
       "vetoesMin": "Mindestens 0 Vetos.",

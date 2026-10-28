@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ListOrdered, Swords, User, Users } from '@lucide/vue'
+import type { Component } from 'vue'
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
 import { AVAILABLE_FORMATS, TEAM_COUNT_MAX, TEAM_COUNT_MIN, TEAM_PLAYERS_MAX, TEAM_SIZE_MAX, TEAM_SIZE_MIN, withTeams, type Format } from '~~/shared/settings'
 
@@ -19,15 +20,17 @@ watchEffect(() => {
   blocker.value = null
 })
 
-const options = computed(() => [
+// bracket and league are not a Format yet, so the cards carry more values than Format (#144).
+const options = computed<{ value: Format | 'bracket' | 'league', label: string, desc: string, icon: Component, locked: boolean }[]>(() => ([
   { value: 'ffa', label: t('stepper.format.ffa.name'), desc: t('stepper.format.ffa.desc'), icon: User },
   { value: 'teams', label: t('stepper.format.teams.name'), desc: t('stepper.format.teams.desc'), icon: Users },
   { value: 'bracket', label: t('stepper.format.bracket.name'), desc: t('stepper.format.bracket.desc'), icon: Swords },
   { value: 'league', label: t('stepper.format.league.name'), desc: t('stepper.format.league.desc'), icon: ListOrdered },
-].map(option => ({ ...option, locked: !(AVAILABLE_FORMATS as readonly string[]).includes(option.value) })))
+] as const).map(option => ({ ...option, locked: !AVAILABLE_FORMATS.some(format => format === option.value) })))
 
-function chooseFormat(value: string) {
-  settings.value = { ...settings.value, format: value as Format }
+// Only a Format can be chosen; the coming cards are locked, so they never get here.
+function chooseFormat(value: Format | 'bracket' | 'league') {
+  if (value === 'teams' || value === 'ffa') settings.value = { ...settings.value, format: value }
 }
 
 // Each stepper's top is the lower of its own limit and what is left of the 24 Players.
