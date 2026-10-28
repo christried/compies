@@ -1,6 +1,7 @@
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
-import type { EventSettings, Format, SettingsFloors } from './settings'
+import type { EventSettings, SettingsFloors } from './settings'
+import type { Suitability } from './game'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -100,7 +101,7 @@ export interface PoolGame {
   clipLength: number
   playersMin: number | null
   playersMax: number | null
-  formats: Format[]
+  suitabilities: Suitability[]
 }
 
 /** The Event's Game pool and Tiebreaker pool. `hidden` = this viewer only learns how many games each pool has (Hidden wheel, #148). */

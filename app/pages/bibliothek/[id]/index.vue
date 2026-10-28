@@ -4,7 +4,7 @@ import { apiFailure } from '~/utils/api-error'
 import { canSeeLibrary, type GameView } from '~~/shared/game'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
-// set length, the facts (player count, Formats, clip length) and who created it. The creator and the Platform
+// set length, the facts (player count, Suitabilities, clip length) and who created it. The creator and the Platform
 // admin get „Bearbeiten“; everyone else gets the reason instead of a dead button. A game that does not exist
 // looks like any missing page; so does the page for Users who may not see the library.
 const { t } = useI18n()
@@ -33,10 +33,11 @@ const players = computed(() => {
   if (min === null) return t('library.playersUpTo', { max })
   return t('library.playersBetween', { min, max })
 })
-const formats = computed(() => {
-  const list = game.value?.formats ?? []
+// The Suitabilities („Passt zu“, #171), in SUITABILITIES order, as one comma-joined fact.
+const suitabilities = computed(() => {
+  const list = game.value?.suitabilities ?? []
   if (list.length === 0) return null
-  return list.length > 1 ? t('library.formatBoth') : t(`library.format.${list[0]}`)
+  return list.map(suitability => t(`library.suitability.${suitability}`)).join(', ')
 })
 </script>
 
@@ -119,7 +120,7 @@ const formats = computed(() => {
             {{ game.name }}
           </h1>
           <ul
-            v-if="players || formats || game.youtubeId"
+            v-if="players || suitabilities || game.youtubeId"
             class="m-0 flex list-none flex-wrap gap-2 p-0"
           >
             <li
@@ -133,14 +134,14 @@ const formats = computed(() => {
               {{ players }}
             </li>
             <li
-              v-if="formats"
+              v-if="suitabilities"
               class="inline-flex h-8 items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-3 text-[13px] font-bold"
             >
               <AppIcon
                 :icon="Swords"
                 :size="14"
               />
-              {{ formats }}
+              {{ suitabilities }}
             </li>
             <li
               v-if="game.youtubeId"

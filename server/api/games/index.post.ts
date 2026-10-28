@@ -1,10 +1,9 @@
 import { defineEventHandler, readBody } from 'h3'
 import { games } from '../../db/schema'
-import { parseGameInput } from '../../domain/game'
+import { parseGameInput, type GameView } from '../../../shared/game'
 import { useDb } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { creatorNameOf, gameView, requireLibraryViewer } from '../../utils/library'
-import type { GameView } from '../../../shared/game'
 
 // Creates a game in the library (#141). Games are never deleted, so Events that use one keep working.
 export default defineEventHandler(async (event): Promise<GameView> => {

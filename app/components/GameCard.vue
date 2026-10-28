@@ -9,7 +9,7 @@ import { youTubeThumbnail } from '~~/shared/youtube'
 // the name is the link and stretches over the whole card (so `#actions` can hold buttons of their own);
 // without it the card is a plain element, not a button. #146 and #148 reuse it.
 const props = withDefaults(defineProps<{
-  game: Pick<GameView, 'name' | 'imageUrl' | 'youtubeId' | 'playersMin' | 'playersMax' | 'formats'>
+  game: Pick<GameView, 'name' | 'imageUrl' | 'youtubeId' | 'playersMin' | 'playersMax' | 'suitabilities'>
   layout?: 'card' | 'row'
   to?: RouteLocationRaw
 }>(), { layout: 'card', to: undefined })
@@ -23,10 +23,8 @@ const players = computed(() => {
   if (min === null && max === null) return null
   return min === max || min === null || max === null ? String(min ?? max) : `${min}–${max}`
 })
-// Both Formats read as „Beides“ (#142, 02-components § GameCard).
-const formats = computed(() => (props.game.formats.length > 1
-  ? t('library.formatBoth')
-  : props.game.formats.map(format => t(`library.format.${format}`)).join(', ')))
+// The Suitabilities („Passt zu“, #171) as a list, in SUITABILITIES order: „Teams, 1 gegen 1“.
+const suitabilities = computed(() => props.game.suitabilities.map(suitability => t(`library.suitability.${suitability}`)).join(', '))
 const isRow = computed(() => props.layout === 'row')
 </script>
 
@@ -72,7 +70,7 @@ const isRow = computed(() => props.layout === 'row')
         {{ game.name }}
       </component>
       <div
-        v-if="players || formats"
+        v-if="players || suitabilities"
         class="flex flex-wrap gap-x-2.5 text-[12px] text-ink-2"
       >
         <span
@@ -85,7 +83,7 @@ const isRow = computed(() => props.layout === 'row')
           />
           {{ players }}
         </span>
-        <span v-if="formats">{{ formats }}</span>
+        <span v-if="suitabilities">{{ suitabilities }}</span>
       </div>
     </div>
 

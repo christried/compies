@@ -69,7 +69,7 @@ describe('draftBody', () => {
 })
 
 function game(id: string, name: string): PoolGame {
-  return { id, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] }
+  return { id, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] }
 }
 
 // The pool steps (#146): the draft keeps the games themselves, so the step and Fertig can show them.

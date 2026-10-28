@@ -21,7 +21,7 @@ function game(overrides: Partial<GameView>): GameView {
     clipLength: 30,
     playersMin: null,
     playersMax: null,
-    formats: [],
+    suitabilities: [],
     createdBy: { id: kitty.id, name: 'Sanne' },
     createdAt: '2026-01-15T10:00:00.000Z',
     canEdit: true,
@@ -258,7 +258,7 @@ describe('the new game page', () => {
   })
 })
 
-const withPlayers = game({ id: '00000000-0000-4000-8000-0000000000a4', name: 'Halo', playersMin: 2, playersMax: 10, formats: ['teams', 'ffa'], canEdit: false, createdBy: { id: 'someone-else', name: 'Sanne' } })
+const withPlayers = game({ id: '00000000-0000-4000-8000-0000000000a4', name: 'Halo', playersMin: 2, playersMax: 10, suitabilities: ['teams', 'ffa'], canEdit: false, createdBy: { id: 'someone-else', name: 'Sanne' } })
 
 describe('the library cards and filters (#142)', () => {
   beforeEach(async () => {
@@ -271,7 +271,7 @@ describe('the library cards and filters (#142)', () => {
     await clearNuxtData('games')
   })
 
-  it('shows the player count and the Formats on the card, both Formats as „Beides“', async () => {
+  it('shows the player count and the Suitabilities on the card, as a list in order', async () => {
     list = { games: [withPlayers, withClip] }
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
@@ -279,8 +279,8 @@ describe('the library cards and filters (#142)', () => {
 
     const [halo, cs] = page.findAll('main li')
     expect(halo!.text()).toContain('2–10')
-    expect(halo!.text()).toContain('Beides')
-    expect(cs!.text()).not.toContain('Beides')
+    expect(halo!.text()).toContain('Teams, Jeder gegen jeden')
+    expect(cs!.text()).not.toContain('Teams')
   })
 
   it('shows the search with the number of games in the library, and the filter chips', async () => {
@@ -293,7 +293,7 @@ describe('the library cards and filters (#142)', () => {
     const chips = page.findAll('main button, main select').map(chip => chip.text())
     expect(chips).toEqual(expect.arrayContaining(['Alle', 'Von mir']))
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(true)
-    expect(page.find('select[aria-label="Format"]').exists()).toBe(true)
+    expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(true)
   })
 
   it('sends the search after a short pause and keeps it in the address', async () => {
@@ -318,13 +318,13 @@ describe('the library cards and filters (#142)', () => {
     expect(useRouter().currentRoute.value.query.mine).toBe('1')
   })
 
-  it('sends the Format picked in its menu', async () => {
+  it('sends the Passt zu picked in its menu', async () => {
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
-    await page.get('select[aria-label="Format"]').setValue('teams')
+    await page.get('select[aria-label="Passt zu"]').setValue('one_v_one')
 
-    await vi.waitFor(() => expect(lastQuery.format).toBe('teams'), { timeout: 5000 })
+    await vi.waitFor(() => expect(lastQuery.suitability).toBe('one_v_one'), { timeout: 5000 })
   })
 
   it('sends the player count picked in its menu and shows it on the chip', async () => {
@@ -338,10 +338,10 @@ describe('the library cards and filters (#142)', () => {
   })
 
   it('takes the filters from the address, so reload and back keep them', async () => {
-    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?q=halo&players=3&format=ffa&mine=1' })
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?q=halo&players=3&suitability=ffa&mine=1' })
     await settle(page)
 
-    expect(lastQuery).toMatchObject({ q: 'halo', players: '3', format: 'ffa', mine: '1' })
+    expect(lastQuery).toMatchObject({ q: 'halo', players: '3', suitability: 'ffa', mine: '1' })
     expect(page.findAll('main button').find(button => button.text() === 'Von mir')!.attributes('aria-pressed')).toBe('true')
   })
 
@@ -359,7 +359,7 @@ describe('the library cards and filters (#142)', () => {
   it('shows „Nix gefunden.“ when only a filter keeps every game out', async () => {
     list = { games: [], total: 2 }
 
-    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?format=ffa' })
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?suitability=ffa' })
     await settle(page)
 
     await vi.waitFor(() => expect(page.findAll('h2').map(heading => heading.text())).toContain('Nix gefunden.'), { timeout: 5000 })
@@ -404,14 +404,14 @@ describe('the game page for its editors (#142)', () => {
     expect(page.find(`a[href="/bibliothek/${withClip.id}/bearbeiten"]`).exists()).toBe(false)
   })
 
-  it('shows the player count and the Formats as facts', async () => {
+  it('shows the player count and the Suitabilities as facts', async () => {
     detail = { ...withPlayers, id: withClip.id }
 
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
     expect(page.text()).toContain('2 bis 10')
-    expect(page.text()).toContain('Beides')
+    expect(page.text()).toContain('Teams, Jeder gegen jeden')
   })
 })
 

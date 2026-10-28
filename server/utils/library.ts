@@ -55,7 +55,7 @@ export function poolGameView(row: typeof games.$inferSelect): PoolGame {
     clipLength: row.clipLength,
     playersMin: row.playersMin,
     playersMax: row.playersMax,
-    formats: row.formats,
+    suitabilities: row.suitabilities,
   }
 }
 

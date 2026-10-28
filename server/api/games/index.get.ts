@@ -9,7 +9,7 @@ import type { GameList } from '../../../shared/game'
 // The Game library (#141): every game, by name without regard to case. Only Hosts and the Platform admin
 // may ask; everyone else gets the answer of a missing route. The filters of #142 combine with AND: a name
 // search, a player count the recommended range covers (a game without any count never matches one), a
-// Format and the viewer's own games. `total` counts the whole library, whatever the filters keep.
+// Suitability („Passt zu“, #171) and the viewer's own games. `total` counts the whole library, whatever the filters keep.
 export default defineEventHandler(async (event): Promise<GameList> => {
   const viewer = await requireLibraryViewer(event)
   const filters = parseGameFilters(getQuery(event))
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event): Promise<GameList> => {
       or(isNotNull(games.playersMin), isNotNull(games.playersMax)),
     )
   }
-  if (filters.format !== null) conditions.push(arrayContains(games.formats, [filters.format]))
+  if (filters.suitability !== null) conditions.push(arrayContains(games.suitabilities, [filters.suitability]))
   if (filters.mine) conditions.push(eq(games.createdBy, viewer.id))
 
   const rows = await db
