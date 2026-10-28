@@ -666,7 +666,7 @@ One proposed date in the poll.
 - **States:** not voted (all options neutral) · voted (selected option filled: Ja success with a check, Meh warning text only, no icon (#50), Nein error red with dark text (`bg-error text-on-error`) with an x) · best (3 px focus border, card shadow, „Bester Termin“ chip) · confirmed
 - **Notes (#102):** an „Anmerkungen“ NoteList sits under the counts (also on a past card). Under Ja / Meh / Nein a NoteEditor offers the User's own Note once voted; choosing Meh opens its field by itself, unfocused. A past card has the list but no button.
 - **Slots:** —
-- **Desktop / mobile:** Desktop 4 columns; mobile 1 column. Host on desktop gets „Diesen festlegen“ in the card.
+- **Desktop / mobile:** Desktop 4 columns; mobile 1 column. Host on desktop gets „Termin festlegen“ in the card.
 - **Accessibility:** Options = `role="radiogroup"` labelled with the slot („Sa 25.10. 20:30“); chip text says best.
 - **Motion:** bar widths tween `dur-slow ease-out` on new votes; best chip pops `ease-pop`. Reduced: instant.
 
