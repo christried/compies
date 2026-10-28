@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import { Crown, FerrisWheel, Hand, Scale, Swords } from '@lucide/vue'
-import { chooseMode, setHiddenWheel, setVetoAllowance, type EventDraft } from '~/utils/event-draft'
-import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, type SettingsFloors } from '~~/shared/settings'
+import { vetoAllowanceOf, type EventDraft, type StepLocks } from '~/utils/event-draft'
+import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, type SelectionMode } from '~~/shared/settings'
 
 // Step 5: the Selection mode (#145). Lucky Wheel and Admin-Wahl are open; the other three are shown as „Bald
 // verfügbar“ so the Host knows what is coming. With the Lucky Wheel: Rad verdecken and the Veto allowance,
-// both kept in the draft's wheel options while Admin-Wahl is chosen. The step never blocks. In the settings editor
-// (#147) `lockedReason` locks the mode (the Event is running; Rad verdecken and the Veto allowance stay open) and
-// `floors` keeps the Veto allowance from going below what a Party has spent.
-const props = defineProps<{
-  lockedReason?: string
-  floors?: SettingsFloors
-}>()
+// both kept in the draft while Admin-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
+// it (`vetoAllowanceOf`). The step never blocks. In the settings editor (#147) `locks.reason` locks the mode (the Event
+// is running; Rad verdecken and the Veto allowance stay open) and `locks.floors` keeps the Veto allowance from going
+// below what a Party has spent.
+const props = defineProps<{ locks?: StepLocks }>()
 const draft = defineModel<EventDraft>({ required: true })
 const blocker = defineModel<string | null>('blocker', { default: null })
 
@@ -30,26 +28,27 @@ const options = computed(() => [
 ].map(option => ({ ...option, locked: !(AVAILABLE_SELECTION_MODES as readonly string[]).includes(option.value) })))
 
 function choose(value: string) {
-  if (value === 'lucky_wheel' || value === 'admin_pick') draft.value = chooseMode(draft.value, value)
+  if (value === 'lucky_wheel' || value === 'admin_pick') draft.value = { ...draft.value, settings: { ...draft.value.settings, selectionMode: value as SelectionMode } }
 }
 
-const vetoMin = computed(() => Math.max(VETO_ALLOWANCE_MIN, props.floors?.vetoAllowance ?? VETO_ALLOWANCE_MIN))
+const vetoMin = computed(() => Math.max(VETO_ALLOWANCE_MIN, props.locks?.floors?.vetoAllowance ?? VETO_ALLOWANCE_MIN))
 const vetoMinReason = computed(() => (vetoMin.value > VETO_ALLOWANCE_MIN ? t('setup.mode.vetoesFloor', { n: vetoMin.value }) : t('setup.mode.vetoesMin')))
 
 const wheel = computed(() => draft.value.settings.selectionMode === 'lucky_wheel')
+const veto = computed(() => vetoAllowanceOf(draft.value))
 </script>
 
 <template>
   <div class="flex flex-col gap-[18px]">
     <SettingLockedNote
-      v-if="lockedReason"
-      :reason="lockedReason"
+      v-if="locks?.reason"
+      :reason="locks.reason"
     />
     <RadioCardGroup
       :model-value="draft.settings.selectionMode"
       :options="options"
       :label="t('setup.mode.title')"
-      :locked-reason="lockedReason"
+      :locked-reason="locks?.reason"
       @update:model-value="choose"
     />
     <p class="m-0 text-[14px] text-pretty text-ink-2">
@@ -61,10 +60,10 @@ const wheel = computed(() => draft.value.settings.selectionMode === 'lucky_wheel
       class="flex flex-col gap-3.5 rounded-2xl border-(length:--cp-bw) border-line bg-surface p-4"
     >
       <ToggleSwitch
-        :model-value="draft.settings.hiddenWheel"
+        :model-value="draft.hiddenWheel"
         :label="t('setup.mode.hideWheel')"
         :help="t('setup.mode.hideWheelHelp')"
-        @update:model-value="draft = setHiddenWheel(draft, $event)"
+        @update:model-value="draft = { ...draft, hiddenWheel: $event }"
       />
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex min-w-[150px] flex-1 flex-col leading-[1.3]">
@@ -72,13 +71,13 @@ const wheel = computed(() => draft.value.settings.selectionMode === 'lucky_wheel
           <span class="text-[12px] text-ink-2">{{ t('setup.mode.vetoesHelp') }}</span>
         </div>
         <NumberStepper
-          :model-value="draft.wheel.vetoAllowance"
+          :model-value="veto"
           :min="vetoMin"
           :max="VETO_ALLOWANCE_MAX"
           :label="t('setup.mode.vetoes')"
           :min-reason="vetoMinReason"
           :max-reason="t('setup.mode.vetoesMax')"
-          @update:model-value="draft = setVetoAllowance(draft, $event)"
+          @update:model-value="draft = { ...draft, vetoAllowance: $event }"
         />
       </div>
     </div>
