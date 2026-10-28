@@ -114,7 +114,7 @@ export function defaultSettings(): EventSettings {
 }
 
 /** The settings after the teams change: a preset points table follows the team count, a custom one is cut or padded with 0 (#144). */
-export function withTeams(settings: EventSettings, teamCount: number, teamSize: number): EventSettings {
+export function withTeams<S extends Pick<EventSettings, 'teamCount' | 'teamSize' | 'pointsTable'>>(settings: S, teamCount: number, teamSize: number): S {
   const { preset, values } = settings.pointsTable
   return { ...settings, teamCount, teamSize, pointsTable: { preset, values: pointsFor(preset, teamCount, values) } }
 }

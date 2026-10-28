@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarDays, Minus, Plus, X } from '@lucide/vue'
 import { errorCopyKey } from '~/utils/api-error'
-import type { SessionsDraft } from '~/utils/event-draft'
+import type { EventDraft, SessionsDraft, StepLocks } from '~/utils/event-draft'
 import { SESSIONS_MAX, SLOTS_MAX, slotProblems as slotRuleProblems, type SlotProblem } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
 // The last step: the Sessions and their Dates (#144; the form of the old create page, moved as it was, #49).
 // The Session count (1 to 8), then a Date poll with up to 16 Slots (at least one per Session) or one direct
 // Date per Session. Times are Berlin wall-clock values; the server is the final judge.
-const dates = defineModel<SessionsDraft>({ required: true })
+defineProps<{ locks?: StepLocks }>()
+const draft = defineModel<EventDraft>({ required: true })
+const dates = computed({
+  get: () => draft.value.dates,
+  set: (value) => {
+    draft.value = { ...draft.value, dates: value }
+  },
+})
 const blocker = defineModel<string | null>('blocker', { default: null })
 
 const { t } = useI18n()
