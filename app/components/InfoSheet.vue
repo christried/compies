@@ -1,24 +1,19 @@
 <script setup lang="ts">
 import { TriangleAlert } from '@lucide/vue'
+import { INFO_SECTIONS, type InfoTopic } from '~/utils/info-sections'
 import { noticeClasses } from '~/utils/notice'
 
 // What a Format or Selection mode means (02-components § InfoSheet), from the product brief §17 (copy in
 // `setup.info.<topic>`): „So läuft’s“, the Lucky Wheel's hidden wheel option, „Gut für“ and „Achtung“.
-// Sections a topic lacks are left out. The stepper puts it in the info column and in the phone sheet.
+// The sections of a topic come from INFO_SECTIONS (a section a topic lacks is not listed). The stepper puts it in the info column and in the phone sheet.
 // A section can have more than one paragraph: the hidden wheel option ends with what the Host sees (#145).
 const props = defineProps<{
-  topic: 'teams' | 'ffa' | 'admin' | 'wheel'
+  topic: InfoTopic
 }>()
 
-const { t, te } = useI18n()
+const { t } = useI18n()
 
-const sections = computed(() => [
-  { key: 'how', heading: 'setup.info.sections.how', parts: ['how'] },
-  { key: 'hideWheel', heading: 'setup.info.sections.hideWheel', parts: ['hideWheel', 'hostSees'] },
-  { key: 'good', heading: 'setup.info.sections.good', parts: ['good'] },
-  { key: 'warn', heading: 'setup.info.sections.warn', parts: ['warn'] },
-].map(section => ({ ...section, parts: section.parts.filter(part => te(`setup.info.${props.topic}.${part}`)) }))
-  .filter(section => section.parts.length > 0))
+const sections = computed(() => INFO_SECTIONS[props.topic])
 </script>
 
 <template>
@@ -28,17 +23,17 @@ const sections = computed(() => [
   >
     <section
       v-for="section in sections"
-      :key="section.key"
+      :key="section.section"
       class="flex flex-col gap-0.5"
-      :class="section.key === 'warn' ? [noticeClasses('warning'), 'px-3 py-2.5'] : undefined"
+      :class="section.section === 'warn' ? [noticeClasses('warning'), 'px-3 py-2.5'] : undefined"
     >
       <h3 class="m-0 flex items-center gap-1.5 font-display text-[18px] font-normal">
         <AppIcon
-          v-if="section.key === 'warn'"
+          v-if="section.section === 'warn'"
           :icon="TriangleAlert"
           :size="16"
         />
-        {{ t(section.heading) }}
+        {{ t(`setup.info.sections.${section.section}`) }}
       </h3>
       <p
         v-for="part in section.parts"
