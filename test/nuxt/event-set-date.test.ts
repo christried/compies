@@ -21,7 +21,7 @@ describe('setting the Date', () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickButton(page.get('[data-slot="fri"]').element, 'Diesen festlegen')
+    await clickButton(page.get('[data-slot="fri"]').element, 'Termin festlegen')
 
     expect(dialog()?.textContent).toContain('Termin festlegen?')
     expect(selectedOption()).toBe('Fr 23.10., 20:00 Uhr')
