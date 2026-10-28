@@ -2,12 +2,12 @@
 
 Where COMPIES goes after 1.2.0: a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Terms follow `GLOSSARY.md`.
 
-Each release is one spec and usable on its own. Only the next release is specced; each later one gets its own grilling once the release before it has shipped, because a real game night changes what comes next. This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
+Each release is one spec and usable on its own. A release is grilled, specced and ticketed in one fresh session **while the release before it is being built**, once the code it builds on exists, never all releases up front: the specs name real modules and seams, and the first game night in the app (1.5/1.6) will change what comes after. 1.4 is planned as soon as the Event settings ticket of 1.3 is merged ([#150](https://github.com/christried/compies/issues/150)). This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
 
 | Release | Name | Status |
 |---|---|---|
 | 1.3 | Spielvorbereitung | specced: [#138](https://github.com/christried/compies/issues/138) |
-| 1.4 | Teams | outline |
+| 1.4 | Teams | outline, planning: [#150](https://github.com/christried/compies/issues/150) |
 | 1.5 | Glücksrad | outline |
 | 1.6 | Punkte | outline |
 | 1.7 | Siegerehrung | outline |
