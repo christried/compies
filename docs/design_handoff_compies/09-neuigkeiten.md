@@ -95,6 +95,8 @@ Mobile replacement for the rail. Decision: **worth it**, because the list grows 
 - **Motion:** as ReleaseRail.
 
 ## VersionLabel
+**Removed in #123:** replaced by PageFooter („Version 1.2.0“) and NewChip, see 10-footer-und-anmerkungen.md. The text below is the history.
+
 **Scope:** [1.x] · **Ref:** Neuigkeiten (state Versionslabel)
 
 Small „v1.2.0“ chip linking to `/neuigkeiten`. Version comes from `CHANGELOG.md` (newest release) at build time, not `package.json`, so label and page never disagree.
@@ -108,7 +110,11 @@ Small „v1.2.0“ chip linking to `/neuigkeiten`. Version comes from `CHANGELOG
 ## UserMenu (addition)
 Existing avatar menu gets a footer row: Impressum, Datenschutz, Neuigkeiten + VersionLabel (`unseen` dot). Desktop: dropdown 340 wide under the avatar (`top 70, right 12`), surface, `border-memphis`, radius 16, `shadow-card`. Mobile: full width minus 12 each side, `top 62`.
 
+**Since #123:** the menu holds only the name and „Abmelden“ (desktop: 280 wide). Below md the PageFooter's links (Impressum, Datenschutz, Version with NewChip) follow below a divider; a click on one closes the menu. See 10-footer-und-anmerkungen.md § UserMenu.
+
 ## i18n keys (new)
 `news.title` „Neuigkeiten“ · `news.intro` „Frisch geschraubt: Hier siehst du, was sich bei COMPIES getan hat.“ · `news.back` „Zurück“ · `news.rail` „Versionen“ · `news.jump` „Springe zu“ · `news.new` „Neu“ · `news.copy` „Link zu Version {v} kopieren“ · `news.copied` „Link kopiert“ · `news.issue` „Issue {n} auf GitHub, öffnet in neuem Tab“ · `news.version` „Version {v}, zu den Neuigkeiten“ · `legal.news` „Neuigkeiten“. Group names come from the changelog itself (German).
 
 **As built (#80):** the intro says „Compies“ (copy rule: never „COMPIES“ in copy). `legal.news` became `legal.links.neuigkeiten` next to the other legal links, and the back link keeps `common.back`. Added: `news.say`, `news.item`, `news.itemNew` (rail link names), `news.copyFailed`, `news.newTab`, `news.versionUnseen`, `legal.nav` „Rechtliches“. Compibert in the hero is the still bust: the CompibertBus (`join` wave, `reveal` cheer) is not built yet, so neither reaction plays.
+
+**As built (#123):** removed `news.version` (its only user was VersionLabel) and `legal.links.neuigkeiten` (the footer's version link has no separate text link now). Changed `legal.nav` to „Rechtliches und Version“ and `news.versionUnseen` to „Version {v}, neu“. Added `legal.links.version` „Version“. The Neuigkeiten page's own footer and its `toTop` are gone; the PageFooter does the scroll.

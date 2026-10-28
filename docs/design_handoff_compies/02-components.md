@@ -98,8 +98,8 @@ Common rules for every component:
 - [`ChangeGroup`](#changegroup) [1.x]
 - [`ChangelogInline`](#changeloginline) [1.x] (with IssueChip)
 - [`ReleaseNav`](#releasenav) [1.x] (ReleaseRail and ReleaseJumpStrip)
-- [`VersionLabel`](#versionlabel) [1.x]
-- [`LegalLinks`](#legallinks) [1.x]
+- [`PageFooter`](#pagefooter) [1.x] (Impressum, Datenschutz, Version; in UserMenu below md)
+- [`NewChip`](#newchip) [1.x]
 
 ## AppButton
 **Scope:** [MVP] · **Ref:** DS Basics
@@ -377,6 +377,7 @@ Layout frame: header, stage, side panel, mobile tab bar, host dock slot.
 - **Props / variants:** `kind: hub | event | bare`, `panel?: boolean`
 - **States:** —
 - **Slots:** `#header`, default (stage), `#panel`, `#dock`, `#tabs`
+- **Footer:** the PageFooter is the last child after the stage, on every page. Signed in it shows from md up (below md the user menu holds the links); signed out it shows at every width. While a Host dock is attached, the footer keeps 96 px of room under its links.
 - **Desktop / mobile:** ≥ 980: header 64, stage max 1100 centred, panel 340 right (Event only), dock floating. < 980: header 56, content, bottom TabBar, crown button 56 bottom-right for hosts.
 - **Accessibility:** Landmarks: `header`, `nav`, `main`, `aside`. Skip link „Zur Bühne springen“.
 - **Motion:** —
@@ -1170,27 +1171,27 @@ All Releases as links to `#<version>`. `variant="rail"`: the sticky card from `m
 - **Accessibility:** `<nav aria-label="Versionen">`; link names „Version 1.2.0, Mehr Termine, 2. Nov. 2026, neu“.
 - **Motion:** jump scroll smooth, `auto` under reduced motion; spy paused for 700 ms after a jump.
 
-## VersionLabel
-**Scope:** [1.x] · **Ref:** Neuigkeiten (state Versionslabel) · **Spec:** 09-neuigkeiten § VersionLabel
+## PageFooter
+**Scope:** [1.x] · **Ref:** Footer und Anmerkungen 1a–1f, 3a, 3b; PageFooter · **Spec:** 10-footer-und-anmerkungen § PageFooter
 
-„v1.2.0“ chip linking to `/neuigkeiten`. The version is the newest Release in `CHANGELOG.md`; the changelog guard test keeps `package.json` at the same version.
+„Impressum ◆ Datenschutz ● Version 1.2.0“ in one band at the bottom of every page. The version is the newest Release in `CHANGELOG.md` (the changelog guard test keeps `package.json` at the same version); the version link opens `/neuigkeiten`, and there it scrolls to the top.
 
-- **Props / variants:** `unseen?: boolean` (user menu only)
-- **States:** default · hover/focus (`primary` fill) · unseen (dot)
+- **Props / variants:** `variant?: 'page' | 'menu'` (default `page`). Everything else is read inside: the route for `aria-current`, the signed-in User and `useNewsSeen` for the chip, `useHostDock` for the 96 px spacer.
+- **States:** default (underline `line-soft`) · hover (highlighter grows from the left, underline `line`) · focus-visible (focus ring) · current page (`aria-current="page"`, marker full, 800, no underline) · unseen (NewChip after the number, name „Version 1.2.0, neu“) · dock (96 px spacer under the links)
 - **Slots:** —
-- **Desktop / mobile:** 28 px pill, 44 px hit area via `::before`. In the user menu's last row, the sign-in footer and the Neuigkeiten footer (there it scrolls to the top).
-- **Accessibility:** „Version 1.2.0, zu den Neuigkeiten“, with „, neu“ when unseen; `role="menuitem"` in the user menu.
-- **Motion:** colour `dur-fast`.
+- **Desktop / mobile:** `page`: `surface` band, `border-top` line, padding 6 / 16, links 14 px, wraps when narrow. `menu`: inside UserMenu below md only, 13 px, left-aligned, no band. Signed in, the page variant has `max-md:hidden`, set by AppShell.
+- **Accessibility:** `<footer>` with `<nav aria-label="Rechtliches und Version">`. The separators are `aria-hidden`. `menu` is a `role="group"` with `role="menuitem"` links; a click on a link closes the menu.
+- **Motion:** highlighter `dur-base` `ease-out`, underline colour `dur-base`. Reduced motion: no transition.
 
-## LegalLinks
-**Scope:** [1.x] · **Ref:** Neuigkeiten (state Versionslabel)
+## NewChip
+**Scope:** [1.x] · **Ref:** Footer und Anmerkungen 2a · **Spec:** 10-footer-und-anmerkungen § NewChip
 
-Impressum, Datenschutz and Neuigkeiten as 13/700 `ink-2` text links, 44 px high. Used with VersionLabel in the user menu's last row (`role="menuitem"`), the sign-in footer and the Neuigkeiten footer.
+Small „Neu“ chip after the version number: the NewStamp's sibling, tilted −6°, `primary` fill, 12 / 800 uppercase. It shows for a signed-in User while this device has not opened Neuigkeiten since the newest Release (the `compies.news.seen` rule). Never signed out.
 
-- **Props / variants:** `role?: "menuitem"`
-- **States:** default · hover (`ink`, underlined) · current page (`aria-current="page"`, 800 `ink`)
+- **Props / variants:** —
+- **States:** visible · gone
 - **Slots:** —
-- **Desktop / mobile:** Same; the parent lays the row out.
-- **Accessibility:** Inside `<nav aria-label="Rechtliches">` outside the menu.
-- **Motion:** —
+- **Desktop / mobile:** identical.
+- **Accessibility:** `aria-hidden="true"`; the link's name carries „neu“.
+- **Motion:** one entrance per mount (scale .5 → 1, fade in, 360 ms delay). No loop. Reduced motion: no entrance.
 
