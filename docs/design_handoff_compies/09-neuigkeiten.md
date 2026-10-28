@@ -4,7 +4,7 @@ Route `/neuigkeiten`, public (works signed out), `AppShell kind="bare"`. Source:
 
 **New tokens: none.** Everything uses existing colour, type, radius, shadow, layer and motion tokens.
 
-Page structure: BackLink „Zurück“ → hero (`h1` „Neuigkeiten“, intro, Compibert bust) → desktop: grid `236px | 1fr`, gap 40 (ReleaseRail + cards); mobile: ReleaseJumpStrip, then cards → legal footer (Impressum, Datenschutz, Neuigkeiten `aria-current="page"`, VersionLabel). Content max 1160, padding 20/40 (mobile 8/16).
+Page structure: BackLink „Zurück“ → hero (`h1` „Neuigkeiten“, intro, Compibert bust) → desktop: grid `236px | 1fr`, gap 40 (ReleaseRail + cards); mobile: ReleaseJumpStrip, then cards → PageFooter (Impressum ◆ Datenschutz ● Version x.y.z, the version `aria-current="page"`; see 10-footer-und-anmerkungen § PageFooter). Content max 1160, padding 20/40 (mobile 8/16).
 
 Hero copy (i18n `news.title`, `news.intro`): „Neuigkeiten“ / „Frisch geschraubt: Hier siehst du, was sich bei COMPIES getan hat.“ Compibert `variant="bust"`, 168 desktop, 104 mobile, `join` event once on mount (wave 2.2 s → idle). Existing mood, no new art. **Optional new pose (not drawn, flag only):** Compibert holding a sign or a wrench would fit this page better than wave; only if the mascot set grows anyway.
 

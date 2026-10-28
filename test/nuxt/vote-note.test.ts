@@ -53,6 +53,23 @@ describe('Notes on Votes', () => {
       await vi.waitFor(() => expect(document.activeElement).toBe(textarea.element))
     })
 
+    it('keeps the caret where it was when a pasted line break is turned into a space', async () => {
+      const { slug } = serve(s => view(s, [kittyMaybe]))
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}`, attachTo: document.body })
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      const textarea = card(page, 'fri').get('textarea')
+      const el = textarea.element as HTMLTextAreaElement
+
+      await textarea.setValue('ab')
+      el.setSelectionRange(1, 1)
+      el.value = 'a\nXb'
+      el.setSelectionRange(3, 3)
+      await textarea.trigger('input')
+
+      expect(el.value).toBe('a Xb')
+      expect(el.selectionStart).toBe(3)
+    })
+
     it('opens the field by itself when Meh is chosen, without focusing it', async () => {
       const store = serve(s => view(s, []))
       registerEndpoint(`/api/e/${store.slug}/slots/sat/vote`, {

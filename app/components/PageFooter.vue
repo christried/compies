@@ -25,7 +25,7 @@ const LINK = 'inline-block rounded-[8px] px-0.5 py-3 leading-5 font-bold whitesp
 const items = computed(() => [
   { to: '/impressum', text: t('legal.links.impressum'), sep: null },
   { to: '/datenschutz', text: t('legal.links.datenschutz'), sep: 'diamond' },
-  { to: '/neuigkeiten', text: t('legal.links.version'), sep: 'circle' },
+  { to: '/neuigkeiten', text: null, sep: 'circle' },
 ] as const)
 
 // On Neuigkeiten the version link goes to the top of the page instead of reloading the list.
@@ -71,7 +71,20 @@ function toTop() {
           :class="[LINK, page ? 'text-[14px]' : 'text-[13px]']"
           @click="item.to === '/neuigkeiten' && toTop()"
         >
-          {{ item.text }}<template v-if="item.to === '/neuigkeiten'">{{ ' ' }}<span class="font-num text-[13px] font-normal tracking-[.02em]">{{ version }}</span><NewChip v-if="unseen" /></template>
+          <template v-if="item.to === '/neuigkeiten'">
+            <i18n-t
+              keypath="legal.links.version"
+              scope="global"
+              tag="span"
+            >
+              <template #v>
+                <span class="font-num text-[13px] font-normal tracking-[.02em]">{{ version }}</span>
+              </template>
+            </i18n-t><NewChip v-if="unseen" />
+          </template>
+          <template v-else>
+            {{ item.text }}
+          </template>
         </NuxtLink>
       </span>
     </component>

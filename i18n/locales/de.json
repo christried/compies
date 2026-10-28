@@ -787,7 +787,7 @@
     "links": {
       "impressum": "Impressum",
       "datenschutz": "Datenschutz",
-      "version": "Version"
+      "version": "Version {v}"
     },
     "impressum": {
       "title": "Impressum",
@@ -975,6 +975,7 @@
       "label": "Anmerkung",
       "audience": "sehen alle",
       "placeholder": "z. B. kann maximal bis 20:30",
+      "quoted": "„{note}“",
       "remaining": "Noch {n} Zeichen",
       "save": "Anmerkung speichern",
       "savedLabel": "Deine Anmerkung · sehen alle",

@@ -14,6 +14,8 @@ const props = defineProps<{
   note: string
 }>()
 
+const { t } = useI18n()
+
 const emit = defineEmits<{ pointerenter: [], pointerleave: [] }>()
 
 const box = useTemplateRef<HTMLElement>('box')
@@ -72,7 +74,7 @@ watch(() => [props.open, props.anchor, props.note] as const, ([open]) => {
         <NoteVoteChip :value="value" />
       </div>
       <p class="m-0 mt-2 text-[14px] leading-[1.4] font-semibold text-pretty break-words">
-        „{{ note }}“
+        {{ t('mvp.notes.quoted', { note }) }}
       </p>
     </div>
   </Teleport>

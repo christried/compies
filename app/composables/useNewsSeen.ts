@@ -1,5 +1,5 @@
-// The newest Release this device has seen on Neuigkeiten (09 § NewStamp, § VersionLabel): the „Neu“ stamp
-// celebrates once per Release, and the version label in the user menu carries a dot until then.
+// The newest Release this device has seen on Neuigkeiten (09 § NewStamp): the „Neu“ stamp celebrates once per
+// Release, and the NewChip on the PageFooter's version link (in the footer and the phone menu) shows until then (10 § NewChip).
 const STORAGE_KEY = 'compies.news.seen'
 
 /** Returns the newest Release this device has seen on Neuigkeiten (`seen`: undefined until read, then its version or null) and `markSeen`, stored in localStorage under `compies.news.seen`. */
