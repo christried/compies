@@ -6,7 +6,7 @@ import { sessionsEditable, type EventView } from '~~/shared/event'
 
 // The Date poll on the Event page (screen M3), while it is open: the kicker with the vote count, the Dates still
 // missing, the legend, a card per Slot and "Wer kann wann?". The Votes are drawn as the page's useOptimisticVotes
-// holds them, so a press shows at once. The Host picks a Slot on its card ("Diesen festlegen"), and the "−" next
+// holds them, so a press shows at once. The Host picks a Slot on its card ("Termin festlegen"), and the "−" next
 // to "N Termine gesucht" removes an undated Session (#55); the Event page runs both.
 const props = defineProps<{
   view: EventView

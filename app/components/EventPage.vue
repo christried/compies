@@ -8,7 +8,7 @@ import { sessionsEditable, type DatedSessionView, type EventView } from '~~/shar
 // every 15 s while the tab is visible, and holds the Host's dialogs and the error states. EventSessions shows the
 // Sessions with their Host actions, EventPoll the Date poll while it is open. Votes show at once and roll back with
 // a toast when saving fails (useOptimisticVotes, ADR 0001). The Date is set in the confirm dialog (#13): from a Slot
-// card ("Diesen festlegen") or the host dock. The Host picks only the Slot; its time goes to the next Session
+// card ("Termin festlegen") or the host dock. The Host picks only the Slot; its time goes to the next Session
 // without a Date (#52). Termine bearbeiten opens SlotEditSheet (#15).
 const props = defineProps<{ slug: string }>()
 
