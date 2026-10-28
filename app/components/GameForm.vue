@@ -2,7 +2,7 @@
 import { ChevronRight } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
 import {
-  CLIP_LENGTH_DEFAULT, GAME_NAME_MAX, SUITABILITIES, clipTime, gameNameProblem, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
+  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, SUITABILITIES, clipTime, gameNameProblem, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
   type GameView, type Suitability,
 } from '~~/shared/game'
 import { parseYouTubeId } from '~~/shared/youtube'
@@ -57,9 +57,10 @@ const linkError = computed(() => {
   if (playerFailed.value) return t('gameEdit.linkBroken')
   return undefined
 })
+// Only the found-video note is help; the link has no hint of its own (#176). An error replaces the help.
 const linkHelp = computed(() => (duration.value && !linkError.value
   ? t('gameEdit.linkFound', { duration: clipTime(duration.value) })
-  : t('gameEdit.youtubeHelp')))
+  : undefined))
 
 // A new link starts over: what the player said about the last one no longer counts.
 watch(link, () => {
@@ -195,14 +196,13 @@ async function submit() {
           <TextField
             v-model="startText"
             :label="t('gameEdit.start')"
-            :help="t('gameEdit.startHelp')"
             :error="startError"
             autocomplete="off"
           />
           <TextField
             v-model="lengthText"
             :label="t('gameEdit.length')"
-            :help="t('gameEdit.lengthHelp')"
+            :help="lengthError ? undefined : t('gameEdit.lengthMax', { max: CLIP_LENGTH_MAX })"
             :error="lengthError"
             inputmode="numeric"
             autocomplete="off"
@@ -294,7 +294,7 @@ async function submit() {
           <span
             v-if="blocker"
             id="game-blocker"
-            class="text-small font-bold text-ink-2"
+            class="text-small font-bold text-error-fg"
           >{{ blocker }}</span>
         </div>
       </div>

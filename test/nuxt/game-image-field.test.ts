@@ -83,6 +83,7 @@ describe('the image in the game form (#143)', () => {
     const page = await mountSuspended(GameForm)
 
     expect(page.text()).toContain('16:10')
+    expect(page.text()).not.toContain('Wird passend zugeschnitten')
     expect(page.find('img[alt="Vorschau des Bildes"]').exists()).toBe(false)
     expect(page.findAll('button').some(button => button.text() === 'Bild wählen')).toBe(true)
   })
