@@ -5,6 +5,9 @@ import EventPage from '~/pages/e/[slug].vue'
 import { kitty, signInAs } from './auth'
 import { closeNotice, radio, sanneAndLarsi, serve, shownToasts, view, type Wrapper } from './event-page'
 
+// The vote mark of the matrix cell whose screen-reader text is `text` (the cells have no title, #125).
+const matrixCell = (page: Awaited<ReturnType<typeof mountSuspended>>, text: string) => page.findAll('table td').find((cell: Wrapper) => cell.text() === text)!.get('span')
+
 describe('the Event poll', () => {
   beforeEach(() => {
     signInAs(kitty)
@@ -66,7 +69,7 @@ describe('the Event poll', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    const titles = page.findAll('table td[title]').map(cell => cell.attributes('title'))
+    const titles = page.findAll('table td').map(cell => cell.get('.sr-only').text())
     expect(titles).toContain('noch nicht abgestimmt')
     expect(titles).toContain('Nein')
     expect(page.get('table').text()).toContain('Kitty')
@@ -163,7 +166,7 @@ describe('the Event poll', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
-    expect(page.get('table td[title="Meh"] span').find('svg').exists()).toBe(true)
+    expect(matrixCell(page, 'Meh').find('svg').exists()).toBe(true)
   })
 
   it('draws a selected Nein in the error red with dark text, and a Nein cell in the matrix as a red square', async () => {
@@ -173,7 +176,7 @@ describe('the Event poll', () => {
 
     const selected = radio(page, 'Fr 23.10. 20:00', 'Nein')
     expect(selected.classes()).toEqual(expect.arrayContaining(['bg-error', 'text-on-error']))
-    const cell = page.get('table td[title="Nein"] span')
+    const cell = matrixCell(page, 'Nein')
     expect(cell.classes()).toEqual(expect.arrayContaining(['bg-error', 'text-on-error']))
   })
 
