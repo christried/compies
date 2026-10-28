@@ -97,7 +97,6 @@ describe('EventStepper', () => {
       const page = await mountStepper()
 
       const footer = page.get('[data-testid="stepper-footer"]')
-      expect(footer.classes()).toContain('sticky')
       expect(footer.text()).toContain('Zurück')
       expect(footer.text()).toContain('Weiter')
 
@@ -141,6 +140,32 @@ describe('EventStepper', () => {
 
       await next.trigger('click')
       expect(page.emitted('next')).toBeUndefined()
+    })
+
+    // The dock is a pill as wide as its buttons, at the bottom right on every screen, not a full-width bar (#174).
+    it('is a dock as wide as its buttons, sticky at the bottom right', async () => {
+      const page = await mountStepper()
+
+      const dock = page.get('[data-testid="stepper-footer"]')
+      expect(dock.classes()).toEqual(expect.arrayContaining(['w-fit', 'ml-auto', 'rounded-pill']))
+      expect(dock.classes()).not.toContain('w-full')
+      expect(dock.classes()).not.toContain('-mx-3.5')
+      const column = dock.element.parentElement!
+      expect(column.className).toContain('sticky')
+      expect(column.className).toContain('layer-sticky')
+    })
+
+    it('keeps the blocker reason out of the dock, right above it, and still describes Weiter with it', async () => {
+      const page = await mountStepper({ nextBlocked: 'Gib der Session einen Namen.' })
+
+      const dock = page.get('[data-testid="stepper-footer"]')
+      const next = dock.findAll('button').find(button => button.text().includes('Weiter'))!
+      const reason = page.get(`[id="${next.attributes('aria-describedby')}"]`)
+      expect(reason.text()).toBe('Gib der Session einen Namen.')
+      expect(reason.classes()).toEqual(expect.arrayContaining(['text-right', 'text-ink-2']))
+      expect(dock.element.contains(reason.element)).toBe(false)
+      expect(dock.text()).not.toContain('Gib der Session einen Namen.')
+      expect(reason.element.compareDocumentPosition(dock.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
     it('uses the label it is given for the last step', async () => {

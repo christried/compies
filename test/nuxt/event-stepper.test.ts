@@ -139,6 +139,16 @@ describe('the stepper', () => {
   })
 
   describe('Format', () => {
+    // The options that cannot be chosen yet carry their chip and no note about it (#174).
+    it('has no note under the Format cards about the options that are coming', async () => {
+      const page = await mountCreate()
+      await stepTo(page, 1)
+
+      expect(page.text()).not.toContain('noch nicht wählbar')
+      expect(page.text()).not.toContain('kommen bald')
+      expect(page.text()).not.toContain('schon sichtbar')
+    })
+
     it('offers Teams, with free-for-all, bracket and league locked as „Bald verfügbar“', async () => {
       const page = await mountCreate()
       await stepTo(page, 1)
@@ -275,7 +285,7 @@ describe('the stepper', () => {
 
       expect(page.get('[data-testid="progress"]').findAll('span')).toHaveLength(8)
       expect(page.get('[data-testid="progress"]').attributes('aria-hidden')).toBe('true')
-      expect(page.get('[data-testid="stepper-footer"]').classes()).toContain('sticky')
+      expect(page.get('[data-testid="stepper-footer"]').element.parentElement!.className).toContain('sticky')
       expect(page.get('h1').text()).toContain('Schritt 3 von 8')
     })
   })

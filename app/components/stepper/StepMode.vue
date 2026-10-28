@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Crown, FerrisWheel, Hand, Scale, Swords } from '@lucide/vue'
+import type { Component } from 'vue'
 import { vetoAllowanceOf, type EventDraft, type StepLocks } from '~/utils/event-draft'
 import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, type SelectionMode } from '~~/shared/settings'
 
 // Step 5: the Selection mode (#145). Lucky Wheel and Admin-Wahl are open; the other three are shown as „Bald
-// verfügbar“ so the Host knows what is coming. With the Lucky Wheel: Rad verdecken and the Veto allowance,
-// both kept in the draft while Admin-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
+// verfügbar“ on their cards, so the Host knows what is coming (no note under them, #174). With the Lucky Wheel:
+// Rad verdecken and the Veto allowance, both kept in the draft while Admin-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
 // it (`vetoAllowanceOf`). The step never blocks. In the settings editor (#147) `locks.reason` locks the mode (the Event
 // is running; Rad verdecken and the Veto allowance stay open) and `locks.floors` keeps the Veto allowance from going
 // below what a Party has spent.
@@ -19,16 +20,16 @@ watchEffect(() => {
   blocker.value = null
 })
 
-const options = computed(() => [
+const options = computed<{ value: SelectionMode, label: string, desc: string, icon: Component, locked: boolean }[]>(() => ([
   { value: 'admin_pick', label: t('setup.mode.admin.name'), desc: t('setup.mode.admin.desc'), icon: Crown },
   { value: 'lucky_wheel', label: t('setup.mode.wheel.name'), desc: t('setup.mode.wheel.desc'), icon: FerrisWheel },
   { value: 'pick_ban', label: t('setup.mode.pickBan.name'), desc: t('setup.mode.pickBan.desc'), icon: Swords },
   { value: 'losers_pick', label: t('setup.mode.loserPick.name'), desc: t('setup.mode.loserPick.desc'), icon: Hand },
   { value: 'losers_advantage', label: t('setup.mode.loserAdv.name'), desc: t('setup.mode.loserAdv.desc'), icon: Scale },
-].map(option => ({ ...option, locked: !(AVAILABLE_SELECTION_MODES as readonly string[]).includes(option.value) })))
+] as const).map(option => ({ ...option, locked: !AVAILABLE_SELECTION_MODES.includes(option.value) })))
 
-function choose(value: string) {
-  if (value === 'lucky_wheel' || value === 'admin_pick') draft.value = { ...draft.value, settings: { ...draft.value.settings, selectionMode: value as SelectionMode } }
+function choose(value: SelectionMode) {
+  if (value === 'lucky_wheel' || value === 'admin_pick') draft.value = { ...draft.value, settings: { ...draft.value.settings, selectionMode: value } }
 }
 
 const vetoMin = computed(() => Math.max(VETO_ALLOWANCE_MIN, props.locks?.floors?.vetoAllowance ?? VETO_ALLOWANCE_MIN))
@@ -51,10 +52,6 @@ const veto = computed(() => vetoAllowanceOf(draft.value))
       :locked-reason="locks?.reason"
       @update:model-value="choose"
     />
-    <p class="m-0 text-[14px] text-pretty text-ink-2">
-      {{ t('setup.mode.plannedNote') }}
-    </p>
-
     <div
       v-if="wheel"
       class="flex flex-col gap-3.5 rounded-2xl border-(length:--cp-bw) border-line bg-surface p-4"
