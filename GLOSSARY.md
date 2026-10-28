@@ -114,6 +114,36 @@ _Avoid_: Waiting room, reserve
 The zone for spectators who will not play (UI: Tribüne).
 _Avoid_: Audience, spectators
 
+## Game selection
+
+**Format**:
+How an Event forms its Parties: Teams (2 to 8 teams of equal size) or free-for-all (every Player is their own Party).
+_Avoid_: Mode, game type
+
+**Game pool**:
+The games an Event's Host picked from the Game library for drawing, picking and banning.
+_Avoid_: Game list, playlist
+
+**Selection mode**:
+How an Event determines its next game, fixed for the whole Event. Whatever the mode, the Host can set the next game directly.
+_Avoid_: Format, draw mode
+
+**Lucky Wheel**:
+The Selection mode in which the Host spins a wheel of games from the Game pool; every game the wheel draws leaves it, whether it is played or vetoed (UI: Glücksrad).
+_Avoid_: Wheel of fortune, roulette, random pick
+
+**Hidden wheel**:
+A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else sees placeholder names until a game is drawn.
+_Avoid_: Blind wheel, secret wheel
+
+**Veto**:
+A Party's rejection of a game the wheel has just drawn, cast within the veto window; the game leaves the wheel and the wheel spins again. Any Player of the Party can cast any of its Vetoes, a Party casts at most one per drawn game, and a cast Veto cannot be withdrawn.
+_Avoid_: Ban (a ban removes a game before it is drawn), skip, reject
+
+**Veto allowance**:
+The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host.
+_Avoid_: Vetoes per player, veto budget
+
 ## App
 
 **Construction page**:
