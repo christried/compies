@@ -285,7 +285,7 @@ async function submit() {
             :aria-disabled="blocked || saving"
             :aria-describedby="blocker ? 'game-blocker' : undefined"
           >
-            {{ saving ? t('gameEdit.saving') : game ? t('gameEdit.saveChanges') : t('library.create') }}
+            {{ saving ? t('common.saving') : game ? t('gameEdit.saveChanges') : t('library.create') }}
             <AppIcon
               :icon="ChevronRight"
               :size="18"

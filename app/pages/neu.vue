@@ -104,7 +104,7 @@ const datesLine = computed(() => (poll.value
         v-model="draft"
         :steps="STEP_KEYS"
         :last-label="t('stepper.create')"
-        :saving-label="t('mvp.create.saving')"
+        :saving-label="t('common.saving')"
         :submit="create"
       />
     </div>

@@ -82,7 +82,7 @@ async function save(sent: EventDraft) {
         :nav-title="heading"
         :kicker="t('eventSettings.kicker')"
         :last-label="t('eventSettings.save')"
-        :saving-label="t('eventSettings.saving')"
+        :saving-label="t('common.saving')"
         :error-copy="{ wrong_phase: 'eventSettings.wrongPhase' }"
         :submit="save"
       />

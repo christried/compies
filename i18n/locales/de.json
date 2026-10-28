@@ -8,6 +8,7 @@
     "cancel": "Abbrechen",
     "close": "Schließen",
     "save": "Speichern",
+    "saving": "Speichert …",
     "back": "Zurück",
     "next": "Weiter",
     "more": "Mehr",
@@ -703,7 +704,6 @@
     "excerpt": "Ausschnitt {from} – {to}",
     "excerptNote": "Genau so läuft der Clip in der Session: {n} s, für alle gleichzeitig, mit Ton.",
     "playerLabel": "YouTube-Vorschau des Clips",
-    "saving": "Speichert …",
     "players": "Empfohlene Spielerzahl",
     "suitabilities": "Passt zu",
     "playersFrom": "von",
@@ -776,7 +776,6 @@
     "heading": "Einstellungen",
     "setupHeading": "Event einrichten",
     "save": "Speichern",
-    "saving": "Speichert …",
     "saved": "Gespeichert.",
     "back": "Zurück zum Event",
     "locked": "Gesperrt, seit die erste Session läuft: Schon gespielte Spiele behalten ihre Regeln.",
@@ -1015,7 +1014,6 @@
       "dateInput": "Datum",
       "timeInput": "Uhrzeit",
       "slotEmpty": "Bitte alle Termine ausfüllen.",
-      "saving": "Speichert …",
       "doneDirectText": "Der Termin steht. Schick ihn an deine Freunde und sie können sich hier anmelden."
     },
     "dateTime": {
