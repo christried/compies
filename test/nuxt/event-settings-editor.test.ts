@@ -17,7 +17,7 @@ const kart = poolGame(1, 'Mario Kart')
 const pong = poolGame(2, 'Pong')
 
 function poolGame(n: number, name: string): PoolGame {
-  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, formats: [] }
+  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] }
 }
 
 // The library the pool steps pick from.

@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { Plus, Search } from '@lucide/vue'
-import { canSeeLibrary, type GameList } from '~~/shared/game'
-import { FORMATS } from '~~/shared/settings'
+import { canSeeLibrary, SUITABILITIES, type GameList } from '~~/shared/game'
 
 // The Game library (screen 23, `?s=lib`, #141, #142): every game, as cards from md up and as rows below. Only Users
 // with the Host permission and the Platform admin see it; for everyone else the page looks like any missing one.
 // Loading shows skeleton cards on a busy grid; an empty library offers the first game. The search and the three
-// filters (player count, Format, „Von mir“) live in the address, so reload and back keep them; a search that
+// filters (player count, Passt zu, „Von mir“) live in the address, so reload and back keep them; a search that
 // matches nothing says so with „Keine Treffer“.
 const { t } = useI18n()
 useHead({ title: () => t('nav.library') })
@@ -25,17 +24,17 @@ function param(name: string): string {
 const filters = computed(() => ({
   q: param('q').trim(),
   players: param('players'),
-  format: param('format'),
+  suitability: param('suitability'),
   mine: param('mine') === '1',
 }))
-const anyFilter = computed(() => Boolean(filters.value.q || filters.value.players || filters.value.format || filters.value.mine))
+const anyFilter = computed(() => Boolean(filters.value.q || filters.value.players || filters.value.suitability || filters.value.mine))
 
 const query = computed(() => {
-  const { q, players, format, mine } = filters.value
+  const { q, players, suitability, mine } = filters.value
   return {
     ...(q ? { q } : {}),
     ...(players ? { players } : {}),
-    ...(format ? { format } : {}),
+    ...(suitability ? { suitability } : {}),
     ...(mine ? { mine: '1' } : {}),
   }
 })
@@ -70,12 +69,12 @@ watch(() => filters.value.q, (q) => {
 function onPlayers(event: Event) {
   setFilters({ players: (event.target as HTMLSelectElement).value || undefined })
 }
-function onFormat(event: Event) {
-  setFilters({ format: (event.target as HTMLSelectElement).value || undefined })
+function onSuitability(event: Event) {
+  setFilters({ suitability: (event.target as HTMLSelectElement).value || undefined })
 }
 function showAll() {
   searchText.value = ''
-  setFilters({ q: undefined, players: undefined, format: undefined, mine: undefined })
+  setFilters({ q: undefined, players: undefined, suitability: undefined, mine: undefined })
 }
 
 // Cards need room; below md the list is rows. Starts wide, so the server and the first client render agree.
@@ -169,20 +168,20 @@ const CHIP_ON = 'border-line bg-ink text-paper'
             </option>
           </select>
           <select
-            :value="filters.format"
-            :aria-label="t('library.filterFormat')"
-            :class="[CHIP, filters.format ? CHIP_ON : CHIP_OFF]"
-            @change="onFormat"
+            :value="filters.suitability"
+            :aria-label="t('library.filterSuitability')"
+            :class="[CHIP, filters.suitability ? CHIP_ON : CHIP_OFF]"
+            @change="onSuitability"
           >
             <option value="">
-              {{ t('library.filterFormat') }}
+              {{ t('library.filterSuitability') }}
             </option>
             <option
-              v-for="format in FORMATS"
-              :key="format"
-              :value="format"
+              v-for="suitability in SUITABILITIES"
+              :key="suitability"
+              :value="suitability"
             >
-              {{ t(`library.format.${format}`) }}
+              {{ t(`library.suitability.${suitability}`) }}
             </option>
           </select>
           <button

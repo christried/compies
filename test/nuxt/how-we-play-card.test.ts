@@ -13,7 +13,7 @@ import { serve, view } from './event-page'
 function poolGame(name: string, overrides: Partial<PoolGame> = {}): PoolGame {
   return {
     id: `id-${name}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30,
-    playersMin: null, playersMax: null, formats: [], ...overrides,
+    playersMin: null, playersMax: null, suitabilities: [], ...overrides,
   }
 }
 
