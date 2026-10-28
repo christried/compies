@@ -119,10 +119,10 @@ The button. One `primary` per view.
 
 Round icon-only button (sound toggle, close, remove slot).
 
-- **Props / variants:** `icon`, `label` (required → `aria-label`), `size: 32 | 40 | 44`, `variant: outline | solid | ghost`, `pressed?: boolean`
+- **Props / variants:** `icon`, `label` (required → `aria-label`), `size: 32 | 36 | 40` (default 40), `tone?: success | error` (solid fill: `bg-success text-on-success` / `bg-error text-on-error`, `shadow-sm`; none = surface), `variant: outline | solid | ghost`, `pressed?: boolean`
 - **States:** as AppButton; `pressed` shows ink fill (toggle)
 - **Slots:** —
-- **Desktop / mobile:** Visual 32–40 px, hit area always ≥ 44 (`hit-44`).
+- **Desktop / mobile:** Visual 32–40 px, hit area always ≥ 44 (`hit-44`). The Note editor's ✓ and ✗ are 36 px with an 8 px gap, so their 44 px hit areas touch (#124).
 - **Accessibility:** `aria-label` required; toggles use `aria-pressed`. Tooltip on hover/focus (desktop) with the same label.
 - **Motion:** as AppButton.
 
@@ -664,7 +664,7 @@ One proposed date in the poll.
 
 - **Props / variants:** `slot: {startsAt}`, `counts: {yes, maybe, no}`, `total`, `myVote`, `best`, `canPick` (host), `notes` (NoteRow[]), `myNote`; emits `note(text)`
 - **States:** not voted (all options neutral) · voted (selected option filled: Ja success with a check, Meh warning text only, no icon (#50), Nein error red with dark text (`bg-error text-on-error`) with an x) · best (3 px focus border, card shadow, „Bester Termin“ chip) · confirmed
-- **Notes (#102):** an „Anmerkungen“ NoteList sits under the counts (also on a past card). Under Ja / Meh / Nein a NoteEditor offers the User's own Note once voted; choosing Meh opens its field by itself, unfocused. A past card has the list but no button.
+- **Notes (#102):** an „Anmerkungen“ NoteList sits under the counts (also on a past card). Under Ja / Meh / Nein a NoteEditor offers the User's own Note once voted: „+ Anmerkung“ without a Note, „Deine Anmerkung · sehen alle“ with the Note text and a pencil, and the editor (#124); choosing Meh opens its field by itself, unfocused. A past card has the list but no button.
 - **Slots:** —
 - **Desktop / mobile:** Desktop 4 columns; mobile 1 column. Host on desktop gets „Diesen festlegen“ in the card.
 - **Accessibility:** Options = `role="radiogroup"` labelled with the slot („Sa 25.10. 20:30“); chip text says best.
@@ -726,12 +726,19 @@ The Notes on the Votes of one Slot.
 
 The User's own Note on their Vote, inside a PollSlotCard.
 
-- **Props / variants:** `note`, `voted`, `past`; emits `save(text)`; exposes `open(focus)`.
-- **States:** no Vote or past (nothing) · voted without Note (secondary „Anmerkung“ button with a speech-bubble icon) · voted with Note (the text and a pencil IconButton „Anmerkung bearbeiten“) · editing (a TextField: label „Anmerkung“, help „Sehen alle im Event. Zum Beispiel: kann maximal bis 20:30“, 80 characters, counter from 80 %, with „Speichern“ and „Abbrechen“).
+- **Props / variants:** `note`, `voted`, `past`; emits `save(text)`; exposes `open(focus)`, `closeIfUntouched()`. Ref: Footer und Anmerkungen 5a, 5b (spec `10-footer-und-anmerkungen § NoteEditor`, #124).
+- **States:**
+  - no Vote or past: nothing;
+  - voted without Note: text button „+ Anmerkung“ (13 / 700, 44 px hit area, `aria-label` „Anmerkung hinzufügen“);
+  - voted with Note: „Deine Anmerkung · sehen alle“ (12 / 700 ink-2) and the Note (13 / 600), with a pencil IconButton „Anmerkung bearbeiten“ (32 px);
+  - editing: a top row („Anmerkung“ label 13 / 800, „sehen alle“ 12 / 600 ink-2, and the counter `n/80` in mono on the right, `warning-fg` from 72, otherwise ink-2); below it a text area (`rows=1`, grows with its text via `field-sizing: content`, with a height fallback on input, no inner scrollbar, `resize: none`; placeholder „z. B. kann maximal bis 20:30“); below that ✓ IconButton „Anmerkung speichern“ (`tone="success"`, 36 px) and ✗ IconButton „Abbrechen“ (`tone="error"`, 36 px), right-aligned, nothing else. No help text.
+  - The root has a 2 px dashed `line-soft` rule above it while voted or editing.
 - **Slots:** —
-- **Desktop / mobile:** same, inline in the card.
-- **Accessibility:** Enter saves, Escape cancels. Opened by the button it focuses the field; opened by choosing Meh it does not take the focus. Saving an empty field removes the Note.
-- **Motion:** —
+- **Desktop / mobile:** same, inline in the card; the text area takes the card's width at 390 px.
+- **Behaviour:** line breaks are not allowed: Enter saves (not while IME composing, never a line break, Shift+Enter saves too); pasted line breaks become spaces (as the server stores them); input stops at 80 characters as the User sees them (`characterCount` / `cutToCharacters`, no native `maxlength`).
+- **Accessibility:** the label belongs to the text area; „sehen alle“ is its `aria-describedby`. The counter is `aria-hidden`; a polite live region announces „Noch {n} Zeichen“ from 64 characters (80 %, as the TextField). Enter and ✓ save, Escape and ✗ cancel. Opened by the button or the pencil it focuses the text area; opened by choosing Meh it does not take the focus. After closing by the User, focus moves to the pencil (saved) or „+ Anmerkung“ (empty or cancelled). Saving an empty field removes the Note.
+- **Not built:** a saving spinner and an error state in the editor. Saving stays optimistic: the editor closes at once, and a failed Vote rolls back with its toast (as before).
+- **Motion:** border colour `dur-fast` is not built; nothing animates.
 
 ## CalendarSheet
 **Scope:** [MVP] · **Ref:** Sheet (#81, built from existing parts, no design of its own)

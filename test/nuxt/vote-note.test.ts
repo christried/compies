@@ -35,17 +35,22 @@ describe('Notes on Votes', () => {
       expect(buttonLabelled(page, 'old', 'Anmerkung')).toBeUndefined()
     })
 
-    it('opens the field with the label and help, focused, from the button', async () => {
+    it('opens the editor with the label on the text area, the audience, the placeholder and the counter, focused', async () => {
       const { slug } = serve(s => view(s, [kittyMaybe]))
       const page = await mountSuspended(EventPage, { route: `/e/${slug}`, attachTo: document.body })
 
       await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
 
       const field = card(page, 'fri')
-      expect(field.text()).toContain('Sehen alle im Event. Zum Beispiel: kann maximal bis 20:30')
-      expect(field.get('label').text()).toBe('Anmerkung')
-      expect(field.get('input').attributes('maxlength')).toBeUndefined()
-      await vi.waitFor(() => expect(document.activeElement).toBe(field.get('input').element))
+      const textarea = field.get('textarea')
+      expect(field.get(`label[for="${textarea.attributes('id')}"]`).text()).toBe('Anmerkung')
+      const audience = field.findAll('span').find((span: Wrapper) => span.text() === 'sehen alle')!
+      expect(textarea.attributes('aria-describedby')).toBe(audience.attributes('id'))
+      expect(textarea.attributes('placeholder')).toBe('z. B. kann maximal bis 20:30')
+      expect(field.text()).toContain('0/80')
+      expect(field.text()).not.toContain('Sehen alle im Event')
+      expect(textarea.attributes('maxlength')).toBeUndefined()
+      await vi.waitFor(() => expect(document.activeElement).toBe(textarea.element))
     })
 
     it('opens the field by itself when Meh is chosen, without focusing it', async () => {
@@ -58,8 +63,8 @@ describe('Notes on Votes', () => {
 
       await radio(page, 'Sa 24.10. 20:00', 'Meh').trigger('click')
 
-      await vi.waitFor(() => expect(card(page, 'sat').find('input').exists()).toBe(true))
-      expect(document.activeElement).not.toBe(card(page, 'sat').get('input').element)
+      await vi.waitFor(() => expect(card(page, 'sat').find('textarea').exists()).toBe(true))
+      expect(document.activeElement).not.toBe(card(page, 'sat').get('textarea').element)
     })
 
     it('does not open the field for Ja', async () => {
@@ -73,7 +78,7 @@ describe('Notes on Votes', () => {
       await radio(page, 'Sa 24.10. 20:00', 'Ja').trigger('click')
 
       await vi.waitFor(() => expect(buttonLabelled(page, 'sat', 'Anmerkung')).toBeDefined())
-      expect(card(page, 'sat').find('input').exists()).toBe(false)
+      expect(card(page, 'sat').find('textarea').exists()).toBe(false)
     })
 
     it('closes the field Meh opened when the Vote moves on to Nein, if nothing was typed into it', async () => {
@@ -89,10 +94,10 @@ describe('Notes on Votes', () => {
       const page = await mountSuspended(EventPage, { route: `/e/${store.slug}`, attachTo: document.body })
 
       await radio(page, 'Sa 24.10. 20:00', 'Meh').trigger('click')
-      await vi.waitFor(() => expect(card(page, 'sat').find('input').exists()).toBe(true))
+      await vi.waitFor(() => expect(card(page, 'sat').find('textarea').exists()).toBe(true))
 
       await radio(page, 'Sa 24.10. 20:00', 'Nein').trigger('click')
-      await vi.waitFor(() => expect(card(page, 'sat').find('input').exists()).toBe(false))
+      await vi.waitFor(() => expect(card(page, 'sat').find('textarea').exists()).toBe(false))
     })
 
     it('leaves the field Meh opened open once something was typed into it', async () => {
@@ -110,12 +115,12 @@ describe('Notes on Votes', () => {
       const page = await mountSuspended(EventPage, { route: `/e/${store.slug}`, attachTo: document.body })
 
       await radio(page, 'Sa 24.10. 20:00', 'Meh').trigger('click')
-      await vi.waitFor(() => expect(card(page, 'sat').find('input').exists()).toBe(true))
-      await card(page, 'sat').get('input').setValue('halb')
+      await vi.waitFor(() => expect(card(page, 'sat').find('textarea').exists()).toBe(true))
+      await card(page, 'sat').get('textarea').setValue('halb')
 
       await radio(page, 'Sa 24.10. 20:00', 'Nein').trigger('click')
       await vi.waitFor(() => expect(sent).toEqual(['maybe', 'no']))
-      expect(card(page, 'sat').get('input').element.value).toBe('halb')
+      expect(card(page, 'sat').get('textarea').element.value).toBe('halb')
     })
 
     it('keeps a field opened with the Anmerkung button open when the Vote changes', async () => {
@@ -136,7 +141,7 @@ describe('Notes on Votes', () => {
       await radio(page, 'Fr 23.10. 20:00', 'Nein').trigger('click')
 
       await vi.waitFor(() => expect(sent).toEqual(['no']))
-      expect(card(page, 'fri').find('input').exists()).toBe(true)
+      expect(card(page, 'fri').find('textarea').exists()).toBe(true)
     })
 
     it('saves a Note with the Vote, shows it at once and lists it under Anmerkungen', async () => {
@@ -153,10 +158,10 @@ describe('Notes on Votes', () => {
       const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
       await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
-      await card(page, 'fri').get('input').setValue(NOTE)
-      await buttonLabelled(page, 'fri', 'Speichern')!.trigger('click')
+      await card(page, 'fri').get('textarea').setValue(NOTE)
+      await buttonLabelled(page, 'fri', 'Anmerkung speichern')!.trigger('click')
 
-      expect(card(page, 'fri').find('input').exists()).toBe(false)
+      expect(card(page, 'fri').find('textarea').exists()).toBe(false)
       expect(card(page, 'fri').text()).toContain(NOTE)
       expect(card(page, 'fri').text()).toContain('Anmerkungen')
       expect(card(page, 'fri').text()).toContain('Kitty (du)')
@@ -176,16 +181,129 @@ describe('Notes on Votes', () => {
       const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
       await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
-      await card(page, 'fri').get('input').setValue('weg damit')
-      await card(page, 'fri').get('input').trigger('keydown', { key: 'Escape' })
-      expect(card(page, 'fri').find('input').exists()).toBe(false)
+      await card(page, 'fri').get('textarea').setValue('weg damit')
+      await card(page, 'fri').get('textarea').trigger('keydown', { key: 'Escape' })
+      expect(card(page, 'fri').find('textarea').exists()).toBe(false)
       expect(sent).toBeNull()
 
       await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
-      await card(page, 'fri').get('input').setValue('x')
-      await card(page, 'fri').get('input').trigger('keydown', { key: 'Enter' })
+      await card(page, 'fri').get('textarea').setValue('x')
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true, bubbles: true })
+      card(page, 'fri').get('textarea').element.dispatchEvent(enter)
 
+      expect(enter.defaultPrevented).toBe(true)
       await vi.waitFor(() => expect(sent).toEqual({ value: 'maybe', note: 'x' }))
+    })
+
+    it('saves with the ✓ and cancels with the ✗, which sends nothing', async () => {
+      const sent: unknown[] = []
+      const store = serve(s => view(s, [kittyMaybe]))
+      registerEndpoint(`/api/e/${store.slug}/slots/fri/vote`, {
+        method: 'PUT',
+        handler: async (event) => {
+          sent.push(await readBody(event))
+          return { slotId: 'fri', value: 'maybe', note: NOTE }
+        },
+      })
+      const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      await card(page, 'fri').get('textarea').setValue('weg damit')
+      await buttonLabelled(page, 'fri', 'Abbrechen')!.trigger('click')
+      expect(card(page, 'fri').find('textarea').exists()).toBe(false)
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      await card(page, 'fri').get('textarea').setValue(NOTE)
+      await buttonLabelled(page, 'fri', 'Anmerkung speichern')!.trigger('click')
+
+      await vi.waitFor(() => expect(sent).toEqual([{ value: 'maybe', note: NOTE }]))
+    })
+
+    it('turns a pasted line break into a space, in the field and in the saved Note', async () => {
+      let sent: unknown = null
+      const store = serve(s => view(s, [kittyMaybe]))
+      registerEndpoint(`/api/e/${store.slug}/slots/fri/vote`, {
+        method: 'PUT',
+        handler: async (event) => {
+          sent = await readBody(event)
+          return { slotId: 'fri', value: 'maybe', note: NOTE }
+        },
+      })
+      const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      await card(page, 'fri').get('textarea').setValue('kann bis\n20:30')
+
+      expect(card(page, 'fri').get('textarea').element.value).toBe('kann bis 20:30')
+      await buttonLabelled(page, 'fri', 'Anmerkung speichern')!.trigger('click')
+      await vi.waitFor(() => expect(sent).toEqual({ value: 'maybe', note: 'kann bis 20:30' }))
+    })
+
+    it('stops the input at 80 characters as the User sees them, with the counter in the warning colour', async () => {
+      const { slug } = serve(s => view(s, [kittyMaybe]))
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      await card(page, 'fri').get('textarea').setValue('👍🏽'.repeat(81))
+
+      const field = card(page, 'fri')
+      expect(field.get('textarea').element.value).toBe('👍🏽'.repeat(80))
+      const counter = field.findAll('span').find((span: Wrapper) => span.text() === '80/80')!
+      expect(counter.classes()).toContain('text-warning-fg')
+    })
+
+    it('announces the characters left from 64 characters on', async () => {
+      const { slug } = serve(s => view(s, [kittyMaybe]))
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      const live = () => card(page, 'fri').get('[aria-live="polite"]').text()
+
+      await card(page, 'fri').get('textarea').setValue('a'.repeat(63))
+      expect(live()).toBe('')
+      await card(page, 'fri').get('textarea').setValue('a'.repeat(64))
+      expect(live()).toBe('Noch 16 Zeichen')
+    })
+
+    it('moves the focus to the pencil after a saved Note', async () => {
+      const store = serve(s => view(s, [kittyMaybe]))
+      registerEndpoint(`/api/e/${store.slug}/slots/fri/vote`, {
+        method: 'PUT',
+        handler: async (event) => {
+          const { note } = await readBody<{ note: string }>(event)
+          store.set(view(store.slug, [{ ...kittyMaybe, note: note || null }]))
+          return { slotId: 'fri', value: 'maybe', note: note || null }
+        },
+      })
+      const page = await mountSuspended(EventPage, { route: `/e/${store.slug}`, attachTo: document.body })
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      await card(page, 'fri').get('textarea').setValue(NOTE)
+      await buttonLabelled(page, 'fri', 'Anmerkung speichern')!.trigger('click')
+
+      const pencil = buttonLabelled(page, 'fri', 'Anmerkung bearbeiten')!
+      await vi.waitFor(() => expect(document.activeElement).toBe(pencil.element))
+    })
+
+    it('moves the focus to „Anmerkung“ after the ✗ on an empty Note', async () => {
+      const { slug } = serve(s => view(s, [kittyMaybe]))
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}`, attachTo: document.body })
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+      await buttonLabelled(page, 'fri', 'Abbrechen')!.trigger('click')
+
+      const add = buttonLabelled(page, 'fri', 'Anmerkung')!
+      await vi.waitFor(() => expect(document.activeElement).toBe(add.element))
+    })
+
+    it('styles the ✓ as success and the ✗ as error', async () => {
+      const { slug } = serve(s => view(s, [kittyMaybe]))
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
+
+      expect(buttonLabelled(page, 'fri', 'Anmerkung speichern')!.classes()).toContain('bg-success')
+      expect(buttonLabelled(page, 'fri', 'Abbrechen')!.classes()).toContain('bg-error')
     })
 
     it('shows an existing Note as text with a pencil, edits it, and removes it with an empty field', async () => {
@@ -202,9 +320,9 @@ describe('Notes on Votes', () => {
       expect(buttonLabelled(page, 'fri', 'Anmerkung')).toBeUndefined()
 
       await buttonLabelled(page, 'fri', 'Anmerkung bearbeiten')!.trigger('click')
-      expect(card(page, 'fri').get('input').element.value).toBe(NOTE)
-      await card(page, 'fri').get('input').setValue('')
-      await buttonLabelled(page, 'fri', 'Speichern')!.trigger('click')
+      expect(card(page, 'fri').get('textarea').element.value).toBe(NOTE)
+      await card(page, 'fri').get('textarea').setValue('')
+      await buttonLabelled(page, 'fri', 'Anmerkung speichern')!.trigger('click')
 
       expect(buttonLabelled(page, 'fri', 'Anmerkung')).toBeDefined()
       expect(card(page, 'fri').text()).not.toContain(NOTE)
@@ -222,8 +340,8 @@ describe('Notes on Votes', () => {
       const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
       await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
-      await card(page, 'fri').get('input').setValue(NOTE)
-      await buttonLabelled(page, 'fri', 'Speichern')!.trigger('click')
+      await card(page, 'fri').get('textarea').setValue(NOTE)
+      await buttonLabelled(page, 'fri', 'Anmerkung speichern')!.trigger('click')
 
       await vi.waitFor(() => expect(shownToasts()).toEqual([expect.objectContaining({ tone: 'error', text: 'Deine Stimme ist nicht angekommen' })]))
       expect(card(page, 'fri').text()).not.toContain(NOTE)
