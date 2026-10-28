@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
 import { addPoolGame, settingsOf, togglePoolGame, type EventDraft, type StepLocks } from '~/utils/event-draft'
-import type { PoolGame } from '~~/shared/event'
-import { NO_FILTERS, type GameFilters, type GameView } from '~~/shared/game'
+import { NO_FILTERS, type GameFilters, type GameView, type PoolGame } from '~~/shared/game'
 import { poolHint, type Pool } from '~~/shared/settings'
 
 // Steps 6 and 7: the Game pool and the Tiebreaker pool (#146), one component and one markup for both (`kind`); they

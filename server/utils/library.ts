@@ -1,7 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import type { PoolGame } from '../../shared/event'
-import { canEditGame, canSeeLibrary, type GameView } from '../../shared/game'
+import { canEditGame, canSeeLibrary, type GameView, type PoolGame } from '../../shared/game'
 import type { AuthUser } from '../../shared/auth'
 import { games, users } from '../db/schema'
 import { isUuid } from '../domain/uuid'

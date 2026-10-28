@@ -60,8 +60,8 @@ export function canEditGame(viewer: { id: string, isAdmin: boolean }, game: { cr
   return viewer.isAdmin || viewer.id === game.createdBy
 }
 
-/** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
-export interface GameView {
+/** What GameCard shows of a game: the part of a library game that an Event's pools carry too (#146). */
+export interface PoolGame {
   id: string
   name: string
   /** URL of the uploaded image (#143); null until then. */
@@ -73,6 +73,10 @@ export interface GameView {
   playersMax: number | null
   /** The Suitabilities, in SUITABILITIES order; empty when none is set (#171). */
   suitabilities: Suitability[]
+}
+
+/** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
+export interface GameView extends PoolGame {
   /** `name` is the display name if the User set one, like Event members. */
   createdBy: { id: string, name: string }
   createdAt: string

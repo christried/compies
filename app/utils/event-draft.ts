@@ -1,4 +1,5 @@
-import type { EventView, PoolGame } from '~~/shared/event'
+import type { EventView } from '~~/shared/event'
+import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, defaultVetoAllowance, hasWheel, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
 
 // What the Host has entered in the stepper so far (#144). Nothing is sent until „Session erstellen“; then
