@@ -60,6 +60,8 @@
   "dock": {
     "label": "Host-Steuerung",
     "setDate": "Termin festlegen",
+    "settings": "Einstellungen",
+    "setup": "Event einrichten",
     "proposeDate": "Termin vorschlagen",
     "start": "Session starten",
     "checkTeams": "Teams prüfen",
@@ -199,6 +201,7 @@
       "vetoes": "Vetos pro Partei",
       "vetoesHelp": "Jede Partei hat gleich viele Vetos für das ganze Event.",
       "vetoesMin": "Mindestens 0 Vetos.",
+      "vetoesFloor": "Eine Partei hat schon {n} Vetos eingesetzt.",
       "vetoesMax": "Höchstens 9 Vetos pro Partei.",
       "howItWorks": "So läuft's",
       "goodFor": "Gut für",
@@ -772,6 +775,22 @@
     "system": "System",
     "language": "Sprache"
   },
+  "eventSettings": {
+    "notice": {
+      "title": "Event einrichten",
+      "text": "Lege Format, Punkte, Auswahlmodus und Spiele fest. Ohne Einstellungen kann keine Session starten.",
+      "action": "Event einrichten"
+    },
+    "kicker": "Einstellungen",
+    "heading": "Einstellungen",
+    "setupHeading": "Event einrichten",
+    "save": "Speichern",
+    "saving": "Speichert …",
+    "saved": "Gespeichert.",
+    "back": "Zurück zum Event",
+    "locked": "Gesperrt, seit die erste Session läuft: Schon gespielte Spiele behalten ihre Regeln.",
+    "wrongPhase": "Das Event ist beendet. Die Einstellungen lassen sich nicht mehr ändern."
+  },
   "connectionG": {
     "lostTitle": "Wir hören nichts mehr vom Server.",
     "lostText": "Deine letzte Nachricht ist gespeichert und geht raus, sobald es wieder klappt. Wir versuchen es weiter.",
@@ -1187,6 +1206,7 @@
       "teamCountMin": "Mindestens 2 Teams.",
       "teamCountMax": "Höchstens 8 Teams.",
       "teamSizeMin": "Mindestens 1 pro Team.",
+      "teamSizeFloor": "Im vollsten Team sind schon {n}.",
       "teamSizeMax": "Höchstens 6 pro Team.",
       "playersMax": "Höchstens 24 Leute in Teams.",
       "total": "{teams} Teams à {size} = {players} Leute in Teams (max. 24)"

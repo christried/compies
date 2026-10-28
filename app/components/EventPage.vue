@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { CalendarCheck, CalendarClock, ChevronRight, Link as LinkIcon } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, ChevronRight, Link as LinkIcon, Settings2 } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { sessionsEditable, type DatedSessionView, type EventView } from '~~/shared/event'
+import { settingsPath } from '~~/shared/links'
+import { settingsEditable } from '~~/shared/settings'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). This page loads the Event, refetches it
 // every 15 s while the tab is visible, and holds the Host's dialogs and the error states. EventSessions shows the
@@ -109,12 +111,24 @@ const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
 const inviteOpen = ref(false)
 const calendarOpen = ref(false)
 
-// "Termin festlegen" looks disabled with its reason when no open future Slot can become a Date (#52).
-const hostActions = computed((): DockAction[] => [
-  { label: t('dock.setDate'), icon: CalendarCheck, primary: true, disabledReason: setBlocked.value ?? undefined, run: () => openConfirm() },
-  { label: t('mvp.slots.title'), icon: CalendarClock, run: () => (editing.value = true) },
-  { label: t('common.invite'), icon: LinkIcon, run: () => (inviteOpen.value = true) },
-])
+// The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
+const canEditSettings = computed(() => (data.value ? data.value.event.isHost && settingsEditable(data.value.event.phase) : false))
+const needsSetup = computed(() => canEditSettings.value && data.value?.settings === null)
+const setupNoticeClosed = ref(false)
+
+// "Termin festlegen" looks disabled with its reason when no open future Slot can become a Date (#52). The poll
+// Phase has the Date actions; every Phase before the Event finishes has Einstellungen and Einladen (#147).
+const hostActions = computed((): DockAction[] => {
+  const invite: DockAction = { label: t('common.invite'), icon: LinkIcon, run: () => (inviteOpen.value = true) }
+  const settings: DockAction = { label: t(needsSetup.value ? 'dock.setup' : 'dock.settings'), icon: Settings2, run: () => navigateTo(settingsPath(slug.value)) }
+  if (data.value?.event.phase !== 'poll') return [settings, invite]
+  return [
+    { label: t('dock.setDate'), icon: CalendarCheck, primary: true, disabledReason: setBlocked.value ?? undefined, run: () => openConfirm() },
+    { label: t('mvp.slots.title'), icon: CalendarClock, run: () => (editing.value = true) },
+    invite,
+    settings,
+  ]
+})
 
 // Only a loaded Event is refetched: a link that failed keeps its error page.
 usePollRefresh(() => {
@@ -138,6 +152,25 @@ usePollRefresh(() => {
       v-if="data"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-4"
     >
+      <NoticeBanner
+        v-if="needsSetup && !setupNoticeClosed"
+        tone="info"
+        :icon="Settings2"
+        host-only
+        @close="setupNoticeClosed = true"
+      >
+        <b>{{ t('eventSettings.notice.title') }}</b>
+        {{ t('eventSettings.notice.text') }}
+        <template #action>
+          <AppButton
+            :to="settingsPath(slug)"
+            size="md"
+          >
+            {{ t('eventSettings.notice.action') }}
+          </AppButton>
+        </template>
+      </NoticeBanner>
+
       <EventSessions
         :view="data"
         :slug="slug"
@@ -186,7 +219,7 @@ usePollRefresh(() => {
     />
 
     <HostDock
-      v-if="data?.event.isHost && data.event.phase === 'poll'"
+      v-if="canEditSettings"
       :actions="hostActions"
     />
 

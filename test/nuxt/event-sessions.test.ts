@@ -1,7 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import EventPage from '~/pages/e/[slug].vue'
+import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
 import { clickButton, dialog, serve, shownToasts, view, viewWithSessions } from './event-page'
 
@@ -23,7 +23,9 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).toContain('Session 1')
     expect(page.text()).toContain('Session 2')
     expect(page.findAll('button').filter(button => button.text() === 'In den Kalender')).toHaveLength(1)
-    expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
+    // One for the whole Event on the cards, one in the Host controls (#147).
+    expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(2)
+    expect(page.get('[role="toolbar"]').findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
     expect(page.findAll('button').filter(button => button.text() === 'Verschieben')).toHaveLength(2)
     expect(page.findAll('button').filter(button => button.text() === 'Neue Terminsuche')).toHaveLength(2)
     expect(page.findAll('button').filter(button => button.text() === 'Entfernen')).toHaveLength(2)

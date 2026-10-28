@@ -1,4 +1,4 @@
-import type { PoolGame } from '~~/shared/event'
+import type { EventView, PoolGame } from '~~/shared/event'
 import { defaultSettings, defaultVetoAllowance, type EventSettings, type Pool } from '~~/shared/settings'
 
 // What the Host has entered in the stepper so far (#144). Nothing is sent until „Session erstellen“; then
@@ -86,9 +86,33 @@ export function followTeamSize(draft: EventDraft): EventDraft {
 /** The body of `POST /api/e`. */
 export function draftBody(draft: EventDraft) {
   const { dates } = draft
-  const pools = { main: draft.pools.main.map(game => game.id), tiebreaker: draft.pools.tiebreaker.map(game => game.id) }
-  const base = { name: draft.name.trim(), sessions: dates.sessionCount, settings: draft.settings, pools }
+  const base = { name: draft.name.trim(), sessions: dates.sessionCount, settings: draft.settings, pools: poolIds(draft) }
   return dates.mode === 'poll'
     ? { ...base, dateMode: 'poll' as const, slots: dates.slots }
     : { ...base, dateMode: 'direct' as const, startsAt: dates.direct }
+}
+
+/**
+ * The draft of the settings editor (#147), made from the Event as the Host reads it. A stored Veto allowance is the
+ * Host's choice, so a Team size change must not overwrite it. Name and dates are not edited here.
+ */
+export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): EventDraft {
+  const settings = view.settings ?? defaultSettings()
+  return {
+    ...newDraft(),
+    settings,
+    touched: { vetoAllowance: view.settings !== null },
+    wheel: { hiddenWheel: settings.hiddenWheel, vetoAllowance: settings.vetoAllowance ?? defaultVetoAllowance(settings.teamSize) },
+    // The Host always gets the games; the guard only narrows the type.
+    pools: view.pools.hidden ? { main: [], tiebreaker: [] } : { main: [...view.pools.main], tiebreaker: [...view.pools.tiebreaker] },
+  }
+}
+
+/** The body of `PATCH /api/e/:slug/settings`: all settings (a full payload also sets up an Event) and both pools. */
+export function settingsBody(draft: EventDraft) {
+  return { settings: draft.settings, pools: poolIds(draft) }
+}
+
+function poolIds(draft: EventDraft) {
+  return { main: draft.pools.main.map(game => game.id), tiebreaker: draft.pools.tiebreaker.map(game => game.id) }
 }

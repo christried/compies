@@ -1,6 +1,7 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
-import type { SessionNote } from '~~/shared/event'
+import type { EventPools, SessionNote } from '~~/shared/event'
+import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 import { kitty } from './auth'
 
 // Fixtures for the Event page tests (event-*.test.ts): the `GET /api/e/:slug` body and a fresh Event link per test.
@@ -12,7 +13,7 @@ export const LARSI = '00000000-0000-4000-8000-000000000002'
 export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, removedSessions?: { id: string, previousStartsAt: string }[] }
+export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pools?: EventPools, removedSessions?: { id: string, previousStartsAt: string }[] }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
@@ -23,6 +24,10 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
   const { startsAt = null, previousStartsAt = null, ...event } = { ...eventOf(slug), ...overrides.event }
   return {
     event,
+    // Set up with the defaults unless a test says otherwise (#147: null is an Event from before 1.3).
+    settings: overrides.settings === undefined ? defaultSettings() : overrides.settings,
+    settingsFloors: overrides.settingsFloors === undefined ? (event.isHost ? { teamSize: 1, vetoAllowance: 0 } : null) : overrides.settingsFloors,
+    pools: overrides.pools ?? { hidden: false, main: [], tiebreaker: [] } as EventPools,
     // The Event's one Session, which the server sends without a number (#70).
     sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[] }],
     removedSessions: overrides.removedSessions ?? [],
