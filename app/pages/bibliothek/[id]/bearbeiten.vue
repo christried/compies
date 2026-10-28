@@ -22,7 +22,7 @@ useHead({ title: () => game.value?.name ?? t('gameEdit.editKicker') })
 
 async function onSaved(saved: GameView) {
   toast({ tone: 'success', text: t('library.saveDone') })
-  await refreshNuxtData(['games', `game-${id.value}`])
+  await Promise.all([refreshGameLibrary(), refreshNuxtData(`game-${id.value}`)])
   await navigateTo(`/bibliothek/${saved.id}`)
 }
 </script>

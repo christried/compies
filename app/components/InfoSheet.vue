@@ -7,7 +7,7 @@ import { noticeClasses } from '~/utils/notice'
 // Sections a topic lacks are left out. The stepper puts it in the info column and in the phone sheet.
 // A section can have more than one paragraph: the hidden wheel option ends with what the Host sees (#145).
 const props = defineProps<{
-  topic: 'teams' | 'ffa' | 'admin' | 'wheel' | 'tiebreaker'
+  topic: 'teams' | 'ffa' | 'admin' | 'wheel'
 }>()
 
 const { t, te } = useI18n()
