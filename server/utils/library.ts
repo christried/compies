@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { canEditGame, canSeeLibrary, type GameView, type PoolGame } from '../../shared/game'
-import type { AuthUser } from '../../shared/auth'
+import { shownName, type AuthUser } from '../../shared/auth'
 import { games, users } from '../db/schema'
 import { isUuid } from '../domain/uuid'
 import type { Db } from './db'
@@ -27,7 +27,7 @@ export const gameWithCreator = { game: games, creatorName: users.name, creatorDi
 
 /** The creator's name as the library shows it: the display name when they set one. */
 export function creatorNameOf({ creatorName, creatorDisplayName }: { creatorName: string, creatorDisplayName: string | null | undefined }): string {
-  return creatorDisplayName ?? creatorName
+  return shownName({ name: creatorName, displayName: creatorDisplayName })
 }
 
 /** One game with its creator's name; libraryNotFound for text that is no uuid (it never reaches the database) and for an unknown id. */

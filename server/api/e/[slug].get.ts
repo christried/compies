@@ -11,6 +11,7 @@ import { eventPools } from '../../utils/pools'
 import { SETTINGS_FLOORS } from '../../utils/settings-floors'
 import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
+import { shownName } from '../../../shared/auth'
 import type { EventView, SessionNote, SessionView } from '../../../shared/event'
 import type { VoteRow } from '../../../shared/poll'
 import { settingsFromRow } from '../../../shared/settings'
@@ -83,7 +84,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     votes,
     members: members.map(row => ({
       id: row.id,
-      name: row.displayName ?? row.name,
+      name: shownName(row),
       image: row.image,
       isHost: row.id === eventRow.hostId,
     })),

@@ -4,6 +4,7 @@ import { users } from '../../db/schema'
 import { useDb } from '../../utils/db'
 import { eventNotFound } from '../../utils/errors'
 import { eventForInvite } from '../../utils/invite'
+import { shownName } from '../../../shared/auth'
 import type { InvitePreview } from '../../../shared/event'
 
 // Signed-out preview of an Invite link (screen 07, ADR 0006): the Event name and the Host's
@@ -20,6 +21,6 @@ export default defineEventHandler(async (event): Promise<InvitePreview> => {
 
   return {
     eventName: eventRow.name,
-    host: { name: host!.displayName ?? host!.name, image: host!.image },
+    host: { name: shownName(host!), image: host!.image },
   }
 })

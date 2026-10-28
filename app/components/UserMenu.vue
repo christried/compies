@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { LogOut } from '@lucide/vue'
+import { shownName } from '~~/shared/auth'
 
 // Avatar menu in the header (09 § UserMenu, 10 § UserMenu): who is signed in and „Abmelden“. Below md the
 // page footer's links follow below a divider (PageFooter variant menu); a click on one of them closes the menu.
@@ -11,7 +12,7 @@ const signOut = useSignOut()
 const open = ref(false)
 const root = useTemplateRef('root')
 const trigger = useTemplateRef('trigger')
-const name = computed(() => user.value?.displayName ?? user.value?.name ?? '')
+const name = computed(() => (user.value ? shownName(user.value) : ''))
 
 async function toggle() {
   open.value = !open.value
