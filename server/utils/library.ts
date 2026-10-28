@@ -23,8 +23,8 @@ export function gameView(row: typeof games.$inferSelect, creatorName: string, vi
   return {
     id: row.id,
     name: row.name,
-    // #143: the URL of the uploaded image (row.imageKey) once the image store exists.
-    imageUrl: null,
+    // Served by GET /api/images/:key; a replaced image gets a new key, so its URL never serves stale (#143).
+    imageUrl: row.imageKey ? `/api/images/${row.imageKey}` : null,
     youtubeId: row.youtubeId,
     clipStart: row.clipStart,
     clipLength: row.clipLength,

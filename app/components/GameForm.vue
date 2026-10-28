@@ -20,6 +20,11 @@ const props = defineProps<{
 const emit = defineEmits<{ saved: [game: GameView] }>()
 
 const { t } = useI18n()
+const { toast } = useToast()
+
+/** The cropped WebP waiting to be uploaded after the game is saved (#143). */
+const image = ref<Blob | null>(null)
+const uploadingImage = ref(false)
 
 const name = ref(props.game?.name ?? '')
 const link = ref(props.game?.youtubeId ? `https://youtu.be/${props.game.youtubeId}` : '')
@@ -74,6 +79,29 @@ const blocker = computed<string | null>(() => {
   return startError.value ?? lengthError.value ?? null
 })
 
+/**
+ * Sends the cropped image once the game exists (#143). A failed upload does not undo the game: it is saved, the
+ * Host sees why the image is missing and can add it later.
+ */
+async function uploadImage(game: GameView): Promise<GameView> {
+  if (!image.value) return game
+  uploadingImage.value = true
+  try {
+    return await $fetch<GameView>(`/api/games/${game.id}/image`, {
+      method: 'PUT',
+      headers: { 'content-type': 'image/webp' },
+      body: image.value,
+    })
+  }
+  catch (error) {
+    toast({ tone: 'error', text: t('gameEdit.imageUploadFailed', { reason: t(apiErrorKey(error)) }) })
+    return game
+  }
+  finally {
+    uploadingImage.value = false
+  }
+}
+
 async function submit() {
   attempted.value = true
   if (blocker.value || saving.value || start.value === null || length.value === null) return
@@ -84,7 +112,7 @@ async function submit() {
       method: 'POST',
       body: { name: trimmedName.value, youtubeUrl: link.value.trim(), clipStart: start.value, clipLength: length.value },
     })
-    emit('saved', game)
+    emit('saved', await uploadImage(game))
   }
   catch (error) {
     failure.value = t(apiErrorKey(error))
@@ -108,6 +136,11 @@ async function submit() {
           :label="t('gameEdit.name')"
           :error="nameError"
           :maxlength="GAME_NAME_MAX"
+        />
+        <GameImageField
+          v-model="image"
+          :image-url="game?.imageUrl"
+          :uploading="uploadingImage"
         />
         <TextField
           v-model="link"
