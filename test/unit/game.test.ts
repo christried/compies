@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseGameInput } from '../../server/domain/game'
-import { CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, canEditGame, canSeeLibrary, clipTime } from '../../shared/game'
+import { CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, canEditGame, canSeeLibrary, clipTime, parseClipTime } from '../../shared/game'
 
 describe('clipTime', () => {
   it.each([
@@ -18,6 +18,26 @@ describe('clipTime', () => {
 
   it('rounds down fractions of a second', () => {
     expect(clipTime(72.9)).toBe('1:12')
+  })
+})
+
+describe('parseClipTime', () => {
+  it.each([
+    ['72', 72],
+    ['0', 0],
+    ['1:12', 72],
+    ['0:05', 5],
+    ['1:2', 62],
+    ['75:00', 4500],
+    ['1:01:05', 3665],
+    ['11:59:59', 43_199],
+    ['  1:12 ', 72],
+  ])('reads %j as %i seconds', (text, seconds) => {
+    expect(parseClipTime(text)).toBe(seconds)
+  })
+
+  it.each([[''], ['   '], ['bald'], ['1:60'], ['1:12:60'], ['1:60:00'], ['-5'], ['1.5'], ['1:'], [':30'], ['1:2:3:4'], ['12:00:00'], ['43200']])('refuses %j', (text) => {
+    expect(parseClipTime(text)).toBeNull()
   })
 })
 
