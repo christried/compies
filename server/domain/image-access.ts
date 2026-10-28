@@ -11,7 +11,6 @@ export interface PoolEvent { isHost: boolean, hiddenWheel: boolean }
  */
 export function canSeeImage({ viewer, poolEvents }: {
   viewer: { canHost: boolean, isAdmin: boolean } | null
-  game: { id: string, createdBy: string }
   poolEvents: PoolEvent[]
 }): boolean {
   if (canSeeLibrary(viewer)) return true

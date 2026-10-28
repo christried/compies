@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   if (!game) throw libraryNotFound()
   // Library viewers need no Event lookup; for everyone else the Events they are Members of decide.
   const poolEvents = viewer && !canSeeLibrary(viewer) ? await poolEventsOf(db, viewer.id, game.id) : []
-  if (!canSeeImage({ viewer, game, poolEvents })) throw libraryNotFound()
+  if (!canSeeImage({ viewer, poolEvents })) throw libraryNotFound()
 
   const image = await useImageStore(event).get(key)
   if (!image) throw libraryNotFound()
