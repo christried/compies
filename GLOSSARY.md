@@ -173,8 +173,12 @@ A Party's rejection of a game the wheel has just drawn, cast within the veto win
 _Avoid_: Ban (a ban removes a game before it is drawn), skip, reject
 
 **Veto allowance**:
-The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host.
+The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host. Bonus Vetoes come on top.
 _Avoid_: Vetoes per player, veto budget
+
+**Bonus Veto**:
+A Veto the Host grants one Party on top of the Veto allowance, to make up for something that went wrong or to favour it over a Party being penalised. The Host never takes a Veto away.
+_Avoid_: Extra veto, refund, penalty veto
 
 **Tiebreaker**:
 An extra game after the Game count, played only by the Parties tied for first place and drawn by a Lucky Wheel from the Tiebreaker pool; it repeats until one Party wins.
@@ -184,6 +188,10 @@ _Avoid_: Decider, overtime, sudden death
 The games an Event keeps apart for the Tiebreaker only.
 _Avoid_: Backup pool
 
+**Suitability**:
+What kind of play a game in the Game library works for: Teams, free-for-all or one against one, any number of them (UI: Passt zu). One against one is a Suitability, not a Format: such an Event is Teams with two teams of one.
+_Avoid_: Format (an Event has a Format, a game has Suitabilities), game mode
+
 **Activity feed**:
 The Event's automatic log of what happened, with times, readable by every Member; it never names a game before everyone may know it (UI: Aktivität).
 _Avoid_: History, log, timeline
@@ -191,6 +199,16 @@ _Avoid_: History, log, timeline
 **Award ceremony**:
 The show that closes a finished Event, started by the Host and seen by every Member at the same moment; the Host can start it again (UI: Siegerehrung).
 _Avoid_: Ceremony screen, finale, results screen
+
+## During a Session
+
+**Coin flip**:
+A coin the Host tosses at any time during a running Session; the server decides the side, and every Member sees the same toss at the same moment (UI: Münzwurf).
+_Avoid_: Coin toss, random pick
+
+**Countdown**:
+A time the Host sets and starts that runs down to zero for every Member at the same moment, for games played against the clock.
+_Avoid_: Timer, stopwatch (it never counts up)
 
 ## App
 
