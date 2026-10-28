@@ -7,7 +7,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | Release | Name | Status |
 |---|---|---|
 | 1.3 | Spielvorbereitung | specced: [#138](https://github.com/christried/compies/issues/138) |
-| 1.4 | Teams | outline, planning: [#150](https://github.com/christried/compies/issues/150) |
+| 1.4 | Teams | specced: [#153](https://github.com/christried/compies/issues/153) |
 | 1.5 | Glücksrad | outline |
 | 1.6 | Punkte | outline |
 | 1.7 | Siegerehrung | outline |
@@ -47,13 +47,13 @@ Hosts can fill a Game library and set up a whole Event. No realtime yet. (T4, T5
 
 ## 1.4 Teams
 
-Everyone in the lobby live; teams formed; a Session can start. (T6, T8, activity feed from T9; screens 09, 10, 27.)
+Everyone in the lobby live; teams formed; a Session can start. (T6, T8, activity feed from T9; screens 09, 10, 27.) Spec: [#153](https://github.com/christried/compies/issues/153).
 
 - Realtime foundation per ADR 0012: Nuxt on Vercel, one PartyServer Worker with one room per Event, room tokens, presence, clock sync, reconnect. Postgres writes stay in Nuxt.
 - Lobby game board: zones, drag and drop, online indicator, team names (open question 10 as designed), team colours.
 - Starting a Session; the Event goes to running.
 - Activity feed.
-- To grill: when the Worker may be deployed (deploys drop every socket), EU jurisdiction, how exact the clip sync must be, staging Worker setup. Facts: `docs/research/realtime-hosting.md`.
+- Grilled on 2026-10-28 (ADR 0013, `GLOSSARY.md`): Nuxt decides and the room only relays; no Worker deploy or Release merge on a day with a Session Date or while a Session runs; rooms in the EU jurisdiction; ≤ 50 ms for server-timed moments, the clip best effort; staging and production Workers on `*.workers.dev`, set up by a wizard. Facts: `docs/research/realtime-hosting.md`.
 
 ## 1.5 Glücksrad
 
