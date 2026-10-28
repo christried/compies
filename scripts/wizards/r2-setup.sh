@@ -195,7 +195,8 @@ finish() {
 # STAGES: Cloudflare R2 for game images (#139). The values go to Vercel, the
 # Production environment and the staging branch (ADR 0007). They never go to
 # the repo or to the local .env. --dry-run walks every stage without opening
-# a browser, calling Vercel or needing Cloudflare access.
+# a browser, calling Vercel or needing Cloudflare access. Cloudflare also gets a
+# $1 budget alert (#180). It only emails: Cloudflare has no hard spending cap.
 # ──────────────────────────────────────────────────────────────────────────
 
 # Set by --dry-run: pages are printed, not opened; values are placeholders;
@@ -340,7 +341,7 @@ done
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"
 
-TOTAL_STAGES=8
+TOTAL_STAGES=9
 
 banner "COMPIES: Cloudflare R2 for game images (#139)"
 
@@ -413,7 +414,36 @@ note "Use the Access Key ID and the Secret Access Key, not the token value Cloud
 need secret R2_ACCESS_KEY_ID "Paste the Access Key ID (input stays hidden):" '^[[:graph:]]+$' "one word without spaces"
 need secret R2_SECRET_ACCESS_KEY "Paste the Secret Access Key (input stays hidden):" '^[[:graph:]]+$' "one word without spaces"
 
-# ── Stage 6: Vercel production ────────────────────────────────────────────
+# ── Stage 6: budget alert ─────────────────────────────────────────────────
+# Cloudflare has no hard spending cap, so the alert only emails. No kill switch
+# is built here: the 1.4 Worker stays on the Workers Free plan (#180).
+stage 'Cloudflare: budget alert at $1'
+say "Cloudflare has no hard spending cap. A budget alert only sends an email; nothing stops the spending."
+note "The 1.4 Worker stays on the Workers Free plan. This wizard builds no kill switch of its own."
+alert_exists=no
+if (( DRY_RUN )); then
+  note "dry run: assuming no budget alert exists yet"
+elif confirm "Does a budget alert at \$1 already exist?"; then
+  alert_exists=yes
+fi
+if [[ "$alert_exists" == yes ]]; then
+  note "A budget alert already exists, so this step is skipped."
+else
+  step "In the Cloudflare dashboard, go to Manage Account → Billing → Billable Usage."
+  step "Create a budget alert: amount \$1 (USD), with the email sent to your account's email address."
+  pause "Press Enter once the budget alert is saved."
+  if (( DRY_RUN )); then
+    note "dry run: assuming the budget alert exists now"
+  elif confirm "Does the budget alert at \$1 exist now?"; then
+    printf '  %s✓%s budget alert at $1 exists\n' "$GREEN" "$RESET"
+  else
+    SKIPPED+=("Cloudflare budget alert at \$1 (Manage Account → Billing → Billable Usage)")
+    warn "budget alert not confirmed. The summary lists it as still to do."
+  fi
+fi
+pause "Press Enter to continue."
+
+# ── Stage 7: Vercel production ────────────────────────────────────────────
 stage "Vercel: variables for production (branch main)"
 say "Writes the Production environment. Production uploads go to compies-production."
 vercel_set R2_ACCOUNT_ID "$R2_ACCOUNT_ID" production
@@ -425,7 +455,7 @@ if [[ -n "$R2_JURISDICTION" ]]; then
 fi
 pause "Press Enter to continue."
 
-# ── Stage 7: Vercel staging branch ────────────────────────────────────────
+# ── Stage 8: Vercel staging branch ────────────────────────────────────────
 stage "Vercel: variables for the staging branch (Preview)"
 say "Writes the Preview environment, limited to the git branch staging (ADR 0007). Staging uploads go to compies-staging."
 vercel_set R2_ACCOUNT_ID "$R2_ACCOUNT_ID" preview staging
@@ -437,7 +467,7 @@ if [[ -n "$R2_JURISDICTION" ]]; then
 fi
 pause "Press Enter to continue."
 
-# ── Stage 8: check and finish ─────────────────────────────────────────────
+# ── Stage 9: check and finish ─────────────────────────────────────────────
 stage "Check the result"
 if (( DRY_RUN )); then
   note "dry run: would run vercel env ls production and vercel env ls preview staging"

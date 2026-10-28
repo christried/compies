@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { risingPlace, type EventSettings } from '~~/shared/settings'
+import type { EventDraft, StepLocks } from '~/utils/event-draft'
+import { risingPlace } from '~~/shared/settings'
 
 // Step 4: the points table (#144). A custom table in which a place earns more than the place above blocks
-// Weiter with the same message the table shows on that row. `lockedReason` (settings editor, #147) shows the table locked.
-defineProps<{ lockedReason?: string }>()
-const settings = defineModel<EventSettings>({ required: true })
+// Weiter with the same message the table shows on that row. `locks.reason` (settings editor, #147) shows the table locked.
+defineProps<{ locks?: StepLocks }>()
+const draft = defineModel<EventDraft>({ required: true })
+const settings = useDraftSettings(draft)
 const blocker = defineModel<string | null>('blocker', { default: null })
 
 const { t } = useI18n()
@@ -18,13 +20,13 @@ watchEffect(() => {
 <template>
   <div class="flex flex-col gap-[18px]">
     <SettingLockedNote
-      v-if="lockedReason"
-      :reason="lockedReason"
+      v-if="locks?.reason"
+      :reason="locks.reason"
     />
     <PointsTableEditor
       :model-value="settings.pointsTable"
       :team-count="settings.teamCount"
-      :locked-reason="lockedReason"
+      :locked-reason="locks?.reason"
       @update:model-value="settings = { ...settings, pointsTable: $event }"
     />
   </div>

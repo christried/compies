@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { Plus, TriangleAlert, X } from '@lucide/vue'
-import { addPoolGame, togglePoolGame, type EventDraft } from '~/utils/event-draft'
+import { addPoolGame, settingsOf, togglePoolGame, type EventDraft, type StepLocks } from '~/utils/event-draft'
 import type { PoolGame } from '~~/shared/event'
 import type { GameView } from '~~/shared/game'
 import { poolHint, type Pool } from '~~/shared/settings'
 
 // Steps 6 and 7: the Game pool and the Tiebreaker pool (#146), one component for both (`kind`). The Host picks
 // games from the library and can make a missing one in a sheet; it lands in the pool being filled, and the
-// stepper's other input stays where it is (the draft lives in neu.vue). Empty pools are fine, so the step never
+// wizard's other input stays where it is (the draft lives in the entry page). Empty pools are fine, so the step never
 // blocks. Only the Game pool has the „Wird knapp“ hint, and it never blocks either.
 const props = defineProps<{
   kind: Pool
+  locks?: StepLocks
 }>()
 const draft = defineModel<EventDraft>({ required: true })
 const blocker = defineModel<string | null>('blocker', { default: null })
@@ -26,7 +27,7 @@ const games = computed(() => draft.value.pools[props.kind])
 const countKey = computed(() => (props.kind === 'main' ? 'stepper.pool.mainCount' : 'stepper.pool.tiebreakerCount'))
 const listKey = computed(() => (props.kind === 'main' ? 'stepper.pool.listMain' : 'stepper.pool.listTiebreaker'))
 
-const hint = computed(() => (props.kind === 'main' ? poolHint(draft.value.settings, games.value.length) : null))
+const hint = computed(() => (props.kind === 'main' ? poolHint(settingsOf(draft.value), games.value.length) : null))
 const hintText = computed(() => {
   const numbers = hint.value
   if (!numbers) return ''
