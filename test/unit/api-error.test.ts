@@ -49,6 +49,12 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(400, 'unknown_game'))).toBe('error.unknownGame')
   })
 
+  it('explains the refusals of a settings change (#147)', () => {
+    expect(apiErrorKey(refusal(409, 'setting_locked'))).toBe('error.settingLocked')
+    expect(apiErrorKey(refusal(409, 'team_size_below_fullest'))).toBe('error.teamSizeBelowFullest')
+    expect(apiErrorKey(refusal(409, 'veto_allowance_below_spent'))).toBe('error.vetoAllowanceBelowSpent')
+  })
+
   it('falls back for reasons it cannot explain, so a 400 is not always a past Slot', () => {
     expect(apiErrorKey(refusal(400, 'invalid_time'))).toBe('error.saveFailed')
     expect(apiErrorKey(refusal(500, 'boom'), 'error.voteFailed')).toBe('error.voteFailed')

@@ -1,6 +1,6 @@
-import { eq, inArray } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { createError, defineEventHandler, readBody } from 'h3'
-import { pollSlots, eventMembers, eventPoolGames, events, games, sessions } from '../../db/schema'
+import { pollSlots, eventMembers, eventPoolGames, events, sessions } from '../../db/schema'
 import { parseNewEvent } from '../../domain/event'
 import { phaseOf } from '../../domain/phase'
 import { parsePools } from '../../domain/pools'
@@ -8,6 +8,7 @@ import { createInviteToken, createSlug } from '../../domain/slug'
 import { useDb, type Db } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { inviteUrl } from '../../utils/links'
+import { assertGamesExist } from '../../utils/pools'
 import { requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
 import { parseSettings } from '../../../shared/settings'
@@ -44,12 +45,7 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const phase = phaseOf(startsAt)
 
   await db.transaction(async (tx) => {
-    // Every game of a pool must be in the library (#146); one lookup for both lists, before anything is written.
-    const poolIds = [...new Set([...pools.main, ...pools.tiebreaker].map(id => id.toLowerCase()))]
-    if (poolIds.length > 0) {
-      const known = await tx.select({ id: games.id }).from(games).where(inArray(games.id, poolIds))
-      if (known.length !== poolIds.length) throw apiError('unknown_game')
-    }
+    await assertGamesExist(tx, pools.main, pools.tiebreaker)
     const [row] = await tx
       .insert(events)
       .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })

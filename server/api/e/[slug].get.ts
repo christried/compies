@@ -8,6 +8,7 @@ import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
 import { eventPools } from '../../utils/pools'
+import { SETTINGS_FLOORS } from '../../utils/settings-floors'
 import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 import type { EventView, SessionNote, SessionView } from '../../../shared/event'
@@ -59,6 +60,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
       isHost,
     },
     settings,
+    settingsFloors: isHost ? SETTINGS_FLOORS : null,
     // The Host sees the games of both pools; every other Member only how many there are (#146, #148).
     pools: await eventPools(db, eventRow.id, poolsVisibleTo({ isHost, settings })),
     // Sessions with a Date come first in Date order, with the number they are shown with (#49, #70); the

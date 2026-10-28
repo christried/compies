@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import type { Phase } from '../../shared/event'
 import {
   GAME_COUNT_DEFAULT,
+  LOCKED_WHEN_RUNNING,
+  canStartSession,
+  checkSettingsChange,
+  settingsEditable,
+  settingsLocked,
   defaultSettings,
   defaultVetoAllowance,
   linearPoints,
@@ -304,5 +310,130 @@ describe('parseSettings', () => {
     expect(errorOf(payload({ gameCount: 0, pointsTable: undefined }))).toBe('game_count_range')
     expect(errorOf(payload({ pointsTable: undefined, selectionMode: 'pick_ban' }))).toBe('invalid_settings')
     expect(errorOf(payload({ pointsTable: { preset: 'custom', values: [0, 1] }, selectionMode: 'pick_ban' }))).toBe('points_rising')
+  })
+})
+
+describe('Phases of the settings (#147)', () => {
+  it('locks the settings once the first Session has started', () => {
+    expect((['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as Phase[]).map(settingsLocked))
+      .toEqual([false, false, false, true, true, true])
+  })
+
+  it('lets the Host change settings in every Phase before the Event is finished', () => {
+    expect((['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as Phase[]).map(settingsEditable))
+      .toEqual([true, true, true, true, false, false])
+  })
+})
+
+describe('checkSettingsChange', () => {
+  const floors = { teamSize: 1, vetoAllowance: 0 }
+  const wheel = parseSettings(payload({ selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 3 }))
+  const current = wheel.ok ? wheel.settings : defaultSettings()
+  const admin = defaultSettings()
+
+  function check(change: unknown, context: { phase?: Phase, floors?: { teamSize: number, vetoAllowance: number } } = {}, from = current) {
+    return checkSettingsChange(from, change, { phase: context.phase ?? 'poll', floors: context.floors ?? floors })
+  }
+
+  const lockedChanges: Record<string, unknown> = {
+    format: { format: 'ffa' },
+    teamCount: { teamCount: 3, pointsTable: { preset: 'linear', values: [2, 1, 0] } },
+    pointsTable: { pointsTable: { preset: 'winner_takes_all', values: [1, 0] } },
+    selectionMode: { selectionMode: 'admin_pick' },
+  }
+
+  it('names the locked settings', () => {
+    expect([...LOCKED_WHEN_RUNNING]).toEqual(['format', 'teamCount', 'pointsTable', 'selectionMode'])
+  })
+
+  it.each(Object.keys(lockedChanges))('accepts a new %s before the first Session and refuses it while running', (key) => {
+    const change = lockedChanges[key]
+    // ffa is a known Format 1.3 can't run: before the lock it fails on that rule, while running the lock comes first.
+    const before = check(change, { phase: 'date_set' })
+    if (key === 'format') expect(before).toEqual({ ok: false, error: 'format_unavailable' })
+    else expect(before.ok).toBe(true)
+    expect(check(change, { phase: 'running' })).toEqual({ ok: false, error: 'setting_locked' })
+  })
+
+  it('accepts locked settings that keep their value while running, even a points table of the same values', () => {
+    const result = check({ ...current, pointsTable: { preset: 'linear', values: [1, 0] }, gameCount: 12 }, { phase: 'running' })
+    expect(result).toEqual({ ok: true, settings: { ...current, gameCount: 12 } })
+  })
+
+  it('compares a points table by its preset and places, not by key order', () => {
+    expect(check({ pointsTable: { values: [1, 0], preset: 'linear' } }, { phase: 'running' }).ok).toBe(true)
+  })
+
+  it('lets Game count, Team size, Veto allowance and Hidden wheel change while running', () => {
+    const result = check({ gameCount: 5, teamSize: 4, vetoAllowance: 5, hiddenWheel: true }, { phase: 'running' })
+    expect(result).toEqual({ ok: true, settings: { ...current, gameCount: 5, teamSize: 4, vetoAllowance: 5, hiddenWheel: true } })
+  })
+
+  it.each(['finished', 'archived'] as Phase[])('refuses everything in the %s Phase', (phase) => {
+    expect(check({ gameCount: 5 }, { phase })).toEqual({ ok: false, error: 'wrong_phase' })
+  })
+
+  it('merges a partial change over the current settings', () => {
+    expect(check({ gameCount: 7 })).toEqual({ ok: true, settings: { ...current, gameCount: 7 } })
+  })
+
+  it('validates the merged settings with the usual rules', () => {
+    expect(check({ gameCount: 99 })).toEqual({ ok: false, error: 'game_count_range' })
+    expect(check({ teamSize: 7 })).toEqual({ ok: false, error: 'team_size_range' })
+  })
+
+  it('drops the wheel options when the merged mode is Admin pick', () => {
+    const result = check({ gameCount: 8 }, {}, admin)
+    expect(result).toEqual({ ok: true, settings: { ...admin, gameCount: 8 } })
+    // The stale wheel values of a client that kept them do not make an Admin pick Event fail.
+    expect(check({ selectionMode: 'admin_pick', hiddenWheel: true, vetoAllowance: 3 }, {}, admin).ok).toBe(true)
+  })
+
+  it('switches to the Lucky Wheel with its options before the first Session', () => {
+    const result = check({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 }, {}, admin)
+    expect(result).toEqual({ ok: true, settings: { ...admin, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 } })
+  })
+
+  describe('floors', () => {
+    it('refuses a Team size below the fullest team and accepts the same size', () => {
+      expect(check({ teamSize: 3 }, { floors: { teamSize: 4, vetoAllowance: 0 } })).toEqual({ ok: false, error: 'team_size_below_fullest' })
+      expect(check({ teamSize: 4 }, { floors: { teamSize: 4, vetoAllowance: 0 } }).ok).toBe(true)
+    })
+
+    it('refuses a Veto allowance below the most Vetoes a Party has spent and accepts the same number', () => {
+      expect(check({ vetoAllowance: 1 }, { floors: { teamSize: 1, vetoAllowance: 2 } })).toEqual({ ok: false, error: 'veto_allowance_below_spent' })
+      expect(check({ vetoAllowance: 2 }, { floors: { teamSize: 1, vetoAllowance: 2 } }).ok).toBe(true)
+    })
+
+    it('has no Veto floor without the Lucky Wheel', () => {
+      expect(check({ gameCount: 8 }, { floors: { teamSize: 1, vetoAllowance: 2 } }, admin).ok).toBe(true)
+    })
+  })
+
+  describe('an Event that is not set up', () => {
+    it('refuses a partial change', () => {
+      expect(check({ gameCount: 5 }, {}, null as never)).toEqual({ ok: false, error: 'invalid_settings' })
+    })
+
+    it('accepts a full payload', () => {
+      const result = checkSettingsChange(null, payload(), { phase: 'poll', floors })
+      expect(result).toEqual({ ok: true, settings: defaultSettings() })
+    })
+
+    it('checks the floors of a full payload too', () => {
+      expect(checkSettingsChange(null, payload({ teamSize: 2 }), { phase: 'poll', floors: { teamSize: 3, vetoAllowance: 0 } }))
+        .toEqual({ ok: false, error: 'team_size_below_fullest' })
+    })
+
+    it('can be set up while running, as nothing is locked yet', () => {
+      expect(checkSettingsChange(null, payload(), { phase: 'running', floors }).ok).toBe(true)
+    })
+  })
+})
+
+describe('canStartSession', () => {
+  it('needs settings', () => {
+    expect(canStartSession(null)).toBe(false)
+    expect(canStartSession(defaultSettings())).toBe(true)
   })
 })
