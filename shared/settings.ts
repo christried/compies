@@ -268,10 +268,10 @@ export function checkSettingsChange(
       return { ok: false, error: 'setting_locked' }
     }
     merged = { ...current, ...change }
-    // An Admin pick Event never fails on wheel values left over from the Lucky Wheel.
+    // Wheel values left over from the Lucky Wheel (from `current`) never fail an Admin pick Event; ones the change sends do, as on create.
     if (merged.selectionMode === 'admin_pick') {
-      delete merged.hiddenWheel
-      delete merged.vetoAllowance
+      if (!('hiddenWheel' in change)) delete merged.hiddenWheel
+      if (!('vetoAllowance' in change)) delete merged.vetoAllowance
     }
   }
 

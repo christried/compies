@@ -127,6 +127,26 @@ describe('changing the settings of an Event (#147)', () => {
       expect(settingsFromRow(await row(slug))).toMatchObject({ teamCount: 3, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 })
     })
 
+    it('refuses wheel options sent to an Admin pick Event instead of answering 200 and storing false', async () => {
+      const slug = await createdEvent()
+
+      for (const settings of [{ hiddenWheel: true }, { vetoAllowance: 3 }]) {
+        const response = await patch(slug, { settings })
+        expect(response.status).toBe(400)
+        expect(response.statusText).toBe('wheel_options_without_wheel')
+      }
+      expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
+    })
+
+    it('switches a Lucky Wheel Event to Admin pick without wheel keys and drops its wheel options', async () => {
+      const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true } })
+
+      const response = await patch(slug, { settings: { selectionMode: 'admin_pick' } })
+
+      expect(response.status).toBe(200)
+      expect(settingsFromRow(await row(slug))).toEqual({ ...luckyWheel, selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null })
+    })
+
     it('refuses a change that breaks a settings rule and keeps the row', async () => {
       const slug = await createdEvent()
 

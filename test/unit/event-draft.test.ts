@@ -231,6 +231,16 @@ describe('the editor draft', () => {
     expect(draft.settings.vetoAllowance).toBe(2)
   })
 
+  it('does not count an Admin pick Event’s missing Veto allowance as chosen: the Lucky Wheel then follows the Team size', () => {
+    const draft = draftFromEvent(view({ ...defaultSettings(), teamSize: 2 }))
+    expect(draft.touched.vetoAllowance).toBe(false)
+
+    let wheel = chooseMode(draft, 'lucky_wheel')
+    wheel = followTeamSize({ ...wheel, settings: { ...wheel.settings, teamSize: 5 } })
+
+    expect(wheel.settings.vetoAllowance).toBe(5)
+  })
+
   it('keeps default wheel options for an Admin pick Event, so choosing the Lucky Wheel offers them', () => {
     const draft = draftFromEvent(view(defaultSettings()))
 

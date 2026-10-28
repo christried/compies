@@ -385,8 +385,21 @@ describe('checkSettingsChange', () => {
   it('drops the wheel options when the merged mode is Admin pick', () => {
     const result = check({ gameCount: 8 }, {}, admin)
     expect(result).toEqual({ ok: true, settings: { ...admin, gameCount: 8 } })
-    // The stale wheel values of a client that kept them do not make an Admin pick Event fail.
-    expect(check({ selectionMode: 'admin_pick', hiddenWheel: true, vetoAllowance: 3 }, {}, admin).ok).toBe(true)
+  })
+
+  it('drops the wheel options left over from the Lucky Wheel when switching to Admin pick', () => {
+    expect(check({ selectionMode: 'admin_pick' })).toEqual({
+      ok: true,
+      settings: { ...current, selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null },
+    })
+  })
+
+  it('refuses wheel options that the change itself sends to an Admin pick Event, as the create does', () => {
+    expect(check({ hiddenWheel: true }, {}, admin)).toEqual({ ok: false, error: 'wheel_options_without_wheel' })
+    expect(check({ vetoAllowance: 3 }, {}, admin)).toEqual({ ok: false, error: 'wheel_options_without_wheel' })
+    expect(check({ selectionMode: 'admin_pick', hiddenWheel: true, vetoAllowance: 3 })).toEqual({ ok: false, error: 'wheel_options_without_wheel' })
+    // Neutral values are no wheel options.
+    expect(check({ hiddenWheel: false, vetoAllowance: null }, {}, admin).ok).toBe(true)
   })
 
   it('switches to the Lucky Wheel with its options before the first Session', () => {
