@@ -61,13 +61,13 @@ describe('the stepper', () => {
     useState('toasts').value = []
   })
 
-  it('starts on step 1 of 5 and sends nothing', async () => {
+  it('starts on step 1 of 6 and sends nothing', async () => {
     const saved = recordPost()
     const page = await mountCreate()
 
-    expect(page.get('h1').text()).toContain('Schritt 1 von 5')
+    expect(page.get('h1').text()).toContain('Schritt 1 von 6')
     expect(page.get('h1').text()).toContain('Wie soll die Session heißen?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spiele', '4 Punkte', '5 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spiele', '4 Punkte', '5 Auswahlmodus', '6 Termin'])
     expect(saved).not.toHaveBeenCalled()
   })
 
@@ -77,7 +77,7 @@ describe('the stepper', () => {
     await stepTo(page, 0)
 
     const titles: string[] = []
-    for (let step = 1; step <= 4; step++) {
+    for (let step = 1; step <= 5; step++) {
       await next(page)
       titles.push(page.get('h1').text())
     }
@@ -86,6 +86,7 @@ describe('the stepper', () => {
       expect.stringContaining('Wer gegen wen?'),
       expect.stringContaining('Wie viele Spiele?'),
       expect.stringContaining('Wer kriegt wie viele Punkte?'),
+      expect.stringContaining('Wie wird das nächste Spiel bestimmt?'),
       expect.stringContaining('Wann zocken wir?'),
     ])
     expect(cta(page).text()).toContain('Session erstellen')
@@ -98,7 +99,7 @@ describe('the stepper', () => {
     expect(cta(page).attributes('aria-disabled')).toBe('true')
     expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib der Session einen Namen.')
     await next(page)
-    expect(page.get('h1').text()).toContain('Schritt 1 von 5')
+    expect(page.get('h1').text()).toContain('Schritt 1 von 6')
 
     await page.get('input[type="text"]').setValue('  ')
     expect(cta(page).attributes('aria-disabled')).toBe('true')
@@ -106,7 +107,7 @@ describe('the stepper', () => {
     await page.get('input[type="text"]').setValue('Freitags-Zocken')
     expect(cta(page).attributes('aria-disabled')).toBeUndefined()
     await next(page)
-    expect(page.get('h1').text()).toContain('Schritt 2 von 5')
+    expect(page.get('h1').text()).toContain('Schritt 2 von 6')
   })
 
   it('goes back with Zurück and keeps what was entered', async () => {
@@ -125,12 +126,12 @@ describe('the stepper', () => {
     const page = await mountCreate()
     await stepTo(page, 3)
 
-    expect(stepItems(page).map(item => item.find('button').exists())).toEqual([true, true, true, false, false])
-    expect(stepItems(page).map(item => item.attributes('aria-current'))).toEqual([undefined, undefined, undefined, 'step', undefined])
+    expect(stepItems(page).map(item => item.find('button').exists())).toEqual([true, true, true, false, false, false])
+    expect(stepItems(page).map(item => item.attributes('aria-current'))).toEqual([undefined, undefined, undefined, 'step', undefined, undefined])
 
     await stepItems(page)[1]!.get('button').trigger('click')
 
-    expect(page.get('h1').text()).toContain('Schritt 2 von 5')
+    expect(page.get('h1').text()).toContain('Schritt 2 von 6')
     expect(stepItems(page)[1]!.attributes('aria-current')).toBe('step')
     expect(stepItems(page)[3]!.find('button').exists()).toBe(true)
   })
@@ -266,14 +267,14 @@ describe('the stepper', () => {
   })
 
   describe('on phones', () => {
-    it('shows a progress bar of 5 segments and a sticky footer with the kicker in the heading', async () => {
+    it('shows a progress bar of 6 segments and a sticky footer with the kicker in the heading', async () => {
       const page = await mountCreate()
       await stepTo(page, 2)
 
-      expect(page.get('[data-testid="progress"]').findAll('span')).toHaveLength(5)
+      expect(page.get('[data-testid="progress"]').findAll('span')).toHaveLength(6)
       expect(page.get('[data-testid="progress"]').attributes('aria-hidden')).toBe('true')
       expect(page.get('[data-testid="stepper-footer"]').classes()).toContain('sticky')
-      expect(page.get('h1').text()).toContain('Schritt 3 von 5')
+      expect(page.get('h1').text()).toContain('Schritt 3 von 6')
     })
   })
 
@@ -321,7 +322,7 @@ describe('the stepper', () => {
       expect(cta(page).attributes('aria-disabled')).toBe('true')
       expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
       await next(page)
-      expect(page.get('h1').text()).toContain('Schritt 4 von 5')
+      expect(page.get('h1').text()).toContain('Schritt 4 von 6')
 
       await click(page, 'Punkte für Platz 3: weniger', 3)
       expect(page.find('[role="alert"]').exists()).toBe(false)
@@ -353,7 +354,7 @@ describe('the stepper', () => {
       await click(page, 'Anzahl Spiele: weniger', 4)
       await next(page)
       await radios(page)[1]!.trigger('click')
-      await next(page)
+      await next(page, 2)
       await page.get('[role="group"]').findAll('input')[0]!.setValue('30.10.2090')
       await page.get('[role="group"]').findAll('input')[1]!.setValue('2030')
 

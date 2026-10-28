@@ -37,10 +37,10 @@ async function mountCreate(): Promise<Page> {
 /** Weiter, or „Session erstellen“ on the last step. */
 const cta = (page: Page) => page.get('button[type="submit"]')
 
-/** Names the Session and goes on to the Sessions and Dates step (step 5 of 5), leaving the other steps as they are. */
+/** Names the Session and goes on to the Sessions and Dates step (step 6 of 6), leaving the other steps as they are. */
 async function toSessionsStep(page: Page, name = 'Freitags-Zocken') {
   await page.get('input[type="text"]').setValue(name)
-  for (let step = 0; step < 4; step++) await cta(page).trigger('click')
+  for (let step = 0; step < 5; step++) await cta(page).trigger('click')
 }
 
 // Each Slot is a DateTimeField group: its date input comes first, then its time input.

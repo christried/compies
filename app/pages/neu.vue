@@ -3,29 +3,35 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import EventStepper from '~/components/stepper/EventStepper.vue'
 import StepFormat from '~/components/stepper/StepFormat.vue'
 import StepGameCount from '~/components/stepper/StepGameCount.vue'
+import StepMode from '~/components/stepper/StepMode.vue'
 import StepName from '~/components/stepper/StepName.vue'
 import StepPoints from '~/components/stepper/StepPoints.vue'
 import StepSessions from '~/components/stepper/StepSessions.vue'
 import { apiErrorKey } from '~/utils/api-error'
-import { draftBody, newDraft } from '~/utils/event-draft'
+import { draftBody, followTeamSize, newDraft } from '~/utils/event-draft'
 import { settingsSentence } from '~/utils/settings-summary'
 import { SLOTS_MAX, type CreatedEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
 
 // Create an Event (screen 05, `?s=create`): the guided stepper (#144) — name, Format with team layout, Game
-// count, points table, then the Sessions and their Dates (the old create form, #49). Nothing is sent until
-// „Session erstellen“; then the Fertig screen shows the summary and the Invite link. Only Users with the
-// Host permission get it (ADR 0002); everyone else sees the Construction page. The server is the final judge.
-// More steps (#145 Selection mode, #146 Game pools) go into STEP_KEYS and the step list below. The stepper's
-// components are imported, not auto-imported: Nuxt would name those in `stepper/` with a folder prefix.
+// count, points table, the Selection mode with the Lucky Wheel's options (#145), then the Sessions and their
+// Dates (the old create form, #49). Nothing is sent until „Session erstellen“; then the Fertig screen shows the
+// summary and the Invite link. Only Users with the Host permission get it (ADR 0002); everyone else sees the
+// Construction page. The server is the final judge. More steps (#146 Game pools) go into STEP_KEYS and the step
+// list below. The stepper's components are imported, not auto-imported: Nuxt would name those in `stepper/` with
+// a folder prefix.
 
 const { t } = useI18n()
 const user = useAuthUser()
 
-const STEP_KEYS = ['name', 'format', 'games', 'points', 'sessions'] as const
+const STEP_KEYS = ['name', 'format', 'games', 'points', 'mode', 'sessions'] as const
 type StepKey = (typeof STEP_KEYS)[number]
 
 const draft = ref(newDraft())
+// An untouched Veto allowance follows the Team size (#145).
+watch(() => draft.value.settings.teamSize, () => {
+  draft.value = followTeamSize(draft.value)
+})
 const current = ref(0)
 const reached = ref(0)
 /** Why the current step cannot go on; each step reports it through `v-model:blocker`. */
@@ -39,6 +45,13 @@ useHead({ title: () => (created.value ? t('stepper.done.title') : t('stepper.hea
 
 const steps = computed(() => STEP_KEYS.map(key => ({ key, label: t(`stepper.steps.${key}.label`) })))
 const stepKey = computed<StepKey>(() => STEP_KEYS[current.value]!)
+// The info column explains the Format or, on the Selection mode step, the chosen mode (#145).
+const infoTopic = computed(() => {
+  if (stepKey.value === 'format') return draft.value.settings.format
+  if (stepKey.value === 'mode') return draft.value.settings.selectionMode === 'lucky_wheel' ? 'wheel' : 'admin'
+  return null
+})
+const infoTitle = computed(() => (infoTopic.value ? t(`setup.info.${infoTopic.value}.title`) : undefined))
 const isLast = computed(() => current.value === STEP_KEYS.length - 1)
 const nextLabel = computed(() => {
   if (saving.value) return t('mvp.create.saving')
@@ -152,7 +165,7 @@ const datesLine = computed(() => (poll.value
         :current="current"
         :reached="reached"
         :title="t(`stepper.steps.${stepKey}.title`)"
-        :info-title="stepKey === 'format' ? t(`setup.info.${draft.settings.format}.title`) : undefined"
+        :info-title="infoTitle"
         :next-label="nextLabel"
         :next-blocked="blocker"
         :busy="saving"
@@ -180,6 +193,11 @@ const datesLine = computed(() => (poll.value
           v-model="draft.settings"
           v-model:blocker="blocker"
         />
+        <StepMode
+          v-else-if="stepKey === 'mode'"
+          v-model="draft"
+          v-model:blocker="blocker"
+        />
         <StepSessions
           v-else
           v-model="draft.dates"
@@ -194,10 +212,10 @@ const datesLine = computed(() => (poll.value
         </p>
 
         <template
-          v-if="stepKey === 'format'"
+          v-if="infoTopic"
           #info
         >
-          <InfoSheet :topic="draft.settings.format" />
+          <InfoSheet :topic="infoTopic" />
         </template>
       </EventStepper>
     </div>

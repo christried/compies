@@ -219,6 +219,41 @@ describe('events', () => {
       expect((await eventRows())[0]).toMatchObject({ selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 5 })
     })
 
+    it('stores a Lucky Wheel with a hidden wheel and the Host’s Veto allowance (#145)', async () => {
+      const cookie = await signInAsHost()
+
+      const response = await create(cookie, poll({ settings: { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 5 } }))
+
+      expect(response.status).toBe(200)
+      expect((await eventRows())[0]).toMatchObject({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 5 })
+    })
+
+    it('stores a Veto allowance of 0 with the Lucky Wheel (#145)', async () => {
+      const cookie = await signInAsHost()
+
+      await create(cookie, poll({ settings: { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', vetoAllowance: 0 } }))
+
+      expect((await eventRows())[0]).toMatchObject({ selectionMode: 'lucky_wheel', vetoAllowance: 0 })
+    })
+
+    it('refuses a Veto allowance outside 0 to 9, and the wheel options with Admin pick, and writes nothing (#145)', async () => {
+      const cookie = await signInAsHost()
+      const cases: [Record<string, unknown>, string][] = [
+        [{ selectionMode: 'lucky_wheel', vetoAllowance: 10 }, 'veto_allowance_range'],
+        [{ selectionMode: 'lucky_wheel', vetoAllowance: -1 }, 'veto_allowance_range'],
+        [{ selectionMode: 'admin_pick', hiddenWheel: true }, 'wheel_options_without_wheel'],
+        [{ selectionMode: 'admin_pick', vetoAllowance: 2 }, 'wheel_options_without_wheel'],
+        [{ selectionMode: 'pick_ban' }, 'mode_unavailable'],
+      ]
+
+      for (const [changes, code] of cases) {
+        const response = await create(cookie, poll({ settings: { ...TEST_SETTINGS, ...changes } }))
+        expect(response.status).toBe(400)
+        expect(response.statusText).toBe(code)
+      }
+      expect(await eventRows()).toEqual([])
+    })
+
     it('answers 400 invalid_settings without settings, and writes nothing (#144)', async () => {
       const cookie = await signInAsHost()
       const { settings: _omitted, ...withoutSettings } = poll()
