@@ -8,6 +8,11 @@ export function apiError(code: ApiErrorCode) {
   return createError({ statusCode: API_ERROR_STATUS[code], statusMessage: code })
 }
 
+/** The answer a missing API resource gets, JSON like every other API answer (review Spec F2). */
+export function apiNotFound() {
+  return createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 /** The generic answer for every link that does not lead to a live Event (ADR 0006). */
 export function eventNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Event not found' })

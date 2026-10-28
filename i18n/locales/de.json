@@ -1378,5 +1378,8 @@
       "text": "Teil den Link, dann füllt sich die Tabelle."
     },
     "lobbyEmpty": "Alle schlafen. Du auch?"
+  },
+  "staging": {
+    "badge": "STAGING"
   }
 }
