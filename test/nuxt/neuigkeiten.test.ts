@@ -126,12 +126,13 @@ describe('Neuigkeiten', () => {
     page.unmount()
   })
 
-  it('ends with the legal links, Neuigkeiten marked as the current page, and the version label', async () => {
+  it('ends with the page footer: the legal links and the version, which is the current page here', async () => {
     const page = await mountSuspended(NeuigkeitenPage, { route: '/neuigkeiten' })
     const footer = page.get('footer')
 
-    expect(footer.findAll('a').map(a => a.text())).toEqual(['Impressum', 'Datenschutz', 'Neuigkeiten', 'v1.2.0'])
-    expect(footer.get('a[href="/neuigkeiten"][aria-current="page"]').text()).toBe('Neuigkeiten')
-    expect(footer.get('a[aria-label="Version 1.2.0, zu den Neuigkeiten"]').text()).toBe('v1.2.0')
+    expect(footer.findAll('a').map(a => a.text())).toEqual(['Impressum', 'Datenschutz', 'Version 1.2.0'])
+    expect(footer.get('a[href="/neuigkeiten"]').attributes('aria-current')).toBe('page')
+    expect(footer.findAll('a').filter(a => a.attributes('aria-current') === 'page')).toHaveLength(1)
+    expect(page.findAll('a').filter(a => a.text() === 'Neuigkeiten')).toHaveLength(0)
   })
 })

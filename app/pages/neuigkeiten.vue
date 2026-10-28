@@ -32,10 +32,6 @@ function jump(version: string) {
   window.history.replaceState(window.history.state, '', `#${version}`)
 }
 
-function toTop() {
-  window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' })
-}
-
 onMounted(() => {
   window.addEventListener('scroll', spy, { passive: true })
   spy()
@@ -94,16 +90,6 @@ onBeforeUnmount(() => window.removeEventListener('scroll', spy))
           />
         </div>
       </div>
-
-      <footer class="mt-10 flex flex-wrap items-center gap-x-[18px] border-t-2 border-dashed border-line-soft pt-3 md:mt-14">
-        <nav
-          :aria-label="t('legal.nav')"
-          class="flex flex-wrap gap-x-[18px]"
-        >
-          <LegalLinks />
-        </nav>
-        <VersionLabel @click="toTop" />
-      </footer>
     </div>
   </AppShell>
 </template>

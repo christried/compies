@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import UserMenu from '~/components/UserMenu.vue'
 import ImpressumPage from '~/pages/impressum.vue'
 import DatenschutzPage from '~/pages/datenschutz.vue'
-import SignInPage from '~/pages/anmelden.vue'
 import { kitty, signInAs } from './auth'
 
 // The back link reads the in-app history entry at click time; a direct visit has none.
@@ -48,41 +47,43 @@ describe('legal pages', () => {
     expect(controller.get('p').element.textContent).toContain('Gilges\nAugust-Thyssen-Str. 16\n52249 Eschweiler')
   })
 
-  it('link both pages, Neuigkeiten and the version label from the sign-in footer', async () => {
-    signInAs(null)
-    const page = await mountSuspended(SignInPage, { route: '/anmelden' })
-    const footer = page.get('footer')
-
-    expect(footer.findAll('a').map(a => a.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten', '/neuigkeiten'])
-    expect(footer.findAll('a').at(-1)!.text()).toMatch(/^v\d+\.\d+\.\d+$/)
-    expect(footer.findAll('a').at(-1)!.attributes('aria-label')).toMatch(/^Version \d+\.\d+\.\d+, zu den Neuigkeiten$/)
-  })
-
-  it('link both pages, Neuigkeiten and the version label from the avatar menu', async () => {
+  it('puts Impressum, Datenschutz and the version in the avatar menu, not a version pill', async () => {
     signInAs(kitty)
     const menu = await mountSuspended(UserMenu)
 
     await menu.get('button[aria-haspopup="menu"]').trigger('click')
 
-    const items = menu.findAll('a[role="menuitem"]')
-    expect(items.map(a => a.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten', '/neuigkeiten'])
-    expect(items.map(a => a.text())).toEqual(['Impressum', 'Datenschutz', 'Neuigkeiten', expect.stringMatching(/^v\d+\.\d+\.\d+$/)])
+    const items = menu.findAll('[role="menuitem"]')
+    expect(items.map(item => item.text())).toEqual(['Abmelden', 'Impressum', 'Datenschutz', expect.stringMatching(/^Version \d+\.\d+\.\d+/)])
+    expect(items.slice(1).map(item => item.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten'])
+    expect(menu.get('[role="none"]').text()).toContain('Kitty')
+    expect(menu.findAll('*').filter(el => /^v\d+\.\d+\.\d+$/.test(el.text().trim()))).toHaveLength(0)
   })
 
-  it('dots the version label in the avatar menu until the newest Release is seen', async () => {
+  it('closes the menu on Esc and gives focus back to the avatar button', async () => {
     signInAs(kitty)
-    localStorage.removeItem('compies.news.seen')
-    const menu = await mountSuspended(UserMenu)
+    const menu = await mountSuspended(UserMenu, { attachTo: document.body })
+    const avatar = menu.get('button[aria-haspopup="menu"]')
+    await avatar.trigger('click')
+
+    await menu.get('[role="menu"]').trigger('keydown', { key: 'Escape' })
+
+    expect(menu.find('[role="menu"]').exists()).toBe(false)
+    expect(document.activeElement).toBe(avatar.element)
+    menu.unmount()
+  })
+
+  it('moves focus to the next menu item on ArrowDown', async () => {
+    signInAs(kitty)
+    const menu = await mountSuspended(UserMenu, { attachTo: document.body })
     await menu.get('button[aria-haspopup="menu"]').trigger('click')
-    const label = () => menu.findAll('a[role="menuitem"]').at(-1)!
+    const abmelden = menu.get('[role="menuitem"]')
+    expect(document.activeElement).toBe(abmelden.element)
 
-    expect(label().attributes('aria-label')).toMatch(/^Version \d+\.\d+\.\d+, neu, zu den Neuigkeiten$/)
+    await abmelden.trigger('keydown', { key: 'ArrowDown' })
 
-    localStorage.setItem('compies.news.seen', label().text().slice(1))
-    const seen = await mountSuspended(UserMenu)
-    await seen.get('button[aria-haspopup="menu"]').trigger('click')
-    expect(seen.findAll('a[role="menuitem"]').at(-1)!.attributes('aria-label')).toMatch(/^Version \d+\.\d+\.\d+, zu den Neuigkeiten$/)
-    localStorage.removeItem('compies.news.seen')
+    expect(document.activeElement).toBe(menu.findAll('[role="menuitem"]')[1]!.element)
+    menu.unmount()
   })
 
   it('shows the reduced-motion hover on an overlay above the avatar, not on the covered button', async () => {
