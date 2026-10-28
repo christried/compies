@@ -4,14 +4,19 @@
 
 ### Neu
 
-- Eine neue Session legst du jetzt Schritt für Schritt an: Name, Format (Teams mit Anzahl und Größe), Anzahl Spiele, Punktetabelle und Termin. Am Ende siehst du alles auf einen Blick. ([#144](https://github.com/christried/compies/issues/144))
+- Ein neues Event legst du jetzt Schritt für Schritt an: Name, Format (Teams mit Anzahl und Größe), Anzahl Spiele, Punktetabelle und Termin. Am Ende siehst du alles auf einen Blick. ([#144](https://github.com/christried/compies/issues/144))
 - Als Host findest du jetzt die **Bibliothek** in der Navigation. Dort legst du Spiele mit Namen und YouTube-Clip an: Startsekunde und Länge stellst du ein, und die Vorschau zeigt dir genau den Ausschnitt, der später läuft. ([#141](https://github.com/christried/compies/issues/141))
 - Du kannst einem Spiel in der Bibliothek ein Bild geben. Es wird direkt im Browser passend zugeschnitten. ([#143](https://github.com/christried/compies/issues/143))
-- Beim Anlegen wählst du jetzt den Auswahlmodus: Admin-Wahl oder Lucky Wheel. Beim Lucky Wheel kannst du das Rad verdecken und festlegen, wie viele Vetos jede Partei hat. ([#145](https://github.com/christried/compies/issues/145))
+- Beim Anlegen wählst du jetzt den Auswahlmodus: Host-Wahl oder Glücksrad. Beim Glücksrad kannst du das Rad verdecken und festlegen, wie viele Vetos jede Partei hat. ([#145](https://github.com/christried/compies/issues/145))
 - In der Bibliothek suchst du jetzt nach Namen und filterst nach Spielerzahl, Format oder deinen eigenen Spielen. Spiele, die du angelegt hast, kannst du bearbeiten und ihnen eine Spielerzahl und passende Formate geben. ([#142](https://github.com/christried/compies/issues/142))
 - Beim Anlegen füllst du jetzt den Spielepool und einen eigenen Tiebreaker-Pool aus der Bibliothek. Fehlt ein Spiel, legst du es direkt dort an. Wird der Pool knapp, sagt dir die App Bescheid. ([#146](https://github.com/christried/compies/issues/146))
 - Auf der Event-Seite siehst du jetzt unter „So wird gespielt“, wie das Event läuft: Format, Anzahl Spiele, Punkte, Auswahlmodus, Vetos und die Spiele im Pool. Ist das Rad verdeckt, siehst du nur, wie viele Spiele drin sind. ([#148](https://github.com/christried/compies/issues/148))
 - Als Host änderst du die Einstellungen eines Events jetzt auch nachträglich über die Host-Steuerung. Läuft das Event schon, bleiben Format, Teamanzahl, Punktetabelle und Auswahlmodus fest; Anzahl Spiele, Teamgröße, Vetos, Rad verdecken und die Pools kannst du weiter ändern. Events von früher richtest du über „Event einrichten“ ein. ([#147](https://github.com/christried/compies/issues/147))
+
+### Geändert
+
+- Eine Punktetabelle, in der jeder Platz gleich viele Punkte bekommt, geht nicht mehr: Platz 1 muss mehr bekommen als der letzte Platz. ([#175](https://github.com/christried/compies/issues/175))
+- Die Terminumfrage zeigt jetzt, wie viele **vollständig** abgestimmt haben: Wer nur bei einem Teil der Termine abgestimmt hat, zählt noch nicht mit. ([#175](https://github.com/christried/compies/issues/175))
 
 ### Sicherheit
 
