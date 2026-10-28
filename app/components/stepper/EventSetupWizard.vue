@@ -25,7 +25,7 @@ import { hasWheel } from '~~/shared/settings'
 const props = defineProps<{
   steps: readonly StepKey[]
   locks?: StepLocks
-  /** The step list's heading; „Neues Event“ by default. */
+  /** The step list's heading; `stepper.heading` by default. */
   navTitle?: string
   /** Replaces „Schritt n von m“ above the step's title. */
   kicker?: string
