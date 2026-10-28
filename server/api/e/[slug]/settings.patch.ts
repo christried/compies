@@ -23,6 +23,7 @@ export default defineEventHandler(async (event): Promise<{ settings: EventSettin
   const db = useDb(event)
   return await db.transaction(async (tx) => {
     const row = await loadEvent(tx, getRouterParam(event, 'slug') ?? '', user.id, { hostOnly: true, lock: 'update' })
+    // checkSettingsChange checks the Phase too, but a request with pools only never reaches it.
     if (!settingsEditable(row.phase)) throw apiError('wrong_phase')
 
     const current = settingsFromRow(row)

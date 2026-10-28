@@ -1,6 +1,6 @@
 // Event settings (#138, release 1.3): the values the stepper, the settings rules and the schema share.
 
-import type { Phase } from './event'
+import { beforeFinish, type Phase } from './event'
 
 /** Formats (GLOSSARY: Format). Only `teams` can be chosen in 1.3; `ffa` is shown „Bald verfügbar“. */
 export const FORMATS = ['teams', 'ffa'] as const
@@ -245,7 +245,7 @@ export function settingsLocked(phase: Phase): boolean {
 
 /** Settings can change in every Phase before the Event is finished. */
 export function settingsEditable(phase: Phase): boolean {
-  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
+  return beforeFinish(phase)
 }
 
 /** The lowest values the Event allows now: Team size never below the fullest team, Veto allowance never below the most Vetoes a Party has spent. */

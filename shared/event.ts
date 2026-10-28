@@ -41,9 +41,14 @@ export function slotProblems(proposed: Date[], existing: Date[], now: Date): (Sl
 export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
 export type Phase = (typeof PHASES)[number]
 
+/** Every Phase before the Event is finished. What may still change (Sessions, settings) is decided by this one set. */
+export function beforeFinish(phase: Phase): boolean {
+  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
+}
+
 /** Sessions are added, removed and reopened in every Phase before the Event finishes (#55). */
 export function sessionsEditable(phase: Phase): boolean {
-  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
+  return beforeFinish(phase)
 }
 
 /** Slots can be added, removed and only then changed by the Host while the Date poll is open (#1). */
