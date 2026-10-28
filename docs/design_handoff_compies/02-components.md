@@ -60,6 +60,8 @@ Common rules for every component:
 - [`GamePoolPicker`](#gamepoolpicker) [1.0]
 - [`PollSlotCard`](#pollslotcard) [MVP]
 - [`PollMatrix`](#pollmatrix) [MVP]
+- [`NotePopover`](#notepopover) [MVP]
+- [`NoteDialog`](#notedialog) [MVP]
 - [`DateConfirmDialog`](#dateconfirmdialog) [MVP]
 - [`DateSetCard`](#datesetcard) [MVP]
 - [`CalendarSheet`](#calendarsheet) [MVP]
@@ -677,11 +679,40 @@ One proposed date in the poll.
 
 - **Props / variants:** `people[]`, `slots[]`, `votes` (each may carry a `note`), `me`
 - **States:** cells: Ja (check, circle, success) · Meh (minus, circle, warning) · Nein (x, square, error red with dark text) · Noch offen (dashed circle)
-- **Notes (#102):** a cell with a Note gets a 10 px `primary` dot with an ink border at its top-right corner (`aria-hidden`). The cell's `title` and its screen-reader text read „Meh: kann maximal bis 20:30“. The CSV export writes the same text in the cell.
+- **Notes (#102, #125):**
+  - A cell with a Note is a `<button type="button" aria-haspopup="dialog">`, 44 × 44, radius 12, `paper-2` on hover and while its popover or dialog is open. The 26 px vote mark sits inside; a 10 px `primary` dot with a `line` border sits at its top-right corner (`aria-hidden`). Every vote cell has the same 44 px box, so rows are even.
+  - **Input type decides, not width:** a mouse gets the NotePopover on hover and on focus; touch and pen get the NoteDialog from a tap; the keyboard gets the popover on focus and the dialog on Enter or Space. A mouse click opens nothing more, its popover is already open. Focus that follows a tap is ignored. The last pointer type is read from a `pointerdown` on the document, a `keydown` resets it.
+  - Leaving the cell closes the popover after 120 ms; entering the cell or the popover cancels that (WCAG 1.4.13). Blur and Esc close it, focus stays. Scrolling the matrix or the page closes it. On keyboard focus the matrix first scrolls a cell that is under the sticky column or past the right edge by the overlap + 8 px, and that scroll doesn't close the popover.
+  - One popover and one dialog per matrix, not one per cell.
+  - **No `title` anywhere in the matrix.** The cell's name is its sr-only text, „Meh: kann maximal bis 20:30“ (the row header gives the Member). The popover is visual only (`aria-hidden`, no `aria-describedby`), since the button's name already says everything and a link would read the Note twice. The dialog is a real dialog. The CSV export writes the same text in the cell.
 - **Slots:** —
 - **Desktop / mobile:** Desktop name column 200 + equal columns; mobile 130 + 72 px columns, horizontal scroll only when the Slots don't fit. Headers show the day and the time on separate lines, never cut.
-- **Accessibility:** Real `<table>` with row/column headers; cell `title` and text equivalent („Ja“).
+- **Accessibility:** Real `<table>` with row/column headers; every cell has its text equivalent („Ja“) as sr-only text, no `title`.
 - **Motion:** cell change pop `dur-base ease-pop`.
+
+## NotePopover
+**Scope:** [MVP] · **Ref:** Footer und Anmerkungen 4a · **Spec:** 10-footer-und-anmerkungen § NotePopover
+
+The Note of a matrix cell on mouse hover or keyboard focus (#125).
+
+- **Props / variants:** `open`, `anchor: HTMLElement | null`, `name`, `image`, `value: yes | maybe | no`, `note`
+- **States:** closed · open (hover) · open (focus)
+- **Slots:** —
+- **Desktop / mobile:** `<Teleport to="body">`, `position: fixed`, `layer-sheet`: above the sticky column and the HostDock, below modals. Width `min(280px, 100vw − 24px)`. Prefers above the cell (12 px gap), flips below when there is no room; centred on the cell and clamped 12 px from the viewport edges, the arrow stays 20 px inside the box and points at the cell (`placeNotePopover`, `app/utils/note-popover.ts`). The vote chip uses the cell's fill (Nein stays `error`).
+- **Accessibility:** `aria-hidden`, no role, not linked: the cell's sr-only text already says it. Pointer can move onto it (close delay 120 ms).
+- **Motion:** enter `opacity 0→1` + `y 4→0` (from below `−4→0`), `dur-fast`, `ease-out`. Reduced: fade only.
+
+## NoteDialog
+**Scope:** [MVP] · **Ref:** Footer und Anmerkungen 4a (touch) · **Spec:** 10-footer-und-anmerkungen § NoteDialog
+
+The same content as a small centred dialog for touch and pen (#125). Not a bottom sheet.
+
+- **Props / variants:** `open`, `name`, `image`, `value`, `note`; emits `close`
+- **States:** open · closed
+- **Slots:** —
+- **Desktop / mobile:** the same at every width: card `max-width: 320px`, 24 px from the edges, `layer-modal`.
+- **Accessibility:** `role="dialog"`, `aria-modal="true"`, labelled by the Display name. Focus lands on „Schließen“ and stays inside (`useDialog`). The ✗, a tap on the overlay and Esc close it; focus returns to the cell.
+- **Motion:** as ConfirmModal.
 
 ## DateConfirmDialog
 **Scope:** [MVP] · **Ref:** M3 confirm

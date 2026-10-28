@@ -248,17 +248,17 @@ describe('Notes on Votes', () => {
   })
 
   describe('„Wer kann wann?“', () => {
-    it('marks a cell with a Note and puts it in the title and the screen-reader text', async () => {
+    it('marks a cell with a Note and puts it in the screen-reader text', async () => {
       const { slug } = serve(s => view(s, [larsiNote, { slotId: 'fri', userId: SANNE, value: 'yes' }]))
 
       const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
       const cells = page.findAll('tbody tr').find(row => row.text().includes('Larsi'))!.findAll('td')
-      expect(cells[0]!.attributes('title')).toBe('Nein: lass 14:30 anfangen')
-      expect(cells[0]!.get('.sr-only').text()).toBe('Nein: lass 14:30 anfangen')
+      expect(page.find('table [title]').exists()).toBe(false)
+      expect(cells[0]!.get('button .sr-only').text()).toBe('Nein: lass 14:30 anfangen')
       expect(cells[0]!.find('span[aria-hidden="true"].bg-primary').exists()).toBe(true)
       const withoutNote = page.findAll('tbody tr').find(row => row.text().includes('Sanne'))!.findAll('td')[0]!
-      expect(withoutNote.attributes('title')).toBe('Ja')
+      expect(withoutNote.find('button').exists()).toBe(false)
       expect(withoutNote.find('span.bg-primary').exists()).toBe(false)
     })
   })
