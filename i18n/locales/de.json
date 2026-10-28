@@ -971,9 +971,14 @@
     },
     "notes": {
       "add": "Anmerkung",
+      "addA11y": "Anmerkung hinzufügen",
       "edit": "Anmerkung bearbeiten",
       "label": "Anmerkung",
-      "help": "Sehen alle im Event. Zum Beispiel: kann maximal bis 20:30",
+      "audience": "sehen alle",
+      "placeholder": "z. B. kann maximal bis 20:30",
+      "remaining": "Noch {n} Zeichen",
+      "save": "Anmerkung speichern",
+      "savedLabel": "Deine Anmerkung · sehen alle",
       "heading": "Anmerkungen"
     },
     "poll": {

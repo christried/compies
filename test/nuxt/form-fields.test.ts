@@ -5,8 +5,23 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import DateTimeField from '~/components/DateTimeField.vue'
+import IconButton from '~/components/IconButton.vue'
 import SegmentedControl from '~/components/SegmentedControl.vue'
 import TextField from '~/components/TextField.vue'
+
+describe('IconButton', () => {
+  it('renders the 40 px surface button by default', async () => {
+    const page = await mountSuspended(IconButton, { props: { icon: Check, label: 'Schließen' } })
+
+    expect(page.classes()).toEqual(expect.arrayContaining(['size-10', 'bg-surface']))
+  })
+
+  it('renders a 36 px success button with a shadow for tone="success"', async () => {
+    const page = await mountSuspended(IconButton, { props: { icon: Check, label: 'Speichern', tone: 'success', size: 36 } })
+
+    expect(page.classes()).toEqual(expect.arrayContaining(['size-9', 'bg-success', 'shadow-sm']))
+  })
+})
 
 describe('TextField', () => {
   it('labels the input and links the error and the help text to it', async () => {
