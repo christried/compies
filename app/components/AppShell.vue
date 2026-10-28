@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Layout frame. hub = header + HubNav (bottom tab bar below md); event = header with a
-// title area and no side panel in the MVP; bare = header only (errors, sign-in).
+// title area and no side panel in the MVP; bare = header only (errors, sign-in). Every page ends with the
+// PageFooter: signed in from md up (the user menu holds its links below md), signed out at every width.
 withDefaults(defineProps<{
   kind?: 'hub' | 'event' | 'bare'
   /** The stage fills the frame edge to edge, without padding or max width (sign-in, setup). */
@@ -37,6 +38,8 @@ const user = useAuthUser()
     >
       <slot />
     </main>
+
+    <PageFooter :class="user && 'max-md:hidden'" />
 
     <HubNav
       v-if="kind === 'hub' && !noTabs"

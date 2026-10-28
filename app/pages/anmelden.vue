@@ -111,15 +111,5 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', resetOnRestore))
         />
       </div>
     </div>
-
-    <footer class="border-t-(length:--cp-bw) border-line bg-surface px-4 py-1">
-      <nav
-        :aria-label="t('legal.nav')"
-        class="flex flex-wrap items-center justify-center gap-x-4"
-      >
-        <LegalLinks />
-        <VersionLabel />
-      </nav>
-    </footer>
   </AppShell>
 </template>

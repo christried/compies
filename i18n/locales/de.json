@@ -779,16 +779,15 @@
     "copyFailed": "Kopieren ging nicht. Link: {url}",
     "issue": "Issue {n} auf GitHub, öffnet in neuem Tab",
     "newTab": "Öffnet in neuem Tab",
-    "version": "Version {v}, zu den Neuigkeiten",
-    "versionUnseen": "Version {v}, neu, zu den Neuigkeiten"
+    "versionUnseen": "Version {v}, neu"
   },
   "legal": {
     "_scope": "Impressum und Datenschutzerklärung von Compies. Jeder Abschnitt hat eine Überschrift und einen Text; Absätze sind durch eine Leerzeile getrennt. Bei Änderungen an der App (neue Dienste, Cookies, Daten) hier nachziehen und den Stand anpassen.",
-    "nav": "Rechtliches",
+    "nav": "Rechtliches und Version",
     "links": {
       "impressum": "Impressum",
       "datenschutz": "Datenschutz",
-      "neuigkeiten": "Neuigkeiten"
+      "version": "Version"
     },
     "impressum": {
       "title": "Impressum",
