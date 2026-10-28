@@ -1,3 +1,4 @@
+import { asRecord } from './record'
 import { characterCount } from './text'
 import { parseYouTubeId } from './youtube'
 
@@ -189,7 +190,7 @@ export interface GameInput {
 export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities'
 
 export function parseGameInput(input: unknown): { ok: true, game: GameInput } | { ok: false, error: GameInputError } {
-  const body = (typeof input === 'object' && input !== null ? input : {}) as Record<string, unknown>
+  const body = asRecord(input)
 
   const name = parseGameName(body.name)
   if (name === null) return { ok: false, error: 'invalid_game_name' }

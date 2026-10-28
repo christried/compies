@@ -1,6 +1,7 @@
 // Event settings (#138, release 1.3): the values the stepper, the settings rules and the schema share.
 
 import { beforeFinish, type Phase } from './event'
+import { isRecord } from './record'
 
 /** Formats (GLOSSARY: Format). Only `teams` can be chosen in 1.3; `ffa` is shown „Bald verfügbar“. */
 export const FORMATS = ['teams', 'ffa'] as const
@@ -154,10 +155,6 @@ type Parsed = { ok: true, settings: EventSettings } | { ok: false, error: Settin
 
 function fail(error: SettingsError): Parsed {
   return { ok: false, error }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function isInt(value: unknown): value is number {

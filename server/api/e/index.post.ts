@@ -11,6 +11,7 @@ import { inviteUrl } from '../../utils/links'
 import { assertGamesExist } from '../../utils/pools'
 import { requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
+import { asRecord } from '../../../shared/record'
 import { POOLS, parseSettings } from '../../../shared/settings'
 
 const SLUG_ATTEMPTS = 5
@@ -27,10 +28,10 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const parsed = parseNewEvent(body, new Date())
   if (!parsed.ok) throw apiError(parsed.error)
   const input = parsed.event
-  const parsedSettings = parseSettings((body as { settings?: unknown } | null)?.settings)
+  const parsedSettings = parseSettings(asRecord(body).settings)
   if (!parsedSettings.ok) throw apiError(parsedSettings.error)
   const { settings } = parsedSettings
-  const parsedPools = parsePools((body as { pools?: unknown } | null)?.pools)
+  const parsedPools = parsePools(asRecord(body).pools)
   if (!parsedPools.ok) throw apiError(parsedPools.error)
   const { pools } = parsedPools
 
