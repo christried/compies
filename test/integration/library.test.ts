@@ -41,7 +41,7 @@ describe('the Game library API (#141)', () => {
     vi.unstubAllEnvs()
   })
 
-  async function cookieOf(profile: typeof host) {
+  async function cookieOf(profile: Parameters<typeof signIn>[1]) {
     return (await signIn(testDb.db, profile)).cookie
   }
 
