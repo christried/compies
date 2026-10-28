@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coverCrop } from '../../app/utils/image-resize'
+import { coverCrop } from '../../shared/image'
 
 // The part of toCardWebp that needs no canvas: which rectangle of the picture becomes the 16:10 card (#143).
 describe('coverCrop', () => {

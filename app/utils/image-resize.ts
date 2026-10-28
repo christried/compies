@@ -1,4 +1,5 @@
 import { GAME_IMAGE_HEIGHT, GAME_IMAGE_MAX_BYTES, GAME_IMAGE_WIDTH } from '~~/shared/game'
+import { coverCrop } from '~~/shared/image'
 
 // Shrinks a picked picture to the card's cover in the browser (#143): center-cropped to 16:10, 512 × 320, one WebP.
 
@@ -8,14 +9,6 @@ export class ImageConversionError extends Error {
     super('image conversion failed')
     this.name = 'ImageConversionError'
   }
-}
-
-/** The centered part of a `width` × `height` picture that has the card's aspect ratio. */
-export function coverCrop(width: number, height: number): { x: number, y: number, width: number, height: number } {
-  const ratio = GAME_IMAGE_WIDTH / GAME_IMAGE_HEIGHT
-  const cropWidth = Math.min(width, height * ratio)
-  const cropHeight = Math.min(height, width / ratio)
-  return { x: (width - cropWidth) / 2, y: (height - cropHeight) / 2, width: cropWidth, height: cropHeight }
 }
 
 /** Quality steps: the first that fits GAME_IMAGE_MAX_BYTES wins. */
@@ -44,9 +37,8 @@ export async function toCardWebp(file: File): Promise<Blob> {
   context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, GAME_IMAGE_WIDTH, GAME_IMAGE_HEIGHT)
   bitmap.close()
 
-  let blob: Blob | null = null
   for (const quality of QUALITIES) {
-    blob = await toBlob(canvas, quality)
+    const blob = await toBlob(canvas, quality)
     // A browser without WebP encoding answers with a PNG whatever was asked.
     if (!blob || blob.type !== 'image/webp') throw new ImageConversionError()
     if (blob.size <= GAME_IMAGE_MAX_BYTES) return blob

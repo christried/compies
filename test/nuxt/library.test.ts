@@ -177,7 +177,7 @@ describe('the game page', () => {
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
-    expect(page.get('img[src="/api/images/a2-abc.webp"]').exists()).toBe(true)
+    expect(page.find('img[src="/api/images/a2-abc.webp"]').exists()).toBe(true)
     expect(page.text()).toContain('Ausschnitt 1:12 – 1:42')
   })
 
@@ -187,7 +187,7 @@ describe('the game page', () => {
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
-    expect(page.get('img[src="/api/images/a2-abc.webp"]').exists()).toBe(true)
+    expect(page.find('img[src="/api/images/a2-abc.webp"]').exists()).toBe(true)
     expect(page.find('[data-cover="placeholder"]').exists()).toBe(false)
   })
 
