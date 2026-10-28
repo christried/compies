@@ -12,6 +12,18 @@ export const API_ERROR_STATUS = {
   invalid_value: 400,
   /** A Note on a Vote is longer than NOTE_MAX characters (#102). */
   note_too_long: 400,
+  /** A game name is empty or longer than GAME_NAME_MAX characters (#141). */
+  invalid_game_name: 400,
+  /** A game's YouTube link is not a link to a video (#141). */
+  invalid_youtube: 400,
+  /** A game's clip start or length is not a whole number in range (#141). */
+  invalid_clip: 400,
+  /** Only the creator of a game and the Platform admin may edit it (#142). */
+  not_game_editor: 403,
+  /** A game image is larger than GAME_IMAGE_MAX_BYTES (#143). */
+  image_too_large: 413,
+  /** A game image is not a WebP file (#143). */
+  image_not_webp: 415,
   too_few_slots: 400,
   in_past: 400,
   slot_past: 400,

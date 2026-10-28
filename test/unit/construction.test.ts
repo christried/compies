@@ -8,7 +8,6 @@ const admin = { canHost: true, isAdmin: true }
 describe('constructionSite', () => {
   it('maps each unbuilt hub area to its own Construction page in the hub shell for those who may see it', () => {
     expect(constructionSite('/archiv', visitor)).toEqual({ area: 'archiv', shell: 'hub' })
-    expect(constructionSite('/bibliothek', host)).toEqual({ area: 'bibliothek', shell: 'hub' })
     expect(constructionSite('/profil', visitor)).toEqual({ area: 'profil', shell: 'hub' })
     expect(constructionSite('/admin', admin)).toEqual({ area: 'admin', shell: 'hub' })
   })
@@ -18,13 +17,9 @@ describe('constructionSite', () => {
     expect(constructionSite('/admin/users', admin)).toEqual({ area: 'admin', shell: 'hub' })
   })
 
-  it('shows the generic state for Bibliothek to Users without the Host permission', () => {
+  it('no longer treats Bibliothek as an unbuilt area, it has its own pages (#141)', () => {
     expect(constructionSite('/bibliothek', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/bibliothek/', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-  })
-
-  it('shows Bibliothek to the Platform admin even without a Host permission flag', () => {
-    expect(constructionSite('/bibliothek', { canHost: false, isAdmin: true })).toEqual({ area: 'bibliothek', shell: 'hub' })
+    expect(constructionSite('/bibliothek/', host)).toEqual({ area: 'generic', shell: 'hub' })
   })
 
   it('shows the generic state for Admin to everyone but the Platform admin', () => {
@@ -34,7 +29,6 @@ describe('constructionSite', () => {
   })
 
   it('treats a signed-out visitor like a User without rights', () => {
-    expect(constructionSite('/bibliothek', null)).toEqual({ area: 'generic', shell: 'hub' })
     expect(constructionSite('/admin', null)).toEqual({ area: 'generic', shell: 'hub' })
     expect(constructionSite('/archiv', null)).toEqual({ area: 'archiv', shell: 'hub' })
   })

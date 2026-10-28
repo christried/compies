@@ -38,6 +38,12 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   points_rising: 'error.pointsOrder',
   mode_unavailable: 'error.modeUnavailable',
   veto_allowance_range: 'error.vetoAllowanceRange',
+  invalid_game_name: 'error.gameNameInvalid',
+  invalid_youtube: 'gameEdit.badLink',
+  invalid_clip: 'error.clipInvalid',
+  not_game_editor: 'error.notGameEditor',
+  image_too_large: 'error.imageTooLarge',
+  image_not_webp: 'error.imageNotWebp',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

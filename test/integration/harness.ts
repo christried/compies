@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
 import { migrate } from 'drizzle-orm/pglite/migrator'
-import { createApp, createRouter, eventHandler, toWebHandler, type EventHandler, type RouterMethod } from 'h3'
+import { createApp, createRouter, eventHandler, toWebHandler, type EventHandler, type H3EventContext, type RouterMethod } from 'h3'
 import * as schema from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
 
@@ -86,10 +86,12 @@ type Route = `${Uppercase<RouterMethod>} /${string}`
  * Serves the given handlers the way Nitro would, with `db` in place of the per-request Neon Pool.
  * Routes are keyed like Nitro's file names, e.g. `{ 'GET /api/health': health }`.
  */
-export function createTestServer(db: Db, routes: Record<Route, EventHandler>) {
+export function createTestServer(db: Db, routes: Record<Route, EventHandler>, context: Partial<H3EventContext> = {}) {
   const app = createApp()
   app.use(eventHandler((event) => {
     event.context.db = db
+    // Extra per-request context, e.g. `{ imageStore }` (#143).
+    Object.assign(event.context, context)
   }))
   const router = createRouter()
   for (const [route, handler] of Object.entries(routes)) {

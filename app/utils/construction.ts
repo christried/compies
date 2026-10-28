@@ -4,7 +4,7 @@
 import type { AuthUser } from '~~/shared/auth'
 
 /** Hub areas still under construction; HubNav marks them with the tape chip. */
-export const HUB_SITES = ['archiv', 'bibliothek', 'profil', 'admin'] as const
+export const HUB_SITES = ['archiv', 'profil', 'admin'] as const
 
 export type HubSite = typeof HUB_SITES[number]
 export type ConstructionArea = HubSite | 'brett' | 'generic'
@@ -18,10 +18,8 @@ export interface ConstructionSite {
 /** The signed-in User's rights that decide which hidden areas show; null when signed out. */
 export type Viewer = Pick<AuthUser, 'canHost' | 'isAdmin'> | null
 
-/** Bibliothek is for Users with the Host permission and the Platform admin. */
-export function canSeeLibrary(viewer: Viewer) {
-  return Boolean(viewer?.canHost || viewer?.isAdmin)
-}
+// The Bibliothek rule lives in shared/game.ts, because the server applies it too (#141).
+export { canSeeLibrary } from '~~/shared/game'
 
 /** Admin is for the Platform admin only. */
 export function canSeeAdmin(viewer: Viewer) {
@@ -39,7 +37,6 @@ export function constructionSite(path: string, viewer: Viewer): ConstructionSite
     return { area: sub === 'brett' ? 'brett' : 'generic', shell: 'event' }
   }
   const hubSite = HUB_SITES.find(site => site === first)
-  if (hubSite === 'bibliothek' && !canSeeLibrary(viewer)) return { area: 'generic', shell: 'hub' }
   if (hubSite === 'admin' && !canSeeAdmin(viewer)) return { area: 'generic', shell: 'hub' }
   return { area: hubSite ?? 'generic', shell: 'hub' }
 }
