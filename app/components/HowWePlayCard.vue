@@ -19,11 +19,8 @@ const counts = computed(() => (props.pools.hidden
   ? { main: props.pools.mainCount, tiebreaker: props.pools.tiebreakerCount }
   : { main: props.pools.main.length, tiebreaker: props.pools.tiebreaker.length }))
 
-/** „2 Spiele im Spielepool, 1 im Tiebreaker-Pool. …“, singular-safe for the first count. */
-const hiddenText = computed(() => t('howWePlay.counts', {
-  main: t('stepper.summary.games', { n: counts.value.main }, counts.value.main),
-  tiebreaker: counts.value.tiebreaker,
-}))
+/** „2 Spiele im Spielepool, 1 im Tiebreaker-Pool. …“: the plural follows the Game pool; the Tiebreaker pool is a bare number. */
+const hiddenText = computed(() => t('howWePlay.counts', counts.value, counts.value.main))
 
 const lists = computed(() => (props.pools.hidden
   ? []

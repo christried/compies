@@ -3,7 +3,7 @@ import { defineEventHandler, getQuery } from 'h3'
 import { games, users } from '../../db/schema'
 import { escapeLike, parseGameFilters } from '../../domain/game'
 import { useDb } from '../../utils/db'
-import { gameView, requireLibraryViewer } from '../../utils/library'
+import { creatorNameOf, gameView, gameWithCreator, requireLibraryViewer } from '../../utils/library'
 import type { GameList } from '../../../shared/game'
 
 // The Game library (#141): every game, by name without regard to case. Only Hosts and the Platform admin
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event): Promise<GameList> => {
   if (filters.mine) conditions.push(eq(games.createdBy, viewer.id))
 
   const rows = await db
-    .select({ game: games, creatorName: users.name, creatorDisplayName: users.displayName })
+    .select(gameWithCreator)
     .from(games)
     .innerJoin(users, eq(games.createdBy, users.id))
     .where(and(...conditions))
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<GameList> => {
   const [counted] = await db.select({ total: count() }).from(games)
 
   return {
-    games: rows.map(row => gameView(row.game, row.creatorDisplayName ?? row.creatorName, viewer)),
+    games: rows.map(row => gameView(row.game, creatorNameOf(row), viewer)),
     total: counted?.total ?? 0,
   }
 })

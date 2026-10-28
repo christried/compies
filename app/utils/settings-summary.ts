@@ -33,7 +33,7 @@ export function modeText(settings: Pick<EventSettings, 'selectionMode' | 'hidden
 
 /** „Linear 3 / 2 / 1 / 0“: the preset with the values it really has. */
 export function pointsText(table: PointsTable, t: Translate): string {
-  return `${t(PRESET_NAME[table.preset])} ${table.values.join(' / ')}`
+  return t('stepper.summary.pointsValue', { preset: t(PRESET_NAME[table.preset]), values: table.values.join(' / ') })
 }
 
 /** „4 Teams à 2, Lucky Wheel (verdeckt), 6 Spiele.“ */
@@ -63,7 +63,7 @@ export function summaryRows(
   if (settings.selectionMode === 'lucky_wheel') {
     rows.push({ key: 'vetoes', label: t('stepper.summary.vetoes'), value: t('stepper.summary.vetoValue', { n: settings.vetoAllowance }) })
   }
-  if (extra.pools) rows.push({ key: 'pool', label: t('stepper.summary.pool'), value: t('stepper.summary.poolValue', extra.pools) })
+  if (extra.pools) rows.push({ key: 'pool', label: t('stepper.summary.pool'), value: t('stepper.summary.poolValue', extra.pools, extra.pools.main) })
   if (extra.dates) rows.push({ key: 'dates', label: t('stepper.summary.dates'), value: extra.dates })
   return rows
 }

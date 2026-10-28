@@ -218,7 +218,7 @@
       },
       "wta": {
         "name": "Winner takes all",
-        "desc": "Nur der Sieg zählt."
+        "desc": "{values}. Nur der Sieg zählt."
       },
       "custom": {
         "name": "Eigene Tabelle",
@@ -1238,12 +1238,11 @@
       "libraryEmpty": "Die Bibliothek ist leer.",
       "noMatch": "Keine Treffer für „{q}“.",
       "create": "Neues Spiel anlegen",
-      "games": "{n} Spiel | {n} Spiele",
-      "vetoes": "{n} Veto | {n} Vetos",
-      "have": "im Pool ist {n} | im Pool sind {n}",
       "hintTitle": "Wird knapp.",
-      "hintWheel": "{games} plus bis zu {vetoes}: Im schlimmsten Fall brauchst du {needed}, {have}. Blockiert nichts, nur damit du’s weißt.",
-      "hintAdmin": "Für {games} brauchst du {needed} im Pool, {have}. Blockiert nichts, nur damit du’s weißt."
+      "hintWheel": "{games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | {games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintWheelOne": "1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | 1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintAdmin": "Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintAdminOne": "Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt."
     },
     "heading": "Neue Session",
     "nav": "Schritte",
@@ -1264,7 +1263,8 @@
       "vetoes": "Vetos",
       "vetoValue": "{n} pro Partei",
       "pool": "Pool",
-      "poolValue": "{main} Spiele, Tiebreaker {tiebreaker}",
+      "poolValue": "{main} Spiel, Tiebreaker {tiebreaker} | {main} Spiele, Tiebreaker {tiebreaker}",
+      "pointsValue": "{preset} {values}",
       "dates": "Termin"
     },
     "number": {
@@ -1279,10 +1279,10 @@
     "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",
     "hostOnly": "Das Rad ist verdeckt. Nur du siehst diese Spiele.",
-    "counts": "{main} im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen."
+    "counts": "{main} Spiel im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen. | {main} Spiele im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen."
   },
   "error": {
-    "network":"Keine Verbindung. Wir versuchen es gleich nochmal.",
+    "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
     "voteFailed": "Deine Stimme ist nicht angekommen",
     "noteTooLong": "Die Anmerkung ist zu lang.",

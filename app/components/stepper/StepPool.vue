@@ -30,13 +30,14 @@ const hint = computed(() => (props.kind === 'main' ? poolHint(draft.value.settin
 const hintText = computed(() => {
   const numbers = hint.value
   if (!numbers) return ''
-  const named = {
-    games: t('stepper.pool.games', { n: numbers.games }, numbers.games),
-    vetoes: t('stepper.pool.vetoes', { n: numbers.vetoes }, numbers.vetoes),
-    needed: t('stepper.pool.games', { n: numbers.needed }, numbers.needed),
-    have: t('stepper.pool.have', { n: numbers.have }, numbers.have),
-  }
-  return t(numbers.vetoes > 0 ? 'stepper.pool.hintWheel' : 'stepper.pool.hintAdmin', named)
+  // One key per whole sentence; the plural forms follow the count in the Pool („ist 1“ / „sind 12“), and a Game
+  // count of 1 has its own key. With the Lucky Wheel the vetoes (Veto allowance × at least 2 teams) and the needed
+  // games are always plural.
+  const one = numbers.games === 1
+  const key = numbers.vetoes > 0
+    ? (one ? 'stepper.pool.hintWheelOne' : 'stepper.pool.hintWheel')
+    : (one ? 'stepper.pool.hintAdminOne' : 'stepper.pool.hintAdmin')
+  return t(key, { games: numbers.games, vetoes: numbers.vetoes, needed: numbers.needed, have: numbers.have }, numbers.have)
 })
 
 const creating = ref(false)

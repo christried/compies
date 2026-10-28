@@ -7,7 +7,7 @@ import StepMode from '~/components/stepper/StepMode.vue'
 import StepPool from '~/components/stepper/StepPool.vue'
 import StepPoints from '~/components/stepper/StepPoints.vue'
 import { apiErrorKey } from '~/utils/api-error'
-import { draftFromEvent, followTeamSize, settingsBody } from '~/utils/event-draft'
+import { draftFromEvent, settingsBody } from '~/utils/event-draft'
 import type { EventView } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
 import { settingsEditable, settingsLocked } from '~~/shared/settings'
@@ -26,7 +26,6 @@ const slug = computed(() => String(route.params.slug))
 const { data } = await useFetch<EventView>(() => `/api/e/${slug.value}`)
 
 const STEP_KEYS = ['format', 'games', 'points', 'mode', 'pool', 'tiebreaker'] as const
-type StepKey = (typeof STEP_KEYS)[number]
 
 const view = computed(() => (data.value?.event.isHost ? data.value : null))
 const editable = computed(() => (view.value ? settingsEditable(view.value.event.phase) : false))
@@ -36,47 +35,22 @@ const lockedReason = computed(() => (view.value && !notSetUp.value && settingsLo
 const floors = computed(() => view.value?.settingsFloors ?? undefined)
 
 const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { hidden: false, main: [], tiebreaker: [] } }))
-// An untouched Veto allowance follows the Team size (#145); a stored one counts as chosen (draftFromEvent).
-watch(() => draft.value.settings.teamSize, () => {
-  draft.value = followTeamSize(draft.value)
-})
-
-const current = ref(0)
-/** Why the current step cannot go on; each step reports it through `v-model:blocker`. */
-const blocker = ref<string | null>(null)
+// Holds the library across the two pool steps, whose pickers mount and unmount (useGameLibrary).
+if (view.value) useGameLibrary()
+const { current, blocker, failure, steps, stepKey, infoTopic, infoTitle, isLast, go, advance } = useEventStepper(STEP_KEYS, draft)
 const saving = ref(false)
-const failure = ref<string | null>(null)
 
 const heading = computed(() => t(notSetUp.value ? 'eventSettings.setupHeading' : 'eventSettings.heading'))
 useHead({ title: () => `${heading.value} · ${data.value?.event.name ?? ''}` })
 
-const steps = computed(() => STEP_KEYS.map(key => ({ key, label: t(`stepper.steps.${key}.label`) })))
-const stepKey = computed<StepKey>(() => STEP_KEYS[current.value]!)
-// As on /neu: the info column explains the Format or, on the Selection mode step, the chosen mode.
-const infoTopic = computed(() => {
-  if (stepKey.value === 'format') return draft.value.settings.format
-  if (stepKey.value === 'mode') return draft.value.settings.selectionMode === 'lucky_wheel' ? 'wheel' : 'admin'
-  if (stepKey.value === 'tiebreaker') return 'tiebreaker'
-  return null
-})
-const infoTitle = computed(() => (infoTopic.value ? t(`setup.info.${infoTopic.value}.title`) : undefined))
-const isLast = computed(() => current.value === STEP_KEYS.length - 1)
 const nextLabel = computed(() => {
   if (saving.value) return t('eventSettings.saving')
   return isLast.value ? t('eventSettings.save') : t('stepper.next')
 })
 
-function go(index: number) {
-  current.value = index
-  failure.value = null
-}
-
 async function next() {
   if (blocker.value || saving.value) return
-  if (!isLast.value) {
-    go(current.value + 1)
-    return
-  }
+  if (!isLast.value) return advance()
   saving.value = true
   failure.value = null
   try {

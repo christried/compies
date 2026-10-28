@@ -15,6 +15,14 @@ describe('ToggleSwitch', () => {
     expect(page.get(`[id="${sw.attributes('aria-describedby')}"]`).text()).toBe('Erfundene Namen, bis das Rad stoppt.')
   })
 
+  it('needs no help: it renders none and describes nothing', async () => {
+    const page = await mountSuspended(ToggleSwitch, { props: { modelValue: false, label: 'Rad verdecken' } })
+
+    const sw = page.get('[role="switch"]')
+    expect(sw.attributes('aria-describedby')).toBeUndefined()
+    expect(page.text()).toBe('Rad verdecken')
+  })
+
   it('reports off and on through aria-checked', async () => {
     const page = await mountSuspended(ToggleSwitch, { props })
     expect(page.get('[role="switch"]').attributes('aria-checked')).toBe('false')

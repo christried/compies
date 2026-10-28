@@ -22,7 +22,7 @@ const errorId = useId()
 const join = (values: number[]) => values.join(' / ')
 const options = computed(() => [
   { value: 'linear', label: t('setup.points.linear.name'), desc: t('setup.points.linear.desc', { example: join(pointsFor('linear', props.teamCount)) }), icon: ListOrdered },
-  { value: 'winner_takes_all', label: t('setup.points.wta.name'), desc: `${join(pointsFor('winner_takes_all', props.teamCount))}. ${t('setup.points.wta.desc')}`, icon: Trophy },
+  { value: 'winner_takes_all', label: t('setup.points.wta.name'), desc: t('setup.points.wta.desc', { values: join(pointsFor('winner_takes_all', props.teamCount)) }), icon: Trophy },
   { value: 'custom', label: t('setup.points.custom.name'), desc: t('setup.points.custom.desc'), icon: Pencil },
 ])
 

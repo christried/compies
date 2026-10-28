@@ -1,3 +1,5 @@
+import { isUuid } from './uuid'
+
 // The pools of a new Event (#146): the game ids the Host put in the Game pool and the Tiebreaker pool.
 
 /** The most games one pool takes; far above any real Event, it only bounds the request. */
@@ -8,12 +10,10 @@ export interface NewPools {
   tiebreaker: string[]
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
 function parseList(raw: unknown): string[] | null {
   if (raw === undefined) return []
   if (!Array.isArray(raw) || raw.length > POOL_GAMES_MAX) return null
-  if (!raw.every((id): id is string => typeof id === 'string' && UUID.test(id))) return null
+  if (!raw.every((id): id is string => isUuid(id))) return null
   // A game may sit in both pools, but only once in one.
   return new Set(raw.map(id => id.toLowerCase())).size === raw.length ? raw : null
 }

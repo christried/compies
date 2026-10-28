@@ -5,6 +5,7 @@ import type { Db } from './db'
 import { apiError } from './errors'
 import { poolGameView } from './library'
 import type { EventPools } from '../../shared/event'
+import type { Pool } from '../../shared/settings'
 
 // The pools of an Event as `GET /api/e/:slug` shows them (#146).
 
@@ -19,7 +20,7 @@ export async function eventPools(db: Db, eventId: string, visible: boolean): Pro
       .from(eventPoolGames)
       .where(eq(eventPoolGames.eventId, eventId))
       .groupBy(eventPoolGames.pool)
-    const countOf = (pool: 'main' | 'tiebreaker') => counts.find(row => row.pool === pool)?.count ?? 0
+    const countOf = (pool: Pool) => counts.find(row => row.pool === pool)?.count ?? 0
     return { hidden: true, mainCount: countOf('main'), tiebreakerCount: countOf('tiebreaker') }
   }
   const rows = await db
@@ -28,7 +29,7 @@ export async function eventPools(db: Db, eventId: string, visible: boolean): Pro
     .innerJoin(games, eq(eventPoolGames.gameId, games.id))
     .where(eq(eventPoolGames.eventId, eventId))
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
-  const inPool = (pool: 'main' | 'tiebreaker') => rows.filter(row => row.pool === pool).map(row => poolGameView(row.game))
+  const inPool = (pool: Pool) => rows.filter(row => row.pool === pool).map(row => poolGameView(row.game))
   return { hidden: false, main: inPool('main'), tiebreaker: inPool('tiebreaker') }
 }
 

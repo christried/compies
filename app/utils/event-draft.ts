@@ -101,7 +101,7 @@ export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): Eve
   return {
     ...newDraft(),
     settings,
-    touched: { vetoAllowance: view.settings !== null },
+    touched: { vetoAllowance: view.settings?.vetoAllowance != null },
     wheel: { hiddenWheel: settings.hiddenWheel, vetoAllowance: settings.vetoAllowance ?? defaultVetoAllowance(settings.teamSize) },
     // The Host always gets the games; the guard only narrows the type.
     pools: view.pools.hidden ? { main: [], tiebreaker: [] } : { main: [...view.pools.main], tiebreaker: [...view.pools.tiebreaker] },

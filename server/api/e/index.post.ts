@@ -11,7 +11,7 @@ import { inviteUrl } from '../../utils/links'
 import { assertGamesExist } from '../../utils/pools'
 import { requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
-import { parseSettings } from '../../../shared/settings'
+import { POOLS, parseSettings } from '../../../shared/settings'
 
 const SLUG_ATTEMPTS = 5
 
@@ -51,10 +51,7 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
       .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })
       .returning({ id: events.id })
     await tx.insert(sessions).values(startsAt.map(date => ({ eventId: row!.id, startsAt: date })))
-    const poolRows = [
-      ...pools.main.map(gameId => ({ eventId: row!.id, gameId, pool: 'main' as const })),
-      ...pools.tiebreaker.map(gameId => ({ eventId: row!.id, gameId, pool: 'tiebreaker' as const })),
-    ]
+    const poolRows = POOLS.flatMap(pool => pools[pool].map(gameId => ({ eventId: row!.id, gameId, pool })))
     if (poolRows.length > 0) await tx.insert(eventPoolGames).values(poolRows)
     await tx.insert(eventMembers).values({ eventId: row!.id, userId: user.id })
     if (input.dateMode === 'poll') {
