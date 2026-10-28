@@ -274,6 +274,30 @@ describe('the library cards and filters (#142, #173)', () => {
   const chip = (page: VueWrapper, text: string) => page.findAll('main button').find(button => button.text() === text)!
   const query = () => useRouter().currentRoute.value.query
 
+  it('shows the card name as plain text: a link without the pill border, with a visible focus ring', async () => {
+    list = { games: [withClip] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const name = page.get('main li a')
+    expect(name.text()).toBe('Counter-Strike 2')
+    expect(name.attributes('href')).toBe(`/bibliothek/${withClip.id}`)
+    expect(name.classes()).not.toContain('outline-memphis')
+    expect(name.classes()).toContain('focus-visible:focus-ring')
+  })
+
+  it('gives every select of the filter bar room between the chevron and the border', async () => {
+    list = { games: [withClip, withPlayers] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    for (const label of ['Spielerzahl', 'Passt zu']) {
+      expect(page.get(`select[aria-label="${label}"]`).classes()).toContain('pr-9')
+    }
+  })
+
   it('shows the player count and the Suitabilities on the card, as a list in order', async () => {
     list = { games: [withPlayers, withClip] }
 

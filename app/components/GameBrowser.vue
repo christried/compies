@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search } from '@lucide/vue'
+import { ChevronDown, Search } from '@lucide/vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, type GameFilters, type GameView } from '~~/shared/game'
 
@@ -58,6 +58,8 @@ const GRID = 'md:grid md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] md:gap-
 const CHIP = 'inline-flex h-11 items-center gap-1.5 rounded-pill border-(length:--cp-bw) px-4 text-small font-bold transition-colors'
 const CHIP_OFF = 'border-line bg-surface text-ink hover:bg-paper-2'
 const CHIP_ON = 'border-line bg-ink text-paper'
+// A select is a chip too, but the browser's own arrow sits on the border, so the arrow is drawn here, with room for it (#176).
+const SELECT = 'h-11 appearance-none rounded-pill border-(length:--cp-bw) py-0 pr-9 pl-4 text-[15px] font-bold transition-colors'
 </script>
 
 <template>
@@ -97,40 +99,56 @@ const CHIP_ON = 'border-line bg-ink text-paper'
           {{ t('library.all') }}
         </button>
         <template v-if="!compact">
-          <select
-            :value="filters.players === null ? '' : String(filters.players)"
-            :aria-label="t('library.filterPlayers')"
-            :class="[CHIP, filters.players !== null ? CHIP_ON : CHIP_OFF]"
-            @change="onPlayers"
-          >
-            <option value="">
-              {{ t('library.filterPlayers') }}
-            </option>
-            <option
-              v-for="n in PLAYER_CHOICES"
-              :key="n"
-              :value="String(n)"
+          <div class="relative flex-none">
+            <select
+              :value="filters.players === null ? '' : String(filters.players)"
+              :aria-label="t('library.filterPlayers')"
+              :class="[SELECT, filters.players !== null ? CHIP_ON : CHIP_OFF]"
+              @change="onPlayers"
             >
-              {{ t('library.players', { n }) }}
-            </option>
-          </select>
-          <select
-            :value="filters.suitability ?? ''"
-            :aria-label="t('library.filterSuitability')"
-            :class="[CHIP, filters.suitability ? CHIP_ON : CHIP_OFF]"
-            @change="onSuitability"
-          >
-            <option value="">
-              {{ t('library.filterSuitability') }}
-            </option>
-            <option
-              v-for="suitability in SUITABILITIES"
-              :key="suitability"
-              :value="suitability"
+              <option value="">
+                {{ t('library.filterPlayers') }}
+              </option>
+              <option
+                v-for="n in PLAYER_CHOICES"
+                :key="n"
+                :value="String(n)"
+              >
+                {{ t('library.players', { n }) }}
+              </option>
+            </select>
+            <AppIcon
+              :icon="ChevronDown"
+              :size="18"
+              class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
+              :class="filters.players !== null ? 'text-paper' : 'text-ink'"
+            />
+          </div>
+          <div class="relative flex-none">
+            <select
+              :value="filters.suitability ?? ''"
+              :aria-label="t('library.filterSuitability')"
+              :class="[SELECT, filters.suitability ? CHIP_ON : CHIP_OFF]"
+              @change="onSuitability"
             >
-              {{ t(`library.suitability.${suitability}`) }}
-            </option>
-          </select>
+              <option value="">
+                {{ t('library.filterSuitability') }}
+              </option>
+              <option
+                v-for="suitability in SUITABILITIES"
+                :key="suitability"
+                :value="suitability"
+              >
+                {{ t(`library.suitability.${suitability}`) }}
+              </option>
+            </select>
+            <AppIcon
+              :icon="ChevronDown"
+              :size="18"
+              class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
+              :class="filters.suitability ? 'text-paper' : 'text-ink'"
+            />
+          </div>
         </template>
         <button
           type="button"

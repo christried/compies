@@ -89,7 +89,7 @@ const look = computed(() => LAYOUT[props.layout])
         :to="to"
         class="leading-tight font-bold text-ink no-underline"
         :class="[
-          to ? 'outline-memphis rounded-sm after:absolute after:inset-0 after:block after:content-[\'\']' : '',
+          to ? 'focus-visible:focus-ring after:absolute after:inset-0 after:block after:content-[\'\']' : '',
           look.name,
           'text-[15px]',
         ]"

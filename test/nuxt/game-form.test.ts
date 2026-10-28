@@ -149,6 +149,35 @@ describe('the game form', () => {
     expect(posted).not.toHaveBeenCalled()
   })
 
+  it('drops the hints of the link, the start and the length, and says the length is at most 60 seconds', async () => {
+    const page = await mountSuspended(GameForm)
+
+    expect(page.text()).not.toContain('Watch-, youtu.be-, Shorts- oder Embed-Link')
+    expect(page.text()).not.toContain('Minuten:Sekunden, zum Beispiel 1:12.')
+    expect(page.text()).not.toContain('In Sekunden, 5 bis 60.')
+    expect(page.text()).toContain('Maximal 60 Sekunden')
+  })
+
+  it('shows the length error instead of the maximum while the length is invalid', async () => {
+    const page = await mountSuspended(GameForm)
+
+    await field(page, 'Länge').setValue('61')
+
+    expect(page.text()).toContain('Die Länge liegt zwischen 5 und 60 Sekunden.')
+    expect(page.text()).not.toContain('Maximal 60 Sekunden')
+  })
+
+  it('says why the game cannot be saved in the error colour', async () => {
+    const page = await mountSuspended(GameForm)
+
+    await page.get('form').trigger('submit')
+
+    const blocker = page.get('#game-blocker')
+    expect(blocker.text()).toBe('Gib dem Spiel einen Namen.')
+    expect(blocker.classes()).toContain('text-error-fg')
+    expect(blocker.classes()).not.toContain('text-ink-2')
+  })
+
   it('posts the game and says it is saved', async () => {
     const page = await mountSuspended(GameForm)
     await field(page, 'Name').setValue('  Mario Kart ')
