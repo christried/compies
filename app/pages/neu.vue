@@ -9,7 +9,7 @@ import StepPool from '~/components/stepper/StepPool.vue'
 import StepPoints from '~/components/stepper/StepPoints.vue'
 import StepSessions from '~/components/stepper/StepSessions.vue'
 import { apiErrorKey } from '~/utils/api-error'
-import { draftBody, followTeamSize, newDraft } from '~/utils/event-draft'
+import { draftBody, newDraft } from '~/utils/event-draft'
 import { settingsSentence } from '~/utils/settings-summary'
 import { SLOTS_MAX, type CreatedEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
@@ -26,52 +26,23 @@ const { t } = useI18n()
 const user = useAuthUser()
 
 const STEP_KEYS = ['name', 'format', 'games', 'points', 'mode', 'pool', 'tiebreaker', 'sessions'] as const
-type StepKey = (typeof STEP_KEYS)[number]
 
 const draft = ref(newDraft())
-// An untouched Veto allowance follows the Team size (#145).
-watch(() => draft.value.settings.teamSize, () => {
-  draft.value = followTeamSize(draft.value)
-})
-const current = ref(0)
-const reached = ref(0)
-/** Why the current step cannot go on; each step reports it through `v-model:blocker`. */
-const blocker = ref<string | null>(null)
+const { current, reached, blocker, failure, steps, stepKey, infoTopic, infoTitle, isLast, go, advance } = useEventStepper(STEP_KEYS, draft)
 const saving = ref(false)
-const failure = ref<string | null>(null)
 const created = ref<CreatedEvent | null>(null)
 const doneHeading = useTemplateRef('doneHeading')
 
 useHead({ title: () => (created.value ? t('stepper.done.title') : t('stepper.heading')) })
 
-const steps = computed(() => STEP_KEYS.map(key => ({ key, label: t(`stepper.steps.${key}.label`) })))
-const stepKey = computed<StepKey>(() => STEP_KEYS[current.value]!)
-// The info column explains the Format or, on the Selection mode step, the chosen mode (#145).
-const infoTopic = computed(() => {
-  if (stepKey.value === 'format') return draft.value.settings.format
-  if (stepKey.value === 'mode') return draft.value.settings.selectionMode === 'lucky_wheel' ? 'wheel' : 'admin'
-  if (stepKey.value === 'tiebreaker') return 'tiebreaker'
-  return null
-})
-const infoTitle = computed(() => (infoTopic.value ? t(`setup.info.${infoTopic.value}.title`) : undefined))
-const isLast = computed(() => current.value === STEP_KEYS.length - 1)
 const nextLabel = computed(() => {
   if (saving.value) return t('mvp.create.saving')
   return isLast.value ? t('stepper.create') : t('stepper.next')
 })
 
-function go(index: number) {
-  current.value = index
-  failure.value = null
-}
-
 async function next() {
   if (blocker.value || saving.value) return
-  if (!isLast.value) {
-    go(current.value + 1)
-    reached.value = Math.max(reached.value, current.value)
-    return
-  }
+  if (!isLast.value) return advance()
   saving.value = true
   failure.value = null
   try {
