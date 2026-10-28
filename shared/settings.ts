@@ -111,6 +111,12 @@ export function defaultSettings(): EventSettings {
   }
 }
 
+/** The settings after the teams change: a preset points table follows the team count, a custom one is cut or padded with 0 (#144). */
+export function withTeams(settings: EventSettings, teamCount: number, teamSize: number): EventSettings {
+  const { preset, values } = settings.pointsTable
+  return { ...settings, teamCount, teamSize, pointsTable: { preset, values: pointsFor(preset, teamCount, values) } }
+}
+
 /** Recommended Game pool size: Game count + Veto allowance × team count for the Lucky Wheel; the Game count otherwise (#146 shows it). */
 export function recommendedPoolSize(settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>): number {
   if (settings.selectionMode !== 'lucky_wheel') return settings.gameCount

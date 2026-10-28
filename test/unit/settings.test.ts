@@ -9,6 +9,7 @@ import {
   recommendedPoolSize,
   risingPlace,
   settingsFromRow,
+  withTeams,
   winnerTakesAllPoints,
 } from '../../shared/settings'
 
@@ -59,6 +60,24 @@ describe('points tables', () => {
     expect(risingPlace([2, 2, 2])).toBeNull()
     expect(risingPlace([5, 3, 4, 0])).toBe(3)
     expect(risingPlace([1, 2])).toBe(2)
+  })
+})
+
+describe('withTeams', () => {
+  it('a preset table follows the team count', () => {
+    const base = defaultSettings()
+    expect(withTeams(base, 4, 2).pointsTable).toEqual({ preset: 'linear', values: [3, 2, 1, 0] })
+    expect(withTeams({ ...base, pointsTable: { preset: 'winner_takes_all', values: [1, 0] } }, 4, 2).pointsTable).toEqual({ preset: 'winner_takes_all', values: [3, 0, 0, 0] })
+  })
+
+  it('a custom table keeps its values, cut or padded with 0', () => {
+    const custom = { ...defaultSettings(), teamCount: 3, pointsTable: { preset: 'custom' as const, values: [5, 3, 1] } }
+    expect(withTeams(custom, 2, 3).pointsTable).toEqual({ preset: 'custom', values: [5, 3] })
+    expect(withTeams(custom, 5, 3).pointsTable).toEqual({ preset: 'custom', values: [5, 3, 1, 0, 0] })
+  })
+
+  it('sets the teams and leaves the rest as it was', () => {
+    expect(withTeams(defaultSettings(), 4, 2)).toMatchObject({ teamCount: 4, teamSize: 2, gameCount: 10, selectionMode: 'admin_pick' })
   })
 })
 

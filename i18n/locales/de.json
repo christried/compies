@@ -211,7 +211,7 @@
       },
       "wta": {
         "name": "Winner takes all",
-        "desc": "Nur Platz 1 bekommt einen Punkt"
+        "desc": "Nur der Sieg zählt."
       },
       "custom": {
         "name": "Eigene Tabelle",
@@ -226,7 +226,7 @@
     },
     "info": {
       "sections": {
-        "how": "So läuft's",
+        "how": "So läuft’s",
         "good": "Gut für",
         "warn": "Achtung",
         "hideWheel": "Option „Rad verdecken“"
@@ -1108,6 +1108,63 @@
   },
   "stepper": {
     "locked": "Bald verfügbar",
+    "steps": {
+      "name": { "label": "Name", "title": "Wie soll die Session heißen?" },
+      "format": { "label": "Format", "title": "Wer gegen wen?" },
+      "games": { "label": "Spiele", "title": "Wie viele Spiele?" },
+      "points": { "label": "Punkte", "title": "Wer kriegt wie viele Punkte?" },
+      "sessions": { "label": "Termin", "title": "Wann zocken wir?" }
+    },
+    "create": "Session erstellen",
+    "done": {
+      "kicker": "Geschafft",
+      "title": "Session erstellt",
+      "heading": "{name} steht!",
+      "datesPoll": "Umfrage, {n} Vorschläge",
+      "datesDirect": "Direkt festgelegt | {n} Termine festgelegt"
+    },
+    "name": {
+      "label": "Name der Session",
+      "help": "Sehen alle in der Einladung und im Archiv."
+    },
+    "format": {
+      "label": "Format",
+      "ffa": { "name": "Jeder gegen jeden", "desc": "Jede Person ist eine eigene Partei. 2 bis 8." },
+      "teams": { "name": "Teams", "desc": "2 bis 8 gleich große Teams, max. 6 pro Team." },
+      "bracket": { "name": "Turnierbaum", "desc": "K.-o.-Runden bis zum Finale." },
+      "league": { "name": "Liga", "desc": "Jeder gegen jeden in Spieltagen." },
+      "teamCount": "Anzahl Teams",
+      "teamCountHelp": "2 bis 8",
+      "teamSize": "Spieler pro Team",
+      "teamSizeHelp": "1 bis 6, alle gleich groß",
+      "teamCountMin": "Mindestens 2 Teams.",
+      "teamCountMax": "Höchstens 8 Teams.",
+      "teamSizeMin": "Mindestens 1 pro Team.",
+      "teamSizeMax": "Höchstens 6 pro Team.",
+      "playersMax": "Höchstens 24 Leute in Teams.",
+      "total": "{teams} Teams à {size} = {players} Leute in Teams (max. 24)"
+    },
+    "games": {
+      "label": "Anzahl Spiele",
+      "min": "Mindestens 1 Spiel.",
+      "max": "Höchstens 30 Spiele.",
+      "help": "Nach {n} Spiel ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1. | Nach {n} Spielen ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1."
+    },
+    "points": {
+      "label": "Punktetabelle",
+      "head": "So sieht’s aus bei {n} Teams",
+      "place": "{n}. Platz",
+      "stepper": "Punkte für Platz {n}",
+      "rising": "Platz {n} kann nicht mehr Punkte bekommen als Platz {above}.",
+      "tie": "Gleichauf: alle bekommen die Punkte des besseren Platzes, der nächste Platz fällt weg (1, 1, 3)."
+    },
+    "heading": "Neue Session",
+    "nav": "Schritte",
+    "kicker": "Schritt {n} von {total}",
+    "back": "Zurück",
+    "next": "Weiter",
+    "info": "Info",
+    "infoAside": "Erklärung",
     "summary": {
       "teams": "{n} Teams à {s}",
       "games": "{n} Spiel | {n} Spiele",
@@ -1137,7 +1194,7 @@
     "eventNotFound": "Dieses Event gibt es nicht (mehr).",
     "linkInvalid": "Dieser Link funktioniert nicht mehr. Frag den Host nach dem neuen.",
     "rateLimited": "Langsam, langsam. Versuch es in ein paar Sekunden.",
-    "nameRequired": "Gib dem Event einen Namen.",
+    "nameRequired": "Gib der Session einen Namen.",
     "nameTooLong": "Höchstens {max} Zeichen.",
     "slotPast": "Der Termin liegt in der Vergangenheit.",
     "slotTakenDate": "Dieser Termin steht schon fest.",
