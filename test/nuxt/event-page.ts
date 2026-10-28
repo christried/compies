@@ -1,7 +1,7 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
 import type { EventPools, SessionNote } from '~~/shared/event'
-import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
+import type { EventSettings, SettingsFloors } from '~~/shared/settings'
 import { kitty } from './auth'
 
 // Fixtures for the Event page tests (event-*.test.ts): the `GET /api/e/:slug` body and a fresh Event link per test.

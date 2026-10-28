@@ -1,7 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it } from 'vitest'
 import HowWePlayCard from '~/components/HowWePlayCard.vue'
-import EventPage from '~/pages/e/[slug].vue'
+import EventPage from '~/pages/e/[slug]/index.vue'
 import type { EventPools, PoolGame } from '~~/shared/event'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
