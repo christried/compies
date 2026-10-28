@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CircleAlert, ListOrdered, Pencil, Trophy } from '@lucide/vue'
+import type { Component } from 'vue'
 import { POINTS_MAX, pointsFor, risingPlace, type PointsPreset, type PointsTable } from '~~/shared/settings'
 
 // Points per place (02-components § PointsTableEditor): the three presets as cards with the values they
@@ -20,15 +21,15 @@ const { t } = useI18n()
 const errorId = useId()
 
 const join = (values: number[]) => values.join(' / ')
-const options = computed(() => [
+const options = computed<{ value: PointsPreset, label: string, desc: string, icon: Component }[]>(() => [
   { value: 'linear', label: t('setup.points.linear.name'), desc: t('setup.points.linear.desc', { example: join(pointsFor('linear', props.teamCount)) }), icon: ListOrdered },
   { value: 'winner_takes_all', label: t('setup.points.wta.name'), desc: t('setup.points.wta.desc', { values: join(pointsFor('winner_takes_all', props.teamCount)) }), icon: Trophy },
   { value: 'custom', label: t('setup.points.custom.name'), desc: t('setup.points.custom.desc'), icon: Pencil },
 ])
 
-function choose(preset: string) {
+function choose(preset: PointsPreset) {
   // A custom table starts from what is on screen, so the Host edits a table instead of typing a new one.
-  emit('update:modelValue', { preset: preset as PointsPreset, values: pointsFor(preset as PointsPreset, props.teamCount, props.modelValue.values) })
+  emit('update:modelValue', { preset, values: pointsFor(preset, props.teamCount, props.modelValue.values) })
 }
 
 function setPlace(index: number, value: number) {
@@ -72,7 +73,7 @@ const rising = computed(() => (custom.value ? risingPlace(props.modelValue.value
           :max="POINTS_MAX"
           :label="t('stepper.points.stepper', { n: index + 1 })"
           :locked-reason="lockedReason"
-          :aria-describedby="rising === index + 1 ? errorId : undefined"
+          :described-by="rising === index + 1 ? errorId : undefined"
           @update:model-value="setPlace(index, $event)"
         />
         <span

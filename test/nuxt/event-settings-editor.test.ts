@@ -2,7 +2,9 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, Fragment, h } from 'vue'
 import EditorPage from '~/pages/e/[slug]/einstellungen.vue'
+import EventPage from '~/pages/e/[slug]/index.vue'
 import type { PoolGame } from '~~/shared/event'
 import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
@@ -45,7 +47,7 @@ interface Setup {
 /** A fresh Event for one test with its GET and PATCH endpoints; `patched` collects the PATCH bodies. */
 function setUp(setup: Setup = {}) {
   const patched = vi.fn()
-  const { slug } = serve(s => view(s, [], {
+  const { slug, set } = serve(s => view(s, [], {
     event: { isHost: setup.isHost ?? true, phase: setup.phase ?? 'poll' },
     settings: setup.settings === undefined ? defaultSettings() : setup.settings,
     settingsFloors: setup.floors,
@@ -60,12 +62,21 @@ function setUp(setup: Setup = {}) {
       return { settings: body.settings }
     },
   })
-  return { slug, patched }
+  return { slug, patched, set }
 }
 
 async function mountEditor(slug: string): Promise<Page> {
   signInAs({ ...kitty, canHost: true })
   const page = await mountSuspended(EditorPage, { route: `/e/${slug}/einstellungen`, attachTo: document.body })
+  mounted.push(page)
+  return page
+}
+
+// The editor and the Event page in one app, so the save's refresh of the Event's read reaches the page (#174).
+async function mountEditorAndEventPage(slug: string): Promise<Page> {
+  signInAs({ ...kitty, canHost: true })
+  const both = defineComponent({ setup: () => () => h(Fragment, [h(EditorPage), h(EventPage, { slug })]) })
+  const page = await mountSuspended(both, { route: `/e/${slug}/einstellungen`, attachTo: document.body })
   mounted.push(page)
   return page
 }
@@ -119,14 +130,14 @@ describe('the settings editor', () => {
     const page = await mountEditor(slug)
 
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Event einrichten')
-    expect(spin(page, 'Spieler pro Team').get('output').text()).toBe('3')
+    expect(spin(page, 'Spieler pro Team').text()).toBe('3')
   })
 
   it('starts from the Event: Team size, Game count, Selection mode with its wheel options, and the pools', async () => {
     const { slug } = setUp({ settings: wheel, pools: { main: [kart, pong], tiebreaker: [pong] } })
 
     const page = await mountEditor(slug)
-    expect(spin(page, 'Spieler pro Team').get('output').text()).toBe('4')
+    expect(spin(page, 'Spieler pro Team').text()).toBe('4')
 
     await goTo(page, 'Spiele')
     expect(page.get('output').text()).toBe('7')
@@ -134,7 +145,7 @@ describe('the settings editor', () => {
     await goTo(page, 'Auswahlmodus')
     expect(checked(page)).toEqual(['Lucky Wheel'])
     expect(page.get('[role="switch"]').attributes('aria-checked')).toBe('true')
-    expect(spin(page, 'Vetos pro Partei').get('output').text()).toBe('2')
+    expect(spin(page, 'Vetos pro Partei').text()).toBe('2')
 
     await goTo(page, 'Spielepool')
     await settle(page)
@@ -164,6 +175,25 @@ describe('the settings editor', () => {
     })
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}`))
     expect(shownToasts().map(toast => toast.text)).toContain('Gespeichert.')
+  })
+
+  // The Event page shows the saved settings at once: the save refreshes the Event's read by its shared key, so the
+  // page does not wait for its next 15 s poll (#174). The page's own summary is checked, not the editor's step.
+  it('shows the saved settings on the Event page at once, without waiting for the poll', async () => {
+    const { slug, set } = setUp({ settings: wheel, pools: { main: [kart], tiebreaker: [] } })
+    const page = await mountEditorAndEventPage(slug)
+    const eventSettings = () => page.get('section[aria-labelledby="how-we-play-title"]')
+    await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
+
+    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { hidden: false, main: [kart], tiebreaker: [] } }))
+    await goTo(page, 'Spiele')
+    await button(page, 'Anzahl Spiele: mehr').trigger('click')
+    await goTo(page, 'Tiebreaker-Pool')
+    await settle(page)
+    await cta(page).trigger('click')
+
+    await vi.waitFor(() => expect(eventSettings().text()).toContain('8 Spiele'))
+    expect(eventSettings().text()).not.toContain('7 Spiele')
   })
 
   it('goes on with Weiter until the last step, where it saves', async () => {
@@ -214,7 +244,7 @@ describe('the settings editor', () => {
       expect(less.attributes('aria-disabled')).toBe('true')
       expect(less.attributes('title')).toBe('Im vollsten Team sind schon 4.')
       await less.trigger('click')
-      expect(spin(page, 'Spieler pro Team').get('output').text()).toBe('4')
+      expect(spin(page, 'Spieler pro Team').text()).toBe('4')
     })
 
     it('keeps the Veto allowance from going below the most Vetoes a Party has spent, and says why', async () => {
@@ -248,7 +278,7 @@ describe('the settings editor', () => {
       expect(button(page, 'Anzahl Teams: weniger').attributes('aria-disabled')).toBe('true')
       expect(button(page, 'Spieler pro Team: mehr').attributes('aria-disabled')).toBeUndefined()
       await button(page, 'Spieler pro Team: mehr').trigger('click')
-      expect(spin(page, 'Spieler pro Team').get('output').text()).toBe('5')
+      expect(spin(page, 'Spieler pro Team').text()).toBe('5')
     })
 
     it('does not change the Format when a locked card is clicked', async () => {
@@ -287,7 +317,7 @@ describe('the settings editor', () => {
       await page.get('[role="switch"]').trigger('click')
       expect(page.get('[role="switch"]').attributes('aria-checked')).toBe('false')
       await button(page, 'Vetos pro Partei: mehr').trigger('click')
-      expect(spin(page, 'Vetos pro Partei').get('output').text()).toBe('3')
+      expect(spin(page, 'Vetos pro Partei').text()).toBe('3')
     })
 
     it('lets the Game count change and shows no lock on that step', async () => {

@@ -95,3 +95,80 @@ describe('NumberStepper with a lockedReason', () => {
     expect(page.emitted('update:modelValue')).toBeUndefined()
   })
 })
+
+// The value is the focusable spinbutton (#174, review S8): a keyboard user lands on it and moves it with the arrow
+// keys, Home and End. The minus and plus buttons stay outside it, so the spinbutton reads only its value.
+describe('NumberStepper as a spinbutton (#174)', () => {
+  const spin = (page: Awaited<ReturnType<typeof mountStepper>>) => page.get('[role="spinbutton"]')
+
+  it('is the focusable value, and the buttons are not inside it', async () => {
+    const page = await mountStepper({ modelValue: 3 })
+
+    expect(spin(page).attributes('tabindex')).toBe('0')
+    expect(spin(page).text()).toBe('3')
+    expect(spin(page).find('button').exists()).toBe(false)
+    expect(page.get('[role="group"]').attributes('aria-label')).toBe('Anzahl Teams')
+  })
+
+  it('moves the value with ArrowUp and ArrowRight, and ArrowDown and ArrowLeft', async () => {
+    const page = await mountStepper()
+
+    await spin(page).trigger('keydown', { key: 'ArrowRight' })
+    await spin(page).trigger('keydown', { key: 'ArrowUp' })
+    await spin(page).trigger('keydown', { key: 'ArrowDown' })
+    await spin(page).trigger('keydown', { key: 'ArrowLeft' })
+
+    expect(page.emitted('update:modelValue')).toEqual([[4], [4], [2], [2]])
+  })
+
+  it('jumps to the minimum with Home and to the maximum with End', async () => {
+    const page = await mountStepper({ modelValue: 3, min: 1, max: 5 })
+
+    await spin(page).trigger('keydown', { key: 'End' })
+    await spin(page).trigger('keydown', { key: 'Home' })
+
+    expect(page.emitted('update:modelValue')).toEqual([[5], [1]])
+  })
+
+  it('announces the value as aria-valuenow and, with a unit, as aria-valuetext', async () => {
+    const page = await mountStepper({ modelValue: 3, unit: 'Teams' })
+    expect(spin(page).attributes('aria-valuetext')).toBe('3 Teams')
+
+    await page.setProps({ modelValue: 4 })
+
+    expect(spin(page).attributes('aria-valuenow')).toBe('4')
+    expect(spin(page).attributes('aria-valuetext')).toBe('4 Teams')
+  })
+
+  it('keeps the focus on the value after a change', async () => {
+    const page = await mountSuspended(NumberStepper, { props: { modelValue: 3, min: 1, max: 5, label: 'Anzahl Teams' }, attachTo: document.body })
+    const value = spin(page).element as HTMLElement
+    value.focus()
+
+    await spin(page).trigger('keydown', { key: 'ArrowUp' })
+    await page.setProps({ modelValue: 4 })
+
+    expect(spin(page).element).toBe(value)
+    expect(document.activeElement).toBe(value)
+    page.unmount()
+  })
+
+  it('does not change when it is locked, and it is out of the tab order', async () => {
+    const page = await mountStepper({ lockedReason: 'Gesperrt, weil es läuft.' })
+
+    await spin(page).trigger('keydown', { key: 'ArrowUp' })
+    await spin(page).trigger('keydown', { key: 'Home' })
+
+    expect(page.emitted('update:modelValue')).toBeUndefined()
+    expect(spin(page).attributes('aria-disabled')).toBe('true')
+    expect(spin(page).attributes('tabindex')).toBe('-1')
+  })
+
+  it('keeps the buttons working beside the keys', async () => {
+    const page = await mountStepper()
+
+    await plus(page).trigger('click')
+
+    expect(page.emitted('update:modelValue')).toEqual([[4]])
+  })
+})

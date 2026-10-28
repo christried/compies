@@ -118,11 +118,13 @@ describe('the Selection mode step', () => {
     expect(checked(page)).toEqual(['true', 'false', 'false', 'false', 'false'])
   })
 
-  it('says which modes are coming, in one note under the group', async () => {
+  // The locked modes carry „Bald verfügbar“ on their cards; the note that explained them is gone (#174).
+  it('has no note under the group about the modes that are coming', async () => {
     const page = await mountCreate()
     await toModeStep(page)
 
-    expect(page.text()).toContain('Pick & Ban, Loser’s Pick und Loser’s Advantage kommen bald.')
+    expect(page.text()).not.toContain('kommen bald')
+    expect(page.text()).not.toContain('noch nicht wählen')
   })
 
   it('shows the hidden wheel switch and the Veto allowance only with the Lucky Wheel', async () => {
@@ -164,8 +166,8 @@ describe('the Selection mode step', () => {
     await toModeStep(page)
     await radios(page)[1]!.trigger('click')
     await hideSwitch(page).trigger('click')
-    await vetoStepper(page)!.findAll('button')[0]!.trigger('click')
-    await vetoStepper(page)!.findAll('button')[0]!.trigger('click')
+    await page.get('button[aria-label="Vetos pro Partei: weniger"]').trigger('click')
+    await page.get('button[aria-label="Vetos pro Partei: weniger"]').trigger('click')
 
     await radios(page)[0]!.trigger('click')
     await radios(page)[1]!.trigger('click')
