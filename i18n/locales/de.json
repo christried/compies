@@ -651,13 +651,23 @@
     "kicker": "Global, für alle Hosts",
     "format": {
       "teams": "Teams",
-      "ffa": "Jeder gg. jeden"
+      "ffa": "Jeder gegen jeden"
     },
     "loading": "Bibliothek lädt",
     "clipFact": "Clip {n} s",
     "createdBy": "Angelegt von {name} im {month}",
     "listFailed": "Die Bibliothek lässt sich gerade nicht laden.",
-    "saved": "{name} ist in der Bibliothek."
+    "saved": "{name} ist in der Bibliothek.",
+    "saveDone": "Gespeichert.",
+    "edit": "Bearbeiten",
+    "all": "Alle",
+    "searchPlaceholder": "{n} Spiele durchsuchen",
+    "noMatch": "„{q}“ kennen wir noch nicht.",
+    "formatBoth": "Beides",
+    "players": "{n} Spieler",
+    "playersFrom": "ab {min}",
+    "playersUpTo": "bis {max}",
+    "playersBetween": "{min} bis {max}"
   },
   "gameEdit": {
     "kicker": "Bibliothek",
@@ -687,6 +697,11 @@
     "saving": "Speichert …",
     "players": "Empfohlene Spielerzahl",
     "formats": "Passende Formate",
+    "playersFrom": "von",
+    "playersTo": "bis",
+    "playersNote": "Spielerzahl und Formate nutzen wir nur für Vorschläge beim Pool-Füllen. Aussortiert wird nie automatisch.",
+    "saveChanges": "Änderungen speichern",
+    "editKicker": "Bearbeiten",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
     "useExisting": "Das nehmen",
     "createAnyway": "Trotzdem anlegen",

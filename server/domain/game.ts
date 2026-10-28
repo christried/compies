@@ -1,5 +1,5 @@
 import {
-  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX,
+  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, PLAYERS_MAX,
 } from '../../shared/game'
 import { FORMATS, type Format } from '../../shared/settings'
 import { characterCount } from '../../shared/text'
@@ -22,9 +22,6 @@ export interface GameInput {
   /** Suitable Formats in FORMATS order, without duplicates (#142). */
   formats: Format[]
 }
-
-/** The player count of a game: 1 to this, the most players a recommendation can name (#142). */
-const PLAYERS_MAX = 99
 
 /** The game name: trimmed, 1 to GAME_NAME_MAX characters (emoji count as one). Null when invalid. */
 export function parseGameName(raw: unknown): string | null {

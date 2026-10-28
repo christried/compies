@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ChevronLeft, Clock, Gamepad2 } from '@lucide/vue'
+import { ChevronLeft, Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
 import { apiFailure } from '~/utils/api-error'
 import { canSeeLibrary, type GameView } from '~~/shared/game'
 
-// One game of the library (screen 23, `?s=detail`, #141): the clip preview from the start second for the set
-// length, the facts and who created it. A game that does not exist looks like any missing page; so does the
-// page for Users who may not see the library. No edit button yet (#142).
+// One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
+// set length, the facts (player count, Formats, clip length) and who created it. The creator and the Platform
+// admin get „Bearbeiten“; everyone else gets the reason instead of a dead button. A game that does not exist
+// looks like any missing page; so does the page for Users who may not see the library.
 const { t } = useI18n()
 const route = useRoute()
 const user = useAuthUser()
@@ -22,6 +23,21 @@ useHead({ title: () => game.value?.name ?? t('nav.library') })
 // Month and year in Berlin time, like the rest of the app (ADR 0003).
 const month = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' })
 const createdMonth = computed(() => (game.value ? month.format(new Date(game.value.createdAt)) : ''))
+
+// The player count as a fact: „2 bis 10“, „ab 2“, „bis 10“, or „2 Spieler“ for one count (#142).
+const players = computed(() => {
+  const { playersMin: min, playersMax: max } = game.value ?? { playersMin: null, playersMax: null }
+  if (min === null && max === null) return null
+  if (min === max) return t('library.players', { n: min })
+  if (max === null) return t('library.playersFrom', { min })
+  if (min === null) return t('library.playersUpTo', { max })
+  return t('library.playersBetween', { min, max })
+})
+const formats = computed(() => {
+  const list = game.value?.formats ?? []
+  if (list.length === 0) return null
+  return list.length > 1 ? t('library.formatBoth') : t(`library.format.${list[0]}`)
+})
 </script>
 
 <template>
@@ -96,10 +112,33 @@ const createdMonth = computed(() => (game.value ? month.format(new Date(game.val
             {{ game.name }}
           </h1>
           <ul
-            v-if="game.youtubeId"
+            v-if="players || formats || game.youtubeId"
             class="m-0 flex list-none flex-wrap gap-2 p-0"
           >
-            <li class="inline-flex h-8 items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-3 text-[13px] font-bold">
+            <li
+              v-if="players"
+              class="inline-flex h-8 items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-3 text-[13px] font-bold"
+            >
+              <AppIcon
+                :icon="Users"
+                :size="14"
+              />
+              {{ players }}
+            </li>
+            <li
+              v-if="formats"
+              class="inline-flex h-8 items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-3 text-[13px] font-bold"
+            >
+              <AppIcon
+                :icon="Swords"
+                :size="14"
+              />
+              {{ formats }}
+            </li>
+            <li
+              v-if="game.youtubeId"
+              class="inline-flex h-8 items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-3 text-[13px] font-bold"
+            >
               <AppIcon
                 :icon="Clock"
                 :size="14"
@@ -109,6 +148,31 @@ const createdMonth = computed(() => (game.value ? month.format(new Date(game.val
           </ul>
           <p class="m-0 text-[13px] text-ink-2">
             {{ t('library.createdBy', { name: game.createdBy.name, month: createdMonth }) }}
+          </p>
+
+          <AppButton
+            v-if="game.canEdit"
+            :to="`/bibliothek/${game.id}/bearbeiten`"
+            variant="secondary"
+            class="self-start"
+          >
+            <template #icon>
+              <AppIcon
+                :icon="Pencil"
+                :size="16"
+              />
+            </template>
+            {{ t('library.edit') }}
+          </AppButton>
+          <p
+            v-else
+            class="m-0 inline-flex items-center gap-1.5 text-[13px] text-ink-2"
+          >
+            <AppIcon
+              :icon="Lock"
+              :size="14"
+            />
+            {{ t('library.editOnlyOwner', { name: game.createdBy.name }) }}
           </p>
         </div>
       </div>

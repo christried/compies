@@ -9,6 +9,16 @@ export const CLIP_LENGTH_MIN = 5
 export const CLIP_LENGTH_MAX = 60
 /** Latest clip start: 11:59:59. */
 export const CLIP_START_MAX = 43_199
+/** The most players a recommended count can name (#142). */
+export const PLAYERS_MAX = 99
+
+/** A recommended player count as the User types it: a whole number from 1 to PLAYERS_MAX. Null for anything else. */
+export function parsePlayerCount(text: string): number | null {
+  const trimmed = text.trim()
+  if (!/^\d{1,2}$/.test(trimmed)) return null
+  const players = Number(trimmed)
+  return players >= 1 && players <= PLAYERS_MAX ? players : null
+}
 
 /** Library viewers: the Host permission or the Platform admin (spec #138 § API contracts). Shared so the server uses the same rule as the navigation. */
 export function canSeeLibrary(viewer: { canHost: boolean, isAdmin: boolean } | null): boolean {
