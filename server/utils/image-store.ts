@@ -14,7 +14,7 @@ declare module 'h3' {
 }
 
 /** A Map-backed store, for tests. */
-export function memoryImageStore(): ImageStore & { keys(): string[] } {
+export function memoryImageStore(): ImageStore & { keys(): string[], clear(): void } {
   const objects = new Map<string, { body: Uint8Array, contentType: string }>()
   return {
     async put(key, body, contentType) {
@@ -24,6 +24,7 @@ export function memoryImageStore(): ImageStore & { keys(): string[] } {
       return objects.get(key) ?? null
     },
     keys: () => [...objects.keys()],
+    clear: () => objects.clear(),
   }
 }
 
