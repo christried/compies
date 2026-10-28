@@ -65,14 +65,12 @@ function rowBlocker(problems: (SlotProblem | null)[], errors: (string | undefine
   return errors.find(error => error !== undefined) ?? null
 }
 
-watchEffect(() => {
+useStepBlocker(blocker, () => {
   const { mode, direct, slots, sessionCount } = dates.value
-  if (mode === 'direct') {
-    blocker.value = direct.includes('') ? t('mvp.create.directEmpty') : rowBlocker(directProblems.value, directErrors.value)
-  }
-  else if (slots.includes('')) blocker.value = t('mvp.create.slotEmpty')
-  else if (slots.length < sessionCount) blocker.value = t('mvp.create.minSlots', { n: sessionCount })
-  else blocker.value = rowBlocker(slotProblems.value, slotErrors.value)
+  if (mode === 'direct') return direct.includes('') ? t('mvp.create.directEmpty') : rowBlocker(directProblems.value, directErrors.value)
+  if (slots.includes('')) return t('mvp.create.slotEmpty')
+  if (slots.length < sessionCount) return t('mvp.create.minSlots', { n: sessionCount })
+  return rowBlocker(slotProblems.value, slotErrors.value)
 })
 
 const MODES = computed(() => [

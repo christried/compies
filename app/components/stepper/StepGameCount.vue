@@ -10,9 +10,7 @@ const blocker = defineModel<string | null>('blocker', { default: null })
 
 const { t } = useI18n()
 
-watchEffect(() => {
-  blocker.value = null
-})
+useStepBlocker(blocker)
 
 const DOT_COLORS = ['bg-primary', 'bg-mint', 'bg-pop', 'bg-cobalt']
 </script>

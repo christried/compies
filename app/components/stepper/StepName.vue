@@ -20,10 +20,7 @@ const name = computed({
 const tooLong = computed(() => eventNameLength(name.value) > EVENT_NAME_MAX)
 const error = computed(() => (tooLong.value ? t('error.nameTooLong', { max: EVENT_NAME_MAX }) : undefined))
 
-watchEffect(() => {
-  if (name.value.trim() === '') blocker.value = t('error.nameRequired')
-  else blocker.value = error.value ?? null
-})
+useStepBlocker(blocker, () => (name.value.trim() === '' ? t('error.nameRequired') : error.value))
 </script>
 
 <template>

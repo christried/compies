@@ -16,9 +16,7 @@ const blocker = defineModel<string | null>('blocker', { default: null })
 const { t } = useI18n()
 
 // Every value this step can produce is valid, so it never blocks.
-watchEffect(() => {
-  blocker.value = null
-})
+useStepBlocker(blocker)
 
 // bracket and league are not a Format yet, so the cards carry more values than Format (#144).
 const options = computed<{ value: Format | 'bracket' | 'league', label: string, desc: string, icon: Component, locked: boolean }[]>(() => ([

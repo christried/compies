@@ -13,11 +13,11 @@ const blocker = defineModel<string | null>('blocker', { default: null })
 
 const { t } = useI18n()
 
-watchEffect(() => {
+useStepBlocker(blocker, () => {
   const { preset, values } = settings.value.pointsTable
   const rising = preset === 'custom' ? risingPlace(values) : null
-  if (rising) blocker.value = t('stepper.points.rising', { n: rising, above: rising - 1 })
-  else blocker.value = preset === 'custom' && isFlat(values) ? t('stepper.points.flat') : null
+  if (rising) return t('stepper.points.rising', { n: rising, above: rising - 1 })
+  return preset === 'custom' && isFlat(values) ? t('stepper.points.flat') : null
 })
 </script>
 

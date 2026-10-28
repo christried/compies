@@ -20,9 +20,7 @@ const blocker = defineModel<string | null>('blocker', { default: null })
 const { t } = useI18n()
 const { toast } = useToast()
 
-watchEffect(() => {
-  blocker.value = null
-})
+useStepBlocker(blocker)
 
 const games = computed(() => draft.value.pools[props.kind])
 const COPY: Record<Pool, { count: string, list: string, note?: string }> = {

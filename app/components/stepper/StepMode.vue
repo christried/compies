@@ -16,9 +16,7 @@ const blocker = defineModel<string | null>('blocker', { default: null })
 
 const { t } = useI18n()
 
-watchEffect(() => {
-  blocker.value = null
-})
+useStepBlocker(blocker)
 
 const options = computed<{ value: SelectionMode, label: string, desc: string, icon: Component, locked: boolean }[]>(() => ([
   { value: 'admin_pick', label: t('setup.mode.admin.name'), desc: t('setup.mode.admin.desc'), icon: Crown },
