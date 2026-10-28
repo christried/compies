@@ -2,17 +2,17 @@
 import { ChevronRight } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
 import {
-  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, GAME_NAME_MAX, clipTime, parseClipTime, parsePlayerCount, type GameView,
+  CLIP_LENGTH_DEFAULT, GAME_NAME_MAX, SUITABILITIES, clipTime, gameNameProblem, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
+  type GameView, type Suitability,
 } from '~~/shared/game'
-import { FORMATS, type Format } from '~~/shared/settings'
-import { characterCount } from '~~/shared/text'
 import { parseYouTubeId } from '~~/shared/youtube'
 
-// Create or edit a game (screen 24, `?s=edit`, #141, #142): name, YouTube link, start and length, with a live
-// preview that plays the clip as a Session will, and the recommended player count and suitable Formats. An
-// empty link is fine (a game without a clip); a link that is no YouTube link, or that the player cannot play,
-// is „YouTube-Link kaputt“ and blocks saving. With `game` the form edits that game (PATCH). The server is the
-// final judge. No page chrome, so a sheet can hold it (#146); the two columns follow the width of the
+// Create or edit a game (screen 24, `?s=edit`, #141, #142, #171): name, YouTube link, start and length, with a live
+// preview that plays the clip as a Session will, and the recommended player count and „Passt zu“ (the
+// Suitabilities). An empty link is fine (a game without a clip); a link that is no YouTube link, or that the
+// player cannot play, is „YouTube-Link kaputt“ and blocks saving. With `game` the form edits that game (PATCH).
+// The rules come from shared/game.ts, the same ones the server applies, so the form refuses what the server
+// refuses (#171). No page chrome, so a sheet can hold it (#146); the two columns follow the width of the
 // form itself, not the viewport.
 const props = defineProps<{
   /** The game to edit (#142); without it the form creates one. */
@@ -34,7 +34,7 @@ const startText = ref(clipTime(props.game?.clipStart ?? 0))
 const lengthText = ref(String(props.game?.clipLength ?? CLIP_LENGTH_DEFAULT))
 const playersFromText = ref(props.game?.playersMin == null ? '' : String(props.game.playersMin))
 const playersToText = ref(props.game?.playersMax == null ? '' : String(props.game.playersMax))
-const formats = ref<Format[]>([...(props.game?.formats ?? [])])
+const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
 const attempted = ref(false)
 const saving = ref(false)
 const failure = ref<string | null>(null)
@@ -42,11 +42,11 @@ const failure = ref<string | null>(null)
 const duration = ref<number | null>(null)
 const playerFailed = ref(false)
 
-const trimmedName = computed(() => name.value.trim())
-const nameTooLong = computed(() => characterCount(trimmedName.value) > GAME_NAME_MAX)
+// The name rule is the shared one (gameNameProblem); the form only words it.
+const nameProblem = computed(() => gameNameProblem(name.value))
 const nameError = computed(() => {
-  if (attempted.value && trimmedName.value === '') return t('gameEdit.nameRequired')
-  if (nameTooLong.value) return t('error.nameTooLong', { max: GAME_NAME_MAX })
+  if (attempted.value && nameProblem.value === 'empty') return t('gameEdit.nameRequired')
+  if (nameProblem.value === 'too_long') return t('error.nameTooLong', { max: GAME_NAME_MAX })
   return undefined
 })
 
@@ -69,11 +69,7 @@ watch(link, () => {
 
 const start = computed(() => parseClipTime(startText.value))
 const startError = computed(() => (start.value === null ? t('gameEdit.startInvalid') : undefined))
-const length = computed(() => {
-  const text = lengthText.value.trim()
-  const seconds = /^\d{1,3}$/.test(text) ? Number(text) : NaN
-  return seconds >= CLIP_LENGTH_MIN && seconds <= CLIP_LENGTH_MAX ? seconds : null
-})
+const length = computed(() => parseClipLength(lengthText.value))
 const lengthError = computed(() => (length.value === null ? t('gameEdit.lengthInvalid') : undefined))
 
 // The player count: both bounds optional; an empty field is open, anything that is no whole number from 1 to 99,
@@ -88,18 +84,38 @@ const rangeInverted = computed(() => {
 const fromError = computed(() => (fromInvalid.value ? t('error.playersInvalid') : undefined))
 const toError = computed(() => (toInvalid.value || rangeInverted.value ? t('error.playersInvalid') : undefined))
 
-/** Why the CTA is blocked, or null when the form can be sent. */
+/** Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. */
 const blocker = computed<string | null>(() => {
-  if (trimmedName.value === '') return t('gameEdit.nameRequired')
-  if (nameTooLong.value) return t('error.nameTooLong', { max: GAME_NAME_MAX })
+  if (nameProblem.value === 'empty') return t('gameEdit.nameRequired')
+  if (nameProblem.value === 'too_long') return t('error.nameTooLong', { max: GAME_NAME_MAX })
   if (linkError.value) return t('gameEdit.linkRequired')
   if (fromError.value || toError.value) return t('error.playersInvalid')
   return startError.value ?? lengthError.value ?? null
 })
 
-function toggleFormat(format: Format) {
-  // Kept in FORMATS order, like the server stores them.
-  formats.value = FORMATS.filter(option => (option === format ? !formats.value.includes(option) : formats.value.includes(option)))
+/** A player count field as the shared rules read it: its number, nothing, or the text itself when that is no count, so the rules refuse it too. */
+function countOf(text: string): number | string | null {
+  if (text.trim() === '') return null
+  return parsePlayerCount(text) ?? text
+}
+
+/** The body the form sends, as the shared rules read it (#171). A field the User left invalid stays as its text, so the rules refuse it. */
+const draft = computed(() => ({
+  name: name.value.trim(),
+  youtubeUrl: link.value.trim(),
+  clipStart: start.value ?? startText.value,
+  clipLength: length.value ?? lengthText.value,
+  playersMin: countOf(playersFromText.value),
+  playersMax: countOf(playersToText.value),
+  suitabilities: SUITABILITIES.filter(suitability => suitabilities.value.includes(suitability)),
+}))
+
+/** The form is blocked exactly when a field says why, or the shared rules refuse the body, or the player reported the link broken (#171). */
+const blocked = computed(() => blocker.value !== null || !parseGameInput(draft.value).ok)
+
+function toggleSuitability(suitability: Suitability) {
+  // Kept in SUITABILITIES order, like the server stores them.
+  suitabilities.value = SUITABILITIES.filter(option => (option === suitability ? !suitabilities.value.includes(option) : suitabilities.value.includes(option)))
 }
 
 /**
@@ -127,18 +143,10 @@ async function uploadImage(game: GameView): Promise<GameView> {
 
 async function submit() {
   attempted.value = true
-  if (blocker.value || saving.value || start.value === null || length.value === null) return
+  if (blocked.value || saving.value) return
   saving.value = true
   failure.value = null
-  const body = {
-    name: trimmedName.value,
-    youtubeUrl: link.value.trim(),
-    clipStart: start.value,
-    clipLength: length.value,
-    playersMin: parsePlayerCount(playersFromText.value),
-    playersMax: parsePlayerCount(playersToText.value),
-    formats: FORMATS.filter(format => formats.value.includes(format)),
-  }
+  const body = draft.value
   try {
     // An image picked while editing is uploaded too, once the game has been saved (#143).
     const game = props.game
@@ -224,18 +232,18 @@ async function submit() {
         </fieldset>
 
         <div class="flex flex-col gap-2">
-          <span class="text-[14px] font-bold">{{ t('gameEdit.formats') }}</span>
+          <span class="text-[14px] font-bold">{{ t('gameEdit.suitabilities') }}</span>
           <div class="flex flex-wrap gap-2">
             <button
-              v-for="format in FORMATS"
-              :key="format"
+              v-for="suitability in SUITABILITIES"
+              :key="suitability"
               type="button"
-              :aria-pressed="formats.includes(format) ? 'true' : 'false'"
+              :aria-pressed="suitabilities.includes(suitability) ? 'true' : 'false'"
               class="outline-memphis inline-flex h-11 items-center rounded-pill border-(length:--cp-bw) px-4 text-small font-bold transition-colors"
-              :class="formats.includes(format) ? 'border-line bg-ink text-paper' : 'border-line bg-surface text-ink hover:bg-paper-2'"
-              @click="toggleFormat(format)"
+              :class="suitabilities.includes(suitability) ? 'border-line bg-ink text-paper' : 'border-line bg-surface text-ink hover:bg-paper-2'"
+              @click="toggleSuitability(suitability)"
             >
-              {{ t(`library.format.${format}`) }}
+              {{ t(`library.suitability.${suitability}`) }}
             </button>
           </div>
         </div>
@@ -277,7 +285,7 @@ async function submit() {
           <AppButton
             type="submit"
             size="lg"
-            :aria-disabled="blocker !== null || saving"
+            :aria-disabled="blocked || saving"
             :aria-describedby="blocker ? 'game-blocker' : undefined"
           >
             {{ saving ? t('gameEdit.saving') : game ? t('gameEdit.saveChanges') : t('library.create') }}

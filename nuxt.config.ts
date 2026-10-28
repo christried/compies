@@ -1,4 +1,9 @@
 import tailwindcss from '@tailwindcss/vite'
+import { isStagingBuild, stageBranding } from './stage'
+
+// Staging names itself and wears tinted icons (#178). Production and local builds keep the defaults.
+const staging = isStagingBuild()
+const brand = stageBranding(staging)
 
 export default defineNuxtConfig({
   modules: [
@@ -12,21 +17,28 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'de' },
-      title: 'Compies',
+      title: brand.name,
       // The manifest link comes from <NuxtPwaManifest /> in app.vue.
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/icons/favicon.svg' },
-        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/icons/favicon-32.png' },
-        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/icons/favicon-16.png' },
-        { rel: 'apple-touch-icon', sizes: '180x180', href: '/icons/apple-touch-icon.png' },
+        { rel: 'icon', type: 'image/svg+xml', href: `${brand.iconDir}/favicon.svg` },
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: `${brand.iconDir}/favicon-32.png` },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: `${brand.iconDir}/favicon-16.png` },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: `${brand.iconDir}/apple-touch-icon.png` },
       ],
       meta: [
         { name: 'theme-color', content: '#fff3df' },
-        { name: 'apple-mobile-web-app-title', content: 'Compies' },
+        { name: 'apple-mobile-web-app-title', content: brand.appleTitle },
       ],
     },
   },
   css: ['~/assets/css/main.css'],
+
+  runtimeConfig: {
+    public: {
+      // Read by <StagingBadge /> (#178).
+      staging,
+    },
+  },
 
   compatibilityDate: '2026-10-22',
   vite: { plugins: [tailwindcss()] },
@@ -63,8 +75,8 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'Compies',
-      short_name: 'Compies',
+      name: brand.name,
+      short_name: brand.shortName,
       description: 'Spieleabende mit Glücksrad, Vetos und Siegerehrung.',
       lang: 'de',
       start_url: '/',
@@ -73,16 +85,17 @@ export default defineNuxtConfig({
       theme_color: '#fff3df',
       background_color: '#fff3df',
       icons: [
-        { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-        { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        { src: `${brand.iconDir}/icon-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: `${brand.iconDir}/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: `${brand.iconDir}/icon-maskable-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         { src: '/icons/monochrome.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'monochrome' },
       ],
     },
     workbox: {
       // Pages are server-rendered per request, so there is no app shell to fall back to.
       navigateFallback: null,
-      globPatterns: ['offline.html', 'icons/favicon.svg'],
+      // The favicon the pages link, so an offline tab keeps the staging icon too.
+      globPatterns: ['offline.html', `${brand.iconDir.slice(1)}/favicon.svg`],
       // The module adds Nuxt's build manifest; a cached copy would hide new deployments.
       globIgnores: ['_nuxt/builds/**'],
       // Keep URLs as they are: the module's default transform turns `offline.html` into `offline`

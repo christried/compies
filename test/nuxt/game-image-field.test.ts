@@ -20,7 +20,7 @@ const created: GameView = {
   clipLength: 30,
   playersMin: null,
   playersMax: null,
-  formats: [],
+  suitabilities: [],
   createdBy: { id: kitty.id, name: 'Kitty' },
   createdAt: '2026-10-28T10:00:00.000Z',
   canEdit: true,

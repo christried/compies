@@ -16,6 +16,14 @@ describe('PWA build', () => {
     for (const icon of manifest.icons) expect(existsSync(resolve(PUBLIC, `.${icon.src}`))).toBe(true)
   })
 
+  it('names the production build Compies and keeps the staging icons out of its manifest (#178)', () => {
+    const manifest = JSON.parse(read('manifest.webmanifest'))
+
+    expect(manifest).toMatchObject({ name: 'Compies', short_name: 'Compies' })
+    const srcs: string[] = manifest.icons.map((icon: { src: string }) => icon.src)
+    expect(srcs.filter(src => src.startsWith('/icons/staging/'))).toEqual([])
+  })
+
   it('emits a service worker that precaches the offline page and falls back to it', () => {
     const sw = read('sw.js')
 

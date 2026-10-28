@@ -4,5 +4,5 @@ For the realtime foundation (release 1.4), Nuxt stays on Vercel and the realtime
 
 ## Consequences
 
-- Game images on R2 are served through a cached Nuxt route, not a public bucket on our own domain, since that also needs Cloudflare DNS.
+- Game images on R2 are served through a cached Nuxt route, not a public bucket on our own domain, since that also needs Cloudflare DNS. "Cached" means the browser cache only: the image route answers `Cache-Control: private`, so a Hidden wheel's images never sit in a shared cache.
 - Deploying the Worker drops every open socket, so release 1.4 has to settle when the Worker may be deployed.

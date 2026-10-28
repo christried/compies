@@ -650,16 +650,17 @@
     "title": "Bibliothek",
     "search": "Spiele suchen",
     "filterPlayers": "Spielerzahl",
-    "filterFormat": "Format",
+    "filterSuitability": "Passt zu",
     "filterMine": "Von mir",
     "none": "Nichts gefunden. Vielleicht heißt es anders?",
     "create": "Spiel anlegen",
     "editOnlyOwner": "Bearbeiten dürfen nur {name} und die Plattform-Admin.",
     "played": "{n}× gespielt",
     "kicker": "Global, für alle Hosts",
-    "format": {
+    "suitability": {
       "teams": "Teams",
-      "ffa": "Jeder gegen jeden"
+      "ffa": "Jeder gegen jeden",
+      "one_v_one": "1 gegen 1"
     },
     "loading": "Bibliothek lädt",
     "clipFact": "Clip {n} s",
@@ -671,7 +672,6 @@
     "all": "Alle",
     "searchPlaceholder": "{n} Spiele durchsuchen",
     "noMatch": "„{q}“ kennen wir noch nicht.",
-    "formatBoth": "Beides",
     "players": "{n} Spieler",
     "playersFrom": "ab {min}",
     "playersUpTo": "bis {max}",
@@ -713,7 +713,7 @@
     "playerLabel": "YouTube-Vorschau des Clips",
     "saving": "Speichert …",
     "players": "Empfohlene Spielerzahl",
-    "formats": "Passende Formate",
+    "suitabilities": "Passt zu",
     "playersFrom": "von",
     "playersTo": "bis",
     "playersNote": "Spielerzahl und Formate nutzen wir nur für Vorschläge beim Pool-Füllen. Aussortiert wird nie automatisch.",
@@ -1289,7 +1289,7 @@
     "gameNameInvalid": "Gib dem Spiel einen Namen, höchstens 60 Zeichen.",
     "clipInvalid": "Der Clip passt nicht: Die Länge liegt zwischen 5 und 60 Sekunden.",
     "playersInvalid": "Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.",
-    "formatsInvalid": "Dieses Format kennen wir nicht.",
+    "suitabilitiesInvalid": "Diese Angabe bei „Passt zu“ kennen wir nicht.",
     "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",
@@ -1379,5 +1379,8 @@
       "text": "Teil den Link, dann füllt sich die Tabelle."
     },
     "lobbyEmpty": "Alle schlafen. Du auch?"
+  },
+  "staging": {
+    "badge": "STAGING"
   }
 }
