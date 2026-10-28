@@ -15,6 +15,10 @@ const props = defineProps<{
   reached: number
   /** The title of the current step („Wer gegen wen?“). */
   title: string
+  /** The step list's heading; „Neue Session“ by default. */
+  navTitle?: string
+  /** Replaces „Schritt n von m“ above the title (the settings editor, #147). */
+  kicker?: string
   /** The info column's and sheet's heading. */
   infoTitle?: string
   nextLabel: string
@@ -57,7 +61,7 @@ function next() {
       :aria-label="t('stepper.nav')"
       class="hidden flex-none flex-col gap-1 rounded-2xl border-(length:--cp-bw) border-line bg-surface-2 p-4 md:sticky md:top-4 md:flex md:w-[230px]"
     >
-      <span class="mx-1.5 mb-3 font-display text-[24px] leading-none">{{ t('stepper.heading') }}</span>
+      <span class="mx-1.5 mb-3 font-display text-[24px] leading-none">{{ navTitle ?? t('stepper.heading') }}</span>
       <ol class="m-0 flex list-none flex-col gap-1 p-0">
         <li
           v-for="(step, index) in steps"
@@ -112,7 +116,7 @@ function next() {
             tabindex="-1"
             class="m-0 flex flex-1 flex-col gap-0.5 text-[14px] font-normal outline-none"
           >
-            <span class="text-[13px] font-bold text-ink-2">{{ t('stepper.kicker', { n: current + 1, total: steps.length }) }}</span>
+            <span class="text-[13px] font-bold text-ink-2">{{ kicker ?? t('stepper.kicker', { n: current + 1, total: steps.length }) }}</span>
             <span class="font-display text-[34px] leading-none md:text-[44px]">{{ title }}</span>
           </h1>
           <IconButton

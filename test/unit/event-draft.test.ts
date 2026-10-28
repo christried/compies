@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { addPoolGame, chooseMode, draftBody, followTeamSize, newDraft, setHiddenWheel, setVetoAllowance, togglePoolGame } from '../../app/utils/event-draft'
-import type { PoolGame } from '../../shared/event'
+import { addPoolGame, chooseMode, draftBody, draftFromEvent, followTeamSize, newDraft, setHiddenWheel, settingsBody, setVetoAllowance, togglePoolGame } from '../../app/utils/event-draft'
+import type { EventView, PoolGame } from '../../shared/event'
 import { defaultSettings, parseSettings } from '../../shared/settings'
 
 // The stepper's draft (#144): what the Host has entered so far, and the body that „Session erstellen“ sends.
@@ -192,5 +192,64 @@ describe('the Selection mode', () => {
 
     expect(draftBody(draft).settings).toMatchObject({ selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null })
     expect(parseSettings(draftBody(draft).settings).ok).toBe(true)
+  })
+})
+
+// The settings editor (#147): a draft made from an Event that exists, and the body of its PATCH.
+describe('the editor draft', () => {
+  const kart = game('a', 'Mario Kart')
+  const pong = game('b', 'Pong')
+
+  function view(settings: EventView['settings'], pools: EventView['pools'] = { hidden: false, main: [], tiebreaker: [] }): EventView {
+    return { settings, pools } as EventView
+  }
+
+  it('starts from the Event’s settings and pools', () => {
+    const settings = { ...defaultSettings(), teamSize: 4, gameCount: 7 }
+
+    const draft = draftFromEvent(view(settings, { hidden: false, main: [kart, pong], tiebreaker: [pong] }))
+
+    expect(draft.settings).toEqual(settings)
+    expect(draft.pools).toEqual({ main: [kart, pong], tiebreaker: [pong] })
+  })
+
+  it('starts from the defaults for an Event that is not set up, without a chosen Veto allowance', () => {
+    const draft = draftFromEvent(view(null))
+
+    expect(draft.settings).toEqual(defaultSettings())
+    expect(draft.touched.vetoAllowance).toBe(false)
+  })
+
+  it('counts a stored Veto allowance as the Host’s choice: a Team size change leaves it alone', () => {
+    const stored = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 2 }
+
+    let draft = draftFromEvent(view(stored))
+    expect(draft.touched.vetoAllowance).toBe(true)
+    expect(draft.wheel).toEqual({ hiddenWheel: true, vetoAllowance: 2 })
+
+    draft = followTeamSize({ ...draft, settings: { ...draft.settings, teamSize: 5 } })
+    expect(draft.settings.vetoAllowance).toBe(2)
+  })
+
+  it('keeps default wheel options for an Admin pick Event, so choosing the Lucky Wheel offers them', () => {
+    const draft = draftFromEvent(view(defaultSettings()))
+
+    expect(draft.wheel).toEqual({ hiddenWheel: false, vetoAllowance: 3 })
+    expect(chooseMode(draft, 'lucky_wheel').settings).toMatchObject({ hiddenWheel: false, vetoAllowance: 3 })
+  })
+
+  it('has no games when the pools are hidden from the viewer', () => {
+    const draft = draftFromEvent(view(defaultSettings(), { hidden: true, mainCount: 2, tiebreakerCount: 1 }))
+
+    expect(draft.pools).toEqual({ main: [], tiebreaker: [] })
+  })
+
+  it('sends the settings and the ids of both pools, which the server accepts', () => {
+    const draft = togglePoolGame(togglePoolGame(draftFromEvent(view(defaultSettings())), 'main', kart), 'tiebreaker', pong)
+
+    const body = settingsBody(draft)
+
+    expect(body).toEqual({ settings: defaultSettings(), pools: { main: ['a'], tiebreaker: ['b'] } })
+    expect(parseSettings(body.settings).ok).toBe(true)
   })
 })

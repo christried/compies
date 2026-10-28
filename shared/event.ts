@@ -1,6 +1,6 @@
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
-import type { EventSettings, Format } from './settings'
+import type { EventSettings, Format, SettingsFloors } from './settings'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -118,6 +118,8 @@ export interface EventView {
   }
   /** The Event's settings (#144); null for an Event from before 1.3 that was never set up. Not secret: Members get them too. */
   settings: EventSettings | null
+  /** The lowest Team size and Veto allowance the settings editor offers (#147). Only the Host gets them; null for every other Member. */
+  settingsFloors: SettingsFloors | null
   /** The Event's pools (#146): the Host always sees the games, every other Member only while the wheel is not hidden, else the counts (poolsVisibleTo, #148). */
   pools: EventPools
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */

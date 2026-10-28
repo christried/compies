@@ -4,7 +4,7 @@ import { Crown } from '@lucide/vue'
 
 // Host controls (02-components § HostDock). Desktop: a floating pill at the bottom centre. Phones: a
 // crown button bottom right that opens the same actions in a sheet. Shortcut H focuses the toolbar.
-// Callers pass at most three actions; the "Mehr" overflow is not needed yet. Each action carries what it does.
+// Callers pass at most four actions (the poll Phase has four, #147); the "Mehr" overflow is not needed yet. Each action carries what it does.
 // An action with a `disabledReason` looks disabled (dashed) but stays focusable and clickable: its `run`
 // answers the click with the reason, as a neutral toast (#52).
 export interface DockAction {

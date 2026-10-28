@@ -48,6 +48,9 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   image_not_webp: 'error.imageNotWebp',
   invalid_pools: 'error.poolsInvalid',
   unknown_game: 'error.unknownGame',
+  setting_locked: 'error.settingLocked',
+  team_size_below_fullest: 'error.teamSizeBelowFullest',
+  veto_allowance_below_spent: 'error.vetoAllowanceBelowSpent',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

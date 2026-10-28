@@ -1,7 +1,8 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { eventMembers, eventPoolGames, events, games } from '../db/schema'
 import type { PoolEvent } from '../domain/image-access'
 import type { Db } from './db'
+import { apiError } from './errors'
 import { poolGameView } from './library'
 import type { EventPools } from '../../shared/event'
 
@@ -29,6 +30,14 @@ export async function eventPools(db: Db, eventId: string, visible: boolean): Pro
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
   const inPool = (pool: 'main' | 'tiebreaker') => rows.filter(row => row.pool === pool).map(row => poolGameView(row.game))
   return { hidden: false, main: inPool('main'), tiebreaker: inPool('tiebreaker') }
+}
+
+/** Every game of the lists must be in the library (`unknown_game` otherwise); one lookup for all of them, before anything is written (#146). */
+export async function assertGamesExist(tx: Db, ...lists: string[][]): Promise<void> {
+  const ids = [...new Set(lists.flat().map(id => id.toLowerCase()))]
+  if (ids.length === 0) return
+  const known = await tx.select({ id: games.id }).from(games).where(inArray(games.id, ids))
+  if (known.length !== ids.length) throw apiError('unknown_game')
 }
 
 /**

@@ -8,6 +8,7 @@ import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
 import { eventPools } from '../../utils/pools'
+import { SETTINGS_FLOORS } from '../../utils/settings-floors'
 import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 import type { EventView, SessionNote, SessionView } from '../../../shared/event'
@@ -59,6 +60,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
       isHost,
     },
     settings,
+    settingsFloors: isHost ? SETTINGS_FLOORS : null,
     // The Host sees the games of both pools; every other Member only while the wheel is not hidden, else how many
     // there are (#146, #148). Under a Hidden wheel NO other field of this response may carry a pool game (name, id,
     // image key, video id): the Members, Sessions and Votes above and below must stay free of them. The test

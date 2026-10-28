@@ -1,5 +1,7 @@
 // Event settings (#138, release 1.3): the values the stepper, the settings rules and the schema share.
 
+import type { Phase } from './event'
+
 /** Formats (GLOSSARY: Format). Only `teams` can be chosen in 1.3; `ffa` is shown „Bald verfügbar“. */
 export const FORMATS = ['teams', 'ffa'] as const
 export type Format = (typeof FORMATS)[number]
@@ -221,4 +223,74 @@ export function settingsFromRow(row: {
   const { format, teamCount, teamSize, gameCount, pointsTable, selectionMode } = row
   if (format === null || teamCount === null || teamSize === null || gameCount === null || pointsTable === null || selectionMode === null) return null
   return { format, teamCount, teamSize, gameCount, pointsTable, selectionMode, hiddenWheel: row.hiddenWheel ?? false, vetoAllowance: row.vetoAllowance }
+}
+
+// Changing the settings of an Event that exists (#147).
+
+/** Settings that stay fixed once the first Session has started (spec): games already played keep their rules. */
+export const LOCKED_WHEN_RUNNING = ['format', 'teamCount', 'pointsTable', 'selectionMode'] as const
+
+/** Phase running or later: the first Session has started. */
+export function settingsLocked(phase: Phase): boolean {
+  return phase === 'running' || phase === 'finished' || phase === 'archived'
+}
+
+/** Settings can change in every Phase before the Event is finished. */
+export function settingsEditable(phase: Phase): boolean {
+  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
+}
+
+/** The lowest values the Event allows now: Team size never below the fullest team, Veto allowance never below the most Vetoes a Party has spent. */
+export interface SettingsFloors {
+  teamSize: number
+  vetoAllowance: number
+}
+
+export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'wrong_phase'
+
+/**
+ * Checks a change of an Event's settings. `current` null = not set up: the change must then be a full payload (parseSettings).
+ * Otherwise the change is merged over `current` (only keys present in `change`), then: wrong_phase when the Phase is not
+ * settingsEditable; in a settingsLocked Phase any LOCKED_WHEN_RUNNING key whose value differs → setting_locked; then
+ * parseSettings on the merged settings; then the floors.
+ */
+export function checkSettingsChange(
+  current: EventSettings | null,
+  change: unknown,
+  context: { phase: Phase, floors: SettingsFloors },
+): { ok: true, settings: EventSettings } | { ok: false, error: SettingsChangeError } {
+  if (!settingsEditable(context.phase)) return { ok: false, error: 'wrong_phase' }
+  if (!isRecord(change)) return { ok: false, error: 'invalid_settings' }
+
+  let merged: Record<string, unknown> = change
+  if (current !== null) {
+    if (settingsLocked(context.phase) && LOCKED_WHEN_RUNNING.some(key => key in change && !sameValue(change[key], current[key]))) {
+      return { ok: false, error: 'setting_locked' }
+    }
+    merged = { ...current, ...change }
+    // An Admin pick Event never fails on wheel values left over from the Lucky Wheel.
+    if (merged.selectionMode === 'admin_pick') {
+      delete merged.hiddenWheel
+      delete merged.vetoAllowance
+    }
+  }
+
+  const parsed = parseSettings(merged)
+  if (!parsed.ok) return parsed
+  const { settings } = parsed
+  if (settings.teamSize < context.floors.teamSize) return { ok: false, error: 'team_size_below_fullest' }
+  if (settings.vetoAllowance !== null && settings.vetoAllowance < context.floors.vetoAllowance) return { ok: false, error: 'veto_allowance_below_spent' }
+  return parsed
+}
+
+/** Same value; a points table counts as the same with the same preset and places, whatever its key order. */
+function sameValue(a: unknown, b: unknown): boolean {
+  if (isRecord(a) && isRecord(b)) return sameValue(a.preset, b.preset) && sameValue(a.values, b.values)
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((value, index) => value === b[index])
+  return a === b
+}
+
+/** Whether an Event may start a Session: it needs settings (release 1.4 enforces it). */
+export function canStartSession(settings: EventSettings | null): boolean {
+  return settings !== null
 }

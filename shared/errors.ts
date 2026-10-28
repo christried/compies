@@ -70,6 +70,12 @@ export const API_ERROR_STATUS = {
   veto_allowance_range: 400,
   /** A hidden wheel or a Veto allowance with a Selection mode that has no wheel. */
   wheel_options_without_wheel: 400,
+  /** The Event is running: Format, team count, points table and Selection mode no longer change (#147). */
+  setting_locked: 409,
+  /** A Team size below the number of Players in the fullest team (#147). */
+  team_size_below_fullest: 409,
+  /** A Veto allowance below the most Vetoes a Party has spent (#147). */
+  veto_allowance_below_spent: 409,
   wrong_phase: 409,
   rate_limited: 429,
 } as const

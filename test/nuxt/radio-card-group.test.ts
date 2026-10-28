@@ -76,3 +76,28 @@ describe('RadioCardGroup', () => {
     expect(radios(none).map(radio => radio.attributes('tabindex'))).toEqual(['-1', '0', '-1', '-1', '-1'])
   })
 })
+
+// A locked group (#147): the Event is running, so the choice cannot change; the chosen card stays chosen.
+describe('RadioCardGroup with a lockedReason', () => {
+  function mountLocked() {
+    return mountSuspended(RadioCardGroup, { props: { modelValue: 'teams', options: options.filter(option => !option.locked), label: 'Format', lockedReason: 'Gesperrt, weil es läuft.' } })
+  }
+
+  it('keeps the chosen card chosen, marks every card aria-disabled and describes them by the reason', async () => {
+    const page = await mountLocked()
+
+    expect(radios(page).map(radio => radio.attributes('aria-checked'))).toEqual(['true', 'false'])
+    expect(radios(page).every(radio => radio.attributes('aria-disabled') === 'true')).toBe(true)
+    const reasonId = radios(page)[0]!.attributes('aria-describedby')!
+    expect(page.get(`#${reasonId}`).text()).toBe('Gesperrt, weil es läuft.')
+  })
+
+  it('chooses nothing by click or by arrow key', async () => {
+    const page = await mountLocked()
+
+    await radios(page)[1]!.trigger('click')
+    await radios(page)[0]!.trigger('keydown', { key: 'ArrowRight' })
+
+    expect(page.emitted('update:modelValue')).toBeUndefined()
+  })
+})
