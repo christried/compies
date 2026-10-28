@@ -39,7 +39,10 @@ beforeEach(() => {
   signInAs(kitty)
 })
 
-afterEach(() => {
+afterEach(async () => {
+  // Pages stay mounted and listen to the window: close any popover while its DOM is still there.
+  ;(document.activeElement as HTMLElement | null)?.blur()
+  await nextTick()
   vi.restoreAllMocks()
   vi.useRealTimers()
   document.body.innerHTML = ''
@@ -154,10 +157,10 @@ describe('PollMatrix', () => {
       expect(popover()).toBeNull()
     }, 15000)
 
-    it('closes the dialog from the overlay', async () => {
+    it('closes the dialog from the overlay, focus back on the cell', async () => {
       const { cell } = await mountWithNote()
 
-      pointer('pointerdown', cell, 'pen')
+      pointer('pointerdown', cell, 'touch')
       cell.click()
       await nextTick()
       expect(dialog()).not.toBeNull()
@@ -165,6 +168,48 @@ describe('PollMatrix', () => {
       ;(document.body.querySelector('.bg-overlay') as HTMLElement).click()
       await nextTick()
       expect(dialog()).toBeNull()
+      await vi.waitFor(() => expect(document.activeElement).toBe(cell))
+    }, 15000)
+
+    it('keeps a popover opened by focus when the browser scrolls the box at once, and closes it on a later scroll', async () => {
+      const { page, cell } = await mountWithNote()
+      const box = page.get('div.overflow-x-auto').element
+
+      cell.focus()
+      box.dispatchEvent(new Event('scroll'))
+      await nextTick()
+      expect(popover()).not.toBeNull()
+
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      box.dispatchEvent(new Event('scroll'))
+      await nextTick()
+      expect(popover()).toBeNull()
+    }, 15000)
+
+    it('does not close a popover that keyboard focus holds when the mouse leaves', async () => {
+      const { cell } = await mountWithNote()
+
+      cell.focus()
+      await nextTick()
+      expect(popover()).not.toBeNull()
+
+      pointer('pointerenter', cell, 'mouse')
+      pointer('pointerleave', cell, 'mouse')
+      await new Promise(resolve => setTimeout(resolve, 150))
+      await nextTick()
+      expect(popover()).not.toBeNull()
+    }, 15000)
+
+    it('shows a Note with an @ or a | as written', async () => {
+      const page = await mountSuspended(PollMatrix, {
+        props: { ...props, votes: [...props.votes, { slotId: 's1', userId: 'u2', value: 'maybe' as const, note: 'a@b | {c}' }] },
+        route: '/e/freitags-zocken-k7q2',
+        attachTo: document.body,
+      })
+      ;(page.get('td button').element as HTMLButtonElement).focus()
+      await nextTick()
+
+      expect(popover()?.textContent).toContain('„a@b | {c}“')
     }, 15000)
 
     it('opens the dialog from the keyboard and not from a mouse click', async () => {

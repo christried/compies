@@ -74,130 +74,25 @@ function textFor(userId: string, slotId: string) {
   return note ? `${label}: ${note}` : label
 }
 
-// A Note opens in COMPIES style instead of a native tooltip (#125). The input type decides, not the width: a mouse
-// gets the popover (hover or focus), touch and pen get the dialog from the tap, the keyboard gets the popover on
-// focus and the dialog on Enter or Space.
-interface Active { key: string, person: MatrixPerson, vote: VoteValue, note: string, el: HTMLElement }
-
-const active = ref<Active | null>(null)
-const mode = ref<'popover' | 'dialog' | null>(null)
+// A Note opens in COMPIES style instead of a native tooltip (#125); the input rules live in useNoteReveal.
 const scrollBox = useTemplateRef<HTMLElement>('scrollBox')
+const { active, mode, handlersFor, cancelClose, closePopoverSoon, closeDialog } = useNoteReveal(scrollBox)
 
-let lastPointer: string = 'keyboard'
-let closeTimer: ReturnType<typeof setTimeout> | undefined
-let ignoreScroll = false
-let skipNextFocus = false
+const keyOf = (userId: string, slotId: string) => `${userId}|${slotId}`
 
-function noteOf(userId: string, slotId: string) {
-  return voteOf.value(userId, slotId)?.note || null
-}
-
-function cancelClose() {
-  clearTimeout(closeTimer)
-}
-
-function openPopover(next: Active) {
-  cancelClose()
-  active.value = next
-  mode.value = 'popover'
-}
-
-function closePopover() {
-  cancelClose()
-  if (mode.value !== 'popover') return
-  mode.value = null
-  active.value = null
-}
-
-// The pointer may move from the cell onto the popover (WCAG 1.4.13), so closing waits a moment.
-function closePopoverSoon() {
-  cancelClose()
-  closeTimer = setTimeout(closePopover, 120)
-}
-
-// Focus goes back to the cell then, which must not open its popover again.
-function closeDialog() {
-  skipNextFocus = true
-  mode.value = null
-  active.value = null
-}
-
-// A cell partly under the sticky name column or past the right edge is scrolled into view first.
-function scrollIntoReach(el: HTMLElement) {
-  const box = scrollBox.value
-  const rowHeader = el.closest('tr')?.querySelector('th')
-  if (!box || !rowHeader) return
-  const hidden = box.getBoundingClientRect().left + rowHeader.getBoundingClientRect().width - el.getBoundingClientRect().left
-  const cut = el.getBoundingClientRect().right - box.getBoundingClientRect().right
-  const by = hidden > 0 ? -(hidden + 8) : cut > 0 ? cut + 8 : 0
-  if (by === 0) return
-  // The scroll event this causes comes after the popover has opened and must not close it again.
-  ignoreScroll = true
-  box.scrollLeft += by
-  requestAnimationFrame(() => {
-    ignoreScroll = false
-  })
-}
-
-function handlersFor(person: MatrixPerson, slotId: string, vote: VoteValue, note: string) {
-  const from = (el: EventTarget | null): Active => ({ key: `${person.id}|${slotId}`, person, vote, note, el: el as HTMLElement })
-  return {
-    pointerenter: (event: PointerEvent) => {
-      if (event.pointerType === 'mouse') openPopover(from(event.currentTarget))
-    },
-    pointerleave: (event: PointerEvent) => {
-      if (event.pointerType === 'mouse') closePopoverSoon()
-    },
-    focus: (event: FocusEvent) => {
-      if (skipNextFocus) {
-        skipNextFocus = false
-        return
-      }
-      if (lastPointer === 'touch' || lastPointer === 'pen') return
-      const el = event.currentTarget as HTMLElement
-      scrollIntoReach(el)
-      openPopover(from(el))
-    },
-    blur: closePopover,
-    keydown: (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closePopover()
-    },
-    click: (event: MouseEvent) => {
-      if (lastPointer === 'mouse') return
-      const el = event.currentTarget as HTMLElement
-      closePopover()
-      // A tap doesn't focus a button on iOS; the dialog returns focus to whatever had it.
-      el.focus({ preventScroll: true })
-      active.value = from(el)
-      mode.value = 'dialog'
-    },
+// Every cell is worked out once per change, not once per use in the template.
+const cells = computed(() => {
+  const map = new Map<string, { key: string, slotId: string, vote: VoteValue | undefined, note: string | null, look: (typeof LOOK)[VoteValue | 'open'], text: string }>()
+  for (const person of props.people) {
+    for (const slot of props.slots) {
+      const key = keyOf(person.id, slot.id)
+      const vote = voteOf.value(person.id, slot.id)
+      map.set(key, { key, slotId: slot.id, vote: vote?.value, note: vote?.note || null, look: lookFor(person.id, slot.id), text: textFor(person.id, slot.id) })
+    }
   }
-}
-
-function onPointerDown(event: PointerEvent) {
-  lastPointer = event.pointerType
-  skipNextFocus = false
-}
-function onKeyDown() {
-  lastPointer = 'keyboard'
-  skipNextFocus = false
-}
-function onScroll() {
-  if (!ignoreScroll) closePopover()
-}
-
-onMounted(() => {
-  document.addEventListener('pointerdown', onPointerDown, true)
-  document.addEventListener('keydown', onKeyDown, true)
-  // Capture: it also hears the matrix's own scroll box.
-  window.addEventListener('scroll', onScroll, { capture: true, passive: true })
+  return map
 })
-onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', onPointerDown, true)
-  document.removeEventListener('keydown', onKeyDown, true)
-  window.removeEventListener('scroll', onScroll, { capture: true })
-  cancelClose()
-})
+const cellsOf = (person: MatrixPerson) => props.slots.map(slot => cells.value.get(keyOf(person.id, slot.id))!)
 </script>
 
 <template>
@@ -253,36 +148,36 @@ onBeforeUnmount(() => {
               </span>
             </th>
             <td
-              v-for="slot in slots"
-              :key="slot.id"
+              v-for="cell in cellsOf(person)"
+              :key="cell.slotId"
               class="border-b-[1.5px] border-line-soft text-center"
             >
               <!-- A cell with a Note is one 44 px button (#125), named by its sr-only text. Others keep the box but aren't focusable. -->
               <component
-                :is="noteOf(person.id, slot.id) ? 'button' : 'div'"
-                :type="noteOf(person.id, slot.id) ? 'button' : undefined"
-                :aria-haspopup="noteOf(person.id, slot.id) ? 'dialog' : undefined"
+                :is="cell.note ? 'button' : 'div'"
+                :type="cell.note ? 'button' : undefined"
+                :aria-haspopup="cell.note ? 'dialog' : undefined"
                 class="relative mx-auto grid size-11 place-items-center rounded-[12px]"
-                :class="noteOf(person.id, slot.id) && ['hover:bg-paper-2', active?.key === `${person.id}|${slot.id}` && 'bg-paper-2']"
-                v-on="noteOf(person.id, slot.id) ? handlersFor(person, slot.id, voteOf(person.id, slot.id)!.value, noteOf(person.id, slot.id)!) : {}"
+                :class="cell.note && ['hover:bg-paper-2', active?.key === cell.key && 'bg-paper-2']"
+                v-on="cell.note ? handlersFor(person, cell.slotId, cell.vote!, cell.note) : {}"
               >
                 <span
                   class="inline-grid size-[26px] place-items-center border-2 border-line"
-                  :class="lookFor(person.id, slot.id).cell"
+                  :class="cell.look.cell"
                 >
                   <AppIcon
-                    v-if="lookFor(person.id, slot.id).icon"
-                    :icon="lookFor(person.id, slot.id).icon!"
+                    v-if="cell.look.icon"
+                    :icon="cell.look.icon"
                     :size="13"
                   />
                 </span>
                 <!-- The dot marks a Note (#102); its text is in the sr-only span. -->
                 <span
-                  v-if="noteOf(person.id, slot.id)"
+                  v-if="cell.note"
                   aria-hidden="true"
                   class="absolute top-1 right-1 size-2.5 rounded-full border-2 border-line bg-primary"
                 />
-                <span class="sr-only">{{ textFor(person.id, slot.id) }}</span>
+                <span class="sr-only">{{ cell.text }}</span>
               </component>
             </td>
           </tr>

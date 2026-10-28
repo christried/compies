@@ -60,8 +60,13 @@ function onInput(event: Event) {
   const el = event.target as HTMLTextAreaElement
   let value = el.value.replace(/\r\n|[\r\n]/g, ' ')
   if (characterCount(value) > NOTE_MAX) value = cutToCharacters(value, NOTE_MAX)
-  // Written back directly: when the cut value equals the draft, Vue would not patch the text area.
-  if (value !== el.value) el.value = value
+  // Written back directly: when the cut value equals the draft, Vue would not patch the text area. Rewriting
+  // sends the caret to the end, so it goes back to where it was (a pasted line break keeps the length).
+  if (value !== el.value) {
+    const caret = Math.min(el.selectionStart, value.length)
+    el.value = value
+    el.setSelectionRange(caret, caret)
+  }
   draft.value = value
   resize()
 }
