@@ -23,7 +23,10 @@ const players = computed(() => {
   if (min === null && max === null) return null
   return min === max || min === null || max === null ? String(min ?? max) : `${min}–${max}`
 })
-const formats = computed(() => props.game.formats.map(format => t(`library.format.${format}`)).join(', '))
+// Both Formats read as „Beides“ (#142, 02-components § GameCard).
+const formats = computed(() => (props.game.formats.length > 1
+  ? t('library.formatBoth')
+  : props.game.formats.map(format => t(`library.format.${format}`)).join(', ')))
 const isRow = computed(() => props.layout === 'row')
 </script>
 

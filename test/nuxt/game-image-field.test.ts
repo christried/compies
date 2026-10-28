@@ -153,3 +153,51 @@ describe('the image in the game form (#143)', () => {
     expect(page.findAll('button').some(button => button.text() === 'Anderes Bild wählen')).toBe(true)
   })
 })
+
+// Edit mode (#142): an image picked while editing is uploaded after the changes are saved, like a new one (#143).
+const patches = vi.fn()
+registerEndpoint(`/api/games/${created.id}`, {
+  method: 'PATCH',
+  handler: () => {
+    patches()
+    return created
+  },
+})
+
+describe('an image picked while editing the game (#142, #143)', () => {
+  beforeEach(() => {
+    signInAs({ ...kitty, canHost: true })
+    creates.mockClear()
+    patches.mockClear()
+    uploads.mockClear()
+    toCardWebp.mockReset()
+    toCardWebp.mockResolvedValue(cardWebp)
+    uploadFailsWith = null
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://localhost/preview')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    useToast().toasts.value.forEach(toast => useToast().dismiss(toast.id))
+  })
+
+  it('saves the changes first, then puts the WebP, and says saved with the game the upload returns', async () => {
+    const page = await mountSuspended(GameForm, { props: { game: created } })
+    await pick(page)
+    await vi.waitFor(() => expect(page.find('img[alt="Vorschau des Bildes"]').exists()).toBe(true))
+
+    await page.get('form').trigger('submit')
+
+    await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[withImage]]))
+    expect(patches).toHaveBeenCalledOnce()
+    expect(creates).not.toHaveBeenCalled()
+    expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 1234 })
+  })
+
+  it('puts nothing when the image was not changed', async () => {
+    const page = await mountSuspended(GameForm, { props: { game: created } })
+
+    await page.get('form').trigger('submit')
+
+    await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[created]]))
+    expect(patches).toHaveBeenCalledOnce()
+    expect(uploads).not.toHaveBeenCalled()
+  })
+})
