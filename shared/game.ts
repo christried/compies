@@ -1,3 +1,4 @@
+import { asRecord } from './record'
 import { characterCount } from './text'
 import { parseYouTubeId } from './youtube'
 
@@ -59,8 +60,8 @@ export function canEditGame(viewer: { id: string, isAdmin: boolean }, game: { cr
   return viewer.isAdmin || viewer.id === game.createdBy
 }
 
-/** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
-export interface GameView {
+/** What GameCard shows of a game: the part of a library game that an Event's pools carry too (#146). */
+export interface PoolGame {
   id: string
   name: string
   /** URL of the uploaded image (#143); null until then. */
@@ -72,6 +73,10 @@ export interface GameView {
   playersMax: number | null
   /** The Suitabilities, in SUITABILITIES order; empty when none is set (#171). */
   suitabilities: Suitability[]
+}
+
+/** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
+export interface GameView extends PoolGame {
   /** `name` is the display name if the User set one, like Event members. */
   createdBy: { id: string, name: string }
   createdAt: string
@@ -138,7 +143,7 @@ export function parseYoutubeField(raw: unknown): string | null | undefined {
 }
 
 /** A whole number from `min` to `max`; `fallback` when the field is absent. Undefined when it is anything else. */
-export function parseWholeNumber(raw: unknown, min: number, max: number, fallback: number): number | undefined {
+function parseWholeNumber(raw: unknown, min: number, max: number, fallback: number): number | undefined {
   if (raw === undefined) return fallback
   return typeof raw === 'number' && Number.isInteger(raw) && raw >= min && raw <= max ? raw : undefined
 }
@@ -156,7 +161,7 @@ function parsePlayerBound(raw: unknown): number | null | undefined {
 }
 
 /** The recommended player count, both bounds optional and min ≤ max when both are set. Null bounds when absent. */
-export function parsePlayers(body: Record<string, unknown>): { min: number | null, max: number | null } | undefined {
+function parsePlayers(body: Record<string, unknown>): { min: number | null, max: number | null } | undefined {
   const min = parsePlayerBound(body.playersMin)
   const max = parsePlayerBound(body.playersMax)
   if (min === undefined || max === undefined) return undefined
@@ -189,7 +194,7 @@ export interface GameInput {
 export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities'
 
 export function parseGameInput(input: unknown): { ok: true, game: GameInput } | { ok: false, error: GameInputError } {
-  const body = (typeof input === 'object' && input !== null ? input : {}) as Record<string, unknown>
+  const body = asRecord(input)
 
   const name = parseGameName(body.name)
   if (name === null) return { ok: false, error: 'invalid_game_name' }

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
 import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
 import { eventDataKey } from '~/utils/event-data'
 import { draftFromEvent, settingsBody, type EventDraft, type StepKey } from '~/utils/event-draft'
@@ -62,16 +61,10 @@ async function save(sent: EventDraft) {
     </template>
 
     <div class="mx-auto flex w-full flex-col gap-[18px] px-1">
-      <NuxtLink
+      <BackLink
         :to="eventPath(slug)"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('eventSettings.back') }}
-      </NuxtLink>
+        :label="t('eventSettings.back')"
+      />
 
       <NoticeBanner
         v-if="!editable"
@@ -89,7 +82,7 @@ async function save(sent: EventDraft) {
         :nav-title="heading"
         :kicker="t('eventSettings.kicker')"
         :last-label="t('eventSettings.save')"
-        :saving-label="t('eventSettings.saving')"
+        :saving-label="t('common.saving')"
         :error-copy="{ wrong_phase: 'eventSettings.wrongPhase' }"
         :submit="save"
       />

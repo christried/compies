@@ -4,7 +4,7 @@ import type { Component } from 'vue'
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
 import { AVAILABLE_FORMATS, TEAM_COUNT_MAX, TEAM_COUNT_MIN, TEAM_PLAYERS_MAX, TEAM_SIZE_MAX, TEAM_SIZE_MIN, withTeams, type Format } from '~~/shared/settings'
 
-// Step 2: Format and team layout (#144). Free-for-all, bracket and league show as „Bald verfügbar“. With
+// Format and team layout (#144). Free-for-all, bracket and league show as „Bald verfügbar“. With
 // Teams: how many teams and how many Players per team, at most 24 Players in all; a plus button at the
 // limit says which limit it is. In the settings editor (#147) `locks.reason` locks the Format and the team count
 // (the Event is running), and `locks.floors` keeps the Team size from going below the fullest team.
@@ -16,9 +16,7 @@ const blocker = defineModel<string | null>('blocker', { default: null })
 const { t } = useI18n()
 
 // Every value this step can produce is valid, so it never blocks.
-watchEffect(() => {
-  blocker.value = null
-})
+useStepBlocker(blocker)
 
 // bracket and league are not a Format yet, so the cards carry more values than Format (#144).
 const options = computed<{ value: Format | 'bracket' | 'league', label: string, desc: string, icon: Component, locked: boolean }[]>(() => ([

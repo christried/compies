@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addPoolGame, draftBody, draftFromEvent, newDraft, settingsBody, settingsOf, togglePoolGame, vetoAllowanceOf, type EventDraft } from '../../app/utils/event-draft'
-import type { EventView, PoolGame } from '../../shared/event'
+import type { EventView } from '../../shared/event'
+import type { PoolGame } from '../../shared/game'
 import { defaultSettings, parseSettings, type EventSettings } from '../../shared/settings'
 
 // The stepper's draft (#144): what the Host has entered so far, and the body that „Event erstellen“ sends.

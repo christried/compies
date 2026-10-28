@@ -2,7 +2,7 @@
 import { ChevronLeft, ChevronRight, CircleHelp } from '@lucide/vue'
 
 // The layout of the guided Event setup (02-components § EventStepper, screen 05). It knows no step: the
-// parent says which steps there are (5 now, 8 with the Selection mode and the pools) and which one is
+// parent says which steps there are (the wizard's `steps`, 8 on /neu and 6 in the settings editor) and which one is
 // current, and puts the step's form in the default slot and its explanation in the `info` slot.
 // Desktop (md+): step list left (230 px), form centre, info column right (340 px). Phones: a progress bar,
 // the info behind an „Info“ button in a bottom sheet. Zurück and Weiter sit in a sticky dock at the bottom right

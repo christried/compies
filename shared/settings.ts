@@ -1,6 +1,7 @@
 // Event settings (#138, release 1.3): the values the stepper, the settings rules and the schema share.
 
-import type { Phase } from './event'
+import { beforeFinish, type Phase } from './event'
+import { isRecord } from './record'
 
 /** Formats (GLOSSARY: Format). Only `teams` can be chosen in 1.3; `ffa` is shown „Bald verfügbar“. */
 export const FORMATS = ['teams', 'ffa'] as const
@@ -70,6 +71,11 @@ export type SettingsError
     | 'veto_allowance_range'
     | 'wheel_options_without_wheel' // hiddenWheel true or vetoAllowance set with a mode other than lucky_wheel
 
+/** Whether the Selection mode spins a Lucky Wheel: only then the Hidden wheel and the Veto allowance apply. 1.5/1.6 modes add their own branches here. */
+export function hasWheel(mode: SelectionMode): boolean {
+  return mode === 'lucky_wheel'
+}
+
 /** The Veto allowance a Lucky Wheel starts with: at least 3, or one per Player of a team. */
 export function defaultVetoAllowance(teamSize: number): number {
   return Math.max(3, teamSize)
@@ -105,7 +111,7 @@ export function isFlat(values: number[]): boolean {
   return values.length >= 2 && values.every(value => value === values[0])
 }
 
-/** Defaults for a new Event: 2 teams × 3 (a 3v3), Game count 10, linear, Admin pick, visible wheel, no Veto allowance. */
+/** Defaults for a new Event: 2 teams × 3 (a 3v3), Game count 10, linear, Host pick (`admin_pick`), visible wheel, no Veto allowance. */
 export function defaultSettings(): EventSettings {
   return {
     format: 'teams',
@@ -127,7 +133,7 @@ export function withTeams<S extends Pick<EventSettings, 'teamCount' | 'teamSize'
 
 /** Recommended Game pool size: Game count + Veto allowance × team count for the Lucky Wheel; the Game count otherwise (#146 shows it). */
 export function recommendedPoolSize(settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>): number {
-  if (settings.selectionMode !== 'lucky_wheel') return settings.gameCount
+  if (!hasWheel(settings.selectionMode)) return settings.gameCount
   return settings.gameCount + (settings.vetoAllowance ?? 0) * settings.teamCount
 }
 
@@ -149,10 +155,6 @@ type Parsed = { ok: true, settings: EventSettings } | { ok: false, error: Settin
 
 function fail(error: SettingsError): Parsed {
   return { ok: false, error }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function isInt(value: unknown): value is number {
@@ -202,7 +204,7 @@ export function parseSettings(input: unknown): Parsed {
 
   const base = { format, teamCount, teamSize, gameCount, pointsTable: { preset, values: points }, selectionMode }
   const { hiddenWheel, vetoAllowance } = input
-  if (selectionMode !== 'lucky_wheel') {
+  if (!hasWheel(selectionMode)) {
     if ((hiddenWheel !== undefined && hiddenWheel !== false) || (vetoAllowance !== undefined && vetoAllowance !== null)) return fail('wheel_options_without_wheel')
     return { ok: true, settings: { ...base, hiddenWheel: false, vetoAllowance: null } }
   }
@@ -215,6 +217,11 @@ export function parseSettings(input: unknown): Parsed {
   if (!isInt(vetoAllowance)) return fail('invalid_settings')
   if (vetoAllowance < VETO_ALLOWANCE_MIN || vetoAllowance > VETO_ALLOWANCE_MAX) return fail('veto_allowance_range')
   return { ok: true, settings: { ...base, hiddenWheel: hiddenWheel ?? false, vetoAllowance } }
+}
+
+/** The Hidden wheel of a stored row: a null counts as hidden, so a row that lost the value never shows a pool it should hide (N11). */
+export function storedHiddenWheel(stored: boolean | null): boolean {
+  return stored ?? true
 }
 
 /** Settings from the stored columns; null when the Event is not set up (any required column null). */
@@ -230,7 +237,7 @@ export function settingsFromRow(row: {
 }): EventSettings | null {
   const { format, teamCount, teamSize, gameCount, pointsTable, selectionMode } = row
   if (format === null || teamCount === null || teamSize === null || gameCount === null || pointsTable === null || selectionMode === null) return null
-  return { format, teamCount, teamSize, gameCount, pointsTable, selectionMode, hiddenWheel: row.hiddenWheel ?? false, vetoAllowance: row.vetoAllowance }
+  return { format, teamCount, teamSize, gameCount, pointsTable, selectionMode, hiddenWheel: storedHiddenWheel(row.hiddenWheel), vetoAllowance: row.vetoAllowance }
 }
 
 // Changing the settings of an Event that exists (#147).
@@ -245,7 +252,7 @@ export function settingsLocked(phase: Phase): boolean {
 
 /** Settings can change in every Phase before the Event is finished. */
 export function settingsEditable(phase: Phase): boolean {
-  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
+  return beforeFinish(phase)
 }
 
 /** The lowest values the Event allows now: Team size never below the fullest team, Veto allowance never below the most Vetoes a Party has spent. */
@@ -255,6 +262,19 @@ export interface SettingsFloors {
 }
 
 export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'wrong_phase'
+
+/**
+ * The change put over the current settings, ready for parseSettings. Wheel values left over from the Lucky Wheel (from
+ * `current`) never fail a Host pick Event, so they are dropped; ones the change itself sends stay and do fail, as on create.
+ */
+export function mergeSettings(current: EventSettings, change: Record<string, unknown>): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...current, ...change }
+  if (merged.selectionMode === 'admin_pick') {
+    if (!('hiddenWheel' in change)) delete merged.hiddenWheel
+    if (!('vetoAllowance' in change)) delete merged.vetoAllowance
+  }
+  return merged
+}
 
 /**
  * Checks a change of an Event's settings. `current` null = not set up: the change must then be a full payload (parseSettings).
@@ -275,12 +295,7 @@ export function checkSettingsChange(
     if (settingsLocked(context.phase) && LOCKED_WHEN_RUNNING.some(key => key in change && !sameValue(change[key], current[key]))) {
       return { ok: false, error: 'setting_locked' }
     }
-    merged = { ...current, ...change }
-    // Wheel values left over from the Lucky Wheel (from `current`) never fail an Admin pick Event; ones the change sends do, as on create.
-    if (merged.selectionMode === 'admin_pick') {
-      if (!('hiddenWheel' in change)) delete merged.hiddenWheel
-      if (!('vetoAllowance' in change)) delete merged.vetoAllowance
-    }
+    merged = mergeSettings(current, change)
   }
 
   const parsed = parseSettings(merged)
@@ -298,7 +313,7 @@ function sameValue(a: unknown, b: unknown): boolean {
   return a === b
 }
 
-/** Whether an Event may start a Session: it needs settings (release 1.4 enforces it). */
+/** Whether an Event may start a Session: it needs settings. Kept for 1.4, which enforces it at Session start; only its unit test calls it today. */
 export function canStartSession(settings: EventSettings | null): boolean {
   return settings !== null
 }

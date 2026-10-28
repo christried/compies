@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
 import { addPoolGame, settingsOf, togglePoolGame, type EventDraft, type StepLocks } from '~/utils/event-draft'
-import type { PoolGame } from '~~/shared/event'
-import { NO_FILTERS, type GameFilters, type GameView } from '~~/shared/game'
+import { NO_FILTERS, type GameFilters, type GameView, type PoolGame } from '~~/shared/game'
 import { poolHint, type Pool } from '~~/shared/settings'
 
-// Steps 6 and 7: the Game pool and the Tiebreaker pool (#146), one component and one markup for both (`kind`); they
+// The Game pool and the Tiebreaker pool (#146), one component and one markup for both (`kind`); they
 // differ in the heading and list copy, the Tiebreaker's note and the Game pool's „Wird knapp“ hint. The Host picks
 // games in the game browser (#173, its filters are local, never the address) and can make a missing one in a sheet; it
 // lands in the pool being filled, and the wizard's other input stays where it is (the draft lives in the entry page).
@@ -21,9 +20,7 @@ const blocker = defineModel<string | null>('blocker', { default: null })
 const { t } = useI18n()
 const { toast } = useToast()
 
-watchEffect(() => {
-  blocker.value = null
-})
+useStepBlocker(blocker)
 
 const games = computed(() => draft.value.pools[props.kind])
 const COPY: Record<Pool, { count: string, list: string, note?: string }> = {

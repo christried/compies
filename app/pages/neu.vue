@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronRight } from '@lucide/vue'
 import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
 import { draftBody, newDraft, settingsOf, type EventDraft, type StepKey } from '~/utils/event-draft'
 import { settingsSentence } from '~/utils/settings-summary'
@@ -8,7 +8,7 @@ import { eventPath } from '~~/shared/links'
 
 // Create an Event (screen 05, `?s=create`): the guided wizard (#144, #170) — name, Format with team layout, Game
 // count, points table, the Selection mode with the Lucky Wheel's options (#145), the Game pool and the Tiebreaker
-// pool (#146), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Session erstellen“; then the Fertig screen shows the
+// pool (#146), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Event erstellen“; then the Fertig screen shows the
 // summary and the Invite link. Only Users with the Host permission get it (ADR 0002); everyone else sees the
 // Construction page. The server is the final judge. A step goes into STEP_KEYS here and into the wizard's step map.
 
@@ -52,16 +52,10 @@ const datesLine = computed(() => (poll.value
     no-tabs
   >
     <div class="mx-auto flex w-full flex-col gap-[18px] px-1">
-      <NuxtLink
+      <BackLink
         to="/"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('mvp.create.back') }}
-      </NuxtLink>
+        :label="t('mvp.create.back')"
+      />
 
       <div
         v-if="created"
@@ -110,7 +104,7 @@ const datesLine = computed(() => (poll.value
         v-model="draft"
         :steps="STEP_KEYS"
         :last-label="t('stepper.create')"
-        :saving-label="t('mvp.create.saving')"
+        :saving-label="t('common.saving')"
         :submit="create"
       />
     </div>

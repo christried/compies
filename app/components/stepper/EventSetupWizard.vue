@@ -12,6 +12,7 @@ import { apiErrorKey } from '~/utils/api-error'
 import type { EventDraft, StepKey, StepLocks } from '~/utils/event-draft'
 import type { ApiErrorCode } from '~~/shared/errors'
 import { SLOTS_MAX } from '~~/shared/event'
+import { hasWheel } from '~~/shared/settings'
 
 // The Event setup wizard (#170): the one step chain that /neu (create, #144) and the settings editor (#147) run.
 // An entry page says which steps (`steps`, copy in `stepper.steps.<key>`), keeps the draft (`v-model`), what is locked
@@ -28,7 +29,7 @@ const props = defineProps<{
   navTitle?: string
   /** Replaces „Schritt n von m“ above the step's title. */
   kicker?: string
-  /** Weiter on the last step („Session erstellen“, „Speichern“) and while `submit` is running. */
+  /** Weiter on the last step („Event erstellen“, „Speichern“) and while `submit` is running. */
   lastLabel: string
   savingLabel: string
   /** Every step is a link from the start (the editor), instead of those the Host has been to. */
@@ -67,7 +68,7 @@ const isLast = computed(() => current.value === props.steps.length - 1)
 // The info column explains the Format or, on the Selection mode step, the chosen mode (#145). The pool steps have none (#173).
 const infoTopic = computed(() => {
   if (stepKey.value === 'format') return draft.value.settings.format
-  if (stepKey.value === 'mode') return draft.value.settings.selectionMode === 'lucky_wheel' ? 'wheel' : 'admin'
+  if (stepKey.value === 'mode') return hasWheel(draft.value.settings.selectionMode) ? 'wheel' : 'admin'
   return null
 })
 const infoTitle = computed(() => (infoTopic.value ? t(`setup.info.${infoTopic.value}.title`) : undefined))

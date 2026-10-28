@@ -1,7 +1,8 @@
-import type { EventView, PoolGame } from '~~/shared/event'
-import { defaultSettings, defaultVetoAllowance, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
+import type { EventView } from '~~/shared/event'
+import type { PoolGame } from '~~/shared/game'
+import { defaultSettings, defaultVetoAllowance, hasWheel, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
 
-// What the Host has entered in the stepper so far (#144). Nothing is sent until „Session erstellen“; then
+// What the Host has entered in the stepper so far (#144). Nothing is sent until „Event erstellen“; then
 // `draftBody` is the POST body of `/api/e`. The functions below return a new draft each; the stepper assigns it.
 
 /** The Sessions and Dates step: the Date poll (up to 16 Slots) or one direct Date per Session. Times are Berlin wall-clock values. */
@@ -30,9 +31,9 @@ export type DraftSettings = Omit<EventSettings, 'hiddenWheel' | 'vetoAllowance'>
 export interface EventDraft {
   name: string
   settings: DraftSettings
-  /** „Rad verdecken“, kept while Admin pick is chosen so switching back restores it (#145). */
+  /** „Rad verdecken“, kept while Host-Wahl is chosen so switching back restores it (#145). */
   hiddenWheel: boolean
-  /** The Host's Veto allowance, kept while Admin pick is chosen; null follows the Team size until the Host touches it (#145). */
+  /** The Host's Veto allowance, kept while Host-Wahl is chosen; null follows the Team size until the Host touches it (#145). */
   vetoAllowance: number | null
   /** The games of the Game pool and the Tiebreaker pool, in the order they were added (#146). Games, not ids, so the step and Fertig can show them. */
   pools: { main: PoolGame[], tiebreaker: PoolGame[] }
@@ -56,9 +57,9 @@ export function vetoAllowanceOf(draft: Pick<EventDraft, 'vetoAllowance' | 'setti
   return draft.vetoAllowance ?? defaultVetoAllowance(draft.settings.teamSize)
 }
 
-/** The settings that are stored: only the Lucky Wheel has the wheel options, Admin pick has none (#145). */
+/** The settings that are stored: only the Lucky Wheel has the wheel options, Host pick has none (#145). */
 export function settingsOf(draft: EventDraft): EventSettings {
-  if (draft.settings.selectionMode !== 'lucky_wheel') return { ...draft.settings, hiddenWheel: false, vetoAllowance: null }
+  if (!hasWheel(draft.settings.selectionMode)) return { ...draft.settings, hiddenWheel: false, vetoAllowance: null }
   return { ...draft.settings, hiddenWheel: draft.hiddenWheel, vetoAllowance: vetoAllowanceOf(draft) }
 }
 
@@ -87,7 +88,7 @@ export function draftBody(draft: EventDraft) {
 
 /**
  * The draft of the settings editor (#147), made from the Event as the Host reads it. A stored Veto allowance is the
- * Host's choice, so a Team size change must not overwrite it; an Admin pick Event has none stored (null), so the Lucky Wheel
+ * Host's choice, so a Team size change must not overwrite it; a Host pick Event has none stored (null), so the Lucky Wheel
  * would follow the Team size. Name and dates are not edited here.
  */
 export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): EventDraft {

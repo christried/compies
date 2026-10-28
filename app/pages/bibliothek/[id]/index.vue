@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ChevronLeft, Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
-import { apiFailure } from '~/utils/api-error'
-import { canSeeLibrary, type GameView } from '~~/shared/game'
+import { Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
+import { formatMonthYear } from '~/utils/berlin-time'
+import { describeGame } from '~/utils/describe-game'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
 // set length, the facts (player count, Suitabilities, clip length) and who created it. The creator and the Platform
@@ -9,36 +9,17 @@ import { canSeeLibrary, type GameView } from '~~/shared/game'
 // looks like any missing page; so does the page for Users who may not see the library.
 const { t } = useI18n()
 const route = useRoute()
-const user = useAuthUser()
-const viewer = computed(() => canSeeLibrary(user.value))
 const id = computed(() => String(route.params.id))
 
-const { data: game, status, error, refresh } = useFetch<GameView>(() => `/api/games/${id.value}`, {
-  key: `game-${id.value}`,
-  immediate: viewer.value,
-})
-const missing = computed(() => apiFailure(error.value).status === 404)
+const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
 useHead({ title: () => game.value?.name ?? t('nav.library') })
 
-// Month and year in Berlin time, like the rest of the app (ADR 0003).
-const month = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' })
-const createdMonth = computed(() => (game.value ? month.format(new Date(game.value.createdAt)) : ''))
+const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.value.createdAt)) : ''))
 
-// The player count as a fact: „2 bis 10“, „ab 2“, „bis 10“, or „2 Spieler“ for one count (#142).
-const players = computed(() => {
-  const { playersMin: min, playersMax: max } = game.value ?? { playersMin: null, playersMax: null }
-  if (min === null && max === null) return null
-  if (min === max) return t('library.players', { n: min })
-  if (max === null) return t('library.playersFrom', { min })
-  if (min === null) return t('library.playersUpTo', { max })
-  return t('library.playersBetween', { min, max })
-})
-// The Suitabilities („Passt zu“, #171), in SUITABILITIES order, as one comma-joined fact.
-const suitabilities = computed(() => {
-  const list = game.value?.suitabilities ?? []
-  if (list.length === 0) return null
-  return list.map(suitability => t(`library.suitability.${suitability}`)).join(', ')
-})
+// The player count (spelled out) and the Suitabilities as facts (#142, #171).
+const description = computed(() => (game.value ? describeGame(game.value, t) : null))
+const players = computed(() => description.value?.players ?? null)
+const suitabilities = computed(() => description.value?.suitabilities ?? null)
 </script>
 
 <template>
@@ -54,16 +35,10 @@ const suitabilities = computed(() => {
     kind="hub"
   >
     <div class="mx-auto flex w-full max-w-[1040px] flex-col gap-[14px]">
-      <NuxtLink
+      <BackLink
         to="/bibliothek"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('nav.library') }}
-      </NuxtLink>
+        :label="t('nav.library')"
+      />
 
       <FullScreenState
         v-if="error"

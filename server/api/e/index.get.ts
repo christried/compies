@@ -7,6 +7,7 @@ import { missingDates, numberedSessions, openPoll } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { sessionNotRemoved } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
+import { shownName } from '../../../shared/auth'
 import type { HomeEvent, HomeView } from '../../../shared/event'
 
 // Home (#12, screen M1): every Event the User is a Member of, not deleted, in Home order. Each card
@@ -84,7 +85,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
     const card: HomeEvent = {
       slug: row.slug,
       name: row.name,
-      host: { name: row.hostDisplayName ?? row.hostName },
+      host: { name: shownName({ name: row.hostName, displayName: row.hostDisplayName }) },
       phase: row.phase,
       sessionCount: sessionStarts.length,
       missingDates: missingDates(sessionStarts),

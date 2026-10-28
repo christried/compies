@@ -12,6 +12,7 @@ import {
   defaultSettings,
   defaultVetoAllowance,
   isFlat,
+  mergeSettings,
   linearPoints,
   parseSettings,
   poolHint,
@@ -19,6 +20,7 @@ import {
   recommendedPoolSize,
   risingPlace,
   settingsFromRow,
+  storedHiddenWheel,
   withTeams,
   winnerTakesAllPoints,
 } from '../../shared/settings'
@@ -176,6 +178,14 @@ describe('settingsFromRow', () => {
     expect(settingsFromRow(full)).toEqual({ ...full, vetoAllowance: null })
     expect(settingsFromRow({ ...full, gameCount: null })).toBeNull()
     expect(settingsFromRow({ ...full, pointsTable: null })).toBeNull()
+  })
+
+  it('a null Hidden wheel on an Event with settings counts as hidden (fail-closed, N11)', () => {
+    const row = { ...empty, format: 'teams' as const, teamCount: 2, teamSize: 3, gameCount: 10, pointsTable: { preset: 'linear' as const, values: [1, 0] }, selectionMode: 'lucky_wheel' as const }
+    expect(settingsFromRow(row)?.hiddenWheel).toBe(true)
+    expect(storedHiddenWheel(null)).toBe(true)
+    expect(storedHiddenWheel(false)).toBe(false)
+    expect(storedHiddenWheel(true)).toBe(true)
   })
 
   it('keeps the wheel options of a Glücksrad Event', () => {
@@ -352,6 +362,33 @@ describe('Phases of the settings (#147)', () => {
   it('lets the Host change settings in every Phase before the Event is finished', () => {
     expect((['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as Phase[]).map(settingsEditable))
       .toEqual([true, true, true, true, false, false])
+  })
+})
+
+describe('mergeSettings', () => {
+  const wheelSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 4 }
+
+  it('puts the change over the current settings', () => {
+    expect(mergeSettings(defaultSettings(), { gameCount: 5, teamSize: 2 })).toMatchObject({ teamCount: 2, teamSize: 2, gameCount: 5 })
+  })
+
+  it('drops the wheel values that are left over when the change switches to Admin pick', () => {
+    const merged = mergeSettings(wheelSettings, { selectionMode: 'admin_pick' })
+
+    expect(merged).toEqual({ ...defaultSettings(), hiddenWheel: undefined, vetoAllowance: undefined, selectionMode: 'admin_pick' })
+    expect('hiddenWheel' in merged).toBe(false)
+    expect('vetoAllowance' in merged).toBe(false)
+  })
+
+  it('keeps wheel values the change itself sends, so parseSettings can refuse them with Admin pick', () => {
+    const merged = mergeSettings(wheelSettings, { selectionMode: 'admin_pick', hiddenWheel: true })
+
+    expect(merged.hiddenWheel).toBe(true)
+    expect('vetoAllowance' in merged).toBe(false)
+  })
+
+  it('keeps the wheel values while the Lucky Wheel stays', () => {
+    expect(mergeSettings(wheelSettings, { gameCount: 5 })).toMatchObject({ hiddenWheel: true, vetoAllowance: 4 })
   })
 })
 

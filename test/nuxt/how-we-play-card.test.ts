@@ -2,7 +2,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it } from 'vitest'
 import HowWePlayCard from '~/components/HowWePlayCard.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { EventPools, PoolGame } from '~~/shared/event'
+import type { EventPools } from '~~/shared/event'
+import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { serve, view } from './event-page'
@@ -83,7 +84,7 @@ describe('HowWePlayCard (#148)', () => {
     const card = await mountCard({ settings: hiddenWheel, pools: visiblePools, isHost: true })
 
     expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong', 'Schach'])
-    expect(card.text()).toContain('Das Rad ist verdeckt. Nur du siehst diese Spiele.')
+    expect(card.text()).toContain('Das Rad ist verdeckt: Die anderen sehen nur, wie viele Spiele im Pool sind.')
   })
 
   it('does not add the note for the Host while the wheel is visible', async () => {
