@@ -64,6 +64,8 @@ export const API_ERROR_STATUS = {
   invalid_points: 400,
   /** A place earns more points than the place above it. */
   points_rising: 400,
+  /** Every place earns the same points, so the table does not rank anyone (#175). */
+  points_flat: 400,
   /** A Selection mode that 1.3 cannot run yet. */
   mode_unavailable: 400,
   /** 0 to 9 Vetos per Party. */

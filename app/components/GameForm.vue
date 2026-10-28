@@ -247,9 +247,6 @@ async function submit() {
             </button>
           </div>
         </div>
-        <p class="m-0 text-small text-ink-2">
-          {{ t('gameEdit.playersNote') }}
-        </p>
       </div>
 
       <div class="flex min-w-0 flex-col gap-2.5">

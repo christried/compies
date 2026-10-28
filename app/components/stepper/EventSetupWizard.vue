@@ -24,7 +24,7 @@ import { SLOTS_MAX } from '~~/shared/event'
 const props = defineProps<{
   steps: readonly StepKey[]
   locks?: StepLocks
-  /** The step list's heading; „Neue Session“ by default. */
+  /** The step list's heading; „Neues Event“ by default. */
   navTitle?: string
   /** Replaces „Schritt n von m“ above the step's title. */
   kicker?: string

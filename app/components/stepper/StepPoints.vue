@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Lock } from '@lucide/vue'
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
-import { risingPlace } from '~~/shared/settings'
+import { isFlat, risingPlace } from '~~/shared/settings'
 
 // Step 4: the points table (#144). A custom table in which a place earns more than the place above blocks
-// Weiter with the same message the table shows on that row. `locks.reason` (settings editor, #147) shows the table locked.
+// Weiter with the same message the table shows on that row, and so does one in which every place earns the
+// same (#175). `locks.reason` (settings editor, #147) shows the table locked.
 defineProps<{ locks?: StepLocks }>()
 const draft = defineModel<EventDraft>({ required: true })
 const settings = useDraftSettings(draft)
@@ -13,8 +14,10 @@ const blocker = defineModel<string | null>('blocker', { default: null })
 const { t } = useI18n()
 
 watchEffect(() => {
-  const rising = settings.value.pointsTable.preset === 'custom' ? risingPlace(settings.value.pointsTable.values) : null
-  blocker.value = rising ? t('stepper.points.rising', { n: rising, above: rising - 1 }) : null
+  const { preset, values } = settings.value.pointsTable
+  const rising = preset === 'custom' ? risingPlace(values) : null
+  if (rising) blocker.value = t('stepper.points.rising', { n: rising, above: rising - 1 })
+  else blocker.value = preset === 'custom' && isFlat(values) ? t('stepper.points.flat') : null
 })
 </script>
 

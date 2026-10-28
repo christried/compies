@@ -138,7 +138,7 @@ describe('changing the settings of an Event (#147)', () => {
       expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
     })
 
-    it('switches a Lucky Wheel Event to Admin pick without wheel keys and drops its wheel options', async () => {
+    it('switches a Glücksrad Event to Admin pick without wheel keys and drops its wheel options', async () => {
       const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true } })
 
       const response = await patch(slug, { settings: { selectionMode: 'admin_pick' } })
@@ -155,6 +155,19 @@ describe('changing the settings of an Event (#147)', () => {
       expect(response.status).toBe(400)
       expect(response.statusText).toBe('game_count_range')
       expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
+    })
+
+    it('refuses a flat points table with points_flat and keeps the row, and takes 5/5/5/4 (#175)', async () => {
+      const slug = await createdEvent()
+
+      const flat = await patch(slug, { settings: { pointsTable: { preset: 'custom', values: [2, 2] } } })
+      expect(flat.status).toBe(400)
+      expect(flat.statusText).toBe('points_flat')
+      expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
+
+      const valid = await patch(slug, { settings: { teamCount: 4, pointsTable: { preset: 'custom', values: [5, 5, 5, 4] } } })
+      expect(valid.status).toBe(200)
+      expect(settingsFromRow(await row(slug))).toMatchObject({ teamCount: 4, pointsTable: { preset: 'custom', values: [5, 5, 5, 4] } })
     })
 
     it('also works in the date_set Phase and while the Event is a draft', async () => {

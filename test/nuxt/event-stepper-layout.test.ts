@@ -46,7 +46,7 @@ describe('EventStepper', () => {
       const page = await mountStepper()
 
       const nav = page.get('nav[aria-label="Schritte"]')
-      expect(nav.text()).toContain('Neue Session')
+      expect(nav.text()).toContain('Neues Event')
       const items = nav.findAll('li')
       expect(items).toHaveLength(5)
       expect(items.map(item => item.attributes('aria-current'))).toEqual([undefined, 'step', undefined, undefined, undefined])
@@ -132,11 +132,11 @@ describe('EventStepper', () => {
     })
 
     it('blocks Weiter with aria-disabled and shows the reason, and does not go on', async () => {
-      const page = await mountStepper({ nextBlocked: 'Gib der Session einen Namen.' })
+      const page = await mountStepper({ nextBlocked: 'Gib dem Event einen Namen.' })
 
       const next = page.findAll('[data-testid="stepper-footer"] button').find(button => button.text().includes('Weiter'))!
       expect(next.attributes('aria-disabled')).toBe('true')
-      expect(page.get(`[id="${next.attributes('aria-describedby')}"]`).text()).toBe('Gib der Session einen Namen.')
+      expect(page.get(`[id="${next.attributes('aria-describedby')}"]`).text()).toBe('Gib dem Event einen Namen.')
 
       await next.trigger('click')
       expect(page.emitted('next')).toBeUndefined()
@@ -169,9 +169,9 @@ describe('EventStepper', () => {
     })
 
     it('uses the label it is given for the last step', async () => {
-      const page = await mountStepper({ current: 4, reached: 4, nextLabel: 'Session erstellen' })
+      const page = await mountStepper({ current: 4, reached: 4, nextLabel: 'Event erstellen' })
 
-      expect(page.get('[data-testid="stepper-footer"]').text()).toContain('Session erstellen')
+      expect(page.get('[data-testid="stepper-footer"]').text()).toContain('Event erstellen')
     })
   })
 

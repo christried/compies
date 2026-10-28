@@ -54,3 +54,33 @@ describe('copy rules', () => {
     expect(offlinePage).not.toMatch(/prefers-color-scheme:\s*dark/)
   })
 })
+
+// The words of GLOSSARY.md (#175): the whole Event is an Event, the Lucky Wheel is the Glücksrad, the Admin pick the Host-Wahl.
+describe('glossary words in the copy', () => {
+  const byKey = new Map(entries.map(e => [e.key, e.value]))
+
+  it('never shows „Lucky Wheel“ or „Admin-Wahl“', () => {
+    const hits = entries.filter(e => /Lucky Wheel|Admin-Wahl/.test(e.value)).map(e => e.key)
+    expect(hits).toEqual([])
+  })
+
+  it('calls the whole Event an Event in the stepper, the name step and the Fertig screen, never a Session', () => {
+    const keys = [
+      'stepper.heading',
+      'stepper.create',
+      'stepper.done.title',
+      'stepper.steps.name.title',
+      'stepper.name.label',
+      'setup.step',
+      'error.nameRequired',
+    ]
+    for (const key of keys) expect(byKey.get(key), key).not.toMatch(/Session/)
+  })
+
+  it('uses the new words in the Unreleased lines of the changelog', () => {
+    const changelog = readFileSync(resolve(import.meta.dirname, '../../CHANGELOG.md'), 'utf8')
+    const unreleased = changelog.split(/^## /m).find(section => section.startsWith('[Unreleased]')) ?? ''
+    expect(unreleased).not.toBe('')
+    expect(unreleased).not.toMatch(/Lucky Wheel|Admin-Wahl/)
+  })
+})

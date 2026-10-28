@@ -66,7 +66,7 @@ describe('the stepper', () => {
     const page = await mountCreate()
 
     expect(page.get('h1').text()).toContain('Schritt 1 von 8')
-    expect(page.get('h1').text()).toContain('Wie soll die Session heißen?')
+    expect(page.get('h1').text()).toContain('Wie soll das Event heißen?')
     expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spiele', '4 Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Tiebreaker-Pool', '8 Termin'])
     expect(saved).not.toHaveBeenCalled()
   })
@@ -91,7 +91,7 @@ describe('the stepper', () => {
       expect.stringContaining('Und falls es knapp wird?'),
       expect.stringContaining('Wann zocken wir?'),
     ])
-    expect(cta(page).text()).toContain('Session erstellen')
+    expect(cta(page).text()).toContain('Event erstellen')
     expect(saved).not.toHaveBeenCalled()
   })
 
@@ -99,7 +99,7 @@ describe('the stepper', () => {
     const page = await mountCreate()
 
     expect(cta(page).attributes('aria-disabled')).toBe('true')
-    expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib der Session einen Namen.')
+    expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib dem Event einen Namen.')
     await next(page)
     expect(page.get('h1').text()).toContain('Schritt 1 von 8')
 
@@ -341,6 +341,24 @@ describe('the stepper', () => {
       expect(cta(page).attributes('aria-disabled')).toBeUndefined()
     })
 
+    it('refuses a custom table in which every place earns the same, and blocks Weiter until a place falls (#175)', async () => {
+      const page = await mountCreate()
+      await stepTo(page, 3)
+      await radios(page)[2]!.trigger('click')
+
+      await click(page, 'Punkte für Platz 2: mehr', 1)
+
+      expect(page.get('[role="alert"]').text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
+      await next(page)
+      expect(page.get('h1').text()).toContain('Schritt 4 von 8')
+
+      await click(page, 'Punkte für Platz 2: weniger', 1)
+      expect(page.find('[role="alert"]').exists()).toBe(false)
+      expect(cta(page).attributes('aria-disabled')).toBeUndefined()
+    })
+
     it('resizes a custom table when the teams change', async () => {
       const page = await mountCreate()
       await stepTo(page, 3)
@@ -355,7 +373,7 @@ describe('the stepper', () => {
     })
   })
 
-  describe('Session erstellen', () => {
+  describe('Event erstellen', () => {
     it('sends what the Host chose and shows the Fertig screen with the sentence, the list and the Invite link', async () => {
       const saved = recordPost()
       const page = await mountCreate()
@@ -392,10 +410,10 @@ describe('the stepper', () => {
         },
       })
       expect(page.text()).toContain('Geschafft')
-      expect(page.text()).toContain('4 Teams à 2, Admin-Wahl, 6 Spiele.')
+      expect(page.text()).toContain('4 Teams à 2, Host-Wahl, 6 Spiele.')
       const list = page.get('dl')
       expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Punkte', 'Modus', 'Pool', 'Termin'])
-      expect(list.findAll('dd').map(value => value.text())).toEqual(['4 Teams à 2', '6', 'Winner takes all 3 / 0 / 0 / 0', 'Admin-Wahl', '0 Spiele, Tiebreaker 0', 'Umfrage, 1 Vorschlag'])
+      expect(list.findAll('dd').map(value => value.text())).toEqual(['4 Teams à 2', '6', 'Winner takes all 3 / 0 / 0 / 0', 'Host-Wahl', '0 Spiele, Tiebreaker 0', 'Umfrage, 1 Vorschlag'])
       expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
       expect(page.find('nav[aria-label="Schritte"]').exists()).toBe(false)
     })

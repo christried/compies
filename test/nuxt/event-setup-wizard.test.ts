@@ -62,7 +62,7 @@ describe('the entry pages', () => {
 
     expect(page.findComponent(EventSetupWizard).exists()).toBe(true)
     expect(stepLabels(page)).toEqual(['Name', 'Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Tiebreaker-Pool', 'Termin'])
-    expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Neue Session')
+    expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Neues Event')
   })
 
   it('the settings editor runs the same wizard with the six steps of an Event, all of them reachable', async () => {
@@ -122,7 +122,7 @@ describe('the Veto allowance in the editor', () => {
 })
 
 describe('the Veto allowance in /neu', () => {
-  it('follows the Team size until touched, and the Host’s value survives a trip through Admin-Wahl', async () => {
+  it('follows the Team size until touched, and the Host’s value survives a trip through Host-Wahl', async () => {
     const page = await mountCreate()
     await page.get('input[type="text"]').setValue('Abend')
     await cta(page).trigger('click')
