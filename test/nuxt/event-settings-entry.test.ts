@@ -9,7 +9,7 @@ import { clickButton, sanneAndLarsi, serve, view } from './event-page'
 
 const NOTICE_TEXT = 'Lege Format, Punkte, Auswahlmodus und Spiele fest. Ohne Einstellungen kann keine Session starten.'
 
-const notice = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.findAll('[role="status"]').find(element => element.text().includes(NOTICE_TEXT))
+const notice = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.findAll('[role="status"]').find((element: { text: () => string }) => element.text().includes(NOTICE_TEXT))
 
 describe('the „Event einrichten“ notice', () => {
   beforeEach(() => {
@@ -67,7 +67,7 @@ describe('Einstellungen in the Host controls', () => {
     signInAs(kitty)
   })
 
-  const toolbarLabels = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.get('[role="toolbar"]').findAll('button').map(button => button.text())
+  const toolbarLabels = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.get('[role="toolbar"]').findAll('button').map((button: { text: () => string }) => button.text())
 
   it('is the fourth action of the poll Phase, after Einladen', async () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
