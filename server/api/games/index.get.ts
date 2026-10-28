@@ -35,10 +35,10 @@ export default defineEventHandler(async (event): Promise<GameList> => {
     .where(and(...conditions))
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
 
-  const [{ total }] = await db.select({ total: count() }).from(games)
+  const [counted] = await db.select({ total: count() }).from(games)
 
   return {
     games: rows.map(row => gameView(row.game, row.creatorDisplayName ?? row.creatorName, viewer)),
-    total,
+    total: counted?.total ?? 0,
   }
 })

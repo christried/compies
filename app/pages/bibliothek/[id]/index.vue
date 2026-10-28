@@ -108,6 +108,13 @@ const formats = computed(() => {
         </div>
 
         <div class="flex min-w-0 flex-col gap-3">
+          <!-- With a clip the player takes the big slot; the uploaded image (#143) is the game's cover beside it. -->
+          <img
+            v-if="game.imageUrl && game.youtubeId"
+            :src="game.imageUrl"
+            alt=""
+            class="aspect-[16/10] w-40 rounded-[12px] border-(length:--cp-bw) border-line object-cover shadow-card"
+          >
           <h1 class="m-0 font-display text-[32px] leading-none text-balance md:text-[44px]">
             {{ game.name }}
           </h1>

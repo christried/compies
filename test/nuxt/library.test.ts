@@ -119,6 +119,15 @@ describe('the library page', () => {
     expect(cards[0]!.find('[data-cover="placeholder"]').exists()).toBe(true)
   })
 
+  it('shows the uploaded image on the card, over the YouTube thumbnail (#143)', async () => {
+    list = { games: [{ ...withClip, imageUrl: '/api/images/a2-abc.webp' }] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    expect(page.get('main li img').attributes('src')).toBe('/api/images/a2-abc.webp')
+  })
+
   it('leads to the form with „Spiel anlegen“', async () => {
     list = { games: [withClip] }
 
@@ -177,6 +186,26 @@ describe('the game page', () => {
     expect(page.text()).not.toContain('Ausschnitt')
     expect(page.text()).not.toContain('Clip 30 s')
     expect(page.find('[data-cover="placeholder"]').exists()).toBe(true)
+  })
+
+  it('shows the uploaded image next to the clip (#143)', async () => {
+    detail = { ...withClip, imageUrl: '/api/images/a2-abc.webp' }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    expect(page.find('img[src="/api/images/a2-abc.webp"]').exists()).toBe(true)
+    expect(page.text()).toContain('Ausschnitt 1:12 – 1:42')
+  })
+
+  it('shows the uploaded image of a game without a clip instead of the placeholder (#143)', async () => {
+    detail = { ...withClip, youtubeId: null, clipStart: 0, imageUrl: '/api/images/a2-abc.webp' }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    expect(page.find('img[src="/api/images/a2-abc.webp"]').exists()).toBe(true)
+    expect(page.find('[data-cover="placeholder"]').exists()).toBe(false)
   })
 
   it('looks like any missing page when the game does not exist', async () => {

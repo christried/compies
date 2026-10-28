@@ -1,104 +1,66 @@
 <script setup lang="ts">
-import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Minus, Plus, X } from '@lucide/vue'
-import { apiErrorKey, errorCopyKey } from '~/utils/api-error'
-import { EVENT_NAME_MAX, SESSIONS_MAX, SLOTS_MAX, eventNameLength, slotProblems as slotRuleProblems, type CreatedEvent, type SlotProblem } from '~~/shared/event'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import EventStepper from '~/components/stepper/EventStepper.vue'
+import StepFormat from '~/components/stepper/StepFormat.vue'
+import StepGameCount from '~/components/stepper/StepGameCount.vue'
+import StepName from '~/components/stepper/StepName.vue'
+import StepPoints from '~/components/stepper/StepPoints.vue'
+import StepSessions from '~/components/stepper/StepSessions.vue'
+import { apiErrorKey } from '~/utils/api-error'
+import { draftBody, newDraft } from '~/utils/event-draft'
+import { settingsSentence } from '~/utils/settings-summary'
+import { SLOTS_MAX, type CreatedEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
-import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
-// Create an Event (screen M2, `?s=create`): a name, the Session count (1 to 8), then a Date poll with
-// up to 16 Slots (at least one per Session) or one direct Date per Session. Only Users with the Host
-// permission get the form (ADR 0002); everyone else sees the Construction page. Times are Berlin
-// wall-clock values; the server is the final judge.
+// Create an Event (screen 05, `?s=create`): the guided stepper (#144) — name, Format with team layout, Game
+// count, points table, then the Sessions and their Dates (the old create form, #49). Nothing is sent until
+// „Session erstellen“; then the Fertig screen shows the summary and the Invite link. Only Users with the
+// Host permission get it (ADR 0002); everyone else sees the Construction page. The server is the final judge.
+// More steps (#145 Selection mode, #146 Game pools) go into STEP_KEYS and the step list below. The stepper's
+// components are imported, not auto-imported: Nuxt would name those in `stepper/` with a folder prefix.
 
 const { t } = useI18n()
-useHead({ title: () => t('mvp.create.kicker') })
 const user = useAuthUser()
 
-const name = ref('')
-const mode = ref('poll')
-const sessionCount = ref(1)
-const slots = ref([''])
-/** One Date per Session in direct mode; its rows follow the Session count. */
-const direct = ref([''])
-/** Berlin wall-clock now, minute precision, as the fields' lower bound (ADR 0003). */
-const now = ref(utcToBerlin(new Date()))
-const attempted = ref(false)
+const STEP_KEYS = ['name', 'format', 'games', 'points', 'sessions'] as const
+type StepKey = (typeof STEP_KEYS)[number]
+
+const draft = ref(newDraft())
+const current = ref(0)
+const reached = ref(0)
+/** Why the current step cannot go on; each step reports it through `v-model:blocker`. */
+const blocker = ref<string | null>(null)
 const saving = ref(false)
 const failure = ref<string | null>(null)
 const created = ref<CreatedEvent | null>(null)
 const doneHeading = useTemplateRef('doneHeading')
 
-watch(sessionCount, (count) => {
-  direct.value.splice(count)
-  while (direct.value.length < count) direct.value.push('')
-})
+useHead({ title: () => (created.value ? t('stepper.done.title') : t('stepper.heading')) })
 
-const trimmedName = computed(() => name.value.trim())
-const nameTooLong = computed(() => eventNameLength(name.value) > EVENT_NAME_MAX)
-const nameError = computed(() => {
-  if (attempted.value && trimmedName.value === '') return t('error.nameRequired')
-  if (nameTooLong.value) return t('error.nameTooLong', { max: EVENT_NAME_MAX })
-  return undefined
-})
-
-/** Each row's problem under the server's Slot rules (shared/event.ts); null for an empty row. */
-function rowProblems(values: string[]) {
-  const instants = values.map(value => (value === '' ? null : berlinToUtc(value)))
-  const problems = slotRuleProblems(instants.filter(instant => instant !== null), [], berlinToUtc(now.value))
-  let next = 0
-  return instants.map(instant => (instant === null ? null : problems[next++] ?? null))
-}
-const slotProblems = computed(() => rowProblems(slots.value))
-const slotErrors = computed(() => slotProblems.value.map(problem => (problem ? t(errorCopyKey(problem)) : undefined)))
-// Direct mode: two Sessions on one Date is the Date rule, not a duplicate Slot.
-const DIRECT_COPY = { duplicate_slot: 'error.dateDuplicate' }
-const directProblems = computed(() => rowProblems(direct.value))
-const directErrors = computed(() => directProblems.value.map(problem => (problem ? t(errorCopyKey(problem, DIRECT_COPY)) : undefined)))
-
-/** A past row blocks with its own call to action; any other row error blocks with that row's text. */
-function rowBlocker(problems: (SlotProblem | null)[], errors: (string | undefined)[]): string | null {
-  if (problems.includes('in_past')) return t('mvp.create.blockedPast')
-  return errors.find(error => error !== undefined) ?? null
-}
-
-/** Why the CTA is blocked, or null when the form can be sent. */
-const blocker = computed<string | null>(() => {
-  if (trimmedName.value === '') return t('error.nameRequired')
-  if (nameTooLong.value) return t('error.nameTooLong', { max: EVENT_NAME_MAX })
-  if (mode.value === 'direct') {
-    if (direct.value.includes('')) return t('mvp.create.directEmpty')
-    return rowBlocker(directProblems.value, directErrors.value)
-  }
-  if (slots.value.includes('')) return t('mvp.create.slotEmpty')
-  if (slots.value.length < sessionCount.value) return t('mvp.create.minSlots', { n: sessionCount.value })
-  return rowBlocker(slotProblems.value, slotErrors.value)
-})
-
-const ctaLabel = computed(() => {
+const steps = computed(() => STEP_KEYS.map(key => ({ key, label: t(`stepper.steps.${key}.label`) })))
+const stepKey = computed<StepKey>(() => STEP_KEYS[current.value]!)
+const isLast = computed(() => current.value === STEP_KEYS.length - 1)
+const nextLabel = computed(() => {
   if (saving.value) return t('mvp.create.saving')
-  return mode.value === 'poll' ? t('mvp.create.submit') : t('mvp.create.submitDirect')
+  return isLast.value ? t('stepper.create') : t('stepper.next')
 })
 
-function addSlot() {
-  slots.value.push('')
+function go(index: number) {
+  current.value = index
+  failure.value = null
 }
 
-function removeSlot(index: number) {
-  slots.value.splice(index, 1)
-}
-
-async function submit() {
-  attempted.value = true
-  now.value = utcToBerlin(new Date())
+async function next() {
   if (blocker.value || saving.value) return
-
-  const body = mode.value === 'poll'
-    ? { name: trimmedName.value, dateMode: 'poll', sessions: sessionCount.value, slots: slots.value }
-    : { name: trimmedName.value, dateMode: 'direct', sessions: sessionCount.value, startsAt: direct.value }
+  if (!isLast.value) {
+    go(current.value + 1)
+    reached.value = Math.max(reached.value, current.value)
+    return
+  }
   saving.value = true
   failure.value = null
   try {
-    created.value = await $fetch<CreatedEvent>('/api/e', { method: 'POST', body })
+    created.value = await $fetch<CreatedEvent>('/api/e', { method: 'POST', body: draftBody(draft.value) })
     await nextTick()
     doneHeading.value?.focus()
   }
@@ -110,10 +72,12 @@ async function submit() {
   }
 }
 
-const MODES = computed(() => [
-  { value: 'poll', label: t('mvp.create.modePoll'), icon: CalendarDays },
-  { value: 'direct', label: t('mvp.create.modeDirect'), icon: CalendarCheck },
-])
+const name = computed(() => draft.value.name.trim())
+const poll = computed(() => draft.value.dates.mode === 'poll')
+const sessionCount = computed(() => draft.value.dates.sessionCount)
+const datesLine = computed(() => (poll.value
+  ? t('stepper.done.datesPoll', { n: draft.value.dates.slots.length }, draft.value.dates.slots.length)
+  : t('stepper.done.datesDirect', { n: sessionCount.value }, sessionCount.value)))
 </script>
 
 <template>
@@ -129,7 +93,7 @@ const MODES = computed(() => [
     kind="hub"
     no-tabs
   >
-    <div class="mx-auto flex w-full max-w-[680px] flex-col gap-[18px] px-1">
+    <div class="mx-auto flex w-full flex-col gap-[18px] px-1">
       <NuxtLink
         to="/"
         class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
@@ -141,162 +105,86 @@ const MODES = computed(() => [
         {{ t('mvp.create.back') }}
       </NuxtLink>
 
-      <section
+      <div
         v-if="created"
-        class="flex flex-col gap-5 rounded-xl border-3 border-line bg-surface p-5 shadow-card md:flex-row md:items-center"
+        class="mx-auto flex w-full max-w-[900px] flex-col gap-3.5"
       >
-        <Compibert
-          variant="bust"
-          :size="120"
+        <span class="text-small font-bold text-ink-2">{{ t('stepper.done.kicker') }}</span>
+        <section class="flex flex-col gap-5 rounded-xl border-3 border-line bg-primary p-5 text-on-primary shadow-card md:flex-row md:items-center">
+          <Compibert
+            variant="bust"
+            :size="120"
+          />
+          <div class="flex min-w-0 flex-1 flex-col gap-3">
+            <h1
+              ref="doneHeading"
+              tabindex="-1"
+              class="m-0 text-[34px] leading-none outline-none"
+            >
+              {{ t('stepper.done.heading', { name }) }}
+            </h1>
+            <p class="m-0 font-semibold text-pretty">
+              {{ settingsSentence(draft.settings, t) }}
+              {{ poll ? t('mvp.create.doneText') : sessionCount > 1 ? t('mvp.create.doneDirectTextPlural') : t('mvp.create.doneDirectText') }}
+            </p>
+            <InviteLinkCard :url="created.inviteUrl" />
+            <NuxtLink
+              :to="eventPath(created.slug)"
+              class="inline-flex items-center gap-1 self-start font-extrabold text-on-primary no-underline"
+            >
+              {{ poll ? t('mvp.create.toPoll') : t('mvp.create.toEvent') }}
+              <AppIcon
+                :icon="ChevronRight"
+                :size="16"
+              />
+            </NuxtLink>
+          </div>
+        </section>
+        <EventSettingsSummary
+          :settings="draft.settings"
+          :dates="datesLine"
         />
-        <div class="flex min-w-0 flex-1 flex-col gap-3">
-          <h1
-            ref="doneHeading"
-            tabindex="-1"
-            class="m-0 text-[34px] leading-none outline-none"
-          >
-            {{ mode === 'poll' ? t('mvp.create.doneTitle', { name: trimmedName }) : t('mvp.create.doneTitleDirect', { name: trimmedName }) }}
-          </h1>
-          <p class="m-0 font-semibold text-pretty">
-            {{ mode === 'poll' ? t('mvp.create.doneText') : sessionCount > 1 ? t('mvp.create.doneDirectTextPlural') : t('mvp.create.doneDirectText') }}
-          </p>
-          <InviteLinkCard :url="created.inviteUrl" />
-          <NuxtLink
-            :to="eventPath(created.slug)"
-            class="inline-flex items-center gap-1 self-start font-extrabold no-underline"
-          >
-            {{ mode === 'poll' ? t('mvp.create.toPoll') : t('mvp.create.toEvent') }}
-            <AppIcon
-              :icon="ChevronRight"
-              :size="16"
-            />
-          </NuxtLink>
-        </div>
-      </section>
+      </div>
 
-      <form
+      <EventStepper
         v-else
-        novalidate
-        class="flex flex-col gap-[18px]"
-        @submit.prevent="submit"
+        :steps="steps"
+        :current="current"
+        :reached="reached"
+        :title="t(`stepper.steps.${stepKey}.title`)"
+        :info-title="stepKey === 'format' ? t(`setup.info.${draft.settings.format}.title`) : undefined"
+        :next-label="nextLabel"
+        :next-blocked="blocker"
+        :busy="saving"
+        @go="go"
+        @next="next"
+        @back="go(current - 1)"
       >
-        <div class="flex flex-col gap-0.5">
-          <span class="text-small font-bold text-ink-2">{{ t('mvp.create.kicker') }}</span>
-          <h1 class="m-0 font-display text-[34px] leading-none md:text-[44px]">
-            {{ t('mvp.create.title') }}
-          </h1>
-        </div>
-
-        <TextField
-          v-model="name"
-          :label="t('mvp.create.nameLabel')"
-          :help="t('mvp.create.nameHelp')"
-          :error="nameError"
-          :maxlength="EVENT_NAME_MAX"
+        <StepName
+          v-if="stepKey === 'name'"
+          v-model="draft.name"
+          v-model:blocker="blocker"
         />
-
-        <div class="flex flex-col gap-2">
-          <b class="text-[14px]">{{ t('mvp.create.sessionsLabel') }}</b>
-          <div class="flex items-center gap-3">
-            <IconButton
-              :icon="Minus"
-              :label="t('mvp.create.sessionsLess')"
-              :disabled="sessionCount <= 1"
-              @click="sessionCount -= 1"
-            />
-            <output
-              class="min-w-8 text-center font-num text-[22px]"
-              aria-live="polite"
-            >{{ sessionCount }}</output>
-            <IconButton
-              :icon="Plus"
-              :label="t('mvp.create.sessionsMore')"
-              :disabled="sessionCount >= SESSIONS_MAX"
-              @click="sessionCount += 1"
-            />
-          </div>
-          <p class="m-0 text-small text-pretty text-ink-2">
-            {{ t('mvp.create.sessionsHelp') }}
-          </p>
-        </div>
-
-        <SegmentedControl
-          v-model="mode"
-          :label="t('mvp.create.dateLabel')"
-          :options="MODES"
+        <StepFormat
+          v-else-if="stepKey === 'format'"
+          v-model="draft.settings"
+          v-model:blocker="blocker"
         />
-
-        <div
-          v-if="mode === 'poll'"
-          class="flex flex-col gap-2"
-        >
-          <b class="text-[14px]">{{ t('mvp.create.slotsTitle') }}</b>
-          <div
-            v-for="(_, index) in slots"
-            :key="index"
-            class="flex items-start gap-2"
-          >
-            <DateTimeField
-              :model-value="slots[index] ?? ''"
-              class="min-w-0 flex-1"
-              :label="t('mvp.create.slotLabel', { n: index + 1 })"
-              :error="slotErrors[index]"
-              @update:model-value="value => (slots[index] = value)"
-            />
-            <IconButton
-              v-if="slots.length > 1"
-              :icon="X"
-              :label="t('mvp.create.removeSlot')"
-              class="mt-1"
-              @click="removeSlot(index)"
-            />
-          </div>
-          <button
-            v-if="slots.length < SLOTS_MAX"
-            type="button"
-            class="hit-44 inline-flex min-h-11 items-center gap-1.5 self-start rounded-pill border-[2.5px] border-dashed border-line px-3.5 text-small font-bold text-ink outline-memphis lift"
-            @click="addSlot"
-          >
-            <AppIcon
-              :icon="Plus"
-              :size="16"
-            />
-            {{ t('mvp.create.addSlot') }}
-          </button>
-          <p class="m-0 text-small text-pretty text-ink-2">
-            {{ t('mvp.create.slotsHelp') }}
-          </p>
-        </div>
-
-        <div
+        <StepGameCount
+          v-else-if="stepKey === 'games'"
+          v-model="draft.settings"
+          v-model:blocker="blocker"
+        />
+        <StepPoints
+          v-else-if="stepKey === 'points'"
+          v-model="draft.settings"
+          v-model:blocker="blocker"
+        />
+        <StepSessions
           v-else
-          class="flex flex-col gap-[18px]"
-        >
-          <div
-            v-for="(_, index) in direct"
-            :key="index"
-            class="flex flex-col gap-2"
-          >
-            <span
-              v-if="sessionCount > 1"
-              aria-hidden="true"
-              class="text-[13px] font-extrabold text-ink-2 uppercase"
-            >{{ t('mvp.create.slotLabel', { n: index + 1 }) }}</span>
-            <DateTimeField
-              :model-value="direct[index] ?? ''"
-              :label="sessionCount > 1 ? t('mvp.create.slotLabel', { n: index + 1 }) : t('mvp.create.dateLabel')"
-              :error="directErrors[index]"
-              @update:model-value="value => (direct[index] = value)"
-            />
-          </div>
-        </div>
-
-        <BaustelleZone
-          :sign="false"
-          :title="t('mvp.create.laterTitle')"
-          :text="t('mvp.create.laterText')"
+          v-model="draft.dates"
+          v-model:blocker="blocker"
         />
-
         <p
           v-if="failure"
           role="alert"
@@ -305,26 +193,13 @@ const MODES = computed(() => [
           {{ failure }}
         </p>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <AppButton
-            type="submit"
-            size="lg"
-            :aria-disabled="blocker !== null || saving"
-            :aria-describedby="blocker ? 'create-blocker' : undefined"
-          >
-            {{ ctaLabel }}
-            <AppIcon
-              :icon="ChevronRight"
-              :size="18"
-            />
-          </AppButton>
-          <span
-            v-if="blocker"
-            id="create-blocker"
-            class="text-small font-bold text-ink-2"
-          >{{ blocker }}</span>
-        </div>
-      </form>
+        <template
+          v-if="stepKey === 'format'"
+          #info
+        >
+          <InfoSheet :topic="draft.settings.format" />
+        </template>
+      </EventStepper>
     </div>
   </AppShell>
 </template>

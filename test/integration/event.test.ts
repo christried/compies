@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -187,6 +188,81 @@ describe('events', () => {
       }
       expect(await eventRows()).toEqual([])
     })
+
+    it('stores the settings with the Event (#144)', async () => {
+      const cookie = await signInAsHost()
+      const settings = {
+        format: 'teams', teamCount: 4, teamSize: 2, gameCount: 6,
+        pointsTable: { preset: 'custom', values: [5, 3, 3, 0] }, selectionMode: 'admin_pick',
+      }
+
+      const response = await create(cookie, poll({ settings }))
+
+      expect(response.status).toBe(200)
+      expect((await eventRows())[0]).toMatchObject({
+        format: 'teams',
+        teamCount: 4,
+        teamSize: 2,
+        gameCount: 6,
+        pointsTable: { preset: 'custom', values: [5, 3, 3, 0] },
+        selectionMode: 'admin_pick',
+        hiddenWheel: false,
+        vetoAllowance: null,
+      })
+    })
+
+    it('stores the Lucky Wheel options with their defaults (#144)', async () => {
+      const cookie = await signInAsHost()
+
+      await create(cookie, poll({ settings: { ...TEST_SETTINGS, teamSize: 5, selectionMode: 'lucky_wheel', hiddenWheel: undefined, vetoAllowance: undefined } }))
+
+      expect((await eventRows())[0]).toMatchObject({ selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 5 })
+    })
+
+    it('answers 400 invalid_settings without settings, and writes nothing (#144)', async () => {
+      const cookie = await signInAsHost()
+      const { settings: _omitted, ...withoutSettings } = poll()
+
+      const response = await create(cookie, withoutSettings)
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_settings')
+      expect(await eventRows()).toEqual([])
+    })
+
+    it('names the first broken Event rule before a settings rule (#144)', async () => {
+      const cookie = await signInAsHost()
+
+      const response = await create(cookie, poll({ name: '  ', settings: { ...TEST_SETTINGS, teamCount: 99 } }))
+
+      expect(response.statusText).toBe('invalid_name')
+    })
+
+    it('refuses settings that break a rule with its code, and writes nothing (#144)', async () => {
+      const cookie = await signInAsHost()
+      const five = { teamCount: 5, teamSize: 5, pointsTable: { preset: 'linear', values: [4, 3, 2, 1, 0] } }
+      const cases: [Record<string, unknown>, string][] = [
+        [five, 'too_many_players'],
+        [{ teamCount: 9, teamSize: 1, pointsTable: { preset: 'linear', values: [8, 7, 6, 5, 4, 3, 2, 1, 0] } }, 'team_count_range'],
+        [{ teamSize: 7 }, 'team_size_range'],
+        [{ gameCount: 31 }, 'game_count_range'],
+        [{ pointsTable: { preset: 'custom', values: [1, 2] } }, 'points_rising'],
+        [{ pointsTable: { preset: 'custom', values: [1] } }, 'invalid_points'],
+        [{ format: 'ffa' }, 'format_unavailable'],
+        [{ format: 'bogus' }, 'invalid_settings'],
+        [{ selectionMode: 'pick_ban' }, 'mode_unavailable'],
+        [{ hiddenWheel: true }, 'wheel_options_without_wheel'],
+        [{ selectionMode: 'lucky_wheel', vetoAllowance: 10 }, 'veto_allowance_range'],
+      ]
+
+      for (const [changes, code] of cases) {
+        const response = await create(cookie, poll({ settings: { ...TEST_SETTINGS, ...changes } }))
+        expect(response.status).toBe(400)
+        expect(response.statusText).toBe(code)
+      }
+      expect(await eventRows()).toEqual([])
+      expect(await testDb.db.select().from(sessions)).toEqual([])
+    })
   })
 
   describe('GET /api/e/:slug', () => {
@@ -248,6 +324,26 @@ describe('events', () => {
       expect(none).toBe(0)
     })
 
+    it('shows the settings to the Host and to a Member (#144)', async () => {
+      const cookie = await signInAsHost()
+      const { slug } = await (await create(cookie, poll())).json()
+      const { cookie: memberCookie } = await signIn(testDb.db, member)
+      const [row] = await eventRows()
+      const guest = (await testDb.db.select().from(users)).find(user => user.id !== row!.hostId)
+      await testDb.db.insert(eventMembers).values({ eventId: row!.id, userId: guest!.id })
+
+      expect((await (await read(cookie, slug)).json()).settings).toEqual(TEST_SETTINGS)
+      expect((await (await read(memberCookie, slug)).json()).settings).toEqual(TEST_SETTINGS)
+    })
+
+    it('shows null for an Event from before 1.3 that was never set up (#144)', async () => {
+      const cookie = await signInAsHost()
+      const { slug } = await (await create(cookie, poll())).json()
+      await testDb.db.update(events).set({ format: null, teamCount: null, teamSize: null, gameCount: null, pointsTable: null, selectionMode: null, hiddenWheel: null, vetoAllowance: null })
+
+      expect((await (await read(cookie, slug)).json()).settings).toBeNull()
+    })
+
     it('answers 404 to a User who is not a Member, so Events cannot be probed', async () => {
       const cookie = await signInAsHost()
       const { slug } = await (await create(cookie, poll())).json()
@@ -277,11 +373,11 @@ describe('events', () => {
 })
 
 function poll(overrides: Record<string, unknown> = {}) {
-  return { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], ...overrides }
+  return { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: TEST_SETTINGS, ...overrides }
 }
 
 function direct(overrides: Record<string, unknown> = {}) {
-  return { name: 'Abend', dateMode: 'direct', sessions: 1, startsAt: ['2090-11-07T20:00'], ...overrides }
+  return { name: 'Abend', dateMode: 'direct', sessions: 1, startsAt: ['2090-11-07T20:00'], settings: TEST_SETTINGS, ...overrides }
 }
 
 function slotsOnDays(count: number) {

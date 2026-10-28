@@ -20,6 +20,11 @@ export function parsePlayerCount(text: string): number | null {
   return players >= 1 && players <= PLAYERS_MAX ? players : null
 }
 
+/** A game image is one WebP of the card's 16:10 cover, 512 px wide, up to about 200 kB (#143). */
+export const GAME_IMAGE_MAX_BYTES = 200_000
+export const GAME_IMAGE_WIDTH = 512
+export const GAME_IMAGE_HEIGHT = 320
+
 /** Library viewers: the Host permission or the Platform admin (spec #138 § API contracts). Shared so the server uses the same rule as the navigation. */
 export function canSeeLibrary(viewer: { canHost: boolean, isAdmin: boolean } | null): boolean {
   return Boolean(viewer?.canHost || viewer?.isAdmin)
