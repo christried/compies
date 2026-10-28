@@ -123,6 +123,20 @@ export function recommendedPoolSize(settings: Pick<EventSettings, 'gameCount' | 
   return settings.gameCount + (settings.vetoAllowance ?? 0) * settings.teamCount
 }
 
+/**
+ * The hint under the Game pool (#146): null while the pool has the recommended size, else the numbers behind
+ * „Wird knapp“. `vetoes` are the vetoes of all Parties on the Lucky Wheel (Veto allowance × team count), 0 otherwise.
+ * It never blocks anything.
+ */
+export function poolHint(
+  settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>,
+  poolSize: number,
+): null | { games: number, vetoes: number, needed: number, have: number } {
+  const needed = recommendedPoolSize(settings)
+  if (poolSize >= needed) return null
+  return { games: settings.gameCount, vetoes: needed - settings.gameCount, needed, have: poolSize }
+}
+
 type Parsed = { ok: true, settings: EventSettings } | { ok: false, error: SettingsError }
 
 function fail(error: SettingsError): Parsed {

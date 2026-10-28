@@ -1,11 +1,13 @@
 import { asc, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes, eventMembers, users } from '../../db/schema'
+import { poolsVisibleTo } from '../../domain/pool-visibility'
 import { isPast, pollStanding } from '../../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
+import { eventPools } from '../../utils/pools'
 import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 import type { EventView, SessionNote, SessionView } from '../../../shared/event'
@@ -46,6 +48,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     .where(eq(eventMembers.eventId, eventRow.id))
     .orderBy(asc(eventMembers.joinedAt))
 
+  const settings = settingsFromRow(eventRow)
   const standing = pollStanding({ slots, votes, memberIds: members.map(row => row.id), viewerId: user.id, now })
 
   return {
@@ -55,7 +58,9 @@ export default defineEventHandler(async (event): Promise<EventView> => {
       phase: eventRow.phase,
       isHost,
     },
-    settings: settingsFromRow(eventRow),
+    settings,
+    // The Host sees the games of both pools; every other Member only how many there are (#146, #148).
+    pools: await eventPools(db, eventRow.id, poolsVisibleTo({ isHost, settings })),
     // Sessions with a Date come first in Date order, with the number they are shown with (#49, #70); the
     // Sessions still waiting for a Date follow and only count as missing Dates.
     sessions: numberedSessions(rows).map(row => sessionView(row, allVotes)),

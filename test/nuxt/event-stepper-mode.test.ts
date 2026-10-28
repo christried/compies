@@ -42,15 +42,15 @@ async function click(page: Page, label: string, times: number) {
   for (let i = 0; i < times; i++) await button(page, label).trigger('click')
 }
 
-/** Names the Session and stands on the Selection mode step (step 5 of 6). */
+/** Names the Session and stands on the Selection mode step (step 5 of 8). */
 async function toModeStep(page: Page) {
   await page.get('input[type="text"]').setValue('Freitags-Zocken')
   await next(page, 4)
 }
 
-/** Goes from the Selection mode step to the Sessions step and fills the one Date, so „Session erstellen“ is ready. */
+/** Goes from the Selection mode step to the Sessions step (past the two pools) and fills the one Date, so „Session erstellen“ is ready. */
 async function toLastStep(page: Page) {
-  await next(page)
+  await next(page, 3)
   await page.get('[role="group"]').findAll('input')[0]!.setValue('30.10.2090')
   await page.get('[role="group"]').findAll('input')[1]!.setValue('2030')
 }
@@ -72,13 +72,13 @@ describe('the Selection mode step', () => {
     useState('toasts').value = []
   })
 
-  it('is step 5 of 6, between the points and the Sessions', async () => {
+  it('is step 5 of 8, between the points and the pools', async () => {
     const page = await mountCreate()
     await toModeStep(page)
 
-    expect(page.get('h1').text()).toContain('Schritt 5 von 6')
+    expect(page.get('h1').text()).toContain('Schritt 5 von 8')
     expect(page.get('h1').text()).toContain('Wie wird das nächste Spiel bestimmt?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '5 Auswahlmodus', '6 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Tiebreaker-Pool', '8 Termin'])
   })
 
   it('offers all five modes in the design’s order, with Admin-Wahl chosen', async () => {
@@ -241,13 +241,14 @@ describe('the Selection mode step', () => {
       }))
       expect(page.text()).toContain('2 Teams à 3, Lucky Wheel (verdeckt), 10 Spiele.')
       const list = page.get('dl')
-      expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Punkte', 'Modus', 'Vetos', 'Termin'])
+      expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Punkte', 'Modus', 'Vetos', 'Pool', 'Termin'])
       expect(list.findAll('dd').map(value => value.text())).toEqual([
         '2 Teams à 3',
         '10',
         'Linear 1 / 0',
         'Lucky Wheel (verdeckt)',
         '2 pro Partei',
+        '0 Spiele, Tiebreaker 0',
         'Umfrage, 1 Vorschlag',
       ])
     })

@@ -61,13 +61,13 @@ describe('the stepper', () => {
     useState('toasts').value = []
   })
 
-  it('starts on step 1 of 6 and sends nothing', async () => {
+  it('starts on step 1 of 8 and sends nothing', async () => {
     const saved = recordPost()
     const page = await mountCreate()
 
-    expect(page.get('h1').text()).toContain('Schritt 1 von 6')
+    expect(page.get('h1').text()).toContain('Schritt 1 von 8')
     expect(page.get('h1').text()).toContain('Wie soll die Session heißen?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spiele', '4 Punkte', '5 Auswahlmodus', '6 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spiele', '4 Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Tiebreaker-Pool', '8 Termin'])
     expect(saved).not.toHaveBeenCalled()
   })
 
@@ -77,7 +77,7 @@ describe('the stepper', () => {
     await stepTo(page, 0)
 
     const titles: string[] = []
-    for (let step = 1; step <= 5; step++) {
+    for (let step = 1; step <= 7; step++) {
       await next(page)
       titles.push(page.get('h1').text())
     }
@@ -87,6 +87,8 @@ describe('the stepper', () => {
       expect.stringContaining('Wie viele Spiele?'),
       expect.stringContaining('Wer kriegt wie viele Punkte?'),
       expect.stringContaining('Wie wird das nächste Spiel bestimmt?'),
+      expect.stringContaining('Welche Spiele kommen in den Pool?'),
+      expect.stringContaining('Und falls es knapp wird?'),
       expect.stringContaining('Wann zocken wir?'),
     ])
     expect(cta(page).text()).toContain('Session erstellen')
@@ -99,7 +101,7 @@ describe('the stepper', () => {
     expect(cta(page).attributes('aria-disabled')).toBe('true')
     expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib der Session einen Namen.')
     await next(page)
-    expect(page.get('h1').text()).toContain('Schritt 1 von 6')
+    expect(page.get('h1').text()).toContain('Schritt 1 von 8')
 
     await page.get('input[type="text"]').setValue('  ')
     expect(cta(page).attributes('aria-disabled')).toBe('true')
@@ -107,7 +109,7 @@ describe('the stepper', () => {
     await page.get('input[type="text"]').setValue('Freitags-Zocken')
     expect(cta(page).attributes('aria-disabled')).toBeUndefined()
     await next(page)
-    expect(page.get('h1').text()).toContain('Schritt 2 von 6')
+    expect(page.get('h1').text()).toContain('Schritt 2 von 8')
   })
 
   it('goes back with Zurück and keeps what was entered', async () => {
@@ -126,12 +128,12 @@ describe('the stepper', () => {
     const page = await mountCreate()
     await stepTo(page, 3)
 
-    expect(stepItems(page).map(item => item.find('button').exists())).toEqual([true, true, true, false, false, false])
-    expect(stepItems(page).map(item => item.attributes('aria-current'))).toEqual([undefined, undefined, undefined, 'step', undefined, undefined])
+    expect(stepItems(page).map(item => item.find('button').exists())).toEqual([true, true, true, false, false, false, false, false])
+    expect(stepItems(page).map(item => item.attributes('aria-current'))).toEqual([undefined, undefined, undefined, 'step', undefined, undefined, undefined, undefined])
 
     await stepItems(page)[1]!.get('button').trigger('click')
 
-    expect(page.get('h1').text()).toContain('Schritt 2 von 6')
+    expect(page.get('h1').text()).toContain('Schritt 2 von 8')
     expect(stepItems(page)[1]!.attributes('aria-current')).toBe('step')
     expect(stepItems(page)[3]!.find('button').exists()).toBe(true)
   })
@@ -267,14 +269,14 @@ describe('the stepper', () => {
   })
 
   describe('on phones', () => {
-    it('shows a progress bar of 6 segments and a sticky footer with the kicker in the heading', async () => {
+    it('shows a progress bar of 8 segments and a sticky footer with the kicker in the heading', async () => {
       const page = await mountCreate()
       await stepTo(page, 2)
 
-      expect(page.get('[data-testid="progress"]').findAll('span')).toHaveLength(6)
+      expect(page.get('[data-testid="progress"]').findAll('span')).toHaveLength(8)
       expect(page.get('[data-testid="progress"]').attributes('aria-hidden')).toBe('true')
       expect(page.get('[data-testid="stepper-footer"]').classes()).toContain('sticky')
-      expect(page.get('h1').text()).toContain('Schritt 3 von 6')
+      expect(page.get('h1').text()).toContain('Schritt 3 von 8')
     })
   })
 
@@ -322,7 +324,7 @@ describe('the stepper', () => {
       expect(cta(page).attributes('aria-disabled')).toBe('true')
       expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
       await next(page)
-      expect(page.get('h1').text()).toContain('Schritt 4 von 6')
+      expect(page.get('h1').text()).toContain('Schritt 4 von 8')
 
       await click(page, 'Punkte für Platz 3: weniger', 3)
       expect(page.find('[role="alert"]').exists()).toBe(false)
@@ -354,7 +356,7 @@ describe('the stepper', () => {
       await click(page, 'Anzahl Spiele: weniger', 4)
       await next(page)
       await radios(page)[1]!.trigger('click')
-      await next(page, 2)
+      await next(page, 4)
       await page.get('[role="group"]').findAll('input')[0]!.setValue('30.10.2090')
       await page.get('[role="group"]').findAll('input')[1]!.setValue('2030')
 
@@ -367,6 +369,7 @@ describe('the stepper', () => {
         dateMode: 'poll',
         sessions: 1,
         slots: ['2090-10-30T20:30'],
+        pools: { main: [], tiebreaker: [] },
         settings: {
           format: 'teams',
           teamCount: 4,
@@ -381,8 +384,8 @@ describe('the stepper', () => {
       expect(page.text()).toContain('Geschafft')
       expect(page.text()).toContain('4 Teams à 2, Admin-Wahl, 6 Spiele.')
       const list = page.get('dl')
-      expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Punkte', 'Modus', 'Termin'])
-      expect(list.findAll('dd').map(value => value.text())).toEqual(['4 Teams à 2', '6', 'Winner takes all 3 / 0 / 0 / 0', 'Admin-Wahl', 'Umfrage, 1 Vorschlag'])
+      expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Punkte', 'Modus', 'Pool', 'Termin'])
+      expect(list.findAll('dd').map(value => value.text())).toEqual(['4 Teams à 2', '6', 'Winner takes all 3 / 0 / 0 / 0', 'Admin-Wahl', '0 Spiele, Tiebreaker 0', 'Umfrage, 1 Vorschlag'])
       expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
       expect(page.find('nav[aria-label="Schritte"]').exists()).toBe(false)
     })

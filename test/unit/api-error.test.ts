@@ -44,6 +44,11 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(415, 'image_not_webp'))).toBe('error.imageNotWebp')
   })
 
+  it('explains the refusals of the pools (#146)', () => {
+    expect(apiErrorKey(refusal(400, 'invalid_pools'))).toBe('error.poolsInvalid')
+    expect(apiErrorKey(refusal(400, 'unknown_game'))).toBe('error.unknownGame')
+  })
+
   it('falls back for reasons it cannot explain, so a 400 is not always a past Slot', () => {
     expect(apiErrorKey(refusal(400, 'invalid_time'))).toBe('error.saveFailed')
     expect(apiErrorKey(refusal(500, 'boom'), 'error.voteFailed')).toBe('error.voteFailed')

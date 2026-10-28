@@ -5,6 +5,7 @@ import {
   defaultVetoAllowance,
   linearPoints,
   parseSettings,
+  poolHint,
   pointsFor,
   recommendedPoolSize,
   risingPlace,
@@ -110,6 +111,29 @@ describe('defaults and helpers', () => {
     expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'admin_pick', vetoAllowance: null })).toBe(10)
     expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'lucky_wheel', vetoAllowance: 3 })).toBe(22)
     expect(recommendedPoolSize({ gameCount: 6, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 0 })).toBe(6)
+  })
+})
+
+describe('poolHint', () => {
+  const lucky = { gameCount: 10, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 3 } as const
+  const admin = { gameCount: 10, teamCount: 2, selectionMode: 'admin_pick', vetoAllowance: null } as const
+
+  it('names the worst case on the Lucky Wheel: Games plus the vetoes of all Parties', () => {
+    expect(poolHint(lucky, 12)).toEqual({ games: 10, vetoes: 6, needed: 16, have: 12 })
+  })
+
+  it('is null at and above the recommended size', () => {
+    expect(poolHint(lucky, 16)).toBeNull()
+    expect(poolHint(lucky, 30)).toBeNull()
+  })
+
+  it('needs only the Game count with Admin pick', () => {
+    expect(poolHint(admin, 9)).toEqual({ games: 10, vetoes: 0, needed: 10, have: 9 })
+    expect(poolHint(admin, 10)).toBeNull()
+  })
+
+  it('counts an empty pool', () => {
+    expect(poolHint(admin, 0)).toEqual({ games: 10, vetoes: 0, needed: 10, have: 0 })
   })
 })
 
