@@ -52,17 +52,13 @@ describe('construction page route guard', () => {
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(true)
   })
 
-  it('renders the Profil state, and the Bibliothek state for a Host', async () => {
+  it('renders the Profil state', async () => {
     expect((await visit('/profil')).get('h1').text()).toBe('Profil? Der Bagger ist bestellt.')
-
-    signInAs({ ...kitty, canHost: true })
-    expect((await visit('/bibliothek')).get('h1').text()).toBe('Die Bibliothek ist noch eingerüstet.')
   })
 
-  it('renders the generic state for Bibliothek without the Host permission', async () => {
-    const page = await visit('/bibliothek')
+  it('keeps Bibliothek out of the nav for a User without the Host permission', async () => {
+    const page = await visit('/crews')
 
-    expect(page.get('h1').text()).toBe('Hier wird noch gebaut.')
     expect(page.find('nav[aria-label="Hauptnavigation"] a').exists()).toBe(true)
     expect(page.findAll('nav[aria-label="Hauptnavigation"] a').some(a => a.text() === 'Bibliothek')).toBe(false)
   })
