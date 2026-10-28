@@ -1,4 +1,5 @@
 import { createError, type H3Event } from 'h3'
+import type { PoolGame } from '../../shared/event'
 import { canEditGame, canSeeLibrary, type GameView } from '../../shared/game'
 import type { AuthUser } from '../../shared/auth'
 import type { games } from '../db/schema'
@@ -16,6 +17,21 @@ export async function requireLibraryViewer(event: H3Event): Promise<AuthUser> {
   const user = await getUser(event)
   if (!user || !canSeeLibrary(user)) throw libraryNotFound()
   return user
+}
+
+/** A games row as an Event's pool shows it (#146): what GameCard needs, no creator and no edit rights. */
+export function poolGameView(row: typeof games.$inferSelect): PoolGame {
+  return {
+    id: row.id,
+    name: row.name,
+    imageUrl: row.imageKey ? `/api/images/${row.imageKey}` : null,
+    youtubeId: row.youtubeId,
+    clipStart: row.clipStart,
+    clipLength: row.clipLength,
+    playersMin: row.playersMin,
+    playersMax: row.playersMax,
+    formats: row.formats,
+  }
 }
 
 /** A games row as the library shows it to `viewer`. */

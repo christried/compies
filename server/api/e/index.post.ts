@@ -1,8 +1,9 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { createError, defineEventHandler, readBody } from 'h3'
-import { pollSlots, eventMembers, events, sessions } from '../../db/schema'
+import { pollSlots, eventMembers, eventPoolGames, events, games, sessions } from '../../db/schema'
 import { parseNewEvent } from '../../domain/event'
 import { phaseOf } from '../../domain/phase'
+import { parsePools } from '../../domain/pools'
 import { createInviteToken, createSlug } from '../../domain/slug'
 import { useDb, type Db } from '../../utils/db'
 import { apiError } from '../../utils/errors'
@@ -15,7 +16,8 @@ const SLUG_ATTEMPTS = 5
 
 // Create an Event (screen M2). Only Users with the Host permission may create one (ADR 0002).
 // The Event with its settings, its Sessions, its Slots and the Host's membership are written in one transaction.
-// Settings are required (#144): an Event without them is one from before 1.3.
+// Settings are required (#144): an Event without them is one from before 1.3. The Game pool and the Tiebreaker
+// pool (#146) are optional lists of library game ids, written in the same transaction.
 export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const user = await requireUser(event)
   if (!user.canHost) throw apiError('no_host_permission')
@@ -27,6 +29,9 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const parsedSettings = parseSettings((body as { settings?: unknown } | null)?.settings)
   if (!parsedSettings.ok) throw apiError(parsedSettings.error)
   const { settings } = parsedSettings
+  const parsedPools = parsePools((body as { pools?: unknown } | null)?.pools)
+  if (!parsedPools.ok) throw apiError(parsedPools.error)
+  const { pools } = parsedPools
 
   const db = useDb(event)
   const slug = await freeSlug(db, input.name)
@@ -39,12 +44,22 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const phase = phaseOf(startsAt)
 
   await db.transaction(async (tx) => {
+    // Every game of a pool must be in the library (#146); one lookup for both lists, before anything is written.
+    const poolIds = [...new Set([...pools.main, ...pools.tiebreaker].map(id => id.toLowerCase()))]
+    if (poolIds.length > 0) {
+      const known = await tx.select({ id: games.id }).from(games).where(inArray(games.id, poolIds))
+      if (known.length !== poolIds.length) throw apiError('unknown_game')
+    }
     const [row] = await tx
       .insert(events)
       .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })
       .returning({ id: events.id })
     await tx.insert(sessions).values(startsAt.map(date => ({ eventId: row!.id, startsAt: date })))
-    // The Game pools get their own insert here (#146).
+    const poolRows = [
+      ...pools.main.map(gameId => ({ eventId: row!.id, gameId, pool: 'main' as const })),
+      ...pools.tiebreaker.map(gameId => ({ eventId: row!.id, gameId, pool: 'tiebreaker' as const })),
+    ]
+    if (poolRows.length > 0) await tx.insert(eventPoolGames).values(poolRows)
     await tx.insert(eventMembers).values({ eventId: row!.id, userId: user.id })
     if (input.dateMode === 'poll') {
       await tx.insert(pollSlots).values(input.slots.map(startsAt => ({ eventId: row!.id, startsAt })))

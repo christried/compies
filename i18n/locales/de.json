@@ -1242,6 +1242,8 @@
     "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",
+    "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
+    "unknownGame": "Ein Spiel aus dem Pool gibt es nicht mehr.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

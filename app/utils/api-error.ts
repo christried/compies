@@ -46,6 +46,8 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   not_game_editor: 'error.notGameEditor',
   image_too_large: 'error.imageTooLarge',
   image_not_webp: 'error.imageNotWebp',
+  invalid_pools: 'error.poolsInvalid',
+  unknown_game: 'error.unknownGame',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */
