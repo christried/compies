@@ -22,9 +22,9 @@ describe('InfoSheet', () => {
   })
 
   it('leaves out the sections a topic does not have', async () => {
-    const page = await mountSuspended(InfoSheet, { props: { topic: 'tiebreaker' } })
+    const page = await mountSuspended(InfoSheet, { props: { topic: 'admin' } })
 
-    expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s'])
+    expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s', 'Gut für', 'Achtung'])
   })
 
   it('adds the hidden wheel option for the Glücksrad', async () => {

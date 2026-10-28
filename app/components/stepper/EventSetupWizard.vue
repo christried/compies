@@ -41,9 +41,6 @@ const draft = defineModel<EventDraft>({ required: true })
 
 const { t } = useI18n()
 
-// Holds the library across the two pool steps, whose pickers mount and unmount (useGameLibrary).
-useGameLibrary()
-
 const STEPS: Record<StepKey, { component: Component, props?: Record<string, unknown> }> = {
   name: { component: StepName },
   format: { component: StepFormat },
@@ -67,11 +64,10 @@ const saving = ref(false)
 const stepList = computed(() => props.steps.map(key => ({ key, label: t(`stepper.steps.${key}.label`) })))
 const stepKey = computed(() => props.steps[current.value]!)
 const isLast = computed(() => current.value === props.steps.length - 1)
-// The info column explains the Format or, on the Selection mode step, the chosen mode (#145), and the Tiebreaker pool (#146).
+// The info column explains the Format or, on the Selection mode step, the chosen mode (#145). The pool steps have none (#173).
 const infoTopic = computed(() => {
   if (stepKey.value === 'format') return draft.value.settings.format
   if (stepKey.value === 'mode') return draft.value.settings.selectionMode === 'lucky_wheel' ? 'wheel' : 'admin'
-  if (stepKey.value === 'tiebreaker') return 'tiebreaker'
   return null
 })
 const infoTitle = computed(() => (infoTopic.value ? t(`setup.info.${infoTopic.value}.title`) : undefined))

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, gameNameProblem, isClipLength,
-  parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
+  CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
+  isClipLength, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
+  type GameFilters, type GameView, type Suitability,
 } from '../../shared/game'
 
 describe('clipTime', () => {
@@ -248,5 +249,89 @@ describe('parseGameInput', () => {
     ])('refuses %j with invalid_suitabilities', (suitabilities) => {
       expect(parseGameInput({ ...valid, suitabilities })).toEqual({ ok: false, error: 'invalid_suitabilities' })
     })
+  })
+})
+
+describe('filterGames (#173)', () => {
+  function game(name: string, overrides: Partial<GameView> = {}): GameView {
+    return {
+      id: name,
+      name,
+      imageUrl: null,
+      youtubeId: null,
+      clipStart: 0,
+      clipLength: 30,
+      playersMin: null,
+      playersMax: null,
+      suitabilities: [],
+      createdBy: { id: 'me', name: 'Ich' },
+      createdAt: '2026-01-15T10:00:00.000Z',
+      canEdit: true,
+      ...overrides,
+    }
+  }
+
+  // Five games: names, counts and Suitabilities chosen so every filter has something to keep and something to drop.
+  const mario = game('Mario Kart', { playersMin: 1, playersMax: 12, suitabilities: ['teams', 'ffa'] })
+  const counter = game('Counter-Strike 2', { playersMin: 2, playersMax: 10, suitabilities: ['teams'] })
+  const halo = game('Halo', { playersMax: 4, suitabilities: ['ffa'] })
+  const open = game('Offen', { playersMin: 6 })
+  const board = game('Brettspiel', { createdBy: { id: 'other', name: 'Anna' } })
+  const library = [mario, counter, halo, open, board]
+
+  const by = (filters: Partial<GameFilters>, viewerId = 'me') => filterGames(library, { ...NO_FILTERS, ...filters }, viewerId).map(found => found.name)
+
+  it('keeps every game without filters, in the given order', () => {
+    expect(by({})).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo', 'Offen', 'Brettspiel'])
+  })
+
+  it('keeps the games whose name contains the search, ignoring case and surrounding spaces', () => {
+    expect(by({ q: 'mario' })).toEqual(['Mario Kart'])
+    expect(by({ q: ' KART ' })).toEqual(['Mario Kart'])
+    expect(by({ q: '  ' })).toHaveLength(5)
+  })
+
+  it('reads % and _ in the search as plain characters', () => {
+    const named = [game('Rocket 100%'), game('Rocket 1000'), game('Die_Siedler'), game('Die Siedler')]
+    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }, 'me').map(item => item.name)
+
+    expect(found('%')).toEqual(['Rocket 100%'])
+    expect(found('_')).toEqual(['Die_Siedler'])
+  })
+
+  it('matches umlauts whatever their case', () => {
+    const named = [game('Äpfel Spiel'), game('Würfeln')]
+    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }, 'me').map(item => item.name)
+
+    expect(found('ä')).toEqual(['Äpfel Spiel'])
+    expect(found('Ä')).toEqual(['Äpfel Spiel'])
+    expect(found('WÜR')).toEqual(['Würfeln'])
+  })
+
+  it('keeps the games whose recommended range covers the player count, open bounds included', () => {
+    expect(by({ players: 3 })).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo'])
+    expect(by({ players: 5 })).toEqual(['Mario Kart', 'Counter-Strike 2'])
+    expect(by({ players: 11 })).toEqual(['Mario Kart', 'Offen'])
+    expect(by({ players: 50 })).toEqual(['Offen'])
+  })
+
+  it('leaves out a game without any player count when the player count is filtered', () => {
+    expect(by({ players: 3 })).not.toContain('Brettspiel')
+  })
+
+  it('keeps the games with the Suitability', () => {
+    expect(by({ suitability: 'teams' })).toEqual(['Mario Kart', 'Counter-Strike 2'])
+    expect(by({ suitability: 'ffa' })).toEqual(['Mario Kart', 'Halo'])
+    expect(by({ suitability: 'one_v_one' as Suitability })).toEqual([])
+  })
+
+  it('keeps the games the viewer created with „Von mir“', () => {
+    expect(by({ mine: true })).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo', 'Offen'])
+    expect(by({ mine: true }, 'other')).toEqual(['Brettspiel'])
+  })
+
+  it('combines the filters with AND', () => {
+    expect(by({ players: 3, suitability: 'teams', mine: true, q: 'counter' })).toEqual(['Counter-Strike 2'])
+    expect(by({ players: 3, suitability: 'ffa', q: 'counter' })).toEqual([])
   })
 })

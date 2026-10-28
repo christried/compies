@@ -2,13 +2,15 @@
 import { Plus, X } from '@lucide/vue'
 import { addPoolGame, settingsOf, togglePoolGame, type EventDraft, type StepLocks } from '~/utils/event-draft'
 import type { PoolGame } from '~~/shared/event'
-import type { GameView } from '~~/shared/game'
+import { NO_FILTERS, type GameFilters, type GameView } from '~~/shared/game'
 import { poolHint, type Pool } from '~~/shared/settings'
 
-// Steps 6 and 7: the Game pool and the Tiebreaker pool (#146), one component for both (`kind`). The Host picks
-// games from the library and can make a missing one in a sheet; it lands in the pool being filled, and the
-// wizard's other input stays where it is (the draft lives in the entry page). Empty pools are fine, so the step never
-// blocks. Only the Game pool has the „Wird knapp“ hint, and it never blocks either.
+// Steps 6 and 7: the Game pool and the Tiebreaker pool (#146), one component and one markup for both (`kind`); they
+// differ in the heading and list copy, the Tiebreaker's note and the Game pool's „Wird knapp“ hint. The Host picks
+// games in the game browser (#173, its filters are local, never the address) and can make a missing one in a sheet; it
+// lands in the pool being filled, and the wizard's other input stays where it is (the draft lives in the entry page).
+// Empty pools are fine, so the step never blocks. A Host who lost the Host permission (`locks.library` false) may not
+// browse the library: the step says so instead of the browser, and the pool's games stay and can be removed.
 const props = defineProps<{
   kind: Pool
   locks?: StepLocks
@@ -24,8 +26,14 @@ watchEffect(() => {
 })
 
 const games = computed(() => draft.value.pools[props.kind])
-const countKey = computed(() => (props.kind === 'main' ? 'stepper.pool.mainCount' : 'stepper.pool.tiebreakerCount'))
-const listKey = computed(() => (props.kind === 'main' ? 'stepper.pool.listMain' : 'stepper.pool.listTiebreaker'))
+const COPY: Record<Pool, { count: string, list: string, note?: string }> = {
+  main: { count: 'stepper.pool.mainCount', list: 'stepper.pool.listMain' },
+  tiebreaker: { count: 'stepper.pool.tiebreakerCount', list: 'stepper.pool.listTiebreaker', note: 'stepper.pool.tiebreakerNote' },
+}
+const copy = computed(() => COPY[props.kind])
+const library = computed(() => props.locks?.library !== false)
+const filters = ref<GameFilters>({ ...NO_FILTERS })
+const pooled = computed(() => new Set(games.value.map(game => game.id)))
 
 const hint = computed(() => (props.kind === 'main' ? poolHint(settingsOf(draft.value), games.value.length) : null))
 const hintText = computed(() => {
@@ -51,7 +59,7 @@ async function onSaved(game: GameView) {
   draft.value = addPoolGame(draft.value, props.kind, game)
   creating.value = false
   toast({ tone: 'success', text: t('library.saved', { name: game.name }) })
-  await refreshNuxtData('games')
+  await refreshGameLibrary()
 }
 </script>
 
@@ -66,7 +74,7 @@ async function onSaved(game: GameView) {
 
     <section class="flex flex-col gap-2">
       <h2 class="m-0 font-display text-[22px] leading-tight font-normal">
-        {{ t(countKey, { n: games.length }, games.length) }}
+        {{ t(copy.count, { n: games.length }, games.length) }}
       </h2>
       <p
         v-if="games.length === 0"
@@ -76,7 +84,7 @@ async function onSaved(game: GameView) {
       </p>
       <ul
         v-else
-        :aria-label="t(listKey)"
+        :aria-label="t(copy.list)"
         class="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
       >
         <li
@@ -92,6 +100,7 @@ async function onSaved(game: GameView) {
               <IconButton
                 :icon="X"
                 :label="t('stepper.pool.remove', { name: game.name })"
+                tone="error"
                 :size="36"
                 @click="toggle(game)"
               />
@@ -101,11 +110,19 @@ async function onSaved(game: GameView) {
       </ul>
     </section>
 
-    <GamePoolPicker
-      :selected="games.map(game => game.id)"
-      @toggle="toggle"
+    <NoticeBanner
+      v-if="copy.note"
+      tone="info"
     >
-      <template #actions>
+      {{ t(copy.note) }}
+    </NoticeBanner>
+
+    <GameBrowser
+      v-if="library"
+      v-model:filters="filters"
+      compact
+    >
+      <template #toolbar>
         <AppButton
           variant="secondary"
           size="lg"
@@ -117,9 +134,31 @@ async function onSaved(game: GameView) {
           {{ t('stepper.pool.create') }}
         </AppButton>
       </template>
-    </GamePoolPicker>
+      <template #card-actions="{ game }">
+        <IconButton
+          v-if="pooled.has(game.id)"
+          :icon="X"
+          :label="t('stepper.pool.remove', { name: game.name })"
+          tone="error"
+          @click="toggle(game)"
+        />
+        <IconButton
+          v-else
+          :icon="Plus"
+          :label="t('stepper.pool.add', { name: game.name })"
+          @click="toggle(game)"
+        />
+      </template>
+    </GameBrowser>
+    <NoticeBanner
+      v-else
+      tone="warning"
+    >
+      {{ t('stepper.pool.noLibrary') }}
+    </NoticeBanner>
 
     <AppSheet
+      v-if="library"
       :open="creating"
       :title="t('stepper.pool.create')"
       @close="creating = false"

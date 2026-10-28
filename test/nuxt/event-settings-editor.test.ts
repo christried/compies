@@ -23,9 +23,13 @@ function poolGame(n: number, name: string): PoolGame {
 }
 
 // The library the pool steps pick from.
+const listed = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: [kart, pong].map(game => ({ ...game, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true })), total: 2 }),
+  handler: () => {
+    listed()
+    return { games: [kart, pong].map(game => ({ ...game, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true })) }
+  },
 })
 
 type Page = VueWrapper
@@ -65,8 +69,8 @@ function setUp(setup: Setup = {}) {
   return { slug, patched, set }
 }
 
-async function mountEditor(slug: string): Promise<Page> {
-  signInAs({ ...kitty, canHost: true })
+async function mountEditor(slug: string, canHost = true): Promise<Page> {
+  signInAs({ ...kitty, canHost })
   const page = await mountSuspended(EditorPage, { route: `/e/${slug}/einstellungen`, attachTo: document.body })
   mounted.push(page)
   return page
@@ -131,6 +135,27 @@ describe('the settings editor', () => {
 
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Event einrichten')
     expect(spin(page, 'Spieler pro Team').text()).toBe('3')
+  })
+
+  it('tells a Host without the Host permission that the library is closed, keeps the pool and asks for no games (#173)', async () => {
+    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart, pong], tiebreaker: [] } })
+    listed.mockClear()
+
+    const page = await mountEditor(slug, false)
+    await goTo(page, 'Spielepool')
+
+    expect(page.text()).toContain('Ohne Host-Berechtigung kannst du keine Spiele aus der Bibliothek hinzufügen. Die Spiele im Pool bleiben.')
+    expect(page.find('input[type="search"]').exists()).toBe(false)
+    expect(page.findAll('button').some(item => item.text().includes('Neues Spiel anlegen'))).toBe(false)
+    expect(page.find('ul[aria-label="Bibliothek"]').exists()).toBe(false)
+    expect(page.find('ul[aria-label="Spiele im Pool"]').exists()).toBe(true)
+
+    await button(page, 'Pong aus dem Pool nehmen').trigger('click')
+    await goTo(page, 'Tiebreaker-Pool')
+    expect(page.find('input[type="search"]').exists()).toBe(false)
+    await cta(page).trigger('click')
+    await vi.waitFor(() => expect(patched).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [kart.id], tiebreaker: [] } })))
+    expect(listed).not.toHaveBeenCalled()
   })
 
   it('starts from the Event: Team size, Game count, Selection mode with its wheel options, and the pools', async () => {

@@ -4,6 +4,7 @@ import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
 import { eventDataKey } from '~/utils/event-data'
 import { draftFromEvent, settingsBody, type EventDraft, type StepKey } from '~/utils/event-draft'
 import type { EventView } from '~~/shared/event'
+import { canSeeLibrary } from '~~/shared/game'
 import { eventPath } from '~~/shared/links'
 import { settingsEditable, settingsLocked } from '~~/shared/settings'
 
@@ -26,7 +27,9 @@ const editable = computed(() => (view.value ? settingsEditable(view.value.event.
 const notSetUp = computed(() => view.value?.settings === null)
 // Nothing is locked on an Event that was never set up: it has no rules yet that played games could rely on.
 const lockedReason = computed(() => (view.value && !notSetUp.value && settingsLocked(view.value.event.phase) ? t('eventSettings.locked') : undefined))
-const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined }))
+// A Host whose Host permission was revoked keeps the games in the pools but may not browse the library (#173).
+const user = useAuthUser()
+const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value) }))
 
 const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { hidden: false, main: [], tiebreaker: [] } }))
 

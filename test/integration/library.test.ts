@@ -179,7 +179,7 @@ describe('the Game library API (#141)', () => {
     it('is empty without games', async () => {
       const cookie = await cookieOf(host)
 
-      expect(await (await list(cookie)).json()).toEqual({ games: [], total: 0 })
+      expect(await (await list(cookie)).json()).toEqual({ games: [] })
     })
 
     it('orders by name, ignoring case', async () => {
@@ -396,121 +396,35 @@ describe('the Game library API (#141)', () => {
     })
   })
 
-  describe('filters on GET /api/games (#142)', () => {
-    // Five games: names, counts and Suitabilities chosen so every filter has something to keep and something to drop.
+  describe('GET /api/games without filters (#173)', () => {
+    // The browser filters (filterGames); the server answers every visible game, whatever the query string says.
     async function seed() {
       const hostCookie = await cookieOf(host)
       await created(hostCookie, { name: 'Mario Kart', playersMin: 1, playersMax: 12, suitabilities: ['teams', 'ffa'] })
       await created(hostCookie, { name: 'Counter-Strike 2', playersMin: 2, playersMax: 10, suitabilities: ['teams'] })
       await created(hostCookie, { name: 'Halo', playersMax: 4, suitabilities: ['ffa'] })
-      await created(hostCookie, { name: 'Offen', playersMin: 6 })
       await created(await cookieOf(otherHost), { name: 'Brettspiel' })
     }
 
-    it('keeps the games whose name contains the search, ignoring case and surrounding spaces', async () => {
+    it('returns every game, by name without regard to case, and no total', async () => {
       await seed()
       const cookie = await cookieOf(host)
 
-      expect(await (await request('/api/games?q=mario', { headers: { cookie } })).json()).toMatchObject({ games: [{ name: 'Mario Kart' }] })
-      expect(await (await request('/api/games?q=%20KART%20', { headers: { cookie } })).json()).toMatchObject({ games: [{ name: 'Mario Kart' }] })
-      expect(await (await request('/api/games?q=%20%20', { headers: { cookie } })).json()).toMatchObject({ games: expect.any(Array) })
-      expect(((await (await request('/api/games?q=%20%20', { headers: { cookie } })).json()) as GameList).games).toHaveLength(5)
+      const body = await (await request('/api/games', { headers: { cookie } })).json() as GameList
+
+      expect(body.games.map(game => game.name)).toEqual(['Brettspiel', 'Counter-Strike 2', 'Halo', 'Mario Kart'])
+      expect(body).not.toHaveProperty('total')
     })
 
-    it('reads % and _ in the search as plain characters', async () => {
-      const cookie = await cookieOf(host)
-      await created(cookie, { name: 'Rocket 100%' })
-      await created(cookie, { name: 'Rocket 1000' })
-      await created(cookie, { name: 'Die_Siedler' })
-      await created(cookie, { name: 'Die Siedler' })
-
-      const percent = await (await request('/api/games?q=%25', { headers: { cookie } })).json() as GameList
-      const underscore = await (await request('/api/games?q=_', { headers: { cookie } })).json() as GameList
-
-      expect(percent.games.map(game => game.name)).toEqual(['Rocket 100%'])
-      expect(underscore.games.map(game => game.name)).toEqual(['Die_Siedler'])
-    })
-
-    it('keeps the games whose recommended range covers the player count, open bounds included', async () => {
-      await seed()
-      const cookie = await cookieOf(host)
-      const at = async (players: number) => (await (await request(`/api/games?players=${players}`, { headers: { cookie } })).json() as GameList).games.map(game => game.name).sort()
-
-      expect(await at(3)).toEqual(['Counter-Strike 2', 'Halo', 'Mario Kart'])
-      expect(await at(5)).toEqual(['Counter-Strike 2', 'Mario Kart'])
-      expect(await at(11)).toEqual(['Mario Kart', 'Offen'])
-      expect(await at(50)).toEqual(['Offen'])
-    })
-
-    it('leaves out a game without any player count when the player count is filtered', async () => {
+    it('ignores a query string', async () => {
       await seed()
       const cookie = await cookieOf(host)
 
-      const { games: found } = await (await request('/api/games?players=3', { headers: { cookie } })).json() as GameList
+      const plain = await (await request('/api/games', { headers: { cookie } })).json() as GameList
+      const queried = await (await request('/api/games?q=x&suitability=teams&players=3&mine=1', { headers: { cookie } })).json() as GameList
 
-      expect(found.map(game => game.name)).not.toContain('Brettspiel')
-    })
-
-    it('ignores a player count that is no whole number from 1 to 99', async () => {
-      await seed()
-      const cookie = await cookieOf(host)
-
-      for (const players of ['abc', '0', '100', '2.5']) {
-        const { games: found } = await (await request(`/api/games?players=${players}`, { headers: { cookie } })).json() as GameList
-        expect(found).toHaveLength(5)
-      }
-    })
-
-    it('keeps the games with the Suitability, and ignores an unknown one', async () => {
-      await seed()
-      const cookie = await cookieOf(host)
-      const by = async (query: string) => (await (await request(`/api/games?${query}`, { headers: { cookie } })).json() as GameList).games.map(game => game.name).sort()
-
-      expect(await by('suitability=teams')).toEqual(['Counter-Strike 2', 'Mario Kart'])
-      expect(await by('suitability=ffa')).toEqual(['Halo', 'Mario Kart'])
-      expect(await by('suitability=wild')).toHaveLength(5)
-    })
-
-    it('keeps the games marked 1 gegen 1 with suitability=one_v_one, and no others', async () => {
-      const cookie = await cookieOf(host)
-      await created(cookie, { name: 'Street Fighter', suitabilities: ['one_v_one'] })
-      await created(cookie, { name: 'Tekken', suitabilities: ['teams', 'one_v_one'] })
-      await created(cookie, { name: 'Catan', suitabilities: ['teams', 'ffa'] })
-
-      const { games: found } = await (await request('/api/games?suitability=one_v_one', { headers: { cookie } })).json() as GameList
-
-      expect(found.map(game => game.name)).toEqual(['Street Fighter', 'Tekken'])
-    })
-
-    it('keeps the games the viewer created with mine=1', async () => {
-      await seed()
-      const cookie = await cookieOf(host)
-
-      const { games: found } = await (await request('/api/games?mine=1', { headers: { cookie } })).json() as GameList
-
-      expect(found.map(game => game.name).sort()).toEqual(['Counter-Strike 2', 'Halo', 'Mario Kart', 'Offen'])
-      expect((await (await request('/api/games?mine=0', { headers: { cookie } })).json() as GameList).games).toHaveLength(5)
-    })
-
-    it('combines the filters with AND', async () => {
-      await seed()
-      const cookie = await cookieOf(host)
-
-      const { games: found } = await (await request('/api/games?players=3&suitability=teams&mine=1&q=counter', { headers: { cookie } })).json() as GameList
-      const { games: none } = await (await request('/api/games?players=3&suitability=ffa&q=counter', { headers: { cookie } })).json() as GameList
-
-      expect(found.map(game => game.name)).toEqual(['Counter-Strike 2'])
-      expect(none).toEqual([])
-    })
-
-    it('keeps total at the full count of the library under filters', async () => {
-      await seed()
-      const cookie = await cookieOf(host)
-
-      const body = await (await request('/api/games?q=halo&mine=1', { headers: { cookie } })).json() as GameList
-
-      expect(body.games.map(game => game.name)).toEqual(['Halo'])
-      expect(body.total).toBe(5)
+      expect(queried).toEqual(plain)
+      expect(queried.games).toHaveLength(4)
     })
   })
 })

@@ -11,7 +11,7 @@ const { toast } = useToast()
 
 async function onSaved(game: GameView) {
   toast({ tone: 'success', text: t('library.saved', { name: game.name }) })
-  await refreshNuxtData('games')
+  await refreshGameLibrary()
   await navigateTo(`/bibliothek/${game.id}`)
 }
 </script>

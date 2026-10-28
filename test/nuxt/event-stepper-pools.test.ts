@@ -6,8 +6,8 @@ import CreatePage from '~/pages/neu.vue'
 import type { GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 
-// Steps 6 and 7 of the stepper, the Game pool and the Tiebreaker pool (#146): the picker over the library, the
-// hint under the Game pool, „Neues Spiel anlegen“ in a sheet, and what is sent. The other steps have their own
+// Steps 6 and 7 of the stepper, the Game pool and the Tiebreaker pool (#146, #173): the game browser over the library,
+// the hint under the Game pool, „Neues Spiel anlegen“ in a sheet, and what is sent. The other steps have their own
 // cases in event-stepper.test.ts, event-stepper-mode.test.ts and create-event.test.ts.
 
 const host = { ...kitty, canHost: true }
@@ -41,7 +41,7 @@ let library: GameView[] = []
 const postedGame = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: library, total: library.length }),
+  handler: () => ({ games: library }),
 })
 registerEndpoint('/api/games', {
   method: 'POST',
@@ -72,8 +72,11 @@ const stepItems = (page: Page) => page.get('nav[aria-label="Schritte"]').findAll
 const picker = (page: Page) => page.get('ul[aria-label="Bibliothek"]')
 const inPool = (page: Page) => page.find('ul[aria-label^="Spiele im"]')
 const toggle = (page: Page, label: string) => picker(page).get(`button[aria-label="${label}"]`)
-/** The card buttons of the picker that say a game is in the pool. */
-const pressed = (page: Page) => picker(page).findAll('button[aria-pressed="true"]').map(button => button.attributes('aria-label'))
+/** The card buttons of the picker that say a game is in the pool: the red ✕ (#173). */
+const pressed = (page: Page) => picker(page).findAll('button[aria-label$="aus dem Pool nehmen"]').map(button => button.attributes('aria-label'))
+/** The card button, or a wrapper that does not exist. */
+const maybeToggle = (page: Page, label: string) => picker(page).find(`button[aria-label="${label}"]`)
+const searchInput = (page: Page) => page.get('input[type="search"]')
 
 async function next(page: Page, times = 1) {
   for (let i = 0; i < times; i++) await cta(page).trigger('click')
@@ -128,6 +131,7 @@ describe('the pool steps', () => {
     savedEvent.mockClear()
     refuseUnknownGame = false
     await clearNuxtData('games')
+    useState('game-library').value = null
   })
 
   it('are steps 6 and 7 of 8, between the Selection mode and the Sessions', async () => {
@@ -164,8 +168,8 @@ describe('the pool steps', () => {
 
       await toggle(page, 'Pong in den Pool').trigger('click')
 
-      expect(toggle(page, 'Pong aus dem Pool nehmen').attributes('aria-pressed')).toBe('true')
-      expect(toggle(page, 'Mario Kart in den Pool').attributes('aria-pressed')).toBe('false')
+      expect(pressed(page)).toEqual(['Pong aus dem Pool nehmen'])
+      expect(maybeToggle(page, 'Mario Kart in den Pool').exists()).toBe(true)
       expect(page.text()).toContain('Im Pool: 1 Spiel')
       expect(page.text()).not.toContain('Noch leer.')
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Pong'])
@@ -197,8 +201,7 @@ describe('the pool steps', () => {
       const page = await mountCreate()
       await toPoolStep(page)
 
-      const search = page.findAll('label').find(label => label.text() === 'Spiel aus der Bibliothek suchen')!
-      const input = page.get(`[id="${search.attributes('for')}"]`)
+      const input = searchInput(page)
 
       await input.setValue('MARIO')
       expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Mario Kart'])
@@ -208,7 +211,7 @@ describe('the pool steps', () => {
 
       await input.setValue('zzz')
       expect(page.find('ul[aria-label="Bibliothek"]').exists()).toBe(false)
-      expect(page.text()).toContain('Keine Treffer für „zzz“.')
+      expect(page.text()).toContain('„zzz“ kennen wir noch nicht.')
 
       await input.setValue('')
       expect(picker(page).findAll('li')).toHaveLength(3)
@@ -218,9 +221,8 @@ describe('the pool steps', () => {
       const page = await mountCreate()
       await toPoolStep(page)
       await toggle(page, 'Pong in den Pool').trigger('click')
-      const search = page.findAll('label').find(label => label.text() === 'Spiel aus der Bibliothek suchen')!
 
-      await page.get(`[id="${search.attributes('for')}"]`).setValue('mario')
+      await searchInput(page).setValue('mario')
 
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Pong'])
     })
@@ -377,13 +379,17 @@ describe('the pool steps', () => {
       expect(page.text()).not.toContain('Wird knapp.')
     })
 
-    it('explains the Tiebreaker in the info column', async () => {
+    it('explains the Tiebreaker in a note between the pool and the search, with no info column', async () => {
       const page = await mountCreate()
       await toTiebreakerStep(page)
 
-      const aside = page.get('aside[aria-label="Erklärung"]')
-      expect(aside.text()).toContain('Tiebreaker')
-      expect(aside.text()).toContain('Liegen am Ende mehrere Parteien punktgleich auf Platz 1')
+      const note = page.findAll('[role="status"]').find(element => element.text().includes('Liegen am Ende mehrere Parteien punktgleich auf Platz 1'))!
+      expect(note.text()).toContain('Du kannst auch ohne Spiel weitermachen.')
+      expect(page.find('aside[aria-label="Erklärung"]').exists()).toBe(false)
+      // After the pool header, before the search.
+      const html = page.html()
+      expect(html.indexOf('Tiebreaker-Pool: 0 Spiele')).toBeLessThan(html.indexOf('Liegen am Ende'))
+      expect(html.indexOf('Liegen am Ende')).toBeLessThan(html.indexOf('type="search"'))
     })
   })
 
@@ -422,7 +428,7 @@ describe('the pool steps', () => {
       expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt' }))
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
       expect(page.text()).toContain('Im Pool: 1 Spiel')
-      await vi.waitFor(() => expect(toggle(page, 'Frisch Angelegt aus dem Pool nehmen').attributes('aria-pressed')).toBe('true'))
+      await vi.waitFor(() => expect(maybeToggle(page, 'Frisch Angelegt aus dem Pool nehmen').exists()).toBe(true))
 
       await stepItems(page)[0]!.get('button').trigger('click')
       expect((page.get('input[type="text"]').element as HTMLInputElement).value).toBe('Freitags-Zocken')
@@ -486,5 +492,72 @@ describe('the pool steps', () => {
 
       await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Ein Spiel aus dem Pool gibt es nicht mehr.'))
     })
+  })
+})
+
+describe('the game browser in the pool steps (#173)', () => {
+  beforeEach(async () => {
+    useState('toasts').value = []
+    library = [kart, pong, chess]
+    await clearNuxtData('games')
+    useState('game-library').value = null
+  })
+
+  it('is the compact browser: the search and „Alle / Von mir“, without the player count and „Passt zu“', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    expect(page.find('input[type="search"]').exists()).toBe(true)
+    const chips = picker(page).element.parentElement!.querySelectorAll('button[aria-pressed]')
+    expect([...chips].map(chip => chip.textContent!.trim())).toEqual(['Alle', 'Von mir'])
+    expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(false)
+    expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(false)
+  })
+
+  it('keeps its filters out of the address', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    const before = useRouter().currentRoute.value.fullPath
+
+    await searchInput(page).setValue('mario')
+    await page.findAll('button[aria-pressed]').find(button => button.text() === 'Von mir')!.trigger('click')
+
+    expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Mario Kart'])
+    await new Promise(resolve => setTimeout(resolve, 400))
+    expect(useRouter().currentRoute.value.fullPath).toBe(before)
+  })
+
+  it('shows a red ✕ on a game in the pool and a ＋ on the others, and a click on the ✕ takes it out, chip and all', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Pong in den Pool').trigger('click')
+
+    const remove = toggle(page, 'Pong aus dem Pool nehmen')
+    expect(remove.classes()).toContain('bg-error')
+    expect(toggle(page, 'Mario Kart in den Pool').classes()).not.toContain('bg-error')
+    expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Pong'])
+    expect(inPool(page)!.get('button[aria-label="Pong aus dem Pool nehmen"]').classes()).toContain('bg-error')
+
+    await remove.trigger('click')
+
+    expect(inPool(page).exists()).toBe(false)
+    expect(maybeToggle(page, 'Pong in den Pool').exists()).toBe(true)
+  })
+
+  it('renders the Game pool and the Tiebreaker pool alike, apart from the heading and the note', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    // Markup only: the heading's words, the list's name and the generated ids are what may differ.
+    const markup = () => {
+      const browser = picker(page).element.parentElement!.outerHTML
+      const pool = page.get('section').html().replace(/(<h2[^>]*>)[^<]*/, '$1')
+      return (pool + browser).replace(/<!--.*?-->/g, '').replace(/ id="[^"]*"/g, '')
+    }
+    const game = markup()
+
+    await next(page)
+    await settle(page)
+
+    expect(markup()).toBe(game)
   })
 })

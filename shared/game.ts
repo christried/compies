@@ -79,10 +79,42 @@ export interface GameView {
   canEdit: boolean
 }
 
-/** The games the filters keep, and `total`: every game in the library, whatever the filters (#142, for the search placeholder). */
+/** Every game the viewer may see, by name (GET /api/games, #173). The browser filters them (`filterGames`) and knows the length. */
 export interface GameList {
   games: GameView[]
-  total: number
+}
+
+/** What the game browser filters by (#142, #171, #173). Empty, null and false mean no filter. */
+export interface GameFilters {
+  /** Name search, as typed. */
+  q: string
+  /** Player count the recommended range must cover. */
+  players: number | null
+  /** A Suitability the game must have. */
+  suitability: Suitability | null
+  /** Only the viewer's own games („Von mir“). */
+  mine: boolean
+}
+
+export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, mine: false }
+
+/**
+ * The games the filters keep, combined with AND: a name search (trimmed, without regard to case, `%` and `_` are plain
+ * characters), a player count the recommended range covers (a game without any count never matches one), a
+ * Suitability and the viewer's own games. One function for the library and both pool pickers (#173).
+ */
+export function filterGames(games: GameView[], filters: GameFilters, viewerId: string): GameView[] {
+  const text = filters.q.trim().toLocaleLowerCase('de')
+  const { players, suitability } = filters
+  return games.filter((game) => {
+    if (text && !game.name.toLocaleLowerCase('de').includes(text)) return false
+    if (players !== null) {
+      const { playersMin: min, playersMax: max } = game
+      if ((min === null && max === null) || (min !== null && min > players) || (max !== null && max < players)) return false
+    }
+    if (suitability !== null && !game.suitabilities.includes(suitability)) return false
+    return !filters.mine || game.createdBy.id === viewerId
+  })
 }
 
 /** What is wrong with a game name: empty after trimming, or longer than GAME_NAME_MAX characters (an emoji counts as one). Null when fine. */

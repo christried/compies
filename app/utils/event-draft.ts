@@ -20,6 +20,8 @@ export type StepKey = 'name' | 'format' | 'games' | 'points' | 'mode' | 'pool' |
 export interface StepLocks {
   reason?: string
   floors?: SettingsFloors
+  /** False when the Host may not browse the Game library (the Host permission was revoked, #173); the pool steps then offer no search. */
+  library?: boolean
 }
 
 /** The settings as the steps edit them. The Lucky Wheel's options sit beside them in the draft; `settingsOf` joins both. */

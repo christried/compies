@@ -280,10 +280,6 @@
         "how": "Wie Glücksrad, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.",
         "good": "Zufall mit einem kleinen Vorteil für die, die hinten liegen.",
         "warn": "Das Rad kann hier nicht verdeckt werden, sonst wüsste niemand, was er bannt."
-      },
-      "tiebreaker": {
-        "title": "Tiebreaker",
-        "how": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht."
       }
     }
   },
@@ -1232,11 +1228,9 @@
       "empty": "Noch leer. Du kannst auch ohne Spiele weitermachen.",
       "add": "{name} in den Pool",
       "remove": "{name} aus dem Pool nehmen",
-      "search": "Spiel aus der Bibliothek suchen",
-      "library": "Bibliothek",
-      "libraryEmpty": "Die Bibliothek ist leer.",
-      "noMatch": "Keine Treffer für „{q}“.",
       "create": "Neues Spiel anlegen",
+      "tiebreakerNote": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht. Du kannst auch ohne Spiel weitermachen.",
+      "noLibrary": "Ohne Host-Berechtigung kannst du keine Spiele aus der Bibliothek hinzufügen. Die Spiele im Pool bleiben.",
       "hintTitle": "Wird knapp.",
       "hintWheel": "{games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | {games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
       "hintWheelOne": "1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | 1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",

@@ -7,10 +7,11 @@ import { youTubeThumbnail } from '~~/shared/youtube'
 // A game as a card or a row (02-components § GameCard, #141). The cover is the uploaded image, else the
 // clip's YouTube thumbnail, else a neutral placeholder. It is decorative: the name is the text. With `to`
 // the name is the link and stretches over the whole card (so `#actions` can hold buttons of their own);
-// without it the card is a plain element, not a button. #146 and #148 reuse it.
+// without it the card is a plain element, not a button. #146 and #148 reuse it. `layout="responsive"` (#173) is a row
+// below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`.
 const props = withDefaults(defineProps<{
   game: Pick<GameView, 'name' | 'imageUrl' | 'youtubeId' | 'playersMin' | 'playersMax' | 'suitabilities'>
-  layout?: 'card' | 'row'
+  layout?: 'card' | 'row' | 'responsive'
   to?: RouteLocationRaw
 }>(), { layout: 'card', to: undefined })
 
@@ -25,18 +26,43 @@ const players = computed(() => {
 })
 // The Suitabilities („Passt zu“, #171) as a list, in SUITABILITIES order: „Teams, 1 gegen 1“.
 const suitabilities = computed(() => props.game.suitabilities.map(suitability => t(`library.suitability.${suitability}`)).join(', '))
-const isRow = computed(() => props.layout === 'row')
+
+// One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.
+const LAYOUT = {
+  row: {
+    box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5',
+    cover: 'size-[46px] rounded-[9px] border-2',
+    body: 'flex-1',
+    name: 'truncate',
+    actions: '',
+  },
+  card: {
+    box: 'flex-col overflow-hidden rounded-[14px]',
+    cover: 'aspect-[16/10] w-full border-b-2',
+    body: 'px-3 pt-2.5 pb-3',
+    name: 'line-clamp-2',
+    actions: 'px-3 pb-3',
+  },
+  responsive: {
+    box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5 md:min-h-0 md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:rounded-[14px] md:p-0',
+    cover: 'size-[46px] rounded-[9px] border-2 md:aspect-[16/10] md:size-auto md:w-full md:rounded-none md:border-0 md:border-b-2',
+    body: 'flex-1 md:flex-none md:px-3 md:pt-2.5 md:pb-3',
+    name: 'truncate md:line-clamp-2 md:whitespace-normal',
+    actions: 'md:px-3 md:pb-3',
+  },
+}
+const look = computed(() => LAYOUT[props.layout])
 </script>
 
 <template>
   <div
     class="relative flex min-w-0 border-(length:--cp-bw) border-line bg-surface shadow-sm"
-    :class="isRow ? 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5' : 'flex-col overflow-hidden rounded-[14px]'"
+    :class="look.box"
   >
     <div
       :data-cover="cover ? 'image' : 'placeholder'"
       class="relative grid flex-none place-items-center overflow-hidden border-line bg-paper-2"
-      :class="isRow ? 'size-[46px] rounded-[9px] border-2' : 'aspect-[16/10] w-full border-b-2'"
+      :class="look.cover"
       :style="cover ? undefined : { backgroundImage: 'repeating-linear-gradient(135deg, var(--cp-paper-2) 0 8px, var(--cp-surface) 8px 16px)' }"
     >
       <img
@@ -49,14 +75,14 @@ const isRow = computed(() => props.layout === 'row')
       <AppIcon
         v-else
         :icon="Gamepad2"
-        :size="isRow ? 20 : 32"
+        :size="layout === 'card' ? 32 : layout === 'row' ? 20 : 24"
         class="text-ink-3"
       />
     </div>
 
     <div
       class="flex min-w-0 flex-col gap-1"
-      :class="isRow ? 'flex-1' : 'px-3 pt-2.5 pb-3'"
+      :class="look.body"
     >
       <component
         :is="to ? NuxtLink : 'b'"
@@ -64,7 +90,8 @@ const isRow = computed(() => props.layout === 'row')
         class="leading-tight font-bold text-ink no-underline"
         :class="[
           to ? 'outline-memphis rounded-sm after:absolute after:inset-0 after:block after:content-[\'\']' : '',
-          isRow ? 'truncate text-[15px]' : 'line-clamp-2 text-[15px]',
+          look.name,
+          'text-[15px]',
         ]"
       >
         {{ game.name }}
@@ -90,7 +117,7 @@ const isRow = computed(() => props.layout === 'row')
     <div
       v-if="$slots.actions"
       class="relative flex flex-none items-center gap-2"
-      :class="isRow ? '' : 'px-3 pb-3'"
+      :class="look.actions"
     >
       <slot name="actions" />
     </div>
