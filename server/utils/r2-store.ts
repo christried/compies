@@ -14,7 +14,7 @@ export interface R2Config {
 }
 
 export interface S3SignInput {
-  method: 'GET' | 'PUT'
+  method: 'GET' | 'PUT' | 'DELETE'
   host: string
   /** The object path as it is, not yet URI-encoded: `/bucket/key`. */
   path: string
@@ -73,11 +73,11 @@ export async function signS3Request(input: S3SignInput): Promise<{ authorization
   return { authorization, headers: { ...sent, authorization } }
 }
 
-/** The image store on R2: `PUT` and `GET https://<account>[.eu].r2.cloudflarestorage.com/<bucket>/<key>`. Checked by hand on staging (#143). */
+/** The image store on R2: `PUT`, `GET` and `DELETE https://<account>[.eu].r2.cloudflarestorage.com/<bucket>/<key>`. Checked by hand on staging (#143). */
 export function r2ImageStore(config: R2Config): ImageStore {
   const host = `${config.accountId}${config.jurisdiction === 'eu' ? '.eu' : ''}.r2.cloudflarestorage.com`
 
-  async function call(method: 'GET' | 'PUT', key: string, body: Uint8Array | undefined, contentType?: string) {
+  async function call(method: 'GET' | 'PUT' | 'DELETE', key: string, body: Uint8Array | undefined, contentType?: string) {
     const path = `/${config.bucket}/${key}`
     const signed = await signS3Request({
       method,
@@ -106,10 +106,11 @@ export function r2ImageStore(config: R2Config): ImageStore {
       const response = await call('GET', key, undefined)
       if (response.status === 404) return null
       if (!response.ok) throw new Error(`R2 get failed: ${response.status}`)
-      return {
-        body: new Uint8Array(await response.arrayBuffer()),
-        contentType: response.headers.get('content-type') ?? 'application/octet-stream',
-      }
+      return new Uint8Array(await response.arrayBuffer())
+    },
+    async delete(key) {
+      const response = await call('DELETE', key, undefined)
+      if (!response.ok && response.status !== 404) throw new Error(`R2 delete failed: ${response.status}`)
     },
   }
 }
