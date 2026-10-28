@@ -53,6 +53,15 @@ describe('summaryRows', () => {
     ])
   })
 
+  it('adds the Veto allowance after the mode with the Lucky Wheel, and only then (#145)', () => {
+    const wheel = summaryRows(settings({ selectionMode: 'lucky_wheel', vetoAllowance: 2 }), t)
+    expect(wheel.map(row => row.key)).toEqual(['format', 'games', 'points', 'mode', 'vetoes'])
+    expect(wheel[4]).toEqual({ key: 'vetoes', label: 'Vetos', value: '2 pro Partei' })
+
+    const admin = summaryRows(settings({ selectionMode: 'admin_pick', vetoAllowance: null }), t)
+    expect(admin.map(row => row.key)).toEqual(['format', 'games', 'points', 'mode'])
+  })
+
   it('adds the Game pool and the Date when it is given them', () => {
     const rows = summaryRows(settings(), t, { pools: { main: 9, tiebreaker: 3 }, dates: 'Umfrage, 4 Vorschläge' })
 
