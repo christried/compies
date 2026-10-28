@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
 import { canSeeLibrary, type GameView } from '~~/shared/game'
 
 // Create a game (screen 24, `?s=edit`, #141). Only Users with the Host permission and the Platform admin get the
@@ -30,16 +29,10 @@ async function onSaved(game: GameView) {
     no-tabs
   >
     <div class="mx-auto flex w-full max-w-[1040px] flex-col gap-[18px]">
-      <NuxtLink
+      <BackLink
         to="/bibliothek"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('nav.library') }}
-      </NuxtLink>
+        :label="t('nav.library')"
+      />
       <div class="flex flex-col gap-0.5">
         <span class="text-small font-bold text-ink-2">{{ t('gameEdit.kicker') }}</span>
         <h1 class="m-0 font-display text-[34px] leading-none md:text-[44px]">

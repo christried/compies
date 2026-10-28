@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, Lock } from '@lucide/vue'
+import { Lock } from '@lucide/vue'
 import { apiFailure } from '~/utils/api-error'
 import { canSeeLibrary, type GameView } from '~~/shared/game'
 
@@ -41,16 +41,10 @@ async function onSaved(saved: GameView) {
     no-tabs
   >
     <div class="mx-auto flex w-full max-w-[1040px] flex-col gap-[18px]">
-      <NuxtLink
+      <BackLink
         to="/bibliothek"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('nav.library') }}
-      </NuxtLink>
+        :label="t('nav.library')"
+      />
 
       <FullScreenState
         v-if="error"

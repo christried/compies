@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronRight } from '@lucide/vue'
 import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
 import { draftBody, newDraft, settingsOf, type EventDraft, type StepKey } from '~/utils/event-draft'
 import { settingsSentence } from '~/utils/settings-summary'
@@ -52,16 +52,10 @@ const datesLine = computed(() => (poll.value
     no-tabs
   >
     <div class="mx-auto flex w-full flex-col gap-[18px] px-1">
-      <NuxtLink
+      <BackLink
         to="/"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('mvp.create.back') }}
-      </NuxtLink>
+        :label="t('mvp.create.back')"
+      />
 
       <div
         v-if="created"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
+import { Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
 import { apiFailure } from '~/utils/api-error'
 import { canSeeLibrary, type GameView } from '~~/shared/game'
 
@@ -54,16 +54,10 @@ const suitabilities = computed(() => {
     kind="hub"
   >
     <div class="mx-auto flex w-full max-w-[1040px] flex-col gap-[14px]">
-      <NuxtLink
+      <BackLink
         to="/bibliothek"
-        class="inline-flex items-center gap-1 self-start text-small font-bold text-ink-2 no-underline"
-      >
-        <AppIcon
-          :icon="ChevronLeft"
-          :size="14"
-        />
-        {{ t('nav.library') }}
-      </NuxtLink>
+        :label="t('nav.library')"
+      />
 
       <FullScreenState
         v-if="error"
