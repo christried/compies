@@ -70,6 +70,11 @@ export type SettingsError
     | 'veto_allowance_range'
     | 'wheel_options_without_wheel' // hiddenWheel true or vetoAllowance set with a mode other than lucky_wheel
 
+/** Whether the Selection mode spins a Lucky Wheel: only then the Hidden wheel and the Veto allowance apply. 1.5/1.6 modes add their own branches here. */
+export function hasWheel(mode: SelectionMode): boolean {
+  return mode === 'lucky_wheel'
+}
+
 /** The Veto allowance a Lucky Wheel starts with: at least 3, or one per Player of a team. */
 export function defaultVetoAllowance(teamSize: number): number {
   return Math.max(3, teamSize)
@@ -127,7 +132,7 @@ export function withTeams<S extends Pick<EventSettings, 'teamCount' | 'teamSize'
 
 /** Recommended Game pool size: Game count + Veto allowance × team count for the Lucky Wheel; the Game count otherwise (#146 shows it). */
 export function recommendedPoolSize(settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>): number {
-  if (settings.selectionMode !== 'lucky_wheel') return settings.gameCount
+  if (!hasWheel(settings.selectionMode)) return settings.gameCount
   return settings.gameCount + (settings.vetoAllowance ?? 0) * settings.teamCount
 }
 
@@ -202,7 +207,7 @@ export function parseSettings(input: unknown): Parsed {
 
   const base = { format, teamCount, teamSize, gameCount, pointsTable: { preset, values: points }, selectionMode }
   const { hiddenWheel, vetoAllowance } = input
-  if (selectionMode !== 'lucky_wheel') {
+  if (!hasWheel(selectionMode)) {
     if ((hiddenWheel !== undefined && hiddenWheel !== false) || (vetoAllowance !== undefined && vetoAllowance !== null)) return fail('wheel_options_without_wheel')
     return { ok: true, settings: { ...base, hiddenWheel: false, vetoAllowance: null } }
   }
@@ -215,6 +220,11 @@ export function parseSettings(input: unknown): Parsed {
   if (!isInt(vetoAllowance)) return fail('invalid_settings')
   if (vetoAllowance < VETO_ALLOWANCE_MIN || vetoAllowance > VETO_ALLOWANCE_MAX) return fail('veto_allowance_range')
   return { ok: true, settings: { ...base, hiddenWheel: hiddenWheel ?? false, vetoAllowance } }
+}
+
+/** The Hidden wheel of a stored row: a null counts as hidden, so a row that lost the value never shows a pool it should hide (N11). */
+export function storedHiddenWheel(stored: boolean | null): boolean {
+  return stored ?? true
 }
 
 /** Settings from the stored columns; null when the Event is not set up (any required column null). */
@@ -230,7 +240,7 @@ export function settingsFromRow(row: {
 }): EventSettings | null {
   const { format, teamCount, teamSize, gameCount, pointsTable, selectionMode } = row
   if (format === null || teamCount === null || teamSize === null || gameCount === null || pointsTable === null || selectionMode === null) return null
-  return { format, teamCount, teamSize, gameCount, pointsTable, selectionMode, hiddenWheel: row.hiddenWheel ?? false, vetoAllowance: row.vetoAllowance }
+  return { format, teamCount, teamSize, gameCount, pointsTable, selectionMode, hiddenWheel: storedHiddenWheel(row.hiddenWheel), vetoAllowance: row.vetoAllowance }
 }
 
 // Changing the settings of an Event that exists (#147).

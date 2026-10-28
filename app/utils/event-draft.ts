@@ -1,5 +1,5 @@
 import type { EventView, PoolGame } from '~~/shared/event'
-import { defaultSettings, defaultVetoAllowance, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
+import { defaultSettings, defaultVetoAllowance, hasWheel, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
 
 // What the Host has entered in the stepper so far (#144). Nothing is sent until „Session erstellen“; then
 // `draftBody` is the POST body of `/api/e`. The functions below return a new draft each; the stepper assigns it.
@@ -58,7 +58,7 @@ export function vetoAllowanceOf(draft: Pick<EventDraft, 'vetoAllowance' | 'setti
 
 /** The settings that are stored: only the Lucky Wheel has the wheel options, Admin pick has none (#145). */
 export function settingsOf(draft: EventDraft): EventSettings {
-  if (draft.settings.selectionMode !== 'lucky_wheel') return { ...draft.settings, hiddenWheel: false, vetoAllowance: null }
+  if (!hasWheel(draft.settings.selectionMode)) return { ...draft.settings, hiddenWheel: false, vetoAllowance: null }
   return { ...draft.settings, hiddenWheel: draft.hiddenWheel, vetoAllowance: vetoAllowanceOf(draft) }
 }
 

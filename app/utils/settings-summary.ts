@@ -1,4 +1,4 @@
-import type { EventSettings, PointsPreset, PointsTable, SelectionMode } from '~~/shared/settings'
+import { hasWheel, type EventSettings, type PointsPreset, type PointsTable, type SelectionMode } from '~~/shared/settings'
 
 // The words for an Event's settings (#144): the sentence of the Fertig screen („4 Teams à 2, Lucky Wheel
 // (verdeckt), 6 Spiele.“) and the key/value list under it. Pure, with vue-i18n's `t` passed in; #145 adds
@@ -28,7 +28,7 @@ export function teamsText(settings: Pick<EventSettings, 'teamCount' | 'teamSize'
 /** „Lucky Wheel (verdeckt)“, „Admin-Wahl“. */
 export function modeText(settings: Pick<EventSettings, 'selectionMode' | 'hiddenWheel'>, t: Translate): string {
   const mode = t(MODE_NAME[settings.selectionMode])
-  return settings.selectionMode === 'lucky_wheel' && settings.hiddenWheel ? t('stepper.summary.hidden', { mode }) : mode
+  return hasWheel(settings.selectionMode) && settings.hiddenWheel ? t('stepper.summary.hidden', { mode }) : mode
 }
 
 /** „Linear 3 / 2 / 1 / 0“: the preset with the values it really has. */
@@ -60,7 +60,7 @@ export function summaryRows(
     { key: 'mode', label: t('stepper.summary.mode'), value: modeText(settings, t) },
   ]
   // Only the Lucky Wheel has vetoes (#145).
-  if (settings.selectionMode === 'lucky_wheel') {
+  if (hasWheel(settings.selectionMode)) {
     rows.push({ key: 'vetoes', label: t('stepper.summary.vetoes'), value: t('stepper.summary.vetoValue', { n: settings.vetoAllowance }) })
   }
   if (extra.pools) rows.push({ key: 'pool', label: t('stepper.summary.pool'), value: t('stepper.summary.poolValue', extra.pools, extra.pools.main) })

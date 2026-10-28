@@ -19,6 +19,7 @@ import {
   recommendedPoolSize,
   risingPlace,
   settingsFromRow,
+  storedHiddenWheel,
   withTeams,
   winnerTakesAllPoints,
 } from '../../shared/settings'
@@ -176,6 +177,14 @@ describe('settingsFromRow', () => {
     expect(settingsFromRow(full)).toEqual({ ...full, vetoAllowance: null })
     expect(settingsFromRow({ ...full, gameCount: null })).toBeNull()
     expect(settingsFromRow({ ...full, pointsTable: null })).toBeNull()
+  })
+
+  it('a null Hidden wheel on an Event with settings counts as hidden (fail-closed, N11)', () => {
+    const row = { ...empty, format: 'teams' as const, teamCount: 2, teamSize: 3, gameCount: 10, pointsTable: { preset: 'linear' as const, values: [1, 0] }, selectionMode: 'lucky_wheel' as const }
+    expect(settingsFromRow(row)?.hiddenWheel).toBe(true)
+    expect(storedHiddenWheel(null)).toBe(true)
+    expect(storedHiddenWheel(false)).toBe(false)
+    expect(storedHiddenWheel(true)).toBe(true)
   })
 
   it('keeps the wheel options of a Glücksrad Event', () => {

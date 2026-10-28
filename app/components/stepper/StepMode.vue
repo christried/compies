@@ -2,7 +2,7 @@
 import { Crown, FerrisWheel, Hand, Lock, Scale, Swords } from '@lucide/vue'
 import type { Component } from 'vue'
 import { vetoAllowanceOf, type EventDraft, type StepLocks } from '~/utils/event-draft'
-import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, type SelectionMode } from '~~/shared/settings'
+import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, hasWheel, type SelectionMode } from '~~/shared/settings'
 
 // Step 5: the Selection mode (#145). Lucky Wheel and Admin-Wahl are open; the other three are shown as „Bald
 // verfügbar“ on their cards, so the Host knows what is coming (no note under them, #174). With the Lucky Wheel:
@@ -35,7 +35,7 @@ function choose(value: SelectionMode) {
 const vetoMin = computed(() => Math.max(VETO_ALLOWANCE_MIN, props.locks?.floors?.vetoAllowance ?? VETO_ALLOWANCE_MIN))
 const vetoMinReason = computed(() => (vetoMin.value > VETO_ALLOWANCE_MIN ? t('setup.mode.vetoesFloor', { n: vetoMin.value }) : t('setup.mode.vetoesMin')))
 
-const wheel = computed(() => draft.value.settings.selectionMode === 'lucky_wheel')
+const wheel = computed(() => hasWheel(draft.value.settings.selectionMode))
 const veto = computed(() => vetoAllowanceOf(draft.value))
 </script>
 
