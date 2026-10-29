@@ -306,6 +306,15 @@ export function checkSettingsChange(
   return parsed
 }
 
+/**
+ * The settings whose value differs between `before` and `after` (#183). `before` null = the Event was not set up, so
+ * every setting is new. The activity feed writes its "Game count changed" lines from this (#159).
+ */
+export function changedKeys(before: EventSettings | null, after: EventSettings): (keyof EventSettings)[] {
+  const keys = Object.keys(after) as (keyof EventSettings)[]
+  return before === null ? keys : keys.filter(key => !sameValue(before[key], after[key]))
+}
+
 /** Same value; a points table counts as the same with the same preset and places, whatever its key order. */
 function sameValue(a: unknown, b: unknown): boolean {
   if (isRecord(a) && isRecord(b)) return sameValue(a.preset, b.preset) && sameValue(a.values, b.values)
