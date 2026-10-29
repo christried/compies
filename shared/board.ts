@@ -81,7 +81,7 @@ export interface TeamSeat { word: string | null, joinedAt: number }
 export function teamWords(seats: readonly TeamSeat[]): string[] {
   return seats
     .filter((seat): seat is { word: string, joinedAt: number } => seat.word !== null)
-    .toSorted((a, b) => a.joinedAt - b.joinedAt)
+    .sort((a, b) => a.joinedAt - b.joinedAt)
     .map(seat => seat.word)
 }
 
