@@ -41,10 +41,14 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
       :style="{ backgroundColor: `var(--cp-team-${team})`, backgroundImage: `var(--cp-team-${team}-pattern)`, backgroundSize: '16px 16px' }"
     >
       <slot name="header">
-        <TeamChip
-          :team="team"
-          :name="name"
-        />
+        <!-- A level 3 heading, as the Bench and the Stands have, so the teams stay in heading navigation. -->
+        <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -- the TeamChip is the heading's text -->
+        <h3 class="m-0 flex min-w-0 text-[length:inherit] font-normal">
+          <TeamChip
+            :team="team"
+            :name="name"
+          />
+        </h3>
       </slot>
       <span class="num-ui ml-auto flex-none rounded-pill border-2 border-line bg-surface px-[7px] text-[12px] font-extrabold text-ink">{{ taken }}/{{ size }}</span>
     </header>

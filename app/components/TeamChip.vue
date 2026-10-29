@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // A team's label: its mark and its name (DS People, 02-components § TeamChip). The name sits on a solid chip of the Team
-// colour, never on the pattern. It truncates on one line; the full name is in `title` (hover) and stays whole in the DOM,
+// colour, never on the pattern. On a phone the name wraps to at most two lines (11-event-seite § GameBoard), from `md`
+// it truncates on one line; the full name is in `title` (hover) and stays whole in the DOM,
 // so it is the accessible name too. `compact` is the mark alone, for tight rows, and then the chip carries the name as
 // its label.
 const props = withDefaults(defineProps<{
@@ -26,7 +27,7 @@ const props = withDefaults(defineProps<{
     />
     <span
       v-if="!compact"
-      class="min-w-0 truncate rounded-[6px] px-1.5 py-px font-display text-[13px] leading-[1.3] font-normal md:px-2 md:text-[19px]"
+      class="min-w-0 rounded-[6px] px-1.5 py-px font-display text-[13px] leading-[1.3] font-normal break-words line-clamp-2 md:line-clamp-none md:truncate md:px-2 md:text-[19px]"
       :style="{ backgroundColor: `var(--cp-team-${props.team})`, color: `var(--cp-team-${props.team}-ink)` }"
     >{{ name }}</span>
   </span>

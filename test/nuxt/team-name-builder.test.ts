@@ -88,6 +88,14 @@ describe('Team names on the Game board', () => {
     expect(zone(page, 'Team Rot').text()).not.toContain('Wilde')
   })
 
+  it('keeps each team name a level 3 heading, like the Bench and the Stands, and the full name in its title', async () => {
+    const members = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken')]
+    const { page } = await mountBoard({ members, teams: teamsNamed('Wilde Gurken') })
+    const headings = page.findAll('h3').map(heading => heading.text())
+    expect(headings).toEqual(['Wilde Gurken', 'Team Orange', 'Bench', 'Tribüne'])
+    expect(page.get('h3 [title="Wilde Gurken"]').text()).toBe('Wilde Gurken')
+  })
+
   it('shows the composed name in the header, in the toasts and in the people\'s labels', async () => {
     const members = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken')]
     const { page } = await mountBoard({ members, teams: teamsNamed('Wilde Gurken') })
