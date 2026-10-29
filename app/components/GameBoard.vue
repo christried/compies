@@ -35,8 +35,10 @@ const phase = computed<'setup' | 'poll' | 'open'>(() => (props.settings === null
 
 // Where everybody is drawn: the server's place, under the moves other people made (from the room, until the refetch
 // agrees) and the moves this viewer is making (until the server has answered).
+// A team's name as it is shown: its Team name, else its colour's name (teamName).
+const nameOfTeam = (position: number) => teamName(props.teams.find(team => team.position === position) ?? position, t)
 const nameOf = (userId: string) => props.members.find(member => member.id === userId)?.name ?? ''
-const moves = useBoardMoves(slug, () => refreshNuxtData(eventDataKey(props.slug)), { nameOf })
+const moves = useBoardMoves(slug, () => refreshNuxtData(eventDataKey(props.slug)), { nameOf, teamNameOf: nameOfTeam })
 const heard = ref<Record<string, Place>>({})
 
 const people = computed(() => props.members.map(member => ({
@@ -46,7 +48,7 @@ const people = computed(() => props.members.map(member => ({
 const seats = computed(() => countSeats(people.value.map(person => person.place)))
 const currentPlace = (userId: string): Place => people.value.find(person => person.id === userId)?.place ?? { zone: 'bench' }
 const inPlace = (place: Place) => people.value.filter(person => placeKey(person.place) === placeKey(place))
-const whereText = (place: Place) => (place.zone === 'team' ? teamName(place.team, t) : t(place.zone === 'bench' ? 'board.bench' : 'board.stands'))
+const whereText = (place: Place) => (place.zone === 'team' ? nameOfTeam(place.team) : t(place.zone === 'bench' ? 'board.bench' : 'board.stands'))
 
 // What the room says about other people's moves is true at once; the refetch it triggers brings the same and drops it.
 // A message the refetch never confirms (a move that was undone meanwhile) is dropped after a while.
@@ -106,7 +108,7 @@ async function requestMove(userId: string, to: Place) {
   await nextTick()
   const element = personEl(userId)
   if (element) pop(element)
-  if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : to.zone === 'bench' ? 'board.movedBench' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? teamName(to.team, t) : '' }))
+  if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : to.zone === 'bench' ? 'board.movedBench' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
 }
 
 const drag = useBoardDrag({
@@ -139,7 +141,7 @@ const drag = useBoardDrag({
 
 watch(drag.overZone, (key) => {
   const place = placeFromKey(key ?? undefined)
-  if (place?.zone === 'team') announce(t('board.zoneAria', { name: teamName(place.team, t), n: freeIn(place.team), size: props.settings?.teamSize ?? 0 }))
+  if (place?.zone === 'team') announce(t('board.zoneAria', { name: nameOfTeam(place.team), n: freeIn(place.team), size: props.settings?.teamSize ?? 0 }))
   else if (place) announce(whereText(place))
 })
 
@@ -170,6 +172,7 @@ function personBindings(person: (typeof people.value)[number]) {
     you: person.id === props.viewerId,
     team: person.place.zone === 'team' ? person.place.team : null,
     where: whereText(person.place),
+    word: person.place.zone === 'team' ? person.teamWord : null,
     lifted: held !== null,
     menuOpen: menu.value?.userId === person.id,
     draggable: props.isHost || person.id === props.viewerId,
@@ -194,7 +197,7 @@ function targetFor(place: Place, label: string, extra: Partial<MoveTarget>): Mov
 }
 
 const targets = computed((): MoveTarget[] => [
-  ...props.teams.map(team => targetFor({ zone: 'team', team: team.position }, t('board.moveToTeam', { team: teamName(team.position, t) }), { team: team.position })),
+  ...props.teams.map(team => targetFor({ zone: 'team', team: team.position }, t('board.moveToTeam', { team: teamName(team, t) }), { team: team.position })),
   targetFor({ zone: 'bench' }, t('board.moveToBench'), { icon: Armchair }),
   targetFor({ zone: 'stands' }, t('board.moveToStands'), { icon: Eye }),
 ])
@@ -206,13 +209,17 @@ function pick(key: string) {
   if (userId && to) void requestMove(userId, to)
 }
 
+// The viewer's own Team word, and the names of the Players who gave one in a team, for the TeamNameBuilder (#161).
+const myWord = computed(() => props.members.find(member => member.id === props.viewerId)?.teamWord ?? null)
+const authorsIn = (team: number) => inPlace({ zone: 'team', team }).filter(person => person.teamWord !== null).map(person => person.name)
+
 // The Host's notice about uneven teams: the smallest team against the biggest.
 const uneven = computed(() => {
   if (!props.isHost || props.settings === null || props.teams.length < 2) return null
   const counts = props.teams.map(team => ({ team: team.position, count: seats.value[team.position] ?? 0 }))
   const small = counts.reduce((least, next) => (next.count < least.count ? next : least))
   const big = Math.max(...counts.map(entry => entry.count))
-  return small.count === big ? null : { team: teamName(small.team, t), small: small.count, big }
+  return small.count === big ? null : { team: nameOfTeam(small.team), small: small.count, big }
 })
 </script>
 
@@ -259,7 +266,7 @@ const uneven = computed(() => {
         v-for="team in teams"
         :key="team.position"
         :team="team.position"
-        :name="teamName(team.position, t)"
+        :name="teamName(team, t)"
         :size="settings?.teamSize ?? 0"
         :taken="inPlace({ zone: 'team', team: team.position }).length"
         :lock-reason="lockReason"
@@ -271,6 +278,18 @@ const uneven = computed(() => {
           :key="person.id"
           v-bind="personBindings(person)"
         />
+        <template #builder>
+          <TeamNameBuilder
+            :slug="slug"
+            :team="team.position"
+            :name="teamName(team, t)"
+            :named="team.name !== null"
+            :mine="placeKey(currentPlace(viewerId)) === `team-${team.position}`"
+            :my-word="myWord"
+            :is-host="isHost"
+            :authors="authorsIn(team.position)"
+          />
+        </template>
       </TeamZone>
     </div>
 

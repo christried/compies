@@ -105,8 +105,18 @@ export type EventPools
 /** What `POST /api/e/:slug/move` returns: the Member and the place they stand in now (#160). */
 export interface MovedMember { userId: string, to: Place }
 
-/** One team of the Game board (#160): its position, 1..team count, which is also its Team colour index. */
-export interface BoardTeam { position: number }
+/** What `POST /api/e/:slug/team-word` returns: the team and the word as saved, null when it was removed (#161). */
+export interface TeamWordSet { team: number, word: string | null }
+
+/** What `POST /api/e/:slug/teams/:position/reset-name` returns: the team whose name is the colour name again (#161). */
+export interface TeamNameReset { team: number }
+
+/**
+ * One team of the Game board (#160): its position, 1..team count, which is also its Team colour index. `name` is the
+ * Team name composed from the words (or the frozen name), null when the team shows its colour's name (#161); `frozen`
+ * says the name is frozen since the first Session started (#164, always false before).
+ */
+export interface BoardTeam { position: number, name: string | null, frozen: boolean }
 
 /** A Member as the Event read lists them. `team` is set exactly when `zone` is `team` (#160). */
 export interface MemberView {
@@ -116,6 +126,8 @@ export interface MemberView {
   isHost: boolean
   zone: 'bench' | 'stands' | 'team'
   team: number | null
+  /** The Member's Team word; null without one, and always null outside a team (#161). */
+  teamWord: string | null
 }
 
 /** What `GET /api/e/:slug` returns to a Member (#11). Times are UTC ISO strings. */

@@ -118,11 +118,15 @@ export const eventMembers = pgTable('event_members', {
   team: integer('team'),
   /** When the Member took this team seat; the latest one wins the race for a last place (#160). Null outside a team. */
   teamJoinedAt: timestamp('team_joined_at', { withTimezone: true }),
+  /** The Member's contribution to their team's name: one word without whitespace, at most 12 characters (checked in code, not here: Postgres counts code points). Null outside a team (#161). */
+  teamWord: text('team_word'),
 }, table => [
   primaryKey({ columns: [table.eventId, table.userId] }),
   index('event_members_event_id_team_idx').on(table.eventId, table.team),
   check('event_members_team_zone_check', sql`(${table.zone} = 'team') = (${table.team} IS NOT NULL)`),
   check('event_members_team_joined_at_check', sql`(${table.team} IS NULL) = (${table.teamJoinedAt} IS NULL)`),
+  check('event_members_team_word_team_check', sql`${table.teamWord} IS NULL OR ${table.team} IS NOT NULL`),
+  check('event_members_team_word_form_check', sql`${table.teamWord} IS NULL OR ${table.teamWord} ~ '^\\S+$'`),
 ])
 
 export const pollSlots = pgTable('poll_slots', {

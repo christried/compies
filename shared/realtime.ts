@@ -20,6 +20,10 @@ export type RoomMessage
     | { type: 'member.moved', userId: string, from: Place, to: Place, by: string }
   /** A new Member joined through the Invite link (#160). */
     | { type: 'member.joined', userId: string }
+  /** A Player in `team` set their Team word, or removed it (`word: null`) (#161). */
+    | { type: 'team.wordSet', team: number, userId: string, word: string | null }
+  /** The Host reset the Team name of `team` to its colour name (#161). */
+    | { type: 'team.nameReset', team: number }
 
 export type RoomMessageType = RoomMessage['type']
 

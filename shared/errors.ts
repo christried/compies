@@ -92,6 +92,10 @@ export const API_ERROR_STATUS = {
   teams_locked: 409,
   /** The team has Team size Players; the error's data names the Player who took the last place (#160). */
   team_full: 409,
+  /** A Team word with a space, or longer than TEAM_WORD_MAX characters (#161). */
+  invalid_team_word: 400,
+  /** Only a Player in a team has a Team word (#161). */
+  not_in_team: 409,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

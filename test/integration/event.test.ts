@@ -111,7 +111,7 @@ describe('events', () => {
       ])
 
       const members = await testDb.db.select().from(eventMembers)
-      expect(members).toEqual([{ eventId: event!.id, userId: host!.id, joinedAt: expect.any(Date), zone: 'bench', team: null, teamJoinedAt: null }])
+      expect(members).toEqual([{ eventId: event!.id, userId: host!.id, joinedAt: expect.any(Date), zone: 'bench', team: null, teamJoinedAt: null, teamWord: null }])
     })
 
     it('creates a direct Date in the phase date_set, without Slots', async () => {

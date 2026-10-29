@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fullestTeam, moveRejection, placeOf, teamChoiceOpen, type MoveCheck, type Place } from '../../shared/board'
+import { composedTeamName, fullestTeam, moveRejection, placeOf, teamChoiceOpen, teamWords, type MoveCheck, type Place } from '../../shared/board'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -131,5 +131,46 @@ describe('fullestTeam', () => {
 
   it('is 0 without Players in teams', () => {
     expect(fullestTeam({})).toBe(0)
+  })
+})
+
+describe('composedTeamName', () => {
+  it('joins the words in the order given, with one space', () => {
+    expect(composedTeamName({ words: ['Wilde', 'Gurken'] })).toBe('Wilde Gurken')
+  })
+
+  it('is null without words, so the client shows the Team colour name', () => {
+    expect(composedTeamName({ words: [] })).toBeNull()
+  })
+
+  it('lets a word leave with its Player', () => {
+    const seats = [
+      { word: 'Wilde', joinedAt: 1 },
+      { word: 'Gurken', joinedAt: 2 },
+      { word: 'Bande', joinedAt: 3 },
+    ]
+    expect(composedTeamName({ words: teamWords(seats) })).toBe('Wilde Gurken Bande')
+    expect(composedTeamName({ words: teamWords(seats.filter(seat => seat.word !== 'Gurken')) })).toBe('Wilde Bande')
+  })
+
+  it('orders the words by when their Players joined and skips Players without a word', () => {
+    const seats = [
+      { word: 'Gurken', joinedAt: 5 },
+      { word: null, joinedAt: 2 },
+      { word: 'Wilde', joinedAt: 1 },
+    ]
+    expect(composedTeamName({ words: teamWords(seats) })).toBe('Wilde Gurken')
+  })
+
+  it('lets a frozen name win over the words', () => {
+    expect(composedTeamName({ frozen: 'Alte Hasen', words: ['Wilde', 'Gurken'] })).toBe('Alte Hasen')
+  })
+
+  it('lets a frozen name win even when the team has no words', () => {
+    expect(composedTeamName({ frozen: 'Alte Hasen', words: [] })).toBe('Alte Hasen')
+  })
+
+  it('falls back to the words when nothing is frozen', () => {
+    expect(composedTeamName({ frozen: null, words: ['Wilde'] })).toBe('Wilde')
   })
 })

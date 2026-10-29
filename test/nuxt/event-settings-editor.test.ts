@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, Fragment, h } from 'vue'
 import EditorPage from '~/pages/e/[slug]/einstellungen.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { MemberView } from '~~/shared/event'
+import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
@@ -47,7 +47,7 @@ interface Setup {
   pools?: { main: PoolGame[], tiebreaker: PoolGame[] }
   /** The Members with their seats, and the teams of the board (the Event read's `members` and `teams`, #160). */
   members?: MemberView[]
-  teams?: { position: number }[]
+  teams?: BoardTeam[]
   /** The refusal the PATCH answers with, or null to accept. */
   refuse?: { statusCode: number, statusMessage: string } | null
 }
@@ -300,8 +300,8 @@ describe('the settings editor', () => {
     const FOUR = '00000000-0000-4000-8000-000000000004'
     const FIVE = '00000000-0000-4000-8000-000000000005'
     const four = { ...defaultSettings(), teamCount: 4, teamSize: 3, pointsTable: { preset: 'linear' as const, values: [3, 2, 1, 0] } }
-    const teamsOf4 = [{ position: 1 }, { position: 2 }, { position: 3 }, { position: 4 }]
-    const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => ({ id, name: id.slice(-4), image: null, isHost: false, zone, team })
+    const teamsOf4 = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }, { position: 3, name: null, frozen: false }, { position: 4, name: null, frozen: false }]
+    const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => ({ id, name: id.slice(-4), image: null, isHost: false, zone, team, teamWord: null })
 
     it('shows the Team size floor the Event read gives, the fullest team, and says why', async () => {
       const { slug } = setUp({

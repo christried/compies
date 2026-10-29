@@ -43,17 +43,20 @@ export function activityText(entry: ActivityEntry, t: Translate): string | null 
       return t('activity.teamSize', { name, to: entry.params.to })
     case 'member_moved':
       return movedText(entry, t)
-    // Written by the Team names (#161) and Session start and end (#164): their sentences come with those tickets.
+    // The entry keeps the position, so the sentence names the colour, not a name that has changed since (#161).
+    case 'team_name_reset':
+      return t('activity.teamNameReset', { name, team: teamName(entry.params.team, t) })
+    // Written by Session start and end (#164): their sentences come with that ticket.
     case 'session_started':
     case 'session_ended':
-    case 'team_name_reset':
       return null
   }
 }
 
 /**
  * A move on the Game board (#160): a Member's own move says where they are now, a Host's move says who moved them. The
- * entry keeps the position, not a name, so a team is „Team“ and its colour (Team names, #161, come later).
+ * entry keeps the position, not a name, so a team is „Team“ and its colour: a Team name that changes later must not
+ * rewrite history (#161).
  */
 function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: Translate): string {
   const { userId, to } = entry.params
