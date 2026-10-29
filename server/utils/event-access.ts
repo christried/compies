@@ -3,27 +3,14 @@ import { getRouterParam, readBody, type H3Event } from 'h3'
 import { events } from '../db/schema'
 import { eventAccessRejection } from '../domain/access'
 import type { AuthUser } from '../../shared/auth'
+import { envelope, type RoomMessage } from '../../shared/realtime'
 import { apiError, eventDeleted, eventNotFound } from './errors'
 import { isMember } from './invite'
 import { useDb, type Db } from './db'
+import { useRoomNotifier } from './room-notifier'
 import { requireUser } from './user'
 
 export type EventRow = typeof events.$inferSelect
-
-/**
- * A message for the Members who have the Event open (spec #153). A change queues them with `publish` while it runs;
- * the wrapper hands them to `afterCommit` once the transaction has committed. #156 gives this its real shape.
- */
-export interface RoomMessage {
-  type: string
-}
-
-declare module 'h3' {
-  interface H3EventContext {
-    /** Tests: called by `afterCommit` with the Event and the messages of the change that just committed (#183). */
-    onAfterCommit?: (committed: { eventId: string, messages: RoomMessage[] }) => void
-  }
-}
 
 export interface ChangeEventOptions extends LoadEventOptions {
   /** Runs once the User is known and before the body is read, e.g. a rate limit. It throws to refuse. */
@@ -67,11 +54,15 @@ export async function changeEvent<T>(
 }
 
 /**
- * The single step that runs after a change to an Event has committed (#183). It does nothing yet: #156 publishes the
- * messages to the Event's room here, so no endpoint can forget to.
+ * The single step that runs after a change to an Event has committed (#183): it tells the Event's room (#156). Every
+ * committed change publishes `event.changed` (the client refetches the Event read) plus the messages the change
+ * queued, so no endpoint can forget to. The notifier never throws and a missed message is made up by the client's
+ * refetch, so this never fails the request.
  */
 export async function afterCommit(event: H3Event, eventRow: EventRow, messages: RoomMessage[]): Promise<void> {
-  event.context.onAfterCommit?.({ eventId: eventRow.id, messages })
+  const now = Date.now()
+  const all: RoomMessage[] = messages.some(message => message.type === 'event.changed') ? messages : [{ type: 'event.changed' }, ...messages]
+  await useRoomNotifier(event).publish(eventRow.id, all.map(message => envelope(message, now)))
 }
 
 export interface LoadEventOptions {

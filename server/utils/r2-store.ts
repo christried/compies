@@ -1,4 +1,4 @@
-import { hex, hmac, sha256Hex } from './crypto'
+import { hex, hmac, sha256Hex } from '../../shared/crypto'
 import type { ImageStore } from './image-store'
 
 // The R2 adapter of the image store (#143): the S3 API of Cloudflare R2 over plain `fetch`, signed with AWS
