@@ -45,6 +45,9 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
     : input.startsAt
   const phase = phaseOf(startsAt)
 
+  // The one Event write that does not go through changeEvent: the Event does not exist yet, so there is nothing to
+  // load by slug, and no one is in its room to tell (#183).
+  // eslint-disable-next-line no-restricted-syntax -- creating an Event has no Event to load and no one to publish to
   await db.transaction(async (tx) => {
     await assertGamesExist(tx, pools.main, pools.tiebreaker)
     const [row] = await tx

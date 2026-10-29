@@ -1,13 +1,13 @@
 import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
-import { getRouterParam, readBody, type H3Event } from 'h3'
+import type { H3Event } from 'h3'
 import { events, pollSlots, sessions } from '../db/schema'
 import { phaseAfterChange } from '../domain/phase'
 import { sequenceRaises } from '../domain/session'
 import type { Phase } from '../../shared/event'
+import { asRecord } from '../../shared/record'
 import { sessionNotFound } from './errors'
-import { loadEvent, type EventRow } from './event-access'
-import { useDb, type Db } from './db'
-import { requireUser } from './user'
+import { changeEvent, type EventRow } from './event-access'
+import type { Db } from './db'
 
 // The Sessions of an Event (ADR 0011, #48, #52, #53, #55, #69). Every Session endpoint runs through changeSessions:
 // it reads the body before the Event lock, reads the Sessions under the lock, lets the rule write, then reads
@@ -15,25 +15,19 @@ import { requireUser } from './user'
 
 export type SessionRow = typeof sessions.$inferSelect
 
-/** The body a Session endpoint accepts; each handler parses the field it needs. */
-export type SessionChangeBody = { startsAt?: unknown, slotId?: unknown } | null
-
 /**
- * One Host change to an Event's Sessions (#69). `before` and `after` are read from the database under the
- * Event lock, so the calendar sequence and the Phase never come from a hand-built copy of what was written.
- * The Session read is `eventSessions` (below), which leaves removed Sessions out (#65).
+ * One Host change to an Event's Sessions (#69), through changeEvent. `before` and `after` are read from the database
+ * under the Event lock, so the calendar sequence and the Phase never come from a hand-built copy of what was written.
+ * The Session read is `eventSessions` (below), which leaves removed Sessions out (#65). Each handler reads the field of
+ * `body` it needs; `body` is a record, empty when the request sent none.
  */
-export async function changeSessions<T extends object>(
+export function changeSessions<T extends object>(
   event: H3Event,
-  change: (ctx: { tx: Db, eventRow: EventRow, sessions: SessionRow[], body: SessionChangeBody }) => Promise<T>,
+  change: (ctx: { tx: Db, eventRow: EventRow, sessions: SessionRow[], body: Record<string, unknown> }) => Promise<T>,
 ): Promise<T & { phase: Phase }> {
-  const user = await requireUser(event)
-  const slug = getRouterParam(event, 'slug') ?? ''
-  const body = await readBody<SessionChangeBody>(event)
-  return useDb(event).transaction(async (tx) => {
-    const eventRow = await loadEvent(tx, slug, user.id, { hostOnly: true, lock: 'update' })
+  return changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, body }) => {
     const before = await eventSessions(tx, eventRow.id)
-    const result = await change({ tx, eventRow, sessions: before, body })
+    const result = await change({ tx, eventRow, sessions: before, body: asRecord(body) })
     const after = await eventSessions(tx, eventRow.id)
     await raiseSequences(tx, sequenceRaises(before, after))
     const phase = phaseAfterChange(eventRow.phase, after.map(row => row.startsAt))

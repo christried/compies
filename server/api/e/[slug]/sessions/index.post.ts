@@ -12,8 +12,8 @@ import type { SessionAdded } from '../../../../../shared/event'
 // takes the Slot. Adding an undated Session sends a date-set Event back to the poll. The Event row is locked
 // for the whole write, so an add cannot race a confirm into a wrong Phase or the 8-Session limit.
 export default defineEventHandler((event): Promise<SessionAdded> => changeSessions(event, async ({ tx, eventRow, sessions: before, body }) => {
-  const given = body?.startsAt !== undefined && body?.startsAt !== null
-  const startsAt = given ? parseLocalTime(body?.startsAt) : null
+  const given = body.startsAt !== undefined && body.startsAt !== null
+  const startsAt = given ? parseLocalTime(body.startsAt) : null
   if (given && startsAt === null) throw apiError('invalid_time')
 
   const rejection = addSessionRejection({
