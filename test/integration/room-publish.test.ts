@@ -111,13 +111,16 @@ describe('publishing to the room', () => {
       ['rotating the Invite link', () => send('POST', `/api/e/${slug}/rotate`, hostCookie)],
     ]
 
+    // The changes the Activity feed logs (#159) publish their entry after `event.changed`.
+    const logged = new Set(['setting a Date', 'adding a Session', 'changing the settings'])
+
     for (const [name, step] of steps) {
       notifier.clear()
       const before = Date.now()
       const response = await step()
 
       expect(response.status, name).toBe(200)
-      expect(types(eventId), name).toEqual(['event.changed'])
+      expect(types(eventId), name).toEqual(logged.has(name) ? ['event.changed', 'activity.added'] : ['event.changed'])
       expect(notifier.messages(eventId)[0], name).toMatchObject({ v: 1, serverTime: expect.any(Number) })
       expect(notifier.messages(eventId)[0]!.serverTime, name).toBeGreaterThanOrEqual(before)
     }
@@ -136,7 +139,7 @@ describe('publishing to the room', () => {
     ] as const) {
       notifier.clear()
       expect((await step()).status, name).toBe(200)
-      expect(types(eventId), name).toEqual(['event.changed'])
+      expect(types(eventId), name).toEqual(['event.changed', 'activity.added'])
     }
   })
 
@@ -144,7 +147,7 @@ describe('publishing to the room', () => {
     const { eventId, invite, strangerCookie } = await pollEvent()
 
     expect((await send('POST', `/api/invite/${invite}`, strangerCookie)).status).toBe(200)
-    expect(types(eventId)).toEqual(['event.changed'])
+    expect(types(eventId)).toEqual(['event.changed', 'activity.added'])
 
     notifier.clear()
     expect((await send('POST', `/api/invite/${invite}`, strangerCookie)).status).toBe(200)

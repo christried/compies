@@ -78,6 +78,8 @@ export const API_ERROR_STATUS = {
   team_size_below_fullest: 409,
   /** A Veto allowance below the most Vetoes a Party has spent (#147). */
   veto_allowance_below_spent: 409,
+  /** The Activity feed's `before` is not the id of an entry of this Event, or its `limit` is not a whole number from 1 to 100 (#159). */
+  invalid_cursor: 400,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

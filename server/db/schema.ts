@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
 import { SUITABILITIES } from '../../shared/game'
 import { FORMATS, POOLS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
@@ -171,3 +172,17 @@ export const eventPoolGames = pgTable('event_pool_games', {
   // Lookups by game (#171, review S6).
   index('event_pool_games_game_id_idx').on(table.gameId),
 ])
+
+export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)
+
+// The Activity feed (#159, GLOSSARY: Activity feed): what happened in an Event, written in the same transaction as the
+// change it records (server/utils/activity.ts). `actorId` is null when the app did it. `params` holds ids, numbers and
+// instants only, never a game. The feed reads one Event's entries by time, so that is the index. Entries go with their Event.
+export const activity = pgTable('activity', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  type: activityType('type').$type<ActivityType>().notNull(),
+  actorId: uuid('actor_id').references(() => users.id),
+  params: jsonb('params').$type<ActivityParams[ActivityType]>().default({}).notNull(),
+  at: timestamp('at', { withTimezone: true }).defaultNow().notNull(),
+}, table => [index('activity_event_id_at_idx').on(table.eventId, table.at)])

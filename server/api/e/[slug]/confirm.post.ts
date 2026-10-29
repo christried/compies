@@ -3,9 +3,10 @@ import { defineEventHandler } from 'h3'
 import { sessions } from '../../../db/schema'
 import { setDateRejection } from '../../../domain/phase'
 import { hasDateAt } from '../../../domain/session'
+import { recordActivity } from '../../../utils/activity'
 import { apiError, slotNotFound } from '../../../utils/errors'
 import { findSlot } from '../../../utils/slots'
-import { changeSessions } from '../../../utils/sessions'
+import { changeSessions, shownNumber } from '../../../utils/sessions'
 import type { DateConfirmed } from '../../../../shared/event'
 
 // Set a Date from the shared Date poll (#1 § Domain rules, ADR 0011, #52): the Host picks a Slot, and its
@@ -13,7 +14,7 @@ import type { DateConfirmed } from '../../../../shared/event'
 // Session waits and moves to `date_set` once every Session has one. The Slot is taken by that Session, so
 // it is no longer open. The Sessions whose number moves up (a Date earlier than the others) get a higher
 // calendar SEQUENCE (#53).
-export default defineEventHandler((event): Promise<DateConfirmed> => changeSessions(event, async ({ tx, eventRow, sessions: before, body }) => {
+export default defineEventHandler((event): Promise<DateConfirmed> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before, body }) => {
   const slotId = typeof body.slotId === 'string' ? body.slotId : ''
   const slot = await findSlot(tx, eventRow.id, slotId)
   if (!slot) throw slotNotFound()
@@ -29,9 +30,13 @@ export default defineEventHandler((event): Promise<DateConfirmed> => changeSessi
   })
   if (rejection) throw apiError(rejection)
 
+  const sessionId = undated[0]!.id
   await tx
     .update(sessions)
     .set({ startsAt: slot.startsAt, previousStartsAt: null, slotId: slot.id })
-    .where(eq(sessions.id, undated[0]!.id))
+    .where(eq(sessions.id, sessionId))
+  // The number is the one the Session has with its new Date (#159).
+  const number = await shownNumber(tx, eventRow.id, sessionId)
+  await recordActivity(tx, publish, eventRow.id, { type: 'date_set', actorId: user.id, params: { sessionId, number, startsAt: slot.startsAt.toISOString() } })
   return { startsAt: slot.startsAt.toISOString() }
 }))

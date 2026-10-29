@@ -2,7 +2,7 @@ import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-uti
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { RoomSocketOptions } from '~/utils/room-socket'
-import { envelope } from '~~/shared/realtime'
+import { envelope, type RoomMessage } from '~~/shared/realtime'
 import { kitty, signInAs } from './auth'
 import { view, type Wrapper } from './event-page'
 
@@ -36,6 +36,7 @@ function serveLive() {
       return { ...view(slug, []), event: { slug, name: served.name, phase: 'poll', isHost: false } }
     },
   })
+  registerEndpoint(`/api/e/${slug}/activity`, { method: 'GET', handler: () => ({ entries: [], next: null }) })
   registerEndpoint(`/api/e/${slug}/room`, {
     method: 'POST',
     handler: () => {
@@ -93,11 +94,22 @@ describe('the live Event page', () => {
     await vi.waitFor(() => expect(page.text()).toContain('Samstags-Zocken'))
   })
 
+  it('shows an Activity feed entry the room sends under „Aktivität“, on the same socket', async () => {
+    const { page } = await mountLive()
+    const entry = { id: 'entry-1', type: 'member_joined', at: new Date().toISOString(), actor: { id: 'u1', name: 'Larsi' }, params: {}, people: {} }
+
+    lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'activity.added', entry } as RoomMessage, Date.now())))
+
+    await vi.waitFor(() => expect(page.find('[role="log"]').text()).toContain('Larsi ist dem Event beigetreten'))
+    expect(page.find('h2#activity-title').text()).toBe('Aktivität')
+    expect(sockets).toHaveLength(1)
+  })
+
   it('ignores a message it does not know, a message of another version and text that is no message', async () => {
     const { served } = await mountLive()
     const before = served.reads
 
-    lastSocket().options.onMessage(JSON.stringify({ v: 1, type: 'activity.added', serverTime: 1 }))
+    lastSocket().options.onMessage(JSON.stringify({ v: 1, type: 'chat.said', serverTime: 1 }))
     lastSocket().options.onMessage(JSON.stringify({ v: 2, type: 'event.changed', serverTime: 1 }))
     lastSocket().options.onMessage('not json')
     await settle()
