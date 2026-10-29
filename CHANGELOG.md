@@ -23,6 +23,7 @@
 - Eine Punktetabelle, in der jeder Platz gleich viele Punkte bekommt, geht nicht mehr: Platz 1 muss mehr bekommen als der letzte Platz. ([#175](https://github.com/christried/compies/issues/175))
 - Die Terminumfrage zeigt jetzt, wie viele **vollständig** abgestimmt haben: Wer nur bei einem Teil der Termine abgestimmt hat, zählt noch nicht mit. ([#175](https://github.com/christried/compies/issues/175))
 - Das Spielformular ist aufgeräumt: weniger Erklärtexte, und warum ein Spiel noch nicht gespeichert werden kann, steht jetzt in Rot. ([#176](https://github.com/christried/compies/issues/176))
+- Die Datenschutzerklärung nennt jetzt den YouTube-Player und Cloudflare R2, über das wir die Spielebilder speichern. ([#179](https://github.com/christried/compies/issues/179))
 
 ### Sicherheit
 
