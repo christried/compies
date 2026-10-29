@@ -13,25 +13,28 @@ import type { EventSettings } from '~~/shared/settings'
 // and the Stands, and where everybody sits. A Player moves themselves, the Host anyone: by dragging (pointer events,
 // a long press on touch), or from the keyboard through the MoveToMenu. An own move shows at once and glides home with
 // a toast when the server refuses it; somebody else's move arrives through the room (`member.moved`) and glides in.
-// Three phases: `setup` (an Event without settings has no teams), `poll` (no Session has a Date: Players cannot take a
-// team yet) and `open` (Team choice is open). Avatars are keyed by user id, so the refetch that follows a move keeps the
+// Four phases: `setup` (an Event without settings has no teams), `poll` (no Session has a Date: Players cannot take a
+// team yet), `open` (Team choice is open) and `running` (the first Session has started, #164: teams and names are locked
+// for Players, Bench and Stands stay free, the Host moves anyone). Avatars are keyed by user id, so the refetch that follows a move keeps the
 // glide going. The room comes from the Event page: one socket per page.
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   slug: string
   members: MemberView[]
   teams: BoardTeam[]
   settings: EventSettings | null
   teamChoiceOpen: boolean
+  /** The first Session has started (#164). */
+  started?: boolean
   viewerId: string
   isHost: boolean
   room: Pick<ReturnType<typeof useEventRoom>, 'on'>
-}>()
+}>(), { started: false })
 
 const { t } = useI18n()
 const root = useTemplateRef<HTMLElement>('root')
 const slug = toRef(() => props.slug)
 
-const phase = computed<'setup' | 'poll' | 'open'>(() => (props.settings === null ? 'setup' : props.teamChoiceOpen ? 'open' : 'poll'))
+const phase = computed<'setup' | 'poll' | 'open' | 'running'>(() => (props.settings === null ? 'setup' : props.started ? 'running' : props.teamChoiceOpen ? 'open' : 'poll'))
 
 // Where everybody is drawn: the server's place, under the moves other people made (from the room, until the refetch
 // agrees) and the moves this viewer is making (until the server has answered).
@@ -85,13 +88,21 @@ function rejectionFor(userId: string, to: Place) {
     to,
     settings: props.settings,
     teamChoiceOpen: props.teamChoiceOpen,
-    started: false,
+    started: props.started,
     seats: seats.value,
   })
 }
 
-// The slots of a team read „Zu“ while the viewer cannot move into a team; the Host always can (#160).
-const lockReason = computed(() => (!props.isHost && phase.value === 'poll' ? t(errorCopyKey('team_choice_closed')) : null))
+// The slots of a team read „Zu“ (poll) or „Gesperrt“ (running) while the viewer cannot move into a team; the Host always can (#160, #164).
+const lockReason = computed(() => {
+  if (props.isHost) return null
+  if (phase.value === 'poll') return t(errorCopyKey('team_choice_closed'))
+  return phase.value === 'running' ? t(errorCopyKey('teams_locked')) : null
+})
+
+/** Whether the viewer sits in a team (the running notice tells them their seat is fixed). */
+const inTeam = computed(() => currentPlace(props.viewerId).zone === 'team')
+const runningNotice = computed(() => (props.isHost ? 'board.notice.runningHost' : inTeam.value ? 'board.notice.runningPlayer' : 'board.notice.running'))
 
 const live = ref('')
 const announce = (text: string) => void (live.value = text)
@@ -215,7 +226,7 @@ const authorsIn = (team: number) => inPlace({ zone: 'team', team }).filter(perso
 
 // The Host's notice about uneven teams: the smallest team against the biggest.
 const uneven = computed(() => {
-  if (!props.isHost || props.settings === null || props.teams.length < 2) return null
+  if (!props.isHost || props.started || props.settings === null || props.teams.length < 2) return null
   const counts = props.teams.map(team => ({ team: team.position, count: seats.value[team.position] ?? 0 }))
   const small = counts.reduce((least, next) => (next.count < least.count ? next : least))
   const big = Math.max(...counts.map(entry => entry.count))
@@ -250,6 +261,13 @@ const uneven = computed(() => {
       {{ t('board.notice.poll') }}
     </NoticeBanner>
     <NoticeBanner
+      v-else-if="phase === 'running'"
+      tone="info"
+      :icon="Lock"
+    >
+      {{ t(runningNotice) }}
+    </NoticeBanner>
+    <NoticeBanner
       v-if="uneven"
       tone="warning"
       host-only
@@ -270,6 +288,8 @@ const uneven = computed(() => {
         :size="settings?.teamSize ?? 0"
         :taken="inPlace({ zone: 'team', team: team.position }).length"
         :lock-reason="lockReason"
+        :lock-label="phase === 'running' ? 'locked' : 'closed'"
+        :frozen="team.frozen"
         :drop-target="drag.overZone.value === `team-${team.position}`"
         :mine="placeKey(currentPlace(viewerId)) === `team-${team.position}`"
       >
@@ -285,6 +305,7 @@ const uneven = computed(() => {
             :name="teamName(team, t)"
             :named="team.name !== null"
             :mine="placeKey(currentPlace(viewerId)) === `team-${team.position}`"
+            :frozen="team.frozen"
             :my-word="myWord"
             :is-host="isHost"
             :authors="authorsIn(team.position)"

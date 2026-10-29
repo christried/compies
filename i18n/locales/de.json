@@ -116,6 +116,7 @@
     "zoneAria": "{name}, {n} von {size} frei",
     "closed": "Zu",
     "closedAria": "Zu. {reason}",
+    "lockedAria": "Gesperrt. {reason}",
     "personAria": "{name}, {where}",
     "moveTo": "Verschieben nach …",
     "whereTo": "Wohin, {name}?",
@@ -443,6 +444,14 @@
     "logAria": "Aktivität",
     "beforeStart": "Vor dem Start",
     "sessionGroup": "Session {n}",
+    "sessionGroupSingle": "Session",
+    "beforeSession": "Vor Session {n}",
+    "afterSession": "Nach Session {n}",
+    "afterSessionSingle": "Nach der Session",
+    "sessionStarted": "{name} hat Session {n} gestartet",
+    "sessionStartedSingle": "{name} hat die Session gestartet",
+    "sessionEnded": "{name} hat Session {n} beendet",
+    "sessionEndedSingle": "{name} hat die Session beendet",
     "empty": "Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und was sich am Event ändert.",
     "older": "Ältere laden",
     "loadFailed": "Die Aktivität konnte nicht geladen werden.",
@@ -1195,7 +1204,9 @@
       "noSlots": "Schlag erst einen Termin vor.",
       "missingAfter": "Danach fehlt noch {n} Termin. | Danach fehlen noch {n} Termine.",
       "dateTime": "{date}, {time} Uhr",
-      "ics": "In den Kalender"
+      "ics": "In den Kalender",
+      "runningSince": "Läuft seit {time}",
+      "endedRange": "{day}, {start} bis {end}"
     },
     "reschedule": {
       "title": "Termin verschieben?",

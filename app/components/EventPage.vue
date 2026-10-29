@@ -2,6 +2,7 @@
 import { CalendarCheck, CalendarClock, ChevronRight, Flag, Link as LinkIcon, Lock, Play, Settings2 } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
+import { feedSessions } from '~/utils/activity'
 import { hostDockState } from '~/utils/host-dock'
 import { datePollOpen, sessionsEditable, type DatedSessionView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
@@ -121,6 +122,10 @@ const pollOpen = computed(() => (data.value ? datePollOpen(data.value.event.phas
 const startOpen = ref(false)
 const starting = ref(false)
 const firstStart = computed(() => data.value?.sessions.every(session => session.startedAt === null) ?? true)
+/** The first Session has started: the teams and their names are locked for Players. */
+const started = computed(() => !firstStart.value)
+/** What the Activity feed's group headers need of the Sessions (#164). */
+const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
 const startLabel = computed(() => {
   const number = data.value?.start?.number ?? null
@@ -281,6 +286,7 @@ const hostActions = computed((): DockAction[] => {
         :teams="data.teams"
         :settings="data.settings"
         :team-choice-open="data.teamChoiceOpen"
+        :started="started"
         :viewer-id="data.viewerId"
         :is-host="data.event.isHost"
         :room="room"
@@ -300,6 +306,8 @@ const hostActions = computed((): DockAction[] => {
         <ActivityFeed
           :slug="slug"
           :room="room"
+          :sessions="feed.started"
+          :next-number="feed.nextNumber"
         />
       </section>
     </div>

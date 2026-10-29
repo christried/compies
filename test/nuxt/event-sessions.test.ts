@@ -299,4 +299,49 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).not.toContain('Session 1')
     expect(page.text()).toContain('Freitags-Zocken')
   })
+
+  describe('the Running Session and the ones that ended (#164)', () => {
+    const FIRST = '2026-10-30T19:00:00.000Z'
+    const SECOND = '2026-10-31T19:00:00.000Z'
+    const card = (page: Awaited<ReturnType<typeof mountSuspended>>, n: number) => page.findAll('section').filter((section: { text: () => string }) => section.text().includes(`Session ${n}`))[0]!
+
+    it('shows „Läuft“ and „Läuft seit“ on the Running Session, in Berlin time, and the other card as it was', async () => {
+      const { slug } = serve(s => viewWithSessions(s, [
+        { number: 1, startsAt: FIRST, startedAt: '2026-10-30T19:34:00.000Z' },
+        { number: 2, startsAt: SECOND },
+      ], 0, { event: { phase: 'running', isHost: true }, slots: [], bestSlotId: null }))
+
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      expect(card(page, 1).text()).toContain('Läuft seit 20:34')
+      expect(card(page, 1).text()).toContain('Läuft')
+      expect(card(page, 2).text()).not.toContain('Läuft')
+    })
+
+    it('shows „Beendet“ with the start and the end of a Session that ended', async () => {
+      const { slug } = serve(s => viewWithSessions(s, [
+        { number: 1, startsAt: FIRST, startedAt: '2026-10-30T19:34:00.000Z', endedAt: '2026-10-30T22:12:00.000Z' },
+        { number: 2, startsAt: SECOND },
+      ], 0, { event: { phase: 'running', isHost: true }, slots: [], bestSlotId: null }))
+
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      expect(card(page, 1).text()).toContain('Beendet')
+      expect(card(page, 1).text()).toContain('Fr 30.10., 20:34 bis 23:12')
+      expect(card(page, 1).text()).not.toContain('Läuft')
+    })
+
+    it('offers the Host no Verschieben, Neue Terminsuche or Entfernen on a started Session, but still on the others', async () => {
+      const { slug } = serve(s => viewWithSessions(s, [
+        { number: 1, startsAt: FIRST, startedAt: '2026-10-30T19:34:00.000Z' },
+        { number: 2, startsAt: SECOND },
+      ], 0, { event: { phase: 'running', isHost: true }, slots: [], bestSlotId: null }))
+
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      const labels = (n: number) => card(page, n).findAll('button').map((button: { text: () => string }) => button.text())
+      expect(labels(1)).toEqual([])
+      expect(labels(2)).toEqual(['Verschieben', 'Neue Terminsuche', 'Entfernen'])
+    })
+  })
 })

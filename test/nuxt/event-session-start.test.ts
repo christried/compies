@@ -190,7 +190,10 @@ describe('starting a Session', () => {
   it('asks first, says the teams lock, and posts the start only when confirmed', async () => {
     let started = 0
     const store = serve(s => hostView(s, [{ number: 1, startsAt: FIRST }, { number: 2, startsAt: SECOND }], { start: { sessionId: 'x', number: 1, rejection: null } }))
-    registerEndpoint(`/api/e/${store.slug}/sessions/start`, { method: 'POST', handler: () => { started += 1; return { sessionId: 'x', phase: 'running' } } })
+    registerEndpoint(`/api/e/${store.slug}/sessions/start`, { method: 'POST', handler: () => {
+      started += 1
+      return { sessionId: 'x', phase: 'running' }
+    } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
     await clickHostAction(page, 'Session 1 starten')
@@ -209,7 +212,10 @@ describe('starting a Session', () => {
   it('does not post when the dialog is cancelled', async () => {
     let started = 0
     const store = serve(s => hostView(s, [{ number: 1, startsAt: FIRST }], { start: { sessionId: 'x', number: null, rejection: null } }))
-    registerEndpoint(`/api/e/${store.slug}/sessions/start`, { method: 'POST', handler: () => { started += 1; return { sessionId: 'x', phase: 'running' } } })
+    registerEndpoint(`/api/e/${store.slug}/sessions/start`, { method: 'POST', handler: () => {
+      started += 1
+      return { sessionId: 'x', phase: 'running' }
+    } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
     await clickHostAction(page, 'Session starten')
 
@@ -251,7 +257,10 @@ describe('ending a Session', () => {
       event: { isHost: true, phase: 'running' },
       running: 0,
     }))
-    registerEndpoint(`/api/e/${store.slug}/sessions/end`, { method: 'POST', handler: () => { ended += 1; return { sessionId: 'session-running', phase: 'running' } } })
+    registerEndpoint(`/api/e/${store.slug}/sessions/end`, { method: 'POST', handler: () => {
+      ended += 1
+      return { sessionId: 'session-running', phase: 'running' }
+    } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
     const hold = page.findAll('[role="toolbar"] button').find(button => button.text().startsWith('Session 1 beenden'))!
 

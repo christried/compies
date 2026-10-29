@@ -28,6 +28,8 @@ let testNumber = 0
 interface Options {
   members: MemberView[]
   teams?: BoardTeam[]
+  /** The first Session has started (#164). */
+  started?: boolean
   viewerId?: string
   isHost?: boolean
 }
@@ -61,7 +63,8 @@ async function mountBoard(options: Options) {
       members: options.members,
       teams: options.teams ?? teamsNamed(null),
       settings,
-      teamChoiceOpen: true,
+      teamChoiceOpen: !options.started,
+      started: options.started ?? false,
       viewerId: options.viewerId ?? kitty.id,
       isHost: options.isHost ?? false,
       room: noRoom,
@@ -76,6 +79,11 @@ const settle = () => new Promise(resolve => setTimeout(resolve))
 const zone = (page: Board, label: string) => page.get(`[role="group"][aria-label^="${label}"]`)
 const field = (page: Board, label: string) => zone(page, label).find<HTMLInputElement>('input')
 const type = async (input: { setValue: (value: string) => Promise<void> }, value: string) => input.setValue(value)
+
+const frozenTeams = (first: string | null, second: string | null = null): BoardTeam[] => [
+  { position: 1, name: first, frozen: true },
+  { position: 2, name: second, frozen: true },
+]
 
 describe('Team names on the Game board', () => {
   afterEach(() => {
@@ -238,6 +246,37 @@ describe('Team names on the Game board', () => {
       await settle()
 
       expect(resets).toEqual([])
+    })
+  })
+
+  describe('after the first Session started (#164)', () => {
+    const named = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken'), member(SANNE, 'Sanne', { zone: 'bench' }, null, true)]
+
+    it('gives a Player in a team no word field any more, and shows the frozen name', async () => {
+      const { page } = await mountBoard({ members: named, teams: frozenTeams('Wilde Gurken'), started: true })
+
+      expect(zone(page, 'Wilde Gurken').find('input').exists()).toBe(false)
+      expect(zone(page, 'Wilde Gurken').text()).not.toContain('Dein Wort für den Teamnamen')
+      expect(zone(page, 'Wilde Gurken').text()).toContain('Wilde Gurken')
+    })
+
+    it('keeps the Host\'s reset while the frozen name is not the colour name, and does not promise to delete words', async () => {
+      const { page, resets } = await mountBoard({ members: named, teams: frozenTeams('Wilde Gurken'), started: true, viewerId: SANNE, isHost: true })
+      expect(zone(page, 'Wilde Gurken').text()).toContain('Name zurücksetzen')
+
+      await clickButton(zone(page, 'Wilde Gurken').element, 'Name zurücksetzen')
+      expect(dialog()?.textContent).toContain('Team Rot')
+      expect(dialog()?.textContent).not.toContain('Wörter')
+      await clickButton(dialog(), 'Zurücksetzen')
+      await settle()
+
+      expect(resets).toEqual([1])
+    })
+
+    it('offers no reset once the frozen name is the colour name', async () => {
+      const { page } = await mountBoard({ members: named, teams: frozenTeams(null), started: true, viewerId: SANNE, isHost: true })
+
+      expect(page.text()).not.toContain('Name zurücksetzen')
     })
   })
 })

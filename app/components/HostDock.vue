@@ -26,7 +26,8 @@ export interface DockAction {
   place?: 'dock' | 'more'
   /** Needs a one second hold; then `run` returns whether the server took it. */
   hold?: boolean
-  run: () => void | Promise<boolean>
+  /** What the action does. A hold action returns a Promise of whether the server took it; the others' result is ignored. */
+  run: () => unknown
 }
 
 const props = defineProps<{

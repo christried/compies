@@ -8,6 +8,7 @@
 - Unter **Aktivität** siehst du jetzt, was im Event passiert ist: wer dazugekommen ist, wann ein Termin feststand und was der Host geändert hat. ([#159](https://github.com/christried/compies/issues/159))
 - Auf der Event-Seite gibt es jetzt das **Spielbrett**: Zieh dich in ein Team, auf die Bench oder auf die Tribüne. Die Teamwahl öffnet, sobald ein Termin steht, und alle sehen sofort, wer wo sitzt. ([#160](https://github.com/christried/compies/issues/160))
 - Jedes Team bekommt jetzt seinen eigenen Namen: Alle im Team geben ein Wort ab, in der Reihenfolge, in der ihr beigetreten seid. ([#161](https://github.com/christried/compies/issues/161))
+- Der Host startet und beendet jetzt die Sessions. Mit dem ersten Start sind die Teams gesperrt und die Teamnamen eingefroren. Läuft schon eine Session, könnt ihr für den Termin der nächsten weiter abstimmen. ([#164](https://github.com/christried/compies/issues/164))
 - Nach einem Update zeigt dir COMPIES einmal, was neu ist. Das gilt für dein Konto: Hast du es auf einem Gerät gesehen, kommt es auf den anderen nicht noch einmal. ([#184](https://github.com/christried/compies/issues/184))
 
 ### Geändert
