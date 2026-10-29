@@ -2,9 +2,11 @@ import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { events, pollSlots, sessions } from '../db/schema'
 import { phaseAfterChange } from '../domain/phase'
-import { sequenceRaises } from '../domain/session'
+import { numberedSessions, sequenceRaises } from '../domain/session'
 import type { Phase } from '../../shared/event'
+import type { AuthUser } from '../../shared/auth'
 import { asRecord } from '../../shared/record'
+import type { RoomMessage } from '../../shared/realtime'
 import { sessionNotFound } from './errors'
 import { changeEvent, type EventRow } from './event-access'
 import type { Db } from './db'
@@ -23,11 +25,11 @@ export type SessionRow = typeof sessions.$inferSelect
  */
 export function changeSessions<T extends object>(
   event: H3Event,
-  change: (ctx: { tx: Db, eventRow: EventRow, sessions: SessionRow[], body: Record<string, unknown> }) => Promise<T>,
+  change: (ctx: { tx: Db, eventRow: EventRow, user: AuthUser, publish: (...messages: RoomMessage[]) => void, sessions: SessionRow[], body: Record<string, unknown> }) => Promise<T>,
 ): Promise<T & { phase: Phase }> {
-  return changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, body }) => {
+  return changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, user, publish, body }) => {
     const before = await eventSessions(tx, eventRow.id)
-    const result = await change({ tx, eventRow, sessions: before, body: asRecord(body) })
+    const result = await change({ tx, eventRow, user, publish, sessions: before, body: asRecord(body) })
     const after = await eventSessions(tx, eventRow.id)
     await raiseSequences(tx, sequenceRaises(before, after))
     const phase = phaseAfterChange(eventRow.phase, after.map(row => row.startsAt))
@@ -58,6 +60,11 @@ export async function removedSessionNotices(db: Db, eventId: string): Promise<{ 
     .where(and(eq(sessions.eventId, eventId), isNotNull(sessions.removedAt), isNotNull(sessions.previousStartsAt)))
     .orderBy(asc(sessions.previousStartsAt))
   return rows.filter((row): row is { id: string, previousStartsAt: Date } => row.previousStartsAt !== null)
+}
+
+/** The number a Session is shown with right now (numberedSessions), null for a Session without a Date or the only one (#159). */
+export async function shownNumber(db: Db, eventId: string, sessionId: string): Promise<number | null> {
+  return numberedSessions(await eventSessions(db, eventId)).find(session => session.id === sessionId)?.number ?? null
 }
 
 /** The Session with this id, or 404 (#69). */

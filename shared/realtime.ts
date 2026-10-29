@@ -2,6 +2,8 @@
 // (realtime/) import this file, so it holds types and tiny helpers only. No message carries a game's name, id,
 // image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer.
 
+import type { ActivityEntry } from './activity'
+
 export const ROOM_PROTOCOL_VERSION = 1
 
 /**
@@ -9,7 +11,10 @@ export const ROOM_PROTOCOL_VERSION = 1
  * and the clock. A change of an Event queues these with `publish`. `event.changed`: something about the Event
  * changed, the client refetches the Event read.
  */
-export type RoomMessage = { type: 'event.changed' }
+export type RoomMessage
+  = | { type: 'event.changed' }
+  /** A new entry of the Activity feed (#159); the feed adds it at once. */
+    | { type: 'activity.added', entry: ActivityEntry }
 
 export type RoomMessageType = RoomMessage['type']
 
