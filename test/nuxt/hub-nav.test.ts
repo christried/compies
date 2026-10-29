@@ -28,15 +28,17 @@ describe('HubNav', () => {
     expect(link(nav, 'Events').attributes('aria-current')).toBe('page')
   })
 
-  it('flags unbuilt areas as Baustelle, with a tape marker, and leaves Events alone', async () => {
+  it('flags unbuilt areas as Baustelle, with a tape marker, and leaves Events and Bibliothek alone', async () => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { canHost: true, isAdmin: false } }, route: '/' })
 
-    for (const label of ['Archiv', 'Bibliothek', 'Profil']) {
+    for (const label of ['Archiv', 'Profil']) {
       expect(link(nav, label).attributes('aria-description')).toBe('Baustelle')
       expect(link(nav, label).find('[title="Baustelle"]').exists()).toBe(true)
     }
-    expect(link(nav, 'Events').attributes('aria-description')).toBeUndefined()
-    expect(link(nav, 'Events').find('[title="Baustelle"]').exists()).toBe(false)
+    for (const label of ['Events', 'Bibliothek']) {
+      expect(link(nav, label).attributes('aria-description')).toBeUndefined()
+      expect(link(nav, label).find('[title="Baustelle"]').exists()).toBe(false)
+    }
   })
 
   it('hides Bibliothek and Admin from a User without rights', async () => {

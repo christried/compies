@@ -14,6 +14,10 @@ Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, 
 
 Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+### Roadmap
+
+Which release comes next and what each one holds: `docs/roadmap.md`. It replaces the 1.0 ticket order in the design hand-off.
+
 ### Release workflow
 
 Changelog lines and the version cut: `CHANGELOG.md` + `package.json`. See `docs/agents/release.md`.

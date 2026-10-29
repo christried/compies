@@ -1,5 +1,8 @@
-import { boolean, index, integer, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { boolean, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { PHASES } from '../../shared/event'
+import { SUITABILITIES } from '../../shared/game'
+import { FORMATS, POOLS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
 
 // MVP schema (#1). Every instant is timestamptz in UTC (ADR 0003); every id is a database-generated uuid.
 
@@ -61,6 +64,8 @@ export const authVerifications = pgTable('auth_verifications', {
 }, table => [index('auth_verifications_identifier_idx').on(table.identifier)])
 
 export const eventPhase = pgEnum('event_phase', PHASES)
+export const eventFormat = pgEnum('event_format', FORMATS)
+export const selectionMode = pgEnum('selection_mode', SELECTION_MODES)
 
 export const events = pgTable('events', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -69,6 +74,16 @@ export const events = pgTable('events', {
   hostId: uuid('host_id').notNull().references(() => users.id),
   name: text('name').notNull(),
   phase: eventPhase('phase').notNull(),
+  // Event settings (#138, 1.3), set in the stepper. All null = not set up: only Events created before 1.3.
+  // `hiddenWheel` and `vetoAllowance` belong to the Lucky Wheel; with another Selection mode they are false and null.
+  format: eventFormat('format'),
+  teamCount: integer('team_count'),
+  teamSize: integer('team_size'),
+  gameCount: integer('game_count'),
+  pointsTable: jsonb('points_table').$type<PointsTable>(),
+  selectionMode: selectionMode('selection_mode'),
+  hiddenWheel: boolean('hidden_wheel'),
+  vetoAllowance: integer('veto_allowance'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -115,3 +130,42 @@ export const pollVotes = pgTable('poll_votes', {
   note: text('note'),
   updatedAt: updatedAt(),
 }, table => [primaryKey({ columns: [table.slotId, table.userId] })])
+
+// A game's Suitability (#171): an Event's Format stays teams or free-for-all; a game can suit more kinds of play.
+export const gameSuitability = pgEnum('game_suitability', SUITABILITIES)
+
+// The Game library (#141, brief §15): one global library that Hosts fill. Games are never deleted, so
+// Events that used them keep working. `imageKey` names the image in the image store (#143); `youtubeId`
+// is the clip's video id, played from `clipStart` for `clipLength` seconds.
+export const games = pgTable('games', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  imageKey: text('image_key'),
+  youtubeId: text('youtube_id'),
+  clipStart: integer('clip_start').default(0).notNull(),
+  clipLength: integer('clip_length').default(30).notNull(),
+  playersMin: integer('players_min'),
+  playersMax: integer('players_max'),
+  /** What kind of play the game works for, any number of them (#171). Was `formats` until 0007. */
+  suitabilities: gameSuitability('suitabilities').array().default(sql`'{}'`).notNull(),
+  createdBy: uuid('created_by').notNull().references(() => users.id),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, table => [
+  index('games_created_by_idx').on(table.createdBy),
+  // Lookups by image key (#171, review S6).
+  index('games_image_key_idx').on(table.imageKey),
+])
+
+export const poolKind = pgEnum('pool_kind', POOLS)
+
+// The games of an Event's Game pool and Tiebreaker pool (#146). A game may sit in both pools.
+export const eventPoolGames = pgTable('event_pool_games', {
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  gameId: uuid('game_id').notNull().references(() => games.id),
+  pool: poolKind('pool').notNull(),
+}, table => [
+  primaryKey({ columns: [table.eventId, table.gameId, table.pool] }),
+  // Lookups by game (#171, review S6).
+  index('event_pool_games_game_id_idx').on(table.gameId),
+])

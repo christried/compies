@@ -31,3 +31,8 @@ export function eventPathSegment(path: string): string | null {
 export function invitePath(slug: string, token: string): string {
   return `/e/${slug}-${token}`
 }
+
+/** The Host's settings editor (#147). */
+export function settingsPath(slug: string): string {
+  return `${eventPath(slug)}/einstellungen`
+}

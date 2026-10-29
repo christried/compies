@@ -21,8 +21,13 @@ Requirements: Node 24 (`.nvmrc`) and pnpm (the version is pinned in `package.jso
    | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Twitch OAuth app; its redirect URIs include `<origin>/api/auth/callback/twitch` |
    | `HOST_PROVIDER_IDS` | Who has the Host permission: `discord:<user id>,twitch:<user id>` (ADR 0002) |
    | `ADMIN_PROVIDER_IDS` | The Platform admin, same format; also gets the Host permission |
+   | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Cloudflare account id and R2 API token (object read and write) for game images |
+   | `R2_BUCKET` | Bucket of this environment: `compies-staging` or `compies-production` |
+   | `R2_JURISDICTION` | Optional: `eu` when the buckets use the EU jurisdiction, else empty |
 
    The allowlists apply at each sign-in, so a change takes effect at that User's next sign-in.
+
+   The R2 variables are set in Vercel, not in your `.env`, by `scripts/wizards/r2-setup.sh` (#139). Image upload needs them; tests use an in-memory store, so leave them empty locally.
 
 4. Apply the migrations to your branch: `pnpm db:migrate`
 5. Start the dev server: `pnpm dev`, then open http://localhost:3000. `GET /api/health` answers `{"status":"ok"}` when the database is reachable and migrated.

@@ -1,26 +1,39 @@
 import { eq } from 'drizzle-orm'
 import { createError, defineEventHandler, readBody } from 'h3'
-import { pollSlots, eventMembers, events, sessions } from '../../db/schema'
+import { pollSlots, eventMembers, eventPoolGames, events, sessions } from '../../db/schema'
 import { parseNewEvent } from '../../domain/event'
 import { phaseOf } from '../../domain/phase'
+import { parsePools } from '../../domain/pools'
 import { createInviteToken, createSlug } from '../../domain/slug'
 import { useDb, type Db } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { inviteUrl } from '../../utils/links'
+import { assertGamesExist } from '../../utils/pools'
 import { requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
+import { asRecord } from '../../../shared/record'
+import { POOLS, parseSettings } from '../../../shared/settings'
 
 const SLUG_ATTEMPTS = 5
 
 // Create an Event (screen M2). Only Users with the Host permission may create one (ADR 0002).
-// The Event, its Sessions, its Slots and the Host's membership are written in one transaction.
+// The Event with its settings, its Sessions, its Slots and the Host's membership are written in one transaction.
+// Settings are required (#144): an Event without them is one from before 1.3. The Game pool and the Tiebreaker
+// pool (#146) are optional lists of library game ids, written in the same transaction.
 export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const user = await requireUser(event)
   if (!user.canHost) throw apiError('no_host_permission')
 
-  const parsed = parseNewEvent(await readBody(event), new Date())
+  const body = await readBody(event)
+  const parsed = parseNewEvent(body, new Date())
   if (!parsed.ok) throw apiError(parsed.error)
   const input = parsed.event
+  const parsedSettings = parseSettings(asRecord(body).settings)
+  if (!parsedSettings.ok) throw apiError(parsedSettings.error)
+  const { settings } = parsedSettings
+  const parsedPools = parsePools(asRecord(body).pools)
+  if (!parsedPools.ok) throw apiError(parsedPools.error)
+  const { pools } = parsedPools
 
   const db = useDb(event)
   const slug = await freeSlug(db, input.name)
@@ -33,11 +46,14 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const phase = phaseOf(startsAt)
 
   await db.transaction(async (tx) => {
+    await assertGamesExist(tx, pools.main, pools.tiebreaker)
     const [row] = await tx
       .insert(events)
-      .values({ slug, inviteToken, hostId: user.id, name: input.name, phase })
+      .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })
       .returning({ id: events.id })
     await tx.insert(sessions).values(startsAt.map(date => ({ eventId: row!.id, startsAt: date })))
+    const poolRows = POOLS.flatMap(pool => pools[pool].map(gameId => ({ eventId: row!.id, gameId, pool })))
+    if (poolRows.length > 0) await tx.insert(eventPoolGames).values(poolRows)
     await tx.insert(eventMembers).values({ eventId: row!.id, userId: user.id })
     if (input.dateMode === 'poll') {
       await tx.insert(pollSlots).values(input.slots.map(startsAt => ({ eventId: row!.id, startsAt })))

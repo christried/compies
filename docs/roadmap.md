@@ -1,0 +1,97 @@
+# Roadmap
+
+Where COMPIES goes after 1.2.0: a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Terms follow `GLOSSARY.md`.
+
+Each release is one spec and usable on its own. A release is grilled, specced and ticketed in one fresh session **while the release before it is being built**, once the code it builds on exists, never all releases up front: the specs name real modules and seams, and the first game night in the app (1.5/1.6) will change what comes after. 1.4 is planned as soon as the Event settings ticket of 1.3 is merged ([#150](https://github.com/christried/compies/issues/150)). This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
+
+| Release | Name | Status |
+|---|---|---|
+| 1.3 | Spielvorbereitung | specced: [#138](https://github.com/christried/compies/issues/138) |
+| 1.4 | Teams | specced: [#153](https://github.com/christried/compies/issues/153) |
+| 1.5 | Glücksrad | outline |
+| 1.6 | Punkte | outline |
+| 1.7 | Siegerehrung | outline |
+
+## 1.3 Spielvorbereitung
+
+Hosts can fill a Game library and set up a whole Event. No realtime yet. (T4, T5b; screens 05, 23, 24.)
+
+**Game library**
+- Only Users with the Host permission and the Platform admin see it, nav item included.
+- Hosts create games; the creator and the Platform admin edit them. No deleting.
+- Fields: name, optional image, YouTube link with start second and length (default 30 s) and a live preview, recommended player count, suitable formats. Search and filters as designed.
+- Image: cropped and shrunk in the browser to one small WebP, stored on Cloudflare R2, served through a cached Nuxt route (ADR 0012). Fallback: the clip's YouTube thumbnail, then a placeholder.
+- Out: duplicate check, pool suggestions.
+
+**Create Event stepper**
+- All 8 steps. Free-for-all, Pick & Ban, Loser's Pick and Loser's Advantage are shown as „Bald verfügbar“. Selection modes: Lucky Wheel (with Hidden wheel option) and Admin pick.
+- The Event is created at „Fertig“; no drafts.
+- Game count: default 10, range 1–30.
+- Veto allowance (step 5): default 3, or the Team size if higher; range 0–9. In the stepper it follows the Team size until the Host touches it; after that, and after creation, only the Host changes it.
+- Step 6: „Neues Spiel anlegen“ opens the game form in a sheet, and the new game lands in the pool. A hint that never blocks: Game count + Veto allowance × Parties games recommended (3v3, 10 games, 3 Vetoes: 16).
+- Info sheet copy: the new Veto allowance rule, and that the Host sees the Hidden wheel's games.
+
+**Editing an Event**
+- Events created before 1.3 stay valid. Their Host sees „Event einrichten“, which opens the same steps as an editor. No Session can start without settings (enforced from 1.4).
+- Before the first Session starts, everything is editable. After that, still editable: Game count, Veto allowance (never below the most any Party has spent), Team size (never below the fullest team), Hidden wheel, Game pool, Tiebreaker pool. Locked: Format, team count, points table, Selection mode.
+- Hidden wheel switched off mid-Event reveals the remaining games to everyone; switched on, it hides undrawn games from then on.
+
+**Event page**
+- „So wird gespielt“ card for every Member, built from the stepper's „Fertig“ summary (`App Vorbereitung`, state Fertig).
+
+**Hidden wheel secrecy** (brief §8)
+- No client except the Host's ever receives the name, id, image or clip of an undrawn game, through any API. Players see neither the Game pool nor the Tiebreaker pool. Acceptance includes a test that calls the API as a Player.
+
+**Human task**
+- Fresh Cloudflare account, R2 bucket in Europe, keys in Vercel for staging and production, walked through by a `/wizard` script. Blocks the image upload.
+
+## 1.4 Teams
+
+Everyone in the lobby live; teams formed; a Session can start. (T6, T8, activity feed from T9; screens 09, 10, 27.) Spec: [#153](https://github.com/christried/compies/issues/153).
+
+- Realtime foundation per ADR 0012: Nuxt on Vercel, one PartyServer Worker with one room per Event, room tokens, presence, clock sync, reconnect. Postgres writes stay in Nuxt.
+- Lobby game board: zones, drag and drop, online indicator, team names (open question 10 as designed), team colours.
+- Starting a Session; the Event goes to running.
+- Activity feed.
+- „Was ist neu“ pop-up: after a new Release, every Release newer than the one the User last saw, newest first, with a link to Neuigkeiten. „Gesehen“ is stored per User on the server, not per device. New Users get none; Users who never saw anything see only the newest Release. Static Compibert bust at most. (Agreed 2026-10-28 in the 1.3 review grilling.)
+- Grilled on 2026-10-28 (ADR 0013, `GLOSSARY.md`): Nuxt decides and the room only relays; no Worker deploy or Release merge on a day with a Session Date or while a Session runs; rooms in the EU jurisdiction; ≤ 50 ms for server-timed moments, the clip best effort; staging and production Workers on `*.workers.dev`, set up by a wizard. Facts: `docs/research/realtime-hosting.md`.
+
+## 1.5 Glücksrad
+
+The game round up to „wird gespielt“. (T10; screens 11, 15, 30.)
+
+- Lucky Wheel with server-drawn result, synced spin, Hidden wheel with placeholder names and the reveal.
+- Admin pick and „Nächstes Spiel setzen“ in every mode; putting a drawn game back.
+- Synced 30 s clip.
+- Vetoes: Veto allowance per Party, at most one per Party per drawn game, 60 s window, sealed until the simultaneous reveal; with an allowance of 0, no veto window.
+- Host-only pool warning. The Hidden wheel can't be switched during a spin or veto window.
+- Bonus Veto: the Host grants one Party a Veto on top of the Veto allowance; nobody ever takes a Veto away, and the allowance stays the same for every Party. Details (before the Event runs, upper limit, Activity feed) are grilled with 1.5.
+- Coin flip: the Host tosses it any time during a running Session; the server decides, and every Member sees the same toss (`Coin3D` animation) at the same moment.
+- Countdown: the Host sets a time and starts, pauses or resets it; it runs down for every Member at the same moment. Needed for the first Event, so it ships in a plain look; the motion and graphics wait for „Nach dem ersten Event“.
+
+## 1.6 Punkte
+
+Scores in the app and a winner. (T13, T14; screens 16, 17, 18.)
+
+- Result entry with placements and „gleichauf“, optional cosmetic scores, points table, live leaderboard, corrections.
+- Tiebreaker from the Tiebreaker pool, with remaining Vetoes, Hidden wheel setting applies.
+- The Event finishes per the Game count rules; afterwards the Event page is read-only with final standings and every game's result.
+
+## 1.7 Siegerehrung
+
+The Award ceremony. (T15; screen 19.)
+
+- Started by the Host, seen by every Member at the same moment; late joiners jump in; the Host can start it again any time after the Event finished.
+- 2D podium, confetti, Compibert dancing, server-picked gag, share image in landscape and square.
+
+## Nach dem ersten Event
+
+Picked up right after the first Event played in the app; the issues are opened then, not before.
+
+- Countdown motion and graphics: a _Claude Design hand-off_ (`docs/agents/design-handoff.md`).
+- Mockup vs. live app: the user compares the reference designs with the live app and names every difference (`ready-for-human`); the differences become tickets.
+- Wording sweep: the user goes over all copy in the app (`ready-for-human`), after every other ticket of this list.
+
+## Out of scope for this roadmap
+
+Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound; push notifications; Compibert states outside the ceremony; second provider, avatar upload and settings (T2b); Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium.

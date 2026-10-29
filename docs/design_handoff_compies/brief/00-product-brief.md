@@ -124,6 +124,7 @@ A guided flow (stepper) with these settings:
    - *Custom table*
 5. **Selection mode**: how the next game is determined (see 8). Fixed for the whole Event. Options:
    - Hide wheel (only for "Lucky Wheel", see 8)
+   - Veto allowance: vetoes per party (see 8)
 6. **Game pool**: the games for the wheel, picks and bans, taken from the game library.
    - While filling it, the Host gets **suggestions** that match the chosen format and player count.
    - Nothing is **filtered out automatically**; the Host decides.
@@ -213,12 +214,15 @@ The **game board** is the heart of the lobby. All participants appear as **avata
 - As soon as the wheel stops, the slice **transforms** (animated) into the real name.
 - This prevents people from saving their vetoes strategically.
 - **Not available with "Loser's Advantage"**, because there you have to see what you're banning.
+- **Really hidden** (decided 2026-10-28): no client except the Host's ever receives the name, id, image or clip of a game that hasn't been drawn, through any API or realtime message, so nobody can read it from the network. Players only get the number of slices and placeholder labels, shuffled per spin. The Game pool list is hidden from players too, the tiebreaker wheel follows the same setting, and games still on the wheel at the end stay hidden for good.
+- The Host knows the entries, also when they play in a party; the info side sheet says so.
 
 ### Veto rules
-- **Every player has 1 veto.**
-  - In a team, vetoes are **pooled**: a 5-person team has 5 vetoes, and any member can spend them.
-  - So one person can burn all of the team's vetoes on different games. That team dynamic is intended and funny.
-  - In free-for-all, each player has 1 veto.
+- **Every party has the same number of vetoes for the whole Event, the veto allowance, set by the Host** (decided 2026-10-28, replaces "every player has 1 veto").
+  - Default: 3, or the team size if that is higher. Range 0 to 9. Until the Host changes it, the default follows the team size.
+  - The Host can change it at any time, like the Game count. It always applies to every party equally and can never drop below the most vetoes any party has already spent.
+  - Any member of a team can spend any of the team's vetoes. So one person can burn all of them on different games. That team dynamic is intended and funny.
+  - With an allowance of 0 there is no veto window: the clip still plays, and the drawn game is set at once.
 - **Max 1 veto per party per drawn game.** Once a team member has pressed it, the button is locked for the rest of the team for that game.
 - **Veto window: 60 seconds**, starting the moment the game is determined.
   - For the first 30 seconds the clip plays.
@@ -235,7 +239,7 @@ The **game board** is the heart of the lobby. All participants appear as **avata
 
 ### Pick & Ban in detail
 - **Who starts is decided by an animated coin flip.** One side of the coin shows **Compibert's funny head** ("Kopf"), the other his **tail / rear end** ("Schwanz").
-- **Number of bans per party = number of members** (i.e. as many as it would have vetoes). In free-for-all that's 1 ban per person.
+- **Number of bans per party = number of members.** In free-for-all that's 1 ban per person.
 - **Ban order follows a snake pattern:** party A 1 ban, party B 2 bans, A 2 bans, B 2 bans … until all bans are used. With more than 2 parties, the snake goes back and forth: A, B, C, C, B, A, A, B, C …
 - **Then picks** in the same pattern until the Game count is reached. The party that did **not** start the bans starts the picks.
 - **Pick order = play order.**
@@ -415,7 +419,7 @@ For every game, this loop runs:
 **Achtung:** Du kannst übrigens in jedem Modus jederzeit selbst eingreifen und das nächste Spiel setzen.
 
 ### Auswahlmodus: Lucky Wheel
-**So läuft's:** Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jeder Spieler bringt 1 Veto mit, im Team werden sie zusammengelegt, und jedes Mitglied darf sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.
+**So läuft's:** Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.
 **Option „Rad verdecken“:** Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.
 **Gut für:** Maximale Spannung und Chaos.
 **Achtung:** Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon.

@@ -24,6 +24,11 @@ export interface AuthUser {
   isAdmin: boolean
 }
 
+/** The name a User is shown with: the Display name once they set one, else the provider name (one rule for Home, the menu, Event members, hosts and game creators). */
+export function shownName({ name, displayName }: { name: string, displayName?: string | null }): string {
+  return displayName ?? name
+}
+
 /** What `GET /api/me` returns: the signed-in User, or null when signed out. */
 export interface MeView {
   user: AuthUser | null

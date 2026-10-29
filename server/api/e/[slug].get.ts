@@ -1,15 +1,20 @@
 import { asc, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots, pollVotes, eventMembers, users } from '../../db/schema'
+import { poolsVisibleTo } from '../../domain/pool-visibility'
 import { isPast, pollStanding } from '../../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../../domain/session'
 import { useDb } from '../../utils/db'
 import { inviteUrl } from '../../utils/links'
 import { loadEvent } from '../../utils/event-access'
+import { eventPools } from '../../utils/pools'
+import { SETTINGS_FLOORS } from '../../utils/settings-floors'
 import { eventSessions, removedSessionNotices } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
+import { shownName } from '../../../shared/auth'
 import type { EventView, SessionNote, SessionView } from '../../../shared/event'
 import type { VoteRow } from '../../../shared/poll'
+import { settingsFromRow } from '../../../shared/settings'
 
 // The Event link (ADR 0006): only Members can open it. A non-Member and an unknown slug get the
 // same 404, so nobody can probe which Events exist. A former Member of a deleted Event gets
@@ -45,6 +50,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     .where(eq(eventMembers.eventId, eventRow.id))
     .orderBy(asc(eventMembers.joinedAt))
 
+  const settings = settingsFromRow(eventRow)
   const standing = pollStanding({ slots, votes, memberIds: members.map(row => row.id), viewerId: user.id, now })
 
   return {
@@ -54,6 +60,13 @@ export default defineEventHandler(async (event): Promise<EventView> => {
       phase: eventRow.phase,
       isHost,
     },
+    settings,
+    settingsFloors: isHost ? SETTINGS_FLOORS : null,
+    // The Host sees the games of both pools; every other Member only while the wheel is not hidden, else how many
+    // there are (#146, #148). Under a Hidden wheel NO other field of this response may carry a pool game (name, id,
+    // image key, video id): the Members, Sessions and Votes above and below must stay free of them. The test
+    // hidden-wheel.test.ts reads the raw response to keep it so.
+    pools: await eventPools(db, eventRow.id, poolsVisibleTo({ isHost, settings })),
     // Sessions with a Date come first in Date order, with the number they are shown with (#49, #70); the
     // Sessions still waiting for a Date follow and only count as missing Dates.
     sessions: numberedSessions(rows).map(row => sessionView(row, allVotes)),
@@ -71,7 +84,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     votes,
     members: members.map(row => ({
       id: row.id,
-      name: row.displayName ?? row.name,
+      name: shownName(row),
       image: row.image,
       isHost: row.id === eventRow.hostId,
     })),

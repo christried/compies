@@ -8,6 +8,7 @@
     "cancel": "Abbrechen",
     "close": "Schließen",
     "save": "Speichern",
+    "saving": "Speichert …",
     "back": "Zurück",
     "next": "Weiter",
     "more": "Mehr",
@@ -60,6 +61,8 @@
   "dock": {
     "label": "Host-Steuerung",
     "setDate": "Termin festlegen",
+    "settings": "Einstellungen",
+    "setup": "Event einrichten",
     "proposeDate": "Termin vorschlagen",
     "start": "Session starten",
     "checkTeams": "Teams prüfen",
@@ -172,15 +175,15 @@
     }
   },
   "setup": {
-    "step": "Session erstellen, Schritt {n} von {total}",
+    "step": "Event erstellen, Schritt {n} von {total}",
     "mode": {
       "title": "Auswahlmodus",
       "admin": {
-        "name": "Admin-Wahl",
+        "name": "Host-Wahl",
         "desc": "Du bestimmst jedes Spiel selbst."
       },
       "wheel": {
-        "name": "Lucky Wheel",
+        "name": "Glücksrad",
         "desc": "Das Glücksrad entscheidet, danach 60 s für Vetos."
       },
       "pickBan": {
@@ -192,10 +195,14 @@
         "desc": "Wer hinten liegt, sucht aus."
       },
       "loserAdv": {
-        "name": "Loser’s Advantage",
+        "name": "Glücksrad – Loser’s Advantage",
         "desc": "Der Letzte bannt vor jedem Dreh."
       },
-      "plannedNote": "Loser’s Pick und Loser’s Advantage kommen bald. Sie sind schon sichtbar, damit Hosts wissen, was kommt, lassen sich aber noch nicht wählen.",
+      "vetoes": "Vetos pro Partei",
+      "vetoesHelp": "Jede Partei hat gleich viele Vetos für das ganze Event.",
+      "vetoesMin": "Mindestens 0 Vetos.",
+      "vetoesFloor": "Eine Partei hat schon {n} Vetos eingesetzt.",
+      "vetoesMax": "Höchstens 9 Vetos pro Partei.",
       "howItWorks": "So läuft's",
       "goodFor": "Gut für",
       "hideWheel": "Rad verdecken",
@@ -211,7 +218,7 @@
       },
       "wta": {
         "name": "Winner takes all",
-        "desc": "Nur Platz 1 bekommt einen Punkt"
+        "desc": "{values}. Nur der Sieg zählt."
       },
       "custom": {
         "name": "Eigene Tabelle",
@@ -226,7 +233,7 @@
     },
     "info": {
       "sections": {
-        "how": "So läuft's",
+        "how": "So läuft’s",
         "good": "Gut für",
         "warn": "Achtung",
         "hideWheel": "Option „Rad verdecken“"
@@ -244,15 +251,16 @@
         "warn": "Ein Spiel startet nur, wenn alle Teams gleich groß sind. Fehlt jemand, kannst du Leute von der Bench nachziehen."
       },
       "admin": {
-        "title": "Admin-Wahl",
+        "title": "Host-Wahl",
         "how": "Du als Host bestimmst jedes Spiel selbst. Kein Zufall, keine Vetos.",
         "good": "Abende mit festem Programm.",
         "warn": "Du kannst übrigens in jedem Modus jederzeit selbst eingreifen und das nächste Spiel setzen."
       },
       "wheel": {
-        "title": "Lucky Wheel",
-        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jeder Spieler bringt 1 Veto mit, im Team werden sie zusammengelegt, und jedes Mitglied darf sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
+        "title": "Glücksrad",
+        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
         "hideWheel": "Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.",
+        "hostSees": "Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.",
         "good": "Maximale Spannung und Chaos.",
         "warn": "Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon."
       },
@@ -266,17 +274,13 @@
         "title": "Loser's Pick",
         "how": "Das erste Spiel bestimmt das Glücksrad. Danach darf immer die Partei auf dem letzten Platz das nächste Spiel aussuchen. Die anderen können innerhalb von 60 Sekunden ein Veto einlegen, dann muss neu gewählt werden. Teilen sich mehrere den letzten Platz, entscheidet das Glücksrad.",
         "good": "Aufholjagden. Wer hinten liegt, spielt sein Lieblingsspiel.",
-        "warn": "Vetos funktionieren wie beim Lucky Wheel."
+        "warn": "Vetos funktionieren wie beim Glücksrad."
       },
       "loserAdv": {
-        "title": "Lucky Wheel – Loser's Advantage",
-        "how": "Wie Lucky Wheel, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.",
+        "title": "Glücksrad – Loser's Advantage",
+        "how": "Wie Glücksrad, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.",
         "good": "Zufall mit einem kleinen Vorteil für die, die hinten liegen.",
         "warn": "Das Rad kann hier nicht verdeckt werden, sonst wüsste niemand, was er bannt."
-      },
-      "tiebreaker": {
-        "title": "Tiebreaker",
-        "how": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht."
       }
     }
   },
@@ -642,22 +646,70 @@
     "title": "Bibliothek",
     "search": "Spiele suchen",
     "filterPlayers": "Spielerzahl",
-    "filterFormat": "Format",
+    "filterSuitability": "Passt zu",
     "filterMine": "Von mir",
     "none": "Nichts gefunden. Vielleicht heißt es anders?",
     "create": "Spiel anlegen",
     "editOnlyOwner": "Bearbeiten dürfen nur {name} und die Plattform-Admin.",
-    "played": "{n}× gespielt"
+    "played": "{n}× gespielt",
+    "kicker": "Global, für alle Hosts",
+    "suitability": {
+      "teams": "Teams",
+      "ffa": "Jeder gegen jeden",
+      "one_v_one": "1 gegen 1"
+    },
+    "loading": "Bibliothek lädt",
+    "clipFact": "Clip {n} s",
+    "createdBy": "Angelegt von {name} im {month}",
+    "listFailed": "Die Bibliothek lässt sich gerade nicht laden.",
+    "saved": "{name} ist in der Bibliothek.",
+    "saveDone": "Gespeichert.",
+    "edit": "Bearbeiten",
+    "all": "Alle",
+    "searchPlaceholder": "{n} Spiele durchsuchen",
+    "noMatch": "„{q}“ kennen wir noch nicht.",
+    "players": "{n} Spieler",
+    "playersFrom": "ab {min}",
+    "playersUpTo": "bis {max}",
+    "playersBetween": "{min} bis {max}"
   },
   "gameEdit": {
+    "kicker": "Bibliothek",
+    "title": "Spiel anlegen",
     "name": "Name",
+    "nameRequired": "Gib dem Spiel einen Namen.",
     "image": "Bild",
+    "imageChoose": "Bild wählen",
+    "imageChange": "Anderes Bild wählen",
+    "imageRatio": "16:10",
+    "imagePreviewAlt": "Vorschau des Bildes",
+    "imageConverting": "Wird zugeschnitten …",
+    "imageUploading": "Lädt hoch …",
+    "imageConvertFailed": "Dein Browser kann das Bild nicht umwandeln. Probier’s mit Chrome oder Firefox.",
+    "imageUploadFailed": "Das Spiel ist gespeichert, das Bild nicht: {reason}",
     "youtube": "YouTube-Link",
-    "start": "Startsekunde",
-    "length": "Clip-Länge",
+    "linkFound": "Video gefunden: {duration} lang, einbettbar.",
+    "linkBroken": "Dieses Video gibt’s nicht oder es ist privat. Prüf den Link.",
+    "linkRequired": "Erst einen gültigen YouTube-Link eintragen.",
+    "start": "Start ab",
+    "startInvalid": "Das ist keine Zeit. Schreib zum Beispiel 1:12 oder 72.",
+    "length": "Länge",
+    "lengthMax": "Maximal {max} Sekunden",
+    "lengthInvalid": "Die Länge liegt zwischen 5 und 60 Sekunden.",
     "lengthDefault": "30 s",
+    "previewTitle": "Vorschau des Clips",
+    "noPreview": "Keine Vorschau ohne gültigen Link",
+    "noClip": "Ohne Link gibt es keinen Clip. Das Spiel lässt sich trotzdem anlegen.",
+    "barLabel": "Ausschnitt im Video",
+    "excerpt": "Ausschnitt {from} – {to}",
+    "excerptNote": "Genau so läuft der Clip in der Session: {n} s, für alle gleichzeitig, mit Ton.",
+    "playerLabel": "YouTube-Vorschau des Clips",
     "players": "Empfohlene Spielerzahl",
-    "formats": "Passende Formate",
+    "suitabilities": "Passt zu",
+    "playersFrom": "von",
+    "playersTo": "bis",
+    "saveChanges": "Änderungen speichern",
+    "editKicker": "Bearbeiten",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
     "useExisting": "Das nehmen",
     "createAnyway": "Trotzdem anlegen",
@@ -714,6 +766,21 @@
     "system": "System",
     "language": "Sprache"
   },
+  "eventSettings": {
+    "notice": {
+      "title": "Event einrichten",
+      "text": "Lege Format, Punkte, Auswahlmodus und Spiele fest. Ohne Einstellungen kann keine Session starten.",
+      "action": "Event einrichten"
+    },
+    "kicker": "Einstellungen",
+    "heading": "Einstellungen",
+    "setupHeading": "Event einrichten",
+    "save": "Speichern",
+    "saved": "Gespeichert.",
+    "back": "Zurück zum Event",
+    "locked": "Gesperrt, seit die erste Session läuft: Schon gespielte Spiele behalten ihre Regeln.",
+    "wrongPhase": "Das Event ist beendet. Die Einstellungen lassen sich nicht mehr ändern."
+  },
   "connectionG": {
     "lostTitle": "Wir hören nichts mehr vom Server.",
     "lostText": "Deine letzte Nachricht ist gespeichert und geht raus, sobald es wieder klappt. Wir versuchen es weiter.",
@@ -738,7 +805,7 @@
       "canHost": "Darf hosten",
       "owner": "Owner",
       "inviteTitle": "Leute in die Crew holen",
-      "inviteText": "Wer über diesen Link kommt, wird Mitglied und sieht alle Events und das Archiv der Crew. Session-Einladungen bleiben davon getrennt.",
+      "inviteText": "Wer über diesen Link kommt, wird Mitglied und sieht alle Events und das Archiv der Crew. Event-Einladungen bleiben davon getrennt.",
       "rotate": "Erneuern (halten)",
       "rotateText": "Alter Link wird sofort ungültig. Mitglieder bleiben Mitglieder.",
       "archive": "Crew-Archiv: {crew}"
@@ -828,71 +895,79 @@
       },
       "hosting": {
         "heading": "3. Hosting (Vercel)",
-        "text": "Compies wird bei der Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA, gehostet; die Server-Funktionen laufen in Frankfurt am Main. Beim Aufruf der Anwendung verarbeitet Vercel technisch notwendige Zugriffsdaten in Server-Logs, darunter IP-Adresse, Datum und Uhrzeit der Anfrage, die angefragte URL, den Referrer sowie Browser- und Betriebssystem-Angaben. Ebenfalls in diesen Logs landen technische Fehlermeldungen der Anwendung. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, stabilen und fehlerfreien Betrieb). Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO). Zur Übermittlung in die USA siehe Abschnitt 13."
+        "text": "Compies wird bei der Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA, gehostet; die Server-Funktionen laufen in Frankfurt am Main. Beim Aufruf der Anwendung verarbeitet Vercel technisch notwendige Zugriffsdaten in Server-Logs, darunter IP-Adresse, Datum und Uhrzeit der Anfrage, die angefragte URL, den Referrer sowie Browser- und Betriebssystem-Angaben. Ebenfalls in diesen Logs landen technische Fehlermeldungen der Anwendung. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, stabilen und fehlerfreien Betrieb). Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO). Zur Übermittlung in die USA siehe Abschnitt 15."
       },
       "database": {
         "heading": "4. Datenbank (Neon)",
-        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 5), Sitzungs- und Sicherheitsdaten (Abschnitt 8) sowie deine Events, Terminvorschläge, Stimmen und Anmerkungen (Abschnitt 9). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
+        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 6), Sitzungs- und Sicherheitsdaten (Abschnitt 10) sowie deine Events, Terminvorschläge, Stimmen und Anmerkungen (Abschnitt 11). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
+      },
+      "storage": {
+        "heading": "5. Spielbilder (Cloudflare R2)",
+        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, dessen Spielepool das Spiel enthält, solange das Rad nicht verdeckt ist. Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
       },
       "signIn": {
-        "heading": "5. Anmeldung über Discord oder Twitch und Anzeigename",
+        "heading": "6. Anmeldung über Discord oder Twitch und Anzeigename",
         "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift Compies darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in Compies sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Events anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Events anlegen)."
       },
       "avatar": {
-        "heading": "6. Profilbild",
+        "heading": "7. Profilbild",
         "text": "Neben deinem Anzeigenamen zeigt Compies ein rundes Profilbild – dir selbst und den Mitgliedern der Events, denen du angehörst. Es ist dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.\n\nDas Profilbild wird direkt von den Servern von Discord bzw. Twitch geladen. Dabei erhält der jeweilige Dienst technisch bedingt die IP-Adresse des Geräts, auf dem das Bild angezeigt wird, sowie übliche Browserangaben – das gilt auch für andere Mitglieder deiner Events, die dein Bild sehen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erkennbarkeit der Mitglieder in einer gemeinsam genutzten Anwendung) bzw. für das Laden von Discord und Twitch Art. 6 Abs. 1 lit. f DSGVO."
       },
+      "youtube": {
+        "heading": "8. Videos (YouTube)",
+        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen. Er startet nicht von selbst und zeigt nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und in einer Liste erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek. Vorschaubilder sehen außerdem Mitglieder eines Events, dessen Spielepool das Spiel enthält, solange das Rad nicht verdeckt ist. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen)."
+      },
       "cookies": {
-        "heading": "7. Cookies und Speicher im Browser",
+        "heading": "9. Cookies und Speicher im Browser",
         "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Session, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Events werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
       },
       "security": {
-        "heading": "8. Sitzungs- und Sicherheitsdaten",
+        "heading": "10. Sitzungs- und Sicherheitsdaten",
         "text": "Zu jeder Anmeldesitzung speichern wir deine IP-Adresse und die Browserkennung (User-Agent), um Missbrauch erkennen zu können. Außerdem zählt Compies zum Schutz vor Missbrauch und Überlastung, wie oft bestimmte Aktionen aufgerufen werden – je nach Aktion deinem Konto oder der aufrufenden IP-Adresse zugeordnet (z. B. Anmeldeversuche oder Abstimmungen). Diese Zähler liegen nur im Arbeitsspeicher, gelten nur für ein kurzes Zeitfenster und werden danach überschrieben. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Sicherheit der Anwendung und dem Schutz vor Missbrauch)."
       },
       "events": {
-        "heading": "9. Events, Terminvorschläge und Stimmen",
+        "heading": "11. Events, Terminvorschläge und Stimmen",
         "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nName, Terminvorschläge und die Termine der Sessions eines Events sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
-        "heading": "10. Kalenderdatei",
+        "heading": "12. Kalenderdatei",
         "text": "Ist ein Termin festgelegt, kannst du eine Kalenderdatei (.ics) mit Name, Termin und Link des Events herunterladen. Sie wird von Compies selbst erzeugt; erst wenn du sie in deinen Kalender importierst, gelten die Datenschutzbestimmungen deines Kalenderanbieters.\n\nWählst du stattdessen „Google Kalender“ oder „Outlook“, öffnet sich in einem neuen Tab die Website von Google (Google Ireland Limited, Dublin, Irland) bzw. Microsoft (Microsoft Ireland Operations Limited, Dublin, Irland). Name, Termin und Link des Events stehen dabei in der Adresse, damit dort ein neuer Termin vorausgefüllt ist; wie bei jedem Website-Aufruf erhält der Anbieter außerdem deine IP-Adresse und übliche Browserangaben. Compies selbst übermittelt dabei nichts an diese Anbieter. Ab dem Aufruf gelten die Datenschutzbestimmungen von Google bzw. Microsoft; ob du den Termin dort speicherst, entscheidest du.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "fonts": {
-        "heading": "11. Schriftarten, Symbole und Tracking",
-        "text": "Die Schriftarten (Lilita One, Bricolage Grotesque, Bungee, JetBrains Mono) werden selbst gehostet ausgeliefert; es wird keine Verbindung zu Google Fonts hergestellt. Symbole und Illustrationen sind fest in die Anwendung eingebunden und werden nicht von externen Diensten nachgeladen. Es kommen keine Analyse-, Tracking- oder Werbedienste zum Einsatz und es findet kein Profiling statt. Ein Cookie-Banner ist daher nicht erforderlich."
+        "heading": "13. Schriftarten, Symbole und Tracking",
+        "text": "Die Schriftarten (Lilita One, Bricolage Grotesque, Bungee, JetBrains Mono) werden selbst gehostet ausgeliefert; es wird keine Verbindung zu Google Fonts hergestellt. Symbole und Illustrationen sind fest in die Anwendung eingebunden und werden nicht von externen Diensten nachgeladen; Ausnahme sind die Videos und Vorschaubilder von YouTube (Abschnitt 8). Es kommen keine Analyse-, Tracking- oder Werbedienste zum Einsatz und es findet kein Profiling statt. Ein Cookie-Banner ist daher nicht erforderlich."
       },
       "recipients": {
-        "heading": "12. Empfänger",
-        "text": "Deine Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang sowie die Mitglieder der Events, denen du angehörst (Abschnitt 9). Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht."
+        "heading": "14. Empfänger",
+        "text": "Deine Daten werden nicht verkauft und nicht zu Werbezwecken weitergegeben. Empfänger sind ausschließlich die in dieser Erklärung genannten Dienstleister im jeweils beschriebenen Umfang sowie die Mitglieder der Events, denen du angehörst (Abschnitt 11). Eine Weitergabe an Behörden erfolgt nur, wenn eine gesetzliche Pflicht dazu besteht."
       },
       "transfer": {
-        "heading": "13. Übermittlung in Drittländer",
-        "text": "Vercel, Neon, Discord und Twitch sind bzw. gehören zu Unternehmen mit Sitz in den USA. Soweit dabei personenbezogene Daten in die USA übermittelt werden, stützt sich dies auf den Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework (Art. 45 DSGVO), soweit der jeweilige Anbieter danach zertifiziert ist, und im Übrigen auf die Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO)."
+        "heading": "15. Übermittlung in Drittländer",
+        "text": "Vercel, Neon, Cloudflare, Discord und Twitch sind bzw. gehören zu Unternehmen mit Sitz in den USA, ebenso Google (YouTube). Soweit dabei personenbezogene Daten in die USA übermittelt werden, stützt sich dies auf den Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework (Art. 45 DSGVO), soweit der jeweilige Anbieter danach zertifiziert ist, und im Übrigen auf die Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO)."
       },
       "retention": {
-        "heading": "14. Speicherdauer",
-        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 8). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
+        "heading": "16. Speicherdauer",
+        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Spielbilder bleiben gespeichert, solange das Spiel besteht und das Bild nicht ersetzt wird (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
       },
       "obligation": {
-        "heading": "15. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
-        "text": "Du bist weder gesetzlich noch vertraglich verpflichtet, Daten bereitzustellen. Ohne die für die Anmeldung nötigen Angaben (Abschnitt 5) kannst du Compies jedoch nicht nutzen. Eine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt; der Abgleich mit der Host-Liste (Abschnitt 5) ist eine reine Berechtigungsprüfung."
+        "heading": "17. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
+        "text": "Du bist weder gesetzlich noch vertraglich verpflichtet, Daten bereitzustellen. Ohne die für die Anmeldung nötigen Angaben (Abschnitt 6) kannst du Compies jedoch nicht nutzen. Eine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt; der Abgleich mit der Host-Liste (Abschnitt 6) ist eine reine Berechtigungsprüfung."
       },
       "rights": {
-        "heading": "16. Deine Rechte",
+        "heading": "18. Deine Rechte",
         "text": "Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18) und Datenübertragbarkeit (Art. 20 DSGVO). Eine erteilte Einwilligung kannst du jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3 DSGVO); die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Zur Ausübung genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nWiderspruchsrecht (Art. 21 DSGVO): Soweit eine Verarbeitung auf Art. 6 Abs. 1 lit. f DSGVO beruht, kannst du ihr aus Gründen, die sich aus deiner besonderen Situation ergeben, jederzeit widersprechen. Wir verarbeiten die Daten dann nicht mehr, es sei denn, wir können zwingende schutzwürdige Gründe nachweisen, die deine Interessen, Rechte und Freiheiten überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen."
       },
       "complaint": {
-        "heading": "17. Beschwerderecht",
+        "heading": "19. Beschwerderecht",
         "text": "Du hast das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO), insbesondere in dem Mitgliedstaat deines Aufenthaltsorts, deines Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes. Für den Verantwortlichen zuständig ist:\n\nLandesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen\nKavalleriestraße 2–4\n40213 Düsseldorf"
       },
       "dataSecurity": {
-        "heading": "18. Datensicherheit",
+        "heading": "20. Datensicherheit",
         "text": "Die Verbindung zu Compies ist durchgehend per TLS (HTTPS) verschlüsselt. Wir treffen angemessene technische und organisatorische Maßnahmen, um deine Daten vor Verlust, Missbrauch und unbefugtem Zugriff zu schützen."
       },
       "changes": {
-        "heading": "19. Änderungen und Stand",
-        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: Oktober 2026."
+        "heading": "21. Änderungen und Stand",
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 29. Oktober 2026."
       }
     }
   },
@@ -908,7 +983,7 @@
       "hostYou": "Host: du",
       "bestSoFar": "Bester Termin bisher",
       "date": "Termin",
-      "votedCount": "{n} von {total} haben abgestimmt",
+      "votedCount": "{n} von {total} haben vollständig abgestimmt",
       "notVoted": "Du hast noch nicht abgestimmt",
       "voted": "Du hast abgestimmt",
       "setReady": "Termin steht",
@@ -923,10 +998,6 @@
     },
     "create": {
       "back": "Zurück",
-      "kicker": "Neues Event",
-      "title": "Erst mal: Wann zocken wir?",
-      "nameLabel": "Name des Events",
-      "nameHelp": "Sehen alle in der Einladung.",
       "dateLabel": "Termin",
       "modePoll": "Terminumfrage",
       "modeDirect": "Direkt festlegen",
@@ -934,13 +1005,7 @@
       "addSlot": "Termin vorschlagen",
       "removeSlot": "Vorschlag entfernen",
       "slotsHelp": "Abgestimmt wird mit Ja, Meh oder Nein. Bis zu 16 Vorschläge, die Zeit gilt für alle (Europe/Berlin).",
-      "submit": "Umfrage starten",
-      "submitDirect": "Event anlegen",
       "blockedPast": "Erst den Termin in der Vergangenheit ändern.",
-      "laterTitle": "Format, Modus und Spiele kommen später.",
-      "laterText": "Sobald das Update da ist, trägst du sie in diesem Event nach. Umfrage und Stimmen bleiben, wie sie sind.",
-      "doneTitle": "Umfrage für {name} läuft!",
-      "doneTitleDirect": "{name} steht!",
       "doneText": "Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.",
       "doneDirectTextPlural": "Die Termine stehen. Schick den Link an deine Freunde, dann können sie sich hier anmelden.",
       "toEvent": "Zum Event",
@@ -957,7 +1022,6 @@
       "dateInput": "Datum",
       "timeInput": "Uhrzeit",
       "slotEmpty": "Bitte alle Termine ausfüllen.",
-      "saving": "Speichert …",
       "doneDirectText": "Der Termin steht. Schick ihn an deine Freunde und sie können sich hier anmelden."
     },
     "dateTime": {
@@ -982,7 +1046,7 @@
       "heading": "Anmerkungen"
     },
     "poll": {
-      "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
+      "kicker": "Terminumfrage läuft, {voted} von {total} haben vollständig abgestimmt",
       "missingDates": "{n} Termin gesucht | {n} Termine gesucht",
       "sessionNumber": "Session {n}",
       "past": "vorbei",
@@ -1018,10 +1082,6 @@
       "archiv": {
         "title": "Das Archiv wird noch gemauert.",
         "text": "Hier landen später alle Abende mit Tabelle, Chat und Siegerbild. Bis dahin zählt: einen Termin finden."
-      },
-      "bibliothek": {
-        "title": "Die Bibliothek ist noch eingerüstet.",
-        "text": "Bald legen Hosts hier Spiele mit Bild und Clip an. Erst mal klären wir, wann überhaupt gezockt wird."
       },
       "profil": {
         "title": "Profil? Der Bagger ist bestellt.",
@@ -1106,11 +1166,134 @@
       "removeMissing": "Session ohne Termin entfernen"
     }
   },
+  "stepper": {
+    "locked": "Bald verfügbar",
+    "steps": {
+      "name": { "label": "Name", "title": "Wie soll das Event heißen?" },
+      "format": { "label": "Format", "title": "Wer gegen wen?" },
+      "games": { "label": "Spiele", "title": "Wie viele Spiele?" },
+      "points": { "label": "Punkte", "title": "Wer kriegt wie viele Punkte?" },
+      "mode": { "label": "Auswahlmodus", "title": "Wie wird das nächste Spiel bestimmt?" },
+      "pool": { "label": "Spielepool", "title": "Welche Spiele kommen in den Pool?" },
+      "tiebreaker": { "label": "Tiebreaker-Pool", "title": "Und falls es knapp wird?" },
+      "sessions": { "label": "Termin", "title": "Wann zocken wir?" }
+    },
+    "create": "Event erstellen",
+    "done": {
+      "kicker": "Geschafft",
+      "title": "Event erstellt",
+      "heading": "{name} steht!",
+      "datesPoll": "Umfrage, {n} Vorschlag | Umfrage, {n} Vorschläge",
+      "datesDirect": "Direkt festgelegt | {n} Termine festgelegt"
+    },
+    "name": {
+      "label": "Name des Events",
+      "help": "Sehen alle in der Einladung und im Archiv."
+    },
+    "format": {
+      "label": "Format",
+      "ffa": { "name": "Jeder gegen jeden", "desc": "Jede Person ist eine eigene Partei. 2 bis 8." },
+      "teams": { "name": "Teams", "desc": "2 bis 8 gleich große Teams, max. 6 pro Team." },
+      "bracket": { "name": "Turnierbaum", "desc": "K.-o.-Runden bis zum Finale." },
+      "league": { "name": "Liga", "desc": "Jeder gegen jeden in Spieltagen." },
+      "teamCount": "Anzahl Teams",
+      "teamCountHelp": "2 bis 8",
+      "teamSize": "Spieler pro Team",
+      "teamSizeHelp": "1 bis 6, alle gleich groß",
+      "teamCountMin": "Mindestens 2 Teams.",
+      "teamCountMax": "Höchstens 8 Teams.",
+      "teamSizeMin": "Mindestens 1 pro Team.",
+      "teamSizeFloor": "Im vollsten Team sind schon {n}.",
+      "teamSizeMax": "Höchstens 6 pro Team.",
+      "playersMax": "Höchstens 24 Leute in Teams.",
+      "total": "{teams} Teams à {size} = {players} Leute in Teams (max. 24)"
+    },
+    "games": {
+      "label": "Anzahl Spiele",
+      "min": "Mindestens 1 Spiel.",
+      "max": "Höchstens 30 Spiele.",
+      "help": "Nach {n} Spiel ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1. | Nach {n} Spielen ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1."
+    },
+    "points": {
+      "label": "Punktetabelle",
+      "head": "So sieht’s aus bei {n} Teams",
+      "place": "{n}. Platz",
+      "stepper": "Punkte für Platz {n}",
+      "rising": "Platz {n} kann nicht mehr Punkte bekommen als Platz {above}.",
+      "flat": "Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.",
+      "tie": "Gleichauf: alle bekommen die Punkte des besseren Platzes, der nächste Platz fällt weg (1, 1, 3)."
+    },
+    "pool": {
+      "mainCount": "Im Pool: {n} Spiel | Im Pool: {n} Spiele",
+      "tiebreakerCount": "Tiebreaker-Pool: {n} Spiel | Tiebreaker-Pool: {n} Spiele",
+      "listMain": "Spiele im Pool",
+      "listTiebreaker": "Spiele im Tiebreaker-Pool",
+      "empty": "Noch leer. Du kannst auch ohne Spiele weitermachen.",
+      "add": "{name} in den Pool",
+      "remove": "{name} aus dem Pool nehmen",
+      "create": "Neues Spiel anlegen",
+      "tiebreakerNote": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht. Du kannst auch ohne Spiel weitermachen.",
+      "noLibrary": "Ohne Host-Berechtigung kannst du keine Spiele aus der Bibliothek hinzufügen. Die Spiele im Pool bleiben.",
+      "hintTitle": "Wird knapp.",
+      "hintWheel": "{games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | {games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintWheelOne": "1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | 1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintAdmin": "Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintAdminOne": "Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt."
+    },
+    "heading": "Neues Event",
+    "nav": "Schritte",
+    "kicker": "Schritt {n} von {total}",
+    "back": "Zurück",
+    "next": "Weiter",
+    "info": "Info",
+    "infoAside": "Erklärung",
+    "summary": {
+      "teams": "{n} Teams à {s}",
+      "games": "{n} Spiel | {n} Spiele",
+      "hidden": "{mode} (verdeckt)",
+      "sentence": "{teams}, {mode}, {games}.",
+      "format": "Format",
+      "gamesLabel": "Spiele",
+      "points": "Punkte",
+      "mode": "Modus",
+      "vetoes": "Vetos",
+      "vetoValue": "{n} pro Partei",
+      "pool": "Pool",
+      "poolValue": "{main} Spiel, Tiebreaker {tiebreaker} | {main} Spiele, Tiebreaker {tiebreaker}",
+      "pointsValue": "{preset} {values}",
+      "dates": "Termin"
+    },
+    "number": {
+      "less": "{label}: weniger",
+      "more": "{label}: mehr"
+    }
+  },
+  "howWePlay": {
+    "title": "So wird gespielt",
+    "notSetUp": "Der Host hat das Event noch nicht eingerichtet.",
+    "mainPool": "Spielepool",
+    "tiebreakerPool": "Tiebreaker-Pool",
+    "emptyPool": "Noch keine Spiele.",
+    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen nur, wie viele Spiele im Pool sind.",
+    "counts": "{main} Spiel im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen. | {main} Spiele im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen."
+  },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
     "voteFailed": "Deine Stimme ist nicht angekommen",
     "noteTooLong": "Die Anmerkung ist zu lang.",
+    "gameNameInvalid": "Gib dem Spiel einen Namen, höchstens 60 Zeichen.",
+    "clipInvalid": "Der Clip passt nicht: Die Länge liegt zwischen 5 und 60 Sekunden.",
+    "playersInvalid": "Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.",
+    "suitabilitiesInvalid": "Diese Angabe bei „Passt zu“ kennen wir nicht.",
+    "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
+    "imageTooLarge": "Das Bild ist zu groß.",
+    "imageNotWebp": "Das Bild muss ein WebP sein.",
+    "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
+    "unknownGame": "Ein Spiel aus dem Pool gibt es nicht mehr.",
+    "settingLocked": "Das lässt sich nicht mehr ändern, seit die erste Session läuft.",
+    "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
+    "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",
@@ -1141,6 +1324,15 @@
     "clipTooShort": "Der Clip muss mindestens 5 Sekunden lang sein.",
     "duplicateGame": "Gibt's vielleicht schon: {name}",
     "pointsOrder": "Ein schlechterer Platz kann nicht mehr Punkte bekommen als ein besserer.",
+    "pointsFlat": "Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.",
+    "formatUnavailable": "Dieses Format gibt es noch nicht.",
+    "teamCountRange": "Teams: zwischen 2 und 8.",
+    "teamSizeRange": "Pro Team: zwischen 1 und 6.",
+    "tooManyPlayers": "Höchstens 24 Leute in Teams.",
+    "gameCountRange": "Spiele: zwischen 1 und 30.",
+    "pointsInvalid": "Die Punktetabelle passt nicht zur Anzahl der Teams.",
+    "modeUnavailable": "Diesen Auswahlmodus gibt es noch nicht.",
+    "vetoAllowanceRange": "Vetos: zwischen 0 und 9.",
     "lastAccount": "Das letzte verknüpfte Konto kannst du nicht trennen.",
     "generic": "Da ist was schiefgelaufen. Fehler-ID: {id}"
   },
@@ -1177,12 +1369,15 @@
     "stands": "Die Tribüne ist leer.",
     "pool": {
       "title": "Pool ist leer.",
-      "text": "Füg Spiele aus der Bibliothek hinzu. Vorschläge passen zu Format und Spielerzahl."
+      "text": "Füg Spiele aus der Bibliothek hinzu."
     },
     "poll": {
       "title": "Noch keine Stimmen.",
       "text": "Teil den Link, dann füllt sich die Tabelle."
     },
     "lobbyEmpty": "Alle schlafen. Du auch?"
+  },
+  "staging": {
+    "badge": "STAGING"
   }
 }

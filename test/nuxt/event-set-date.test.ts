@@ -1,7 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import EventPage from '~/pages/e/[slug].vue'
+import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
 import { clickButton, dialog, sanneAndLarsi, serve, shownToasts, view } from './event-page'
 

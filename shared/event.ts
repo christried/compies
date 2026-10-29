@@ -1,5 +1,7 @@
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
+import type { EventSettings, SettingsFloors } from './settings'
+import type { PoolGame } from './game'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -39,9 +41,14 @@ export function slotProblems(proposed: Date[], existing: Date[], now: Date): (Sl
 export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
 export type Phase = (typeof PHASES)[number]
 
+/** Every Phase before the Event is finished. What may still change (Sessions, settings) is decided by this one set. */
+export function beforeFinish(phase: Phase): boolean {
+  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
+}
+
 /** Sessions are added, removed and reopened in every Phase before the Event finishes (#55). */
 export function sessionsEditable(phase: Phase): boolean {
-  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
+  return beforeFinish(phase)
 }
 
 /** Slots can be added, removed and only then changed by the Host while the Date poll is open (#1). */
@@ -89,6 +96,11 @@ export interface RemovedSessionView {
   previousStartsAt: string
 }
 
+/** The Event's Game pool and Tiebreaker pool. `hidden` = this viewer only learns how many games each pool has (Hidden wheel, #148). */
+export type EventPools
+  = { hidden: false, main: PoolGame[], tiebreaker: PoolGame[] }
+    | { hidden: true, mainCount: number, tiebreakerCount: number }
+
 /** What `GET /api/e/:slug` returns to a Member (#11). Times are UTC ISO strings. */
 export interface EventView {
   event: {
@@ -97,6 +109,12 @@ export interface EventView {
     phase: Phase
     isHost: boolean
   }
+  /** The Event's settings (#144); null for an Event from before 1.3 that was never set up. Not secret: Members get them too. */
+  settings: EventSettings | null
+  /** The lowest Team size and Veto allowance the settings editor offers (#147). Only the Host gets them; null for every other Member. */
+  settingsFloors: SettingsFloors | null
+  /** The Event's pools (#146): the Host always sees the games, every other Member only while the wheel is not hidden, else the counts (poolsVisibleTo, #148). */
+  pools: EventPools
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
   /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */

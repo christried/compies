@@ -5,6 +5,7 @@ import readEvent from '../../server/api/e/[slug].get'
 import previewInvite from '../../server/api/invite/[invite].get'
 import joinInvite from '../../server/api/invite/[invite].post'
 import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
+import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -54,7 +55,7 @@ describe('invite links', () => {
     const response = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30', '2090-10-31T19:00'] }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30', '2090-10-31T19:00'], settings: TEST_SETTINGS }),
     })
     const { slug, inviteUrl } = await response.json()
     return { slug, invite: new URL(inviteUrl).pathname.slice('/e/'.length), hostCookie }
