@@ -110,7 +110,7 @@ describe('legal pages', () => {
 
     // The avatar is opaque and covers the button, so the tint sits on a layer above it.
     expect(button.classes()).not.toContain('motion-reduce:hover:tint')
-    const overlay = button.get('span:last-child')
+    const overlay = button.get('span.pointer-events-none')
     expect(overlay.classes()).toContain('motion-reduce:group-hover:tint')
     expect(overlay.classes()).toContain('reduced:group-hover:tint')
     expect(button.classes()).toContain('group')

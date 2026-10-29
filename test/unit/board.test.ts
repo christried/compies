@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fullestTeam, moveRejection, teamChoiceOpen, type MoveCheck, type Place } from '../../shared/board'
+import { fullestTeam, moveRejection, placeOf, teamChoiceOpen, type MoveCheck, type Place } from '../../shared/board'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -113,6 +113,14 @@ describe('moveRejection', () => {
 
   it('does not count the other teams against the target team', () => {
     expect(check({ seats: { 2: 2, 3: 2 } })).toBeNull()
+  })
+})
+
+describe('placeOf', () => {
+  it('reads the zone and, for a team, its position', () => {
+    expect(placeOf({ zone: 'bench', team: null })).toEqual(bench)
+    expect(placeOf({ zone: 'stands', team: null })).toEqual(stands)
+    expect(placeOf({ zone: 'team', team: 3 })).toEqual(team(3))
   })
 })
 

@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { eventMembers } from '../db/schema'
-import { teamChoiceOpen, type Place } from '../../shared/board'
+import { placeOf, teamChoiceOpen, type Place } from '../../shared/board'
 import { settingsFromRow } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
@@ -10,20 +10,13 @@ import type { SessionRow } from './sessions'
 // team_joined_at goes through seatMember, so a rule that follows a seat change (#161: leaving a team clears the Team
 // word; #163: removed teams send their Players to the Bench) has one place to live.
 
-type MemberRow = typeof eventMembers.$inferSelect
-
-/** The place a Member row stands for. The table's check keeps `team` set exactly when the zone is `team`. */
-export function placeOfRow(row: Pick<MemberRow, 'zone' | 'team'>): Place {
-  return row.zone === 'team' && row.team !== null ? { zone: 'team', team: row.team } : { zone: row.zone === 'stands' ? 'stands' : 'bench' }
-}
-
 /** Every Member of the Event with the place they stand in. */
 export async function readSeats(tx: Db, eventId: string): Promise<{ userId: string, place: Place }[]> {
   const rows = await tx
     .select({ userId: eventMembers.userId, zone: eventMembers.zone, team: eventMembers.team })
     .from(eventMembers)
     .where(eq(eventMembers.eventId, eventId))
-  return rows.map(row => ({ userId: row.userId, place: placeOfRow(row) }))
+  return rows.map(row => ({ userId: row.userId, place: placeOf(row) }))
 }
 
 /**

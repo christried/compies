@@ -2,10 +2,10 @@
 import { Armchair, Eye, Lock } from '@lucide/vue'
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { errorCopyKey } from '~/utils/api-error'
-import { placeFromKey, placeKey, placeOfMember, teamName } from '~/utils/board'
+import { placeFromKey, placeKey, teamName } from '~/utils/board'
 import { eventDataKey } from '~/utils/event-data'
 import { glide, pop } from '~/utils/motion'
-import { countSeats, moveRejection, type Place } from '~~/shared/board'
+import { countSeats, moveRejection, placeOf, type Place } from '~~/shared/board'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { EventSettings } from '~~/shared/settings'
 
@@ -41,19 +41,21 @@ const heard = ref<Record<string, Place>>({})
 
 const people = computed(() => props.members.map(member => ({
   ...member,
-  place: moves.pending.value[member.id] ?? heard.value[member.id] ?? placeOfMember(member),
+  place: moves.pending.value[member.id] ?? heard.value[member.id] ?? placeOf(member),
 })))
 const seats = computed(() => countSeats(people.value.map(person => person.place)))
-const placeOf = (userId: string): Place => people.value.find(person => person.id === userId)?.place ?? { zone: 'bench' }
+const currentPlace = (userId: string): Place => people.value.find(person => person.id === userId)?.place ?? { zone: 'bench' }
 const inPlace = (place: Place) => people.value.filter(person => placeKey(person.place) === placeKey(place))
 const whereText = (place: Place) => (place.zone === 'team' ? teamName(place.team, t) : t(place.zone === 'bench' ? 'board.bench' : 'board.stands'))
 
 // What the room says about other people's moves is true at once; the refetch it triggers brings the same and drops it.
 // A message the refetch never confirms (a move that was undone meanwhile) is dropped after a while.
 const HEARD_MS = 5000
+const heardTimers = new Map<string, ReturnType<typeof setTimeout>>()
 function hear(userId: string, to: Place) {
   heard.value = { ...heard.value, [userId]: to }
-  setTimeout(() => forget(userId, to), HEARD_MS)
+  clearTimeout(heardTimers.get(userId))
+  heardTimers.set(userId, setTimeout(() => forget(userId, to), HEARD_MS))
 }
 function forget(userId: string, to?: Place) {
   const current = heard.value[userId]
@@ -62,11 +64,14 @@ function forget(userId: string, to?: Place) {
 watch(() => props.members, (members) => {
   for (const member of members) {
     const heardPlace = heard.value[member.id]
-    if (heardPlace && placeKey(heardPlace) === placeKey(placeOfMember(member))) forget(member.id)
+    if (heardPlace && placeKey(heardPlace) === placeKey(placeOf(member))) forget(member.id)
   }
 })
 const stopHearing = props.room.on('member.moved', message => hear(message.userId, message.to))
-onBeforeUnmount(stopHearing)
+onBeforeUnmount(() => {
+  stopHearing()
+  for (const timer of heardTimers.values()) clearTimeout(timer)
+})
 
 /** Why the viewer cannot put this Member there (`moveRejection`, the server's rule), or null. */
 function rejectionFor(userId: string, to: Place) {
@@ -74,7 +79,7 @@ function rejectionFor(userId: string, to: Place) {
     actorId: props.viewerId,
     actorIsHost: props.isHost,
     userId,
-    from: placeOf(userId),
+    from: currentPlace(userId),
     to,
     settings: props.settings,
     teamChoiceOpen: props.teamChoiceOpen,
@@ -153,6 +158,27 @@ watch(layout, () => {
   }
   before = new Map()
 }, { flush: 'post' })
+
+// Everything a person on the board is bound to, the same in every zone: what it shows, and the pointer, click and menu handlers.
+function personBindings(person: (typeof people.value)[number]) {
+  const held = drag.dragging.value?.userId === person.id ? drag.dragging.value : null
+  return {
+    userId: person.id,
+    name: person.name,
+    image: person.image,
+    isHost: person.isHost,
+    you: person.id === props.viewerId,
+    team: person.place.zone === 'team' ? person.place.team : null,
+    where: whereText(person.place),
+    lifted: held !== null,
+    menuOpen: menu.value?.userId === person.id,
+    draggable: props.isHost || person.id === props.viewerId,
+    style: held ? { transform: `translate(${held.dx}px, ${held.dy}px)` } : undefined,
+    onPointerdown: (event: PointerEvent) => drag.start(event, person.id),
+    onClick: (event: MouseEvent) => openMenu(event, person.id),
+    onContextmenu: (event: Event) => event.preventDefault(),
+  }
+}
 
 // The MoveToMenu.
 const menu = ref<{ userId: string, anchor: HTMLElement } | null>(null)
@@ -238,24 +264,12 @@ const uneven = computed(() => {
         :taken="inPlace({ zone: 'team', team: team.position }).length"
         :lock-reason="lockReason"
         :drop-target="drag.overZone.value === `team-${team.position}`"
-        :mine="placeOf(viewerId).zone === 'team' && placeKey(placeOf(viewerId)) === `team-${team.position}`"
+        :mine="placeKey(currentPlace(viewerId)) === `team-${team.position}`"
       >
         <BoardPerson
           v-for="person in inPlace({ zone: 'team', team: team.position })"
           :key="person.id"
-          :user-id="person.id"
-          :name="person.name"
-          :image="person.image"
-          :is-host="person.isHost"
-          :you="person.id === viewerId"
-          :where="whereText(person.place)"
-          :lifted="drag.dragging.value?.userId === person.id"
-          :menu-open="menu?.userId === person.id"
-          :draggable="isHost || person.id === viewerId"
-          :style="drag.dragging.value?.userId === person.id ? { transform: `translate(${drag.dragging.value.dx}px, ${drag.dragging.value.dy}px)` } : undefined"
-          @pointerdown="drag.start($event, person.id)"
-          @click="openMenu($event, person.id)"
-          @contextmenu.prevent
+          v-bind="personBindings(person)"
         />
       </TeamZone>
     </div>
@@ -271,19 +285,7 @@ const uneven = computed(() => {
         <BoardPerson
           v-for="person in inPlace({ zone })"
           :key="person.id"
-          :user-id="person.id"
-          :name="person.name"
-          :image="person.image"
-          :is-host="person.isHost"
-          :you="person.id === viewerId"
-          :where="whereText(person.place)"
-          :lifted="drag.dragging.value?.userId === person.id"
-          :menu-open="menu?.userId === person.id"
-          :draggable="isHost || person.id === viewerId"
-          :style="drag.dragging.value?.userId === person.id ? { transform: `translate(${drag.dragging.value.dx}px, ${drag.dragging.value.dy}px)` } : undefined"
-          @pointerdown="drag.start($event, person.id)"
-          @click="openMenu($event, person.id)"
-          @contextmenu.prevent
+          v-bind="personBindings(person)"
         />
       </BenchZone>
     </div>

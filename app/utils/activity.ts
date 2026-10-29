@@ -1,6 +1,7 @@
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
+import { teamName } from './board'
 import type { Translate } from './settings-summary'
 
 // The Activity feed's pure parts (#159, GLOSSARY: Activity feed): what an entry says, which group it sits in, and
@@ -60,7 +61,7 @@ function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: T
   const own = entry.actor?.id === userId
   const actor = entry.actor?.name ?? ''
   if (to.zone === 'team') {
-    const team = t('team.defaultName', { color: t(`team.colors.${to.team}`) })
+    const team = teamName(to.team, t)
     return own ? t('activity.moveTeam', { name, team }) : t('activity.movedTeam', { actor, name, team })
   }
   const key = to.zone === 'bench' ? 'Bench' : 'Stands'

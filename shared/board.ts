@@ -10,6 +10,11 @@ export interface BoardSettings { teamCount: number, teamSize: number }
 /** Where a Member stands on the Game board: the Bench, the Stands (Tribüne) or a team by its position (1..team count). */
 export type Place = { zone: 'bench' | 'stands' } | { zone: 'team', team: number }
 
+/** The place a Member row stands for (the Event read's and the table's `zone` and `team`). `team` is set exactly when the zone is `team`. */
+export function placeOf(row: { zone: 'bench' | 'stands' | 'team', team: number | null }): Place {
+  return row.zone === 'team' && row.team !== null ? { zone: 'team', team: row.team } : { zone: row.zone === 'stands' ? 'stands' : 'bench' }
+}
+
 /** Why a move is refused. `teams_locked` needs `started`, which #164 sets once the first Session has started. */
 export type MoveRejection = 'host_only' | 'already_there' | 'no_such_team' | 'team_choice_closed' | 'teams_locked' | 'team_full'
 

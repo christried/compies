@@ -389,6 +389,18 @@ describe('GameBoard', () => {
       expect(group(page, 'Team Orange, 1 von 2 frei').text()).toContain('Larsi')
     })
 
+    it('leaves no timer behind when the board goes away', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const { page, send } = await mountBoard()
+      const before = vi.getTimerCount()
+
+      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      expect(vi.getTimerCount()).toBe(before + 1)
+      page.unmount()
+
+      expect(vi.getTimerCount()).toBe(before)
+    })
+
     it('glides the avatar from its old slot to the new one', async () => {
       layOutBoard()
       const animate = vi.fn()

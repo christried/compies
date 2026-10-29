@@ -1,14 +1,8 @@
 import type { Place } from '~~/shared/board'
-import type { MemberView } from '~~/shared/event'
 import type { Translate } from './settings-summary'
 
-// The Game board's pure client parts (#160): the place of a Member row, the key a zone is known by in the DOM, and the
+// The Game board's pure client parts (#160): the key a zone is known by in the DOM, and the
 // name a team has until Team words exist (#161).
-
-/** The place a Member of the Event read stands in. The server keeps `team` set exactly when the zone is `team`. */
-export function placeOfMember(member: Pick<MemberView, 'zone' | 'team'>): Place {
-  return member.zone === 'team' && member.team !== null ? { zone: 'team', team: member.team } : { zone: member.zone === 'stands' ? 'stands' : 'bench' }
-}
 
 /** The key of a place: the `data-drop-zone` of its zone, and what tells two places apart. */
 export function placeKey(place: Place): string {

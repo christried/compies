@@ -29,12 +29,12 @@ const label = computed(() => t(props.zone === 'bench' ? 'board.bench' : 'board.s
       <h3 class="m-0 font-display text-[19px] leading-none font-normal">
         {{ label }}
       </h3>
-      <span class="num-ui rounded-pill border-2 border-line bg-paper-2 px-2 text-[12px] font-bold">{{ count }}</span>
       <span class="min-w-0 truncate text-[13px] text-ink-2">{{ t(zone === 'bench' ? 'board.benchSub' : 'board.standsSub') }}</span>
+      <span class="num-ui ml-auto flex-none rounded-pill border-2 border-line px-2 text-[12px] font-extrabold">{{ count }}</span>
     </header>
     <div
       v-if="count > 0"
-      class="flex flex-wrap gap-1"
+      class="flex flex-wrap gap-1.5 md:gap-3"
     >
       <slot />
     </div>
