@@ -75,7 +75,7 @@ describe('publishing to the room', () => {
     const strangerCookie = (await signIn(testDb.db, stranger)).cookie
     const created = await request('/api/e', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', cookie: hostCookie },
+      headers: { 'content-type': 'application/json', 'cookie': hostCookie },
       body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: ['2090-10-30T20:30', '2090-10-31T19:00', '2090-11-01T19:00'], settings: TEST_SETTINGS }),
     })
     const { slug, inviteUrl } = await created.json() as { slug: string, inviteUrl: string }

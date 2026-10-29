@@ -14,8 +14,9 @@ const recordCast = {
 
 export default withNuxt(
   {
-    // Design handoff and its prototype scripts are reference material, not app code.
-    ignores: ['docs/**'],
+    // Design handoff and its prototype scripts are reference material, not app code. The realtime Worker runs in
+    // workerd with its own globals and its own typecheck and tests (realtime/package.json).
+    ignores: ['docs/**', 'realtime/**'],
   },
   {
     // ADR 0005: no Vercel-only runtime APIs, so the app can move off Vercel cheaply.

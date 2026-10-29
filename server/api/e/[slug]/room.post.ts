@@ -21,5 +21,5 @@ export default defineEventHandler(async (event): Promise<RoomTicket> => {
 
   const exp = Math.floor(Date.now() / 1000) + ROOM_TOKEN_TTL_SECONDS
   const token = await signRoomToken({ sub: user.id, evt: eventRow.id, host: eventRow.hostId === user.id, exp, jti: crypto.randomUUID() }, secret)
-  return { url, token }
+  return { url, room: eventRow.id, token }
 })

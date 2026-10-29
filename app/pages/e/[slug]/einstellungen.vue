@@ -2,7 +2,6 @@
 import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
 import { eventDataKey } from '~/utils/event-data'
 import { draftFromEvent, settingsBody, type EventDraft, type StepKey } from '~/utils/event-draft'
-import type { EventView } from '~~/shared/event'
 import { canSeeLibrary } from '~~/shared/game'
 import { eventPath } from '~~/shared/links'
 import { settingsEditable, settingsLocked } from '~~/shared/settings'
@@ -17,7 +16,7 @@ const { t } = useI18n()
 const { toast } = useToast()
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
-const { data } = await useFetch<EventView>(() => `/api/e/${slug.value}`, { key: () => eventDataKey(slug.value) })
+const { data } = await useEventView(slug)
 
 const STEP_KEYS: StepKey[] = ['format', 'games', 'points', 'mode', 'pool', 'tiebreaker']
 

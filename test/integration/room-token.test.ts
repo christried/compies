@@ -48,7 +48,7 @@ describe('POST /api/e/:slug/room', () => {
     const strangerCookie = (await signIn(testDb.db, stranger)).cookie
     const created = await request('/api/e', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', cookie: hostCookie },
+      headers: { 'content-type': 'application/json', 'cookie': hostCookie },
       body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30'], settings: TEST_SETTINGS }),
     })
     const { slug } = await created.json() as { slug: string }
@@ -66,8 +66,9 @@ describe('POST /api/e/:slug/room', () => {
 
     const asMember = await ask(slug, memberCookie)
     expect(asMember.status).toBe(200)
-    const memberTicket = await asMember.json() as { url: string, token: string }
+    const memberTicket = await asMember.json() as { url: string, room: string, token: string }
     expect(memberTicket.url).toBe('https://compies-rt-staging.example.workers.dev')
+    expect(memberTicket.room).toBe(eventId)
     const verified = await verifyRoomToken(memberTicket.token, { secrets: ['token-secret'], now: Date.now(), eventId })
     expect(verified).toEqual({ ok: true, claims: { sub: memberId, evt: eventId, host: false, exp: expect.any(Number), jti: expect.any(String) } })
 

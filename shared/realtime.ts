@@ -5,12 +5,11 @@
 export const ROOM_PROTOCOL_VERSION = 1
 
 /**
- * The message types of the room. A change of an Event queues these with `publish`; later tickets add the types of
- * presence, moves, Sessions, the Activity feed and the clock here.
+ * The message types of the room, a union that later tickets extend with presence, moves, Sessions, the Activity feed
+ * and the clock. A change of an Event queues these with `publish`. `event.changed`: something about the Event
+ * changed, the client refetches the Event read.
  */
-export type RoomMessage =
-  /** Something about the Event changed; the client refetches the Event read. */
-  | { type: 'event.changed' }
+export type RoomMessage = { type: 'event.changed' }
 
 export type RoomMessageType = RoomMessage['type']
 
@@ -38,8 +37,12 @@ export function roomPath(eventId: string): string {
   return `/parties/${ROOM_PARTY}/${encodeURIComponent(eventId)}`
 }
 
-/** What the room token endpoint answers: the Worker to connect to and the 60-second token to connect with. */
+/**
+ * What the room token endpoint answers: the Worker to connect to, the room's name (the Event id, which the Event read
+ * does not carry) and the 60-second token to connect with.
+ */
 export interface RoomTicket {
   url: string
+  room: string
   token: string
 }

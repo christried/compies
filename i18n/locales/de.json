@@ -514,9 +514,11 @@
   },
   "connection": {
     "reconnecting": "Verbindung wird wiederhergestellt …",
-    "reconnectingText": "Alles bleibt, wo es ist. Eingaben warten kurz.",
-    "lost": "Verbindung verloren. Deine Vetos sind sicher.",
+    "reconnectingText": "Bis dahin lädt sich die Seite alle 15 Sekunden neu.",
+    "lost": "Verbindung verloren",
     "lostText": "Du siehst den letzten Stand.",
+    "retry": "Neu verbinden",
+    "back": "Wieder da",
     "invalidLink": "Dieser Link ist abgelaufen.",
     "invalidLinkText": "Der Host hat einen neuen Einladungslink erstellt. Frag nach dem neuen.",
     "ended": "{session} ist vorbei.",
@@ -975,8 +977,12 @@
         "heading": "20. Datensicherheit",
         "text": "Die Verbindung zu Compies ist durchgehend per TLS (HTTPS) verschlüsselt. Wir treffen angemessene technische und organisatorische Maßnahmen, um deine Daten vor Verlust, Missbrauch und unbefugtem Zugriff zu schützen."
       },
+      "realtime": {
+        "heading": "21. Live-Verbindung (Cloudflare Workers)",
+        "text": "Damit sich die Event-Seite von selbst aktualisiert, öffnet dein Browser, solange du ein Event offen hast, eine WebSocket-Verbindung zu einem Dienst von Cloudflare Workers. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Der Dienst läuft in der EU-Jurisdiktion von Cloudflare, also auf Servern in der Europäischen Union. Cloudflare verarbeitet die Daten in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nAnders als bei den Spielbildern (Abschnitt 5) verbindet sich hier dein Browser selbst mit Cloudflare. Cloudflare erhält deshalb deine IP-Adresse und deine Browserangaben als Teil der Verbindung. Zum Verbindungsaufbau schickt dein Browser ein Zugangstoken mit, das Compies nur für Mitglieder des Events ausstellt. Es enthält deine Benutzerkennung, die Kennung des Events und ob du der Host bist, gilt eine Minute und wird nur beim Verbindungsaufbau geprüft.\n\nÜber die Verbindung kommt nur der Hinweis, dass sich im Event etwas geändert hat; die Inhalte lädt dein Browser danach wie gewohnt bei Compies. Der Dienst speichert keine Inhalte deines Events. Ohne die Verbindung lädt sich die Seite alle 15 Sekunden neu.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Event-Seite mit aktuellem Stand)."
+      },
       "changes": {
-        "heading": "21. Änderungen und Stand",
+        "heading": "22. Änderungen und Stand",
         "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 29. Oktober 2026."
       }
     }

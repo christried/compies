@@ -61,7 +61,8 @@ export function httpRoomNotifier({ url, secret, timeoutMs = ROOM_PUBLISH_TIMEOUT
           signal: AbortSignal.timeout(timeoutMs),
         })
         if (!response.ok) console.error(`Room publish for Event ${eventId} was refused: ${response.status}`)
-      } catch (error) {
+      }
+      catch (error) {
         console.error(`Room publish for Event ${eventId} failed`, error)
       }
     },

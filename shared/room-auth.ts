@@ -42,7 +42,8 @@ function fromBase64Url(text: string): Uint8Array | null {
   try {
     const binary = atob(text.replace(/-/g, '+').replace(/_/g, '/'))
     return Uint8Array.from(binary, char => char.charCodeAt(0))
-  } catch {
+  }
+  catch {
     return null
   }
 }
@@ -92,7 +93,8 @@ export async function verifyRoomToken(token: string, options: { secrets: string[
   let parsed: unknown
   try {
     parsed = bytes ? JSON.parse(decoder.decode(bytes)) : null
-  } catch {
+  }
+  catch {
     parsed = null
   }
   const claims = asClaims(parsed)

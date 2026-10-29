@@ -38,7 +38,8 @@ export class EventRoom extends Server {
     let body: unknown
     try {
       body = await request.json()
-    } catch {
+    }
+    catch {
       return new Response('Bad request', { status: 400 })
     }
     const messages = isRecord(body) && Array.isArray(body.messages) ? body.messages : null

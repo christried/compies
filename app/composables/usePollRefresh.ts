@@ -1,4 +1,4 @@
-// Keeps data fresh without realtime (ADR 0001). Both refetch on window focus and when the tab becomes
+// Keeps data fresh without realtime (ADR 0001); the Event page uses it as the fallback while its room is down. Both refetch on window focus and when the tab becomes
 // visible again; an Event also refetches every 15 s while the tab is visible. The caller refetches
 // after its own writes. Listeners stop when the page scope ends. Nothing runs on the server.
 
@@ -23,13 +23,19 @@ export function useRefreshOnReturn(refresh: () => unknown) {
   })
 }
 
-/** Refetch on return, and every `intervalMs` while the tab is visible (the Event page, #11). */
-export function usePollRefresh(refresh: () => unknown, intervalMs = POLL_INTERVAL_MS) {
+/**
+ * Refetch on return, and every `intervalMs` while the tab is visible (the Event page, #11). With the live room (#156)
+ * this is the fallback: `active` says whether the page needs it right now, i.e. the room is not open. While it is
+ * not, nothing refetches, because the room says when to.
+ */
+export function usePollRefresh(refresh: () => unknown, intervalMs = POLL_INTERVAL_MS, active: () => boolean = () => true) {
   if (!import.meta.client) return
 
-  useRefreshOnReturn(refresh)
+  useRefreshOnReturn(() => {
+    if (active()) refresh()
+  })
   const timer = setInterval(() => {
-    if (visible()) refresh()
+    if (visible() && active()) refresh()
   }, intervalMs)
   onScopeDispose(() => clearInterval(timer))
 }
