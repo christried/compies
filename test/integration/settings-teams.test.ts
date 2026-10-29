@@ -4,6 +4,7 @@ import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import changeSettings from '../../server/api/e/[slug]/settings.patch'
+import setTeamWord from '../../server/api/e/[slug]/team-word.post'
 import joinInvite from '../../server/api/invite/[invite].post'
 import { activity, eventMembers, events, users } from '../../server/db/schema'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
@@ -39,6 +40,7 @@ describe('settings follow the teams (#163)', () => {
       'POST /api/e': createEvent,
       'GET /api/e/:slug': readEvent,
       'POST /api/e/:slug/move': moveMember,
+      'POST /api/e/:slug/team-word': setTeamWord,
       'PATCH /api/e/:slug/settings': changeSettings,
       'POST /api/invite/:invite': joinInvite,
     }, { roomNotifier: notifier })
@@ -228,7 +230,24 @@ describe('settings follow the teams (#163)', () => {
       ]))
     })
 
-    it.todo('clears the Team words of the moved Players (#161, Team words: leaving a team clears the word)')
+    it('clears the Team words of the moved Players and keeps the words of the other teams (#161)', async () => {
+      const game = await setup()
+      await seatTeams(game)
+      for (const [key, word] of [['one', 'Wilde'], ['four', 'Gurken'], ['two', 'Rote'], ['three', 'Bande']] as const) {
+        expect((await send('POST', `/api/e/${game.slug}/team-word`, game.cookies[key], { word })).status).toBe(200)
+      }
+      expect((await read(game)).teams.map(row => row.name)).toEqual(['Wilde Gurken', null, 'Rote', 'Bande'])
+
+      await patch(game, { settings: { teamCount: 2, pointsTable: LINEAR_2 } })
+
+      const view = await read(game)
+      const wordOf = (id: string) => view.members.find(member => member.id === id)?.teamWord
+      expect(wordOf(game.ids.two)).toBeNull()
+      expect(wordOf(game.ids.three)).toBeNull()
+      expect(wordOf(game.ids.one)).toBe('Wilde')
+      expect(wordOf(game.ids.four)).toBe('Gurken')
+      expect(view.teams.map(row => row.name)).toEqual(['Wilde Gurken', null])
+    })
   })
 
   describe('a refused update', () => {
