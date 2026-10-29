@@ -10,11 +10,11 @@ import { view, type Wrapper } from './event-page'
 // and whenever the connection opens, polls only while the connection is down, and tells the User about the
 // connection with the ConnectionBanner. The socket is a fake that the test opens, closes and sends messages on.
 const { sockets, createRoomSocket } = vi.hoisted(() => {
-  const sockets: { options: RoomSocketOptions, close: ReturnType<typeof vi.fn>, reconnect: ReturnType<typeof vi.fn> }[] = []
+  const sockets: { options: RoomSocketOptions, close: ReturnType<typeof vi.fn>, reconnect: ReturnType<typeof vi.fn>, send: ReturnType<typeof vi.fn> }[] = []
   return {
     sockets,
     createRoomSocket: vi.fn((options: RoomSocketOptions) => {
-      const socket = { options, close: vi.fn(), reconnect: vi.fn() }
+      const socket = { options, close: vi.fn(), reconnect: vi.fn(), send: vi.fn() }
       sockets.push(socket)
       return socket
     }),

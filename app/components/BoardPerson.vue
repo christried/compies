@@ -17,6 +17,8 @@ const props = defineProps<{
   /** Where they stand, for the accessible name („Kitty, Team Rot“). */
   where: string
   lifted: boolean
+  /** Online in the Event's room (#162); undefined while presence is not known. */
+  online?: boolean
   /** The MoveToMenu of this person is open. */
   menuOpen: boolean
   /** Can be picked up by the viewer. */
@@ -25,6 +27,8 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const shown = computed(() => (props.you ? t('common.you') : props.name))
+// The accessible name: „Kitty, Team Rot“, and „Kitty, Team Rot, online“ once presence is known (DS People).
+const label = computed(() => t(props.online === undefined ? 'board.personAria' : props.online ? 'board.personAriaOnline' : 'board.personAriaOffline', { name: props.name, where: props.where }))
 </script>
 
 <template>
@@ -33,7 +37,7 @@ const shown = computed(() => (props.you ? t('common.you') : props.name))
     class="relative flex w-12 touch-manipulation flex-col items-center gap-1 rounded-md pt-1 text-ink select-none [-webkit-touch-callout:none] md:w-[60px]"
     :class="[draggable ? 'cursor-grab' : 'cursor-pointer', lifted ? 'layer-sticky cursor-grabbing' : '']"
     :data-user-id="userId"
-    :aria-label="t('board.personAria', { name, where })"
+    :aria-label="label"
     aria-haspopup="menu"
     :aria-expanded="menuOpen"
     :title="t('board.dragHint')"
@@ -45,6 +49,7 @@ const shown = computed(() => (props.you ? t('common.you') : props.name))
       :size="48"
       :team="team"
       :lifted="lifted"
+      :online="online"
     />
     <span
       class="flex max-w-full items-center gap-0.5 text-[12px] leading-tight"

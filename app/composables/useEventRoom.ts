@@ -1,11 +1,12 @@
 import { apiFailure } from '~/utils/api-error'
-import { ROOM_PROTOCOL_VERSION, type Envelope, type RoomMessage, type RoomMessageType, type RoomTicket } from '~~/shared/realtime'
+import { ROOM_PROTOCOL_VERSION, type ClientMessage, type Envelope, type RoomMessage, type RoomMessageType, type RoomTicket } from '~~/shared/realtime'
 import { asRecord } from '~~/shared/record'
 
 // The live connection of an Event page to its room (#156, ADR 0012). It connects only where the app knows a Worker
 // (public runtime config `realtimeUrl`), asks Nuxt for a fresh 60-second token before every (re)connect, and hands the
 // room's messages to whoever listens with `on`. The room says what happened, Nuxt decides what is true: the page
-// reacts by refetching the Event read (useEventView). Nothing here runs on the server.
+// reacts by refetching the Event read (useEventView). Presence and the clock ride on the same socket (#162): `send` says
+// something to the room while it is open, `onAny` hears every message. Nothing here runs on the server.
 
 export type RoomState = 'connecting' | 'open' | 'closed'
 
@@ -18,6 +19,7 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
   const enabled = Boolean(useRuntimeConfig().public.realtimeUrl)
   const state = ref<RoomState>(enabled ? 'connecting' : 'closed')
   const handlers = new Map<string, Set<(message: Envelope) => void>>()
+  const anyHandlers = new Set<(message: Envelope) => void>()
 
   let socket: RoomSocket | null = null
   let retryTimer: ReturnType<typeof setTimeout> | undefined
@@ -33,6 +35,17 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
     return () => void set.delete(stored)
   }
 
+  /** Listens to every message, whatever its type (the server clock reads their `serverTime`); returns the function that stops listening. */
+  function onAny(handler: (message: Envelope) => void): () => void {
+    anyHandlers.add(handler)
+    return () => void anyHandlers.delete(handler)
+  }
+
+  /** Says something to the room; nothing happens while the connection is not open. */
+  function send(message: ClientMessage) {
+    if (state.value === 'open') socket?.send(JSON.stringify(message))
+  }
+
   function receive(data: string) {
     let message: unknown
     try {
@@ -43,6 +56,7 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
     }
     const { v, type } = asRecord(message)
     if (v !== ROOM_PROTOCOL_VERSION || typeof type !== 'string') return
+    for (const handler of anyHandlers) handler(message as Envelope)
     for (const handler of handlers.get(type) ?? []) handler(message as Envelope)
   }
 
@@ -103,5 +117,5 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
     })
   }
 
-  return { enabled, state: readonly(state), retry, on }
+  return { enabled, state: readonly(state), retry, on, onAny, send }
 }

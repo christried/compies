@@ -1,8 +1,10 @@
 <script setup lang="ts">
 // A person (DS People, Avatar.dc.html): the provider image, or the initial when there is none. With a `team` the
 // avatar carries the Team colour as a ring and the team's mark on the rim, bottom left; `lifted` is the avatar in the hand
-// while it is dragged on the Game board (#160). Presence arrives with #162. Decorative: the name next to it carries the
-// meaning, and the team is named in text beside it too. The initial is sized by its container (cqw), so a caller can
+// while it is dragged on the Game board (#160). `online` (#162) puts the presence dot on the rim, bottom right: online
+// is a filled green dot, offline a hollow ring and the picture in grey, so it differs by shape and not by colour alone
+// (DS People); undefined means nobody knows yet and shows neither. Decorative: the name next to it carries the
+// meaning, and the team and presence are named in text beside it too. The initial is sized by its container (cqw), so a caller can
 // resize the avatar with CSS (the board does, 48 px on a desktop and 40 px on a phone).
 const props = withDefaults(defineProps<{
   name: string
@@ -13,7 +15,9 @@ const props = withDefaults(defineProps<{
   team?: number | null
   /** Scaled up with the lift shadow, while it is dragged. */
   lifted?: boolean
-}>(), { image: null, size: 40, team: null, lifted: false })
+  /** Has a socket open in the Event's room. Undefined: presence is not known, no dot and no grey. */
+  online?: boolean
+}>(), { image: null, size: 40, team: null, lifted: false, online: undefined })
 
 const failed = ref(false)
 watch(() => props.image, () => failed.value = false)
@@ -27,6 +31,17 @@ const shadow = computed(() => {
   ].join(', ') || undefined
 })
 const badge = computed(() => Math.max(14, Math.round(props.size * 0.4)))
+
+// The presence dot (Avatar.dc.html): 28 % of the avatar, at least 9 px, and a little further out when a team ring is there.
+const dot = computed(() => {
+  const offset = props.team ? -Math.round(props.size * 0.06) - 2 : -Math.round(props.size * 0.02)
+  return {
+    width: `${Math.max(9, Math.round(props.size * 0.28))}px`,
+    height: `${Math.max(9, Math.round(props.size * 0.28))}px`,
+    right: `${offset}px`,
+    bottom: `${offset}px`,
+  }
+})
 </script>
 
 <template>
@@ -37,7 +52,7 @@ const badge = computed(() => Math.max(14, Math.round(props.size * 0.4)))
   >
     <span
       class="absolute inset-0 grid place-items-center overflow-hidden rounded-pill border-line bg-paper-2 font-extrabold text-ink"
-      :class="[size >= 40 ? 'border-[2.5px]' : 'border-2', lifted ? 'scale-[1.06]' : '']"
+      :class="[size >= 40 ? 'border-[2.5px]' : 'border-2', lifted ? 'scale-[1.06]' : '', online === false ? 'grayscale' : '']"
       :style="{ fontSize: '44cqw', boxShadow: shadow }"
     >
       <img
@@ -59,5 +74,12 @@ const badge = computed(() => Math.max(14, Math.round(props.size * 0.4)))
         :size="badge"
       />
     </span>
+    <span
+      v-if="online !== undefined"
+      class="absolute box-border rounded-pill"
+      :class="online ? 'border-2 border-line bg-online' : 'border-[2.5px] border-offline bg-surface'"
+      :style="dot"
+      :data-presence="online ? 'online' : 'offline'"
+    />
   </span>
 </template>
