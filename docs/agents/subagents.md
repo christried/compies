@@ -18,4 +18,4 @@ Read the ticket and the code first, then write one brief per ticket: files to ch
 
 ## Supervision
 
-Read every implementer's diff against its brief and the ticket's acceptance criteria before it merges, and send concrete fix lists back. The orchestrator does every merge into `staging` and `main` (`docs/agents/delivery.md`).
+Read every implementer's diff against its brief and the ticket's acceptance criteria before it merges, and send concrete fix lists back. A ticket that changes a page isn't done on tests alone: look at the page on `pnpm dev` at 390 and 1440 px wide, signed in through `/api/dev/sign-in?as=host` or `?as=member` (README), and compare it with its `.dc.html` artboard in `docs/design_handoff_compies/reference/`. Put the screenshots in the PR. The orchestrator does every merge into `staging` and `main` (`docs/agents/delivery.md`).
