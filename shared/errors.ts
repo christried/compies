@@ -80,6 +80,18 @@ export const API_ERROR_STATUS = {
   veto_allowance_below_spent: 409,
   /** The Activity feed's `before` is not the id of an entry of this Event, or its `limit` is not a whole number from 1 to 100 (#159). */
   invalid_cursor: 400,
+  /** Only the Host moves another Member on the Game board (#160). */
+  host_only: 403,
+  /** The Member is in that place already (#160). */
+  already_there: 409,
+  /** A team the Event does not have: no settings, or a position above the team count (#160). */
+  no_such_team: 400,
+  /** Players move into and out of teams only once a Session has a Date (#160). */
+  team_choice_closed: 409,
+  /** Teams are locked for Players since the first Session started (#160, #164). */
+  teams_locked: 409,
+  /** The team has Team size Players; the error's data names the Player who took the last place (#160). */
+  team_full: 409,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

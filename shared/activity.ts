@@ -2,6 +2,8 @@
 // An entry's params hold ids, numbers and instants only, never a game (no name, id, image, video), so a Hidden wheel
 // stays hidden in the feed (spec stories 69, 71).
 
+import type { Place } from './board'
+
 /** Every entry type of 1.4. All of them are in the database enum now, so later tickets need no enum migration. */
 export const ACTIVITY_TYPES = [
   'member_joined',

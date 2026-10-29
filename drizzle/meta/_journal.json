@@ -71,6 +71,13 @@
       "when": 1793268170846,
       "tag": "0009_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793278800625,
+      "tag": "0010_team_seats",
+      "breakpoints": true
     }
   ]
 }

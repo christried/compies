@@ -56,6 +56,15 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(409, 'veto_allowance_below_spent'))).toBe('error.vetoAllowanceBelowSpent')
   })
 
+  it('explains the refusals of a move on the Game board (#160)', () => {
+    expect(apiErrorKey(refusal(403, 'host_only'))).toBe('board.reason.hostOnly')
+    expect(apiErrorKey(refusal(409, 'already_there'))).toBe('board.reason.already')
+    expect(apiErrorKey(refusal(409, 'team_choice_closed'))).toBe('board.reason.pollLocked')
+    expect(apiErrorKey(refusal(409, 'teams_locked'))).toBe('board.reason.runningLocked')
+    expect(apiErrorKey(refusal(409, 'team_full'))).toBe('board.reason.full')
+    expect(apiErrorKey(refusal(400, 'no_such_team'))).toBe('error.saveFailed')
+  })
+
   it('falls back for reasons it cannot explain, so a 400 is not always a past Slot', () => {
     expect(apiErrorKey(refusal(400, 'invalid_time'))).toBe('error.saveFailed')
     expect(apiErrorKey(refusal(500, 'boom'), 'error.voteFailed')).toBe('error.voteFailed')
