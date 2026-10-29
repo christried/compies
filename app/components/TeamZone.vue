@@ -2,8 +2,8 @@
 import { Lock, Plus } from '@lucide/vue'
 
 // One team on the Game board (#160, 02-components § TeamZone, App Lobby screen 09): one header band in the team's
-// colour and pattern with its mark, its name (a `header` slot, which the Team words of #161 fill) and the count; below it
-// the people in the default slot and a free place up to the Team size, in the same cells as the people. While Players
+// colour and pattern with its mark, its name (a TeamChip, #161) and the count; under it the `builder` slot (the Team
+// word field, #161); below that the people in the default slot and a free place up to the Team size, in the same cells as the people. While Players
 // cannot move into a team the free places read „Zu“ with the reason; a team a person is held over lights up its first
 // free place. The zone is the drop target of the board's drag: `data-drop-zone` is what the GameBoard finds it by.
 const props = defineProps<{
@@ -35,27 +35,20 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
     :aria-label="t('board.zoneAria', { name, n: free, size })"
     :data-drop-zone="`team-${team}`"
   >
-    <!-- The pattern is the colour's second signal; the name sits on a solid chip of the colour, never on the pattern. -->
+    <!-- The pattern is the colour's second signal; the TeamChip puts the name on a solid chip of the colour, never on the pattern. -->
     <header
       class="flex items-center gap-2 rounded-t-[11px] border-b-2 border-line px-2 py-1.5 md:px-3 md:py-2"
       :style="{ backgroundColor: `var(--cp-team-${team})`, backgroundImage: `var(--cp-team-${team}-pattern)`, backgroundSize: '16px 16px' }"
     >
       <slot name="header">
-        <TeamMark
+        <TeamChip
           :team="team"
-          :size="26"
-          class="max-md:!size-5"
+          :name="name"
         />
-        <h3
-          class="m-0 min-w-0 truncate rounded-[6px] px-2 py-px font-display text-[14px] leading-[1.3] font-normal md:text-[19px]"
-          :title="name"
-          :style="{ backgroundColor: `var(--cp-team-${team})`, color: `var(--cp-team-${team}-ink)` }"
-        >
-          {{ name }}
-        </h3>
       </slot>
       <span class="num-ui ml-auto flex-none rounded-pill border-2 border-line bg-surface px-[7px] text-[12px] font-extrabold text-ink">{{ taken }}/{{ size }}</span>
     </header>
+    <slot name="builder" />
     <div class="flex min-h-16 flex-wrap gap-1.5 p-2.5 md:min-h-20 md:gap-3 md:p-3">
       <slot />
       <template v-if="lockReason">

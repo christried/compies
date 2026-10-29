@@ -154,7 +154,12 @@
       "noTeam": "Du bist gerade in keinem Team. Dein Wort zählt, sobald du einem beitrittst.",
       "order": "Reihenfolge:",
       "reset": "Name zurücksetzen",
-      "resetDone": "Name zurückgesetzt auf {name}."
+      "resetDone": "Name zurückgesetzt auf {name}.",
+      "resetTitle": "Teamnamen zurücksetzen?",
+      "resetText": "„{name}“ heißt dann wieder „{color}“.",
+      "resetWords": "Die Wörter von {people} werden gelöscht.",
+      "resetConfirm": "Zurücksetzen",
+      "announce": "Teamname: {name}"
     }
   },
   "people": {
@@ -436,6 +441,7 @@
     "sessionRemovedSingle": "{name} hat eine Session entfernt",
     "gameCount": "{name} hat die Anzahl Spiele auf {to} geändert",
     "teamSize": "{name} hat die Teamgröße auf {to} geändert",
+    "teamNameReset": "{name} hat den Namen von {team} zurückgesetzt",
     "gameHeader": "Spiel {n}, {game}",
     "join": "{name} ist dem Event beigetreten",
     "moveTeam": "{name} ist jetzt in {team}",

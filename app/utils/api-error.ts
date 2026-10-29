@@ -57,6 +57,8 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   team_choice_closed: 'board.reason.pollLocked',
   teams_locked: 'board.reason.runningLocked',
   team_full: 'board.reason.full',
+  invalid_team_word: 'team.word.noSpaces',
+  not_in_team: 'team.word.noTeam',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

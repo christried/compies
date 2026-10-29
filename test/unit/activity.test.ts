@@ -81,8 +81,13 @@ describe('activityText', () => {
     expect(activityText({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } }, t)).toBe('Hostess hat Sanne auf die Tribüne verschoben')
   })
 
+  it('says who reset a Team name, with the colour name of the team (the entry stores the position)', () => {
+    expect(activityText({ ...base, type: 'team_name_reset', params: { team: 1 } }, t)).toBe('Sanne hat den Namen von Team Rot zurückgesetzt')
+    expect(activityText({ ...base, type: 'team_name_reset', params: { team: 6 } }, t)).toBe('Sanne hat den Namen von Team Blau zurückgesetzt')
+  })
+
   it('has no sentence yet for the types that later tickets write', () => {
-    expect(activityText({ ...base, type: 'team_name_reset', params: { team: 1 } }, t)).toBeNull()
+    expect(activityText({ ...base, type: 'session_started', params: { sessionId: 's', number: null } }, t)).toBeNull()
   })
 })
 

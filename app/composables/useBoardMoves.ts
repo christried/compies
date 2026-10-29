@@ -1,5 +1,4 @@
 import { apiErrorKey, apiFailure } from '~/utils/api-error'
-import { teamName } from '~/utils/board'
 import type { Place } from '~~/shared/board'
 import { asRecord } from '~~/shared/record'
 
@@ -9,9 +8,10 @@ import { asRecord } from '~~/shared/record'
 // place the slower one learns by name who was faster. Moves of one Event queue up on the server, so each is sent at
 // once and the answers are handled in the order they come.
 
-/** Who stands where, for the name in the lost-race toast. */
+/** Who stands where and what the teams are called, for the lost-race toast. */
 export interface BoardPeople {
   nameOf: (userId: string) => string
+  teamNameOf: (position: number) => string
 }
 
 export function useBoardMoves(slug: Readonly<Ref<string>>, refresh: () => Promise<unknown>, people: BoardPeople) {
@@ -52,7 +52,7 @@ export function useBoardMoves(slug: Readonly<Ref<string>>, refresh: () => Promis
     const { code } = apiFailure(failure)
     const winnerId = asRecord(asRecord(asRecord(failure).data).data).winnerId
     if (code === 'team_full' && to.zone === 'team' && typeof winnerId === 'string') {
-      return t('board.reason.lostRace', { name: people.nameOf(winnerId), team: teamName(to.team, t) })
+      return t('board.reason.lostRace', { name: people.nameOf(winnerId), team: people.teamNameOf(to.team) })
     }
     return t(apiErrorKey(failure))
   }

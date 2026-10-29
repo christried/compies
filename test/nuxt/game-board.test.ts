@@ -14,12 +14,12 @@ import { LARSI, SANNE, serve, shownToasts, view } from './event-page'
 // the reasons, the own move that shows at once and comes back with a toast, the Host's uneven notice, and the glide of
 // somebody else's move. The room is a fake the test plays messages on; the move endpoint records what is posted.
 const settings: EventSettings = { ...defaultSettings(), teamCount: 2, teamSize: 2 }
-const teams: BoardTeam[] = [{ position: 1 }, { position: 2 }]
+const teams: BoardTeam[] = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
 const BENCH: Place = { zone: 'bench' }
 const team = (n: number): Place => ({ zone: 'team', team: n })
 
 function member(id: string, name: string, place: Place = BENCH, isHost = false): MemberView {
-  return { id, name, image: null, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null }
+  return { id, name, image: null, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null, teamWord: null }
 }
 
 const kittyAt = (place: Place = BENCH) => member(kitty.id, 'Kitty', place)

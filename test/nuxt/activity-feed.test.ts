@@ -100,7 +100,7 @@ describe('ActivityFeed', () => {
   it('leaves out an entry no ticket has a sentence for yet', async () => {
     const { wrapper } = await mountFeed([
       entry('a', 3),
-      entry('b', 2, { type: 'team_name_reset', params: { team: 1 } }),
+      entry('b', 2, { type: 'session_started', params: { sessionId: 's', number: null } }),
     ])
 
     expect(lines(wrapper)).toHaveLength(1)

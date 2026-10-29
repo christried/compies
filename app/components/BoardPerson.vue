@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Crown } from '@lucide/vue'
+import { popIn } from '~/utils/motion'
 
 // One Member on the Game board: avatar and name, a button that opens the MoveToMenu (Enter or click) and that
 // the GameBoard makes draggable through its pointer handlers (#160, 02-components § GameBoard). Everyone's person is
 // a button, because the menu explains to a Player why they cannot move somebody else. `lifted` is the person in the hand.
-// The avatar is 48 px on a desktop and 40 px on a phone (DS People); in a team it carries the team's ring and mark.
-const props = defineProps<{
+// The avatar is 48 px on a desktop and 40 px on a phone (DS People); in a team it carries the team's ring and mark. A
+// Team word (#161) shows as a small chip under it and pops in when it arrives.
+const props = withDefaults(defineProps<{
   userId: string
   name: string
   image: string | null
@@ -21,9 +23,17 @@ const props = defineProps<{
   menuOpen: boolean
   /** Can be picked up by the viewer. */
   draggable: boolean
-}>()
+  /** The Player's Team word, shown as a chip under the avatar (#161). */
+  word?: string | null
+}>(), { word: null })
 
 const { t } = useI18n()
+const wordChip = useTemplateRef<HTMLElement>('wordChip')
+watch(() => props.word, async (word, before) => {
+  if (!word || word === before) return
+  await nextTick()
+  if (wordChip.value) popIn(wordChip.value)
+})
 const shown = computed(() => (props.you ? t('common.you') : props.name))
 </script>
 
@@ -57,5 +67,10 @@ const shown = computed(() => (props.you ? t('common.you') : props.name))
       />
       <span class="truncate">{{ shown }}</span>
     </span>
+    <span
+      v-if="word"
+      ref="wordChip"
+      class="-mt-0.5 max-w-full truncate rounded-[6px] border-[1.5px] border-line bg-paper-2 px-1.5 text-[10px] leading-snug font-extrabold"
+    >{{ word }}</span>
   </button>
 </template>
