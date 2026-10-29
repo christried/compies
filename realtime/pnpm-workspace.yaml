@@ -1,0 +1,10 @@
+# The Worker is its own install, apart from the app's (ADR 0012): Vercel never installs wrangler or workerd.
+# This file makes this folder its own workspace root, so pnpm does not walk up to the app's.
+packages: []
+allowBuilds:
+  esbuild: true
+  workerd: true
+  sharp: false
+minimumReleaseAgeExclude:
+  - miniflare@5.20261023.2-beta
+  - wrangler@4.155.0

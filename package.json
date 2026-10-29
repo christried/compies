@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "nuxt dev",
+    "dev:realtime": "pnpm --dir realtime dev",
     "build": "nuxt build",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
