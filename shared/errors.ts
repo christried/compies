@@ -80,6 +80,8 @@ export const API_ERROR_STATUS = {
   veto_allowance_below_spent: 409,
   wrong_phase: 409,
   rate_limited: 429,
+  /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */
+  no_live_connection: 503,
 } as const
 
 export type ApiErrorCode = keyof typeof API_ERROR_STATUS

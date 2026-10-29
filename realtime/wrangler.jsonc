@@ -1,0 +1,29 @@
+// The realtime Worker of COMPIES (ADR 0012): one PartyServer room per Event, a staging and a production Worker on
+// *.workers.dev. Each environment names its own Worker and so gets its own Durable Object namespace and secrets
+// (#157 deploys them). Wrangler does not inherit bindings, vars or migrations into an environment, so each repeats them.
+//
+// Secrets, never in this file: ROOM_TOKEN_SECRET and ROOM_INTERNAL_SECRET (`wrangler secret put`, per Worker), and
+// while a key rotates ROOM_TOKEN_SECRET_PREVIOUS and ROOM_INTERNAL_SECRET_PREVIOUS. Locally: realtime/.dev.vars.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "compies-rt-dev",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-22",
+  "vars": { "ALLOWED_ORIGINS": "http://localhost:3000" },
+  "durable_objects": { "bindings": [{ "name": "EventRoom", "class_name": "EventRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["EventRoom"] }],
+  "env": {
+    "staging": {
+      "name": "compies-rt-staging",
+      "vars": { "ALLOWED_ORIGINS": "https://staging.compies.christried.me", "JURISDICTION": "eu" },
+      "durable_objects": { "bindings": [{ "name": "EventRoom", "class_name": "EventRoom" }] },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["EventRoom"] }]
+    },
+    "production": {
+      "name": "compies-rt",
+      "vars": { "ALLOWED_ORIGINS": "https://compies.christried.me", "JURISDICTION": "eu" },
+      "durable_objects": { "bindings": [{ "name": "EventRoom", "class_name": "EventRoom" }] },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["EventRoom"] }]
+    }
+  }
+}

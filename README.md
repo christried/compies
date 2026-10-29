@@ -24,6 +24,9 @@ Requirements: Node 24 (`.nvmrc`) and pnpm (the version is pinned in `package.jso
    | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Cloudflare account id and R2 API token (object read and write) for game images |
    | `R2_BUCKET` | Bucket of this environment: `compies-staging` or `compies-production` |
    | `R2_JURISDICTION` | Optional: `eu` when the buckets use the EU jurisdiction, else empty |
+   | `REALTIME_URL` | The realtime Worker the Event page connects to: `http://localhost:8787` locally, the `*.workers.dev` URL of the staging or production Worker in Vercel. Empty: no live connection, the page polls every 15 s |
+   | `ROOM_TOKEN_SECRET` | Random string that signs the 60-second room token; the Worker holds the same value |
+   | `ROOM_INTERNAL_SECRET` | Random string that signs the calls from the app to the Worker; the Worker holds the same value |
 
    The allowlists apply at each sign-in, so a change takes effect at that User's next sign-in.
 
@@ -31,6 +34,16 @@ Requirements: Node 24 (`.nvmrc`) and pnpm (the version is pinned in `package.jso
 
 4. Apply the migrations to your branch: `pnpm db:migrate`
 5. Start the dev server: `pnpm dev`, then open http://localhost:3000. `GET /api/health` answers `{"status":"ok"}` when the database is reachable and migrated. To sign in without Discord or Twitch, open http://localhost:3000/api/dev/sign-in?as=host (or `member`, `admin`; `&to=/bibliothek` picks the page). The route exists only in the dev server.
+
+## Realtime (the Worker in `realtime/`)
+
+The Event page updates live through a Cloudflare Worker with one PartyServer room per Event (ADR 0012, ADR 0013). It is its own install with its own lockfile, so Vercel never installs wrangler. To try it locally:
+
+1. `pnpm --dir realtime install --frozen-lockfile`
+2. Copy `realtime/.dev.vars.example` to `realtime/.dev.vars` and give `ROOM_TOKEN_SECRET` and `ROOM_INTERNAL_SECRET` the same values as in your `.env`. Set `REALTIME_URL=http://localhost:8787` in `.env`.
+3. `pnpm dev:realtime` (wrangler dev on port 8787) next to `pnpm dev`. Open an Event in two browsers: a Vote shows in the other at once.
+
+Without the Worker the page polls every 15 s, as before. The Worker's checks: `pnpm --dir realtime typecheck` and `pnpm --dir realtime test` (workerd). To rotate a secret, set the new value in Vercel and as the Worker's secret, and the old one as the Worker's `ROOM_TOKEN_SECRET_PREVIOUS` or `ROOM_INTERNAL_SECRET_PREVIOUS` until open tokens and calls have expired.
 
 ## Database changes
 
@@ -50,7 +63,7 @@ The test projects:
 - `integration` (`test/integration/`): server handlers called over HTTP against an in-memory PGlite with the committed migrations applied, via `test/integration/harness.ts`. No Neon needed. Server code imports `h3` and its own modules explicitly instead of relying on Nitro auto-imports, so these tests can load it.
 - `nuxt` (`test/nuxt/`): pages and components in a Nuxt runtime.
 
-CI runs all three checks on pull requests into and pushes to `staging` and `main`.
+CI runs all three checks on pull requests into and pushes to `staging` and `main`, and the Worker's typecheck and tests (`realtime/`) after them.
 
 ## Deploy
 

@@ -2,13 +2,13 @@
 import { CalendarCheck, CalendarClock, ChevronRight, Link as LinkIcon, Settings2 } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
-import { eventDataKey } from '~/utils/event-data'
-import { sessionsEditable, type DatedSessionView, type EventView } from '~~/shared/event'
+import { sessionsEditable, type DatedSessionView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { settingsEditable } from '~~/shared/settings'
 
-// The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). This page loads the Event, refetches it
-// every 15 s while the tab is visible, and holds the Host's dialogs and the error states. EventSessions shows the
+// The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). This page loads the Event through
+// useEventView (live through the Event's room, polling every 15 s while that is down, #156), shows the
+// ConnectionBanner, and holds the Host's dialogs and the error states. EventSessions shows the
 // Sessions with their Host actions, EventPoll the Date poll while it is open. Votes show at once and roll back with
 // a toast when saving fails (useOptimisticVotes, ADR 0001). The Date is set in the confirm dialog (#13): from a Slot
 // card ("Termin festlegen") or the host dock. The Host picks only the Slot; its time goes to the next Session
@@ -18,7 +18,8 @@ const props = defineProps<{ slug: string }>()
 const { t } = useI18n()
 const { toast } = useToast()
 const slug = toRef(() => props.slug)
-const { data, error, refresh } = await useFetch<EventView>(() => `/api/e/${slug.value}`, { key: () => eventDataKey(slug.value) })
+const { data, error, refresh, room } = await useEventView(slug)
+const connection = useConnectionBanner(room.state, room.enabled)
 
 const notFound = computed(() => error.value?.statusCode === 404)
 const deleted = computed(() => error.value?.statusCode === 410)
@@ -147,11 +148,6 @@ const hostActions = computed((): DockAction[] => {
   const slots: DockAction = { key: 'slots', label: t('mvp.slots.title'), icon: CalendarClock, group: t('dock.group.dates'), place: 'more', run: () => (editing.value = true) }
   return setup ? [settings, invite, setDate, slots] : [setDate, invite, slots, settings]
 })
-
-// Only a loaded Event is refetched: a link that failed keeps its error page.
-usePollRefresh(() => {
-  if (data.value) refresh()
-})
 </script>
 
 <template>
@@ -170,6 +166,11 @@ usePollRefresh(() => {
       v-if="data"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-4"
     >
+      <ConnectionBanner
+        :state="connection"
+        @retry="room.retry"
+      />
+
       <NoticeBanner
         v-if="needsSetup && !setupNoticeClosed"
         tone="info"

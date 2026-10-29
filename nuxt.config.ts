@@ -47,6 +47,9 @@ export default defineNuxtConfig({
     public: {
       // Read by <StagingBadge /> (#178).
       staging,
+      // The realtime Worker the Event page connects to (#156). Empty: no live connection, the page polls. Vercel sets
+      // either REALTIME_URL (read here at build time) or NUXT_PUBLIC_REALTIME_URL (Nuxt reads it at runtime).
+      realtimeUrl: process.env.REALTIME_URL ?? '',
     },
   },
 
