@@ -358,6 +358,16 @@ else
     fi
   fi
   command -v vercel >/dev/null 2>&1 || vercel_by_hand
+  # A CLI that can't start would otherwise read as "not signed in" below.
+  if ! vercel --version >/dev/null 2>&1; then
+    warn "The Vercel CLI at $(command -v vercel) does not run in this shell."
+    if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
+      note "This is WSL's bash: it finds the Windows Vercel CLI, but not the Windows node it needs."
+      note "Run the wizard from Git Bash instead. From PowerShell:"
+      note '  & "C:\Program Files\Git\bin\bash.exe" scripts/wizards/r2-setup.sh'
+    fi
+    exit 1
+  fi
   if ! vercel whoami >/dev/null 2>&1; then
     say "Sign in to Vercel. The CLI opens a browser or prints a link to open."
     vercel login || true
