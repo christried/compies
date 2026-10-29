@@ -7,8 +7,8 @@ function action(label: string, overrides: Partial<DockAction> = {}): DockAction 
   return { key: label, label, icon: Crown, group: 'Event', run: () => {}, ...overrides }
 }
 
-const pillLabels = (page: Awaited<ReturnType<typeof mountSuspended>>) =>
-  page.get('[role="toolbar"]').findAll('button').map(button => button.text())
+const pillLabels = (page: { element: Element }) =>
+  [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.trim())
 
 // Focus moves are only visible on an attached tree.
 const mountAttached = (actions: DockAction[]) => mountSuspended(HostDock, { props: { actions }, attachTo: document.body })
@@ -90,6 +90,64 @@ describe('HostDock', () => {
     expect(page.find('[role="menu"]').exists()).toBe(false)
     expect(more.attributes('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(more.element)
+    page.unmount()
+  })
+
+  it('on a phone, the crown opens one sheet with every action grouped, and the reason under a disabled one', async () => {
+    const run = vi.fn()
+    const page = await mountSuspended(HostDock, { props: { actions: [
+      action('Termin festlegen', { group: 'Termine', primary: true, disabledReason: 'Noch kein Termin gewählt.', run }),
+      action('Einladen', { group: 'Leute' }),
+      action('Termine bearbeiten', { group: 'Termine', place: 'more' }),
+      action('Einstellungen', { group: 'Event', place: 'more' }),
+    ] }, attachTo: document.body })
+
+    await page.get('button[aria-haspopup="dialog"]').trigger('click')
+
+    const sheet = document.querySelector('[role="dialog"]')!
+    expect(sheet.querySelector('h2')?.textContent).toContain('Host-Steuerung')
+    expect([...sheet.querySelectorAll('[role="group"]')].map(group => group.getAttribute('aria-label'))).toEqual(['Termine', 'Leute', 'Event'])
+    const buttons = [...sheet.querySelectorAll('button')].filter(button => button.textContent?.trim())
+    expect(buttons.map(button => button.textContent?.trim())).toEqual([
+      'Termin festlegen Noch kein Termin gewählt.',
+      'Termine bearbeiten',
+      'Einladen',
+      'Einstellungen',
+    ])
+    expect(buttons[0]!.getAttribute('aria-disabled')).toBe('true')
+
+    buttons[0]!.click()
+
+    expect(run).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+    page.unmount()
+  })
+
+  it('H focuses the first pill button, and the arrows move along the pill with Mehr at its end', async () => {
+    const page = await mountAttached([action('A'), action('B'), action('C'), action('D', { place: 'more' })])
+    const buttons = page.findAll('[role="toolbar"] button')
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', bubbles: true }))
+    expect(document.activeElement).toBe(buttons[0]!.element)
+
+    for (let step = 0; step < 3; step++) await buttons[step]!.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(buttons[3]!.element)
+    expect(buttons[3]!.attributes('aria-haspopup')).toBe('menu')
+
+    await buttons[3]!.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(buttons[0]!.element)
+    page.unmount()
+  })
+
+  it('a disabled action still runs when clicked, so that its reason can be shown', async () => {
+    const run = vi.fn()
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Termin festlegen', { disabledReason: 'Noch kein Termin.', run })] } })
+
+    const button = page.get('[role="toolbar"] button')
+    expect(button.attributes('aria-disabled')).toBe('true')
+    await button.trigger('click')
+
+    expect(run).toHaveBeenCalledOnce()
     page.unmount()
   })
 

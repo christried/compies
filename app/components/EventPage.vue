@@ -119,16 +119,33 @@ const setupNoticeClosed = ref(false)
 
 // "Termin festlegen" looks disabled with its reason when no open future Slot can become a Date (#52). The poll
 // Phase has the Date actions; every Phase before the Event finishes has Einstellungen and Einladen (#147).
+// The Host controls per state (11-event-seite § HostDock, #155). Setup is the primary while the Event has no settings.
 const hostActions = computed((): DockAction[] => {
-  const invite: DockAction = { label: t('common.invite'), icon: LinkIcon, run: () => (inviteOpen.value = true) }
-  const settings: DockAction = { label: t(needsSetup.value ? 'dock.setup' : 'dock.settings'), icon: Settings2, run: () => navigateTo(settingsPath(slug.value)) }
-  if (data.value?.event.phase !== 'poll') return [settings, invite]
-  return [
-    { label: t('dock.setDate'), icon: CalendarCheck, primary: true, disabledReason: setBlocked.value ?? undefined, run: () => openConfirm() },
-    { label: t('mvp.slots.title'), icon: CalendarClock, run: () => (editing.value = true) },
-    invite,
-    settings,
-  ]
+  const setup = needsSetup.value
+  const invite: DockAction = { key: 'invite', label: t('common.invite'), icon: LinkIcon, group: t('dock.group.people'), place: 'dock', run: () => (inviteOpen.value = true) }
+  const settings: DockAction = {
+    key: 'settings',
+    label: t(setup ? 'dock.setup' : 'dock.settings'),
+    icon: Settings2,
+    group: t('dock.group.event'),
+    primary: setup,
+    place: setup ? 'dock' : 'more',
+    run: () => navigateTo(settingsPath(slug.value)),
+  }
+  // A set-up Event outside the poll has no primary yet: #164 adds „Session starten“ as this state's primary.
+  if (data.value?.event.phase !== 'poll') return setup ? [settings, invite] : [invite, settings]
+  const setDate: DockAction = {
+    key: 'setDate',
+    label: t('dock.setDate'),
+    icon: CalendarCheck,
+    group: t('dock.group.dates'),
+    primary: !setup,
+    disabledReason: setBlocked.value ?? undefined,
+    place: setup ? 'more' : 'dock',
+    run: () => openConfirm(),
+  }
+  const slots: DockAction = { key: 'slots', label: t('mvp.slots.title'), icon: CalendarClock, group: t('dock.group.dates'), place: 'more', run: () => (editing.value = true) }
+  return setup ? [settings, invite, setDate, slots] : [setDate, invite, slots, settings]
 })
 
 // Only a loaded Event is refetched: a link that failed keeps its error page.

@@ -170,6 +170,7 @@ onBeforeUnmount(() => {
       v-if="moreOpen"
       ref="menu"
       role="menu"
+      tabindex="-1"
       :aria-label="t('dock.label')"
       class="fixed bottom-[100px] left-1/2 layer-dock hidden w-[380px] -translate-x-1/2 flex-col gap-2.5 rounded-[18px] border-(length:--cp-bw) border-line bg-surface p-3.5 shadow-modal md:flex"
       @keydown.esc="closeMore"
@@ -243,22 +244,43 @@ onBeforeUnmount(() => {
       :title="t('dock.label')"
       @close="sheetOpen = false"
     >
-      <div class="flex flex-col gap-2.5">
-        <button
-          v-for="action in actions"
-          :key="action.label"
-          type="button"
-          class="outline-memphis hit-44 flex h-14 items-center gap-3 rounded-pill border-(length:--cp-bw) border-line px-5 font-bold shadow-btn hover:tint aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:bg-none"
-          :class="action.primary ? 'bg-primary text-on-primary' : 'bg-surface text-ink'"
-          :aria-disabled="action.disabledReason ? 'true' : undefined"
-          @click="run(action)"
+      <!-- The phone has no „Mehr“ step: the sheet lists every action under its group (#155). -->
+      <div class="flex flex-col gap-4">
+        <div
+          v-for="group in groups"
+          :key="group.name"
+          role="group"
+          :aria-label="group.name"
+          class="flex flex-col gap-2.5"
         >
-          <AppIcon
-            :icon="action.icon"
-            :size="18"
-          />
-          {{ action.label }}
-        </button>
+          <p
+            class="text-[11px] tracking-[0.08em] text-ink-2 uppercase"
+            aria-hidden="true"
+          >
+            {{ group.name }}
+          </p>
+          <button
+            v-for="action in group.actions"
+            :key="action.key"
+            type="button"
+            class="outline-memphis hit-44 flex min-h-14 items-center gap-3 rounded-pill border-(length:--cp-bw) border-line px-5 py-2 text-left font-bold shadow-btn hover:tint aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:bg-none"
+            :class="action.primary ? 'bg-primary text-on-primary' : 'bg-surface text-ink'"
+            :aria-disabled="action.disabledReason ? 'true' : undefined"
+            @click="run(action)"
+          >
+            <AppIcon
+              :icon="action.icon"
+              :size="18"
+            />
+            <span class="flex flex-col leading-tight">
+              {{ action.label }}
+              <span
+                v-if="action.disabledReason"
+                class="text-[11px] font-semibold text-ink-2"
+              >{{ action.disabledReason }}</span>
+            </span>
+          </button>
+        </div>
       </div>
     </AppSheet>
   </div>

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- In der Host-Steuerung siehst du jetzt nur die wichtigsten Aktionen. Alles Weitere, etwa Termine bearbeiten und Einstellungen, findest du unter **Mehr**. ([#155](https://github.com/christried/compies/issues/155))
+
 ## [1.3.0] - 2026-10-29 – Spielvorbereitung
 
 Eine Bibliothek für eure Spiele und ein Event, das du Schritt für Schritt einrichtest: Format, Punkte, Glücksrad oder Host-Wahl, Vetos und die Spielepools.

@@ -112,3 +112,42 @@ export async function clickButton(root: ParentNode | null | undefined, label: st
   button!.click()
   await new Promise(resolve => setTimeout(resolve))
 }
+
+/** A mounted page, as far as the Host dock helpers read it. */
+export type Mounted = { element: Element }
+
+function hostButtons(page: Mounted) {
+  return [...page.element.querySelectorAll<HTMLButtonElement>('[role="toolbar"] button')]
+}
+
+/** Opens „Mehr“ of the Host dock (once) and returns its menu. The header's user menu is a menu too, so the label scopes it. */
+export async function openHostMenu(page: Mounted): Promise<HTMLElement> {
+  const scope = '[role="menu"][aria-label="Host-Steuerung"]'
+  if (!page.element.querySelector(scope)) {
+    const more = hostButtons(page).find(button => button.textContent?.trim() === 'Mehr')
+    expect(more, 'Mehr').toBeDefined()
+    more!.click()
+    await new Promise(resolve => setTimeout(resolve))
+  }
+  const menu = page.element.querySelector<HTMLElement>(scope)
+  expect(menu, 'Host-Steuerung').not.toBeNull()
+  return menu!
+}
+
+/** The Host dock action with this label: its pill button, or its item in „Mehr“ (which is opened first). */
+export async function hostActionElement(page: Mounted, label: string): Promise<HTMLButtonElement> {
+  const pill = hostButtons(page).find(button => button.textContent?.trim() === label)
+  if (pill) return pill
+  // A disabled item carries its reason after its label, so the label is only a prefix there.
+  const items = [...(await openHostMenu(page)).querySelectorAll<HTMLButtonElement>('[role="menuitem"]')]
+  const item = items.find(node => node.textContent?.trim().startsWith(label))
+  expect(item, label).toBeDefined()
+  return item!
+}
+
+/** Clicks the Host dock action with this label, from the pill or from „Mehr“, and lets Vue run the handler. */
+export async function clickHostAction(page: Mounted, label: string) {
+  const element = await hostActionElement(page, label)
+  element.click()
+  await new Promise(resolve => setTimeout(resolve))
+}

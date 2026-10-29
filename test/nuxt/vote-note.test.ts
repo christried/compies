@@ -3,7 +3,7 @@ import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { clickButton, dialog, LARSI, radio, SANNE, serve, shownToasts, view, type Vote, type Wrapper } from './event-page'
+import { clickHostAction, dialog, LARSI, radio, SANNE, serve, shownToasts, view, type Vote, type Wrapper } from './event-page'
 
 // The Note on a Vote (#102) on the Event page: the Slot card's button and field, the matrix marker, the lists in
 // „Termin festlegen“ and on the DateSetCard.
@@ -403,7 +403,7 @@ describe('Notes on Votes', () => {
       const { slug } = serve(s => view(s, [larsiNote], { event: { isHost: true } }))
       const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-      await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+      await clickHostAction(page, 'Termin festlegen')
 
       const option = dialog()!.querySelector('[data-slot="fri"]')!.parentElement!
       expect(option.textContent).toContain('Anmerkungen')
