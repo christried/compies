@@ -88,6 +88,12 @@
       "teams_uneven": "Geht erst, wenn alle Teams gleich groß sind."
     },
     "shortcut": "Taste H: Host-Steuerung",
+    "startDialog": {
+      "title": "Los geht’s?",
+      "textFirst": "Mit dem Start werden Teams und Teamnamen gesperrt. Bench und Tribüne bleiben offen, nachziehen kannst du weiterhin.",
+      "textLater": "Die Teams bleiben, wie sie sind.",
+      "lock": "{teams} Teams à {size}, Namen werden eingefroren"
+    },
     "more": "Mehr",
     "group": {
       "dates": "Termine",

@@ -1,6 +1,6 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
-import type { BoardTeam, EventPools, MemberView, SessionNote } from '~~/shared/event'
+import type { BoardTeam, EventPools, MemberView, SessionNote, StartView } from '~~/shared/event'
 import type { EventSettings, SettingsFloors } from '~~/shared/settings'
 import { kitty } from './auth'
 
@@ -13,10 +13,16 @@ export const LARSI = '00000000-0000-4000-8000-000000000002'
 export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pools?: EventPools, removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean }
+export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pools?: EventPools, removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
+}
+
+/** What the Host's start rule says about the one Session of the default fixture. */
+function defaultStart(slug: string, startsAt: string | null, setUp: boolean): StartView {
+  if (!setUp) return { sessionId: startsAt ? `session-${slug}` : null, number: null, rejection: 'not_set_up' }
+  return startsAt ? { sessionId: `session-${slug}`, number: null, rejection: 'teams_empty' } : { sessionId: null, number: null, rejection: 'no_dated_session' }
 }
 
 /** The `GET /api/e/:slug` body for a Member (Kitty) in a poll with Slots Fr, Sa and a past Di. */
@@ -29,8 +35,10 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     settingsFloors: overrides.settingsFloors === undefined ? (event.isHost ? { teamSize: 1, vetoAllowance: 0 } : null) : overrides.settingsFloors,
     pools: overrides.pools ?? { hidden: true, mainCount: 0, tiebreakerCount: 0 } as EventPools,
     // The Event's one Session, which the server sends without a number (#70).
-    sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[] }],
+    sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[], startedAt: null as string | null, endedAt: null as string | null }],
     removedSessions: overrides.removedSessions ?? [],
+    // The one Session waits for a Date until the view gives it one; the Date poll is open while any Session waits (#164).
+    missingDates: startsAt === null ? 1 : 0,
     viewerId: kitty.id,
     slots: overrides.slots ?? [
       { id: 'fri', startsAt: '2026-10-23T18:00:00.000Z', past: false },
@@ -46,6 +54,10 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     ] satisfies MemberView[],
     teams: overrides.teams ?? [] as BoardTeam[],
     teamChoiceOpen: overrides.teamChoiceOpen ?? false,
+    // No Session has started (#164) unless a test says so. The Host's start rule defaults to the Event's one Session:
+    // next once it has a Date (blocked by empty teams), none before.
+    runningSessionId: overrides.runningSessionId ?? null,
+    start: overrides.start !== undefined ? overrides.start : event.isHost ? defaultStart(slug, startsAt, overrides.settings !== null && overrides.settings !== undefined) : null,
     bestSlotId: overrides.bestSlotId === undefined ? 'sat' : overrides.bestSlotId,
     progress: overrides.progress ?? { voted: 2, total: 3 },
     inviteUrl: overrides.inviteUrl ?? null,
@@ -53,10 +65,10 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
 }
 
 /** The `GET /api/e/:slug` body of an Event with several Sessions (#49): the Sessions come as the server numbers them. */
-export function viewWithSessions(slug: string, sessions: { startsAt: string | null, number: number | null }[], missingDates: number, overrides: EventOverrides = {}) {
+export function viewWithSessions(slug: string, sessions: { startsAt: string | null, number: number | null, startedAt?: string | null, endedAt?: string | null }[], missingDates: number, overrides: EventOverrides = {}) {
   return {
     ...view(slug, [], overrides),
-    sessions: sessions.map((session, index) => ({ id: `session-${slug}-${index}`, previousStartsAt: null, notes: [], ...session })),
+    sessions: sessions.map((session, index) => ({ id: `session-${slug}-${index}`, previousStartsAt: null, notes: [], startedAt: null, endedAt: null, ...session })),
     missingDates,
   } as ReturnType<typeof view>
 }
