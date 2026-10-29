@@ -25,6 +25,8 @@ const props = defineProps<{
   viewerId: string
   isHost: boolean
   room: Pick<ReturnType<typeof useEventRoom>, 'on'>
+  /** Whether somebody is online in the room (#162); undefined while presence is not known (no dots then). */
+  online?: (userId: string) => boolean | undefined
 }>()
 
 const { t } = useI18n()
@@ -174,6 +176,7 @@ function personBindings(person: (typeof people.value)[number]) {
     where: whereText(person.place),
     word: person.place.zone === 'team' ? person.teamWord : null,
     lifted: held !== null,
+    online: props.online?.(person.id),
     menuOpen: menu.value?.userId === person.id,
     draggable: props.isHost || person.id === props.viewerId,
     style: held ? { transform: `translate(${held.dx}px, ${held.dy}px)` } : undefined,

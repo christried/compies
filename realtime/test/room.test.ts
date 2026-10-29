@@ -1,41 +1,20 @@
 import { exports } from 'cloudflare:workers'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { envelope, roomPath, type Envelope } from '../../shared/realtime'
-import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall, signRoomToken, type RoomClaims } from '../../shared/room-auth'
+import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall, signRoomToken } from '../../shared/room-auth'
+import { INTERNAL_SECRET, TOKEN_SECRET, claims, connect, isRoomOwn, open, settle, track } from './room-helpers'
 
 // The Worker in workerd (#156): who may open a socket, who may publish, and where a published message goes.
-const ORIGIN = 'https://app.test'
-const TOKEN_SECRET = 'test-token-secret'
-const INTERNAL_SECRET = 'test-internal-secret'
 
-const claims = (event: string, overrides: Partial<RoomClaims> = {}): RoomClaims => ({
-  sub: 'user-1', evt: event, host: false, exp: Math.floor(Date.now() / 1000) + 60, jti: crypto.randomUUID(), ...overrides,
-})
-
-const sockets: WebSocket[] = []
-afterEach(() => {
-  for (const socket of sockets.splice(0)) socket.close()
-})
-
-function connect(event: string, token: string | null, origin: string | null = ORIGIN) {
-  const query = token === null ? '' : `?token=${encodeURIComponent(token)}`
-  return exports.default.fetch(`https://rt.test${roomPath(event)}${query}`, {
-    headers: { Upgrade: 'websocket', ...(origin ? { Origin: origin } : {}) },
-  })
-}
-
-/** An open socket in a room, with the messages it has received so far. */
-async function join(event: string, overrides: Partial<RoomClaims> = {}) {
-  const response = await connect(event, await signRoomToken(claims(event, overrides), TOKEN_SECRET))
-  expect(response.status).toBe(101)
-  const socket = response.webSocket!
-  socket.accept()
-  sockets.push(socket)
-  const received: Envelope[] = []
+/** An open socket in a room, with the messages it has received so far, but not the room's own presence (#162). */
+async function join(event: string, overrides: Partial<Parameters<typeof claims>[1]> = {}) {
+  const { socket } = await open(event, overrides)
+  const published: Envelope[] = []
   socket.addEventListener('message', (message) => {
-    received.push(JSON.parse(String(message.data)))
+    const parsed: Envelope = JSON.parse(String(message.data))
+    if (!isRoomOwn(parsed)) published.push(parsed)
   })
-  return received
+  return published
 }
 
 async function publish(event: string, messages: Envelope[], { secret = INTERNAL_SECRET, at = Date.now() } = {}) {
@@ -49,7 +28,6 @@ async function publish(event: string, messages: Envelope[], { secret = INTERNAL_
 }
 
 const changed = () => envelope({ type: 'event.changed' }, Date.now())
-const settle = () => new Promise(resolve => setTimeout(resolve, 100))
 
 describe('opening a socket', () => {
   it('accepts a Member with a token for this Event and an allowed Origin', async () => {
@@ -57,7 +35,7 @@ describe('opening a socket', () => {
 
     expect(response.status).toBe(101)
     response.webSocket!.accept()
-    sockets.push(response.webSocket!)
+    track(response.webSocket!)
   })
 
   it('accepts a token signed with the previous key while a key rotates', async () => {
@@ -65,7 +43,7 @@ describe('opening a socket', () => {
 
     expect(response.status).toBe(101)
     response.webSocket!.accept()
-    sockets.push(response.webSocket!)
+    track(response.webSocket!)
   })
 
   it('refuses a token with a bad signature', async () => {
