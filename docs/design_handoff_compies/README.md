@@ -53,6 +53,7 @@ Notes for the stack decision (leave the final call to the Claude Code session):
 | [08-open-questions.md](08-open-questions.md) | Everything still unclear or assumed |
 | [09-neuigkeiten.md](09-neuigkeiten.md) | The „Neuigkeiten“ page (Changelog, 1.2): its new elements, motion and states |
 | [10-footer-und-anmerkungen.md](10-footer-und-anmerkungen.md) | Page footer, „NEU“ chip, slimmer profile menu, the Note popover/dialog in „Wer kann wann?“ and the Note editor (1.2) |
+| [11-event-seite.md](11-event-seite.md) | The Event page with Game board, Activity feed and Host dock per state, desktop and mobile (1.4); ref `reference/App Event-Seite.dc.html` |
 | `reference/` | The HTML design files, tokens, assets and earlier docs (handoff.md, compibert-handoff.md, Spec Changes.md) |
 | `brief/00-product-brief.md` | The product brief (single source of truth for scope) |
 
