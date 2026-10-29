@@ -3,7 +3,7 @@ import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { closeNotice, radio, sanneAndLarsi, serve, shownToasts, view, type Wrapper } from './event-page'
+import { clickButton, closeNotice, openHostMenu, radio, sanneAndLarsi, serve, shownToasts, view, type Wrapper } from './event-page'
 
 // The vote mark of the matrix cell whose screen-reader text is `text` (the cells have no title, #125).
 const matrixCell = (page: Awaited<ReturnType<typeof mountSuspended>>, text: string) => page.findAll('table td').find((cell: Wrapper) => cell.text() === text)!.get('span')
@@ -259,8 +259,8 @@ describe('the Event poll', () => {
     const hostView = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const hostPage = await mountSuspended(EventPage, { route: `/e/${hostView.slug}` })
     expect(hostPage.get('[role="toolbar"]').attributes('aria-label')).toBe('Host-Steuerung')
-    expect(hostPage.get('[role="toolbar"]').text()).toContain('Termin festlegen')
     expect(hostPage.get('[role="toolbar"]').text()).toContain('Einladen')
+    expect((await openHostMenu(hostPage)).textContent).toContain('Termin festlegen')
   })
 
   it('renders no stray markup as text for the Host', async () => {
@@ -276,11 +276,9 @@ describe('the Event poll', () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    const edit = page.get('[role="toolbar"]').findAll('button').find(button => button.text() === 'Termine bearbeiten')
-    expect(edit).toBeDefined()
     expect(document.querySelector('[role="dialog"]')).toBeNull()
 
-    await edit!.trigger('click')
+    await clickButton(await openHostMenu(page), 'Termine bearbeiten')
 
     const dialog = document.querySelector('[role="dialog"]')
     expect(dialog?.textContent).toContain('Termine bearbeiten')

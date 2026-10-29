@@ -3,7 +3,7 @@ import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { clickButton, dialog, sanneAndLarsi, serve, shownToasts, view } from './event-page'
+import { clickButton, clickHostAction, dialog, sanneAndLarsi, serve, shownToasts, view } from './event-page'
 
 describe('setting the Date', () => {
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe('setting the Date', () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+    await clickHostAction(page, 'Termin festlegen')
 
     expect(selectedOption()).toBe('Sa 24.10., 20:00 Uhr')
   })
@@ -40,7 +40,7 @@ describe('setting the Date', () => {
     const { slug } = serve(s => view(s, [], { event: { isHost: true }, bestSlotId: null }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+    await clickHostAction(page, 'Termin festlegen')
 
     expect(selectedOption()).toBe('Fr 23.10., 20:00 Uhr')
   })
@@ -60,7 +60,7 @@ describe('setting the Date', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+    await clickHostAction(page, 'Termin festlegen')
 
     await clickButton(dialog(), 'Festlegen')
 
@@ -102,7 +102,7 @@ describe('setting the Date', () => {
     }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+    await clickHostAction(page, 'Termin festlegen')
 
     expect(dialog()).toBeNull()
     expect(shownToasts().map(toast => toast.text)).toContain('Kein Termin liegt mehr in der Zukunft.')
@@ -117,7 +117,7 @@ describe('setting the Date', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+    await clickHostAction(page, 'Termin festlegen')
 
     await clickButton(dialog(), 'Festlegen')
 
@@ -134,7 +134,7 @@ describe('setting the Date', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await clickButton(page.get('[role="toolbar"]').element, 'Termin festlegen')
+    await clickHostAction(page, 'Termin festlegen')
 
     await clickButton(dialog(), 'Festlegen')
 

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { clickButton, sanneAndLarsi, serve, view } from './event-page'
+import { clickButton, type Mounted, openHostMenu, sanneAndLarsi, serve, view } from './event-page'
 
 // The ways into the settings editor from the Event page (#147): the „Event einrichten“ notice for the Host of an
 // Event that was never set up, and „Einstellungen“ in the Host controls.
@@ -70,26 +70,34 @@ describe('Einstellungen in the Host controls', () => {
 
   const toolbarLabels = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.get('[role="toolbar"]').findAll('button').map((button: { text: () => string }) => button.text())
 
-  it('is the fourth action of the poll Phase, after Einladen', async () => {
+  // Opens „Mehr“ and returns what it lists, the pill's actions included.
+  async function menuLabels(page: Mounted) {
+    return [...(await openHostMenu(page)).querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())
+  }
+
+  it('is listed in Mehr of the poll Phase, after Termine bearbeiten', async () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true }, settings: defaultSettings() }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(toolbarLabels(page)).toEqual(['Termin festlegen', 'Termine bearbeiten', 'Einladen', 'Einstellungen'])
+    expect(toolbarLabels(page)).toEqual(['Termin festlegen', 'Einladen', 'Mehr'])
+    expect(await menuLabels(page)).toEqual(['Termin festlegen', 'Termine bearbeiten', 'Einladen', 'Einstellungen'])
   })
 
-  it('is there once the Date is set, next to Einladen', async () => {
+  it('is listed in Mehr once the Date is set, next to Einladen', async () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'date_set', startsAt: '2090-10-24T18:00:00.000Z' }, settings: defaultSettings() }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(toolbarLabels(page)).toEqual(['Einstellungen', 'Einladen'])
+    expect(toolbarLabels(page)).toEqual(['Einladen', 'Mehr'])
+    expect(await menuLabels(page)).toEqual(['Einladen', 'Einstellungen'])
   })
 
-  it('is there while the Event is running, and gone when it is finished', async () => {
+  it('is listed in Mehr while the Event is running, and gone when it is finished', async () => {
     const running = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'running' }, settings: defaultSettings() }))
     const runningPage = await mountSuspended(EventPage, { route: `/e/${running.slug}` })
-    expect(toolbarLabels(runningPage)).toEqual(['Einstellungen', 'Einladen'])
+    expect(toolbarLabels(runningPage)).toEqual(['Einladen', 'Mehr'])
+    expect(await menuLabels(runningPage)).toEqual(['Einladen', 'Einstellungen'])
 
     const finished = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'finished' }, settings: defaultSettings() }))
     const finishedPage = await mountSuspended(EventPage, { route: `/e/${finished.slug}` })
@@ -108,7 +116,7 @@ describe('Einstellungen in the Host controls', () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true }, settings: defaultSettings() }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickButton(page.get('[role="toolbar"]').element, 'Einstellungen')
+    await clickButton(await openHostMenu(page), 'Einstellungen')
 
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}/einstellungen`))
   })
