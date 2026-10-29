@@ -6,7 +6,9 @@ import { createTestDb, createTestServer } from './harness'
 import { stubAuthEnv } from './sign-in'
 
 // The sign-in for `pnpm dev` (retro 1.3): a real Better Auth login session for a fixed Dev User.
-describe('dev sign-in', () => {
+// Each case migrates a fresh database and signs in through Better Auth, which takes longer than vitest's 5 s
+// default while the whole suite runs in parallel (it timed out in CI on #194).
+describe('dev sign-in', { timeout: 20_000 }, () => {
   beforeEach(() => stubAuthEnv())
 
   async function signInAs(query: string) {
