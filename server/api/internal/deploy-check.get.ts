@@ -6,7 +6,7 @@ import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, verifyRoomCall 
 import { useDb } from '../../utils/db'
 import { sessionNotRemoved } from '../../utils/sessions'
 
-// The game-day guard of the Worker deploy (#157, spec #153 § Deploys): the deploy workflow asks here before it
+// The game-day guard of the Worker deploy (#157, #164, spec #153 § Deploys): the deploy workflow asks here before it
 // replaces the production Worker, because a deploy drops every open socket. Signed like a call to a room (same scheme
 // and keys, current and previous), so only the workflow can ask. Every refusal is the same 401.
 export default defineEventHandler(async (event): Promise<DeployCheck> => {
@@ -20,9 +20,11 @@ export default defineEventHandler(async (event): Promise<DeployCheck> => {
   if (!signed) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
   const rows = await useDb(event)
-    .select({ startsAt: sessions.startsAt })
+    .select({ startsAt: sessions.startsAt, startedAt: sessions.startedAt, endedAt: sessions.endedAt })
     .from(sessions)
     .innerJoin(events, eq(events.id, sessions.eventId))
     .where(and(isNull(events.deletedAt), sessionNotRemoved))
-  return deployCheck({ startsAt: rows.map(row => row.startsAt), now: new Date() })
+  // A Running Session (#164) is started and not ended; a removed Session and a deleted Event are left out by the query.
+  const running = rows.filter(row => row.startedAt !== null && row.endedAt === null).length
+  return deployCheck({ startsAt: rows.map(row => row.startsAt), running, now: new Date() })
 })

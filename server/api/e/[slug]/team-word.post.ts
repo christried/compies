@@ -15,7 +15,7 @@ export default defineEventHandler((event): Promise<TeamWordSet> => changeEvent(e
   const seat = (await readSeats(tx, eventRow.id)).find(row => row.userId === user.id)
   if (seat?.place.zone !== 'team') throw apiError('not_in_team')
 
-  // #164 (Session start): after the first start the Team names are frozen, so this refuses `teams_locked` when `started`.
+  // After the first Session start (#164) the Team names are frozen, so a word changes nothing any more.
   if (teamChoiceOf(eventRow, await eventSessions(tx, eventRow.id)).started) throw apiError('teams_locked')
 
   const parsed = parseTeamWord(asRecord(body).word)

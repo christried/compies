@@ -1,4 +1,4 @@
-import type { Place } from './board'
+import type { Place, StartRejection } from './board'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
 import type { EventSettings, SettingsFloors } from './settings'
@@ -52,9 +52,13 @@ export function sessionsEditable(phase: Phase): boolean {
   return beforeFinish(phase)
 }
 
-/** Slots can be added, removed and only then changed by the Host while the Date poll is open (#1). */
-export function slotsEditable(phase: Phase): boolean {
-  return phase === 'poll'
+/**
+ * Whether the Date poll is open (#1, #164): a Session waits for a Date (`missingDates`) in the poll Phase, or in a
+ * running Event, where the poll of a later Session goes on after the first Session started. While the Event is not
+ * running, `poll` already means a Session waits for a Date. Votes, Slot edits and setting a Date all ask this.
+ */
+export function datePollOpen(phase: Phase, missingDates: number): boolean {
+  return missingDates > 0 && (phase === 'poll' || phase === 'running')
 }
 
 /** What `PUT /api/e/:slug/slots/:slotId/vote` returns: the Vote as saved, with its Note or null (#102). */
@@ -76,6 +80,10 @@ export interface DatedSessionView {
   previousStartsAt: null
   /** The Notes on the Slot this Session's Date came from (#102); none for a Date set directly. */
   notes: SessionNote[]
+  /** When the Host started it (#164), null until then. A started Session is fixed: no remove, reschedule or reopen. */
+  startedAt: string | null
+  /** When the Host ended it (#164), null while it has not ended. Started and not ended = the Running Session. */
+  endedAt: string | null
 }
 
 /** A Session still waiting for a Date from the Date poll. Times are UTC ISO strings. */
@@ -85,6 +93,9 @@ export interface UndatedSessionView {
   startsAt: null
   /** The Date a Reopen withdrew, until the next Date is set. Members see a notice for it. */
   previousStartsAt: string | null
+  /** Only a dated Session starts (#164). */
+  startedAt: null
+  endedAt: null
 }
 
 /** One Session of an Event (#48, #49): it has its Date, or it waits for one. */
@@ -105,6 +116,17 @@ export type EventPools
 /** What `POST /api/e/:slug/move` returns: the Member and the place they stand in now (#160). */
 export interface MovedMember { userId: string, to: Place }
 
+/** What `POST /api/e/:slug/sessions/start` returns: the Session that started and the Phase, running from the first start on (#164). */
+export interface SessionStarted { sessionId: string, phase: Phase }
+/** What `POST /api/e/:slug/sessions/end` returns: the Session that ended and the Phase, which stays running (#164). */
+export interface SessionEnded { sessionId: string, phase: Phase }
+
+/**
+ * What the Host sees of the start rule (#164): the next Session (the earliest dated one that has not started), its
+ * shown number, and why it cannot start now; null when it can. `sessionId` and `number` are null when no dated Session is left.
+ */
+export interface StartView { sessionId: string | null, number: number | null, rejection: StartRejection | null }
+
 /** What `POST /api/e/:slug/team-word` returns: the team and the word as saved, null when it was removed (#161). */
 export interface TeamWordSet { team: number, word: string | null }
 
@@ -114,7 +136,7 @@ export interface TeamNameReset { team: number }
 /**
  * One team of the Game board (#160): its position, 1..team count, which is also its Team colour index. `name` is the
  * Team name composed from the words (or the frozen name), null when the team shows its colour's name (#161); `frozen`
- * says the name is frozen since the first Session started (#164, always false before).
+ * says the name is frozen since the first Session started (#164): then `name` is the frozen name, null for the colour name.
  */
 export interface BoardTeam { position: number, name: string | null, frozen: boolean }
 
@@ -159,6 +181,10 @@ export interface EventView {
   teams: BoardTeam[]
   /** Whether Players may move into and out of teams now (Team choice, shared/board.ts). */
   teamChoiceOpen: boolean
+  /** The Running Session (started, not ended), or null (#164). */
+  runningSessionId: string | null
+  /** The start rule's answer for the next Session (#164). Only the Host gets it; null for every other Member. */
+  start: StartView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

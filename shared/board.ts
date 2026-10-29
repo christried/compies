@@ -15,7 +15,7 @@ export function placeOf(row: { zone: 'bench' | 'stands' | 'team', team: number |
   return row.zone === 'team' && row.team !== null ? { zone: 'team', team: row.team } : { zone: row.zone === 'stands' ? 'stands' : 'bench' }
 }
 
-/** Why a move is refused. `teams_locked` needs `started`, which #164 sets once the first Session has started. */
+/** Why a move is refused. `teams_locked` needs `started`: the first Session has started (#164). */
 export type MoveRejection = 'host_only' | 'already_there' | 'no_such_team' | 'team_choice_closed' | 'teams_locked' | 'team_full'
 
 /** Players per team position (missing = nobody). */
@@ -86,12 +86,13 @@ export function teamWords(seats: readonly TeamSeat[]): string[] {
 }
 
 /**
- * The Team name (GLOSSARY: Team name, #161): the frozen name when there is one (#164 sets it at the first Session
- * start), else the team's words in the order given (teamWords), joined by a space. Null when neither exists: the
- * client then shows the Team colour's name.
+ * The Team name (GLOSSARY: Team name, #161, #164). `frozen` undefined means the team is not frozen: the name is
+ * composed from its words in the order given (teamWords), joined by a space. From the first Session start `frozen` is
+ * what `event_teams.frozen_name` holds: the string, or null for the Team colour's name, which stays null even when
+ * words exist (the Host reset it). Null means the client shows the Team colour's name.
  */
 export function composedTeamName({ frozen, words }: { frozen?: string | null, words: readonly string[] }): string | null {
-  if (typeof frozen === 'string') return frozen
+  if (frozen !== undefined) return frozen
   return words.length === 0 ? null : words.join(' ')
 }
 
@@ -107,4 +108,39 @@ export function parsePlace(value: unknown): Place | null {
 /** The Player count of the fullest team (0 without Players in teams): the lowest Team size the settings may take. */
 export function fullestTeam(seats: Seats): number {
   return Math.max(0, ...Object.values(seats))
+}
+
+/** A Session as the start rule needs it: its Date and its start and end as ms since the epoch, null while it has none (no `Date` parsing in here). */
+export interface StartSession { id: string, startsAt: number | null, startedAt: number | null, endedAt: number | null }
+
+/**
+ * The next Session (#164): the earliest dated Session that has not started, by its Date, or null. No time check: a
+ * future Date can start early.
+ */
+export function nextSession<S extends StartSession>(sessions: readonly S[]): S | null {
+  let next: S | null = null
+  for (const session of sessions) {
+    if (session.startsAt === null || session.startedAt !== null) continue
+    if (next === null || session.startsAt < next.startsAt!) next = session
+  }
+  return next
+}
+
+/** Why a Session cannot start now (spec #153 § Game board rules module), in the order they are checked. */
+export type StartRejection = 'not_set_up' | 'session_running' | 'no_dated_session' | 'teams_empty' | 'teams_uneven'
+
+export interface StartInput { settings: BoardSettings | null, sessions: readonly StartSession[], seats: Seats }
+
+/**
+ * The reason the next Session cannot start, or null when it may (#164): the Event is set up (this mirrors
+ * `canStartSession` in shared/settings.ts, which is not imported because the Worker reaches this file), no Session
+ * is running, a dated Session is left to start, every team has a Player and the teams are equally big.
+ */
+export function startRejection({ settings, sessions, seats }: StartInput): StartRejection | null {
+  if (settings === null) return 'not_set_up'
+  if (sessions.some(session => session.startedAt !== null && session.endedAt === null)) return 'session_running'
+  if (nextSession(sessions) === null) return 'no_dated_session'
+  const sizes = Array.from({ length: settings.teamCount }, (_, index) => seats[index + 1] ?? 0)
+  if (sizes.some(size => size === 0)) return 'teams_empty'
+  return sizes.every(size => size === sizes[0]) ? null : 'teams_uneven'
 }

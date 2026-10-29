@@ -59,6 +59,13 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   team_full: 'board.reason.full',
   invalid_team_word: 'team.word.noSpaces',
   not_in_team: 'team.word.noTeam',
+  session_started: 'error.sessionStarted',
+  not_set_up: 'dock.startBlocked.not_set_up',
+  session_running: 'dock.startBlocked.session_running',
+  no_dated_session: 'dock.startBlocked.no_dated_session',
+  teams_empty: 'dock.startBlocked.teams_empty',
+  teams_uneven: 'dock.startBlocked.teams_uneven',
+  no_running_session: 'error.noRunningSession',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

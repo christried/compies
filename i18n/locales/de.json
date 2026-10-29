@@ -77,6 +77,16 @@
     "gameCount": "Anzahl Spiele",
     "spinDuration": "Drehdauer",
     "endSession": "Session beenden",
+    "startN": "Session {n} starten",
+    "endN": "Session {n} beenden",
+    "setDateN": "Termin für Session {n}",
+    "startBlocked": {
+      "not_set_up": "Geht erst, wenn das Event eingerichtet ist.",
+      "no_dated_session": "Geht erst, wenn eine Session einen Termin hat.",
+      "session_running": "Es läuft schon eine Session.",
+      "teams_empty": "Geht erst, wenn in jedem Team jemand ist.",
+      "teams_uneven": "Geht erst, wenn alle Teams gleich groß sind."
+    },
     "shortcut": "Taste H: Host-Steuerung",
     "more": "Mehr",
     "group": {
@@ -1334,6 +1344,8 @@
     "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
     "unknownGame": "Ein Spiel aus dem Pool gibt es nicht mehr.",
     "settingLocked": "Das lässt sich nicht mehr ändern, seit die erste Session läuft.",
+    "sessionStarted": "Diese Session hat schon begonnen. Sie bleibt, wie sie ist.",
+    "noRunningSession": "Es läuft gerade keine Session.",
     "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",

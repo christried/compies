@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
-import { eventMembers } from '../db/schema'
-import { placeOf, teamChoiceOpen, type Place } from '../../shared/board'
+import { eventMembers, eventTeams } from '../db/schema'
+import { composedTeamName, countSeats, nextSession, placeOf, startRejection, teamChoiceOpen, type Place, type StartRejection, type StartSession, teamWords } from '../../shared/board'
 import { settingsFromRow } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
@@ -50,10 +50,50 @@ export async function lastToJoin(tx: Db, eventId: string, team: number): Promise
 
 /**
  * Whether Team choice is open for an Event and whether its first Session has started, from its settings and Sessions.
- * The move and the Event read both ask here. `started` stays false until Session start (#164) adds `started_at`.
+ * The move and the Event read both ask here. The first Session has started (#164) once any Session has `started_at`,
+ * also one that has ended.
  */
 export function teamChoiceOf(eventRow: EventRow, sessions: readonly SessionRow[]) {
   const settings = settingsFromRow(eventRow)
-  const started = false
+  const started = sessions.some(row => row.startedAt !== null)
   return { settings, started, open: teamChoiceOpen({ settings, hasDatedSession: sessions.some(row => row.startsAt !== null), started }) }
+}
+
+/** A Session row as the start rule sees it: its times as ms since the epoch (#164). */
+function startSessionOf(row: SessionRow): StartSession {
+  return { id: row.id, startsAt: row.startsAt?.getTime() ?? null, startedAt: row.startedAt?.getTime() ?? null, endedAt: row.endedAt?.getTime() ?? null }
+}
+
+/**
+ * The start rule for an Event (#164): the Session that would start next (the earliest dated one that has not started)
+ * and why it cannot start now, null when it can. The start endpoint and the Event read both ask here, with the places
+ * the Members stand in.
+ */
+export function startOf(eventRow: EventRow, sessions: readonly SessionRow[], places: readonly Place[]): { next: SessionRow | null, rejection: StartRejection | null } {
+  const rules = sessions.map(startSessionOf)
+  const nextId = nextSession(rules)?.id
+  return {
+    next: sessions.find(row => row.id === nextId) ?? null,
+    rejection: startRejection({ settings: settingsFromRow(eventRow), sessions: rules, seats: countSeats(places) }),
+  }
+}
+
+/**
+ * Freezes the Team names at the first Session start (#164): one `event_teams` row per team position 1..`teamCount`
+ * with the name composed from the team's words (null without words: the Team colour's name). Called once, by the start
+ * that finds no Session started; the rows are the names from then on, whatever happens to the words.
+ */
+export async function freezeTeamNames(tx: Db, eventId: string, teamCount: number): Promise<void> {
+  const members = await tx
+    .select({ team: eventMembers.team, word: eventMembers.teamWord, joinedAt: eventMembers.teamJoinedAt })
+    .from(eventMembers)
+    .where(eq(eventMembers.eventId, eventId))
+  const rows = Array.from({ length: teamCount }, (_, index) => {
+    const position = index + 1
+    const seats = members
+      .filter(member => member.team === position)
+      .map(member => ({ word: member.word, joinedAt: member.joinedAt?.getTime() ?? 0 }))
+    return { eventId, position, frozenName: composedTeamName({ words: teamWords(seats) }) }
+  })
+  await tx.insert(eventTeams).values(rows)
 }

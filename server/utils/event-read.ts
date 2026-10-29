@@ -1,18 +1,18 @@
 import { asc, eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { eventMembers, pollSlots, pollVotes, users } from '../db/schema'
+import { eventMembers, eventTeams, pollSlots, pollVotes, users } from '../db/schema'
 import { poolsVisibleTo } from '../domain/pool-visibility'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
-import { composedTeamName, teamWords } from '../../shared/board'
+import { composedTeamName, placeOf, teamWords } from '../../shared/board'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
 import { settingsFromRow } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
 import { inviteUrl } from './links'
-import { teamChoiceOf } from './board'
+import { startOf, teamChoiceOf } from './board'
 import { eventPools } from './pools'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { settingsFloors } from './settings-floors'
@@ -37,10 +37,12 @@ export interface EventRows {
   votes: VoteRow[]
   /** The Members in the order they joined. */
   members: { id: string, name: string, displayName: string | null, image: string | null, zone: 'bench' | 'stands' | 'team', team: number | null, teamWord: string | null, teamJoinedAt: Date | null }[]
+  /** The frozen teams (#164): none before the first Session start. A null name is the Team colour's name. */
+  frozenTeams: { position: number, frozenName: string | null }[]
 }
 
 export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRows> {
-  const [sessions, removedSessions, slots, votes, members] = await Promise.all([
+  const [sessions, removedSessions, slots, votes, members, frozenTeams] = await Promise.all([
     eventSessions(db, eventRow.id),
     removedSessionNotices(db, eventRow.id),
     db
@@ -59,8 +61,12 @@ export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRo
       .innerJoin(users, eq(eventMembers.userId, users.id))
       .where(eq(eventMembers.eventId, eventRow.id))
       .orderBy(asc(eventMembers.joinedAt)),
+    db
+      .select({ position: eventTeams.position, frozenName: eventTeams.frozenName })
+      .from(eventTeams)
+      .where(eq(eventTeams.eventId, eventRow.id)),
   ])
-  return { sessions, removedSessions, slots, votes, members }
+  return { sessions, removedSessions, slots, votes, members, frozenTeams }
 }
 
 /**
@@ -82,7 +88,7 @@ export function pollSection(rows: EventRows, viewer: Viewer, now: Date): Pick<Ev
   }
 }
 
-export function sessionSection(rows: EventRows): Pick<EventView, 'sessions' | 'removedSessions' | 'missingDates'> {
+export function sessionSection(rows: EventRows): Pick<EventView, 'sessions' | 'removedSessions' | 'missingDates' | 'runningSessionId'> {
   return {
     // Sessions with a Date come first in Date order, with the number they are shown with (#49, #70); the
     // Sessions still waiting for a Date follow and only count as missing Dates.
@@ -90,6 +96,8 @@ export function sessionSection(rows: EventRows): Pick<EventView, 'sessions' | 'r
     // Removed Sessions that had a Date, only for their notice (#65); they count nowhere else.
     removedSessions: rows.removedSessions.map(row => ({ id: row.id, previousStartsAt: row.previousStartsAt.toISOString() })),
     missingDates: missingDates(rows.sessions.map(row => row.startsAt)),
+    // The Running Session (#164): started and not ended. At most one exists (a unique index).
+    runningSessionId: rows.sessions.find(row => row.startedAt !== null && row.endedAt === null)?.id ?? null,
   }
 }
 
@@ -109,7 +117,8 @@ export function membersSection(eventRow: EventRow, rows: EventRows): Pick<EventV
 
 /**
  * The Game board (#160): the teams the settings call for, with their Team names (#161), and whether Players may move
- * into and out of them now. A name is composed from the words of the team's Players in the order they joined it.
+ * into and out of them now. A name is composed from the words of the team's Players in the order they joined it,
+ * until the first Session starts (#164): from then on it is the frozen name, null for the colour's name.
  */
 export function boardSection(eventRow: EventRow, rows: EventRows): Pick<EventView, 'teams' | 'teamChoiceOpen'> {
   const { settings, open } = teamChoiceOf(eventRow, rows.sessions)
@@ -119,11 +128,22 @@ export function boardSection(eventRow: EventRow, rows: EventRows): Pick<EventVie
       const seats = rows.members
         .filter(row => row.team === position)
         .map(row => ({ word: row.teamWord, joinedAt: row.teamJoinedAt?.getTime() ?? 0 }))
-      // The frozen name (#164) is passed here once it exists; until then no team is frozen.
-      return { position, name: composedTeamName({ words: teamWords(seats) }), frozen: false }
+      const frozen = rows.frozenTeams.find(row => row.position === position)
+      return { position, name: composedTeamName({ frozen: frozen?.frozenName, words: teamWords(seats) }), frozen: frozen !== undefined }
     }),
     teamChoiceOpen: open,
   }
+}
+
+/**
+ * The start rule for the Host (#164): the next Session, its shown number and why it cannot start now. Every other
+ * Member gets null, as for the Invite link, so only the Host's page offers the start.
+ */
+export function startSection(eventRow: EventRow, rows: EventRows, viewer: Viewer): Pick<EventView, 'start'> {
+  if (!viewer.isHost) return { start: null }
+  const { next, rejection } = startOf(eventRow, rows.sessions, rows.members.map(row => placeOf(row)))
+  const number = next === null ? null : numberedSessions(rows.sessions).find(row => row.id === next.id)?.number ?? null
+  return { start: { sessionId: next?.id ?? null, number, rejection } }
 }
 
 export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'settings' | 'settingsFloors' | 'pools'>> {
@@ -153,12 +173,20 @@ export function inviteSection(event: H3Event, eventRow: EventRow, viewer: Viewer
  * undated one with the Date a Reopen withdrew while that notice is due.
  */
 function sessionView(
-  session: { id: string, number: number | null, startsAt: Date | null, previousStartsAt: Date | null, slotId: string | null },
+  session: { id: string, number: number | null, startsAt: Date | null, previousStartsAt: Date | null, slotId: string | null, startedAt: Date | null, endedAt: Date | null },
   votes: VoteRow[],
 ): SessionView {
   return session.startsAt === null
-    ? { id: session.id, number: null, startsAt: null, previousStartsAt: session.previousStartsAt?.toISOString() ?? null }
-    : { id: session.id, number: session.number, startsAt: session.startsAt.toISOString(), previousStartsAt: null, notes: notesOn(session.slotId, votes) }
+    ? { id: session.id, number: null, startsAt: null, previousStartsAt: session.previousStartsAt?.toISOString() ?? null, startedAt: null, endedAt: null }
+    : {
+        id: session.id,
+        number: session.number,
+        startsAt: session.startsAt.toISOString(),
+        previousStartsAt: null,
+        notes: notesOn(session.slotId, votes),
+        startedAt: session.startedAt?.toISOString() ?? null,
+        endedAt: session.endedAt?.toISOString() ?? null,
+      }
 }
 
 /** The Notes on a Slot (#102), for the Session whose Date came from it. */

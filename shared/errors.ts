@@ -96,6 +96,20 @@ export const API_ERROR_STATUS = {
   invalid_team_word: 400,
   /** Only a Player in a team has a Team word (#161). */
   not_in_team: 409,
+  /** The Session has started: it is not removed, rescheduled or reopened any more (#164). */
+  session_started: 409,
+  /** The Event has no settings, so no Session can start (#164, start rule). */
+  not_set_up: 409,
+  /** A Session is running already (#164, start rule). */
+  session_running: 409,
+  /** No dated Session is left to start (#164, start rule). */
+  no_dated_session: 409,
+  /** A team has no Player (#164, start rule). */
+  teams_empty: 409,
+  /** The teams differ in size (#164, start rule). */
+  teams_uneven: 409,
+  /** No Session is running, so none can end (#164). */
+  no_running_session: 409,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

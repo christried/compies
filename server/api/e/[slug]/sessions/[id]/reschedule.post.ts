@@ -18,7 +18,7 @@ export default defineEventHandler((event): Promise<SessionRescheduled> => change
   const startsAt = parseLocalTime(body.startsAt)
   if (!startsAt) throw apiError('invalid_time')
 
-  const rejection = rescheduleRejection({ hasDate: session.startsAt !== null, startsAt, now: new Date(), duplicate: hasDateAt(before, startsAt, session.id) })
+  const rejection = rescheduleRejection({ hasDate: session.startsAt !== null, started: session.startedAt !== null, startsAt, now: new Date(), duplicate: hasDateAt(before, startsAt, session.id) })
   if (rejection) throw apiError(rejection)
 
   await tx.update(sessions).set({ startsAt, previousStartsAt: null }).where(eq(sessions.id, session.id))

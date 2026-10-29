@@ -14,9 +14,15 @@ describe('setDateRejection', () => {
     expect(setDateRejection(open)).toBeNull()
   })
 
-  it('refuses any phase other than poll, so a set Date cannot be changed this way', () => {
+  it('refuses any phase other than poll and running, so a set Date cannot be changed this way', () => {
     expect(setDateRejection({ ...open, phase: 'date_set' })).toBe('wrong_phase')
     expect(setDateRejection({ ...open, phase: 'draft' })).toBe('wrong_phase')
+    expect(setDateRejection({ ...open, phase: 'finished' })).toBe('wrong_phase')
+  })
+
+  it('lets the Host set a Date in a running Event while a Session waits for one (#164)', () => {
+    expect(setDateRejection({ ...open, phase: 'running' })).toBeNull()
+    expect(setDateRejection({ ...open, phase: 'running', undated: 0 })).toBe('wrong_phase')
   })
 
   it('refuses when no Session is left without a Date', () => {
@@ -68,36 +74,46 @@ describe('phaseOf', () => {
 
 describe('rescheduleRejection', () => {
   it('lets the Host move a set Date to a future time that no other Session has', () => {
-    expect(rescheduleRejection({ hasDate: true, startsAt: later, now, duplicate: false })).toBeNull()
+    expect(rescheduleRejection({ hasDate: true, started: false, startsAt: later, now, duplicate: false })).toBeNull()
+  })
+
+  it('refuses a Session that has started, before anything else (#164)', () => {
+    expect(rescheduleRejection({ hasDate: true, started: true, startsAt: later, now, duplicate: false })).toBe('session_started')
+    expect(rescheduleRejection({ hasDate: true, started: true, startsAt: now, now, duplicate: true })).toBe('session_started')
   })
 
   it('refuses a Session that has no set Date yet, so Reschedule never acts on an undated one', () => {
-    expect(rescheduleRejection({ hasDate: false, startsAt: later, now, duplicate: false })).toBe('wrong_phase')
+    expect(rescheduleRejection({ hasDate: false, started: false, startsAt: later, now, duplicate: false })).toBe('wrong_phase')
   })
 
   it('refuses a time that is not in the future', () => {
-    expect(rescheduleRejection({ hasDate: true, startsAt: now, now, duplicate: false })).toBe('in_past')
+    expect(rescheduleRejection({ hasDate: true, started: false, startsAt: now, now, duplicate: false })).toBe('in_past')
   })
 
   it('refuses a Date another Session already has, with duplicate_date', () => {
-    expect(rescheduleRejection({ hasDate: true, startsAt: later, now, duplicate: true })).toBe('duplicate_date')
+    expect(rescheduleRejection({ hasDate: true, started: false, startsAt: later, now, duplicate: true })).toBe('duplicate_date')
   })
 
   it('checks the Date before the time', () => {
-    expect(rescheduleRejection({ hasDate: false, startsAt: now, now, duplicate: false })).toBe('wrong_phase')
+    expect(rescheduleRejection({ hasDate: false, started: false, startsAt: now, now, duplicate: false })).toBe('wrong_phase')
   })
 })
 
 describe('reopenRejection', () => {
   it('lets the Host reopen one set Date in every Phase before finished, also while running', () => {
-    expect(reopenRejection({ phase: 'date_set', hasDate: true })).toBeNull()
-    expect(reopenRejection({ phase: 'poll', hasDate: true })).toBeNull()
-    expect(reopenRejection({ phase: 'running', hasDate: true })).toBeNull()
+    expect(reopenRejection({ phase: 'date_set', hasDate: true, started: false })).toBeNull()
+    expect(reopenRejection({ phase: 'poll', hasDate: true, started: false })).toBeNull()
+    expect(reopenRejection({ phase: 'running', hasDate: true, started: false })).toBeNull()
+  })
+
+  it('refuses a Session that has started, before anything else (#164)', () => {
+    expect(reopenRejection({ phase: 'running', hasDate: true, started: true })).toBe('session_started')
+    expect(reopenRejection({ phase: 'finished', hasDate: false, started: true })).toBe('session_started')
   })
 
   it('refuses a Session that has no Date, and any phase that is not editable', () => {
-    expect(reopenRejection({ phase: 'poll', hasDate: false })).toBe('wrong_phase')
-    expect(reopenRejection({ phase: 'finished', hasDate: true })).toBe('wrong_phase')
+    expect(reopenRejection({ phase: 'poll', hasDate: false, started: false })).toBe('wrong_phase')
+    expect(reopenRejection({ phase: 'finished', hasDate: true, started: false })).toBe('wrong_phase')
   })
 })
 
@@ -120,15 +136,20 @@ describe('addSessionRejection', () => {
 
 describe('removeSessionRejection', () => {
   it('removes a Session of an editable Event while another one stays', () => {
-    expect(removeSessionRejection({ phase: 'poll', count: 2 })).toBeNull()
-    expect(removeSessionRejection({ phase: 'date_set', count: 3 })).toBeNull()
+    expect(removeSessionRejection({ phase: 'poll', count: 2, started: false })).toBeNull()
+    expect(removeSessionRejection({ phase: 'date_set', count: 3, started: false })).toBeNull()
   })
 
   it('never removes the last Session', () => {
-    expect(removeSessionRejection({ phase: 'poll', count: 1 })).toBe('last_session')
+    expect(removeSessionRejection({ phase: 'poll', count: 1, started: false })).toBe('last_session')
+  })
+
+  it('refuses a Session that has started, before anything else (#164)', () => {
+    expect(removeSessionRejection({ phase: 'running', count: 2, started: true })).toBe('session_started')
+    expect(removeSessionRejection({ phase: 'finished', count: 1, started: true })).toBe('session_started')
   })
 
   it('refuses a phase that is not editable', () => {
-    expect(removeSessionRejection({ phase: 'finished', count: 2 })).toBe('wrong_phase')
+    expect(removeSessionRejection({ phase: 'finished', count: 2, started: false })).toBe('wrong_phase')
   })
 })

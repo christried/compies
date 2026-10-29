@@ -100,7 +100,7 @@ describe('events', () => {
         hostId: host!.id,
         deletedAt: null,
       })
-      expect(await sessionRows(event!.id)).toEqual([{ id: expect.any(String), eventId: event!.id, startsAt: null, previousStartsAt: null, slotId: null, icsSequence: 0, removedAt: null }])
+      expect(await sessionRows(event!.id)).toEqual([{ id: expect.any(String), eventId: event!.id, startsAt: null, previousStartsAt: null, slotId: null, icsSequence: 0, removedAt: null, startedAt: null, endedAt: null }])
       expect(inviteUrl.endsWith(`${slug}-${event!.inviteToken}`)).toBe(true)
       expect(event!.inviteToken).toMatch(/^[A-Za-z0-9]{12}$/)
 
@@ -320,7 +320,7 @@ describe('events', () => {
         phase: 'poll',
         isHost: true,
       })
-      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: null, previousStartsAt: null }])
+      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: null, previousStartsAt: null, startedAt: null, endedAt: null }])
       expect(response.ok).toBe(true)
       expect(slots.map((slot: { startsAt: string }) => slot.startsAt)).toEqual([
         '2090-10-30T19:30:00.000Z',
@@ -336,7 +336,7 @@ describe('events', () => {
       const { event, slots, sessions, missingDates } = await (await read(cookie, slug)).json()
 
       expect(event).toMatchObject({ phase: 'date_set' })
-      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null, notes: [] }])
+      expect(sessions).toEqual([{ id: expect.any(String), number: null, startsAt: '2090-11-07T19:00:00.000Z', previousStartsAt: null, notes: [], startedAt: null, endedAt: null }])
       expect(missingDates).toBe(0)
       expect(slots).toEqual([])
     })
@@ -347,9 +347,9 @@ describe('events', () => {
 
       const { sessions, missingDates } = await (await read(cookie, slug)).json()
       expect(sessions).toEqual([
-        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null },
-        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null },
-        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null },
+        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null, startedAt: null, endedAt: null },
+        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null, startedAt: null, endedAt: null },
+        { id: expect.any(String), number: null, startsAt: null, previousStartsAt: null, startedAt: null, endedAt: null },
       ])
       expect(missingDates).toBe(3)
 

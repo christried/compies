@@ -1,6 +1,6 @@
 import { NOTE_MAX, VOTE_VALUES, type VoteValue } from '../../shared/poll'
 import { characterCount } from '../../shared/text'
-import type { Phase } from '../../shared/event'
+import { datePollOpen, type Phase } from '../../shared/event'
 
 // Date poll rules (#1 § Domain rules, ADR 0001). Pure functions: the handlers load the rows and
 // pass them in; `now` is injected so the rules can be tested at a fixed moment.
@@ -82,11 +82,12 @@ export function pollStanding<S extends PollSlot>(input: { slots: S[], votes: Pol
 export type VoteRejection = 'wrong_phase' | 'slot_taken' | 'slot_past'
 
 /**
- * Why a Vote on this Slot is refused, or null. Votes need the poll phase and a Slot that is not past (#1).
+ * Why a Vote on this Slot is refused, or null. Votes need an open Date poll (datePollOpen: `missingDates` Sessions wait
+ * for a Date, in the poll or a running Event, #164) and a Slot that is not past (#1).
  * A Slot that became a Session's Date is taken and its Votes are frozen (#52).
  */
-export function voteRejection(input: { phase: Phase, startsAt: Date, now: Date, taken?: boolean }): VoteRejection | null {
-  if (input.phase !== 'poll') return 'wrong_phase'
+export function voteRejection(input: { phase: Phase, missingDates: number, startsAt: Date, now: Date, taken?: boolean }): VoteRejection | null {
+  if (!datePollOpen(input.phase, input.missingDates)) return 'wrong_phase'
   if (input.taken) return 'slot_taken'
   if (isPast(input.startsAt, input.now)) return 'slot_past'
   return null
