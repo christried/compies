@@ -118,6 +118,8 @@
     "closedAria": "Zu. {reason}",
     "lockedAria": "Gesperrt. {reason}",
     "personAria": "{name}, {where}",
+    "personAriaOnline": "{name}, {where}, online",
+    "personAriaOffline": "{name}, {where}, offline",
     "moveTo": "Verschieben nach …",
     "whereTo": "Wohin, {name}?",
     "moveToTeam": "Nach {team}",

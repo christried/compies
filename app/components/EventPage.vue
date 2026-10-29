@@ -23,6 +23,12 @@ const slug = toRef(() => props.slug)
 const { data, error, refresh, room } = await useEventView(slug)
 const connection = useConnectionBanner(room.state, room.enabled)
 
+// Who is online (#162) goes to the Game board's dots. The server clock is kept here, on the page's one socket, for the
+// timers of 1.5 (which will provide it from here); nothing reads it yet.
+const presence = usePresence(room)
+useServerClock(room)
+const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
+
 const notFound = computed(() => error.value?.statusCode === 404)
 const deleted = computed(() => error.value?.statusCode === 410)
 const failed = computed(() => error.value !== null && !notFound.value && !deleted.value)
@@ -290,6 +296,7 @@ const hostActions = computed((): DockAction[] => {
         :viewer-id="data.viewerId"
         :is-host="data.event.isHost"
         :room="room"
+        :online="onlineState"
       />
 
       <!-- Provisional: the SidePanel (#166) takes the feed over. -->
