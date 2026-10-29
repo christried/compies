@@ -3,7 +3,9 @@
 // through shared/realtime.ts (the `Place` in `member.moved`), so it imports nothing outside shared/.
 
 import { isRecord } from './record'
-import type { EventSettings } from './settings'
+
+/** What the board needs of an Event's settings (EventSettings has it). Declared here so this file imports nothing but shared/record. */
+export interface BoardSettings { teamCount: number, teamSize: number }
 
 /** Where a Member stands on the Game board: the Bench, the Stands (Tribüne) or a team by its position (1..team count). */
 export type Place = { zone: 'bench' | 'stands' } | { zone: 'team', team: number }
@@ -19,7 +21,7 @@ export type Seats = Readonly<Record<number, number>>
  * Date, and the first Session has not started. Reopening the only Date closes it again, and moves nobody (moveRejection
  * only gates moves).
  */
-export function teamChoiceOpen({ settings, hasDatedSession, started }: { settings: EventSettings | null, hasDatedSession: boolean, started: boolean }): boolean {
+export function teamChoiceOpen({ settings, hasDatedSession, started }: { settings: BoardSettings | null, hasDatedSession: boolean, started: boolean }): boolean {
   return settings !== null && hasDatedSession && !started
 }
 
@@ -30,7 +32,7 @@ export interface MoveCheck {
   userId: string
   from: Place
   to: Place
-  settings: EventSettings | null
+  settings: BoardSettings | null
   teamChoiceOpen: boolean
   /** The first Session has started. */
   started: boolean

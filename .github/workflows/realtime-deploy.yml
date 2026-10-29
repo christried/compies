@@ -14,6 +14,7 @@ on:
       # reaches shared/activity.ts). test/unit/realtime-deploy-paths.test.ts keeps this list complete.
       - 'shared/realtime.ts'
       - 'shared/activity.ts'
+      - 'shared/board.ts'
       - 'shared/room-auth.ts'
       - 'shared/crypto.ts'
       - 'shared/record.ts'
