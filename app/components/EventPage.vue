@@ -217,10 +217,16 @@ const hostActions = computed((): DockAction[] => {
         @remove-session="removeSession"
       />
 
-      <BaustelleZone
-        compact
-        :title="t('mvp.poll.zoneOpenTitle')"
-        :text="t('mvp.poll.zoneOpenText')"
+      <!-- Provisional spot: the final order of the page comes with #166. -->
+      <GameBoard
+        :slug="slug"
+        :members="data.members"
+        :teams="data.teams"
+        :settings="data.settings"
+        :team-choice-open="data.teamChoiceOpen"
+        :viewer-id="data.viewerId"
+        :is-host="data.event.isHost"
+        :room="room"
       />
 
       <!-- Provisional: the SidePanel (#166) takes the feed over. -->

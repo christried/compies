@@ -78,10 +78,10 @@ describe('construction page route guard', () => {
     expect(page.findAll('nav[aria-label="Hauptnavigation"] a').some(a => a.text() === 'Bibliothek')).toBe(true)
   })
 
-  it('renders the Spielbrett state in the event shell, without the hub navigation', async () => {
-    const page = await visit('/e/freitags-zocken-k7q2/brett')
+  it('renders the generic state in the event shell for an Event sub-route, without the hub navigation', async () => {
+    const page = await visit('/e/freitags-zocken-k7q2/tabelle')
 
-    expect(page.get('h1').text()).toBe('Spielbrett im Rohbau.')
+    expect(page.get('h1').text()).toBe('Hier wird noch gebaut.')
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(false)
   })
 

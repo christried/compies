@@ -134,9 +134,9 @@ describe('changeEvent', () => {
     const { cookie } = await signIn(testDb.db, newcomer)
 
     await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })
-    expect(types(eventId)).toEqual(['event.changed', 'activity.added'])
+    expect(types(eventId)).toEqual(['event.changed', 'activity.added', 'member.joined'])
 
     await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })
-    expect(types(eventId)).toEqual(['event.changed', 'activity.added'])
+    expect(types(eventId)).toEqual(['event.changed', 'activity.added', 'member.joined'])
   })
 })

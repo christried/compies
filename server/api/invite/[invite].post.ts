@@ -27,7 +27,10 @@ export default defineEventHandler(async (event): Promise<JoinedEvent> => {
   const messages: RoomMessage[] = []
   const joined = await db.transaction(async (tx) => {
     const added = await addMember(tx, eventRow.id, user.id)
-    if (added) await recordActivity(tx, (...queued) => void messages.push(...queued), eventRow.id, { type: 'member_joined', actorId: user.id, params: {} })
+    if (added) {
+      await recordActivity(tx, (...queued) => void messages.push(...queued), eventRow.id, { type: 'member_joined', actorId: user.id, params: {} })
+      messages.push({ type: 'member.joined', userId: user.id })
+    }
     return added
   })
   // The join loads the Event by its Invite link, not by slug, so it cannot go through changeEvent; it reaches the

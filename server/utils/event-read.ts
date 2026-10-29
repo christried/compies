@@ -11,14 +11,14 @@ import { settingsFromRow } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
 import { inviteUrl } from './links'
+import { teamChoiceOf } from './board'
 import { eventPools } from './pools'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { settingsFloors } from './settings-floors'
 
 // The Event read (`GET /api/e/:slug`) as section builders (#183). Each builder returns its slice of EventView and the
 // handler composes them. Rows that more than one section needs are read once, together, by readEventRows; the pools
-// need nothing from them, so the handler reads both at the same time. A new section (1.4's board) is one more builder
-// and one more entry in that composition.
+// need nothing from them, so the handler reads both at the same time. The board (#160) is one such builder.
 
 /** Who reads the Event. */
 export interface Viewer {
@@ -35,7 +35,7 @@ export interface EventRows {
   slots: { id: string, startsAt: Date }[]
   votes: VoteRow[]
   /** The Members in the order they joined. */
-  members: { id: string, name: string, displayName: string | null, image: string | null }[]
+  members: { id: string, name: string, displayName: string | null, image: string | null, zone: 'bench' | 'stands' | 'team', team: number | null }[]
 }
 
 export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRows> {
@@ -53,7 +53,7 @@ export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRo
       .innerJoin(pollSlots, eq(pollVotes.slotId, pollSlots.id))
       .where(eq(pollSlots.eventId, eventRow.id)),
     db
-      .select({ id: users.id, name: users.name, displayName: users.displayName, image: users.image })
+      .select({ id: users.id, name: users.name, displayName: users.displayName, image: users.image, zone: eventMembers.zone, team: eventMembers.team })
       .from(eventMembers)
       .innerJoin(users, eq(eventMembers.userId, users.id))
       .where(eq(eventMembers.eventId, eventRow.id))
@@ -99,7 +99,18 @@ export function membersSection(eventRow: EventRow, rows: EventRows): Pick<EventV
       name: shownName(row),
       image: row.image,
       isHost: row.id === eventRow.hostId,
+      zone: row.zone,
+      team: row.team,
     })),
+  }
+}
+
+/** The Game board (#160): the teams the settings call for, and whether Players may move into and out of them now. */
+export function boardSection(eventRow: EventRow, rows: EventRows): Pick<EventView, 'teams' | 'teamChoiceOpen'> {
+  const { settings, open } = teamChoiceOf(eventRow, rows.sessions)
+  return {
+    teams: Array.from({ length: settings?.teamCount ?? 0 }, (_, index) => ({ position: index + 1 })),
+    teamChoiceOpen: open,
   }
 }
 

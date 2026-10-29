@@ -52,6 +52,11 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   setting_locked: 'error.settingLocked',
   team_size_below_fullest: 'error.teamSizeBelowFullest',
   veto_allowance_below_spent: 'error.vetoAllowanceBelowSpent',
+  host_only: 'board.reason.hostOnly',
+  already_there: 'board.reason.already',
+  team_choice_closed: 'board.reason.pollLocked',
+  teams_locked: 'board.reason.runningLocked',
+  team_full: 'board.reason.full',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

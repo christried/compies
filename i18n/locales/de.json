@@ -90,14 +90,17 @@
     "bench": "Bench",
     "benchSub": "Ersatz, unbegrenzt",
     "stands": "Tribüne",
-    "standsSub": "Zuschauer, nur Emotes",
+    "standsSub": "Zuschauer, spielen nicht mit",
     "benchEmpty": "Niemand auf der Bench.",
     "standsEmpty": "Die Tribüne ist leer.",
     "free": "Frei",
     "dropHere": "Hier rein",
     "locked": "Gesperrt",
     "slotsFree": "{n} Platz frei | {n} Plätze frei",
-    "zoneAria": "{name}, {n} von {size}",
+    "zoneAria": "{name}, {n} von {size} frei",
+    "closed": "Zu",
+    "closedAria": "Zu. {reason}",
+    "personAria": "{name}, {where}",
     "moveTo": "Verschieben nach …",
     "whereTo": "Wohin, {name}?",
     "moveToTeam": "Nach {team}",
@@ -117,8 +120,11 @@
       "leaveRunning": "Nur der Host kann dich aus dem Team holen.",
       "lostRace": "{name} war schneller. Der letzte Platz in {team} ist weg."
     },
+    "note": {
+      "setup": "Teams gibt es, sobald das Event eingerichtet ist. Bis dahin: Bench oder Tribüne."
+    },
     "notice": {
-      "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench, Tribüne und Chat.",
+      "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench oder Tribüne.",
       "uneven": "{team} hat {small}, die anderen haben {big}. Das Spiel startet erst, wenn alle Teams gleich groß sind.",
       "running": "Das Spiel läuft. Zwischen Bench und Tribüne kannst du frei wechseln.",
       "runningHost": "Spiel läuft: nur du kannst noch tauschen. Name eingefroren.",
@@ -432,7 +438,12 @@
     "teamSize": "{name} hat die Teamgröße auf {to} geändert",
     "gameHeader": "Spiel {n}, {game}",
     "join": "{name} ist dem Event beigetreten",
-    "move": "{name} ist auf die Tribüne gewechselt",
+    "moveTeam": "{name} ist jetzt in {team}",
+    "moveBench": "{name} ist jetzt auf der Bench",
+    "moveStands": "{name} ist jetzt auf der Tribüne",
+    "movedTeam": "{actor} hat {name} nach {team} verschoben",
+    "movedBench": "{actor} hat {name} auf die Bench verschoben",
+    "movedStands": "{actor} hat {name} auf die Tribüne verschoben",
     "date": "Termin steht: {date}",
     "start": "{name} hat die Session gestartet",
     "wheel": "Glücksrad: {game}",
@@ -1092,11 +1103,7 @@
       "confirmSeeAll": "Alle sehen den Termin sofort hier.",
       "confirmCta": "Festlegen",
       "cancel": "Abbrechen",
-      "setText": "Der Termin ist fix. Wenn dir was dazwischenkommt, sag dem Host sofort Bescheid. Wird geil.",
-      "zoneOpenTitle": "Spielbrett im Rohbau.",
-      "zoneOpenText": "Teams, Chat und Glücksrad kommen mit dem nächsten Update. Bis dahin reicht: abstimmen.",
-      "zoneSetTitle": "Teamwahl kommt mit dem nächsten Update.",
-      "zoneSetText": "Bis dahin steht der Termin, und alle wissen Bescheid. Teams, Chat und Glücksrad bauen wir gerade."
+      "setText": "Der Termin ist fix. Wenn dir was dazwischenkommt, sag dem Host sofort Bescheid. Wird geil."
     },
     "zone": {
       "chip": "Kommt mit dem nächsten Update",
@@ -1119,10 +1126,6 @@
         "title": "Profil? Der Bagger ist bestellt.",
         "text": "Name und Bild kommen gerade von Discord oder Twitch. Hochladen und Einstellungen folgen mit dem nächsten Update.",
         "logout": "Abmelden"
-      },
-      "brett": {
-        "title": "Spielbrett im Rohbau.",
-        "text": "Teams, Chat, Glücksrad und Siegerehrung kommen mit den nächsten Updates. Die Terminumfrage läuft schon."
       },
       "admin": {
         "title": "Der Admin-Bereich hat noch keine Tür.",

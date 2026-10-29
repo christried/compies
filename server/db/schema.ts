@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { boolean, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
 import { SUITABILITIES } from '../../shared/game'
@@ -114,7 +114,16 @@ export const eventMembers = pgTable('event_members', {
   userId: uuid('user_id').notNull().references(() => users.id),
   joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
   zone: memberZone('zone').default('bench').notNull(),
-}, table => [primaryKey({ columns: [table.eventId, table.userId] })])
+  /** The team position (1..team count) while the zone is `team`, else null (#160). */
+  team: integer('team'),
+  /** When the Member took this team seat; the latest one wins the race for a last place (#160). Null outside a team. */
+  teamJoinedAt: timestamp('team_joined_at', { withTimezone: true }),
+}, table => [
+  primaryKey({ columns: [table.eventId, table.userId] }),
+  index('event_members_event_id_team_idx').on(table.eventId, table.team),
+  check('event_members_team_zone_check', sql`(${table.zone} = 'team') = (${table.team} IS NOT NULL)`),
+  check('event_members_team_joined_at_check', sql`(${table.team} IS NULL) = (${table.teamJoinedAt} IS NULL)`),
+])
 
 export const pollSlots = pgTable('poll_slots', {
   id: uuid('id').defaultRandom().primaryKey(),
