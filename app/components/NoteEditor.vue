@@ -105,6 +105,7 @@ defineExpose({ open, closeIfUntouched })
     ref="root"
     :class="voted || editing ? 'flex flex-col gap-2 border-t-2 border-dashed border-line-soft pt-2.5' : undefined"
   >
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- Escape cancels the edit from any control inside -->
     <div
       v-if="editing"
       class="flex flex-col gap-1.5"

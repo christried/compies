@@ -91,6 +91,7 @@ const VALUE = { md: 'min-w-11 text-[28px]', lg: 'min-w-[90px] text-[72px]' }
       :id="minId"
       class="sr-only"
     >{{ minText }}</span>
+    <!-- eslint-disable-next-line vuejs-accessibility/interactive-supports-focus -- tabindex is bound: 0, or -1 while the setting is locked -->
     <output
       role="spinbutton"
       :tabindex="lockedReason ? -1 : 0"

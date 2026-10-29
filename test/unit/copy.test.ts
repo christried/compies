@@ -55,13 +55,23 @@ describe('copy rules', () => {
   })
 })
 
-// The words of GLOSSARY.md (#175): the whole Event is an Event, the Lucky Wheel is the Glücksrad, the Host pick the Host-Wahl.
+// The words of GLOSSARY.md (#175). A UI word the glossary replaces goes into RETIRED with its successor
+// (docs/agents/domain.md), so neither the copy nor the changelog falls back to it.
+const RETIRED: Record<string, string> = {
+  'Lucky Wheel': 'Glücksrad',
+  'Admin-Wahl': 'Host-Wahl',
+  'Passende Formate': 'Passt zu',
+}
+
 describe('glossary words in the copy', () => {
   const byKey = new Map(entries.map(e => [e.key, e.value]))
+  const changelog = readFileSync(resolve(import.meta.dirname, '../../CHANGELOG.md'), 'utf8')
+  const unreleased = changelog.split(/^## /m).find(section => section.startsWith('[Unreleased]')) ?? ''
 
-  it('never shows „Lucky Wheel“ or „Admin-Wahl“', () => {
-    const hits = entries.filter(e => /Lucky Wheel|Admin-Wahl/.test(e.value)).map(e => e.key)
+  it.each(Object.entries(RETIRED))('never shows „%s“ (now „%s“) in the copy or the Unreleased lines', (retired) => {
+    const hits = entries.filter(e => e.value.includes(retired)).map(e => e.key)
     expect(hits).toEqual([])
+    expect(unreleased).not.toContain(retired)
   })
 
   it('calls the whole Event an Event in the stepper, the name step and the Fertig screen, never a Session', () => {
@@ -77,10 +87,7 @@ describe('glossary words in the copy', () => {
     for (const key of keys) expect(byKey.get(key), key).not.toMatch(/Session/)
   })
 
-  it('uses the new words in the Unreleased lines of the changelog', () => {
-    const changelog = readFileSync(resolve(import.meta.dirname, '../../CHANGELOG.md'), 'utf8')
-    const unreleased = changelog.split(/^## /m).find(section => section.startsWith('[Unreleased]')) ?? ''
+  it('finds the Unreleased section it checks', () => {
     expect(unreleased).not.toBe('')
-    expect(unreleased).not.toMatch(/Lucky Wheel|Admin-Wahl/)
   })
 })

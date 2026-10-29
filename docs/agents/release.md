@@ -51,6 +51,8 @@ Which case applies depends on what `staging` holds after the cut.
 - Tag the merge commit on `main` with an annotated tag `vX.Y.Z`, message `Release x.y.z – Name` (e.g. `Release 1.2.0 – Mehr Termine`), and push the tag. A cloud session tags through the REST API (`docs/agents/delivery.md`).
 - If `main` and `staging` have diverged (the merge commit on `main` is not in `staging`), merge `main` back into `staging` so the next Release PR is clean.
 - Delete the `release/x.y.z` branch once it is merged (Case B only).
+- Mark the Release as released in `docs/roadmap.md`.
+- Ask the user to run `/retro` (step 4 of § Review, walk-through, retro).
 
 ## Semantic versioning
 

@@ -14,7 +14,7 @@ Pass `model` on every Agent call. `CLAUDE_CODE_SUBAGENT_MODEL=haiku` in `.claude
 
 ## Briefs
 
-Read the ticket and the code first, then write one brief per ticket: files to change, data shapes, migration, tests at which seam with which cases, edge cases, what not to touch, an acceptance checklist, and the model it runs on. The more precise the brief, the more of the work Haiku can take. Around it goes the generic frame: worktree base, commits, the changelog line (`docs/agents/release.md`), the checks CI runs (`.github/workflows/ci.yml`), and the report.
+Read the ticket and the code first, then write one brief per ticket: files to change, data shapes, migration, tests at which seam with which cases, edge cases, what not to touch, an acceptance checklist, and the model it runs on. The more precise the brief, the more of the work Haiku can take. Name the existing module the ticket extends (the homes in `CODING_STANDARDS.md`); a ticket that builds a second copy of a page, flow or component says why. Around it goes the generic frame: worktree base, commits, the changelog line (`docs/agents/release.md`), the checks CI runs (`.github/workflows/ci.yml`), and the report.
 
 ## Supervision
 
