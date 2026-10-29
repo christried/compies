@@ -125,7 +125,8 @@ describe('changeEvent', () => {
       body: JSON.stringify({ settings: { gameCount: 12 } }),
     })
     expect(changed.status).toBe(200)
-    expect(types(eventId)).toEqual(['event.changed', 'event.changed'])
+    // A changed game count also goes into the Activity feed (#159).
+    expect(types(eventId)).toEqual(['event.changed', 'event.changed', 'activity.added'])
   })
 
   it('publishes when someone joins through the Invite link, and not when a Member joins again', async () => {
@@ -133,9 +134,9 @@ describe('changeEvent', () => {
     const { cookie } = await signIn(testDb.db, newcomer)
 
     await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })
-    expect(types(eventId)).toEqual(['event.changed'])
+    expect(types(eventId)).toEqual(['event.changed', 'activity.added'])
 
     await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })
-    expect(types(eventId)).toEqual(['event.changed'])
+    expect(types(eventId)).toEqual(['event.changed', 'activity.added'])
   })
 })

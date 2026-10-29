@@ -25,3 +25,16 @@ export async function isMember(db: Db, eventId: string, userId: string) {
     .where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)))
   return member !== undefined
 }
+
+/**
+ * Makes the User a Member of the Event, on the Bench (#159). Returns whether this call added them: a User who already
+ * is a Member changes nothing and keeps their place. Joining and creating an Event both go through here.
+ */
+export async function addMember(db: Db, eventId: string, userId: string): Promise<boolean> {
+  const added = await db
+    .insert(eventMembers)
+    .values({ eventId, userId })
+    .onConflictDoNothing({ target: [eventMembers.eventId, eventMembers.userId] })
+    .returning({ userId: eventMembers.userId })
+  return added.length > 0
+}
