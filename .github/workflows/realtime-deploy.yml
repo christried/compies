@@ -10,8 +10,10 @@ on:
     branches: [staging, main]
     paths:
       - 'realtime/**'
-      # The shared files the Worker imports (realtime/src, through shared/room-auth.ts).
+      # The shared files the Worker imports (realtime/src, and what those import in turn, e.g. shared/realtime.ts
+      # reaches shared/activity.ts). test/unit/realtime-deploy-paths.test.ts keeps this list complete.
       - 'shared/realtime.ts'
+      - 'shared/activity.ts'
       - 'shared/room-auth.ts'
       - 'shared/crypto.ts'
       - 'shared/record.ts'
