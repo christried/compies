@@ -60,6 +60,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- the arrow keys move focus between the toolbar buttons -->
     <div
       ref="toolbar"
       role="toolbar"

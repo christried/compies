@@ -91,6 +91,7 @@ const MODES = computed<{ value: SessionsDraft['mode'], label: string, icon: Comp
           :disabled="dates.sessionCount <= 1"
           @click="setSessionCount(dates.sessionCount - 1)"
         />
+        <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -- an <output> shows a value, it is not a form control -->
         <output
           class="min-w-8 text-center font-num text-[22px]"
           aria-live="polite"
