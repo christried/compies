@@ -1246,6 +1246,7 @@
       "teamSizeMin": "Mindestens 1 pro Team.",
       "teamSizeFloor": "Im vollsten Team sind schon {n}.",
       "teamSizeMax": "Höchstens 6 pro Team.",
+      "toBench": "Beim Speichern geht {n} Person aus den entfernten Teams auf die Bench. | Beim Speichern gehen {n} Leute aus den entfernten Teams auf die Bench.",
       "playersMax": "Höchstens 24 Leute in Teams.",
       "total": "{teams} Teams à {size} = {players} Leute in Teams (max. 24)"
     },

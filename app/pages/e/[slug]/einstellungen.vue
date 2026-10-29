@@ -2,6 +2,7 @@
 import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
 import { eventDataKey } from '~/utils/event-data'
 import { draftFromEvent, settingsBody, type EventDraft, type StepKey } from '~/utils/event-draft'
+import { countSeats, placeOf } from '~~/shared/board'
 import { canSeeLibrary } from '~~/shared/game'
 import { eventPath } from '~~/shared/links'
 import { settingsEditable, settingsLocked } from '~~/shared/settings'
@@ -27,7 +28,13 @@ const notSetUp = computed(() => view.value?.settings === null)
 const lockedReason = computed(() => (view.value && !notSetUp.value && settingsLocked(view.value.event.phase) ? t('eventSettings.locked') : undefined))
 // A Host whose Host permission was revoked keeps the games in the pools but may not browse the library (#173).
 const user = useAuthUser()
-const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value) }))
+// The Players per saved team (#163): one entry per team the Event has now, so the Format step can count the Players a
+// lower team count would send to the Bench.
+const teamPlayers = computed(() => {
+  const seats = countSeats((view.value?.members ?? []).map(member => placeOf(member)))
+  return (view.value?.teams ?? []).map(team => seats[team.position] ?? 0)
+})
+const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value }))
 
 const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { hidden: false, main: [], tiebreaker: [] } }))
 
