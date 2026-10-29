@@ -5,6 +5,7 @@ import { poolsVisibleTo } from '../domain/pool-visibility'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
+import { composedTeamName, teamWords } from '../../shared/board'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
 import { settingsFromRow } from '../../shared/settings'
@@ -35,7 +36,7 @@ export interface EventRows {
   slots: { id: string, startsAt: Date }[]
   votes: VoteRow[]
   /** The Members in the order they joined. */
-  members: { id: string, name: string, displayName: string | null, image: string | null, zone: 'bench' | 'stands' | 'team', team: number | null }[]
+  members: { id: string, name: string, displayName: string | null, image: string | null, zone: 'bench' | 'stands' | 'team', team: number | null, teamWord: string | null, teamJoinedAt: Date | null }[]
 }
 
 export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRows> {
@@ -53,7 +54,7 @@ export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRo
       .innerJoin(pollSlots, eq(pollVotes.slotId, pollSlots.id))
       .where(eq(pollSlots.eventId, eventRow.id)),
     db
-      .select({ id: users.id, name: users.name, displayName: users.displayName, image: users.image, zone: eventMembers.zone, team: eventMembers.team })
+      .select({ id: users.id, name: users.name, displayName: users.displayName, image: users.image, zone: eventMembers.zone, team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
       .from(eventMembers)
       .innerJoin(users, eq(eventMembers.userId, users.id))
       .where(eq(eventMembers.eventId, eventRow.id))
@@ -101,15 +102,26 @@ export function membersSection(eventRow: EventRow, rows: EventRows): Pick<EventV
       isHost: row.id === eventRow.hostId,
       zone: row.zone,
       team: row.team,
+      teamWord: row.teamWord,
     })),
   }
 }
 
-/** The Game board (#160): the teams the settings call for, and whether Players may move into and out of them now. */
+/**
+ * The Game board (#160): the teams the settings call for, with their Team names (#161), and whether Players may move
+ * into and out of them now. A name is composed from the words of the team's Players in the order they joined it.
+ */
 export function boardSection(eventRow: EventRow, rows: EventRows): Pick<EventView, 'teams' | 'teamChoiceOpen'> {
   const { settings, open } = teamChoiceOf(eventRow, rows.sessions)
   return {
-    teams: Array.from({ length: settings?.teamCount ?? 0 }, (_, index) => ({ position: index + 1 })),
+    teams: Array.from({ length: settings?.teamCount ?? 0 }, (_, index) => {
+      const position = index + 1
+      const seats = rows.members
+        .filter(row => row.team === position)
+        .map(row => ({ word: row.teamWord, joinedAt: row.teamJoinedAt?.getTime() ?? 0 }))
+      // The frozen name (#164) is passed here once it exists; until then no team is frozen.
+      return { position, name: composedTeamName({ words: teamWords(seats) }), frozen: false }
+    }),
     teamChoiceOpen: open,
   }
 }

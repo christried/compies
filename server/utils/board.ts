@@ -7,8 +7,9 @@ import type { EventRow } from './event-access'
 import type { SessionRow } from './sessions'
 
 // The seats of the Game board (#160, GLOSSARY: Game board). One home: every write of a Member's zone, team and
-// team_joined_at goes through seatMember, so a rule that follows a seat change (#161: leaving a team clears the Team
-// word; #163: removed teams send their Players to the Bench) has one place to live.
+// team_joined_at (and the Team word that goes with the seat) goes through seatMember, so a rule that follows a seat
+// change (#161: a seat change clears the Team word; #163: removed teams send their Players to the Bench) has one place
+// to live.
 
 /** Every Member of the Event with the place they stand in. */
 export async function readSeats(tx: Db, eventId: string): Promise<{ userId: string, place: Place }[]> {
@@ -23,12 +24,16 @@ export async function readSeats(tx: Db, eventId: string): Promise<{ userId: stri
  * Puts the Member in `to`. Entering a team (or changing team) stamps `team_joined_at` with the moment of the write,
  * leaving a team clears it. The stamp is the clock, not the transaction start, so seats taken one after the other
  * keep their order even when their transactions began together (lastToJoin reads it).
+ *
+ * Every seat change also clears the Member's Team word (#161): a word belongs to the team it was given in, so leaving
+ * a team or changing team drops it. A move to the place the Member is in never gets here (`already_there`), so a
+ * Player keeps their word until they really move. Callers that send Players away (#163: removed teams) get this too.
  */
 export async function seatMember(tx: Db, eventId: string, userId: string, to: Place): Promise<void> {
   const team = to.zone === 'team' ? to.team : null
   await tx
     .update(eventMembers)
-    .set({ zone: to.zone, team, teamJoinedAt: team === null ? null : sql`clock_timestamp()` })
+    .set({ zone: to.zone, team, teamJoinedAt: team === null ? null : sql`clock_timestamp()`, teamWord: null })
     .where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)))
 }
 
