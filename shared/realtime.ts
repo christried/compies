@@ -28,6 +28,10 @@ export type RoomMessage
     | { type: 'presence.leave', userId: string }
   /** The answer to a `clock.ping`, to the asking socket only: `t0` is the client's own, the envelope's `serverTime` is the server's (#162). */
     | { type: 'clock.pong', t0: number }
+  /** A Player in `team` set their Team word, or removed it (`word: null`) (#161). */
+    | { type: 'team.wordSet', team: number, userId: string, word: string | null }
+  /** The Host reset the Team name of `team` to its colour name (#161). */
+    | { type: 'team.nameReset', team: number }
 
 export type RoomMessageType = RoomMessage['type']
 

@@ -109,8 +109,8 @@ describe('poll votes and the Event read', () => {
       expect(body.votes).toHaveLength(4)
       expect(body.votes).toContainEqual({ slotId: fri, userId: hostId, value: 'yes', note: null })
       expect(body.members).toEqual([
-        { id: hostId, name: 'Hostess', image: expect.any(String), isHost: true, zone: 'bench', team: null },
-        { id: memberId, name: 'Gast', image: expect.any(String), isHost: false, zone: 'bench', team: null },
+        { id: hostId, name: 'Hostess', image: expect.any(String), isHost: true, zone: 'bench', team: null, teamWord: null },
+        { id: memberId, name: 'Gast', image: expect.any(String), isHost: false, zone: 'bench', team: null, teamWord: null },
       ])
       expect(body.bestSlotId).toBe(fri)
       expect(body.progress).toEqual({ voted: 2, total: 2 })

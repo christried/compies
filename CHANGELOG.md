@@ -8,11 +8,13 @@
 - Unter **Aktivität** siehst du jetzt, was im Event passiert ist: wer dazugekommen ist, wann ein Termin feststand und was der Host geändert hat. ([#159](https://github.com/christried/compies/issues/159))
 - Auf der Event-Seite gibt es jetzt das **Spielbrett**: Zieh dich in ein Team, auf die Bench oder auf die Tribüne. Die Teamwahl öffnet, sobald ein Termin steht, und alle sehen sofort, wer wo sitzt. ([#160](https://github.com/christried/compies/issues/160))
 - Auf dem Spielbrett siehst du jetzt, wer gerade online ist. ([#162](https://github.com/christried/compies/issues/162))
+- Jedes Team bekommt jetzt seinen eigenen Namen: Alle im Team geben ein Wort ab, in der Reihenfolge, in der ihr beigetreten seid. ([#161](https://github.com/christried/compies/issues/161))
 - Nach einem Update zeigt dir COMPIES einmal, was neu ist. Das gilt für dein Konto: Hast du es auf einem Gerät gesehen, kommt es auf den anderen nicht noch einmal. ([#184](https://github.com/christried/compies/issues/184))
 
 ### Geändert
 
 - In der Host-Steuerung siehst du jetzt nur die wichtigsten Aktionen. Alles Weitere, etwa Termine bearbeiten und Einstellungen, findest du unter **Mehr**. ([#155](https://github.com/christried/compies/issues/155))
+- Die Teamgröße geht in den Einstellungen nicht mehr unter das vollste Team. Wenn du Teams entfernst, gehen ihre Leute auf die Bench. ([#163](https://github.com/christried/compies/issues/163))
 
 ## [1.3.0] - 2026-10-29 – Spielvorbereitung
 

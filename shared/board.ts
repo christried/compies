@@ -74,6 +74,27 @@ export function countSeats(places: readonly Place[]): Seats {
   return seats
 }
 
+/** A Player's seat in a team as the Team name needs it: their Team word (if any) and when they took the seat (ms since the epoch). */
+export interface TeamSeat { word: string | null, joinedAt: number }
+
+/** The Team words of a team's seats in the order their Players joined it (#161); Players without a word add none. */
+export function teamWords(seats: readonly TeamSeat[]): string[] {
+  return seats
+    .filter((seat): seat is { word: string, joinedAt: number } => seat.word !== null)
+    .sort((a, b) => a.joinedAt - b.joinedAt)
+    .map(seat => seat.word)
+}
+
+/**
+ * The Team name (GLOSSARY: Team name, #161): the frozen name when there is one (#164 sets it at the first Session
+ * start), else the team's words in the order given (teamWords), joined by a space. Null when neither exists: the
+ * client then shows the Team colour's name.
+ */
+export function composedTeamName({ frozen, words }: { frozen?: string | null, words: readonly string[] }): string | null {
+  if (typeof frozen === 'string') return frozen
+  return words.length === 0 ? null : words.join(' ')
+}
+
 /** The place a request names, or null when it is none: a zone, and for `team` a whole position (its range is moveRejection's). */
 export function parsePlace(value: unknown): Place | null {
   if (!isRecord(value)) return null
