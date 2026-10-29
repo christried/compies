@@ -45,3 +45,8 @@ export function formatDateTile(instant: Date): { weekday: string, month: string,
 export function formatSlotWhen(instant: Date): string {
   return `${formatSlotDay(instant)} ${formatSlotTime(instant)}`
 }
+
+/** When an Activity feed entry happened (#159): `20:30` on the day of `now`, else the day with the time (Berlin). */
+export function formatActivityTime(instant: Date, now: Date): string {
+  return formatSlotDay(instant) === formatSlotDay(now) ? formatSlotTime(instant) : formatSlotWhen(instant)
+}

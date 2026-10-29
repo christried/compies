@@ -222,6 +222,23 @@ const hostActions = computed((): DockAction[] => {
         :title="t('mvp.poll.zoneOpenTitle')"
         :text="t('mvp.poll.zoneOpenText')"
       />
+
+      <!-- Provisional: the SidePanel (#166) takes the feed over. -->
+      <section
+        class="flex flex-col gap-4 rounded-[20px] border-(length:--cp-bw) border-line bg-surface p-5.5 text-ink shadow-card md:p-[22px]"
+        aria-labelledby="activity-title"
+      >
+        <h2
+          id="activity-title"
+          class="m-0 font-display text-[26px] leading-none font-normal md:text-[32px]"
+        >
+          {{ t('activity.title') }}
+        </h2>
+        <ActivityFeed
+          :slug="slug"
+          :room="room"
+        />
+      </section>
     </div>
 
     <FullScreenState
