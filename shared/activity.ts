@@ -21,9 +21,6 @@ export const ACTIVITY_TYPES = [
 ] as const
 export type ActivityType = (typeof ACTIVITY_TYPES)[number]
 
-/** Where a Member stands on the Game board: the Bench, the Stands (Tribüne) or a team by its position. */
-export type Place = { zone: 'bench' | 'stands' } | { zone: 'team', team: number }
-
 /** The params of each entry type. Instants are ISO strings; `number` is the number the Session was shown with. */
 export interface ActivityParams {
   member_joined: Record<string, never>

@@ -128,7 +128,7 @@ describe('the Activity feed', () => {
       expect(entries).toEqual([
         { id: expect.any(String), type: 'member_joined', at: expect.any(String), actor: { id: strangerId, name: 'Fremd' }, params: {}, people: {} },
       ])
-      expect(notifier.messages(eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added'])
+      expect(notifier.messages(eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added', 'member.joined'])
       expect(added(eventId)).toEqual(entries)
     })
 

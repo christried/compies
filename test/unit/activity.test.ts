@@ -64,6 +64,23 @@ describe('activityText', () => {
     expect(activityText({ ...base, type: 'session_removed', params: { sessionId: 's', number: null, startsAt: null } }, t)).toBe('Sanne hat eine Session entfernt')
   })
 
+  it('says where a Member moved themselves, with the team named by its colour (#160)', () => {
+    const own = { ...base, people: { u1: 'Sanne' } }
+
+    expect(activityText({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 1 } } }, t)).toBe('Sanne ist jetzt in Team Rot')
+    expect(activityText({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'team', team: 4 } } }, t)).toBe('Sanne ist jetzt in Team Himmel')
+    expect(activityText({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'bench' } } }, t)).toBe('Sanne ist jetzt auf der Bench')
+    expect(activityText({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } }, t)).toBe('Sanne ist jetzt auf der Tribüne')
+  })
+
+  it('says who moved a Member when the Host did (#160)', () => {
+    const byHost = { ...base, actor: { id: 'h', name: 'Hostess' }, people: { u1: 'Sanne' } }
+
+    expect(activityText({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } } }, t)).toBe('Hostess hat Sanne nach Team Orange verschoben')
+    expect(activityText({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 2 }, to: { zone: 'bench' } } }, t)).toBe('Hostess hat Sanne auf die Bench verschoben')
+    expect(activityText({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } }, t)).toBe('Hostess hat Sanne auf die Tribüne verschoben')
+  })
+
   it('has no sentence yet for the types that later tickets write', () => {
     expect(activityText({ ...base, type: 'team_name_reset', params: { team: 1 } }, t)).toBeNull()
   })

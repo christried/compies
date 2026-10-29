@@ -1,3 +1,4 @@
+import type { Place } from './board'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
 import type { EventSettings, SettingsFloors } from './settings'
@@ -101,6 +102,22 @@ export type EventPools
   = { hidden: false, main: PoolGame[], tiebreaker: PoolGame[] }
     | { hidden: true, mainCount: number, tiebreakerCount: number }
 
+/** What `POST /api/e/:slug/move` returns: the Member and the place they stand in now (#160). */
+export interface MovedMember { userId: string, to: Place }
+
+/** One team of the Game board (#160): its position, 1..team count, which is also its Team colour index. */
+export interface BoardTeam { position: number }
+
+/** A Member as the Event read lists them. `team` is set exactly when `zone` is `team` (#160). */
+export interface MemberView {
+  id: string
+  name: string
+  image: string | null
+  isHost: boolean
+  zone: 'bench' | 'stands' | 'team'
+  team: number | null
+}
+
 /** What `GET /api/e/:slug` returns to a Member (#11). Times are UTC ISO strings. */
 export interface EventView {
   event: {
@@ -125,7 +142,11 @@ export interface EventView {
   /** The open Slots only (#52): a Slot that became a Session's Date is left out, with its Votes. */
   slots: { id: string, startsAt: string, past: boolean }[]
   votes: VoteRow[]
-  members: { id: string, name: string, image: string | null, isHost: boolean }[]
+  members: MemberView[]
+  /** The teams of the Game board (#160): one per team count; none while the Event has no settings. */
+  teams: BoardTeam[]
+  /** Whether Players may move into and out of teams now (Team choice, shared/board.ts). */
+  teamChoiceOpen: boolean
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

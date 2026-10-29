@@ -40,13 +40,31 @@ export function activityText(entry: ActivityEntry, t: Translate): string | null 
       return t('activity.gameCount', { name, to: entry.params.to })
     case 'team_size_changed':
       return t('activity.teamSize', { name, to: entry.params.to })
-    // Written by the Game board (#160, #161, #164) and the Team names (#162): their sentences come with those tickets.
     case 'member_moved':
+      return movedText(entry, t)
+    // Written by the Team names (#161) and Session start and end (#164): their sentences come with those tickets.
     case 'session_started':
     case 'session_ended':
     case 'team_name_reset':
       return null
   }
+}
+
+/**
+ * A move on the Game board (#160): a Member's own move says where they are now, a Host's move says who moved them. The
+ * entry keeps the position, not a name, so a team is „Team“ and its colour (Team names, #161, come later).
+ */
+function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: Translate): string {
+  const { userId, to } = entry.params
+  const name = entry.people[userId] ?? ''
+  const own = entry.actor?.id === userId
+  const actor = entry.actor?.name ?? ''
+  if (to.zone === 'team') {
+    const team = t('team.defaultName', { color: t(`team.colors.${to.team}`) })
+    return own ? t('activity.moveTeam', { name, team }) : t('activity.movedTeam', { actor, name, team })
+  }
+  const key = to.zone === 'bench' ? 'Bench' : 'Stands'
+  return own ? t(`activity.move${key}`, { name }) : t(`activity.moved${key}`, { actor, name })
 }
 
 /** Entries from one start of a Session until the next (`number` counts the starts), or everything before the first. */

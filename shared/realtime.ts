@@ -3,6 +3,7 @@
 // image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer.
 
 import type { ActivityEntry } from './activity'
+import type { Place } from './board'
 
 export const ROOM_PROTOCOL_VERSION = 1
 
@@ -15,6 +16,10 @@ export type RoomMessage
   = | { type: 'event.changed' }
   /** A new entry of the Activity feed (#159); the feed adds it at once. */
     | { type: 'activity.added', entry: ActivityEntry }
+  /** A Member took a new place on the Game board; `by` moved them (#160). The board glides the avatar from `from` to `to`. */
+    | { type: 'member.moved', userId: string, from: Place, to: Place, by: string }
+  /** A new Member joined through the Invite link (#160). */
+    | { type: 'member.joined', userId: string }
 
 export type RoomMessageType = RoomMessage['type']
 

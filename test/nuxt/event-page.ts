@@ -1,6 +1,6 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
-import type { EventPools, SessionNote } from '~~/shared/event'
+import type { BoardTeam, EventPools, MemberView, SessionNote } from '~~/shared/event'
 import type { EventSettings, SettingsFloors } from '~~/shared/settings'
 import { kitty } from './auth'
 
@@ -13,7 +13,7 @@ export const LARSI = '00000000-0000-4000-8000-000000000002'
 export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pools?: EventPools, removedSessions?: { id: string, previousStartsAt: string }[] }
+export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pools?: EventPools, removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
@@ -38,11 +38,14 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
       { id: 'old', startsAt: '2026-10-20T18:00:00.000Z', past: true },
     ],
     votes: votes.map(vote => ({ note: null, ...vote })),
-    members: [
-      { id: kitty.id, name: 'Kitty', image: null, isHost: false },
-      { id: LARSI, name: 'Larsi', image: null, isHost: false },
-      { id: SANNE, name: 'Sanne', image: null, isHost: true },
-    ],
+    // Everyone on the Bench, no teams and Team choice closed, unless a test says otherwise (#160).
+    members: overrides.members ?? [
+      { id: kitty.id, name: 'Kitty', image: null, isHost: false, zone: 'bench', team: null },
+      { id: LARSI, name: 'Larsi', image: null, isHost: false, zone: 'bench', team: null },
+      { id: SANNE, name: 'Sanne', image: null, isHost: true, zone: 'bench', team: null },
+    ] satisfies MemberView[],
+    teams: overrides.teams ?? [] as BoardTeam[],
+    teamChoiceOpen: overrides.teamChoiceOpen ?? false,
     bestSlotId: overrides.bestSlotId === undefined ? 'sat' : overrides.bestSlotId,
     progress: overrides.progress ?? { voted: 2, total: 3 },
     inviteUrl: overrides.inviteUrl ?? null,

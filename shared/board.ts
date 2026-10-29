@@ -2,6 +2,7 @@
 // Pure, so the server enforces them and the board's MoveToMenu shows the same reasons. The Worker reaches this file
 // through shared/realtime.ts (the `Place` in `member.moved`), so it imports nothing outside shared/.
 
+import { isRecord } from './record'
 import type { EventSettings } from './settings'
 
 /** Where a Member stands on the Game board: the Bench, the Stands (Tribüne) or a team by its position (1..team count). */
@@ -54,6 +55,24 @@ export function moveRejection({ actorId, actorIsHost, userId, from, to, settings
     if (!choiceOpen) return 'team_choice_closed'
   }
   if (to.zone === 'team' && settings !== null && (seats[to.team] ?? 0) >= settings.teamSize) return 'team_full'
+  return null
+}
+
+/** The Players per team position of these places (Bench and Stands count for no team). */
+export function countSeats(places: readonly Place[]): Seats {
+  const seats: Record<number, number> = {}
+  for (const place of places) {
+    if (place.zone === 'team') seats[place.team] = (seats[place.team] ?? 0) + 1
+  }
+  return seats
+}
+
+/** The place a request names, or null when it is none: a zone, and for `team` a whole position (its range is moveRejection's). */
+export function parsePlace(value: unknown): Place | null {
+  if (!isRecord(value)) return null
+  const { zone, team } = value
+  if (zone === 'bench' || zone === 'stands') return { zone }
+  if (zone === 'team' && typeof team === 'number' && Number.isInteger(team)) return { zone, team }
   return null
 }
 
