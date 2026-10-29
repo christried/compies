@@ -1,0 +1,107 @@
+name: Realtime deploy
+
+# Deploys the realtime Worker (#157, ADR 0012, spec #153 § Deploys). Staging deploys on a push to `staging`, production
+# on a push to `main`, and only when the push touches the Worker or a shared file it imports. A production deploy drops
+# every open socket, so it first asks the app whether a Session is dated today (the game-day guard).
+# Setup is a one-off: scripts/wizards/realtime-setup.sh creates the secrets below and deploys both Workers once.
+
+on:
+  push:
+    branches: [staging, main]
+    paths:
+      - 'realtime/**'
+      # The shared files the Worker imports (realtime/src, through shared/room-auth.ts).
+      - 'shared/realtime.ts'
+      - 'shared/room-auth.ts'
+      - 'shared/crypto.ts'
+      - 'shared/record.ts'
+      - '.github/workflows/realtime-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which Worker to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+      override:
+        description: Skip the game-day guard (deploys even on a day with a Session; this drops every open socket)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/staging') || (github.event_name == 'workflow_dispatch' && inputs.target == 'staging') }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: realtime-deploy-staging
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      # Before the wizard has run there is no token. Staging then ends with a warning instead of a red run.
+      - name: Check for the Cloudflare token
+        id: token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning::CLOUDFLARE_API_TOKEN is not set, so the staging Worker was not deployed. Run scripts/wizards/realtime-setup.sh."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.token.outputs.deploy == 'true'
+        uses: actions/checkout@v4
+      - if: steps.token.outputs.deploy == 'true'
+        uses: pnpm/action-setup@v4
+      - if: steps.token.outputs.deploy == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: realtime/pnpm-lock.yaml
+      - if: steps.token.outputs.deploy == 'true'
+        run: pnpm --dir realtime install --frozen-lockfile
+      - if: steps.token.outputs.deploy == 'true'
+        run: pnpm --dir realtime run deploy:staging
+
+  production:
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target == 'production') }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: realtime-deploy-production
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      # Production never skips silently: a missing token fails the run.
+      - name: Check for the Cloudflare token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is not set, so the production Worker cannot be deployed. Run scripts/wizards/realtime-setup.sh."
+            exit 1
+          fi
+      - name: Check the branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::The production Worker deploys from main only."
+          exit 1
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: realtime/pnpm-lock.yaml
+      # The guard needs Node only, so it runs before anything is installed. `override` skips it.
+      - name: Game-day guard
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.override) }}
+        env:
+          # Signs the guard's call to the app. It is the key the production app (Vercel) has as ROOM_INTERNAL_SECRET.
+          ROOM_INTERNAL_SECRET: ${{ secrets.ROOM_INTERNAL_SECRET_PRODUCTION }}
+        run: node realtime/scripts/deploy-check.mjs
+      - run: pnpm --dir realtime install --frozen-lockfile
+      - run: pnpm --dir realtime run deploy:production
