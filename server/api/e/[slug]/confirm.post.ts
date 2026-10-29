@@ -14,7 +14,7 @@ import type { DateConfirmed } from '../../../../shared/event'
 // it is no longer open. The Sessions whose number moves up (a Date earlier than the others) get a higher
 // calendar SEQUENCE (#53).
 export default defineEventHandler((event): Promise<DateConfirmed> => changeSessions(event, async ({ tx, eventRow, sessions: before, body }) => {
-  const slotId = typeof body?.slotId === 'string' ? body.slotId : ''
+  const slotId = typeof body.slotId === 'string' ? body.slotId : ''
   const slot = await findSlot(tx, eventRow.id, slotId)
   if (!slot) throw slotNotFound()
 

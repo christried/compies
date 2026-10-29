@@ -2,6 +2,7 @@ import { defineEventHandler, getRouterParam } from 'h3'
 import { eventMembers } from '../../db/schema'
 import { useDb } from '../../utils/db'
 import { eventDeleted, eventNotFound } from '../../utils/errors'
+import { afterCommit } from '../../utils/event-access'
 import { isMember, eventForInvite } from '../../utils/invite'
 import { requireUser } from '../../utils/user'
 import type { JoinedEvent } from '../../../shared/event'
@@ -27,5 +28,9 @@ export default defineEventHandler(async (event): Promise<JoinedEvent> => {
     .onConflictDoNothing({ target: [eventMembers.eventId, eventMembers.userId] })
     .returning({ userId: eventMembers.userId })
 
-  return { slug: eventRow.slug, joined: added.length > 0 }
+  const joined = added.length > 0
+  // The join loads the Event by its Invite link, not by slug, so it cannot go through changeEvent; it reaches the
+  // same step after its write (#183). A repeated join changed nothing, so nothing is announced.
+  if (joined) await afterCommit(event, eventRow, [])
+  return { slug: eventRow.slug, joined }
 })

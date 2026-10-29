@@ -5,7 +5,7 @@ import type { Db } from './db'
 import { apiError } from './errors'
 import { poolGameView } from './library'
 import type { EventPools } from '../../shared/event'
-import { storedHiddenWheel, type Pool } from '../../shared/settings'
+import type { Pool } from '../../shared/settings'
 
 // The pools of an Event as `GET /api/e/:slug` shows them (#146).
 
@@ -52,6 +52,6 @@ export async function poolEventsOf(db: Db, userId: string, gameId: string): Prom
     .innerJoin(events, eq(eventPoolGames.eventId, events.id))
     .innerJoin(eventMembers, and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)))
     .where(and(eq(eventPoolGames.gameId, gameId), isNull(events.deletedAt)))
-  // The same rule as the Event read (settingsFromRow): a null Hidden wheel counts as hidden.
-  return rows.map(row => ({ isHost: row.isHost, hiddenWheel: storedHiddenWheel(row.hiddenWheel) }))
+  // The raw column: canSeePoolGames decides what a null (an Event that is not set up) means (#183).
+  return rows
 }

@@ -14,7 +14,7 @@ import type { SessionRescheduled } from '../../../../../../shared/event'
 // Event row is locked, so a Reschedule that races a Reopen or a confirm cannot write over it.
 export default defineEventHandler((event): Promise<SessionRescheduled> => changeSessions(event, async ({ tx, sessions: before, body }) => {
   const session = findSession(before, getRouterParam(event, 'id'))
-  const startsAt = parseLocalTime(body?.startsAt)
+  const startsAt = parseLocalTime(body.startsAt)
   if (!startsAt) throw apiError('invalid_time')
 
   const rejection = rescheduleRejection({ hasDate: session.startsAt !== null, startsAt, now: new Date(), duplicate: hasDateAt(before, startsAt, session.id) })

@@ -38,6 +38,17 @@ export default withNuxt(
     ignores: ['shared/auth.ts', 'shared/record.ts'],
     rules: { 'no-restricted-syntax': ['error', shownNameCopy, recordCast] },
   },
+  {
+    // An Event changes through changeEvent: it owns the transaction, the locked load and the step after the commit (#183).
+    // A later block with the same rule replaces the one above for these files, so the selectors above are repeated.
+    files: ['server/api/e/**'],
+    rules: {
+      'no-restricted-syntax': ['error', shownNameCopy, recordCast, {
+        selector: 'CallExpression[callee.property.name="transaction"]',
+        message: 'Change an Event through changeEvent() in server/utils/event-access.ts (#183).',
+      }],
+    },
+  },
   // Accessibility of the Vue templates (a spinbutton that could not take focus reached the 1.3 review).
   ...pluginVueA11y.configs['flat/recommended'],
   {

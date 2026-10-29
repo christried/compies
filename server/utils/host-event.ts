@@ -1,14 +1,14 @@
+import type { H3Event } from 'h3'
 import { slotsEditable } from '../../shared/event'
 import { apiError } from './errors'
-import { loadEvent } from './event-access'
-import type { Db } from './db'
+import { changeEvent, type EventChange } from './event-access'
 
-// Loads the Event a Host edits Slots in (#15). Runs inside the caller's transaction and locks the
-// Event row, so two edits of one Event queue up and the 8-Slot limit holds; Votes wait for the
-// edit too. Same answers as the Event link (ADR 0006). Only the Host of this Event may edit its
-// Slots (#1 § Domain rules), and only while the Phase is poll.
-export async function lockEventForSlotEdit(tx: Db, slug: string, userId: string) {
-  const event = await loadEvent(tx, slug, userId, { hostOnly: true, lock: 'update' })
-  if (!slotsEditable(event.phase)) throw apiError('wrong_phase')
-  return event
+// A Host's Slot edit (#15). Runs through changeEvent and locks the Event row, so two edits of one Event queue up and
+// the 8-Slot limit holds; Votes wait for the edit too. Same answers as the Event link (ADR 0006). Only the Host of
+// this Event may edit its Slots (#1 § Domain rules), and only while the Phase is poll.
+export function changeSlots<T>(event: H3Event, change: (ctx: EventChange) => Promise<T>): Promise<T> {
+  return changeEvent(event, { hostOnly: true, lock: 'update' }, async (ctx) => {
+    if (!slotsEditable(ctx.eventRow.phase)) throw apiError('wrong_phase')
+    return change(ctx)
+  })
 }
