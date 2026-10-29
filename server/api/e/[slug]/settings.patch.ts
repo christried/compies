@@ -8,7 +8,7 @@ import { changedKeys, type EventSettings } from '../../../../shared/settings'
 // transaction: a refusal leaves settings and pools as they were. A change of the game count or the Team size goes into
 // the Activity feed (#159); setting an Event up for the first time is not a change, and pools never appear there.
 export default defineEventHandler((event): Promise<{ settings: EventSettings }> => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, user, publish, body }) => {
-  const { before, after } = await applySettingsChange(tx, eventRow, body)
+  const { before, after } = await applySettingsChange(tx, eventRow, body, { publish, hostId: user.id })
   if (before !== null) {
     const changed = changedKeys(before, after)
     if (changed.includes('gameCount')) await recordActivity(tx, publish, eventRow.id, { type: 'game_count_changed', actorId: user.id, params: { from: before.gameCount, to: after.gameCount } })

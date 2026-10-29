@@ -23,6 +23,8 @@ export interface StepLocks {
   floors?: SettingsFloors
   /** False when the Host may not browse the Game library (the Host permission was revoked, #173); the pool steps then offer no search. */
   library?: boolean
+  /** The Players per team of the Event as it is saved, index 0 = team 1, one entry per saved team (#163). The Format step counts the Bench hint from it. */
+  teamPlayers?: number[]
 }
 
 /** The settings as the steps edit them. The Lucky Wheel's options sit beside them in the draft; `settingsOf` joins both. */
