@@ -5,6 +5,7 @@ import type { H3Event } from 'h3'
 import { parseAllowlist, permissionsFor } from '../domain/allowlist'
 import * as schema from '../db/schema'
 import { useDb, type Db } from './db'
+import { CURRENT_RELEASE } from './release'
 
 export type Auth = ReturnType<typeof createAuth>
 
@@ -59,7 +60,18 @@ export function createAuth(db: Db) {
     },
     verification: { modelName: 'auth_verifications' },
     advanced: { database: { generateId: 'uuid' } },
-    databaseHooks: { account: { create: sync, update: sync, delete: sync } },
+    databaseHooks: {
+      account: { create: sync, update: sync, delete: sync },
+      // A new User gets no „Was ist neu“ for Releases from before they came (#184). Better Auth never writes
+      // this column itself (ADR 0004), so it is set once the User exists; Users from before keep null.
+      user: {
+        create: {
+          after: async (user) => {
+            await db.update(schema.users).set({ newsSeen: CURRENT_RELEASE }).where(eq(schema.users.id, user.id))
+          },
+        },
+      },
+    },
     // `name` and `image` mirror the provider at every sign-in. A missing email gets a placeholder,
     // since Better Auth requires one; it is never shown or used (ADR 0008).
     socialProviders: {

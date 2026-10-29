@@ -23,6 +23,8 @@ export const users = pgTable('users', {
   displayName: text('display_name'),
   canHost: boolean('can_host').default(false).notNull(),
   isAdmin: boolean('is_admin').default(false).notNull(),
+  // The newest Release the User has seen in „Was ist neu“ (#184); null for a User who has seen none.
+  newsSeen: text('news_seen_version'),
 })
 
 // Better Auth's login sessions, provider accounts and OAuth state, renamed so that a bare "session"

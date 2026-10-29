@@ -4,6 +4,7 @@ import { users } from '../db/schema'
 import { createAuth } from '../utils/auth'
 import { useDb } from '../utils/db'
 import { apiNotFound } from '../utils/errors'
+import { CURRENT_RELEASE } from '../utils/release'
 
 // Signs in without Discord or Twitch on `pnpm dev`, so the user and agents can open Host and Member
 // pages locally and take screenshots (retro 1.3). Only the dev server registers this route
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
   // The same three Users every time; the permissions are set here, since no allowlist knows them.
   const db = useDb(event)
   const [user] = await db.insert(users)
-    .values({ ...person, displayName: person.name, email: `${as}@dev.compies.invalid`, emailVerified: true })
+    .values({ ...person, displayName: person.name, email: `${as}@dev.compies.invalid`, emailVerified: true, newsSeen: CURRENT_RELEASE })
     .onConflictDoUpdate({ target: users.email, set: { canHost: person.canHost, isAdmin: person.isAdmin } })
     .returning({ id: users.id })
 

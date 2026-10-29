@@ -848,6 +848,10 @@
     "newTab": "Öffnet in neuem Tab",
     "versionUnseen": "Version {v}, neu"
   },
+  "whatsNew": {
+    "title": "Was ist neu",
+    "all": "Alle Neuigkeiten"
+  },
   "legal": {
     "_scope": "Impressum und Datenschutzerklärung von Compies. Jeder Abschnitt hat eine Überschrift und einen Text; Absätze sind durch eine Leerzeile getrennt. Bei Änderungen an der App (neue Dienste, Cookies, Daten) hier nachziehen und den Stand anpassen.",
     "nav": "Rechtliches und Version",
