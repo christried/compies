@@ -2,11 +2,11 @@
 import { ChevronLeft, ChevronRight, CircleHelp } from '@lucide/vue'
 
 // The layout of the guided Event setup (02-components § EventStepper, screen 05). It knows no step: the
-// parent says which steps there are (5 now, 8 with the Selection mode and the pools) and which one is
+// parent says which steps there are (the wizard's `steps`, 8 on /neu and 6 in the settings editor) and which one is
 // current, and puts the step's form in the default slot and its explanation in the `info` slot.
 // Desktop (md+): step list left (230 px), form centre, info column right (340 px). Phones: a progress bar,
-// the info behind an „Info“ button in a bottom sheet, and a sticky footer with Zurück and Weiter.
-// A blocked Weiter is aria-disabled with its reason beside it, as on the old create form (#49).
+// the info behind an „Info“ button in a bottom sheet. Zurück and Weiter sit in a sticky dock at the bottom right
+// on both (#174). A blocked Weiter is aria-disabled with its reason right above the dock, as on the old create form (#49).
 const props = defineProps<{
   steps: { key: string, label: string }[]
   /** Index of the current step. */
@@ -15,7 +15,7 @@ const props = defineProps<{
   reached: number
   /** The title of the current step („Wer gegen wen?“). */
   title: string
-  /** The step list's heading; „Neue Session“ by default. */
+  /** The step list's heading; `stepper.heading` by default. */
   navTitle?: string
   /** Replaces „Schritt n von m“ above the title (the settings editor, #147). */
   kicker?: string
@@ -131,31 +131,32 @@ function next() {
         <slot />
       </div>
 
-      <div
-        data-testid="stepper-footer"
-        class="sticky bottom-0 layer-sticky -mx-3.5 mt-4 flex flex-none items-center justify-between gap-3 border-t-(length:--cp-bw) border-line bg-surface px-3.5 py-3 md:mx-0 md:rounded-2xl md:border-(length:--cp-bw)"
-      >
-        <AppButton
-          v-if="current > 0"
-          variant="secondary"
-          class="border-transparent shadow-none"
-          @click="emit('back')"
+      <!-- A dock as wide as its buttons, bottom right on every screen (like HostDock, #174). The blocked reason is
+           not in it: it sits right above it. -->
+      <div class="sticky bottom-4 layer-sticky mt-4 ml-auto flex w-fit flex-none flex-col items-end gap-2">
+        <span
+          v-if="nextBlocked"
+          :id="blockedId"
+          class="text-right text-small font-bold text-pretty text-ink-2"
+        >{{ nextBlocked }}</span>
+        <div
+          data-testid="stepper-footer"
+          class="ml-auto flex w-fit items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface p-1.5 shadow-card"
         >
-          <template #icon>
-            <AppIcon
-              :icon="ChevronLeft"
-              :size="18"
-            />
-          </template>
-          {{ t('stepper.back') }}
-        </AppButton>
-        <span v-else />
-        <div class="flex min-w-0 flex-1 items-center justify-end gap-3">
-          <span
-            v-if="nextBlocked"
-            :id="blockedId"
-            class="min-w-0 text-right text-small font-bold text-pretty text-ink-2"
-          >{{ nextBlocked }}</span>
+          <AppButton
+            v-if="current > 0"
+            variant="secondary"
+            class="border-transparent shadow-none"
+            @click="emit('back')"
+          >
+            <template #icon>
+              <AppIcon
+                :icon="ChevronLeft"
+                :size="18"
+              />
+            </template>
+            {{ t('stepper.back') }}
+          </AppButton>
           <AppButton
             type="submit"
             size="lg"

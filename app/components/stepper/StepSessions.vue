@@ -1,14 +1,22 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarDays, Minus, Plus, X } from '@lucide/vue'
+import type { Component } from 'vue'
 import { errorCopyKey } from '~/utils/api-error'
-import type { SessionsDraft } from '~/utils/event-draft'
+import type { EventDraft, SessionsDraft, StepLocks } from '~/utils/event-draft'
 import { SESSIONS_MAX, SLOTS_MAX, slotProblems as slotRuleProblems, type SlotProblem } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
 
-// The last step: the Sessions and their Dates (#144; the form of the old create page, moved as it was, #49).
+// The Sessions and their Dates (#144; the form of the old create page, moved as it was, #49).
 // The Session count (1 to 8), then a Date poll with up to 16 Slots (at least one per Session) or one direct
 // Date per Session. Times are Berlin wall-clock values; the server is the final judge.
-const dates = defineModel<SessionsDraft>({ required: true })
+defineProps<{ locks?: StepLocks }>()
+const draft = defineModel<EventDraft>({ required: true })
+const dates = computed({
+  get: () => draft.value.dates,
+  set: (value) => {
+    draft.value = { ...draft.value, dates: value }
+  },
+})
 const blocker = defineModel<string | null>('blocker', { default: null })
 
 const { t } = useI18n()
@@ -58,17 +66,15 @@ function rowBlocker(problems: (SlotProblem | null)[], errors: (string | undefine
   return errors.find(error => error !== undefined) ?? null
 }
 
-watchEffect(() => {
+useStepBlocker(blocker, () => {
   const { mode, direct, slots, sessionCount } = dates.value
-  if (mode === 'direct') {
-    blocker.value = direct.includes('') ? t('mvp.create.directEmpty') : rowBlocker(directProblems.value, directErrors.value)
-  }
-  else if (slots.includes('')) blocker.value = t('mvp.create.slotEmpty')
-  else if (slots.length < sessionCount) blocker.value = t('mvp.create.minSlots', { n: sessionCount })
-  else blocker.value = rowBlocker(slotProblems.value, slotErrors.value)
+  if (mode === 'direct') return direct.includes('') ? t('mvp.create.directEmpty') : rowBlocker(directProblems.value, directErrors.value)
+  if (slots.includes('')) return t('mvp.create.slotEmpty')
+  if (slots.length < sessionCount) return t('mvp.create.minSlots', { n: sessionCount })
+  return rowBlocker(slotProblems.value, slotErrors.value)
 })
 
-const MODES = computed(() => [
+const MODES = computed<{ value: SessionsDraft['mode'], label: string, icon: Component }[]>(() => [
   { value: 'poll', label: t('mvp.create.modePoll'), icon: CalendarDays },
   { value: 'direct', label: t('mvp.create.modeDirect'), icon: CalendarCheck },
 ])
@@ -105,7 +111,7 @@ const MODES = computed(() => [
       :model-value="dates.mode"
       :label="t('mvp.create.dateLabel')"
       :options="MODES"
-      @update:model-value="update({ mode: $event as SessionsDraft['mode'] })"
+      @update:model-value="update({ mode: $event })"
     />
 
     <div

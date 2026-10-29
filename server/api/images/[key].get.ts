@@ -29,5 +29,7 @@ export default defineEventHandler(async (event) => {
 
   setHeader(event, 'content-type', 'image/webp')
   setHeader(event, 'cache-control', 'private, max-age=31536000, immutable')
-  return image.body
+  // The only check on an upload is its WebP marks, so the browser must not guess another type.
+  setHeader(event, 'x-content-type-options', 'nosniff')
+  return image
 })

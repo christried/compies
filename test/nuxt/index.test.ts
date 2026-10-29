@@ -158,6 +158,15 @@ describe('home page', () => {
     expect(page.text()).toContain('Bester Termin bisher')
   })
 
+  it('says how many have voted on every Date while the poll is open (#175)', async () => {
+    homeEvents = [card({ slug: 'a-aaaa', name: 'Umfrage', progress: { voted: 2, total: 3 } })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.text()).toContain('2 von 3 haben vollständig abgestimmt')
+    expect(page.text()).not.toContain('haben abgestimmt')
+  })
+
   it('shows the next Session with its number once every Date is set', async () => {
     homeEvents = [
       card({

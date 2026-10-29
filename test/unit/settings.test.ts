@@ -3,12 +3,16 @@ import type { Phase } from '../../shared/event'
 import {
   GAME_COUNT_DEFAULT,
   LOCKED_WHEN_RUNNING,
+  TEAM_COUNT_MAX,
+  TEAM_COUNT_MIN,
   canStartSession,
   checkSettingsChange,
   settingsEditable,
   settingsLocked,
   defaultSettings,
   defaultVetoAllowance,
+  isFlat,
+  mergeSettings,
   linearPoints,
   parseSettings,
   poolHint,
@@ -16,13 +20,14 @@ import {
   recommendedPoolSize,
   risingPlace,
   settingsFromRow,
+  storedHiddenWheel,
   withTeams,
   winnerTakesAllPoints,
 } from '../../shared/settings'
 
 // The settings rules (#144): one module for the stepper and the server.
 
-/** A valid payload (2 teams of 3, linear, Admin pick) with changes. */
+/** A valid payload (2 teams of 3, linear, Host pick) with changes. */
 function payload(overrides: Record<string, unknown> = {}) {
   return {
     format: 'teams',
@@ -68,6 +73,24 @@ describe('points tables', () => {
     expect(risingPlace([5, 3, 4, 0])).toBe(3)
     expect(risingPlace([1, 2])).toBe(2)
   })
+
+  it('isFlat is true only for two or more places that all earn what the first place earns (#175)', () => {
+    expect(isFlat([3, 3, 3])).toBe(true)
+    expect(isFlat([0, 0])).toBe(true)
+    expect(isFlat([5, 5, 5, 4])).toBe(false)
+    expect(isFlat([1, 0])).toBe(false)
+    expect(isFlat([5])).toBe(false)
+  })
+
+  it('the presets never give every place the same, for 2 to 8 teams (#175)', () => {
+    for (let teams = TEAM_COUNT_MIN; teams <= TEAM_COUNT_MAX; teams++) {
+      for (const preset of ['linear', 'winner_takes_all'] as const) {
+        const values = pointsFor(preset, teams)
+        expect(isFlat(values)).toBe(false)
+        expect(values[0]!).toBeGreaterThan(values[teams - 1]!)
+      }
+    }
+  })
 })
 
 describe('withTeams', () => {
@@ -95,7 +118,7 @@ describe('defaults and helpers', () => {
     expect(defaultVetoAllowance(5)).toBe(5)
   })
 
-  it('a new Event is a 3v3 with 10 Games, linear points and Admin pick', () => {
+  it('a new Event is a 3v3 with 10 Games, linear points and Host pick', () => {
     expect(defaultSettings()).toEqual({
       format: 'teams',
       teamCount: 2,
@@ -113,7 +136,7 @@ describe('defaults and helpers', () => {
     expect(parseSettings(defaultSettings())).toEqual({ ok: true, settings: defaultSettings() })
   })
 
-  it('the recommended pool is the Game count, plus the vetoes of all Parties on the Lucky Wheel', () => {
+  it('the recommended pool is the Game count, plus the vetoes of all Parties on the Glücksrad', () => {
     expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'admin_pick', vetoAllowance: null })).toBe(10)
     expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'lucky_wheel', vetoAllowance: 3 })).toBe(22)
     expect(recommendedPoolSize({ gameCount: 6, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 0 })).toBe(6)
@@ -124,7 +147,7 @@ describe('poolHint', () => {
   const lucky = { gameCount: 10, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 3 } as const
   const admin = { gameCount: 10, teamCount: 2, selectionMode: 'admin_pick', vetoAllowance: null } as const
 
-  it('names the worst case on the Lucky Wheel: Games plus the vetoes of all Parties', () => {
+  it('names the worst case on the Glücksrad: Games plus the vetoes of all Parties', () => {
     expect(poolHint(lucky, 12)).toEqual({ games: 10, vetoes: 6, needed: 16, have: 12 })
   })
 
@@ -133,7 +156,7 @@ describe('poolHint', () => {
     expect(poolHint(lucky, 30)).toBeNull()
   })
 
-  it('needs only the Game count with Admin pick', () => {
+  it('needs only the Game count with Host pick', () => {
     expect(poolHint(admin, 9)).toEqual({ games: 10, vetoes: 0, needed: 10, have: 9 })
     expect(poolHint(admin, 10)).toBeNull()
   })
@@ -157,7 +180,15 @@ describe('settingsFromRow', () => {
     expect(settingsFromRow({ ...full, pointsTable: null })).toBeNull()
   })
 
-  it('keeps the wheel options of a Lucky Wheel Event', () => {
+  it('a null Hidden wheel on an Event with settings counts as hidden (fail-closed, N11)', () => {
+    const row = { ...empty, format: 'teams' as const, teamCount: 2, teamSize: 3, gameCount: 10, pointsTable: { preset: 'linear' as const, values: [1, 0] }, selectionMode: 'lucky_wheel' as const }
+    expect(settingsFromRow(row)?.hiddenWheel).toBe(true)
+    expect(storedHiddenWheel(null)).toBe(true)
+    expect(storedHiddenWheel(false)).toBe(false)
+    expect(storedHiddenWheel(true)).toBe(true)
+  })
+
+  it('keeps the wheel options of a Glücksrad Event', () => {
     const row = { format: 'teams' as const, teamCount: 4, teamSize: 2, gameCount: 6, pointsTable: { preset: 'linear' as const, values: [3, 2, 1, 0] }, selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 4 }
     expect(settingsFromRow(row)).toEqual(row)
   })
@@ -246,9 +277,18 @@ describe('parseSettings', () => {
       expect(errorOf(payload({ teamCount: 4, teamSize: 2, pointsTable: { preset: 'winner_takes_all', values: [3, 2, 1, 0] } }))).toBe('invalid_points')
     })
 
-    it('accepts a custom table, equal places included', () => {
+    it('accepts a custom table, equal places included, while the first place earns more than the last (#175)', () => {
       expect(errorOf(payload({ teamCount: 3, pointsTable: { preset: 'custom', values: [5, 3, 1] } }))).toBeNull()
-      expect(errorOf(payload({ teamCount: 3, pointsTable: { preset: 'custom', values: [2, 2, 2] } }))).toBeNull()
+      expect(errorOf(payload({ teamCount: 4, pointsTable: { preset: 'custom', values: [5, 5, 5, 4] } }))).toBeNull()
+    })
+
+    it('refuses a custom table in which every place earns the same, with points_flat (#175)', () => {
+      expect(errorOf(payload({ teamCount: 3, pointsTable: { preset: 'custom', values: [3, 3, 3] } }))).toBe('points_flat')
+      expect(errorOf(payload({ pointsTable: { preset: 'custom', values: [0, 0] } }))).toBe('points_flat')
+    })
+
+    it('names a rising place before a flat table, as the rule that comes first (#175)', () => {
+      expect(errorOf(payload({ teamCount: 3, pointsTable: { preset: 'custom', values: [1, 1, 2] } }))).toBe('points_rising')
     })
 
     it('refuses a custom table in which a place earns more than the place above', () => {
@@ -281,13 +321,13 @@ describe('parseSettings', () => {
       expect(errorOf(payload({ selectionMode }))).toBe('mode_unavailable')
     })
 
-    it('Lucky Wheel defaults the veto allowance to max(3, Team size) and the wheel to visible', () => {
+    it('Glücksrad defaults the veto allowance to max(3, Team size) and the wheel to visible', () => {
       const result = parseSettings(payload({ selectionMode: 'lucky_wheel', teamSize: 5 }))
       expect(result).toMatchObject({ ok: true, settings: { selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 5 } })
       expect(parseSettings(payload({ selectionMode: 'lucky_wheel', teamSize: 2 }))).toMatchObject({ ok: true, settings: { vetoAllowance: 3 } })
     })
 
-    it('Lucky Wheel takes a hidden wheel and a veto allowance from 0 to 9', () => {
+    it('Glücksrad takes a hidden wheel and a veto allowance from 0 to 9', () => {
       expect(parseSettings(payload({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 0 })))
         .toMatchObject({ ok: true, settings: { hiddenWheel: true, vetoAllowance: 0 } })
       expect(errorOf(payload({ selectionMode: 'lucky_wheel', vetoAllowance: 9 }))).toBeNull()
@@ -297,7 +337,7 @@ describe('parseSettings', () => {
       expect(errorOf(payload({ selectionMode: 'lucky_wheel', hiddenWheel: 'yes' }))).toBe('invalid_settings')
     })
 
-    it('Admin pick has no wheel options', () => {
+    it('Host pick has no wheel options', () => {
       expect(errorOf(payload({ hiddenWheel: true }))).toBe('wheel_options_without_wheel')
       expect(errorOf(payload({ vetoAllowance: 3 }))).toBe('wheel_options_without_wheel')
       expect(errorOf(payload({ hiddenWheel: false, vetoAllowance: null }))).toBeNull()
@@ -322,6 +362,33 @@ describe('Phases of the settings (#147)', () => {
   it('lets the Host change settings in every Phase before the Event is finished', () => {
     expect((['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as Phase[]).map(settingsEditable))
       .toEqual([true, true, true, true, false, false])
+  })
+})
+
+describe('mergeSettings', () => {
+  const wheelSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 4 }
+
+  it('puts the change over the current settings', () => {
+    expect(mergeSettings(defaultSettings(), { gameCount: 5, teamSize: 2 })).toMatchObject({ teamCount: 2, teamSize: 2, gameCount: 5 })
+  })
+
+  it('drops the wheel values that are left over when the change switches to Host pick', () => {
+    const merged = mergeSettings(wheelSettings, { selectionMode: 'admin_pick' })
+
+    expect(merged).toEqual({ ...defaultSettings(), hiddenWheel: undefined, vetoAllowance: undefined, selectionMode: 'admin_pick' })
+    expect('hiddenWheel' in merged).toBe(false)
+    expect('vetoAllowance' in merged).toBe(false)
+  })
+
+  it('keeps wheel values the change itself sends, so parseSettings can refuse them with Host pick', () => {
+    const merged = mergeSettings(wheelSettings, { selectionMode: 'admin_pick', hiddenWheel: true })
+
+    expect(merged.hiddenWheel).toBe(true)
+    expect('vetoAllowance' in merged).toBe(false)
+  })
+
+  it('keeps the wheel values while the Lucky Wheel stays', () => {
+    expect(mergeSettings(wheelSettings, { gameCount: 5 })).toMatchObject({ hiddenWheel: true, vetoAllowance: 4 })
   })
 })
 
@@ -382,19 +449,19 @@ describe('checkSettingsChange', () => {
     expect(check({ teamSize: 7 })).toEqual({ ok: false, error: 'team_size_range' })
   })
 
-  it('drops the wheel options when the merged mode is Admin pick', () => {
+  it('drops the wheel options when the merged mode is Host pick', () => {
     const result = check({ gameCount: 8 }, {}, admin)
     expect(result).toEqual({ ok: true, settings: { ...admin, gameCount: 8 } })
   })
 
-  it('drops the wheel options left over from the Lucky Wheel when switching to Admin pick', () => {
+  it('drops the wheel options left over from the Glücksrad when switching to Host pick', () => {
     expect(check({ selectionMode: 'admin_pick' })).toEqual({
       ok: true,
       settings: { ...current, selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null },
     })
   })
 
-  it('refuses wheel options that the change itself sends to an Admin pick Event, as the create does', () => {
+  it('refuses wheel options that the change itself sends to a Host pick Event, as the create does', () => {
     expect(check({ hiddenWheel: true }, {}, admin)).toEqual({ ok: false, error: 'wheel_options_without_wheel' })
     expect(check({ vetoAllowance: 3 }, {}, admin)).toEqual({ ok: false, error: 'wheel_options_without_wheel' })
     expect(check({ selectionMode: 'admin_pick', hiddenWheel: true, vetoAllowance: 3 })).toEqual({ ok: false, error: 'wheel_options_without_wheel' })
@@ -402,7 +469,7 @@ describe('checkSettingsChange', () => {
     expect(check({ hiddenWheel: false, vetoAllowance: null }, {}, admin).ok).toBe(true)
   })
 
-  it('switches to the Lucky Wheel with its options before the first Session', () => {
+  it('switches to the Glücksrad with its options before the first Session', () => {
     const result = check({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 }, {}, admin)
     expect(result).toEqual({ ok: true, settings: { ...admin, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 } })
   })
@@ -418,7 +485,7 @@ describe('checkSettingsChange', () => {
       expect(check({ vetoAllowance: 2 }, { floors: { teamSize: 1, vetoAllowance: 2 } }).ok).toBe(true)
     })
 
-    it('has no Veto floor without the Lucky Wheel', () => {
+    it('has no Veto floor without the Glücksrad', () => {
       expect(check({ gameCount: 8 }, { floors: { teamSize: 1, vetoAllowance: 2 } }, admin).ok).toBe(true)
     })
   })

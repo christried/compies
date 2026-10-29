@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
+import { shownName } from '~~/shared/auth'
 import type { HomeView } from '~~/shared/event'
 
 // Home (screen M1, #12): every Event the User is a Member of, in the order the server sends (open
@@ -16,7 +17,7 @@ const pending = computed(() => status.value === 'pending')
 const events = computed(() => data.value?.events ?? [])
 const empty = computed(() => !error.value && !!data.value && events.value.length === 0)
 
-const greetingName = computed(() => user.value?.displayName ?? user.value?.name ?? '')
+const greetingName = computed(() => (user.value ? shownName(user.value) : ''))
 const title = computed(() => t(empty.value ? 'mvp.home.titleEmpty' : 'mvp.home.title'))
 
 useRefreshOnReturn(refresh)

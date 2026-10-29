@@ -8,6 +8,7 @@
     "cancel": "Abbrechen",
     "close": "Schließen",
     "save": "Speichern",
+    "saving": "Speichert …",
     "back": "Zurück",
     "next": "Weiter",
     "more": "Mehr",
@@ -174,15 +175,15 @@
     }
   },
   "setup": {
-    "step": "Session erstellen, Schritt {n} von {total}",
+    "step": "Event erstellen, Schritt {n} von {total}",
     "mode": {
       "title": "Auswahlmodus",
       "admin": {
-        "name": "Admin-Wahl",
+        "name": "Host-Wahl",
         "desc": "Du bestimmst jedes Spiel selbst."
       },
       "wheel": {
-        "name": "Lucky Wheel",
+        "name": "Glücksrad",
         "desc": "Das Glücksrad entscheidet, danach 60 s für Vetos."
       },
       "pickBan": {
@@ -194,10 +195,9 @@
         "desc": "Wer hinten liegt, sucht aus."
       },
       "loserAdv": {
-        "name": "Lucky Wheel – Loser’s Advantage",
+        "name": "Glücksrad – Loser’s Advantage",
         "desc": "Der Letzte bannt vor jedem Dreh."
       },
-      "plannedNote": "Pick & Ban, Loser’s Pick und Loser’s Advantage kommen bald. Sie sind schon sichtbar, damit du weißt, was kommt, lassen sich aber noch nicht wählen.",
       "vetoes": "Vetos pro Partei",
       "vetoesHelp": "Jede Partei hat gleich viele Vetos für das ganze Event.",
       "vetoesMin": "Mindestens 0 Vetos.",
@@ -251,13 +251,13 @@
         "warn": "Ein Spiel startet nur, wenn alle Teams gleich groß sind. Fehlt jemand, kannst du Leute von der Bench nachziehen."
       },
       "admin": {
-        "title": "Admin-Wahl",
+        "title": "Host-Wahl",
         "how": "Du als Host bestimmst jedes Spiel selbst. Kein Zufall, keine Vetos.",
         "good": "Abende mit festem Programm.",
         "warn": "Du kannst übrigens in jedem Modus jederzeit selbst eingreifen und das nächste Spiel setzen."
       },
       "wheel": {
-        "title": "Lucky Wheel",
+        "title": "Glücksrad",
         "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
         "hideWheel": "Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.",
         "hostSees": "Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.",
@@ -274,17 +274,13 @@
         "title": "Loser's Pick",
         "how": "Das erste Spiel bestimmt das Glücksrad. Danach darf immer die Partei auf dem letzten Platz das nächste Spiel aussuchen. Die anderen können innerhalb von 60 Sekunden ein Veto einlegen, dann muss neu gewählt werden. Teilen sich mehrere den letzten Platz, entscheidet das Glücksrad.",
         "good": "Aufholjagden. Wer hinten liegt, spielt sein Lieblingsspiel.",
-        "warn": "Vetos funktionieren wie beim Lucky Wheel."
+        "warn": "Vetos funktionieren wie beim Glücksrad."
       },
       "loserAdv": {
-        "title": "Lucky Wheel – Loser's Advantage",
-        "how": "Wie Lucky Wheel, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.",
+        "title": "Glücksrad – Loser's Advantage",
+        "how": "Wie Glücksrad, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.",
         "good": "Zufall mit einem kleinen Vorteil für die, die hinten liegen.",
         "warn": "Das Rad kann hier nicht verdeckt werden, sonst wüsste niemand, was er bannt."
-      },
-      "tiebreaker": {
-        "title": "Tiebreaker",
-        "how": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht."
       }
     }
   },
@@ -650,16 +646,17 @@
     "title": "Bibliothek",
     "search": "Spiele suchen",
     "filterPlayers": "Spielerzahl",
-    "filterFormat": "Format",
+    "filterSuitability": "Passt zu",
     "filterMine": "Von mir",
     "none": "Nichts gefunden. Vielleicht heißt es anders?",
     "create": "Spiel anlegen",
     "editOnlyOwner": "Bearbeiten dürfen nur {name} und die Plattform-Admin.",
     "played": "{n}× gespielt",
     "kicker": "Global, für alle Hosts",
-    "format": {
+    "suitability": {
       "teams": "Teams",
-      "ffa": "Jeder gegen jeden"
+      "ffa": "Jeder gegen jeden",
+      "one_v_one": "1 gegen 1"
     },
     "loading": "Bibliothek lädt",
     "clipFact": "Clip {n} s",
@@ -671,7 +668,6 @@
     "all": "Alle",
     "searchPlaceholder": "{n} Spiele durchsuchen",
     "noMatch": "„{q}“ kennen wir noch nicht.",
-    "formatBoth": "Beides",
     "players": "{n} Spieler",
     "playersFrom": "ab {min}",
     "playersUpTo": "bis {max}",
@@ -686,22 +682,19 @@
     "imageChoose": "Bild wählen",
     "imageChange": "Anderes Bild wählen",
     "imageRatio": "16:10",
-    "imageHelp": "Wird passend zugeschnitten.",
     "imagePreviewAlt": "Vorschau des Bildes",
     "imageConverting": "Wird zugeschnitten …",
     "imageUploading": "Lädt hoch …",
     "imageConvertFailed": "Dein Browser kann das Bild nicht umwandeln. Probier’s mit Chrome oder Firefox.",
     "imageUploadFailed": "Das Spiel ist gespeichert, das Bild nicht: {reason}",
     "youtube": "YouTube-Link",
-    "youtubeHelp": "Watch-, youtu.be-, Shorts- oder Embed-Link. Ohne Link gibt es keinen Clip.",
     "linkFound": "Video gefunden: {duration} lang, einbettbar.",
     "linkBroken": "Dieses Video gibt’s nicht oder es ist privat. Prüf den Link.",
     "linkRequired": "Erst einen gültigen YouTube-Link eintragen.",
     "start": "Start ab",
-    "startHelp": "Minuten:Sekunden, zum Beispiel 1:12.",
     "startInvalid": "Das ist keine Zeit. Schreib zum Beispiel 1:12 oder 72.",
     "length": "Länge",
-    "lengthHelp": "In Sekunden, 5 bis 60.",
+    "lengthMax": "Maximal {max} Sekunden",
     "lengthInvalid": "Die Länge liegt zwischen 5 und 60 Sekunden.",
     "lengthDefault": "30 s",
     "previewTitle": "Vorschau des Clips",
@@ -711,12 +704,10 @@
     "excerpt": "Ausschnitt {from} – {to}",
     "excerptNote": "Genau so läuft der Clip in der Session: {n} s, für alle gleichzeitig, mit Ton.",
     "playerLabel": "YouTube-Vorschau des Clips",
-    "saving": "Speichert …",
     "players": "Empfohlene Spielerzahl",
-    "formats": "Passende Formate",
+    "suitabilities": "Passt zu",
     "playersFrom": "von",
     "playersTo": "bis",
-    "playersNote": "Spielerzahl und Formate nutzen wir nur für Vorschläge beim Pool-Füllen. Aussortiert wird nie automatisch.",
     "saveChanges": "Änderungen speichern",
     "editKicker": "Bearbeiten",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
@@ -785,7 +776,6 @@
     "heading": "Einstellungen",
     "setupHeading": "Event einrichten",
     "save": "Speichern",
-    "saving": "Speichert …",
     "saved": "Gespeichert.",
     "back": "Zurück zum Event",
     "locked": "Gesperrt, seit die erste Session läuft: Schon gespielte Spiele behalten ihre Regeln.",
@@ -815,7 +805,7 @@
       "canHost": "Darf hosten",
       "owner": "Owner",
       "inviteTitle": "Leute in die Crew holen",
-      "inviteText": "Wer über diesen Link kommt, wird Mitglied und sieht alle Events und das Archiv der Crew. Session-Einladungen bleiben davon getrennt.",
+      "inviteText": "Wer über diesen Link kommt, wird Mitglied und sieht alle Events und das Archiv der Crew. Event-Einladungen bleiben davon getrennt.",
       "rotate": "Erneuern (halten)",
       "rotateText": "Alter Link wird sofort ungültig. Mitglieder bleiben Mitglieder.",
       "archive": "Crew-Archiv: {crew}"
@@ -993,7 +983,7 @@
       "hostYou": "Host: du",
       "bestSoFar": "Bester Termin bisher",
       "date": "Termin",
-      "votedCount": "{n} von {total} haben abgestimmt",
+      "votedCount": "{n} von {total} haben vollständig abgestimmt",
       "notVoted": "Du hast noch nicht abgestimmt",
       "voted": "Du hast abgestimmt",
       "setReady": "Termin steht",
@@ -1032,7 +1022,6 @@
       "dateInput": "Datum",
       "timeInput": "Uhrzeit",
       "slotEmpty": "Bitte alle Termine ausfüllen.",
-      "saving": "Speichert …",
       "doneDirectText": "Der Termin steht. Schick ihn an deine Freunde und sie können sich hier anmelden."
     },
     "dateTime": {
@@ -1057,7 +1046,7 @@
       "heading": "Anmerkungen"
     },
     "poll": {
-      "kicker": "Terminumfrage läuft, {voted} von {total} haben abgestimmt",
+      "kicker": "Terminumfrage läuft, {voted} von {total} haben vollständig abgestimmt",
       "missingDates": "{n} Termin gesucht | {n} Termine gesucht",
       "sessionNumber": "Session {n}",
       "past": "vorbei",
@@ -1180,7 +1169,7 @@
   "stepper": {
     "locked": "Bald verfügbar",
     "steps": {
-      "name": { "label": "Name", "title": "Wie soll die Session heißen?" },
+      "name": { "label": "Name", "title": "Wie soll das Event heißen?" },
       "format": { "label": "Format", "title": "Wer gegen wen?" },
       "games": { "label": "Spiele", "title": "Wie viele Spiele?" },
       "points": { "label": "Punkte", "title": "Wer kriegt wie viele Punkte?" },
@@ -1189,16 +1178,16 @@
       "tiebreaker": { "label": "Tiebreaker-Pool", "title": "Und falls es knapp wird?" },
       "sessions": { "label": "Termin", "title": "Wann zocken wir?" }
     },
-    "create": "Session erstellen",
+    "create": "Event erstellen",
     "done": {
       "kicker": "Geschafft",
-      "title": "Session erstellt",
+      "title": "Event erstellt",
       "heading": "{name} steht!",
       "datesPoll": "Umfrage, {n} Vorschlag | Umfrage, {n} Vorschläge",
       "datesDirect": "Direkt festgelegt | {n} Termine festgelegt"
     },
     "name": {
-      "label": "Name der Session",
+      "label": "Name des Events",
       "help": "Sehen alle in der Einladung und im Archiv."
     },
     "format": {
@@ -1231,6 +1220,7 @@
       "place": "{n}. Platz",
       "stepper": "Punkte für Platz {n}",
       "rising": "Platz {n} kann nicht mehr Punkte bekommen als Platz {above}.",
+      "flat": "Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.",
       "tie": "Gleichauf: alle bekommen die Punkte des besseren Platzes, der nächste Platz fällt weg (1, 1, 3)."
     },
     "pool": {
@@ -1241,18 +1231,16 @@
       "empty": "Noch leer. Du kannst auch ohne Spiele weitermachen.",
       "add": "{name} in den Pool",
       "remove": "{name} aus dem Pool nehmen",
-      "search": "Spiel aus der Bibliothek suchen",
-      "library": "Bibliothek",
-      "libraryEmpty": "Die Bibliothek ist leer.",
-      "noMatch": "Keine Treffer für „{q}“.",
       "create": "Neues Spiel anlegen",
+      "tiebreakerNote": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht. Du kannst auch ohne Spiel weitermachen.",
+      "noLibrary": "Ohne Host-Berechtigung kannst du keine Spiele aus der Bibliothek hinzufügen. Die Spiele im Pool bleiben.",
       "hintTitle": "Wird knapp.",
       "hintWheel": "{games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | {games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
       "hintWheelOne": "1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | 1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
       "hintAdmin": "Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
       "hintAdminOne": "Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt."
     },
-    "heading": "Neue Session",
+    "heading": "Neues Event",
     "nav": "Schritte",
     "kicker": "Schritt {n} von {total}",
     "back": "Zurück",
@@ -1286,7 +1274,7 @@
     "mainPool": "Spielepool",
     "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",
-    "hostOnly": "Das Rad ist verdeckt. Nur du siehst diese Spiele.",
+    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen nur, wie viele Spiele im Pool sind.",
     "counts": "{main} Spiel im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen. | {main} Spiele im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen."
   },
   "error": {
@@ -1297,7 +1285,7 @@
     "gameNameInvalid": "Gib dem Spiel einen Namen, höchstens 60 Zeichen.",
     "clipInvalid": "Der Clip passt nicht: Die Länge liegt zwischen 5 und 60 Sekunden.",
     "playersInvalid": "Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.",
-    "formatsInvalid": "Dieses Format kennen wir nicht.",
+    "suitabilitiesInvalid": "Diese Angabe bei „Passt zu“ kennen wir nicht.",
     "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",
@@ -1312,7 +1300,7 @@
     "eventNotFound": "Dieses Event gibt es nicht (mehr).",
     "linkInvalid": "Dieser Link funktioniert nicht mehr. Frag den Host nach dem neuen.",
     "rateLimited": "Langsam, langsam. Versuch es in ein paar Sekunden.",
-    "nameRequired": "Gib der Session einen Namen.",
+    "nameRequired": "Gib dem Event einen Namen.",
     "nameTooLong": "Höchstens {max} Zeichen.",
     "slotPast": "Der Termin liegt in der Vergangenheit.",
     "slotTakenDate": "Dieser Termin steht schon fest.",
@@ -1336,6 +1324,7 @@
     "clipTooShort": "Der Clip muss mindestens 5 Sekunden lang sein.",
     "duplicateGame": "Gibt's vielleicht schon: {name}",
     "pointsOrder": "Ein schlechterer Platz kann nicht mehr Punkte bekommen als ein besserer.",
+    "pointsFlat": "Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.",
     "formatUnavailable": "Dieses Format gibt es noch nicht.",
     "teamCountRange": "Teams: zwischen 2 und 8.",
     "teamSizeRange": "Pro Team: zwischen 1 und 6.",
@@ -1380,12 +1369,15 @@
     "stands": "Die Tribüne ist leer.",
     "pool": {
       "title": "Pool ist leer.",
-      "text": "Füg Spiele aus der Bibliothek hinzu. Vorschläge passen zu Format und Spielerzahl."
+      "text": "Füg Spiele aus der Bibliothek hinzu."
     },
     "poll": {
       "title": "Noch keine Stimmen.",
       "text": "Teil den Link, dann füllt sich die Tabelle."
     },
     "lobbyEmpty": "Alle schlafen. Du auch?"
+  },
+  "staging": {
+    "badge": "STAGING"
   }
 }

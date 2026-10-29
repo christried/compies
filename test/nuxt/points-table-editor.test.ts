@@ -76,8 +76,22 @@ describe('PointsTableEditor', () => {
     expect(page.findAll('[data-testid="points-row"]')[1]!.get('[role="spinbutton"]').attributes('aria-describedby')).toBeUndefined()
   })
 
-  it('shows no error for equal places or a preset', async () => {
-    expect((await mountEditor({ preset: 'custom', values: [2, 2, 2] }, 3)).find('[role="alert"]').exists()).toBe(false)
+  it('shows no error for equal places that still fall below the first, or for a preset', async () => {
+    expect((await mountEditor({ preset: 'custom', values: [5, 5, 5, 4] }, 4)).find('[role="alert"]').exists()).toBe(false)
     expect((await mountEditor({ preset: 'linear', values: [2, 1, 0] }, 3)).find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('says when every place earns the same, and links the message to the last place (#175)', async () => {
+    const page = await mountEditor({ preset: 'custom', values: [3, 3, 3] }, 3)
+
+    const alert = page.get('[role="alert"]')
+    expect(alert.text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
+    const rows = page.findAll('[data-testid="points-row"]')
+    expect(rows[2]!.get('[role="spinbutton"]').attributes('aria-describedby')).toBe(alert.attributes('id'))
+    expect(rows[1]!.get('[role="spinbutton"]').attributes('aria-describedby')).toBeUndefined()
+  })
+
+  it('shows no flat error for a preset, whose places always fall', async () => {
+    expect((await mountEditor({ preset: 'winner_takes_all', values: [2, 0, 0] }, 3)).find('[role="alert"]').exists()).toBe(false)
   })
 })

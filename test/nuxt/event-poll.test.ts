@@ -20,7 +20,7 @@ describe('the Event poll', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(page.get('h1').text()).toBe('Freitags-Zocken')
-    expect(page.text()).toContain('Terminumfrage läuft, 2 von 3 haben abgestimmt')
+    expect(page.text()).toContain('Terminumfrage läuft, 2 von 3 haben vollständig abgestimmt')
     const cards = page.findAll('[role="radiogroup"]').map(group => group.attributes('aria-label'))
     expect(cards).toEqual(['Fr 23.10. 20:00', 'Sa 24.10. 20:00', 'Di 20.10. 20:00'])
   })

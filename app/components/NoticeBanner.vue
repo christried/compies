@@ -1,30 +1,36 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-import { X } from '@lucide/vue'
+import { Check, CircleAlert, Info, TriangleAlert, X } from '@lucide/vue'
+import { noticeChipClasses, noticeClasses, type NoticeTone } from '~/utils/notice'
 
-// An inline notice inside a page (02-components § NoticeBanner). It is announced as a status when it
-// appears; the text carries the meaning. `hostOnly` adds the "Nur du siehst das" chip. Every notice
-// has an ✕; the page decides what closing means (it emits `close`, the banner does not hide itself).
-withDefaults(defineProps<{
-  tone?: 'success' | 'info' | 'warning'
+// An inline notice inside a page (02-components § NoticeBanner). Four tones (#172): info, warning (Hinweis),
+// critical (Kritisch) and success. Each tone has its tint and a default icon, and the icon can be overridden.
+// `critical` is announced as an alert, the others as a status; the text carries the meaning. `hostOnly` adds the
+// "Nur du siehst das" chip. The ✕ is there only with `closable`: the page decides what closing means (it emits
+// `close`, the banner does not hide itself), and a notice with nothing to close has no dead button.
+const props = withDefaults(defineProps<{
+  tone?: NoticeTone
   icon?: Component
   hostOnly?: boolean
-}>(), { tone: 'info', icon: undefined, hostOnly: false })
+  closable?: boolean
+}>(), { tone: 'info', icon: undefined, hostOnly: false, closable: false })
 
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
+
+const DEFAULT_ICON: Record<NoticeTone, Component> = { info: Info, warning: TriangleAlert, critical: CircleAlert, success: Check }
+const icon = computed(() => props.icon ?? DEFAULT_ICON[props.tone])
 </script>
 
 <template>
   <div
-    role="status"
-    class="animate-enter flex flex-wrap items-center gap-3 rounded-[12px] border-2 border-line bg-surface px-3.5 py-2.5 text-[14px] text-ink"
+    :role="tone === 'critical' ? 'alert' : 'status'"
+    class="animate-enter flex flex-wrap items-center gap-3 px-3.5 py-2.5 text-[14px] text-ink"
+    :class="noticeClasses(tone)"
   >
     <span
-      v-if="icon"
-      class="grid size-7 flex-none place-items-center rounded-pill border-2 border-line"
-      :class="{ 'bg-success text-on-success': tone === 'success', 'bg-warning text-on-warning': tone === 'warning', 'bg-info text-ink': tone === 'info' }"
+      :class="noticeChipClasses(tone)"
       aria-hidden="true"
     >
       <AppIcon
@@ -41,6 +47,7 @@ const { t } = useI18n()
     >{{ t('common.hostOnly') }}</span>
     <slot name="action" />
     <button
+      v-if="closable"
       type="button"
       class="hit-44 grid flex-none place-items-center"
       :aria-label="t('common.close')"

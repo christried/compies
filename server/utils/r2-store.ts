@@ -1,3 +1,4 @@
+import { hex, hmac, sha256Hex } from './crypto'
 import type { ImageStore } from './image-store'
 
 // The R2 adapter of the image store (#143): the S3 API of Cloudflare R2 over plain `fetch`, signed with AWS
@@ -13,7 +14,7 @@ export interface R2Config {
 }
 
 export interface S3SignInput {
-  method: 'GET' | 'PUT'
+  method: 'GET' | 'PUT' | 'DELETE'
   host: string
   /** The object path as it is, not yet URI-encoded: `/bucket/key`. */
   path: string
@@ -26,23 +27,6 @@ export interface S3SignInput {
   region: string
   service?: string
   date: Date
-}
-
-const encoder = new TextEncoder()
-
-function hex(bytes: ArrayBuffer | Uint8Array): string {
-  return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('')
-}
-
-export async function sha256Hex(data: Uint8Array | string): Promise<string> {
-  const bytes = typeof data === 'string' ? encoder.encode(data) : data
-  return hex(await crypto.subtle.digest('SHA-256', bytes as BufferSource))
-}
-
-async function hmac(key: ArrayBuffer | Uint8Array | string, data: string): Promise<ArrayBuffer> {
-  const raw = typeof key === 'string' ? encoder.encode(key) : key
-  const cryptoKey = await crypto.subtle.importKey('raw', raw as BufferSource, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  return crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(data))
 }
 
 /** AWS wants every byte outside the unreserved set encoded, which encodeURIComponent leaves `!'()*` of. */
@@ -89,11 +73,11 @@ export async function signS3Request(input: S3SignInput): Promise<{ authorization
   return { authorization, headers: { ...sent, authorization } }
 }
 
-/** The image store on R2: `PUT` and `GET https://<account>[.eu].r2.cloudflarestorage.com/<bucket>/<key>`. Checked by hand on staging (#143). */
+/** The image store on R2: `PUT`, `GET` and `DELETE https://<account>[.eu].r2.cloudflarestorage.com/<bucket>/<key>`. Checked by hand on staging (#143). */
 export function r2ImageStore(config: R2Config): ImageStore {
   const host = `${config.accountId}${config.jurisdiction === 'eu' ? '.eu' : ''}.r2.cloudflarestorage.com`
 
-  async function call(method: 'GET' | 'PUT', key: string, body: Uint8Array | undefined, contentType?: string) {
+  async function call(method: 'GET' | 'PUT' | 'DELETE', key: string, body: Uint8Array | undefined, contentType?: string) {
     const path = `/${config.bucket}/${key}`
     const signed = await signS3Request({
       method,
@@ -122,10 +106,11 @@ export function r2ImageStore(config: R2Config): ImageStore {
       const response = await call('GET', key, undefined)
       if (response.status === 404) return null
       if (!response.ok) throw new Error(`R2 get failed: ${response.status}`)
-      return {
-        body: new Uint8Array(await response.arrayBuffer()),
-        contentType: response.headers.get('content-type') ?? 'application/octet-stream',
-      }
+      return new Uint8Array(await response.arrayBuffer())
+    },
+    async delete(key) {
+      const response = await call('DELETE', key, undefined)
+      if (!response.ok && response.status !== 404) throw new Error(`R2 delete failed: ${response.status}`)
     },
   }
 }

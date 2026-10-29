@@ -1,4 +1,5 @@
 import { EVENT_NAME_MAX, SLOTS_MAX, eventNameLength, slotProblems, type SlotProblem } from '../../shared/event'
+import { asRecord } from '../../shared/record'
 import { berlinToUtc, utcToBerlin } from '../../shared/time'
 import { parseSessionCount } from './session'
 
@@ -62,7 +63,7 @@ export function parseEditedSlot(raw: unknown, existing: { id: string, startsAt: 
  * one Date per Session (in the future and distinct). `now` is injected so the rules can be tested.
  */
 export function parseNewEvent(input: unknown, now: Date): { ok: true, event: NewEvent } | { ok: false, error: EventInputError } {
-  const body = (input ?? {}) as { name?: unknown, dateMode?: unknown, sessions?: unknown, slots?: unknown, startsAt?: unknown }
+  const body = asRecord(input)
   const name = parseEventName(body.name)
   if (!name) return { ok: false, error: 'invalid_name' }
   if (body.dateMode !== 'poll' && body.dateMode !== 'direct') return { ok: false, error: 'invalid_mode' }

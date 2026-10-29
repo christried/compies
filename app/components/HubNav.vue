@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Archive, Gamepad2, House, Shield, User } from '@lucide/vue'
 import type { Component } from 'vue'
-import { canSeeAdmin, canSeeLibrary, HUB_SITES, type Viewer } from '~/utils/construction'
+import { canSeeLibrary } from '~~/shared/game'
+import { canSeeAdmin, HUB_SITES, type Viewer } from '~/utils/construction'
 
 // Main navigation: the header nav on desktop, the bottom tab bar below md.
 const props = withDefaults(defineProps<{
   layout: 'header' | 'tabs'
-  /** Who sees the hidden areas (Bibliothek, Admin); null when signed out. The rules live in construction.ts. */
+  /** Who sees the hidden areas (Bibliothek, Admin); null when signed out. The rules live in construction.ts (Admin) and shared/game.ts (Bibliothek). */
   viewer?: Viewer
 }>(), { viewer: null })
 

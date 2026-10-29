@@ -211,7 +211,7 @@ describe('events', () => {
       })
     })
 
-    it('stores the Lucky Wheel options with their defaults (#144)', async () => {
+    it('stores the Glücksrad options with their defaults (#144)', async () => {
       const cookie = await signInAsHost()
 
       await create(cookie, poll({ settings: { ...TEST_SETTINGS, teamSize: 5, selectionMode: 'lucky_wheel', hiddenWheel: undefined, vetoAllowance: undefined } }))
@@ -219,7 +219,7 @@ describe('events', () => {
       expect((await eventRows())[0]).toMatchObject({ selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 5 })
     })
 
-    it('stores a Lucky Wheel with a hidden wheel and the Host’s Veto allowance (#145)', async () => {
+    it('stores a Glücksrad with a hidden wheel and the Host’s Veto allowance (#145)', async () => {
       const cookie = await signInAsHost()
 
       const response = await create(cookie, poll({ settings: { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 5 } }))
@@ -228,7 +228,7 @@ describe('events', () => {
       expect((await eventRows())[0]).toMatchObject({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 5 })
     })
 
-    it('stores a Veto allowance of 0 with the Lucky Wheel (#145)', async () => {
+    it('stores a Veto allowance of 0 with the Glücksrad (#145)', async () => {
       const cookie = await signInAsHost()
 
       await create(cookie, poll({ settings: { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', vetoAllowance: 0 } }))
@@ -236,7 +236,7 @@ describe('events', () => {
       expect((await eventRows())[0]).toMatchObject({ selectionMode: 'lucky_wheel', vetoAllowance: 0 })
     })
 
-    it('refuses a Veto allowance outside 0 to 9, and the wheel options with Admin pick, and writes nothing (#145)', async () => {
+    it('refuses a Veto allowance outside 0 to 9, and the wheel options with Host pick, and writes nothing (#145)', async () => {
       const cookie = await signInAsHost()
       const cases: [Record<string, unknown>, string][] = [
         [{ selectionMode: 'lucky_wheel', vetoAllowance: 10 }, 'veto_allowance_range'],
@@ -282,6 +282,7 @@ describe('events', () => {
         [{ teamSize: 7 }, 'team_size_range'],
         [{ gameCount: 31 }, 'game_count_range'],
         [{ pointsTable: { preset: 'custom', values: [1, 2] } }, 'points_rising'],
+        [{ pointsTable: { preset: 'custom', values: [0, 0] } }, 'points_flat'],
         [{ pointsTable: { preset: 'custom', values: [1] } }, 'invalid_points'],
         [{ format: 'ffa' }, 'format_unavailable'],
         [{ format: 'bogus' }, 'invalid_settings'],

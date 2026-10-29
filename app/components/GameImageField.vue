@@ -80,7 +80,7 @@ async function onPick(event: Event) {
         >
         <template v-else>{{ t('gameEdit.imageRatio') }}</template>
       </span>
-      <div class="flex min-w-0 flex-col items-start gap-1.5">
+      <div class="flex min-w-0 flex-col items-start">
         <AppButton
           variant="secondary"
           :aria-disabled="busy || undefined"
@@ -94,24 +94,20 @@ async function onPick(event: Event) {
           </template>
           {{ shown ? t('gameEdit.imageChange') : t('gameEdit.imageChoose') }}
         </AppButton>
-        <span
-          v-if="status"
-          role="status"
-          class="text-small font-bold text-ink-2"
-        >{{ status }}</span>
-        <span
-          v-else-if="!failure"
-          class="text-small text-ink-2"
-        >{{ t('gameEdit.imageHelp') }}</span>
       </div>
     </div>
-    <p
+    <!-- Below the row, so the button stays centred on the preview while the image is being converted or sent (#176). -->
+    <span
+      v-if="status"
+      role="status"
+      class="text-small font-bold text-ink-2"
+    >{{ status }}</span>
+    <NoticeBanner
       v-if="failure"
-      role="alert"
-      class="m-0 text-small font-bold text-error-fg"
+      tone="critical"
     >
       {{ failure }}
-    </p>
+    </NoticeBanner>
     <input
       ref="input"
       type="file"

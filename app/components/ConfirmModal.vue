@@ -71,7 +71,7 @@ const { onKeydown } = useDialog(toRef(props, 'open'), panel, () => emit('cancel'
             :aria-disabled="loading ? 'true' : undefined"
             @click="!loading && emit('confirm')"
           >
-            {{ loading ? t('mvp.create.saving') : confirmLabel }}
+            {{ loading ? t('common.saving') : confirmLabel }}
           </AppButton>
           <button
             type="button"

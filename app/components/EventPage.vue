@@ -2,6 +2,7 @@
 import { CalendarCheck, CalendarClock, ChevronRight, Link as LinkIcon, Settings2 } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
+import { eventDataKey } from '~/utils/event-data'
 import { sessionsEditable, type DatedSessionView, type EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { settingsEditable } from '~~/shared/settings'
@@ -17,7 +18,7 @@ const props = defineProps<{ slug: string }>()
 const { t } = useI18n()
 const { toast } = useToast()
 const slug = toRef(() => props.slug)
-const { data, error, refresh } = await useFetch<EventView>(() => `/api/e/${slug.value}`)
+const { data, error, refresh } = await useFetch<EventView>(() => `/api/e/${slug.value}`, { key: () => eventDataKey(slug.value) })
 
 const notFound = computed(() => error.value?.statusCode === 404)
 const deleted = computed(() => error.value?.statusCode === 410)
@@ -157,6 +158,7 @@ usePollRefresh(() => {
         tone="info"
         :icon="Settings2"
         host-only
+        closable
         @close="setupNoticeClosed = true"
       >
         <b>{{ t('eventSettings.notice.title') }}</b>

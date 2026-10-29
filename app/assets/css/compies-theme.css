@@ -35,6 +35,11 @@
   --color-warning: var(--cp-warning);  --color-on-warning: var(--cp-on-warning);  --color-warning-fg: var(--cp-warning-fg);
   --color-error: var(--cp-error);      --color-on-error: var(--cp-on-error);      --color-error-fg: var(--cp-error-fg);
   --color-info: var(--cp-info);        --color-on-info: var(--cp-on-info);        --color-info-fg: var(--cp-info-fg);
+  /* Notice backgrounds (#172): a pale tint of the tone on the surface, opaque so the dotted page never shows through. */
+  --color-success-tint: color-mix(in srgb, var(--cp-success) 15%, var(--cp-surface));
+  --color-warning-tint: color-mix(in srgb, var(--cp-warning) 15%, var(--cp-surface));
+  --color-error-tint: color-mix(in srgb, var(--cp-error) 15%, var(--cp-surface));
+  --color-info-tint: color-mix(in srgb, var(--cp-info) 15%, var(--cp-surface));
   --color-online: var(--cp-online);
   --color-offline: var(--cp-offline);
   --color-white: #ffffff;

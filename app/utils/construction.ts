@@ -18,9 +18,6 @@ export interface ConstructionSite {
 /** The signed-in User's rights that decide which hidden areas show; null when signed out. */
 export type Viewer = Pick<AuthUser, 'canHost' | 'isAdmin'> | null
 
-// The Bibliothek rule lives in shared/game.ts, because the server applies it too (#141).
-export { canSeeLibrary } from '~~/shared/game'
-
 /** Admin is for the Platform admin only. */
 export function canSeeAdmin(viewer: Viewer) {
   return Boolean(viewer?.isAdmin)

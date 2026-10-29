@@ -1,6 +1,6 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
-import { createError, getQuery, readBody } from 'h3'
+import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import DetailPage from '~/pages/bibliothek/[id]/index.vue'
 import EditPage from '~/pages/bibliothek/[id]/bearbeiten.vue'
@@ -21,7 +21,7 @@ function game(overrides: Partial<GameView>): GameView {
     clipLength: 30,
     playersMin: null,
     playersMax: null,
-    formats: [],
+    suitabilities: [],
     createdBy: { id: kitty.id, name: 'Sanne' },
     createdAt: '2026-01-15T10:00:00.000Z',
     canEdit: true,
@@ -33,19 +33,17 @@ const withClip = game({ id: '00000000-0000-4000-8000-0000000000a2', name: 'Count
 const withoutClip = game({ id: '00000000-0000-4000-8000-0000000000a3', name: 'Brettspiel' })
 
 // One endpoint per path for the file (a second registration is not replaced); each test sets what it returns.
-// `total` defaults to the number of games; the query of the last list request is what the filters sent (#142).
-let list: { games: GameView[], total?: number } = { games: [] }
+// The list is every game; the browser filters it (#173), so the tests look at the rendered cards.
+let list: { games: GameView[] } = { games: [] }
 let listMode: 'ok' | 'hang' = 'ok'
 let detail: GameView | null = withClip
-let lastQuery: Record<string, unknown> = {}
 const patched = vi.fn()
 
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: (event) => {
-    lastQuery = getQuery(event)
+  handler: () => {
     if (listMode === 'hang') return new Promise(() => {})
-    return { games: list.games, total: list.total ?? list.games.length }
+    return { games: list.games }
   },
 })
 registerEndpoint(`/api/games/${withClip.id}`, {
@@ -81,6 +79,7 @@ describe('the library page', () => {
     listMode = 'ok'
     detail = withClip
     await clearNuxtData('games')
+    useState('game-library').value = null
     await clearNuxtData(`game-${withClip.id}`)
   })
 
@@ -258,20 +257,48 @@ describe('the new game page', () => {
   })
 })
 
-const withPlayers = game({ id: '00000000-0000-4000-8000-0000000000a4', name: 'Halo', playersMin: 2, playersMax: 10, formats: ['teams', 'ffa'], canEdit: false, createdBy: { id: 'someone-else', name: 'Sanne' } })
+const withPlayers = game({ id: '00000000-0000-4000-8000-0000000000a4', name: 'Halo', playersMin: 2, playersMax: 10, suitabilities: ['teams', 'ffa'], canEdit: false, createdBy: { id: 'someone-else', name: 'Sanne' } })
 
-describe('the library cards and filters (#142)', () => {
+describe('the library cards and filters (#142, #173)', () => {
   beforeEach(async () => {
     signInAs(host)
     // The test before may have navigated away (to a game); each filter test starts on the library page.
     await useRouter().push('/bibliothek')
-    list = { games: [withClip], total: 1 }
+    list = { games: [withClip] }
     listMode = 'ok'
-    lastQuery = {}
     await clearNuxtData('games')
+    useState('game-library').value = null
   })
 
-  it('shows the player count and the Formats on the card, both Formats as „Beides“', async () => {
+  const names = (page: VueWrapper) => page.findAll('main ul li').map(card => card.get('b, a').text())
+  const chip = (page: VueWrapper, text: string) => page.findAll('main button').find(button => button.text() === text)!
+  const query = () => useRouter().currentRoute.value.query
+
+  it('shows the card name as plain text: a link without the pill border, with a visible focus ring', async () => {
+    list = { games: [withClip] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const name = page.get('main li a')
+    expect(name.text()).toBe('Counter-Strike 2')
+    expect(name.attributes('href')).toBe(`/bibliothek/${withClip.id}`)
+    expect(name.classes()).not.toContain('outline-memphis')
+    expect(name.classes()).toContain('focus-visible:focus-ring')
+  })
+
+  it('gives every select of the filter bar room between the chevron and the border', async () => {
+    list = { games: [withClip, withPlayers] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    for (const label of ['Spielerzahl', 'Passt zu']) {
+      expect(page.get(`select[aria-label="${label}"]`).classes()).toContain('pr-9')
+    }
+  })
+
+  it('shows the player count and the Suitabilities on the card, as a list in order', async () => {
     list = { games: [withPlayers, withClip] }
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
@@ -279,100 +306,133 @@ describe('the library cards and filters (#142)', () => {
 
     const [halo, cs] = page.findAll('main li')
     expect(halo!.text()).toContain('2–10')
-    expect(halo!.text()).toContain('Beides')
-    expect(cs!.text()).not.toContain('Beides')
+    expect(halo!.text()).toContain('Teams, Jeder gegen jeden')
+    expect(cs!.text()).not.toContain('Teams')
   })
 
   it('shows the search with the number of games in the library, and the filter chips', async () => {
-    list = { games: [withClip, withoutClip], total: 86 }
+    list = { games: [withClip, withoutClip, withPlayers] }
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
-    expect(page.get('input[type="search"]').attributes('placeholder')).toBe('86 Spiele durchsuchen')
-    const chips = page.findAll('main button, main select').map(chip => chip.text())
+    expect(page.get('input[type="search"]').attributes('placeholder')).toBe('3 Spiele durchsuchen')
+    const chips = page.findAll('main button, main select').map(item => item.text())
     expect(chips).toEqual(expect.arrayContaining(['Alle', 'Von mir']))
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(true)
-    expect(page.find('select[aria-label="Format"]').exists()).toBe(true)
+    expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(true)
   })
 
-  it('sends the search after a short pause and keeps it in the address', async () => {
+  it('filters the cards on every keystroke and writes the search to the address after a short pause', async () => {
+    list = { games: [withClip, withoutClip, withPlayers] }
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
     await page.get('input[type="search"]').setValue('counter')
 
-    await vi.waitFor(() => expect(lastQuery.q).toBe('counter'), { timeout: 5000 })
-    expect(useRouter().currentRoute.value.query.q).toBe('counter')
+    expect(names(page)).toEqual(['Counter-Strike 2'])
+    expect(query().q).toBeUndefined()
+    await vi.waitFor(() => expect(query().q).toBe('counter'), { timeout: 5000 })
   })
 
-  it('sends „Von mir“ as mine=1 and shows it pressed', async () => {
-    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
-    await settle(page)
-    const mine = page.findAll('main button').find(button => button.text() === 'Von mir')!
-
-    await mine.trigger('click')
-
-    await vi.waitFor(() => expect(lastQuery.mine).toBe('1'), { timeout: 5000 })
-    expect(page.findAll('main button').find(button => button.text() === 'Von mir')!.attributes('aria-pressed')).toBe('true')
-    expect(useRouter().currentRoute.value.query.mine).toBe('1')
-  })
-
-  it('sends the Format picked in its menu', async () => {
+  it('keeps only the games of the viewer with „Von mir“, shows it pressed and puts it in the address', async () => {
+    list = { games: [withClip, withPlayers] }
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
-    await page.get('select[aria-label="Format"]').setValue('teams')
+    await chip(page, 'Von mir').trigger('click')
 
-    await vi.waitFor(() => expect(lastQuery.format).toBe('teams'), { timeout: 5000 })
+    expect(names(page)).toEqual(['Counter-Strike 2'])
+    expect(chip(page, 'Von mir').attributes('aria-pressed')).toBe('true')
+    await vi.waitFor(() => expect(query().mine).toBe('1'))
   })
 
-  it('sends the player count picked in its menu and shows it on the chip', async () => {
+  it('keeps the games of the Passt zu picked in its menu', async () => {
+    list = { games: [withClip, withPlayers] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    await page.get('select[aria-label="Passt zu"]').setValue('ffa')
+
+    expect(names(page)).toEqual(['Halo'])
+    await vi.waitFor(() => expect(query().suitability).toBe('ffa'))
+  })
+
+  it('keeps the games whose range covers the player count picked in its menu, and shows it on the chip', async () => {
+    list = { games: [withClip, withPlayers, withoutClip] }
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
     await page.get('select[aria-label="Spielerzahl"]').setValue('3')
 
-    await vi.waitFor(() => expect(lastQuery.players).toBe('3'), { timeout: 5000 })
+    expect(names(page)).toEqual(['Halo'])
     expect(page.get('select[aria-label="Spielerzahl"]').text()).toContain('3 Spieler')
+    await vi.waitFor(() => expect(query().players).toBe('3'))
   })
 
   it('takes the filters from the address, so reload and back keep them', async () => {
-    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?q=halo&players=3&format=ffa&mine=1' })
+    list = { games: [withClip, withPlayers, withoutClip] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?q=halo&players=3&suitability=ffa&mine=1' })
     await settle(page)
 
-    expect(lastQuery).toMatchObject({ q: 'halo', players: '3', format: 'ffa', mine: '1' })
-    expect(page.findAll('main button').find(button => button.text() === 'Von mir')!.attributes('aria-pressed')).toBe('true')
+    expect(names(page)).toEqual([])
+    expect((page.get('input[type="search"]').element as HTMLInputElement).value).toBe('halo')
+    expect(chip(page, 'Von mir').attributes('aria-pressed')).toBe('true')
+    expect((page.get('select[aria-label="Passt zu"]').element as HTMLSelectElement).value).toBe('ffa')
+  })
+
+  it('follows the address when back changes the search', async () => {
+    list = { games: [withClip, withPlayers] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?q=halo' })
+    await settle(page)
+    expect(names(page)).toEqual(['Halo'])
+
+    await useRouter().push('/bibliothek?q=counter')
+
+    await vi.waitFor(() => expect(names(page)).toEqual(['Counter-Strike 2']))
+    expect((page.get('input[type="search"]').element as HTMLInputElement).value).toBe('counter')
+  })
+
+  it('„Alle“ clears the search and every filter', async () => {
+    list = { games: [withClip, withPlayers] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?q=halo&suitability=ffa' })
+    await settle(page)
+
+    await chip(page, 'Alle').trigger('click')
+
+    expect(names(page)).toEqual(['Counter-Strike 2', 'Halo'])
+    await vi.waitFor(() => expect(query()).toEqual({}))
   })
 
   it('shows „Keine Treffer“ with the search text when nothing matches it', async () => {
-    list = { games: [], total: 2 }
+    list = { games: [withClip, withoutClip] }
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek?q=Stardew%20Valley' })
     await settle(page)
 
-    await vi.waitFor(() => expect(page.findAll('h2').map(heading => heading.text())).toContain('„Stardew Valley“ kennen wir noch nicht.'), { timeout: 5000 })
+    expect(page.findAll('h2').map(heading => heading.text())).toContain('„Stardew Valley“ kennen wir noch nicht.')
     expect(page.text()).toContain('Anders schreiben, oder das Spiel neu anlegen.')
     expect(page.findAll('main a').some(link => link.text().includes('Spiel anlegen'))).toBe(true)
   })
 
   it('shows „Nix gefunden.“ when only a filter keeps every game out', async () => {
-    list = { games: [], total: 2 }
+    list = { games: [withClip, withoutClip] }
 
-    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?format=ffa' })
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?suitability=ffa' })
     await settle(page)
 
-    await vi.waitFor(() => expect(page.findAll('h2').map(heading => heading.text())).toContain('Nix gefunden.'), { timeout: 5000 })
+    expect(page.findAll('h2').map(heading => heading.text())).toContain('Nix gefunden.')
     expect(page.text()).not.toContain('Die Bibliothek ist leer.')
   })
 
   it('shows the empty library state, not „Keine Treffer“, when the library has no games', async () => {
-    list = { games: [], total: 0 }
+    list = { games: [] }
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
-    await vi.waitFor(() => expect(page.findAll('h2').map(heading => heading.text())).toContain('Die Bibliothek ist leer.'), { timeout: 5000 })
+    expect(page.findAll('h2').map(heading => heading.text())).toContain('Die Bibliothek ist leer.')
     expect(page.text()).not.toContain('Nix gefunden.')
   })
 })
@@ -404,14 +464,14 @@ describe('the game page for its editors (#142)', () => {
     expect(page.find(`a[href="/bibliothek/${withClip.id}/bearbeiten"]`).exists()).toBe(false)
   })
 
-  it('shows the player count and the Formats as facts', async () => {
+  it('shows the player count and the Suitabilities as facts', async () => {
     detail = { ...withPlayers, id: withClip.id }
 
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
     expect(page.text()).toContain('2 bis 10')
-    expect(page.text()).toContain('Beides')
+    expect(page.text()).toContain('Teams, Jeder gegen jeden')
   })
 })
 
@@ -422,6 +482,7 @@ describe('the edit page (#142)', () => {
     patched.mockClear()
     await clearNuxtData(`game-${withClip.id}`)
     await clearNuxtData('games')
+    useState('game-library').value = null
   })
 
   function field(page: VueWrapper, label: string) {

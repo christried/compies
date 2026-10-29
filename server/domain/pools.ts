@@ -1,3 +1,4 @@
+import { isRecord } from '../../shared/record'
 import { isUuid } from './uuid'
 
 // The pools of a new Event (#146): the game ids the Host put in the Game pool and the Tiebreaker pool.
@@ -24,10 +25,9 @@ function parseList(raw: unknown): string[] | null {
  */
 export function parsePools(raw: unknown): { ok: true, pools: NewPools } | { ok: false, error: 'invalid_pools' } {
   if (raw === undefined) return { ok: true, pools: { main: [], tiebreaker: [] } }
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return { ok: false, error: 'invalid_pools' }
-  const { main, tiebreaker } = raw as { main?: unknown, tiebreaker?: unknown }
-  const mainIds = parseList(main)
-  const tiebreakerIds = parseList(tiebreaker)
+  if (!isRecord(raw)) return { ok: false, error: 'invalid_pools' }
+  const mainIds = parseList(raw.main)
+  const tiebreakerIds = parseList(raw.tiebreaker)
   if (!mainIds || !tiebreakerIds) return { ok: false, error: 'invalid_pools' }
   return { ok: true, pools: { main: mainIds, tiebreaker: tiebreakerIds } }
 }
