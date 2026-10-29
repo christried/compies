@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseChangelog } from '~~/shared/changelog'
+import { compareVersions, parseChangelog, unseenReleases } from '~~/shared/changelog'
 
 // The Changelog parser (CHANGELOG.md, Keep a Changelog, German for Users). Each block type gets a case;
 // anything the parser does not know throws, so a broken file never reaches the Neuigkeiten page.
@@ -115,5 +115,42 @@ describe('parseChangelog', () => {
   it('rejects an intro text in [Unreleased] and text between groups and items', () => {
     expect(() => parseChangelog('# Changelog\n\n## [Unreleased]\n\nText ohne Gruppe.\n')).toThrow()
     expect(() => parseChangelog('# Changelog\n\n## [Unreleased]\n\n### Neu\n\nText nach Gruppe.\n')).toThrow()
+  })
+})
+
+// „Was ist neu“ (#184): which Releases a User still has to be shown.
+describe('compareVersions', () => {
+  it('orders versions by their numbers, not as text', () => {
+    expect(compareVersions('1.10.0', '1.9.0')).toBeGreaterThan(0)
+    expect(compareVersions('1.2.0', '1.2.1')).toBeLessThan(0)
+    expect(compareVersions('2.0.0', '1.99.99')).toBeGreaterThan(0)
+    expect(compareVersions('1.3.0', '1.3.0')).toBe(0)
+  })
+})
+
+describe('unseenReleases', () => {
+  const releases = ['1.4.0', '1.3.0', '1.2.0', '1.1.0'].map(version => ({
+    version, date: '2026-10-22', name: `Release ${version}`, intro: null, groups: [],
+  }))
+  const versions = (seen: string | null) => unseenReleases(releases, seen).map(r => r.version)
+
+  it('shows only the newest Release to a User who never saw one', () => {
+    expect(versions(null)).toEqual(['1.4.0'])
+  })
+
+  it('shows every Release newer than the seen one, newest first', () => {
+    expect(versions('1.2.0')).toEqual(['1.4.0', '1.3.0'])
+  })
+
+  it('shows nothing once the newest Release is seen', () => {
+    expect(versions('1.4.0')).toEqual([])
+  })
+
+  it('treats a version that is no Release like never having seen one', () => {
+    expect(versions('0.9.0')).toEqual(['1.4.0'])
+  })
+
+  it('shows nothing when there are no Releases', () => {
+    expect(unseenReleases([], null)).toEqual([])
   })
 })
