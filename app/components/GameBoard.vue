@@ -1,0 +1,308 @@
+<script setup lang="ts">
+import { Armchair, Eye, Lock } from '@lucide/vue'
+import type { MoveTarget } from '~/components/MoveToMenuList.vue'
+import { errorCopyKey } from '~/utils/api-error'
+import { placeFromKey, placeKey, placeOfMember, teamName } from '~/utils/board'
+import { eventDataKey } from '~/utils/event-data'
+import { glide, pop } from '~/utils/motion'
+import { countSeats, moveRejection, type Place } from '~~/shared/board'
+import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { EventSettings } from '~~/shared/settings'
+
+// The Game board (#160, GLOSSARY: Game board, 02-components § GameBoard, 11-event-seite § GameBoard): the teams, the Bench
+// and the Stands, and where everybody sits. A Player moves themselves, the Host anyone: by dragging (pointer events,
+// a long press on touch), or from the keyboard through the MoveToMenu. An own move shows at once and glides home with
+// a toast when the server refuses it; somebody else's move arrives through the room (`member.moved`) and glides in.
+// Three phases: `setup` (an Event without settings has no teams), `poll` (no Session has a Date: Players cannot take a
+// team yet) and `open` (Team choice is open). Avatars are keyed by user id, so the refetch that follows a move keeps the
+// glide going. The room comes from the Event page: one socket per page.
+const props = defineProps<{
+  slug: string
+  members: MemberView[]
+  teams: BoardTeam[]
+  settings: EventSettings | null
+  teamChoiceOpen: boolean
+  viewerId: string
+  isHost: boolean
+  room: Pick<ReturnType<typeof useEventRoom>, 'on'>
+}>()
+
+const { t } = useI18n()
+const root = useTemplateRef<HTMLElement>('root')
+const slug = toRef(() => props.slug)
+
+const phase = computed<'setup' | 'poll' | 'open'>(() => (props.settings === null ? 'setup' : props.teamChoiceOpen ? 'open' : 'poll'))
+
+// Where everybody is drawn: the server's place, under the moves other people made (from the room, until the refetch
+// agrees) and the moves this viewer is making (until the server has answered).
+const nameOf = (userId: string) => props.members.find(member => member.id === userId)?.name ?? ''
+const moves = useBoardMoves(slug, () => refreshNuxtData(eventDataKey(props.slug)), { nameOf })
+const heard = ref<Record<string, Place>>({})
+
+const people = computed(() => props.members.map(member => ({
+  ...member,
+  place: moves.pending.value[member.id] ?? heard.value[member.id] ?? placeOfMember(member),
+})))
+const seats = computed(() => countSeats(people.value.map(person => person.place)))
+const placeOf = (userId: string): Place => people.value.find(person => person.id === userId)?.place ?? { zone: 'bench' }
+const inPlace = (place: Place) => people.value.filter(person => placeKey(person.place) === placeKey(place))
+const whereText = (place: Place) => (place.zone === 'team' ? teamName(place.team, t) : t(place.zone === 'bench' ? 'board.bench' : 'board.stands'))
+
+// What the room says about other people's moves is true at once; the refetch it triggers brings the same and drops it.
+// A message the refetch never confirms (a move that was undone meanwhile) is dropped after a while.
+const HEARD_MS = 5000
+function hear(userId: string, to: Place) {
+  heard.value = { ...heard.value, [userId]: to }
+  setTimeout(() => forget(userId, to), HEARD_MS)
+}
+function forget(userId: string, to?: Place) {
+  const current = heard.value[userId]
+  if (current && (!to || placeKey(current) === placeKey(to))) heard.value = Object.fromEntries(Object.entries(heard.value).filter(([key]) => key !== userId))
+}
+watch(() => props.members, (members) => {
+  for (const member of members) {
+    const heardPlace = heard.value[member.id]
+    if (heardPlace && placeKey(heardPlace) === placeKey(placeOfMember(member))) forget(member.id)
+  }
+})
+const stopHearing = props.room.on('member.moved', message => hear(message.userId, message.to))
+onBeforeUnmount(stopHearing)
+
+/** Why the viewer cannot put this Member there (`moveRejection`, the server's rule), or null. */
+function rejectionFor(userId: string, to: Place) {
+  return moveRejection({
+    actorId: props.viewerId,
+    actorIsHost: props.isHost,
+    userId,
+    from: placeOf(userId),
+    to,
+    settings: props.settings,
+    teamChoiceOpen: props.teamChoiceOpen,
+    started: false,
+    seats: seats.value,
+  })
+}
+
+// The slots of a team read „Zu“ while the viewer cannot move into a team; the Host always can (#160).
+const lockReason = computed(() => (!props.isHost && phase.value === 'poll' ? t(errorCopyKey('team_choice_closed')) : null))
+
+const live = ref('')
+const announce = (text: string) => void (live.value = text)
+const freeIn = (team: number) => Math.max((props.settings?.teamSize ?? 0) - (seats.value[team] ?? 0), 0)
+
+function personEl(userId: string): HTMLElement | null {
+  return root.value?.querySelector<HTMLElement>(`[data-user-id="${userId}"]`) ?? null
+}
+
+/** Moves somebody, from a drop or from the menu: drawn at once, announced when the server took it. */
+async function requestMove(userId: string, to: Place) {
+  if (rejectionFor(userId, to)) return
+  const taken = moves.move(userId, to)
+  await nextTick()
+  const element = personEl(userId)
+  if (element) pop(element)
+  if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : to.zone === 'bench' ? 'board.movedBench' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? teamName(to.team, t) : '' }))
+}
+
+const drag = useBoardDrag({
+  canDrag: userId => props.isHost || userId === props.viewerId,
+  zoneAt(x, y) {
+    for (const zone of root.value?.querySelectorAll<HTMLElement>('[data-drop-zone]') ?? []) {
+      const rect = zone.getBoundingClientRect()
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return zone.dataset.dropZone ?? null
+    }
+    return null
+  },
+  accepts(userId, key) {
+    const to = placeFromKey(key)
+    return to !== null && rejectionFor(userId, to) === null
+  },
+  drop(userId, key) {
+    const to = placeFromKey(key)
+    if (to) void requestMove(userId, to)
+  },
+  async release(userId) {
+    // Let go anywhere else: the person was lifted off their place and glides back to it.
+    announce(t('board.cancelled'))
+    const element = personEl(userId)
+    if (!element) return
+    const from = element.getBoundingClientRect()
+    await nextTick()
+    glide(element, from, element.getBoundingClientRect(), 'bounce')
+  },
+})
+
+watch(drag.overZone, (key) => {
+  const place = placeFromKey(key ?? undefined)
+  if (place?.zone === 'team') announce(t('board.zoneAria', { name: teamName(place.team, t), n: freeIn(place.team), size: props.settings?.teamSize ?? 0 }))
+  else if (place) announce(whereText(place))
+})
+
+// A change of anyone's place glides their avatar from the old slot to the new one (Flip). The pre-flush watcher sees the
+// old layout, the post-flush one the new; the avatars are found by user id because each zone draws its own element.
+const layout = computed(() => people.value.map(person => `${person.id}:${placeKey(person.place)}`).join('|'))
+let before = new Map<string, DOMRect>()
+const measure = () => new Map([...(root.value?.querySelectorAll<HTMLElement>('[data-user-id]') ?? [])].map(element => [element.dataset.userId ?? '', element.getBoundingClientRect()]))
+watch(layout, () => void (before = measure()), { flush: 'pre' })
+watch(layout, () => {
+  for (const element of root.value?.querySelectorAll<HTMLElement>('[data-user-id]') ?? []) {
+    const id = element.dataset.userId ?? ''
+    const from = before.get(id)
+    if (from) glide(element, from, element.getBoundingClientRect(), moves.bounced.has(id) ? 'bounce' : 'glide')
+    moves.bounced.delete(id)
+  }
+  before = new Map()
+}, { flush: 'post' })
+
+// The MoveToMenu.
+const menu = ref<{ userId: string, anchor: HTMLElement } | null>(null)
+
+function openMenu(event: MouseEvent, userId: string) {
+  if (drag.wasDragged()) return
+  menu.value = { userId, anchor: event.currentTarget as HTMLElement }
+}
+
+function targetFor(place: Place, label: string, extra: Partial<MoveTarget>): MoveTarget {
+  const rejection = menu.value ? rejectionFor(menu.value.userId, place) : null
+  return { key: placeKey(place), label, reason: rejection ? t(errorCopyKey(rejection)) : null, ...extra }
+}
+
+const targets = computed((): MoveTarget[] => [
+  ...props.teams.map(team => targetFor({ zone: 'team', team: team.position }, t('board.moveToTeam', { team: teamName(team.position, t) }), { team: team.position })),
+  targetFor({ zone: 'bench' }, t('board.moveToBench'), { icon: Armchair }),
+  targetFor({ zone: 'stands' }, t('board.moveToStands'), { icon: Eye }),
+])
+
+function pick(key: string) {
+  const userId = menu.value?.userId
+  const to = placeFromKey(key)
+  menu.value = null
+  if (userId && to) void requestMove(userId, to)
+}
+
+// The Host's notice about uneven teams: the smallest team against the biggest.
+const uneven = computed(() => {
+  if (!props.isHost || props.settings === null || props.teams.length < 2) return null
+  const counts = props.teams.map(team => ({ team: team.position, count: seats.value[team.position] ?? 0 }))
+  const small = counts.reduce((least, next) => (next.count < least.count ? next : least))
+  const big = Math.max(...counts.map(entry => entry.count))
+  return small.count === big ? null : { team: teamName(small.team, t), small: small.count, big }
+})
+</script>
+
+<template>
+  <section
+    ref="root"
+    class="@container flex flex-col gap-3 rounded-[20px] border-(length:--cp-bw) border-line bg-surface p-5.5 text-ink shadow-card md:p-[22px]"
+    aria-labelledby="board-title"
+  >
+    <h2
+      id="board-title"
+      class="m-0 font-display text-[26px] leading-none font-normal md:text-[32px]"
+    >
+      {{ t('board.title') }}
+    </h2>
+
+    <NoticeBanner
+      v-if="phase === 'setup'"
+      tone="info"
+    >
+      {{ t('board.note.setup') }}
+    </NoticeBanner>
+    <NoticeBanner
+      v-else-if="phase === 'poll'"
+      tone="info"
+      :icon="Lock"
+    >
+      {{ t('board.notice.poll') }}
+    </NoticeBanner>
+    <NoticeBanner
+      v-if="uneven"
+      tone="warning"
+      host-only
+    >
+      {{ t('board.notice.uneven', uneven) }}
+    </NoticeBanner>
+
+    <!-- Two columns on a phone; from a board 560 px wide as many as fit with at least 250 px each (4 at full width). -->
+    <div
+      v-if="teams.length > 0"
+      class="grid grid-cols-2 gap-2 @min-[560px]:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] @min-[560px]:gap-3"
+    >
+      <TeamZone
+        v-for="team in teams"
+        :key="team.position"
+        :team="team.position"
+        :name="teamName(team.position, t)"
+        :size="settings?.teamSize ?? 0"
+        :taken="inPlace({ zone: 'team', team: team.position }).length"
+        :lock-reason="lockReason"
+        :drop-target="drag.overZone.value === `team-${team.position}`"
+        :mine="placeOf(viewerId).zone === 'team' && placeKey(placeOf(viewerId)) === `team-${team.position}`"
+      >
+        <BoardPerson
+          v-for="person in inPlace({ zone: 'team', team: team.position })"
+          :key="person.id"
+          :user-id="person.id"
+          :name="person.name"
+          :image="person.image"
+          :is-host="person.isHost"
+          :you="person.id === viewerId"
+          :where="whereText(person.place)"
+          :lifted="drag.dragging.value?.userId === person.id"
+          :menu-open="menu?.userId === person.id"
+          :draggable="isHost || person.id === viewerId"
+          :style="drag.dragging.value?.userId === person.id ? { transform: `translate(${drag.dragging.value.dx}px, ${drag.dragging.value.dy}px)` } : undefined"
+          @pointerdown="drag.start($event, person.id)"
+          @click="openMenu($event, person.id)"
+          @contextmenu.prevent
+        />
+      </TeamZone>
+    </div>
+
+    <div class="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3">
+      <BenchZone
+        v-for="zone in (['bench', 'stands'] as const)"
+        :key="zone"
+        :zone="zone"
+        :count="inPlace({ zone }).length"
+        :drop-target="drag.overZone.value === zone"
+      >
+        <BoardPerson
+          v-for="person in inPlace({ zone })"
+          :key="person.id"
+          :user-id="person.id"
+          :name="person.name"
+          :image="person.image"
+          :is-host="person.isHost"
+          :you="person.id === viewerId"
+          :where="whereText(person.place)"
+          :lifted="drag.dragging.value?.userId === person.id"
+          :menu-open="menu?.userId === person.id"
+          :draggable="isHost || person.id === viewerId"
+          :style="drag.dragging.value?.userId === person.id ? { transform: `translate(${drag.dragging.value.dx}px, ${drag.dragging.value.dy}px)` } : undefined"
+          @pointerdown="drag.start($event, person.id)"
+          @click="openMenu($event, person.id)"
+          @contextmenu.prevent
+        />
+      </BenchZone>
+    </div>
+
+    <div
+      class="sr-only"
+      role="status"
+      aria-live="polite"
+    >
+      {{ live }}
+    </div>
+
+    <MoveToMenu
+      :open="menu !== null"
+      :name="menu ? nameOf(menu.userId) : ''"
+      :targets="targets"
+      :anchor="menu?.anchor ?? null"
+      @close="menu = null"
+      @pick="pick"
+    />
+  </section>
+</template>

@@ -33,11 +33,8 @@ describe('constructionSite', () => {
     expect(constructionSite('/archiv', null)).toEqual({ area: 'archiv', shell: 'hub' })
   })
 
-  it('shows the Spielbrett state in the event shell', () => {
-    expect(constructionSite('/e/freitags-zocken-k7q2/brett', visitor)).toEqual({ area: 'brett', shell: 'event' })
-  })
-
   it('shows the generic state for any other Event sub-route', () => {
+    expect(constructionSite('/e/freitags-zocken-k7q2/brett', visitor)).toEqual({ area: 'generic', shell: 'event' })
     expect(constructionSite('/e/freitags-zocken-k7q2/tabelle', visitor)).toEqual({ area: 'generic', shell: 'event' })
     expect(constructionSite('/e/freitags-zocken-k7q2/chat/old', visitor)).toEqual({ area: 'generic', shell: 'event' })
   })

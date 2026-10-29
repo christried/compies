@@ -31,7 +31,7 @@ describe('the Event poll', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(page.text()).not.toContain('Aktualisiert sich von selbst')
-    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['So wird gespielt', 'Wann zocken wir?', 'Wer kann wann?', 'Aktivität'])
+    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['So wird gespielt', 'Wann zocken wir?', 'Wer kann wann?', 'Spielbrett', 'Aktivität'])
   })
 
   it('writes each matrix column header as the day and the time on separate lines', async () => {
