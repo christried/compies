@@ -20,6 +20,14 @@ export type RoomMessage
     | { type: 'member.moved', userId: string, from: Place, to: Place, by: string }
   /** A new Member joined through the Invite link (#160). */
     | { type: 'member.joined', userId: string }
+  /** Sent to a socket that just connected: every user who is online right now, the newcomer included (#162). */
+    | { type: 'presence.sync', userIds: string[] }
+  /** A user's first socket opened (#162). */
+    | { type: 'presence.join', userId: string }
+  /** A user's last socket closed or went silent (#162). */
+    | { type: 'presence.leave', userId: string }
+  /** The answer to a `clock.ping`, to the asking socket only: `t0` is the client's own, the envelope's `serverTime` is the server's (#162). */
+    | { type: 'clock.pong', t0: number }
 
 export type RoomMessageType = RoomMessage['type']
 
@@ -33,6 +41,18 @@ export type Envelope<M extends RoomMessage = RoomMessage> = M & {
 export function envelope<M extends RoomMessage>(message: M, serverTime: number): Envelope<M> {
   return { ...message, v: ROOM_PROTOCOL_VERSION, serverTime }
 }
+
+/** What a client says to the room. Moves, words and Session actions are HTTP calls to Nuxt, never socket messages. */
+export type ClientMessage = { type: 'clock.ping', t0: number }
+
+// The heartbeat is plain text, not JSON, so the runtime answers it without waking the room (#162): the client sends
+// `ping` every HEARTBEAT_MS and the room's auto-response says `pong`.
+export const HEARTBEAT_PING = 'ping'
+export const HEARTBEAT_PONG = 'pong'
+export const HEARTBEAT_MS = 10_000
+
+/** A socket with no heartbeat for this long is dead: the room's sweep closes it, and its user may go offline (#162). */
+export const SILENT_AFTER_MS = 30_000
 
 /** The body of a call to a room (Nuxt to Worker): the messages to send to every socket of the Event. */
 export interface RoomPublishBody {
