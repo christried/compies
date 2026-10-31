@@ -18,16 +18,16 @@ export function pop(element: Element): void {
   )
 }
 
-/** How an element travels: `glide` for a place somebody else took (or the own move), `bounce` for the way back after a refusal (04-motion § Avatar). */
+/** How an element travels: `glide` for a place somebody took, the own move included (04-motion § Avatar: 0.36 s `EASE.pop`, #208), `bounce` for the way back after a refusal (04-motion § Avatar). */
 export type GlideKind = 'glide' | 'bounce'
 
-/** Where an element sits and where it sat. A move from `from` to `to` is a Flip: the element is at `to`, drawn from `from` first. */
+/** Where an element sits and where it sat. A move from `from` to `to` is a Flip: the element is at `to`, drawn from `from` first, with 04-motion's `EASE.pop` for a glide (#208). */
 export function glide(element: Element, from: Pick<DOMRect, 'left' | 'top'>, to: Pick<DOMRect, 'left' | 'top'>, kind: GlideKind = 'glide'): void {
   if (reducedMotion() || typeof element.animate !== 'function') return
   const dx = from.left - to.left
   const dy = from.top - to.top
   if (dx === 0 && dy === 0) return
   const duration = Number.parseFloat(kind === 'bounce' ? motionToken('--cp-dur-slower', '600ms') : motionToken('--cp-dur-slow', '360ms'))
-  const easing = kind === 'bounce' ? motionToken('--cp-ease-spring', 'cubic-bezier(.5,1.8,.4,.8)') : motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)')
+  const easing = kind === 'bounce' ? motionToken('--cp-ease-spring', 'cubic-bezier(.5,1.8,.4,.8)') : motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)')
   element.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], { duration, easing })
 }

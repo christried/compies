@@ -472,6 +472,29 @@ describe('GameBoard', () => {
       await settle()
     })
 
+    it('pops the own move once (#208)', async () => {
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      let release: () => void = () => undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const { page, posted } = await mountBoard({ answer: async (body) => {
+        await gate
+        return { userId: body.userId, to: body.to }
+      } })
+
+      await person(page, kitty.id).trigger('click')
+      menuItem('Nach Team Rot').click()
+      await vi.waitFor(() => expect(posted).toHaveLength(1))
+      await nextTick()
+
+      const landings = animate.mock.calls.filter(([keyframes]) => (keyframes as { transform: string }[])[0]?.transform === 'scale(.6)')
+      expect(landings).toHaveLength(1)
+      release()
+      await settle()
+    })
+
     it('goes back to where it was with a toast when the server refuses', async () => {
       const { page } = await mountBoard({ answer: () => {
         throw createError({ statusCode: 409, statusMessage: 'team_choice_closed' })
@@ -543,9 +566,29 @@ describe('GameBoard', () => {
       await nextTick()
 
       expect(animate).toHaveBeenCalled()
-      const [keyframes] = animate.mock.calls[0] as [{ transform: string }[]]
+      const [keyframes, options] = animate.mock.calls[0] as [{ transform: string }[], { duration: number, easing: string }]
       expect(keyframes[0]!.transform).toBe('translate(-300px, 300px)')
+      expect(options.duration).toBe(360)
+      expect(options.easing).toBe('cubic-bezier(.34,1.56,.64,1)')
       expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
+    })
+
+    it('lands somebody else\'s move with a pop (#208)', async () => {
+      layOutBoard()
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
+      const { page, send } = await mountBoard()
+
+      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      await nextTick()
+      await nextTick()
+
+      const picture = person(page, LARSI).element.firstElementChild
+      const landings = animate.mock.calls.filter((_, index) => animate.mock.contexts[index] === picture)
+      expect(landings).toHaveLength(1)
+      const [keyframes] = landings[0] as [{ transform: string }[]]
+      expect(keyframes[0]!.transform).toBe('scale(.6)')
     })
 
     it('places the avatar without any animation when motion is reduced', async () => {
