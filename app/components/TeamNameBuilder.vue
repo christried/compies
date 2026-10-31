@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { RotateCcw } from '@lucide/vue'
-import { apiErrorKey } from '~/utils/api-error'
 import { teamName } from '~/utils/board'
 import { eventDataKey } from '~/utils/event-data'
 import { characterCount, cutToCharacters } from '~~/shared/text'
@@ -36,6 +35,7 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 const { toast } = useToast()
+const { send } = useEventMutation(() => props.slug, () => refreshNuxtData(eventDataKey(props.slug)))
 const fieldId = useId()
 const helpId = `${fieldId}-help`
 
@@ -65,17 +65,13 @@ async function save() {
   if (word === saved.value) return
   const before = saved.value
   saved.value = word
-  try {
-    await $fetch(`/api/e/${props.slug}/team-word`, { method: 'POST', body: { word } })
-  }
-  catch (failure) {
-    saved.value = before
-    draft.value = before
-    toast({ tone: 'error', text: t(apiErrorKey(failure)) })
-  }
-  finally {
-    await refreshNuxtData(eventDataKey(props.slug))
-  }
+  await send('POST', 'team-word', {
+    body: { word },
+    refused: () => {
+      saved.value = before
+      draft.value = before
+    },
+  })
 }
 
 function onBlur() {
@@ -96,19 +92,11 @@ const resetting = ref(false)
 const authorList = computed(() => new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(props.authors))
 
 async function reset() {
-  resetting.value = true
-  try {
-    await $fetch(`/api/e/${props.slug}/teams/${props.team}/reset-name`, { method: 'POST' })
-    toast({ tone: 'success', text: t('team.word.resetDone', { name: teamName(props.team, t) }) })
-  }
-  catch (failure) {
-    toast({ tone: 'error', text: t(apiErrorKey(failure)) })
-  }
-  finally {
-    resetting.value = false
-    asking.value = false
-    await refreshNuxtData(eventDataKey(props.slug))
-  }
+  await send('POST', `teams/${props.team}/reset-name`, {
+    busy: resetting,
+    done: () => toast({ tone: 'success', text: t('team.word.resetDone', { name: teamName(props.team, t) }) }),
+  })
+  asking.value = false
 }
 </script>
 
