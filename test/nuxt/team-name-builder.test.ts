@@ -14,7 +14,7 @@ const settings: EventSettings = { ...defaultSettings(), teamCount: 2, teamSize: 
 const team = (n: number): Place => ({ zone: 'team', team: n })
 
 function member(id: string, name: string, place: Place, teamWord: string | null = null, isHost = false): MemberView {
-  return { id, name, image: null, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null, teamWord }
+  return { id, name, image: `https://example.com/${name}.png`, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null, teamWord }
 }
 
 const teamsNamed = (first: string | null, second: string | null = null): BoardTeam[] => [

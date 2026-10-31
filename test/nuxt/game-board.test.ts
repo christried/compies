@@ -19,7 +19,7 @@ const BENCH: Place = { zone: 'bench' }
 const team = (n: number): Place => ({ zone: 'team', team: n })
 
 function member(id: string, name: string, place: Place = BENCH, isHost = false): MemberView {
-  return { id, name, image: null, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null, teamWord: null }
+  return { id, name, image: `https://example.com/${name}.png`, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null, teamWord: null }
 }
 
 const kittyAt = (place: Place = BENCH) => member(kitty.id, 'Kitty', place)
@@ -434,17 +434,15 @@ describe('GameBoard', () => {
   })
 
   describe('picking up by the avatar (#207)', () => {
-    const withPicture = () => [kittyAt(), { ...larsiAt(), image: 'https://example.com/larsi.png' }, sanneAt()]
-
     it('never drags the avatar\'s picture as an image', async () => {
-      const { page } = await mountBoard({ members: withPicture() })
+      const { page } = await mountBoard()
 
       expect(person(page, LARSI).find('img').attributes('draggable')).toBe('false')
       expect(person(page, LARSI).find('img').classes()).toContain('pointer-events-none')
     })
 
     it('cancels the browser\'s own drag on a person', async () => {
-      const { page } = await mountBoard({ members: withPicture() })
+      const { page } = await mountBoard()
       const event = new Event('dragstart', { bubbles: true, cancelable: true })
 
       person(page, LARSI).find('img').element.dispatchEvent(event)

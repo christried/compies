@@ -31,7 +31,7 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
   it('signs in as a Member without the Host permission', async () => {
     const { user } = await signInAs('?as=member')
 
-    expect(user).toMatchObject({ displayName: 'Dev Member', canHost: false, isAdmin: false })
+    expect(user).toMatchObject({ displayName: 'Dev Member', canHost: false, isAdmin: false, image: '/icons/icon-192.png' })
   })
 
   it('signs in as the Platform admin', async () => {

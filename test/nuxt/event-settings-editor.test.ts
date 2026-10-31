@@ -22,7 +22,7 @@ const pong = poolGame(2, 'Pong')
 const FOUR = '00000000-0000-4000-8000-000000000004'
 const FIVE = '00000000-0000-4000-8000-000000000005'
 const SIX = '00000000-0000-4000-8000-000000000006'
-const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => ({ id, name: id.slice(-4), image: null, isHost: false, zone, team, teamWord: null })
+const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => ({ id, name: id.slice(-4), image: `https://example.com/${id}.png`, isHost: false, zone, team, teamWord: null })
 
 function poolGame(n: number, name: string): PoolGame {
   return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] }

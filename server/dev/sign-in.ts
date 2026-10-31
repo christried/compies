@@ -18,6 +18,10 @@ const PEOPLE = {
 
 type Person = keyof typeof PEOPLE
 
+// Every Discord and Twitch account has a picture, so the dev Users have one too: pages and browser checks then draw
+// the picture, not the initial (the 1.4 walk-through found a drag only the picture broke, #207).
+const PICTURE = '/icons/icon-192.png'
+
 // Only a path inside the app, so the link can't send anyone elsewhere.
 const landing = (to: unknown) => typeof to === 'string' && /^\/(?!\/)/.test(to) ? to : '/'
 
@@ -30,8 +34,8 @@ export default defineEventHandler(async (event) => {
   // The same three Users every time; the permissions are set here, since no allowlist knows them.
   const db = useDb(event)
   const [user] = await db.insert(users)
-    .values({ ...person, displayName: person.name, email: `${as}@dev.compies.invalid`, emailVerified: true, newsSeen: CURRENT_RELEASE })
-    .onConflictDoUpdate({ target: users.email, set: { canHost: person.canHost, isAdmin: person.isAdmin } })
+    .values({ ...person, displayName: person.name, image: PICTURE, email: `${as}@dev.compies.invalid`, emailVerified: true, newsSeen: CURRENT_RELEASE })
+    .onConflictDoUpdate({ target: users.email, set: { canHost: person.canHost, isAdmin: person.isAdmin, image: PICTURE } })
     .returning({ id: users.id })
 
   // A Better Auth login session, with the cookie signed the way Better Auth signs it.

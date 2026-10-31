@@ -27,6 +27,15 @@ A second page, flow or component that does what an existing one does needs its r
 - An enum belongs to one glossary term. A concept with its own term gets its own enum, even when today's values match (games' Suitability is not the Event's Format).
 - A migration that has run on staging is never edited; the fix is a new migration.
 
+## Motion
+
+- An animation takes the curve and the duration that `docs/design_handoff_compies/04-motion.md` names for its moment, as that entry's tokens (`--cp-ease-pop`, `--cp-dur-slow`). The 1.4 walk-through found a Flip on `--cp-ease-out` that read as a jump where 04-motion asks for `EASE.pop` (#208).
+- Its test asserts that easing and duration, as well as that something animated.
+
+## Tests
+
+- Test data has the shape production data has. A Member comes with a picture, as every Discord and Twitch account does: the 1.4 board tests drew only initials, so the picture's own drag reached the walk-through (#207).
+
 ## Copy
 
 - UI copy uses the glossary's UI word. When the glossary retires a word, it goes into `RETIRED` in `test/unit/copy.test.ts`.

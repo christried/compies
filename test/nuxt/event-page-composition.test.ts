@@ -21,7 +21,7 @@ const team = (position: number, name: string | null = null): BoardTeam => ({ pos
 /** Kitty, Larsi and Sanne (the Host) with the seats a test gives them; everyone else sits on the Bench. */
 function members(seats: { kitty?: Seat, larsi?: Seat, sanne?: Seat } = {}): MemberView[] {
   const member = (id: string, name: string, isHost: boolean, seat: Seat = { zone: 'bench' }): MemberView => ({
-    id, name, image: null, isHost, zone: seat.zone, team: seat.zone === 'team' ? seat.team ?? 1 : null, teamWord: null,
+    id, name, image: `https://example.com/${name}.png`, isHost, zone: seat.zone, team: seat.zone === 'team' ? seat.team ?? 1 : null, teamWord: null,
   })
   return [member(kitty.id, 'Kitty', false, seats.kitty), member(LARSI, 'Larsi', false, seats.larsi), member(SANNE, 'Sanne', true, seats.sanne)]
 }
