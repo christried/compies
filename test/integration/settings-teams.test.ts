@@ -265,6 +265,29 @@ describe('settings follow the teams (#163)', () => {
       await expectNothingWritten(game)
     })
 
+    it('takes the Team size floor from the teams that remain, so a lowering and a smaller Team size may come in one request', async () => {
+      const game = await setup()
+      // Team 4, which the request removes, holds three Players; the teams that remain hold one each.
+      await seat(game, 'one', team(4))
+      await seat(game, 'two', team(4))
+      await seat(game, 'three', team(4))
+      await seat(game, 'four', team(1))
+      await seat(game, 'host', team(2))
+      expect((await read(game)).settingsFloors).toEqual({ teamSize: 3, vetoAllowance: 0 })
+
+      const response = await patch(game, { settings: { teamCount: 2, teamSize: 2, pointsTable: LINEAR_2 } })
+
+      expect(response.status).toBe(200)
+      expect(await settingsOf(game)).toMatchObject({ teamCount: 2, teamSize: 2 })
+      expect(await seatsOf(game)).toEqual({
+        [game.ids.one]: BENCH,
+        [game.ids.two]: BENCH,
+        [game.ids.three]: BENCH,
+        [game.ids.four]: team(1),
+        [game.ids.host]: team(2),
+      })
+    })
+
     it('changes nobody and writes nothing when the same lowering leaves the Team size below the fullest team', async () => {
       const game = await setup()
       await seatTeams(game)
