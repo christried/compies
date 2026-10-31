@@ -73,7 +73,7 @@ async function openAgo(ago: number, event: string, sub: string) {
 describe('the sweep', () => {
   afterEach(() => void vi.useRealTimers())
 
-  it('closes a socket that never sent a heartbeat for 30 s and tells the others its user left', async () => {
+  it('closes a socket that never sent a heartbeat for 75 s and tells the others its user left', async () => {
     const { received: anna } = await open('sweep-1', { sub: 'anna' })
     const ben = await openAgo(SILENT_AFTER_MS + 1000, 'sweep-1', 'ben')
     let closed = false
