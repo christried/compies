@@ -176,6 +176,43 @@ describe('publishing to the room', () => {
     }
   })
 
+  it('answers without waiting for the Worker, and still publishes (#202)', async () => {
+    const { slug, slotIds, memberCookie } = await pollEvent()
+    // A Worker that takes as long as the test likes: the publish records its messages, then waits for `release`.
+    let release!: () => void
+    const gate = new Promise<void>(resolve => (release = resolve))
+    const published: string[] = []
+    const slowWorker = {
+      async publish(_eventId: string, messages: { type: string }[]) {
+        published.push(...messages.map(message => message.type))
+        await gate
+      },
+    }
+    const slowRequest = createTestServer(testDb.db, { 'PUT /api/e/:slug/slots/:slotId/vote': putVote }, { roomNotifier: slowWorker })
+    // Guards the red run: without the fix the request waits on the gate, and this race settles instead of hanging.
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const stalled = new Promise<'stalled'>(resolve => (timer = setTimeout(() => resolve('stalled'), 1000)))
+
+    try {
+      const answer = await Promise.race([
+        slowRequest(`/api/e/${slug}/slots/${slotIds[0]}/vote`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json', cookie: memberCookie },
+          body: JSON.stringify({ value: 'yes' }),
+        }),
+        stalled,
+      ])
+
+      expect(answer, 'the answer waited for the Worker').not.toBe('stalled')
+      expect((answer as Response).status).toBe(200)
+      expect(published).toEqual(['event.changed'])
+    }
+    finally {
+      clearTimeout(timer)
+      release()
+    }
+  })
+
   it('tells only the room of the Event that changed', async () => {
     const { slug, eventId, slotIds, memberCookie } = await pollEvent()
 
