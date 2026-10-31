@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3'
 import { isUuid } from '../../../domain/uuid'
 import { lastToJoin, moveMember, readSeats, teamChoiceOf } from '../../../utils/board'
-import { apiError, memberNotFound } from '../../../utils/errors'
+import { apiError } from '../../../utils/errors'
 import { changeEvent } from '../../../utils/event-access'
 import { eventSessions } from '../../../utils/sessions'
 import { countSeats, moveRejection, parsePlace } from '../../../../shared/board'
@@ -19,7 +19,7 @@ export default defineEventHandler((event): Promise<MovedMember> => changeEvent(e
 
   const seats = await readSeats(tx, eventRow.id)
   const from = seats.find(seat => seat.userId === userId)?.place
-  if (!from) throw memberNotFound()
+  if (!from) throw apiError('member_not_found')
 
   const { settings, started, open } = teamChoiceOf(eventRow, await eventSessions(tx, eventRow.id))
   const rejection = moveRejection({

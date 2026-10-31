@@ -8,11 +8,6 @@ export function apiError(code: ApiErrorCode, data?: Record<string, string>) {
   return createError({ statusCode: API_ERROR_STATUS[code], statusMessage: code, data })
 }
 
-/** The Member id a move names is no Member of the Event (#160). */
-export function memberNotFound() {
-  return createError({ statusCode: 404, statusMessage: 'Member not found' })
-}
-
 /** The answer a missing API resource gets, JSON like every other API answer (review Spec F2). */
 export function apiNotFound() {
   return createError({ statusCode: 404, statusMessage: 'Not Found' })

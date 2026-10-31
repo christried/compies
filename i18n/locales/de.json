@@ -1443,6 +1443,7 @@
     "settingLocked": "Das lässt sich nicht mehr ändern, seit die erste Session läuft.",
     "sessionStarted": "Diese Session hat schon begonnen. Sie bleibt, wie sie ist.",
     "noRunningSession": "Es läuft gerade keine Session.",
+    "memberNotFound": "Diese Person ist nicht mehr im Event.",
     "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",

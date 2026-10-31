@@ -132,9 +132,8 @@ export type StartRejection = 'not_set_up' | 'session_running' | 'no_dated_sessio
 export interface StartInput { settings: BoardSettings | null, sessions: readonly StartSession[], seats: Seats }
 
 /**
- * The reason the next Session cannot start, or null when it may (#164): the Event is set up (this mirrors
- * `canStartSession` in shared/settings.ts, which is not imported because the Worker reaches this file), no Session
- * is running, a dated Session is left to start, every team has a Player and the teams are equally big.
+ * The reason the next Session cannot start, or null when it may (#164): the Event is set up (it has
+ * settings: the one home of that rule), no Session is running, a dated Session is left to start, every team has a Player and the teams are equally big.
  */
 export function startRejection({ settings, sessions, seats }: StartInput): StartRejection | null {
   if (settings === null) return 'not_set_up'
