@@ -35,6 +35,6 @@ export default defineEventHandler(async (event): Promise<JoinedEvent> => {
   })
   // The join loads the Event by its Invite link, not by slug, so it cannot go through changeEvent; it reaches the
   // same step after its write (#183). A repeated join changed nothing, so nothing is announced.
-  if (joined) await afterCommit(event, eventRow, messages)
+  if (joined) afterCommit(event, eventRow, messages)
   return { slug: eventRow.slug, joined }
 })

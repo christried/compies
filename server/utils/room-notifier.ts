@@ -1,3 +1,4 @@
+import { waitUntil } from '@vercel/functions'
 import type { H3Event } from 'h3'
 import { roomPath, type Envelope, type RoomPublishBody } from '../../shared/realtime'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall } from '../../shared/room-auth'
@@ -17,7 +18,7 @@ declare module 'h3' {
   }
 }
 
-/** How long a request waits for the Worker before it goes on without the message. */
+/** How long a publish waits for the Worker before it gives up on the message (#202: after the response). */
 export const ROOM_PUBLISH_TIMEOUT_MS = 2000
 
 /** Records the messages per Event, for tests (like the in-memory image store). */
@@ -72,6 +73,18 @@ export function httpRoomNotifier({ url, secret, timeoutMs = ROOM_PUBLISH_TIMEOUT
 /** The Worker's address, or null when this deployment has none (tests, local dev without `wrangler`). */
 export function realtimeUrl(): string | null {
   return process.env.REALTIME_URL || null
+}
+
+/**
+ * Publishes after the response (#202): the request doesn't wait up to ROOM_PUBLISH_TIMEOUT_MS for the Worker. On
+ * Vercel, `waitUntil` keeps the function alive until the publish is done (Nitro's Vercel preset doesn't hand
+ * `event.waitUntil` to the platform); elsewhere the promise simply runs. A publish never fails the request.
+ */
+export function publishAfterResponse(event: H3Event, eventId: string, messages: Envelope[]): void {
+  const sent = useRoomNotifier(event).publish(eventId, messages).catch((error: unknown) => {
+    console.error(`Room publish for Event ${eventId} failed`, error)
+  })
+  waitUntil(sent)
 }
 
 /**
