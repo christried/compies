@@ -430,6 +430,25 @@ describe('GameBoard', () => {
     })
   })
 
+  describe('picking up by the avatar (#207)', () => {
+    const withPicture = () => [kittyAt(), { ...larsiAt(), image: 'https://example.com/larsi.png' }, sanneAt()]
+
+    it('never drags the avatar\'s picture as an image', async () => {
+      const { page } = await mountBoard({ members: withPicture() })
+
+      expect(person(page, LARSI).find('img').attributes('draggable')).toBe('false')
+    })
+
+    it('cancels the browser\'s own drag on a person', async () => {
+      const { page } = await mountBoard({ members: withPicture() })
+      const event = new Event('dragstart', { bubbles: true, cancelable: true })
+
+      person(page, LARSI).find('img').element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+  })
+
   describe('an own move', () => {
     it('shows at once, before the server has answered', async () => {
       let release: () => void = () => undefined
