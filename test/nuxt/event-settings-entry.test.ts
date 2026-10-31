@@ -8,7 +8,7 @@ import { clickButton, type Mounted, openHostMenu, sanneAndLarsi, serve, view, vi
 // The ways into the settings editor from the Event page (#147): the „Event einrichten“ notice for the Host of an
 // Event that was never set up, and „Einstellungen“ in the Host controls.
 
-const NOTICE_TEXT = 'Lege Format, Punkte, Auswahlmodus und Spiele fest. Ohne Einstellungen kann keine Session starten.'
+const NOTICE_TEXT = 'Für dieses Event fehlt noch, wie gespielt wird. Leg Format, Spiele und Punkte fest, dann öffnet die Teamwahl.'
 
 const notice = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.findAll('[role="status"]').find((element: { text: () => string }) => element.text().includes(NOTICE_TEXT))
 
@@ -26,7 +26,7 @@ describe('the „Event einrichten“ notice', () => {
     expect(banner.text()).toContain('Event einrichten')
     expect(banner.text()).toContain('Nur du siehst das')
     expect(banner.get('a').attributes('href')).toBe(`/e/${slug}/einstellungen`)
-    expect(banner.get('a').text()).toBe('Event einrichten')
+    expect(banner.get('a').text()).toBe('Jetzt einrichten')
   })
 
   it('stays away for a Member, who cannot set the Event up', async () => {

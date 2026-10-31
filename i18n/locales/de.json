@@ -2,7 +2,8 @@
   "app": {
     "name": "Compies",
     "loading": "Einen Moment, wir suchen die Controller …",
-    "skipToStage": "Zur Bühne springen"
+    "skipToStage": "Zur Bühne springen",
+    "sidePanel": "Seitenleiste"
   },
   "common": {
     "cancel": "Abbrechen",
@@ -136,6 +137,41 @@
         "titleHost": "Erst einrichten, dann zocken",
         "title": "Gleich geht’s los"
       }
+    },
+    "pill": {
+      "running": "Läuft · Session {n} von {total}"
+    },
+    "tabs": {
+      "label": "Event",
+      "event": "Event",
+      "unread": "{label}, {n} neu"
+    },
+    "notice": {
+      "setupTitle": "Event einrichten",
+      "setup": "Für dieses Event fehlt noch, wie gespielt wird. Leg Format, Spiele und Punkte fest, dann öffnet die Teamwahl.",
+      "setupAction": "Jetzt einrichten",
+      "setupMember": "{host} richtet das Event noch ein. Bis dahin: Bench oder Tribüne.",
+      "seatTeam": "Du spielst mit, in {team}. Das Host-Dock bleibt genau gleich.",
+      "seatStands": "Du sitzt auf der Tribüne und spielst nicht mit. Das Host-Dock bleibt genau gleich.",
+      "teamsStay": "Die Teams bleiben fürs ganze Event. Wer bei Session {n} fehlt, ersetzt du von der Bench.",
+      "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Bench.",
+      "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Bench.",
+      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Bench."
+    },
+    "poll": {
+      "title": "Termin für Session {n}",
+      "matrixToggle": "Wer kann wann? · {voted} von {total}"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "count": "{n} Session | {n} Sessions",
+      "session": "Session",
+      "sessionN": "Session {n}",
+      "voted": "{voted} von {total} haben abgestimmt",
+      "toPoll": "Zur Umfrage",
+      "vote": "Abstimmen",
+      "calendar": "Session {n} in den Kalender",
+      "calendarSingle": "Session in den Kalender"
     }
   },
   "board": {
@@ -179,7 +215,15 @@
     "note": {
       "setup": "Teams gibt es, sobald das Event eingerichtet ist. Bis dahin: Bench oder Tribüne."
     },
+    "meta": {
+      "setup": "{n} Leute da",
+      "poll": "{teams} · Teamwahl noch zu",
+      "open": "{taken} von {places} Plätzen besetzt",
+      "running": "{teams} · gesperrt"
+    },
+    "longPress": "Lange drücken zum Ziehen",
     "notice": {
+      "unevenMember": "{team} sucht noch jemanden. Rück rein, dann kann’s losgehen.",
       "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench oder Tribüne.",
       "uneven": "{team} hat {small}, die anderen haben {big}. Das Spiel startet erst, wenn alle Teams gleich groß sind.",
       "running": "Das Spiel läuft. Zwischen Bench und Tribüne kannst du frei wechseln.",
@@ -491,7 +535,7 @@
     "sessionStartedSingle": "{name} hat die Session gestartet",
     "sessionEnded": "{name} hat Session {n} beendet",
     "sessionEndedSingle": "{name} hat die Session beendet",
-    "empty": "Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und was sich am Event ändert.",
+    "empty": "Noch nichts passiert. Ab jetzt steht hier, wer dazukommt, wechselt und abstimmt.",
     "older": "Ältere laden",
     "loadFailed": "Die Aktivität konnte nicht geladen werden.",
     "retry": "Nochmal versuchen",
@@ -872,11 +916,6 @@
     "language": "Sprache"
   },
   "eventSettings": {
-    "notice": {
-      "title": "Event einrichten",
-      "text": "Lege Format, Punkte, Auswahlmodus und Spiele fest. Ohne Einstellungen kann keine Session starten.",
-      "action": "Event einrichten"
-    },
     "kicker": "Einstellungen",
     "heading": "Einstellungen",
     "setupHeading": "Event einrichten",
@@ -1159,9 +1198,7 @@
       "heading": "Anmerkungen"
     },
     "poll": {
-      "kicker": "Terminumfrage läuft, {voted} von {total} haben vollständig abgestimmt",
       "missingDates": "{n} Termin gesucht | {n} Termine gesucht",
-      "sessionNumber": "Session {n}",
       "past": "vorbei",
       "notVoted": "noch nicht abgestimmt",
       "savedNote": "Gespeichert. Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.",
@@ -1172,8 +1209,7 @@
       "you": "{name} (du)",
       "confirmSeeAll": "Alle sehen den Termin sofort hier.",
       "confirmCta": "Festlegen",
-      "cancel": "Abbrechen",
-      "setText": "Der Termin ist fix. Wenn dir was dazwischenkommt, sag dem Host sofort Bescheid. Wird geil."
+      "cancel": "Abbrechen"
     },
     "zone": {
       "chip": "Kommt mit dem nächsten Update",
@@ -1243,7 +1279,6 @@
       "noSlots": "Schlag erst einen Termin vor.",
       "missingAfter": "Danach fehlt noch {n} Termin. | Danach fehlen noch {n} Termine.",
       "dateTime": "{date}, {time} Uhr",
-      "ics": "In den Kalender",
       "runningSince": "Läuft seit {time}",
       "endedRange": "{day}, {start} bis {end}"
     },
@@ -1378,7 +1413,12 @@
   },
   "howWePlay": {
     "title": "So wird gespielt",
-    "notSetUp": "Der Host hat das Event noch nicht eingerichtet.",
+    "mode": "Auswahl",
+    "vetoes": "{n} Veto pro Partei | {n} Vetos pro Partei",
+    "edit": "Bearbeiten",
+    "locked": "Fest seit dem Start",
+    "emptyHost": "Noch nicht festgelegt. Format, Spiele und Punkte legst du beim Einrichten fest.",
+    "emptyMember": "Noch nicht festgelegt. {host} legt gleich fest, wie gespielt wird.",
     "mainPool": "Spielepool",
     "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",

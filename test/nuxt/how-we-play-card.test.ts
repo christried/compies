@@ -27,22 +27,30 @@ const visiblePools: EventPools = {
   tiebreaker: [poolGame('Schach')],
 }
 
-type Props = { settings: EventSettings | null, pools: EventPools, isHost?: boolean }
+type Props = { settings: EventSettings | null, pools: EventPools, isHost?: boolean, editTo?: string | null, locked?: boolean, hostName?: string }
 function mountCard({ isHost = false, ...props }: Props) {
   return mountSuspended(HowWePlayCard, { props: { isHost, ...props } })
 }
 
 describe('HowWePlayCard (#148)', () => {
-  it('shows the settings as the Fertig summary: sentence, Format, Spiele, Punkte, Modus, Vetos and the Pool row', async () => {
+  it('shows the settings as four rows: Format, Spiele, Auswahl and Punkte', async () => {
     const card = await mountCard({ settings: wheel, pools: visiblePools })
 
     expect(card.get('h2').text()).toBe('So wird gespielt')
-    const text = card.text()
-    expect(text).toContain('4 Teams à 2, Glücksrad, 6 Spiele.')
-    for (const row of ['Format', 'Spiele', 'Punkte', 'Modus', 'Vetos', 'Pool']) expect(card.findAll('dt').map(dt => dt.text())).toContain(row)
-    expect(text).toContain('Linear 3 / 2 / 1 / 0')
-    expect(text).toContain('3 pro Partei')
-    expect(text).toContain('2 Spiele, Tiebreaker 1')
+    const rows = card.findAll('dl > div').map(row => [row.get('dt').text(), row.get('dd').text()])
+    expect(rows).toEqual([
+      ['Format', '4 Teams à 2'],
+      ['Spiele', '6 Spiele'],
+      ['Auswahl', 'Glücksrad, 3 Vetos pro Partei'],
+      ['Punkte', 'Linear 3 / 2 / 1 / 0'],
+    ])
+  })
+
+  it('names no Vetos for a Selection mode without the wheel', async () => {
+    const card = await mountCard({ settings: { ...wheel, selectionMode: 'admin_pick', vetoAllowance: null }, pools: visiblePools })
+
+    expect(card.findAll('dd').map(dd => dd.text())).toContain('Host-Wahl')
+    expect(card.text()).not.toContain('Veto')
   })
 
   it('lists the games of both pools while the wheel is not hidden', async () => {
@@ -93,13 +101,29 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.text()).not.toContain('Das Rad ist verdeckt')
   })
 
-  it('says the Host has not set the Event up yet, without settings and without pools', async () => {
-    const card = await mountCard({ settings: null, pools: { hidden: true, mainCount: 0, tiebreakerCount: 0 } })
+  it('says what is missing without settings, to the Host and to a Member by name, and shows no rows and no pools', async () => {
+    const pools: EventPools = { hidden: true, mainCount: 0, tiebreakerCount: 0 }
+    const host = await mountCard({ settings: null, pools, isHost: true })
+    const member = await mountCard({ settings: null, pools, hostName: 'Sanne' })
 
-    expect(card.get('h2').text()).toBe('So wird gespielt')
-    expect(card.text()).toContain('Der Host hat das Event noch nicht eingerichtet.')
-    expect(card.find('dl').exists()).toBe(false)
-    expect(card.text()).not.toContain('Spielepool')
+    expect(host.get('h2').text()).toBe('So wird gespielt')
+    expect(host.text()).toContain('Noch nicht festgelegt. Format, Spiele und Punkte legst du beim Einrichten fest.')
+    expect(member.text()).toContain('Noch nicht festgelegt. Sanne legt gleich fest, wie gespielt wird.')
+    expect(host.find('dl').exists()).toBe(false)
+    expect(host.text()).not.toContain('Spielepool')
+  })
+
+  it('offers the Host Bearbeiten until the first Session starts, and a lock with „Fest seit dem Start“ afterwards', async () => {
+    const editable = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, editTo: '/e/x/einstellungen' })
+    const locked = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, locked: true })
+    const member = await mountCard({ settings: wheel, pools: visiblePools })
+
+    expect(editable.get('a').text()).toBe('Bearbeiten')
+    expect(editable.get('a').attributes('href')).toBe('/e/x/einstellungen')
+    expect(editable.text()).not.toContain('Fest seit dem Start')
+    expect(locked.find('a').exists()).toBe(false)
+    expect(locked.text()).toContain('Fest seit dem Start')
+    expect(member.find('a').exists()).toBe(false)
   })
 })
 
@@ -108,7 +132,7 @@ describe('the card on the Event page (#148)', () => {
     signInAs(kitty)
   })
 
-  it('sits under the Sessions and above the Date poll, for a Member', async () => {
+  it('sits beside the Sessions card, for a Member', async () => {
     const { slug } = serve(s => ({
       ...view(s, []),
       settings: wheel,
@@ -120,6 +144,6 @@ describe('the card on the Event page (#148)', () => {
     const text = page.text()
     expect(text).toContain('So wird gespielt')
     expect(text).toContain('2 Spiele im Spielepool, 1 im Tiebreaker-Pool.')
-    expect(text.indexOf('So wird gespielt')).toBeLessThan(text.indexOf('Wann zocken wir?'))
+    expect(text.indexOf('Sessions')).toBeLessThan(text.indexOf('So wird gespielt'))
   })
 })
