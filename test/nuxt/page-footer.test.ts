@@ -76,11 +76,11 @@ describe('page footer', () => {
     signInAs(null)
     const detach = useHostDock().attach()
     const docked = await mountSuspended(SignInPage, { route: '/anmelden' })
-    expect(docked.get('footer').find('span.h-24').exists()).toBe(true)
+    expect(docked.get('footer').find('span.h-32').exists()).toBe(true)
     detach()
 
     const plain = await mountSuspended(SignInPage, { route: '/anmelden' })
-    expect(plain.get('footer').find('span.h-24').exists()).toBe(false)
+    expect(plain.get('footer').find('span.h-32').exists()).toBe(false)
   })
 
   it('scrolls to the top when the version link is clicked on Neuigkeiten', async () => {
