@@ -6,6 +6,7 @@ import { freezeTeamNames, readSeats, startOf } from '../../../../utils/board'
 import { apiError } from '../../../../utils/errors'
 import { changeEvent } from '../../../../utils/event-access'
 import { eventSessions, shownNumber } from '../../../../utils/sessions'
+import { hasStarted } from '../../../../../shared/board'
 import type { SessionStarted } from '../../../../../shared/event'
 import { settingsFromRow } from '../../../../../shared/settings'
 
@@ -18,7 +19,7 @@ export default defineEventHandler((event): Promise<SessionStarted> => changeEven
   const { next, rejection } = startOf(eventRow, rows, (await readSeats(tx, eventRow.id)).map(seat => seat.place))
   if (rejection || next === null) throw apiError(rejection ?? 'no_dated_session')
 
-  const first = rows.every(row => row.startedAt === null)
+  const first = !hasStarted(rows)
   await tx.update(sessions).set({ startedAt: sql`now()` }).where(eq(sessions.id, next.id))
   if (first) {
     await freezeTeamNames(tx, eventRow.id, settingsFromRow(eventRow)!.teamCount)

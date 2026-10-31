@@ -6,6 +6,7 @@ import { feedSessions } from '~/utils/activity'
 import { teamName } from '~/utils/board'
 import { eventPageState, pagePill } from '~/utils/event-page'
 import { hostDockState } from '~/utils/host-dock'
+import { hasStarted } from '~~/shared/board'
 import { datePollOpen, sessionsEditable, type DatedSessionView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { settingsEditable } from '~~/shared/settings'
@@ -131,7 +132,7 @@ const pollOpen = computed(() => (data.value ? datePollOpen(data.value.event.phas
 // Starting a Session (#164): the dock's primary asks first (the first start locks the teams and freezes their names).
 const startOpen = ref(false)
 const starting = ref(false)
-const firstStart = computed(() => data.value?.sessions.every(session => session.startedAt === null) ?? true)
+const firstStart = computed(() => !hasStarted(data.value?.sessions ?? []))
 /** The first Session has started: the teams and their names are locked for Players. */
 const started = computed(() => !firstStart.value)
 /** What the Activity feed's group headers need of the Sessions (#164). */

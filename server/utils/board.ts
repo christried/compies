@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { eventMembers, eventTeams } from '../db/schema'
-import { composedTeamName, countSeats, nextSession, placeOf, startRejection, teamChoiceOpen, type Place, type StartRejection, type StartSession, teamWords } from '../../shared/board'
+import { composedTeamName, countSeats, hasStarted, nextSession, placeOf, startRejection, teamChoiceOpen, type Place, type StartRejection, type StartSession, teamWords } from '../../shared/board'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
 import type { Db } from './db'
@@ -67,7 +67,7 @@ export async function lastToJoin(tx: Db, eventId: string, team: number): Promise
  */
 export function teamChoiceOf(eventRow: EventRow, sessions: readonly SessionRow[]) {
   const settings = settingsFromRow(eventRow)
-  const started = sessions.some(row => row.startedAt !== null)
+  const started = hasStarted(sessions)
   return { settings, started, open: teamChoiceOpen({ settings, hasDatedSession: sessions.some(row => row.startsAt !== null), started }) }
 }
 

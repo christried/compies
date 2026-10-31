@@ -5,7 +5,7 @@ import { poolsVisibleTo } from '../domain/pool-visibility'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
-import { composedTeamName, placeOf, teamWords } from '../../shared/board'
+import { composedTeamName, placeOf, runningOf, teamWords } from '../../shared/board'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
 import { settingsFromRow } from '../../shared/settings'
@@ -97,7 +97,7 @@ export function sessionSection(rows: EventRows): Pick<EventView, 'sessions' | 'r
     removedSessions: rows.removedSessions.map(row => ({ id: row.id, previousStartsAt: row.previousStartsAt.toISOString() })),
     missingDates: missingDates(rows.sessions.map(row => row.startsAt)),
     // The Running Session (#164): started and not ended. At most one exists (a unique index).
-    runningSessionId: rows.sessions.find(row => row.startedAt !== null && row.endedAt === null)?.id ?? null,
+    runningSessionId: runningOf(rows.sessions)?.id ?? null,
   }
 }
 

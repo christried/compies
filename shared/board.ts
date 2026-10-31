@@ -113,15 +113,38 @@ export function fullestTeam(seats: Seats): number {
 /** A Session as the start rule needs it: its Date and its start and end as ms since the epoch, null while it has none (no `Date` parsing in here). */
 export interface StartSession { id: string, startsAt: number | null, startedAt: number | null, endedAt: number | null }
 
+/** A point in time as the layers hold it: ms since the epoch, a `Date` (database rows) or an ISO string (the Event read). */
+type Instant = number | Date | string
+
+const msOf = (at: Instant): number => (typeof at === 'number' ? at : new Date(at).getTime())
+
+/**
+ * Whether any Session has started (#164), also one that has ended: from then on the teams and the settings that stay
+ * fixed are locked. The one home of that filter, for the server's rows and the client's Event read alike.
+ */
+export function hasStarted(sessions: readonly { startedAt: unknown }[]): boolean {
+  return sessions.some(session => session.startedAt !== null)
+}
+
+/** Whether the Session is the Running Session (#164): started and not ended. */
+export function isRunning(session: { startedAt: unknown, endedAt: unknown }): boolean {
+  return session.startedAt !== null && session.endedAt === null
+}
+
+/** The Running Session (#164), or undefined. At most one per Event. */
+export function runningOf<S extends { startedAt: unknown, endedAt: unknown }>(sessions: readonly S[]): S | undefined {
+  return sessions.find(isRunning)
+}
+
 /**
  * The next Session (#164): the earliest dated Session that has not started, by its Date, or null. No time check: a
- * future Date can start early.
+ * future Date can start early. Rows, the Event read's Sessions and the start rule's StartSessions all take it.
  */
-export function nextSession<S extends StartSession>(sessions: readonly S[]): S | null {
-  let next: S | null = null
+export function nextSession<S extends { startsAt: Instant | null, startedAt: unknown }>(sessions: readonly S[]): (S & { startsAt: Instant }) | null {
+  let next: (S & { startsAt: Instant }) | null = null
   for (const session of sessions) {
     if (session.startsAt === null || session.startedAt !== null) continue
-    if (next === null || session.startsAt < next.startsAt!) next = session
+    if (next === null || msOf(session.startsAt) < msOf(next.startsAt)) next = session as S & { startsAt: Instant }
   }
   return next
 }
@@ -137,7 +160,7 @@ export interface StartInput { settings: BoardSettings | null, sessions: readonly
  */
 export function startRejection({ settings, sessions, seats }: StartInput): StartRejection | null {
   if (settings === null) return 'not_set_up'
-  if (sessions.some(session => session.startedAt !== null && session.endedAt === null)) return 'session_running'
+  if (runningOf(sessions)) return 'session_running'
   if (nextSession(sessions) === null) return 'no_dated_session'
   const sizes = Array.from({ length: settings.teamCount }, (_, index) => seats[index + 1] ?? 0)
   if (sizes.some(size => size === 0)) return 'teams_empty'
