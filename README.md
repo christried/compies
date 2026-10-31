@@ -46,7 +46,7 @@ The Event page updates live through a Cloudflare Worker with one PartyServer roo
 
 ### Deploying the Worker
 
-`.github/workflows/realtime-deploy.yml` deploys it: a push to `staging` deploys `compies-rt-staging`, a push to `main` deploys `compies-rt`, each only when the push touches `realtime/` or a `shared/` file the Worker imports. A production deploy drops every open socket, so it first asks the app's deploy check (`GET /api/internal/deploy-check`, signed with the room's internal key) and fails on a day with a Session Date (Europe/Berlin). To deploy anyway, or to deploy by hand, run the workflow from the Actions tab: `target` picks the Worker, `override` skips the check. Releases to `main` wait for a day without a Session (`docs/agents/release.md`).
+`.github/workflows/realtime-deploy.yml` deploys it: a push to `staging` deploys `compies-rt-staging`, a push to `main` deploys `compies-rt`, each only when the push touches `realtime/` or a `shared/` file the Worker imports. A production deploy drops every open socket, so it first asks the app's deploy check (`GET /api/internal/deploy-check`, signed with the room's internal key) and fails on a day with a Session Date (Europe/Berlin) or while a Session runs (for 16 h after its start). To deploy anyway, or to deploy by hand, run the workflow from the Actions tab: `target` picks the Worker, `override` skips the check. Releases to `main` wait for a day without a Session (`docs/agents/release.md`).
 
 One-off setup, once per Cloudflare account: run `scripts/wizards/realtime-setup.sh` (`--dry-run` walks it without access; on Windows use Git Bash). It deploys both Workers, gives each its two secrets, sets the Vercel variables and these GitHub Actions secrets:
 

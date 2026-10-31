@@ -219,7 +219,7 @@ describe('GET /api/e (Home)', () => {
     await addMember(gone.eventId, memberUser.id)
     await addMember(recent.eventId, memberUser.id)
     await startSessions(gone.eventId, 31, 30)
-    await startSessions(recent.eventId, 4, 23)
+    await startSessions(recent.eventId, 25, 23)
 
     const { events: listed } = await (await list(memberUser.cookie)).json()
 

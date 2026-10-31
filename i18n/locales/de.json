@@ -1231,7 +1231,7 @@
       },
       "profil": {
         "title": "Profil? Der Bagger ist bestellt.",
-        "text": "Name und Bild kommen gerade von Discord oder Twitch. Hochladen und Einstellungen folgen mit dem nächsten Update.",
+        "text": "Name und Bild kommen gerade von Discord oder Twitch. Hochladen und Einstellungen folgen in einer der nächsten Versionen.",
         "logout": "Abmelden"
       },
       "admin": {

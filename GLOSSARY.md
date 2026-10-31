@@ -111,7 +111,7 @@ One competing unit in an Event: a team in a team format, a single player in free
 _Avoid_: Side, group
 
 **Team size**:
-The number of slots per team in the Teams format, set by the Host and changeable while the Event runs, but never below the number of Players in the fullest team. A team may have fewer Players than its Team size; a game starts only when all teams have the same number of Players.
+The number of slots per team in the Teams format, set by the Host and changeable while the Event runs, but never below the number of Players in the fullest team that remains (lowering the team count sends the Players of the removed teams to the Bench). A team may have fewer Players than its Team size; a game starts only when all teams have the same number of Players.
 _Avoid_: Team capacity, players per team
 
 **Game board**:

@@ -40,6 +40,15 @@ export function pollingNumber(sessions: Pick<SessionView, 'startsAt'>[], missing
 }
 
 /**
+ * The number each Session of the list is shown with, in list order (#201): a dated one its own `number`, one that still
+ * polls the number it will get (pollingNumber), so the list, the dock and the Head agree.
+ */
+export function shownSessionNumbers(sessions: Pick<SessionView, 'startsAt' | 'number'>[], missingDates: number): (number | null)[] {
+  let nth = 0
+  return sessions.map(session => (session.startsAt === null ? pollingNumber(sessions, missingDates, ++nth) : session.number))
+}
+
+/**
  * What the Phase pill in the header says, from the page state (design `frame()`): the Event's Phase is running from the
  * first start on, which would say „Läuft“ between two Sessions and after the last. The pill follows the Sessions instead:
  * the poll, the Date that stands, the Session that runs, over. `phase` is the pill's look and word; `ended` swaps the word

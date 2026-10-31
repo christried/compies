@@ -7,6 +7,6 @@ import { waitUntil } from '@vercel/functions'
  * and the promise runs in the process. A move off Vercel replaces this function with the host's waitUntil, e.g.
  * Nitro's `event.waitUntil` on Cloudflare; nothing else changes.
  */
-export function afterResponse(promise: Promise<unknown>): void {
+export function keepRunningAfterResponse(promise: Promise<unknown>): void {
   waitUntil(promise)
 }

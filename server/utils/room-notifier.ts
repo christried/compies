@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import { roomPath, type Envelope, type RoomPublishBody } from '../../shared/realtime'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall } from '../../shared/room-auth'
-import { afterResponse } from './after-response'
+import { keepRunningAfterResponse } from './after-response'
 
 /**
  * Tells the Members who have an Event open what happened (spec #153, ADR 0012, ADR 0013). Nuxt decides and commits;
@@ -84,7 +84,7 @@ export function publishAfterResponse(event: H3Event, eventId: string, messages: 
   const sent = useRoomNotifier(event).publish(eventId, messages).catch((error: unknown) => {
     console.error(`Room publish for Event ${eventId} failed`, error)
   })
-  afterResponse(sent)
+  keepRunningAfterResponse(sent)
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, pagePill, pollingNumber, type PageInput } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, pagePill, pollingNumber, shownSessionNumbers, type PageInput } from '../../app/utils/event-page'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too.
@@ -107,6 +107,16 @@ describe('pollingNumber', () => {
 
   it('is null when no Session polls', () => {
     expect(pollingNumber([dated('a', 1, SAT), dated('b', 2, SUN)], 0)).toBeNull()
+  })
+})
+
+describe('shownSessionNumbers', () => {
+  it('numbers the polling Sessions of the list after the dated one, in list order (#201)', () => {
+    expect(shownSessionNumbers([dated('a', 1, SAT), undated('b'), undated('c')], 2)).toEqual([1, 2, 3])
+  })
+
+  it('shows the only Session of an Event with no number', () => {
+    expect(shownSessionNumbers([undated('a')], 1)).toEqual([null])
   })
 })
 
