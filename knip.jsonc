@@ -14,7 +14,10 @@
         // Imported by nuxt.config.ts, which knip reads as config and does not follow in production mode (#178).
         "stage.ts!",
         // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server only (#178).
-        "server/dev/sign-in.ts!"
+        "server/dev/sign-in.ts!",
+        // The browser checks are run with node by agents (scripts/browser/README.md); cdp.mjs is what they import.
+        "scripts/browser/moves.mjs!",
+        "scripts/browser/shots.mjs!"
       ],
       "ignore": [
         // The design hand-off and its prototype scripts are reference material, not shipped (also ignored by eslint).

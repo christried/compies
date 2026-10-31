@@ -1,10 +1,12 @@
 // Screenshots of one page as the Dev Host and the Dev Member, at 1440 and 390 px (retro 1.4), for the PR and for
 // comparing with the `.dc.html` artboards.
-// Usage: node scripts/browser/shots.mjs <path> [css selector]   e.g. /e/my-event 'section[aria-labelledby="board-title"]'
+// Usage: node scripts/browser/shots.mjs <path> [css selector]   e.g. e/my-event 'section[aria-labelledby="board-title"]'
+// The path goes without its leading slash: Git Bash turns an argument like /e/x into the Windows path E:/x.
 import { launch, open, resize, shot, sleep } from './cdp.mjs'
 
-const [path, selector] = process.argv.slice(2)
-if (!path) throw new Error('Usage: node scripts/browser/shots.mjs <path> [css selector]')
+const [given, selector] = process.argv.slice(2)
+if (!given) throw new Error('Usage: node scripts/browser/shots.mjs <path without leading slash> [css selector]')
+const path = `/${given.replace(/^\/+/, '')}`
 const name = path.replace(/\W+/g, '-').replace(/^-|-$/g, '') || 'home'
 
 for (const [account, port] of [['host', 9311], ['member', 9312]]) {
