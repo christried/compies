@@ -51,12 +51,21 @@ const lastSocket = () => sockets[sockets.length - 1]!
 const settle = () => new Promise(resolve => setTimeout(resolve))
 const sendMessage = (type: 'event.changed') => lastSocket().options.onMessage(JSON.stringify(envelope({ type }, Date.now())))
 
+/** Pages mounted by a test. Each keeps listening for returns (window focus, visibility, online) until it unmounts. */
+const mounted: { unmount: () => void }[] = []
+
 async function mountLive() {
   const live = serveLive()
   const page = await mountSuspended(EventPage, { route: `/e/${live.slug}` })
+  mounted.push(page)
   await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
   return { ...live, page }
 }
+
+// A page left mounted would refetch on the next test's return events and skew its read count (#198).
+afterEach(() => {
+  for (const page of mounted.splice(0)) page.unmount()
+})
 
 describe('the live Event page', () => {
   beforeEach(() => {
@@ -145,7 +154,7 @@ describe('the live Event page', () => {
     useRuntimeConfig().public.realtimeUrl = ''
     const live = serveLive()
 
-    await mountSuspended(EventPage, { route: `/e/${live.slug}` })
+    mounted.push(await mountSuspended(EventPage, { route: `/e/${live.slug}` }))
     await settle()
 
     expect(createRoomSocket).not.toHaveBeenCalled()
@@ -188,6 +197,34 @@ describe('polling as the fallback', () => {
     lastSocket().options.onClose()
     await vi.advanceTimersByTimeAsync(15_000)
     expect(served.reads).toBeGreaterThan(reads)
+  })
+
+  it('refetches once when the tab becomes visible again, on window focus and when the browser is back online, also while the connection is open', async () => {
+    const { served } = await mountLive()
+    const beforeOpen = served.reads
+    lastSocket().options.onOpen()
+    // The open itself refetches once: wait for that read, so that it is not counted as a return below.
+    await vi.waitFor(() => expect(served.reads).toBe(beforeOpen + 1))
+    await settle()
+
+    /** Dispatches one return event and expects exactly one more read, even while the connection is open (#198). */
+    const returnsOnce = async (dispatch: () => void) => {
+      const before = served.reads
+      dispatch()
+      await vi.waitFor(() => expect(served.reads).toBe(before + 1))
+      await settle()
+      expect(served.reads).toBe(before + 1)
+    }
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' })
+    try {
+      await returnsOnce(() => document.dispatchEvent(new Event('visibilitychange')))
+    }
+    finally {
+      Reflect.deleteProperty(document, 'visibilityState')
+    }
+    await returnsOnce(() => window.dispatchEvent(new Event('online')))
+    await returnsOnce(() => window.dispatchEvent(new Event('focus')))
   })
 })
 
@@ -261,6 +298,25 @@ describe('the ConnectionBanner on the Event page', () => {
     expect(banner(page, 'Verbindung')).toBeUndefined()
   })
 
+  it('shows nothing on a slow first connect, and no „Wieder da“ when it opens', async () => {
+    // The socket never opens: the first connect is slow. The page needs real timers to mount, the banner's timing fake ones.
+    const { page } = await mountLive()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
+
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(banner(page, 'Verbindung')).toBeUndefined()
+
+    lastSocket().options.onOpen()
+    await vi.advanceTimersByTimeAsync(10)
+    expect(banner(page, 'Wieder da')).toBeUndefined()
+    expect(banner(page, 'Verbindung')).toBeUndefined()
+
+    // A drop after that first open is announced as before.
+    lastSocket().options.onClose()
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(banner(page, 'Verbindung wird wiederhergestellt')).toBeDefined()
+  })
+
   it('tries again at once when the retry button of „verloren“ is pressed', async () => {
     const { page } = await mountOpenThenFreezeClock()
     lastSocket().options.onClose()
@@ -277,6 +333,7 @@ describe('the ConnectionBanner on the Event page', () => {
     useRuntimeConfig().public.realtimeUrl = ''
     const live = serveLive()
     const page = await mountSuspended(EventPage, { route: `/e/${live.slug}` })
+    mounted.push(page)
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
 
     await vi.advanceTimersByTimeAsync(60_000)
