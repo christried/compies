@@ -1,6 +1,6 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 import GameBoard from '~/components/GameBoard.vue'
 import type { Place } from '~~/shared/board'
 import type { BoardTeam, MemberView } from '~~/shared/event'
@@ -124,6 +124,9 @@ function layOutBoard() {
 function pointer(type: 'pointermove' | 'pointerup', x: number, y: number) {
   window.dispatchEvent(new PointerEvent(type, { pointerId: 1, clientX: x, clientY: y, bubbles: true }))
 }
+
+/** The elements that popped: the ones an `animate` call ran a landing on (`scale(.6)` first, 04-motion § Avatar). */
+const landingsOf = (animate: Mock) => animate.mock.calls.flatMap((call, index) => ((call[0] as { transform?: string }[])[0]?.transform === 'scale(.6)' ? [animate.mock.contexts[index] as Element] : []))
 
 describe('GameBoard', () => {
   beforeEach(() => {
@@ -430,6 +433,26 @@ describe('GameBoard', () => {
     })
   })
 
+  describe('picking up by the avatar (#207)', () => {
+    const withPicture = () => [kittyAt(), { ...larsiAt(), image: 'https://example.com/larsi.png' }, sanneAt()]
+
+    it('never drags the avatar\'s picture as an image', async () => {
+      const { page } = await mountBoard({ members: withPicture() })
+
+      expect(person(page, LARSI).find('img').attributes('draggable')).toBe('false')
+      expect(person(page, LARSI).find('img').classes()).toContain('pointer-events-none')
+    })
+
+    it('cancels the browser\'s own drag on a person', async () => {
+      const { page } = await mountBoard({ members: withPicture() })
+      const event = new Event('dragstart', { bubbles: true, cancelable: true })
+
+      person(page, LARSI).find('img').element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+  })
+
   describe('an own move', () => {
     it('shows at once, before the server has answered', async () => {
       let release: () => void = () => undefined
@@ -452,6 +475,28 @@ describe('GameBoard', () => {
       await settle()
     })
 
+    it('pops the own move once (#208)', async () => {
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      let release: () => void = () => undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const { page, posted } = await mountBoard({ answer: async (body) => {
+        await gate
+        return { userId: body.userId, to: body.to }
+      } })
+
+      await person(page, kitty.id).trigger('click')
+      menuItem('Nach Team Rot').click()
+      await vi.waitFor(() => expect(posted).toHaveLength(1))
+      await nextTick()
+
+      expect(landingsOf(animate)).toHaveLength(1)
+      release()
+      await settle()
+    })
+
     it('goes back to where it was with a toast when the server refuses', async () => {
       const { page } = await mountBoard({ answer: () => {
         throw createError({ statusCode: 409, statusMessage: 'team_choice_closed' })
@@ -462,6 +507,24 @@ describe('GameBoard', () => {
 
       await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Teamwahl öffnet, sobald der Termin steht.'))
       expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
+    })
+
+    it('a refused own move pops once on the drop and bounces home without a second pop (#208)', async () => {
+      layOutBoard()
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
+      const { page } = await mountBoard({ answer: () => {
+        throw createError({ statusCode: 409, statusMessage: 'team_choice_closed' })
+      } })
+
+      await person(page, kitty.id).trigger('click')
+      menuItem('Nach Team Rot').click()
+
+      await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Teamwahl öffnet, sobald der Termin steht.'))
+      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
+      expect(landingsOf(animate)).toHaveLength(1)
+      expect(animate.mock.calls.some(([, options]) => (options as { easing: string }).easing === 'cubic-bezier(.5,1.8,.4,.8)')).toBe(true)
     })
 
     it('names the winner when it lost the race for the last place', async () => {
@@ -511,7 +574,7 @@ describe('GameBoard', () => {
       expect(vi.getTimerCount()).toBe(before)
     })
 
-    it('glides the avatar from its old slot to the new one', async () => {
+    it('glides the avatar from its old slot to the new one when the Host moves somebody (#208)', async () => {
       layOutBoard()
       const animate = vi.fn()
       Element.prototype.animate = animate
@@ -523,9 +586,56 @@ describe('GameBoard', () => {
       await nextTick()
 
       expect(animate).toHaveBeenCalled()
-      const [keyframes] = animate.mock.calls[0] as [{ transform: string }[]]
+      const [keyframes, options] = animate.mock.calls[0] as [{ transform: string }[], { duration: number, easing: string }]
       expect(keyframes[0]!.transform).toBe('translate(-300px, 300px)')
+      expect(options.duration).toBe(360)
+      expect(options.easing).toBe('cubic-bezier(.34,1.56,.64,1)')
       expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
+    })
+
+    it('lands somebody else\'s move with a pop (#208)', async () => {
+      layOutBoard()
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
+      const { page, send } = await mountBoard()
+
+      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      await nextTick()
+      await nextTick()
+
+      expect(landingsOf(animate)).toEqual([person(page, LARSI).element.firstElementChild])
+    })
+
+    it('somebody already in the team doesn\'t pop when another person joins (#208)', async () => {
+      layOutBoard()
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
+      const { page, send } = await mountBoard({ members: [kittyAt(team(2)), larsiAt(), sanneAt()] })
+
+      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      await nextTick()
+      await nextTick()
+
+      expect(landingsOf(animate)).toEqual([person(page, LARSI).element.firstElementChild])
+    })
+
+    it('a move between the Bench and the Stands glides and lands (#208)', async () => {
+      layOutBoard()
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
+      const { page, send } = await mountBoard()
+
+      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: { zone: 'stands' }, by: LARSI })
+      await nextTick()
+      await nextTick()
+
+      const glides = animate.mock.calls.filter(([keyframes]) => (keyframes as { transform: string }[])[0]?.transform.startsWith('translate('))
+      expect(glides).toHaveLength(1)
+      expect((glides[0]![1] as { easing: string }).easing).toBe('cubic-bezier(.34,1.56,.64,1)')
+      expect(landingsOf(animate)).toEqual([person(page, LARSI).element.firstElementChild])
     })
 
     it('places the avatar without any animation when motion is reduced', async () => {
