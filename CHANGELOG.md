@@ -14,6 +14,7 @@
 
 ### Geändert
 
+- Die Event-Seite ist neu sortiert: Oben steht immer, was gerade dran ist. Die Aktivität hat ihren eigenen Platz, am Rechner rechts daneben, am Handy als eigener Tab. ([#166](https://github.com/christried/compies/issues/166))
 - In der Host-Steuerung siehst du jetzt nur die wichtigsten Aktionen. Alles Weitere, etwa Termine bearbeiten und Einstellungen, findest du unter **Mehr**. ([#155](https://github.com/christried/compies/issues/155))
 - Die Teamgröße geht in den Einstellungen nicht mehr unter das vollste Team. Wenn du Teams entfernst, gehen ihre Leute auf die Bench. ([#163](https://github.com/christried/compies/issues/163))
 

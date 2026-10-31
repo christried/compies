@@ -19,8 +19,9 @@ describe('the Event poll', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(page.get('h1').text()).toBe('Freitags-Zocken')
-    expect(page.text()).toContain('Terminumfrage läuft, 2 von 3 haben vollständig abgestimmt')
+    expect(page.get('header').text()).toContain('Freitags-Zocken')
+    expect(page.findAll('h1')).toHaveLength(1)
+    expect(page.get('[aria-labelledby]').text()).toContain('2 von 3 haben abgestimmt')
     const cards = page.findAll('[role="radiogroup"]').map(group => group.attributes('aria-label'))
     expect(cards).toEqual(['Fr 23.10. 20:00', 'Sa 24.10. 20:00', 'Di 20.10. 20:00'])
   })
@@ -31,7 +32,8 @@ describe('the Event poll', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(page.text()).not.toContain('Aktualisiert sich von selbst')
-    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['So wird gespielt', 'Wann zocken wir?', 'Wer kann wann?', 'Spielbrett', 'Aktivität'])
+    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Terminumfrage', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(page.findAll('h3').map(heading => heading.text())).toContain('Wer kann wann?')
   })
 
   it('writes each matrix column header as the day and the time on separate lines', async () => {
@@ -309,7 +311,7 @@ describe('the Event poll', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(page.text()).toContain('Samstag, 24. Oktober, 20:00 Uhr')
+    expect(page.get('time').text()).toBe('Sa 24.10., 20:00')
     expect(page.findAll('[role="radiogroup"]')).toHaveLength(0)
   })
 

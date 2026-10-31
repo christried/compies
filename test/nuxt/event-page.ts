@@ -128,6 +128,48 @@ export async function clickButton(root: ParentNode | null | undefined, label: st
   await new Promise(resolve => setTimeout(resolve))
 }
 
+/**
+ * Tells the page how wide the screen is (#166): from 980 px the Activity feed lives in the side panel, below it in the
+ * phone's own view. Without a call the test environment decides. `restoreScreen` puts the environment's own back.
+ */
+const ownMatchMedia = window.matchMedia
+/** Returns the function that resizes the screen while the page is mounted: it tells every listener of the query. */
+export function stubScreen(wide: boolean) {
+  const listeners = new Set<(event: { matches: boolean }) => void>()
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      get matches() { return wide },
+      media: query,
+      addEventListener: (_type: string, listener: (event: { matches: boolean }) => void) => void listeners.add(listener),
+      removeEventListener: (_type: string, listener: (event: { matches: boolean }) => void) => void listeners.delete(listener),
+    }),
+  })
+  return (next: boolean) => {
+    wide = next
+    for (const listener of listeners) listener({ matches: next })
+  }
+}
+export function restoreScreen() {
+  Object.defineProperty(window, 'matchMedia', { configurable: true, writable: true, value: ownMatchMedia })
+}
+
+/** Clicks the icon button with this accessible name inside `root` (a round IconButton has no text) and lets Vue run the handler. */
+export async function clickIconButton(root: ParentNode | null | undefined, label: string) {
+  const button = root?.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)
+  expect(button, label).not.toBeNull()
+  button!.click()
+  await new Promise(resolve => setTimeout(resolve))
+}
+
+/** The headings of the page's regions (the Sessions, the poll, the Game board, „So wird gespielt“) in the order they appear: the order of the blocks of the stage (#166). */
+export function regionHeadings(page: Mounted): string[] {
+  return [...page.element.querySelectorAll<HTMLElement>('[aria-labelledby]')]
+    .filter(region => region.tagName === 'SECTION')
+    .map(region => page.element.querySelector(`[id="${region.getAttribute('aria-labelledby')}"]`)?.textContent?.trim() ?? '')
+}
+
 /** A mounted page, as far as the Host dock helpers read it. */
 export type Mounted = { element: Element }
 

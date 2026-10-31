@@ -1,5 +1,6 @@
 import type { StartRejection } from '~~/shared/board'
 import type { EventView } from '~~/shared/event'
+import { pollingNumber } from './event-page'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, from the
 // Event read. One place decides it, so the dock, its tests and the page agree. „Event beenden“ is not here: finishing
@@ -22,7 +23,7 @@ export interface HostDockState {
 
 /** The dock's state for the Host. */
 export function hostDockState({ settings, sessions, missingDates, runningSessionId, start }: DockInput): HostDockState {
-  const pollNumber = missingDates > 0 && sessions.length > 1 ? sessions.filter(session => session.startsAt !== null).length + 1 : null
+  const pollNumber = pollingNumber(sessions, missingDates)
   const base = { number: null, pollNumber, startRejection: null }
   if (settings === null) return { ...base, kind: 'setup', primary: 'setup' }
 

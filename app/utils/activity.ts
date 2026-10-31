@@ -1,3 +1,5 @@
+import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Eye, Flag, Play, RotateCcw, SlidersHorizontal, UserPlus, Users } from '@lucide/vue'
+import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
@@ -13,6 +15,46 @@ import type { Translate } from './settings-summary'
  * number is the Event's only one, so its sentences say „der Termin“ or „die Session“.
  */
 export function activityText(entry: ActivityEntry, t: Translate): string | null {
+  return sentence(entry, t)
+}
+
+// The names, teams and Dates of a sentence are set in bold (DS Communication § ActivityFeed). The sentence is built once, with
+// markers around those values, so no sentence is written twice.
+const OPEN = '\u0001'
+const CLOSE = '\u0002'
+const STRONG = new Set(['name', 'actor', 'team', 'date'])
+
+/** The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. */
+export function activityParts(entry: ActivityEntry, t: Translate): { text: string, strong: boolean }[] | null {
+  const marked: Translate = (key, named, plural) => t(key, named && Object.fromEntries(Object.entries(named).map(([name, value]) => [name, STRONG.has(name) ? OPEN + String(value) + CLOSE : value])), plural)
+  const text = sentence(entry, marked)
+  if (text === null) return null
+  return text.split(OPEN).flatMap((chunk, index) => {
+    if (index === 0) return chunk ? [{ text: chunk, strong: false }] : []
+    const [strong = '', rest = ''] = chunk.split(CLOSE)
+    return [{ text: strong, strong: true }, ...(rest ? [{ text: rest, strong: false }] : [])]
+  })
+}
+
+/** The icon in the disc before an entry and the disc's tone (DS Communication § ActivityFeed): the date set is the good news, the start the highlight. */
+export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'primary' | 'surface' | 'success' } {
+  switch (entry.type) {
+    case 'member_joined': return { icon: UserPlus, tone: 'surface' }
+    case 'member_moved': return { icon: entry.params.to.zone === 'team' ? Users : entry.params.to.zone === 'bench' ? Armchair : Eye, tone: 'surface' }
+    case 'date_set': return { icon: CalendarCheck, tone: 'success' }
+    case 'date_rescheduled': return { icon: CalendarClock, tone: 'surface' }
+    case 'date_reopened': return { icon: CalendarX, tone: 'surface' }
+    case 'session_added': return { icon: CalendarPlus, tone: 'surface' }
+    case 'session_removed': return { icon: CalendarMinus, tone: 'surface' }
+    case 'session_started': return { icon: Play, tone: 'primary' }
+    case 'session_ended': return { icon: Flag, tone: 'surface' }
+    case 'team_name_reset': return { icon: RotateCcw, tone: 'surface' }
+    case 'game_count_changed':
+    case 'team_size_changed': return { icon: SlidersHorizontal, tone: 'surface' }
+  }
+}
+
+function sentence(entry: ActivityEntry, t: Translate): string | null {
   const name = entry.actor?.name ?? ''
   switch (entry.type) {
     case 'member_joined':

@@ -3,7 +3,7 @@ import type { Component } from 'vue'
 import { Crown, Ellipsis } from '@lucide/vue'
 
 // Host controls (02-components § HostDock). Desktop: a floating pill at the bottom centre. Phones: a
-// crown button bottom right that opens the same actions in a sheet. Shortcut H focuses the toolbar.
+// crown button bottom right, above the tab bar, that opens the same actions in a sheet. Shortcut H focuses the toolbar.
 // The pill shows at most three actions; the rest, and every action placed in „Mehr“ (#155), wait behind
 // the „Mehr“ button, which lists all actions grouped. Each action carries what it does.
 // An action with a `disabledReason` looks disabled (dashed) but stays focusable and clickable: its `run`
@@ -32,11 +32,16 @@ export interface DockAction {
 
 const props = defineProps<{
   actions: DockAction[]
+  /** The page has a side panel from md up (#166): the pill, its bubble and „Mehr“ centre over the stage, never over the panel. */
+  panel?: boolean
 }>()
 
 const { t } = useI18n()
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const sheetOpen = ref(false)
+
+// With a side panel the centre is (viewport − panel) / 2 (11-event-seite § HostDock).
+const centre = computed(() => (props.panel ? 'md:left-[calc((100vw-var(--cp-panel-w))/2)]' : ''))
 
 const pillActions = computed(() => props.actions.filter(action => action.place !== 'more').slice(0, 3))
 
@@ -152,6 +157,7 @@ onBeforeUnmount(() => {
       role="toolbar"
       :aria-label="t('dock.label')"
       class="fixed bottom-6 left-1/2 layer-dock hidden -translate-x-1/2 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface p-1.5 shadow-card md:flex"
+      :class="centre"
       @keydown="moveFocus"
     >
       <template
@@ -205,6 +211,7 @@ onBeforeUnmount(() => {
     <p
       v-if="bubbleAction"
       :id="reasonId"
+      :class="centre"
       class="fixed bottom-[88px] left-1/2 layer-dock m-0 hidden max-w-[360px] -translate-x-1/2 rounded-[12px] border-2 border-line bg-surface px-3 py-1.5 text-center text-[13px] font-bold text-ink shadow-card md:block"
     >
       {{ bubbleAction.disabledReason }}
@@ -216,6 +223,7 @@ onBeforeUnmount(() => {
       role="menu"
       tabindex="-1"
       :aria-label="t('dock.label')"
+      :class="centre"
       class="fixed bottom-[100px] left-1/2 layer-dock hidden w-[380px] -translate-x-1/2 flex-col gap-2.5 rounded-[18px] border-(length:--cp-bw) border-line bg-surface p-3.5 shadow-modal md:flex"
       @keydown.esc="closeMore"
       @keydown.down.prevent="stepMore(1)"
@@ -270,7 +278,7 @@ onBeforeUnmount(() => {
 
     <button
       type="button"
-      class="outline-memphis hit-44 fixed right-4 bottom-20 layer-dock grid size-14 place-items-center rounded-pill border-(length:--cp-bw) border-line bg-primary text-on-primary shadow-btn lift md:hidden"
+      class="outline-memphis hit-44 fixed right-3.5 bottom-24 layer-dock grid size-14 place-items-center rounded-pill border-(length:--cp-bw) border-line bg-primary text-on-primary shadow-btn lift md:hidden"
       :aria-label="t('dock.label')"
       aria-haspopup="dialog"
       :aria-expanded="sheetOpen"

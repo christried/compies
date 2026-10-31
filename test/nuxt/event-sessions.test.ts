@@ -1,9 +1,16 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import type { VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
 import { clickButton, clickHostAction, dialog, hostActionElement, openHostMenu, serve, shownToasts, view, viewWithSessions } from './event-page'
+
+type Page = VueWrapper
+/** The buttons of the page that start with this label (a hold button's text goes on with its „1 s halten“ badge). */
+const labelled = (page: Page, label: string) => page.findAll('button').filter(button => button.text().startsWith(label))
+/** The row of Session n in the Sessions card. */
+const rowOf = (page: Page, n: number) => page.findAll('li').filter(row => row.findAll('b')[0]?.text() === `Session ${n}`)[0]!
 
 describe('several Sessions on the Event page', () => {
   beforeEach(() => {
@@ -12,7 +19,7 @@ describe('several Sessions on the Event page', () => {
     document.body.innerHTML = ''
   })
 
-  it('shows a numbered card per dated Session with the Host actions on each, and one In den Kalender and one Einladen for the whole Event', async () => {
+  it('shows a numbered row per dated Session with the Host actions on each, a calendar button per row and Einladen only in the Host controls', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
       { number: 1, startsAt: '2026-10-30T19:00:00.000Z' },
       { number: 2, startsAt: '2026-10-31T19:00:00.000Z' },
@@ -22,18 +29,19 @@ describe('several Sessions on the Event page', () => {
 
     expect(page.text()).toContain('Session 1')
     expect(page.text()).toContain('Session 2')
-    expect(page.findAll('button').filter(button => button.text() === 'In den Kalender')).toHaveLength(1)
-    // One for the whole Event on the cards, one in the Host controls (#147).
-    expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(2)
+    expect(page.findAll('button').filter(button => button.text() === 'In den Kalender')).toHaveLength(0)
+    expect(page.findAll('button[aria-label$="in den Kalender"]').map(button => button.attributes('aria-label'))).toEqual(['Session 1 in den Kalender', 'Session 2 in den Kalender'])
+    // Einladen is in the Host controls only; the Sessions card has none (#147, #166).
+    expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
     expect(page.get('[role="toolbar"]').findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
-    expect(page.findAll('button').filter(button => button.text() === 'Verschieben')).toHaveLength(2)
-    expect(page.findAll('button').filter(button => button.text() === 'Neue Terminsuche')).toHaveLength(2)
-    expect(page.findAll('button').filter(button => button.text() === 'Entfernen')).toHaveLength(2)
+    expect(labelled(page, 'Verschieben')).toHaveLength(2)
+    expect(labelled(page, 'Neue Terminsuche')).toHaveLength(2)
+    expect(labelled(page, 'Entfernen')).toHaveLength(2)
     expect(page.text()).not.toContain('Termin festlegen')
-    // Every button on the cards is 48 px (h-12), the Reopen and removal holds too (#55).
-    const cardButtons = page.findAll('button').filter(button => ['Verschieben', 'Neue Terminsuche', 'Entfernen'].includes(button.text()))
-    expect(cardButtons).toHaveLength(6)
-    expect(cardButtons.every(button => button.classes().includes('h-12'))).toBe(true)
+    // Every button of a row is 44 px (h-11), the Reopen and removal holds too (#55, #166).
+    const rowButtons = ['Verschieben', 'Neue Terminsuche', 'Entfernen'].flatMap(label => labelled(page, label))
+    expect(rowButtons).toHaveLength(6)
+    expect(rowButtons.every(button => button.classes().includes('h-11') || button.classes().includes('h-control-md'))).toBe(true)
   })
 
   it('reschedules the Session whose card was used, sending its own id', async () => {
@@ -52,9 +60,7 @@ describe('several Sessions on the Event page', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    const second = page.findAll('section').filter(section => section.text().includes('Session 2'))[0]!
-
-    await clickButton(second.element, 'Verschieben')
+    await clickButton(rowOf(page, 2).element, 'Verschieben')
     const rescheduleDialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(element => element.textContent?.includes('Termin verschieben?'))
     await clickButton(rescheduleDialog, 'Termin verschieben')
 
@@ -76,9 +82,9 @@ describe('several Sessions on the Event page', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    const holds = () => page.findAll('button').filter(button => ['Neue Terminsuche', 'Entfernen'].includes(button.text())).map(button => button.element)
+    const holds = () => [...labelled(page, 'Neue Terminsuche'), ...labelled(page, 'Entfernen')].map(button => button.element)
     const before = holds()
-    const hold = page.findAll('button').filter(button => button.text() === 'Entfernen')[0]!
+    const hold = labelled(page, 'Entfernen')[0]!
 
     await hold.trigger('pointerdown')
     await new Promise(resolve => setTimeout(resolve, 1100))
@@ -132,7 +138,7 @@ describe('several Sessions on the Event page', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(page.findAll('button').filter(button => button.text() === 'Verschieben')).toHaveLength(2)
+    expect(labelled(page, 'Verschieben')).toHaveLength(2)
     expect(page.text()).not.toContain('Neue Terminsuche')
     expect(page.text()).not.toContain('Entfernen')
     expect(page.text()).not.toContain('Session hinzufügen')
@@ -300,10 +306,82 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).toContain('Freitags-Zocken')
   })
 
+  describe('the rows of the Sessions card (#166)', () => {
+    const FIRST = '2026-10-30T19:00:00.000Z'
+    const card = (page: Page) => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'Sessions'))!
+    const rowText = (page: Page, n: number) => rowOf(page, n).text()
+
+    it('counts the Sessions in the title and names each row by its number, with the undated ones numbered after the dated ones', async () => {
+      const { slug } = serve(s => viewWithSessions(s, [
+        { number: 1, startsAt: FIRST },
+        { number: null, startsAt: null },
+        { number: null, startsAt: null },
+      ], 2, { event: { phase: 'poll' } }))
+
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      expect(card(page).get('h2 + span').text()).toBe('3 Sessions')
+      expect(card(page).findAll('ol > li').map(row => row.findAll('b')[0]!.text())).toEqual(['Session 1', 'Session 2', 'Session 3'])
+      expect(rowText(page, 1)).toContain('Termin steht')
+      expect(rowText(page, 1)).toContain('Fr 30.10., 20:00')
+      expect(card(page).get('time').attributes('datetime')).toBe(FIRST)
+    })
+
+    it('shows a Session that polls with how many voted and sends the Host to the poll, and a Member too', async () => {
+      const host = serve(s => viewWithSessions(s, [{ number: 1, startsAt: FIRST }, { number: null, startsAt: null }], 1, { event: { phase: 'poll', isHost: true } }))
+      const hostPage = await mountSuspended(EventPage, { route: `/e/${host.slug}`, attachTo: document.body })
+
+      expect(rowText(hostPage, 2)).toContain('Terminumfrage')
+      expect(rowText(hostPage, 2)).toContain('2 von 3 haben abgestimmt')
+      await clickButton(rowOf(hostPage, 2).element, 'Zur Umfrage')
+      expect(document.activeElement?.id).toBe('poll-session-2')
+      hostPage.unmount()
+
+      const member = serve(s => viewWithSessions(s, [{ number: 1, startsAt: FIRST }, { number: null, startsAt: null }], 1, { event: { phase: 'poll' } }))
+      const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}`, attachTo: document.body })
+
+      expect(rowOf(memberPage, 2).findAll('button').map(button => button.text())).toEqual(['Abstimmen'])
+      memberPage.unmount()
+    })
+
+    it('gives a Session that runs and one that ended no actions, but its time', async () => {
+      const { slug } = serve(s => viewWithSessions(s, [
+        { number: 1, startsAt: FIRST, startedAt: '2026-10-30T19:34:00.000Z', endedAt: '2026-10-30T22:12:00.000Z' },
+        { number: 2, startsAt: '2026-10-31T19:00:00.000Z', startedAt: '2026-10-31T19:30:00.000Z' },
+      ], 0, { event: { phase: 'running', isHost: true }, slots: [], bestSlotId: null, runningSessionId: `session-${s}-1` }))
+
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      expect(rowText(page, 1)).toContain('Beendet')
+      expect(rowText(page, 1)).toContain('Fr 30.10., 20:34 bis 23:12')
+      expect(rowText(page, 2)).toContain('Läuft seit 20:30')
+      expect(rowOf(page, 1).findAll('button')).toHaveLength(0)
+      expect(rowOf(page, 2).findAll('button')).toHaveLength(0)
+    })
+
+    it('names the only Session just „Session“ and keeps „Session hinzufügen“ as the underlined text button at the end, for the Host only', async () => {
+      const host = serve(s => viewWithSessions(s, [{ number: null, startsAt: FIRST }], 0, { event: { phase: 'date_set', isHost: true }, slots: [], bestSlotId: null }))
+      const hostPage = await mountSuspended(EventPage, { route: `/e/${host.slug}` })
+
+      expect(card(hostPage).get('h2 + span').text()).toBe('1 Session')
+      expect(card(hostPage).get('ol li b').text()).toBe('Session')
+      const add = card(hostPage).findAll('button').at(-1)!
+      expect(add.text()).toBe('Session hinzufügen')
+      expect(add.classes()).toContain('underline')
+      // Plain underlined text: outline-memphis would draw a box around it.
+      expect(add.classes()).not.toContain('outline-memphis')
+      hostPage.unmount()
+
+      const member = serve(s => viewWithSessions(s, [{ number: null, startsAt: FIRST }], 0, { event: { phase: 'date_set' }, slots: [], bestSlotId: null }))
+      const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
+      expect(memberPage.text()).not.toContain('Session hinzufügen')
+    })
+  })
+
   describe('the Running Session and the ones that ended (#164)', () => {
     const FIRST = '2026-10-30T19:00:00.000Z'
     const SECOND = '2026-10-31T19:00:00.000Z'
-    const card = (page: Awaited<ReturnType<typeof mountSuspended>>, n: number) => page.findAll('section').filter((section: { text: () => string }) => section.text().includes(`Session ${n}`))[0]!
+    const card = rowOf
 
     it('shows „Läuft“ and „Läuft seit“ on the Running Session, in Berlin time, and the other card as it was', async () => {
       const { slug } = serve(s => viewWithSessions(s, [
@@ -339,7 +417,8 @@ describe('several Sessions on the Event page', () => {
 
       const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-      const labels = (n: number) => card(page, n).findAll('button').map((button: { text: () => string }) => button.text())
+      // The round calendar button has no text; the holds go on with their „1 s halten“ badge.
+      const labels = (n: number) => card(page, n).findAll('button').map(button => button.text().replace(/ 1 s halten.*$/, '')).filter(Boolean)
       expect(labels(1)).toEqual([])
       expect(labels(2)).toEqual(['Verschieben', 'Neue Terminsuche', 'Entfernen'])
     })

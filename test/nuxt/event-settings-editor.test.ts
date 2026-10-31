@@ -213,7 +213,7 @@ describe('the settings editor', () => {
   it('shows the saved settings on the Event page at once, without waiting for the poll', async () => {
     const { slug, set } = setUp({ settings: wheel, pools: { main: [kart], tiebreaker: [] } })
     const page = await mountEditorAndEventPage(slug)
-    const eventSettings = () => page.get('section[aria-labelledby="how-we-play-title"]')
+    const eventSettings = () => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'So wird gespielt'))!
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
     set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { hidden: false, main: [kart], tiebreaker: [] } }))

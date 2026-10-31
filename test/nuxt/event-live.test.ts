@@ -4,7 +4,7 @@ import EventPage from '~/pages/e/[slug]/index.vue'
 import type { RoomSocketOptions } from '~/utils/room-socket'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
 import { kitty, signInAs } from './auth'
-import { view, type Wrapper } from './event-page'
+import { restoreScreen, stubScreen, view, type Wrapper } from './event-page'
 
 // The Event page goes live (#156, spec #153 § Live Event page): it refetches when its room says something changed
 // and whenever the connection opens, polls only while the connection is down, and tells the User about the
@@ -68,6 +68,7 @@ describe('the live Event page', () => {
 
   afterEach(() => {
     useRuntimeConfig().public.realtimeUrl = ''
+    restoreScreen()
     vi.useRealTimers()
     document.body.innerHTML = ''
   })
@@ -94,14 +95,16 @@ describe('the live Event page', () => {
     await vi.waitFor(() => expect(page.text()).toContain('Samstags-Zocken'))
   })
 
-  it('shows an Activity feed entry the room sends under „Aktivität“, on the same socket', async () => {
+  it('shows an Activity feed entry the room sends in the side panel under „Aktivität“, on the same socket', async () => {
+    stubScreen(true)
     const { page } = await mountLive()
     const entry = { id: 'entry-1', type: 'member_joined', at: new Date().toISOString(), actor: { id: 'u1', name: 'Larsi' }, params: {}, people: {} }
 
     lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'activity.added', entry } as RoomMessage, Date.now())))
 
     await vi.waitFor(() => expect(page.find('[role="log"]').text()).toContain('Larsi ist dem Event beigetreten'))
-    expect(page.find('h2#activity-title').text()).toBe('Aktivität')
+    expect(page.find('[role="tabpanel"] [role="log"]').exists()).toBe(true)
+    expect(page.get('[role="tab"]').text()).toBe('Aktivität')
     expect(sockets).toHaveLength(1)
   })
 
@@ -223,6 +226,11 @@ describe('the ConnectionBanner on the Event page', () => {
 
     await vi.advanceTimersByTimeAsync(1)
     expect(banner(page, 'Verbindung wird wiederhergestellt')?.attributes('role')).toBe('status')
+    // It sits right under the header, over the stage and the side panel, not in the stage (#166).
+    const warning = banner(page, 'Verbindung wird wiederhergestellt')!.element
+    expect(warning.closest('main')).toBeNull()
+    expect(page.get('header').element.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(page.get('#stage').element.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
 
     await vi.advanceTimersByTimeAsync(12_999)
     expect(banner(page, 'Verbindung wird wiederhergestellt')).toBeDefined()

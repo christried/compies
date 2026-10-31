@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { CalendarCheck, CalendarClock, ChevronRight, Flag, Link as LinkIcon, Lock, Play, Settings2 } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, ChevronRight, Crown, Flag, History, Hourglass, LayoutGrid, Link as LinkIcon, Lock, Play, Settings2 } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
+import { teamName } from '~/utils/board'
+import { eventPageState, pagePill } from '~/utils/event-page'
 import { hostDockState } from '~/utils/host-dock'
 import { datePollOpen, sessionsEditable, type DatedSessionView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
@@ -10,8 +12,10 @@ import { settingsEditable } from '~~/shared/settings'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). This page loads the Event through
 // useEventView (live through the Event's room, polling every 15 s while that is down, #156), shows the
-// ConnectionBanner, and holds the Host's dialogs and the error states. EventSessions shows the
-// Sessions with their Host actions, EventPoll the Date poll while it is open. Votes show at once and roll back with
+// ConnectionBanner under the header, and holds the Host's dialogs and the error states. The stage is the Head and the
+// blocks in the order of the page's state (#166, 11-event-seite § EventPage: what has to happen now goes on top):
+// EventSessions with „So wird gespielt“, EventPoll while a Session waits for a Date, the Game board and the notices.
+// The Activity feed has the side panel from md up and a tab of its own on a phone. Votes show at once and roll back with
 // a toast when saving fails (useOptimisticVotes, ADR 0001). The Date is set in the confirm dialog (#13): from a Slot
 // card ("Termin festlegen") or the host dock. The Host picks only the Slot; its time goes to the next Session
 // without a Date (#52). Termine bearbeiten opens SlotEditSheet (#15).
@@ -216,6 +220,92 @@ const hostActions = computed((): DockAction[] => {
   if (state.primary === 'setDate') return [...dates, invite, ...datesOnly, settings]
   return [invite, settings]
 })
+
+// The state of the page for everybody (#166) and the blocks of the stage in the order that state wants. „What has to happen
+// now goes on top“: the poll while no Session is dated, the Game board from the first Date on, the Sessions card between two
+// Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits for a Date has its poll
+// (compact) below the board once another Session is dated or started.
+type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'board' | 'cards' | 'stay'
+const pageState = computed(() => (data.value ? eventPageState(data.value) : null))
+const order = computed((): Block[] => {
+  const state = pageState.value
+  if (!state) return []
+  const poll: Block[] = pollOpen.value ? ['poll'] : []
+  switch (state.kind) {
+    case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
+    case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
+    case 'running': return ['head', 'reopen', 'board', ...poll, 'cards']
+    case 'between': return ['head', 'reopen', 'cards', 'stay', 'board', ...poll]
+    case 'done': return ['head', 'reopen', 'cards', 'board']
+    default: return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
+  }
+})
+/** The poll is the quiet one below the board as soon as the page is about something else than the Date. */
+const pollCompact = computed(() => pageState.value !== null && !['poll', 'setup'].includes(pageState.value.kind))
+/** Between two Sessions and after the last the Sessions card is the news of the page and gets a shadow. */
+const cardsStandOut = computed(() => pageState.value?.kind === 'between' || pageState.value?.kind === 'done')
+
+const hostName = computed(() => data.value?.members.find(member => member.isHost)?.name ?? '')
+
+// The Host's seat note (teams only): where the Host sits does not change the dock, and the note says so. Closed for this visit.
+const seatNoteClosed = ref(false)
+const seatNote = computed(() => {
+  const view = data.value
+  const me = view?.members.find(member => member.id === view.viewerId)
+  if (!view || !view.event.isHost || !me) return null
+  if (me.zone === 'stands') return t('event.notice.seatStands')
+  if (me.zone !== 'team' || me.team === null) return null
+  return t('event.notice.seatTeam', { team: teamName(view.teams.find(team => team.position === me.team) ?? me.team, t) })
+})
+
+/** What the Teams-bleiben notice names: the next Session by its number, or „der nächsten“ when it has none yet or is the only one. */
+const teamsStay = computed(() => {
+  const number = pageState.value?.next?.number ?? null
+  const host = data.value?.event.isHost ?? false
+  const key = number === null ? (host ? 'teamsStayNext' : 'teamsStayMemberNext') : (host ? 'teamsStay' : 'teamsStayMember')
+  return t(`event.notice.${key}`, { n: number })
+})
+
+// The header pill follows the page state, not the Event's Phase, which is running from the first start on (pagePill, #166):
+// „Läuft · Session 1 von 2“ while a Session runs in an Event with several, „Vorbei“ after the last one.
+const pill = computed(() => {
+  const state = pageState.value
+  const shown = state ? pagePill(state) : null
+  if (!state || !shown) return { phase: data.value?.event.phase ?? 'poll', label: undefined }
+  if (shown.ended) return { phase: shown.phase, label: t('phase.ended') }
+  const several = state.kind === 'running' && state.total > 1
+  return { phase: shown.phase, label: several ? t('event.pill.running', { n: state.running?.number, total: state.total }) : undefined }
+})
+
+// The phone's views (11-event-seite § TabBar): the Event page or the Activity feed. The feed is mounted once, in the side panel
+// from md up and in its own view below; the wide layout is known after mount only, so nothing of the feed renders before.
+const wide = useMediaQuery('(min-width: 61.25rem)')
+const panelTab = ref('activity')
+const activeView = ref<'event' | 'activity'>('event')
+const unread = ref(0)
+// Only the phone counts: on a desktop the panel shows the feed, and a count from there would be stale once the window narrows.
+room.on('activity.added', () => {
+  if (wide.value === false && activeView.value !== 'activity') unread.value += 1
+})
+watch(wide, (isWide) => {
+  if (isWide) unread.value = 0
+})
+function selectView(key: string) {
+  activeView.value = key === 'activity' ? 'activity' : 'event'
+  if (activeView.value === 'activity') unread.value = 0
+}
+const tabs = computed(() => [
+  { key: 'event', label: t('event.tabs.event'), icon: LayoutGrid, current: activeView.value === 'event' },
+  {
+    key: 'activity',
+    label: t('nav.tabs.activity'),
+    icon: History,
+    current: activeView.value === 'activity',
+    badge: activeView.value === 'activity' ? 0 : unread.value,
+    ariaLabel: activeView.value !== 'activity' && unread.value > 0 ? t('event.tabs.unread', { label: t('nav.tabs.activity'), n: unread.value }) : undefined,
+  },
+])
+const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity'), icon: History }])
 </script>
 
 <template>
@@ -224,98 +314,226 @@ const hostActions = computed((): DockAction[] => {
       v-if="data"
       #title
     >
-      <h1 class="m-0 min-w-0 truncate text-[22px] leading-none">
+      <p class="m-0 min-w-0 truncate text-[22px] leading-none">
         {{ data.event.name }}
-      </h1>
-      <PhasePill :phase="data.event.phase" />
+      </p>
+      <PhasePill
+        :phase="pill.phase"
+        :label="pill.label"
+      />
     </template>
 
-    <div
-      v-if="data"
-      class="mx-auto flex w-full max-w-[1100px] flex-col gap-4"
+    <template
+      v-if="data?.inviteUrl"
+      #actions
     >
-      <ConnectionBanner
-        :state="connection"
-        @retry="room.retry"
-      />
-
-      <NoticeBanner
-        v-if="needsSetup && !setupNoticeClosed"
-        tone="info"
-        :icon="Settings2"
-        host-only
-        closable
-        @close="setupNoticeClosed = true"
+      <AppButton
+        variant="secondary"
+        class="max-md:hidden"
+        aria-haspopup="dialog"
+        @click="inviteOpen = true"
       >
-        <b>{{ t('eventSettings.notice.title') }}</b>
-        {{ t('eventSettings.notice.text') }}
-        <template #action>
-          <AppButton
-            :to="settingsPath(slug)"
-            size="md"
-          >
-            {{ t('eventSettings.notice.action') }}
-          </AppButton>
+        <AppIcon
+          :icon="LinkIcon"
+          :size="16"
+        />
+        {{ t('common.invite') }}
+      </AppButton>
+    </template>
+
+    <template
+      v-if="data"
+      #banner
+    >
+      <div class="px-3.5 pt-3 empty:hidden md:px-6">
+        <ConnectionBanner
+          :state="connection"
+          @retry="room.retry"
+        />
+      </div>
+    </template>
+
+    <template
+      v-if="data"
+      #panel
+    >
+      <SidePanel
+        v-model="panelTab"
+        :label="t('app.sidePanel')"
+        :tabs="panelTabs"
+      >
+        <template #activity>
+          <ActivityFeed
+            v-if="wide"
+            :slug="slug"
+            :room="room"
+            :sessions="feed.started"
+            :next-number="feed.nextNumber"
+          />
         </template>
-      </NoticeBanner>
+      </SidePanel>
+    </template>
 
-      <EventSessions
-        :view="data"
-        :slug="slug"
-        :reopen="reopenSession"
-        :remove="removeSession"
-        @reschedule="openReschedule"
-        @add="addOpen = true"
-        @invite="inviteOpen = true"
-        @calendar="calendarOpen = true"
+    <template
+      v-if="data"
+      #tabs
+    >
+      <TabBar
+        :label="t('event.tabs.label')"
+        :items="tabs"
+        @select="selectView"
       />
+    </template>
 
-      <HowWePlayCard
-        :settings="data.settings"
-        :pools="data.pools"
-        :is-host="data.event.isHost"
-      />
-
-      <EventPoll
-        v-if="pollOpen"
-        :view="data"
-        :slots="slots"
-        :votes="votes"
-        @pick="openConfirm"
-        @remove-session="removeSession"
-      />
-
-      <!-- Provisional spot: the final order of the page comes with #166. -->
-      <GameBoard
-        :slug="slug"
-        :members="data.members"
-        :teams="data.teams"
-        :settings="data.settings"
-        :team-choice-open="data.teamChoiceOpen"
-        :started="started"
-        :viewer-id="data.viewerId"
-        :is-host="data.event.isHost"
-        :room="room"
-        :online="onlineState"
-      />
-
-      <!-- Provisional: the SidePanel (#166) takes the feed over. -->
-      <section
-        class="flex flex-col gap-4 rounded-[20px] border-(length:--cp-bw) border-line bg-surface p-5.5 text-ink shadow-card md:p-[22px]"
-        aria-labelledby="activity-title"
+    <TransitionGroup
+      v-if="data && pageState && (wide !== false || activeView === 'event')"
+      tag="div"
+      move-class="transition-transform dur-slow ease-out motion-reduce:transition-none reduced:transition-none"
+      class="mx-auto flex w-full max-w-[1100px] flex-col gap-[18px] px-3.5 pt-4 md:gap-[22px] md:px-6 md:pt-6 md:pb-10"
+      :class="data.event.isHost ? 'pb-[92px]' : 'pb-7'"
+    >
+      <div
+        v-for="block in order"
+        :key="block"
+        class="min-w-0 empty:hidden"
       >
-        <h2
+        <EventPageHead
+          v-if="block === 'head'"
+          :state="pageState"
+          :is-host="data.event.isHost"
+        />
+
+        <ReopenNotices
+          v-else-if="block === 'reopen'"
+          :view="data"
+        />
+
+        <template v-else-if="block === 'setup'">
+          <NoticeBanner
+            v-if="needsSetup && !setupNoticeClosed"
+            tone="info"
+            :icon="Settings2"
+            host-only
+            closable
+            @close="setupNoticeClosed = true"
+          >
+            <b>{{ t('event.notice.setupTitle') }}</b>
+            {{ t('event.notice.setup') }}
+            <template #action>
+              <AppButton
+                :to="settingsPath(slug)"
+                variant="secondary"
+                size="md"
+              >
+                {{ t('event.notice.setupAction') }}
+              </AppButton>
+            </template>
+          </NoticeBanner>
+          <NoticeBanner
+            v-else-if="!data.event.isHost"
+            tone="info"
+            :icon="Hourglass"
+          >
+            {{ t('event.notice.setupMember', { host: hostName }) }}
+          </NoticeBanner>
+        </template>
+
+        <NoticeBanner
+          v-else-if="block === 'seat' && seatNote && !seatNoteClosed"
+          tone="info"
+          :icon="Crown"
+          host-only
+          closable
+          @close="seatNoteClosed = true"
+        >
+          {{ seatNote }}
+        </NoticeBanner>
+
+        <EventPoll
+          v-else-if="block === 'poll'"
+          :view="data"
+          :slots="slots"
+          :votes="votes"
+          :number="pageState.pollNumber"
+          :compact="pollCompact"
+          @pick="openConfirm"
+          @remove-session="removeSession"
+        />
+
+        <GameBoard
+          v-else-if="block === 'board'"
+          :slug="slug"
+          :members="data.members"
+          :teams="data.teams"
+          :settings="data.settings"
+          :team-choice-open="data.teamChoiceOpen"
+          :started="started"
+          :locked-notice="pageState.kind === 'running'"
+          :uneven-notice="pageState.kind !== 'running' && pageState.kind !== 'done'"
+          :viewer-id="data.viewerId"
+          :is-host="data.event.isHost"
+          :room="room"
+          :online="onlineState"
+        />
+
+        <NoticeBanner
+          v-else-if="block === 'stay'"
+          tone="info"
+          :icon="Lock"
+        >
+          {{ teamsStay }}
+        </NoticeBanner>
+
+        <div
+          v-else-if="block === 'cards'"
+          class="grid items-start gap-4 md:grid-cols-2"
+        >
+          <EventSessions
+            :view="data"
+            :reopen="reopenSession"
+            :remove="removeSession"
+            :poll-number="pageState.pollNumber"
+            :poll-open="pollOpen"
+            :shadow="cardsStandOut"
+            @reschedule="openReschedule"
+            @add="addOpen = true"
+            @calendar="calendarOpen = true"
+          />
+          <HowWePlayCard
+            :settings="data.settings"
+            :pools="data.pools"
+            :is-host="data.event.isHost"
+            :edit-to="canEditSettings && data.settings !== null && !started ? settingsPath(slug) : null"
+            :locked="started"
+            :host-name="hostName"
+          />
+        </div>
+      </div>
+    </TransitionGroup>
+
+    <!-- A phone's second view (11-event-seite § TabBar): the feed alone, with the Head's place taken by its title. -->
+    <div
+      v-else-if="data && wide === false"
+      class="mx-auto flex w-full max-w-[1100px] flex-col gap-3 px-3.5 pt-4 pb-7"
+    >
+      <section
+        aria-labelledby="activity-title"
+        class="flex flex-col gap-3"
+      >
+        <h1
           id="activity-title"
-          class="m-0 font-display text-[26px] leading-none font-normal md:text-[32px]"
+          class="m-0 font-display text-[34px] leading-none font-normal"
         >
           {{ t('activity.title') }}
-        </h2>
-        <ActivityFeed
-          :slug="slug"
-          :room="room"
-          :sessions="feed.started"
-          :next-number="feed.nextNumber"
-        />
+        </h1>
+        <div class="flex h-[calc(100dvh-17rem)] min-h-72 flex-col rounded-[16px] border-(length:--cp-bw) border-line bg-surface">
+          <ActivityFeed
+            :slug="slug"
+            :room="room"
+            :sessions="feed.started"
+            :next-number="feed.nextNumber"
+          />
+        </div>
       </section>
     </div>
 
@@ -342,6 +560,7 @@ const hostActions = computed((): DockAction[] => {
     <HostDock
       v-if="canEditSettings"
       :actions="hostActions"
+      panel
     />
 
     <DateConfirmDialog

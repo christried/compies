@@ -17,7 +17,7 @@ function run(toast: { id: number, action?: { run: () => void } }) {
 <template>
   <div
     class="pointer-events-none fixed inset-x-0 layer-toast flex flex-col items-center gap-2 px-3.5"
-    :class="docked ? 'bottom-36 md:bottom-24' : 'bottom-20 md:bottom-6'"
+    :class="docked ? 'bottom-44 md:bottom-24' : 'bottom-20 md:bottom-6'"
   >
     <div
       v-for="toast in toasts"

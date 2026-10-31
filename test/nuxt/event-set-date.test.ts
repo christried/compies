@@ -45,7 +45,7 @@ describe('setting the Date', () => {
     expect(selectedOption()).toBe('Fr 23.10., 20:00 Uhr')
   })
 
-  it('confirms the chosen Slot, then shows the Date set card to everyone', async () => {
+  it('confirms the chosen Slot, then shows the Date in the Sessions card to everyone', async () => {
     let sent: unknown = null
     const store = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     registerEndpoint(`/api/e/${store.slug}/confirm`, {
@@ -65,12 +65,12 @@ describe('setting the Date', () => {
     await clickButton(dialog(), 'Festlegen')
 
     await vi.waitFor(() => expect(sent).toEqual({ slotId: 'sat' }))
-    await vi.waitFor(() => expect(page.text()).toContain('Samstag, 24. Oktober, 20:00 Uhr'))
+    await vi.waitFor(() => expect(page.text()).toContain('Sa 24.10., 20:00'))
     expect(page.findAll('[role="radiogroup"]')).toHaveLength(0)
     expect(dialog()).toBeNull()
   })
 
-  it('shows In den Kalender to every Member, and Verschieben only to the Host', async () => {
+  it('shows the calendar button of the Session to every Member, and Verschieben only to the Host', async () => {
     const member = serve(s => view(s, [], {
       event: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z' },
       slots: [],
@@ -79,7 +79,7 @@ describe('setting the Date', () => {
     const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
     // The control is about the Date, so it is labelled as a calendar entry, not as a file download. It opens the
     // calendar sheet (#81, event-calendar.test.ts).
-    const calendarButton = memberPage.findAll('button').filter(button => button.text() === 'In den Kalender')
+    const calendarButton = memberPage.findAll('button[aria-label="Session in den Kalender"]')
     expect(calendarButton).toHaveLength(1)
     expect(calendarButton[0]!.attributes('aria-haspopup')).toBe('dialog')
     expect(memberPage.text()).not.toContain('Verschieben')
