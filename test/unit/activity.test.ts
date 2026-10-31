@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { activityText, feedSessions, groupActivity, readEntry } from '../../app/utils/activity'
+import { activityIcon, activityParts, activityText, feedSessions, groupActivity, readEntry } from '../../app/utils/activity'
 import { formatActivityTime } from '../../app/utils/berlin-time'
 import de from '../../i18n/locales/de.json'
-import type { ActivityEntry } from '../../shared/activity'
+import { ACTIVITY_TYPES, type ActivityEntry } from '../../shared/activity'
 
 // The Activity feed's pure parts (#159): which group an entry sits in, what an entry says, which messages count.
 // `t` is the real German copy with {name} filled in, so a changed sentence shows up here.
@@ -164,6 +164,41 @@ describe('readEntry', () => {
     expect(readEntry({ ...entry, type: 'nobody_knows' })).toBeNull()
     expect(readEntry({ ...entry, params: 'x' })).toBeNull()
     expect(readEntry({ ...entry, at: undefined })).toBeNull()
+  })
+})
+
+describe('activityParts', () => {
+  it('sets the actor, the person and the team in bold and says the same words as the plain sentence', () => {
+    const moved: ActivityEntry = { ...base, actor: { id: 'u2', name: 'Hostess' }, people: { u1: 'Sanne' }, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } } }
+
+    expect(activityParts(moved, t)).toEqual([
+      { text: 'Hostess', strong: true },
+      { text: ' hat ', strong: false },
+      { text: 'Sanne', strong: true },
+      { text: ' nach ', strong: false },
+      { text: 'Team Orange', strong: true },
+      { text: ' verschoben', strong: false },
+    ])
+    expect(activityParts(moved, t)!.map(part => part.text).join('')).toBe(activityText(moved, t))
+  })
+
+  it('sets the Date of a Session in bold and keeps a sentence without a name whole', () => {
+    const set: ActivityEntry = { ...base, actor: null, type: 'date_set', params: { sessionId: 's', number: 1, startsAt: '2090-11-01T19:30:00.000Z' } }
+
+    expect(activityParts(set, t)).toEqual([
+      { text: 'Termin für Session 1 steht: ', strong: false },
+      { text: 'Mi 01.11. 20:30', strong: true },
+    ])
+  })
+})
+
+describe('activityIcon', () => {
+  it('gives every entry type an icon, the date set the success tone and a start the primary', () => {
+    const types = ACTIVITY_TYPES.map(type => ({ ...base, type, params: type === 'member_moved' ? { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } : {} }) as unknown as ActivityEntry)
+
+    for (const entry of types) expect(activityIcon(entry).icon, entry.type).toBeDefined()
+    expect(activityIcon(types.find(entry => entry.type === 'date_set')!).tone).toBe('success')
+    expect(activityIcon(types.find(entry => entry.type === 'session_started')!).tone).toBe('primary')
   })
 })
 

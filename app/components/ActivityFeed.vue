@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { activityText, groupActivity, readEntry, type ActivityGroup, type FeedSession } from '~/utils/activity'
+import { activityIcon, activityParts, groupActivity, readEntry, type ActivityGroup, type FeedSession } from '~/utils/activity'
 import { formatActivityTime } from '~/utils/berlin-time'
 import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
 
@@ -102,10 +102,12 @@ watch(props.room.state, (state) => {
 })
 onMounted(() => void loadFirst())
 
-/** The entries with their sentence; an entry no ticket has a sentence for yet is left out. */
+const TONE = { primary: 'bg-primary text-on-primary', surface: 'bg-surface text-ink', success: 'bg-success text-on-success' }
+
+/** The entries with their sentence in pieces (names in bold) and their icon; an entry no ticket has a sentence for yet is left out. */
 const shown = computed(() => entries.value.flatMap((entry) => {
-  const text = activityText(entry, t)
-  return text === null ? [] : [{ entry, text, time: formatActivityTime(new Date(entry.at), now) }]
+  const parts = activityParts(entry, t)
+  return parts === null ? [] : [{ entry, parts, ...activityIcon(entry), time: formatActivityTime(new Date(entry.at), now) }]
 }))
 
 // The headers (#164): „Vor dem Start“, then „Session n“ from a start to its end, „Vor Session m“ until the next start and
@@ -130,10 +132,11 @@ const groups = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <!-- It fills its parent (the SidePanel's tab or the phone's Aktivität view), which has the height; the log scrolls inside. -->
+  <div class="flex min-h-0 flex-1 flex-col gap-3">
     <div
       v-if="status === 'failed'"
-      class="flex flex-col items-start gap-3 rounded-[18px] border-2 border-dashed border-line bg-paper-2 p-4"
+      class="m-3 flex flex-col items-start gap-3 rounded-[12px] border-2 border-dashed border-line-soft p-3.5"
     >
       <p class="m-0 text-ink-2">
         {{ t('activity.loadFailed') }}
@@ -150,7 +153,7 @@ const groups = computed(() => {
       <AppButton
         v-if="next"
         variant="secondary"
-        class="self-center"
+        class="mt-3 self-center"
         :aria-disabled="loadingOlder"
         @click="loadOlder"
       >
@@ -162,11 +165,11 @@ const groups = computed(() => {
         role="log"
         aria-live="polite"
         :aria-label="t('activity.logAria')"
-        class="max-h-[420px] overflow-y-auto"
+        class="min-h-0 flex-1 overflow-y-auto px-3 pb-3"
       >
         <p
           v-if="status === 'ready' && shown.length === 0"
-          class="m-0 rounded-[18px] border-2 border-dashed border-line bg-paper-2 p-4 text-ink-2"
+          class="mx-0 my-4 rounded-[12px] border-2 border-dashed border-line-soft p-3.5 text-[14px] font-semibold text-pretty text-ink-2"
         >
           {{ t('activity.empty') }}
         </p>
@@ -175,20 +178,38 @@ const groups = computed(() => {
           v-for="group in groups"
           :key="group.key"
         >
-          <h3 class="sticky top-0 z-10 m-0 bg-surface py-1.5 text-small font-extrabold text-ink-2">
+          <h3 class="sticky top-0 z-10 m-0 bg-surface pt-3 pb-1.5 text-[12px] font-extrabold tracking-[.04em] text-ink-2 uppercase">
             {{ group.title }}
           </h3>
-          <ol class="m-0 flex list-none flex-col gap-2 p-0">
+          <ol class="m-0 flex list-none flex-col p-0">
             <li
               v-for="item in group.items"
               :key="item.entry.id"
-              class="flex items-baseline gap-3"
+              class="flex items-start gap-2.5 py-1.5"
             >
+              <span
+                class="grid size-7 flex-none place-items-center rounded-full border-2 border-line"
+                :class="TONE[item.tone]"
+                aria-hidden="true"
+              >
+                <AppIcon
+                  :icon="item.icon"
+                  :size="14"
+                />
+              </span>
+              <span class="min-w-0 flex-1 pt-[3px] text-[14px] leading-[1.4] text-pretty">
+                <template
+                  v-for="(part, index) in item.parts"
+                  :key="index"
+                ><b
+                  v-if="part.strong"
+                  class="font-extrabold"
+                >{{ part.text }}</b><template v-else>{{ part.text }}</template></template>
+              </span>
               <time
                 :datetime="item.entry.at"
-                class="w-[88px] flex-none text-small text-ink-2 tabular-nums"
+                class="w-[4.75rem] flex-none pt-[5px] text-right text-[12px] text-ink-2 tabular-nums"
               >{{ item.time }}</time>
-              <span class="min-w-0 text-pretty">{{ item.text }}</span>
             </li>
           </ol>
         </section>
