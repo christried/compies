@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, pagePill, type PageInput } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, pagePill, pollingNumber, shownSessionNumbers, type PageInput } from '../../app/utils/event-page'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too.
@@ -89,6 +89,34 @@ describe('eventPageState', () => {
     const state = eventPageState(input([dated('a', null, SAT, { startedAt: SAT, endedAt: SUN })]))
 
     expect(state).toMatchObject({ kind: 'done', total: 1, lastEnded: { number: null } })
+  })
+})
+
+describe('pollingNumber', () => {
+  it('numbers the polling Sessions after the dated ones, in list order (#201)', () => {
+    const sessions = [dated('a', 1, SAT), undated('b'), dated('c', 2, SUN), undated('d')]
+
+    expect(pollingNumber(sessions, 2, 1)).toBe(3)
+    expect(pollingNumber(sessions, 2, 2)).toBe(4)
+    expect(pollingNumber(sessions, 2, 3)).toBeNull()
+  })
+
+  it('is null for the only Session of an Event, polling or not', () => {
+    expect(pollingNumber([undated('a')], 1)).toBeNull()
+  })
+
+  it('is null when no Session polls', () => {
+    expect(pollingNumber([dated('a', 1, SAT), dated('b', 2, SUN)], 0)).toBeNull()
+  })
+})
+
+describe('shownSessionNumbers', () => {
+  it('numbers the polling Sessions of the list after the dated one, in list order (#201)', () => {
+    expect(shownSessionNumbers([dated('a', 1, SAT), undated('b'), undated('c')], 2)).toEqual([1, 2, 3])
+  })
+
+  it('shows the only Session of an Event with no number', () => {
+    expect(shownSessionNumbers([undated('a')], 1)).toEqual([null])
   })
 })
 

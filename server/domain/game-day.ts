@@ -19,13 +19,21 @@ export function sessionsToday(startsAt: (Date | null)[], now: Date): number {
 }
 
 /**
- * Whether a deploy may drop the sockets: not while a Session runs (#164), and not on a day with a dated Session.
- * `startsAt` holds the Dates of every Session (not removed) of every Event that is not deleted; `running` counts the
- * Running Sessions among them (started, not ended), whatever their Date was.
+ * How long a Running Session blocks a deploy after its start (#200). Ending a Session is a manual hold button, so a
+ * Session nobody ended would block every production deploy for ever; no game night runs this long.
  */
-export function deployCheck(input: { startsAt: (Date | null)[], running: number, now: Date }): DeployCheck {
-  if (input.running > 0) {
-    const sessions = input.running === 1 ? '1 Session is' : `${input.running} Sessions are`
+export const RUNNING_BLOCKS_FOR_MS = 16 * 60 * 60 * 1000
+
+/**
+ * Whether a deploy may drop the sockets: not while a Session runs (#164), and not on a day with a dated Session.
+ * `startsAt` holds the Dates of every Session (not removed) of every Event that is not deleted. `runningSince` holds the
+ * start times of the Running Sessions (started, not ended, whatever their Date was); only those started less than
+ * RUNNING_BLOCKS_FOR_MS before `now` count (#200).
+ */
+export function deployCheck(input: { startsAt: (Date | null)[], runningSince: Date[], now: Date }): DeployCheck {
+  const running = input.runningSince.filter(started => input.now.getTime() - started.getTime() < RUNNING_BLOCKS_FOR_MS).length
+  if (running > 0) {
+    const sessions = running === 1 ? '1 Session is' : `${running} Sessions are`
     return { ok: false, reason: `${sessions} running. A deploy would drop every open socket.` }
   }
   const today = sessionsToday(input.startsAt, input.now)

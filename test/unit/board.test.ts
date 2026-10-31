@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { composedTeamName, fullestTeam, hasStarted, moveRejection, nextSession, placeOf, runningOf, startRejection, teamChoiceOpen, teamNameOf, teamWords, type MoveCheck, type Place, type StartInput, type StartSession } from '../../shared/board'
+import { composedTeamName, hasStarted, moveRejection, nextSession, placeOf, runningOf, startRejection, teamChoiceOpen, teamNameOf, teamWords, type MoveCheck, type Place, type StartInput, type StartSession } from '../../shared/board'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -121,16 +121,6 @@ describe('placeOf', () => {
     expect(placeOf({ zone: 'bench', team: null })).toEqual(bench)
     expect(placeOf({ zone: 'stands', team: null })).toEqual(stands)
     expect(placeOf({ zone: 'team', team: 3 })).toEqual(team(3))
-  })
-})
-
-describe('fullestTeam', () => {
-  it('is the Player count of the fullest team', () => {
-    expect(fullestTeam({ 1: 1, 2: 3, 3: 2 })).toBe(3)
-  })
-
-  it('is 0 without Players in teams', () => {
-    expect(fullestTeam({})).toBe(0)
   })
 })
 

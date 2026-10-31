@@ -7,6 +7,8 @@ import de from '~~/i18n/locales/de.json'
 // named, and the calendar is about the Date, not the file (no „.ics“ outside the legal texts and the
 // calendar sheet's „Apple & andere (.ics)“, where the Member picks between Google, Outlook and the file, #81).
 const offlinePage = readFileSync(resolve(import.meta.dirname, '../../public/offline.html'), 'utf8')
+const changelog = readFileSync(resolve(import.meta.dirname, '../../CHANGELOG.md'), 'utf8')
+const unreleased = changelog.split(/^## /m).find(section => section.startsWith('[Unreleased]')) ?? ''
 
 type Entry = { key: string, value: string }
 
@@ -28,10 +30,11 @@ describe('copy rules', () => {
     expect(offlinePage).not.toMatch(/compibert/i)
   })
 
-  it('writes the app name as „Compies“, not „COMPIES“, in the locale file and the offline page', () => {
+  it('writes the app name as „Compies“, not „COMPIES“, in the locale file, the offline page and the Unreleased lines', () => {
     const hits = entries.filter(e => e.value.includes('COMPIES')).map(e => e.key)
     expect(hits).toEqual([])
     expect(offlinePage).not.toContain('COMPIES')
+    expect(unreleased).not.toContain('COMPIES')
   })
 
   it('keeps „.ics“ out of UI copy, except the legal texts and the calendar sheet’s file button', () => {
@@ -65,8 +68,6 @@ const RETIRED: Record<string, string> = {
 
 describe('glossary words in the copy', () => {
   const byKey = new Map(entries.map(e => [e.key, e.value]))
-  const changelog = readFileSync(resolve(import.meta.dirname, '../../CHANGELOG.md'), 'utf8')
-  const unreleased = changelog.split(/^## /m).find(section => section.startsWith('[Unreleased]')) ?? ''
 
   it.each(Object.entries(RETIRED))('never shows „%s“ (now „%s“) in the copy or the Unreleased lines', (retired) => {
     const hits = entries.filter(e => e.value.includes(retired)).map(e => e.key)

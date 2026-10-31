@@ -26,6 +26,7 @@ export default defineEventHandler(async (event): Promise<DeployCheck> => {
     .innerJoin(events, eq(events.id, sessions.eventId))
     .where(and(isNull(events.deletedAt), sessionNotRemoved))
   // A Running Session (#164) is started and not ended; a removed Session and a deleted Event are left out by the query.
-  const running = rows.filter(isRunning).length
-  return deployCheck({ startsAt: rows.map(row => row.startsAt), running, now: new Date() })
+  // It counts while it started less than 16 h ago (#200), so a Session nobody ended stops blocking the deploy.
+  const runningSince = rows.flatMap(row => (isRunning(row) && row.startedAt ? [row.startedAt] : []))
+  return deployCheck({ startsAt: rows.map(row => row.startsAt), runningSince, now: new Date() })
 })

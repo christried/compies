@@ -30,9 +30,22 @@ export function dateBlockedKey(slots: readonly { past: boolean }[]): 'mvp.set.no
   return slots.every(slot => slot.past) ? 'mvp.set.noFutureSlot' : null
 }
 
-/** The shown number a Session that still polls will have: after the dated ones. null when none polls, or the Event has one Session. */
-export function pollingNumber(sessions: Pick<SessionView, 'startsAt'>[], missingDates: number): number | null {
-  return missingDates > 0 && sessions.length > 1 ? sessions.filter(session => session.startsAt !== null).length + 1 : null
+/**
+ * The shown number the `nth` Session that still polls will have (1 = the first): after the dated ones, in list order.
+ * null when fewer than `nth` poll, or the Event has one Session. A Session keeps no number until it has a Date
+ * (GLOSSARY: Session); this is the number the page shows it with meanwhile (#201).
+ */
+export function pollingNumber(sessions: Pick<SessionView, 'startsAt'>[], missingDates: number, nth = 1): number | null {
+  return missingDates >= nth && sessions.length > 1 ? sessions.filter(session => session.startsAt !== null).length + nth : null
+}
+
+/**
+ * The number each Session of the list is shown with, in list order (#201): a dated one its own `number`, one that still
+ * polls the number it will get (pollingNumber), so the list, the dock and the Head agree.
+ */
+export function shownSessionNumbers(sessions: Pick<SessionView, 'startsAt' | 'number'>[], missingDates: number): (number | null)[] {
+  let nth = 0
+  return sessions.map(session => (session.startsAt === null ? pollingNumber(sessions, missingDates, ++nth) : session.number))
 }
 
 /**
