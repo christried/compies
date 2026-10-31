@@ -265,6 +265,19 @@ describe('settings follow the teams (#163)', () => {
       await expectNothingWritten(game)
     })
 
+    it('refuses a fractional team count with invalid_settings and changes nobody, before any floor is read (#197)', async () => {
+      const game = await setup()
+      await seatTeams(game)
+
+      const response = await patch(game, { settings: { teamCount: 2.5, teamSize: 1, pointsTable: LINEAR_2 } })
+
+      expect(response.status).toBe(400)
+      expect((await response.json() as { statusMessage: string }).statusMessage).toBe('invalid_settings')
+      expect((await settingsOf(game)).teamCount).toBe(4)
+      expect((await seatsOf(game))[game.ids.two]).toEqual(team(3))
+      await expectNothingWritten(game)
+    })
+
     it('takes the Team size floor from the teams that remain, so a lowering and a smaller Team size may come in one request', async () => {
       const game = await setup()
       // Team 4, which the request removes, holds three Players; the teams that remain hold one each.
