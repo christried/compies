@@ -7,7 +7,8 @@ import { AVAILABLE_FORMATS, TEAM_COUNT_MAX, TEAM_COUNT_MIN, TEAM_PLAYERS_MAX, TE
 // Format and team layout (#144). Free-for-all, bracket and league show as „Bald verfügbar“. With
 // Teams: how many teams and how many Players per team, at most 24 Players in all; a plus button at the
 // limit says which limit it is. In the settings editor (#147) `locks.reason` locks the Format and the team count
-// (the Event is running), and `locks.floors` keeps the Team size from going below the fullest team.
+// (the Event is running), and `locks.floors` keeps the Team size from going below the fullest team. A lower team
+// count than the saved one shows how many Players go to the Bench from the removed teams (`locks.teamPlayers`, #163).
 const props = defineProps<{ locks?: StepLocks }>()
 const draft = defineModel<EventDraft>({ required: true })
 const settings = useDraftSettings(draft)
@@ -41,6 +42,10 @@ const teamSizeMin = computed(() => Math.max(TEAM_SIZE_MIN, props.locks?.floors?.
 const teamSizeMinReason = computed(() => (teamSizeMin.value > TEAM_SIZE_MIN ? t('stepper.format.teamSizeFloor', { n: teamSizeMin.value }) : t('stepper.format.teamSizeMin')))
 
 const players = computed(() => settings.value.teamCount * settings.value.teamSize)
+
+// The Players the saved teams hold from the draft's team count on: a lower count sends them to the Bench when saved (#163).
+// `locks.teamPlayers` has one entry per saved team, so the teams past the draft's count are its tail.
+const benchCount = computed(() => (props.locks?.teamPlayers ?? []).slice(settings.value.teamCount).reduce((sum, count) => sum + count, 0))
 </script>
 
 <template>
@@ -80,6 +85,12 @@ const players = computed(() => settings.value.teamCount * settings.value.teamSiz
           @update:model-value="settings = withTeams(settings, $event, settings.teamSize)"
         />
       </div>
+      <NoticeBanner
+        v-if="benchCount > 0"
+        tone="warning"
+      >
+        {{ t('stepper.format.toBench', { n: benchCount }, benchCount) }}
+      </NoticeBanner>
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex min-w-[150px] flex-1 flex-col leading-[1.3]">
           <b>{{ t('stepper.format.teamSize') }}</b>

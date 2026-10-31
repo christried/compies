@@ -5,7 +5,7 @@ import {
   LOCKED_WHEN_RUNNING,
   TEAM_COUNT_MAX,
   TEAM_COUNT_MIN,
-  canStartSession,
+  changedKeys,
   checkSettingsChange,
   settingsEditable,
   settingsLocked,
@@ -511,9 +511,24 @@ describe('checkSettingsChange', () => {
   })
 })
 
-describe('canStartSession', () => {
-  it('needs settings', () => {
-    expect(canStartSession(null)).toBe(false)
-    expect(canStartSession(defaultSettings())).toBe(true)
+describe('changedKeys (#183)', () => {
+  const before = defaultSettings()
+
+  it('names nothing when nothing changed', () => {
+    expect(changedKeys(before, { ...before })).toEqual([])
+  })
+
+  it('names the settings whose value differs', () => {
+    expect(changedKeys(before, { ...before, gameCount: before.gameCount + 1, teamSize: before.teamSize + 1 }).sort()).toEqual(['gameCount', 'teamSize'])
+  })
+
+  it('counts a points table as the same with the same preset and places', () => {
+    const same = { ...before, pointsTable: { values: [...before.pointsTable.values], preset: before.pointsTable.preset } }
+    expect(changedKeys(before, same)).toEqual([])
+    expect(changedKeys(before, { ...before, pointsTable: { preset: 'custom', values: before.pointsTable.values } })).toEqual(['pointsTable'])
+  })
+
+  it('names every setting for an Event that was not set up', () => {
+    expect(changedKeys(null, before).sort()).toEqual(Object.keys(before).sort())
   })
 })

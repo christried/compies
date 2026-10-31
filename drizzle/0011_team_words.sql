@@ -1,0 +1,3 @@
+ALTER TABLE "event_members" ADD COLUMN "team_word" text;--> statement-breakpoint
+ALTER TABLE "event_members" ADD CONSTRAINT "event_members_team_word_team_check" CHECK ("event_members"."team_word" IS NULL OR "event_members"."team" IS NOT NULL);--> statement-breakpoint
+ALTER TABLE "event_members" ADD CONSTRAINT "event_members_team_word_form_check" CHECK ("event_members"."team_word" IS NULL OR "event_members"."team_word" ~ '^\S+$');

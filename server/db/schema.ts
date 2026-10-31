@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
-import { boolean, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
 import { SUITABILITIES } from '../../shared/game'
 import { FORMATS, POOLS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
@@ -23,6 +24,8 @@ export const users = pgTable('users', {
   displayName: text('display_name'),
   canHost: boolean('can_host').default(false).notNull(),
   isAdmin: boolean('is_admin').default(false).notNull(),
+  // The newest Release the User has seen in „Was ist neu“ (#184); null for a User who has seen none.
+  newsSeen: text('news_seen_version'),
 })
 
 // Better Auth's login sessions, provider accounts and OAuth state, renamed so that a bare "session"
@@ -93,7 +96,8 @@ export const events = pgTable('events', {
 // `slotId` is the Slot the Date came from, if any: a Slot a Session refers to is no longer open.
 // `previousStartsAt` is the Date the last Reopen or removal withdrew (for the notice); `icsSequence` is this
 // Session's own calendar SEQUENCE. `removedAt` is set when the Host removed a Session that has, or had, a
-// Date (#65): the row stays only for its notice and counts nowhere else.
+// Date (#65): the row stays only for its notice and counts nowhere else. `startedAt` and `endedAt` (#164) are the
+// Host's start and end: a Session with `startedAt` and no `endedAt` is the Running Session, at most one per Event.
 export const sessions = pgTable('sessions', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -102,7 +106,24 @@ export const sessions = pgTable('sessions', {
   slotId: uuid('slot_id').references(() => pollSlots.id, { onDelete: 'set null' }),
   icsSequence: integer('ics_sequence').default(0).notNull(),
   removedAt: timestamp('removed_at', { withTimezone: true }),
-})
+  startedAt: timestamp('started_at', { withTimezone: true }),
+  endedAt: timestamp('ended_at', { withTimezone: true }),
+}, table => [
+  check('sessions_ended_after_started_check', sql`${table.endedAt} IS NULL OR ${table.startedAt} IS NOT NULL`),
+  uniqueIndex('sessions_one_running_per_event_idx').on(table.eventId).where(sql`${table.startedAt} IS NOT NULL AND ${table.endedAt} IS NULL AND ${table.removedAt} IS NULL`),
+])
+
+// The teams of an Event from its first Session start on (#164): one row per team position, written once. `frozenName`
+// is the Team name frozen at that start; null means the Team colour's name (also after the Host reset it). An Event
+// that has not started has no rows, and its Team names are composed from the Team words.
+export const eventTeams = pgTable('event_teams', {
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull(),
+  frozenName: text('frozen_name'),
+}, table => [
+  primaryKey({ columns: [table.eventId, table.position] }),
+  check('event_teams_position_check', sql`${table.position} >= 1`),
+])
 
 export const memberZone = pgEnum('member_zone', ['bench', 'stands', 'team'])
 
@@ -111,7 +132,20 @@ export const eventMembers = pgTable('event_members', {
   userId: uuid('user_id').notNull().references(() => users.id),
   joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
   zone: memberZone('zone').default('bench').notNull(),
-}, table => [primaryKey({ columns: [table.eventId, table.userId] })])
+  /** The team position (1..team count) while the zone is `team`, else null (#160). */
+  team: integer('team'),
+  /** When the Member took this team seat; the latest one wins the race for a last place (#160). Null outside a team. */
+  teamJoinedAt: timestamp('team_joined_at', { withTimezone: true }),
+  /** The Member's contribution to their team's name: one word without whitespace, at most 12 characters (checked in code, not here: Postgres counts code points). Null outside a team (#161). */
+  teamWord: text('team_word'),
+}, table => [
+  primaryKey({ columns: [table.eventId, table.userId] }),
+  index('event_members_event_id_team_idx').on(table.eventId, table.team),
+  check('event_members_team_zone_check', sql`(${table.zone} = 'team') = (${table.team} IS NOT NULL)`),
+  check('event_members_team_joined_at_check', sql`(${table.team} IS NULL) = (${table.teamJoinedAt} IS NULL)`),
+  check('event_members_team_word_team_check', sql`${table.teamWord} IS NULL OR ${table.team} IS NOT NULL`),
+  check('event_members_team_word_form_check', sql`${table.teamWord} IS NULL OR ${table.teamWord} ~ '^\\S+$'`),
+])
 
 export const pollSlots = pgTable('poll_slots', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -169,3 +203,17 @@ export const eventPoolGames = pgTable('event_pool_games', {
   // Lookups by game (#171, review S6).
   index('event_pool_games_game_id_idx').on(table.gameId),
 ])
+
+export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)
+
+// The Activity feed (#159, GLOSSARY: Activity feed): what happened in an Event, written in the same transaction as the
+// change it records (server/utils/activity.ts). `actorId` is null when the app did it. `params` holds ids, numbers and
+// instants only, never a game. The feed reads one Event's entries by time, so that is the index. Entries go with their Event.
+export const activity = pgTable('activity', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  type: activityType('type').$type<ActivityType>().notNull(),
+  actorId: uuid('actor_id').references(() => users.id),
+  params: jsonb('params').$type<ActivityParams[ActivityType]>().default({}).notNull(),
+  at: timestamp('at', { withTimezone: true }).defaultNow().notNull(),
+}, table => [index('activity_event_id_at_idx').on(table.eventId, table.at)])

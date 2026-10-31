@@ -25,3 +25,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm test:build
+      # The realtime Worker is its own install and has its own checks (#156).
+      - run: pnpm --dir realtime install --frozen-lockfile
+      - run: pnpm --dir realtime typecheck
+      - run: pnpm --dir realtime test

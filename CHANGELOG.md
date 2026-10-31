@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Die Event-Seite aktualisiert sich jetzt von selbst: Was andere tun, siehst du sofort. Bricht die Verbindung ab, zeigt dir ein Hinweis oben, wann sie wieder steht. ([#156](https://github.com/christried/compies/issues/156))
+- Unter **Aktivität** siehst du jetzt, was im Event passiert ist: wer dazugekommen ist, wann ein Termin feststand und was der Host geändert hat. ([#159](https://github.com/christried/compies/issues/159))
+- Auf der Event-Seite gibt es jetzt das **Spielbrett**: Zieh dich in ein Team, auf die Bench oder auf die Tribüne. Die Teamwahl öffnet, sobald ein Termin steht, und alle sehen sofort, wer wo sitzt. ([#160](https://github.com/christried/compies/issues/160))
+- Auf dem Spielbrett siehst du jetzt, wer gerade online ist. ([#162](https://github.com/christried/compies/issues/162))
+- Jedes Team bekommt jetzt seinen eigenen Namen: Alle im Team geben ein Wort ab, in der Reihenfolge, in der ihr beigetreten seid. ([#161](https://github.com/christried/compies/issues/161))
+- Der Host startet und beendet jetzt die Sessions. Mit dem ersten Start sind die Teams gesperrt und die Teamnamen eingefroren. Läuft schon eine Session, könnt ihr für den Termin der nächsten weiter abstimmen. ([#164](https://github.com/christried/compies/issues/164))
+- Nach einer neuen Version zeigt dir COMPIES einmal, was neu ist. Das gilt für dein Konto: Hast du es auf einem Gerät gesehen, kommt es auf den anderen nicht noch einmal. ([#184](https://github.com/christried/compies/issues/184))
+
+### Geändert
+
+- Die Event-Seite ist neu sortiert: Oben steht immer, was gerade dran ist. Die Aktivität hat ihren eigenen Platz, am Rechner rechts daneben, am Handy als eigener Tab. ([#166](https://github.com/christried/compies/issues/166))
+- In der Host-Steuerung siehst du jetzt nur die wichtigsten Aktionen. Alles Weitere, etwa Termine bearbeiten und Einstellungen, findest du unter **Mehr**. ([#155](https://github.com/christried/compies/issues/155))
+- Die Teamgröße geht in den Einstellungen nicht mehr unter das vollste Team. Wenn du Teams entfernst, gehen ihre Leute auf die Bench. ([#163](https://github.com/christried/compies/issues/163))
+- Die Datenschutzerklärung beschreibt jetzt auch das Spielbrett, den Aktivitäts-Feed, die Live-Verbindung und „Was ist neu“. ([#153](https://github.com/christried/compies/issues/153))
+
 ## [1.3.0] - 2026-10-29 – Spielvorbereitung
 
 Eine Bibliothek für eure Spiele und ein Event, das du Schritt für Schritt einrichtest: Format, Punkte, Glücksrad oder Host-Wahl, Vetos und die Spielepools.

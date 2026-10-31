@@ -8,6 +8,8 @@ import { Check } from '@lucide/vue'
 // With an `action`, the button runs it after the hold and keeps the fill while it runs: it shows done when the
 // action resolves to true and goes back to idle on false, so a refused request can be held again (#74). Without
 // one, it is done at once and the parent acts on `confirm`.
+// The hint „1 Sekunde halten“ is a line below the button, or with `hint="badge"` a small „1 s halten“ badge inside it
+// (the HostDock, #164); the badge is hidden from screen readers, which hear the full hint through aria-describedby.
 const props = withDefaults(defineProps<{
   label: string
   holdingLabel?: string
@@ -16,8 +18,12 @@ const props = withDefaults(defineProps<{
   duration?: number
   /** `secondary` is for a hold next to a primary action (#14 "Neue Terminsuche"). */
   variant?: 'hot' | 'primary' | 'secondary'
-  /** card = 48 px, the buttons of a Session card (#55, #49: same text as its siblings); lg = 52 px. */
-  size?: 'card' | 'lg'
+  /** card = 48 px, the buttons of a Session card (#55, #49: same text as its siblings); lg = 52 px; dock = 44 px, the HostDock pill's buttons; row = a 56 px row of the phone sheet (#164). */
+  size?: 'card' | 'lg' | 'dock' | 'row'
+  /** Where the hint „1 Sekunde halten“ shows: a line `below` the button, or a `badge` inside it (#164). */
+  hint?: 'below' | 'badge'
+  /** Full width, label and icon left-aligned (the badge goes to the end). */
+  block?: boolean
   disabled?: boolean
   /** Shown with aria-describedby when disabled. */
   disabledReason?: string
@@ -30,6 +36,8 @@ const props = withDefaults(defineProps<{
   duration: 1000,
   variant: 'primary',
   size: 'lg',
+  hint: 'below',
+  block: false,
   disabled: false,
   disabledReason: undefined,
   icon: undefined,
@@ -45,6 +53,7 @@ const running = ref(false)
 const done = ref(false)
 const announcement = ref('')
 const reasonId = useId()
+const hintId = useId()
 let timer: ReturnType<typeof setTimeout> | undefined
 
 function start() {
@@ -106,13 +115,16 @@ const visibleLabel = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-1.5">
+  <div
+    class="flex flex-col items-center gap-1.5"
+    :class="{ 'w-full': block }"
+  >
     <button
       type="button"
-      class="outline-memphis hit-44 relative inline-flex cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden rounded-pill border-(length:--cp-bw) border-line px-5 whitespace-nowrap shadow-btn transition-[transform,translate,box-shadow] dur-instant ease-snap select-none hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
-      :class="{ 'bg-hot text-ink': variant === 'hot', 'bg-primary text-on-primary': variant === 'primary', 'bg-surface text-ink': variant === 'secondary', 'h-12 text-body font-bold': size === 'card', 'h-control-lg font-extrabold': size === 'lg' }"
+      class="outline-memphis hit-44 relative inline-flex cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden rounded-pill border-(length:--cp-bw) border-line whitespace-nowrap shadow-btn transition-[transform,translate,box-shadow] dur-instant ease-snap select-none hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
+      :class="{ 'bg-hot text-ink': variant === 'hot', 'bg-primary text-on-primary': variant === 'primary', 'bg-surface text-ink': variant === 'secondary', 'h-12 px-5 text-body font-bold': size === 'card', 'h-control-lg px-5 font-extrabold': size === 'lg', 'h-11 px-4 text-[14px] font-bold': size === 'dock', 'min-h-14 px-5 text-body font-bold': size === 'row', 'w-full justify-start': block }"
       :aria-disabled="disabled ? 'true' : undefined"
-      :aria-describedby="disabled && disabledReason ? reasonId : undefined"
+      :aria-describedby="disabled && disabledReason ? reasonId : (!disabled && hint === 'badge' ? hintId : undefined)"
       @pointerdown="onPointerDown"
       @pointerup="cancel"
       @pointerleave="cancel"
@@ -131,7 +143,10 @@ const visibleLabel = computed(() => {
           transitionTimingFunction: holding ? 'var(--cp-ease-linear)' : 'var(--cp-ease-out)',
         }"
       />
-      <span class="relative flex items-center gap-2">
+      <span
+        class="relative flex items-center gap-2"
+        :class="{ 'w-full': block }"
+      >
         <AppIcon
           v-if="done"
           :icon="Check"
@@ -143,11 +158,22 @@ const visibleLabel = computed(() => {
           :size="18"
         />
         {{ visibleLabel }}
+        <span
+          v-if="hint === 'badge' && !disabled"
+          aria-hidden="true"
+          class="rounded-[6px] border-[1.5px] border-current px-1.5 py-px text-[11px] font-extrabold"
+          :class="block ? 'ml-auto' : ''"
+        >{{ t('common.holdBadge') }}</span>
       </span>
     </button>
     <span
-      v-if="!disabled"
+      v-if="!disabled && hint === 'below'"
       class="px-1 text-center text-[12px] text-ink-2"
+    >{{ t('common.holdFor1s') }}</span>
+    <span
+      v-if="!disabled && hint === 'badge'"
+      :id="hintId"
+      class="sr-only"
     >{{ t('common.holdFor1s') }}</span>
     <span
       v-if="disabled && disabledReason"

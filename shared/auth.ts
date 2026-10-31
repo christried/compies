@@ -22,6 +22,8 @@ export interface AuthUser {
   displayName: string | null
   canHost: boolean
   isAdmin: boolean
+  /** The newest Release the User has seen in „Was ist neu“ (#184); null before any. */
+  newsSeen: string | null
 }
 
 /** The name a User is shown with: the Display name once they set one, else the provider name (one rule for Home, the menu, Event members, hosts and game creators). */
@@ -32,6 +34,11 @@ export function shownName({ name, displayName }: { name: string, displayName?: s
 /** What `GET /api/me` returns: the signed-in User, or null when signed out. */
 export interface MeView {
   user: AuthUser | null
+}
+
+/** What `POST /api/me/news-seen` returns: the newest Release the User has seen now (#184). */
+export interface SavedNewsSeen {
+  newsSeen: string
 }
 
 /** What `POST /api/profile/setup` returns: the User with the Display name just saved. */

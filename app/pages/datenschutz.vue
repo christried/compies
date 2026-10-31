@@ -14,7 +14,7 @@ useHead({ title: () => t('legal.datenschutz.title') })
       :sections="[
         'intro', 'controller', 'overview', 'hosting', 'database', 'storage', 'signIn', 'avatar', 'youtube', 'cookies',
         'security', 'events', 'calendar', 'fonts', 'recipients', 'transfer', 'retention',
-        'obligation', 'rights', 'complaint', 'dataSecurity', 'changes',
+        'obligation', 'rights', 'complaint', 'dataSecurity', 'realtime', 'changes',
       ]"
     />
   </AppShell>

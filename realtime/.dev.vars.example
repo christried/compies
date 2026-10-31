@@ -1,0 +1,7 @@
+# Secrets of `pnpm dev:realtime` (wrangler dev). Copy to realtime/.dev.vars (gitignored) and give both the same
+# values as in the app's .env. Any random strings do, e.g. `openssl rand -base64 32`.
+ROOM_TOKEN_SECRET=
+ROOM_INTERNAL_SECRET=
+# Only while a key rotates: the old value, accepted next to the new one.
+# ROOM_TOKEN_SECRET_PREVIOUS=
+# ROOM_INTERNAL_SECRET_PREVIOUS=

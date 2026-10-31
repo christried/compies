@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseEditedSlot, parseNewEvent } from '../../server/domain/event'
-import { slotsEditable } from '../../shared/event'
+import { datePollOpen } from '../../shared/event'
 import { berlinToUtc } from '../../shared/time'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Times below are Berlin wall-clock values.
@@ -162,11 +162,24 @@ describe('parseEditedSlot', () => {
   })
 })
 
-describe('slotsEditable', () => {
-  it('lets the Host change Slots only in the poll phase', () => {
-    expect(slotsEditable('poll')).toBe(true)
-    for (const phase of ['draft', 'date_set', 'running', 'finished', 'archived'] as const) {
-      expect(slotsEditable(phase)).toBe(false)
+describe('datePollOpen', () => {
+  it('is open in the poll Phase while a Session waits for a Date', () => {
+    expect(datePollOpen('poll', 1)).toBe(true)
+  })
+
+  it('stays open in a running Event while a Session still waits for a Date (#164)', () => {
+    expect(datePollOpen('running', 1)).toBe(true)
+  })
+
+  it('is closed when no Session waits for a Date, in any Phase', () => {
+    for (const phase of ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const) {
+      expect(datePollOpen(phase, 0)).toBe(false)
+    }
+  })
+
+  it('is closed outside the poll and a running Event, also with a missing Date', () => {
+    for (const phase of ['draft', 'date_set', 'finished', 'archived'] as const) {
+      expect(datePollOpen(phase, 2)).toBe(false)
     }
   })
 })

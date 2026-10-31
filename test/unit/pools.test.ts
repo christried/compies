@@ -1,10 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { POOL_GAMES_MAX, parsePools } from '../../server/domain/pools'
+import { POOL_GAMES_MAX, parsePoolChange, parsePools } from '../../server/domain/pools'
 
 // The pools of a new Event as the create request sends them (#146).
 
 const A = '11111111-1111-4111-8111-111111111111'
 const B = '22222222-2222-4222-8222-222222222222'
+
+describe('parsePoolChange (#183)', () => {
+  it('returns only the lists that were given', () => {
+    expect(parsePoolChange(undefined)).toEqual({ ok: true, pools: {} })
+    expect(parsePoolChange({})).toEqual({ ok: true, pools: {} })
+    expect(parsePoolChange({ main: [A] })).toEqual({ ok: true, pools: { main: [A] } })
+    expect(parsePoolChange({ tiebreaker: [] })).toEqual({ ok: true, pools: { tiebreaker: [] } })
+    expect(parsePoolChange({ main: [B], tiebreaker: [A] })).toEqual({ ok: true, pools: { main: [B], tiebreaker: [A] } })
+  })
+
+  it('refuses what parsePools refuses', () => {
+    expect(parsePoolChange('nope')).toEqual({ ok: false, error: 'invalid_pools' })
+    expect(parsePoolChange({ main: [A, A] })).toEqual({ ok: false, error: 'invalid_pools' })
+    expect(parsePoolChange({ tiebreaker: ['nope'] })).toEqual({ ok: false, error: 'invalid_pools' })
+  })
+})
 
 describe('parsePools', () => {
   it('takes absent pools as two empty ones', () => {

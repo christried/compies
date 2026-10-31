@@ -3,7 +3,7 @@ import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { closeNotice, radio, sanneAndLarsi, serve, shownToasts, view, type Wrapper } from './event-page'
+import { clickButton, closeNotice, openHostMenu, radio, sanneAndLarsi, serve, shownToasts, view, type Wrapper } from './event-page'
 
 // The vote mark of the matrix cell whose screen-reader text is `text` (the cells have no title, #125).
 const matrixCell = (page: Awaited<ReturnType<typeof mountSuspended>>, text: string) => page.findAll('table td').find((cell: Wrapper) => cell.text() === text)!.get('span')
@@ -19,8 +19,9 @@ describe('the Event poll', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(page.get('h1').text()).toBe('Freitags-Zocken')
-    expect(page.text()).toContain('Terminumfrage läuft, 2 von 3 haben vollständig abgestimmt')
+    expect(page.get('header').text()).toContain('Freitags-Zocken')
+    expect(page.findAll('h1')).toHaveLength(1)
+    expect(page.get('[aria-labelledby]').text()).toContain('2 von 3 haben abgestimmt')
     const cards = page.findAll('[role="radiogroup"]').map(group => group.attributes('aria-label'))
     expect(cards).toEqual(['Fr 23.10. 20:00', 'Sa 24.10. 20:00', 'Di 20.10. 20:00'])
   })
@@ -31,7 +32,8 @@ describe('the Event poll', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(page.text()).not.toContain('Aktualisiert sich von selbst')
-    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['So wird gespielt', 'Wann zocken wir?', 'Wer kann wann?'])
+    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Terminumfrage', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(page.findAll('h3').map(heading => heading.text())).toContain('Wer kann wann?')
   })
 
   it('writes each matrix column header as the day and the time on separate lines', async () => {
@@ -259,8 +261,8 @@ describe('the Event poll', () => {
     const hostView = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const hostPage = await mountSuspended(EventPage, { route: `/e/${hostView.slug}` })
     expect(hostPage.get('[role="toolbar"]').attributes('aria-label')).toBe('Host-Steuerung')
-    expect(hostPage.get('[role="toolbar"]').text()).toContain('Termin festlegen')
     expect(hostPage.get('[role="toolbar"]').text()).toContain('Einladen')
+    expect((await openHostMenu(hostPage)).textContent).toContain('Termin festlegen')
   })
 
   it('renders no stray markup as text for the Host', async () => {
@@ -276,11 +278,9 @@ describe('the Event poll', () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    const edit = page.get('[role="toolbar"]').findAll('button').find(button => button.text() === 'Termine bearbeiten')
-    expect(edit).toBeDefined()
     expect(document.querySelector('[role="dialog"]')).toBeNull()
 
-    await edit!.trigger('click')
+    await clickButton(await openHostMenu(page), 'Termine bearbeiten')
 
     const dialog = document.querySelector('[role="dialog"]')
     expect(dialog?.textContent).toContain('Termine bearbeiten')
@@ -311,7 +311,7 @@ describe('the Event poll', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(page.text()).toContain('Samstag, 24. Oktober, 20:00 Uhr')
+    expect(page.get('time').text()).toBe('Sa 24.10., 20:00')
     expect(page.findAll('[role="radiogroup"]')).toHaveLength(0)
   })
 

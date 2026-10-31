@@ -1,11 +1,69 @@
 import { eq } from 'drizzle-orm'
+import { getRouterParam, readBody, type H3Event } from 'h3'
 import { events } from '../db/schema'
 import { eventAccessRejection } from '../domain/access'
+import type { AuthUser } from '../../shared/auth'
+import { envelope, type RoomMessage } from '../../shared/realtime'
 import { apiError, eventDeleted, eventNotFound } from './errors'
 import { isMember } from './invite'
-import type { Db } from './db'
+import { useDb, type Db } from './db'
+import { useRoomNotifier } from './room-notifier'
+import { requireUser } from './user'
 
 export type EventRow = typeof events.$inferSelect
+
+export interface ChangeEventOptions extends LoadEventOptions {
+  /** Runs once the User is known and before the body is read, e.g. a rate limit. It throws to refuse. */
+  beforeBody?: (user: AuthUser) => void
+}
+
+/** What a change of an Event gets. `body` is `unknown` until the handler's parser has checked it. */
+export interface EventChange {
+  tx: Db
+  eventRow: EventRow
+  user: AuthUser
+  body: unknown
+  /** Queues messages for after the commit. A change that throws drops them with its transaction. */
+  publish: (...messages: RoomMessage[]) => void
+}
+
+/**
+ * The one way to change an Event (#183). Order matters and the tests pin it: 401 first, then the body is read (before
+ * the lock), then one transaction in which `loadEvent` answers 404, 410 or 403 before the change runs any rule.
+ * After the transaction commits, `afterCommit` runs with the messages the change queued; a change that throws never
+ * reaches it. Joining through the Invite link loads the Event by its token instead and calls `afterCommit` itself.
+ */
+export async function changeEvent<T>(
+  event: H3Event,
+  { beforeBody, ...load }: ChangeEventOptions,
+  change: (ctx: EventChange) => Promise<T>,
+): Promise<T> {
+  const user = await requireUser(event)
+  beforeBody?.(user)
+  const body: unknown = await readBody(event)
+  const slug = getRouterParam(event, 'slug') ?? ''
+  const messages: RoomMessage[] = []
+  const { result, eventRow } = await useDb(event).transaction(async (tx) => {
+    const eventRow = await loadEvent(tx, slug, user.id, load)
+    const publish = (...queued: RoomMessage[]) => void messages.push(...queued)
+    const result = await change({ tx, eventRow, user, body, publish })
+    return { result, eventRow }
+  })
+  await afterCommit(event, eventRow, messages)
+  return result
+}
+
+/**
+ * The single step that runs after a change to an Event has committed (#183): it tells the Event's room (#156). Every
+ * committed change publishes `event.changed` (the client refetches the Event read) plus the messages the change
+ * queued, so no endpoint can forget to. The notifier never throws and a missed message is made up by the client's
+ * refetch, so this never fails the request.
+ */
+export async function afterCommit(event: H3Event, eventRow: EventRow, messages: RoomMessage[]): Promise<void> {
+  const now = Date.now()
+  const all: RoomMessage[] = messages.some(message => message.type === 'event.changed') ? messages : [{ type: 'event.changed' }, ...messages]
+  await useRoomNotifier(event).publish(eventRow.id, all.map(message => envelope(message, now)))
+}
 
 export interface LoadEventOptions {
   /** Only the Host of this Event may go on; other Members get 403 not_host. */

@@ -89,6 +89,37 @@ describe('HoldToConfirmButton', () => {
     expect(action).toHaveBeenCalledTimes(2)
   })
 
+  it('shows the hint as a line below the button by default', async () => {
+    const page = await mountSuspended(HoldToConfirmButton, { props: { label: 'Erneuern' } })
+
+    expect(page.get('button').text()).toBe('Erneuern')
+    expect(page.text()).toContain('1 Sekunde halten')
+    expect(page.find('button [aria-hidden="true"]:not(.absolute)').exists()).toBe(false)
+  })
+
+  it('shows the hint as a badge inside the button, and still tells screen readers how to use it (#164)', async () => {
+    const page = await mountSuspended(HoldToConfirmButton, { props: { label: 'Session 1 beenden', hint: 'badge', size: 'dock' } })
+
+    const button = page.get('button')
+    expect(button.text()).toBe('Session 1 beenden 1 s halten')
+    expect(button.get('[aria-hidden="true"]:not(.absolute)').text()).toBe('1 s halten')
+    const description = page.get(`#${button.attributes('aria-describedby')}`)
+    expect(description.text()).toBe('1 Sekunde halten')
+    expect(description.classes()).toContain('sr-only')
+    expect(button.element.contains(description.element)).toBe(false)
+  })
+
+  it('holds for a second in the badge variant too', async () => {
+    const action = vi.fn(() => Promise.resolve(true))
+    const page = await mountSuspended(HoldToConfirmButton, { props: { label: 'Session 1 beenden', hint: 'badge', action } })
+
+    await page.get('button').trigger('pointerdown')
+    await vi.advanceTimersByTimeAsync(900)
+    expect(action).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(action).toHaveBeenCalledOnce()
+  })
+
   it('does not respond while disabled, and says why', async () => {
     const page = await mountSuspended(HoldToConfirmButton, {
       props: { label: 'Erneuern', disabled: true, disabledReason: 'Nur der Host' },

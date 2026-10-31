@@ -8,7 +8,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 
 | Concern | Home |
 |---|---|
-| A change to an Event: user, body, transaction, locked Event load, publish after commit | the Event mutation wrapper in `server/utils/event-access.ts` (#183); Session changes through `changeSessions` in `server/utils/sessions.ts` |
+| A change to an Event: user, body, transaction, locked Event load, publish after commit | `changeEvent` in `server/utils/event-access.ts` (#183; lint refuses `.transaction(` in `server/api/e/**`); Session changes through `changeSessions` in `server/utils/sessions.ts`, which calls it |
 | A rule both sides enforce (name length, clip, player count, points table, settings) | a pure function in `shared/`, called by the form and by the server parser |
 | Request input | `unknown` until a domain parser has checked it; `asRecord`/`isRecord` from `shared/record.ts`, no casts (lint) |
 | A User's visible name | `shownName` in `shared/auth.ts` (lint) |

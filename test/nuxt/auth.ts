@@ -7,6 +7,7 @@ export const kitty: AuthUser = {
   displayName: 'Kitty',
   canHost: false,
   isAdmin: false,
+  newsSeen: null,
 }
 
 /** Seeds what the auth middleware would load from `GET /api/me`; null signs out. */

@@ -102,10 +102,11 @@ export function buildIcs(entries: IcsEntry[], now: Date): string {
   return `${lines.flatMap(fold).join('\r\n')}\r\n`
 }
 
-/** A Session as the calendar sees it: its id, its Date (null while undated) and its icsSequence. */
+/** A Session as the calendar sees it: its id, its Date (null while undated), when it started (its number depends on it, #164) and its icsSequence. */
 export interface CalendarSession {
   id: string
   startsAt: Date | null
+  startedAt: Date | null
   icsSequence: number
 }
 
@@ -118,7 +119,7 @@ export interface CalendarCopy {
 }
 
 /**
- * One entry per Session with a Date, in Date order (#53). The title names the number the Session is shown with
+ * One entry per Session with a Date, in the order the Sessions are numbered (#53, #164). The title names the number the Session is shown with
  * (numberedSessions: only an Event with several Sessions numbers them). Undated Sessions get no entry, so an
  * Event with no Date has none.
  */

@@ -57,6 +57,41 @@
       "when": 1793219084899,
       "tag": "0007_game_suitability",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793264295857,
+      "tag": "0008_news_seen",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793268170846,
+      "tag": "0009_activity",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793278800625,
+      "tag": "0010_team_seats",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793295949168,
+      "tag": "0011_team_words",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793299386507,
+      "tag": "0012_session_start",
+      "breakpoints": true
     }
   ]
 }

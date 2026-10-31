@@ -24,3 +24,7 @@ coverage
 # Claude Code per-machine settings
 .claude/settings.local.json
 .claude/worktrees/
+
+# Local secrets of the realtime Worker, and wrangler state
+.dev.vars
+.wrangler

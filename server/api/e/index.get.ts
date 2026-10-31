@@ -40,7 +40,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   const eventIds = rows.map(row => row.id)
 
   const sessionRows = await db
-    .select({ id: sessions.id, eventId: sessions.eventId, startsAt: sessions.startsAt, slotId: sessions.slotId })
+    .select({ id: sessions.id, eventId: sessions.eventId, startsAt: sessions.startsAt, startedAt: sessions.startedAt, slotId: sessions.slotId })
     .from(sessions)
     .where(and(inArray(sessions.eventId, eventIds), sessionNotRemoved))
 
@@ -81,7 +81,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       now,
     })
     const isHost = row.hostId === user.id
-    const viewerNeedsVote = needsVote(row.phase, standing.votableSlotIds, poll.votes, user.id)
+    const viewerNeedsVote = needsVote(row.phase, missingDates(sessionStarts), standing.votableSlotIds, poll.votes, user.id)
     const card: HomeEvent = {
       slug: row.slug,
       name: row.name,

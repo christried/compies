@@ -7,7 +7,7 @@ import type { AuthUser } from '~~/shared/auth'
 export const HUB_SITES = ['archiv', 'profil', 'admin'] as const
 
 export type HubSite = typeof HUB_SITES[number]
-export type ConstructionArea = HubSite | 'brett' | 'generic'
+export type ConstructionArea = HubSite | 'generic'
 export type ShellKind = 'hub' | 'event'
 
 export interface ConstructionSite {
@@ -28,11 +28,9 @@ export function canSeeAdmin(viewer: Viewer) {
  * may not see gets the generic state, so its address does not reveal the area.
  */
 export function constructionSite(path: string, viewer: Viewer): ConstructionSite {
-  const [first, slug, sub] = path.split('/').filter(Boolean)
+  const [first, slug] = path.split('/').filter(Boolean)
 
-  if (first === 'e' && slug) {
-    return { area: sub === 'brett' ? 'brett' : 'generic', shell: 'event' }
-  }
+  if (first === 'e' && slug) return { area: 'generic', shell: 'event' }
   const hubSite = HUB_SITES.find(site => site === first)
   if (hubSite === 'admin' && !canSeeAdmin(viewer)) return { area: 'generic', shell: 'hub' }
   return { area: hubSite ?? 'generic', shell: 'hub' }

@@ -2,7 +2,7 @@
 import { Volume2, VolumeX } from '@lucide/vue'
 
 // Logo (Compibert head), then the hub nav or the event title area, then sound toggle and
-// the avatar menu when signed in. The Einladen button lands with the invite sheet.
+// the avatar menu when signed in. The `actions` slot is the page's own buttons (the Event page's Einladen, #166).
 // Full-width pages (sign-in, setup) stretch the header edge to edge, so the logo sits at the left edge.
 defineProps<{ kind: 'hub' | 'event' | 'bare', flush?: boolean }>()
 
@@ -52,6 +52,8 @@ const user = useAuthUser()
         v-else
         class="flex-1"
       />
+
+      <slot name="actions" />
 
       <IconButton
         :icon="sound.enabled.value ? Volume2 : VolumeX"

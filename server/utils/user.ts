@@ -17,6 +17,7 @@ export const userColumns = {
   displayName: users.displayName,
   canHost: users.canHost,
   isAdmin: users.isAdmin,
+  newsSeen: users.newsSeen,
 } satisfies Record<keyof AuthUser, AnyPgColumn>
 
 /**

@@ -5,10 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, Fragment, h } from 'vue'
 import EditorPage from '~/pages/e/[slug]/einstellungen.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
+import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { serve, shownToasts, view } from './event-page'
+import { LARSI, SANNE, serve, shownToasts, view } from './event-page'
 
 // The settings editor (#147): the stepper's steps 2 to 7 on an Event that exists, prefilled, with the settings
 // that stay fixed once the Event runs shown locked with their reason.
@@ -44,6 +45,9 @@ interface Setup {
   isHost?: boolean
   floors?: SettingsFloors | null
   pools?: { main: PoolGame[], tiebreaker: PoolGame[] }
+  /** The Members with their seats, and the teams of the board (the Event read's `members` and `teams`, #160). */
+  members?: MemberView[]
+  teams?: BoardTeam[]
   /** The refusal the PATCH answers with, or null to accept. */
   refuse?: { statusCode: number, statusMessage: string } | null
 }
@@ -56,6 +60,8 @@ function setUp(setup: Setup = {}) {
     settings: setup.settings === undefined ? defaultSettings() : setup.settings,
     settingsFloors: setup.floors,
     pools: { hidden: false, ...(setup.pools ?? { main: [], tiebreaker: [] }) },
+    members: setup.members,
+    teams: setup.teams,
   }))
   registerEndpoint(`/api/e/${slug}/settings`, {
     method: 'PATCH',
@@ -207,7 +213,7 @@ describe('the settings editor', () => {
   it('shows the saved settings on the Event page at once, without waiting for the poll', async () => {
     const { slug, set } = setUp({ settings: wheel, pools: { main: [kart], tiebreaker: [] } })
     const page = await mountEditorAndEventPage(slug)
-    const eventSettings = () => page.get('section[aria-labelledby="how-we-play-title"]')
+    const eventSettings = () => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'So wird gespielt'))!
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
     set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { hidden: false, main: [kart], tiebreaker: [] } }))
@@ -287,6 +293,65 @@ describe('the settings editor', () => {
       const { slug } = setUp({ settings: { ...wheel, teamSize: 1 }, floors: { teamSize: 1, vetoAllowance: 0 } })
       const page = await mountEditor(slug)
       expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
+    })
+  })
+
+  describe('the teams (#163)', () => {
+    const FOUR = '00000000-0000-4000-8000-000000000004'
+    const FIVE = '00000000-0000-4000-8000-000000000005'
+    const four = { ...defaultSettings(), teamCount: 4, teamSize: 3, pointsTable: { preset: 'linear' as const, values: [3, 2, 1, 0] } }
+    const teamsOf4 = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }, { position: 3, name: null, frozen: false }, { position: 4, name: null, frozen: false }]
+    const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => ({ id, name: id.slice(-4), image: null, isHost: false, zone, team, teamWord: null })
+
+    it('shows the Team size floor the Event read gives, the fullest team, and says why', async () => {
+      const { slug } = setUp({
+        settings: four,
+        floors: { teamSize: 2, vetoAllowance: 0 },
+        teams: teamsOf4,
+        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 3), seated(SANNE, 'team', 3), seated(FOUR, 'bench')],
+      })
+      const page = await mountEditor(slug)
+
+      const less = button(page, 'Spieler pro Team: weniger')
+      expect(less.attributes('aria-disabled')).toBeUndefined()
+      await less.trigger('click')
+
+      expect(spin(page, 'Spieler pro Team').text()).toBe('2')
+      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 2.')
+      expect(button(page, 'Spieler pro Team: weniger').attributes('aria-disabled')).toBe('true')
+    })
+
+    it('tells the Host how many Players go to the Bench when the team count drops, singular and plural', async () => {
+      const { slug } = setUp({
+        settings: four,
+        teams: teamsOf4,
+        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 3), seated(SANNE, 'team', 3), seated(FOUR, 'team', 4), seated(FIVE, 'bench')],
+      })
+      const page = await mountEditor(slug)
+      expect(page.text()).not.toContain('Beim Speichern')
+
+      await button(page, 'Anzahl Teams: weniger').trigger('click')
+      expect(spin(page, 'Anzahl Teams').text()).toBe('3')
+      expect(page.text()).toContain('Beim Speichern geht 1 Person aus den entfernten Teams auf die Bench.')
+
+      await button(page, 'Anzahl Teams: weniger').trigger('click')
+      expect(spin(page, 'Anzahl Teams').text()).toBe('2')
+      expect(page.text()).toContain('Beim Speichern gehen 3 Leute aus den entfernten Teams auf die Bench.')
+    })
+
+    it('shows no Bench hint when the teams that go are empty', async () => {
+      const { slug } = setUp({
+        settings: four,
+        teams: teamsOf4,
+        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 2), seated(SANNE, 'bench')],
+      })
+      const page = await mountEditor(slug)
+
+      await button(page, 'Anzahl Teams: weniger').trigger('click')
+      await button(page, 'Anzahl Teams: weniger').trigger('click')
+
+      expect(spin(page, 'Anzahl Teams').text()).toBe('2')
+      expect(page.text()).not.toContain('Beim Speichern')
     })
   })
 

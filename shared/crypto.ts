@@ -1,4 +1,4 @@
-// Web Crypto helpers shared by the signers (R2 requests today; the room token and internal call secret in 1.4).
+// Web Crypto helpers shared by the signers: R2 requests (server/utils/r2-store.ts) and the room token and internal call (shared/room-auth.ts). No Node APIs, so they run in Nitro, workerd and the browser.
 
 const encoder = new TextEncoder()
 

@@ -1,5 +1,5 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import IndexPage from '~/pages/index.vue'
 import SignInPage from '~/pages/anmelden.vue'
 import ImpressumPage from '~/pages/impressum.vue'
@@ -11,21 +11,13 @@ import { kitty, signInAs } from './auth'
 registerEndpoint('/api/e', { method: 'GET', handler: () => ({ events: [] }) })
 
 const VERSION = RELEASES[0]!.version
-const SEEN_KEY = 'compies.news.seen'
-
 describe('page footer', () => {
-  beforeEach(() => {
-    localStorage.removeItem(SEEN_KEY)
-  })
-
   afterEach(() => {
-    localStorage.removeItem(SEEN_KEY)
     vi.restoreAllMocks()
   })
 
   it('shows the three links and the newest version on a hub page, signed in, hidden below md', async () => {
-    signInAs(kitty)
-    localStorage.setItem(SEEN_KEY, VERSION)
+    signInAs({ ...kitty, newsSeen: VERSION })
     const page = await mountSuspended(IndexPage, { route: '/' })
     const footer = page.get('footer')
 
@@ -55,8 +47,7 @@ describe('page footer', () => {
   })
 
   it('shows no chip once the newest Release is seen', async () => {
-    signInAs(kitty)
-    localStorage.setItem(SEEN_KEY, VERSION)
+    signInAs({ ...kitty, newsSeen: VERSION })
     const page = await mountSuspended(IndexPage, { route: '/' })
     const link = page.get('footer a[href="/neuigkeiten"]')
 
@@ -85,11 +76,11 @@ describe('page footer', () => {
     signInAs(null)
     const detach = useHostDock().attach()
     const docked = await mountSuspended(SignInPage, { route: '/anmelden' })
-    expect(docked.get('footer').find('span.h-24').exists()).toBe(true)
+    expect(docked.get('footer').find('span.h-32').exists()).toBe(true)
     detach()
 
     const plain = await mountSuspended(SignInPage, { route: '/anmelden' })
-    expect(plain.get('footer').find('span.h-24').exists()).toBe(false)
+    expect(plain.get('footer').find('span.h-32').exists()).toBe(false)
   })
 
   it('scrolls to the top when the version link is clicked on Neuigkeiten', async () => {

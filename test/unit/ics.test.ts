@@ -111,10 +111,10 @@ describe('buildIcs', () => {
 
 describe('sessionEntries', () => {
   const at = (local: string) => berlinToUtc(local)
-  const input = (sessions: { id: string, startsAt: Date | null, icsSequence?: number }[]) => ({
+  const input = (sessions: { id: string, startsAt: Date | null, startedAt?: Date | null, icsSequence?: number }[]) => ({
     eventName: 'Freitags-Zocken',
     url: 'https://compies.example/e/freitags-zocken-k7q2',
-    sessions: sessions.map(session => ({ icsSequence: 0, ...session })),
+    sessions: sessions.map(session => ({ icsSequence: 0, startedAt: null, ...session })),
     copy,
   })
 
