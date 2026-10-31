@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- #202: the publish must outlive the response on Vercel; ADR 0005 needs a decision to allow it
 import { waitUntil } from '@vercel/functions'
 import type { H3Event } from 'h3'
 import { roomPath, type Envelope, type RoomPublishBody } from '../../shared/realtime'

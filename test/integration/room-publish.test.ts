@@ -197,7 +197,7 @@ describe('publishing to the room', () => {
       const answer = await Promise.race([
         slowRequest(`/api/e/${slug}/slots/${slotIds[0]}/vote`, {
           method: 'PUT',
-          headers: { 'content-type': 'application/json', cookie: memberCookie },
+          headers: { 'content-type': 'application/json', 'cookie': memberCookie },
           body: JSON.stringify({ value: 'yes' }),
         }),
         stalled,
