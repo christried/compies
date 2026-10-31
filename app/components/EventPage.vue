@@ -378,7 +378,7 @@ const hostActions = computed((): DockAction[] => {
       </p>
       <p
         v-if="firstStart"
-        class="mt-3 mb-0 flex items-center gap-2 font-bold text-ink"
+        class="mt-3 mb-0 flex items-center gap-2 text-[14px] text-ink"
       >
         <AppIcon
           :icon="Lock"
