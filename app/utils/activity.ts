@@ -10,15 +10,6 @@ import type { Translate } from './settings-summary'
 // The Activity feed's pure parts (#159, GLOSSARY: Activity feed): what an entry says, which group it sits in, and
 // whether a message from the room is an entry at all.
 
-/**
- * The sentence for an entry, in the voice of the existing feed copy (`activity.*` in de.json), or null for a type
- * that has no sentence yet (the feed leaves such an entry out; every type has one since #164). A Session without a
- * number is the Event's only one, so its sentences say „der Termin“ or „die Session“.
- */
-export function activityText(entry: ActivityEntry, t: Translate): string | null {
-  return sentence(entry, t)
-}
-
 // The names, teams and Dates of a sentence are set in bold (DS Communication § ActivityFeed). The sentence is built once, with
 // markers around those values, so no sentence is written twice.
 const OPEN = '\u0001'
