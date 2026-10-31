@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatMonthYear, formatSlotDay, formatSlotTime, formatSlotWhen } from '../../app/utils/berlin-time'
+import { formatMonthYear, formatSlotDay, formatSlotTime, formatSessionWhen, formatSlotWhen } from '../../app/utils/berlin-time'
 
 describe('berlin-time', () => {
   it('formats a day as weekday and day.month in Berlin time', () => {
@@ -20,5 +20,9 @@ describe('berlin-time', () => {
 
   it('formats a Slot as day and time, as cards and lists show it', () => {
     expect(formatSlotWhen(new Date('2026-10-24T18:30:00Z'))).toBe('Sa 24.10. 20:30')
+  })
+
+  it('formats the Date of a Session with a comma between day and time, as the Head and the Sessions card show it', () => {
+    expect(formatSessionWhen(new Date('2026-10-24T18:30:00Z'))).toBe('Sa 24.10., 20:30')
   })
 })

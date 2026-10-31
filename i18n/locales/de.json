@@ -102,6 +102,42 @@
       "event": "Event"
     }
   },
+  "event": {
+    "head": {
+      "poll": {
+        "kicker": "Session {n} von {total} · Terminumfrage läuft",
+        "kickerSingle": "Terminumfrage läuft",
+        "title": "Wann zocken wir?"
+      },
+      "teams": {
+        "kicker": "Session {n}: {date} · Teamwahl offen",
+        "kickerSingle": "{date} · Teamwahl offen",
+        "title": "Rein in die Teams"
+      },
+      "jumpPoll": "Session {n}: Terminumfrage läuft",
+      "running": {
+        "kicker": "Session {n} von {total} läuft seit {time}",
+        "kickerSingle": "Läuft seit {time}",
+        "title": "Session {n} läuft",
+        "titleSingle": "Die Session läuft"
+      },
+      "between": {
+        "kicker": "Session {n} beendet · Session {m}: {date}",
+        "kickerPoll": "Session {n} beendet · Session {m}: Terminumfrage läuft",
+        "title": "Halbzeit"
+      },
+      "done": {
+        "kicker": "Session {n} von {total} beendet",
+        "kickerSingle": "Session beendet",
+        "title": "Gut gespielt"
+      },
+      "setup": {
+        "kicker": "Noch nicht eingerichtet",
+        "titleHost": "Erst einrichten, dann zocken",
+        "title": "Gleich geht’s los"
+      }
+    }
+  },
   "board": {
     "title": "Spielbrett",
     "bench": "Bench",

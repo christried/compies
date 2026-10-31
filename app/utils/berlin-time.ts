@@ -50,3 +50,8 @@ export function formatSlotWhen(instant: Date): string {
 export function formatActivityTime(instant: Date, now: Date): string {
   return formatSlotDay(instant) === formatSlotDay(now) ? formatSlotTime(instant) : formatSlotWhen(instant)
 }
+
+/** A Session's Date as the Event page's Head and rows show it: `Sa 25.10., 20:30` (Berlin). */
+export function formatSessionWhen(instant: Date): string {
+  return `${formatSlotDay(instant)}, ${formatSlotTime(instant)}`
+}
