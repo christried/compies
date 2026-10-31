@@ -85,7 +85,7 @@ describe('the Host dock per state', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(pill(page)).toEqual(['Session 1 beenden', 'Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
     expect(page.get('[role="toolbar"]').text()).toContain('1 Sekunde halten')
   })
 
