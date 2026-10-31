@@ -114,11 +114,11 @@ describe('Team names on the Game board', () => {
     expect(page.get('[data-user-id]').attributes('aria-label')).toContain('Wilde Gurken')
   })
 
-  it('shows a Player\'s word as a small chip under their avatar', async () => {
+  it('shows the Team word in the Team name and not under the avatar (#209)', async () => {
     const members = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1))]
     const { page } = await mountBoard({ members, teams: teamsNamed('Wilde') })
-    expect(page.get(`[data-user-id="${kitty.id}"]`).text()).toContain('Wilde')
-    expect(page.get(`[data-user-id="${LARSI}"]`).text()).not.toContain('Wilde')
+    expect(zone(page, 'Wilde').text()).toContain('Wilde')
+    expect(page.get(`[data-user-id="${kitty.id}"]`).text()).not.toContain('Wilde')
   })
 
   it('gives a Player in a team an empty field labelled „Dein Wort“ with the counter', async () => {
