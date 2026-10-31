@@ -7,7 +7,7 @@ import { envelope, type RoomMessage } from '../../shared/realtime'
 import { apiError, eventDeleted, eventNotFound } from './errors'
 import { isMember } from './invite'
 import { useDb, type Db } from './db'
-import { useRoomNotifier } from './room-notifier'
+import { publishAfterResponse } from './room-notifier'
 import { requireUser } from './user'
 
 export type EventRow = typeof events.$inferSelect
@@ -32,6 +32,7 @@ export interface EventChange {
  * the lock), then one transaction in which `loadEvent` answers 404, 410 or 403 before the change runs any rule.
  * After the transaction commits, `afterCommit` runs with the messages the change queued; a change that throws never
  * reaches it. Joining through the Invite link loads the Event by its token instead and calls `afterCommit` itself.
+ * The publish runs after the response (#202), so the change answers without waiting for the Worker.
  */
 export async function changeEvent<T>(
   event: H3Event,
@@ -49,20 +50,20 @@ export async function changeEvent<T>(
     const result = await change({ tx, eventRow, user, body, publish })
     return { result, eventRow }
   })
-  await afterCommit(event, eventRow, messages)
+  afterCommit(event, eventRow, messages)
   return result
 }
 
 /**
  * The single step that runs after a change to an Event has committed (#183): it tells the Event's room (#156). Every
  * committed change publishes `event.changed` (the client refetches the Event read) plus the messages the change
- * queued, so no endpoint can forget to. The notifier never throws and a missed message is made up by the client's
- * refetch, so this never fails the request.
+ * queued, so no endpoint can forget to. The publish runs after the response (#202): the notifier never throws and a
+ * missed message is made up by the client's refetch, so this never fails the request.
  */
-export async function afterCommit(event: H3Event, eventRow: EventRow, messages: RoomMessage[]): Promise<void> {
+export function afterCommit(event: H3Event, eventRow: EventRow, messages: RoomMessage[]): void {
   const now = Date.now()
   const all: RoomMessage[] = messages.some(message => message.type === 'event.changed') ? messages : [{ type: 'event.changed' }, ...messages]
-  await useRoomNotifier(event).publish(eventRow.id, all.map(message => envelope(message, now)))
+  publishAfterResponse(event, eventRow.id, all.map(message => envelope(message, now)))
 }
 
 export interface LoadEventOptions {
