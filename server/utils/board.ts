@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { eventMembers, eventTeams } from '../db/schema'
-import { composedTeamName, countSeats, hasStarted, nextSession, placeOf, startRejection, teamChoiceOpen, type Place, type StartRejection, type StartSession, teamWords } from '../../shared/board'
+import { countSeats, hasStarted, nextSession, placeOf, startRejection, teamChoiceOpen, teamNameOf, type Place, type StartRejection, type StartSession } from '../../shared/board'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
 import type { Db } from './db'
@@ -97,15 +97,9 @@ export function startOf(eventRow: EventRow, sessions: readonly SessionRow[], pla
  */
 export async function freezeTeamNames(tx: Db, eventId: string, teamCount: number): Promise<void> {
   const members = await tx
-    .select({ team: eventMembers.team, word: eventMembers.teamWord, joinedAt: eventMembers.teamJoinedAt })
+    .select({ team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
     .from(eventMembers)
     .where(eq(eventMembers.eventId, eventId))
-  const rows = Array.from({ length: teamCount }, (_, index) => {
-    const position = index + 1
-    const seats = members
-      .filter(member => member.team === position)
-      .map(member => ({ word: member.word, joinedAt: member.joinedAt?.getTime() ?? 0 }))
-    return { eventId, position, frozenName: composedTeamName({ words: teamWords(seats) }) }
-  })
+  const rows = Array.from({ length: teamCount }, (_, index) => ({ eventId, position: index + 1, frozenName: teamNameOf(members, index + 1) }))
   await tx.insert(eventTeams).values(rows)
 }

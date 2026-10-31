@@ -96,6 +96,20 @@ export function composedTeamName({ frozen, words }: { frozen?: string | null, wo
   return words.length === 0 ? null : words.join(' ')
 }
 
+/** A Member as the Team name needs them: their team position, Team word and the moment they took the seat (database columns). */
+export interface TeamMember { team: number | null, teamWord: string | null, teamJoinedAt: Date | null }
+
+/**
+ * The Team name of one team from the Event's Members (composedTeamName of its words, teamWords): the Event read shows it
+ * and the first start freezes it (#161, #164). `frozen` is the frozen name, or undefined while the team is not frozen.
+ */
+export function teamNameOf(members: readonly TeamMember[], position: number, frozen?: string | null): string | null {
+  const seats = members
+    .filter(member => member.team === position)
+    .map(member => ({ word: member.teamWord, joinedAt: member.teamJoinedAt?.getTime() ?? 0 }))
+  return composedTeamName({ frozen, words: teamWords(seats) })
+}
+
 /** The place a request names, or null when it is none: a zone, and for `team` a whole position (its range is moveRejection's). */
 export function parsePlace(value: unknown): Place | null {
   if (!isRecord(value)) return null
