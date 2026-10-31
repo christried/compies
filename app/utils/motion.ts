@@ -8,7 +8,7 @@ function motionToken(name: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
 }
 
-/** The landing of a dropped avatar: its picture pops from small to a little too big to its size (04-motion § Avatar). */
+/** The landing of an avatar that took a new place, by an own drop, the menu or somebody else's move (04-motion § Avatar: `scale .6→1.12→1`). */
 export function pop(element: Element): void {
   const picture = element.firstElementChild
   if (!picture || reducedMotion() || typeof picture.animate !== 'function') return
@@ -18,10 +18,10 @@ export function pop(element: Element): void {
   )
 }
 
-/** How an element travels: `glide` for a place somebody took, the own move included (04-motion § Avatar: 0.36 s `EASE.pop`, #208), `bounce` for the way back after a refusal (04-motion § Avatar). */
+/** How an element travels: `glide` to a new place, `bounce` back after a refusal. */
 export type GlideKind = 'glide' | 'bounce'
 
-/** Where an element sits and where it sat. A move from `from` to `to` is a Flip: the element is at `to`, drawn from `from` first, with 04-motion's `EASE.pop` for a glide (#208). */
+/** Where an element sits and where it sat. A move from `from` to `to` is a Flip: the element is at `to`, drawn from `from` first, a glide with 0.36 s `EASE.pop` (04-motion § Avatar, #208). */
 export function glide(element: Element, from: Pick<DOMRect, 'left' | 'top'>, to: Pick<DOMRect, 'left' | 'top'>, kind: GlideKind = 'glide'): void {
   if (reducedMotion() || typeof element.animate !== 'function') return
   const dx = from.left - to.left

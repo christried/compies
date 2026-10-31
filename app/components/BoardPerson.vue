@@ -5,8 +5,8 @@ import { Crown } from '@lucide/vue'
 // the GameBoard makes draggable through its pointer handlers (#160, 02-components § GameBoard). Everyone's person is
 // a button, because the menu explains to a Player why they cannot move somebody else. `lifted` is the person in the hand.
 // The avatar is 44 px on a desktop and 36 px on a phone (11-event-seite § GameBoard); in a team it carries the team's ring and mark.
-// The Team word shows only in the Team name, not under the avatar (#209). Nothing inside a person starts the browser's own
-// drag (#207): a press on the picture is the Game board's drag, as one on the name is.
+// The Team word shows only in the Team name, not under the avatar (#209). Its button cancels the browser's own drag (#207);
+// UserAvatar's picture takes no pointer events.
 const props = defineProps<{
   userId: string
   name: string

@@ -7,7 +7,7 @@
 // meaning, and the team and presence are named in text beside it too. The initial is sized by its container (cqw), so a caller can
 // resize the avatar with CSS (the board does, 44 px on a desktop and 36 px on a phone). The picture is never dragged as an image,
 // so a press on it stays the Game board's drag (#207). The picture takes no pointer events either, so a press always lands on
-// the person's button, and iOS Safari's own image preview stays off.
+// the person's button on the Game board, which also cancels any other native drag, and iOS Safari's own image preview stays off.
 const props = withDefaults(defineProps<{
   name: string
   image?: string | null
