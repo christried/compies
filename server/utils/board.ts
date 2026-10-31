@@ -2,8 +2,9 @@ import { and, desc, eq, sql } from 'drizzle-orm'
 import { eventMembers, eventTeams } from '../db/schema'
 import { composedTeamName, countSeats, nextSession, placeOf, startRejection, teamChoiceOpen, type Place, type StartRejection, type StartSession, teamWords } from '../../shared/board'
 import { settingsFromRow } from '../../shared/settings'
+import { recordActivity } from './activity'
 import type { Db } from './db'
-import type { EventRow } from './event-access'
+import type { EventChange, EventRow } from './event-access'
 import type { SessionRow } from './sessions'
 
 // The seats of the Game board (#160, GLOSSARY: Game board). One home: every write of a Member's zone, team and
@@ -35,6 +36,17 @@ export async function seatMember(tx: Db, eventId: string, userId: string, to: Pl
     .update(eventMembers)
     .set({ zone: to.zone, team, teamJoinedAt: team === null ? null : sql`clock_timestamp()`, teamWord: null })
     .where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)))
+}
+
+/**
+ * One Member's seat change as the Game board makes it (#160, #163): the seat, its feed entry, and `member.moved` after the
+ * commit. The move endpoint and the lowering of the team count (the removed teams' Players go to the Bench, in the Host's
+ * name) both end here, so a move reads the same wherever it came from. The rules that allow it are the caller's.
+ */
+export async function moveMember(tx: Db, publish: EventChange['publish'], eventId: string, actorId: string, userId: string, from: Place, to: Place): Promise<void> {
+  await seatMember(tx, eventId, userId, to)
+  await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId, params: { userId, from, to } })
+  publish({ type: 'member.moved', userId, from, to, by: actorId })
 }
 
 /** The Player who took a seat in the team most recently, or null for an empty team: the winner of a lost race. */
