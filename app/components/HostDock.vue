@@ -248,7 +248,7 @@ onBeforeUnmount(() => {
           :key="action.key"
           type="button"
           role="menuitem"
-          class="outline-memphis hit-44 flex min-h-11 items-center gap-2.5 rounded-[10px] border-0 bg-transparent px-2 text-left text-[14px] font-bold text-ink hover:tint aria-disabled:text-ink-3 aria-disabled:hover:bg-none"
+          class="hit-44 flex min-h-11 items-center gap-2.5 rounded-[10px] border-0 bg-transparent px-2 text-left text-[14px] font-bold text-ink hover:tint aria-disabled:text-ink-3 aria-disabled:hover:bg-none"
           :aria-disabled="action.disabledReason ? 'true' : undefined"
           @click="runFromMenu(action)"
         >

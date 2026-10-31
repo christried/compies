@@ -164,6 +164,8 @@ describe('HostDock', () => {
     for (const item of page.findAll('[role="menuitem"]')) {
       expect(item.classes()).not.toContain('bg-primary')
       expect(item.classes()).toContain('border-0')
+      // outline-memphis sets a border later in the utilities layer and would bring the box back.
+      expect(item.classes()).not.toContain('outline-memphis')
     }
     page.unmount()
   })
