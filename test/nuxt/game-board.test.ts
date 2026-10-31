@@ -237,11 +237,14 @@ describe('GameBoard', () => {
       expect(posted).toEqual([{ userId: kitty.id, to: team(2) }])
     })
 
-    it('marks every team name as frozen with a lock that says so', async () => {
+    it('marks every team as frozen with a lock in its count pill, not beside the name', async () => {
       const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
 
       const locks = page.findAll('[aria-label="Eingefroren seit Spielstart."]')
       expect(locks).toHaveLength(2)
+      expect(locks.map(lock => lock.element.parentElement!.textContent!.trim())).toEqual(['1/2', '0/2'])
+      expect(locks.map(lock => lock.attributes('title'))).toEqual(['Eingefroren seit Spielstart.', 'Eingefroren seit Spielstart.'])
+      for (const heading of page.findAll('h3')) expect(heading.find('[role="img"]').exists()).toBe(false)
     })
 
     it('shows no lock on a team name before the start', async () => {
