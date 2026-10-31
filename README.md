@@ -24,7 +24,7 @@ Requirements: Node 24 (`.nvmrc`) and pnpm (the version is pinned in `package.jso
    | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Cloudflare account id and R2 API token (object read and write) for game images |
    | `R2_BUCKET` | Bucket of this environment: `compies-staging` or `compies-production` |
    | `R2_JURISDICTION` | Optional: `eu` when the buckets use the EU jurisdiction, else empty |
-   | `REALTIME_URL` | The realtime Worker the Event page connects to: `http://localhost:8787` locally, the `*.workers.dev` URL of the staging or production Worker in Vercel (read at build time; Nuxt also reads `NUXT_PUBLIC_REALTIME_URL` at runtime). Empty: no live connection, the page polls every 15 s |
+   | `REALTIME_URL` | The realtime Worker the Event page connects to: `http://localhost:8787` locally, the `*.workers.dev` URL of the staging or production Worker in Vercel (read at build time). Empty: no live connection, the page polls every 15 s |
    | `ROOM_TOKEN_SECRET` | Random string that signs the 60-second room token; the Worker holds the same value |
    | `ROOM_INTERNAL_SECRET` | Random string that signs the calls from the app to the Worker, and the deploy workflow's game-day check; the Worker holds the same value |
    | `ROOM_TOKEN_SECRET_PREVIOUS`, `ROOM_INTERNAL_SECRET_PREVIOUS` | Optional, only while a key rotates: the old value, accepted next to the new one (the app's deploy check and the Worker both read them) |
