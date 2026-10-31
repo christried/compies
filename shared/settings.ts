@@ -261,6 +261,15 @@ export interface SettingsFloors {
   vetoAllowance: number
 }
 
+/**
+ * The lowest Team size `teamCount` teams allow (#163, #197): the fullest of the teams that remain, never below
+ * TEAM_SIZE_MIN. `playersPerTeam[i]` holds the Players seated in team i + 1. A lowered team count sends the Players of
+ * the teams past it to the Bench, so those teams don't count. The settings editor and the server both ask here.
+ */
+export function teamSizeFloor(playersPerTeam: readonly number[], teamCount: number): number {
+  return Math.max(TEAM_SIZE_MIN, ...playersPerTeam.slice(0, teamCount))
+}
+
 export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'wrong_phase'
 
 /**
@@ -280,12 +289,13 @@ export function mergeSettings(current: EventSettings, change: Record<string, unk
  * Checks a change of an Event's settings. `current` null = not set up: the change must then be a full payload (parseSettings).
  * Otherwise the change is merged over `current` (only keys present in `change`), then: wrong_phase when the Phase is not
  * settingsEditable; in a settingsLocked Phase any LOCKED_WHEN_RUNNING key whose value differs → setting_locked; then
- * parseSettings on the merged settings; then the floors.
+ * parseSettings on the merged settings; then the floors. The floors come as a function of the team count, called with the
+ * parsed one: a change that lowers the team count is measured against the teams that remain (#197).
  */
 export function checkSettingsChange(
   current: EventSettings | null,
   change: unknown,
-  context: { phase: Phase, floors: SettingsFloors },
+  context: { phase: Phase, floors: (teamCount: number) => SettingsFloors },
 ): { ok: true, settings: EventSettings } | { ok: false, error: SettingsChangeError } {
   if (!settingsEditable(context.phase)) return { ok: false, error: 'wrong_phase' }
   if (!isRecord(change)) return { ok: false, error: 'invalid_settings' }
@@ -301,8 +311,9 @@ export function checkSettingsChange(
   const parsed = parseSettings(merged)
   if (!parsed.ok) return parsed
   const { settings } = parsed
-  if (settings.teamSize < context.floors.teamSize) return { ok: false, error: 'team_size_below_fullest' }
-  if (settings.vetoAllowance !== null && settings.vetoAllowance < context.floors.vetoAllowance) return { ok: false, error: 'veto_allowance_below_spent' }
+  const floors = context.floors(settings.teamCount)
+  if (settings.teamSize < floors.teamSize) return { ok: false, error: 'team_size_below_fullest' }
+  if (settings.vetoAllowance !== null && settings.vetoAllowance < floors.vetoAllowance) return { ok: false, error: 'veto_allowance_below_spent' }
   return parsed
 }
 

@@ -19,6 +19,11 @@ const LOCKED = 'Gesperrt, seit die erste Session läuft: Schon gespielte Spiele 
 const kart = poolGame(1, 'Mario Kart')
 const pong = poolGame(2, 'Pong')
 
+const FOUR = '00000000-0000-4000-8000-000000000004'
+const FIVE = '00000000-0000-4000-8000-000000000005'
+const SIX = '00000000-0000-4000-8000-000000000006'
+const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => ({ id, name: id.slice(-4), image: null, isHost: false, zone, team, teamWord: null })
+
 function poolGame(n: number, name: string): PoolGame {
   return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] }
 }
@@ -267,7 +272,12 @@ describe('the settings editor', () => {
 
   describe('floors', () => {
     it('keeps the Team size from going below the fullest team, and says why', async () => {
-      const { slug } = setUp({ settings: { ...defaultSettings(), teamSize: 4 }, floors: { teamSize: 4, vetoAllowance: 0 } })
+      const { slug } = setUp({
+        settings: { ...defaultSettings(), teamSize: 4 },
+        floors: { teamSize: 4, vetoAllowance: 0 },
+        teams: [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }],
+        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 1), seated(SANNE, 'team', 1), seated(FOUR, 'team', 1)],
+      })
 
       const page = await mountEditor(slug)
 
@@ -297,11 +307,8 @@ describe('the settings editor', () => {
   })
 
   describe('the teams (#163)', () => {
-    const FOUR = '00000000-0000-4000-8000-000000000004'
-    const FIVE = '00000000-0000-4000-8000-000000000005'
     const four = { ...defaultSettings(), teamCount: 4, teamSize: 3, pointsTable: { preset: 'linear' as const, values: [3, 2, 1, 0] } }
     const teamsOf4 = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }, { position: 3, name: null, frozen: false }, { position: 4, name: null, frozen: false }]
-    const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => ({ id, name: id.slice(-4), image: null, isHost: false, zone, team, teamWord: null })
 
     it('shows the Team size floor the Event read gives, the fullest team, and says why', async () => {
       const { slug } = setUp({
@@ -319,6 +326,30 @@ describe('the settings editor', () => {
       expect(spin(page, 'Spieler pro Team').text()).toBe('2')
       expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 2.')
       expect(button(page, 'Spieler pro Team: weniger').attributes('aria-disabled')).toBe('true')
+    })
+
+    it('lowers the Team size floor with the team count, and raises it again with the count (#197)', async () => {
+      const { slug } = setUp({
+        settings: four,
+        teams: teamsOf4,
+        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 2), seated(SANNE, 'team', 3), seated(FOUR, 'team', 4), seated(FIVE, 'team', 4), seated(SIX, 'team', 4)],
+      })
+      const page = await mountEditor(slug)
+      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
+
+      await button(page, 'Anzahl Teams: weniger').trigger('click')
+      expect(spin(page, 'Anzahl Teams').text()).toBe('3')
+      await button(page, 'Spieler pro Team: weniger').trigger('click')
+      await button(page, 'Spieler pro Team: weniger').trigger('click')
+
+      expect(spin(page, 'Spieler pro Team').text()).toBe('1')
+      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
+      expect(button(page, 'Spieler pro Team: weniger').attributes('aria-disabled')).toBe('true')
+
+      await button(page, 'Anzahl Teams: mehr').trigger('click')
+      expect(spin(page, 'Anzahl Teams').text()).toBe('4')
+      expect(spin(page, 'Spieler pro Team').text()).toBe('3')
+      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
     })
 
     it('tells the Host how many Players go to the Bench when the team count drops, singular and plural', async () => {
