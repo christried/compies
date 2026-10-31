@@ -51,7 +51,7 @@ const copy = computed(() => {
         kicker: single ? t('event.head.done.kickerSingle') : t('event.head.done.kicker', { n: lastEnded?.number ?? total, total }),
         title: t('event.head.done.title'),
       }
-    case 'setup':
+    default:
       return {
         kicker: t('event.head.setup.kicker'),
         title: props.isHost ? t('event.head.setup.titleHost') : t('event.head.setup.title'),

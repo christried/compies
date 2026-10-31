@@ -38,13 +38,16 @@ const icon = computed(() => props.icon ?? DEFAULT_ICON[props.tone])
         :size="14"
       />
     </span>
-    <span class="min-w-0 flex-1 text-pretty">
-      <slot />
-    </span>
-    <span
-      v-if="hostOnly"
-      class="rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] font-bold"
-    >{{ t('common.hostOnly') }}</span>
+    <!-- Below sm the „Nur du siehst das“ badge sits above the text, so the text keeps the whole line (#166). -->
+    <div class="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+      <span class="min-w-0 flex-1 text-pretty">
+        <slot />
+      </span>
+      <span
+        v-if="hostOnly"
+        class="rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] font-bold max-sm:order-first max-sm:self-start"
+      >{{ t('common.hostOnly') }}</span>
+    </div>
     <slot name="action" />
     <button
       v-if="closable"
