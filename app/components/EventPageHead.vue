@@ -76,7 +76,7 @@ const jump = computed(() => {
     <a
       v-if="jump"
       :href="`#${jump.id}`"
-      class="outline-memphis inline-flex min-h-11 items-center gap-1.5 self-start text-[14px] font-extrabold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
+      class="inline-flex min-h-11 items-center gap-1.5 self-start text-[14px] font-extrabold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
       @click.prevent="jumpTo(jump.id)"
     >
       <AppIcon

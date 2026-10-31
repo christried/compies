@@ -120,6 +120,8 @@ describe('HowWePlayCard (#148)', () => {
 
     expect(editable.get('a').text()).toBe('Bearbeiten')
     expect(editable.get('a').attributes('href')).toBe('/e/x/einstellungen')
+    // Plain underlined text: outline-memphis would draw a box around it.
+    expect(editable.get('a').classes()).not.toContain('outline-memphis')
     expect(editable.text()).not.toContain('Fest seit dem Start')
     expect(locked.find('a').exists()).toBe(false)
     expect(locked.text()).toContain('Fest seit dem Start')

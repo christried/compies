@@ -368,6 +368,8 @@ describe('several Sessions on the Event page', () => {
       const add = card(hostPage).findAll('button').at(-1)!
       expect(add.text()).toBe('Session hinzufügen')
       expect(add.classes()).toContain('underline')
+      // Plain underlined text: outline-memphis would draw a box around it.
+      expect(add.classes()).not.toContain('outline-memphis')
       hostPage.unmount()
 
       const member = serve(s => viewWithSessions(s, [{ number: null, startsAt: FIRST }], 0, { event: { phase: 'date_set' }, slots: [], bestSlotId: null }))

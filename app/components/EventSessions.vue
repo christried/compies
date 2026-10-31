@@ -194,7 +194,7 @@ const title = (number: number | null) => (number === null ? t('event.sessions.se
       <button
         v-if="!full"
         type="button"
-        class="outline-memphis inline-flex min-h-11 items-center gap-1.5 self-start px-1 text-[13px] font-bold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
+        class="inline-flex min-h-11 items-center gap-1.5 self-start px-1 text-[13px] font-bold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
         @click="emit('add')"
       >
         <AppIcon

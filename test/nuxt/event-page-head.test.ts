@@ -50,6 +50,8 @@ describe('EventPageHead', () => {
     const jump = head.get('a')
     expect(jump.text()).toBe('Session 2: Terminumfrage läuft')
     expect(jump.attributes('href')).toBe('#poll-session-2')
+    // Plain underlined text: outline-memphis would draw a box around it.
+    expect(jump.classes()).not.toContain('outline-memphis')
   })
 
   it('has no jump while all Sessions are dated', async () => {

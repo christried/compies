@@ -67,7 +67,7 @@ const lists = computed(() => (props.pools.hidden
       <NuxtLink
         v-if="editTo"
         :to="editTo"
-        class="outline-memphis -my-2 inline-flex h-11 flex-none items-center gap-1.5 px-1 text-[13px] font-bold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
+        class="-my-2 inline-flex h-11 flex-none items-center gap-1.5 px-1 text-[13px] font-bold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
       >
         <AppIcon
           :icon="Pencil"
