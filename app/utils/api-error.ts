@@ -53,6 +53,7 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   team_size_below_fullest: 'error.teamSizeBelowFullest',
   veto_allowance_below_spent: 'error.vetoAllowanceBelowSpent',
   host_only: 'board.reason.hostOnly',
+  member_not_found: 'error.memberNotFound',
   already_there: 'board.reason.already',
   team_choice_closed: 'board.reason.pollLocked',
   teams_locked: 'board.reason.runningLocked',

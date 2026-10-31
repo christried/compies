@@ -1,16 +1,17 @@
 import type { StartRejection } from '~~/shared/board'
 import type { EventView } from '~~/shared/event'
-import { pollingNumber } from './event-page'
+import { eventPageState, type EventPageState } from './event-page'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, from the
-// Event read. One place decides it, so the dock, its tests and the page agree. „Event beenden“ is not here: finishing
-// an Event is 1.6, so after the last Session ended the dock has no primary.
+// Event read. It is the Event page's own state (eventPageState: one place decides what the Event is doing) plus the
+// Host's start rule, so the dock, its tests and the page agree. „Event beenden“ is not here: finishing an Event is 1.6,
+// so after the last Session ended the dock has no primary.
 
 export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'runningSessionId' | 'start'>
 
 export interface HostDockState {
-  /** `setup`: no settings. `poll`: no Session is dated, none started. `teams`: a Session is dated, none started. `running`: a Session runs. `between`: a Session ended, none runs. `done`: every Session ended. */
-  kind: 'setup' | 'poll' | 'teams' | 'running' | 'between' | 'done'
+  /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between` or `done`. */
+  kind: EventPageState['kind']
   /** The one primary action, or null when there is none (`done`). */
   primary: 'setup' | 'setDate' | 'start' | 'end' | null
   /** The shown number of the Session to start or end; null for the only Session of an Event, or without one. */
@@ -22,20 +23,18 @@ export interface HostDockState {
 }
 
 /** The dock's state for the Host. */
-export function hostDockState({ settings, sessions, missingDates, runningSessionId, start }: DockInput): HostDockState {
-  const pollNumber = pollingNumber(sessions, missingDates)
-  const base = { number: null, pollNumber, startRejection: null }
-  if (settings === null) return { ...base, kind: 'setup', primary: 'setup' }
-
-  if (runningSessionId !== null) {
-    return { ...base, kind: 'running', primary: 'end', number: sessions.find(session => session.id === runningSessionId)?.number ?? null }
+export function hostDockState(input: DockInput): HostDockState {
+  const page = eventPageState(input)
+  const base = { kind: page.kind, number: null, pollNumber: page.pollNumber, startRejection: null }
+  switch (page.kind) {
+    case 'setup': return { ...base, primary: 'setup' }
+    case 'poll': return { ...base, primary: 'setDate' }
+    case 'running': return { ...base, primary: 'end', number: page.running?.number ?? null }
+    case 'done': return { ...base, primary: null }
+    // `teams` and `between`: a dated Session is left to start, with the Host's start rule on it; a `between` with none left
+    // has a Session that still polls, which gets its Date next.
+    default: return page.next === null
+      ? { ...base, primary: 'setDate' }
+      : { ...base, primary: 'start', number: input.start?.number ?? null, startRejection: input.start?.rejection ?? null }
   }
-
-  const next = start?.sessionId ?? null
-  const started = sessions.some(session => session.startedAt !== null)
-  const startable = { ...base, primary: 'start' as const, number: start?.number ?? null, startRejection: start?.rejection ?? null }
-  if (!started) return next === null ? { ...base, kind: 'poll', primary: 'setDate' } : { ...startable, kind: 'teams' }
-  if (next !== null) return { ...startable, kind: 'between' }
-  // Every dated Session has started: a Session that still polls gets its Date next, else the Event waits for 1.6.
-  return missingDates > 0 ? { ...base, kind: 'between', primary: 'setDate' } : { ...base, kind: 'done', primary: null }
 }

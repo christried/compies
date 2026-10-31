@@ -1,3 +1,4 @@
+import { hasStarted, nextSession } from '~~/shared/board'
 import type { EventView, Phase, SessionView } from '~~/shared/event'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
@@ -18,6 +19,15 @@ export interface EventPageState {
   lastEnded: { number: number | null } | null
   /** The shown number a Session that still polls will have (after the dated ones); null when none polls or the Event has one Session. */
   pollNumber: number | null
+}
+
+/**
+ * Why "Termin festlegen" cannot set a Date right now (#52), as an i18n key, or null: no open Slot at all, or none in the
+ * future. The dock shows it as the action's reason and the confirm dialog as a toast.
+ */
+export function dateBlockedKey(slots: readonly { past: boolean }[]): 'mvp.set.noSlots' | 'mvp.set.noFutureSlot' | null {
+  if (slots.length === 0) return 'mvp.set.noSlots'
+  return slots.every(slot => slot.past) ? 'mvp.set.noFutureSlot' : null
 }
 
 /** The shown number a Session that still polls will have: after the dated ones. null when none polls, or the Event has one Session. */
@@ -43,14 +53,12 @@ export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase:
 }
 
 export function eventPageState({ settings, sessions, missingDates, runningSessionId }: PageInput): EventPageState {
-  const waiting = sessions
-    .filter((session): session is typeof session & { startsAt: string } => session.startsAt !== null && session.startedAt === null)
-    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0]
+  const waiting = nextSession(sessions)
   const runningSession = sessions.find(session => session.id === runningSessionId)
   const ended = sessions
     .filter(session => session.endedAt !== null)
     .sort((a, b) => Date.parse(b.endedAt!) - Date.parse(a.endedAt!))[0]
-  const started = sessions.some(session => session.startedAt !== null)
+  const started = hasStarted(sessions)
 
   const base = {
     total: sessions.length,

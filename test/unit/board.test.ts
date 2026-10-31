@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { composedTeamName, fullestTeam, moveRejection, nextSession, placeOf, startRejection, teamChoiceOpen, teamWords, type MoveCheck, type Place, type StartInput, type StartSession } from '../../shared/board'
+import { composedTeamName, fullestTeam, hasStarted, moveRejection, nextSession, placeOf, runningOf, startRejection, teamChoiceOpen, teamNameOf, teamWords, type MoveCheck, type Place, type StartInput, type StartSession } from '../../shared/board'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -179,6 +179,25 @@ describe('composedTeamName', () => {
   })
 })
 
+describe('teamNameOf', () => {
+  const member = (team: number | null, teamWord: string | null, joined: number) => ({ team, teamWord, teamJoinedAt: new Date(joined) })
+  const members = [member(1, 'Gurken', 5), member(1, 'Wilde', 1), member(2, 'Hasen', 2), member(null, 'Stray', 0), member(1, null, 3)]
+
+  it('composes the name of one team from its Members\' words, in the order they joined', () => {
+    expect(teamNameOf(members, 1)).toBe('Wilde Gurken')
+    expect(teamNameOf(members, 2)).toBe('Hasen')
+  })
+
+  it('is null for a team without words, so the colour name shows', () => {
+    expect(teamNameOf(members, 3)).toBeNull()
+  })
+
+  it('gives the frozen name when there is one, also null for a reset name', () => {
+    expect(teamNameOf(members, 1, 'Alte Hasen')).toBe('Alte Hasen')
+    expect(teamNameOf(members, 1, null)).toBeNull()
+  })
+})
+
 const at = (hour: number) => Date.UTC(2026, 10, 7, hour)
 const session = (id: string, fields: Partial<StartSession> = {}): StartSession => ({ id, startsAt: at(18), startedAt: null, endedAt: null, ...fields })
 
@@ -200,6 +219,31 @@ describe('nextSession', () => {
 
   it('does not look at the clock: a Date far in the future can start early', () => {
     expect(nextSession([session('future', { startsAt: Date.UTC(2099, 0, 1) })])?.id).toBe('future')
+  })
+
+  // The server reads Dates from rows and the client ISO strings from the Event read: one rule for all of them.
+  it('compares Dates and ISO strings the way it compares numbers', () => {
+    const row = (id: string, startsAt: Date | null, startedAt: Date | null = null) => ({ id, startsAt, startedAt })
+    expect(nextSession([row('later', new Date(at(20))), row('earlier', new Date(at(14))), row('done', new Date(at(10)), new Date(at(10)))])?.id).toBe('earlier')
+    const view = (id: string, startsAt: string | null, startedAt: string | null = null) => ({ id, startsAt, startedAt })
+    expect(nextSession([view('later', new Date(at(20)).toISOString()), view('earlier', new Date(at(14)).toISOString()), view('undated', null)])?.id).toBe('earlier')
+  })
+})
+
+describe('hasStarted and runningOf', () => {
+  const view = (id: string, startedAt: string | null, endedAt: string | null = null) => ({ id, startedAt, endedAt })
+
+  it('say whether any Session has started, also one that has ended', () => {
+    expect(hasStarted([])).toBe(false)
+    expect(hasStarted([view('a', null)])).toBe(false)
+    expect(hasStarted([view('a', null), view('b', '2026-11-07T18:00:00.000Z', '2026-11-07T20:00:00.000Z')])).toBe(true)
+  })
+
+  it('finds the Session that is started and not ended', () => {
+    const running = view('b', '2026-11-07T18:00:00.000Z')
+    expect(runningOf([view('a', null), running, view('c', '2026-11-06T18:00:00.000Z', '2026-11-06T20:00:00.000Z')])).toBe(running)
+    expect(runningOf([view('a', null), view('c', '2026-11-06T18:00:00.000Z', '2026-11-06T20:00:00.000Z')])).toBeUndefined()
+    expect(runningOf([])).toBeUndefined()
   })
 })
 

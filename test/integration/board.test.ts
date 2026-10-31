@@ -248,7 +248,7 @@ describe('the Game board', () => {
       expect(await placeOf(game.slug, game.hostCookie, game.ids.two)).toEqual({ zone: 'bench', team: null })
     })
 
-    it('answers 404 for a User who is no Member of the Event', async () => {
+    it('answers 404 member_not_found for a User who is no Member of the Event', async () => {
       const game = await setup()
       const stranger = { provider: 'twitch', id: '9', name: 'Fremd', email: 'stranger@example.com', image: undefined } as const
       await signIn(testDb.db, stranger)
@@ -257,6 +257,7 @@ describe('the Game board', () => {
       const response = await move(game.slug, game.hostCookie, row!.id, STANDS)
 
       expect(response.status).toBe(404)
+      expect((await response.json() as { statusMessage: string }).statusMessage).toBe('member_not_found')
       await expectNothingWritten(game)
     })
   })

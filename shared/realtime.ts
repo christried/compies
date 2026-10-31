@@ -61,8 +61,9 @@ export const HEARTBEAT_PING = 'ping'
 export const HEARTBEAT_PONG = 'pong'
 export const HEARTBEAT_MS = 10_000
 
-/** A socket with no heartbeat for this long is dead: the room's sweep closes it, and its user may go offline (#162). */
-export const SILENT_AFTER_MS = 30_000
+/** A socket with no heartbeat for this long is dead: the room's sweep closes it, and its user may go offline (#162).
+ * 75 s, not 30: a hidden tab's throttled heartbeat fires about once a minute, so 30 s dropped such tabs and the dot flapped. */
+export const SILENT_AFTER_MS = 75_000
 
 /** The body of a call to a room (Nuxt to Worker): the messages to send to every socket of the Event. */
 export interface RoomPublishBody {

@@ -321,8 +321,3 @@ function sameValue(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((value, index) => value === b[index])
   return a === b
 }
-
-/** Whether an Event may start a Session: it needs settings. Kept for 1.4, which enforces it at Session start; only its unit test calls it today. */
-export function canStartSession(settings: EventSettings | null): boolean {
-  return settings !== null
-}

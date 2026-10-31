@@ -1,9 +1,10 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { eventMembers, eventTeams } from '../db/schema'
-import { composedTeamName, countSeats, nextSession, placeOf, startRejection, teamChoiceOpen, type Place, type StartRejection, type StartSession, teamWords } from '../../shared/board'
+import { countSeats, hasStarted, nextSession, placeOf, startRejection, teamChoiceOpen, teamNameOf, type Place, type StartRejection, type StartSession } from '../../shared/board'
 import { settingsFromRow } from '../../shared/settings'
+import { recordActivity } from './activity'
 import type { Db } from './db'
-import type { EventRow } from './event-access'
+import type { EventChange, EventRow } from './event-access'
 import type { SessionRow } from './sessions'
 
 // The seats of the Game board (#160, GLOSSARY: Game board). One home: every write of a Member's zone, team and
@@ -37,6 +38,17 @@ export async function seatMember(tx: Db, eventId: string, userId: string, to: Pl
     .where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)))
 }
 
+/**
+ * One Member's seat change as the Game board makes it (#160, #163): the seat, its feed entry, and `member.moved` after the
+ * commit. The move endpoint and the lowering of the team count (the removed teams' Players go to the Bench, in the Host's
+ * name) both end here, so a move reads the same wherever it came from. The rules that allow it are the caller's.
+ */
+export async function moveMember(tx: Db, publish: EventChange['publish'], eventId: string, actorId: string, userId: string, from: Place, to: Place): Promise<void> {
+  await seatMember(tx, eventId, userId, to)
+  await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId, params: { userId, from, to } })
+  publish({ type: 'member.moved', userId, from, to, by: actorId })
+}
+
 /** The Player who took a seat in the team most recently, or null for an empty team: the winner of a lost race. */
 export async function lastToJoin(tx: Db, eventId: string, team: number): Promise<string | null> {
   const [row] = await tx
@@ -55,7 +67,7 @@ export async function lastToJoin(tx: Db, eventId: string, team: number): Promise
  */
 export function teamChoiceOf(eventRow: EventRow, sessions: readonly SessionRow[]) {
   const settings = settingsFromRow(eventRow)
-  const started = sessions.some(row => row.startedAt !== null)
+  const started = hasStarted(sessions)
   return { settings, started, open: teamChoiceOpen({ settings, hasDatedSession: sessions.some(row => row.startsAt !== null), started }) }
 }
 
@@ -85,15 +97,9 @@ export function startOf(eventRow: EventRow, sessions: readonly SessionRow[], pla
  */
 export async function freezeTeamNames(tx: Db, eventId: string, teamCount: number): Promise<void> {
   const members = await tx
-    .select({ team: eventMembers.team, word: eventMembers.teamWord, joinedAt: eventMembers.teamJoinedAt })
+    .select({ team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
     .from(eventMembers)
     .where(eq(eventMembers.eventId, eventId))
-  const rows = Array.from({ length: teamCount }, (_, index) => {
-    const position = index + 1
-    const seats = members
-      .filter(member => member.team === position)
-      .map(member => ({ word: member.word, joinedAt: member.joinedAt?.getTime() ?? 0 }))
-    return { eventId, position, frozenName: composedTeamName({ words: teamWords(seats) }) }
-  })
+  const rows = Array.from({ length: teamCount }, (_, index) => ({ eventId, position: index + 1, frozenName: teamNameOf(members, index + 1) }))
   await tx.insert(eventTeams).values(rows)
 }

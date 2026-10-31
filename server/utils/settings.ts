@@ -3,8 +3,7 @@ import { eventPoolGames, events } from '../db/schema'
 import { parsePoolChange } from '../domain/pools'
 import { POOLS, checkSettingsChange, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Place } from '../../shared/board'
-import { recordActivity } from './activity'
-import { seatMember, readSeats } from './board'
+import { moveMember, readSeats } from './board'
 import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange, EventRow } from './event-access'
@@ -38,7 +37,10 @@ export async function applySettingsChange(
   const before = settingsFromRow(eventRow)
   let after: EventSettings
   if (change !== undefined) {
-    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: await settingsFloors(tx, eventRow.id) })
+    // The Team size floor counts the teams that remain: Players of a team this very change removes go to the Bench (#163).
+    const requested = asRecord(change).teamCount
+    const teamCount = typeof requested === 'number' && Number.isInteger(requested) ? requested : undefined
+    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: await settingsFloors(tx, eventRow.id, teamCount) })
     if (!checked.ok) throw apiError(checked.error)
     after = checked.settings
   }
@@ -62,13 +64,11 @@ export async function applySettingsChange(
 
 /**
  * Every Player seated in a team the lowered team count removes goes to the Bench (#163). Each one is a move made by the
- * Host, written the way the move endpoint writes it: the seat, its feed entry, and `member.moved` after the commit.
+ * Host, written the way the move endpoint writes it (moveMember).
  */
 async function benchRemovedTeams(tx: Db, publish: EventChange['publish'], eventId: string, teamCount: number, hostId: string): Promise<void> {
   const removed = (await readSeats(tx, eventId)).filter(seat => seat.place.zone === 'team' && seat.place.team > teamCount)
   for (const { userId, place } of removed) {
-    await seatMember(tx, eventId, userId, BENCH)
-    await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId: hostId, params: { userId, from: place, to: BENCH } })
-    publish({ type: 'member.moved', userId, from: place, to: BENCH, by: hostId })
+    await moveMember(tx, publish, eventId, hostId, userId, place, BENCH)
   }
 }

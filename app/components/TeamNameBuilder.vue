@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { RotateCcw } from '@lucide/vue'
-import { apiErrorKey } from '~/utils/api-error'
 import { teamName } from '~/utils/board'
 import { eventDataKey } from '~/utils/event-data'
 import { characterCount, cutToCharacters } from '~~/shared/text'
-import { TEAM_WORD_MAX } from '~~/shared/team-word'
+import { hasSpace, stripSpaces, TEAM_WORD_MAX } from '~~/shared/team-word'
 
 // The Team word field and the Host's reset in the band under a team's header (#161, 02-components § TeamNameBuilder,
 // App Lobby 09 „Teamwahl offen + Teamwort“). A Player in this team sees „Dein Wort“ with a counter: spaces are stripped
@@ -36,6 +35,7 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 const { toast } = useToast()
+const { send } = useEventMutation(() => props.slug, () => refreshNuxtData(eventDataKey(props.slug)))
 const fieldId = useId()
 const helpId = `${fieldId}-help`
 
@@ -53,8 +53,8 @@ watch(() => props.myWord, (word) => {
 
 function onInput(event: Event) {
   const input = event.target as HTMLInputElement
-  const clean = cutToCharacters(input.value.replace(/\s/g, ''), TEAM_WORD_MAX)
-  stripped.value = /\s/.test(input.value)
+  const clean = cutToCharacters(stripSpaces(input.value), TEAM_WORD_MAX)
+  stripped.value = hasSpace(input.value)
   // Written back directly: when the cleaned value equals the current model, Vue would not patch the input.
   input.value = clean
   draft.value = clean
@@ -65,17 +65,13 @@ async function save() {
   if (word === saved.value) return
   const before = saved.value
   saved.value = word
-  try {
-    await $fetch(`/api/e/${props.slug}/team-word`, { method: 'POST', body: { word } })
-  }
-  catch (failure) {
-    saved.value = before
-    draft.value = before
-    toast({ tone: 'error', text: t(apiErrorKey(failure)) })
-  }
-  finally {
-    await refreshNuxtData(eventDataKey(props.slug))
-  }
+  await send('POST', 'team-word', {
+    body: { word },
+    refused: () => {
+      saved.value = before
+      draft.value = before
+    },
+  })
 }
 
 function onBlur() {
@@ -96,19 +92,11 @@ const resetting = ref(false)
 const authorList = computed(() => new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(props.authors))
 
 async function reset() {
-  resetting.value = true
-  try {
-    await $fetch(`/api/e/${props.slug}/teams/${props.team}/reset-name`, { method: 'POST' })
-    toast({ tone: 'success', text: t('team.word.resetDone', { name: teamName(props.team, t) }) })
-  }
-  catch (failure) {
-    toast({ tone: 'error', text: t(apiErrorKey(failure)) })
-  }
-  finally {
-    resetting.value = false
-    asking.value = false
-    await refreshNuxtData(eventDataKey(props.slug))
-  }
+  await send('POST', `teams/${props.team}/reset-name`, {
+    busy: resetting,
+    done: () => toast({ tone: 'success', text: t('team.word.resetDone', { name: teamName(props.team, t) }) }),
+  })
+  asking.value = false
 }
 </script>
 

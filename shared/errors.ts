@@ -82,6 +82,8 @@ export const API_ERROR_STATUS = {
   invalid_cursor: 400,
   /** Only the Host moves another Member on the Game board (#160). */
   host_only: 403,
+  /** The id a move names is no Member of the Event (#160). */
+  member_not_found: 404,
   /** The Member is in that place already (#160). */
   already_there: 409,
   /** A team the Event does not have: no settings, or a position above the team count (#160). */

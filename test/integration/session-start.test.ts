@@ -378,6 +378,37 @@ describe('Starting and ending Sessions', () => {
     })
   })
 
+  describe('the numbers of started Sessions (#164)', () => {
+    it('keeps a started Session\'s number when another Session is dated before it, and numbers the next feed entry from it', async () => {
+      const game = await setup()
+      // The first Session gets the latest Slot and starts early.
+      expect((await send('POST', `/api/e/${game.slug}/confirm`, game.hostCookie, { slotId: game.slotIds[2] })).status).toBe(200)
+      await fillTeams(game)
+      expect((await start(game)).status).toBe(200)
+      // The second Session is then dated before the started one.
+      expect((await send('POST', `/api/e/${game.slug}/confirm`, game.hostCookie, { slotId: game.slotIds[0] })).status).toBe(200)
+
+      const view = await read(game)
+      expect(view.sessions.map(session => [session.startsAt?.slice(0, 10), session.number])).toEqual([['2090-11-01', 1], ['2090-10-30', 2]])
+      expect(view.start).toMatchObject({ number: 2, rejection: 'session_running' })
+
+      await end(game)
+      await start(game)
+      const entries = await testDb.db.select().from(activity).where(eq(activity.type, 'session_started')).orderBy(activity.at)
+      expect(entries.map(entry => (entry.params as { number: number }).number)).toEqual([1, 2])
+    })
+
+    it('does not renumber anything when the next Session starts', async () => {
+      const game = await ready()
+      const numbers = async () => (await read(game)).sessions.map(session => [session.id, session.number])
+      const before = await numbers()
+
+      await start(game)
+
+      expect(await numbers()).toEqual(before)
+    })
+  })
+
   describe('a started Session is fixed', () => {
     it('is refused for remove, reschedule and reopen with 409 session_started, while an unstarted one still works', async () => {
       const game = await ready()

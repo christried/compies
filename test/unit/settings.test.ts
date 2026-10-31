@@ -5,7 +5,6 @@ import {
   LOCKED_WHEN_RUNNING,
   TEAM_COUNT_MAX,
   TEAM_COUNT_MIN,
-  canStartSession,
   changedKeys,
   checkSettingsChange,
   settingsEditable,
@@ -531,12 +530,5 @@ describe('changedKeys (#183)', () => {
 
   it('names every setting for an Event that was not set up', () => {
     expect(changedKeys(null, before).sort()).toEqual(Object.keys(before).sort())
-  })
-})
-
-describe('canStartSession', () => {
-  it('needs settings', () => {
-    expect(canStartSession(null)).toBe(false)
-    expect(canStartSession(defaultSettings())).toBe(true)
   })
 })

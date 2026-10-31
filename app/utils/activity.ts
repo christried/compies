@@ -1,6 +1,7 @@
 import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Eye, Flag, Play, RotateCcw, SlidersHorizontal, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
+import { nextSession } from '~~/shared/board'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
 import { teamName } from './board'
@@ -171,10 +172,7 @@ export function groupActivity(entries: ActivityEntry[], sessions: FeedSession[],
  */
 export function feedSessions(sessions: { id: string, number: number | null, startsAt: string | null, startedAt: string | null, endedAt: string | null }[]): { started: FeedSession[], nextNumber: number | null } {
   const started = sessions.flatMap(session => (session.startedAt === null ? [] : [{ id: session.id, number: session.number, startedAt: session.startedAt, endedAt: session.endedAt }]))
-  const waiting = sessions
-    .filter((session): session is typeof session & { startsAt: string } => session.startsAt !== null && session.startedAt === null)
-    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
-  return { started, nextNumber: waiting[0]?.number ?? null }
+  return { started, nextNumber: nextSession(sessions)?.number ?? null }
 }
 
 /** An entry from the room or the feed endpoint, or null when it is not one (a malformed message is ignored). */

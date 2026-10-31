@@ -2,6 +2,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { createError, defineEventHandler, getRequestHeader } from 'h3'
 import { deployCheck, type DeployCheck } from '../../domain/game-day'
 import { events, sessions } from '../../db/schema'
+import { isRunning } from '../../../shared/board'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, verifyRoomCall } from '../../../shared/room-auth'
 import { useDb } from '../../utils/db'
 import { sessionNotRemoved } from '../../utils/sessions'
@@ -25,6 +26,6 @@ export default defineEventHandler(async (event): Promise<DeployCheck> => {
     .innerJoin(events, eq(events.id, sessions.eventId))
     .where(and(isNull(events.deletedAt), sessionNotRemoved))
   // A Running Session (#164) is started and not ended; a removed Session and a deleted Event are left out by the query.
-  const running = rows.filter(row => row.startedAt !== null && row.endedAt === null).length
+  const running = rows.filter(isRunning).length
   return deployCheck({ startsAt: rows.map(row => row.startsAt), running, now: new Date() })
 })

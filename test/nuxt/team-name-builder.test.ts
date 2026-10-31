@@ -1,5 +1,5 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { readBody } from 'h3'
+import { createError, readBody } from 'h3'
 import { afterEach, describe, expect, it } from 'vitest'
 import GameBoard from '~/components/GameBoard.vue'
 import type { Place } from '~~/shared/board'
@@ -32,6 +32,8 @@ interface Options {
   started?: boolean
   viewerId?: string
   isHost?: boolean
+  /** The server refuses every word with this code. */
+  refuseWord?: string
 }
 
 /** A board for one test, with endpoints that record the Team words and the resets posted. */
@@ -43,6 +45,7 @@ async function mountBoard(options: Options) {
   registerEndpoint(`/api/e/${slug}/team-word`, {
     method: 'POST',
     handler: async (event) => {
+      if (options.refuseWord) throw createError({ statusCode: 409, statusMessage: options.refuseWord })
       const { word } = await readBody(event) as { word: string }
       words.push(word)
       return { team: 1, word: word === '' ? null : word }
@@ -172,6 +175,18 @@ describe('Team names on the Game board', () => {
     await settle()
 
     expect(words).toEqual(['Wilde'])
+  })
+
+  it('puts the saved word back and says why when the server refuses the new one', async () => {
+    const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde'), refuseWord: 'teams_locked' })
+    const input = field(page, 'Wilde')
+
+    await type(input, 'Gurken')
+    await input.trigger('keydown', { key: 'Enter' })
+    await settle()
+
+    expect(input.element.value).toBe('Wilde')
+    expect(shownToasts().at(-1)).toMatchObject({ tone: 'error' })
   })
 
   it('posts the word on blur when it changed, and not when it did not', async () => {
