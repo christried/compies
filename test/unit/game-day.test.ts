@@ -46,14 +46,15 @@ describe('sessionsToday', () => {
 
 describe('deployCheck', () => {
   const now = at('2024-01-15T10:00:00Z')
+  const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000)
 
   it('is ok, without a reason, when no Session is dated today', () => {
-    expect(deployCheck({ startsAt: [at('2024-01-14T19:00:00Z'), at('2024-01-16T19:00:00Z'), null], running: 0, now })).toEqual({ ok: true, reason: null })
+    expect(deployCheck({ startsAt: [at('2024-01-14T19:00:00Z'), at('2024-01-16T19:00:00Z'), null], runningSince: [], now })).toEqual({ ok: true, reason: null })
   })
 
   it('is not ok on a game day and names how many Sessions fall on it', () => {
-    const one = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], running: 0, now })
-    const two = deployCheck({ startsAt: [at('2024-01-15T17:00:00Z'), at('2024-01-15T19:00:00Z')], running: 0, now })
+    const one = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], runningSince: [], now })
+    const two = deployCheck({ startsAt: [at('2024-01-15T17:00:00Z'), at('2024-01-15T19:00:00Z')], runningSince: [], now })
 
     expect(one).toEqual({ ok: false, reason: expect.stringContaining('game day') })
     expect(one.reason).toContain('1 Session')
@@ -61,17 +62,45 @@ describe('deployCheck', () => {
   })
 
   it('is not ok while a Session runs (#164), with a reason of its own, whatever day its Date was', () => {
-    const running = deployCheck({ startsAt: [at('2024-01-10T19:00:00Z')], running: 1, now })
+    const running = deployCheck({ startsAt: [at('2024-01-10T19:00:00Z')], runningSince: [hoursAgo(2)], now })
 
     expect(running).toEqual({ ok: false, reason: expect.stringContaining('running') })
     expect(running.reason).not.toContain('game day')
-    expect(deployCheck({ startsAt: [], running: 2, now }).reason).toContain('2 Sessions are running')
+    expect(deployCheck({ startsAt: [], runningSince: [hoursAgo(1), hoursAgo(2)], now }).reason).toContain('2 Sessions are running')
   })
 
   it('names the running Session first when one runs on a game day', () => {
-    const both = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], running: 1, now })
+    const both = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], runningSince: [hoursAgo(2)], now })
 
     expect(both.ok).toBe(false)
     expect(both.reason).toContain('running')
+  })
+
+  it('is not ok while a Session started less than 16 h ago runs, and says so (#200)', () => {
+    const justUnder = new Date(now.getTime() - (16 * 3_600_000 - 60_000)) // 15 h 59 min ago
+
+    const body = deployCheck({ startsAt: [], runningSince: [justUnder], now })
+
+    expect(body).toEqual({ ok: false, reason: expect.stringContaining('running') })
+  })
+
+  it('is ok when the Running Session started exactly 16 h ago or 3 days ago and no Session is dated today (#200)', () => {
+    expect(deployCheck({ startsAt: [], runningSince: [hoursAgo(16)], now })).toEqual({ ok: true, reason: null })
+    expect(deployCheck({ startsAt: [at('2024-01-12T19:00:00Z')], runningSince: [hoursAgo(72)], now })).toEqual({ ok: true, reason: null })
+  })
+
+  it('counts only the Running Sessions that started less than 16 h ago (#200)', () => {
+    const body = deployCheck({ startsAt: [], runningSince: [hoursAgo(2), hoursAgo(16), hoursAgo(40)], now })
+
+    expect(body.ok).toBe(false)
+    expect(body.reason).toContain('1 Session is running')
+  })
+
+  it('names the game day, not the running Session, when a Session started 17 h ago runs on a game day (#200)', () => {
+    const body = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], runningSince: [hoursAgo(17)], now })
+
+    expect(body.ok).toBe(false)
+    expect(body.reason).toContain('game day')
+    expect(body.reason).not.toContain('running')
   })
 })

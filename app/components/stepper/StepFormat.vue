@@ -2,13 +2,14 @@
 import { ListOrdered, Lock, Swords, User, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import type { EventDraft, StepLocks } from '~/utils/event-draft'
-import { AVAILABLE_FORMATS, TEAM_COUNT_MAX, TEAM_COUNT_MIN, TEAM_PLAYERS_MAX, TEAM_SIZE_MAX, TEAM_SIZE_MIN, withTeams, type Format } from '~~/shared/settings'
+import { AVAILABLE_FORMATS, TEAM_COUNT_MAX, TEAM_COUNT_MIN, TEAM_PLAYERS_MAX, TEAM_SIZE_MAX, TEAM_SIZE_MIN, teamSizeFloor, withTeams, type Format } from '~~/shared/settings'
 
 // Format and team layout (#144). Free-for-all, bracket and league show as „Bald verfügbar“. With
 // Teams: how many teams and how many Players per team, at most 24 Players in all; a plus button at the
 // limit says which limit it is. In the settings editor (#147) `locks.reason` locks the Format and the team count
-// (the Event is running), and `locks.floors` keeps the Team size from going below the fullest team. A lower team
-// count than the saved one shows how many Players go to the Bench from the removed teams (`locks.teamPlayers`, #163).
+// (the Event is running). The Team size floor is the fullest of the teams the draft keeps (`locks.teamPlayers`, #163),
+// so a lower team count lowers it too (#197). A lower team count than the saved one shows how many Players go to the
+// Bench from the removed teams (#163).
 const props = defineProps<{ locks?: StepLocks }>()
 const draft = defineModel<EventDraft>({ required: true })
 const settings = useDraftSettings(draft)
@@ -38,8 +39,13 @@ const teamSizeMax = computed(() => Math.min(TEAM_SIZE_MAX, Math.floor(TEAM_PLAYE
 const teamCountMaxReason = computed(() => (teamCountMax.value < TEAM_COUNT_MAX ? t('stepper.format.playersMax') : t('stepper.format.teamCountMax')))
 const teamSizeMaxReason = computed(() => (teamSizeMax.value < TEAM_SIZE_MAX ? t('stepper.format.playersMax') : t('stepper.format.teamSizeMax')))
 
-const teamSizeMin = computed(() => Math.max(TEAM_SIZE_MIN, props.locks?.floors?.teamSize ?? TEAM_SIZE_MIN))
+// The fullest of the teams the draft keeps: a lower team count lowers the floor at once (#197).
+const teamSizeMin = computed(() => teamSizeFloor(props.locks?.teamPlayers ?? [], settings.value.teamCount))
 const teamSizeMinReason = computed(() => (teamSizeMin.value > TEAM_SIZE_MIN ? t('stepper.format.teamSizeFloor', { n: teamSizeMin.value }) : t('stepper.format.teamSizeMin')))
+// A raised team count can raise the floor above the draft's Team size, so the Team size follows it up (#197).
+watch(teamSizeMin, (floor) => {
+  if (settings.value.teamSize < floor) settings.value = { ...settings.value, teamSize: floor }
+})
 
 const players = computed(() => settings.value.teamCount * settings.value.teamSize)
 
