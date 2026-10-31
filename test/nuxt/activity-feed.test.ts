@@ -124,7 +124,7 @@ describe('ActivityFeed', () => {
   it('says what it promises in an empty state, without a log entry', async () => {
     const { wrapper } = await mountFeed([])
 
-    expect(wrapper.text()).toContain('Noch nichts passiert. Ab jetzt steht hier, wer dazukommt, wechselt und abstimmt.')
+    expect(wrapper.text()).toContain('Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und wechselt.')
     expect(lines(wrapper)).toEqual([])
   })
 

@@ -64,6 +64,15 @@ describe('home page', () => {
     expect(page.get('h3').text()).toBe('Freitags-Zocken')
   })
 
+  it('says on the construction card what is still being built, and what already works (#196)', async () => {
+    homeEvents = [card({ name: 'Freitags-Zocken' })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.text()).toContain('Glücksrad, Live-Tabelle und Siegerehrung bauen wir gerade. Terminumfrage und Spielbrett funktionieren schon.')
+    expect(page.text()).toContain('Kommt in einer der nächsten Versionen')
+  })
+
   it('keeps „Deine Events“ as a second-level heading', async () => {
     homeEvents = [card({ name: 'Freitags-Zocken' })]
     const page = await mountSuspended(IndexPage)

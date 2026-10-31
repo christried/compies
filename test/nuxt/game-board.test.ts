@@ -188,8 +188,8 @@ describe('GameBoard', () => {
     it('leaves out the locked notice where the page says so, between two Sessions', async () => {
       const { page } = await mountBoard({ started: true, lockedNotice: false })
 
-      expect(page.text()).not.toContain('Das Spiel läuft')
-      expect(page.text()).not.toContain('Gesperrt seit Spielstart')
+      expect(page.text()).not.toContain('Das Event läuft')
+      expect(page.text()).not.toContain('Gesperrt seit dem Start')
     })
   })
 
@@ -201,7 +201,7 @@ describe('GameBoard', () => {
 
       const locked = page.findAll('[role="img"][aria-label^="Gesperrt"]')
       expect(locked).toHaveLength(3)
-      expect(locked[0]!.attributes('aria-label')).toBe('Gesperrt. Teams sind gesperrt, das Spiel läuft.')
+      expect(locked[0]!.attributes('aria-label')).toBe('Gesperrt. Teams sind gesperrt, das Event läuft.')
       expect(locked[0]!.text()).toBe('Gesperrt')
       expect(page.text()).not.toContain('Frei')
     })
@@ -215,19 +215,19 @@ describe('GameBoard', () => {
 
     it('tells the Host, a Player in a team and everyone else what is locked', async () => {
       const host = await running({ viewerId: SANNE, isHost: true })
-      expect(host.page.text()).toContain('Spiel läuft: nur du kannst noch tauschen. Name eingefroren.')
+      expect(host.page.text()).toContain('Event läuft: nur du kannst noch tauschen. Name eingefroren.')
 
       const player = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
-      expect(player.page.text()).toContain('Gesperrt seit Spielstart. Name eingefroren.')
+      expect(player.page.text()).toContain('Gesperrt seit dem Start. Name eingefroren.')
 
       const other = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
-      expect(other.page.text()).toContain('Das Spiel läuft. Zwischen Bench und Tribüne kannst du frei wechseln.')
+      expect(other.page.text()).toContain('Das Event läuft. Zwischen Bench und Tribüne kannst du frei wechseln.')
     })
 
     it('does not tell the Host about uneven teams any more: the start is over', async () => {
       const { page } = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt(team(1))], viewerId: SANNE, isHost: true })
 
-      expect(page.text()).not.toContain('Das Spiel startet erst')
+      expect(page.text()).not.toContain('Die Session startet erst')
     })
 
     it('refuses a Player on the Bench a team in the MoveToMenu with the reason, but keeps the Stands open', async () => {
@@ -237,7 +237,7 @@ describe('GameBoard', () => {
 
       expect(menuItem('Auf die Tribüne').getAttribute('aria-disabled')).not.toBe('true')
       expect(menuItem('Nach Team Orange').getAttribute('aria-disabled')).toBe('true')
-      expect(menuItem('Nach Team Orange').textContent).toContain('Teams sind gesperrt, das Spiel läuft.')
+      expect(menuItem('Nach Team Orange').textContent).toContain('Teams sind gesperrt, das Event läuft.')
     })
 
     it('refuses a Player in a team the way out, even to the Bench, with the same reason', async () => {
@@ -246,7 +246,7 @@ describe('GameBoard', () => {
       await person(page, kitty.id).trigger('click')
 
       expect(menuItem('Auf die Bench').getAttribute('aria-disabled')).toBe('true')
-      expect(menuItem('Auf die Bench').textContent).toContain('Teams sind gesperrt, das Spiel läuft.')
+      expect(menuItem('Auf die Bench').textContent).toContain('Teams sind gesperrt, das Event läuft.')
     })
 
     it('lets the Host move a Player into a team', async () => {
@@ -263,17 +263,17 @@ describe('GameBoard', () => {
     it('marks every team as frozen with a lock in its count pill, not beside the name', async () => {
       const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
 
-      const locks = page.findAll('[aria-label="Eingefroren seit Spielstart."]')
+      const locks = page.findAll('[aria-label="Eingefroren seit dem Start."]')
       expect(locks).toHaveLength(2)
       expect(locks.map(lock => lock.element.parentElement!.textContent!.trim())).toEqual(['1/2', '0/2'])
-      expect(locks.map(lock => lock.attributes('title'))).toEqual(['Eingefroren seit Spielstart.', 'Eingefroren seit Spielstart.'])
+      expect(locks.map(lock => lock.attributes('title'))).toEqual(['Eingefroren seit dem Start.', 'Eingefroren seit dem Start.'])
       for (const heading of page.findAll('h3')) expect(heading.find('[role="img"]').exists()).toBe(false)
     })
 
     it('shows no lock on a team name before the start', async () => {
       const { page } = await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
 
-      expect(page.findAll('[aria-label="Eingefroren seit Spielstart."]')).toHaveLength(0)
+      expect(page.findAll('[aria-label="Eingefroren seit dem Start."]')).toHaveLength(0)
     })
   })
 
@@ -569,7 +569,7 @@ describe('GameBoard', () => {
     it('tells the Host which team is short', async () => {
       const { page } = await mountBoard({ members: uneven, viewerId: SANNE, isHost: true })
 
-      expect(page.text()).toContain('Team Orange hat 0, die anderen haben 2. Das Spiel startet erst, wenn alle Teams gleich groß sind.')
+      expect(page.text()).toContain('Team Orange hat 0, die anderen haben 2. Die Session startet erst, wenn alle Teams gleich groß sind.')
       expect(page.text()).toContain('Nur du siehst das')
       expect(page.get('[role="status"] b').text()).toBe('Teams sind ungleich')
     })
@@ -577,7 +577,7 @@ describe('GameBoard', () => {
     it('does not tell a Player the start waits, but that the short team looks for somebody while Team choice is open (#166)', async () => {
       const { page } = await mountBoard({ members: uneven })
 
-      expect(page.text()).not.toContain('Das Spiel startet erst')
+      expect(page.text()).not.toContain('Die Session startet erst')
       expect(page.text()).toContain('Team Orange sucht noch jemanden. Rück rein, dann kann’s losgehen.')
       expect(page.text()).not.toContain('Nur du siehst das')
     })
@@ -587,7 +587,7 @@ describe('GameBoard', () => {
       expect(closed.page.text()).not.toContain('sucht noch jemanden')
 
       const host = await mountBoard({ members: uneven, viewerId: SANNE, isHost: true, unevenNotice: false })
-      expect(host.page.text()).not.toContain('Das Spiel startet erst')
+      expect(host.page.text()).not.toContain('Die Session startet erst')
     })
 
     it('puts the notice above the board\'s title, like the other notices of the page (#166)', async () => {
@@ -599,10 +599,10 @@ describe('GameBoard', () => {
 
     it('stays away when the teams are the same size, and for an Event without teams', async () => {
       const even = await mountBoard({ members: [kittyAt(team(1)), larsiAt(team(2)), sanneAt()], viewerId: SANNE, isHost: true })
-      expect(even.page.text()).not.toContain('Das Spiel startet erst')
+      expect(even.page.text()).not.toContain('Die Session startet erst')
 
       const none = await mountBoard({ settings: null, teamChoiceOpen: false, viewerId: SANNE, isHost: true })
-      expect(none.page.text()).not.toContain('Das Spiel startet erst')
+      expect(none.page.text()).not.toContain('Die Session startet erst')
     })
   })
 })
