@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowDown, CalendarClock, Download, Plus, Search, Trash2 } from '@lucide/vue'
 import { formatSessionWhen, formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
-import { pollingNumber } from '~/utils/event-page'
+import { shownSessionNumbers } from '~/utils/event-page'
 import { jumpTo, pollHeadingId } from '~/utils/jump'
 import { noteRows } from '~/utils/notes'
 import { SESSIONS_MAX, sessionsEditable, type EventView } from '~~/shared/event'
@@ -48,9 +48,9 @@ const PILL: Record<RowKind, { label: string, background: string, dot: string }> 
 }
 
 const rows = computed(() => {
-  let nth = 0
-  return props.view.sessions.map((session) => {
-    const number = session.startsAt === null ? pollingNumber(props.view.sessions, props.view.missingDates, ++nth) : session.number
+  const numbers = shownSessionNumbers(props.view.sessions, props.view.missingDates)
+  return props.view.sessions.map((session, index) => {
+    const number = numbers[index] ?? null
     const kind: RowKind = session.startsAt === null ? 'poll' : session.endedAt ? 'ended' : session.startedAt ? 'running' : 'set'
     const started = session.startedAt ? new Date(session.startedAt) : null
     return {
