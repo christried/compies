@@ -437,6 +437,7 @@ describe('GameBoard', () => {
       const { page } = await mountBoard({ members: withPicture() })
 
       expect(person(page, LARSI).find('img').attributes('draggable')).toBe('false')
+      expect(person(page, LARSI).find('img').classes()).toContain('pointer-events-none')
     })
 
     it('cancels the browser\'s own drag on a person', async () => {
