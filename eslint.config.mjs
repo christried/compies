@@ -27,6 +27,15 @@ export default withNuxt(
     },
   },
   {
+    // The one exception ADR 0005 amends (#202): waitUntil keeps the room publish alive on Vercel, in one file.
+    files: ['server/utils/after-response.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{ group: ['@vercel/*', '!@vercel/functions'], message: 'Vercel-only runtime APIs are not allowed (ADR 0005); only @vercel/functions in server/utils/after-response.ts (#202).' }],
+      }],
+    },
+  },
+  {
     files: ['app/**', 'server/**', 'shared/**'],
     ignores: ['shared/auth.ts'],
     rules: {
