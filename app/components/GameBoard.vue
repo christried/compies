@@ -197,7 +197,6 @@ function personBindings(person: (typeof people.value)[number]) {
     you: person.id === props.viewerId,
     team: person.place.zone === 'team' ? person.place.team : null,
     where: whereText(person.place),
-    word: person.place.zone === 'team' ? person.teamWord : null,
     lifted: held !== null,
     online: props.online?.(person.id),
     menuOpen: menu.value?.userId === person.id,
