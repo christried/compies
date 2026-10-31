@@ -271,12 +271,12 @@ describe('the stage of the Event page', () => {
       const between = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED }), SESSION(2, SECOND)], missing: 0, phase: 'running' })
 
       const runningPage = await mount(running.slug)
-      expect(has(runningPage, 'Gesperrt seit Spielstart')).toBe(false)
-      expect(has(runningPage, 'Das Spiel läuft.')).toBe(true)
+      expect(has(runningPage, 'Gesperrt seit dem Start')).toBe(false)
+      expect(has(runningPage, 'Das Event läuft.')).toBe(true)
       expect(has(runningPage, 'Die Teams bleiben fürs ganze Event')).toBe(false)
 
       const betweenPage = await mount(between.slug)
-      expect(has(betweenPage, 'Das Spiel läuft.')).toBe(false)
+      expect(has(betweenPage, 'Das Event läuft.')).toBe(false)
       expect(has(betweenPage, 'Die Teams bleiben fürs ganze Event. Wenn du bei Session 2 nicht kannst, setz dich auf die Bench.')).toBe(true)
     })
 
@@ -297,7 +297,7 @@ describe('the stage of the Event page', () => {
         overrides: { members: members({ larsi: { zone: 'team', team: 1 } }) },
       })
 
-      expect(has(await mount(slug), 'Das Spiel startet erst, wenn alle Teams gleich groß sind.')).toBe(true)
+      expect(has(await mount(slug), 'Die Session startet erst, wenn alle Teams gleich groß sind.')).toBe(true)
     })
 
     it('gives the Host in an Event that was never set up a way to the editor, and closes it with its ✕', async () => {

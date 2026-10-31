@@ -99,6 +99,12 @@ describe('construction page route guard', () => {
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(false)
   })
 
+  it('shows the chip „Kommt in einer der nächsten Versionen“ on the generic Construction page (#196)', async () => {
+    const page = await visit('/crews')
+
+    expect(page.text()).toContain('Kommt in einer der nächsten Versionen')
+  })
+
   it('renders the generic state for an unknown area', async () => {
     const page = await visit('/crews')
 

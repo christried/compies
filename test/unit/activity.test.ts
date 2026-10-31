@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activityIcon, activityParts, activityText, feedSessions, groupActivity, readEntry } from '../../app/utils/activity'
+import { activityIcon, activityParts, feedSessions, groupActivity, readEntry } from '../../app/utils/activity'
 import { formatActivityTime } from '../../app/utils/berlin-time'
 import de from '../../i18n/locales/de.json'
 import { ACTIVITY_TYPES, type ActivityEntry } from '../../shared/activity'
@@ -105,52 +105,54 @@ describe('feedSessions', () => {
   })
 })
 
-describe('activityText', () => {
+describe('the sentence of an entry', () => {
+  const text = (entry: ActivityEntry) => activityParts(entry, t)?.map(part => part.text).join('') ?? null
+
   it('names the actor and the Session number', () => {
-    expect(activityText({ ...base, type: 'member_joined', params: {} }, t)).toBe('Sanne ist dem Event beigetreten')
-    expect(activityText({ ...base, type: 'date_rescheduled', params: { sessionId: 's', number: 2, from: '2090-10-30T18:00:00.000Z', to: '2090-11-01T19:30:00.000Z' } }, t)).toBe('Sanne hat Session 2 auf Mi 01.11. 20:30 verschoben')
-    expect(activityText({ ...base, type: 'date_reopened', params: { sessionId: 's', number: 1, previousStartsAt: '2090-10-30T18:00:00.000Z' } }, t)).toBe('Sanne hat den Termin von Session 1 zurückgenommen')
-    expect(activityText({ ...base, type: 'session_added', params: { sessionId: 's', startsAt: null } }, t)).toBe('Sanne hat eine Session hinzugefügt')
-    expect(activityText({ ...base, type: 'session_removed', params: { sessionId: 's', number: 3, startsAt: null } }, t)).toBe('Sanne hat Session 3 entfernt')
-    expect(activityText({ ...base, type: 'game_count_changed', params: { from: 10, to: 12 } }, t)).toBe('Sanne hat die Anzahl Spiele auf 12 geändert')
-    expect(activityText({ ...base, type: 'team_size_changed', params: { from: 3, to: 4 } }, t)).toBe('Sanne hat die Teamgröße auf 4 geändert')
+    expect(text({ ...base, type: 'member_joined', params: {} })).toBe('Sanne ist dem Event beigetreten')
+    expect(text({ ...base, type: 'date_rescheduled', params: { sessionId: 's', number: 2, from: '2090-10-30T18:00:00.000Z', to: '2090-11-01T19:30:00.000Z' } })).toBe('Sanne hat Session 2 auf Mi 01.11. 20:30 verschoben')
+    expect(text({ ...base, type: 'date_reopened', params: { sessionId: 's', number: 1, previousStartsAt: '2090-10-30T18:00:00.000Z' } })).toBe('Sanne hat den Termin von Session 1 zurückgenommen')
+    expect(text({ ...base, type: 'session_added', params: { sessionId: 's', startsAt: null } })).toBe('Sanne hat eine Session hinzugefügt')
+    expect(text({ ...base, type: 'session_removed', params: { sessionId: 's', number: 3, startsAt: null } })).toBe('Sanne hat Session 3 entfernt')
+    expect(text({ ...base, type: 'game_count_changed', params: { from: 10, to: 12 } })).toBe('Sanne hat die Anzahl Spiele auf 12 geändert')
+    expect(text({ ...base, type: 'team_size_changed', params: { from: 3, to: 4 } })).toBe('Sanne hat die Teamgröße auf 4 geändert')
   })
 
   it('says „Termin“ without a number for the only Session', () => {
-    expect(activityText({ ...base, type: 'date_set', params: { sessionId: 's', number: 1, startsAt: '2090-11-01T19:30:00.000Z' } }, t)).toBe('Termin für Session 1 steht: Mi 01.11. 20:30')
-    expect(activityText({ ...base, type: 'date_set', params: { sessionId: 's', number: null, startsAt: '2090-11-01T19:30:00.000Z' } }, t)).toBe('Termin steht: Mi 01.11. 20:30')
-    expect(activityText({ ...base, type: 'date_rescheduled', params: { sessionId: 's', number: null, from: '2090-10-30T18:00:00.000Z', to: '2090-11-01T19:30:00.000Z' } }, t)).toBe('Sanne hat den Termin auf Mi 01.11. 20:30 verschoben')
-    expect(activityText({ ...base, type: 'date_reopened', params: { sessionId: 's', number: null, previousStartsAt: '2090-10-30T18:00:00.000Z' } }, t)).toBe('Sanne hat den Termin zurückgenommen')
-    expect(activityText({ ...base, type: 'session_removed', params: { sessionId: 's', number: null, startsAt: null } }, t)).toBe('Sanne hat eine Session entfernt')
+    expect(text({ ...base, type: 'date_set', params: { sessionId: 's', number: 1, startsAt: '2090-11-01T19:30:00.000Z' } })).toBe('Termin für Session 1 steht: Mi 01.11. 20:30')
+    expect(text({ ...base, type: 'date_set', params: { sessionId: 's', number: null, startsAt: '2090-11-01T19:30:00.000Z' } })).toBe('Termin steht: Mi 01.11. 20:30')
+    expect(text({ ...base, type: 'date_rescheduled', params: { sessionId: 's', number: null, from: '2090-10-30T18:00:00.000Z', to: '2090-11-01T19:30:00.000Z' } })).toBe('Sanne hat den Termin auf Mi 01.11. 20:30 verschoben')
+    expect(text({ ...base, type: 'date_reopened', params: { sessionId: 's', number: null, previousStartsAt: '2090-10-30T18:00:00.000Z' } })).toBe('Sanne hat den Termin zurückgenommen')
+    expect(text({ ...base, type: 'session_removed', params: { sessionId: 's', number: null, startsAt: null } })).toBe('Sanne hat eine Session entfernt')
   })
 
   it('says where a Member moved themselves, with the team named by its colour (#160)', () => {
     const own = { ...base, people: { u1: 'Sanne' } }
 
-    expect(activityText({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 1 } } }, t)).toBe('Sanne ist jetzt in Team Rot')
-    expect(activityText({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'team', team: 4 } } }, t)).toBe('Sanne ist jetzt in Team Himmel')
-    expect(activityText({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'bench' } } }, t)).toBe('Sanne ist jetzt auf der Bench')
-    expect(activityText({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } }, t)).toBe('Sanne ist jetzt auf der Tribüne')
+    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 1 } } })).toBe('Sanne ist jetzt in Team Rot')
+    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'team', team: 4 } } })).toBe('Sanne ist jetzt in Team Himmel')
+    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'bench' } } })).toBe('Sanne ist jetzt auf der Bench')
+    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } })).toBe('Sanne ist jetzt auf der Tribüne')
   })
 
   it('says who moved a Member when the Host did (#160)', () => {
     const byHost = { ...base, actor: { id: 'h', name: 'Hostess' }, people: { u1: 'Sanne' } }
 
-    expect(activityText({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } } }, t)).toBe('Hostess hat Sanne nach Team Orange verschoben')
-    expect(activityText({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 2 }, to: { zone: 'bench' } } }, t)).toBe('Hostess hat Sanne auf die Bench verschoben')
-    expect(activityText({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } }, t)).toBe('Hostess hat Sanne auf die Tribüne verschoben')
+    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } } })).toBe('Hostess hat Sanne nach Team Orange verschoben')
+    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 2 }, to: { zone: 'bench' } } })).toBe('Hostess hat Sanne auf die Bench verschoben')
+    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } })).toBe('Hostess hat Sanne auf die Tribüne verschoben')
   })
 
   it('says who reset a Team name, with the colour name of the team (the entry stores the position)', () => {
-    expect(activityText({ ...base, type: 'team_name_reset', params: { team: 1 } }, t)).toBe('Sanne hat den Namen von Team Rot zurückgesetzt')
-    expect(activityText({ ...base, type: 'team_name_reset', params: { team: 6 } }, t)).toBe('Sanne hat den Namen von Team Blau zurückgesetzt')
+    expect(text({ ...base, type: 'team_name_reset', params: { team: 1 } })).toBe('Sanne hat den Namen von Team Rot zurückgesetzt')
+    expect(text({ ...base, type: 'team_name_reset', params: { team: 6 } })).toBe('Sanne hat den Namen von Team Blau zurückgesetzt')
   })
 
   it('says who started and who ended a Session, with its number when the Event has several', () => {
-    expect(activityText({ ...base, type: 'session_started', params: { sessionId: 's', number: 2 } }, t)).toBe('Sanne hat Session 2 gestartet')
-    expect(activityText({ ...base, type: 'session_started', params: { sessionId: 's', number: null } }, t)).toBe('Sanne hat die Session gestartet')
-    expect(activityText({ ...base, type: 'session_ended', params: { sessionId: 's', number: 2 } }, t)).toBe('Sanne hat Session 2 beendet')
-    expect(activityText({ ...base, type: 'session_ended', params: { sessionId: 's', number: null } }, t)).toBe('Sanne hat die Session beendet')
+    expect(text({ ...base, type: 'session_started', params: { sessionId: 's', number: 2 } })).toBe('Sanne hat Session 2 gestartet')
+    expect(text({ ...base, type: 'session_started', params: { sessionId: 's', number: null } })).toBe('Sanne hat die Session gestartet')
+    expect(text({ ...base, type: 'session_ended', params: { sessionId: 's', number: 2 } })).toBe('Sanne hat Session 2 beendet')
+    expect(text({ ...base, type: 'session_ended', params: { sessionId: 's', number: null } })).toBe('Sanne hat die Session beendet')
   })
 })
 
@@ -168,7 +170,7 @@ describe('readEntry', () => {
 })
 
 describe('activityParts', () => {
-  it('sets the actor, the person and the team in bold and says the same words as the plain sentence', () => {
+  it('sets the actor, the person and the team in bold, and the pieces read as one sentence', () => {
     const moved: ActivityEntry = { ...base, actor: { id: 'u2', name: 'Hostess' }, people: { u1: 'Sanne' }, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } } }
 
     expect(activityParts(moved, t)).toEqual([
@@ -179,7 +181,7 @@ describe('activityParts', () => {
       { text: 'Team Orange', strong: true },
       { text: ' verschoben', strong: false },
     ])
-    expect(activityParts(moved, t)!.map(part => part.text).join('')).toBe(activityText(moved, t))
+    expect(activityParts(moved, t)!.map(part => part.text).join('')).toBe('Hostess hat Sanne nach Team Orange verschoben')
   })
 
   it('sets the Date of a Session in bold and keeps a sentence without a name whole', () => {
