@@ -37,10 +37,7 @@ export async function applySettingsChange(
   const before = settingsFromRow(eventRow)
   let after: EventSettings
   if (change !== undefined) {
-    // The Team size floor counts the teams that remain: Players of a team this very change removes go to the Bench (#163).
-    const requested = asRecord(change).teamCount
-    const teamCount = typeof requested === 'number' && Number.isInteger(requested) ? requested : undefined
-    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: await settingsFloors(tx, eventRow.id, teamCount) })
+    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: await settingsFloors(tx, eventRow.id) })
     if (!checked.ok) throw apiError(checked.error)
     after = checked.settings
   }
