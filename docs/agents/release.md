@@ -50,7 +50,7 @@ Which case applies depends on what `staging` holds after the cut.
 
 **After the merge, in both cases:**
 
-- Tag the merge commit on `main` with an annotated tag `vX.Y.Z`, message `Release x.y.z – Name` (e.g. `Release 1.2.0 – Mehr Termine`), and push the tag. A cloud session tags through the REST API (`docs/agents/delivery.md`).
+- Tag the merge commit on `main` with an annotated tag `vX.Y.Z`, message `Release x.y.z – Name` (e.g. `Release 0.3.0 – Mehr Termine`), and push the tag. A cloud session tags through the REST API (`docs/agents/delivery.md`).
 - If `main` and `staging` have diverged (the merge commit on `main` is not in `staging`), merge `main` back into `staging` so the next Release PR is clean.
 - Delete the `release/x.y.z` branch once it is merged (Case B only).
 - Mark the Release as released in `docs/roadmap.md`.
@@ -58,9 +58,11 @@ Which case applies depends on what `staging` holds after the cut.
 
 ## Semantic versioning
 
-- A Release with a new feature raises the minor number and resets the patch number: `1.1.1` → `1.2.0`.
-- A Release with fixes only raises the patch number: `1.1.1` → `1.1.2`.
-- The major number is reserved for a break Users feel, for example everyone having to sign in again.
+Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the user declares ready, never an agent. Until 0.5.1 the Releases were numbered 1.x; 0.5.1 renumbers them `1.N.p` → `0.(N+1).p` (1.0.0 is 0.1.0, 1.4.0 is 0.5.0), tags included. Specs, issues, reviews, ADRs and code comments written before keep the old numbers; `docs/roadmap.md` maps them.
+
+- A Release with a new feature raises the minor number and resets the patch number: `0.2.1` → `0.3.0`.
+- A Release with fixes only raises the patch number: `0.2.1` → `0.2.2`.
+- From 1.0.0 on, the major number is reserved for a break Users feel, for example everyone having to sign in again. Before 1.0.0, such a break raises the minor number.
 
 ## Checks
 

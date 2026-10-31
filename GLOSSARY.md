@@ -32,14 +32,14 @@ _Avoid_: Tournament, game night, lobby, match
 
 **Session**:
 One sitting of an Event on one Date. Every Event has at least one; the Host can add and remove Sessions until the Event is finished, and a Session that has started stays and keeps its Date. Sessions that have started are numbered first, in the order they started, then the dated ones that have not started by Date (a Session still waiting for a Date keeps no number, but the page shows it with the number it will get, after the dated ones); once a Session has started, its number never changes.
+_Avoid_: Game night, evening, round
 
 **Running Session**:
 The Session the Host has started and not yet ended; an Event has at most one. The Host starts the earliest dated Session that has not started, and the first start makes the Event running (UI: „Session starten“, „Session beenden“).
 _Avoid_: Active session, live session, game night
-_Avoid_: Game night, evening, round
 
 **Game count**:
-The number of games an Event runs for, changeable by the Host at any time. The Event finishes after its last Session once that many games (plus a tiebreaker if needed) have been played, never after a set time. The Session that plays the last game becomes the last one, and later Sessions are removed; if the last Session ends short of the count, the Event stays open until the Host adds a Session or lowers the count.
+The number of Rounds an Event runs for, changeable by the Host at any time but never below the Rounds already started. The Event finishes after its last Session once that many Rounds have their result (plus a Tiebreaker if needed), never after a set time. The Session that plays the last Round becomes the last one, and later Sessions are removed; if the last Session ends short of the count, the Event stays open until the Host adds a Session or lowers the count.
 _Avoid_: Rounds, games per Session
 
 **Phase**:
@@ -169,11 +169,15 @@ The Selection mode in which the Host sets every next game (UI: Host-Wahl).
 _Avoid_: Admin pick, Admin-Wahl (Admin means the Platform admin)
 
 **Hidden wheel**:
-A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else sees placeholder names until a game is drawn, and never learns the games that were not drawn.
+A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else learns how many there are only once the wheel is on screen, sees placeholder names until a game is drawn, and never learns the games that were not drawn.
 _Avoid_: Blind wheel, secret wheel
 
+**Pool preview**:
+Whether Members other than the Host see an Event's Game pool and Tiebreaker pool before the games come up; the Host chooses it, and under a Hidden wheel it is always off. With it off, Members neither see the games nor learn how many there are; they meet them only on the Lucky Wheel or when the Host sets one (UI: „Pool vorher zeigen“).
+_Avoid_: Pool visibility, open pool
+
 **Veto**:
-A Party's rejection of a game the wheel has just drawn, cast within the veto window; the game leaves the wheel and the wheel spins again. Any Player of the Party can cast any of its Vetoes, a Party casts at most one per drawn game, and a cast Veto cannot be withdrawn.
+A Party's rejection of a game the wheel has just drawn, or that the Host has set and allowed a Veto on, cast within the veto window; the game leaves the Game pool, and the wheel or the Host determines another. Any Player of the Party can cast any of its Vetoes, a Party casts at most one per drawn game, and a cast Veto cannot be withdrawn.
 _Avoid_: Ban (a ban removes a game before it is drawn), skip, reject
 
 **Veto allowance**:
@@ -196,6 +200,10 @@ _Avoid_: Backup pool
 What kind of play a game in the Game library works for: Teams, free-for-all or one against one, any number of them (UI: Passt zu). One against one is a Suitability, not a Format: such an Event is Teams with two teams of one.
 _Avoid_: Format (an Event has a Format, a game has Suitabilities), game mode
 
+**Game notes**:
+The free text on a game in the Game library, such as its settings, warm-up and win condition; the game's editors write it, and Members read it once they may know the game (UI: Notizen).
+_Avoid_: Note (a Note belongs to a Vote), description, rules
+
 **Activity feed**:
 The Event's automatic log of what happened, with times, readable by every Member; it never names a game before everyone may know it (UI: Aktivität).
 _Avoid_: History, log, timeline
@@ -205,6 +213,10 @@ The show that closes a finished Event, started by the Host and seen by every Mem
 _Avoid_: Ceremony screen, finale, results screen
 
 ## During a Session
+
+**Round**:
+One of the games an Event plays. It begins with a spin or with the Host setting a game, keeps going through vetoed draws until no Veto stops its game, and ends with its result; if the Host puts its game back first, the Round is gone. Only one Round at a time is being drawn, but several can wait for their result, across Sessions too, and their results can be entered in any order. A Round gets its number („Spiel 3“) when its result is entered, and an Event never starts more Rounds than its Game count, apart from the Tiebreaker.
+_Avoid_: Match, game (alone), Session
 
 **Coin flip**:
 A coin the Host tosses at any time during a running Session; the server decides the side, and every Member sees the same toss at the same moment (UI: Münzwurf).
@@ -225,7 +237,7 @@ The platform-wide collection of games that Hosts fill their Events from; only Us
 _Avoid_: Game list, catalogue
 
 **Release**:
-A version of COMPIES that reaches Users, numbered by semantic versioning: a new feature raises the minor number, fixes alone raise the patch number.
+A version of COMPIES that reaches Users, numbered by semantic versioning: a new feature raises the minor number, fixes alone raise the patch number. Releases count from 0.1 while COMPIES is being built; 1.0 is the Release the operator declares ready.
 _Avoid_: Deploy, update, build
 
 **Changelog**:
