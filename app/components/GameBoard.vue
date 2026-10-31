@@ -165,25 +165,24 @@ watch(drag.overZone, (key) => {
 // Whoever's place changed lands with a pop (04-motion § Avatar, #208), the own drop as much as somebody else's; a refused
 // move bounces home and does not land, and people who only shift because others moved glide without a pop.
 const layout = computed(() => people.value.map(person => `${person.id}:${placeKey(person.place)}`).join('|'))
-const placesIn = (text: string) => new Map(text.split('|').filter(Boolean).map((entry) => {
-  const cut = entry.indexOf(':')
-  return [entry.slice(0, cut), entry.slice(cut + 1)] as const
-}))
+const placesOf = (list: typeof people.value) => new Map(list.map(person => [person.id, placeKey(person.place)] as const))
+// The places the board last drew: a landing is a place that differs from them.
+let placesShown = placesOf(people.value)
 let before = new Map<string, DOMRect>()
 const measure = () => new Map([...(root.value?.querySelectorAll<HTMLElement>('[data-user-id]') ?? [])].map(element => [element.dataset.userId ?? '', element.getBoundingClientRect()]))
 watch(layout, () => void (before = measure()), { flush: 'pre' })
-watch(layout, (now, was) => {
-  const placesBefore = placesIn(was)
-  const placesNow = placesIn(now)
+watch(layout, () => {
+  const placesNow = placesOf(people.value)
   for (const element of root.value?.querySelectorAll<HTMLElement>('[data-user-id]') ?? []) {
     const id = element.dataset.userId ?? ''
     const from = before.get(id)
     const bounced = moves.bounced.has(id)
     if (from) glide(element, from, element.getBoundingClientRect(), bounced ? 'bounce' : 'glide')
-    if (!bounced && placesBefore.has(id) && placesBefore.get(id) !== placesNow.get(id)) pop(element)
+    if (!bounced && placesShown.has(id) && placesShown.get(id) !== placesNow.get(id)) pop(element)
     moves.bounced.delete(id)
   }
   before = new Map()
+  placesShown = placesNow
 }, { flush: 'post' })
 
 // Everything a person on the board is bound to, the same in every zone: what it shows, and the pointer, click and menu handlers.
