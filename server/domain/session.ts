@@ -9,10 +9,16 @@ export function parseSessionCount(raw: unknown): number | null {
   return Number.isInteger(raw) && (raw as number) >= 1 && (raw as number) <= SESSIONS_MAX ? raw as number : null
 }
 
-/** A Session as the Event holds it: its id and its set Date (null while it waits for one). */
+/** A Session as the Event holds it: its id, its set Date (null while it waits for one) and when the Host started it (null until then, #164). */
 export interface SessionDate {
   id: string
   startsAt: Date | null
+  startedAt: Date | null
+}
+
+/** Whether the Host has started the Session (#164). */
+export function isStarted<S extends { startedAt: Date | null }>(session: S): session is S & { startedAt: Date } {
+  return session.startedAt !== null
 }
 
 /** Whether the Session has its Date. */
@@ -21,20 +27,23 @@ export function isDated<S extends { startsAt: Date | null }>(session: S): sessio
 }
 
 /**
- * The Sessions with the number they are shown with (#49, #53, #70): the dated ones first, in Date order, then
- * the ones still waiting for a Date, in the given order. The dated ones are numbered 1…n ("Session 1" is always
- * the first evening), but only while the Event has several Sessions: a single Session has nothing to tell apart,
- * so it is shown without a number. A Session without a Date has no number. Equal Dates keep their given order.
- * The Event page, Home and the calendar title all show this number, and sequenceRaises compares it.
+ * The Sessions with the number they are shown with (#49, #53, #70, #164): the started ones first, in the order they
+ * started, then the dated ones that have not started, in Date order, then the ones still waiting for a Date, in the
+ * given order. They are numbered 1…n down that list, but only while the Event has several Sessions: a single Session
+ * has nothing to tell apart, so it is shown without a number. A Session without a Date that has not started has no
+ * number. Once a Session has started its number never changes: a start picks the earliest dated Session, which
+ * already holds the next number, and a Date set or moved later only reorders the Sessions behind the started ones.
+ * Equal Dates (and equal starts) keep their given order. The Event page, Home and the calendar title all show this
+ * number, and sequenceRaises compares it.
  */
 export function numberedSessions<S extends SessionDate>(sessions: S[]): (S & { number: number | null })[] {
   const several = sessions.length > 1
-  // Array sort is stable, so equal Dates keep their given order.
-  const dated = sessions.filter(isDated).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
-  return [
-    ...dated.map((session, index) => ({ ...session, number: several ? index + 1 : null })),
-    ...sessions.filter(session => session.startsAt === null).map(session => ({ ...session, number: null })),
-  ]
+  // Array sort is stable, so equal times keep their given order.
+  const started = sessions.filter(isStarted).sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
+  const waiting = sessions.filter(session => session.startedAt === null)
+  const dated = waiting.filter(isDated).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+  const numbered = [...started, ...dated].map((session, index) => ({ ...session, number: several ? index + 1 : null }))
+  return [...numbered, ...waiting.filter(session => session.startsAt === null).map(session => ({ ...session, number: null }))]
 }
 
 /** How many Sessions still wait for a Date. */
@@ -56,7 +65,7 @@ export function openPoll<S extends { id: string }, V extends { slotId: string }>
 }
 
 /** Whether a Session other than `exceptId` has this instant as its set Date (#49: Dates are distinct). */
-export function hasDateAt(sessions: SessionDate[], instant: Date, exceptId?: string): boolean {
+export function hasDateAt(sessions: Pick<SessionDate, 'id' | 'startsAt'>[], instant: Date, exceptId?: string): boolean {
   return sessions.some(session => session.id !== exceptId && session.startsAt?.getTime() === instant.getTime())
 }
 

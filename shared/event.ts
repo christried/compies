@@ -71,7 +71,7 @@ export interface SessionNote { userId: string, value: VoteValue, note: string }
 export interface DatedSessionView {
   id: string
   /**
-   * The number the Session is shown with: 1…n in Date order while the Event has several Sessions, null for the
+   * The number the Session is shown with: 1…n (started Sessions in start order, then the rest by Date) while the Event has several Sessions, null for the
    * one Session of an Event (numberedSessions in server/domain/session.ts, #70). The client shows it as it is.
    */
   number: number | null

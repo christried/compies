@@ -40,7 +40,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   const eventIds = rows.map(row => row.id)
 
   const sessionRows = await db
-    .select({ id: sessions.id, eventId: sessions.eventId, startsAt: sessions.startsAt, slotId: sessions.slotId })
+    .select({ id: sessions.id, eventId: sessions.eventId, startsAt: sessions.startsAt, startedAt: sessions.startedAt, slotId: sessions.slotId })
     .from(sessions)
     .where(and(inArray(sessions.eventId, eventIds), sessionNotRemoved))
 
