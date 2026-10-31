@@ -1,0 +1,38 @@
+// Unused files, exports and dependencies (`pnpm knip`, run in CI). Dead code got past typecheck, lint and tests in
+// Release 1.4 (a merge brought back `popIn`; `activityText` was kept alive by its test only).
+// `pnpm knip` runs with --production: test files are not entry points, so an export only a test calls counts as unused.
+// Knip's Nuxt plugin knows pages, layouts, middleware, plugins, server/api, server/plugins and the auto-imports of
+// app/components, app/composables and app/utils. What it cannot see goes in "entry" below, each with its reason.
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // An export the file uses itself is a helper that a unit test imports to check it directly (LOST_AFTER_MS, kebabCase,
+  // ...). That is fine. What counts as dead is an export nothing uses, the file included, or one kept alive by a test only.
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": [
+        // Imported by nuxt.config.ts, which knip reads as config and does not follow in production mode (#178).
+        "stage.ts!",
+        // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server only (#178).
+        "server/dev/sign-in.ts!"
+      ],
+      "ignore": [
+        // The design hand-off and its prototype scripts are reference material, not shipped (also ignored by eslint).
+        "docs/**",
+        // Test helpers and fixtures. Tests are not entry points in production mode, so helpers only they import look unused.
+        "test/**"
+      ]
+    },
+    // The realtime Worker is its own package with its own lockfile (README, Realtime). Knip reads its package.json and
+    // wrangler.jsonc, so what it imports from shared/ counts as used. Its dependencies are not installed in the app's CI
+    // job (the realtime install runs after), which is fine: knip only reads the declared ones.
+    "realtime": {
+      // vitest.config.ts imports @cloudflare/vitest-plugin, which is not installed when knip runs, and knip would fail loading it.
+      "vitest": false,
+      // The Worker's own tests and their config are not shipped.
+      "ignore": ["test/**", "vitest.config.ts"],
+      // Run by .github/workflows/realtime-deploy.yml, not imported by the Worker.
+      "entry": ["scripts/deploy-check.mjs"]
+    }
+  }
+}
