@@ -5,7 +5,7 @@
 // is a filled green dot, offline a hollow ring and the picture in grey, so it differs by shape and not by colour alone
 // (DS People); undefined means nobody knows yet and shows neither. Decorative: the name next to it carries the
 // meaning, and the team and presence are named in text beside it too. The initial is sized by its container (cqw), so a caller can
-// resize the avatar with CSS (the board does, 48 px on a desktop and 40 px on a phone).
+// resize the avatar with CSS (the board does, 44 px on a desktop and 36 px on a phone).
 const props = withDefaults(defineProps<{
   name: string
   image?: string | null

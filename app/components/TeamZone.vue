@@ -82,7 +82,7 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
           :title="lockReason"
           class="flex w-12 flex-col items-center gap-1 pt-1 text-[12px] font-semibold text-ink-3 md:w-[60px]"
         >
-          <span class="grid size-10 place-items-center rounded-pill border-[2.5px] border-dashed border-ink-3 md:size-12">
+          <span class="grid size-9 place-items-center rounded-pill border-[2.5px] border-dashed border-ink-3 md:size-11">
             <AppIcon
               :icon="Lock"
               :size="16"
@@ -99,7 +99,7 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
           :class="dropTarget && slot === 1 ? 'font-extrabold text-focus' : 'font-semibold text-ink-2'"
         >
           <span
-            class="grid size-10 place-items-center rounded-pill border-dashed md:size-12"
+            class="grid size-9 place-items-center rounded-pill border-dashed md:size-11"
             :class="dropTarget && slot === 1 ? 'border-[3px] border-focus bg-surface-2 text-focus' : 'border-[2.5px] border-ink-3 text-ink-3'"
           >
             <AppIcon

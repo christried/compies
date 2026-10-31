@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Armchair, Eye, Lock } from '@lucide/vue'
+import { Armchair, Eye, Hand, Hourglass, Lock, Users } from '@lucide/vue'
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { errorCopyKey } from '~/utils/api-error'
 import { placeFromKey, placeKey, teamName } from '~/utils/board'
@@ -25,12 +25,16 @@ const props = withDefaults(defineProps<{
   teamChoiceOpen: boolean
   /** The first Session has started (#164). */
   started?: boolean
+  /** Whether the board says why it is locked once a Session has started. The page leaves it out between Sessions, where its own notice says it (#166). */
+  lockedNotice?: boolean
+  /** Whether the board says teams are uneven. The page says no while a Session runs and once every Session is over; without it the board says so until the first Session starts (#166). */
+  unevenNotice?: boolean
   viewerId: string
   isHost: boolean
   room: Pick<ReturnType<typeof useEventRoom>, 'on'>
   /** Whether somebody is online in the room (#162); undefined while presence is not known (no dots then). */
   online?: (userId: string) => boolean | undefined
-}>(), { started: false, online: undefined })
+}>(), { started: false, lockedNotice: true, unevenNotice: undefined, online: undefined })
 
 const { t } = useI18n()
 const root = useTemplateRef<HTMLElement>('root')
@@ -227,32 +231,78 @@ function pick(key: string) {
 const myWord = computed(() => props.members.find(member => member.id === props.viewerId)?.teamWord ?? null)
 const authorsIn = (team: number) => inPlace({ zone: 'team', team }).filter(person => person.teamWord !== null).map(person => person.name)
 
-// The Host's notice about uneven teams: the smallest team against the biggest.
+// The notice about uneven teams: the smallest team against the biggest. The Host's says the next start waits for it, also
+// between two Sessions, where the next start is blocked again (#166); a Player's says the team looks for somebody, only
+// while Team choice is open (11-event-seite § NoticeBanner).
 const uneven = computed(() => {
-  if (!props.isHost || props.started || props.settings === null || props.teams.length < 2) return null
+  if (!(props.unevenNotice ?? !props.started) || props.settings === null || props.teams.length < 2) return null
+  if (!props.isHost && phase.value !== 'open') return null
   const counts = props.teams.map(team => ({ team: team.position, count: seats.value[team.position] ?? 0 }))
   const small = counts.reduce((least, next) => (next.count < least.count ? next : least))
   const big = Math.max(...counts.map(entry => entry.count))
   return small.count === big ? null : { team: nameOfTeam(small.team), small: small.count, big }
 })
+
+/** What the board says about itself under its title (11-event-seite § GameBoard): who is there, or how full the teams are. */
+const meta = computed(() => {
+  const size = props.settings?.teamSize ?? 0
+  const teamsText = t('stepper.summary.teams', { n: props.teams.length, s: size })
+  switch (phase.value) {
+    case 'setup': return t('board.meta.setup', { n: props.members.length })
+    case 'poll': return t('board.meta.poll', { teams: teamsText })
+    case 'open': return t('board.meta.open', { taken: Object.values(seats.value).reduce((sum, n) => sum + n, 0), places: props.teams.length * size })
+    default: return t('board.meta.running', { teams: teamsText })
+  }
+})
 </script>
 
 <template>
+  <!-- A plain block of the stage, no card around it (11-event-seite § GameBoard): its notices sit above the title like the other notices of the page. -->
   <section
     ref="root"
-    class="@container flex flex-col gap-3 rounded-[20px] border-(length:--cp-bw) border-line bg-surface p-5.5 text-ink shadow-card md:p-[22px]"
+    class="@container flex flex-col gap-3 text-ink"
     aria-labelledby="board-title"
   >
-    <h2
-      id="board-title"
-      class="m-0 font-display text-[26px] leading-none font-normal md:text-[32px]"
+    <NoticeBanner
+      v-if="phase === 'running' && lockedNotice"
+      tone="info"
+      :icon="Lock"
     >
-      {{ t('board.title') }}
-    </h2>
+      {{ t(runningNotice) }}
+    </NoticeBanner>
+    <NoticeBanner
+      v-if="uneven"
+      tone="warning"
+      :icon="Users"
+      :host-only="isHost"
+    >
+      {{ t(isHost ? 'board.notice.uneven' : 'board.notice.unevenMember', uneven) }}
+    </NoticeBanner>
+
+    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <h2
+        id="board-title"
+        class="m-0 font-display text-[24px] leading-none font-normal md:text-[30px]"
+      >
+        {{ t('board.title') }}
+      </h2>
+      <span class="text-[13px] font-bold text-ink-2">{{ meta }}</span>
+      <span
+        v-if="phase === 'open'"
+        class="ml-auto inline-flex items-center gap-1 text-[12px] font-bold text-ink-2 md:hidden"
+      >
+        <AppIcon
+          :icon="Hand"
+          :size="14"
+        />
+        {{ t('board.longPress') }}
+      </span>
+    </div>
 
     <NoticeBanner
       v-if="phase === 'setup'"
       tone="info"
+      :icon="Hourglass"
     >
       {{ t('board.note.setup') }}
     </NoticeBanner>
@@ -262,20 +312,6 @@ const uneven = computed(() => {
       :icon="Lock"
     >
       {{ t('board.notice.poll') }}
-    </NoticeBanner>
-    <NoticeBanner
-      v-else-if="phase === 'running'"
-      tone="info"
-      :icon="Lock"
-    >
-      {{ t(runningNotice) }}
-    </NoticeBanner>
-    <NoticeBanner
-      v-if="uneven"
-      tone="warning"
-      host-only
-    >
-      {{ t('board.notice.uneven', uneven) }}
     </NoticeBanner>
 
     <!-- Two columns on a phone; from a board 560 px wide as many as fit with at least 250 px each (4 at full width). -->
@@ -317,7 +353,7 @@ const uneven = computed(() => {
       </TeamZone>
     </div>
 
-    <div class="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3">
+    <div class="grid grid-cols-1 gap-2 @min-[560px]:grid-cols-2 @min-[560px]:gap-3">
       <BenchZone
         v-for="zone in (['bench', 'stands'] as const)"
         :key="zone"

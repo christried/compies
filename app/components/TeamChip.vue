@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<{
     />
     <span
       v-if="!compact"
-      class="min-w-0 rounded-[6px] px-1.5 py-px font-display text-[13px] leading-[1.3] font-normal break-words line-clamp-2 md:line-clamp-none md:truncate md:px-2 md:text-[19px]"
+      class="min-w-0 rounded-[6px] px-1.5 py-px font-display text-[13px] leading-[1.3] font-normal hyphens-auto [overflow-wrap:anywhere] line-clamp-2 md:line-clamp-none md:truncate md:px-2 md:text-[19px]"
       :style="{ backgroundColor: `var(--cp-team-${props.team})`, color: `var(--cp-team-${props.team}-ink)` }"
     >{{ name }}</span>
   </span>

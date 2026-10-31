@@ -51,6 +51,9 @@ interface Options {
   started?: boolean
   viewerId?: string
   isHost?: boolean
+  /** The page's say on the uneven and the locked notice (#166); without it the board decides itself. */
+  unevenNotice?: boolean
+  lockedNotice?: boolean
   /** What the move endpoint answers; it may wait and throw. */
   answer?: (body: { userId: string, to: Place }) => Promise<unknown> | unknown
 }
@@ -81,6 +84,8 @@ async function mountBoard(options: Options = {}) {
       viewerId: options.viewerId ?? kitty.id,
       isHost: options.isHost ?? false,
       room: live.room,
+      ...(options.unevenNotice === undefined ? {} : { unevenNotice: options.unevenNotice }),
+      ...(options.lockedNotice === undefined ? {} : { lockedNotice: options.lockedNotice }),
     },
   })
   return { page, posted, ...live }
@@ -167,6 +172,24 @@ describe('GameBoard', () => {
       expect(group(page, 'Team Rot, 1 von 2 frei').text()).toContain('Frei')
       expect(group(page, 'Team Orange, 2 von 2 frei').text().match(/Frei/g)).toHaveLength(2)
       expect(page.findAll('[role="img"]')).toHaveLength(0)
+    })
+  })
+
+  describe('what the board says about itself under its title (#166)', () => {
+    const meta = (page: Board) => page.get('h2 + span').text()
+
+    it('says who is there in an Event that was never set up, how full the teams are while Team choice is open, and that the teams are closed or locked otherwise', async () => {
+      expect(meta((await mountBoard({ settings: null, teamChoiceOpen: false })).page)).toBe('3 Leute da')
+      expect(meta((await mountBoard({ teamChoiceOpen: false })).page)).toBe('2 Teams à 2 · Teamwahl noch zu')
+      expect(meta((await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })).page)).toBe('1 von 4 Plätzen besetzt')
+      expect(meta((await mountBoard({ started: true })).page)).toBe('2 Teams à 2 · gesperrt')
+    })
+
+    it('leaves out the locked notice where the page says so, between two Sessions', async () => {
+      const { page } = await mountBoard({ started: true, lockedNotice: false })
+
+      expect(page.text()).not.toContain('Das Spiel läuft')
+      expect(page.text()).not.toContain('Gesperrt seit Spielstart')
     })
   })
 
@@ -550,10 +573,27 @@ describe('GameBoard', () => {
       expect(page.text()).toContain('Nur du siehst das')
     })
 
-    it('does not tell a Player', async () => {
+    it('does not tell a Player the start waits, but that the short team looks for somebody while Team choice is open (#166)', async () => {
       const { page } = await mountBoard({ members: uneven })
 
       expect(page.text()).not.toContain('Das Spiel startet erst')
+      expect(page.text()).toContain('Team Orange sucht noch jemanden. Rück rein, dann kann’s losgehen.')
+      expect(page.text()).not.toContain('Nur du siehst das')
+    })
+
+    it('does not tell a Player once Team choice is closed, and stays quiet where the page says no (#166)', async () => {
+      const closed = await mountBoard({ members: uneven, teamChoiceOpen: false })
+      expect(closed.page.text()).not.toContain('sucht noch jemanden')
+
+      const host = await mountBoard({ members: uneven, viewerId: SANNE, isHost: true, unevenNotice: false })
+      expect(host.page.text()).not.toContain('Das Spiel startet erst')
+    })
+
+    it('puts the notice above the board\'s title, like the other notices of the page (#166)', async () => {
+      const { page } = await mountBoard({ members: uneven, viewerId: SANNE, isHost: true })
+
+      const notice = page.get('[role="status"]').element
+      expect(notice.compareDocumentPosition(page.get('h2').element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
     it('stays away when the teams are the same size, and for an Event without teams', async () => {

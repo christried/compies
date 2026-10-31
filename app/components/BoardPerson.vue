@@ -5,7 +5,7 @@ import { popIn } from '~/utils/motion'
 // One Member on the Game board: avatar and name, a button that opens the MoveToMenu (Enter or click) and that
 // the GameBoard makes draggable through its pointer handlers (#160, 02-components § GameBoard). Everyone's person is
 // a button, because the menu explains to a Player why they cannot move somebody else. `lifted` is the person in the hand.
-// The avatar is 48 px on a desktop and 40 px on a phone (DS People); in a team it carries the team's ring and mark. A
+// The avatar is 44 px on a desktop and 36 px on a phone (11-event-seite § GameBoard); in a team it carries the team's ring and mark. A
 // Team word (#161) shows as a small chip under it and pops in when it arrives.
 const props = withDefaults(defineProps<{
   userId: string
@@ -53,7 +53,7 @@ const label = computed(() => t(props.online === undefined ? 'board.personAria' :
     :title="t('board.dragHint')"
   >
     <UserAvatar
-      class="max-md:!size-10"
+      class="max-md:!size-9 md:!size-11"
       :name="name"
       :image="image"
       :size="48"
