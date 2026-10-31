@@ -31,7 +31,7 @@ One competition of a group, from its Date poll to its archive, played over one o
 _Avoid_: Tournament, game night, lobby, match
 
 **Session**:
-One sitting of an Event on one Date. Every Event has at least one; the Host can add and remove Sessions until the Event is finished, and a Session that has started stays and keeps its Date. Sessions that have started are numbered first, in the order they started, then the dated ones that have not started by Date (a Session still waiting for a Date has no number); once a Session has started, its number never changes.
+One sitting of an Event on one Date. Every Event has at least one; the Host can add and remove Sessions until the Event is finished, and a Session that has started stays and keeps its Date. Sessions that have started are numbered first, in the order they started, then the dated ones that have not started by Date (a Session still waiting for a Date keeps no number, but the page shows it with the number it will get, after the dated ones); once a Session has started, its number never changes.
 
 **Running Session**:
 The Session the Host has started and not yet ended; an Event has at most one. The Host starts the earliest dated Session that has not started, and the first start makes the Event running (UI: „Session starten“, „Session beenden“).
