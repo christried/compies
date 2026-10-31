@@ -6,7 +6,7 @@ import type { EventPools } from '~~/shared/event'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { serve, view } from './event-page'
+import { serve, view, viewWithSessions } from './event-page'
 
 // „So wird gespielt“ (#148): the settings of the Event for every Member, and the pools as names or, under a
 // Hidden wheel, as counts.
@@ -113,19 +113,51 @@ describe('HowWePlayCard (#148)', () => {
     expect(host.text()).not.toContain('Spielepool')
   })
 
-  it('offers the Host Bearbeiten until the first Session starts, and a lock with „Fest seit dem Start“ afterwards', async () => {
-    const editable = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, editTo: '/e/x/einstellungen' })
-    const locked = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, locked: true })
+  it('offers the Host Bearbeiten, before and after the first start, for as long as the settings can be edited', async () => {
+    const before = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, editTo: '/e/x/einstellungen' })
+    const after = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, editTo: '/e/x/einstellungen', locked: true })
+    const finished = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, locked: true })
     const member = await mountCard({ settings: wheel, pools: visiblePools })
 
-    expect(editable.get('a').text()).toBe('Bearbeiten')
-    expect(editable.get('a').attributes('href')).toBe('/e/x/einstellungen')
-    // Plain underlined text: outline-memphis would draw a box around it.
-    expect(editable.get('a').classes()).not.toContain('outline-memphis')
-    expect(editable.text()).not.toContain('Fest seit dem Start')
-    expect(locked.find('a').exists()).toBe(false)
-    expect(locked.text()).toContain('Fest seit dem Start')
+    for (const card of [before, after]) {
+      expect(card.get('a').text()).toBe('Bearbeiten')
+      expect(card.get('a').attributes('href')).toBe('/e/x/einstellungen')
+      // Plain underlined text: outline-memphis would draw a box around it.
+      expect(card.get('a').classes()).not.toContain('outline-memphis')
+    }
+    expect(finished.find('a').exists()).toBe(false)
     expect(member.find('a').exists()).toBe(false)
+  })
+
+  // The settings that stay fixed once the first Session has started (LOCKED_WHEN_RUNNING) carry a lock on their row; the
+  // header says nothing. Spiele can still change, so it has none.
+  const lockedRows = (card: Awaited<ReturnType<typeof mountCard>>) => card.findAll('dl > div')
+    .filter(row => row.find('[title="Fest seit dem Start"]').exists())
+    .map(row => row.get('dt').text())
+
+  it('marks Format, Auswahl and Punkte with a lock named „Fest seit dem Start“ after the first start, and Spiele with none', async () => {
+    const host = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, editTo: '/e/x/einstellungen', locked: true })
+
+    expect(lockedRows(host)).toEqual(['Format', 'Auswahl', 'Punkte'])
+    expect(host.findAll('[title="Fest seit dem Start"]')).toHaveLength(3)
+    // The accessible name is text, not only the title.
+    expect(host.findAll('dl > div')[0]!.text()).toContain('Fest seit dem Start')
+    expect(host.findAll('dl > div')[1]!.text()).not.toContain('Fest seit dem Start')
+    expect(host.get('h2').element.parentElement!.textContent).not.toContain('Fest seit dem Start')
+  })
+
+  it('shows Members the same locks, without Bearbeiten', async () => {
+    const member = await mountCard({ settings: wheel, pools: visiblePools, locked: true })
+
+    expect(lockedRows(member)).toEqual(['Format', 'Auswahl', 'Punkte'])
+    expect(member.find('a').exists()).toBe(false)
+  })
+
+  it('shows no lock before the first start', async () => {
+    const host = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, editTo: '/e/x/einstellungen' })
+
+    expect(lockedRows(host)).toEqual([])
+    expect(host.text()).not.toContain('Fest seit dem Start')
   })
 })
 
@@ -147,5 +179,20 @@ describe('the card on the Event page (#148)', () => {
     expect(text).toContain('So wird gespielt')
     expect(text).toContain('2 Spiele im Spielepool, 1 im Tiebreaker-Pool.')
     expect(text.indexOf('Sessions')).toBeLessThan(text.indexOf('So wird gespielt'))
+  })
+
+  it('keeps Bearbeiten for the Host after the first start, next to the locks (#166)', async () => {
+    const { slug } = serve(s => viewWithSessions(
+      s,
+      [{ startsAt: '2026-10-23T18:00:00.000Z', number: 1, startedAt: '2026-10-23T18:05:00.000Z', endedAt: '2026-10-23T20:00:00.000Z' }, { startsAt: '2026-10-30T18:00:00.000Z', number: 2 }],
+      0,
+      { event: { isHost: true, phase: 'running' }, settings: wheel, pools: visiblePools },
+    ))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    const section = page.findAll('section').find(candidate => candidate.find('h2')?.text() === 'So wird gespielt')!
+    expect(section.findAll('a').map(link => link.text())).toContain('Bearbeiten')
+    expect(section.findAll('[title="Fest seit dem Start"]')).toHaveLength(3)
   })
 })

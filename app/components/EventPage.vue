@@ -503,7 +503,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :settings="data.settings"
             :pools="data.pools"
             :is-host="data.event.isHost"
-            :edit-to="canEditSettings && data.settings !== null && !started ? settingsPath(slug) : null"
+            :edit-to="canEditSettings && data.settings !== null ? settingsPath(slug) : null"
             :locked="started"
             :host-name="hostName"
           />
