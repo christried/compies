@@ -163,7 +163,8 @@ onBeforeUnmount(() => {
           :label="action.label"
           :icon="action.icon"
           :variant="action.primary ? 'primary' : 'secondary'"
-          size="card"
+          size="dock"
+          hint="badge"
           :action="async () => (await action.run()) !== false"
         />
         <button
@@ -310,6 +311,9 @@ onBeforeUnmount(() => {
               :label="action.label"
               :icon="action.icon"
               :variant="action.primary ? 'primary' : 'secondary'"
+              size="row"
+              hint="badge"
+              block
               :action="() => runHold(action)"
             />
             <button

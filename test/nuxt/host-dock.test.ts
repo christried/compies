@@ -212,6 +212,20 @@ describe('HostDock', () => {
     page.unmount()
   })
 
+  it('shows the hold hint as a badge inside the pill button, as tall as its siblings, with no line below (#164)', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 beenden', { primary: true, hold: true }), action('Einladen')] } })
+
+    const [hold, sibling] = page.findAll('[role="toolbar"] button')
+    expect(hold!.text()).toBe('Session 1 beenden 1 s halten')
+    expect(hold!.classes()).toContain('h-11')
+    expect(sibling!.classes()).toContain('h-11')
+    expect(page.get(`#${hold!.attributes('aria-describedby')}`).text()).toBe('1 Sekunde halten')
+    // The only element with the full hint is the sr-only description, not a visible line.
+    const hints = page.findAll('[role="toolbar"] span').filter(span => span.text() === '1 Sekunde halten')
+    expect(hints.map(hint => hint.classes())).toEqual([expect.arrayContaining(['sr-only'])])
+    page.unmount()
+  })
+
   it('does not run a hold action on a plain click', async () => {
     const run = vi.fn(() => Promise.resolve(true))
     const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 beenden', { primary: true, hold: true, run })] } })
@@ -235,6 +249,22 @@ describe('HostDock', () => {
 
     expect(run).toHaveBeenCalledOnce()
     vi.useRealTimers()
+    page.unmount()
+  })
+
+  it('on a phone, the hold action is a full width row with the badge at its end and no line below (#164)', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 beenden', { primary: true, hold: true })] }, attachTo: document.body })
+
+    await page.get('button[aria-haspopup="dialog"]').trigger('click')
+    const sheet = document.querySelector('[role="dialog"]')!
+    const hold = [...sheet.querySelectorAll('button')].find(button => button.textContent?.includes('Session 1 beenden'))!
+    expect(hold.textContent?.replace(/\s+/g, ' ').trim()).toBe('Session 1 beenden 1 s halten')
+    expect(hold.classList).toContain('w-full')
+    const badge = [...hold.querySelectorAll('[aria-hidden="true"]')].find(element => element.textContent === '1 s halten')
+    expect(badge?.classList).toContain('ml-auto')
+    const description = sheet.querySelector(`#${hold.getAttribute('aria-describedby')}`)!
+    expect(description.textContent).toBe('1 Sekunde halten')
+    expect(description.classList).toContain('sr-only')
     page.unmount()
   })
 

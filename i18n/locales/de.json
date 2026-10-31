@@ -28,6 +28,7 @@
     "lastSeen": "offline, zuletzt {time}",
     "holdToConfirm": "gedrückt halten",
     "holdFor1s": "1 Sekunde halten",
+    "holdBadge": "1 s halten",
     "counter": "{n}/{max}"
   },
   "nav": {
