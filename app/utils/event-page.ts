@@ -1,4 +1,4 @@
-import type { EventView, SessionView } from '~~/shared/event'
+import type { EventView, Phase, SessionView } from '~~/shared/event'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too.
@@ -23,6 +23,23 @@ export interface EventPageState {
 /** The shown number a Session that still polls will have: after the dated ones. null when none polls, or the Event has one Session. */
 export function pollingNumber(sessions: Pick<SessionView, 'startsAt'>[], missingDates: number): number | null {
   return missingDates > 0 && sessions.length > 1 ? sessions.filter(session => session.startsAt !== null).length + 1 : null
+}
+
+/**
+ * What the Phase pill in the header says, from the page state (design `frame()`): the Event's Phase is running from the
+ * first start on, which would say „Läuft“ between two Sessions and after the last. The pill follows the Sessions instead:
+ * the poll, the Date that stands, the Session that runs, over. `phase` is the pill's look and word; `ended` swaps the word
+ * for „Vorbei“ (the finished look). null in `setup`, where the Event's own Phase stays.
+ */
+export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase: Phase, ended: boolean } | null {
+  switch (state.kind) {
+    case 'poll': return { phase: 'poll', ended: false }
+    case 'teams': return { phase: 'date_set', ended: false }
+    case 'running': return { phase: 'running', ended: false }
+    case 'between': return { phase: state.next ? 'date_set' : 'poll', ended: false }
+    case 'done': return { phase: 'finished', ended: true }
+    default: return null
+  }
 }
 
 export function eventPageState({ settings, sessions, missingDates, runningSessionId }: PageInput): EventPageState {

@@ -348,5 +348,18 @@ describe('the stage of the Event page', () => {
       expect((await mount(single.slug)).get('header').text()).not.toContain('Session 1 von')
       expect((await mount(between.slug)).get('header').text()).not.toContain('Session 1 von')
     })
+
+    it('follows the state of the page, not the Event\'s Phase, which stays running after the first start', async () => {
+      const pill = async (setup: Setup) => (await mount(serveState(setup).slug)).get('header').text()
+      const ended = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
+
+      expect(await pill({ sessions: [SESSION(1, null), SESSION(2, null)], missing: 2 })).toContain('Terminumfrage')
+      expect(await pill({ sessions: [SESSION(1, FIRST), SESSION(2, null)], missing: 1 })).toContain('Termin steht')
+      expect(await pill({ sessions: [ended, SESSION(2, SECOND)], missing: 0, phase: 'running' })).toContain('Termin steht')
+      expect(await pill({ sessions: [ended, SESSION(2, null)], missing: 1, phase: 'running' })).toContain('Terminumfrage')
+      const done = await pill({ sessions: [ended], missing: 0, phase: 'running' })
+      expect(done).toContain('Vorbei')
+      expect(done).not.toContain('Läuft')
+    })
   })
 })

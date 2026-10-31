@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { eventPageState, type PageInput } from '../../app/utils/event-page'
+import { eventPageState, pagePill, type PageInput } from '../../app/utils/event-page'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too.
@@ -67,6 +67,22 @@ describe('eventPageState', () => {
     ]))
 
     expect(state).toMatchObject({ kind: 'done', lastEnded: { number: 2 }, next: null, pollNumber: null })
+  })
+
+  it('follows the Sessions in the header pill, not the Event\'s Phase: poll, Date stands, running, over (#166)', () => {
+    const ended = dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })
+    const pill = (sessions: PageInput['sessions'], fields: Partial<PageInput> = {}) => pagePill(eventPageState(input(sessions, fields)))
+
+    expect(pill([undated('a')])).toEqual({ phase: 'poll', ended: false })
+    expect(pill([dated('a', 1, SAT), undated('b')])).toEqual({ phase: 'date_set', ended: false })
+    expect(pill([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { runningSessionId: 'a' })).toEqual({ phase: 'running', ended: false })
+    expect(pill([ended, dated('b', 2, SUN)])).toEqual({ phase: 'date_set', ended: false })
+    expect(pill([ended, undated('b')])).toEqual({ phase: 'poll', ended: false })
+    expect(pill([ended])).toEqual({ phase: 'finished', ended: true })
+  })
+
+  it('leaves the pill to the Event\'s own Phase in setup', () => {
+    expect(pagePill(eventPageState(input([undated('a')], { settings: null })))).toBeNull()
   })
 
   it('is done for the only Session once it ended, without numbers', () => {

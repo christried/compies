@@ -4,7 +4,7 @@ import type { DockAction } from '~/components/HostDock.vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { teamName } from '~/utils/board'
-import { eventPageState } from '~/utils/event-page'
+import { eventPageState, pagePill } from '~/utils/event-page'
 import { hostDockState } from '~/utils/host-dock'
 import { datePollOpen, sessionsEditable, type DatedSessionView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
@@ -266,10 +266,15 @@ const teamsStay = computed(() => {
   return t(`event.notice.${key}`, { n: number })
 })
 
-/** „Läuft · Session 1 von 2“ in the header while a Session runs in an Event with several; otherwise the Phase's word. */
-const pillLabel = computed(() => {
+// The header pill follows the page state, not the Event's Phase, which is running from the first start on (pagePill, #166):
+// „Läuft · Session 1 von 2“ while a Session runs in an Event with several, „Vorbei“ after the last one.
+const pill = computed(() => {
   const state = pageState.value
-  return state?.kind === 'running' && state.total > 1 ? t('event.pill.running', { n: state.running?.number, total: state.total }) : undefined
+  const shown = state ? pagePill(state) : null
+  if (!state || !shown) return { phase: data.value?.event.phase ?? 'poll', label: undefined }
+  if (shown.ended) return { phase: shown.phase, label: t('phase.ended') }
+  const several = state.kind === 'running' && state.total > 1
+  return { phase: shown.phase, label: several ? t('event.pill.running', { n: state.running?.number, total: state.total }) : undefined }
 })
 
 // The phone's views (11-event-seite § TabBar): the Event page or the Activity feed. The feed is mounted once, in the side panel
@@ -278,8 +283,12 @@ const wide = useMediaQuery('(min-width: 61.25rem)')
 const panelTab = ref('activity')
 const activeView = ref<'event' | 'activity'>('event')
 const unread = ref(0)
+// Only the phone counts: on a desktop the panel shows the feed, and a count from there would be stale once the window narrows.
 room.on('activity.added', () => {
-  if (activeView.value !== 'activity') unread.value += 1
+  if (wide.value === false && activeView.value !== 'activity') unread.value += 1
+})
+watch(wide, (isWide) => {
+  if (isWide) unread.value = 0
 })
 function selectView(key: string) {
   activeView.value = key === 'activity' ? 'activity' : 'event'
@@ -309,8 +318,8 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
         {{ data.event.name }}
       </p>
       <PhasePill
-        :phase="data.event.phase"
-        :label="pillLabel"
+        :phase="pill.phase"
+        :label="pill.label"
       />
     </template>
 
