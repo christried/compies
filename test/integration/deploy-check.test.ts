@@ -39,7 +39,7 @@ describe('GET /api/internal/deploy-check', () => {
   let counter = 0
 
   /** An Event with one Session per given Date (a Date of null is a Session still to be dated). */
-  async function eventWith(dates: (Date | null)[], options: { deleted?: boolean, removed?: boolean, running?: boolean } = {}) {
+  async function eventWith(dates: (Date | null)[], options: { deleted?: boolean, removed?: boolean, running?: boolean, startedAt?: Date } = {}) {
     counter++
     const [eventRow] = await testDb.db.insert(events).values({
       slug: `game-day-${counter}`,
@@ -53,7 +53,7 @@ describe('GET /api/internal/deploy-check', () => {
       eventId: eventRow!.id,
       startsAt,
       removedAt: options.removed ? new Date() : null,
-      startedAt: options.running ? new Date() : null,
+      startedAt: options.startedAt ?? (options.running ? new Date() : null),
     })))
   }
 
@@ -112,6 +112,12 @@ describe('GET /api/internal/deploy-check', () => {
 
     expect(body.ok).toBe(false)
     expect(body.reason).toContain('running')
+  })
+
+  it('says ok when the only Running Session started 16 h or more ago (#200)', async () => {
+    await eventWith([hoursFromNow(-36)], { startedAt: hoursFromNow(-17) })
+
+    expect(await (await ask()).json()).toEqual({ ok: true, reason: null })
   })
 
   it('does not count a Session that ended, a running one that was removed or one of a deleted Event', async () => {
