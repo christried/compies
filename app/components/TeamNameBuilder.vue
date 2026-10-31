@@ -3,7 +3,7 @@ import { RotateCcw } from '@lucide/vue'
 import { teamName } from '~/utils/board'
 import { eventDataKey } from '~/utils/event-data'
 import { characterCount, cutToCharacters } from '~~/shared/text'
-import { TEAM_WORD_MAX } from '~~/shared/team-word'
+import { hasSpace, stripSpaces, TEAM_WORD_MAX } from '~~/shared/team-word'
 
 // The Team word field and the Host's reset in the band under a team's header (#161, 02-components § TeamNameBuilder,
 // App Lobby 09 „Teamwahl offen + Teamwort“). A Player in this team sees „Dein Wort“ with a counter: spaces are stripped
@@ -53,8 +53,8 @@ watch(() => props.myWord, (word) => {
 
 function onInput(event: Event) {
   const input = event.target as HTMLInputElement
-  const clean = cutToCharacters(input.value.replace(/\s/g, ''), TEAM_WORD_MAX)
-  stripped.value = /\s/.test(input.value)
+  const clean = cutToCharacters(stripSpaces(input.value), TEAM_WORD_MAX)
+  stripped.value = hasSpace(input.value)
   // Written back directly: when the cleaned value equals the current model, Vue would not patch the input.
   input.value = clean
   draft.value = clean
