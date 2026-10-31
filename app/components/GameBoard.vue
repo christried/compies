@@ -12,7 +12,8 @@ import type { EventSettings } from '~~/shared/settings'
 // The Game board (#160, GLOSSARY: Game board, 02-components § GameBoard, 11-event-seite § GameBoard): the teams, the Bench
 // and the Stands, and where everybody sits. A Player moves themselves, the Host anyone: by dragging (pointer events,
 // a long press on touch), or from the keyboard through the MoveToMenu. An own move shows at once and glides home with
-// a toast when the server refuses it; somebody else's move arrives through the room (`member.moved`) and glides in.
+// a toast when the server refuses it; somebody else's move arrives through the room (`member.moved`) and glides in and
+// lands like an own drop (04-motion, #208).
 // Four phases: `setup` (an Event without settings has no teams), `poll` (no Session has a Date: Players cannot take a
 // team yet), `open` (Team choice is open) and `running` (the first Session has started, #164: teams and names are locked
 // for Players, Bench and Stands stay free, the Host moves anyone). Avatars are keyed by user id, so the refetch that follows a move keeps the
@@ -122,9 +123,6 @@ function personEl(userId: string): HTMLElement | null {
 async function requestMove(userId: string, to: Place) {
   if (rejectionFor(userId, to)) return
   const taken = moves.move(userId, to)
-  await nextTick()
-  const element = personEl(userId)
-  if (element) pop(element)
   if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : to.zone === 'bench' ? 'board.movedBench' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
 }
 
@@ -164,15 +162,25 @@ watch(drag.overZone, (key) => {
 
 // A change of anyone's place glides their avatar from the old slot to the new one (Flip). The pre-flush watcher sees the
 // old layout, the post-flush one the new; the avatars are found by user id because each zone draws its own element.
+// Whoever's place changed lands with a pop (04-motion § Avatar, #208), the own drop as much as somebody else's; a refused
+// move bounces home and does not land, and people who only shift because others moved glide without a pop.
 const layout = computed(() => people.value.map(person => `${person.id}:${placeKey(person.place)}`).join('|'))
+const placesIn = (text: string) => new Map(text.split('|').filter(Boolean).map((entry) => {
+  const cut = entry.indexOf(':')
+  return [entry.slice(0, cut), entry.slice(cut + 1)] as const
+}))
 let before = new Map<string, DOMRect>()
 const measure = () => new Map([...(root.value?.querySelectorAll<HTMLElement>('[data-user-id]') ?? [])].map(element => [element.dataset.userId ?? '', element.getBoundingClientRect()]))
 watch(layout, () => void (before = measure()), { flush: 'pre' })
-watch(layout, () => {
+watch(layout, (now, was) => {
+  const placesBefore = placesIn(was)
+  const placesNow = placesIn(now)
   for (const element of root.value?.querySelectorAll<HTMLElement>('[data-user-id]') ?? []) {
     const id = element.dataset.userId ?? ''
     const from = before.get(id)
-    if (from) glide(element, from, element.getBoundingClientRect(), moves.bounced.has(id) ? 'bounce' : 'glide')
+    const bounced = moves.bounced.has(id)
+    if (from) glide(element, from, element.getBoundingClientRect(), bounced ? 'bounce' : 'glide')
+    if (!bounced && placesBefore.has(id) && placesBefore.get(id) !== placesNow.get(id)) pop(element)
     moves.bounced.delete(id)
   }
   before = new Map()
