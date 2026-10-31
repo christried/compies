@@ -26,6 +26,8 @@ const props = defineProps<{
   notes: NoteRow[]
   /** This User's own Note on the Slot. */
   myNote: string | null
+  /** The poll of a later Session below the Game board (#166): the dock owns the primary, so the card's pick stays secondary. */
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{ vote: [value: VoteValue], pick: [], note: [text: string] }>()
@@ -110,7 +112,7 @@ function choose(value: string) {
     />
     <AppButton
       v-if="canPick && !timeslot.past"
-      :variant="best ? 'primary' : 'secondary'"
+      :variant="best && !compact ? 'primary' : 'secondary'"
       class="max-md:hidden"
       @click="emit('pick')"
     >

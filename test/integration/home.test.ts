@@ -115,6 +115,13 @@ describe('GET /api/e (Home)', () => {
     return request('/api/e', { headers: cookie ? { cookie } : {} })
   }
 
+  /** Starts every Session of an Event `startedHoursAgo` hours ago, and ends it `endedHoursAgo` hours ago when given (#164). */
+  async function startSessions(eventId: string, startedHoursAgo: number, endedHoursAgo?: number) {
+    const startedAt = new Date(Date.now() - startedHoursAgo * 3_600_000)
+    const endedAt = endedHoursAgo === undefined ? null : new Date(Date.now() - endedHoursAgo * 3_600_000)
+    await testDb.db.update(sessions).set({ startedAt, endedAt }).where(eq(sessions.eventId, eventId))
+  }
+
   it('requires a signed-in User', async () => {
     const response = await list(undefined)
 
@@ -204,20 +211,44 @@ describe('GET /api/e (Home)', () => {
     expect(listed[0].action).toBe('vote')
   })
 
-  it('hides a Date that is more than 24 h past, and keeps one that passed less than 24 h ago', async () => {
+  it('hides an Event whose Sessions have all ended more than 24 h ago, and keeps one that ended less than 24 h ago (#199)', async () => {
     const hostUser = await signInAs(host, { hostPermission: true })
     const memberUser = await signInAs(member)
     const gone = await createDate(hostUser.cookie, 'Vorbei', '2090-11-01T20:00')
     const recent = await createDate(hostUser.cookie, 'Gerade eben', '2090-11-01T20:00')
     await addMember(gone.eventId, memberUser.id)
     await addMember(recent.eventId, memberUser.id)
-    const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000)
-    await testDb.db.update(sessions).set({ startsAt: hoursAgo(30) }).where(eq(sessions.eventId, gone.eventId))
-    await testDb.db.update(sessions).set({ startsAt: hoursAgo(2) }).where(eq(sessions.eventId, recent.eventId))
+    await startSessions(gone.eventId, 31, 30)
+    await startSessions(recent.eventId, 25, 23)
 
     const { events: listed } = await (await list(memberUser.cookie)).json()
 
     expect(listed.map((row: { name: string }) => row.name)).toEqual(['Gerade eben'])
+  })
+
+  it('keeps an Event whose dated Session has not started, however far its Date is past (#199)', async () => {
+    const hostUser = await signInAs(host, { hostPermission: true })
+    const memberUser = await signInAs(member)
+    const overdue = await createDate(hostUser.cookie, 'Überfällig', '2090-11-01T20:00')
+    await addMember(overdue.eventId, memberUser.id)
+    await testDb.db.update(sessions).set({ startsAt: new Date(Date.now() - 3 * 24 * 3_600_000) }).where(eq(sessions.eventId, overdue.eventId))
+
+    const { events: listed } = await (await list(memberUser.cookie)).json()
+
+    expect(listed.map((row: { name: string }) => row.name)).toEqual(['Überfällig'])
+  })
+
+  it('keeps an Event whose Session runs, even when its Date is 3 days past (#199)', async () => {
+    const hostUser = await signInAs(host, { hostPermission: true })
+    const memberUser = await signInAs(member)
+    const running = await createDate(hostUser.cookie, 'Läuft', '2090-11-01T20:00')
+    await addMember(running.eventId, memberUser.id)
+    await testDb.db.update(sessions).set({ startsAt: new Date(Date.now() - 3 * 24 * 3_600_000) }).where(eq(sessions.eventId, running.eventId))
+    await startSessions(running.eventId, 3 * 24)
+
+    const { events: listed } = await (await list(memberUser.cookie)).json()
+
+    expect(listed.map((row: { name: string }) => row.name)).toEqual(['Läuft'])
   })
 
   it('shows a Date card with the Date and the view action, and no number for the one Session (#70)', async () => {
@@ -308,13 +339,12 @@ describe('GET /api/e (Home)', () => {
     expect(listed[0].nextSession).toMatchObject({ number: 2, startsAt: expect.any(String) })
   })
 
-  it('drops an Event once all its Sessions are more than 24 h past', async () => {
+  it('drops an Event once all its Sessions have ended more than 24 h ago (#199)', async () => {
     const hostUser = await signInAs(host, { hostPermission: true })
     const memberUser = await signInAs(member)
     const evenings = await createSessionDates(hostUser.cookie, 'Vorbei', ['2090-11-01T20:00', '2090-11-08T20:00'])
     await addMember(evenings.eventId, memberUser.id)
-    const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000)
-    await testDb.db.update(sessions).set({ startsAt: hoursAgo(30) }).where(eq(sessions.eventId, evenings.eventId))
+    await startSessions(evenings.eventId, 31, 30)
 
     const { events: listed } = await (await list(memberUser.cookie)).json()
 

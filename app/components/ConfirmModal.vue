@@ -32,6 +32,7 @@ const { onKeydown } = useDialog(toRef(props, 'open'), panel, () => emit('cancel'
         aria-hidden="true"
         @click="emit('cancel')"
       />
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- Escape and the focus trap of the dialog -->
       <section
         ref="panel"
         role="dialog"

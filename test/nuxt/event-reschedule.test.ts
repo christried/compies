@@ -117,7 +117,7 @@ describe('rescheduling and reopening the Date', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const hold = page.findAll('button').find(button => button.text() === 'Neue Terminsuche')!
+    const hold = page.findAll('button').find(button => button.text().startsWith('Neue Terminsuche'))!
 
     await hold.trigger('pointerdown')
     await new Promise(resolve => setTimeout(resolve, 1100))

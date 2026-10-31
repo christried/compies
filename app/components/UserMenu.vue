@@ -51,6 +51,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
 </script>
 
 <template>
+  <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- arrow keys and Escape for the menu items -->
   <div
     v-if="user"
     ref="root"
@@ -107,6 +108,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
         <AppIcon :icon="LogOut" />
         {{ t('auth.logout') }}
       </button>
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -- closes the menu after a click on a footer link inside -->
       <div
         class="md:hidden"
         @click="open = false"

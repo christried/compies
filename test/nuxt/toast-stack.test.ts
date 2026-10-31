@@ -68,7 +68,7 @@ describe('ToastStack', () => {
     const page = await mountSuspended(ToastStack)
     expect(useHostDock().docked.value).toBe(false)
 
-    const dock = await mountSuspended(HostDock, { props: { actions: [{ label: 'Termin festlegen', icon: Crown, run: () => {} }] } })
+    const dock = await mountSuspended(HostDock, { props: { actions: [{ key: 'setDate', label: 'Termin festlegen', icon: Crown, group: 'Termine', run: () => {} }] } })
     await vi.waitFor(() => expect(useHostDock().docked.value).toBe(true))
     useToast().toast({ tone: 'info', text: 'Über dem Dock' })
     await vi.waitFor(() => expect(page.get('[role="status"]').text()).toContain('Über dem Dock'))

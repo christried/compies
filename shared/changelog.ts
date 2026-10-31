@@ -110,6 +110,27 @@ function parseSection(lines: Line[], allowIntro: boolean): { intro: Inline[] | n
   return { intro: introText ? inline(intro[0]!, introText) : null, groups }
 }
 
+/** Whether a value is an `x.y.z` version, the form of every Release heading. */
+export function isVersion(value: unknown): value is string {
+  return typeof value === 'string' && /^\d+\.\d+\.\d+$/.test(value)
+}
+
+/** Orders two `x.y.z` versions by their numbers (1.10.0 is after 1.9.0): negative, zero or positive like a sort comparator. */
+export function compareVersions(a: string, b: string): number {
+  const [x, y] = [a, b].map(version => version.split('.').map(Number))
+  return (x![0]! - y![0]!) || (x![1]! - y![1]!) || (x![2]! - y![2]!)
+}
+
+/**
+ * The Releases the „Was ist neu“ pop-up shows (#184), newest first, from `releases` newest first and the newest
+ * version the User has seen. Nothing seen yet (or a version that is no Release) shows only the newest, so a
+ * User who joins long after 1.0 is not buried in old news.
+ */
+export function unseenReleases(releases: Release[], seen: string | null): Release[] {
+  if (seen === null || !releases.some(r => r.version === seen)) return releases.slice(0, 1)
+  return releases.filter(r => compareVersions(r.version, seen) > 0)
+}
+
 export function parseChangelog(source: string): Changelog {
   const lines = source.split('\n').map((text, i): Line => ({ n: i + 1, text: text.trimEnd() }))
   if (lines[0]?.text !== '# Changelog') throw new Error('CHANGELOG.md must start with „# Changelog“')

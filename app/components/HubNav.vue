@@ -4,7 +4,7 @@ import type { Component } from 'vue'
 import { canSeeLibrary } from '~~/shared/game'
 import { canSeeAdmin, HUB_SITES, type Viewer } from '~/utils/construction'
 
-// Main navigation: the header nav on desktop, the bottom tab bar below md.
+// Main navigation: the header nav on desktop, the bottom tab bar (TabBar) below md.
 const props = withDefaults(defineProps<{
   layout: 'header' | 'tabs'
   /** Who sees the hidden areas (Bibliothek, Admin); null when signed out. The rules live in construction.ts (Admin) and shared/game.ts (Bibliothek). */
@@ -32,12 +32,23 @@ const soon = (key: string) => (HUB_SITES as readonly string[]).includes(key)
 </script>
 
 <template>
+  <TabBar
+    v-if="layout === 'tabs'"
+    :label="t('nav.main')"
+    :items="items.map(item => ({ ...item, current: item.key === current, description: soon(item.key) ? t('mvp.zone.navMarker') : undefined }))"
+  >
+    <template #marker="{ item }">
+      <NavSoonMarker
+        v-if="soon(item.key)"
+        class="absolute top-2 left-1/2 ml-1.5"
+      />
+    </template>
+  </TabBar>
+
   <nav
+    v-else
     :aria-label="t('nav.main')"
-    :class="layout === 'header'
-      ? 'ml-3.5 flex gap-0.5'
-      : 'grid border-t-(length:--cp-bw) border-line bg-surface px-1 pb-[max(18px,env(safe-area-inset-bottom))]'"
-    :style="layout === 'tabs' ? { gridTemplateColumns: `repeat(${items.length}, 1fr)` } : undefined"
+    class="ml-3.5 flex gap-0.5"
   >
     <NuxtLink
       v-for="item in items"
@@ -45,27 +56,16 @@ const soon = (key: string) => (HUB_SITES as readonly string[]).includes(key)
       :to="item.to"
       :aria-current="item.key === current ? 'page' : undefined"
       :aria-description="soon(item.key) ? t('mvp.zone.navMarker') : undefined"
-      class="relative flex items-center no-underline"
-      :class="[
-        layout === 'header'
-          ? 'h-[61px] gap-1.5 border-b-3 px-[11px] text-[14px]'
-          : '-mt-0.5 h-[58px] flex-col justify-center gap-[3px] border-t-3 text-[11px]',
-        item.key === current
-          ? ['font-extrabold text-ink', layout === 'header' ? 'border-hot' : 'border-ink']
-          : 'border-transparent font-semibold text-ink-2',
-        'hover:tint',
-      ]"
+      class="relative flex h-[61px] items-center gap-1.5 border-b-3 px-[11px] text-[14px] no-underline hover:tint"
+      :class="item.key === current ? 'border-hot font-extrabold text-ink' : 'border-transparent font-semibold text-ink-2'"
     >
       <AppIcon
         :icon="item.icon"
-        :size="layout === 'header' ? 16 : 22"
+        :size="16"
         :offset="item.key === current ? 'var(--cp-hot)' : undefined"
       />
       {{ item.label }}
-      <NavSoonMarker
-        v-if="soon(item.key)"
-        :class="layout === 'tabs' && 'absolute top-2 left-1/2 ml-1.5'"
-      />
+      <NavSoonMarker v-if="soon(item.key)" />
     </NuxtLink>
   </nav>
 </template>

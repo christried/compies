@@ -4,7 +4,8 @@ import type { Phase } from '~~/shared/event'
 // Phase chip in the Event header and on cards (02-components § PhasePill). The text carries the
 // meaning; the dot only adds colour. Phases beyond the MVP (running, finished, archived) are styled
 // too, so 1.0 needs no change here.
-defineProps<{ phase: Phase }>()
+// `label` replaces the Phase's word where the page knows more (the running Event: „Läuft · Session 1 von 2“, #166).
+defineProps<{ phase: Phase, label?: string }>()
 
 const { t } = useI18n()
 
@@ -33,6 +34,6 @@ const DOT: Record<Phase, string> = {
       :class="DOT[phase]"
       aria-hidden="true"
     />
-    {{ t(`phase.${LABEL[phase]}`) }}
+    {{ label ?? t(`phase.${LABEL[phase]}`) }}
   </span>
 </template>

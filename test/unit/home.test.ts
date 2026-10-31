@@ -1,34 +1,51 @@
 import { describe, expect, it } from 'vitest'
-import { arrangeHome, homeAction, homeSession, needsVote, staysOnHome } from '../../server/domain/home'
+import { arrangeHome, homeAction, homeSession, needsVote, staysOnHome, type HomeSessionTimes } from '../../server/domain/home'
 import type { Phase } from '../../shared/event'
 
-// Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Dates older than 24 h before this instant drop off Home.
+// Thursday 22 Oct 2026, 12:00 in Berlin (CEST). An Event leaves Home a day after its last Session has ended.
 const now = new Date('2026-10-22T10:00:00Z')
 const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000)
 const hoursAhead = (hours: number) => new Date(now.getTime() + hours * 3_600_000)
 
+/** A Session with its Date, not started yet. */
+const dated = (startsAt: Date): HomeSessionTimes => ({ startsAt, startedAt: null, endedAt: null })
+/** A Session still waiting for its Date, not started. */
+const undated = (): HomeSessionTimes => ({ startsAt: null, startedAt: null, endedAt: null })
+/** A Session that has ended at `endedAt`, started an hour before it and dated on the same day. */
+const ended = (endedAt: Date): HomeSessionTimes => ({ startsAt: endedAt, startedAt: new Date(endedAt.getTime() - 3_600_000), endedAt })
+
 describe('staysOnHome', () => {
-  it('leaves an Event once all its Dates are more than 24 h past', () => {
-    expect(staysOnHome([hoursAgo(25)], now)).toBe(false)
-    expect(staysOnHome([hoursAgo(25), hoursAgo(30)], now)).toBe(false)
+  it('keeps an Event while a Session runs, however old its Date', () => {
+    const running = { startsAt: hoursAgo(72), startedAt: hoursAgo(72), endedAt: null }
+
+    expect(staysOnHome([running], now)).toBe(true)
   })
 
-  it('keeps an Event whose Date is less than 24 h past, or upcoming', () => {
-    expect(staysOnHome([hoursAgo(23)], now)).toBe(true)
-    expect(staysOnHome([hoursAhead(3)], now)).toBe(true)
+  it('keeps an Event while a dated Session has not started, however old its Date', () => {
+    expect(staysOnHome([dated(hoursAgo(30 * 24))], now)).toBe(true)
   })
 
-  it('keeps a poll, which has no Date yet', () => {
-    expect(staysOnHome([null], now)).toBe(true)
+  it('keeps an Event while a Session has no Date', () => {
+    expect(staysOnHome([undated()], now)).toBe(true)
+    expect(staysOnHome([ended(hoursAgo(30)), undated()], now)).toBe(true)
   })
 
-  it('keeps an Event while a Session has no Date, even if the others have passed', () => {
-    expect(staysOnHome([hoursAgo(30), null], now)).toBe(true)
+  it('keeps an Event for 24 h after its last Session has ended, and leaves it after that', () => {
+    expect(staysOnHome([ended(hoursAgo(23))], now)).toBe(true)
+    expect(staysOnHome([ended(hoursAgo(25))], now)).toBe(false)
+    expect(staysOnHome([ended(hoursAgo(30)), ended(hoursAgo(25))], now)).toBe(false)
   })
 
-  it('keeps an Event while any Session is upcoming or less than 24 h past', () => {
-    expect(staysOnHome([hoursAgo(30), hoursAhead(48)], now)).toBe(true)
-    expect(staysOnHome([hoursAgo(30), hoursAgo(2)], now)).toBe(true)
+  it('keeps an Event while any Session has ended less than 24 h ago', () => {
+    expect(staysOnHome([ended(hoursAgo(30)), ended(hoursAgo(23))], now)).toBe(true)
+  })
+
+  it('keeps an Event whose one Session ended 2 days ago while another is dated, not started and due yesterday', () => {
+    expect(staysOnHome([ended(hoursAgo(48)), dated(hoursAgo(24))], now)).toBe(true)
+  })
+
+  it('leaves an Event without Sessions', () => {
+    expect(staysOnHome([], now)).toBe(false)
   })
 })
 
@@ -57,18 +74,25 @@ describe('needsVote', () => {
   const slots = ['fri', 'sat']
 
   it('is true for an open poll with a votable Slot the User has not voted on', () => {
-    expect(needsVote('poll', slots, [{ slotId: 'fri', userId: 'me', value: 'yes' }], 'me')).toBe(true)
+    expect(needsVote('poll', 1, slots, [{ slotId: 'fri', userId: 'me', value: 'yes' }], 'me')).toBe(true)
   })
 
   it('is false once the User has a Vote on every votable Slot', () => {
     const votes = [{ slotId: 'fri', userId: 'me', value: 'yes' as const }, { slotId: 'sat', userId: 'me', value: 'no' as const }]
 
-    expect(needsVote('poll', slots, votes, 'me')).toBe(false)
+    expect(needsVote('poll', 1, slots, votes, 'me')).toBe(false)
   })
 
   it('is false when no Slot is left to vote on, and for Events with a Date', () => {
-    expect(needsVote('poll', [], [], 'me')).toBe(false)
-    expect(needsVote('date_set', slots, [], 'me')).toBe(false)
+    expect(needsVote('poll', 1, [], [], 'me')).toBe(false)
+    expect(needsVote('date_set', 0, slots, [], 'me')).toBe(false)
+  })
+})
+
+describe('needsVote in a running Event (#164)', () => {
+  it('is true while a Session still waits for a Date, false once every Session has one', () => {
+    expect(needsVote('running', 1, ['fri'], [], 'me')).toBe(true)
+    expect(needsVote('running', 0, ['fri'], [], 'me')).toBe(false)
   })
 })
 
@@ -84,12 +108,12 @@ describe('homeAction', () => {
 })
 
 describe('arrangeHome', () => {
-  /** An Event card; `startsAt` stands for a single Session, `homeDate` names the Session Home shows of several. */
-  const item = (name: string, fields: { phase?: Phase, needsVote?: boolean, startsAt?: Date | null, sessionStarts?: (Date | null)[], homeDate?: Date, createdAt?: Date } = {}) => ({
+  /** An Event card; `startsAt` stands for a single dated Session, `sessions` gives its Sessions, `homeDate` names the Session Home shows of several. */
+  const item = (name: string, fields: { phase?: Phase, needsVote?: boolean, startsAt?: Date | null, sessions?: HomeSessionTimes[], homeDate?: Date, createdAt?: Date } = {}) => ({
     name,
     phase: fields.phase ?? 'poll',
     needsVote: fields.needsVote ?? false,
-    sessionStarts: fields.sessionStarts ?? [fields.startsAt ?? null],
+    sessions: fields.sessions ?? [fields.startsAt ? dated(fields.startsAt) : undated()],
     homeDate: fields.homeDate ?? fields.startsAt ?? null,
     createdAt: fields.createdAt ?? hoursAgo(48),
   })
@@ -103,6 +127,16 @@ describe('arrangeHome', () => {
     ], now)
 
     expect(arranged.map(row => row.name)).toEqual(['todo-poll', 'voted-poll', 'date-sooner', 'date-later'])
+  })
+
+  it('lists a running Event with a Session in its poll among the open polls', () => {
+    const arranged = arrangeHome([
+      item('date', { phase: 'date_set', startsAt: hoursAhead(24) }),
+      item('running-poll', { phase: 'running', sessions: [dated(hoursAhead(1)), undated()], homeDate: hoursAhead(1) }),
+      item('running', { phase: 'running', startsAt: hoursAhead(2) }),
+    ], now)
+
+    expect(arranged.map(row => row.name)).toEqual(['running-poll', 'running', 'date'])
   })
 
   it('lists upcoming Dates before Dates that passed within the last 24 h, the most recent of those first', () => {
@@ -125,18 +159,26 @@ describe('arrangeHome', () => {
     expect(arranged.map(row => row.name)).toEqual(['newer', 'older'])
   })
 
-  it('drops Dates that are more than 24 h past and keeps the ones within the grace period', () => {
+  it('drops Events whose Sessions all ended more than 24 h ago, and keeps the ones that ended within the grace period', () => {
     const arranged = arrangeHome([
-      item('gone', { phase: 'date_set', startsAt: hoursAgo(30) }),
-      item('just-passed', { phase: 'date_set', startsAt: hoursAgo(2) }),
+      item('gone', { phase: 'date_set', sessions: [ended(hoursAgo(30))] }),
+      item('just-ended', { phase: 'date_set', sessions: [ended(hoursAgo(2))] }),
     ], now)
 
-    expect(arranged.map(row => row.name)).toEqual(['just-passed'])
+    expect(arranged.map(row => row.name)).toEqual(['just-ended'])
+  })
+
+  it('keeps an Event whose dated Session is more than 24 h past but has not started', () => {
+    const arranged = arrangeHome([
+      item('overdue', { phase: 'date_set', startsAt: hoursAgo(30 * 24) }),
+    ], now)
+
+    expect(arranged.map(row => row.name)).toEqual(['overdue'])
   })
 
   it('orders an Event with several Sessions by the Session Home shows', () => {
     const arranged = arrangeHome([
-      item('two-sessions-later', { phase: 'date_set', sessionStarts: [hoursAgo(30), hoursAhead(72)], homeDate: hoursAhead(72) }),
+      item('two-sessions-later', { phase: 'date_set', sessions: [ended(hoursAgo(30)), dated(hoursAhead(72))], homeDate: hoursAhead(72) }),
       item('one-session-sooner', { phase: 'date_set', startsAt: hoursAhead(24) }),
     ], now)
 
@@ -145,8 +187,8 @@ describe('arrangeHome', () => {
 
   it('keeps an Event between its Sessions, while a Session still waits for a Date', () => {
     const arranged = arrangeHome([
-      item('waiting', { sessionStarts: [hoursAgo(30), null] }),
-      item('gone', { phase: 'date_set', sessionStarts: [hoursAgo(30), hoursAgo(26)] }),
+      item('waiting', { sessions: [ended(hoursAgo(30)), undated()] }),
+      item('gone', { phase: 'date_set', sessions: [ended(hoursAgo(30)), ended(hoursAgo(26))] }),
     ], now)
 
     expect(arranged.map(row => row.name)).toEqual(['waiting'])

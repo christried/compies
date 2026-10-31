@@ -1,12 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { createError, defineEventHandler, readBody } from 'h3'
-import { pollSlots, eventMembers, eventPoolGames, events, sessions } from '../../db/schema'
+import { pollSlots, eventPoolGames, events, sessions } from '../../db/schema'
 import { parseNewEvent } from '../../domain/event'
 import { phaseOf } from '../../domain/phase'
 import { parsePools } from '../../domain/pools'
 import { createInviteToken, createSlug } from '../../domain/slug'
 import { useDb, type Db } from '../../utils/db'
 import { apiError } from '../../utils/errors'
+import { addMember } from '../../utils/invite'
 import { inviteUrl } from '../../utils/links'
 import { assertGamesExist } from '../../utils/pools'
 import { requireUser } from '../../utils/user'
@@ -45,6 +46,9 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
     : input.startsAt
   const phase = phaseOf(startsAt)
 
+  // The one Event write that does not go through changeEvent: the Event does not exist yet, so there is nothing to
+  // load by slug, and no one is in its room to tell (#183).
+  // eslint-disable-next-line no-restricted-syntax -- creating an Event has no Event to load and no one to publish to
   await db.transaction(async (tx) => {
     await assertGamesExist(tx, pools.main, pools.tiebreaker)
     const [row] = await tx
@@ -54,7 +58,7 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
     await tx.insert(sessions).values(startsAt.map(date => ({ eventId: row!.id, startsAt: date })))
     const poolRows = POOLS.flatMap(pool => pools[pool].map(gameId => ({ eventId: row!.id, gameId, pool })))
     if (poolRows.length > 0) await tx.insert(eventPoolGames).values(poolRows)
-    await tx.insert(eventMembers).values({ eventId: row!.id, userId: user.id })
+    await addMember(tx, row!.id, user.id)
     if (input.dateMode === 'poll') {
       await tx.insert(pollSlots).values(input.slots.map(startsAt => ({ eventId: row!.id, startsAt })))
     }

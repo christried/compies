@@ -5,7 +5,7 @@ import {
   LOCKED_WHEN_RUNNING,
   TEAM_COUNT_MAX,
   TEAM_COUNT_MIN,
-  canStartSession,
+  changedKeys,
   checkSettingsChange,
   settingsEditable,
   settingsLocked,
@@ -21,6 +21,8 @@ import {
   risingPlace,
   settingsFromRow,
   storedHiddenWheel,
+  TEAM_SIZE_MIN,
+  teamSizeFloor,
   withTeams,
   winnerTakesAllPoints,
 } from '../../shared/settings'
@@ -392,6 +394,25 @@ describe('mergeSettings', () => {
   })
 })
 
+describe('teamSizeFloor (#197)', () => {
+  it('is the fullest of the teams that remain', () => {
+    expect(teamSizeFloor([1, 3, 2], 3)).toBe(3)
+  })
+
+  it('leaves out the teams a lower team count removes', () => {
+    expect(teamSizeFloor([1, 3, 2], 2)).toBe(3)
+    expect(teamSizeFloor([1, 3, 2], 1)).toBe(TEAM_SIZE_MIN)
+  })
+
+  it('never goes below TEAM_SIZE_MIN', () => {
+    expect(teamSizeFloor([], 2)).toBe(TEAM_SIZE_MIN)
+  })
+
+  it('counts every team when the count is larger than the list', () => {
+    expect(teamSizeFloor([1, 3, 2], 8)).toBe(3)
+  })
+})
+
 describe('checkSettingsChange', () => {
   const floors = { teamSize: 1, vetoAllowance: 0 }
   const wheel = parseSettings(payload({ selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 3 }))
@@ -399,7 +420,7 @@ describe('checkSettingsChange', () => {
   const admin = defaultSettings()
 
   function check(change: unknown, context: { phase?: Phase, floors?: { teamSize: number, vetoAllowance: number } } = {}, from = current) {
-    return checkSettingsChange(from, change, { phase: context.phase ?? 'poll', floors: context.floors ?? floors })
+    return checkSettingsChange(from, change, { phase: context.phase ?? 'poll', floors: () => context.floors ?? floors })
   }
 
   const lockedChanges: Record<string, unknown> = {
@@ -488,6 +509,15 @@ describe('checkSettingsChange', () => {
     it('has no Veto floor without the Glücksrad', () => {
       expect(check({ gameCount: 8 }, { floors: { teamSize: 1, vetoAllowance: 2 } }, admin).ok).toBe(true)
     })
+
+    it('measures the Team size against the team count the change parses to (#197)', () => {
+      const fourTeams = withTeams(defaultSettings(), 4, 3)
+      const floorsByCount = (count: number) => ({ teamSize: count >= 3 ? 3 : 1, vetoAllowance: 0 })
+      const lowered = { teamCount: 2, teamSize: 1, pointsTable: { preset: 'linear', values: [1, 0] } }
+      expect(checkSettingsChange(fourTeams, lowered, { phase: 'poll', floors: floorsByCount }).ok).toBe(true)
+      expect(checkSettingsChange(fourTeams, { teamSize: 1 }, { phase: 'poll', floors: floorsByCount }))
+        .toEqual({ ok: false, error: 'team_size_below_fullest' })
+    })
   })
 
   describe('an Event that is not set up', () => {
@@ -496,24 +526,39 @@ describe('checkSettingsChange', () => {
     })
 
     it('accepts a full payload', () => {
-      const result = checkSettingsChange(null, payload(), { phase: 'poll', floors })
+      const result = checkSettingsChange(null, payload(), { phase: 'poll', floors: () => floors })
       expect(result).toEqual({ ok: true, settings: defaultSettings() })
     })
 
     it('checks the floors of a full payload too', () => {
-      expect(checkSettingsChange(null, payload({ teamSize: 2 }), { phase: 'poll', floors: { teamSize: 3, vetoAllowance: 0 } }))
+      expect(checkSettingsChange(null, payload({ teamSize: 2 }), { phase: 'poll', floors: () => ({ teamSize: 3, vetoAllowance: 0 }) }))
         .toEqual({ ok: false, error: 'team_size_below_fullest' })
     })
 
     it('can be set up while running, as nothing is locked yet', () => {
-      expect(checkSettingsChange(null, payload(), { phase: 'running', floors }).ok).toBe(true)
+      expect(checkSettingsChange(null, payload(), { phase: 'running', floors: () => floors }).ok).toBe(true)
     })
   })
 })
 
-describe('canStartSession', () => {
-  it('needs settings', () => {
-    expect(canStartSession(null)).toBe(false)
-    expect(canStartSession(defaultSettings())).toBe(true)
+describe('changedKeys (#183)', () => {
+  const before = defaultSettings()
+
+  it('names nothing when nothing changed', () => {
+    expect(changedKeys(before, { ...before })).toEqual([])
+  })
+
+  it('names the settings whose value differs', () => {
+    expect(changedKeys(before, { ...before, gameCount: before.gameCount + 1, teamSize: before.teamSize + 1 }).sort()).toEqual(['gameCount', 'teamSize'])
+  })
+
+  it('counts a points table as the same with the same preset and places', () => {
+    const same = { ...before, pointsTable: { values: [...before.pointsTable.values], preset: before.pointsTable.preset } }
+    expect(changedKeys(before, same)).toEqual([])
+    expect(changedKeys(before, { ...before, pointsTable: { preset: 'custom', values: before.pointsTable.values } })).toEqual(['pointsTable'])
+  })
+
+  it('names every setting for an Event that was not set up', () => {
+    expect(changedKeys(null, before).sort()).toEqual(Object.keys(before).sort())
   })
 })

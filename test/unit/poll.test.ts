@@ -70,24 +70,33 @@ describe('hasVoted', () => {
 
 describe('voteRejection', () => {
   it('accepts a Vote on a future Slot in the poll phase', () => {
-    expect(voteRejection({ phase: 'poll', startsAt: FRI.startsAt, now })).toBeNull()
+    expect(voteRejection({ phase: 'poll', missingDates: 1, startsAt: FRI.startsAt, now })).toBeNull()
   })
 
   it('rejects a Vote outside the poll phase, so the Date cannot shift under the Host', () => {
-    expect(voteRejection({ phase: 'date_set', startsAt: FRI.startsAt, now })).toBe('wrong_phase')
+    expect(voteRejection({ phase: 'date_set', missingDates: 1, startsAt: FRI.startsAt, now })).toBe('wrong_phase')
+  })
+
+  it('accepts a Vote in a running Event while a Session still waits for a Date (#164)', () => {
+    expect(voteRejection({ phase: 'running', missingDates: 1, startsAt: FRI.startsAt, now })).toBeNull()
+  })
+
+  it('rejects a Vote when no Session waits for a Date, also in a running Event', () => {
+    expect(voteRejection({ phase: 'running', missingDates: 0, startsAt: FRI.startsAt, now })).toBe('wrong_phase')
+    expect(voteRejection({ phase: 'poll', missingDates: 0, startsAt: FRI.startsAt, now })).toBe('wrong_phase')
   })
 
   it('rejects a Vote on a past Slot', () => {
-    expect(voteRejection({ phase: 'poll', startsAt: PAST.startsAt, now })).toBe('slot_past')
+    expect(voteRejection({ phase: 'poll', missingDates: 1, startsAt: PAST.startsAt, now })).toBe('slot_past')
   })
 
   it('rejects a Vote on a Slot that already became a Date, so the Votes stay frozen (#52)', () => {
-    expect(voteRejection({ phase: 'poll', startsAt: FRI.startsAt, now, taken: true })).toBe('slot_taken')
+    expect(voteRejection({ phase: 'poll', missingDates: 1, startsAt: FRI.startsAt, now, taken: true })).toBe('slot_taken')
   })
 
   it('checks the phase first, then the taken Slot, then the time', () => {
-    expect(voteRejection({ phase: 'date_set', startsAt: FRI.startsAt, now, taken: true })).toBe('wrong_phase')
-    expect(voteRejection({ phase: 'poll', startsAt: PAST.startsAt, now, taken: true })).toBe('slot_taken')
+    expect(voteRejection({ phase: 'date_set', missingDates: 1, startsAt: FRI.startsAt, now, taken: true })).toBe('wrong_phase')
+    expect(voteRejection({ phase: 'poll', missingDates: 1, startsAt: PAST.startsAt, now, taken: true })).toBe('slot_taken')
   })
 })
 

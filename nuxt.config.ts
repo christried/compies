@@ -1,4 +1,5 @@
 import tailwindcss from '@tailwindcss/vite'
+import { addServerHandler, createResolver, defineNuxtModule } from 'nuxt/kit'
 import { isStagingBuild, stageBranding } from './stage'
 
 // Staging names itself and wears tinted icons (#178). Production and local builds keep the defaults.
@@ -11,6 +12,15 @@ export default defineNuxtConfig({
     // Its client plugin imports a virtual module the Nuxt test environment cannot load;
     // test/build/pwa.test.ts checks the PWA against the production build instead.
     ...(process.env.VITEST ? [] : ['@vite-pwa/nuxt']),
+    // The sign-in without Discord or Twitch exists in the dev server only (server/dev/sign-in.ts);
+    // test/build/dev-sign-in.test.ts checks that no production build carries it.
+    defineNuxtModule({
+      meta: { name: 'dev-sign-in' },
+      setup(_options, nuxt) {
+        if (!nuxt.options.dev) return
+        addServerHandler({ route: '/api/dev/sign-in', method: 'get', handler: createResolver(import.meta.url).resolve('./server/dev/sign-in') })
+      },
+    }),
   ],
   devtools: { enabled: true },
 
@@ -37,6 +47,9 @@ export default defineNuxtConfig({
     public: {
       // Read by <StagingBadge /> (#178).
       staging,
+      // The realtime Worker the Event page connects to (#156). Empty: no live connection, the page polls. Vercel sets
+      // either REALTIME_URL (read here at build time) or NUXT_PUBLIC_REALTIME_URL (Nuxt reads it at runtime).
+      realtimeUrl: process.env.REALTIME_URL ?? '',
     },
   },
 

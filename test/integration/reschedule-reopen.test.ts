@@ -449,7 +449,7 @@ describe('reschedule and reopen', () => {
       const body = await (await view(cookie, slug)).json() as { event: { phase: string }, sessions: { startsAt: string | null, previousStartsAt: string | null }[] }
 
       expect(body.event).toMatchObject({ phase: 'poll' })
-      expect(body.sessions).toEqual([{ id: expect.any(String), number: null, startsAt: null, previousStartsAt: '2090-10-31T18:00:00.000Z' }])
+      expect(body.sessions).toEqual([{ id: expect.any(String), number: null, startsAt: null, previousStartsAt: '2090-10-31T18:00:00.000Z', startedAt: null, endedAt: null }])
     })
 
     it('makes a direct Event a poll with no Slots for the Host to fill', async () => {

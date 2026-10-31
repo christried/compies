@@ -27,11 +27,13 @@ When a Release is ready, a PR into `staging` does three things:
 2. Leaves `## [Unreleased]` empty above it.
 3. Sets `version` in `package.json` to `x.y.z`.
 
-The cut lands on `staging` through its own PR first, before the Release PR to `main`.
+The cut lands on `staging` through its own PR first, before the Release PR to `main`. Plan the merge into `main` for a day without a Session (§ Release PR to `main`, No game days).
 
 ## Release PR to `main`
 
 The user approves every merge into `main`. Agents open the Release PR and ask; they never merge it themselves.
+
+**No game days.** Do not ask for the merge on a day with a Session Date (Europe/Berlin) or while a Session runs. The merge deploys the production Worker (`.github/workflows/realtime-deploy.yml`), and that drops every open socket. Before asking, check with the deploy check: `ROOM_INTERNAL_SECRET=… node realtime/scripts/deploy-check.mjs` (the production key; exit 0 means no Session is dated today and none has run for less than 16 h), or look at the Event list. The workflow runs the same check itself and fails the production deploy on a game day; the merge into `main` has then already happened, so the check up front is what keeps the deploy from waiting (re-run the failed workflow on the next day without a Session). The check (and the workflow's guard) counts a Running Session only for 16 h after its start, so a Session nobody ended stops blocking the next day. A deploy that must go out anyway: run the workflow by hand with `override`.
 
 Which case applies depends on what `staging` holds after the cut.
 
@@ -51,6 +53,8 @@ Which case applies depends on what `staging` holds after the cut.
 - Tag the merge commit on `main` with an annotated tag `vX.Y.Z`, message `Release x.y.z – Name` (e.g. `Release 1.2.0 – Mehr Termine`), and push the tag. A cloud session tags through the REST API (`docs/agents/delivery.md`).
 - If `main` and `staging` have diverged (the merge commit on `main` is not in `staging`), merge `main` back into `staging` so the next Release PR is clean.
 - Delete the `release/x.y.z` branch once it is merged (Case B only).
+- Mark the Release as released in `docs/roadmap.md`.
+- Ask the user to run `/retro` (step 4 of § Review, walk-through, retro).
 
 ## Semantic versioning
 

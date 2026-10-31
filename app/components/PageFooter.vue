@@ -88,10 +88,11 @@ function toTop() {
         </NuxtLink>
       </span>
     </component>
+    <!-- Room for the dock and for the reason bubble above its disabled primary (#166). -->
     <span
       v-if="page && docked"
       aria-hidden="true"
-      class="h-24 flex-none"
+      class="h-32 flex-none"
     />
   </component>
 </template>

@@ -53,6 +53,18 @@ describe('NoticeBanner tones (#172)', () => {
     expect(closable.emitted('close')).toHaveLength(1)
   })
 
+  it('keeps an action in the column of the text, under it below sm, and adds no empty wrapper without one (#166)', async () => {
+    const withAction = await mountSuspended(NoticeBanner, { props: { hostOnly: true }, slots: { default: 'Lange Nachricht.', action: '<button type="button">Jetzt</button>' } })
+    const button = withAction.get('button').element
+    const textColumn = [...withAction.element.children].find(child => child.textContent?.includes('Lange Nachricht.'))!
+    expect(textColumn.contains(button)).toBe(true)
+    expect(button.parentElement?.className).toContain('max-sm:self-start')
+    expect(withAction.get('[role]').text()).toContain('Nur du siehst das')
+
+    const without = await mountSuspended(NoticeBanner, { slots: { default: 'Nur Text.' } })
+    expect(without.element.querySelectorAll('.max-sm\\:self-start')).toHaveLength(0)
+  })
+
   it('shows the icon chip of its tone by default', async () => {
     const page = await mountSuspended(NoticeBanner, { props: { tone: 'critical' }, slots: { default: 'Kritisch.' } })
     expect(page.find('.bg-error').exists()).toBe(true)

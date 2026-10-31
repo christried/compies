@@ -39,6 +39,15 @@ describe('legal pages', () => {
     expect(page.get('main').text()).toContain('Cloudflare')
   })
 
+  it('name the live connection to Cloudflare Workers, since the browser connects there itself (#156)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const live = page.findAll('section').find(s => s.get('h2').text().includes('Live-Verbindung'))
+
+    expect(live?.text()).toContain('Cloudflare Workers')
+    expect(live?.text()).toContain('IP-Adresse')
+    expect(live?.text()).toContain('EU-Jurisdiktion')
+  })
+
   it('ship no placeholder text', async () => {
     for (const [Page, route] of [[ImpressumPage, '/impressum'], [DatenschutzPage, '/datenschutz']] as const) {
       const page = await mountSuspended(Page, { route })
@@ -101,7 +110,7 @@ describe('legal pages', () => {
 
     // The avatar is opaque and covers the button, so the tint sits on a layer above it.
     expect(button.classes()).not.toContain('motion-reduce:hover:tint')
-    const overlay = button.get('span:last-child')
+    const overlay = button.get('span.pointer-events-none')
     expect(overlay.classes()).toContain('motion-reduce:group-hover:tint')
     expect(overlay.classes()).toContain('reduced:group-hover:tint')
     expect(button.classes()).toContain('group')

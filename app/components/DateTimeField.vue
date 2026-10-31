@@ -273,6 +273,7 @@ function fieldClass(hasError: boolean | undefined) {
     <div class="flex gap-2">
       <PopoverRoot v-model:open="dateOpen">
         <PopoverAnchor as-child>
+          <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -- a click anywhere on the field opens the picker; the input inside takes the keyboard -->
           <div
             ref="dateField"
             class="relative min-w-0 flex-1"
@@ -400,6 +401,7 @@ function fieldClass(hasError: boolean | undefined) {
       <PopoverRoot v-model:open="timeOpen">
         <PopoverAnchor as-child>
           <!-- 120 px: „23:59“ in Bungee plus the padding fits, and the date keeps room for „30.12.2026“ in a 290 px row (#113). -->
+          <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -- a click anywhere on the field opens the picker; the input inside takes the keyboard -->
           <div
             ref="timeField"
             class="relative w-30 flex-none"

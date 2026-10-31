@@ -64,6 +64,15 @@ describe('home page', () => {
     expect(page.get('h3').text()).toBe('Freitags-Zocken')
   })
 
+  it('says on the construction card what is still being built, and what already works (#196)', async () => {
+    homeEvents = [card({ name: 'Freitags-Zocken' })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.text()).toContain('Glücksrad, Live-Tabelle und Siegerehrung bauen wir gerade. Terminumfrage und Spielbrett funktionieren schon.')
+    expect(page.text()).toContain('Kommt in einer der nächsten Versionen')
+  })
+
   it('keeps „Deine Events“ as a second-level heading', async () => {
     homeEvents = [card({ name: 'Freitags-Zocken' })]
     const page = await mountSuspended(IndexPage)
@@ -165,6 +174,15 @@ describe('home page', () => {
 
     expect(page.text()).toContain('2 von 3 haben vollständig abgestimmt')
     expect(page.text()).not.toContain('haben abgestimmt')
+  })
+
+  it('keeps the poll on the card of a running Event while a Session still waits for a Date (#164)', async () => {
+    homeEvents = [card({ slug: 'a-aaaa', name: 'Läuft schon', phase: 'running', sessionCount: 2, missingDates: 1, nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' }, progress: { voted: 2, total: 3 } })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.text()).toContain('2 von 3 haben vollständig abgestimmt')
+    expect(page.text()).toContain('Du hast noch nicht abgestimmt')
   })
 
   it('shows the next Session with its number once every Date is set', async () => {

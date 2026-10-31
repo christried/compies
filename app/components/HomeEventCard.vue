@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatSlotWhen } from '~/utils/berlin-time'
-import type { HomeEvent } from '~~/shared/event'
+import { datePollOpen, type HomeEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
 
 // One Event on Home (screen M1, 02-components). Shows the name and the Host, the phase, the Best
@@ -13,7 +13,8 @@ const props = defineProps<{ event: HomeEvent }>()
 
 const { t } = useI18n()
 
-const isPoll = computed(() => props.event.phase === 'poll')
+// The Date poll is open while a Session waits for a Date, also in a running Event (#164, datePollOpen).
+const isPoll = computed(() => datePollOpen(props.event.phase, props.event.missingDates))
 const hasSeveralSessions = computed(() => props.event.sessionCount > 1)
 const datesMissing = computed(() => props.event.missingDates > 0)
 

@@ -13,7 +13,7 @@ import type { HomeEvent, HomeView } from '../../../shared/event'
 // Home (#12, screen M1): every Event the User is a Member of, not deleted, in Home order. Each card
 // carries what the card shows: the Host, the phase, the Best slot or the next Session, the Sessions
 // still waiting for a Date, how many Members have voted, the User's own status and the call to action.
-// Events whose Sessions have all passed by more than 24 h are left out (#54).
+// Events whose Sessions have all ended more than 24 h ago are left out (#199, after #54).
 // Pure rules live in server/domain/home.ts and poll.ts; this handler only loads the rows.
 export default defineEventHandler(async (event): Promise<HomeView> => {
   const user = await requireUser(event)
@@ -40,7 +40,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   const eventIds = rows.map(row => row.id)
 
   const sessionRows = await db
-    .select({ id: sessions.id, eventId: sessions.eventId, startsAt: sessions.startsAt, slotId: sessions.slotId })
+    .select({ id: sessions.id, eventId: sessions.eventId, startsAt: sessions.startsAt, startedAt: sessions.startedAt, endedAt: sessions.endedAt, slotId: sessions.slotId })
     .from(sessions)
     .where(and(inArray(sessions.eventId, eventIds), sessionNotRemoved))
 
@@ -81,7 +81,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       now,
     })
     const isHost = row.hostId === user.id
-    const viewerNeedsVote = needsVote(row.phase, standing.votableSlotIds, poll.votes, user.id)
+    const viewerNeedsVote = needsVote(row.phase, missingDates(sessionStarts), standing.votableSlotIds, poll.votes, user.id)
     const card: HomeEvent = {
       slug: row.slug,
       name: row.name,
@@ -98,7 +98,8 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       action: homeAction({ isHost, needsVote: viewerNeedsVote }),
     }
     // Home order reads the row's own times, the Session the card shows and whether the viewer still has to vote.
-    return { card, phase: row.phase, needsVote: viewerNeedsVote, sessionStarts, homeDate: next?.startsAt ?? null, createdAt: row.createdAt }
+    // Home keeps the Event by its Sessions' start and end times (#199).
+    return { card, phase: row.phase, needsVote: viewerNeedsVote, sessions: eventSessionRows, homeDate: next?.startsAt ?? null, createdAt: row.createdAt }
   })
 
   return { events: arrangeHome(cards, now).map(entry => entry.card) }

@@ -1,18 +1,28 @@
-import type { HomeAction, Phase } from '../../shared/event'
+import { datePollOpen, type HomeAction, type Phase } from '../../shared/event'
 import { hasVoted, isPast, type PollVote } from './poll'
-import { isDated } from './session'
+import { isDated, missingDates } from './session'
 
 // Home rules (#1 user stories 15–24, #12). Pure functions: the list handler loads the rows and
 // passes them in; `now` is injected so the rules can be tested at a fixed moment.
 
-export const HOME_DATE_GRACE_MS = 24 * 60 * 60 * 1000
+export const HOME_END_GRACE_MS = 24 * 60 * 60 * 1000
+
+/** What Home needs of a Session: its Date, and when it started and ended (null while it hasn't). */
+export interface HomeSessionTimes {
+  startsAt: Date | null
+  startedAt: Date | null
+  endedAt: Date | null
+}
 
 /**
- * An Event stays on Home while a Session has no Date, or any Session's Date is upcoming or less than
- * 24 h past (#54). It leaves once every Session has a Date and all of them are more than 24 h past.
+ * An Event stays on Home while a Session has not ended, or ended less than 24 h ago (#199). That covers a
+ * Session without a Date, a dated one that has not started (whatever its Date) and a Running Session. Since
+ * 1.4 a Session can start days after its Date and an Event goes on between Sessions, so the Date no longer
+ * says whether an Event is over; the end does. A Session from before 1.4 never started, so such an Event
+ * stays too (user decision, 2026-10-31). An Event without Sessions leaves.
  */
-export function staysOnHome(sessionStarts: (Date | null)[], now: Date): boolean {
-  return sessionStarts.some(startsAt => startsAt === null || startsAt.getTime() >= now.getTime() - HOME_DATE_GRACE_MS)
+export function staysOnHome(sessions: readonly HomeSessionTimes[], now: Date): boolean {
+  return sessions.some(session => session.endedAt === null || session.endedAt.getTime() >= now.getTime() - HOME_END_GRACE_MS)
 }
 
 /**
@@ -33,9 +43,9 @@ export function homeSession<S extends { startsAt: Date | null }>(sessions: S[], 
   return upcoming ?? latestPassed
 }
 
-/** The User still has to vote: an open poll with Slots left to vote on and no full set of Votes. */
-export function needsVote(phase: Phase, votableSlotIds: string[], votes: PollVote[], userId: string): boolean {
-  return phase === 'poll' && votableSlotIds.length > 0 && !hasVoted(votableSlotIds, votes, userId)
+/** The User still has to vote: an open Date poll (datePollOpen, also in a running Event, #164) with Slots left to vote on and no full set of Votes. */
+export function needsVote(phase: Phase, missing: number, votableSlotIds: string[], votes: PollVote[], userId: string): boolean {
+  return datePollOpen(phase, missing) && votableSlotIds.length > 0 && !hasVoted(votableSlotIds, votes, userId)
 }
 
 /** The card's call to action: the Host opens the Event, a User who still has to vote is asked to vote, the rest view it. */
@@ -47,8 +57,8 @@ export function homeAction(input: { isHost: boolean, needsVote: boolean }): Home
 export interface HomeOrderable {
   phase: Phase
   needsVote: boolean
-  /** Each Session's Date, null while it waits for one. */
-  sessionStarts: (Date | null)[]
+  /** Each Session's Date and start and end times (staysOnHome). */
+  sessions: HomeSessionTimes[]
   /** The Date of the Session Home shows (homeSession), null while no Session has a Date. */
   homeDate: Date | null
   createdAt: Date
@@ -60,7 +70,7 @@ const GROUP = { toVote: 0, otherPoll: 1, upcomingDate: 2, passedDate: 3 } as con
 /** The sort bucket of an item: one of GROUP. */
 function orderGroup(item: HomeOrderable, now: Date): number {
   if (item.needsVote) return GROUP.toVote
-  if (item.phase === 'poll') return GROUP.otherPoll
+  if (datePollOpen(item.phase, missingDates(item.sessions.map(session => session.startsAt)))) return GROUP.otherPoll
   return item.homeDate && isPast(item.homeDate, now) ? GROUP.passedDate : GROUP.upcomingDate
 }
 
@@ -72,7 +82,7 @@ function orderGroup(item: HomeOrderable, now: Date): number {
 export function arrangeHome<T extends HomeOrderable>(items: T[], now: Date): T[] {
   const time = (item: T) => item.homeDate?.getTime() ?? 0
   return items
-    .filter(item => staysOnHome(item.sessionStarts, now))
+    .filter(item => staysOnHome(item.sessions, now))
     .sort((a, b) => {
       const groupA = orderGroup(a, now)
       const byGroup = groupA - orderGroup(b, now)
