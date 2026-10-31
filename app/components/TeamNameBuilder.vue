@@ -11,8 +11,8 @@ import { hasSpace, stripSpaces, TEAM_WORD_MAX } from '~~/shared/team-word'
 // when the team has a name from words; it asks first (screen 10 „Teamnamen zurücksetzen?“). Once the first Session
 // has started (#164) the name is frozen: there is no word field, and the Host's reset gives the colour name while the
 // words stay. A polite live region
-// announces the composed name when it changes. Everyone else sees only the name, in the header. The word shown
-// under each avatar is the BoardPerson's. The refetch after a save brings the truth.
+// announces the composed name when it changes. Everyone else sees only the name, in the header. The refetch after a
+// save brings the truth.
 const props = withDefaults(defineProps<{
   slug: string
   /** The team's position, which is its Team colour index. */
