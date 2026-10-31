@@ -18,11 +18,17 @@ describe('HostDock', () => {
     document.body.innerHTML = ''
   })
 
-  it('shows up to three actions in the pill, and no Mehr while nothing is left over', async () => {
+  it('shows up to three actions in the pill, and Mehr is there whenever there are actions (#164)', async () => {
     const page = await mountSuspended(HostDock, { props: { actions: [action('Termin festlegen'), action('Einladen'), action('Einstellungen')] } })
 
-    expect(pillLabels(page)).toEqual(['Termin festlegen', 'Einladen', 'Einstellungen'])
-    expect(page.find('[aria-haspopup="menu"]').exists()).toBe(false)
+    expect(pillLabels(page)).toEqual(['Termin festlegen', 'Einladen', 'Einstellungen', 'Mehr'])
+    page.unmount()
+  })
+
+  it('has no pill and no Mehr without any action', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [] } })
+
+    expect(pillLabels(page)).toEqual([])
     page.unmount()
   })
 
@@ -148,6 +154,117 @@ describe('HostDock', () => {
     await button.trigger('click')
 
     expect(run).toHaveBeenCalledOnce()
+    page.unmount()
+  })
+
+  it('lists the Mehr menu as plain rows: the primary keeps no fill and no row is a bordered box', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Session starten', { primary: true }), action('Einstellungen', { place: 'more' })] } })
+    await page.get('[aria-haspopup="menu"]').trigger('click')
+
+    for (const item of page.findAll('[role="menuitem"]')) {
+      expect(item.classes()).not.toContain('bg-primary')
+      expect(item.classes()).toContain('border-0')
+      // outline-memphis sets a border later in the utilities layer and would bring the box back.
+      expect(item.classes()).not.toContain('outline-memphis')
+    }
+    page.unmount()
+  })
+
+  it('says why a disabled primary is disabled in a bubble above the pill, linked with aria-describedby', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [
+      action('Session 1 starten', { primary: true, disabledReason: 'Geht erst, wenn alle Teams gleich groß sind.' }),
+      action('Einladen'),
+    ] } })
+
+    const button = page.findAll('[role="toolbar"] button')[0]!
+    const bubble = page.get(`#${button.attributes('aria-describedby')}`)
+    expect(bubble.text()).toBe('Geht erst, wenn alle Teams gleich groß sind.')
+    expect(button.attributes('aria-disabled')).toBe('true')
+    page.unmount()
+  })
+
+  it('shows no bubble when the primary can run', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 starten', { primary: true }), action('Einladen')] } })
+
+    expect(page.findAll('[role="toolbar"] button')[0]!.attributes('aria-describedby')).toBeUndefined()
+    page.unmount()
+  })
+
+  it('runs a hold action only after the hold, from the pill, and keeps it out of Mehr', async () => {
+    vi.useFakeTimers()
+    const run = vi.fn(() => Promise.resolve(true))
+    const page = await mountSuspended(HostDock, { props: { actions: [
+      action('Session 1 beenden', { primary: true, hold: true, run }),
+      action('Einladen'),
+      action('Einstellungen', { place: 'more' }),
+    ] } })
+    const hold = page.findAll('[role="toolbar"] button').find(button => button.text().includes('Session 1 beenden'))!
+
+    await hold.trigger('pointerdown')
+    vi.advanceTimersByTime(900)
+    expect(run).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(100)
+    expect(run).toHaveBeenCalledOnce()
+
+    await page.get('[aria-haspopup="menu"]').trigger('click')
+    expect(page.findAll('[role="menuitem"]').map(item => item.text())).toEqual(['Einladen', 'Einstellungen'])
+    vi.useRealTimers()
+    page.unmount()
+  })
+
+  it('shows the hold hint as a badge inside the pill button, as tall as its siblings, with no line below (#164)', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 beenden', { primary: true, hold: true }), action('Einladen')] } })
+
+    const [hold, sibling] = page.findAll('[role="toolbar"] button')
+    expect(hold!.text()).toBe('Session 1 beenden 1 s halten')
+    expect(hold!.classes()).toContain('h-11')
+    expect(sibling!.classes()).toContain('h-11')
+    expect(page.get(`#${hold!.attributes('aria-describedby')}`).text()).toBe('1 Sekunde halten')
+    // The only element with the full hint is the sr-only description, not a visible line.
+    const hints = page.findAll('[role="toolbar"] span').filter(span => span.text() === '1 Sekunde halten')
+    expect(hints.map(hint => hint.classes())).toEqual([expect.arrayContaining(['sr-only'])])
+    page.unmount()
+  })
+
+  it('does not run a hold action on a plain click', async () => {
+    const run = vi.fn(() => Promise.resolve(true))
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 beenden', { primary: true, hold: true, run })] } })
+
+    await page.findAll('[role="toolbar"] button')[0]!.trigger('click')
+
+    expect(run).not.toHaveBeenCalled()
+    page.unmount()
+  })
+
+  it('on a phone, the sheet holds the hold action too', async () => {
+    vi.useFakeTimers()
+    const run = vi.fn(() => Promise.resolve(true))
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 beenden', { primary: true, hold: true, run })] }, attachTo: document.body })
+
+    await page.get('button[aria-haspopup="dialog"]').trigger('click')
+    const sheet = document.querySelector('[role="dialog"]')!
+    const hold = [...sheet.querySelectorAll('button')].find(button => button.textContent?.includes('Session 1 beenden'))!
+    hold.dispatchEvent(new Event('pointerdown'))
+    vi.advanceTimersByTime(1000)
+
+    expect(run).toHaveBeenCalledOnce()
+    vi.useRealTimers()
+    page.unmount()
+  })
+
+  it('on a phone, the hold action is a full width row with the badge at its end and no line below (#164)', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 beenden', { primary: true, hold: true })] }, attachTo: document.body })
+
+    await page.get('button[aria-haspopup="dialog"]').trigger('click')
+    const sheet = document.querySelector('[role="dialog"]')!
+    const hold = [...sheet.querySelectorAll('button')].find(button => button.textContent?.includes('Session 1 beenden'))!
+    expect(hold.textContent?.replace(/\s+/g, ' ').trim()).toBe('Session 1 beenden 1 s halten')
+    expect(hold.classList).toContain('w-full')
+    const badge = [...hold.querySelectorAll('[aria-hidden="true"]')].find(element => element.textContent === '1 s halten')
+    expect(badge?.classList).toContain('ml-auto')
+    const description = sheet.querySelector(`#${hold.getAttribute('aria-describedby')}`)!
+    expect(description.textContent).toBe('1 Sekunde halten')
+    expect(description.classList).toContain('sr-only')
     page.unmount()
   })
 

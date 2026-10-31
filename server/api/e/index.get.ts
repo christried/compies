@@ -81,7 +81,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       now,
     })
     const isHost = row.hostId === user.id
-    const viewerNeedsVote = needsVote(row.phase, standing.votableSlotIds, poll.votes, user.id)
+    const viewerNeedsVote = needsVote(row.phase, missingDates(sessionStarts), standing.votableSlotIds, poll.votes, user.id)
     const card: HomeEvent = {
       slug: row.slug,
       name: row.name,

@@ -415,7 +415,7 @@ describe('Notes on Votes', () => {
     it('lists the Notes of the Slot on a dated Session, read-only', async () => {
       const { slug } = serve(s => ({
         ...view(s, [], { event: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z' }, slots: [], bestSlotId: null }),
-        sessions: [{ id: 's1', number: null, startsAt: '2026-10-24T18:00:00.000Z', previousStartsAt: null, notes: [{ userId: LARSI, value: 'maybe' as const, note: NOTE }] }],
+        sessions: [{ id: 's1', number: null, startsAt: '2026-10-24T18:00:00.000Z', previousStartsAt: null, notes: [{ userId: LARSI, value: 'maybe' as const, note: NOTE }], startedAt: null, endedAt: null }],
       }))
 
       const page = await mountSuspended(EventPage, { route: `/e/${slug}` })

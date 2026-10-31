@@ -2,6 +2,7 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { getQuery } from 'h3'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ActivityFeed from '~/components/ActivityFeed.vue'
+import type { FeedSession } from '~/utils/activity'
 import { formatSlotWhen } from '~/utils/berlin-time'
 import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
@@ -60,10 +61,10 @@ function fakeRoom() {
 
 const settle = () => new Promise(resolve => setTimeout(resolve))
 
-async function mountFeed(all: ActivityEntry[], options: { pageSize?: number } = {}) {
+async function mountFeed(all: ActivityEntry[], options: { pageSize?: number, sessions?: FeedSession[], nextNumber?: number | null } = {}) {
   const feed = serveFeed(all, options)
   const live = fakeRoom()
-  const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: live.room } })
+  const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: live.room, sessions: options.sessions, nextNumber: options.nextNumber } })
   await vi.waitFor(() => expect(feed.served.reads).toBeGreaterThan(0))
   await settle()
   return { ...feed, ...live, wrapper }
@@ -97,13 +98,27 @@ describe('ActivityFeed', () => {
     expect(shown[2]).toContain('Termin für Session 1 steht: Mo 30.10. 20:30')
   })
 
-  it('leaves out an entry no ticket has a sentence for yet', async () => {
+  it('puts a header over each stretch: before the start, the Session, and before the next one (#164)', async () => {
+    const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
+    const sessions: FeedSession[] = [{ id: 's1', number: 1, startedAt: at(50), endedAt: at(20) }]
     const { wrapper } = await mountFeed([
-      entry('a', 3),
-      entry('b', 2, { type: 'session_started', params: { sessionId: 's', number: null } }),
-    ])
+      entry('a', 60),
+      entry('b', 49, { type: 'session_started', params: { sessionId: 's1', number: 1 } }),
+      entry('c', 19, { type: 'member_joined' }),
+    ], { sessions, nextNumber: 2 })
 
-    expect(lines(wrapper)).toHaveLength(1)
+    const headers = wrapper.findAll('[role="log"] h3').map(heading => heading.text())
+    expect(headers).toEqual(['Vor dem Start', 'Session 1', 'Vor Session 2'])
+    expect(lines(wrapper)[1]).toContain('Sanne hat Session 1 gestartet')
+  })
+
+  it('says „Nach Session n“ when no Session is left, and „Session“ for the only Session of an Event', async () => {
+    const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
+    const after = await mountFeed([entry('a', 10)], { sessions: [{ id: 's1', number: 2, startedAt: at(50), endedAt: at(20) }], nextNumber: null })
+    expect(after.wrapper.findAll('[role="log"] h3').map(heading => heading.text())).toEqual(['Nach Session 2'])
+
+    const single = await mountFeed([entry('b', 30, { type: 'session_started', params: { sessionId: 's1', number: null } })], { sessions: [{ id: 's1', number: null, startedAt: at(40), endedAt: null }] })
+    expect(single.wrapper.findAll('[role="log"] h3').map(heading => heading.text())).toEqual(['Session'])
   })
 
   it('says what it promises in an empty state, without a log entry', async () => {

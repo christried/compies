@@ -1,7 +1,7 @@
 import { defineEventHandler, getRouterParam } from 'h3'
 import { useDb } from '../../utils/db'
 import { loadEvent } from '../../utils/event-access'
-import { boardSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, sessionSection } from '../../utils/event-read'
+import { boardSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, sessionSection, startSection } from '../../utils/event-read'
 import { requireUser } from '../../utils/user'
 import type { EventView } from '../../../shared/event'
 
@@ -31,5 +31,6 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     ...pollSection(rows, viewer, new Date()),
     ...membersSection(eventRow, rows),
     ...boardSection(eventRow, rows),
+    ...startSection(eventRow, rows, viewer),
   }
 })

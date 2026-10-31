@@ -48,15 +48,30 @@ describe('deployCheck', () => {
   const now = at('2024-01-15T10:00:00Z')
 
   it('is ok, without a reason, when no Session is dated today', () => {
-    expect(deployCheck({ startsAt: [at('2024-01-14T19:00:00Z'), at('2024-01-16T19:00:00Z'), null], now })).toEqual({ ok: true, reason: null })
+    expect(deployCheck({ startsAt: [at('2024-01-14T19:00:00Z'), at('2024-01-16T19:00:00Z'), null], running: 0, now })).toEqual({ ok: true, reason: null })
   })
 
   it('is not ok on a game day and names how many Sessions fall on it', () => {
-    const one = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], now })
-    const two = deployCheck({ startsAt: [at('2024-01-15T17:00:00Z'), at('2024-01-15T19:00:00Z')], now })
+    const one = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], running: 0, now })
+    const two = deployCheck({ startsAt: [at('2024-01-15T17:00:00Z'), at('2024-01-15T19:00:00Z')], running: 0, now })
 
     expect(one).toEqual({ ok: false, reason: expect.stringContaining('game day') })
     expect(one.reason).toContain('1 Session')
     expect(two.reason).toContain('2 Sessions')
+  })
+
+  it('is not ok while a Session runs (#164), with a reason of its own, whatever day its Date was', () => {
+    const running = deployCheck({ startsAt: [at('2024-01-10T19:00:00Z')], running: 1, now })
+
+    expect(running).toEqual({ ok: false, reason: expect.stringContaining('running') })
+    expect(running.reason).not.toContain('game day')
+    expect(deployCheck({ startsAt: [], running: 2, now }).reason).toContain('2 Sessions are running')
+  })
+
+  it('names the running Session first when one runs on a game day', () => {
+    const both = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], running: 1, now })
+
+    expect(both.ok).toBe(false)
+    expect(both.reason).toContain('running')
   })
 })

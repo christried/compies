@@ -13,10 +13,11 @@ import type { SessionRemoved } from '../../../../../shared/event'
 // wrong Phase or a Slot held by a removed Session. The Sessions whose number changes get a higher SEQUENCE.
 // A Session that has, or had, a Date stays as a removed row with that Date (#65), so every Member still sees
 // the notice to delete the evening from their calendar; it counts nowhere else (eventSessions leaves it out).
-// A Session that never had a Date leaves nothing to tell, so it is really deleted.
+// A Session that never had a Date leaves nothing to tell, so it is really deleted. A Session that has started is not
+// removed at all (#164).
 export default defineEventHandler((event): Promise<SessionRemoved> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before }) => {
   const session = findSession(before, getRouterParam(event, 'id'))
-  const rejection = removeSessionRejection({ phase: eventRow.phase, count: before.length })
+  const rejection = removeSessionRejection({ phase: eventRow.phase, count: before.length, started: session.startedAt !== null })
   if (rejection) throw apiError(rejection)
 
   // The number the Session was shown with, before it is gone (#159).

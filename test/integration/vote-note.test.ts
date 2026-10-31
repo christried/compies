@@ -182,7 +182,7 @@ describe('Notes on Votes', () => {
     })
 
     it('refuses a Note on a Slot that became a Date, and keeps the Note it had', async () => {
-      const { slug, hostCookie, guestCookie, guestId, slotIds } = await setUp()
+      const { slug, eventId, hostCookie, guestCookie, guestId, slotIds } = await setUp()
       await put(guestCookie, slug, slotIds[1]!, { value: 'maybe', note: 'bis 20:30' })
       await request(`/api/e/${slug}/confirm`, {
         method: 'POST',
@@ -190,8 +190,9 @@ describe('Notes on Votes', () => {
         body: JSON.stringify({ slotId: slotIds[1] }),
       })
 
-      // The Event has one Session, so the Date closes the poll; with several Sessions the poll stays open and
-      // only the taken Slot refuses.
+      // The Event has one Session, so the Date closes the poll; with several Sessions the poll stays open (a Session
+      // still waits for a Date) and only the taken Slot refuses.
+      await testDb.db.insert(sessions).values({ eventId, startsAt: null })
       await testDb.db.update(events).set({ phase: 'poll' }).where(eq(events.slug, slug))
 
       const response = await put(guestCookie, slug, slotIds[1]!, { value: 'maybe', note: 'neu' })

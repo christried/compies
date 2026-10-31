@@ -20,7 +20,7 @@ describe('construction page route guard', () => {
 
   it('links the call to action to the latest open poll when the User has one', async () => {
     homeEvents = [
-      { slug: 'freitags-zocken-k7q2', name: 'Freitags-Zocken', phase: 'poll', createdAt: '2026-10-20T10:00:00.000Z' },
+      { slug: 'freitags-zocken-k7q2', name: 'Freitags-Zocken', phase: 'poll', missingDates: 1, createdAt: '2026-10-20T10:00:00.000Z' },
     ]
     const page = await visit('/archiv')
 
@@ -33,15 +33,29 @@ describe('construction page route guard', () => {
   it('picks the most recently created open poll, not the first one on Home', async () => {
     // Home lists polls to vote on first, so an older poll can come before a newer one.
     homeEvents = [
-      { slug: 'alt-a1b2', name: 'Alt', phase: 'poll', createdAt: '2026-10-01T10:00:00.000Z' },
-      { slug: 'abend-c3d4', name: 'Abend', phase: 'date_set', createdAt: '2026-10-21T10:00:00.000Z' },
-      { slug: 'neu-e5f6', name: 'Neu', phase: 'poll', createdAt: '2026-10-20T10:00:00.000Z' },
+      { slug: 'alt-a1b2', name: 'Alt', phase: 'poll', missingDates: 1, createdAt: '2026-10-01T10:00:00.000Z' },
+      { slug: 'abend-c3d4', name: 'Abend', phase: 'date_set', missingDates: 0, createdAt: '2026-10-21T10:00:00.000Z' },
+      { slug: 'neu-e5f6', name: 'Neu', phase: 'poll', missingDates: 1, createdAt: '2026-10-20T10:00:00.000Z' },
     ]
     const page = await visit('/archiv')
 
     await vi.waitFor(() => {
       const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
       expect(cta?.attributes('href')).toBe('/e/neu-e5f6')
+    })
+  })
+
+  it('counts a running Event whose next Session still polls as an open poll (#164)', async () => {
+    homeEvents = [
+      { slug: 'alt-a1b2', name: 'Alt', phase: 'poll', missingDates: 1, createdAt: '2026-10-01T10:00:00.000Z' },
+      { slug: 'lauf-g7h8', name: 'Lauf', phase: 'running', missingDates: 1, createdAt: '2026-10-22T10:00:00.000Z' },
+      { slug: 'fertig-i9j0', name: 'Fertig', phase: 'running', missingDates: 0, createdAt: '2026-10-23T10:00:00.000Z' },
+    ]
+    const page = await visit('/archiv')
+
+    await vi.waitFor(() => {
+      const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
+      expect(cta?.attributes('href')).toBe('/e/lauf-g7h8')
     })
   })
 

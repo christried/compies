@@ -39,7 +39,7 @@ describe('GET /api/internal/deploy-check', () => {
   let counter = 0
 
   /** An Event with one Session per given Date (a Date of null is a Session still to be dated). */
-  async function eventWith(dates: (Date | null)[], options: { deleted?: boolean, removed?: boolean } = {}) {
+  async function eventWith(dates: (Date | null)[], options: { deleted?: boolean, removed?: boolean, running?: boolean } = {}) {
     counter++
     const [eventRow] = await testDb.db.insert(events).values({
       slug: `game-day-${counter}`,
@@ -53,6 +53,7 @@ describe('GET /api/internal/deploy-check', () => {
       eventId: eventRow!.id,
       startsAt,
       removedAt: options.removed ? new Date() : null,
+      startedAt: options.running ? new Date() : null,
     })))
   }
 
@@ -100,6 +101,24 @@ describe('GET /api/internal/deploy-check', () => {
   it('ignores a Session of a deleted Event and a removed Session', async () => {
     await eventWith([now()], { deleted: true })
     await eventWith([now()], { removed: true })
+
+    expect(await (await ask()).json()).toEqual({ ok: true, reason: null })
+  })
+
+  it('says not ok while a Session runs (started, not ended), also when its Date is not today (#164)', async () => {
+    await eventWith([hoursFromNow(-36)], { running: true })
+
+    const body = await (await ask()).json() as { ok: boolean, reason: string }
+
+    expect(body.ok).toBe(false)
+    expect(body.reason).toContain('running')
+  })
+
+  it('does not count a Session that ended, a running one that was removed or one of a deleted Event', async () => {
+    await eventWith([hoursFromNow(-36)], { removed: true, running: true })
+    await eventWith([hoursFromNow(-36)], { deleted: true, running: true })
+    const [ended] = await testDb.db.insert(events).values({ slug: 'ended', inviteToken: 'invite-ended', hostId, name: 'Vorbei', phase: 'running' }).returning()
+    await testDb.db.insert(sessions).values({ eventId: ended!.id, startsAt: hoursFromNow(-36), startedAt: hoursFromNow(-35), endedAt: hoursFromNow(-30) })
 
     expect(await (await ask()).json()).toEqual({ ok: true, reason: null })
   })

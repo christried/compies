@@ -19,13 +19,16 @@ export function sessionsToday(startsAt: (Date | null)[], now: Date): number {
 }
 
 /**
- * Whether a deploy may drop the sockets: not on a day with a dated Session. `startsAt` holds the Dates of every
- * Session (not removed) of every Event that is not deleted.
+ * Whether a deploy may drop the sockets: not while a Session runs (#164), and not on a day with a dated Session.
+ * `startsAt` holds the Dates of every Session (not removed) of every Event that is not deleted; `running` counts the
+ * Running Sessions among them (started, not ended), whatever their Date was.
  */
-export function deployCheck(input: { startsAt: (Date | null)[], now: Date }): DeployCheck {
+export function deployCheck(input: { startsAt: (Date | null)[], running: number, now: Date }): DeployCheck {
+  if (input.running > 0) {
+    const sessions = input.running === 1 ? '1 Session is' : `${input.running} Sessions are`
+    return { ok: false, reason: `${sessions} running. A deploy would drop every open socket.` }
+  }
   const today = sessionsToday(input.startsAt, input.now)
-  // The second half of the rule, a Session that runs (started, not ended), lands with the Session start (#164): it
-  // joins the reason here, and a running Session on an earlier Date blocks the deploy as well.
   if (today === 0) return { ok: true, reason: null }
   const sessions = today === 1 ? '1 Session is' : `${today} Sessions are`
   return { ok: false, reason: `Today is a game day: ${sessions} dated today (Europe/Berlin). A deploy would drop every open socket.` }

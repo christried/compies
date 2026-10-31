@@ -32,6 +32,12 @@ export type RoomMessage
     | { type: 'team.wordSet', team: number, userId: string, word: string | null }
   /** The Host reset the Team name of `team` to its colour name (#161). */
     | { type: 'team.nameReset', team: number }
+  /** The Host started a Session (#164). No game data. */
+    | { type: 'session.started', sessionId: string }
+  /** The Host ended the Running Session (#164). */
+    | { type: 'session.ended', sessionId: string }
+  /** The first Session started: every team's Team name is frozen (#164). */
+    | { type: 'team.nameFrozen' }
 
 export type RoomMessageType = RoomMessage['type']
 

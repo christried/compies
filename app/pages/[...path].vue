@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { LogOut } from '@lucide/vue'
 import { constructionSite } from '~/utils/construction'
-import type { HomeEvent, HomeView } from '~~/shared/event'
+import { datePollOpen, type HomeEvent, type HomeView } from '~~/shared/event'
 
 // MVP route guard: every path without a page of its own lands here (see utils/construction.ts).
 const route = useRoute()
@@ -15,7 +15,7 @@ const signOut = useSignOut()
 // most recently created one, whatever its place in Home order. ISO strings sort as their times.
 const { data: home } = useFetch<HomeView>('/api/e', { key: 'home-events' })
 const latestPollSlug = computed(() => (home.value?.events ?? [])
-  .filter(event => event.phase === 'poll')
+  .filter(event => datePollOpen(event.phase, event.missingDates))
   .reduce<HomeEvent | null>((latest, event) => (!latest || event.createdAt > latest.createdAt ? event : latest), null)
   ?.slug ?? null)
 </script>

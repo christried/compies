@@ -65,6 +65,8 @@ const { notices: reopenNotices, close: closeReopenNotice } = useReopenNotices(no
       :number="session.number"
       :notes="noteRows(session.notes, view.members, view.viewerId)"
       :is-host="view.event.isHost"
+      :started-at="session.startedAt"
+      :ended-at="session.endedAt"
       @reschedule="emit('reschedule', session.id)"
     >
       <template #host-actions>

@@ -85,6 +85,13 @@
       "when": 1793295949168,
       "tag": "0011_team_words",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793299386507,
+      "tag": "0012_session_start",
+      "breakpoints": true
     }
   ]
 }

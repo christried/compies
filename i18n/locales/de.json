@@ -28,6 +28,7 @@
     "lastSeen": "offline, zuletzt {time}",
     "holdToConfirm": "gedrückt halten",
     "holdFor1s": "1 Sekunde halten",
+    "holdBadge": "1 s halten",
     "counter": "{n}/{max}"
   },
   "nav": {
@@ -77,7 +78,23 @@
     "gameCount": "Anzahl Spiele",
     "spinDuration": "Drehdauer",
     "endSession": "Session beenden",
+    "startN": "Session {n} starten",
+    "endN": "Session {n} beenden",
+    "setDateN": "Termin für Session {n}",
+    "startBlocked": {
+      "not_set_up": "Geht erst, wenn das Event eingerichtet ist.",
+      "no_dated_session": "Geht erst, wenn eine Session einen Termin hat.",
+      "session_running": "Es läuft schon eine Session.",
+      "teams_empty": "Geht erst, wenn in jedem Team jemand ist.",
+      "teams_uneven": "Geht erst, wenn alle Teams gleich groß sind."
+    },
     "shortcut": "Taste H: Host-Steuerung",
+    "startDialog": {
+      "title": "Los geht’s?",
+      "textFirst": "Mit dem Start werden Teams und Teamnamen gesperrt. Bench und Tribüne bleiben offen, nachziehen kannst du weiterhin.",
+      "textLater": "Die Teams bleiben, wie sie sind.",
+      "lock": "{teams} Teams à {size}, Namen werden eingefroren"
+    },
     "more": "Mehr",
     "group": {
       "dates": "Termine",
@@ -100,6 +117,7 @@
     "zoneAria": "{name}, {n} von {size} frei",
     "closed": "Zu",
     "closedAria": "Zu. {reason}",
+    "lockedAria": "Gesperrt. {reason}",
     "personAria": "{name}, {where}",
     "personAriaOnline": "{name}, {where}, online",
     "personAriaOffline": "{name}, {where}, offline",
@@ -429,6 +447,14 @@
     "logAria": "Aktivität",
     "beforeStart": "Vor dem Start",
     "sessionGroup": "Session {n}",
+    "sessionGroupSingle": "Session",
+    "beforeSession": "Vor Session {n}",
+    "afterSession": "Nach Session {n}",
+    "afterSessionSingle": "Nach der Session",
+    "sessionStarted": "{name} hat Session {n} gestartet",
+    "sessionStartedSingle": "{name} hat die Session gestartet",
+    "sessionEnded": "{name} hat Session {n} beendet",
+    "sessionEndedSingle": "{name} hat die Session beendet",
     "empty": "Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und was sich am Event ändert.",
     "older": "Ältere laden",
     "loadFailed": "Die Aktivität konnte nicht geladen werden.",
@@ -1181,7 +1207,9 @@
       "noSlots": "Schlag erst einen Termin vor.",
       "missingAfter": "Danach fehlt noch {n} Termin. | Danach fehlen noch {n} Termine.",
       "dateTime": "{date}, {time} Uhr",
-      "ics": "In den Kalender"
+      "ics": "In den Kalender",
+      "runningSince": "Läuft seit {time}",
+      "endedRange": "{day}, {start} bis {end}"
     },
     "reschedule": {
       "title": "Termin verschieben?",
@@ -1336,6 +1364,8 @@
     "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
     "unknownGame": "Ein Spiel aus dem Pool gibt es nicht mehr.",
     "settingLocked": "Das lässt sich nicht mehr ändern, seit die erste Session läuft.",
+    "sessionStarted": "Diese Session hat schon begonnen. Sie bleibt, wie sie ist.",
+    "noRunningSession": "Es läuft gerade keine Session.",
     "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",

@@ -14,7 +14,7 @@ import type { SessionReopened } from '../../../../../../shared/event'
 // Session whose entry changed gets its calendar SEQUENCE raised, the withdrawn one included.
 export default defineEventHandler((event): Promise<SessionReopened> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before }) => {
   const session = findSession(before, getRouterParam(event, 'id'))
-  const rejection = reopenRejection({ phase: eventRow.phase, hasDate: session.startsAt !== null })
+  const rejection = reopenRejection({ phase: eventRow.phase, hasDate: session.startsAt !== null, started: session.startedAt !== null })
   if (rejection) throw apiError(rejection)
 
   // The number the Session was shown with, before it loses its Date (#159); reopenRejection saw that it had one.

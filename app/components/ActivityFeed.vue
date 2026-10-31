@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { activityText, groupActivity, readEntry } from '~/utils/activity'
+import { activityText, groupActivity, readEntry, type ActivityGroup, type FeedSession } from '~/utils/activity'
 import { formatActivityTime } from '~/utils/berlin-time'
 import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
 
@@ -8,11 +8,15 @@ import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
 // endpoint, adds what the room sends (`activity.added`) at once, and reads the first page again whenever the
 // connection opens, because a message sent while the socket was down is gone; an entry the page and the room both
 // bring shows once (by id). „Ältere laden“ reads the page before the oldest one shown. The room comes from the
-// Event page: one socket per page.
-const props = defineProps<{
+// Event page: one socket per page. The headers over the groups come from the Sessions that have started (#164).
+const props = withDefaults(defineProps<{
   slug: string
   room: Pick<ReturnType<typeof useEventRoom>, 'state' | 'on'>
-}>()
+  /** The Sessions that have started, with when they ran. */
+  sessions?: FeedSession[]
+  /** The number of the next dated Session that has not started, for „Vor Session m“; null when none is left. */
+  nextNumber?: number | null
+}>(), { sessions: () => [], nextNumber: null })
 
 const { t } = useI18n()
 
@@ -104,13 +108,22 @@ const shown = computed(() => entries.value.flatMap((entry) => {
   return text === null ? [] : [{ entry, text, time: formatActivityTime(new Date(entry.at), now) }]
 }))
 
-// No Session has started before #164, so there is one group, „Vor dem Start“; the starts come with that ticket.
-const sessionStarts = computed<string[]>(() => [])
+// The headers (#164): „Vor dem Start“, then „Session n“ from a start to its end, „Vor Session m“ until the next start and
+// „Nach Session n“ when none is left. An Event with one Session has no numbers: „Session“ and „Nach der Session“.
+function groupTitle(group: ActivityGroup): string {
+  const n = group.number
+  switch (group.kind) {
+    case 'beforeStart': return t('activity.beforeStart')
+    case 'session': return n === null ? t('activity.sessionGroupSingle') : t('activity.sessionGroup', { n })
+    case 'before': return t('activity.beforeSession', { n })
+    case 'after': return n === null ? t('activity.afterSessionSingle') : t('activity.afterSession', { n })
+  }
+}
 const groups = computed(() => {
   const byId = new Map(shown.value.map(item => [item.entry.id, item]))
-  return groupActivity(shown.value.map(item => item.entry), sessionStarts.value).map(group => ({
+  return groupActivity(shown.value.map(item => item.entry), props.sessions, props.nextNumber).map(group => ({
     key: group.key,
-    title: group.key === 'beforeStart' ? t('activity.beforeStart') : t('activity.sessionGroup', { n: group.number }),
+    title: groupTitle(group),
     items: group.entries.map(entry => byId.get(entry.id)!),
   }))
 })

@@ -47,6 +47,8 @@ interface Options {
   members?: MemberView[]
   settings?: EventSettings | null
   teamChoiceOpen?: boolean
+  /** The first Session has started (#164): the board is locked and the teams are frozen. */
+  started?: boolean
   viewerId?: string
   isHost?: boolean
   /** What the move endpoint answers; it may wait and throw. */
@@ -72,9 +74,10 @@ async function mountBoard(options: Options = {}) {
     props: {
       slug,
       members: options.members ?? [kittyAt(), larsiAt(), sanneAt()],
-      teams: resolvedSettings ? teams : [],
+      teams: resolvedSettings ? (options.started ? teams.map(entry => ({ ...entry, frozen: true })) : teams) : [],
       settings: resolvedSettings,
-      teamChoiceOpen: options.teamChoiceOpen ?? true,
+      teamChoiceOpen: options.started ? false : (options.teamChoiceOpen ?? true),
+      started: options.started ?? false,
       viewerId: options.viewerId ?? kitty.id,
       isHost: options.isHost ?? false,
       room: live.room,
@@ -164,6 +167,90 @@ describe('GameBoard', () => {
       expect(group(page, 'Team Rot, 1 von 2 frei').text()).toContain('Frei')
       expect(group(page, 'Team Orange, 2 von 2 frei').text().match(/Frei/g)).toHaveLength(2)
       expect(page.findAll('[role="img"]')).toHaveLength(0)
+    })
+  })
+
+  describe('after the first Session started (#164)', () => {
+    const running = (extra: Options = {}) => mountBoard({ started: true, ...extra })
+
+    it('locks the free slots as „Gesperrt“ with the reason for a Player', async () => {
+      const { page } = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
+
+      const locked = page.findAll('[role="img"][aria-label^="Gesperrt"]')
+      expect(locked).toHaveLength(3)
+      expect(locked[0]!.attributes('aria-label')).toBe('Gesperrt. Teams sind gesperrt, das Spiel läuft.')
+      expect(locked[0]!.text()).toBe('Gesperrt')
+      expect(page.text()).not.toContain('Frei')
+    })
+
+    it('leaves the free slots open for the Host, who moves anyone', async () => {
+      const { page } = await running({ viewerId: SANNE, isHost: true })
+
+      expect(page.findAll('[role="img"][aria-label^="Gesperrt"]')).toHaveLength(0)
+      expect(page.text()).toContain('Frei')
+    })
+
+    it('tells the Host, a Player in a team and everyone else what is locked', async () => {
+      const host = await running({ viewerId: SANNE, isHost: true })
+      expect(host.page.text()).toContain('Spiel läuft: nur du kannst noch tauschen. Name eingefroren.')
+
+      const player = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+      expect(player.page.text()).toContain('Gesperrt seit Spielstart. Name eingefroren.')
+
+      const other = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
+      expect(other.page.text()).toContain('Das Spiel läuft. Zwischen Bench und Tribüne kannst du frei wechseln.')
+    })
+
+    it('does not tell the Host about uneven teams any more: the start is over', async () => {
+      const { page } = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt(team(1))], viewerId: SANNE, isHost: true })
+
+      expect(page.text()).not.toContain('Das Spiel startet erst')
+    })
+
+    it('refuses a Player on the Bench a team in the MoveToMenu with the reason, but keeps the Stands open', async () => {
+      const { page } = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
+
+      await person(page, kitty.id).trigger('click')
+
+      expect(menuItem('Auf die Tribüne').getAttribute('aria-disabled')).not.toBe('true')
+      expect(menuItem('Nach Team Orange').getAttribute('aria-disabled')).toBe('true')
+      expect(menuItem('Nach Team Orange').textContent).toContain('Teams sind gesperrt, das Spiel läuft.')
+    })
+
+    it('refuses a Player in a team the way out, even to the Bench, with the same reason', async () => {
+      const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+
+      await person(page, kitty.id).trigger('click')
+
+      expect(menuItem('Auf die Bench').getAttribute('aria-disabled')).toBe('true')
+      expect(menuItem('Auf die Bench').textContent).toContain('Teams sind gesperrt, das Spiel läuft.')
+    })
+
+    it('lets the Host move a Player into a team', async () => {
+      const { page, posted } = await running({ members: [kittyAt(), larsiAt(), sanneAt()], viewerId: SANNE, isHost: true })
+
+      await person(page, kitty.id).trigger('click')
+      expect(menuItem('Nach Team Orange').getAttribute('aria-disabled')).not.toBe('true')
+      menuItem('Nach Team Orange').click()
+      await settle()
+
+      expect(posted).toEqual([{ userId: kitty.id, to: team(2) }])
+    })
+
+    it('marks every team as frozen with a lock in its count pill, not beside the name', async () => {
+      const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+
+      const locks = page.findAll('[aria-label="Eingefroren seit Spielstart."]')
+      expect(locks).toHaveLength(2)
+      expect(locks.map(lock => lock.element.parentElement!.textContent!.trim())).toEqual(['1/2', '0/2'])
+      expect(locks.map(lock => lock.attributes('title'))).toEqual(['Eingefroren seit Spielstart.', 'Eingefroren seit Spielstart.'])
+      for (const heading of page.findAll('h3')) expect(heading.find('[role="img"]').exists()).toBe(false)
+    })
+
+    it('shows no lock on a team name before the start', async () => {
+      const { page } = await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+
+      expect(page.findAll('[aria-label="Eingefroren seit Spielstart."]')).toHaveLength(0)
     })
   })
 

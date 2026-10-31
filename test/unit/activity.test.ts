@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activityText, groupActivity, readEntry } from '../../app/utils/activity'
+import { activityText, feedSessions, groupActivity, readEntry } from '../../app/utils/activity'
 import { formatActivityTime } from '../../app/utils/berlin-time'
 import de from '../../i18n/locales/de.json'
 import type { ActivityEntry } from '../../shared/activity'
@@ -15,33 +15,93 @@ const base = { id: 'e', at: '2090-10-30T18:00:00.000Z', actor: { id: 'u1', name:
 
 describe('groupActivity', () => {
   const entry = (id: string, at: string): ActivityEntry => ({ ...base, id, at, type: 'member_joined', params: {} })
+  const ended = (id: string, at: string, sessionId: string): ActivityEntry => ({ ...base, id, at, type: 'session_ended', params: { sessionId, number: 1 } })
+  const one = { id: 's1', number: 1, startedAt: '2090-10-31T17:00:00.000Z', endedAt: '2090-10-31T21:00:00.000Z' }
+  const two = { id: 's2', number: 2, startedAt: '2090-11-07T17:00:00.000Z', endedAt: null }
 
   it('puts everything into „Vor dem Start“ while no Session has started', () => {
     const entries = [entry('a', '2090-10-30T18:00:00.000Z'), entry('b', '2090-10-30T19:00:00.000Z')]
 
-    expect(groupActivity(entries, [])).toEqual([{ key: 'beforeStart', entries }])
+    expect(groupActivity(entries, [], 1)).toEqual([{ key: 'beforeStart', kind: 'beforeStart', number: null, entries }])
   })
 
   it('has no group for no entries', () => {
-    expect(groupActivity([], [])).toEqual([])
+    expect(groupActivity([], [], null)).toEqual([])
   })
 
   it('moves the entries from a Session start on into a group of that Session, and drops a group with no entries', () => {
     const a = entry('a', '2090-10-30T18:00:00.000Z')
     const b = entry('b', '2090-10-31T18:00:00.000Z')
-    const c = entry('c', '2090-11-01T18:00:00.000Z')
+    const c = entry('c', '2090-10-31T19:00:00.000Z')
 
-    expect(groupActivity([a, b, c], ['2090-10-31T17:00:00.000Z', '2090-11-02T17:00:00.000Z'])).toEqual([
-      { key: 'beforeStart', entries: [a] },
-      { key: 'session-1', number: 1, entries: [b, c] },
+    expect(groupActivity([a, b, c], [{ ...one, endedAt: null }], 2)).toEqual([
+      { key: 'beforeStart', kind: 'beforeStart', number: null, entries: [a] },
+      { key: 'session-0', kind: 'session', number: 1, entries: [b, c] },
     ])
-    expect(groupActivity([b], ['2090-10-31T17:00:00.000Z'])).toEqual([{ key: 'session-1', number: 1, entries: [b] }])
+    expect(groupActivity([b], [{ ...one, endedAt: null }], 2)).toEqual([{ key: 'session-0', kind: 'session', number: 1, entries: [b] }])
   })
 
-  it('numbers the groups by start, whatever order the starts come in', () => {
-    const a = entry('a', '2090-11-03T18:00:00.000Z')
+  it('opens „Vor Session m“ when a Session ended, and closes it with the next start', () => {
+    const during = entry('a', '2090-10-31T18:00:00.000Z')
+    const between = entry('b', '2090-11-02T18:00:00.000Z')
+    const next = entry('c', '2090-11-07T18:00:00.000Z')
 
-    expect(groupActivity([a], ['2090-11-02T17:00:00.000Z', '2090-10-31T17:00:00.000Z'])).toEqual([{ key: 'session-2', number: 2, entries: [a] }])
+    expect(groupActivity([during, between, next], [one, two], null)).toEqual([
+      { key: 'session-0', kind: 'session', number: 1, entries: [during] },
+      { key: 'gap-0', kind: 'before', number: 2, entries: [between] },
+      { key: 'session-1', kind: 'session', number: 2, entries: [next] },
+    ])
+  })
+
+  it('names the next Session in the gap after the last start, and „Nach Session n“ when none is left', () => {
+    const after = entry('a', '2090-11-02T18:00:00.000Z')
+
+    expect(groupActivity([after], [one], 2)).toEqual([{ key: 'gap-0', kind: 'before', number: 2, entries: [after] }])
+    expect(groupActivity([after], [one], null)).toEqual([{ key: 'gap-0', kind: 'after', number: 1, entries: [after] }])
+  })
+
+  it('keeps the entry that ends a Session in that Session\'s group, although it is written after the end', () => {
+    const closing = ended('a', '2090-10-31T21:00:00.500Z', 's1')
+
+    expect(groupActivity([closing], [one], 2)).toEqual([{ key: 'session-0', kind: 'session', number: 1, entries: [closing] }])
+  })
+
+  it('has no number for the only Session of an Event', () => {
+    const during = entry('a', '2090-10-31T18:00:00.000Z')
+    const after = entry('b', '2090-11-02T18:00:00.000Z')
+
+    expect(groupActivity([during, after], [{ ...one, number: null }], null)).toEqual([
+      { key: 'session-0', kind: 'session', number: null, entries: [during] },
+      { key: 'gap-0', kind: 'after', number: null, entries: [after] },
+    ])
+  })
+
+  it('orders the groups by start, whatever order the Sessions come in', () => {
+    const a = entry('a', '2090-11-08T18:00:00.000Z')
+
+    expect(groupActivity([a], [two, one], null)).toEqual([{ key: 'session-1', kind: 'session', number: 2, entries: [a] }])
+  })
+})
+
+describe('feedSessions', () => {
+  const dated = (id: string, number: number, startsAt: string, startedAt: string | null = null, endedAt: string | null = null) => ({ id, number, startsAt, startedAt, endedAt })
+
+  it('takes the started Sessions and the number of the next dated one that has not started', () => {
+    const sessions = [
+      dated('a', 1, '2090-10-31T19:00:00.000Z', '2090-10-31T19:30:00.000Z', '2090-10-31T22:00:00.000Z'),
+      dated('b', 2, '2090-11-07T19:00:00.000Z'),
+      dated('c', 3, '2090-11-14T19:00:00.000Z'),
+      { id: 'd', number: null, startsAt: null, startedAt: null, endedAt: null },
+    ]
+
+    expect(feedSessions(sessions)).toEqual({
+      started: [{ id: 'a', number: 1, startedAt: '2090-10-31T19:30:00.000Z', endedAt: '2090-10-31T22:00:00.000Z' }],
+      nextNumber: 2,
+    })
+  })
+
+  it('has no next number when every dated Session has started', () => {
+    expect(feedSessions([dated('a', 1, '2090-10-31T19:00:00.000Z', '2090-10-31T19:30:00.000Z')]).nextNumber).toBeNull()
   })
 })
 
@@ -86,8 +146,11 @@ describe('activityText', () => {
     expect(activityText({ ...base, type: 'team_name_reset', params: { team: 6 } }, t)).toBe('Sanne hat den Namen von Team Blau zurückgesetzt')
   })
 
-  it('has no sentence yet for the types that later tickets write', () => {
-    expect(activityText({ ...base, type: 'session_started', params: { sessionId: 's', number: null } }, t)).toBeNull()
+  it('says who started and who ended a Session, with its number when the Event has several', () => {
+    expect(activityText({ ...base, type: 'session_started', params: { sessionId: 's', number: 2 } }, t)).toBe('Sanne hat Session 2 gestartet')
+    expect(activityText({ ...base, type: 'session_started', params: { sessionId: 's', number: null } }, t)).toBe('Sanne hat die Session gestartet')
+    expect(activityText({ ...base, type: 'session_ended', params: { sessionId: 's', number: 2 } }, t)).toBe('Sanne hat Session 2 beendet')
+    expect(activityText({ ...base, type: 'session_ended', params: { sessionId: 's', number: null } }, t)).toBe('Sanne hat die Session beendet')
   })
 })
 

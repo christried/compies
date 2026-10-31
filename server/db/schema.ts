@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
 import { SUITABILITIES } from '../../shared/game'
@@ -96,7 +96,8 @@ export const events = pgTable('events', {
 // `slotId` is the Slot the Date came from, if any: a Slot a Session refers to is no longer open.
 // `previousStartsAt` is the Date the last Reopen or removal withdrew (for the notice); `icsSequence` is this
 // Session's own calendar SEQUENCE. `removedAt` is set when the Host removed a Session that has, or had, a
-// Date (#65): the row stays only for its notice and counts nowhere else.
+// Date (#65): the row stays only for its notice and counts nowhere else. `startedAt` and `endedAt` (#164) are the
+// Host's start and end: a Session with `startedAt` and no `endedAt` is the Running Session, at most one per Event.
 export const sessions = pgTable('sessions', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -105,7 +106,24 @@ export const sessions = pgTable('sessions', {
   slotId: uuid('slot_id').references(() => pollSlots.id, { onDelete: 'set null' }),
   icsSequence: integer('ics_sequence').default(0).notNull(),
   removedAt: timestamp('removed_at', { withTimezone: true }),
-})
+  startedAt: timestamp('started_at', { withTimezone: true }),
+  endedAt: timestamp('ended_at', { withTimezone: true }),
+}, table => [
+  check('sessions_ended_after_started_check', sql`${table.endedAt} IS NULL OR ${table.startedAt} IS NOT NULL`),
+  uniqueIndex('sessions_one_running_per_event_idx').on(table.eventId).where(sql`${table.startedAt} IS NOT NULL AND ${table.endedAt} IS NULL AND ${table.removedAt} IS NULL`),
+])
+
+// The teams of an Event from its first Session start on (#164): one row per team position, written once. `frozenName`
+// is the Team name frozen at that start; null means the Team colour's name (also after the Host reset it). An Event
+// that has not started has no rows, and its Team names are composed from the Team words.
+export const eventTeams = pgTable('event_teams', {
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull(),
+  frozenName: text('frozen_name'),
+}, table => [
+  primaryKey({ columns: [table.eventId, table.position] }),
+  check('event_teams_position_check', sql`${table.position} >= 1`),
+])
 
 export const memberZone = pgEnum('member_zone', ['bench', 'stands', 'team'])
 

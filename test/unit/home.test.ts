@@ -57,18 +57,25 @@ describe('needsVote', () => {
   const slots = ['fri', 'sat']
 
   it('is true for an open poll with a votable Slot the User has not voted on', () => {
-    expect(needsVote('poll', slots, [{ slotId: 'fri', userId: 'me', value: 'yes' }], 'me')).toBe(true)
+    expect(needsVote('poll', 1, slots, [{ slotId: 'fri', userId: 'me', value: 'yes' }], 'me')).toBe(true)
   })
 
   it('is false once the User has a Vote on every votable Slot', () => {
     const votes = [{ slotId: 'fri', userId: 'me', value: 'yes' as const }, { slotId: 'sat', userId: 'me', value: 'no' as const }]
 
-    expect(needsVote('poll', slots, votes, 'me')).toBe(false)
+    expect(needsVote('poll', 1, slots, votes, 'me')).toBe(false)
   })
 
   it('is false when no Slot is left to vote on, and for Events with a Date', () => {
-    expect(needsVote('poll', [], [], 'me')).toBe(false)
-    expect(needsVote('date_set', slots, [], 'me')).toBe(false)
+    expect(needsVote('poll', 1, [], [], 'me')).toBe(false)
+    expect(needsVote('date_set', 0, slots, [], 'me')).toBe(false)
+  })
+})
+
+describe('needsVote in a running Event (#164)', () => {
+  it('is true while a Session still waits for a Date, false once every Session has one', () => {
+    expect(needsVote('running', 1, ['fri'], [], 'me')).toBe(true)
+    expect(needsVote('running', 0, ['fri'], [], 'me')).toBe(false)
   })
 })
 
@@ -103,6 +110,16 @@ describe('arrangeHome', () => {
     ], now)
 
     expect(arranged.map(row => row.name)).toEqual(['todo-poll', 'voted-poll', 'date-sooner', 'date-later'])
+  })
+
+  it('lists a running Event with a Session in its poll among the open polls', () => {
+    const arranged = arrangeHome([
+      item('date', { phase: 'date_set', startsAt: hoursAhead(24) }),
+      item('running-poll', { phase: 'running', sessionStarts: [hoursAhead(1), null], homeDate: hoursAhead(1) }),
+      item('running', { phase: 'running', startsAt: hoursAhead(2) }),
+    ], now)
+
+    expect(arranged.map(row => row.name)).toEqual(['running-poll', 'running', 'date'])
   })
 
   it('lists upcoming Dates before Dates that passed within the last 24 h, the most recent of those first', () => {

@@ -7,7 +7,10 @@ import { Crown, Ellipsis } from '@lucide/vue'
 // The pill shows at most three actions; the rest, and every action placed in „Mehr“ (#155), wait behind
 // the „Mehr“ button, which lists all actions grouped. Each action carries what it does.
 // An action with a `disabledReason` looks disabled (dashed) but stays focusable and clickable: its `run`
-// answers the click with the reason, as a neutral toast (#52).
+// answers the click with the reason, as a neutral toast (#52). On the pill the reason also shows in a bubble above it,
+// linked with aria-describedby (#164); on the phone sheet it sits under the button.
+// A `hold` action (#164, „Session beenden“) is a HoldToConfirmButton in the pill and in the sheet: its `run` happens
+// after the hold and resolves to whether it worked. It is not repeated in „Mehr“. „Mehr“ is there whenever there are actions.
 export interface DockAction {
   /** Stable key for v-for and tests. */
   key: string
@@ -21,7 +24,10 @@ export interface DockAction {
   disabledReason?: string
   /** `dock` (default): in the pill (at most three). `more`: only in „Mehr“. */
   place?: 'dock' | 'more'
-  run: () => void
+  /** Needs a one second hold; then `run` returns whether the server took it. */
+  hold?: boolean
+  /** What the action does. A hold action returns a Promise of whether the server took it; the others' result is ignored. */
+  run: () => unknown
 }
 
 const props = defineProps<{
@@ -33,15 +39,23 @@ const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const sheetOpen = ref(false)
 
 const pillActions = computed(() => props.actions.filter(action => action.place !== 'more').slice(0, 3))
-// Any action that is not in the pill (placed in „Mehr“, or past the third) ends the pill with „Mehr“.
-const hasMore = computed(() => props.actions.length > pillActions.value.length)
 
-// „Mehr“ lists every action, grouped under each heading in the order the heading first appears (#155).
-const groups = computed(() => {
+function grouped(actions: DockAction[]) {
   const byName = new Map<string, DockAction[]>()
-  for (const action of props.actions) byName.set(action.group, [...(byName.get(action.group) ?? []), action])
-  return [...byName].map(([name, actions]) => ({ name, actions }))
-})
+  for (const action of actions) byName.set(action.group, [...(byName.get(action.group) ?? []), action])
+  return [...byName].map(([name, list]) => ({ name, actions: list }))
+}
+
+// „Mehr“ lists every action but a hold action that sits in the pill, grouped under each heading in the order the
+// heading first appears (#155, #164). The phone sheet has no „Mehr“ step, so it lists them all.
+const menuActions = computed(() => props.actions.filter(action => !(action.hold && pillActions.value.includes(action))))
+const hasMore = computed(() => menuActions.value.length > 0)
+const groups = computed(() => grouped(menuActions.value))
+const sheetGroups = computed(() => grouped(props.actions))
+
+// The reason of a disabled primary in the pill, for the bubble above it.
+const reasonId = useId()
+const bubbleAction = computed(() => pillActions.value.find(action => action.primary && action.disabledReason))
 
 const moreButton = useTemplateRef<HTMLElement>('moreButton')
 const menu = useTemplateRef<HTMLElement>('menu')
@@ -91,6 +105,13 @@ function run(action: DockAction) {
   sheetOpen.value = false
 }
 
+// A hold action in the sheet: the sheet closes once the server took it.
+async function runHold(action: DockAction): Promise<boolean> {
+  const worked = (await action.run()) !== false
+  if (worked) sheetOpen.value = false
+  return worked
+}
+
 // Arrow keys move between the actions inside the toolbar (02-components § HostDock).
 function moveFocus(event: KeyboardEvent) {
   if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
@@ -133,21 +154,35 @@ onBeforeUnmount(() => {
       class="fixed bottom-6 left-1/2 layer-dock hidden -translate-x-1/2 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface p-1.5 shadow-card md:flex"
       @keydown="moveFocus"
     >
-      <button
+      <template
         v-for="action in pillActions"
         :key="action.key"
-        type="button"
-        class="outline-memphis hit-44 inline-flex h-11 items-center gap-2 rounded-pill px-4 font-bold whitespace-nowrap shadow-btn lift aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
-        :class="action.primary ? 'bg-primary text-on-primary' : 'border-(length:--cp-bw) border-line bg-surface text-ink'"
-        :aria-disabled="action.disabledReason ? 'true' : undefined"
-        @click="run(action)"
       >
-        <AppIcon
+        <HoldToConfirmButton
+          v-if="action.hold"
+          :label="action.label"
           :icon="action.icon"
-          :size="16"
+          :variant="action.primary ? 'primary' : 'secondary'"
+          size="dock"
+          hint="badge"
+          :action="async () => (await action.run()) !== false"
         />
-        {{ action.label }}
-      </button>
+        <button
+          v-else
+          type="button"
+          class="outline-memphis hit-44 inline-flex h-11 items-center gap-2 rounded-pill px-4 font-bold whitespace-nowrap shadow-btn lift aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
+          :class="action.primary ? 'bg-primary text-on-primary' : 'border-(length:--cp-bw) border-line bg-surface text-ink'"
+          :aria-disabled="action.disabledReason ? 'true' : undefined"
+          :aria-describedby="action === bubbleAction ? reasonId : undefined"
+          @click="run(action)"
+        >
+          <AppIcon
+            :icon="action.icon"
+            :size="16"
+          />
+          {{ action.label }}
+        </button>
+      </template>
 
       <button
         v-if="hasMore"
@@ -165,6 +200,15 @@ onBeforeUnmount(() => {
         {{ t('dock.more') }}
       </button>
     </div>
+
+    <!-- The reason a disabled primary is disabled, above the pill (desktop). -->
+    <p
+      v-if="bubbleAction"
+      :id="reasonId"
+      class="fixed bottom-[88px] left-1/2 layer-dock m-0 hidden max-w-[360px] -translate-x-1/2 rounded-[12px] border-2 border-line bg-surface px-3 py-1.5 text-center text-[13px] font-bold text-ink shadow-card md:block"
+    >
+      {{ bubbleAction.disabledReason }}
+    </p>
 
     <div
       v-if="moreOpen"
@@ -205,8 +249,7 @@ onBeforeUnmount(() => {
           :key="action.key"
           type="button"
           role="menuitem"
-          class="outline-memphis hit-44 flex min-h-11 items-center gap-2.5 rounded-[10px] px-2 text-left text-[14px] font-bold aria-disabled:border-dashed aria-disabled:text-ink-3"
-          :class="action.primary ? 'bg-primary text-on-primary' : 'text-ink hover:bg-paper-2'"
+          class="hit-44 flex min-h-11 items-center gap-2.5 rounded-[10px] border-0 bg-transparent px-2 text-left text-[14px] font-bold text-ink hover:tint aria-disabled:text-ink-3 aria-disabled:hover:bg-none"
           :aria-disabled="action.disabledReason ? 'true' : undefined"
           @click="runFromMenu(action)"
         >
@@ -247,7 +290,7 @@ onBeforeUnmount(() => {
       <!-- The phone has no „Mehr“ step: the sheet lists every action under its group (#155). -->
       <div class="flex flex-col gap-4">
         <div
-          v-for="group in groups"
+          v-for="group in sheetGroups"
           :key="group.name"
           role="group"
           :aria-label="group.name"
@@ -259,27 +302,41 @@ onBeforeUnmount(() => {
           >
             {{ group.name }}
           </p>
-          <button
+          <template
             v-for="action in group.actions"
             :key="action.key"
-            type="button"
-            class="outline-memphis hit-44 flex min-h-14 items-center gap-3 rounded-pill border-(length:--cp-bw) border-line px-5 py-2 text-left font-bold shadow-btn hover:tint aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:bg-none"
-            :class="action.primary ? 'bg-primary text-on-primary' : 'bg-surface text-ink'"
-            :aria-disabled="action.disabledReason ? 'true' : undefined"
-            @click="run(action)"
           >
-            <AppIcon
+            <HoldToConfirmButton
+              v-if="action.hold"
+              :label="action.label"
               :icon="action.icon"
-              :size="18"
+              :variant="action.primary ? 'primary' : 'secondary'"
+              size="row"
+              hint="badge"
+              block
+              :action="() => runHold(action)"
             />
-            <span class="flex flex-col leading-tight">
-              {{ action.label }}
-              <span
-                v-if="action.disabledReason"
-                class="text-[11px] font-semibold text-ink-2"
-              >{{ action.disabledReason }}</span>
-            </span>
-          </button>
+            <button
+              v-else
+              type="button"
+              class="outline-memphis hit-44 flex min-h-14 items-center gap-3 rounded-pill border-(length:--cp-bw) border-line px-5 py-2 text-left font-bold shadow-btn hover:tint aria-disabled:border-dashed aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:hover:bg-none"
+              :class="action.primary ? 'bg-primary text-on-primary' : 'bg-surface text-ink'"
+              :aria-disabled="action.disabledReason ? 'true' : undefined"
+              @click="run(action)"
+            >
+              <AppIcon
+                :icon="action.icon"
+                :size="18"
+              />
+              <span class="flex flex-col leading-tight">
+                {{ action.label }}
+                <span
+                  v-if="action.disabledReason"
+                  class="text-[11px] font-semibold text-ink-2"
+                >{{ action.disabledReason }}</span>
+              </span>
+            </button>
+          </template>
         </div>
       </div>
     </AppSheet>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { composedTeamName, fullestTeam, moveRejection, placeOf, teamChoiceOpen, teamWords, type MoveCheck, type Place } from '../../shared/board'
+import { composedTeamName, fullestTeam, moveRejection, nextSession, placeOf, startRejection, teamChoiceOpen, teamWords, type MoveCheck, type Place, type StartInput, type StartSession } from '../../shared/board'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -170,7 +170,80 @@ describe('composedTeamName', () => {
     expect(composedTeamName({ frozen: 'Alte Hasen', words: [] })).toBe('Alte Hasen')
   })
 
-  it('falls back to the words when nothing is frozen', () => {
-    expect(composedTeamName({ frozen: null, words: ['Wilde'] })).toBe('Wilde')
+  it('composes from the words when nothing is frozen (frozen is undefined)', () => {
+    expect(composedTeamName({ frozen: undefined, words: ['Wilde'] })).toBe('Wilde')
+  })
+
+  it('gives null for a frozen null even when words exist, so the colour name shows', () => {
+    expect(composedTeamName({ frozen: null, words: ['Wilde', 'Gurken'] })).toBeNull()
+  })
+})
+
+const at = (hour: number) => Date.UTC(2026, 10, 7, hour)
+const session = (id: string, fields: Partial<StartSession> = {}): StartSession => ({ id, startsAt: at(18), startedAt: null, endedAt: null, ...fields })
+
+describe('nextSession', () => {
+  it('is the earliest dated Session that has not started, whatever order they come in', () => {
+    const sessions = [
+      session('undated', { startsAt: null }),
+      session('done', { startsAt: at(10), startedAt: at(10), endedAt: at(12) }),
+      session('later', { startsAt: at(20) }),
+      session('earlier', { startsAt: at(14) }),
+    ]
+    expect(nextSession(sessions)?.id).toBe('earlier')
+  })
+
+  it('is null when every dated Session has started or none is dated', () => {
+    expect(nextSession([session('a', { startsAt: null }), session('b', { startedAt: at(18) })])).toBeNull()
+    expect(nextSession([])).toBeNull()
+  })
+
+  it('does not look at the clock: a Date far in the future can start early', () => {
+    expect(nextSession([session('future', { startsAt: Date.UTC(2099, 0, 1) })])?.id).toBe('future')
+  })
+})
+
+describe('startRejection', () => {
+  const ready: StartInput = {
+    settings,
+    sessions: [session('one')],
+    seats: { 1: 2, 2: 2, 3: 2 },
+  }
+
+  it('is null when the Event is set up, a Session is dated and every team has the same number of Players', () => {
+    expect(startRejection(ready)).toBeNull()
+  })
+
+  it('says not_set_up without settings, before anything else', () => {
+    expect(startRejection({ ...ready, settings: null, sessions: [session('one', { startedAt: at(18) })], seats: {} })).toBe('not_set_up')
+  })
+
+  it('says session_running while a Session has started and not ended', () => {
+    expect(startRejection({ ...ready, sessions: [session('one', { startedAt: at(18) }), session('two', { startsAt: at(20) })] })).toBe('session_running')
+  })
+
+  it('does not count an ended Session as running', () => {
+    expect(startRejection({ ...ready, sessions: [session('one', { startedAt: at(18), endedAt: at(20) }), session('two', { startsAt: at(22) })] })).toBeNull()
+  })
+
+  it('says no_dated_session when no dated Session is left to start', () => {
+    expect(startRejection({ ...ready, sessions: [session('one', { startsAt: null })] })).toBe('no_dated_session')
+    expect(startRejection({ ...ready, sessions: [session('one', { startedAt: at(18), endedAt: at(19) })] })).toBe('no_dated_session')
+  })
+
+  it('says teams_empty when a team position has no Player, also when the others are full', () => {
+    expect(startRejection({ ...ready, seats: { 1: 2, 3: 2 } })).toBe('teams_empty')
+    expect(startRejection({ ...ready, seats: {} })).toBe('teams_empty')
+  })
+
+  it('says teams_uneven when the teams differ in size', () => {
+    expect(startRejection({ ...ready, seats: { 1: 2, 2: 1, 3: 2 } })).toBe('teams_uneven')
+  })
+
+  it('names the first reason in the order not_set_up, session_running, no_dated_session, teams_empty, teams_uneven', () => {
+    const running = session('run', { startedAt: at(18) })
+    expect(startRejection({ settings, sessions: [running, session('x', { startsAt: null })], seats: {} })).toBe('session_running')
+    expect(startRejection({ settings, sessions: [session('x', { startsAt: null })], seats: {} })).toBe('no_dated_session')
+    expect(startRejection({ settings, sessions: [session('x')], seats: { 1: 1 } })).toBe('teams_empty')
   })
 })

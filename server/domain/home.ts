@@ -1,6 +1,6 @@
-import type { HomeAction, Phase } from '../../shared/event'
+import { datePollOpen, type HomeAction, type Phase } from '../../shared/event'
 import { hasVoted, isPast, type PollVote } from './poll'
-import { isDated } from './session'
+import { isDated, missingDates } from './session'
 
 // Home rules (#1 user stories 15–24, #12). Pure functions: the list handler loads the rows and
 // passes them in; `now` is injected so the rules can be tested at a fixed moment.
@@ -33,9 +33,9 @@ export function homeSession<S extends { startsAt: Date | null }>(sessions: S[], 
   return upcoming ?? latestPassed
 }
 
-/** The User still has to vote: an open poll with Slots left to vote on and no full set of Votes. */
-export function needsVote(phase: Phase, votableSlotIds: string[], votes: PollVote[], userId: string): boolean {
-  return phase === 'poll' && votableSlotIds.length > 0 && !hasVoted(votableSlotIds, votes, userId)
+/** The User still has to vote: an open Date poll (datePollOpen, also in a running Event, #164) with Slots left to vote on and no full set of Votes. */
+export function needsVote(phase: Phase, missing: number, votableSlotIds: string[], votes: PollVote[], userId: string): boolean {
+  return datePollOpen(phase, missing) && votableSlotIds.length > 0 && !hasVoted(votableSlotIds, votes, userId)
 }
 
 /** The card's call to action: the Host opens the Event, a User who still has to vote is asked to vote, the rest view it. */
@@ -60,7 +60,7 @@ const GROUP = { toVote: 0, otherPoll: 1, upcomingDate: 2, passedDate: 3 } as con
 /** The sort bucket of an item: one of GROUP. */
 function orderGroup(item: HomeOrderable, now: Date): number {
   if (item.needsVote) return GROUP.toVote
-  if (item.phase === 'poll') return GROUP.otherPoll
+  if (datePollOpen(item.phase, missingDates(item.sessionStarts))) return GROUP.otherPoll
   return item.homeDate && isPast(item.homeDate, now) ? GROUP.passedDate : GROUP.upcomingDate
 }
 
