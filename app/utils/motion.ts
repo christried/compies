@@ -18,15 +18,6 @@ export function pop(element: Element): void {
   )
 }
 
-/** A Team word that arrives pops in under its avatar (04-motion § Team name: `dur-slow ease-pop`); reduced motion shows it still. */
-export function popIn(element: Element): void {
-  if (reducedMotion() || typeof element.animate !== 'function') return
-  element.animate(
-    [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.1)', opacity: 1 }, { transform: 'scale(1)', opacity: 1 }],
-    { duration: Number.parseFloat(motionToken('--cp-dur-slow', '360ms')), easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') },
-  )
-}
-
 /** How an element travels: `glide` for a place somebody took, the own move included (04-motion § Avatar: 0.36 s `EASE.pop`, #208), `bounce` for the way back after a refusal (04-motion § Avatar). */
 export type GlideKind = 'glide' | 'bounce'
 
