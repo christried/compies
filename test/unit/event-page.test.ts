@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { eventPageState, pagePill, type PageInput } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, pagePill, type PageInput } from '../../app/utils/event-page'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too.
@@ -89,5 +89,16 @@ describe('eventPageState', () => {
     const state = eventPageState(input([dated('a', null, SAT, { startedAt: SAT, endedAt: SUN })]))
 
     expect(state).toMatchObject({ kind: 'done', total: 1, lastEnded: { number: null } })
+  })
+})
+
+describe('dateBlockedKey', () => {
+  it('says why Termin festlegen cannot set a Date: no Slot at all, or none in the future', () => {
+    expect(dateBlockedKey([])).toBe('mvp.set.noSlots')
+    expect(dateBlockedKey([{ past: true }, { past: true }])).toBe('mvp.set.noFutureSlot')
+  })
+
+  it('is null while one open future Slot can become a Date', () => {
+    expect(dateBlockedKey([{ past: true }, { past: false }])).toBeNull()
   })
 })

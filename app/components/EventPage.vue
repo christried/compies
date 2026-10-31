@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { CalendarCheck, CalendarClock, ChevronRight, Crown, Flag, History, Hourglass, LayoutGrid, Link as LinkIcon, Lock, Play, Settings2 } from '@lucide/vue'
-import type { DockAction } from '~/components/HostDock.vue'
+import { ChevronRight, Crown, History, Hourglass, LayoutGrid, Link as LinkIcon, Lock, Settings2 } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { teamName } from '~/utils/board'
-import { eventPageState, pagePill } from '~/utils/event-page'
-import { hostDockState } from '~/utils/host-dock'
+import { dateBlockedKey, eventPageState, pagePill } from '~/utils/event-page'
 import { hasStarted } from '~~/shared/board'
-import { datePollOpen, sessionsEditable, type DatedSessionView } from '~~/shared/event'
+import { datePollOpen } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { settingsEditable } from '~~/shared/settings'
 
@@ -17,13 +15,11 @@ import { settingsEditable } from '~~/shared/settings'
 // blocks in the order of the page's state (#166, 11-event-seite § EventPage: what has to happen now goes on top):
 // EventSessions with „So wird gespielt“, EventPoll while a Session waits for a Date, the Game board and the notices.
 // The Activity feed has the side panel from md up and a tab of its own on a phone. Votes show at once and roll back with
-// a toast when saving fails (useOptimisticVotes, ADR 0001). The Date is set in the confirm dialog (#13): from a Slot
-// card ("Termin festlegen") or the host dock. The Host picks only the Slot; its time goes to the next Session
-// without a Date (#52). Termine bearbeiten opens SlotEditSheet (#15).
+// a toast when saving fails (useOptimisticVotes, ADR 0001). The Host's dialogs are EventHostDialogs (the Date is set in
+// the confirm dialog from a Slot card or the dock, #13); the dock's actions are built by useHostActions.
 const props = defineProps<{ slug: string }>()
 
 const { t } = useI18n()
-const { toast } = useToast()
 const slug = toRef(() => props.slug)
 const { data, error, refresh, room } = await useEventView(slug)
 const connection = useConnectionBanner(room.state, room.enabled)
@@ -48,104 +44,24 @@ const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
   return { id: slot.id, day: formatSlotDay(instant), time: formatSlotTime(instant), past: slot.past }
 }))
 
-// The Host's changes go through the one send (#74); the dialogs and the sheet close only when the server took it.
+// The Host's changes go through the one send (#74). The dialogs are EventHostDialogs'; the page opens them through `dialogs`.
 const { send } = useEventMutation(slug, refresh)
-const confirmOpen = ref(false)
-const confirming = ref(false)
-const confirmPreset = ref<string | null>(null)
-
-/** Sets the Date of the next undated Session from the Slot the Host picked (#52). */
-function confirmDate(slotId: string) {
-  return send('POST', 'confirm', { body: { slotId }, busy: confirming, done: () => (confirmOpen.value = false) })
-}
+const dialogs = useTemplateRef('dialogs')
 
 /** Withdraws one Session's Date and frees its Slot; removes a Session, whose Slot goes back to the poll (#55). */
 const reopenSession = (sessionId: string) => send('POST', `sessions/${sessionId}/reopen`)
 const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
-/** The open Slots the Host can still confirm, in time order, with their counts for the dialog (#52). */
-const confirmOptions = computed(() => slots.value
-  .filter(slot => !slot.past)
-  .map(slot => ({ id: slot.id, day: slot.day, time: slot.time, ...votes.countsFor(slot.id), notes: votes.notesFor(slot.id, data.value?.members ?? []) })))
-
-/** The Dates still missing after the one the Host sets now (#52): the dialog says so. */
-const missingAfterSet = computed(() => Math.max((data.value?.missingDates ?? 0) - 1, 0))
-
-/** Why "Termin festlegen" cannot set a Date right now, or null (#52): no open Slot at all, or none in the future. */
-const setBlocked = computed(() => {
-  if (slots.value.length === 0) return t('mvp.set.noSlots')
-  if (confirmOptions.value.length === 0) return t('mvp.set.noFutureSlot')
-  return null
-})
-
-/** Opens the confirm dialog: the Slot picked on its card, else the Best slot, else the earliest future Slot. */
-function openConfirm(slotId?: string) {
-  const first = confirmOptions.value[0]
-  if (!first) {
-    toast({ tone: 'info', text: setBlocked.value ?? t('mvp.set.noFutureSlot') })
-    return
-  }
-  confirmPreset.value = slotId ?? data.value?.bestSlotId ?? first.id
-  confirmOpen.value = true
-}
-
-const rescheduleOpen = ref(false)
-const rescheduling = ref(false)
-const rescheduleSessionId = ref<string | null>(null)
-
-function openReschedule(sessionId: string) {
-  rescheduleSessionId.value = sessionId
-  rescheduleOpen.value = true
-}
-
-/** The Session the reschedule dialog moves, while it still has its Date (#55). */
-const rescheduleSession = computed(() => data.value?.sessions
-  .find((session): session is DatedSessionView => session.id === rescheduleSessionId.value && session.startsAt !== null) ?? null)
-
-/** Moves that Session's Date to a new Berlin time (`YYYY-MM-DDTHH:mm`); the dialog shows only while it has one. */
-function rescheduleDate(startsAt: string) {
-  return send('POST', `sessions/${rescheduleSessionId.value}/reschedule`, { body: { startsAt }, busy: rescheduling, done: () => (rescheduleOpen.value = false) })
-}
-
-/** Sessions can be added in every Phase before the Event finishes (#55, sessionsEditable). */
-const canChangeSessions = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
-const addOpen = ref(false)
-const adding = ref(false)
-
-/** Adds a Session with this Berlin time, or without one (null) to leave its Date to the poll (#55). */
-function addSession(startsAt: string | null) {
-  return send('POST', 'sessions', { body: startsAt === null ? {} : { startsAt }, busy: adding, done: () => (addOpen.value = false) })
-}
-
-const editing = ref(false)
-const editableSlots = computed(() => (data.value?.slots ?? []).map(slot => ({
-  id: slot.id,
-  startsAt: slot.startsAt,
-  votes: (data.value?.votes ?? []).filter(vote => vote.slotId === slot.id).length,
-})))
 const inviteOpen = ref(false)
 const calendarOpen = ref(false)
 
 /** The Date poll is open while a Session waits for a Date, in the poll Phase and in a running Event (#164, datePollOpen). */
 const pollOpen = computed(() => (data.value ? datePollOpen(data.value.event.phase, data.value.missingDates) : false))
 
-// Starting a Session (#164): the dock's primary asks first (the first start locks the teams and freezes their names).
-const startOpen = ref(false)
-const starting = ref(false)
-const firstStart = computed(() => !hasStarted(data.value?.sessions ?? []))
 /** The first Session has started: the teams and their names are locked for Players. */
-const started = computed(() => !firstStart.value)
+const started = computed(() => hasStarted(data.value?.sessions ?? []))
 /** What the Activity feed's group headers need of the Sessions (#164). */
 const feed = computed(() => feedSessions(data.value?.sessions ?? []))
-
-const startLabel = computed(() => {
-  const number = data.value?.start?.number ?? null
-  return number === null ? t('dock.start') : t('dock.startN', { n: number })
-})
-
-function startSession() {
-  return send('POST', 'sessions/start', { busy: starting, done: () => (startOpen.value = false) })
-}
 
 /** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
 const endSession = () => send('POST', 'sessions/end')
@@ -155,72 +71,24 @@ const canEditSettings = computed(() => (data.value ? data.value.event.isHost && 
 const needsSetup = computed(() => canEditSettings.value && data.value?.settings === null)
 const setupNoticeClosed = ref(false)
 
-// "Termin festlegen" looks disabled with its reason when no open future Slot can become a Date (#52). Every Phase before
-// the Event finishes has Einstellungen and Einladen (#147).
-// The Host controls per state (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers
-// (Event einrichten, Termin festlegen, Session starten or beenden, or none after the last Session). „Session starten“
-// looks disabled with the start rule's reason when it cannot start; „Session beenden“ is a hold. „Termin für Session m“
-// stays while another Session still polls, and „Termine bearbeiten“ while the Date poll is open.
-const hostActions = computed((): DockAction[] => {
-  const view = data.value
-  if (!view) return []
-  const state = hostDockState(view)
-  const invite: DockAction = { key: 'invite', label: t('common.invite'), icon: LinkIcon, group: t('dock.group.people'), place: 'dock', run: () => (inviteOpen.value = true) }
-  const settings: DockAction = {
-    key: 'settings',
-    label: t(state.kind === 'setup' ? 'dock.setup' : 'dock.settings'),
-    icon: Settings2,
-    group: t('dock.group.event'),
-    primary: state.primary === 'setup',
-    place: state.kind === 'setup' ? 'dock' : 'more',
-    run: () => navigateTo(settingsPath(slug.value)),
-  }
-  const slots: DockAction = { key: 'slots', label: t('mvp.slots.title'), icon: CalendarClock, group: t('dock.group.dates'), place: 'more', run: () => (editing.value = true) }
-  const datesOnly = pollOpen.value ? [slots] : []
-
-  const setDate: DockAction = {
-    key: 'setDate',
-    // Named by its Session once another Session is dated or started; before that it is simply „Termin festlegen“.
-    label: t(state.pollNumber !== null && ['teams', 'running', 'between'].includes(state.kind) ? 'dock.setDateN' : 'dock.setDate', { n: state.pollNumber }),
-    icon: CalendarCheck,
-    group: t('dock.group.dates'),
-    primary: state.primary === 'setDate',
-    disabledReason: setBlocked.value ?? undefined,
-    // Next to a Session to start or end the Date is a second action; while the Event is being set up or runs it waits in „Mehr“.
-    place: state.primary === 'setDate' || state.kind === 'teams' || state.kind === 'between' ? 'dock' : 'more',
-    run: () => openConfirm(),
-  }
-  const dates = pollOpen.value ? [setDate] : []
-
-  if (state.kind === 'setup') return [settings, invite, ...dates, ...datesOnly]
-  if (state.primary === 'start') {
-    const reason = state.startRejection === null ? undefined : t(`dock.startBlocked.${state.startRejection}`)
-    const start: DockAction = {
-      key: 'start',
-      label: t(state.number === null ? 'dock.start' : 'dock.startN', { n: state.number }),
-      icon: Play,
-      group: t('dock.group.event'),
-      primary: true,
-      disabledReason: reason,
-      run: () => (reason ? toast({ tone: 'info', text: reason }) : void (startOpen.value = true)),
-    }
-    return [start, ...dates, invite, ...datesOnly, settings]
-  }
-  if (state.primary === 'end') {
-    const end: DockAction = {
-      key: 'end',
-      label: t(state.number === null ? 'dock.endSession' : 'dock.endN', { n: state.number }),
-      icon: Flag,
-      group: t('dock.group.event'),
-      primary: true,
-      hold: true,
-      run: endSession,
-    }
-    return [end, invite, ...dates, ...datesOnly, settings]
-  }
-  if (state.primary === 'setDate') return [...dates, invite, ...datesOnly, settings]
-  return [invite, settings]
+/** Why "Termin festlegen" cannot set a Date right now, or null (#52): the dock's action says so. */
+const setBlocked = computed(() => {
+  const key = dateBlockedKey(slots.value)
+  return key === null ? null : t(key)
 })
+
+const hostActions = useHostActions(
+  () => data.value,
+  slug,
+  { pollOpen, setBlocked },
+  {
+    invite: () => (inviteOpen.value = true),
+    editSlots: () => dialogs.value?.openSlotEditor(),
+    setDate: () => dialogs.value?.openConfirm(),
+    start: () => dialogs.value?.openStart(),
+    end: endSession,
+  },
+)
 
 // The state of the page for everybody (#166) and the blocks of the stage in the order that state wants. „What has to happen
 // now goes on top“: the poll while no Session is dated, the Game board from the first Date on, the Sessions card between two
@@ -457,7 +325,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           :votes="votes"
           :number="pageState.pollNumber"
           :compact="pollCompact"
-          @pick="openConfirm"
+          @pick="dialogs?.openConfirm($event)"
           @remove-session="removeSession"
         />
 
@@ -496,8 +364,8 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :poll-number="pageState.pollNumber"
             :poll-open="pollOpen"
             :shadow="cardsStandOut"
-            @reschedule="openReschedule"
-            @add="addOpen = true"
+            @reschedule="dialogs?.openReschedule($event)"
+            @add="dialogs?.openAdd()"
             @calendar="calendarOpen = true"
           />
           <HowWePlayCard
@@ -564,65 +432,14 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       panel
     />
 
-    <DateConfirmDialog
+    <EventHostDialogs
       v-if="data?.event.isHost"
-      :open="confirmOpen"
-      :options="confirmOptions"
-      :preselected="confirmPreset"
-      :missing-after="missingAfterSet"
-      :loading="confirming"
-      @confirm="confirmDate"
-      @cancel="confirmOpen = false"
-    />
-    <SlotEditSheet
-      v-if="data?.event.isHost && pollOpen"
-      :open="editing"
+      ref="dialogs"
       :slug="slug"
-      :slots="editableSlots"
-      @close="editing = false"
-      @changed="refresh"
-    />
-
-    <ConfirmModal
-      v-if="data?.event.isHost && data.settings"
-      :open="startOpen"
-      :title="t('dock.startDialog.title')"
-      :icon="Play"
-      :confirm-label="startLabel"
-      :loading="starting"
-      @confirm="startSession"
-      @cancel="startOpen = false"
-    >
-      <p class="m-0">
-        {{ t(firstStart ? 'dock.startDialog.textFirst' : 'dock.startDialog.textLater') }}
-      </p>
-      <p
-        v-if="firstStart"
-        class="mt-3 mb-0 flex items-center gap-2 text-[14px] text-ink"
-      >
-        <AppIcon
-          :icon="Lock"
-          :size="16"
-        />
-        {{ t('dock.startDialog.lock', { teams: data.settings.teamCount, size: data.settings.teamSize }) }}
-      </p>
-    </ConfirmModal>
-
-    <DateRescheduleDialog
-      v-if="data?.event.isHost && rescheduleSession"
-      :open="rescheduleOpen"
-      :starts-at="rescheduleSession.startsAt"
-      :loading="rescheduling"
-      @confirm="rescheduleDate"
-      @cancel="rescheduleOpen = false"
-    />
-
-    <SessionAddSheet
-      v-if="data?.event.isHost && canChangeSessions"
-      :open="addOpen"
-      :busy="adding"
-      @close="addOpen = false"
-      @submit="addSession"
+      :view="data"
+      :slots="slots"
+      :votes="votes"
+      :refresh="refresh"
     />
 
     <InviteSheet

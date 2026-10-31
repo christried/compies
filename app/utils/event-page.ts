@@ -21,6 +21,15 @@ export interface EventPageState {
   pollNumber: number | null
 }
 
+/**
+ * Why "Termin festlegen" cannot set a Date right now (#52), as an i18n key, or null: no open Slot at all, or none in the
+ * future. The dock shows it as the action's reason and the confirm dialog as a toast.
+ */
+export function dateBlockedKey(slots: readonly { past: boolean }[]): 'mvp.set.noSlots' | 'mvp.set.noFutureSlot' | null {
+  if (slots.length === 0) return 'mvp.set.noSlots'
+  return slots.every(slot => slot.past) ? 'mvp.set.noFutureSlot' : null
+}
+
 /** The shown number a Session that still polls will have: after the dated ones. null when none polls, or the Event has one Session. */
 export function pollingNumber(sessions: Pick<SessionView, 'startsAt'>[], missingDates: number): number | null {
   return missingDates > 0 && sessions.length > 1 ? sessions.filter(session => session.startsAt !== null).length + 1 : null
