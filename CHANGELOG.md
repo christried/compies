@@ -18,6 +18,7 @@
 - In der Host-Steuerung siehst du jetzt nur die wichtigsten Aktionen. Alles Weitere, etwa Termine bearbeiten und Einstellungen, findest du unter **Mehr**. ([#155](https://github.com/christried/compies/issues/155))
 - Die Teamgröße geht in den Einstellungen nicht mehr unter das vollste Team. Wenn du Teams entfernst, gehen ihre Leute auf die Bench. ([#163](https://github.com/christried/compies/issues/163))
 - Die Datenschutzerklärung beschreibt jetzt auch das Spielbrett, den Aktivitäts-Feed, die Live-Verbindung und „Was ist neu“. ([#153](https://github.com/christried/compies/issues/153))
+- Ein Event bleibt jetzt auf der Startseite, bis alle seine Sessions gespielt sind, auch wenn ihr Termin schon vorbei ist. Einen Tag nach dem Ende der letzten Session verschwindet es von dort. ([#199](https://github.com/christried/compies/issues/199))
 
 ## [1.3.0] - 2026-10-29 – Spielvorbereitung
 

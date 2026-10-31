@@ -30,9 +30,13 @@ export function dateBlockedKey(slots: readonly { past: boolean }[]): 'mvp.set.no
   return slots.every(slot => slot.past) ? 'mvp.set.noFutureSlot' : null
 }
 
-/** The shown number a Session that still polls will have: after the dated ones. null when none polls, or the Event has one Session. */
-export function pollingNumber(sessions: Pick<SessionView, 'startsAt'>[], missingDates: number): number | null {
-  return missingDates > 0 && sessions.length > 1 ? sessions.filter(session => session.startsAt !== null).length + 1 : null
+/**
+ * The shown number the `nth` Session that still polls will have (1 = the first): after the dated ones, in list order.
+ * null when fewer than `nth` poll, or the Event has one Session. A Session keeps no number until it has a Date
+ * (GLOSSARY: Session); this is the number the page shows it with meanwhile (#201).
+ */
+export function pollingNumber(sessions: Pick<SessionView, 'startsAt'>[], missingDates: number, nth = 1): number | null {
+  return missingDates >= nth && sessions.length > 1 ? sessions.filter(session => session.startsAt !== null).length + nth : null
 }
 
 /**

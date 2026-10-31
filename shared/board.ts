@@ -119,11 +119,6 @@ export function parsePlace(value: unknown): Place | null {
   return null
 }
 
-/** The Player count of the fullest team (0 without Players in teams): the lowest Team size the settings may take. */
-export function fullestTeam(seats: Seats): number {
-  return Math.max(0, ...Object.values(seats))
-}
-
 /** A Session as the start rule needs it: its Date and its start and end as ms since the epoch, null while it has none (no `Date` parsing in here). */
 export interface StartSession { id: string, startsAt: number | null, startedAt: number | null, endedAt: number | null }
 

@@ -146,7 +146,8 @@ export function startSection(eventRow: EventRow, rows: EventRows, viewer: Viewer
 export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'settings' | 'settingsFloors' | 'pools'>> {
   const settings = settingsFromRow(eventRow)
   const [floors, pools] = await Promise.all([
-    viewer.isHost ? settingsFloors(db, eventRow.id) : null,
+    // The floors at the saved team count; an Event that is not set up counts all teams (#197).
+    viewer.isHost ? settingsFloors(db, eventRow.id).then(floorsAt => floorsAt(settings?.teamCount ?? Number.POSITIVE_INFINITY)) : null,
     eventPools(db, eventRow.id, poolsVisibleTo({ isHost: viewer.isHost, settings })),
   ])
   return {
