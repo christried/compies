@@ -7,7 +7,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | Release | Name | Status |
 |---|---|---|
 | 1.3 | Spielvorbereitung | released as 1.3.0 on 2026-10-29: [#138](https://github.com/christried/compies/issues/138), [#169](https://github.com/christried/compies/issues/169) |
-| 1.4 | Teams | specced: [#153](https://github.com/christried/compies/issues/153) |
+| 1.4 | Teams | released as 1.4.0 on 2026-10-31: [#153](https://github.com/christried/compies/issues/153), [#195](https://github.com/christried/compies/issues/195), [#206](https://github.com/christried/compies/issues/206) |
 | 1.5 | Glücksrad | outline |
 | 1.6 | Punkte | outline |
 | 1.7 | Siegerehrung | outline |
