@@ -69,6 +69,24 @@ The game round up to „wird gespielt“. (T10; screens 11, 15, 30.)
 - Coin flip: the Host tosses it any time during a running Session; the server decides, and every Member sees the same toss (`Coin3D` animation) at the same moment.
 - Countdown: the Host sets a time and starts, pauses or resets it; it runs down for every Member at the same moment. Needed for the first Event, so it ships in a plain look; the motion and graphics wait for „Nach dem ersten Event“.
 
+**Planning items from 1.4** (`docs/reviews/review_1.4_2026-10-31.md` § Result and the leftovers of [#195](https://github.com/christried/compies/issues/195)). Taken into the 1.5 grilling and tickets:
+- **Ticket zero (A1):** one home for a Session's state, out of the Game board file. It also closes Standards S3 („started“ and „running“ in more than one place) and S6 (`startOf`, `StartSession`).
+- **Grilling question (A2):** who owns the wheel and veto deadlines, Nuxt or the room. Amend ADR 0013 with the answer, before the tickets.
+- **A3:** a settings lock that depends on round state (the Hidden wheel during a spin or veto window), and one summary for „So wird gespielt“ and the stepper.
+- **A4:** the Event page's block and dock lists, when the first 1.5 block lands.
+- **A6:** Activity people by declaration, not by naming convention; one enum migration per Release.
+- **A8:** `useBoardPlaces`, the next time the Game board is touched.
+- **Nits:** N3–N12 and A9 of the review, and „Ersatz“ in `board.benchSub`.
+- **Code-review leftovers of #195:**
+  - `settingsFloors` returns a function, the `POSITIVE_INFINITY` sentinel, and the Players-per-team array built twice;
+  - `HomeSessionTimes.startedAt` is unused;
+  - the duplicate log line in `publishAfterResponse`;
+  - one return refetches twice (visibility and focus);
+  - a first connect that never succeeds shows no banner.
+- **Code-review leftovers of [#206](https://github.com/christried/compies/issues/206)** (the walk-through fixes):
+  - 04-motion asks for a 0.14 s fade on a place change under reduced motion; the Game board shows none;
+  - a `member.moved` that the refetch never confirms goes back after 5 s with a glide and a landing pop.
+
 ## 1.6 Punkte
 
 Scores in the app and a winner. (T13, T14; screens 16, 17, 18.)

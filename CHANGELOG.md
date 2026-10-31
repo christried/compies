@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-31 – Teams
+
+Die Event-Seite ist jetzt live: Ihr seht, wer gerade da ist, setzt euch auf dem Spielbrett in Teams, gebt eurem Team gemeinsam einen Namen, und der Host startet die Sessions. Unter **Aktivität** steht, was im Event passiert ist.
+
 ### Neu
 
 - Die Event-Seite aktualisiert sich jetzt von selbst: Was andere tun, siehst du sofort. Bricht die Verbindung ab, zeigt dir ein Hinweis oben, wann sie wieder steht. ([#156](https://github.com/christried/compies/issues/156))
