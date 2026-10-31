@@ -571,6 +571,7 @@ describe('GameBoard', () => {
 
       expect(page.text()).toContain('Team Orange hat 0, die anderen haben 2. Das Spiel startet erst, wenn alle Teams gleich groß sind.')
       expect(page.text()).toContain('Nur du siehst das')
+      expect(page.get('[role="status"] b').text()).toBe('Teams sind ungleich')
     })
 
     it('does not tell a Player the start waits, but that the short team looks for somebody while Team choice is open (#166)', async () => {

@@ -276,6 +276,7 @@ const meta = computed(() => {
       :icon="Users"
       :host-only="isHost"
     >
+      <b v-if="isHost">{{ t('board.notice.unevenTitle') }}</b>
       {{ t(isHost ? 'board.notice.uneven' : 'board.notice.unevenMember', uneven) }}
     </NoticeBanner>
 

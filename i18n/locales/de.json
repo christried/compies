@@ -223,6 +223,7 @@
     },
     "longPress": "Lange drücken zum Ziehen",
     "notice": {
+      "unevenTitle": "Teams sind ungleich",
       "unevenMember": "{team} sucht noch jemanden. Rück rein, dann kann’s losgehen.",
       "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench oder Tribüne.",
       "uneven": "{team} hat {small}, die anderen haben {big}. Das Spiel startet erst, wenn alle Teams gleich groß sind.",

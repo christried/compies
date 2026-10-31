@@ -100,6 +100,19 @@ describe('the Activity feed on the Event page', () => {
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Gleich geht’s los'])
     })
 
+    it('counts nothing while the panel shows the feed, so a narrowed window starts at zero', async () => {
+      const resize = stubScreen(true)
+      const { page } = await mountEvent()
+
+      await joined('a')
+      resize(false)
+      await settle()
+
+      expect(tabs(page)[1]!.attributes('aria-label')).toBeUndefined()
+      await joined('b')
+      expect(tabs(page)[1]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+    })
+
     it('says what the feed promises while nothing happened', async () => {
       const { page } = await mountEvent()
 
@@ -135,6 +148,20 @@ describe('the Activity feed on the Event page', () => {
 
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Gleich geht’s los'])
       expect(page.find('[role="log"]').exists()).toBe(false)
+    })
+
+    it('forgets the count when the layout turns wide', async () => {
+      const resize = stubScreen(false)
+      const { page } = await mountEvent()
+      await joined('a')
+      expect(tabs(page)[1]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+
+      resize(true)
+      await settle()
+      resize(false)
+      await settle()
+
+      expect(tabs(page)[1]!.attributes('aria-label')).toBeUndefined()
     })
 
     it('counts the entries that arrive while the Event tab is shown, says so in the name, and resets when the feed opens', async () => {
