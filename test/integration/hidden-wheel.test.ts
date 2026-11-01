@@ -174,6 +174,23 @@ describe('Hidden wheel secrecy (#148)', () => {
     expect(raw).not.toMatch(/api\/images/)
   })
 
+  it('gives a Player the same response however many games the pools hold (#222)', async () => {
+    const { slug } = await setUp()
+    const before = await rawRead(playerCookie, slug)
+
+    const delta = await newGame('Delta Dart', 'ddddddddddd')
+    const [eventRow] = await testDb.db.select({ id: events.id }).from(events).where(eq(events.slug, slug))
+    await testDb.db.insert(eventPoolGames).values([
+      { eventId: eventRow!.id, gameId: delta.id, pool: 'main' },
+      { eventId: eventRow!.id, gameId: delta.id, pool: 'tiebreaker' },
+    ])
+    const after = await rawRead(playerCookie, slug)
+
+    // The control: the Host sees the new game, so the insert really changed the pools.
+    expect(await rawRead(hostCookie, slug)).toContain('Delta Dart')
+    expect(after).toBe(before)
+  })
+
   it('gives the Host the games under a Hidden wheel', async () => {
     const { slug, secrets } = await setUp()
 
