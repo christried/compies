@@ -1460,6 +1460,11 @@
     "range": "Zwischen 5 Sekunden und 99:59.",
     "running": "Der Countdown läuft schon."
   },
+  "clip": {
+    "label": "Clip: {name}",
+    "live": "Clip läuft für alle",
+    "closeForMe": "Für mich schließen"
+  },
   "rounds": {
     "title": "Gerade dran",
     "list": "Offene Spiele",
