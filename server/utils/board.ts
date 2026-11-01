@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { eventMembers, eventTeams } from '../db/schema'
 import { numberedSessions } from '../domain/session'
-import { countSeats, placeOf, teamChoiceOpen, teamNameOf, type Place } from '../../shared/board'
+import { countSeats, placeOf, teamChoiceOpen, composeTeamName, type Place } from '../../shared/board'
 import { hasStarted, nextSession, startRejection, type StartRejection } from '../../shared/session-state'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
@@ -95,6 +95,6 @@ export async function freezeTeamNames(tx: Db, eventId: string, teamCount: number
     .select({ team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
     .from(eventMembers)
     .where(eq(eventMembers.eventId, eventId))
-  const rows = Array.from({ length: teamCount }, (_, index) => ({ eventId, position: index + 1, frozenName: teamNameOf(members, index + 1) }))
+  const rows = Array.from({ length: teamCount }, (_, index) => ({ eventId, position: index + 1, frozenName: composeTeamName(members, index + 1) }))
   await tx.insert(eventTeams).values(rows)
 }
