@@ -35,7 +35,7 @@ export type ActivityType = (typeof ACTIVITY_TYPES)[number]
  * may be read from, not published, and left out of the feed until then (the clients refetch it when the instant passes). The
  * others have an `at` the database stamps, which a test clock must not hide. #235 adds `coin_tossed`.
  */
-export const INSTANT_ACTIVITY_TYPES: readonly ActivityType[] = ['game_drawn']
+export const INSTANT_ACTIVITY_TYPES: readonly ActivityType[] = ['game_drawn', 'coin_tossed']
 
 /** An instant in the params: an ISO string, built from a `Date` by `isoInstant` (the stored rows already hold these). */
 export type IsoInstant = `${number}-${number}-${number}T${string}`

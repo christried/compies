@@ -185,6 +185,14 @@ export interface WheelView {
  */
 export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null }
 
+/**
+ * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member, null otherwise. The
+ * stored facts (ISO instants); the side shows in the UI only from `landsAt`.
+ */
+export interface CoinView { id: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
+/** What `POST /api/e/:slug/coin` returns: the toss and its instants (ISO), #235. */
+export interface CoinTossed { tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
+
 /** What `POST /api/e/:slug/rounds` returns: the Round that was opened (#228). */
 export interface RoundSet { roundId: string }
 /** What `POST /api/e/:slug/rounds/spin` returns: the Round being drawn and its draw (#229). */
@@ -264,6 +272,8 @@ export interface EventView {
   wheel: WheelView | null
   /** The Countdown of the running Session (#236): every Member gets it while a Session runs, null otherwise. */
   countdown: CountdownView | null
+  /** The Coin flip (#235): the latest toss of the running Session; every Member gets it, null otherwise. */
+  coin: CoinView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

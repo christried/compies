@@ -5,6 +5,7 @@ import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import pauseCountdown from '../../server/api/e/[slug]/countdown/pause.post'
 import resetCountdown from '../../server/api/e/[slug]/countdown/reset.post'
 import startCountdown from '../../server/api/e/[slug]/countdown/start.post'
+import tossCoin from '../../server/api/e/[slug]/coin.post'
 import setCountdown from '../../server/api/e/[slug]/countdown/index.put'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import putBackRound from '../../server/api/e/[slug]/rounds/[id].delete'
@@ -102,6 +103,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       'DELETE /api/e/:slug/rounds/:id': putBackRound,
       'PUT /api/e/:slug/countdown': setCountdown,
       'POST /api/e/:slug/countdown/start': startCountdown,
+      'POST /api/e/:slug/coin': tossCoin,
       'POST /api/e/:slug/countdown/pause': pauseCountdown,
       'POST /api/e/:slug/countdown/reset': resetCountdown,
     }, { imageStore: store, roomNotifier: notifier, clock })
@@ -342,7 +344,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
   // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'round.set', 'round.putBack', 'round.spun', 'countdown.changed'] as const satisfies readonly RoomMessageType[]
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'round.set', 'round.putBack', 'round.spun', 'countdown.changed', 'coin.tossed'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
@@ -468,6 +470,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       // The Host sets a Countdown and starts it (countdown.changed, #236); ending the Session clears it.
       expect((await send('PUT', `/api/e/${slug}/countdown`, hostCookie, { seconds: 60 })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/countdown/start`, hostCookie)).status).toBe(200)
+      // The Host tosses the coin (coin.tossed, #235); its feed entry waits for the landing, which the clock passes below.
+      expect((await send('POST', `/api/e/${slug}/coin`, hostCookie)).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/sessions/end`, hostCookie)).status).toBe(200)
 
       return { slug, eventId, games: [a, b, c, d] as const, set: e, player2Cookie }
@@ -479,10 +483,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(everyTypeListed).toBe(true)
       const sent = new Set(notifier.messages(eventId).map(message => message.type))
       for (const type of SERVER_SENT) expect(sent.has(type), `the flow sends no ${type}`).toBe(true)
-      // The 0.7 kinds (#226) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228, and
-      // game_drawn, #229, which the feed shows from the stop on). The rest come with #231 (vetoes_revealed), #233 (bonus_veto_granted)
-      // and #235 (coin_tossed).
-      const written = ACTIVITY_TYPES.filter(type => !['vetoes_revealed', 'bonus_veto_granted', 'coin_tossed'].includes(type))
+      // The 0.7 kinds (#226) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228, game_drawn,
+      // #229, which the feed shows from the stop on, and coin_tossed, #235, from the landing on). The rest come with #231 (vetoes_revealed)
+      // and #233 (bonus_veto_granted).
+      const written = ACTIVITY_TYPES.filter(type => !['vetoes_revealed', 'bonus_veto_granted'].includes(type))
       clock.advance(60_000)
       expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
     })

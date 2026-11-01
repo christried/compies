@@ -19,6 +19,7 @@ import { startOf, teamChoiceOf } from './board'
 import { roundGameView } from './library'
 import { eventPools } from './pools'
 import { countdownView, readCountdown } from './countdown'
+import { coinView, readShownToss } from './coin'
 import { readDraws, readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { floorFacts } from './settings-floors'
@@ -251,6 +252,15 @@ export async function countdownSection(db: Db, eventRow: EventRow, rows: EventRo
   if (!runningOf(rows.sessions)) return { countdown: null }
   const row = await readCountdown(db, eventRow.id)
   return { countdown: row ? countdownView(row) : null }
+}
+
+/**
+ * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member; null otherwise. Its
+ * side is in the read for everybody, since the page shows it only from the landing on (the room carries it too).
+ */
+export async function coinSection(db: Db, eventRow: EventRow, rows: EventRows): Promise<Pick<EventView, 'coin'>> {
+  const toss = await readShownToss(db, eventRow, rows.sessions)
+  return { coin: toss ? coinView(toss) : null }
 }
 
 /** The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on. */
