@@ -360,14 +360,25 @@ describe('the Activity feed', () => {
       expect(paged.map(entry => entry.id)).toEqual(all.entries.map(entry => entry.id))
     })
 
-    it('refuses a limit or a cursor it cannot use with 400 invalid_cursor', async () => {
+    it('refuses a cursor it cannot use with 400 invalid_cursor', async () => {
       const { slug, hostCookie } = await pollEvent()
       await send('POST', `/api/e/${slug}/sessions`, hostCookie, {})
 
-      for (const query of ['?before=nope', '?before=00000000-0000-4000-8000-000000000000', '?limit=0', '?limit=abc', '?limit=101']) {
+      for (const query of ['?before=nope', '?before=00000000-0000-4000-8000-000000000000']) {
         const response = await send('GET', `/api/e/${slug}/activity${query}`, hostCookie)
         expect(response.status, query).toBe(400)
         expect(response.statusText, query).toBe('invalid_cursor')
+      }
+    })
+
+    it('refuses a limit it cannot use with 400 invalid_value (N5)', async () => {
+      const { slug, hostCookie } = await pollEvent()
+      await send('POST', `/api/e/${slug}/sessions`, hostCookie, {})
+
+      for (const query of ['?limit=0', '?limit=abc', '?limit=101']) {
+        const response = await send('GET', `/api/e/${slug}/activity${query}`, hostCookie)
+        expect(response.status, query).toBe(400)
+        expect(response.statusText, query).toBe('invalid_value')
       }
     })
 
