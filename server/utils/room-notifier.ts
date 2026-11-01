@@ -94,8 +94,9 @@ export function realtimeUrl(): string | null {
  * `event.waitUntil` to the platform); elsewhere the promise simply runs. A publish never fails the request.
  */
 export function publishAfterResponse(event: H3Event, eventId: string, messages: Envelope[], to?: readonly string[]): void {
+  // The notifier logs its own failures and never throws; this guard only logs what it did not expect (#195 leftover, #238).
   const sent = useRoomNotifier(event).publish(eventId, messages, to).catch((error: unknown) => {
-    console.error(`Room publish for Event ${eventId} failed`, error)
+    console.error(`Room notifier threw for Event ${eventId}`, error)
   })
   keepRunningAfterResponse(sent)
 }
