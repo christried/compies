@@ -24,6 +24,7 @@ const created: GameView = {
   createdBy: { id: kitty.id, name: 'Kitty' },
   createdAt: '2026-10-28T10:00:00.000Z',
   canEdit: true,
+  notes: null,
 }
 const withImage: GameView = { ...created, imageUrl: '/api/images/b1-abc.webp' }
 

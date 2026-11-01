@@ -27,6 +27,7 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     createdBy: { id: kitty.id, name: 'Kitty' },
     createdAt: '2026-01-15T10:00:00.000Z',
     canEdit: true,
+    notes: null,
     ...overrides,
   }
 }
@@ -46,9 +47,12 @@ registerEndpoint('/api/games', {
 registerEndpoint('/api/games', {
   method: 'POST',
   handler: async (event) => {
-    postedGame(await readBody(event))
-    library = [...library, fresh]
-    return fresh
+    const body = await readBody(event)
+    postedGame(body)
+    // The server answers the game with the notes it stored (#223).
+    const stored = { ...fresh, notes: body.notes || null }
+    library = [...library, stored]
+    return stored
   },
 })
 
@@ -397,13 +401,19 @@ describe('the pool steps', () => {
     const newGameButton = (page: Page) => page.findAll('button').find(button => button.text().includes('Neues Spiel anlegen'))!
     const dialog = () => document.body.querySelector('[role="dialog"]')
 
-    async function createInSheet(page: Page) {
+    async function createInSheet(page: Page, notes?: string) {
       await newGameButton(page).trigger('click')
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
       const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
       const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
       input.value = 'Frisch Angelegt'
       input.dispatchEvent(new Event('input'))
+      if (notes !== undefined) {
+        const notesLabel = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Notizen')!
+        const area = dialog()!.querySelector<HTMLTextAreaElement>(`[id="${notesLabel.getAttribute('for')}"]`)!
+        area.value = notes
+        area.dispatchEvent(new Event('input'))
+      }
       dialog()!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
     }
 
@@ -432,6 +442,18 @@ describe('the pool steps', () => {
 
       await stepItems(page)[0]!.get('button').trigger('click')
       expect((page.get('input[type="text"]').element as HTMLInputElement).value).toBe('Freitags-Zocken')
+    })
+
+    it('posts the notes typed in the sheet and puts the game in the pool (#223)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      const notes = 'Settings: 3 Runden\nWin: meiste Punkte'
+
+      await createInSheet(page, notes)
+
+      await vi.waitFor(() => expect(dialog()).toBeNull())
+      expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt', notes }))
+      expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
     })
 
     it('puts the new game in the Tiebreaker pool when it is made on that step', async () => {
