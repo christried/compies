@@ -5,7 +5,7 @@ import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
-import { placeOf, teamNameOf, type Zone } from '../../shared/board'
+import { placeOf, composeTeamName, type Zone } from '../../shared/board'
 import { runningOf } from '../../shared/session-state'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
@@ -127,7 +127,7 @@ export function boardSection(eventRow: EventRow, rows: EventRows): Pick<EventVie
     teams: Array.from({ length: settings?.teamCount ?? 0 }, (_, index) => {
       const position = index + 1
       const frozen = rows.frozenTeams.find(row => row.position === position)
-      return { position, name: teamNameOf(rows.members, position, frozen?.frozenName), frozen: frozen !== undefined }
+      return { position, name: composeTeamName(rows.members, position, frozen?.frozenName), frozen: frozen !== undefined }
     }),
     teamChoiceOpen: open,
   }
