@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
-import { activity, users } from '../db/schema'
+import { activity, games, rounds, users } from '../db/schema'
 import { shownName } from '../../shared/auth'
-import { activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType } from '../../shared/activity'
+import { activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType } from '../../shared/activity'
 import type { RoomMessage } from '../../shared/realtime'
 import type { Db } from './db'
 import { apiError } from './errors'
@@ -35,8 +35,29 @@ function paramUserIds({ type, params }: ActivityRow): string[] {
   return activityPeople(type, params)
 }
 
-/** The entries for these rows, in the same order, with the shown name of every actor and every User in the params. */
+/**
+ * The names of the games these rows name (ACTIVITY_GAMES) that may be named yet (#228), keyed by Event and game: a game that
+ * a Round of the Event has set, from the moment it is set (a put-back Round's game too: everyone saw it set). Nothing else
+ * is named, so a Hidden wheel stays hidden in the feed (spec stories 69, 71, 80). The draw of 0.7-04 adds a drawn game here
+ * from its stop instant on, with one more condition.
+ */
+async function namedGames(db: Db, rows: ActivityRow[]): Promise<Map<string, string>> {
+  const gameIds = [...new Set(rows.flatMap(row => activityGames(row.type, row.params)))]
+  const named = new Map<string, string>()
+  if (gameIds.length === 0) return named
+  const eventIds = [...new Set(rows.map(row => row.eventId))]
+  const found = await db
+    .select({ eventId: rounds.eventId, gameId: games.id, name: games.name })
+    .from(rounds)
+    .innerJoin(games, eq(rounds.gameId, games.id))
+    .where(and(inArray(rounds.gameId, gameIds), inArray(rounds.eventId, eventIds)))
+  for (const { eventId, gameId, name } of found) named.set(`${eventId}:${gameId}`, name)
+  return named
+}
+
+/** The entries for these rows, in the same order, with the shown name of every actor and every User in the params, and the name of every game that may be named. */
 export async function activityEntries(db: Db, rows: ActivityRow[]): Promise<ActivityEntry[]> {
+  const named = await namedGames(db, rows)
   const ids = [...new Set(rows.flatMap(row => [...(row.actorId ? [row.actorId] : []), ...paramUserIds(row)]))]
   const people = new Map<string, string>()
   if (ids.length > 0) {
@@ -50,6 +71,10 @@ export async function activityEntries(db: Db, rows: ActivityRow[]): Promise<Acti
     at: row.at.toISOString(),
     actor: row.actorId ? { id: row.actorId, name: people.get(row.actorId) ?? '' } : null,
     people: Object.fromEntries(paramUserIds(row).map(id => [id, people.get(id) ?? ''])),
+    games: Object.fromEntries(activityGames(row.type, row.params).flatMap((id) => {
+      const name = named.get(`${row.eventId}:${id}`)
+      return name === undefined ? [] : [[id, name]]
+    })),
     type: row.type,
     params: row.params,
   }) as ActivityEntry)

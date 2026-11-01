@@ -40,7 +40,7 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     event,
     // An Event that was never set up (#144) unless a test says otherwise: no settings, nothing about the pools (#148, #147).
     settings: overrides.settings === undefined ? null as EventSettings | null : overrides.settings,
-    settingsFloors: overrides.settingsFloors === undefined ? (event.isHost ? { teamSize: 1, vetoAllowance: 0 } : null) : overrides.settingsFloors,
+    settingsFloors: overrides.settingsFloors === undefined ? (event.isHost ? { teamSize: 1, vetoAllowance: 0, gameCount: 0 } : null) : overrides.settingsFloors,
     pools: overrides.pools ?? null as EventPools | null,
     // The Event's one Session, which the server sends without a number (#70).
     sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[], startedAt: null as string | null, endedAt: null as string | null }],

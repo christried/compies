@@ -11,7 +11,7 @@ function t(key: string, named: Record<string, unknown> = {}): string {
   return template.replace(/\{(\w+)\}/g, (_, name: string) => String(named[name]))
 }
 
-const base = { id: 'e', at: '2090-10-30T18:00:00.000Z', actor: { id: 'u1', name: 'Sanne' }, people: {} }
+const base = { id: 'e', at: '2090-10-30T18:00:00.000Z', actor: { id: 'u1', name: 'Sanne' }, people: {}, games: {} }
 
 describe('groupActivity', () => {
   const entry = (id: string, at: string): ActivityEntry => ({ ...base, id, at, type: 'member_joined', params: {} })

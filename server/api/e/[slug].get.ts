@@ -2,7 +2,7 @@ import { defineEventHandler, getRouterParam } from 'h3'
 import { useClock } from '../../utils/clock'
 import { useDb } from '../../utils/db'
 import { loadEvent } from '../../utils/event-access'
-import { boardSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, sessionSection, startSection } from '../../utils/event-read'
+import { boardSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, roundsSection, sessionSection, startSection } from '../../utils/event-read'
 import { requireUser } from '../../utils/user'
 import type { EventView } from '../../../shared/event'
 
@@ -18,6 +18,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
   const viewer = { id: user.id, isHost: eventRow.hostId === user.id }
 
   const [rows, pools] = await Promise.all([readEventRows(db, eventRow), poolsSection(db, eventRow, viewer)])
+  const roundSections = await roundsSection(db, eventRow, rows, viewer)
   return {
     event: {
       slug: eventRow.slug,
@@ -33,5 +34,6 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     ...membersSection(eventRow, rows),
     ...boardSection(eventRow, rows),
     ...startSection(eventRow, rows, viewer),
+    ...roundSections,
   }
 })
