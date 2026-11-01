@@ -11,7 +11,7 @@ export function canSeePoolGames({ isHost, hiddenWheel }: { isHost: boolean, hidd
   return isHost || hiddenWheel === false
 }
 
-/** Whether a viewer sees the games of the pools, or only how many there are, from an Event's settings (null = not set up). */
+/** Whether a viewer sees the games of the pools, or nothing about them, not even how many (#222), from an Event's settings (null = not set up). */
 export function poolsVisibleTo({ isHost, settings }: { isHost: boolean, settings: EventSettings | null }): boolean {
   return canSeePoolGames({ isHost, hiddenWheel: settings?.hiddenWheel ?? null })
 }

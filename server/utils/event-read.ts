@@ -153,10 +153,10 @@ export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): 
   return {
     settings,
     settingsFloors: floors,
-    // The Host sees the games of both pools; every other Member only while the wheel is not hidden, else how many
-    // there are (#146, #148). Under a Hidden wheel NO other field of this response may carry a pool game (name, id,
-    // image key, video id): the Members, Sessions and Votes in the other sections must stay free of them. The test
-    // hidden-wheel.test.ts reads the raw response to keep it so.
+    // The Host sees the games of both pools; every other Member only while the wheel is not hidden, else nothing about
+    // the pools, not even how many (#146, #148, #222). Under a Hidden wheel NO other field of this response may carry a
+    // pool game (name, id, image key, video id): the Members, Sessions and Votes in the other sections must stay free of
+    // them. The test hidden-wheel.test.ts reads the raw response to keep it so.
     pools,
   }
 }
