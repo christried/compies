@@ -8,6 +8,7 @@
 - Das Glücksrad dreht sich: Der Host dreht, und alle sehen denselben Dreh mit demselben Ergebnis im selben Moment. Beim verdeckten Rad stehen Platzhalter auf dem Rad, bis es stoppt. ([#229](https://github.com/christried/compies/issues/229))
 - Der Host kann in der laufenden Session einen Countdown stellen, der bei allen gleichzeitig abläuft, auch für alle, die später dazukommen. ([#236](https://github.com/christried/compies/issues/236))
 - Der Host wirft in der laufenden Session eine Münze, die bei allen im selben Moment auf Kopf oder Schwanz landet. ([#235](https://github.com/christried/compies/issues/235))
+- Der Clip des Spiels läuft bei allen im selben Moment, ab dem Stopp des Rads oder sobald der Host das Spiel setzt, und wer später kommt, landet an der richtigen Stelle. Der Host kann ihn für alle überspringen. ([#230](https://github.com/christried/compies/issues/230))
 
 ### Behoben
 

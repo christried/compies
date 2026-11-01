@@ -40,12 +40,14 @@ useHead({ title: () => data.value?.event.name })
 const votes = useOptimisticVotes(slug, data, refresh)
 
 // No timer runs on the server (ADR 0013, amended 2026-10-31): the first read after an instant settles it, so the page reads the Event
-// and the Activity feed again when an instant it knows passes (#229: the wheel's stop; the next tickets add their own).
+// and the Activity feed again when an instant it knows passes (#229: the wheel's stop; #230: the end of the clip, which the
+// overlay closes at by itself and the read then drops; the next tickets add their own).
 const feedTick = ref(0)
 // The coin's landing (#235) is one of them: the feed shows its entry from then on, and the toss's result is the page's from then on.
 const knownInstants = computed(() => [
   ...(data.value?.wheel?.spin ? [Date.parse(data.value.wheel.spin.stopAt)] : []),
   ...(data.value?.coin ? [Date.parse(data.value.coin.landsAt)] : []),
+  ...(data.value?.clip ? [Date.parse(data.value.clip.endsAt)] : []),
 ])
 useInstantRefresh(knownInstants, serverClock.now, () => {
   void refresh()
@@ -81,6 +83,9 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
 /** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
 const endSession = () => send('POST', 'sessions/end')
+
+/** The Host skips the clip for everyone (#230); the overlay learns whether the server took it. */
+const skipClip = () => send('POST', 'clip/skip')
 
 /** Puts an open Round back (#228); the hold on its card learns whether the server took it. */
 const putBackRound = (roundId: string) => send('DELETE', `rounds/${roundId}`)
@@ -456,6 +461,16 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
     <FullScreenState
       v-else-if="failed"
       kind="generic"
+    />
+
+    <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. -->
+    <ClipOverlay
+      v-if="data?.clip"
+      :key="data.clip.drawId"
+      :clip="data.clip"
+      :server-now="serverClock.now"
+      :is-host="data.event.isHost"
+      :skip="skipClip"
     />
 
     <HostDock

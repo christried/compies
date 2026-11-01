@@ -2,7 +2,7 @@ import { defineEventHandler, getRouterParam } from 'h3'
 import { useClock } from '../../utils/clock'
 import { useDb } from '../../utils/db'
 import { loadEvent } from '../../utils/event-access'
-import { boardSection, coinSection, countdownSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, roundsSection, sessionSection, startSection } from '../../utils/event-read'
+import { boardSection, clipSection, coinSection, countdownSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, roundsSection, sessionSection, startSection } from '../../utils/event-read'
 import { settleBeforeRead } from '../../utils/rounds'
 import { requireUser } from '../../utils/user'
 import type { EventView } from '../../../shared/event'
@@ -24,8 +24,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
 
   const [rows, pools] = await Promise.all([readEventRows(db, eventRow), poolsSection(db, eventRow, viewer)])
   const roundSections = await roundsSection(db, eventRow, rows, viewer, now)
-  const countdown = await countdownSection(db, eventRow, rows)
-  const coin = await coinSection(db, eventRow, rows)
+  const [clip, countdown, coin] = await Promise.all([clipSection(db, eventRow, rows, now), countdownSection(db, eventRow, rows), coinSection(db, eventRow, rows)])
   return {
     event: {
       slug: eventRow.slug,
@@ -42,6 +41,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     ...boardSection(eventRow, rows),
     ...startSection(eventRow, rows, viewer),
     ...roundSections,
+    ...clip,
     ...countdown,
     ...coin,
   }

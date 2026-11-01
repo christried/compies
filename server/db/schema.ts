@@ -263,7 +263,9 @@ export const rounds = pgTable('rounds', {
 // here) and `vetoEndsAt` (the end of the Veto window, null when no window opens). A draw settles at the first read or write
 // after its last instant: `outcome` and `settledAt` are null until then. A spin keeps what #229 needs to replay it
 // identically on reload: the games of the slices in order, the placeholder labels shuffled for that spin (null on a visible
-// wheel), the result index and the offset within the slice (a fraction from 0 up to 1).
+// wheel), the result index and the offset within the slice (a fraction from 0 up to 1). `clipSkippedAt` (0018, #230) is when the
+// Host skipped the draw's clip for everyone: the clip is a read of the instants, so the skip has to be stored to reach Members who
+// join later. It is nullable and new, so the code that serves during the switch-over (ADR 0007) neither reads nor writes it.
 export const draws = pgTable('draws', {
   id: uuid('id').defaultRandom().primaryKey(),
   roundId: uuid('round_id').notNull().references(() => rounds.id, { onDelete: 'cascade' }),
@@ -274,6 +276,7 @@ export const draws = pgTable('draws', {
   spinStartAt: timestamp('spin_start_at', { withTimezone: true }),
   stopAt: timestamp('stop_at', { withTimezone: true }).notNull(),
   vetoEndsAt: timestamp('veto_ends_at', { withTimezone: true }),
+  clipSkippedAt: timestamp('clip_skipped_at', { withTimezone: true }),
   outcome: drawOutcome('outcome'),
   settledAt: timestamp('settled_at', { withTimezone: true }),
   sliceGameIds: uuid('slice_game_ids').array(),
