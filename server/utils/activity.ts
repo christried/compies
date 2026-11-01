@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { activity, users } from '../db/schema'
 import { shownName } from '../../shared/auth'
-import type { ActivityEntry, ActivityPage, ActivityParams, ActivityType } from '../../shared/activity'
+import { activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType } from '../../shared/activity'
 import type { RoomMessage } from '../../shared/realtime'
 import type { Db } from './db'
 import { apiError } from './errors'
@@ -30,15 +30,14 @@ export async function recordActivity<T extends ActivityType>(
   publish({ type: 'activity.added', entry: entry! })
 }
 
-/** The User ids a row's params name, whose names the client needs (`people`). */
-function paramUserIds(params: ActivityRow['params']): string[] {
-  const id = (params as { userId?: unknown }).userId
-  return typeof id === 'string' ? [id] : []
+/** The User ids a row's params name, whose names the client needs (`people`): what its type declares in ACTIVITY_PEOPLE (#226). */
+function paramUserIds({ type, params }: ActivityRow): string[] {
+  return activityPeople(type, params)
 }
 
 /** The entries for these rows, in the same order, with the shown name of every actor and every User in the params. */
 export async function activityEntries(db: Db, rows: ActivityRow[]): Promise<ActivityEntry[]> {
-  const ids = [...new Set(rows.flatMap(row => [...(row.actorId ? [row.actorId] : []), ...paramUserIds(row.params)]))]
+  const ids = [...new Set(rows.flatMap(row => [...(row.actorId ? [row.actorId] : []), ...paramUserIds(row)]))]
   const people = new Map<string, string>()
   if (ids.length > 0) {
     const found = await db.select({ id: users.id, name: users.name, displayName: users.displayName }).from(users).where(inArray(users.id, ids))
@@ -50,7 +49,7 @@ export async function activityEntries(db: Db, rows: ActivityRow[]): Promise<Acti
     id: row.id,
     at: row.at.toISOString(),
     actor: row.actorId ? { id: row.actorId, name: people.get(row.actorId) ?? '' } : null,
-    people: Object.fromEntries(paramUserIds(row.params).map(id => [id, people.get(id) ?? ''])),
+    people: Object.fromEntries(paramUserIds(row).map(id => [id, people.get(id) ?? ''])),
     type: row.type,
     params: row.params,
   }) as ActivityEntry)

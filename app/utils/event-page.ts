@@ -1,4 +1,4 @@
-import { hasStarted, nextSession } from '~~/shared/board'
+import { hasStarted, nextSession, runningOf, sessionState } from '~~/shared/session-state'
 import type { EventView, Phase, SessionView } from '~~/shared/event'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
@@ -67,16 +67,16 @@ export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase:
 
 export function eventPageState({ settings, sessions, missingDates, runningSessionId }: PageInput): EventPageState {
   const waiting = nextSession(sessions)
-  const runningSession = sessions.find(session => session.id === runningSessionId)
+  const runningSession = runningOf(sessions)
   const ended = sessions
-    .filter(session => session.endedAt !== null)
+    .filter(session => sessionState(session) === 'ended')
     .sort((a, b) => Date.parse(b.endedAt!) - Date.parse(a.endedAt!))[0]
   const started = hasStarted(sessions)
 
   const base = {
     total: sessions.length,
     next: waiting ? { number: waiting.number, startsAt: waiting.startsAt } : null,
-    running: runningSession?.startedAt ? { number: runningSession.number, startedAt: runningSession.startedAt } : null,
+    running: runningSession ? { number: runningSession.number, startedAt: runningSession.startedAt } : null,
     lastEnded: ended ? { number: ended.number } : null,
     pollNumber: pollingNumber(sessions, missingDates),
   }

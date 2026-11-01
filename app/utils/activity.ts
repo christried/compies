@@ -1,7 +1,7 @@
-import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Eye, Flag, Play, RotateCcw, SlidersHorizontal, UserPlus, Users } from '@lucide/vue'
+import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Eye, Flag, Pin, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Undo2, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
-import { nextSession } from '~~/shared/board'
+import { isStarted, nextSession } from '~~/shared/session-state'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
 import { teamName } from './board'
@@ -43,6 +43,13 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
     case 'team_name_reset': return { icon: RotateCcw, tone: 'surface' }
     case 'game_count_changed':
     case 'team_size_changed': return { icon: SlidersHorizontal, tone: 'surface' }
+    // The 0.7 kinds (#226 adds them to the enum; their sentences come with the tickets that write them, see `sentence`). The icons are placeholders until then.
+    case 'game_drawn': return { icon: Dices, tone: 'surface' }
+    case 'vetoes_revealed': return { icon: ShieldX, tone: 'surface' }
+    case 'game_set': return { icon: Pin, tone: 'surface' }
+    case 'game_put_back': return { icon: Undo2, tone: 'surface' }
+    case 'bonus_veto_granted': return { icon: ShieldPlus, tone: 'surface' }
+    case 'coin_tossed': return { icon: Coins, tone: 'surface' }
   }
 }
 
@@ -84,6 +91,14 @@ function sentence(entry: ActivityEntry, t: Translate): string | null {
       return entry.params.number === null ? t('activity.sessionStartedSingle', { name }) : t('activity.sessionStarted', { name, n: entry.params.number })
     case 'session_ended':
       return entry.params.number === null ? t('activity.sessionEndedSingle', { name }) : t('activity.sessionEnded', { name, n: entry.params.number })
+    // The 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #229 game drawn, #231 Vetoes revealed, #228 game set and put back, #233 Bonus Veto, #235 coin toss.
+    case 'game_drawn':
+    case 'vetoes_revealed':
+    case 'game_set':
+    case 'game_put_back':
+    case 'bonus_veto_granted':
+    case 'coin_tossed':
+      return null
   }
 }
 
@@ -162,7 +177,7 @@ export function groupActivity(entries: ActivityEntry[], sessions: FeedSession[],
  * dated Session that has not (null when there is none, or the Event has one Session). `sessions` is the Event read's.
  */
 export function feedSessions(sessions: { id: string, number: number | null, startsAt: string | null, startedAt: string | null, endedAt: string | null }[]): { started: FeedSession[], nextNumber: number | null } {
-  const started = sessions.flatMap(session => (session.startedAt === null ? [] : [{ id: session.id, number: session.number, startedAt: session.startedAt, endedAt: session.endedAt }]))
+  const started = sessions.flatMap(session => (isStarted(session) ? [{ id: session.id, number: session.number, startedAt: session.startedAt, endedAt: session.endedAt }] : []))
   return { started, nextNumber: nextSession(sessions)?.number ?? null }
 }
 

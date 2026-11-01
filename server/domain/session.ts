@@ -1,4 +1,5 @@
 import { SESSIONS_MAX } from '../../shared/event'
+import { isStarted } from '../../shared/session-state'
 
 // The Sessions of an Event (ADR 0011, #49). Pure: the create handler checks the count, the readers number the
 // Sessions and count the missing Dates. Numbering, and the rule that only several Sessions get a number, live
@@ -14,11 +15,6 @@ export interface SessionDate {
   id: string
   startsAt: Date | null
   startedAt: Date | null
-}
-
-/** Whether the Host has started the Session (#164). */
-export function isStarted<S extends { startedAt: Date | null }>(session: S): session is S & { startedAt: Date } {
-  return session.startedAt !== null
 }
 
 /** Whether the Session has its Date. */
@@ -40,7 +36,7 @@ export function numberedSessions<S extends SessionDate>(sessions: S[]): (S & { n
   const several = sessions.length > 1
   // Array sort is stable, so equal times keep their given order.
   const started = sessions.filter(isStarted).sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
-  const waiting = sessions.filter(session => session.startedAt === null)
+  const waiting = sessions.filter(session => !isStarted(session))
   const dated = waiting.filter(isDated).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
   const numbered = [...started, ...dated].map((session, index) => ({ ...session, number: several ? index + 1 : null }))
   return [...numbered, ...waiting.filter(session => session.startsAt === null).map(session => ({ ...session, number: null }))]

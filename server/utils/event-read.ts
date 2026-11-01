@@ -5,7 +5,8 @@ import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
-import { placeOf, runningOf, teamNameOf } from '../../shared/board'
+import { placeOf, teamNameOf, type Zone } from '../../shared/board'
+import { runningOf } from '../../shared/session-state'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
 import { settingsFromRow } from '../../shared/settings'
@@ -36,7 +37,7 @@ export interface EventRows {
   slots: { id: string, startsAt: Date }[]
   votes: VoteRow[]
   /** The Members in the order they joined. */
-  members: { id: string, name: string, displayName: string | null, image: string | null, zone: 'bench' | 'stands' | 'team', team: number | null, teamWord: string | null, teamJoinedAt: Date | null }[]
+  members: { id: string, name: string, displayName: string | null, image: string | null, zone: Zone, team: number | null, teamWord: string | null, teamJoinedAt: Date | null }[]
   /** The frozen teams (#164): none before the first Session start. A null name is the Team colour's name. */
   frozenTeams: { position: number, frozenName: string | null }[]
 }
@@ -139,8 +140,7 @@ export function boardSection(eventRow: EventRow, rows: EventRows): Pick<EventVie
 export function startSection(eventRow: EventRow, rows: EventRows, viewer: Viewer): Pick<EventView, 'start'> {
   if (!viewer.isHost) return { start: null }
   const { next, rejection } = startOf(eventRow, rows.sessions, rows.members.map(row => placeOf(row)))
-  const number = next === null ? null : numberedSessions(rows.sessions).find(row => row.id === next.id)?.number ?? null
-  return { start: { sessionId: next?.id ?? null, number, rejection } }
+  return { start: { sessionId: next?.id ?? null, number: next?.number ?? null, rejection } }
 }
 
 export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'settings' | 'settingsFloors' | 'pools'>> {

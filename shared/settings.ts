@@ -269,7 +269,7 @@ export function lockedWhenRunning(keys: readonly (keyof EventSettings)[]): boole
   return keys.some(key => (LOCKED_WHEN_RUNNING as readonly string[]).includes(key))
 }
 
-/** Phase running or later: the first Session has started. */
+/** Phase running or later: the first Session has started. The Phase rule; it equals `hasStarted` (shared/session-state.ts) because the first start sets the Phase in its transaction. */
 export function settingsLocked(phase: Phase): boolean {
   return phase === 'running' || phase === 'finished' || phase === 'archived'
 }

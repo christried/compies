@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
+import { ZONES } from '../../shared/board'
 import { SUITABILITIES } from '../../shared/game'
 import { FORMATS, POOLS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
 
@@ -127,7 +128,7 @@ export const eventTeams = pgTable('event_teams', {
   check('event_teams_position_check', sql`${table.position} >= 1`),
 ])
 
-export const memberZone = pgEnum('member_zone', ['bench', 'stands', 'team'])
+export const memberZone = pgEnum('member_zone', ZONES)
 
 export const eventMembers = pgTable('event_members', {
   eventId: uuid('event_id').notNull().references(() => events.id),
@@ -212,7 +213,7 @@ export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)
 
 // The Activity feed (#159, GLOSSARY: Activity feed): what happened in an Event, written in the same transaction as the
 // change it records (server/utils/activity.ts). `actorId` is null when the app did it. `params` holds ids, numbers and
-// instants only, never a game. The feed reads one Event's entries by time, so that is the index. Entries go with their Event.
+// instants only, never a game's name (ActivityParams checks it). The feed reads one Event's entries by time, so that is the index. Entries go with their Event.
 export const activity = pgTable('activity', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),

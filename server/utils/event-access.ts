@@ -4,6 +4,7 @@ import { events } from '../db/schema'
 import { eventAccessRejection } from '../domain/access'
 import type { AuthUser } from '../../shared/auth'
 import { envelope, type RoomMessage } from '../../shared/realtime'
+import { useClock } from './clock'
 import { apiError, eventDeleted, eventNotFound } from './errors'
 import { isMember } from './invite'
 import { useDb, type Db } from './db'
@@ -71,7 +72,7 @@ export async function changeEvent<T>(
  * missed message is made up by the client's refetch, so this never fails the request.
  */
 export function afterCommit(event: H3Event, eventRow: EventRow, messages: RoomMessage[], named: NamedMessages[] = []): void {
-  const now = Date.now()
+  const now = useClock(event).now().getTime()
   const all: RoomMessage[] = messages.some(message => message.type === 'event.changed') ? messages : [{ type: 'event.changed' }, ...messages]
   publishAfterResponse(event, eventRow.id, all.map(message => envelope(message, now)))
   // A named send never adds `event.changed`: it reaches some Users only, and the broadcast above already says the Event changed (#227).
