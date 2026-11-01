@@ -407,13 +407,14 @@ describe('the stepper', () => {
           selectionMode: 'admin_pick',
           hiddenWheel: false,
           vetoAllowance: null,
+          poolPreview: true,
         },
       })
       expect(page.text()).toContain('Geschafft')
       expect(page.text()).toContain('4 Teams à 2, Host-Wahl, 6 Spiele.')
       const list = page.get('dl')
-      expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Punkte', 'Modus', 'Pool', 'Termin'])
-      expect(list.findAll('dd').map(value => value.text())).toEqual(['4 Teams à 2', '6', 'Winner takes all 3 / 0 / 0 / 0', 'Host-Wahl', '0 Spiele, Tiebreaker 0', 'Umfrage, 1 Vorschlag'])
+      expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Auswahl', 'Punkte', 'Pool', 'Termin'])
+      expect(list.findAll('dd').map(value => value.text())).toEqual(['4 Teams à 2', '6 Spiele', 'Host-Wahl', 'Winner takes all 3 / 0 / 0 / 0', '0 Spiele, Tiebreaker 0', 'Umfrage, 1 Vorschlag'])
       expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
       expect(page.find('nav[aria-label="Schritte"]').exists()).toBe(false)
     })

@@ -41,4 +41,34 @@ describe('ToggleSwitch', () => {
 
     expect(page.emitted('update:modelValue')).toEqual([[true], [false]])
   })
+
+  describe('disabled (#225)', () => {
+    it('is announced as disabled, keeps its state and its help, and is not announced as disabled otherwise', async () => {
+      const page = await mountSuspended(ToggleSwitch, { props: { ...props, disabled: true } })
+
+      const sw = page.get('[role="switch"]')
+      expect(sw.attributes('aria-disabled')).toBe('true')
+      expect(sw.attributes('aria-checked')).toBe('false')
+      expect(page.get(`[id="${sw.attributes('aria-describedby')}"]`).text()).toBe('Erfundene Namen, bis das Rad stoppt.')
+
+      await page.setProps({ disabled: false })
+      expect(page.get('[role="switch"]').attributes('aria-disabled')).toBeUndefined()
+    })
+
+    it('asks for nothing when it is clicked', async () => {
+      const page = await mountSuspended(ToggleSwitch, { props: { ...props, disabled: true } })
+
+      await page.get('[role="switch"]').trigger('click')
+
+      expect(page.emitted('update:modelValue')).toBeUndefined()
+    })
+
+    it('looks muted like the other disabled controls: a dashed track', async () => {
+      const page = await mountSuspended(ToggleSwitch, { props: { ...props, disabled: true } })
+
+      const track = page.get('[role="switch"] > span')
+      expect(track.classes()).toContain('border-dashed')
+      expect(page.get('[role="switch"]').classes()).toContain('aria-disabled:text-ink-3')
+    })
+  })
 })

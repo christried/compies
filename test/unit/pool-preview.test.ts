@@ -5,7 +5,7 @@ import { defaultSettings } from '../../shared/settings'
 // Who sees the games of the pools, and who learns nothing about them (#146, #148, #183, #222, #225).
 
 const visibleWheel = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: false, vetoAllowance: 3 }
-const hiddenWheel = { ...visibleWheel, hiddenWheel: true }
+const hiddenWheel = { ...visibleWheel, hiddenWheel: true, poolPreview: false }
 
 describe('canSeePoolGames (#183)', () => {
   it('gives the Host the games whatever the Pool preview is', () => {
@@ -29,6 +29,8 @@ describe('poolFactsOf (#148, #225)', () => {
     expect(canSeePoolGames(poolFactsOf({ isHost: false, settings: visibleWheel }))).toBe(true)
     expect(canSeePoolGames(poolFactsOf({ isHost: false, settings: defaultSettings() }))).toBe(true)
     expect(canSeePoolGames(poolFactsOf({ isHost: false, settings: hiddenWheel }))).toBe(false)
+    expect(canSeePoolGames(poolFactsOf({ isHost: false, settings: { ...visibleWheel, poolPreview: false } }))).toBe(false)
+    expect(canSeePoolGames(poolFactsOf({ isHost: false, settings: { ...defaultSettings(), poolPreview: false } }))).toBe(false)
   })
 
   it('gives another Member nothing for an Event that is not set up', () => {

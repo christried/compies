@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Neue Einstellung **Pool vorher zeigen** bei Host-Wahl und Glücksrad: Ist sie aus, sehen die anderen weder die Spiele im Spielepool und im Tiebreaker-Pool noch, wie viele es sind. Du kannst sie jederzeit ändern, auch während das Event läuft; beim verdeckten Rad ist sie immer aus. ([#225](https://github.com/christried/compies/issues/225))
+
 ## [0.5.1] - 2026-11-01 – Neue Nummern
 
 Ein kleines Update ohne neue Funktion: neue Versionsnummern, eine eigene Kontaktadresse, und ein verdecktes Rad verrät noch weniger.
