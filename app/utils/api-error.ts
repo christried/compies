@@ -1,4 +1,5 @@
 import type { ApiErrorCode } from '~~/shared/errors'
+import { isRecord } from '~~/shared/record'
 
 // What a failed API call tells the UI (shared/errors.ts). `$fetch` puts the answer's statusMessage in
 // `data.statusMessage`; the status code is on the error itself.
@@ -6,11 +7,14 @@ import type { ApiErrorCode } from '~~/shared/errors'
 export interface ApiFailure {
   status: number | undefined
   code: string | undefined
+  /** The payload the server sent with the refusal (`apiError`'s `data`, e.g. the `winnerId` of a lost race), when it is an object (#237). */
+  data: Record<string, unknown> | undefined
 }
 
 export function apiFailure(failure: unknown): ApiFailure {
-  const error = failure as { statusCode?: number, statusMessage?: string, data?: { statusMessage?: string } } | null
-  return { status: error?.statusCode, code: error?.data?.statusMessage ?? error?.statusMessage }
+  const error = failure as { statusCode?: number, statusMessage?: string, data?: { statusMessage?: string, data?: unknown } } | null
+  const data = error?.data?.data
+  return { status: error?.statusCode, code: error?.data?.statusMessage ?? error?.statusMessage, data: isRecord(data) ? data : undefined }
 }
 
 /** The copy for each error code the UI can explain. Codes not listed fall back to the caller's copy. */

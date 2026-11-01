@@ -15,7 +15,11 @@ export type Zone = (typeof ZONES)[number]
 /** Where a Member stands on the Game board: the Bench, the Stands (Tribüne) or a team by its position (1..team count). */
 export type Place = { zone: Exclude<Zone, 'team'> } | { zone: 'team', team: number }
 
-/** The place a Member row stands for (the Event read's and the table's `zone` and `team`). `team` is set exactly when the zone is `team`. */
+/**
+ * The place a Member row stands for (the Event read's and the table's `zone` and `team`). `team` is set exactly when the zone
+ * is `team`: the DB check `event_members_team_zone_check` makes a `team` row with a null `team` impossible, so the Bench
+ * fallback is a defensive default and no row the table holds reaches it (A9).
+ */
 export function placeOf(row: { zone: Zone, team: number | null }): Place {
   return row.zone === 'team' && row.team !== null ? { zone: 'team', team: row.team } : { zone: row.zone === 'stands' ? 'stands' : 'bench' }
 }
@@ -108,11 +112,18 @@ export interface TeamMember { team: number | null, teamWord: string | null, team
  * The Team name of one team from the Event's Members (composedTeamName of its words, teamWords): the Event read shows it
  * and the first start freezes it (#161, #164). `frozen` is the frozen name, or undefined while the team is not frozen.
  */
-export function teamNameOf(members: readonly TeamMember[], position: number, frozen?: string | null): string | null {
+export function composeTeamName(members: readonly TeamMember[], position: number, frozen?: string | null): string | null {
   const seats = members
     .filter(member => member.team === position)
     .map(member => ({ word: member.teamWord, joinedAt: member.teamJoinedAt?.getTime() ?? 0 }))
   return composedTeamName({ frozen, words: teamWords(seats) })
+}
+
+/** The team position a request names in its path (N5): a whole number from 1, or null. Its range is the Event's team count, checked by the caller. */
+export function parseTeamPosition(raw: string): number | null {
+  if (!/^\d+$/.test(raw)) return null
+  const position = Number(raw)
+  return position >= 1 ? position : null
 }
 
 /** The place a request names, or null when it is none: a zone, and for `team` a whole position (its range is moveRejection's). */

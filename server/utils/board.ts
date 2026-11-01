@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { eventMembers, eventTeams } from '../db/schema'
 import { numberedSessions } from '../domain/session'
-import { countSeats, placeOf, teamChoiceOpen, teamNameOf, type Place } from '../../shared/board'
+import { countSeats, placeOf, teamChoiceOpen, composeTeamName, type Place } from '../../shared/board'
 import { hasStarted, nextSession, startRejection, type StartRejection } from '../../shared/session-state'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
@@ -9,10 +9,10 @@ import type { Db } from './db'
 import type { EventChange, EventRow } from './event-access'
 import type { SessionRow } from './sessions'
 
-// The seats of the Game board (#160, GLOSSARY: Game board). One home: every write of a Member's zone, team and
-// team_joined_at (and the Team word that goes with the seat) goes through seatMember, so a rule that follows a seat
-// change (#161: a seat change clears the Team word; #163: removed teams send their Players to the Bench) has one place
-// to live.
+// The seats of the Game board (#160, GLOSSARY: Game board). One home: every change of a seat goes through seatMember,
+// so a rule that follows a seat change (#161: a seat change clears the Team word; #163: removed teams send their Players
+// to the Bench) has one place to live. The Team word handlers write the word themselves (team-word.post.ts,
+// reset-name.post.ts).
 
 /** Every Member of the Event with the place they stand in. */
 export async function readSeats(tx: Db, eventId: string): Promise<{ userId: string, place: Place }[]> {
@@ -95,6 +95,6 @@ export async function freezeTeamNames(tx: Db, eventId: string, teamCount: number
     .select({ team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
     .from(eventMembers)
     .where(eq(eventMembers.eventId, eventId))
-  const rows = Array.from({ length: teamCount }, (_, index) => ({ eventId, position: index + 1, frozenName: teamNameOf(members, index + 1) }))
+  const rows = Array.from({ length: teamCount }, (_, index) => ({ eventId, position: index + 1, frozenName: composeTeamName(members, index + 1) }))
   await tx.insert(eventTeams).values(rows)
 }

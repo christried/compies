@@ -31,3 +31,9 @@ export function glide(element: Element, from: Pick<DOMRect, 'left' | 'top'>, to:
   const easing = kind === 'bounce' ? motionToken('--cp-ease-spring', 'cubic-bezier(.5,1.8,.4,.8)') : motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)')
   element.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], { duration, easing })
 }
+
+/** What a Member whose place changed gets under reduced motion instead of the glide and the pop: a short fade at the new place (04-motion § Avatar: „Reduced: position changes with a 0.14 fade“, #237). */
+export function fade(element: Element): void {
+  if (!reducedMotion() || typeof element.animate !== 'function') return
+  element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: Number.parseFloat(motionToken('--cp-dur-fast', '140ms')), easing: motionToken('--cp-ease-out', 'ease-out') })
+}

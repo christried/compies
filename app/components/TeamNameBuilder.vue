@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { RotateCcw } from '@lucide/vue'
 import { teamName } from '~/utils/board'
-import { eventDataKey } from '~/utils/event-data'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 import { hasSpace, stripSpaces, TEAM_WORD_MAX } from '~~/shared/team-word'
 
@@ -34,7 +33,7 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 const { toast } = useToast()
-const { send } = useEventMutation(() => props.slug, () => refreshNuxtData(eventDataKey(props.slug)))
+const { send } = useEventMutation(() => props.slug, () => refreshEvent(props.slug))
 const fieldId = useId()
 const helpId = `${fieldId}-help`
 
