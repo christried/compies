@@ -25,10 +25,10 @@ const slug = toRef(() => props.slug)
 const { data, error, refresh, room } = await useEventView(slug)
 const connection = useConnectionBanner(room.state, room.enabled)
 
-// Who is online (#162) goes to the Game board's dots. The server clock is kept here, on the page's one socket, for the
-// timers of Glücksrad (0.7) (which will provide it from here); nothing reads it yet.
+// Who is online (#162) goes to the Game board's dots. The server clock is kept here, on the page's one socket: the Countdown (#236)
+// reads its time from it, and so will the other timers of 0.7.
 const presence = usePresence(room)
-useServerClock(room)
+const serverClock = useServerClock(room)
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 const notFound = computed(() => error.value?.statusCode === 404)
@@ -94,6 +94,7 @@ const hostActions = useHostActions(
     start: () => dialogs.value?.openStart(),
     end: endSession,
     setGame: () => dialogs.value?.openSetGame(),
+    countdown: () => dialogs.value?.openCountdown(),
   },
 )
 
@@ -322,6 +323,14 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           :put-back="putBackRound"
         />
 
+        <EventCountdown
+          v-else-if="block === 'countdown' && data.countdown"
+          :countdown="data.countdown"
+          :server-now="serverClock.now"
+          :is-host="data.event.isHost"
+          :command="(action) => send('POST', 'countdown/' + action)"
+        />
+
         <GameBoard
           v-else-if="block === 'board'"
           :slug="slug"
@@ -434,6 +443,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       :refresh="refresh"
       :poll-open="pollOpen"
       :can-change-sessions="canChangeSessions"
+      :server-now="serverClock.now"
     />
 
     <InviteSheet

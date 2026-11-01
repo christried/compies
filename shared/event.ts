@@ -145,6 +145,12 @@ export interface RoundView {
  */
 export interface SetGameView { rejection: SetRejection | null, left: string[] }
 
+/**
+ * The Event's Countdown (#236, spec #218 § Countdown): its stored facts, the duration and either the remaining time (paused, ready)
+ * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt).
+ */
+export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null }
+
 /** What `POST /api/e/:slug/rounds` returns: the Round that was opened (#228). */
 export interface RoundSet { roundId: string }
 /** What `DELETE /api/e/:slug/rounds/:id` returns: the Round that was put back (#228). */
@@ -218,6 +224,8 @@ export interface EventView {
   rounds: RoundView[]
   /** Setting the next game (#228). Only the Host gets it; null for every other Member. */
   setGame: SetGameView | null
+  /** The Countdown of the running Session (#236): every Member gets it while a Session runs, null otherwise. */
+  countdown: CountdownView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

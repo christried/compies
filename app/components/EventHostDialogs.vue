@@ -21,6 +21,8 @@ const props = defineProps<{
   pollOpen: boolean
   /** Sessions can be added in this Phase (the page's sessionsEditable, #238). */
   canChangeSessions: boolean
+  /** The server's clock (the page's useServerClock): the Countdown sheet asks whether one runs (#236). */
+  serverNow: () => number
 }>()
 
 const { t } = useI18n()
@@ -119,9 +121,18 @@ function setNextGame(gameId: string) {
   return send('POST', 'rounds', { body: { gameId }, busy: setting, done: () => (pickerOpen.value = false) })
 }
 
+// The Countdown (#236): the sheet sends the length in seconds; it closes once the server took it.
+const countdownOpen = ref(false)
+const countdownSetting = ref(false)
+
+function setCountdown(seconds: number) {
+  return send('PUT', 'countdown', { body: { seconds }, busy: countdownSetting, done: () => (countdownOpen.value = false) })
+}
+
 defineExpose({
   openConfirm,
   openSetGame: () => (pickerOpen.value = true),
+  openCountdown: () => (countdownOpen.value = true),
   openReschedule,
   openAdd: () => (addOpen.value = true),
   openSlotEditor: () => (editing.value = true),
@@ -189,6 +200,15 @@ defineExpose({
     :busy="setting"
     @close="pickerOpen = false"
     @pick="setNextGame"
+  />
+
+  <CountdownSheet
+    :open="countdownOpen"
+    :busy="countdownSetting"
+    :countdown="view.countdown"
+    :server-now="serverNow"
+    @close="countdownOpen = false"
+    @set="setCountdown"
   />
 
   <SessionAddSheet

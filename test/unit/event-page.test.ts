@@ -152,7 +152,7 @@ describe('the blocks of the stage', () => {
   it('shows the open Rounds above the Game board while a Session runs, and only then', () => {
     const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
 
-    expect(blocks(running, { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'board', 'poll', 'cards'])
+    expect(blocks(running, { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'countdown', 'board', 'poll', 'cards'])
     expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).not.toContain('rounds')
     expect(blocks([dated('a', 1, SAT)])).not.toContain('rounds')
   })

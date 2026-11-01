@@ -124,6 +124,14 @@ export const API_ERROR_STATUS = {
   round_being_drawn: 409,
   /** A Round id the Event does not hold, or one that was put back already (#228). */
   round_not_found: 404,
+  /** No Countdown is set in this Event, so there is none to start, pause or reset (#236). */
+  no_countdown: 409,
+  /** The Countdown runs already: it cannot be set again, nor started (#236). */
+  countdown_running: 409,
+  /** The Countdown has run out: start is refused until the Host resets it (#236). */
+  countdown_ended: 409,
+  /** The Countdown does not run, so there is nothing to pause (#236). */
+  countdown_not_running: 409,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

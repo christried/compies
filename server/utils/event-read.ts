@@ -17,6 +17,7 @@ import { inviteUrl } from './links'
 import { startOf, teamChoiceOf } from './board'
 import { roundGameView } from './library'
 import { eventPools } from './pools'
+import { countdownView, readCountdown } from './countdown'
 import { readDraws, readGamePool, setRejectionOf, type RoundRow } from './rounds'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { floorFacts } from './settings-floors'
@@ -191,6 +192,16 @@ export async function roundsSection(db: Db, eventRow: EventRow, rows: EventRows,
     rounds: open,
     setGame: { rejection: setRejectionOf(eventRow, rows.sessions, rows.members.map(row => placeOf(row)), roundRows, true), left: gamesLeft(pool, draws, roundRows) },
   }
+}
+
+/**
+ * The Countdown (#236, spec #218 § Countdown): every Member gets it while a Session runs, and nothing otherwise, even when a row
+ * was left behind (the Session end deletes it, but the read does not rely on that).
+ */
+export async function countdownSection(db: Db, eventRow: EventRow, rows: EventRows): Promise<Pick<EventView, 'countdown'>> {
+  if (!runningOf(rows.sessions)) return { countdown: null }
+  const row = await readCountdown(db, eventRow.id)
+  return { countdown: row ? countdownView(row) : null }
 }
 
 /** The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on. */
