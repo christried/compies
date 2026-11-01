@@ -4,25 +4,27 @@
 // after its own writes. Listeners stop when the page scope ends. Nothing runs on the server.
 
 export const POLL_INTERVAL_MS = 15_000
+/**
+ * The returns of one comeback within this window refetch once (#238). The two events of one return (visibilitychange,
+ * then focus) arrive in separate tasks, so one task is too short a window; a second return that comes this late counts.
+ */
+export const RETURN_DEDUPE_MS = 1000
 
 const visible = () => document.visibilityState === 'visible'
 
 /**
  * Refetch when the User comes back: the tab becomes visible again, window focus, and the browser is back online
- * (Home, #12; `online` #198). The events of one return arrive together (visibility, then focus), so they share one
- * refetch: a return that is announced twice in one task reads once (#238).
+ * (Home, #12; `online` #198). A return within RETURN_DEDUPE_MS of the last one that refetched refetches nothing (#238).
  */
 export function useRefreshOnReturn(refresh: () => unknown) {
   if (!import.meta.client) return
 
-  let queued = false
+  let lastRefetch = -Infinity
   const onReturn = () => {
-    if (queued) return
-    queued = true
-    queueMicrotask(() => {
-      queued = false
-      refresh()
-    })
+    const now = Date.now()
+    if (now - lastRefetch < RETURN_DEDUPE_MS) return
+    lastRefetch = now
+    refresh()
   }
   const onVisibility = () => {
     if (visible()) onReturn()
