@@ -154,3 +154,14 @@ describe('unseenReleases', () => {
     expect(unseenReleases([], null)).toEqual([])
   })
 })
+
+// A User who saw 1.4.0 has the stored version 0.5.0 after the renumbering (#220): only the newer Release is shown.
+describe('unseenReleases after the renumbering', () => {
+  const renumbered = ['0.5.1', '0.5.0', '0.4.0', '0.3.0'].map(version => ({
+    version, date: '2026-10-31', name: `Release ${version}`, intro: null, groups: [],
+  }))
+
+  it('shows only the Releases newer than a mapped 0.5.0', () => {
+    expect(unseenReleases(renumbered, '0.5.0').map(r => r.version)).toEqual(['0.5.1'])
+  })
+})
