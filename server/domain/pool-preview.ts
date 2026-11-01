@@ -15,5 +15,5 @@ export function canSeePoolGames({ isHost, poolPreview }: PoolFacts): boolean {
 
 /** The facts from an Event's settings (null = not set up). An Event that is not set up has nothing to see: the safe default. */
 export function poolFactsOf({ isHost, settings }: { isHost: boolean, settings: EventSettings | null }): PoolFacts {
-  return { isHost, poolPreview: settings !== null && !settings.hiddenWheel }
+  return { isHost, poolPreview: settings?.poolPreview ?? false }
 }

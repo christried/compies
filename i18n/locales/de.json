@@ -1438,6 +1438,7 @@
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",
     "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
+    "poolPreviewHiddenWheel": "Beim verdeckten Rad sieht niemand den Pool.",
     "unknownGame": "Ein Spiel aus dem Pool gibt es nicht mehr.",
     "settingLocked": "Das lässt sich nicht mehr ändern, seit die erste Session läuft.",
     "sessionStarted": "Diese Session hat schon begonnen. Sie bleibt, wie sie ist.",

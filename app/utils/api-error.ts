@@ -39,6 +39,7 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   points_flat: 'error.pointsFlat',
   mode_unavailable: 'error.modeUnavailable',
   veto_allowance_range: 'error.vetoAllowanceRange',
+  pool_preview_hidden_wheel: 'error.poolPreviewHiddenWheel',
   invalid_game_name: 'error.gameNameInvalid',
   invalid_youtube: 'gameEdit.badLink',
   invalid_clip: 'error.clipInvalid',

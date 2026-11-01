@@ -86,6 +86,8 @@ export const events = pgTable('events', {
   pointsTable: jsonb('points_table').$type<PointsTable>(),
   selectionMode: selectionMode('selection_mode'),
   hiddenWheel: boolean('hidden_wheel'),
+  // Pool preview (#225): null only for Events not set up and rows the code before 0.6 wrote (storedPoolPreview reads it as on unless the wheel is hidden).
+  poolPreview: boolean('pool_preview'),
   vetoAllowance: integer('veto_allowance'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),

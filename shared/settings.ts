@@ -57,6 +57,8 @@ export interface EventSettings {
   hiddenWheel: boolean
   /** Vetoes per Party; only with `lucky_wheel`, null otherwise. */
   vetoAllowance: number | null
+  /** Pool preview (#225): whether Members other than the Host see the pools before the games come up. Always false under a Hidden wheel. */
+  poolPreview: boolean
 }
 
 export type SettingsError
@@ -70,6 +72,7 @@ export type SettingsError
     | 'mode_unavailable' // pick_ban, losers_pick, losers_advantage
     | 'veto_allowance_range'
     | 'wheel_options_without_wheel' // hiddenWheel true or vetoAllowance set with a mode other than lucky_wheel
+    | 'pool_preview_hidden_wheel' // poolPreview true together with a Hidden wheel (#225)
 
 /** Whether the Selection mode spins a Lucky Wheel: only then the Hidden wheel and the Veto allowance apply. 1.5/1.6 modes add their own branches here. */
 export function hasWheel(mode: SelectionMode): boolean {
@@ -111,7 +114,7 @@ export function isFlat(values: number[]): boolean {
   return values.length >= 2 && values.every(value => value === values[0])
 }
 
-/** Defaults for a new Event: 2 teams × 3 (a 3v3), Game count 10, linear, Host pick (`admin_pick`), visible wheel, no Veto allowance. */
+/** Defaults for a new Event: 2 teams × 3 (a 3v3), Game count 10, linear, Host pick (`admin_pick`), visible wheel, no Veto allowance, Pool preview on. */
 export function defaultSettings(): EventSettings {
   return {
     format: 'teams',
@@ -122,6 +125,7 @@ export function defaultSettings(): EventSettings {
     selectionMode: 'admin_pick',
     hiddenWheel: false,
     vetoAllowance: null,
+    poolPreview: true,
   }
 }
 
@@ -203,24 +207,38 @@ export function parseSettings(input: unknown): Parsed {
   if (!oneOf(AVAILABLE_SELECTION_MODES, selectionMode)) return fail('mode_unavailable')
 
   const base = { format, teamCount, teamSize, gameCount, pointsTable: { preset, values: points }, selectionMode }
-  const { hiddenWheel, vetoAllowance } = input
+  const { hiddenWheel, vetoAllowance, poolPreview } = input
+  if (poolPreview !== undefined && typeof poolPreview !== 'boolean') return fail('invalid_settings')
   if (!hasWheel(selectionMode)) {
     if ((hiddenWheel !== undefined && hiddenWheel !== false) || (vetoAllowance !== undefined && vetoAllowance !== null)) return fail('wheel_options_without_wheel')
-    return { ok: true, settings: { ...base, hiddenWheel: false, vetoAllowance: null } }
+    return { ok: true, settings: { ...base, hiddenWheel: false, vetoAllowance: null, poolPreview: poolPreview ?? true } }
   }
 
   if (hiddenWheel !== undefined && typeof hiddenWheel !== 'boolean') return fail('invalid_settings')
+  // A Hidden wheel has no Pool preview: asking for both is refused, leaving it out means off (#225).
+  if (hiddenWheel === true && poolPreview === true) return fail('pool_preview_hidden_wheel')
+  const preview = hiddenWheel === true ? false : poolPreview ?? true
   // An absent or null allowance means „not chosen“: the default applies.
   if (vetoAllowance === undefined || vetoAllowance === null) {
-    return { ok: true, settings: { ...base, hiddenWheel: hiddenWheel ?? false, vetoAllowance: defaultVetoAllowance(teamSize) } }
+    return { ok: true, settings: { ...base, hiddenWheel: hiddenWheel ?? false, vetoAllowance: defaultVetoAllowance(teamSize), poolPreview: preview } }
   }
   if (!isInt(vetoAllowance)) return fail('invalid_settings')
   if (vetoAllowance < VETO_ALLOWANCE_MIN || vetoAllowance > VETO_ALLOWANCE_MAX) return fail('veto_allowance_range')
-  return { ok: true, settings: { ...base, hiddenWheel: hiddenWheel ?? false, vetoAllowance } }
+  return { ok: true, settings: { ...base, hiddenWheel: hiddenWheel ?? false, vetoAllowance, poolPreview: preview } }
 }
 
 /** The Hidden wheel of a stored row: a null counts as hidden, so a row that lost the value never shows a pool it should hide (N11). */
 export function storedHiddenWheel(stored: boolean | null): boolean {
+  return stored ?? true
+}
+
+/**
+ * The Pool preview of a stored row (#225). A Hidden wheel always has it off. Otherwise a null column is what the code
+ * before 0.6 writes (it creates Events and changes settings without the column, ADR 0007), and that code showed the pools
+ * whenever the wheel was not hidden: null reads as on.
+ */
+export function storedPoolPreview(stored: boolean | null, hiddenWheel: boolean | null): boolean {
+  if (storedHiddenWheel(hiddenWheel)) return false
   return stored ?? true
 }
 
@@ -234,16 +252,22 @@ export function settingsFromRow(row: {
   selectionMode: SelectionMode | null
   hiddenWheel: boolean | null
   vetoAllowance: number | null
+  poolPreview: boolean | null
 }): EventSettings | null {
   const { format, teamCount, teamSize, gameCount, pointsTable, selectionMode } = row
   if (format === null || teamCount === null || teamSize === null || gameCount === null || pointsTable === null || selectionMode === null) return null
-  return { format, teamCount, teamSize, gameCount, pointsTable, selectionMode, hiddenWheel: storedHiddenWheel(row.hiddenWheel), vetoAllowance: row.vetoAllowance }
+  return { format, teamCount, teamSize, gameCount, pointsTable, selectionMode, hiddenWheel: storedHiddenWheel(row.hiddenWheel), vetoAllowance: row.vetoAllowance, poolPreview: storedPoolPreview(row.poolPreview, row.hiddenWheel) }
 }
 
 // Changing the settings of an Event that exists (#147).
 
 /** Settings that stay fixed once the first Session has started (spec): games already played keep their rules. */
 export const LOCKED_WHEN_RUNNING = ['format', 'teamCount', 'pointsTable', 'selectionMode'] as const
+
+/** Whether any of the settings stays fixed once the first Session has started: the lock a row of „So wird gespielt“ carries (#225). */
+export function lockedWhenRunning(keys: readonly (keyof EventSettings)[]): boolean {
+  return keys.some(key => (LOCKED_WHEN_RUNNING as readonly string[]).includes(key))
+}
 
 /** Phase running or later: the first Session has started. */
 export function settingsLocked(phase: Phase): boolean {
@@ -275,9 +299,12 @@ export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_
 /**
  * The change put over the current settings, ready for parseSettings. Wheel values left over from the Lucky Wheel (from
  * `current`) never fail a Host pick Event, so they are dropped; ones the change itself sends stay and do fail, as on create.
+ * A change to a Hidden wheel that does not say anything about the Pool preview drops the carried-over one, so it defaults to
+ * off (#225); a change that itself sends `poolPreview: true` with a Hidden wheel stays and fails.
  */
 export function mergeSettings(current: EventSettings, change: Record<string, unknown>): Record<string, unknown> {
   const merged: Record<string, unknown> = { ...current, ...change }
+  if (change.hiddenWheel === true && !('poolPreview' in change)) delete merged.poolPreview
   if (merged.selectionMode === 'admin_pick') {
     if (!('hiddenWheel' in change)) delete merged.hiddenWheel
     if (!('vetoAllowance' in change)) delete merged.vetoAllowance
