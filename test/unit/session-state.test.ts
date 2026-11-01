@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasStarted, isRunning, nextSession, runningOf, sessionState, startRejection, type SessionTimes, type StartInput } from '../../shared/session-state'
+import { hasStarted, isRunning, nextSession, runningOf, sessionState, startRejection, teamsRejection, type SessionTimes, type StartInput } from '../../shared/session-state'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -132,5 +132,21 @@ describe('hasStarted and isRunning with every kind of instant', () => {
     expect(isRunning({ startedAt: 0, endedAt: null })).toBe(true)
     expect(isRunning({ startedAt: 0, endedAt: 0 })).toBe(false)
     expect(isRunning({ startedAt: null, endedAt: null })).toBe(false)
+  })
+})
+
+describe('teamsRejection (#228)', () => {
+  it('lets teams play when every team has the same number of Players', () => {
+    expect(teamsRejection(3, { 1: 2, 2: 2, 3: 2 })).toBeNull()
+  })
+
+  it('names a team without a Player first, then teams that differ in size', () => {
+    expect(teamsRejection(3, { 1: 2, 2: 2 })).toBe('teams_empty')
+    expect(teamsRejection(2, { 1: 3, 2: 2 })).toBe('teams_uneven')
+    expect(teamsRejection(2, { 1: 3 })).toBe('teams_empty')
+  })
+
+  it('looks at the teams the Event has, not at Players seated in teams past the count', () => {
+    expect(teamsRejection(2, { 1: 2, 2: 2, 5: 1 })).toBeNull()
   })
 })

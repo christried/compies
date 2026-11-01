@@ -2,7 +2,8 @@
 // #226). One home of "undated, set, running, ended", of "has started" and "is running", and of the start rule that
 // follows from them. Pure, so the server enforces them and the client shows the same state. The Worker does not import
 // this file (it needs only the `Place` of shared/board.ts), so a change here does not redeploy it. A running Session holds
-// the Event's Rounds from 0.7-03 (#228); they join this module as one more arm of the state, not as a tenth call site.
+// the Event's Rounds from 0.7-03 (#228); their rules are shared/rounds.ts, which asks this module for the Running Session
+// and for the equal-teams rule (`teamsRejection`) that starting a Session uses too.
 
 import type { BoardSettings, Seats } from './board'
 
@@ -61,8 +62,21 @@ export function nextSession<S extends { startsAt: Instant | null, startedAt: Ins
   return next
 }
 
+/** Why the teams cannot play now: one has no Player, or they differ in size. */
+export type TeamsRejection = 'teams_empty' | 'teams_uneven'
+
+/**
+ * The one equal-teams rule (spec #218 § Rounds): every team has a Player and the teams are equally big. Starting a Session
+ * and setting or spinning a game (#228) both ask here; `seats` counts the Players per team.
+ */
+export function teamsRejection(teamCount: number, seats: Seats): TeamsRejection | null {
+  const sizes = Array.from({ length: teamCount }, (_, index) => seats[index + 1] ?? 0)
+  if (sizes.some(size => size === 0)) return 'teams_empty'
+  return sizes.every(size => size === sizes[0]) ? null : 'teams_uneven'
+}
+
 /** Why a Session cannot start now (spec #153 § Game board rules module), in the order they are checked. */
-export type StartRejection = 'not_set_up' | 'session_running' | 'no_dated_session' | 'teams_empty' | 'teams_uneven'
+export type StartRejection = 'not_set_up' | 'session_running' | 'no_dated_session' | TeamsRejection
 
 export interface StartInput { settings: BoardSettings | null, sessions: readonly SessionTimes[], seats: Seats }
 
@@ -74,7 +88,5 @@ export function startRejection({ settings, sessions, seats }: StartInput): Start
   if (settings === null) return 'not_set_up'
   if (runningOf(sessions)) return 'session_running'
   if (nextSession(sessions) === null) return 'no_dated_session'
-  const sizes = Array.from({ length: settings.teamCount }, (_, index) => seats[index + 1] ?? 0)
-  if (sizes.some(size => size === 0)) return 'teams_empty'
-  return sizes.every(size => size === sizes[0]) ? null : 'teams_uneven'
+  return teamsRejection(settings.teamCount, seats)
 }

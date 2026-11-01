@@ -11,11 +11,13 @@ import {
   settingsLocked,
   defaultSettings,
   defaultVetoAllowance,
+  floorsAt,
   isFlat,
   mergeSettings,
   linearPoints,
   lockedWhenRunning,
   parseSettings,
+  playersPerTeam,
   poolHint,
   pointsFor,
   recommendedPoolSize,
@@ -23,6 +25,7 @@ import {
   settingsFromRow,
   storedPoolPreview,
   storedHiddenWheel,
+  type SettingsFloors,
   TEAM_SIZE_MIN,
   teamSizeFloor,
   withTeams,
@@ -485,13 +488,31 @@ describe('teamSizeFloor (#197)', () => {
   })
 })
 
+describe('playersPerTeam and floorsAt (#195, #228)', () => {
+  it('counts the Players of each team, index 0 = team 1, an empty team as 0', () => {
+    expect(playersPerTeam({ 1: 2, 3: 1 }, 3)).toEqual([2, 0, 1])
+    expect(playersPerTeam({ 1: 2 }, 0)).toEqual([])
+  })
+
+  it('reads all three floors from the facts, at the team count the change parses to', () => {
+    const facts = { playersPerTeam: [1, 3, 2], roundsStarted: 5 }
+
+    expect(floorsAt(facts, 3)).toEqual({ teamSize: 3, vetoAllowance: 0, gameCount: 5 })
+    expect(floorsAt(facts, 1)).toEqual({ teamSize: TEAM_SIZE_MIN, vetoAllowance: 0, gameCount: 5 })
+  })
+
+  it('counts every team when no team count is given: an Event that is not set up', () => {
+    expect(floorsAt({ playersPerTeam: [1, 3, 2], roundsStarted: 0 }).teamSize).toBe(3)
+  })
+})
+
 describe('checkSettingsChange', () => {
-  const floors = { teamSize: 1, vetoAllowance: 0 }
+  const floors = { teamSize: 1, vetoAllowance: 0, gameCount: 0 }
   const wheel = parseSettings(payload({ selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 3 }))
   const current = wheel.ok ? wheel.settings : defaultSettings()
   const admin = defaultSettings()
 
-  function check(change: unknown, context: { phase?: Phase, floors?: { teamSize: number, vetoAllowance: number } } = {}, from = current) {
+  function check(change: unknown, context: { phase?: Phase, floors?: SettingsFloors } = {}, from = current) {
     return checkSettingsChange(from, change, { phase: context.phase ?? 'poll', floors: () => context.floors ?? floors })
   }
 
@@ -590,22 +611,29 @@ describe('checkSettingsChange', () => {
 
   describe('floors', () => {
     it('refuses a Team size below the fullest team and accepts the same size', () => {
-      expect(check({ teamSize: 3 }, { floors: { teamSize: 4, vetoAllowance: 0 } })).toEqual({ ok: false, error: 'team_size_below_fullest' })
-      expect(check({ teamSize: 4 }, { floors: { teamSize: 4, vetoAllowance: 0 } }).ok).toBe(true)
+      expect(check({ teamSize: 3 }, { floors: { teamSize: 4, vetoAllowance: 0, gameCount: 0 } })).toEqual({ ok: false, error: 'team_size_below_fullest' })
+      expect(check({ teamSize: 4 }, { floors: { teamSize: 4, vetoAllowance: 0, gameCount: 0 } }).ok).toBe(true)
     })
 
     it('refuses a Veto allowance below the most Vetoes a Party has spent and accepts the same number', () => {
-      expect(check({ vetoAllowance: 1 }, { floors: { teamSize: 1, vetoAllowance: 2 } })).toEqual({ ok: false, error: 'veto_allowance_below_spent' })
-      expect(check({ vetoAllowance: 2 }, { floors: { teamSize: 1, vetoAllowance: 2 } }).ok).toBe(true)
+      expect(check({ vetoAllowance: 1 }, { floors: { teamSize: 1, vetoAllowance: 2, gameCount: 0 } })).toEqual({ ok: false, error: 'veto_allowance_below_spent' })
+      expect(check({ vetoAllowance: 2 }, { floors: { teamSize: 1, vetoAllowance: 2, gameCount: 0 } }).ok).toBe(true)
+    })
+
+    it('refuses a Game count below the Rounds started and accepts the same number (#228)', () => {
+      const started = { teamSize: 1, vetoAllowance: 0, gameCount: 4 }
+
+      expect(check({ gameCount: 3 }, { floors: started })).toEqual({ ok: false, error: 'game_count_below_started' })
+      expect(check({ gameCount: 4 }, { floors: started }).ok).toBe(true)
     })
 
     it('has no Veto floor without the Glücksrad', () => {
-      expect(check({ gameCount: 8 }, { floors: { teamSize: 1, vetoAllowance: 2 } }, admin).ok).toBe(true)
+      expect(check({ gameCount: 8 }, { floors: { teamSize: 1, vetoAllowance: 2, gameCount: 0 } }, admin).ok).toBe(true)
     })
 
     it('measures the Team size against the team count the change parses to (#197)', () => {
       const fourTeams = withTeams(defaultSettings(), 4, 3)
-      const floorsByCount = (count: number) => ({ teamSize: count >= 3 ? 3 : 1, vetoAllowance: 0 })
+      const floorsByCount = (count: number) => ({ teamSize: count >= 3 ? 3 : 1, vetoAllowance: 0, gameCount: 0 })
       const lowered = { teamCount: 2, teamSize: 1, pointsTable: { preset: 'linear', values: [1, 0] } }
       expect(checkSettingsChange(fourTeams, lowered, { phase: 'poll', floors: floorsByCount }).ok).toBe(true)
       expect(checkSettingsChange(fourTeams, { teamSize: 1 }, { phase: 'poll', floors: floorsByCount }))
@@ -624,7 +652,7 @@ describe('checkSettingsChange', () => {
     })
 
     it('checks the floors of a full payload too', () => {
-      expect(checkSettingsChange(null, payload({ teamSize: 2 }), { phase: 'poll', floors: () => ({ teamSize: 3, vetoAllowance: 0 }) }))
+      expect(checkSettingsChange(null, payload({ teamSize: 2 }), { phase: 'poll', floors: () => ({ teamSize: 3, vetoAllowance: 0, gameCount: 0 }) }))
         .toEqual({ ok: false, error: 'team_size_below_fullest' })
     })
 

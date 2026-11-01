@@ -82,6 +82,8 @@ export const API_ERROR_STATUS = {
   team_size_below_fullest: 409,
   /** A Veto allowance below the most Vetoes a Party has spent (#147). */
   veto_allowance_below_spent: 409,
+  /** A Game count below the Rounds already started (#228). */
+  game_count_below_started: 409,
   /** The Activity feed's `before` is not the id of an entry of this Event, or its `limit` is not a whole number from 1 to 100 (#159). */
   invalid_cursor: 400,
   /** Only the Host moves another Member on the Game board (#160). */
@@ -114,8 +116,14 @@ export const API_ERROR_STATUS = {
   teams_empty: 409,
   /** The teams differ in size (#164, start rule). */
   teams_uneven: 409,
-  /** No Session is running, so none can end (#164). */
+  /** No Session is running, so none can end (#164), and no game can be set (#228). */
   no_running_session: 409,
+  /** The Event has started as many Rounds as its Game count: no game can be set (#228). */
+  game_count_reached: 409,
+  /** A Round is being drawn: no game can be set, and that Round cannot be put back (#228). */
+  round_being_drawn: 409,
+  /** A Round id the Event does not hold, or one that was put back already (#228). */
+  round_not_found: 404,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

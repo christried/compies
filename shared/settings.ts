@@ -1,5 +1,6 @@
 // Event settings (#138, release 1.3): the values the stepper, the settings rules and the schema share.
 
+import type { Seats } from './board'
 import { beforeFinish, type Phase } from './event'
 import { isRecord } from './record'
 
@@ -279,10 +280,25 @@ export function settingsEditable(phase: Phase): boolean {
   return beforeFinish(phase)
 }
 
-/** The lowest values the Event allows now: Team size never below the fullest team, Veto allowance never below the most Vetoes a Party has spent. */
+/**
+ * The lowest values the Event allows now: Team size never below the fullest team, Veto allowance never below the most
+ * Vetoes a Party has spent, Game count never below the Rounds started (#228).
+ */
 export interface SettingsFloors {
   teamSize: number
   vetoAllowance: number
+  gameCount: number
+}
+
+/** What the floors are read from: the Players seated in each team (index 0 = team 1) and the Rounds started. */
+export interface FloorFacts {
+  playersPerTeam: readonly number[]
+  roundsStarted: number
+}
+
+/** The Players per team, index 0 = team 1, for `teamCount` teams: the server's seats and the editor's members both count here (#195). */
+export function playersPerTeam(seats: Seats, teamCount: number): number[] {
+  return Array.from({ length: teamCount }, (_, index) => seats[index + 1] ?? 0)
 }
 
 /**
@@ -294,7 +310,16 @@ export function teamSizeFloor(playersPerTeam: readonly number[], teamCount: numb
   return Math.max(TEAM_SIZE_MIN, ...playersPerTeam.slice(0, teamCount))
 }
 
-export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'wrong_phase'
+/**
+ * The floors at `teamCount` teams (#195, #228). Without a team count (an Event that is not set up) every team counts,
+ * so no Team size is offered below the fullest one. The Veto allowance floor stays 0 until 0.7-06 plugs the most Vetoes
+ * a Party has spent in here.
+ */
+export function floorsAt({ playersPerTeam: players, roundsStarted }: FloorFacts, teamCount: number = players.length): SettingsFloors {
+  return { teamSize: teamSizeFloor(players, teamCount), vetoAllowance: 0, gameCount: roundsStarted }
+}
+
+export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'game_count_below_started' | 'wrong_phase'
 
 /**
  * The change put over the current settings, ready for parseSettings. Wheel values left over from the Lucky Wheel (from
@@ -341,6 +366,7 @@ export function checkSettingsChange(
   const floors = context.floors(settings.teamCount)
   if (settings.teamSize < floors.teamSize) return { ok: false, error: 'team_size_below_fullest' }
   if (settings.vetoAllowance !== null && settings.vetoAllowance < floors.vetoAllowance) return { ok: false, error: 'veto_allowance_below_spent' }
+  if (settings.gameCount < floors.gameCount) return { ok: false, error: 'game_count_below_started' }
   return parsed
 }
 
