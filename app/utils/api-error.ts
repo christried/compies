@@ -77,6 +77,7 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   round_being_drawn: 'dock.setBlocked.round_being_drawn',
   no_wheel: 'dock.setBlocked.no_wheel',
   pool_empty: 'dock.setBlocked.pool_empty',
+  no_clip: 'error.noClip',
   round_not_found: 'error.roundNotFound',
   game_count_below_started: 'error.gameCountBelowStarted',
   no_countdown: 'error.noCountdown',

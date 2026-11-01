@@ -18,6 +18,7 @@ import { inviteUrl } from './links'
 import { startOf, teamChoiceOf } from './board'
 import { roundGameView } from './library'
 import { eventPools } from './pools'
+import { readClip } from './clip'
 import { countdownView, readCountdown } from './countdown'
 import { readDraws, readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
@@ -241,6 +242,11 @@ async function wheelView(db: Db, viewer: Viewer, hidden: boolean, left: string[]
         }
       : null,
   }
+}
+
+/** The clip that runs now (#230, spec #218 § Clip): every Member gets the same one while a Session runs, from the draw's stop on. */
+export async function clipSection(db: Db, eventRow: EventRow, rows: EventRows, now: Date): Promise<Pick<EventView, 'clip'>> {
+  return { clip: await readClip(db, eventRow.id, rows.sessions, now) }
 }
 
 /**

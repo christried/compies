@@ -180,6 +180,14 @@ export interface WheelView {
 }
 
 /**
+ * The clip that runs now (#230, GLOSSARY: Clip, spec #218 § Clip): the latest draw's, from its stop to the end of the game's clip length,
+ * for every Member alike. The instants are ISO; the client plays `clipPosition` of them against the server clock. `game.youtubeId`
+ * may be null: then the client shows the game's card for the clip's length. It is keyed by the draw, not by the Round: a Veto
+ * window (0.7-06) plays the clip of a draw that is not set yet.
+ */
+export interface ClipView { drawId: string, startAt: string, endsAt: string, game: RoundGame }
+
+/**
  * The Event's Countdown (#236, spec #218 § Countdown): its stored facts, the duration and either the remaining time (paused, ready)
  * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt).
  */
@@ -189,6 +197,8 @@ export interface CountdownView { durationMs: number, remainingMs: number, starte
 export interface RoundSet { roundId: string }
 /** What `POST /api/e/:slug/rounds/spin` returns: the Round being drawn and its draw (#229). */
 export interface RoundSpun { roundId: string, drawId: string }
+/** What `POST /api/e/:slug/clip/skip` returns: the draw whose clip was skipped (#230). */
+export interface ClipSkipped { drawId: string }
 /** What `DELETE /api/e/:slug/rounds/:id` returns: the Round that was put back (#228). */
 export interface RoundPutBack { roundId: string }
 
@@ -262,6 +272,8 @@ export interface EventView {
   setGame: SetGameView | null
   /** The Lucky Wheel (#229): in a running Session of a Lucky Wheel Event, else null. */
   wheel: WheelView | null
+  /** The clip that runs now (#230): while a Session runs, from a draw's stop to the end of its clip, unless the Host skipped it. Else null. */
+  clip: ClipView | null
   /** The Countdown of the running Session (#236): every Member gets it while a Session runs, null otherwise. */
   countdown: CountdownView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
