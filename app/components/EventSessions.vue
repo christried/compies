@@ -4,7 +4,7 @@ import { formatSessionWhen, formatSlotDay, formatSlotTime } from '~/utils/berlin
 import { shownSessionNumbers } from '~/utils/event-page'
 import { jumpTo, pollHeadingId } from '~/utils/jump'
 import { noteRows } from '~/utils/notes'
-import { SESSIONS_MAX, sessionsEditable, type EventView } from '~~/shared/event'
+import { SESSIONS_MAX, type EventView } from '~~/shared/event'
 import { isStarted, sessionState, type SessionState } from '~~/shared/session-state'
 
 // The Sessions card of the Event page (#49, #55, #166, 11-event-seite § EventSessions): one row per Session with its
@@ -21,9 +21,11 @@ const props = withDefaults(defineProps<{
   /** The shown number of the Session whose poll is on the page, and whether the poll is on the page at all. */
   pollNumber?: number | null
   pollOpen?: boolean
+  /** Sessions can be added, moved and removed in this Phase (the page's sessionsEditable, #238). */
+  canChangeSessions?: boolean
   /** The card stands out (shadow) when it is the news of the page (between two Sessions). */
   shadow?: boolean
-}>(), { pollNumber: null, pollOpen: false, shadow: false })
+}>(), { pollNumber: null, pollOpen: false, canChangeSessions: false, shadow: false })
 
 const emit = defineEmits<{
   reschedule: [sessionId: string]
@@ -36,7 +38,6 @@ const headingId = useId()
 
 const several = computed(() => props.view.sessions.length > 1)
 const isHost = computed(() => props.view.event.isHost)
-const canChangeSessions = computed(() => sessionsEditable(props.view.event.phase))
 const full = computed(() => props.view.sessions.length >= SESSIONS_MAX)
 
 // The look of the state pill (design `PILL`): the text carries the meaning, the dot only adds colour.

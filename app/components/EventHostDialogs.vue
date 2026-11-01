@@ -2,7 +2,7 @@
 import { Lock, Play } from '@lucide/vue'
 import { dateBlockedKey } from '~/utils/event-page'
 import { hasStarted } from '~~/shared/session-state'
-import { datePollOpen, sessionsEditable, type DatedSessionView, type EventView } from '~~/shared/event'
+import type { DatedSessionView, EventView } from '~~/shared/event'
 
 // The Host's dialogs and sheets of the Event page (#52, #55, #164): the Date confirm dialog, the reschedule dialog, the
 // Slot editor, the add-Session sheet and the start dialog. The page opens them (from the dock, the poll and the Sessions
@@ -16,6 +16,10 @@ const props = defineProps<{
   votes: ReturnType<typeof useOptimisticVotes>
   /** Refetches the Event, after the Slot editor changed it. */
   refresh: () => unknown
+  /** The Date poll is open (the page's datePollOpen, #238): the Slot editor is there. */
+  pollOpen: boolean
+  /** Sessions can be added in this Phase (the page's sessionsEditable, #238). */
+  canChangeSessions: boolean
 }>()
 
 const { t } = useI18n()
@@ -70,8 +74,7 @@ function rescheduleDate(startsAt: string) {
   return send('POST', `sessions/${rescheduleSessionId.value}/reschedule`, { body: { startsAt }, busy: rescheduling, done: () => (rescheduleOpen.value = false) })
 }
 
-// Adding a Session (#55): in every Phase before the Event finishes (sessionsEditable).
-const canChangeSessions = computed(() => sessionsEditable(props.view.event.phase))
+// Adding a Session (#55): in every Phase before the Event finishes (the page's canChangeSessions).
 const addOpen = ref(false)
 const adding = ref(false)
 
@@ -80,8 +83,7 @@ function addSession(startsAt: string | null) {
   return send('POST', 'sessions', { body: startsAt === null ? {} : { startsAt }, busy: adding, done: () => (addOpen.value = false) })
 }
 
-// The Slot editor (#15) is there while the Date poll is open (#164, datePollOpen).
-const pollOpen = computed(() => datePollOpen(props.view.event.phase, props.view.missingDates))
+// The Slot editor (#15) is there while the Date poll is open (#164, the page's pollOpen).
 const editing = ref(false)
 const editableSlots = computed(() => props.view.slots.map(slot => ({
   id: slot.id,
