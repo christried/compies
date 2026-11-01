@@ -169,7 +169,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     const raw = await rawRead(playerCookie, slug)
 
-    expect((JSON.parse(raw) as EventView).pools).toEqual({ hidden: true })
+    expect((JSON.parse(raw) as EventView).pools).toBeNull()
     for (const trace of secrets.flatMap(traces)) expect(raw).not.toContain(trace)
     expect(raw).not.toMatch(/api\/images/)
   })
@@ -197,7 +197,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const raw = await rawRead(hostCookie, slug)
 
     for (const trace of secrets.flatMap(traces)) expect(raw).toContain(trace)
-    expect((JSON.parse(raw) as EventView).pools).toMatchObject({ hidden: false, main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
+    expect((JSON.parse(raw) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
   })
 
   it('gives the Player the games once the wheel is not hidden, and nothing about the pools when it is hidden again', async () => {
@@ -205,7 +205,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     await setWheelHidden(false)
     const open = await rawRead(playerCookie, slug)
-    expect((JSON.parse(open) as EventView).pools).toMatchObject({ hidden: false, main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
+    expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
     for (const secret of secrets) {
       for (const trace of [secret.name, secret.id, secret.imageKey, secret.videoId]) expect(open).toContain(trace)
     }
@@ -213,13 +213,13 @@ describe('Hidden wheel secrecy (#148)', () => {
     await setWheelHidden(true)
     const closed = await rawRead(playerCookie, slug)
     for (const trace of secrets.flatMap(traces)) expect(closed).not.toContain(trace)
-    expect((JSON.parse(closed) as EventView).pools).toEqual({ hidden: true })
+    expect((JSON.parse(closed) as EventView).pools).toBeNull()
   })
 
   it('gives the Player the games of an Event with a visible Lucky wheel from the start', async () => {
     const { slug } = await setUp({ ...HIDDEN_WHEEL, hiddenWheel: false })
 
-    expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView).pools.hidden).toBe(false)
+    expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView).pools).not.toBeNull()
   })
 
   describe('the image route', () => {
@@ -461,7 +461,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { hiddenWheel: false } })).status).toBe(200)
 
       const open = await rawRead(playerCookie, slug)
-      expect((JSON.parse(open) as EventView).pools).toMatchObject({ hidden: false, main: [{ name: 'Alpha Arena' }, { name: 'Delta Dart' }], tiebreaker: [{ name: 'Gamma Garten' }] })
+      expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Delta Dart' }], tiebreaker: [{ name: 'Gamma Garten' }] })
       for (const game of [a, c, d]) for (const trace of traces(game)) expect(open, `the open Event read lacks ${trace}`).toContain(trace)
       expectNoTrace('the room', JSON.stringify(notifier.messages(eventId)), games)
 

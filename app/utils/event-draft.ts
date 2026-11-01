@@ -100,8 +100,8 @@ export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): Eve
     settings,
     hiddenWheel,
     vetoAllowance,
-    // The Host always gets the games; the guard only narrows the type.
-    pools: view.pools.hidden ? { main: [], tiebreaker: [] } : { main: [...view.pools.main], tiebreaker: [...view.pools.tiebreaker] },
+    // The Host always gets the games; null only narrows the type (a viewer without them has no editor).
+    pools: view.pools ? { main: [...view.pools.main], tiebreaker: [...view.pools.tiebreaker] } : { main: [], tiebreaker: [] },
   }
 }
 

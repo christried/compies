@@ -182,14 +182,14 @@ describe('the editor draft', () => {
   const kart = game('a', 'Mario Kart')
   const pong = game('b', 'Pong')
 
-  function view(settings: EventView['settings'], pools: EventView['pools'] = { hidden: false, main: [], tiebreaker: [] }): EventView {
+  function view(settings: EventView['settings'], pools: EventView['pools'] = { main: [], tiebreaker: [] }): EventView {
     return { settings, pools } as EventView
   }
 
   it('starts from the Event’s settings and pools', () => {
     const settings = { ...defaultSettings(), teamSize: 4, gameCount: 7 }
 
-    const draft = draftFromEvent(view(settings, { hidden: false, main: [kart, pong], tiebreaker: [pong] }))
+    const draft = draftFromEvent(view(settings, { main: [kart, pong], tiebreaker: [pong] }))
 
     expect(settingsOf(draft)).toEqual(settings)
     expect(draft.pools).toEqual({ main: [kart, pong], tiebreaker: [pong] })
@@ -221,8 +221,8 @@ describe('the editor draft', () => {
     expect(settingsOf(wheel).vetoAllowance).toBe(5)
   })
 
-  it('has no games when the pools are hidden from the viewer', () => {
-    const draft = draftFromEvent(view(defaultSettings(), { hidden: true }))
+  it('has no games when the viewer learns nothing about the pools', () => {
+    const draft = draftFromEvent(view(defaultSettings(), null))
 
     expect(draft.pools).toEqual({ main: [], tiebreaker: [] })
   })

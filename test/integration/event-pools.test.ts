@@ -145,7 +145,6 @@ describe('the pools of an Event (#146)', () => {
       const view = await read(hostCookie, slug)
 
       expect(view.pools).toEqual({
-        hidden: false,
         main: [
           { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'] },
           { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] },
@@ -158,7 +157,7 @@ describe('the pools of an Event (#146)', () => {
     it('gives the Host empty lists for an Event without pools', async () => {
       const { slug } = await createdEvent({})
 
-      expect((await read(hostCookie, slug)).pools).toEqual({ hidden: false, main: [], tiebreaker: [] })
+      expect((await read(hostCookie, slug)).pools).toEqual({ main: [], tiebreaker: [] })
     })
 
     it('gives every other Member nothing about the pools under a Hidden wheel, no count and not a trace of the games (the full test is hidden-wheel.test.ts, #148, #222)', async () => {
@@ -174,7 +173,7 @@ describe('the pools of an Event (#146)', () => {
       const raw = await response.text()
       const view = JSON.parse(raw) as EventView
 
-      expect(view.pools).toEqual({ hidden: true })
+      expect(view.pools).toBeNull()
       expect(raw).not.toContain('Geheimes Spiel')
       expect(raw).not.toContain('Anderes Spiel')
       expect(raw).not.toContain(secret.id)

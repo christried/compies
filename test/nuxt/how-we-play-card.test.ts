@@ -22,12 +22,11 @@ const wheel: EventSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel
 const hiddenWheel: EventSettings = { ...wheel, hiddenWheel: true }
 
 const visiblePools: EventPools = {
-  hidden: false,
   main: [poolGame('Mario Kart'), poolGame('Pong')],
   tiebreaker: [poolGame('Schach')],
 }
 
-type Props = { settings: EventSettings | null, pools: EventPools, isHost?: boolean, editTo?: string | null, locked?: boolean, hostName?: string }
+type Props = { settings: EventSettings | null, pools: EventPools | null, isHost?: boolean, editTo?: string | null, locked?: boolean, hostName?: string }
 function mountCard({ isHost = false, ...props }: Props) {
   return mountSuspended(HowWePlayCard, { props: { isHost, ...props } })
 }
@@ -67,14 +66,14 @@ describe('HowWePlayCard (#148)', () => {
   })
 
   it('says „Noch keine Spiele.“ for an empty pool', async () => {
-    const card = await mountCard({ settings: wheel, pools: { hidden: false, main: [poolGame('Pong')], tiebreaker: [] } })
+    const card = await mountCard({ settings: wheel, pools: { main: [poolGame('Pong')], tiebreaker: [] } })
 
     expect(card.findAll('ul')).toHaveLength(1)
     expect(card.text()).toContain('Noch keine Spiele.')
   })
 
   it('shows a Player nothing about the pools under a Hidden wheel: no count, no game, no note', async () => {
-    const card = await mountCard({ settings: hiddenWheel, pools: { hidden: true } })
+    const card = await mountCard({ settings: hiddenWheel, pools: null })
 
     expect(card.text()).toContain('Glücksrad (verdeckt)')
     expect(card.find('ul').exists()).toBe(false)
@@ -98,7 +97,7 @@ describe('HowWePlayCard (#148)', () => {
   })
 
   it('says what is missing without settings, to the Host and to a Member by name, and shows no rows and no pools', async () => {
-    const pools: EventPools = { hidden: true }
+    const pools = null as EventPools | null
     const host = await mountCard({ settings: null, pools, isHost: true })
     const member = await mountCard({ settings: null, pools, hostName: 'Sanne' })
 
@@ -166,7 +165,7 @@ describe('the card on the Event page (#148)', () => {
     const { slug } = serve(s => ({
       ...view(s, []),
       settings: wheel,
-      pools: { hidden: true },
+      pools: null,
     }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })

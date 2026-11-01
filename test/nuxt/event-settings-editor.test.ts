@@ -64,7 +64,7 @@ function setUp(setup: Setup = {}) {
     event: { isHost: setup.isHost ?? true, phase: setup.phase ?? 'poll' },
     settings: setup.settings === undefined ? defaultSettings() : setup.settings,
     settingsFloors: setup.floors,
-    pools: { hidden: false, ...(setup.pools ?? { main: [], tiebreaker: [] }) },
+    pools: setup.pools ?? { main: [], tiebreaker: [] },
     members: setup.members,
     teams: setup.teams,
   }))
@@ -221,7 +221,7 @@ describe('the settings editor', () => {
     const eventSettings = () => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'So wird gespielt'))!
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
-    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { hidden: false, main: [kart], tiebreaker: [] } }))
+    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { main: [kart], tiebreaker: [] } }))
     await goTo(page, 'Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Tiebreaker-Pool')

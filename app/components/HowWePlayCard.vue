@@ -6,14 +6,14 @@ import { hasWheel, LOCKED_WHEN_RUNNING, type EventSettings } from '~~/shared/set
 
 // „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl and Punkte of
 // the Event's settings for every Member, and the pools below them. `pools` is what the server decided this viewer may see
-// (poolsVisibleTo): the games, or under a Hidden wheel nothing about the pools, not even how many (#222). This component
+// (canSeePoolGames): the games, or null: nothing about the pools, not even how many (#222). This component
 // shows what it is given and never asks for more. The Host gets the games under a Hidden wheel too, with a note that
 // nobody else sees them. The Host can edit the settings for as long as the Event allows (`editTo` is the settings page,
 // null when they cannot). From the first Session on, the rows of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry
 // a lock, for Members too.
 const props = withDefaults(defineProps<{
   settings: EventSettings | null
-  pools: EventPools
+  pools: EventPools | null
   isHost: boolean
   /** The settings page, while the Host can still change the settings; null otherwise. */
   editTo?: string | null
@@ -48,12 +48,12 @@ const rows = computed(() => {
   ].map(row => ({ ...row, locked: props.locked && fixedWhenRunning(row.key) }))
 })
 
-const lists = computed(() => (props.pools.hidden
-  ? []
-  : [
+const lists = computed(() => (props.pools
+  ? [
       { key: 'main', title: t('howWePlay.mainPool'), games: props.pools.main },
       { key: 'tiebreaker', title: t('howWePlay.tiebreakerPool'), games: props.pools.tiebreaker },
-    ]))
+    ]
+  : []))
 </script>
 
 <template>
@@ -115,7 +115,7 @@ const lists = computed(() => (props.pools.hidden
         </div>
       </dl>
 
-      <template v-if="!pools.hidden">
+      <template v-if="pools">
         <NoticeBanner
           v-if="isHost && settings.hiddenWheel"
           tone="info"
