@@ -99,6 +99,20 @@
       "when": 1793524840569,
       "tag": "0013_renumber_releases",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793544956037,
+      "tag": "0014_game_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793547479122,
+      "tag": "0015_pool_preview",
+      "breakpoints": true
     }
   ]
 }

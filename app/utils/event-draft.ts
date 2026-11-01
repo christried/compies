@@ -1,5 +1,5 @@
 import type { EventView } from '~~/shared/event'
-import type { PoolGame } from '~~/shared/game'
+import { isFullPoolGame, type PoolGame } from '~~/shared/game'
 import { defaultSettings, defaultVetoAllowance, hasWheel, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
 
 // What the Host has entered in the stepper so far (#144). Nothing is sent until „Event erstellen“; then
@@ -27,14 +27,16 @@ export interface StepLocks {
   teamPlayers?: number[]
 }
 
-/** The settings as the steps edit them. The Lucky Wheel's options sit beside them in the draft; `settingsOf` joins both. */
-export type DraftSettings = Omit<EventSettings, 'hiddenWheel' | 'vetoAllowance'>
+/** The settings as the steps edit them. The Lucky Wheel's options and the Pool preview sit beside them in the draft; `settingsOf` joins them. */
+export type DraftSettings = Omit<EventSettings, 'hiddenWheel' | 'vetoAllowance' | 'poolPreview'>
 
 export interface EventDraft {
   name: string
   settings: DraftSettings
   /** „Rad verdecken“, kept while Host-Wahl is chosen so switching back restores it (#145). */
   hiddenWheel: boolean
+  /** „Pool vorher zeigen“ (#225): on by default, kept while Host-Wahl is chosen, and off under „Rad verdecken“. */
+  poolPreview: boolean
   /** The Host's Veto allowance, kept while Host-Wahl is chosen; null follows the Team size until the Host touches it (#145). */
   vetoAllowance: number | null
   /** The games of the Game pool and the Tiebreaker pool, in the order they were added (#146). Games, not ids, so the step and Fertig can show them. */
@@ -43,11 +45,12 @@ export interface EventDraft {
 }
 
 export function newDraft(): EventDraft {
-  const { hiddenWheel, vetoAllowance, ...settings } = defaultSettings()
+  const { hiddenWheel, vetoAllowance, poolPreview, ...settings } = defaultSettings()
   return {
     name: '',
     settings,
     hiddenWheel,
+    poolPreview,
     vetoAllowance,
     pools: { main: [], tiebreaker: [] },
     dates: { mode: 'poll', sessionCount: 1, slots: [''], direct: [''] },
@@ -59,10 +62,13 @@ export function vetoAllowanceOf(draft: Pick<EventDraft, 'vetoAllowance' | 'setti
   return draft.vetoAllowance ?? defaultVetoAllowance(draft.settings.teamSize)
 }
 
-/** The settings that are stored: only the Lucky Wheel has the wheel options, Host pick has none (#145). */
+/**
+ * The settings that are stored: only the Lucky Wheel has the wheel options, Host pick has none (#145). The Pool preview
+ * is the Host's choice, except under a Hidden wheel, where it is always off (#225).
+ */
 export function settingsOf(draft: EventDraft): EventSettings {
-  if (!hasWheel(draft.settings.selectionMode)) return { ...draft.settings, hiddenWheel: false, vetoAllowance: null }
-  return { ...draft.settings, hiddenWheel: draft.hiddenWheel, vetoAllowance: vetoAllowanceOf(draft) }
+  if (!hasWheel(draft.settings.selectionMode)) return { ...draft.settings, hiddenWheel: false, vetoAllowance: null, poolPreview: draft.poolPreview }
+  return { ...draft.settings, hiddenWheel: draft.hiddenWheel, vetoAllowance: vetoAllowanceOf(draft), poolPreview: draft.hiddenWheel ? false : draft.poolPreview }
 }
 
 /** A game into a pool, or out of it when it is in already (the picker's toggle button, #146). */
@@ -94,14 +100,17 @@ export function draftBody(draft: EventDraft) {
  * would follow the Team size. Name and dates are not edited here.
  */
 export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): EventDraft {
-  const { hiddenWheel, vetoAllowance, ...settings } = view.settings ?? defaultSettings()
+  const { hiddenWheel, vetoAllowance, poolPreview, ...settings } = view.settings ?? defaultSettings()
   return {
     ...newDraft(),
     settings,
     hiddenWheel,
+    poolPreview,
     vetoAllowance,
-    // The Host always gets the games; the guard only narrows the type.
-    pools: view.pools.hidden ? { main: [], tiebreaker: [] } : { main: [...view.pools.main], tiebreaker: [...view.pools.tiebreaker] },
+    // The Host always gets the games whole; null and the face only (a Member's) only narrow the type, a Member has no editor.
+    pools: view.pools
+      ? { main: view.pools.main.filter(isFullPoolGame), tiebreaker: view.pools.tiebreaker.filter(isFullPoolGame) }
+      : { main: [], tiebreaker: [] },
   }
 }
 

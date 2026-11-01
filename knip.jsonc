@@ -17,7 +17,9 @@
         "server/dev/sign-in.ts!",
         // The browser checks are run with node by agents (scripts/browser/README.md); cdp.mjs is what they import.
         "scripts/browser/moves.mjs!",
-        "scripts/browser/shots.mjs!"
+        "scripts/browser/shots.mjs!",
+        // Run with node by /implement-spec before each new implementer (.claude/skills/implement-spec/SKILL.md).
+        "scripts/context-usage.mjs!"
       ],
       "ignore": [
         // The design hand-off and its prototype scripts are reference material, not shipped (also ignored by eslint).

@@ -36,7 +36,7 @@ const teamPlayers = computed(() => {
 })
 const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value }))
 
-const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { hidden: false, main: [], tiebreaker: [] } }))
+const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { main: [], tiebreaker: [] } }))
 
 const heading = computed(() => t(notSetUp.value ? 'eventSettings.setupHeading' : 'eventSettings.heading'))
 useHead({ title: () => `${heading.value} · ${data.value?.event.name ?? ''}` })

@@ -368,8 +368,8 @@ describe('events', () => {
       const guest = (await testDb.db.select().from(users)).find(user => user.id !== row!.hostId)
       await testDb.db.insert(eventMembers).values({ eventId: row!.id, userId: guest!.id })
 
-      expect((await (await read(cookie, slug)).json()).settings).toEqual(TEST_SETTINGS)
-      expect((await (await read(memberCookie, slug)).json()).settings).toEqual(TEST_SETTINGS)
+      expect((await (await read(cookie, slug)).json()).settings).toEqual({ ...TEST_SETTINGS, poolPreview: true })
+      expect((await (await read(memberCookie, slug)).json()).settings).toEqual({ ...TEST_SETTINGS, poolPreview: true })
     })
 
     it('shows null for an Event from before 1.3 that was never set up (#144)', async () => {

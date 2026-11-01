@@ -108,6 +108,7 @@ describe('publishing to the room', () => {
       ['setting a Date', () => send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId: slotIds[0] })],
       ['adding a Session', () => send('POST', `/api/e/${slug}/sessions`, hostCookie, {})],
       ['changing the settings', () => send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 12 } })],
+      ['turning the Pool preview off (#225)', () => send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { poolPreview: false } })],
       ['rotating the Invite link', () => send('POST', `/api/e/${slug}/rotate`, hostCookie)],
     ]
 

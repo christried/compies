@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { canEditGame, canSeeLibrary, type GameView, type PoolGame } from '../../shared/game'
+import { canEditGame, canSeeLibrary, type GameView, type PoolGame, type PoolGameFace } from '../../shared/game'
 import { shownName, type AuthUser } from '../../shared/auth'
 import { games, users } from '../db/schema'
 import { isUuid } from '../domain/uuid'
@@ -42,19 +42,27 @@ export async function loadGame(db: Db, id: string): Promise<{ game: typeof games
   return { game: row.game, creatorName: creatorNameOf(row) }
 }
 
-/** A games row as an Event's pool shows it (#146): what GameCard needs, no creator and no edit rights. */
-export function poolGameView(row: typeof games.$inferSelect): PoolGame {
+/** A games row as an Event's pool shows it to a Member (#224): picture and name only. */
+export function poolGameFace(row: typeof games.$inferSelect): PoolGameFace {
   return {
     id: row.id,
     name: row.name,
     // Served by GET /api/images/:key; a replaced image gets a new key, so its URL never serves stale (#143).
     imageUrl: row.imageKey ? `/api/images/${row.imageKey}` : null,
     youtubeId: row.youtubeId,
+  }
+}
+
+/** A games row as the Host's pool shows it (#146): the face plus what GameCard shows and the notes (#224), no creator and no edit rights. */
+export function poolGameView(row: typeof games.$inferSelect): PoolGame {
+  return {
+    ...poolGameFace(row),
     clipStart: row.clipStart,
     clipLength: row.clipLength,
     playersMin: row.playersMin,
     playersMax: row.playersMax,
     suitabilities: row.suitabilities,
+    notes: row.notes,
   }
 }
 

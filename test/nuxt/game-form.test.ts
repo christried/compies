@@ -19,6 +19,7 @@ const saved: GameView = {
   createdBy: { id: kitty.id, name: 'Kitty' },
   createdAt: '2026-10-28T10:00:00.000Z',
   canEdit: true,
+  notes: null,
 }
 
 // One endpoint for the file; each test sets whether it fails and sees what was posted.
@@ -187,7 +188,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
-    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] })
+    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: '' })
   })
 
   it('saves a game without a link and without a clip', async () => {
@@ -197,7 +198,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(posted).toHaveBeenCalled())
-    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] })
+    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: '' })
   })
 
   describe('player count and Suitabilities (#142, #171)', () => {
@@ -269,6 +270,123 @@ describe('the game form', () => {
 
       await vi.waitFor(() => expect(posted).toHaveBeenCalled())
       expect(posted).toHaveBeenCalledWith(expect.objectContaining({ suitabilities: ['one_v_one'] }))
+    })
+  })
+
+  describe('game notes (#223)', () => {
+    const NOTES_MAX = 1000
+
+    function notesField(page: Page) {
+      return field(page, 'Notizen')
+    }
+
+    it('takes the notes in a textbox that keeps the line breaks the User types', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      const notes = 'Settings: 3 Runden\nWarmup: Lobby\n\nWin: meiste Punkte'
+
+      expect(notesField(page).element.tagName).toBe('TEXTAREA')
+      await notesField(page).setValue(notes)
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ notes })))
+    })
+
+    it('shows no counter while the notes are short, and the counter from 800 characters', async () => {
+      const page = await mountSuspended(GameForm)
+
+      await notesField(page).setValue('a'.repeat(799))
+      expect(page.text()).not.toContain(`/${NOTES_MAX}`)
+
+      await notesField(page).setValue('a'.repeat(800))
+      expect(page.text()).toContain(`800/${NOTES_MAX}`)
+    })
+
+    it('accepts exactly 1000 characters without a message', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await notesField(page).setValue('a'.repeat(NOTES_MAX))
+
+      expect(page.text()).not.toContain('Höchstens 1000 Zeichen.')
+      expect(cta(page).attributes('aria-disabled')).not.toBe('true')
+    })
+
+    it('shows the red message for 1001 characters, blocks saving with the same reason and sends nothing', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await notesField(page).setValue('a'.repeat(NOTES_MAX + 1))
+
+      const message = page.findAll('span').find(el => el.text() === 'Höchstens 1000 Zeichen.')
+      expect(message).toBeDefined()
+      expect(message!.classes()).toContain('text-error-fg')
+      expect(notesField(page).attributes('aria-invalid')).toBe('true')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Höchstens 1000 Zeichen.')
+
+      await page.get('form').trigger('submit')
+
+      expect(posted).not.toHaveBeenCalled()
+    })
+
+    it('counts an emoji once: 999 letters and one family emoji are no problem', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await notesField(page).setValue(`${'a'.repeat(999)}\u{1F468}‍\u{1F469}‍\u{1F467}`)
+
+      expect(page.text()).not.toContain('Höchstens 1000 Zeichen.')
+      expect(cta(page).attributes('aria-disabled')).not.toBe('true')
+    })
+
+    it('shows the notes of a game being edited and saves them with PATCH', async () => {
+      patchedWith.mockClear()
+      const page = await mountSuspended(GameForm, { props: { game: { ...saved, notes: 'Settings: 3 Runden\nWin: Punkte' } } })
+
+      expect((notesField(page).element as HTMLTextAreaElement).value).toBe('Settings: 3 Runden\nWin: Punkte')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ notes: 'Settings: 3 Runden\nWin: Punkte' })))
+    })
+
+    it('marks the notes field as one that grows with its text', async () => {
+      const page = await mountSuspended(GameForm)
+
+      expect(notesField(page).classes()).toContain('field-sizing-content')
+    })
+
+    it('sets the height from the text where the browser cannot size the field itself', async () => {
+      vi.stubGlobal('CSS', { supports: () => false })
+      try {
+        const page = await mountSuspended(GameForm)
+        const area = notesField(page)
+        Object.defineProperty(area.element, 'scrollHeight', { value: 120, configurable: true })
+
+        await area.setValue('Zeile\nZeile\nZeile\nZeile\nZeile\nZeile')
+
+        expect((area.element as HTMLTextAreaElement).style.height).toBe('124px')
+      }
+      finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('leaves the height to the browser where it sizes the field itself', async () => {
+      vi.stubGlobal('CSS', { supports: () => true })
+      try {
+        const page = await mountSuspended(GameForm)
+        const area = notesField(page)
+        Object.defineProperty(area.element, 'scrollHeight', { value: 120, configurable: true })
+
+        await area.setValue('Zeile\nZeile\nZeile\nZeile\nZeile\nZeile')
+
+        expect((area.element as HTMLTextAreaElement).style.height).toBe('')
+      }
+      finally {
+        vi.unstubAllGlobals()
+      }
     })
   })
 

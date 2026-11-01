@@ -86,6 +86,8 @@ export const events = pgTable('events', {
   pointsTable: jsonb('points_table').$type<PointsTable>(),
   selectionMode: selectionMode('selection_mode'),
   hiddenWheel: boolean('hidden_wheel'),
+  // Pool preview (#225): null only for Events not set up and rows the code before 0.6 wrote (storedPoolPreview reads it as on unless the wheel is hidden).
+  poolPreview: boolean('pool_preview'),
   vetoAllowance: integer('veto_allowance'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
@@ -182,6 +184,8 @@ export const games = pgTable('games', {
   playersMax: integer('players_max'),
   /** What kind of play the game works for, any number of them (#171). Was `formats` until 0007. */
   suitabilities: gameSuitability('suitabilities').array().default(sql`'{}'`).notNull(),
+  // Game notes (#223): plain text, at most GAME_NOTES_MAX characters; null = none.
+  notes: text('notes'),
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: createdAt(),
   updatedAt: updatedAt(),

@@ -1,7 +1,7 @@
 import { asc, eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { eventMembers, eventTeams, pollSlots, pollVotes, users } from '../db/schema'
-import { poolsVisibleTo } from '../domain/pool-visibility'
+import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
@@ -148,15 +148,16 @@ export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): 
   const [floors, pools] = await Promise.all([
     // The floors at the saved team count; an Event that is not set up counts all teams (#197).
     viewer.isHost ? settingsFloors(db, eventRow.id).then(floorsAt => floorsAt(settings?.teamCount ?? Number.POSITIVE_INFINITY)) : null,
-    eventPools(db, eventRow.id, poolsVisibleTo({ isHost: viewer.isHost, settings })),
+    // Nothing about the pools is selected for a viewer who may not see them (#222).
+    canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings })) ? eventPools(db, eventRow.id, viewer.isHost) : null,
   ])
   return {
     settings,
     settingsFloors: floors,
-    // The Host sees the games of both pools; every other Member only while the wheel is not hidden, else nothing about
-    // the pools, not even how many (#146, #148, #222). Under a Hidden wheel NO other field of this response may carry a
-    // pool game (name, id, image key, video id): the Members, Sessions and Votes in the other sections must stay free of
-    // them. The test hidden-wheel.test.ts reads the raw response to keep it so.
+    // The Host sees the games of both pools; every other Member only while the Pool preview is on, else null: nothing
+    // about the pools, not even how many (#146, #148, #222, #225). Then NO other field of this response may carry a pool
+    // game (name, id, image key, video id, notes): the Members, Sessions and Votes in the other sections must stay free
+    // of them. The tests hidden-wheel.test.ts and pool-preview.test.ts read the raw response to keep it so.
     pools,
   }
 }
