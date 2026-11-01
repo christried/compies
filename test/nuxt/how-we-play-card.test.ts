@@ -32,7 +32,7 @@ function mountCard({ isHost = false, ...props }: Props) {
 }
 
 describe('HowWePlayCard (#148)', () => {
-  it('shows the settings as four rows: Format, Spiele, Auswahl and Punkte', async () => {
+  it('shows the settings as rows: Format, Spiele, Auswahl, Vetos with the Lucky Wheel, and Punkte', async () => {
     const card = await mountCard({ settings: wheel, pools: visiblePools })
 
     expect(card.get('h2').text()).toBe('So wird gespielt')
@@ -40,7 +40,8 @@ describe('HowWePlayCard (#148)', () => {
     expect(rows).toEqual([
       ['Format', '4 Teams à 2'],
       ['Spiele', '6 Spiele'],
-      ['Auswahl', 'Glücksrad, 3 Vetos pro Partei'],
+      ['Auswahl', 'Glücksrad'],
+      ['Vetos', '3 pro Partei'],
       ['Punkte', 'Linear 3 / 2 / 1 / 0'],
     ])
   })
@@ -81,6 +82,58 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.text()).not.toContain('Tiebreaker-Pool')
     expect(card.text()).not.toContain('verrät')
     expect(card.text()).not.toContain('Das Rad ist verdeckt')
+  })
+
+  // The Auswahl row (#225): the four cases of the Selection mode, the Hidden wheel and the Pool preview.
+  const auswahl = (card: Awaited<ReturnType<typeof mountCard>>) => card.findAll('dl > div').find(row => row.get('dt').text() === 'Auswahl')!.get('dd').text()
+
+  it.each([
+    ['a visible wheel with the Pool preview', wheel, 'Glücksrad'],
+    ['a Hidden wheel', hiddenWheel, 'Glücksrad (verdeckt)'],
+    ['a visible wheel with the Pool preview off', { ...wheel, poolPreview: false }, 'Glücksrad, Spiele erst am Rad'],
+    ['Host pick with the Pool preview off', { ...defaultSettings(), poolPreview: false }, 'Host-Wahl, Spiele erst beim Setzen'],
+    ['Host pick with the Pool preview', defaultSettings(), 'Host-Wahl'],
+  ])('reads the Auswahl row for %s', async (_name, settings, expected) => {
+    const card = await mountCard({ settings, pools: null })
+
+    expect(auswahl(card)).toBe(expected)
+  })
+
+  it('shows a Member no pool list and no number with the Pool preview off', async () => {
+    const card = await mountCard({ settings: { ...wheel, poolPreview: false }, pools: null })
+
+    expect(card.find('ul').exists()).toBe(false)
+    expect(card.findAll('h3')).toHaveLength(0)
+    expect(card.text()).not.toMatch(/Spielepool|Tiebreaker|Noch keine Spiele/)
+    expect(card.text()).not.toContain('Pool vorher zeigen')
+  })
+
+  describe('the Host notice with the Pool preview off (#225)', () => {
+    it('says the others see the games only at the wheel, with the Lucky Wheel, and the Host keeps both pools', async () => {
+      const card = await mountCard({ settings: { ...wheel, poolPreview: false }, pools: visiblePools, isHost: true })
+
+      expect(card.text()).toContain('Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.')
+      expect(card.text()).toContain('Nur du siehst das')
+      expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong', 'Schach'])
+    })
+
+    it('says the others see the games only once the Host sets them, with Host pick', async () => {
+      const card = await mountCard({ settings: { ...defaultSettings(), poolPreview: false }, pools: visiblePools, isHost: true })
+
+      expect(card.text()).toContain('Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt.')
+      expect(card.text()).not.toContain('am Rad')
+    })
+
+    it('is not shown to a Member, with the Pool preview on, or instead of the Hidden wheel notice', async () => {
+      const member = await mountCard({ settings: { ...wheel, poolPreview: false }, pools: null })
+      const previewOn = await mountCard({ settings: wheel, pools: visiblePools, isHost: true })
+      const hidden = await mountCard({ settings: hiddenWheel, pools: visiblePools, isHost: true })
+
+      expect(member.text()).not.toContain('Pool vorher zeigen')
+      expect(previewOn.text()).not.toContain('Pool vorher zeigen')
+      expect(hidden.text()).toContain('Das Rad ist verdeckt')
+      expect(hidden.text()).not.toContain('Pool vorher zeigen')
+    })
   })
 
   it('shows the Host the games under a Hidden wheel, with the note that only they see them', async () => {
@@ -125,12 +178,12 @@ describe('HowWePlayCard (#148)', () => {
   })
 
   // The settings that stay fixed once the first Session has started (LOCKED_WHEN_RUNNING) carry a lock on their row; the
-  // header says nothing. Spiele can still change, so it has none.
+  // header says nothing. Spiele and Vetos can still change, so they have none.
   const lockedRows = (card: Awaited<ReturnType<typeof mountCard>>) => card.findAll('dl > div')
     .filter(row => row.find('[title="Fest seit dem Start"]').exists())
     .map(row => row.get('dt').text())
 
-  it('marks Format, Auswahl and Punkte with a lock named „Fest seit dem Start“ after the first start, and Spiele with none', async () => {
+  it('marks Format, Auswahl and Punkte with a lock named „Fest seit dem Start“ after the first start, with none on Spiele and Vetos', async () => {
     const host = await mountCard({ settings: wheel, pools: visiblePools, isHost: true, editTo: '/e/x/einstellungen', locked: true })
 
     expect(lockedRows(host)).toEqual(['Format', 'Auswahl', 'Punkte'])

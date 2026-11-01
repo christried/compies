@@ -1395,11 +1395,13 @@
       "teams": "{n} Teams à {s}",
       "games": "{n} Spiel | {n} Spiele",
       "hidden": "{mode} (verdeckt)",
+      "previewOffWheel": "{mode}, Spiele erst am Rad",
+      "previewOffPick": "{mode}, Spiele erst beim Setzen",
       "sentence": "{teams}, {mode}, {games}.",
       "format": "Format",
       "gamesLabel": "Spiele",
       "points": "Punkte",
-      "mode": "Modus",
+      "mode": "Auswahl",
       "vetoes": "Vetos",
       "vetoValue": "{n} pro Partei",
       "pool": "Pool",
@@ -1414,8 +1416,6 @@
   },
   "howWePlay": {
     "title": "So wird gespielt",
-    "mode": "Auswahl",
-    "vetoes": "{n} Veto pro Partei | {n} Vetos pro Partei",
     "edit": "Bearbeiten",
     "locked": "Fest seit dem Start",
     "emptyHost": "Noch nicht festgelegt. Format, Spiele und Punkte legst du beim Einrichten fest.",
@@ -1423,7 +1423,9 @@
     "mainPool": "Spielepool",
     "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",
-    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden."
+    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.",
+    "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
+    "previewOffPick": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt."
   },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
