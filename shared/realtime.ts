@@ -51,6 +51,11 @@ export type RoomMessage
     | { type: 'round.spun', roundId: string, drawId: string, spinStartAt: string, stopAt: string, slices: number, resultIndex: number, resultOffset: number, labels: string[] | null }
   /** The Host changed the Countdown (#236): set, started, paused, reset or cleared. No payload; the client refetches the Event read. */
     | { type: 'countdown.changed' }
+  /**
+   * A Player of `team` cast a Veto on `drawId` (#231, spec #218 § Realtime room). Sent to the Users of that Party only (the named
+   * send, #227), the Host only when the Host plays in it; never broadcast, so no other Party learns that someone vetoed.
+   */
+    | { type: 'veto.cast', drawId: string, team: number }
 
 export type RoomMessageType = RoomMessage['type']
 

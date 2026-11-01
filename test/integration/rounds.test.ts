@@ -99,9 +99,10 @@ describe('Rounds', () => {
   /**
    * A Running Session of an Event with two teams of two (One and Two in team 1, Three and Four in team 2) and three games:
    * Halo and Kart in the Game pool, Schach only in the library. Every game has notes. The Game count is `gameCount`.
-   * With `wheel` the Selection mode is the Lucky Wheel (visible, the Pool preview on unless `poolPreview` says otherwise).
+   * With `wheel` the Selection mode is the Lucky Wheel (visible, the Pool preview on unless `poolPreview` says otherwise, no Veto allowance
+   * unless `vetoAllowance` says otherwise: these tests are about the draw, the Veto window is vetoes.test.ts's).
    */
-  async function running({ gameCount = 10, wheel = false, poolPreview }: { gameCount?: number, wheel?: boolean, poolPreview?: boolean } = {}) {
+  async function running({ gameCount = 10, wheel = false, poolPreview, vetoAllowance = 0 }: { gameCount?: number, wheel?: boolean, poolPreview?: boolean, vetoAllowance?: number } = {}) {
     setAllowlist({ hosts: 'discord:1' })
     const hostCookie = (await signIn(testDb.db, host)).cookie
     const cookies: Record<keyof typeof players, string> = {
@@ -110,7 +111,7 @@ describe('Rounds', () => {
       three: (await signIn(testDb.db, players.three)).cookie,
       four: (await signIn(testDb.db, players.four)).cookie,
     }
-    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings: { ...TEST_SETTINGS, teamSize: 2, gameCount, ...(wheel ? { selectionMode: 'lucky_wheel' } : {}), ...(poolPreview === undefined ? {} : { poolPreview }) } })
+    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings: { ...TEST_SETTINGS, teamSize: 2, gameCount, ...(wheel ? { selectionMode: 'lucky_wheel', vetoAllowance } : {}), ...(poolPreview === undefined ? {} : { poolPreview }) } })
     const { slug } = await created.json() as { slug: string }
     const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
     const eventId = eventRow!.id
@@ -298,6 +299,8 @@ describe('Rounds', () => {
     it('refuses while a Round is being drawn with 409 round_being_drawn, and does not put that Round back', async () => {
       const game = await running()
       const [drawn] = await testDb.db.insert(rounds).values({ eventId: game.eventId, startedAt: new Date(T0) }).returning()
+      // A Round is being drawn while one of its draws is open (#231).
+      await testDb.db.insert(draws).values({ roundId: drawn!.id, gameId: game.kart.id, source: 'pool', kind: 'set', committedAt: new Date(T0), stopAt: new Date('2090-10-30T11:00:00.000Z') })
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'round_being_drawn' })
       expect((await read(game)).setGame?.rejection).toBe('round_being_drawn')
@@ -697,7 +700,7 @@ describe('Rounds', () => {
         const game = await running({ wheel: true, poolPreview: false })
 
         for (const cookie of [game.hostCookie, game.cookies.three]) {
-          expect((await read(game, cookie)).wheel).toEqual({ count: 2, slices: [{ id: game.halo.id, name: 'Halo' }, { id: game.kart.id, name: 'Kart' }], spin: null })
+          expect((await read(game, cookie)).wheel).toMatchObject({ count: 2, slices: [{ id: game.halo.id, name: 'Halo' }, { id: game.kart.id, name: 'Kart' }], spin: null })
         }
         expect((await read(game, game.cookies.three)).pools).toBeNull()
       })

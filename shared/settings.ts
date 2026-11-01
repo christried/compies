@@ -290,10 +290,12 @@ export interface SettingsFloors {
   gameCount: number
 }
 
-/** What the floors are read from: the Players seated in each team (index 0 = team 1) and the Rounds started. */
+/** What the floors are read from: the Players seated in each team (index 0 = team 1), the Rounds started and the most Vetoes any Party has cast. */
 export interface FloorFacts {
   playersPerTeam: readonly number[]
   roundsStarted: number
+  /** The most Vetoes any one Party has cast in the Event, settled or not (#231). */
+  vetoesSpent: number
 }
 
 /** The Players per team, index 0 = team 1, for `teamCount` teams: the server's seats and the editor's members both count here (#195). */
@@ -312,14 +314,24 @@ export function teamSizeFloor(playersPerTeam: readonly number[], teamCount: numb
 
 /**
  * The floors at `teamCount` teams (#195, #228). Without a team count (an Event that is not set up) every team counts,
- * so no Team size is offered below the fullest one. The Veto allowance floor stays 0 until 0.7-06 plugs the most Vetoes
- * a Party has spent in here.
+ * so no Team size is offered below the fullest one. The Veto allowance floor is the most Vetoes any Party has cast (#231).
  */
-export function floorsAt({ playersPerTeam: players, roundsStarted }: FloorFacts, teamCount: number = players.length): SettingsFloors {
-  return { teamSize: teamSizeFloor(players, teamCount), vetoAllowance: 0, gameCount: roundsStarted }
+export function floorsAt({ playersPerTeam: players, roundsStarted, vetoesSpent }: FloorFacts, teamCount: number = players.length): SettingsFloors {
+  return { teamSize: teamSizeFloor(players, teamCount), vetoAllowance: vetoesSpent, gameCount: roundsStarted }
 }
 
-export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'game_count_below_started' | 'wrong_phase'
+/**
+ * Settings that stay fixed while a Round is being drawn (#231, review 1.4 A3): the wheel spins or a Veto window runs. „Rad
+ * verdecken“ would change what the Players see of a draw that is under way.
+ */
+export const LOCKED_WHILE_DRAWN = ['hiddenWheel'] as const
+
+/** Whether any of the settings stays fixed while a Round is being drawn: the lock the settings screen shows next to the phase lock. */
+export function lockedWhileDrawn(keys: readonly (keyof EventSettings)[]): boolean {
+  return keys.some(key => (LOCKED_WHILE_DRAWN as readonly string[]).includes(key))
+}
+
+export type SettingsChangeError = SettingsError | 'setting_locked' | 'hidden_wheel_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'game_count_below_started' | 'wrong_phase'
 
 /**
  * The change put over the current settings, ready for parseSettings. Wheel values left over from the Lucky Wheel (from
@@ -340,14 +352,15 @@ export function mergeSettings(current: EventSettings, change: Record<string, unk
 /**
  * Checks a change of an Event's settings. `current` null = not set up: the change must then be a full payload (parseSettings).
  * Otherwise the change is merged over `current` (only keys present in `change`), then: wrong_phase when the Phase is not
- * settingsEditable; in a settingsLocked Phase any LOCKED_WHEN_RUNNING key whose value differs → setting_locked; then
+ * settingsEditable; in a settingsLocked Phase any LOCKED_WHEN_RUNNING key whose value differs → setting_locked; while a Round
+ * is being drawn any LOCKED_WHILE_DRAWN key whose value differs → hidden_wheel_locked (#231); then
  * parseSettings on the merged settings; then the floors. The floors come as a function of the team count, called with the
  * parsed one: a change that lowers the team count is measured against the teams that remain (#197).
  */
 export function checkSettingsChange(
   current: EventSettings | null,
   change: unknown,
-  context: { phase: Phase, floors: (teamCount: number) => SettingsFloors },
+  context: { phase: Phase, floors: (teamCount: number) => SettingsFloors, roundBeingDrawn: boolean },
 ): { ok: true, settings: EventSettings } | { ok: false, error: SettingsChangeError } {
   if (!settingsEditable(context.phase)) return { ok: false, error: 'wrong_phase' }
   if (!isRecord(change)) return { ok: false, error: 'invalid_settings' }
@@ -356,6 +369,9 @@ export function checkSettingsChange(
   if (current !== null) {
     if (settingsLocked(context.phase) && LOCKED_WHEN_RUNNING.some(key => key in change && !sameValue(change[key], current[key]))) {
       return { ok: false, error: 'setting_locked' }
+    }
+    if (context.roundBeingDrawn && LOCKED_WHILE_DRAWN.some(key => key in change && !sameValue(change[key], current[key]))) {
+      return { ok: false, error: 'hidden_wheel_locked' }
     }
     merged = mergeSettings(current, change)
   }

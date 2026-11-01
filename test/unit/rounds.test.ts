@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gamesLeft, isOpen, roundsStarted, roundState, setRejection, spinRejection, type DrawFacts, type RoundFacts, type SetInput, type SpinInput } from '../../shared/rounds'
+import { VETO_WINDOW_MS, drawOutcome, gamesLeft, isBeingDrawn, isOpen, opensWindow, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
 import type { SessionTimes } from '../../shared/session-state'
 import { floorsAt } from '../../shared/settings'
 
@@ -10,6 +10,8 @@ const at = (hour: number) => Date.UTC(2090, 10, 7, hour)
 
 const round = (id: string, fields: Partial<RoundFacts> = {}): RoundFacts => ({ id, setAt: at(19), putBackAt: null, ...fields })
 const draw = (roundId: string, gameId: string, fields: Partial<DrawFacts> = {}): DrawFacts => ({ roundId, gameId, source: 'pool', outcome: 'set', ...fields })
+const open = (roundId: string): DrawFacts => draw(roundId, 'halo', { outcome: null })
+const vetoed = (roundId: string, gameId = 'halo'): DrawFacts => draw(roundId, gameId, { outcome: 'vetoed' })
 
 describe('roundState', () => {
   it('is being drawn until the game is set, then set', () => {
@@ -76,7 +78,7 @@ describe('gamesLeft', () => {
 })
 
 describe('the Game count floor', () => {
-  const facts = { playersPerTeam: [2, 3], roundsStarted: 4 }
+  const facts = { playersPerTeam: [2, 3], roundsStarted: 4, vetoesSpent: 0 }
 
   it('is the Rounds started', () => {
     expect(floorsAt(facts, 2).gameCount).toBe(4)
@@ -100,6 +102,7 @@ describe('setRejection', () => {
     sessions,
     seats: { 1: 2, 2: 2 },
     rounds: [],
+    draws: [],
     ...fields,
   })
 
@@ -139,12 +142,12 @@ describe('setRejection', () => {
   })
 
   it('refuses while a Round is being drawn', () => {
-    expect(setRejection(input({ rounds: [round('a', { setAt: null })] }))).toBe('round_being_drawn')
+    expect(setRejection(input({ rounds: [round('a', { setAt: null })], draws: [open('a')] }))).toBe('round_being_drawn')
   })
 
   it('names the first reason in this order: Host, running Session, teams, Game count, a Round being drawn', () => {
     const drawn = [round('a'), round('b'), round('c', { setAt: null })]
-    const worst = input({ isHost: false, sessions: [], seats: { 1: 1, 2: 2 }, rounds: drawn })
+    const worst = input({ isHost: false, sessions: [], seats: { 1: 1, 2: 2 }, rounds: drawn, draws: [open('c')] })
 
     expect(setRejection(worst)).toBe('not_host')
     expect(setRejection({ ...worst, isHost: true })).toBe('no_running_session')
@@ -162,6 +165,7 @@ describe('spinRejection', () => {
     sessions,
     seats: { 1: 2, 2: 2 },
     rounds: [],
+    draws: [],
     left: ['halo', 'kart'],
     ...fields,
   })
@@ -175,7 +179,7 @@ describe('spinRejection', () => {
     expect(spinRejection(input({ sessions: [] }))).toBe('no_running_session')
     expect(spinRejection(input({ seats: { 1: 2, 2: 1 } }))).toBe('teams_uneven')
     expect(spinRejection(input({ rounds: [round('a'), round('b'), round('c')] }))).toBe('game_count_reached')
-    expect(spinRejection(input({ rounds: [round('a', { setAt: null })] }))).toBe('round_being_drawn')
+    expect(spinRejection(input({ rounds: [round('a', { setAt: null })], draws: [open('a')] }))).toBe('round_being_drawn')
   })
 
   it('refuses Host pick: there is no wheel to spin', () => {
@@ -184,6 +188,141 @@ describe('spinRejection', () => {
 
   it('refuses an empty wheel, after every reason of setting a game', () => {
     expect(spinRejection(input({ left: [] }))).toBe('pool_empty')
-    expect(spinRejection(input({ left: [], rounds: [round('a', { setAt: null })] }))).toBe('round_being_drawn')
+    expect(spinRejection(input({ left: [], rounds: [round('a', { setAt: null })], draws: [open('a')] }))).toBe('round_being_drawn')
+  })
+})
+
+describe('Vetoes left', () => {
+  it('is the Veto allowance plus the Bonus Vetoes of the Party, minus the Vetoes it cast', () => {
+    const ledger = { allowance: 3, teamCount: 3, bonusTeams: [2, 2], castTeams: [1, 2, 2, 2] }
+
+    expect(vetoesLeftByParty(ledger)).toEqual([2, 2, 3])
+  })
+
+  it('counts every Veto cast, settled or not: a Veto spent in a put-back Round stays spent', () => {
+    // The ledger knows team numbers only: which draw or Round a Veto sits in does not change what it spent.
+    expect(vetoesLeftByParty({ allowance: 2, teamCount: 2, bonusTeams: [], castTeams: [1, 1] })).toEqual([0, 2])
+  })
+
+  it('has none without an allowance (Host pick) and never drops below zero', () => {
+    expect(vetoesLeftByParty({ allowance: null, teamCount: 2, bonusTeams: [], castTeams: [] })).toEqual([0, 0])
+    expect(vetoesLeftByParty({ allowance: 1, teamCount: 1, bonusTeams: [], castTeams: [1, 1] })).toEqual([0])
+  })
+})
+
+describe('opensWindow', () => {
+  it('opens when some Party has a Veto left', () => {
+    expect(opensWindow([0, 1])).toBe(true)
+    expect(opensWindow([2, 3])).toBe(true)
+  })
+
+  it('does not open when no Party has one', () => {
+    expect(opensWindow([0, 0])).toBe(false)
+    expect(opensWindow([])).toBe(false)
+  })
+})
+
+describe('drawOutcome', () => {
+  it('is vetoed with any Veto and set with none', () => {
+    expect(drawOutcome(0)).toBe('set')
+    expect(drawOutcome(1)).toBe('vetoed')
+    expect(drawOutcome(3)).toBe('vetoed')
+  })
+})
+
+describe('the Veto window', () => {
+  it('lasts 60 seconds', () => {
+    expect(VETO_WINDOW_MS).toBe(60_000)
+  })
+})
+
+describe('vetoRejection', () => {
+  const stopAt = at(19)
+  const vetoEndsAt = stopAt + VETO_WINDOW_MS
+  const open_ = { stopAt, vetoEndsAt, outcome: null }
+  const input = (fields: Partial<VetoInput> = {}): VetoInput => ({
+    viewerTeam: 1,
+    draw: open_,
+    now: stopAt + 1000,
+    castTeams: [],
+    left: 2,
+    ...fields,
+  })
+
+  it('lets a Player of a Party with a Veto left cast one while the window is open', () => {
+    expect(vetoRejection(input())).toBeNull()
+  })
+
+  it('refuses a viewer who is no Player: on the Bench, in the Stands or without a Member', () => {
+    expect(vetoRejection(input({ viewerTeam: null }))).toBe('not_a_player')
+  })
+
+  it('refuses a draw without a window, and a draw that does not exist', () => {
+    expect(vetoRejection(input({ draw: { stopAt, vetoEndsAt: null, outcome: 'set' } }))).toBe('no_veto_window')
+    expect(vetoRejection(input({ draw: null }))).toBe('no_veto_window')
+  })
+
+  it('refuses from the end of the window on, to the millisecond, and before the stop', () => {
+    expect(vetoRejection(input({ now: vetoEndsAt - 1 }))).toBeNull()
+    expect(vetoRejection(input({ now: vetoEndsAt }))).toBe('veto_window_closed')
+    expect(vetoRejection(input({ now: stopAt }))).toBeNull()
+    expect(vetoRejection(input({ now: stopAt - 1 }))).toBe('veto_window_closed')
+  })
+
+  it('refuses a draw that has settled, whatever the clock says', () => {
+    expect(vetoRejection(input({ draw: { stopAt, vetoEndsAt, outcome: 'vetoed' }, now: stopAt + 1 }))).toBe('veto_window_closed')
+  })
+
+  it('refuses a second Veto of the Party on the same draw, but not after another Party\'s', () => {
+    expect(vetoRejection(input({ castTeams: [2, 1] }))).toBe('veto_already_cast')
+    expect(vetoRejection(input({ castTeams: [2] }))).toBeNull()
+  })
+
+  it('refuses a Party without a Veto left', () => {
+    expect(vetoRejection(input({ left: 0 }))).toBe('no_vetoes_left')
+  })
+
+  it('names the first reason in this order: Player, window, closed, already cast, none left', () => {
+    const worst = input({ viewerTeam: null, draw: null, now: vetoEndsAt + 1, castTeams: [1], left: 0 })
+
+    expect(vetoRejection(worst)).toBe('not_a_player')
+    expect(vetoRejection({ ...worst, viewerTeam: 1 })).toBe('no_veto_window')
+    expect(vetoRejection({ ...worst, viewerTeam: 1, draw: open_ })).toBe('veto_window_closed')
+    expect(vetoRejection({ ...worst, viewerTeam: 1, draw: open_, now: stopAt })).toBe('veto_already_cast')
+    expect(vetoRejection({ ...worst, viewerTeam: 1, draw: open_, now: stopAt, castTeams: [] })).toBe('no_vetoes_left')
+  })
+})
+
+describe('a Round waiting for a respin', () => {
+  it('stands, has no game, and has only vetoed draws', () => {
+    const waiting = round('a', { setAt: null })
+
+    expect(waitsForRespin(waiting, [vetoed('a'), vetoed('a', 'kart')])).toBe(true)
+    expect(isBeingDrawn(waiting, [vetoed('a'), vetoed('a', 'kart')])).toBe(false)
+  })
+
+  it('is being drawn while a draw of it is open, also after an earlier draw was vetoed', () => {
+    const drawn = round('a', { setAt: null })
+
+    expect(isBeingDrawn(drawn, [open('a')])).toBe(true)
+    expect(isBeingDrawn(drawn, [vetoed('a'), open('a')])).toBe(true)
+    expect(waitsForRespin(drawn, [vetoed('a'), open('a')])).toBe(false)
+  })
+
+  it('is neither once its game is set, or when the Host put it back', () => {
+    expect(waitsForRespin(round('a'), [vetoed('a'), draw('a', 'kart')])).toBe(false)
+    expect(isBeingDrawn(round('a'), [draw('a', 'kart')])).toBe(false)
+    expect(waitsForRespin(round('a', { setAt: null, putBackAt: at(20) }), [vetoed('a')])).toBe(false)
+  })
+
+  it('does not block setting or spinning, and adds no Round: the Game count does not refuse it', () => {
+    const rounds = [round('a'), round('b'), round('c', { setAt: null })]
+    const draws = [vetoed('c')]
+    const sessions: SessionTimes[] = [{ startsAt: at(18), startedAt: at(19), endedAt: null }]
+    const base = { isHost: true, sessions, seats: { 1: 2, 2: 2 }, rounds, draws }
+
+    expect(setRejection({ ...base, settings: { teamCount: 2, gameCount: 3 } })).toBeNull()
+    expect(spinRejection({ ...base, settings: { teamCount: 2, gameCount: 3, selectionMode: 'lucky_wheel' }, left: ['kart'] })).toBeNull()
+    expect(spinRejection({ ...base, settings: { teamCount: 2, gameCount: 3, selectionMode: 'lucky_wheel' }, left: [] })).toBe('pool_empty')
   })
 })

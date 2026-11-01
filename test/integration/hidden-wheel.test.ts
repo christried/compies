@@ -7,6 +7,7 @@ import resetCountdown from '../../server/api/e/[slug]/countdown/reset.post'
 import startCountdown from '../../server/api/e/[slug]/countdown/start.post'
 import setCountdown from '../../server/api/e/[slug]/countdown/index.put'
 import moveMember from '../../server/api/e/[slug]/move.post'
+import castVeto from '../../server/api/e/[slug]/draws/[drawId]/veto.post'
 import putBackRound from '../../server/api/e/[slug]/rounds/[id].delete'
 import setRound from '../../server/api/e/[slug]/rounds/index.post'
 import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
@@ -99,6 +100,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       'POST /api/e/:slug/rotate': rotateInvite,
       'POST /api/e/:slug/rounds': setRound,
       'POST /api/e/:slug/rounds/spin': spinWheel,
+      'POST /api/e/:slug/draws/:drawId/veto': castVeto,
       'DELETE /api/e/:slug/rounds/:id': putBackRound,
       'PUT /api/e/:slug/countdown': setCountdown,
       'POST /api/e/:slug/countdown/start': startCountdown,
@@ -342,7 +344,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
   // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'round.set', 'round.putBack', 'round.spun', 'countdown.changed'] as const satisfies readonly RoomMessageType[]
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'round.set', 'round.putBack', 'round.spun', 'countdown.changed', 'veto.cast'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
@@ -475,15 +477,20 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     it('produces every message type Nuxt sends to the room, and writes every Activity type', async () => {
       const { slug, eventId } = await lobbyFlow()
+      // The wheel stops (the clock moves past it) and Player 1 casts a Veto after the Session ended: veto.cast goes to Player 1's
+      // Party only (#231). The flow's leak tests below stay before the stop.
+      const [drawn] = (await testDb.db.select().from(draws)).filter(row => row.kind === 'spin')
+      clock.advance(8000)
+      expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
 
       expect(everyTypeListed).toBe(true)
       const sent = new Set(notifier.messages(eventId).map(message => message.type))
       for (const type of SERVER_SENT) expect(sent.has(type), `the flow sends no ${type}`).toBe(true)
-      // The 0.7 kinds (#226) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228, and
-      // game_drawn, #229, which the feed shows from the stop on). The rest come with #231 (vetoes_revealed), #233 (bonus_veto_granted)
-      // and #235 (coin_tossed).
-      const written = ACTIVITY_TYPES.filter(type => !['vetoes_revealed', 'bonus_veto_granted', 'coin_tossed'].includes(type))
-      clock.advance(60_000)
+      // The 0.7 kinds (#226) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228,
+      // game_drawn, #229, which the feed shows from the stop on, and vetoes_revealed, #231, from the end of the Veto window on).
+      // The rest come with #233 (bonus_veto_granted) and #235 (coin_tossed).
+      const written = ACTIVITY_TYPES.filter(type => !['bonus_veto_granted', 'coin_tossed'].includes(type))
+      clock.advance(70_000)
       expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
     })
 
@@ -499,6 +506,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     it('shows the pools to a Player once the Hidden wheel is off and the Pool preview on, and the room still carries no game', async () => {
       const { slug, eventId, games } = await lobbyFlow()
       const [a, , c, d] = games
+      // The Session ended with a Round still being drawn; Rad verdecken is locked until its Veto window has run out (#231).
+      clock.advance(70_000)
 
       expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { hiddenWheel: false, poolPreview: true } })).status).toBe(200)
 
@@ -518,14 +527,16 @@ describe('Hidden wheel secrecy (#148)', () => {
 
   const second = { provider: 'twitch', id: '5', name: 'Zweite', email: 'second@example.com', image: undefined } as const
   const LOBBY = { ...HIDDEN_WHEEL, teamCount: 2, teamSize: 1 } as const
+  /** The same Event with no Veto allowance: no window opens, so a draw settles at its stop (the spin tests below are about the stop). */
+  const NO_WINDOW = { ...LOBBY, vetoAllowance: 0 } as const
 
   /** A Running Session under a Hidden wheel: Alpha and Beta in the Game pool, Gamma in the Tiebreaker pool, Epsilon only in the library. */
-  async function runningEvent() {
+  async function runningEvent(settings: Record<string, unknown> = LOBBY) {
     const [a, b, c, e] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
     const created = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: LOBBY, pools: { main: [a.id, b.id], tiebreaker: [c.id] } }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings, pools: { main: [a.id, b.id], tiebreaker: [c.id] } }),
     })
     const { slug, inviteUrl } = await created.json() as CreatedEvent
     const token = new URL(inviteUrl).pathname.slice('/e/'.length)
@@ -534,7 +545,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     await startRunningSession(request, testDb.db, { slug, hostCookie, seated: [{ cookie: playerCookie, email: player.email }, { cookie: secondCookie, email: second.email }] })
     notifier.clear()
     const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    return { slug, eventId: eventRow!.id, a, b, c, e }
+    return { slug, eventId: eventRow!.id, a, b, c, e, secondCookie }
   }
 
   const imageStatus = async (secret: Secret) => (await request(secret.imageUrl, { headers: { cookie: playerCookie } })).status
@@ -624,8 +635,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(await rawRead(hostCookie, slug)).toContain('Delta Dart')
       const after = JSON.parse(await rawRead(playerCookie, slug)) as EventView
       // The count is the wheel's: the Player learns how many games there are from the wheel and from nowhere else (spec story 13).
-      expect(before.wheel).toEqual({ count: 1, slices: null, spin: null })
-      expect(after.wheel).toEqual({ count: 2, slices: null, spin: null })
+      expect(before.wheel).toEqual({ count: 1, slices: null, spin: null, vetoes: expect.anything() })
+      expect(after.wheel).toEqual({ count: 2, slices: null, spin: null, vetoes: expect.anything() })
       expect({ ...after, wheel: null }).toEqual({ ...before, wheel: null })
     })
   })
@@ -642,7 +653,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     /** A spin of a Running Session under a Hidden wheel, and the games on the wheel in the order of the draw. */
     async function spun() {
-      const running = await runningEvent()
+      const running = await runningEvent(NO_WINDOW)
       const response = await spin(running.slug)
       expect(response.status).toBe(200)
       const [row] = await testDb.db.select().from(draws)
@@ -672,8 +683,9 @@ describe('Hidden wheel secrecy (#148)', () => {
         count: 1,
         slices: null,
         spin: {
-          roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null,
+          roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null, vetoEndsAt: null,
         },
+        vetoes: { left: [0, 0], own: { team: 1, castBy: null, rejection: 'no_veto_window' }, revealed: null },
       })
       expect(row.sliceLabels).toHaveLength(2)
       expect(new Set(row.sliceLabels).size).toBe(2)
@@ -735,6 +747,54 @@ describe('Hidden wheel secrecy (#148)', () => {
       clock.set(new Date(stopAt - 1))
 
       expectNone(await whatThePlayerGets(slug, eventId), [a, b])
+    })
+  })
+
+  // A Veto is sealed until the end of its window (#231, spec #218 § Vetoes): no other Party learns that one was cast, nor which.
+  describe('a Veto (#231)', () => {
+    const idOf = async (email: string) => (await testDb.db.select().from(users).where(eq(users.email, email)))[0]!.id
+
+    /** A Running Session with a Veto allowance of 3; the wheel stopped, and Player 1 (team 1) cast the Veto. The room's record starts at the cast. */
+    async function castByPlayer() {
+      const running = await runningEvent()
+      const spun = await request(`/api/e/${running.slug}/rounds/spin`, { method: 'POST', headers: { cookie: hostCookie } })
+      expect(spun.status).toBe(200)
+      const { drawId } = await spun.json() as { drawId: string }
+      const [row] = await testDb.db.select().from(draws)
+      clock.set(row!.stopAt)
+      notifier.clear()
+      const cast = await request(`/api/e/${running.slug}/draws/${drawId}/veto`, { method: 'POST', headers: { cookie: playerCookie } })
+      expect(cast.status).toBe(200)
+      return { ...running, drawId, row: row!, playerId: await idOf(player.email), secondId: await idOf(second.email) }
+    }
+
+    const wheelOf = async (cookie: string, slug: string) => (JSON.parse(await rawRead(cookie, slug)) as EventView).wheel!
+
+    it('reaches nobody before the end of the window: not the other Party, nor the Host, through the read, the numbers, the feed or the room', async () => {
+      const { slug, eventId, playerId, secondId } = await castByPlayer()
+
+      const other = await wheelOf((await signIn(testDb.db, second)).cookie, slug)
+      expect(other.vetoes).toEqual({ left: [3, 3], own: { team: 2, castBy: null, rejection: null }, revealed: null })
+      expect(await wheelOf(hostCookie, slug)).toMatchObject({ vetoes: { left: [3, 3], own: null, revealed: null } })
+      for (const cookie of [hostCookie, (await signIn(testDb.db, second)).cookie]) {
+        expect(await rawRead(cookie, slug), 'the Event read').not.toContain(`"castBy":"${playerId}"`)
+        const feed = JSON.parse(await (await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie } })).text()) as ActivityPage
+        expect(feed.entries.map(entry => entry.type)).not.toContain('vetoes_revealed')
+      }
+      // The Party's own Player sees it at once.
+      expect((await wheelOf(playerCookie, slug)).vetoes).toEqual({ left: [2, 3], own: { team: 1, castBy: playerId, rejection: 'veto_already_cast' }, revealed: null })
+      // The room: only the named send to the Party's Users, and neither event.changed nor any other message.
+      expect(notifier.sends(eventId)).toEqual([{ to: [playerId], messages: [expect.objectContaining({ type: 'veto.cast', team: 1 })] }])
+      expect(JSON.stringify(notifier.messages(eventId))).not.toContain(secondId)
+    })
+
+    it('reaches everyone at the end of the window, with who cast it', async () => {
+      const { slug, row, playerId } = await castByPlayer()
+      clock.set(row.vetoEndsAt!)
+
+      const other = await wheelOf((await signIn(testDb.db, second)).cookie, slug)
+
+      expect(other.vetoes).toEqual({ left: [2, 3], own: { team: 2, castBy: null, rejection: 'veto_window_closed' }, revealed: [{ team: 1, userId: playerId }] })
     })
   })
 })

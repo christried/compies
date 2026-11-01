@@ -122,6 +122,18 @@ export const API_ERROR_STATUS = {
   game_count_reached: 409,
   /** A Round is being drawn: no game can be set, and that Round cannot be put back (#228). */
   round_being_drawn: 409,
+  /** The Veto is for a viewer who plays in no Party: on the Bench, in the Stands, or without a team (#231). */
+  not_a_player: 403,
+  /** The draw has no Veto window (no Party had a Veto left when it was drawn, or the Host set it), or the Event has no such draw (#231). */
+  no_veto_window: 409,
+  /** The Veto window is not open: it has ended, or the wheel has not stopped yet (#231). */
+  veto_window_closed: 409,
+  /** The Party cast its Veto on this draw already (#231). */
+  veto_already_cast: 409,
+  /** The Party has no Veto left: the allowance and its Bonus Vetoes are used up (#231). */
+  no_vetoes_left: 409,
+  /** Rad verdecken cannot change while a Round is being drawn (#231, review 1.4 A3). */
+  hidden_wheel_locked: 409,
   /** The Selection mode has no wheel to spin (#229). */
   no_wheel: 409,
   /** No game is left on the wheel (#229). */

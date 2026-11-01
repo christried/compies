@@ -3,6 +3,7 @@ import type { Phase } from '../../shared/event'
 import {
   GAME_COUNT_DEFAULT,
   LOCKED_WHEN_RUNNING,
+  LOCKED_WHILE_DRAWN,
   TEAM_COUNT_MAX,
   TEAM_COUNT_MIN,
   changedKeys,
@@ -16,6 +17,7 @@ import {
   mergeSettings,
   linearPoints,
   lockedWhenRunning,
+  lockedWhileDrawn,
   parseSettings,
   playersPerTeam,
   poolHint,
@@ -494,15 +496,15 @@ describe('playersPerTeam and floorsAt (#195, #228)', () => {
     expect(playersPerTeam({ 1: 2 }, 0)).toEqual([])
   })
 
-  it('reads all three floors from the facts, at the team count the change parses to', () => {
-    const facts = { playersPerTeam: [1, 3, 2], roundsStarted: 5 }
+  it('reads all three floors from the facts (the Veto allowance floor is the most Vetoes any Party has cast, #231), at the team count the change parses to', () => {
+    const facts = { playersPerTeam: [1, 3, 2], roundsStarted: 5, vetoesSpent: 2 }
 
-    expect(floorsAt(facts, 3)).toEqual({ teamSize: 3, vetoAllowance: 0, gameCount: 5 })
-    expect(floorsAt(facts, 1)).toEqual({ teamSize: TEAM_SIZE_MIN, vetoAllowance: 0, gameCount: 5 })
+    expect(floorsAt(facts, 3)).toEqual({ teamSize: 3, vetoAllowance: 2, gameCount: 5 })
+    expect(floorsAt(facts, 1)).toEqual({ teamSize: TEAM_SIZE_MIN, vetoAllowance: 2, gameCount: 5 })
   })
 
   it('counts every team when no team count is given: an Event that is not set up', () => {
-    expect(floorsAt({ playersPerTeam: [1, 3, 2], roundsStarted: 0 }).teamSize).toBe(3)
+    expect(floorsAt({ playersPerTeam: [1, 3, 2], roundsStarted: 0, vetoesSpent: 0 }).teamSize).toBe(3)
   })
 })
 
@@ -512,8 +514,8 @@ describe('checkSettingsChange', () => {
   const current = wheel.ok ? wheel.settings : defaultSettings()
   const admin = defaultSettings()
 
-  function check(change: unknown, context: { phase?: Phase, floors?: SettingsFloors } = {}, from = current) {
-    return checkSettingsChange(from, change, { phase: context.phase ?? 'poll', floors: () => context.floors ?? floors })
+  function check(change: unknown, context: { phase?: Phase, floors?: SettingsFloors, drawing?: boolean } = {}, from = current) {
+    return checkSettingsChange(from, change, { phase: context.phase ?? 'poll', floors: () => context.floors ?? floors, roundBeingDrawn: context.drawing ?? false })
   }
 
   const lockedChanges: Record<string, unknown> = {
@@ -548,6 +550,28 @@ describe('checkSettingsChange', () => {
   it('lets Game count, Team size, Veto allowance and Hidden wheel change while running', () => {
     const result = check({ gameCount: 5, teamSize: 4, vetoAllowance: 5, hiddenWheel: true }, { phase: 'running' })
     expect(result).toEqual({ ok: true, settings: { ...current, gameCount: 5, teamSize: 4, vetoAllowance: 5, hiddenWheel: true, poolPreview: false } })
+  })
+
+  describe('while a Round is being drawn (#231, review 1.4 A3)', () => {
+    it('names the settings that stay fixed meanwhile: Rad verdecken', () => {
+      expect([...LOCKED_WHILE_DRAWN]).toEqual(['hiddenWheel'])
+      expect(lockedWhileDrawn(['hiddenWheel', 'gameCount'])).toBe(true)
+      expect(lockedWhileDrawn(['gameCount', 'vetoAllowance'])).toBe(false)
+    })
+
+    it('refuses a changed Hidden wheel with hidden_wheel_locked, in a running Event too', () => {
+      expect(check({ hiddenWheel: true }, { drawing: true })).toEqual({ ok: false, error: 'hidden_wheel_locked' })
+      expect(check({ hiddenWheel: true }, { drawing: true, phase: 'running' })).toEqual({ ok: false, error: 'hidden_wheel_locked' })
+      expect(check({ hiddenWheel: false }, { drawing: true }, { ...current, hiddenWheel: true, poolPreview: false })).toEqual({ ok: false, error: 'hidden_wheel_locked' })
+    })
+
+    it('accepts the Hidden wheel as it is, and every other setting', () => {
+      expect(check({ hiddenWheel: false, gameCount: 4, vetoAllowance: 5 }, { drawing: true, phase: 'running' }).ok).toBe(true)
+    })
+
+    it('lets the Hidden wheel change when no Round is being drawn', () => {
+      expect(check({ hiddenWheel: true }, { drawing: false }).ok).toBe(true)
+    })
   })
 
   describe('Pool preview (#225)', () => {
@@ -635,8 +659,8 @@ describe('checkSettingsChange', () => {
       const fourTeams = withTeams(defaultSettings(), 4, 3)
       const floorsByCount = (count: number) => ({ teamSize: count >= 3 ? 3 : 1, vetoAllowance: 0, gameCount: 0 })
       const lowered = { teamCount: 2, teamSize: 1, pointsTable: { preset: 'linear', values: [1, 0] } }
-      expect(checkSettingsChange(fourTeams, lowered, { phase: 'poll', floors: floorsByCount }).ok).toBe(true)
-      expect(checkSettingsChange(fourTeams, { teamSize: 1 }, { phase: 'poll', floors: floorsByCount }))
+      expect(checkSettingsChange(fourTeams, lowered, { phase: 'poll', floors: floorsByCount, roundBeingDrawn: false }).ok).toBe(true)
+      expect(checkSettingsChange(fourTeams, { teamSize: 1 }, { phase: 'poll', floors: floorsByCount, roundBeingDrawn: false }))
         .toEqual({ ok: false, error: 'team_size_below_fullest' })
     })
   })
@@ -647,17 +671,17 @@ describe('checkSettingsChange', () => {
     })
 
     it('accepts a full payload', () => {
-      const result = checkSettingsChange(null, payload(), { phase: 'poll', floors: () => floors })
+      const result = checkSettingsChange(null, payload(), { phase: 'poll', floors: () => floors, roundBeingDrawn: false })
       expect(result).toEqual({ ok: true, settings: defaultSettings() })
     })
 
     it('checks the floors of a full payload too', () => {
-      expect(checkSettingsChange(null, payload({ teamSize: 2 }), { phase: 'poll', floors: () => ({ teamSize: 3, vetoAllowance: 0, gameCount: 0 }) }))
+      expect(checkSettingsChange(null, payload({ teamSize: 2 }), { phase: 'poll', floors: () => ({ teamSize: 3, vetoAllowance: 0, gameCount: 0 }), roundBeingDrawn: false }))
         .toEqual({ ok: false, error: 'team_size_below_fullest' })
     })
 
     it('can be set up while running, as nothing is locked yet', () => {
-      expect(checkSettingsChange(null, payload(), { phase: 'running', floors: () => floors }).ok).toBe(true)
+      expect(checkSettingsChange(null, payload(), { phase: 'running', floors: () => floors, roundBeingDrawn: false }).ok).toBe(true)
     })
   })
 })

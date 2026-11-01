@@ -1,5 +1,5 @@
 import type { Place, Zone } from './board'
-import type { SetRejection, SpinRejection } from './rounds'
+import type { SetRejection, SpinRejection, VetoRejection } from './rounds'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
@@ -166,6 +166,30 @@ export interface SpinView {
   resultOffset: number
   labels: string[] | null
   game: RoundGame | null
+  /** The end of the Veto window (ISO, #231): it opens at `stopAt`. Null when no Party had a Veto left at the spin. */
+  vetoEndsAt: string | null
+}
+
+/** A Veto of a Party and the Player who cast it (#231); the Event read shows it from the end of the window on. */
+export interface VetoCastView { team: number, userId: string }
+
+/**
+ * The viewer's own Party in the Veto window (#231): its team, the Player of it who cast (null: not yet, the Party's Players learn it
+ * at once, nobody else before the end of the window), and why the Party cannot cast on the spin's draw now, or null when it may.
+ * Only a Player of a Party gets it: the Bench, the Stands and a Host outside the teams get `own: null`.
+ */
+export interface OwnVetoView { team: number, castBy: string | null, rejection: VetoRejection | null }
+
+/**
+ * The Vetoes of the Lucky Wheel (#231, spec #218 § Vetoes, sealed until the end of the window). `left` is every Party's Vetoes left
+ * (index 0 = team 1) as THIS viewer may know them: a Veto cast on a draw whose window still runs counts only for the Players of the
+ * casting Party, for everybody else from the end of the window on, so no number gives a sealed Veto away. `revealed` holds every
+ * Party's Veto on the spin's draw from the end of its window on (null before, and without a window).
+ */
+export interface VetoView {
+  left: number[]
+  own: OwnVetoView | null
+  revealed: VetoCastView[] | null
 }
 
 /**
@@ -177,6 +201,7 @@ export interface WheelView {
   count: number
   slices: { id: string, name: string }[] | null
   spin: SpinView | null
+  vetoes: VetoView
 }
 
 /**
@@ -189,6 +214,8 @@ export interface CountdownView { durationMs: number, remainingMs: number, starte
 export interface RoundSet { roundId: string }
 /** What `POST /api/e/:slug/rounds/spin` returns: the Round being drawn and its draw (#229). */
 export interface RoundSpun { roundId: string, drawId: string }
+/** What `POST /api/e/:slug/draws/:drawId/veto` returns: the draw and the Party whose Veto was cast (#231). */
+export interface VetoCast { drawId: string, team: number }
 /** What `DELETE /api/e/:slug/rounds/:id` returns: the Round that was put back (#228). */
 export interface RoundPutBack { roundId: string }
 
@@ -262,6 +289,8 @@ export interface EventView {
   setGame: SetGameView | null
   /** The Lucky Wheel (#229): in a running Session of a Lucky Wheel Event, else null. */
   wheel: WheelView | null
+  /** Whether a game is being drawn now (#231): the wheel spins or its Veto window runs. „Rad verdecken“ is locked meanwhile (LOCKED_WHILE_DRAWN). Only the Host's page needs it; false for every other Member. */
+  roundBeingDrawn: boolean
   /** The Countdown of the running Session (#236): every Member gets it while a Session runs, null otherwise. */
   countdown: CountdownView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
