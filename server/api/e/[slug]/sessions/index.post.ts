@@ -7,6 +7,7 @@ import { recordActivity } from '../../../../utils/activity'
 import { useClock } from '../../../../utils/clock'
 import { apiError } from '../../../../utils/errors'
 import { changeSessions, slotAt } from '../../../../utils/sessions'
+import { isoInstant } from '../../../../../shared/activity'
 import type { SessionAdded } from '../../../../../shared/event'
 
 // Adds a Session to an Event (#55, ADR 0011). The Host gives a Date, or leaves it to the Date poll by sending
@@ -34,6 +35,6 @@ export default defineEventHandler((event): Promise<SessionAdded> => changeSessio
     .insert(sessions)
     .values({ eventId: eventRow.id, startsAt, slotId: takenSlot ? null : slotId })
     .returning({ id: sessions.id })
-  await recordActivity(tx, publish, eventRow.id, { type: 'session_added', actorId: user.id, params: { sessionId: row!.id, startsAt: startsAt?.toISOString() ?? null } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'session_added', actorId: user.id, params: { sessionId: row!.id, startsAt: startsAt ? isoInstant(startsAt) : null } })
   return { id: row!.id }
 }))

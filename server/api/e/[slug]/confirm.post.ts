@@ -8,6 +8,7 @@ import { useClock } from '../../../utils/clock'
 import { apiError, slotNotFound } from '../../../utils/errors'
 import { findSlot } from '../../../utils/slots'
 import { changeSessions, shownNumber } from '../../../utils/sessions'
+import { isoInstant } from '../../../../shared/activity'
 import type { DateConfirmed } from '../../../../shared/event'
 
 // Set a Date from the shared Date poll (#1 § Domain rules, ADR 0011, #52): the Host picks a Slot, and its
@@ -38,6 +39,6 @@ export default defineEventHandler((event): Promise<DateConfirmed> => changeSessi
     .where(eq(sessions.id, sessionId))
   // The number is the one the Session has with its new Date (#159).
   const number = await shownNumber(tx, eventRow.id, sessionId)
-  await recordActivity(tx, publish, eventRow.id, { type: 'date_set', actorId: user.id, params: { sessionId, number, startsAt: slot.startsAt.toISOString() } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'date_set', actorId: user.id, params: { sessionId, number, startsAt: isoInstant(slot.startsAt) } })
   return { startsAt: slot.startsAt.toISOString() }
 }))

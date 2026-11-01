@@ -8,6 +8,7 @@ import { recordActivity } from '../../../../../utils/activity'
 import { apiError } from '../../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../../utils/sessions'
 import { useClock } from '../../../../../utils/clock'
+import { isoInstant } from '../../../../../../shared/activity'
 import type { SessionRescheduled } from '../../../../../../shared/event'
 import { isStarted } from '../../../../../../shared/session-state'
 
@@ -26,6 +27,6 @@ export default defineEventHandler((event): Promise<SessionRescheduled> => change
   await tx.update(sessions).set({ startsAt, previousStartsAt: null }).where(eq(sessions.id, session.id))
   // The number is the one the Session has at its new Date (#159); rescheduleRejection saw that it had a Date.
   const number = await shownNumber(tx, eventRow.id, session.id)
-  await recordActivity(tx, publish, eventRow.id, { type: 'date_rescheduled', actorId: user.id, params: { sessionId: session.id, number, from: session.startsAt!.toISOString(), to: startsAt.toISOString() } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'date_rescheduled', actorId: user.id, params: { sessionId: session.id, number, from: isoInstant(session.startsAt!), to: isoInstant(startsAt) } })
   return { startsAt: startsAt.toISOString() }
 }))

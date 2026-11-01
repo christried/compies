@@ -5,6 +5,7 @@ import { reopenRejection } from '../../../../../domain/phase'
 import { recordActivity } from '../../../../../utils/activity'
 import { apiError } from '../../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../../utils/sessions'
+import { isoInstant } from '../../../../../../shared/activity'
 import type { SessionReopened } from '../../../../../../shared/event'
 import { isStarted } from '../../../../../../shared/session-state'
 
@@ -25,6 +26,6 @@ export default defineEventHandler((event): Promise<SessionReopened> => changeSes
     .update(sessions)
     .set({ startsAt: null, slotId: null, previousStartsAt: sql`${sessions.startsAt}` })
     .where(eq(sessions.id, session.id))
-  await recordActivity(tx, publish, eventRow.id, { type: 'date_reopened', actorId: user.id, params: { sessionId: session.id, number, previousStartsAt: session.startsAt!.toISOString() } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'date_reopened', actorId: user.id, params: { sessionId: session.id, number, previousStartsAt: isoInstant(session.startsAt!) } })
   return {}
 }))

@@ -5,6 +5,7 @@ import { removeSessionRejection } from '../../../../domain/phase'
 import { recordActivity } from '../../../../utils/activity'
 import { apiError } from '../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../utils/sessions'
+import { isoInstant } from '../../../../../shared/activity'
 import type { SessionRemoved } from '../../../../../shared/event'
 import { isStarted } from '../../../../../shared/session-state'
 
@@ -33,6 +34,6 @@ export default defineEventHandler((event): Promise<SessionRemoved> => changeSess
       .set({ removedAt: sql`now()`, previousStartsAt: withdrawn, startsAt: null, slotId: null })
       .where(eq(sessions.id, session.id))
   }
-  await recordActivity(tx, publish, eventRow.id, { type: 'session_removed', actorId: user.id, params: { sessionId: session.id, number, startsAt: session.startsAt?.toISOString() ?? null } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'session_removed', actorId: user.id, params: { sessionId: session.id, number, startsAt: session.startsAt ? isoInstant(session.startsAt) : null } })
   return { id: session.id }
 }))

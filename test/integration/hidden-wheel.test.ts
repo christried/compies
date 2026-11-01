@@ -448,7 +448,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(everyTypeListed).toBe(true)
       const sent = new Set(notifier.messages(eventId).map(message => message.type))
       for (const type of SERVER_SENT) expect(sent.has(type), `the flow sends no ${type}`).toBe(true)
-      expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(ACTIVITY_TYPES))
+      // The six 0.7 kinds (#226) are in the enum, but nothing writes them before #228, #229, #231, #233 and #235.
+      const written = ACTIVITY_TYPES.filter(type => !['game_drawn', 'vetoes_revealed', 'game_set', 'game_put_back', 'bonus_veto_granted', 'coin_tossed'].includes(type))
+      expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
     })
 
     it('leaks no pool game through the room, the Activity feed or the Event read of either Player', async () => {
