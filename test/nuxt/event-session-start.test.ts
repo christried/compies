@@ -89,7 +89,7 @@ describe('the Host dock per state', () => {
     expect(page.get('[role="toolbar"]').text()).toContain('1 Sekunde halten')
   })
 
-  it('offers Session 1 beenden as the hold that comes first in the Lucky Wheel, with Nächstes Spiel setzen in Mehr (#228)', async () => {
+  it('offers Rad drehen first in the Lucky Wheel, then Session 1 beenden, with Nächstes Spiel setzen in Mehr (#228, #229)', async () => {
     const { slug } = serve(s => hostView(s, [{ number: 1, startsAt: FIRST, startedAt: STARTED }, { number: 2, startsAt: SECOND }], {
       event: { isHost: true, phase: 'running' },
       settings: { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3 },
@@ -98,9 +98,9 @@ describe('the Host dock per state', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(pill(page)).toEqual(['Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Rad drehen', 'Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
     const menu = await openHostMenu(page)
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Einladen', 'Nächstes Spiel setzen', 'Countdown', 'Einstellungen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Rad drehen', 'Nächstes Spiel setzen', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen'])
   })
 
   it('offers Session 2 starten between Sessions', async () => {
@@ -135,7 +135,7 @@ describe('the Host dock per state', () => {
 
     const menu = await openHostMenu(page)
 
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Nächstes Spiel setzen', 'Countdown', 'Einladen', 'Einstellungen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Nächstes Spiel setzen', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen'])
   })
 })
 
