@@ -9,7 +9,7 @@ export const CLOCK_DRIFT_MARGIN_MS = 500
 type RoomForClock = Pick<ReturnType<typeof useEventRoom>, 'on' | 'onAny' | 'send' | 'state'>
 
 /**
- * The server's clock on this client (#162, spec #153 § Clock sync), for the timers of 1.5: `now()` is server time in
+ * The server's clock on this client (#162, spec #153 § Clock sync), for the timers of Glücksrad (0.7): `now()` is server time in
  * epoch ms. A round of probes (`clock.ping`, answered by `clock.pong` to this socket only) runs on every open of the
  * connection, whenever the tab becomes visible, whenever the network comes back, and when a message is stamped later
  * than the estimate, which means the estimate is behind. The offset is the one of the probe with the lowest round
