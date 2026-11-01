@@ -45,6 +45,7 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   invalid_clip: 'error.clipInvalid',
   invalid_players: 'error.playersInvalid',
   invalid_suitabilities: 'error.suitabilitiesInvalid',
+  invalid_game_notes: 'error.gameNotesInvalid',
   not_game_editor: 'error.notGameEditor',
   image_too_large: 'error.imageTooLarge',
   image_not_webp: 'error.imageNotWebp',

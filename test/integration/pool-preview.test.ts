@@ -72,13 +72,13 @@ describe('Pool preview secrecy (#225)', () => {
     vi.unstubAllEnvs()
   })
 
-  interface PoolGame { id: string, name: string, videoId: string, imageUrl: string, imageKey: string }
+  interface PoolGame { id: string, name: string, videoId: string, imageUrl: string, imageKey: string, notes: string }
 
   async function newGame(name: string, videoId: string): Promise<PoolGame> {
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}` }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: `Hausregel zu ${name}` }),
     })
     expect(created.status).toBe(200)
     const { id } = await created.json() as GameView
@@ -89,7 +89,7 @@ describe('Pool preview secrecy (#225)', () => {
     })
     expect(uploaded.status).toBe(200)
     const view = await uploaded.json() as GameView
-    return { id, name, videoId, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length) }
+    return { id, name, videoId, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), notes: view.notes! }
   }
 
   /** A, B in the Game pool, C in the Tiebreaker pool; the Player has joined. */
@@ -116,7 +116,9 @@ describe('Pool preview secrecy (#225)', () => {
     return await response.text()
   }
 
-  const traces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId]
+  // What the Event read of a viewer who may see the pools holds, and what it must not hold for one who may not (notes too: the pool view carries none yet, #224 adds them).
+  const shown = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId]
+  const traces = (game: PoolGame) => [...shown(game), game.notes]
 
   function fetchImage(game: PoolGame, cookie: string) {
     return request(game.imageUrl, { headers: { cookie } })
@@ -171,7 +173,7 @@ describe('Pool preview secrecy (#225)', () => {
 
       const raw = await rawRead(hostCookie, slug)
 
-      for (const trace of pool.flatMap(traces)) expect(raw).toContain(trace)
+      for (const trace of pool.flatMap(shown)) expect(raw).toContain(trace)
       expect((JSON.parse(raw) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
       for (const game of pool) {
         const response = await fetchImage(game, hostCookie)
@@ -186,7 +188,7 @@ describe('Pool preview secrecy (#225)', () => {
       expect((await patch(slug, { poolPreview: true })).status).toBe(200)
       const open = await rawRead(playerCookie, slug)
       expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
-      for (const trace of pool.flatMap(traces)) expect(open).toContain(trace)
+      for (const trace of pool.flatMap(shown)) expect(open).toContain(trace)
       for (const game of pool) expect((await fetchImage(game, playerCookie)).status).toBe(200)
 
       expect((await patch(slug, { poolPreview: false })).status).toBe(200)
@@ -203,7 +205,7 @@ describe('Pool preview secrecy (#225)', () => {
     const raw = await rawRead(playerCookie, slug)
 
     expect((JSON.parse(raw) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
-    for (const trace of pool.flatMap(traces)) expect(raw).toContain(trace)
+    for (const trace of pool.flatMap(shown)) expect(raw).toContain(trace)
     for (const game of pool) expect((await fetchImage(game, playerCookie)).status).toBe(200)
   })
 })

@@ -146,7 +146,7 @@ describe('parseGameInput', () => {
     it.each([[undefined], [null], ['']])('gives a game without a clip for %j', (youtubeUrl) => {
       expect(parseGameInput({ ...valid, youtubeUrl })).toEqual({
         ok: true,
-        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] },
+        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
       })
     })
 
@@ -267,6 +267,7 @@ describe('filterGames (#173)', () => {
       createdBy: { id: 'me', name: 'Ich' },
       createdAt: '2026-01-15T10:00:00.000Z',
       canEdit: true,
+      notes: null,
       ...overrides,
     }
   }

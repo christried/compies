@@ -35,7 +35,7 @@ A second page, flow or component that does what an existing one does needs its r
 
 ## Tests
 
-- Test data has the shape production data has. A Member comes with a picture, as every Discord and Twitch account does: the 1.4 board tests drew only initials, so the picture's own drag reached the walk-through (#207).
+- Test data has the shape production data has. A Member that a test renders (avatar, Game board, lists of people) comes with a picture, as every Discord and Twitch account does: the 1.4 board tests drew only initials, so the picture's own drag reached the walk-through (#207). Tests that draw a Member build it with `memberView()` in `test/nuxt/event-page.ts`.
 
 ## Copy
 

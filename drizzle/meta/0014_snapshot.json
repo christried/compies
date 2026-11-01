@@ -1,5 +1,5 @@
 {
-  "id": "f705d838-351a-47b3-a752-c5f2b3df65b4",
+  "id": "f170fb92-cdcd-4b71-98a3-3e8ff70b70d4",
   "prevId": "020a565b-7e06-4df6-90a7-ab397724580f",
   "version": "7",
   "dialect": "postgresql",
@@ -760,12 +760,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "pool_preview": {
-          "name": "pool_preview",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
         "veto_allowance": {
           "name": "veto_allowance",
           "type": "integer",
@@ -892,6 +886,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_by": {
           "name": "created_by",

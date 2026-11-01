@@ -10,7 +10,7 @@ import { signIn, stubAuthEnv } from './sign-in'
 // visible wheel show the pools, a Hidden wheel does not), Events that are not set up stay without it, and a row the
 // code before 0.6 writes during the switch-over (set up, no Pool preview) reads as it did there (ADR 0007).
 
-const MIGRATION = '0014_pool_preview'
+const MIGRATION = '0015_pool_preview'
 
 const HOST = '00000000-0000-4000-8000-0000000000a1'
 const GAME = '00000000-0000-4000-8000-0000000000d1'

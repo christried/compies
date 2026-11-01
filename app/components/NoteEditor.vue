@@ -24,6 +24,7 @@ const root = useTemplateRef<HTMLElement>('root')
 const field = useTemplateRef<HTMLTextAreaElement>('field')
 const editing = ref(false)
 const draft = ref('')
+const { resize } = useAutoHeight(field, () => draft.value)
 const openedByMeh = ref(false)
 const count = computed(() => characterCount(draft.value))
 const nearLimit = computed(() => count.value >= NOTE_MAX * 0.8)
@@ -76,14 +77,6 @@ function onEnter(event: KeyboardEvent) {
   if (event.isComposing) return
   event.preventDefault()
   save()
-}
-
-// Fallback for browsers without `field-sizing: content`: the height follows the text (2 px borders, border-box).
-function resize() {
-  const el = field.value
-  if (!el || globalThis.CSS?.supports?.('field-sizing', 'content')) return
-  el.style.height = 'auto'
-  el.style.height = `${el.scrollHeight + 4}px`
 }
 
 // A Vote that did not arrive takes the open field with it.

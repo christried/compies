@@ -2,21 +2,20 @@
 // `pnpm dev` without Claude in Chrome (retro 1.4). Node 24's global WebSocket talks to Chrome; nothing to install.
 // README.md in this folder has the commands and the limits.
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 export const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
 /** Profiles and screenshots go here, outside the repo. */
 export const OUT = join(tmpdir(), 'compies-browser')
+/** The DevTools port of each account's Chrome, so two accounts run side by side. */
+export const PORTS = { host: 9311, member: 9312, admin: 9313 }
 
 const CHROME = process.env.CHROME_PATH ?? {
   win32: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
   darwin: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 }[process.platform] ?? 'google-chrome'
-
-/** The app's version: „Was ist neu“ counts as seen up to it. */
-const RELEASE = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version
 
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -33,11 +32,12 @@ const ANIMATION_SPY = `(() => {
   };
 })();`
 
-/** Starts Chrome for one account (`host`, `member`, `admin`) and connects to its page. */
-export async function launch(account, port) {
+/** Starts Chrome for one account (`host`, `member`, `admin`) on its port in `PORTS` and connects to its page. */
+export async function launch(account) {
   if (!existsSync(CHROME)) throw new Error(`No Chrome at ${CHROME}; set CHROME_PATH.`)
   const profile = join(OUT, `profile-${account}`)
   mkdirSync(profile, { recursive: true })
+  const port = PORTS[account]
   const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' })
   for (let i = 0; i < 50; i++) {
     try {
@@ -75,9 +75,17 @@ async function connect(url) {
     else if (data.method === 'Input.dragIntercepted') nativeDrags.push(data.params)
     else if (data.method === 'Runtime.exceptionThrown' || (data.method === 'Runtime.consoleAPICalled' && data.params.type === 'error')) errors.push(JSON.stringify(data.params).slice(0, 300))
   }
-  const send = (method, params = {}) => new Promise((resolve) => {
+  // A call with no answer after 30 s rejects, so a stuck Chrome fails the check instead of hanging it.
+  const send = (method, params = {}) => new Promise((resolve, reject) => {
     const n = ++id
-    waiting.set(n, resolve)
+    const timer = setTimeout(() => {
+      waiting.delete(n)
+      reject(new Error(`CDP ${method} timed out`))
+    }, 30_000)
+    waiting.set(n, (answer) => {
+      clearTimeout(timer)
+      resolve(answer)
+    })
     socket.send(JSON.stringify({ id: n, method, params }))
   })
   async function evaluate(expression) {
@@ -99,8 +107,8 @@ export async function resize(tab, width, height) {
 
 /**
  * Signs in through the dev route as the tab's account and opens `path`, logging animations from the first frame on. The
- * dev Users haven't seen the newest „Was ist neu“, whose dialog would cover the page and catch every press: it is
- * marked seen unless `news` is true (to check the dialog itself).
+ * dev sign-in marks the newest „Was ist neu“ seen, so its dialog never covers the page; `news: true` leaves it unseen,
+ * to check the dialog itself.
  */
 export async function open(tab, path, width, height, waitFor = 'body', { news = false } = {}) {
   await resize(tab, width, height)
@@ -108,15 +116,8 @@ export async function open(tab, path, width, height, waitFor = 'body', { news = 
     await tab.send('Page.addScriptToEvaluateOnNewDocument', { source: ANIMATION_SPY })
     tab.spying = true
   }
-  await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}` })
+  await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}` })
   await hydrated(tab, waitFor)
-  if (news) return
-  await api(tab, 'POST', '/api/me/news-seen', { version: RELEASE })
-  if (await tab.evaluate(`!!document.querySelector('[role="dialog"]')`)) {
-    await tab.send('Page.reload')
-    await sleep(500)
-    await hydrated(tab, waitFor)
-  }
 }
 
 /** Waits until Nuxt has hydrated (the dev server takes up to 20 s) and `selector` is on the page. */
@@ -137,14 +138,14 @@ export function api(tab, method, path, body) {
 /** The animations logged since the last call. */
 export const animations = tab => tab.evaluate('window.__animations.splice(0)')
 
-/** The centre of the first element matching `selector`, scrolled into view. */
-export const centre = (tab, selector) => tab.evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); el.scrollIntoView({ block: 'center', behavior: 'instant' }); const r = el.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) } })()`)
+/** The centre of the first element matching `selector`, scrolled into view unless `scroll` is false. */
+export const centre = (tab, selector, { scroll = true } = {}) => tab.evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (${scroll}) el.scrollIntoView({ block: 'center', behavior: 'instant' }); const r = el.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) } })()`)
 
 /** Presses on `from` and lets go over `to`: a mouse drag, or on a phone (touch) after the 300 ms long press. */
 export async function drag(tab, from, to, { touch = false } = {}) {
   await centre(tab, to)
   const start = await centre(tab, from)
-  const end = await tab.evaluate(`(() => { const r = document.querySelector(${JSON.stringify(to)}).getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) } })()`)
+  const end = await centre(tab, to, { scroll: false })
   const at = i => ({ x: start.x + (end.x - start.x) * i / 12, y: start.y + (end.y - start.y) * i / 12 })
   if (touch) {
     await tab.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] })

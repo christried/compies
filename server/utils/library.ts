@@ -65,5 +65,6 @@ export function gameView(row: typeof games.$inferSelect, creatorName: string, vi
     createdBy: { id: row.createdBy, name: creatorName },
     createdAt: row.createdAt.toISOString(),
     canEdit: canEditGame(viewer, row),
+    notes: row.notes,
   }
 }
