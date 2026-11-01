@@ -34,6 +34,8 @@ export async function applySettingsChange(
 
   // checkSettingsChange checks the Phase too, but a request with pools only never reaches it.
   if (!settingsEditable(eventRow.phase)) throw apiError('wrong_phase')
+  // A body with neither key would change nothing; a top-level `{ poolPreview }` is the likely slip, so refuse it (retro 0.6).
+  if (change === undefined && rawPools === undefined) throw apiError('invalid_settings')
   const before = settingsFromRow(eventRow)
   let after: EventSettings
   if (change !== undefined) {
