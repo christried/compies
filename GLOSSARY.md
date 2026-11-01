@@ -40,7 +40,7 @@ _Avoid_: Active session, live session, game night
 
 **Game count**:
 The number of Rounds an Event runs for, changeable by the Host at any time but never below the Rounds already started. The Event finishes after its last Session once that many Rounds have their result (plus a Tiebreaker if needed), never after a set time. The Session that plays the last Round becomes the last one, and later Sessions are removed; if the last Session ends short of the count, the Event stays open until the Host adds a Session or lowers the count.
-_Avoid_: Rounds, games per Session
+_Avoid_: Games per Session, number of games
 
 **Phase**:
 The lifecycle stage an Event is in: draft, date poll, date set, running, finished or archived. Before it runs, an Event is in date poll while any of its Sessions has no Date, and in date set once all have one.

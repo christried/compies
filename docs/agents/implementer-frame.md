@@ -11,7 +11,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
    - then create your branch: `git checkout -b <your branch>`.
 2. `pnpm install --frozen-lockfile` (runs `nuxt prepare`). If you add a dependency, use `pnpm add` and commit the lockfile.
 3. Read, in this order:
-   - your ticket: `gh api repos/christried/compies/issues/<n> --jq .body` (`gh issue view` prints nothing from Git Bash);
+   - your ticket, read as `docs/agents/issue-tracker.md` § Conventions says (from Git Bash the `gh api` form);
    - its parent spec the same way;
    - your brief;
    - `CODING_STANDARDS.md`, and `GLOSSARY.md` for the terms you touch;
@@ -25,7 +25,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 - UI copy is German, in `i18n/locales/de.json`. Use the exact strings your brief gives.
 - A schema change or a migration only when your brief asks for one.
 - Tests check what a User or the API can observe (responses, stored rows, published messages, rendered text and roles), never internals. Prior art is named in each brief.
-- Changelog: add a line only if your brief says so, under `## [Unreleased]` in `CHANGELOG.md`, in the group it names (`docs/agents/release.md`). Plain German for Users, ending with the issue link `([#199](https://github.com/christried/compies/issues/199))`.
+- Changelog: add a line only if your brief says so (a brief names one whenever `release.md` asks for it; if your change is visible to Users and the brief has no line, say so in your report), under `## [Unreleased]` in `CHANGELOG.md`, in the group it names (`docs/agents/release.md`). Plain German for Users, ending with the issue link `([#199](https://github.com/christried/compies/issues/199))`.
 - Shell: this is Windows, and the Bash tool is Git Bash. Script with `node` from a file, never Python; inline `node -e` in bash mangles backticks.
 - Touch only what your brief allows. If the brief and the ticket disagree, or the code makes the brief wrong, do what the ticket needs and say so in the report.
 

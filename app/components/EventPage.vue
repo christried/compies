@@ -25,7 +25,7 @@ const { data, error, refresh, room } = await useEventView(slug)
 const connection = useConnectionBanner(room.state, room.enabled)
 
 // Who is online (#162) goes to the Game board's dots. The server clock is kept here, on the page's one socket, for the
-// timers of 1.5 (which will provide it from here); nothing reads it yet.
+// timers of Glücksrad (0.7) (which will provide it from here); nothing reads it yet.
 const presence = usePresence(room)
 useServerClock(room)
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)

@@ -131,6 +131,26 @@ describe('Was ist neu', () => {
     expect(dialog()).toBeNull()
   })
 
+  it('shows only the newest Release to a User whose stored version is above every Release (#242)', async () => {
+    await visit({ newsSeen: '2.0.0' })
+
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    expect([...dialog()!.querySelectorAll('section[id] h2')]).toHaveLength(1)
+    expect(dialog()!.textContent).toContain('Teams')
+  })
+
+  it('replaces that version with the newest Release when the pop-up is closed (#242)', async () => {
+    await visit({ newsSeen: '2.0.0' })
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+
+    closeButton()!.click()
+    await settle()
+
+    expect(dialog()).toBeNull()
+    expect(posted).toEqual([{ version: '1.4.0' }])
+    expect(useAuthUser().value?.newsSeen).toBe('1.4.0')
+  })
+
   it('tells the server the newest Release is seen when the close button is pressed', async () => {
     await visit({ newsSeen: '1.2.0' })
     await vi.waitFor(() => expect(dialog()).not.toBeNull())
