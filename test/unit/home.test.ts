@@ -8,15 +8,15 @@ const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000)
 const hoursAhead = (hours: number) => new Date(now.getTime() + hours * 3_600_000)
 
 /** A Session with its Date, not started yet. */
-const dated = (startsAt: Date): HomeSessionTimes => ({ startsAt, startedAt: null, endedAt: null })
+const dated = (startsAt: Date): HomeSessionTimes => ({ startsAt, endedAt: null })
 /** A Session still waiting for its Date, not started. */
-const undated = (): HomeSessionTimes => ({ startsAt: null, startedAt: null, endedAt: null })
-/** A Session that has ended at `endedAt`, started an hour before it and dated on the same day. */
-const ended = (endedAt: Date): HomeSessionTimes => ({ startsAt: endedAt, startedAt: new Date(endedAt.getTime() - 3_600_000), endedAt })
+const undated = (): HomeSessionTimes => ({ startsAt: null, endedAt: null })
+/** A Session that has ended at `endedAt`, dated on the same day. */
+const ended = (endedAt: Date): HomeSessionTimes => ({ startsAt: endedAt, endedAt })
 
 describe('staysOnHome', () => {
   it('keeps an Event while a Session runs, however old its Date', () => {
-    const running = { startsAt: hoursAgo(72), startedAt: hoursAgo(72), endedAt: null }
+    const running = { startsAt: hoursAgo(72), endedAt: null }
 
     expect(staysOnHome([running], now)).toBe(true)
   })
