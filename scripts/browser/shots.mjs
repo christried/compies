@@ -2,7 +2,8 @@
 // comparing with the `.dc.html` artboards.
 // Usage: node scripts/browser/shots.mjs <path> [css selector]   e.g. e/my-event 'section[aria-labelledby="board-title"]'
 // The path goes without its leading slash: Git Bash turns an argument like /e/x into the Windows path E:/x.
-import { launch, open, resize, shot, sleep } from './cdp.mjs'
+import { launch, resize, shot, sleep } from './chrome.mjs'
+import { open } from './kit.mjs'
 
 const [given, selector] = process.argv.slice(2)
 if (!given) throw new Error('Usage: node scripts/browser/shots.mjs <path without leading slash> [css selector]')
