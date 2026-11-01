@@ -20,7 +20,7 @@ export interface GameFacts extends PoolFacts { set: boolean }
  * the moment it is set, with the Pool preview off and under a Hidden wheel alike: the Round card shows it. Nothing else
  * becomes visible with it. Every other game follows the pools (canSeePoolGames). The image route asks here, so a Member
  * never sees a name (the Round card) without its picture. A put-back Round's game stays visible: everyone saw it set.
- * Glücksrad's draw (#229) adds a drawn game here from its stop instant on.
+ * A game the wheel drew counts as set from the draw's stop instant on (#229, gameEventsOf), settled or not.
  */
 export function canSeeGame({ set, ...pool }: GameFacts): boolean {
   return set || canSeePoolGames(pool)

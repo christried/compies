@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { finalAngle, removalEase, sliceSpans, wheelAngle, type WheelTiming } from '../../app/utils/wheel'
+import { finalAngle, removalEase, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '../../app/utils/wheel'
 import { SPIN_REDUCED_MS } from '../../shared/rounds'
 
 // The Lucky Wheel's angle toward a fixed stop instant (#229, 04-motion § Lucky Wheel, § Synchronised moments): a function of
@@ -71,6 +71,33 @@ describe('the removal of the drawn slice', () => {
     expect(removalEase(spin, STOP + 2200, false, true)).toBe(0)
     expect(removalEase(spin, STOP + 2200 + 199, false, true)).toBe(0)
     expect(removalEase(spin, STOP + 2200 + 200, false, true)).toBe(1)
+  })
+})
+
+describe('the reveal of a Hidden wheel', () => {
+  it('keeps the placeholder until half a second after the stop, then morphs for 0.3 s, then shows the game', () => {
+    expect(revealStage(spin, STOP, false)).toEqual({ stage: 'placeholder', progress: 0 })
+    expect(revealStage(spin, STOP + 499, false)).toEqual({ stage: 'placeholder', progress: 0 })
+    expect(revealStage(spin, STOP + 650, false)).toEqual({ stage: 'morph', progress: 0.5 })
+    expect(revealStage(spin, STOP + 800, false)).toEqual({ stage: 'real', progress: 1 })
+  })
+
+  it('crossfades for 0.2 s under reduced motion', () => {
+    expect(revealStage(spin, STOP + 600, true)).toEqual({ stage: 'morph', progress: 0.5 })
+    expect(revealStage(spin, STOP + 700, true)).toEqual({ stage: 'real', progress: 1 })
+  })
+})
+
+describe('scramble', () => {
+  it('turns a name into random letters of the same length, spaces kept, a new set for every frame', () => {
+    const a = scramble('Super Smash Bratwurst', 1)
+    const b = scramble('Super Smash Bratwurst', 2)
+
+    expect(a).toHaveLength('Super Smash Bratwurst'.length)
+    expect([...a].map((char, index) => char === ' ' ? index : -1).filter(index => index >= 0)).toEqual([5, 11])
+    expect(scramble('Super Smash Bratwurst', 1)).toBe(a)
+    expect(b).not.toBe(a)
+    expect(a).not.toBe('Super Smash Bratwurst')
   })
 })
 

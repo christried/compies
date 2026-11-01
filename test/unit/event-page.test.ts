@@ -157,6 +157,16 @@ describe('the blocks of the stage', () => {
     expect(blocks([dated('a', 1, SAT)])).not.toContain('rounds')
   })
 
+  it('puts the wheel on top of the open Rounds in a running Lucky Wheel Event, and nowhere else (#229)', () => {
+    const wheel = { settings: { ...settings, selectionMode: 'lucky_wheel' } as PageInput['settings'] }
+    const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
+
+    expect(blocks(running, { event: { phase: 'running' }, ...wheel })).toEqual(['head', 'reopen', 'wheel', 'rounds', 'board', 'poll', 'cards'])
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' }, ...wheel })).not.toContain('wheel')
+    expect(blocks([dated('a', 1, SAT)], wheel)).not.toContain('wheel')
+    expect(blocks(running, { event: { phase: 'running' }, settings: { ...settings, selectionMode: 'admin_pick' } as PageInput['settings'] })).not.toContain('wheel')
+  })
+
   it('puts the cards first between two Sessions, with the notice that the teams stay', () => {
     expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'cards', 'stay', 'board'])
   })

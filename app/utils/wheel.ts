@@ -92,6 +92,36 @@ export function removalEase(spin: Pick<WheelTiming, 'stopAt'>, nowMs: number, hi
   return bezier(IO_EASE, Math.min(Math.max(elapsed / REMOVE_MS, 0), 1))
 }
 
+/** A Hidden wheel's drawn label turns into the real game this long after the stop (04-motion § reveal). */
+const REVEAL_AFTER_MS = 500
+/** The label scrambles for 6 frames of 0.05 s, then shows the game; reduced motion crossfades for 0.2 s instead. */
+const SCRAMBLE_MS = 300
+const CROSSFADE_MS = 200
+export const SCRAMBLE_FRAME_MS = 50
+
+/**
+ * Where the reveal of the drawn label stands (04-motion § Lucky Wheel, `reveal`): `placeholder` until half a second after the
+ * stop, `morph` while the label scrambles (reduced: crossfades), `real` after. `progress` runs 0 to 1 through the morph.
+ */
+export function revealStage(spin: Pick<WheelTiming, 'stopAt'>, nowMs: number, reduced: boolean): { stage: 'placeholder' | 'morph' | 'real', progress: number } {
+  const elapsed = nowMs - (spin.stopAt + REVEAL_AFTER_MS)
+  const length = reduced ? CROSSFADE_MS : SCRAMBLE_MS
+  if (elapsed < 0) return { stage: 'placeholder', progress: 0 }
+  return elapsed >= length ? { stage: 'real', progress: 1 } : { stage: 'morph', progress: elapsed / length }
+}
+
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+
+/** A name as random letters for one frame of the reveal: the same length, the spaces kept; the same frame always gives the same letters. */
+export function scramble(name: string, frame: number): string {
+  let seed = (frame + 1) * 2654435761
+  return Array.from(name, (char) => {
+    if (char === ' ') return char
+    seed = (Math.imul(seed, 1103515245) + 12345) >>> 0
+    return LETTERS[(seed >>> 8) % LETTERS.length]!
+  }).join('')
+}
+
 /** The angular span of each slice, in degrees from the top, while the slice `drawn` leaves (`ease` 0 = all slices alike, 1 = it is gone and the others share the circle). */
 export function sliceSpans(slices: number, drawn: number, ease: number): { start: number, end: number }[] {
   const even = 360 / slices

@@ -26,9 +26,9 @@ const { data, error, refresh, room } = await useEventView(slug)
 const connection = useConnectionBanner(room.state, room.enabled)
 
 // Who is online (#162) goes to the Game board's dots. The server clock is kept here, on the page's one socket, for the
-// timers of Glücksrad (0.7) (which will provide it from here); nothing reads it yet.
+// timers of Glücksrad (0.7): the blocks that run toward an instant get its `now` as `server-now`.
 const presence = usePresence(room)
-useServerClock(room)
+const serverClock = useServerClock(room)
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 const notFound = computed(() => error.value?.statusCode === 404)
@@ -38,6 +38,15 @@ const failed = computed(() => error.value !== null && !notFound.value && !delete
 useHead({ title: () => data.value?.event.name })
 
 const votes = useOptimisticVotes(slug, data, refresh)
+
+// No timer runs on the server (ADR 0013, amended 2026-10-31): the first read after an instant settles it, so the page reads the Event
+// and the Activity feed again when an instant it knows passes (#229: the wheel's stop; the next tickets add their own).
+const feedTick = ref(0)
+const knownInstants = computed(() => (data.value?.wheel?.spin ? [Date.parse(data.value.wheel.spin.stopAt)] : []))
+useInstantRefresh(knownInstants, serverClock.now, () => {
+  void refresh()
+  feedTick.value += 1
+})
 
 /** The open Slots with their day and time in Berlin, for the poll and the confirm dialog. */
 const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
@@ -94,6 +103,7 @@ const hostActions = useHostActions(
     start: () => dialogs.value?.openStart(),
     end: endSession,
     setGame: () => dialogs.value?.openSetGame(),
+    spin: () => void send('POST', 'rounds/spin'),
   },
 )
 
@@ -224,6 +234,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :room="room"
             :sessions="feed.started"
             :next-number="feed.nextNumber"
+            :refresh-tick="feedTick"
           />
         </template>
       </SidePanel>
@@ -315,6 +326,14 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           @remove-session="removeSession"
         />
 
+        <LuckyWheel
+          v-else-if="block === 'wheel' && data.wheel"
+          :wheel="data.wheel"
+          :hidden="data.settings?.hiddenWheel ?? false"
+          :is-host="data.event.isHost"
+          :server-now="serverClock.now"
+        />
+
         <EventRounds
           v-else-if="block === 'rounds'"
           :rounds="data.rounds"
@@ -393,6 +412,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :room="room"
             :sessions="feed.started"
             :next-number="feed.nextNumber"
+            :refresh-tick="feedTick"
           />
         </div>
       </section>

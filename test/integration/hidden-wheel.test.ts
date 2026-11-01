@@ -509,36 +509,36 @@ describe('Hidden wheel secrecy (#148)', () => {
   const LOBBY = { ...HIDDEN_WHEEL, teamCount: 2, teamSize: 1 } as const
 
   /** A Running Session under a Hidden wheel: Alpha and Beta in the Game pool, Gamma in the Tiebreaker pool, Epsilon only in the library. */
-    async function runningEvent() {
-      const [a, b, c, e] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
-      const created = await request('/api/e', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-        body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: LOBBY, pools: { main: [a.id, b.id], tiebreaker: [c.id] } }),
-      })
-      const { slug, inviteUrl } = await created.json() as CreatedEvent
-      const token = new URL(inviteUrl).pathname.slice('/e/'.length)
-      const secondCookie = (await signIn(testDb.db, second)).cookie
-      for (const cookie of [playerCookie, secondCookie]) expect((await request(`/api/invite/${token}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
-      await startRunningSession(request, testDb.db, { slug, hostCookie, seated: [{ cookie: playerCookie, email: player.email }, { cookie: secondCookie, email: second.email }] })
-      notifier.clear()
-      const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-      return { slug, eventId: eventRow!.id, a, b, c, e }
-    }
+  async function runningEvent() {
+    const [a, b, c, e] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
+    const created = await request('/api/e', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'cookie': hostCookie },
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: LOBBY, pools: { main: [a.id, b.id], tiebreaker: [c.id] } }),
+    })
+    const { slug, inviteUrl } = await created.json() as CreatedEvent
+    const token = new URL(inviteUrl).pathname.slice('/e/'.length)
+    const secondCookie = (await signIn(testDb.db, second)).cookie
+    for (const cookie of [playerCookie, secondCookie]) expect((await request(`/api/invite/${token}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
+    await startRunningSession(request, testDb.db, { slug, hostCookie, seated: [{ cookie: playerCookie, email: player.email }, { cookie: secondCookie, email: second.email }] })
+    notifier.clear()
+    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+    return { slug, eventId: eventRow!.id, a, b, c, e }
+  }
 
-    const imageStatus = async (secret: Secret) => (await request(secret.imageUrl, { headers: { cookie: playerCookie } })).status
+  const imageStatus = async (secret: Secret) => (await request(secret.imageUrl, { headers: { cookie: playerCookie } })).status
 
-    /** Everything the Player can read: the Event read, the feed and the room. */
-    async function whatThePlayerGets(slug: string, eventId: string) {
-      const feed = await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie: playerCookie } })
-      return { event: await rawRead(playerCookie, slug), feed: await feed.text(), room: JSON.stringify(notifier.messages(eventId)) }
-    }
+  /** Everything the Player can read: the Event read, the feed and the room. */
+  async function whatThePlayerGets(slug: string, eventId: string) {
+    const feed = await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie: playerCookie } })
+    return { event: await rawRead(playerCookie, slug), feed: await feed.text(), room: JSON.stringify(notifier.messages(eventId)) }
+  }
 
-    function expectNone(what: Record<string, string>, secrets: readonly Secret[], include: (secret: Secret) => string[] = traces) {
-      for (const [place, raw] of Object.entries(what)) {
-        for (const secret of secrets) for (const trace of include(secret)) expect(raw, `${place} leaks ${trace}`).not.toContain(trace)
-      }
+  function expectNone(what: Record<string, string>, secrets: readonly Secret[], include: (secret: Secret) => string[] = traces) {
+    for (const [place, raw] of Object.entries(what)) {
+      for (const secret of secrets) for (const trace of include(secret)) expect(raw, `${place} leaks ${trace}`).not.toContain(trace)
     }
+  }
 
   // A game the Host sets is every Member's from the moment it is set, and nothing else becomes known with it (#228).
   describe('a game the Host sets (#228)', () => {
