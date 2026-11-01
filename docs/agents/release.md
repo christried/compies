@@ -15,6 +15,7 @@ COMPIES keeps its version history in `CHANGELOG.md` at the repo root (Keep a Cha
 Every Release runs these steps in this order. A step finds work → tickets, fixed on `staging`, before the next step.
 
 1. **Review.** Once every ticket of the Release is on `staging`, review the Release diff (`vPREVIOUS...origin/staging`) in three `sonnet` subagents: `code-review` Standards, `code-review` Spec against the Release spec and its tickets, and `thermo-nuclear-code-quality-review` with `improve-codebase-architecture`. Merge their findings into `docs/reviews/review_x.y_YYYY-MM-DD.md` and turn what must change into tickets.
+   - A Release that is one spec on one integration branch gets this review on the integration branch (`vPREVIOUS...<integration branch>`), as `/implement-spec`'s code review, and its fixes land before the integration PR merges. In 0.5.1 a two-axis review on the integration branch and this review on `staging` covered the same diff, and only the second found #242.
 2. **Walk-through.** Open a `ready-for-human` issue „Staging walk-through x.y“ with a checklist built from the spec's acceptance criteria. The user walks staging and notes what is off; each finding becomes a ticket.
 3. **Cut.** Only then the version cut and the Release PR below.
 4. **Retro.** After the merge into `main`, ask the user to run `/retro` on the Release's sessions: what the review and the walk-through caught that a check, a standard or a brief should have caught earlier. Its rules land in `CLAUDE.md`, `docs/agents/` or a new automated check.

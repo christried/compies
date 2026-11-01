@@ -26,6 +26,7 @@ A second page, flow or component that does what an existing one does needs its r
 - A column a request filters or joins on gets its index in the same migration.
 - An enum belongs to one glossary term. A concept with its own term gets its own enum, even when today's values match (games' Suitability is not the Event's Format).
 - A migration that has run on staging is never edited; the fix is a new migration.
+- Migrations run in the Vercel build while the previous deployment still serves (ADR 0007). A data migration keeps the app correct for the rows the old code writes after it ran: 0013 renumbered the seen versions, and the old code could store `1.4.0` again until the switch-over (#242).
 
 ## Motion
 
@@ -39,5 +40,5 @@ A second page, flow or component that does what an existing one does needs its r
 ## Copy
 
 - UI copy uses the glossary's UI word. When the glossary retires a word, it goes into `RETIRED` in `test/unit/copy.test.ts`.
-- Copy promises only what the app does today.
+- Copy promises only what the app does today. A string the spec prescribes word for word is decided; the review names it only when the app has changed since the spec.
 - A new third party the browser or the server talks to goes into the Datenschutzerklärung; `test/unit/privacy-hosts.test.ts` names the host, and the user approves the text.

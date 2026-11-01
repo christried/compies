@@ -37,7 +37,16 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
 
+   **COMPIES:** before every new implementer (steps 4, 6 and 7), run `node scripts/context-usage.mjs`. It reads this main session's context from its transcript; subagents don't count. At 300k tokens or more, start no new implementer: let the running ones report, review and merge them as usual, then write a **handoff** for the next session and stop. `handoff` is user-invoked, so read `.claude/skills/handoff/SKILL.md` and follow it. The handoff carries what a fresh `/implement-spec` needs to go on without loss:
+   - the spec, the integration branch, its PR, and each ticket's state: merged, in flight (branch, worktree), on the frontier, or blocked (by what);
+   - the brief of every ticket not yet merged, copied next to the handoff (briefs live in this session's scratchpad);
+   - every decision the user made in chat, first posted as a comment on its issue, then pointed to;
+   - the friction worth a `/retro`: what cost time, what a check, a doc or a brief should have caught.
+   End by telling the user the handoff's path, to start the next session with `/implement-spec` and that path.
+
 7. Once all tickets are complete, call the Skill tool with `code-review` on the integration branch. Fix all issues raised by the code review in a single **implementer subagent**.
+
+   **COMPIES:** when the spec is a whole Release, run the Release review of `docs/agents/release.md` § Review, walk-through, retro here instead of `code-review`: it reviews the integration branch once, and the Release needs no second review on `staging`.
 
 8. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket the way the issue tracker closes work, and report the integration branch.
 
