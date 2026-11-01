@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import HowWePlayCard from '~/components/HowWePlayCard.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { EventPools } from '~~/shared/event'
-import type { PoolGame } from '~~/shared/game'
+import type { PoolGame, PoolGameFace } from '~~/shared/game'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { serve, view, viewWithSessions } from './event-page'
@@ -16,6 +16,11 @@ function poolGame(name: string, overrides: Partial<PoolGame> = {}): PoolGame {
     id: `id-${name}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30,
     playersMin: null, playersMax: null, suitabilities: [], notes: null, ...overrides,
   }
+}
+
+// What the server gives a Member who may see the pools (#224): picture and name, no more.
+function faceOf(game: PoolGame): PoolGameFace {
+  return { id: game.id, name: game.name, imageUrl: game.imageUrl, youtubeId: game.youtubeId }
 }
 
 const wheel: EventSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3, gameCount: 6, teamCount: 4, teamSize: 2, pointsTable: { preset: 'linear', values: [3, 2, 1, 0] } }
@@ -53,7 +58,7 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.text()).not.toContain('Veto')
   })
 
-  it('lists the games of both pools while the wheel is not hidden', async () => {
+  it('lists the games of both pools it is given', async () => {
     const card = await mountCard({ settings: wheel, pools: visiblePools })
 
     const lists = card.findAll('ul')
@@ -66,9 +71,10 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.text()).not.toContain('verrät das Rad')
   })
 
-  it('gives a pool game with notes one Notizen disclosure below its card, and none without notes (#224)', async () => {
+  it('gives the Host a pool game with notes one Notizen disclosure below its card, and none without notes (#224)', async () => {
     const card = await mountCard({
       settings: wheel,
+      isHost: true,
       pools: { main: [poolGame('Mario Kart', { notes: 'Settings: 3 Runden' }), poolGame('Pong')], tiebreaker: [] },
     })
 
@@ -78,13 +84,38 @@ describe('HowWePlayCard (#148)', () => {
     expect(withoutNotes!.text()).not.toContain('Notizen')
   })
 
-  it('gives a game in both pools one Notizen disclosure per list, each with its own panel (#224)', async () => {
+  it('gives the Host a game in both pools one Notizen disclosure per list, each with its own panel (#224)', async () => {
     const kart = poolGame('Mario Kart', { notes: 'Settings: 3 Runden' })
-    const card = await mountCard({ settings: wheel, pools: { main: [kart], tiebreaker: [kart] } })
+    const card = await mountCard({ settings: wheel, isHost: true, pools: { main: [kart], tiebreaker: [kart] } })
 
     const buttons = card.findAll('button').filter(button => button.text() === 'Notizen')
     expect(buttons).toHaveLength(2)
+    // A closed disclosure controls no panel (aria-controls only while open).
+    for (const button of buttons) await button.trigger('click')
     expect(buttons[0]!.attributes('aria-controls')).not.toBe(buttons[1]!.attributes('aria-controls'))
+  })
+
+  it('shows a Member of a visible pool picture and name of each game, and no player count, Suitabilities or Notizen (#224)', async () => {
+    const kart = poolGame('Mario Kart', { imageUrl: '/api/images/kart.webp', playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
+    const pong = poolGame('Pong', { youtubeId: 'dQw4w9WgXcQ' })
+    const card = await mountCard({ settings: wheel, pools: { main: [faceOf(kart), faceOf(pong)], tiebreaker: [faceOf(kart)] } })
+
+    const [first, second] = card.findAll('ul')[0]!.findAll('li')
+    expect(first!.text()).toBe('Mario Kart')
+    expect(first!.get('img').attributes('src')).toBe('/api/images/kart.webp')
+    expect(second!.text()).toBe('Pong')
+    expect(second!.get('img').attributes('src')).toContain('dQw4w9WgXcQ')
+    expect(card.findAll('ul').map(list => list.text()).join(' ')).not.toMatch(/Notizen|2–4|Teams/)
+    expect(card.findAll('button')).toHaveLength(0)
+  })
+
+  it('shows the Host the player count and Suitabilities of a pool game next to its Notizen (#224)', async () => {
+    const kart = poolGame('Mario Kart', { playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
+    const card = await mountCard({ settings: wheel, isHost: true, pools: { main: [kart], tiebreaker: [] } })
+
+    expect(card.get('li').text()).toContain('2–4')
+    expect(card.get('li').text()).toContain('Teams')
+    expect(card.get('li').text()).toContain('Notizen')
   })
 
   it('says „Noch keine Spiele.“ for an empty pool', async () => {

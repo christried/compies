@@ -77,8 +77,19 @@ export interface PoolGame {
   playersMax: number | null
   /** The Suitabilities, in SUITABILITIES order; empty when none is set (#171). */
   suitabilities: Suitability[]
-  /** Game notes (#223); null = none. In a pool only for the viewers who may see the pool's games (#224). */
+  /** Game notes (#223); null = none. In a pool only the Host reads them (#224). */
   notes: string | null
+}
+
+/**
+ * What a Member who may see a pool gets of its games: what draws the picture and the name, nothing else (#224). The
+ * Host's pool game is the whole PoolGame. `youtubeId` is the card's thumbnail for a game without an image of its own.
+ */
+export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId'>
+
+/** Whether a pool game came whole, as the Host gets it (the notes are there, even when null), or as the face only. */
+export function isFullPoolGame(game: PoolGame | PoolGameFace): game is PoolGame {
+  return 'notes' in game
 }
 
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */

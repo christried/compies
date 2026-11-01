@@ -38,7 +38,7 @@ const wheel = computed(() => hasWheel(draft.value.settings.selectionMode))
 const veto = computed(() => vetoAllowanceOf(draft.value))
 
 // „Pool vorher zeigen“ (#225) is always off under „Rad verdecken“. Turning „Rad verdecken“ on turns it off; turning it off
-// leaves it off until the Host turns it on, so nothing is revealed by surprise.
+// leaves it off until the Host turns it on, so nothing is revealed by surprise (also not a value kept from Host-Wahl).
 const poolPreview = computed({
   get: () => draft.value.poolPreview && !(wheel.value && draft.value.hiddenWheel),
   set: (value) => {
@@ -47,7 +47,8 @@ const poolPreview = computed({
 })
 
 function hideWheel(hidden: boolean) {
-  draft.value = hidden ? { ...draft.value, hiddenWheel: true, poolPreview: false } : { ...draft.value, hiddenWheel: false }
+  // Both ways leave the Pool preview off: a value the Host set under Host-Wahl in between must not come back by surprise.
+  draft.value = { ...draft.value, hiddenWheel: hidden, poolPreview: false }
 }
 </script>
 

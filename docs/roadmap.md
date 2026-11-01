@@ -76,7 +76,7 @@ Game notes and Pool preview; no realtime, no round. Spec: [#217](https://github.
 - **Game notes** („Notizen“) on every library game:
   - plain text, multi-line, line breaks kept, at most 1000 characters (graphemes, #76);
   - written by the game's editors, also in the stepper's „Neues Spiel anlegen“ sheet;
-  - shown in the library and, behind a collapsible „Notizen“, under each game in „So wird gespielt“ wherever the game is visible.
+  - shown to Hosts in the library and, behind a collapsible „Notizen“, under each game in „So wird gespielt“ for the Host of the Event only; Members of a pool see picture and name of its games and nothing else (decided 2026-11-01, [#217 comment](https://github.com/christried/compies/issues/217#issuecomment-6560579466)).
   - One note per library game, shared across every Host's Events.
 - **Pool preview** („Pool vorher zeigen“):
   - an Event setting for Host pick and the visible Lucky Wheel, on by default and for existing Events, editable while the Event runs;
@@ -128,7 +128,7 @@ The game round up to „wird gespielt“. (T10; screens 10, 11, 15, 30.) Spec: [
   - no sound, no feed entry.
   - Needed for the first Event, so it ships in a plain look; the motion and graphics wait for „Nach dem ersten Event“.
 - **Host-only pool warning:** shown when the games left are fewer than (Game count − Rounds started) + every Party's remaining Vetoes (Bonus Vetoes included), or under Host pick fewer than the Rounds still to start. It never blocks.
-- **Game notes on the Round card**, open while the game is played.
+- **Game notes on the Round card**, open while the game is played, for the Host only (decided 2026-11-01, [#217 comment](https://github.com/christried/compies/issues/217#issuecomment-6560579466)).
 - **Settings lock (A3):** the Hidden wheel can't be switched during a spin or veto window; one summary for „So wird gespielt“ and the stepper.
 - All UI _own build_ from the reference designs; no Claude Design hand-off.
 

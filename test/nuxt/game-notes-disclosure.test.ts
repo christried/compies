@@ -15,8 +15,17 @@ describe('GameNotesDisclosure (#224)', () => {
     expect(button.text()).toBe('Notizen')
     expect(button.attributes('type')).toBe('button')
     expect(button.attributes('aria-expanded')).toBe('false')
+    // No panel, so nothing to control: aria-controls would point at an id that is not in the page.
+    expect(button.attributes('aria-controls')).toBeUndefined()
     expect(disclosure.find('p').exists()).toBe(false)
     expect(disclosure.text()).not.toContain('Warmup')
+  })
+
+  it('is plain underlined text like Bearbeiten, with no outline-memphis box around it', async () => {
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: NOTES } })
+
+    expect(disclosure.get('button').classes()).not.toContain('outline-memphis')
+    expect(disclosure.get('button').classes()).toContain('underline')
   })
 
   it('opens on a click, shows the notes with their line breaks, and names its panel', async () => {
@@ -40,6 +49,7 @@ describe('GameNotesDisclosure (#224)', () => {
     await button.trigger('click')
 
     expect(button.attributes('aria-expanded')).toBe('false')
+    expect(button.attributes('aria-controls')).toBeUndefined()
     expect(disclosure.find('p').exists()).toBe(false)
   })
 

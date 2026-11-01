@@ -11,8 +11,8 @@ import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
-// The Game pool and the Tiebreaker pool of an Event (#146): created with the Event, read back by the Host in full
-// by every other Member only while the wheel is not hidden (#148), and otherwise learns nothing about them (#222).
+// The Game pool and the Tiebreaker pool of an Event (#146): created with the Event, read back by the Host in full,
+// by every other Member as picture and name only while the Pool preview is on (#148, #224, #225), and otherwise they learn nothing about them (#222).
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
@@ -154,20 +154,30 @@ describe('the pools of an Event (#146)', () => {
       })
     })
 
-    it('gives a Member who may see the pools each game with its notes, and null for a game without notes (#224)', async () => {
-      const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby' })
+    it('gives a Member who may see the pools only the picture and name of each game, even when it has notes (#224)', async () => {
+      const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby', playersMin: 2, suitabilities: ['teams'] })
       const pong = await newGame('Pong')
       const { slug, inviteUrl } = await createdEvent({ pools: { main: [kart.id, pong.id], tiebreaker: [] } })
       const { cookie } = await signIn(testDb.db, member)
       const invite = new URL(inviteUrl).pathname.slice('/e/'.length)
       expect((await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
 
-      expect((await read(cookie, slug)).pools).toMatchObject({
+      expect((await read(cookie, slug)).pools).toEqual({
         main: [
-          { name: 'Mario Kart', notes: 'Settings: 3 Runden\nWarmup: Lobby' },
-          { name: 'Pong', notes: null },
+          { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null },
+          { id: pong.id, name: 'Pong', imageUrl: null, youtubeId: null },
         ],
+        tiebreaker: [],
       })
+    })
+
+    it('gives the Host every field of a pool game, the notes too (#224)', async () => {
+      const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden', playersMin: 2, playersMax: 4 })
+      const { slug } = await createdEvent({ pools: { main: [kart.id], tiebreaker: [] } })
+
+      expect((await read(hostCookie, slug)).pools!.main).toEqual([
+        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Settings: 3 Runden' },
+      ])
     })
 
     it('gives the Host empty lists for an Event without pools', async () => {

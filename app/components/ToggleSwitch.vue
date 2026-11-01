@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// An on/off setting (02-components § ToggleSwitch): „Rad verdecken“ in the Lucky Wheel's options (#145). The
+// An on/off setting (02-components § ToggleSwitch): „Rad verdecken“ in the Lucky Wheel's options (#145) and „Pool vorher zeigen“ (#225). The
 // whole row is the switch, so the label is clickable; the optional help is its description. The knob slides with the
 // same ease as the other motion, and not at all with reduced motion. `disabled` (#225) keeps the switch where it is: it
 // is announced as disabled (aria-disabled, like the other disabled controls, so it stays focusable and its help, which

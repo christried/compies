@@ -204,6 +204,26 @@ describe('the Selection mode step', () => {
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
     })
 
+    it('stays off when „Rad verdecken“ is turned off again after a detour through Host-Wahl, where the Host turned it on', async () => {
+      const saved = recordPost()
+      const page = await mountCreate()
+      await toModeStep(page)
+      await radios(page)[1]!.trigger('click')
+      await hideSwitch(page).trigger('click')
+      await radios(page)[0]!.trigger('click')
+      await previewSwitch(page)!.trigger('click')
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
+      await radios(page)[1]!.trigger('click')
+
+      await hideSwitch(page).trigger('click')
+
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('false')
+      await toLastStep(page)
+      await cta(page).trigger('click')
+      await vi.waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
+      expect(saved).toHaveBeenLastCalledWith(expect.objectContaining({ settings: expect.objectContaining({ selectionMode: 'lucky_wheel', hiddenWheel: false, poolPreview: false }) }))
+    })
+
     it('is sent with Host-Wahl and with the Glücksrad as the Host set it', async () => {
       const saved = recordPost()
       const page = await mountCreate()

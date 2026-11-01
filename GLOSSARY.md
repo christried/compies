@@ -201,7 +201,7 @@ What kind of play a game in the Game library works for: Teams, free-for-all or o
 _Avoid_: Format (an Event has a Format, a game has Suitabilities), game mode
 
 **Game notes**:
-The free text on a game in the Game library, such as its settings, warm-up and win condition; the game's editors write it, and Members read it once they may know the game (UI: Notizen).
+The free text on a game in the Game library, such as its settings, warm-up and win condition; the game's editors write it, and only Hosts read it, in the library and as the Host of an Event whose pool holds the game (UI: Notizen).
 _Avoid_: Note (a Note belongs to a Vote), description, rules
 
 **Activity feed**:

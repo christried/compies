@@ -149,7 +149,7 @@ export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): 
     // The floors at the saved team count; an Event that is not set up counts all teams (#197).
     viewer.isHost ? settingsFloors(db, eventRow.id).then(floorsAt => floorsAt(settings?.teamCount ?? Number.POSITIVE_INFINITY)) : null,
     // Nothing about the pools is selected for a viewer who may not see them (#222).
-    canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings })) ? eventPools(db, eventRow.id) : null,
+    canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings })) ? eventPools(db, eventRow.id, viewer.isHost) : null,
   ])
   return {
     settings,

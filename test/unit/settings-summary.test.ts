@@ -31,6 +31,11 @@ describe('settingsSentence', () => {
     expect(settingsSentence(settings({ selectionMode: 'lucky_wheel', vetoAllowance: 3 }), t)).toBe('2 Teams à 3, Glücksrad, 10 Spiele.')
     expect(settingsSentence(settings({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 }), t)).toBe('2 Teams à 3, Glücksrad (verdeckt), 10 Spiele.')
   })
+
+  it('says when the Pool preview is off (#225)', () => {
+    expect(settingsSentence(settings({ poolPreview: false }), t)).toBe('2 Teams à 3, Host-Wahl, Spiele erst beim Setzen, 10 Spiele.')
+    expect(settingsSentence(settings({ selectionMode: 'lucky_wheel', vetoAllowance: 3, poolPreview: false }), t)).toBe('2 Teams à 3, Glücksrad, Spiele erst am Rad, 10 Spiele.')
+  })
 })
 
 describe('pointsText', () => {
