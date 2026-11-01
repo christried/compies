@@ -6,7 +6,7 @@ import type { Place } from '~~/shared/board'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty } from './auth'
-import { LARSI, SANNE, clickButton, dialog, shownToasts } from './event-page'
+import { LARSI, SANNE, clickButton, dialog, memberView, shownToasts } from './event-page'
 
 // Team names on the Game board (#161, 02-components § TeamNameBuilder, App Lobby 09 „Teamwahl offen + Teamwort“): the
 // Player's own field in their team's header area, the composed name, its live region, and the Host's reset.
@@ -14,7 +14,7 @@ const settings: EventSettings = { ...defaultSettings(), teamCount: 2, teamSize: 
 const team = (n: number): Place => ({ zone: 'team', team: n })
 
 function member(id: string, name: string, place: Place, teamWord: string | null = null, isHost = false): MemberView {
-  return { id, name, image: `https://example.com/${name}.png`, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null, teamWord }
+  return memberView({ id, name, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null, teamWord })
 }
 
 const teamsNamed = (first: string | null, second: string | null = null): BoardTeam[] => [

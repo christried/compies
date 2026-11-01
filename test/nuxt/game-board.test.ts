@@ -8,7 +8,7 @@ import { envelope, type RoomMessage } from '~~/shared/realtime'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { LARSI, SANNE, serve, shownToasts, view } from './event-page'
+import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page'
 
 // The Game board (#160, spec #153 § Game board): the three phases, moving by drag and by keyboard, the MoveToMenu with
 // the reasons, the own move that shows at once and comes back with a toast, the Host's uneven notice, and the glide of
@@ -19,7 +19,7 @@ const BENCH: Place = { zone: 'bench' }
 const team = (n: number): Place => ({ zone: 'team', team: n })
 
 function member(id: string, name: string, place: Place = BENCH, isHost = false): MemberView {
-  return { id, name, image: `https://example.com/${name}.png`, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null, teamWord: null }
+  return memberView({ id, name, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null })
 }
 
 const kittyAt = (place: Place = BENCH) => member(kitty.id, 'Kitty', place)

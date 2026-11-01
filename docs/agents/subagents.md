@@ -31,4 +31,12 @@ Read every implementer's diff against its brief and the ticket's acceptance crit
 
 A ticket that changes a page isn't done on tests alone: look at the page on `pnpm dev` at 390 and 1440 px wide, signed in through `/api/dev/sign-in?as=host` or `?as=member` (README), and compare it with its `.dc.html` artboard in `docs/design_handoff_compies/reference/`. Put the screenshots in the PR. A ticket with live behaviour (two people on one Event) or motion also gets the two-account check in `scripts/browser/`: a Host and a Member in two headless Chrome profiles, with every animation logged.
 
+**Context limit.** Before every new implementer (`implement-spec` steps 4, 6 and 7), run `node scripts/context-usage.mjs`. It reads this main session's context from its transcript; subagents don't count. At 300k tokens or more, start no new implementer: let the running ones report, review and merge them as usual, then write a handoff for the next session and stop. `handoff` is user-invoked, so read `.claude/skills/handoff/SKILL.md` and follow it. The handoff carries what a fresh `/implement-spec` needs to go on without loss:
+- the spec, the integration branch, its PR, and each ticket's state: merged, in flight (branch, worktree), on the frontier, or blocked (by what);
+- the brief of every ticket not yet merged, copied next to the handoff (briefs live in this session's scratchpad);
+- every decision the user made in chat, first posted as a comment on its issue, then pointed to;
+- the friction worth a `/retro`: what cost time, what a check, a doc or a brief should have caught.
+
+End by telling the user the handoff's path, to start the next session with `/implement-spec` and that path.
+
 The orchestrator does every merge into `staging` and `main` (`docs/agents/delivery.md`).

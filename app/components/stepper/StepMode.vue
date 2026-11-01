@@ -7,9 +7,10 @@ import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, hasW
 // The Selection mode (#145). The Lucky Wheel (Glücksrad) and Host-Wahl are open; the other three are shown as „Bald
 // verfügbar“ on their cards, so the Host knows what is coming (no note under them, #174). With the Lucky Wheel:
 // Rad verdecken and the Veto allowance, both kept in the draft while Host-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
-// it (`vetoAllowanceOf`). The step never blocks. In the settings editor (#147) `locks.reason` locks the mode (the Event
-// is running; Rad verdecken and the Veto allowance stay open) and `locks.floors` keeps the Veto allowance from going
-// below what a Party has spent.
+// it (`vetoAllowanceOf`). „Pool vorher zeigen“ (#225) sits in the wheel's box with the Lucky Wheel and in a box of its own
+// with Host-Wahl. The step never blocks. In the settings editor (#147) `locks.reason` locks the mode (the Event
+// is running; Rad verdecken, Pool vorher zeigen and the Veto allowance stay open) and `locks.floors` keeps the Veto
+// allowance from going below what a Party has spent.
 const props = defineProps<{ locks?: StepLocks }>()
 const draft = defineModel<EventDraft>({ required: true })
 const blocker = defineModel<string | null>('blocker', { default: null })
@@ -35,6 +36,20 @@ const vetoMinReason = computed(() => (vetoMin.value > VETO_ALLOWANCE_MIN ? t('se
 
 const wheel = computed(() => hasWheel(draft.value.settings.selectionMode))
 const veto = computed(() => vetoAllowanceOf(draft.value))
+
+// „Pool vorher zeigen“ (#225) is always off under „Rad verdecken“. Turning „Rad verdecken“ on turns it off; turning it off
+// leaves it off until the Host turns it on, so nothing is revealed by surprise (also not a value kept from Host-Wahl).
+const poolPreview = computed({
+  get: () => draft.value.poolPreview && !(wheel.value && draft.value.hiddenWheel),
+  set: (value) => {
+    draft.value = { ...draft.value, poolPreview: value }
+  },
+})
+
+function hideWheel(hidden: boolean) {
+  // Both ways leave the Pool preview off: a value the Host set under Host-Wahl in between must not come back by surprise.
+  draft.value = { ...draft.value, hiddenWheel: hidden, poolPreview: false }
+}
 </script>
 
 <template>
@@ -54,14 +69,30 @@ const veto = computed(() => vetoAllowanceOf(draft.value))
       @update:model-value="choose"
     />
     <div
-      v-if="wheel"
+      v-if="!wheel"
+      class="flex flex-col gap-3.5 rounded-2xl border-(length:--cp-bw) border-line bg-surface p-4"
+    >
+      <ToggleSwitch
+        v-model="poolPreview"
+        :label="t('setup.mode.poolPreview')"
+        :help="t('setup.mode.poolPreviewHelp')"
+      />
+    </div>
+    <div
+      v-else
       class="flex flex-col gap-3.5 rounded-2xl border-(length:--cp-bw) border-line bg-surface p-4"
     >
       <ToggleSwitch
         :model-value="draft.hiddenWheel"
         :label="t('setup.mode.hideWheel')"
         :help="t('setup.mode.hideWheelHelp')"
-        @update:model-value="draft = { ...draft, hiddenWheel: $event }"
+        @update:model-value="hideWheel"
+      />
+      <ToggleSwitch
+        v-model="poolPreview"
+        :label="t('setup.mode.poolPreview')"
+        :help="draft.hiddenWheel ? t('setup.mode.poolPreviewHidden') : t('setup.mode.poolPreviewHelp')"
+        :disabled="draft.hiddenWheel"
       />
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex min-w-[150px] flex-1 flex-col leading-[1.3]">

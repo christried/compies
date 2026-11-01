@@ -120,7 +120,7 @@ describe('the Game library API (#141)', () => {
       expect(game).toEqual({
         id: row!.id, name: 'Mario Kart', imageUrl: null, youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45,
         playersMin: null, playersMax: null, suitabilities: [],
-        createdBy: { id: row!.createdBy, name: 'Hostess' }, createdAt: row!.createdAt.toISOString(), canEdit: true,
+        createdBy: { id: row!.createdBy, name: 'Hostess' }, createdAt: row!.createdAt.toISOString(), canEdit: true, notes: null,
       })
     })
 
@@ -292,6 +292,140 @@ describe('the Game library API (#141)', () => {
       expect(response.status).toBe(400)
       expect(response.statusText).toBe('invalid_players')
       expect(await testDb.db.select().from(games)).toHaveLength(0)
+    })
+  })
+
+  describe('Game notes (#223)', () => {
+    // Three people and two joiners make one emoji, one character (#76).
+    const family = '\u{1F468}‍\u{1F469}‍\u{1F467}'
+
+    function edit(cookie: string | undefined, id: string, body: unknown) {
+      return request(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+        body: JSON.stringify(body),
+      })
+    }
+
+    it('stores the notes with their inner line breaks and answers them', async () => {
+      const notes = 'Settings: 3 Runden\nWarmup: Lobby\n\nWin: meiste Punkte'
+
+      const game = await created(await cookieOf(host), { name: 'Mario Kart', notes })
+
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBe(notes)
+      expect(game.notes).toBe(notes)
+    })
+
+    it('trims leading and trailing blank space from the notes and keeps the inner line breaks', async () => {
+      const game = await created(await cookieOf(host), { name: 'Mario Kart', notes: '  \n Settings\n\nWin  \n\n' })
+
+      expect(game.notes).toBe('Settings\n\nWin')
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBe('Settings\n\nWin')
+    })
+
+    it.each([
+      ['only blank space', '  \n\t '],
+      ['an empty text', ''],
+      ['null', null],
+    ])('stores %s as no notes', async (_, notes) => {
+      const game = await created(await cookieOf(host), { name: 'Mario Kart', notes })
+
+      expect(game.notes).toBeNull()
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBeNull()
+    })
+
+    it('stores a game sent without notes as no notes', async () => {
+      const game = await created(await cookieOf(host), { name: 'Mario Kart' })
+
+      expect(game.notes).toBeNull()
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBeNull()
+    })
+
+    it('accepts exactly 1000 characters', async () => {
+      const notes = 'a'.repeat(1000)
+
+      const response = await create(await cookieOf(host), { name: 'Mario Kart', notes })
+
+      expect(response.status).toBe(200)
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBe(notes)
+    })
+
+    it('counts an emoji as one character: 999 letters and one family emoji are accepted', async () => {
+      const notes = `${'a'.repeat(999)}${family}`
+
+      const response = await create(await cookieOf(host), { name: 'Mario Kart', notes })
+
+      expect(response.status).toBe(200)
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBe(notes)
+    })
+
+    it('refuses 1001 characters with invalid_game_notes and stores nothing', async () => {
+      const response = await create(await cookieOf(host), { name: 'Mario Kart', notes: 'a'.repeat(1001) })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_game_notes')
+      expect(await testDb.db.select().from(games)).toHaveLength(0)
+    })
+
+    it('lets the creator change the notes, and a PATCH without notes clears them', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', notes: 'Alt' })
+
+      const changed = await edit(cookie, id, { name: 'Mario Kart', notes: 'Neu\nZeile zwei' })
+      expect(await changed.json()).toMatchObject({ notes: 'Neu\nZeile zwei' })
+
+      await edit(cookie, id, { name: 'Mario Kart' })
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBeNull()
+    })
+
+    it('lets the Platform admin change the notes of another Host\'s game', async () => {
+      const { id } = await created(await cookieOf(host), { name: 'Mario Kart', notes: 'Alt' })
+
+      const response = await edit(await cookieOf(admin), id, { name: 'Mario Kart', notes: 'Vom Admin' })
+
+      expect(response.status).toBe(200)
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBe('Vom Admin')
+    })
+
+    it('refuses another Host with not_game_editor and keeps the notes', async () => {
+      const { id } = await created(await cookieOf(host), { name: 'Mario Kart', notes: 'Alt' })
+
+      const response = await edit(await cookieOf(otherHost), id, { name: 'Mario Kart', notes: 'Fremd' })
+
+      expect(response.status).toBe(403)
+      expect(response.statusText).toBe('not_game_editor')
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBe('Alt')
+    })
+
+    it('refuses a too-long edit with invalid_game_notes and keeps the notes', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', notes: 'Alt' })
+
+      const response = await edit(cookie, id, { name: 'Mario Kart', notes: 'a'.repeat(1001) })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_game_notes')
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.notes).toBe('Alt')
+    })
+
+    it('returns the notes to every Host, on the game and in the list', async () => {
+      const notes = 'Settings: 3 Runden\nWin: Punkte'
+      const { id } = await created(await cookieOf(host), { name: 'Mario Kart', notes })
+      const otherCookie = await cookieOf(otherHost)
+
+      expect(await (await read(id, otherCookie)).json()).toMatchObject({ id, notes })
+      const list = await (await request('/api/games', { headers: { cookie: otherCookie } })).json() as GameList
+      expect(list.games.find(game => game.id === id)).toMatchObject({ notes })
     })
   })
 

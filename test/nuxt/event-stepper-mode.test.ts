@@ -31,7 +31,9 @@ const button = (page: Page, label: string) => page.get(`button[aria-label="${lab
 const radios = (page: Page) => page.findAll('[role="radio"]')
 const checked = (page: Page) => radios(page).map(radio => radio.attributes('aria-checked'))
 const stepItems = (page: Page) => page.get('nav[aria-label="Schritte"]').findAll('li')
-const hideSwitch = (page: Page) => page.find('[role="switch"]')
+const switchOf = (page: Page, label: string) => page.findAll('[role="switch"]').find(sw => sw.text().includes(label))
+const hideSwitch = (page: Page) => switchOf(page, 'Rad verdecken')!
+const previewSwitch = (page: Page) => switchOf(page, 'Pool vorher zeigen')
 const vetoStepper = (page: Page) => page.findAll('[role="spinbutton"]').find(stepper => stepper.attributes('aria-label') === 'Vetos pro Partei')
 
 async function next(page: Page, times = 1) {
@@ -131,7 +133,7 @@ describe('the Selection mode step', () => {
     const page = await mountCreate()
     await toModeStep(page)
 
-    expect(hideSwitch(page).exists()).toBe(false)
+    expect(switchOf(page, 'Rad verdecken')).toBeUndefined()
     expect(vetoStepper(page)).toBeUndefined()
 
     await radios(page)[1]!.trigger('click')
@@ -142,8 +144,110 @@ describe('the Selection mode step', () => {
 
     await radios(page)[0]!.trigger('click')
 
-    expect(hideSwitch(page).exists()).toBe(false)
+    expect(switchOf(page, 'Rad verdecken')).toBeUndefined()
     expect(vetoStepper(page)).toBeUndefined()
+  })
+
+  // „Pool vorher zeigen“ (#225): on by default for Host-Wahl and the Glücksrad, off and disabled under „Rad verdecken“.
+  describe('Pool vorher zeigen', () => {
+    it('is on by default, with Host-Wahl and with the Glücksrad, with its help', async () => {
+      const page = await mountCreate()
+      await toModeStep(page)
+
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
+      expect(previewSwitch(page)!.attributes('aria-disabled')).toBeUndefined()
+      expect(previewSwitch(page)!.text()).toContain('Die anderen sehen Spielepool und Tiebreaker-Pool schon vorher.')
+
+      await radios(page)[1]!.trigger('click')
+
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
+      expect(previewSwitch(page)!.text()).toContain('Die anderen sehen Spielepool und Tiebreaker-Pool schon vorher.')
+    })
+
+    it('sits right after „Rad verdecken“ in the wheel’s box', async () => {
+      const page = await mountCreate()
+      await toModeStep(page)
+      await radios(page)[1]!.trigger('click')
+
+      expect(page.findAll('[role="switch"]').map(sw => sw.get('b').text())).toEqual(['Rad verdecken', 'Pool vorher zeigen'])
+      expect(hideSwitch(page).element.parentElement).toBe(previewSwitch(page)!.element.parentElement)
+    })
+
+    it('turns off and is disabled with the reason under „Rad verdecken“', async () => {
+      const page = await mountCreate()
+      await toModeStep(page)
+      await radios(page)[1]!.trigger('click')
+
+      await hideSwitch(page).trigger('click')
+
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('false')
+      expect(previewSwitch(page)!.attributes('aria-disabled')).toBe('true')
+      expect(previewSwitch(page)!.text()).toContain('Beim verdeckten Rad sieht niemand den Pool.')
+      await previewSwitch(page)!.trigger('click')
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('false')
+    })
+
+    it('stays off when „Rad verdecken“ is turned off again, until the Host turns it on', async () => {
+      const page = await mountCreate()
+      await toModeStep(page)
+      await radios(page)[1]!.trigger('click')
+      await hideSwitch(page).trigger('click')
+
+      await hideSwitch(page).trigger('click')
+
+      expect(hideSwitch(page).attributes('aria-checked')).toBe('false')
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('false')
+      expect(previewSwitch(page)!.attributes('aria-disabled')).toBeUndefined()
+      expect(previewSwitch(page)!.text()).not.toContain('Beim verdeckten Rad')
+
+      await previewSwitch(page)!.trigger('click')
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
+    })
+
+    it('stays off when „Rad verdecken“ is turned off again after a detour through Host-Wahl, where the Host turned it on', async () => {
+      const saved = recordPost()
+      const page = await mountCreate()
+      await toModeStep(page)
+      await radios(page)[1]!.trigger('click')
+      await hideSwitch(page).trigger('click')
+      await radios(page)[0]!.trigger('click')
+      await previewSwitch(page)!.trigger('click')
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
+      await radios(page)[1]!.trigger('click')
+
+      await hideSwitch(page).trigger('click')
+
+      expect(previewSwitch(page)!.attributes('aria-checked')).toBe('false')
+      await toLastStep(page)
+      await cta(page).trigger('click')
+      await vi.waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
+      expect(saved).toHaveBeenLastCalledWith(expect.objectContaining({ settings: expect.objectContaining({ selectionMode: 'lucky_wheel', hiddenWheel: false, poolPreview: false }) }))
+    })
+
+    it('is sent with Host-Wahl and with the Glücksrad as the Host set it', async () => {
+      const saved = recordPost()
+      const page = await mountCreate()
+      await toModeStep(page)
+      await previewSwitch(page)!.trigger('click')
+      await toLastStep(page)
+      await cta(page).trigger('click')
+
+      await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
+      expect(saved).toHaveBeenLastCalledWith(expect.objectContaining({ settings: expect.objectContaining({ selectionMode: 'admin_pick', poolPreview: false }) }))
+      expect(page.text()).toContain('Host-Wahl, Spiele erst beim Setzen')
+    })
+
+    it('is sent on by default with the Glücksrad, and off under „Rad verdecken“', async () => {
+      const saved = recordPost()
+      const page = await mountCreate()
+      await toModeStep(page)
+      await radios(page)[1]!.trigger('click')
+      await toLastStep(page)
+      await cta(page).trigger('click')
+
+      await vi.waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
+      expect(saved).toHaveBeenLastCalledWith(expect.objectContaining({ settings: expect.objectContaining({ selectionMode: 'lucky_wheel', hiddenWheel: false, poolPreview: true }) }))
+    })
   })
 
   it('shows the explanation of the chosen mode in the info column', async () => {
@@ -239,17 +343,17 @@ describe('the Selection mode step', () => {
 
       await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
       expect(saved).toHaveBeenCalledWith(expect.objectContaining({
-        settings: expect.objectContaining({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 }),
+        settings: expect.objectContaining({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2, poolPreview: false }),
       }))
       expect(page.text()).toContain('2 Teams à 3, Glücksrad (verdeckt), 10 Spiele.')
       const list = page.get('dl')
-      expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Punkte', 'Modus', 'Vetos', 'Pool', 'Termin'])
+      expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Auswahl', 'Vetos', 'Punkte', 'Pool', 'Termin'])
       expect(list.findAll('dd').map(value => value.text())).toEqual([
         '2 Teams à 3',
-        '10',
-        'Linear 1 / 0',
+        '10 Spiele',
         'Glücksrad (verdeckt)',
         '2 pro Partei',
+        'Linear 1 / 0',
         '0 Spiele, Tiebreaker 0',
         'Umfrage, 1 Vorschlag',
       ])

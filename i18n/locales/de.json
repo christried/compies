@@ -325,6 +325,9 @@
       "goodFor": "Gut für",
       "hideWheel": "Rad verdecken",
       "hideWheelHelp": "Erfundene Namen, bis das Rad stoppt.",
+      "poolPreview": "Pool vorher zeigen",
+      "poolPreviewHelp": "Die anderen sehen Spielepool und Tiebreaker-Pool schon vorher.",
+      "poolPreviewHidden": "Beim verdeckten Rad sieht niemand den Pool.",
       "spinDuration": "Drehdauer",
       "seconds": "{n} s"
     },
@@ -821,7 +824,8 @@
     "players": "{n} Spieler",
     "playersFrom": "ab {min}",
     "playersUpTo": "bis {max}",
-    "playersBetween": "{min} bis {max}"
+    "playersBetween": "{min} bis {max}",
+    "notes": "Notizen"
   },
   "gameEdit": {
     "kicker": "Bibliothek",
@@ -858,6 +862,9 @@
     "suitabilities": "Passt zu",
     "playersFrom": "von",
     "playersTo": "bis",
+    "notes": "Notizen",
+    "notesHelp": "Einstellungen, Aufwärmen, Siegbedingung, Hausregeln. Alle Hosts können sie lesen.",
+    "notesTooLong": "Höchstens {max} Zeichen.",
     "saveChanges": "Änderungen speichern",
     "editKicker": "Bearbeiten",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
@@ -1048,11 +1055,11 @@
       },
       "database": {
         "heading": "4. Datenbank (Neon)",
-        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 6), Sitzungs- und Sicherheitsdaten (Abschnitt 10) sowie deine Events, Terminvorschläge, Stimmen und Anmerkungen (Abschnitt 11). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
+        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 6), Sitzungs- und Sicherheitsdaten (Abschnitt 10) sowie deine Events, Terminvorschläge, Stimmen und Anmerkungen und die Spiele der Bibliothek mit ihren Notizen (Abschnitt 11). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
       },
       "storage": {
         "heading": "5. Spielbilder (Cloudflare R2)",
-        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, dessen Spielepool das Spiel enthält, solange das Rad nicht verdeckt ist. Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
+        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
       },
       "signIn": {
         "heading": "6. Anmeldung über Discord oder Twitch und Anzeigename",
@@ -1064,7 +1071,7 @@
       },
       "youtube": {
         "heading": "8. Videos (YouTube)",
-        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen. Er startet nicht von selbst und zeigt nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und in einer Liste erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek. Vorschaubilder sehen außerdem Mitglieder eines Events, dessen Spielepool das Spiel enthält, solange das Rad nicht verdeckt ist. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen)."
+        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen. Er startet nicht von selbst und zeigt nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und in einer Liste erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek. Vorschaubilder sehen außerdem Mitglieder eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen)."
       },
       "cookies": {
         "heading": "9. Cookies und Speicher im Browser",
@@ -1076,7 +1083,7 @@
       },
       "events": {
         "heading": "11. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "12. Kalenderdatei",
@@ -1395,11 +1402,13 @@
       "teams": "{n} Teams à {s}",
       "games": "{n} Spiel | {n} Spiele",
       "hidden": "{mode} (verdeckt)",
+      "previewOffWheel": "{mode}, Spiele erst am Rad",
+      "previewOffPick": "{mode}, Spiele erst beim Setzen",
       "sentence": "{teams}, {mode}, {games}.",
       "format": "Format",
       "gamesLabel": "Spiele",
       "points": "Punkte",
-      "mode": "Modus",
+      "mode": "Auswahl",
       "vetoes": "Vetos",
       "vetoValue": "{n} pro Partei",
       "pool": "Pool",
@@ -1414,16 +1423,17 @@
   },
   "howWePlay": {
     "title": "So wird gespielt",
-    "mode": "Auswahl",
-    "vetoes": "{n} Veto pro Partei | {n} Vetos pro Partei",
     "edit": "Bearbeiten",
+    "notes": "Notizen",
     "locked": "Fest seit dem Start",
     "emptyHost": "Noch nicht festgelegt. Format, Spiele und Punkte legst du beim Einrichten fest.",
     "emptyMember": "Noch nicht festgelegt. {host} legt gleich fest, wie gespielt wird.",
     "mainPool": "Spielepool",
     "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",
-    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden."
+    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.",
+    "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
+    "previewOffPick": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt."
   },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
@@ -1434,10 +1444,12 @@
     "clipInvalid": "Der Clip passt nicht: Die Länge liegt zwischen 5 und 60 Sekunden.",
     "playersInvalid": "Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.",
     "suitabilitiesInvalid": "Diese Angabe bei „Passt zu“ kennen wir nicht.",
+    "gameNotesInvalid": "Die Notizen sind zu lang.",
     "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",
     "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
+    "poolPreviewHiddenWheel": "Beim verdeckten Rad sieht niemand den Pool.",
     "unknownGame": "Ein Spiel aus dem Pool gibt es nicht mehr.",
     "settingLocked": "Das lässt sich nicht mehr ändern, seit die erste Session läuft.",
     "sessionStarted": "Diese Session hat schon begonnen. Sie bleibt, wie sie ist.",

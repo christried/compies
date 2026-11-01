@@ -8,8 +8,8 @@ const slug = process.argv[2]
 if (!slug) throw new Error('Usage: node scripts/browser/moves.mjs <slug>')
 const board = 'section[aria-labelledby="board-title"] [data-user-id]'
 
-const host = await launch('host', 9311)
-const member = await launch('member', 9312)
+const host = await launch('host')
+const member = await launch('member')
 try {
   await open(host, `/e/${slug}`, 1440, 900, board)
   await open(member, '/', 390, 844)

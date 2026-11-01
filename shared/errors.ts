@@ -22,6 +22,8 @@ export const API_ERROR_STATUS = {
   invalid_players: 400,
   /** A game's Suitabilities are unknown or repeated (#171). */
   invalid_suitabilities: 400,
+  /** A game's notes are longer than GAME_NOTES_MAX characters (#223). */
+  invalid_game_notes: 400,
   /** Only the creator of a game and the Platform admin may edit it (#142). */
   not_game_editor: 403,
   /** A game image is larger than GAME_IMAGE_MAX_BYTES (#143). */
@@ -72,6 +74,8 @@ export const API_ERROR_STATUS = {
   veto_allowance_range: 400,
   /** A hidden wheel or a Veto allowance with a Selection mode that has no wheel. */
   wheel_options_without_wheel: 400,
+  /** Pool preview on together with a Hidden wheel: under a Hidden wheel nobody sees the pool (#225). */
+  pool_preview_hidden_wheel: 400,
   /** The Event is running: Format, team count, points table and Selection mode no longer change (#147). */
   setting_locked: 409,
   /** A Team size below the number of Players in the fullest team (#147). */

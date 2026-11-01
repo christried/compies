@@ -12,6 +12,7 @@ describe('newDraft', () => {
       name: '',
       settings: { format: 'teams', teamCount: 2, teamSize: 3, gameCount: 10, pointsTable: { preset: 'linear', values: [1, 0] }, selectionMode: 'admin_pick' },
       hiddenWheel: false,
+      poolPreview: true,
       vetoAllowance: null,
       pools: { main: [], tiebreaker: [] },
       dates: { mode: 'poll', sessionCount: 1, slots: [''], direct: [''] },
@@ -70,7 +71,7 @@ describe('draftBody', () => {
 })
 
 function game(id: string, name: string): PoolGame {
-  return { id, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] }
+  return { id, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null }
 }
 
 // The pool steps (#146): the draft keeps the games themselves, so the step and Fertig can show them.
@@ -182,14 +183,14 @@ describe('the editor draft', () => {
   const kart = game('a', 'Mario Kart')
   const pong = game('b', 'Pong')
 
-  function view(settings: EventView['settings'], pools: EventView['pools'] = { hidden: false, main: [], tiebreaker: [] }): EventView {
+  function view(settings: EventView['settings'], pools: EventView['pools'] = { main: [], tiebreaker: [] }): EventView {
     return { settings, pools } as EventView
   }
 
   it('starts from the Event’s settings and pools', () => {
     const settings = { ...defaultSettings(), teamSize: 4, gameCount: 7 }
 
-    const draft = draftFromEvent(view(settings, { hidden: false, main: [kart, pong], tiebreaker: [pong] }))
+    const draft = draftFromEvent(view(settings, { main: [kart, pong], tiebreaker: [pong] }))
 
     expect(settingsOf(draft)).toEqual(settings)
     expect(draft.pools).toEqual({ main: [kart, pong], tiebreaker: [pong] })
@@ -203,7 +204,7 @@ describe('the editor draft', () => {
   })
 
   it('counts a stored Veto allowance as the Host’s choice: a Team size change leaves it alone', () => {
-    const stored = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 2 }
+    const stored = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 2, poolPreview: false }
 
     const draft = draftFromEvent(view(stored))
     expect(draft).toMatchObject({ hiddenWheel: true, vetoAllowance: 2 })
@@ -221,8 +222,43 @@ describe('the editor draft', () => {
     expect(settingsOf(wheel).vetoAllowance).toBe(5)
   })
 
-  it('has no games when the pools are hidden from the viewer', () => {
-    const draft = draftFromEvent(view(defaultSettings(), { hidden: true }))
+  describe('the Pool preview (#225)', () => {
+    const lucky = (draft: EventDraft): EventDraft => ({ ...draft, settings: { ...draft.settings, selectionMode: 'lucky_wheel' } })
+
+    it('is on in a new draft, for Host pick and for the Lucky Wheel', () => {
+      expect(newDraft().poolPreview).toBe(true)
+      expect(settingsOf(newDraft()).poolPreview).toBe(true)
+      expect(settingsOf(lucky(newDraft())).poolPreview).toBe(true)
+    })
+
+    it('stores what the Host chose for Host pick and for a visible wheel', () => {
+      const off = { ...newDraft(), poolPreview: false }
+
+      expect(settingsOf(off).poolPreview).toBe(false)
+      expect(settingsOf(lucky(off)).poolPreview).toBe(false)
+    })
+
+    it('is off under a Hidden wheel, whatever the draft keeps', () => {
+      expect(settingsOf({ ...lucky(newDraft()), hiddenWheel: true, poolPreview: true }).poolPreview).toBe(false)
+      expect(parseSettings(settingsOf({ ...lucky(newDraft()), hiddenWheel: true, poolPreview: true })).ok).toBe(true)
+    })
+
+    it('takes it from the Event’s settings, also when the wheel is hidden', () => {
+      expect(draftFromEvent(view({ ...defaultSettings(), poolPreview: false })).poolPreview).toBe(false)
+      expect(draftFromEvent(view(defaultSettings())).poolPreview).toBe(true)
+      const hidden = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 3, poolPreview: false }
+      expect(draftFromEvent(view(hidden))).toMatchObject({ hiddenWheel: true, poolPreview: false })
+    })
+
+    it('keeps the Host’s choice while Host pick is chosen, so switching back restores it', () => {
+      const draft = { ...lucky(newDraft()), poolPreview: false }
+
+      expect(settingsOf({ ...draft, settings: { ...draft.settings, selectionMode: 'admin_pick' } }).poolPreview).toBe(false)
+    })
+  })
+
+  it('has no games when the viewer learns nothing about the pools', () => {
+    const draft = draftFromEvent(view(defaultSettings(), null))
 
     expect(draft.pools).toEqual({ main: [], tiebreaker: [] })
   })

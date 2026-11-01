@@ -253,6 +253,16 @@ describe('the Activity feed', () => {
       expect(added(eventId)).toEqual([])
     })
 
+    it('writes nothing for a Pool preview change (#225)', async () => {
+      const { slug, eventId, hostCookie } = await pollEvent()
+
+      expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { poolPreview: false } })).status).toBe(200)
+      expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { poolPreview: true } })).status).toBe(200)
+
+      expect((await feed(hostCookie, slug)).entries).toEqual([])
+      expect(added(eventId)).toEqual([])
+    })
+
     it('writes nothing when an Event is set up for the first time', async () => {
       const { slug, eventId, hostCookie } = await pollEvent()
       await testDb.db.update(events).set({ format: null, teamCount: null, teamSize: null, gameCount: null, pointsTable: null, selectionMode: null }).where(eq(events.id, eventId))

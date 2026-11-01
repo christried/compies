@@ -2,14 +2,14 @@
 import { ChevronRight } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
 import {
-  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, SUITABILITIES, clipTime, gameNameProblem, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
-  type GameView, type Suitability,
+  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, SUITABILITIES, clipTime, gameNameProblem, gameNotesProblem, parseClipLength, parseClipTime, parseGameInput,
+  parsePlayerCount, type GameView, type Suitability,
 } from '~~/shared/game'
 import { parseYouTubeId } from '~~/shared/youtube'
 
 // Create or edit a game (screen 24, `?s=edit`, #141, #142, #171): name, YouTube link, start and length, with a live
 // preview that plays the clip as a Session will, and the recommended player count and „Passt zu“ (the
-// Suitabilities). An empty link is fine (a game without a clip); a link that is no YouTube link, or that the
+// Suitabilities), and the notes (#223). An empty link is fine (a game without a clip); a link that is no YouTube link, or that the
 // player cannot play, is „YouTube-Link kaputt“ and blocks saving. With `game` the form edits that game (PATCH).
 // The rules come from shared/game.ts, the same ones the server applies, so the form refuses what the server
 // refuses (#171). No page chrome, so a sheet can hold it (#146); the two columns follow the width of the
@@ -35,6 +35,7 @@ const lengthText = ref(String(props.game?.clipLength ?? CLIP_LENGTH_DEFAULT))
 const playersFromText = ref(props.game?.playersMin == null ? '' : String(props.game.playersMin))
 const playersToText = ref(props.game?.playersMax == null ? '' : String(props.game.playersMax))
 const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
+const notes = ref(props.game?.notes ?? '')
 const attempted = ref(false)
 const saving = ref(false)
 const failure = ref<string | null>(null)
@@ -85,12 +86,16 @@ const rangeInverted = computed(() => {
 const fromError = computed(() => (fromInvalid.value ? t('error.playersInvalid') : undefined))
 const toError = computed(() => (toInvalid.value || rangeInverted.value ? t('error.playersInvalid') : undefined))
 
+// Game notes (#223): the shared rule says when they are too long; the message shows at once, like the name's.
+const notesError = computed(() => (gameNotesProblem(notes.value) === 'too_long' ? t('gameEdit.notesTooLong', { max: GAME_NOTES_MAX }) : undefined))
+
 /** Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. */
 const blocker = computed<string | null>(() => {
   if (nameProblem.value === 'empty') return t('gameEdit.nameRequired')
   if (nameProblem.value === 'too_long') return t('error.nameTooLong', { max: GAME_NAME_MAX })
   if (linkError.value) return t('gameEdit.linkRequired')
   if (fromError.value || toError.value) return t('error.playersInvalid')
+  if (notesError.value) return notesError.value
   return startError.value ?? lengthError.value ?? null
 })
 
@@ -109,6 +114,8 @@ const draft = computed(() => ({
   playersMin: countOf(playersFromText.value),
   playersMax: countOf(playersToText.value),
   suitabilities: SUITABILITIES.filter(suitability => suitabilities.value.includes(suitability)),
+  // The raw text: the shared rules trim it, and refuse it when it is too long.
+  notes: notes.value,
 }))
 
 /** The form is blocked exactly when a field says why, or the shared rules refuse the body, or the player reported the link broken (#171). */
@@ -247,6 +254,15 @@ async function submit() {
             </button>
           </div>
         </div>
+
+        <TextField
+          v-model="notes"
+          multiline
+          :label="t('gameEdit.notes')"
+          :help="t('gameEdit.notesHelp')"
+          :error="notesError"
+          :maxlength="GAME_NOTES_MAX"
+        />
       </div>
 
       <div class="flex min-w-0 flex-col gap-2.5">

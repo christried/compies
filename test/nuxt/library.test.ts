@@ -25,6 +25,7 @@ function game(overrides: Partial<GameView>): GameView {
     createdBy: { id: kitty.id, name: 'Sanne' },
     createdAt: '2026-01-15T10:00:00.000Z',
     canEdit: true,
+    notes: null,
     ...overrides,
   }
 }
@@ -205,6 +206,38 @@ describe('the game page', () => {
 
     expect(page.find('img[src="/api/images/a2-abc.webp"]').exists()).toBe(true)
     expect(page.find('[data-cover="placeholder"]').exists()).toBe(false)
+  })
+
+  it('shows the notes under „Notizen“ with their line breaks, as the Host wrote them (#223)', async () => {
+    detail = { ...withClip, notes: 'Settings: 3 Runden\nWarmup: Lobby\n\nWin: meiste Punkte' }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    const heading = page.findAll('h2').find(el => el.text() === 'Notizen')
+    expect(heading).toBeDefined()
+    const notesEl = page.findAll('p').find(el => el.text().includes('Settings'))
+    expect(notesEl!.element.textContent).toBe('Settings: 3 Runden\nWarmup: Lobby\n\nWin: meiste Punkte')
+  })
+
+  it('shows notes as plain text: no formatting and no links', async () => {
+    detail = { ...withClip, notes: 'Hausregel: <b>nur Teams</b> und https://example.com' }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    expect(page.text()).toContain('Hausregel: <b>nur Teams</b> und https://example.com')
+    expect(page.find('b').exists()).toBe(false)
+    expect(page.find('a[href="https://example.com"]').exists()).toBe(false)
+  })
+
+  it('shows no „Notizen“ section for a game without notes', async () => {
+    detail = { ...withClip, notes: null }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    expect(page.findAll('h2').some(el => el.text() === 'Notizen')).toBe(false)
   })
 
   it('looks like any missing page when the game does not exist', async () => {

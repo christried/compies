@@ -14,6 +14,8 @@ export const CLIP_LENGTH_MAX = 60
 export const CLIP_START_MAX = 43_199
 /** The most players a recommended count can name (#142). */
 export const PLAYERS_MAX = 99
+/** Game notes (#223, GLOSSARY: Game notes): at most this many characters after trimming (characterCount, #76). */
+export const GAME_NOTES_MAX = 1000
 
 /** Suitability (GLOSSARY; UI „Passt zu“): the kinds of play a game works for, any number of them (#171). */
 export const SUITABILITIES = ['teams', 'ffa', 'one_v_one'] as const
@@ -75,6 +77,19 @@ export interface PoolGame {
   playersMax: number | null
   /** The Suitabilities, in SUITABILITIES order; empty when none is set (#171). */
   suitabilities: Suitability[]
+  /** Game notes (#223); null = none. In a pool only the Host reads them (#224). */
+  notes: string | null
+}
+
+/**
+ * What a Member who may see a pool gets of its games: what draws the picture and the name, nothing else (#224). The
+ * Host's pool game is the whole PoolGame. `youtubeId` is the card's thumbnail for a game without an image of its own.
+ */
+export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId'>
+
+/** Whether a pool game came whole, as the Host gets it (the notes are there, even when null), or as the face only. */
+export function isFullPoolGame(game: PoolGame | PoolGameFace): game is PoolGame {
+  return 'notes' in game
 }
 
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
@@ -137,6 +152,20 @@ export function parseGameName(raw: unknown): string | null {
   return raw.trim()
 }
 
+/** What is wrong with the game notes: longer than GAME_NOTES_MAX characters once trimmed. Null when fine. */
+export function gameNotesProblem(raw: string): 'too_long' | null {
+  return characterCount(raw.trim()) > GAME_NOTES_MAX ? 'too_long' : null
+}
+
+/** The game notes (#223): absent, null or empty is none; trimmed, blank is none; inner line breaks stay. Undefined for anything else or too long. */
+export function parseGameNotes(raw: unknown): string | null | undefined {
+  if (raw === undefined || raw === null || raw === '') return null
+  if (typeof raw !== 'string') return undefined
+  const trimmed = raw.trim()
+  if (trimmed === '') return null
+  return gameNotesProblem(trimmed) === null ? trimmed : undefined
+}
+
 /** The video id of the pasted link. Absent, null or empty means no clip (null id); undefined when the link is no YouTube link. */
 export function parseYoutubeField(raw: unknown): string | null | undefined {
   if (raw === undefined || raw === null || raw === '') return null
@@ -185,9 +214,11 @@ export interface GameInput {
   playersMax: number | null
   /** Suitabilities in SUITABILITIES order, without duplicates (#171). */
   suitabilities: Suitability[]
+  /** Game notes, trimmed; null when none (#223). */
+  notes: string | null
 }
 
-export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities'
+export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities' | 'invalid_game_notes'
 
 export function parseGameInput(input: unknown): { ok: true, game: GameInput } | { ok: false, error: GameInputError } {
   const body = asRecord(input)
@@ -208,9 +239,12 @@ export function parseGameInput(input: unknown): { ok: true, game: GameInput } | 
   const suitabilities = parseSuitabilities(body.suitabilities)
   if (!suitabilities) return { ok: false, error: 'invalid_suitabilities' }
 
+  const notes = parseGameNotes(body.notes)
+  if (notes === undefined) return { ok: false, error: 'invalid_game_notes' }
+
   return {
     ok: true,
-    game: { name, youtubeId, clipStart, clipLength, playersMin: players.min, playersMax: players.max, suitabilities },
+    game: { name, youtubeId, clipStart, clipLength, playersMin: players.min, playersMax: players.max, suitabilities, notes },
   }
 }
 

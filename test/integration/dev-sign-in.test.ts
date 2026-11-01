@@ -1,7 +1,10 @@
+import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import me from '../../server/api/me.get'
 import devSignIn from '../../server/dev/sign-in'
+import { users } from '../../server/db/schema'
 import type { MeView } from '../../shared/auth'
+import { version as current } from '../../package.json'
 import { createTestDb, createTestServer } from './harness'
 import { stubAuthEnv } from './sign-in'
 
@@ -11,9 +14,9 @@ import { stubAuthEnv } from './sign-in'
 describe('dev sign-in', { timeout: 20_000 }, () => {
   beforeEach(() => stubAuthEnv())
 
-  async function signInAs(query: string) {
-    const { db } = await createTestDb()
-    const server = createTestServer(db, { 'GET /api/dev/sign-in': devSignIn, 'GET /api/me': me })
+  async function signInAs(query: string, db?: Awaited<ReturnType<typeof createTestDb>>['db']) {
+    const database = db ?? (await createTestDb()).db
+    const server = createTestServer(database, { 'GET /api/dev/sign-in': devSignIn, 'GET /api/me': me })
     const response = await server(`/api/dev/sign-in${query}`, { redirect: 'manual' })
     const cookie = response.headers.getSetCookie().map(header => header.split(';')[0]).join('; ')
     const view = await (await server('/api/me', { headers: { cookie } })).json() as MeView
@@ -38,6 +41,29 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
     const { user } = await signInAs('?as=admin')
 
     expect(user).toMatchObject({ canHost: true, isAdmin: true })
+  })
+
+  // The Dev Users see the current „Was ist neu“ as seen on every sign-in, not only the first (review 0.5.1 T2): a
+  // Release that ships between two sign-ins must not open the pop-up on the dev server.
+  it('marks the news seen on every sign-in, so a Release never opens the pop-up', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=host', db)
+    await db.update(users).set({ newsSeen: '0.1.0' }).where(eq(users.email, 'host@dev.compies.invalid'))
+
+    const { user } = await signInAs('?as=host', db)
+
+    expect(user).toMatchObject({ newsSeen: current })
+  })
+
+  // `?news=unseen` is the one check that wants the pop-up: it stores null on the first sign-in and on a later one.
+  it('leaves the news unseen with `?news=unseen`, on the first sign-in and on a later one', async () => {
+    const { db } = await createTestDb()
+    const first = await signInAs('?as=host&news=unseen', db)
+    expect(first.user).toMatchObject({ newsSeen: null })
+
+    await signInAs('?as=host', db)
+    const later = await signInAs('?as=host&news=unseen', db)
+    expect(later.user).toMatchObject({ newsSeen: null })
   })
 
   it('lands on Home for a `to` outside the app', async () => {
