@@ -20,6 +20,8 @@ export type StepKey = 'name' | 'format' | 'games' | 'points' | 'mode' | 'pool' |
 /** What a step reads about locked settings (the editor of a running Event, #147); every step takes it and may ignore it. */
 export interface StepLocks {
   reason?: string
+  /** The reason „Rad verdecken“ is locked while a Round is being drawn (#231, LOCKED_WHILE_DRAWN); undefined when it is free. */
+  drawing?: string
   floors?: SettingsFloors
   /** False when the Host may not browse the Game library (the Host permission was revoked, #173); the pool steps then offer no search. */
   library?: boolean

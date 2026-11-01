@@ -14,7 +14,7 @@ import type { Translate } from './settings-summary'
 // markers around those values, so no sentence is written twice.
 const OPEN = '\u0001'
 const CLOSE = '\u0002'
-const STRONG = new Set(['name', 'actor', 'team', 'date', 'game'])
+const STRONG = new Set(['name', 'actor', 'team', 'date', 'game', 'list'])
 
 /** The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. */
 export function activityParts(entry: ActivityEntry, t: Translate): { text: string, strong: boolean }[] | null {
@@ -101,8 +101,12 @@ function sentence(entry: ActivityEntry, t: Translate): string | null {
     // What the wheel drew (#229) is in the feed from its stop on, and the server names the game only then (the same rule).
     case 'game_drawn':
       return entry.games[entry.params.gameId] === undefined ? null : t('activity.wheel', { game: entry.games[entry.params.gameId] })
-    // The other 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #231 Vetoes revealed, #233 Bonus Veto, #235 coin toss.
-    case 'vetoes_revealed':
+    // The Vetoes of a draw, from the end of its Veto window on (#231): who cast them. It names no game, so a Hidden wheel stays hidden.
+    case 'vetoes_revealed': {
+      const list = new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(entry.params.vetoes.map(veto => entry.people[veto.userId] ?? ''))
+      return t('activity.veto', { list })
+    }
+    // The other 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #233 Bonus Veto, #235 coin toss.
     case 'bonus_veto_granted':
     case 'coin_tossed':
       return null

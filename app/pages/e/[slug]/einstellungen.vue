@@ -31,7 +31,9 @@ const user = useAuthUser()
 // The Players per saved team (#163): one entry per team the Event has now, so the Format step can count the Players a
 // lower team count would send to the Bench.
 const teamPlayers = computed(() => playersPerTeam(countSeats((view.value?.members ?? []).map(member => placeOf(member))), view.value?.teams.length ?? 0))
-const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value }))
+// „Rad verdecken“ is locked while a game is being drawn (#231, LOCKED_WHILE_DRAWN); the server refuses the change too (hidden_wheel_locked).
+const drawingReason = computed(() => (view.value?.roundBeingDrawn ? t('eventSettings.lockedDrawing') : undefined))
+const locks = computed(() => ({ reason: lockedReason.value, drawing: drawingReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value }))
 
 const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { main: [], tiebreaker: [] } }))
 

@@ -274,6 +274,7 @@ describe('Vetoes', () => {
       expect(view.rounds).toEqual([])
       expect(view.setGame?.left).not.toContain(row!.gameId)
       expect(view.setGame?.left).toHaveLength(3)
+      expect(view.setGame?.respin).toBe(true)
     })
 
     it('spins into the same Round: no new Round, and the Game count counts it once', async () => {

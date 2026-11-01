@@ -85,7 +85,8 @@ function hideWheel(hidden: boolean) {
       <ToggleSwitch
         :model-value="draft.hiddenWheel"
         :label="t('setup.mode.hideWheel')"
-        :help="t('setup.mode.hideWheelHelp')"
+        :help="locks?.drawing ?? t('setup.mode.hideWheelHelp')"
+        :disabled="locks?.drawing !== undefined"
         @update:model-value="hideWheel"
       />
       <ToggleSwitch

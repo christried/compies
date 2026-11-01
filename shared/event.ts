@@ -147,6 +147,8 @@ export interface SetGameView {
   rejection: SetRejection | null
   /** Why the wheel cannot be spun now, or null (#229): the dock's „Rad drehen“. A Selection mode without a wheel says `no_wheel`. */
   spinRejection: SpinRejection | null
+  /** Whether a Round waits for a respin (#231): every draw of it was vetoed. The dock then says „Neu drehen“, and the next spin or set goes into that Round. */
+  respin: boolean
   left: string[]
 }
 

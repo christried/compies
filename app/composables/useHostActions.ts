@@ -97,7 +97,8 @@ export function useHostActions(
       },
       spin: {
         key: 'spin',
-        label: t('dock.spin'),
+        // A Round whose draws were all vetoed waits for a respin (#231): the same action, named for it.
+        label: t(current.setGame?.respin ? 'dock.respin' : 'dock.spin'),
         icon: Dices,
         group: t('dock.group.game'),
         disabledReason: spinReason,

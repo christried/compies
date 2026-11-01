@@ -70,6 +70,7 @@
     "checkTeams": "Teams prüfen",
     "fillFromBench": "Von der Bench nachziehen",
     "spin": "Rad drehen",
+    "respin": "Neu drehen",
     "setGame": "Nächstes Spiel setzen",
     "skipClip": "Clip überspringen",
     "vetoRunning": "Veto-Fenster läuft",
@@ -459,7 +460,26 @@
     "banner": "Das Glücksrad sagt: {game}. {seconds} Sekunden für Vetos.",
     "hold": "Veto gedrückt halten",
     "sealed": "Veto abgegeben. Wird nach Ablauf aufgedeckt.",
-    "by": "Veto von {name} ({team})"
+    "by": "Veto von {name} ({team})",
+    "title": "Veto-Fenster",
+    "left": "Keine Vetos mehr | Noch 1 Veto | Noch {n} Vetos",
+    "timeLeft": "Noch {seconds} Sekunden",
+    "holding": "Halten …",
+    "cast": "Veto eingelegt",
+    "stamp": "Versiegelt",
+    "byMate": "{name} hat schon gevetot",
+    "hint": "Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.",
+    "hintSealed": "Die anderen sehen es erst beim Aufdecken.",
+    "hintMate": "Ein Veto pro Team und Spiel. Euer Team hat für dieses Spiel schon gevetot.",
+    "revealing": "Aufdecken …",
+    "revealed": "Aufgedeckt",
+    "tileVeto": "Veto",
+    "tileNone": "Kein Veto",
+    "tileBy": "von {name}",
+    "tileSpared": "Vetos gespart",
+    "outcomeVeto": "Veto von {list}. {game} fliegt vom Rad, es wird neu gedreht.",
+    "outcomeSet": "Kein Veto. {game} wird gespielt. Viel Glück!",
+    "parties": "Vetos der Parteien"
   },
   "coin": {
     "throw": "Münze werfen",
@@ -940,6 +960,7 @@
     "saved": "Gespeichert.",
     "back": "Zurück zum Event",
     "locked": "Gesperrt, seit die erste Session läuft: Schon gespielte Spiele behalten ihre Regeln.",
+    "lockedDrawing": "Gesperrt, solange ein Spiel gezogen wird: Rad verdecken lässt sich wieder ändern, sobald das Spiel feststeht.",
     "wrongPhase": "Das Event ist beendet. Die Einstellungen lassen sich nicht mehr ändern."
   },
   "connectionG": {

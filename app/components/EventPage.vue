@@ -42,7 +42,11 @@ const votes = useOptimisticVotes(slug, data, refresh)
 // No timer runs on the server (ADR 0013, amended 2026-10-31): the first read after an instant settles it, so the page reads the Event
 // and the Activity feed again when an instant it knows passes (#229: the wheel's stop; the next tickets add their own).
 const feedTick = ref(0)
-const knownInstants = computed(() => (data.value?.wheel?.spin ? [Date.parse(data.value.wheel.spin.stopAt)] : []))
+const knownInstants = computed(() => {
+  const spin = data.value?.wheel?.spin
+  // The wheel's stop (#229) and the end of its Veto window (#231), which reveals every Party's Veto.
+  return spin ? [Date.parse(spin.stopAt), ...(spin.vetoEndsAt ? [Date.parse(spin.vetoEndsAt)] : [])] : []
+})
 useInstantRefresh(knownInstants, serverClock.now, () => {
   void refresh()
   feedTick.value += 1
@@ -77,6 +81,11 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
 /** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
 const endSession = () => send('POST', 'sessions/end')
+
+/** A Player casts their Party's Veto on a draw (#231); the hold on the button learns whether the server took it. */
+const castVeto = (drawId: string) => send('POST', `draws/${drawId}/veto`)
+// The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
+room.on('veto.cast', () => void refresh())
 
 /** Puts an open Round back (#228); the hold on its card learns whether the server took it. */
 const putBackRound = (roundId: string) => send('DELETE', `rounds/${roundId}`)
@@ -327,13 +336,26 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           @remove-session="removeSession"
         />
 
-        <LuckyWheel
+        <div
           v-else-if="block === 'wheel' && data.wheel"
-          :wheel="data.wheel"
-          :hidden="data.settings?.hiddenWheel ?? false"
-          :is-host="data.event.isHost"
-          :server-now="serverClock.now"
-        />
+          class="flex flex-col gap-[18px] md:gap-[22px]"
+        >
+          <LuckyWheel
+            :wheel="data.wheel"
+            :hidden="data.settings?.hiddenWheel ?? false"
+            :is-host="data.event.isHost"
+            :server-now="serverClock.now"
+          />
+          <VetoWindow
+            v-if="data.wheel.spin?.vetoEndsAt"
+            :wheel="data.wheel"
+            :teams="data.teams"
+            :members="data.members"
+            :viewer-id="data.viewerId"
+            :server-now="serverClock.now"
+            :cast="castVeto"
+          />
+        </div>
 
         <EventRounds
           v-else-if="block === 'rounds'"

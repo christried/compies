@@ -7,7 +7,7 @@ import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
 import { placeOf, composeTeamName, type Zone } from '../../shared/board'
-import { gamesLeft, isBeingDrawn, isOpen, vetoRejection } from '../../shared/rounds'
+import { gamesLeft, isBeingDrawn, isOpen, vetoRejection, waitsForRespin } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import type { EventView, RoundView, SessionNote, SessionView, VetoView, WheelView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
@@ -199,7 +199,7 @@ export async function roundsSection(db: Db, eventRow: EventRow, rows: EventRows,
     rounds: open,
     roundBeingDrawn: viewer.isHost && roundRows.some(round => isBeingDrawn(round, draws)),
     setGame: viewer.isHost
-      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, draws, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, draws, left, true), left }
+      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, draws, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, draws, left, true), respin: roundRows.some(round => waitsForRespin(round, draws)), left }
       : null,
     wheel: onWheel ? await wheelView(db, eventRow, rows, viewer, settings.hiddenWheel, left, draws, now) : null,
   }
