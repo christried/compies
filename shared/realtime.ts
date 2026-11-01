@@ -8,9 +8,9 @@ import type { Place } from './board'
 export const ROOM_PROTOCOL_VERSION = 1
 
 /**
- * The message types of the room, a union that later tickets extend with presence, moves, Sessions, the Activity feed
- * and the clock. A change of an Event queues these with `publish`. `event.changed`: something about the Event
- * changed, the client refetches the Event read.
+ * The message types of the room: the union of every message the room sends; Nuxt adds a type without a Worker deploy,
+ * since the Worker checks only `v` and `type`. A change of an Event queues these with `publish`. `event.changed`:
+ * something about the Event changed, the client refetches the Event read.
  */
 export type RoomMessage
   = | { type: 'event.changed' }
