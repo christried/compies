@@ -245,10 +245,16 @@ describe('Pool preview secrecy (#225)', () => {
   })
 
   // A game the Host sets is every Member's from the moment it is set, with the Pool preview off too, and nothing else is (#228).
+  // A visible Lucky Wheel in a running Session shows the games left in the Game pool on the wheel, also with the Pool preview off
+  // (#229): their id and name are the wheel's, but never a picture, a video id or notes.
   describe.each([
-    ['Host pick', HOST_PICK],
-    ['a visible Lucky Wheel', VISIBLE_WHEEL],
-  ])('a game the Host sets under %s with the Pool preview off', (_mode, settings) => {
+    ['Host pick', HOST_PICK, false],
+    ['a visible Lucky Wheel', VISIBLE_WHEEL, true],
+  ])('a game the Host sets under %s with the Pool preview off', (_mode, settings, onWheel) => {
+    /** The games of the Game pool, which a visible wheel shows by name. */
+    const wheelGames = new Set<string>()
+    /** What must not reach the Player: everything of a game, but a name and an id the wheel shows. */
+    const hidden = (game: PoolGame) => (wheelGames.has(game.id) ? [game.imageKey, game.videoId, game.notes] : traces(game))
     /** A Running Session: Player and Second in a team each, Alpha and Beta in the Game pool, Gamma in the Tiebreaker pool, Epsilon only in the library. */
     async function runningEvent() {
       const { slug, pool } = await setUp(settings)
@@ -258,6 +264,8 @@ describe('Pool preview secrecy (#225)', () => {
       await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: (await testDb.db.select().from(users).where(eq(users.email, second.email)))[0]!.id })
       await startRunningSession(request, testDb.db, { slug, hostCookie, seated: [{ cookie: playerCookie, email: player.email }, { cookie: secondCookie, email: second.email }] })
       notifier.clear()
+      wheelGames.clear()
+      if (onWheel) for (const game of [pool[0]!, pool[1]!]) wheelGames.add(game.id)
       return { slug, eventId: eventRow!.id, alpha: pool[0]!, beta: pool[1]!, gamma: pool[2]!, library }
     }
 
@@ -266,7 +274,7 @@ describe('Pool preview secrecy (#225)', () => {
       return { event: await rawRead(playerCookie, slug), feed: await feed.text(), room: JSON.stringify(notifier.messages(eventId)) }
     }
 
-    function expectNone(what: Record<string, string>, games: PoolGame[], include: (game: PoolGame) => string[] = traces) {
+    function expectNone(what: Record<string, string>, games: PoolGame[], include: (game: PoolGame) => string[] = hidden) {
       for (const [place, raw] of Object.entries(what)) {
         for (const game of games) for (const trace of include(game)) expect(raw, `${place} leaks ${trace}`).not.toContain(trace)
       }

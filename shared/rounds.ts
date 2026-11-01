@@ -5,7 +5,7 @@
 
 import type { Seats } from './board'
 import { runningOf, teamsRejection, type Instant, type SessionTimes, type TeamsRejection } from './session-state'
-import type { EventSettings } from './settings'
+import { hasWheel, type EventSettings } from './settings'
 
 /** Where a draw's game came from: the Game pool, or the library beyond it. A library game never joins a pool (spec #218 § Rounds). */
 export const DRAW_SOURCES = ['pool', 'library'] as const
@@ -97,4 +97,29 @@ export function setRejection({ isHost, settings, sessions, seats, rounds }: SetI
   if (teams) return teams
   if (roundsStarted(rounds) >= settings.gameCount) return 'game_count_reached'
   return rounds.some(round => stands(round) && roundState(round) === 'drawn') ? 'round_being_drawn' : null
+}
+
+/** The spin starts this long after the commit, so every client has the message and starts together (#229, spec #218 § Drawing). */
+export const SPIN_LEAD_MS = 1500
+/** How long the wheel spins (04-motion § Lucky Wheel: 3 to 10 s); there is no setting for it. The stop is the start plus this. */
+export const SPIN_DURATION_MS = 6000
+/** A reduced-motion client spins this long, ending at the same stop instant. */
+export const SPIN_REDUCED_MS = 1200
+
+/** Why the Host cannot spin now: the reasons of setting a game, plus a Selection mode without a wheel and an empty pool. */
+export type SpinRejection = SetRejection | 'no_wheel' | 'pool_empty'
+
+export interface SpinInput extends Omit<SetInput, 'settings'> {
+  /** The settings that matter here; null for an Event that is not set up. */
+  settings: Pick<EventSettings, 'teamCount' | 'gameCount' | 'selectionMode'> | null
+  /** The games left in the Game pool (gamesLeft). */
+  left: readonly string[]
+}
+
+/** The reason the wheel cannot be spun now, or null (#229): setRejection's reasons in their order, then no wheel, then no game left. */
+export function spinRejection({ left, ...input }: SpinInput): SpinRejection | null {
+  const rejection = setRejection(input)
+  if (rejection) return rejection
+  if (!hasWheel(input.settings!.selectionMode)) return 'no_wheel'
+  return left.length === 0 ? 'pool_empty' : null
 }

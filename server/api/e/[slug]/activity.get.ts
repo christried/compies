@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery, getRouterParam } from 'h3'
 import { readActivityPage } from '../../../utils/activity'
 import { parseActivityQuery } from '../../../domain/activity'
+import { useClock } from '../../../utils/clock'
 import { useDb } from '../../../utils/db'
 import { apiError } from '../../../utils/errors'
 import { loadEvent } from '../../../utils/event-access'
@@ -17,5 +18,5 @@ export default defineEventHandler(async (event): Promise<ActivityPage> => {
 
   const query = parseActivityQuery(getQuery(event))
   if (!query.ok) throw apiError(query.error)
-  return readActivityPage(db, eventRow.id, query.before, query.limit)
+  return readActivityPage(db, eventRow.id, query.before, query.limit, useClock(event).now())
 })

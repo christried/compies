@@ -44,7 +44,7 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
     case 'game_count_changed':
     case 'team_size_changed': return { icon: SlidersHorizontal, tone: 'surface' }
     // The 0.7 kinds (#226 adds them to the enum; their sentences come with the tickets that write them, see `sentence`). A game set
-    // and put back have theirs (#228); the icons of the others are placeholders until their tickets.
+    // and put back have theirs (#228), and a game drawn (#229, the dice); the icons of the others are placeholders until their tickets.
     case 'game_drawn': return { icon: Dices, tone: 'surface' }
     case 'vetoes_revealed': return { icon: ShieldX, tone: 'surface' }
     case 'game_set': return { icon: Gamepad2, tone: 'surface' }
@@ -98,8 +98,10 @@ function sentence(entry: ActivityEntry, t: Translate): string | null {
       return gameSentence(entry, 'activity.hostSet', t)
     case 'game_put_back':
       return gameSentence(entry, 'activity.gamePutBack', t)
-    // The other 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #229 game drawn, #231 Vetoes revealed, #233 Bonus Veto, #235 coin toss.
+    // What the wheel drew (#229) is in the feed from its stop on, and the server names the game only then (the same rule).
     case 'game_drawn':
+      return entry.games[entry.params.gameId] === undefined ? null : t('activity.wheel', { game: entry.games[entry.params.gameId] })
+    // The other 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #231 Vetoes revealed, #233 Bonus Veto, #235 coin toss.
     case 'vetoes_revealed':
     case 'bonus_veto_granted':
     case 'coin_tossed':

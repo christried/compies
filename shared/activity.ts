@@ -30,6 +30,13 @@ export const ACTIVITY_TYPES = [
 ] as const
 export type ActivityType = (typeof ACTIVITY_TYPES)[number]
 
+/**
+ * The entry types whose entry waits for its instant (#229, spec #218 § Deadlines): written with `at` set to the instant they
+ * may be read from, not published, and left out of the feed until then (the clients refetch it when the instant passes). The
+ * others have an `at` the database stamps, which a test clock must not hide. #235 adds `coin_tossed`.
+ */
+export const INSTANT_ACTIVITY_TYPES: readonly ActivityType[] = ['game_drawn']
+
 /** An instant in the params: an ISO string, built from a `Date` by `isoInstant` (the stored rows already hold these). */
 export type IsoInstant = `${number}-${number}-${number}T${string}`
 

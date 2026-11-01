@@ -43,6 +43,12 @@ export type RoomMessage
     | { type: 'round.set', roundId: string }
   /** The Host put an open Round back (#228). No game data. */
     | { type: 'round.putBack', roundId: string }
+  /**
+   * The Host spun the Lucky Wheel (#229, spec #218 § Hidden wheel on the wire). Instants are ISO strings; `slices` is how many
+   * slices the wheel had. Never a game: `labels` are the placeholders of a Hidden wheel (shuffled for this spin), null on a
+   * visible wheel, whose names the clients take from the Event read.
+   */
+    | { type: 'round.spun', roundId: string, drawId: string, spinStartAt: string, stopAt: string, slices: number, resultIndex: number, resultOffset: number, labels: string[] | null }
   /** The Host changed the Countdown (#236): set, started, paused, reset or cleared. No payload; the client refetches the Event read. */
     | { type: 'countdown.changed' }
 

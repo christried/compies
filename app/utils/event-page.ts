@@ -1,4 +1,5 @@
 import { hasStarted, nextSession, runningOf, sessionState } from '~~/shared/session-state'
+import { hasWheel } from '~~/shared/settings'
 import { datePollOpen, type EventView, type Phase, type SessionView } from '~~/shared/event'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the blocks of the stage
@@ -8,9 +9,12 @@ import { datePollOpen, type EventView, type Phase, type SessionView } from '~~/s
 export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates'> & { event: Pick<EventView['event'], 'phase'> }
 
 /**
- null `cards`: the Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions.
+ * The blocks of the stage (#166, #228). `head`: kicker and title. `reopen`: the notices of reopened Dates. `setup`: the Event
+ * is not set up. `seat`: where the Host sits. `poll`: the Date poll. `wheel`: the Lucky Wheel, on top of the Rounds (#229).
+ * `rounds`: the open Rounds, in a running Session. `countdown`: the Countdown (#236). `board`: the Game board. `cards`: the
+ * Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions.
  */
-export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'rounds' | 'countdown' | 'board' | 'cards' | 'stay'
+export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'wheel' | 'rounds' | 'countdown' | 'board' | 'cards' | 'stay'
 
 /** The next Session to start (the earliest dated one that has not started): its shown number (null for an only Session) and Date. */
 export interface NextSession { number: number | null, startsAt: string }
@@ -48,18 +52,19 @@ type Kind = EventPageState['kind']
 
 /**
  * The blocks of the stage per state (11-event-seite § EventPage): what has to happen now goes on top. The poll while no
- * Session is dated, the Game board from the first Date on, the open Rounds above it while a Session runs, with the Countdown (#236)
- * under them, the Sessions card
+ * Session is dated, the Game board from the first Date on, the open Rounds above it while a Session runs, with the wheel on top
+ * of them when the Event plays with the Lucky Wheel (`lucky`, #229) and the Countdown (#236) under them, the Sessions card
  * between two Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits for a Date has its
  * poll (compact) below the board once another Session is dated or started.
  */
-export function pageBlocks(kind: Kind, pollOpen: boolean): Block[] {
+export function pageBlocks(kind: Kind, pollOpen: boolean, lucky = false): Block[] {
   const poll: Block[] = pollOpen ? ['poll'] : []
+  const wheel: Block[] = lucky ? ['wheel'] : []
   switch (kind) {
     case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
     case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
     // The Countdown (#236) sits under the open Rounds and is shown only while the Event has one (the page checks it).
-    case 'running': return ['head', 'reopen', 'rounds', 'countdown', 'board', ...poll, 'cards']
+    case 'running': return ['head', 'reopen', ...wheel, 'rounds', 'countdown', 'board', ...poll, 'cards']
     case 'between': return ['head', 'reopen', 'cards', 'stay', 'board', ...poll]
     case 'done': return ['head', 'reopen', 'cards', 'board']
     case 'setup': return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
@@ -135,7 +140,7 @@ export function eventPageState({ settings, sessions, missingDates, event }: Page
     next,
     lastEnded: ended ? { number: ended.number } : null,
     pollNumber: pollingNumber(sessions, missingDates),
-    blocks: pageBlocks(kind, pollOpen),
+    blocks: pageBlocks(kind, pollOpen, settings !== null && hasWheel(settings.selectionMode)),
     pollCompact: pollCompactIn(kind),
     cardsStandOut: cardsStandOutIn(kind),
   })

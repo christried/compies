@@ -173,16 +173,24 @@ describe('the sentence of an entry', () => {
     expect(text({ ...base, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })).toBeNull()
   })
 
+  it('says what the wheel drew, naming the game, with the game in bold, and nothing while the viewer may not name it yet (#229)', () => {
+    const drawn = { ...base, type: 'game_drawn', params: { roundId: 'r', drawId: 'd', gameId: 'g1' } } as const
+
+    expect(text({ ...drawn, games: { g1: 'Halo' } })).toBe('Glücksrad: Halo')
+    expect(activityParts({ ...drawn, games: { g1: 'Halo' } }, t)).toEqual([{ text: 'Glücksrad: ', strong: false }, { text: 'Halo', strong: true }])
+    expect(text(drawn)).toBeNull()
+  })
+
   it('still has no sentence for the kinds whose tickets come later', () => {
-    expect(text({ ...base, type: 'game_drawn', params: { roundId: 'r', drawId: 'd', gameId: 'g1' } })).toBeNull()
     expect(text({ ...base, type: 'coin_tossed', params: { side: 'heads' } })).toBeNull()
   })
 
-  it('draws a game set and a game put back with an icon of their own', () => {
+  it('draws a game set, a game put back and a game drawn with an icon of their own', () => {
     const set = activityIcon({ ...base, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })
     const back = activityIcon({ ...base, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })
+    const drawn = activityIcon({ ...base, type: 'game_drawn', params: { roundId: 'r', drawId: 'd', gameId: 'g1' } })
 
-    expect(set.icon).not.toBe(back.icon)
+    expect(new Set([set.icon, back.icon, drawn.icon]).size).toBe(3)
     expect(set.tone).toBe('surface')
   })
 })

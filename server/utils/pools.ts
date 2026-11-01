@@ -1,5 +1,5 @@
-import { and, asc, eq, exists, inArray, isNull, or, sql } from 'drizzle-orm'
-import { eventMembers, eventPoolGames, events, games, rounds } from '../db/schema'
+import { and, asc, eq, exists, inArray, isNull, lte, or, sql } from 'drizzle-orm'
+import { draws, eventMembers, eventPoolGames, events, games, rounds } from '../db/schema'
 import type { GameFacts } from '../domain/pool-preview'
 import type { Db } from './db'
 import { apiError } from './errors'
@@ -38,9 +38,12 @@ export async function assertGamesExist(tx: Db, ...lists: string[][]): Promise<vo
  * it, with whether they host it, whether their Pool preview is on and whether a Round set the game: what the image route
  * needs (#148, #225, #228). One query, deleted Events left out. A Round that was put back still counts as set: everyone saw it.
  */
-export async function gameEventsOf(db: Db, userId: string, gameId: string): Promise<GameFacts[]> {
+export async function gameEventsOf(db: Db, userId: string, gameId: string, now: Date): Promise<GameFacts[]> {
   const inPool = exists(db.select({ one: sql`1` }).from(eventPoolGames).where(and(eq(eventPoolGames.eventId, events.id), eq(eventPoolGames.gameId, gameId))))
-  const wasSet = exists(db.select({ one: sql`1` }).from(rounds).where(and(eq(rounds.eventId, events.id), eq(rounds.gameId, gameId))))
+  // A game is set once a Round has it, or a draw of the Event has it and stopped (#229): a draw whose stop has passed but nobody has
+  // read since is not settled yet, and its image must not wait for that.
+  const stopped = exists(db.select({ one: sql`1` }).from(draws).innerJoin(rounds, eq(draws.roundId, rounds.id)).where(and(eq(rounds.eventId, events.id), eq(draws.gameId, gameId), lte(draws.stopAt, now))))
+  const wasSet = or(exists(db.select({ one: sql`1` }).from(rounds).where(and(eq(rounds.eventId, events.id), eq(rounds.gameId, gameId)))), stopped)
   const found = await db
     .selectDistinct({ isHost: sql<boolean>`${events.hostId} = ${userId}`, hiddenWheel: events.hiddenWheel, poolPreview: events.poolPreview, set: sql<boolean>`${wasSet}` })
     .from(events)

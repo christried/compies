@@ -55,19 +55,19 @@ describe('hostDockState', () => {
     expect(state).toMatchObject({ kind: 'teams', primary: 'start', startRejection: 'teams_uneven' })
   })
 
-  it('is running while a Session runs: Session beenden, with that Session\'s number', () => {
+  it('is running while a Session runs: Rad drehen in the Lucky Wheel, with that Session\'s number', () => {
     const state = hostDockState(input({
       sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z' }), dated('b', 2)],
       start: { sessionId: 'b', number: 2, rejection: 'session_running' },
     }))
 
-    expect(state).toMatchObject({ kind: 'running', primary: 'end', number: 1 })
+    expect(state).toMatchObject({ kind: 'running', primary: 'spin', number: 1 })
   })
 
   it('says no number for the only Session of an Event', () => {
     const state = hostDockState(input({ sessions: [dated('a', null, { startedAt: '2090-10-30T19:30:00.000Z' })], start: { sessionId: null, number: null, rejection: 'session_running' } }))
 
-    expect(state).toMatchObject({ kind: 'running', primary: 'end', number: null })
+    expect(state).toMatchObject({ kind: 'running', primary: 'spin', number: null })
   })
 
   it('is between Sessions when one ended and another is dated: the next one starts', () => {
@@ -109,12 +109,18 @@ describe('hostDockState', () => {
 
 describe('the primary of a running Session (#228)', () => {
   it('is Nächstes Spiel setzen under Host pick, with the reason the rule gives', () => {
-    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: null, left: [] } }))).toMatchObject({ kind: 'running', primary: 'setGame', setRejection: null })
-    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: 'teams_uneven', left: [] } }))).toMatchObject({ primary: 'setGame', setRejection: 'teams_uneven' })
+    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: null, spinRejection: null, left: [] } }))).toMatchObject({ kind: 'running', primary: 'setGame', setRejection: null })
+    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: 'teams_uneven', spinRejection: 'teams_uneven', left: [] } }))).toMatchObject({ primary: 'setGame', setRejection: 'teams_uneven' })
   })
 
-  it('stays Session beenden in the Lucky Wheel, where setting waits in Mehr until Drehen is the primary', () => {
-    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: null, left: [] } }))).toMatchObject({ kind: 'running', primary: 'end' })
+  it('is Rad drehen in the Lucky Wheel, with the reason the spin rule gives, where setting waits in Mehr (#229)', () => {
+    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: null, spinRejection: null, left: [] } }))).toMatchObject({ kind: 'running', primary: 'spin', spinRejection: null })
+    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: null, spinRejection: 'pool_empty', left: [] } }))).toMatchObject({ primary: 'spin', spinRejection: 'pool_empty' })
+    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: 'round_being_drawn', spinRejection: 'round_being_drawn', left: [] } }))).toMatchObject({ primary: 'spin', spinRejection: 'round_being_drawn', setRejection: 'round_being_drawn' })
+  })
+
+  it('has no spin reason under Host pick: the wheel is not there', () => {
+    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: null, spinRejection: 'no_wheel', left: [] } }))).toMatchObject({ primary: 'setGame', spinRejection: null })
   })
 })
 
@@ -140,9 +146,9 @@ describe('dockLayout', () => {
     expect(layout({ settings: hostPick, sessions: RUNNING })).toEqual({ primary: ['setGame'], secondary: ['end', 'invite'], more: ['countdown', 'settings'] })
   })
 
-  it('in the Lucky Wheel puts Session beenden first and Nächstes Spiel setzen in Mehr', () => {
-    expect(layout({ settings, sessions: RUNNING })).toEqual({ primary: ['end'], secondary: ['invite'], more: ['setGame', 'countdown', 'settings'] })
-    expect(layout({ settings, sessions: [...RUNNING, undated('b')] }, true)).toEqual({ primary: ['end'], secondary: ['invite'], more: ['setGame', 'setDate', 'slots', 'countdown', 'settings'] })
+  it('in the Lucky Wheel puts Rad drehen first, Session beenden beside it and Nächstes Spiel setzen in Mehr (#229)', () => {
+    expect(layout({ settings, sessions: RUNNING })).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'countdown', 'settings'] })
+    expect(layout({ settings, sessions: [...RUNNING, undated('b')] }, true)).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'setDate', 'slots', 'countdown', 'settings'] })
   })
 
   it('puts Countdown in Mehr in both running layouts (#236), and in no other state', () => {
@@ -166,5 +172,7 @@ describe('setBlockedKey', () => {
     expect(setBlockedKey('game_count_reached')).toBe('dock.setBlocked.game_count_reached')
     expect(setBlockedKey('round_being_drawn')).toBe('dock.setBlocked.round_being_drawn')
     expect(setBlockedKey('no_running_session')).toBe('dock.setBlocked.no_running_session')
+    expect(setBlockedKey('no_wheel')).toBe('dock.setBlocked.no_wheel')
+    expect(setBlockedKey('pool_empty')).toBe('dock.setBlocked.pool_empty')
   })
 })

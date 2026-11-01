@@ -16,7 +16,9 @@ const props = withDefaults(defineProps<{
   sessions?: FeedSession[]
   /** The number of the next dated Session that has not started, for „Vor Session m“; null when none is left. */
   nextNumber?: number | null
-}>(), { sessions: () => [], nextNumber: null })
+  /** Counts the instants that passed (the page's useInstantRefresh): an entry that waited for its instant (a draw's) is readable now, so the feed reads again (#229). */
+  refreshTick?: number
+}>(), { sessions: () => [], nextNumber: null, refreshTick: 0 })
 
 const { t } = useI18n()
 
@@ -100,6 +102,7 @@ onScopeDispose(stopListening)
 watch(props.room.state, (state) => {
   if (state === 'open' && status.value === 'ready') void loadFirst()
 })
+watch(() => props.refreshTick, () => void loadFirst())
 onMounted(() => void loadFirst())
 
 const TONE = { primary: 'bg-primary text-on-primary', surface: 'bg-surface text-ink', success: 'bg-success text-on-success' }

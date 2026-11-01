@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gamesLeft, isOpen, roundsStarted, roundState, setRejection, type DrawFacts, type RoundFacts, type SetInput } from '../../shared/rounds'
+import { gamesLeft, isOpen, roundsStarted, roundState, setRejection, spinRejection, type DrawFacts, type RoundFacts, type SetInput, type SpinInput } from '../../shared/rounds'
 import type { SessionTimes } from '../../shared/session-state'
 import { floorsAt } from '../../shared/settings'
 
@@ -151,5 +151,39 @@ describe('setRejection', () => {
     expect(setRejection({ ...worst, isHost: true, sessions })).toBe('teams_uneven')
     expect(setRejection({ ...worst, isHost: true, sessions, seats: { 1: 2, 2: 2 } })).toBe('game_count_reached')
     expect(setRejection({ ...worst, isHost: true, sessions, seats: { 1: 2, 2: 2 }, settings: { teamCount: 2, gameCount: 9 } })).toBe('round_being_drawn')
+  })
+})
+
+describe('spinRejection', () => {
+  const sessions: SessionTimes[] = [{ startsAt: at(18), startedAt: at(19), endedAt: null }]
+  const input = (fields: Partial<SpinInput> = {}): SpinInput => ({
+    isHost: true,
+    settings: { teamCount: 2, gameCount: 3, selectionMode: 'lucky_wheel' },
+    sessions,
+    seats: { 1: 2, 2: 2 },
+    rounds: [],
+    left: ['halo', 'kart'],
+    ...fields,
+  })
+
+  it('lets the Host spin a Lucky Wheel with games left', () => {
+    expect(spinRejection(input())).toBeNull()
+  })
+
+  it('gives the reasons of setting a game, in their order', () => {
+    expect(spinRejection(input({ isHost: false }))).toBe('not_host')
+    expect(spinRejection(input({ sessions: [] }))).toBe('no_running_session')
+    expect(spinRejection(input({ seats: { 1: 2, 2: 1 } }))).toBe('teams_uneven')
+    expect(spinRejection(input({ rounds: [round('a'), round('b'), round('c')] }))).toBe('game_count_reached')
+    expect(spinRejection(input({ rounds: [round('a', { setAt: null })] }))).toBe('round_being_drawn')
+  })
+
+  it('refuses Host pick: there is no wheel to spin', () => {
+    expect(spinRejection(input({ settings: { teamCount: 2, gameCount: 3, selectionMode: 'admin_pick' } }))).toBe('no_wheel')
+  })
+
+  it('refuses an empty wheel, after every reason of setting a game', () => {
+    expect(spinRejection(input({ left: [] }))).toBe('pool_empty')
+    expect(spinRejection(input({ left: [], rounds: [round('a', { setAt: null })] }))).toBe('round_being_drawn')
   })
 })

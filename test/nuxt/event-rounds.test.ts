@@ -8,7 +8,7 @@ import type { EventPools, RoundView, SetGameView } from '~~/shared/event'
 import type { GameView, PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { clickButton, clickHostAction, dialog, regionHeadings, serve, shownToasts, viewWithSessions, type Mounted, type Wrapper } from './event-page'
+import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, serve, shownToasts, viewWithSessions, type Mounted, type Wrapper } from './event-page'
 
 // The open Rounds on the stage and „Nächstes Spiel setzen“ (#228, 11-event-seite § EventPage, screen 15): the Round card with
 // „wird gespielt“, its Game notes open for the Host only, „Zurücklegen“ as the Host's hold, the picker that lists the Game pool
@@ -192,7 +192,7 @@ describe('„Nächstes Spiel setzen“', () => {
   }
 
   it('is disabled with its reason while the rule refuses, and answers a click with that reason and no sheet', async () => {
-    const { slug } = serveHostPick({ rejection: 'teams_uneven', left: [] })
+    const { slug } = serveHostPick({ rejection: 'teams_uneven', spinRejection: 'no_wheel', left: [] })
     const stage = await mount(slug)
 
     const action = stage.findAll('[role="toolbar"] button')[0]!
@@ -210,7 +210,7 @@ describe('„Nächstes Spiel setzen“', () => {
     ['game_count_reached', 'Alle Spiele dieses Events sind schon gestartet.'],
     ['round_being_drawn', 'Gerade wird ein Spiel gezogen.'],
   ] as const)('says %s in words', async (rejection, text) => {
-    const { slug } = serveHostPick({ rejection, left: [] })
+    const { slug } = serveHostPick({ rejection, spinRejection: 'no_wheel', left: [] })
     const stage = await mount(slug)
 
     const action = stage.findAll('[role="toolbar"] button')[0]!
@@ -220,7 +220,7 @@ describe('„Nächstes Spiel setzen“', () => {
   it('opens a sheet that lists the games left in the Game pool first, then the library', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
     signInAs({ ...kitty, canHost: true })
-    const { slug } = serveHostPick({ rejection: null, left: [halo.id, pong.id] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', left: [halo.id, pong.id] })
     const stage = await mount(slug)
 
     await clickHostAction(stage, 'Nächstes Spiel setzen')
@@ -241,7 +241,7 @@ describe('„Nächstes Spiel setzen“', () => {
   it('sets the chosen game from the bar and closes once the server took it', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
     signInAs({ ...kitty, canHost: true })
-    const { slug } = serveHostPick({ rejection: null, left: [halo.id, pong.id] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', left: [halo.id, pong.id] })
     const stage = await mount(slug)
     await clickHostAction(stage, 'Nächstes Spiel setzen')
     await vi.waitFor(() => expect(dialog()).not.toBeNull())
@@ -263,7 +263,7 @@ describe('„Nächstes Spiel setzen“', () => {
   it('can pick a game of the library that is not in the pool', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
     signInAs({ ...kitty, canHost: true })
-    const { slug } = serveHostPick({ rejection: null, left: [halo.id] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', left: [halo.id] })
     const stage = await mount(slug)
     await clickHostAction(stage, 'Nächstes Spiel setzen')
     await vi.waitFor(() => expect(dialog()?.querySelector('ul[aria-label="Bibliothek"]')).not.toBeNull())
@@ -276,7 +276,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('offers the pool only to a Host without the library permission', async () => {
-    const { slug } = serveHostPick({ rejection: null, left: [halo.id] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', left: [halo.id] })
     const stage = await mount(slug)
 
     await clickHostAction(stage, 'Nächstes Spiel setzen')
@@ -288,7 +288,7 @@ describe('„Nächstes Spiel setzen“', () => {
   it('says so when the pool has nothing left, and still offers the library', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [schach] }) })
     signInAs({ ...kitty, canHost: true })
-    const { slug } = serveHostPick({ rejection: null, left: [] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', left: [] })
     const stage = await mount(slug)
 
     await clickHostAction(stage, 'Nächstes Spiel setzen')
@@ -304,5 +304,84 @@ describe('„Nächstes Spiel setzen“', () => {
 
     expect(stage.find('[role="toolbar"]').exists()).toBe(false)
     expect(pill(stage)).toEqual([])
+  })
+})
+
+describe('the Lucky Wheel on the stage (#229)', () => {
+  const wheelSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3 } as const
+  const wheel = { count: 2, slices: [{ id: halo.id, name: 'Halo' }, { id: pong.id, name: 'Pong' }], spin: null }
+  let posted: number
+
+  beforeEach(() => {
+    posted = 0
+  })
+
+  function serveWheel({ host, setGame, rounds = [] }: { host: boolean, setGame?: SetGameView, rounds?: RoundView[] }) {
+    const served = serve(slug => viewWithSessions(slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+      event: { isHost: host, phase: 'running' },
+      settings: wheelSettings,
+      runningSessionId: `session-${slug}-0`,
+      rounds,
+      setGame,
+      wheel,
+      pools: host ? pools : null,
+    }))
+    registerEndpoint(`/api/e/${served.slug}/rounds/spin`, { method: 'POST', handler: () => {
+      posted += 1
+      return { roundId: 'r-new', drawId: 'd-new' }
+    } })
+    return served
+  }
+
+  it('shows the wheel with its games on top of the open Rounds, to a Member too', async () => {
+    const { slug } = serveWheel({ host: false, rounds: [round('r1', kart)] })
+
+    const stage = await mount(slug)
+
+    expect(regionHeadings(stage)).toEqual(['Glücksrad', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(stage.get('[role="img"][aria-label="Glücksrad mit 2 Spielen"]').text()).toContain('Halo')
+  })
+
+  it('has no wheel under Host pick', async () => {
+    const { slug } = serveRunning({ host: false })
+
+    const stage = await mount(slug)
+
+    expect(regionHeadings(stage)).not.toContain('Glücksrad')
+  })
+
+  it('makes Rad drehen the Host\'s primary with Session beenden beside it, and spins on a click', async () => {
+    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: null, left: [halo.id, pong.id] } })
+    const stage = await mount(slug)
+
+    expect(pill(stage).slice(0, 2)).toEqual([expect.stringContaining('Rad drehen'), expect.stringContaining('Session beenden')])
+    await clickHostAction(stage, 'Rad drehen')
+
+    await vi.waitFor(() => expect(posted).toBe(1))
+  })
+
+  it('looks disabled with the reason while the wheel cannot be spun, and spins nothing on a click', async () => {
+    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: 'pool_empty', left: [] } })
+    const stage = await mount(slug)
+
+    const action = stage.findAll('[role="toolbar"] button')[0]!
+    expect(action.text()).toBe('Rad drehen')
+    expect(action.attributes('aria-disabled')).toBe('true')
+    expect(stage.get(`#${action.attributes('aria-describedby')}`).text()).toBe('Auf dem Rad ist kein Spiel mehr.')
+
+    await clickHostAction(stage, 'Rad drehen')
+
+    expect(shownToasts().map(toast => toast.text)).toEqual(['Auf dem Rad ist kein Spiel mehr.'])
+    expect(posted).toBe(0)
+  })
+
+  it('keeps Nächstes Spiel setzen in Mehr', async () => {
+    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: null, left: [halo.id] } })
+    const stage = await mount(slug)
+
+    expect(pill(stage)).not.toContain('Nächstes Spiel setzen')
+    const item = await hostActionElement(stage, 'Nächstes Spiel setzen')
+
+    expect(item.getAttribute('role')).toBe('menuitem')
   })
 })
