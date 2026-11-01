@@ -54,40 +54,40 @@ describe('the Releases a User has seen', () => {
 
   it('keeps the current Release for a returning User, who signs in again', async () => {
     const { cookie } = await signIn(testDb.db, kitty)
-    await testDb.db.update(users).set({ newsSeen: '1.0.0' })
+    await testDb.db.update(users).set({ newsSeen: '0.1.0' })
 
     await signIn(testDb.db, kitty)
 
-    expect(await seenOf(cookie)).toBe('1.0.0')
+    expect(await seenOf(cookie)).toBe('0.1.0')
   })
 
   it('stores the Release a User has seen', async () => {
     const { cookie } = await signIn(testDb.db, kitty)
     await testDb.db.update(users).set({ newsSeen: null })
 
-    const response = await markSeen(cookie, '1.0.0')
+    const response = await markSeen(cookie, '0.1.0')
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ newsSeen: '1.0.0' })
-    expect(await seenOf(cookie)).toBe('1.0.0')
+    expect(await response.json()).toEqual({ newsSeen: '0.1.0' })
+    expect(await seenOf(cookie)).toBe('0.1.0')
   })
 
   it('never moves back to an older Release', async () => {
     const { cookie } = await signIn(testDb.db, kitty)
-    await testDb.db.update(users).set({ newsSeen: '1.2.0' })
+    await testDb.db.update(users).set({ newsSeen: '0.3.0' })
 
-    const response = await markSeen(cookie, '1.1.0')
+    const response = await markSeen(cookie, '0.2.0')
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ newsSeen: '1.2.0' })
-    expect(await seenOf(cookie)).toBe('1.2.0')
+    expect(await response.json()).toEqual({ newsSeen: '0.3.0' })
+    expect(await seenOf(cookie)).toBe('0.3.0')
   })
 
   it('refuses a version that is no Release', async () => {
     const { cookie } = await signIn(testDb.db, kitty)
     await testDb.db.update(users).set({ newsSeen: null })
 
-    for (const version of ['9.9.9', 'latest', '1.2', '', 42, undefined]) {
+    for (const version of ['9.9.9', '1.4.0', 'latest', '1.2', '', 42, undefined]) {
       expect((await markSeen(cookie, version)).status, String(version)).toBe(400)
     }
     const [row] = await testDb.db.select().from(users).where(eq(users.email, kitty.email))

@@ -164,14 +164,31 @@ describe('Hidden wheel secrecy (#148)', () => {
     return testDb.db.update(events).set({ hiddenWheel: hidden })
   }
 
-  it('gives a Player under a Hidden wheel only the counts: not a name, id, image key or video id anywhere in the raw response', async () => {
+  it('gives a Player under a Hidden wheel nothing about the pools: not a count, name, id, image key or video id anywhere in the raw response', async () => {
     const { slug, secrets } = await setUp()
 
     const raw = await rawRead(playerCookie, slug)
 
-    expect((JSON.parse(raw) as EventView).pools).toEqual({ hidden: true, mainCount: 2, tiebreakerCount: 1 })
+    expect((JSON.parse(raw) as EventView).pools).toEqual({ hidden: true })
     for (const trace of secrets.flatMap(traces)) expect(raw).not.toContain(trace)
     expect(raw).not.toMatch(/api\/images/)
+  })
+
+  it('gives a Player the same response however many games the pools hold (#222)', async () => {
+    const { slug } = await setUp()
+    const before = await rawRead(playerCookie, slug)
+
+    const delta = await newGame('Delta Dart', 'ddddddddddd')
+    const [eventRow] = await testDb.db.select({ id: events.id }).from(events).where(eq(events.slug, slug))
+    await testDb.db.insert(eventPoolGames).values([
+      { eventId: eventRow!.id, gameId: delta.id, pool: 'main' },
+      { eventId: eventRow!.id, gameId: delta.id, pool: 'tiebreaker' },
+    ])
+    const after = await rawRead(playerCookie, slug)
+
+    // The control: the Host sees the new game, so the insert really changed the pools.
+    expect(await rawRead(hostCookie, slug)).toContain('Delta Dart')
+    expect(after).toBe(before)
   })
 
   it('gives the Host the games under a Hidden wheel', async () => {
@@ -180,10 +197,10 @@ describe('Hidden wheel secrecy (#148)', () => {
     const raw = await rawRead(hostCookie, slug)
 
     for (const trace of secrets.flatMap(traces)) expect(raw).toContain(trace)
-    expect((JSON.parse(raw) as EventView).pools.hidden).toBe(false)
+    expect((JSON.parse(raw) as EventView).pools).toMatchObject({ hidden: false, main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
   })
 
-  it('gives the Player the games once the wheel is not hidden, and the counts again when it is hidden again', async () => {
+  it('gives the Player the games once the wheel is not hidden, and nothing about the pools when it is hidden again', async () => {
     const { slug, secrets } = await setUp()
 
     await setWheelHidden(false)
@@ -196,7 +213,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     await setWheelHidden(true)
     const closed = await rawRead(playerCookie, slug)
     for (const trace of secrets.flatMap(traces)) expect(closed).not.toContain(trace)
-    expect((JSON.parse(closed) as EventView).pools).toEqual({ hidden: true, mainCount: 2, tiebreakerCount: 1 })
+    expect((JSON.parse(closed) as EventView).pools).toEqual({ hidden: true })
   })
 
   it('gives the Player the games of an Event with a visible Lucky wheel from the start', async () => {
