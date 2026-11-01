@@ -147,11 +147,28 @@ describe('the pools of an Event (#146)', () => {
       expect(view.pools).toEqual({
         hidden: false,
         main: [
-          { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'] },
-          { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] },
-          { id: zebra.id, name: 'Zebra Rennen', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] },
+          { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: null },
+          { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
+          { id: zebra.id, name: 'Zebra Rennen', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
         ],
         tiebreaker: [expect.objectContaining({ id: zebra.id, name: 'Zebra Rennen' })],
+      })
+    })
+
+    it('gives a Member who may see the pools each game with its notes, and null for a game without notes (#224)', async () => {
+      const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby' })
+      const pong = await newGame('Pong')
+      const { slug, inviteUrl } = await createdEvent({ pools: { main: [kart.id, pong.id], tiebreaker: [] } })
+      const { cookie } = await signIn(testDb.db, member)
+      const invite = new URL(inviteUrl).pathname.slice('/e/'.length)
+      expect((await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
+
+      expect((await read(cookie, slug)).pools).toMatchObject({
+        hidden: false,
+        main: [
+          { name: 'Mario Kart', notes: 'Settings: 3 Runden\nWarmup: Lobby' },
+          { name: 'Pong', notes: null },
+        ],
       })
     })
 

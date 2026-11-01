@@ -77,6 +77,8 @@ export interface PoolGame {
   playersMax: number | null
   /** The Suitabilities, in SUITABILITIES order; empty when none is set (#171). */
   suitabilities: Suitability[]
+  /** Game notes (#223); null = none. In a pool only for the viewers who may see the pool's games (#224). */
+  notes: string | null
 }
 
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
@@ -86,8 +88,6 @@ export interface GameView extends PoolGame {
   createdAt: string
   /** Whether the viewer may edit it (canEditGame). */
   canEdit: boolean
-  /** Game notes (#223); null = none. */
-  notes: string | null
 }
 
 /** Every game the viewer may see, by name (GET /api/games, #173). The browser filters them (`filterGames`) and knows the length. */
