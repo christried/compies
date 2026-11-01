@@ -124,11 +124,21 @@ export function compareVersions(a: string, b: string): number {
 /**
  * The Releases the „Was ist neu“ pop-up shows (#184), newest first, from `releases` newest first and the newest
  * version the User has seen. Nothing seen yet (or a version that is no Release) shows only the newest, so a
- * User who joins long after 1.0 is not buried in old news.
+ * User who joins long after the first Release is not buried in old news.
  */
 export function unseenReleases(releases: Release[], seen: string | null): Release[] {
   if (seen === null || !releases.some(r => r.version === seen)) return releases.slice(0, 1)
   return releases.filter(r => compareVersions(r.version, seen) > 0)
+}
+
+/**
+ * The version a User has seen once they mark `version` seen (#184, #242): the higher of the two, so it never goes down. A
+ * stored version above `newest` counts as unknown and is replaced: old code can store one while a deploy runs its
+ * migrations (`1.4.0` after the renumbering to 0.x), and no Release would ever come after it.
+ */
+export function seenAfter(stored: string | null, version: string, newest: string): string {
+  if (stored === null || compareVersions(stored, newest) > 0) return version
+  return compareVersions(version, stored) > 0 ? version : stored
 }
 
 export function parseChangelog(source: string): Changelog {

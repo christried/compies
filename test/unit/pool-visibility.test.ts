@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { canSeePoolGames, poolsVisibleTo } from '../../server/domain/pool-visibility'
 import { defaultSettings } from '../../shared/settings'
 
-// Who sees the games of the pools and who only the counts (#146, #148).
+// Who sees the games of the pools, and who learns nothing about them (#146, #148, #222).
 
 const visibleWheel = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: false, vetoAllowance: 3 }
 const hiddenWheel = { ...visibleWheel, hiddenWheel: true }

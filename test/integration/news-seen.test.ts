@@ -83,6 +83,17 @@ describe('the Releases a User has seen', () => {
     expect(await seenOf(cookie)).toBe('0.3.0')
   })
 
+  it('replaces a version above the newest Release, which old code can store during a deploy (#242)', async () => {
+    const { cookie } = await signIn(testDb.db, kitty)
+    await testDb.db.update(users).set({ newsSeen: '1.4.0' })
+
+    const response = await markSeen(cookie, current)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ newsSeen: current })
+    expect(await seenOf(cookie)).toBe(current)
+  })
+
   it('refuses a version that is no Release', async () => {
     const { cookie } = await signIn(testDb.db, kitty)
     await testDb.db.update(users).set({ newsSeen: null })
