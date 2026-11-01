@@ -370,6 +370,16 @@ describe('changing the settings of an Event (#147)', () => {
       expect(settingsFromRow(await row(slug))).toEqual(STORED_SETTINGS)
     })
 
+    it('refuses a bare { poolPreview } body, which has no settings key, instead of answering 200 and changing nothing', async () => {
+      const slug = await createdEvent()
+
+      const response = await patch(slug, { poolPreview: false })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_settings')
+      expect(settingsFromRow(await row(slug))).toEqual(STORED_SETTINGS)
+    })
+
     it('refuses a Pool preview that is not a boolean and keeps the row', async () => {
       const slug = await createdEvent()
 

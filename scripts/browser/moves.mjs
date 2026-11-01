@@ -2,7 +2,8 @@
 // Event, moves on one side, and every animation both sides draw. It is how #208 (a Flip on the wrong curve) and #207
 // (the picture's own drag) would have shown before the walk-through.
 // Usage: node scripts/browser/moves.mjs <slug>   (an Event of the Dev Host with settings and a Date: Team choice open)
-import { animations, api, drag, launch, open, sleep } from './cdp.mjs'
+import { launch, sleep } from './chrome.mjs'
+import { animations, api, drag, joinEvent, open } from './kit.mjs'
 
 const slug = process.argv[2]
 if (!slug) throw new Error('Usage: node scripts/browser/moves.mjs <slug>')
@@ -17,8 +18,7 @@ try {
   const [hostId, memberId] = [await me(host), await me(member)]
 
   // The Dev Member joins through the Invite link if they aren't a Member yet, and starts on the Bench like the Host.
-  const event = (await api(host, 'GET', `/api/e/${slug}`)).body
-  await api(member, 'POST', `/api/invite/${event.inviteUrl.split('/').pop()}`)
+  await joinEvent(member, slug, host)
   await open(member, `/e/${slug}`, 390, 844, board)
   for (const [tab, userId] of [[host, hostId], [member, memberId]]) await api(tab, 'POST', `/api/e/${slug}/move`, { userId, to: { zone: 'bench' } })
   await sleep(3000)

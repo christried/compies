@@ -8,6 +8,10 @@
   // An export the file uses itself is a helper that a unit test imports to check it directly (LOST_AFTER_MS, kebabCase,
   // ...). That is fine. What counts as dead is an export nothing uses, the file included, or one kept alive by a test only.
   "ignoreExportsUsedInFile": true,
+  "ignoreIssues": {
+    // The browser kit is a toolbox for the checks agents write (scripts/browser/README.md): a helper waits there for the next scenario.
+    "scripts/browser/kit.mjs": ["exports"]
+  },
   "workspaces": {
     ".": {
       "entry": [
@@ -15,8 +19,9 @@
         "stage.ts!",
         // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server only (#178).
         "server/dev/sign-in.ts!",
-        // The browser checks are run with node by agents (scripts/browser/README.md); cdp.mjs is what they import.
+        // The browser checks are run with node by agents (scripts/browser/README.md); chrome.mjs and kit.mjs are what they import.
         "scripts/browser/moves.mjs!",
+        "scripts/browser/pool-preview.mjs!",
         "scripts/browser/shots.mjs!",
         // Run with node by /implement-spec before each new implementer (.claude/skills/implement-spec/SKILL.md).
         "scripts/context-usage.mjs!"

@@ -16,7 +16,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
    - your brief;
    - `CODING_STANDARDS.md`, and `GLOSSARY.md` for the terms you touch;
    - the ADRs and the files your brief names.
-4. Call the Skill tool with `tdd` and build the ticket test-first.
+4. Call the Skill tool with `tdd` and build the ticket test-first. The test seams the brief names count as confirmed by the user, so `tdd`'s „confirm with the user“ step is met by the brief; a seam the brief doesn't name goes into your report.
 
 ## Rules
 

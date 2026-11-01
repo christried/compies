@@ -1,0 +1,26 @@
+name: Game day check
+
+# Check only, deploys nothing (retro 0.6): asks the production app whether a Session is dated today or has run for less than
+# 16 h, the same check as the game-day guard of realtime-deploy.yml. For agents that have no production key, before they ask
+# for a merge into `main` (docs/agents/release.md § No game days). Green = no game day. A `workflow_dispatch` workflow runs
+# only once it is on the default branch (`main`).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Game-day check
+        env:
+          # Signs the call to the app. It is the key the production app (Vercel) has as ROOM_INTERNAL_SECRET.
+          ROOM_INTERNAL_SECRET: ${{ secrets.ROOM_INTERNAL_SECRET_PRODUCTION }}
+        run: node realtime/scripts/deploy-check.mjs
