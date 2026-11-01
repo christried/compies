@@ -9,15 +9,24 @@ const visible = () => document.visibilityState === 'visible'
 
 /**
  * Refetch when the User comes back: the tab becomes visible again, window focus, and the browser is back online
- * (Home, #12; `online` #198).
+ * (Home, #12; `online` #198). The events of one return arrive together (visibility, then focus), so they share one
+ * refetch: a return that is announced twice in one task reads once (#238).
  */
 export function useRefreshOnReturn(refresh: () => unknown) {
   if (!import.meta.client) return
 
-  const onVisibility = () => {
-    if (visible()) refresh()
+  let queued = false
+  const onReturn = () => {
+    if (queued) return
+    queued = true
+    queueMicrotask(() => {
+      queued = false
+      refresh()
+    })
   }
-  const onReturn = () => refresh()
+  const onVisibility = () => {
+    if (visible()) onReturn()
+  }
 
   document.addEventListener('visibilitychange', onVisibility)
   window.addEventListener('focus', onReturn)

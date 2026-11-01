@@ -226,6 +226,27 @@ describe('polling as the fallback', () => {
     await returnsOnce(() => window.dispatchEvent(new Event('online')))
     await returnsOnce(() => window.dispatchEvent(new Event('focus')))
   })
+
+  it('refetches once for one return that comes as visibility and focus together (#238)', async () => {
+    const { served } = await mountLive()
+    const beforeOpen = served.reads
+    lastSocket().options.onOpen()
+    await vi.waitFor(() => expect(served.reads).toBe(beforeOpen + 1))
+    await settle()
+
+    const before = served.reads
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' })
+    try {
+      document.dispatchEvent(new Event('visibilitychange'))
+      window.dispatchEvent(new Event('focus'))
+    }
+    finally {
+      Reflect.deleteProperty(document, 'visibilityState')
+    }
+    await vi.waitFor(() => expect(served.reads).toBe(before + 1))
+    await settle()
+    expect(served.reads).toBe(before + 1)
+  })
 })
 
 describe('the ConnectionBanner on the Event page', () => {
@@ -296,6 +317,22 @@ describe('the ConnectionBanner on the Event page', () => {
 
     expect(banner(page, 'Wieder da')).toBeUndefined()
     expect(banner(page, 'Verbindung')).toBeUndefined()
+  })
+
+  it('shows the banner when the first connect fails and keeps failing, after the delays of a drop (#238)', async () => {
+    // The socket closes before it ever opened: the first connect fails, and the clock starts at the failure.
+    const { page } = await mountLive()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
+
+    lastSocket().options.onClose()
+    await vi.advanceTimersByTimeAsync(1999)
+    expect(banner(page, 'Verbindung')).toBeUndefined()
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(banner(page, 'Verbindung wird wiederhergestellt')?.attributes('role')).toBe('status')
+
+    await vi.advanceTimersByTimeAsync(13_000)
+    expect(banner(page, 'Verbindung verloren')?.attributes('role')).toBe('alert')
   })
 
   it('shows nothing on a slow first connect, and no „Wieder da“ when it opens', async () => {
