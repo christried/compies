@@ -164,12 +164,12 @@ describe('Hidden wheel secrecy (#148)', () => {
     return testDb.db.update(events).set({ hiddenWheel: hidden })
   }
 
-  it('gives a Player under a Hidden wheel only the counts: not a name, id, image key or video id anywhere in the raw response', async () => {
+  it('gives a Player under a Hidden wheel nothing about the pools: not a count, name, id, image key or video id anywhere in the raw response', async () => {
     const { slug, secrets } = await setUp()
 
     const raw = await rawRead(playerCookie, slug)
 
-    expect((JSON.parse(raw) as EventView).pools).toEqual({ hidden: true, mainCount: 2, tiebreakerCount: 1 })
+    expect((JSON.parse(raw) as EventView).pools).toEqual({ hidden: true })
     for (const trace of secrets.flatMap(traces)) expect(raw).not.toContain(trace)
     expect(raw).not.toMatch(/api\/images/)
   })
@@ -180,10 +180,10 @@ describe('Hidden wheel secrecy (#148)', () => {
     const raw = await rawRead(hostCookie, slug)
 
     for (const trace of secrets.flatMap(traces)) expect(raw).toContain(trace)
-    expect((JSON.parse(raw) as EventView).pools.hidden).toBe(false)
+    expect((JSON.parse(raw) as EventView).pools).toMatchObject({ hidden: false, main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
   })
 
-  it('gives the Player the games once the wheel is not hidden, and the counts again when it is hidden again', async () => {
+  it('gives the Player the games once the wheel is not hidden, and nothing about the pools when it is hidden again', async () => {
     const { slug, secrets } = await setUp()
 
     await setWheelHidden(false)
@@ -196,7 +196,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     await setWheelHidden(true)
     const closed = await rawRead(playerCookie, slug)
     for (const trace of secrets.flatMap(traces)) expect(closed).not.toContain(trace)
-    expect((JSON.parse(closed) as EventView).pools).toEqual({ hidden: true, mainCount: 2, tiebreakerCount: 1 })
+    expect((JSON.parse(closed) as EventView).pools).toEqual({ hidden: true })
   })
 
   it('gives the Player the games of an Event with a visible Lucky wheel from the start', async () => {
