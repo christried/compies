@@ -10,7 +10,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 |---|---|---|
 | 0.4 (was 1.3) | Spielvorbereitung | released as 1.3.0 on 2026-10-29: [#138](https://github.com/christried/compies/issues/138), [#169](https://github.com/christried/compies/issues/169) |
 | 0.5 (was 1.4) | Teams | released as 1.4.0 on 2026-10-31: [#153](https://github.com/christried/compies/issues/153), [#195](https://github.com/christried/compies/issues/195), [#206](https://github.com/christried/compies/issues/206) |
-| 0.5.1 | Neue Nummern | spec [#215](https://github.com/christried/compies/issues/215) |
+| 0.5.1 | Neue Nummern | released on 2026-11-01: [#215](https://github.com/christried/compies/issues/215), [#242](https://github.com/christried/compies/issues/242) |
 | 0.6 | Notizen | spec [#217](https://github.com/christried/compies/issues/217) |
 | 0.7 | Glücksrad | spec [#218](https://github.com/christried/compies/issues/218) |
 | 0.8 | Punkte | outline |
