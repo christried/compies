@@ -1421,6 +1421,7 @@
     "mode": "Auswahl",
     "vetoes": "{n} Veto pro Partei | {n} Vetos pro Partei",
     "edit": "Bearbeiten",
+    "notes": "Notizen",
     "locked": "Fest seit dem Start",
     "emptyHost": "Noch nicht festgelegt. Format, Spiele und Punkte legst du beim Einrichten fest.",
     "emptyMember": "Noch nicht festgelegt. {host} legt gleich fest, wie gespielt wird.",

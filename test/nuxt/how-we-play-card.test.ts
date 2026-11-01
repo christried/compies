@@ -14,7 +14,7 @@ import { serve, view, viewWithSessions } from './event-page'
 function poolGame(name: string, overrides: Partial<PoolGame> = {}): PoolGame {
   return {
     id: `id-${name}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30,
-    playersMin: null, playersMax: null, suitabilities: [], ...overrides,
+    playersMin: null, playersMax: null, suitabilities: [], notes: null, ...overrides,
   }
 }
 
@@ -64,6 +64,27 @@ describe('HowWePlayCard (#148)', () => {
     expect(lists[1]!.findAll('li').map(li => li.text())).toEqual(['Schach'])
     expect(card.text()).not.toContain('Das Rad ist verdeckt')
     expect(card.text()).not.toContain('verrät das Rad')
+  })
+
+  it('gives a pool game with notes one Notizen disclosure below its card, and none without notes (#224)', async () => {
+    const card = await mountCard({
+      settings: wheel,
+      pools: { hidden: false, main: [poolGame('Mario Kart', { notes: 'Settings: 3 Runden' }), poolGame('Pong')], tiebreaker: [] },
+    })
+
+    const [withNotes, withoutNotes] = card.findAll('ul')[0]!.findAll('li')
+    expect(withNotes!.findAll('button').map(button => button.text())).toEqual(['Notizen'])
+    expect(withoutNotes!.find('button').exists()).toBe(false)
+    expect(withoutNotes!.text()).not.toContain('Notizen')
+  })
+
+  it('gives a game in both pools one Notizen disclosure per list, each with its own panel (#224)', async () => {
+    const kart = poolGame('Mario Kart', { notes: 'Settings: 3 Runden' })
+    const card = await mountCard({ settings: wheel, pools: { hidden: false, main: [kart], tiebreaker: [kart] } })
+
+    const buttons = card.findAll('button').filter(button => button.text() === 'Notizen')
+    expect(buttons).toHaveLength(2)
+    expect(buttons[0]!.attributes('aria-controls')).not.toBe(buttons[1]!.attributes('aria-controls'))
   })
 
   it('says „Noch keine Spiele.“ for an empty pool', async () => {
