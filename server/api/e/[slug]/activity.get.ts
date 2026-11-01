@@ -1,11 +1,11 @@
 import { defineEventHandler, getQuery, getRouterParam } from 'h3'
 import { readActivityPage } from '../../../utils/activity'
-import { isUuid } from '../../../domain/uuid'
+import { parseActivityQuery } from '../../../domain/activity'
 import { useDb } from '../../../utils/db'
 import { apiError } from '../../../utils/errors'
 import { loadEvent } from '../../../utils/event-access'
 import { requireUser } from '../../../utils/user'
-import { ACTIVITY_PAGE_DEFAULT, ACTIVITY_PAGE_MAX, type ActivityPage } from '../../../../shared/activity'
+import type { ActivityPage } from '../../../../shared/activity'
 
 // The Activity feed of an Event (#159, spec #153 § API contracts): only Members read it, with the same answers as the
 // Event read (401, 404). Newest first, `limit` entries (default 50, at most 100) older than the entry `before`; `next`
@@ -15,8 +15,7 @@ export default defineEventHandler(async (event): Promise<ActivityPage> => {
   const db = useDb(event)
   const eventRow = await loadEvent(db, getRouterParam(event, 'slug') ?? '', user.id)
 
-  const { before, limit } = getQuery(event)
-  if (before !== undefined && !isUuid(before)) throw apiError('invalid_cursor')
-  if (limit !== undefined && (typeof limit !== 'string' || !/^\d+$/.test(limit) || Number(limit) < 1 || Number(limit) > ACTIVITY_PAGE_MAX)) throw apiError('invalid_cursor')
-  return readActivityPage(db, eventRow.id, before, limit === undefined ? ACTIVITY_PAGE_DEFAULT : Number(limit))
+  const query = parseActivityQuery(getQuery(event))
+  if (!query.ok) throw apiError(query.error)
+  return readActivityPage(db, eventRow.id, query.before, query.limit)
 })

@@ -177,7 +177,7 @@
   "board": {
     "title": "Spielbrett",
     "bench": "Bench",
-    "benchSub": "Ersatz, unbegrenzt",
+    "benchSub": "Noch ohne Team, unbegrenzt",
     "stands": "Tribüne",
     "standsSub": "Zuschauer, spielen nicht mit",
     "benchEmpty": "Niemand auf der Bench.",

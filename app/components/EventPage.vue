@@ -5,7 +5,7 @@ import { feedSessions } from '~/utils/activity'
 import { teamName } from '~/utils/board'
 import { dateBlockedKey, eventPageState, pagePill } from '~/utils/event-page'
 import { hasStarted } from '~~/shared/session-state'
-import { datePollOpen } from '~~/shared/event'
+import { datePollOpen, sessionsEditable } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { settingsEditable } from '~~/shared/settings'
 
@@ -57,6 +57,8 @@ const calendarOpen = ref(false)
 
 /** The Date poll is open while a Session waits for a Date, in the poll Phase and in a running Event (#164, datePollOpen). */
 const pollOpen = computed(() => (data.value ? datePollOpen(data.value.event.phase, data.value.missingDates) : false))
+/** Sessions can be added, moved and removed in this Phase (sessionsEditable): computed once here for the cards and the dialogs (#238). */
+const canChangeSessions = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
 
 /** The first Session has started: the teams and their names are locked for Players. */
 const started = computed(() => hasStarted(data.value?.sessions ?? []))
@@ -361,6 +363,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :remove="removeSession"
             :poll-number="pageState.pollNumber"
             :poll-open="pollOpen"
+            :can-change-sessions="canChangeSessions"
             :shadow="cardsStandOut"
             @reschedule="dialogs?.openReschedule($event)"
             @add="dialogs?.openAdd()"
@@ -438,6 +441,8 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       :slots="slots"
       :votes="votes"
       :refresh="refresh"
+      :poll-open="pollOpen"
+      :can-change-sessions="canChangeSessions"
     />
 
     <InviteSheet

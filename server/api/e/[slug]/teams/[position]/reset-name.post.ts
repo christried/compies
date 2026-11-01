@@ -6,6 +6,7 @@ import { apiError } from '../../../../../utils/errors'
 import { changeEvent } from '../../../../../utils/event-access'
 import { eventHasStarted } from '../../../../../utils/sessions'
 import type { TeamNameReset } from '../../../../../../shared/event'
+import { parseTeamPosition } from '../../../../../../shared/board'
 import { settingsFromRow } from '../../../../../../shared/settings'
 
 // The Host resets a team's name to its colour name (#161, spec #153 § API contracts). Before the first start that
@@ -14,9 +15,8 @@ import { settingsFromRow } from '../../../../../../shared/settings'
 // Host sees the same answer, and the feed shows what they did.
 export default defineEventHandler((event): Promise<TeamNameReset> => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, user, publish }) => {
   const settings = settingsFromRow(eventRow)
-  const raw = getRouterParam(event, 'position') ?? ''
-  const position = /^\d+$/.test(raw) ? Number(raw) : 0
-  if (settings === null || position < 1 || position > settings.teamCount) throw apiError('no_such_team')
+  const position = parseTeamPosition(getRouterParam(event, 'position') ?? '')
+  if (settings === null || position === null || position > settings.teamCount) throw apiError('no_such_team')
 
   if (await eventHasStarted(tx, eventRow.id)) {
     await tx

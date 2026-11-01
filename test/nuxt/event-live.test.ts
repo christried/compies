@@ -1,6 +1,7 @@
 import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
+import { RETURN_DEDUPE_MS } from '~/composables/usePollRefresh'
 import type { RoomSocketOptions } from '~/utils/room-socket'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
 import { kitty, signInAs } from './auth'
@@ -206,9 +207,12 @@ describe('polling as the fallback', () => {
     // The open itself refetches once: wait for that read, so that it is not counted as a return below.
     await vi.waitFor(() => expect(served.reads).toBe(beforeOpen + 1))
     await settle()
+    // The returns below come a dedupe window apart (#238): the clock moves past it before each one.
+    vi.useFakeTimers({ toFake: ['Date'] })
 
     /** Dispatches one return event and expects exactly one more read, even while the connection is open (#198). */
     const returnsOnce = async (dispatch: () => void) => {
+      vi.setSystemTime(Date.now() + RETURN_DEDUPE_MS)
       const before = served.reads
       dispatch()
       await vi.waitFor(() => expect(served.reads).toBe(before + 1))
@@ -216,15 +220,75 @@ describe('polling as the fallback', () => {
       expect(served.reads).toBe(before + 1)
     }
 
+    try {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' })
+      try {
+        await returnsOnce(() => document.dispatchEvent(new Event('visibilitychange')))
+      }
+      finally {
+        Reflect.deleteProperty(document, 'visibilityState')
+      }
+      await returnsOnce(() => window.dispatchEvent(new Event('online')))
+      await returnsOnce(() => window.dispatchEvent(new Event('focus')))
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('refetches once for one return that comes as visibility and focus together (#238)', async () => {
+    const { served } = await mountLive()
+    const beforeOpen = served.reads
+    lastSocket().options.onOpen()
+    await vi.waitFor(() => expect(served.reads).toBe(beforeOpen + 1))
+    await settle()
+
+    const before = served.reads
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' })
     try {
-      await returnsOnce(() => document.dispatchEvent(new Event('visibilitychange')))
+      document.dispatchEvent(new Event('visibilitychange'))
+      window.dispatchEvent(new Event('focus'))
     }
     finally {
       Reflect.deleteProperty(document, 'visibilityState')
     }
-    await returnsOnce(() => window.dispatchEvent(new Event('online')))
-    await returnsOnce(() => window.dispatchEvent(new Event('focus')))
+    await vi.waitFor(() => expect(served.reads).toBe(before + 1))
+    await settle()
+    expect(served.reads).toBe(before + 1)
+  })
+
+  it('refetches once for a return whose focus comes 50 ms after its visibility, and again for one 2 s later (#238)', async () => {
+    const { served } = await mountLive()
+    const beforeOpen = served.reads
+    lastSocket().options.onOpen()
+    await vi.waitFor(() => expect(served.reads).toBe(beforeOpen + 1))
+    await settle()
+    vi.useFakeTimers({ toFake: ['Date'] })
+
+    try {
+      const first = served.reads
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' })
+      try {
+        document.dispatchEvent(new Event('visibilitychange'))
+      }
+      finally {
+        Reflect.deleteProperty(document, 'visibilityState')
+      }
+      await vi.waitFor(() => expect(served.reads).toBe(first + 1))
+
+      // The focus of the same return arrives in a later task: it is part of that return.
+      vi.setSystemTime(Date.now() + 50)
+      window.dispatchEvent(new Event('focus'))
+      await settle()
+      expect(served.reads).toBe(first + 1)
+
+      vi.setSystemTime(Date.now() + 2000)
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(served.reads).toBe(first + 2))
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 })
 
@@ -296,6 +360,22 @@ describe('the ConnectionBanner on the Event page', () => {
 
     expect(banner(page, 'Wieder da')).toBeUndefined()
     expect(banner(page, 'Verbindung')).toBeUndefined()
+  })
+
+  it('shows the banner when the first connect fails and keeps failing, after the delays of a drop (#238)', async () => {
+    // The socket closes before it ever opened: the first connect fails, and the clock starts at the failure.
+    const { page } = await mountLive()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
+
+    lastSocket().options.onClose()
+    await vi.advanceTimersByTimeAsync(1999)
+    expect(banner(page, 'Verbindung')).toBeUndefined()
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(banner(page, 'Verbindung wird wiederhergestellt')?.attributes('role')).toBe('status')
+
+    await vi.advanceTimersByTimeAsync(13_000)
+    expect(banner(page, 'Verbindung verloren')?.attributes('role')).toBe('alert')
   })
 
   it('shows nothing on a slow first connect, and no „Wieder da“ when it opens', async () => {
