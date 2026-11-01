@@ -1,6 +1,6 @@
-import { CalendarCheck, CalendarClock, Dices, Flag, Gamepad2, Link as LinkIcon, Play, Settings2, Timer } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, Coins, Dices, Flag, Gamepad2, Link as LinkIcon, Play, Settings2, Timer } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
-import { dockLayout, hostDockState, setBlockedKey, type DockKey } from '~/utils/host-dock'
+import { coinBlockedKey, dockLayout, hostDockState, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 
@@ -29,12 +29,14 @@ export interface HostActionHandlers {
   spin: () => void
   /** Opens the sheet that sets the Countdown (#236). */
   countdown: () => void
+  /** Tosses the Coin flip (#235): no dialog; the page sends it and refetches the Event read. */
+  coin: () => void
 }
 
 export function useHostActions(
   view: MaybeRefOrGetter<EventView | null | undefined>,
   slug: MaybeRefOrGetter<string>,
-  { pollOpen, setBlocked }: { pollOpen: MaybeRefOrGetter<boolean>, setBlocked: MaybeRefOrGetter<string | null> },
+  { pollOpen, setBlocked, serverNow }: { pollOpen: MaybeRefOrGetter<boolean>, setBlocked: MaybeRefOrGetter<string | null>, serverNow: () => number },
   handlers: HostActionHandlers,
 ) {
   const { t } = useI18n()
@@ -51,6 +53,9 @@ export function useHostActions(
     const startReason = state.startRejection === null ? undefined : t(`dock.startBlocked.${state.startRejection}`)
     const setReason = state.setRejection === null ? undefined : t(setBlockedKey(state.setRejection))
     const spinReason = state.spinRejection === null ? undefined : t(setBlockedKey(state.spinRejection))
+    // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
+    const coinKey = coinBlockedKey(current, serverNow())
+    const coinReason = coinKey === null ? undefined : t(coinKey)
 
     const entries: Record<DockKey, DockAction> = {
       invite: { key: 'invite', label: t('common.invite'), icon: LinkIcon, group: t('dock.group.people'), run: handlers.invite },
@@ -102,6 +107,15 @@ export function useHostActions(
         group: t('dock.group.game'),
         disabledReason: spinReason,
         run: guarded(spinReason, handlers.spin),
+      },
+      // One toss at a time: the action is disabled with the reason while the coin flies (#235), and otherwise tosses at once.
+      coin: {
+        key: 'coin',
+        label: t('coin.title'),
+        icon: Coins,
+        group: t('dock.group.game'),
+        disabledReason: coinReason,
+        run: guarded(coinReason, handlers.coin),
       },
       // The sheet itself says when a Countdown runs (CountdownSheet); the action always opens it (#236).
       countdown: {

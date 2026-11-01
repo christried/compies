@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dockLayout, hostDockState, setBlockedKey, type DockInput } from '../../app/utils/host-dock'
+import { coinBlockedKey, dockLayout, hostDockState, setBlockedKey, type DockInput } from '../../app/utils/host-dock'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, derived from
 // the Event read, and which actions sit where (the layout, review 1.4 A4, #228).
@@ -143,12 +143,19 @@ describe('dockLayout', () => {
   })
 
   it('under Host pick puts Nächstes Spiel setzen first in a running Session, with Session beenden beside it', () => {
-    expect(layout({ settings: hostPick, sessions: RUNNING })).toEqual({ primary: ['setGame'], secondary: ['end', 'invite'], more: ['countdown', 'settings'] })
+    expect(layout({ settings: hostPick, sessions: RUNNING })).toEqual({ primary: ['setGame'], secondary: ['end', 'invite'], more: ['coin', 'countdown', 'settings'] })
   })
 
   it('in the Lucky Wheel puts Rad drehen first, Session beenden beside it and Nächstes Spiel setzen in Mehr (#229)', () => {
-    expect(layout({ settings, sessions: RUNNING })).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'countdown', 'settings'] })
-    expect(layout({ settings, sessions: [...RUNNING, undated('b')] }, true)).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'setDate', 'slots', 'countdown', 'settings'] })
+    expect(layout({ settings, sessions: RUNNING })).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'coin', 'countdown', 'settings'] })
+    expect(layout({ settings, sessions: [...RUNNING, undated('b')] }, true)).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'setDate', 'slots', 'coin', 'countdown', 'settings'] })
+  })
+
+  it('puts Münzwurf in Mehr in both running layouts, before the Countdown (#235), and in no other state', () => {
+    expect(layout({ settings: hostPick, sessions: RUNNING }).more).toContain('coin')
+    expect(layout({ settings, sessions: RUNNING }).more).toContain('coin')
+    expect(layout({ sessions: [dated('a', 1), dated('b', 2)] }).more).not.toContain('coin')
+    expect(layout({ sessions: [dated('a', 1), undated('b')], start: { sessionId: 'a', number: 1, rejection: null } }).more).not.toContain('coin')
   })
 
   it('puts Countdown in Mehr in both running layouts (#236), and in no other state', () => {
@@ -162,6 +169,21 @@ describe('dockLayout', () => {
     const ended = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
 
     expect(layout({ sessions: [dated('a', 1, ended)], start: { sessionId: null, number: null, rejection: 'no_dated_session' } })).toEqual({ primary: [], secondary: ['invite'], more: ['settings'] })
+  })
+})
+
+describe('coinBlockedKey (#235)', () => {
+  const LANDS = '2090-10-30T20:00:05.100Z'
+  const flying = { sessions: RUNNING, coin: { id: 'c', side: 'heads' as const, startedAt: '2090-10-30T20:00:01.500Z', landsAt: LANDS } }
+
+  it('says why the Host cannot toss while the coin flies: „Die Münze fliegt noch.“', () => {
+    expect(coinBlockedKey(flying, Date.parse(LANDS) - 1)).toBe('error.coinInAir')
+  })
+
+  it('has no reason once the coin has landed, without a toss, or when no Session runs', () => {
+    expect(coinBlockedKey(flying, Date.parse(LANDS))).toBeNull()
+    expect(coinBlockedKey({ sessions: RUNNING, coin: null }, Date.parse(LANDS) - 1)).toBeNull()
+    expect(coinBlockedKey({ sessions: [dated('a', 1)], coin: flying.coin }, Date.parse(LANDS) - 1)).toBe('error.noRunningSession')
   })
 })
 

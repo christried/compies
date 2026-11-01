@@ -152,16 +152,25 @@ describe('the blocks of the stage', () => {
   it('shows the open Rounds above the Game board while a Session runs, and only then', () => {
     const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
 
-    expect(blocks(running, { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'countdown', 'board', 'poll', 'cards'])
+    expect(blocks(running, { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'countdown', 'coin', 'board', 'poll', 'cards'])
     expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).not.toContain('rounds')
     expect(blocks([dated('a', 1, SAT)])).not.toContain('rounds')
+  })
+
+  it('shows the coin under the Countdown while a Session runs, and nowhere else (#235)', () => {
+    const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
+
+    expect(blocks(running, { event: { phase: 'running' } })).toEqual(expect.arrayContaining(['countdown', 'coin']))
+    expect(blocks(running, { event: { phase: 'running' } }).indexOf('coin')).toBe(blocks(running, { event: { phase: 'running' } }).indexOf('countdown') + 1)
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).not.toContain('coin')
+    expect(blocks([dated('a', 1, SAT)])).not.toContain('coin')
   })
 
   it('puts the wheel on top of the open Rounds in a running Lucky Wheel Event, and nowhere else (#229)', () => {
     const wheel = { settings: { ...settings, selectionMode: 'lucky_wheel' } as PageInput['settings'] }
     const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
 
-    expect(blocks(running, { event: { phase: 'running' }, ...wheel })).toEqual(['head', 'reopen', 'wheel', 'rounds', 'countdown', 'board', 'poll', 'cards'])
+    expect(blocks(running, { event: { phase: 'running' }, ...wheel })).toEqual(['head', 'reopen', 'wheel', 'rounds', 'countdown', 'coin', 'board', 'poll', 'cards'])
     expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' }, ...wheel })).not.toContain('wheel')
     expect(blocks([dated('a', 1, SAT)], wheel)).not.toContain('wheel')
     expect(blocks(running, { event: { phase: 'running' }, settings: { ...settings, selectionMode: 'admin_pick' } as PageInput['settings'] })).not.toContain('wheel')
