@@ -37,7 +37,7 @@ Hosts can fill a Game library and set up a whole Event. No realtime yet. (T4, T5
 - Info sheet copy: the new Veto allowance rule, and that the Host sees the Hidden wheel's games.
 
 **Editing an Event**
-- Events created before 1.3 stay valid. Their Host sees „Event einrichten“, which opens the same steps as an editor. No Session can start without settings (enforced from 1.4).
+- Events created before 0.4 (1.3) stay valid. Their Host sees „Event einrichten“, which opens the same steps as an editor. No Session can start without settings (enforced from 0.5).
 - Before the first Session starts, everything is editable. After that, still editable: Game count, Veto allowance (never below the most any Party has spent), Team size (never below the fullest team), Hidden wheel, Game pool, Tiebreaker pool. Locked: Format, team count, points table, Selection mode.
 - Hidden wheel switched off mid-Event reveals the remaining games to everyone; switched on, it hides undrawn games from then on.
 
@@ -82,7 +82,7 @@ Game notes and Pool preview; no realtime, no round. Spec: [#217](https://github.
   - an Event setting for Host pick and the visible Lucky Wheel, on by default and for existing Events, editable while the Event runs;
   - under a Hidden wheel always off and disabled, and switching the Hidden wheel off leaves it off.
   - With it off, Members see no pool list and no counts. The Auswahl row reads „Glücksrad, Spiele erst am Rad“ or „Host-Wahl, Spiele erst beim Setzen“.
-  - The 1.3 secrecy rules and test cover it, notes included.
+  - The 0.4 secrecy rules (#148) and test cover it, notes included.
 - The Datenschutzerklärung covers both.
 - All UI _own build_.
 
@@ -90,7 +90,7 @@ Game notes and Pool preview; no realtime, no round. Spec: [#217](https://github.
 
 The game round up to „wird gespielt“. (T10; screens 10, 11, 15, 30.) Spec: [#218](https://github.com/christried/compies/issues/218).
 
-- **Ticket zero (A1):** one home for a Session's state, out of the Game board file. It models the Event's **Rounds** as a list, not one current game, and closes Standards S3 and S6.
+- **Ticket zero (A1):** one home for a Session's state, out of the Game board file. It models the Event's **Rounds** as a list, not one current game, and closes Standards S3 and S6 of review 1.4.
 - **Deadlines (A2, ADR 0013 amended 2026-10-31):**
   - Nuxt owns every timed moment, stored as an instant; no timer runs anywhere, and reads are gated by time.
   - The room's one change is sending to named Users, for sealed Vetoes. It needs one Worker deploy, on a day without a Session.
@@ -132,7 +132,7 @@ The game round up to „wird gespielt“. (T10; screens 10, 11, 15, 30.) Spec: [
 - **Settings lock (A3):** the Hidden wheel can't be switched during a spin or veto window; one summary for „So wird gespielt“ and the stepper.
 - All UI _own build_ from the reference designs; no Claude Design hand-off.
 
-**Planning items from 1.4** (`docs/reviews/review_1.4_2026-10-31.md` § Result and the leftovers of [#195](https://github.com/christried/compies/issues/195)), in the 0.7 tickets:
+**Planning items from 0.5 (review 1.4)** (`docs/reviews/review_1.4_2026-10-31.md` § Result and the leftovers of [#195](https://github.com/christried/compies/issues/195)), in the 0.7 tickets:
 - **A4:** the Event page's block and dock lists, when the first 0.7 block lands.
 - **A6:** Activity people by declaration, not by naming convention; one enum migration per Release.
 - **A8:** `useBoardPlaces`, the next time the Game board is touched.
