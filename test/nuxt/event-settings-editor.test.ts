@@ -9,7 +9,7 @@ import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { LARSI, SANNE, serve, shownToasts, view } from './event-page'
+import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page'
 
 // The settings editor (#147): the stepper's steps 2 to 7 on an Event that exists, prefilled, with the settings
 // that stay fixed once the Event runs shown locked with their reason.
@@ -22,7 +22,7 @@ const pong = poolGame(2, 'Pong')
 const FOUR = '00000000-0000-4000-8000-000000000004'
 const FIVE = '00000000-0000-4000-8000-000000000005'
 const SIX = '00000000-0000-4000-8000-000000000006'
-const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => ({ id, name: id.slice(-4), image: `https://example.com/${id}.png`, isHost: false, zone, team, teamWord: null })
+const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => memberView({ id, name: id.slice(-4), zone, team })
 
 function poolGame(n: number, name: string): PoolGame {
   return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null }

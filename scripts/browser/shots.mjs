@@ -9,8 +9,8 @@ if (!given) throw new Error('Usage: node scripts/browser/shots.mjs <path without
 const path = `/${given.replace(/^\/+/, '')}`
 const name = path.replace(/\W+/g, '-').replace(/^-|-$/g, '') || 'home'
 
-for (const [account, port] of [['host', 9311], ['member', 9312]]) {
-  const tab = await launch(account, port)
+for (const account of ['host', 'member']) {
+  const tab = await launch(account)
   try {
     await open(tab, path, 1440, 900, selector ?? 'body')
     for (const [width, height] of [[1440, 900], [390, 844]]) {
