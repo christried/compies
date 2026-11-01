@@ -1,23 +1,24 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { eventMembers, eventTeams, games, pollSlots, pollVotes, rounds, users } from '../db/schema'
 import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
+import { WHEEL_UNKNOWN } from '../domain/wheel'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
 import { placeOf, composeTeamName, type Zone } from '../../shared/board'
 import { gamesLeft, isOpen } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
-import type { EventView, RoundView, SessionNote, SessionView } from '../../shared/event'
+import type { EventView, RoundView, SessionNote, SessionView, WheelView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
-import { floorsAt, settingsFromRow } from '../../shared/settings'
+import { floorsAt, hasWheel, settingsFromRow } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
 import { inviteUrl } from './links'
 import { startOf, teamChoiceOf } from './board'
 import { roundGameView } from './library'
 import { eventPools } from './pools'
-import { readDraws, readGamePool, setRejectionOf, type RoundRow } from './rounds'
+import { readDraws, readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { floorFacts } from './settings-floors'
 
@@ -178,18 +179,66 @@ export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): 
  * The open Rounds (#228), in start order, and for the Host the answer to setting the next game. A set game is visible to
  * every Member from the moment it is set, with the Pool preview off and under a Hidden wheel alike, and its Game notes are
  * the Host's alone (decided 2026-11-01). Nothing else about the pools reaches a Member through here. A Round that is being drawn
- * is not listed: its game is not known yet (0.7-04).
+ * is not listed: its game is not known yet; the read settles a draw that is due before this runs (settleBeforeRead, #229).
+ * The Lucky Wheel (#229) comes with them, since it reads the same draws and the games left.
  */
-export async function roundsSection(db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer): Promise<Pick<EventView, 'rounds' | 'setGame'>> {
+export async function roundsSection(db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer, now: Date): Promise<Pick<EventView, 'rounds' | 'setGame' | 'wheel'>> {
   const roundRows = rows.rounds.map(({ round }) => round)
   const open: RoundView[] = rows.rounds.flatMap(({ round, game }) => (isOpen(round) && game
     ? [{ id: round.id, startedAt: round.startedAt.toISOString(), setAt: round.setAt!.toISOString(), game: roundGameView(game), ...(viewer.isHost && game.notes ? { notes: game.notes } : {}) }]
     : []))
-  if (!viewer.isHost) return { rounds: open, setGame: null }
+  const settings = settingsFromRow(eventRow)
+  const onWheel = settings !== null && hasWheel(settings.selectionMode) && runningOf(rows.sessions) !== undefined
+  if (!viewer.isHost && !onWheel) return { rounds: open, setGame: null, wheel: null }
   const [draws, pool] = await Promise.all([readDraws(db, eventRow.id), readGamePool(db, eventRow.id)])
+  const left = gamesLeft(pool, draws, roundRows)
+  const places = rows.members.map(row => placeOf(row))
   return {
     rounds: open,
-    setGame: { rejection: setRejectionOf(eventRow, rows.sessions, rows.members.map(row => placeOf(row)), roundRows, true), left: gamesLeft(pool, draws, roundRows) },
+    setGame: viewer.isHost
+      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, left, true), left }
+      : null,
+    wheel: onWheel ? await wheelView(db, viewer, settings.hiddenWheel, left, draws, now) : null,
+  }
+}
+
+/**
+ * The Lucky Wheel of a running Session, for one viewer (#229, spec #218 § Hidden wheel on the wire). The Host and every Member
+ * of a visible wheel get the names of the slices; a Member under a Hidden wheel gets the count and, for a spin, the placeholders
+ * of that spin, and the drawn game's name and card only from the stop instant on, the Host's always. Nothing about any other
+ * game reaches that Member: the games are selected only when the viewer may read them.
+ */
+async function wheelView(db: Db, viewer: Viewer, hidden: boolean, left: string[], draws: DrawRow[], now: Date): Promise<WheelView> {
+  const spin = draws.filter(draw => draw.kind === 'spin').sort((a, b) => b.committedAt.getTime() - a.committedAt.getTime() || (a.id < b.id ? 1 : -1))[0]
+  const stopped = spin !== undefined && spin.stopAt <= now
+  const sees = viewer.isHost || !hidden
+  const ids = new Set<string>()
+  if (sees) for (const id of [...left, ...(spin?.sliceGameIds ?? [])]) ids.add(id)
+  if (spin && (viewer.isHost || stopped)) ids.add(spin.gameId)
+  const found = ids.size === 0 ? [] : await db.select().from(games).where(inArray(games.id, [...ids]))
+  const byId = new Map(found.map(game => [game.id, game]))
+  const nameOf = (id: string) => byId.get(id)?.name ?? ''
+  const drawn = spin ? byId.get(spin.gameId) : undefined
+  return {
+    count: left.length,
+    slices: sees ? left.map(id => ({ id, name: nameOf(id) })) : null,
+    spin: spin
+      ? {
+          roundId: spin.roundId,
+          drawId: spin.id,
+          spinStartAt: spin.spinStartAt!.toISOString(),
+          stopAt: spin.stopAt.toISOString(),
+          slices: spin.sliceGameIds!.length,
+          resultIndex: spin.resultIndex!,
+          resultOffset: spin.resultOffset!,
+          // The stored placeholders keep their order; the result slice's turns real at the stop. A spin from a visible wheel that was hidden since has none.
+          labels: sees
+            ? spin.sliceGameIds!.map(nameOf)
+            : (spin.sliceLabels ?? spin.sliceGameIds!.map(() => WHEEL_UNKNOWN)).map((label, index) => (stopped && index === spin.resultIndex ? nameOf(spin.gameId) : label)),
+          // The names of a visible wheel are public, the drawn card is not: a Member gets it from the stop on.
+          game: drawn && (viewer.isHost || stopped) ? roundGameView(drawn) : null,
+        }
+      : null,
   }
 }
 

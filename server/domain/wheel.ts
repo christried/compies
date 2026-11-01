@@ -17,6 +17,9 @@ export interface Spin {
 /** The placeholder names of a Hidden wheel (brief §18): the copy's own list, so the names live in one place. */
 export const WHEEL_PLACEHOLDERS: readonly string[] = de.wheel.placeholders
 
+/** The label of a slice past the placeholders, and of a slice whose placeholder is unknown: „???“. */
+export const WHEEL_UNKNOWN: string = de.wheel.placeholderQ
+
 /** The offsets are drawn in thousandths between 0.2 and 0.8. */
 const OFFSET_STEPS = 600
 
@@ -43,6 +46,6 @@ export function drawSpin(left: readonly string[], placeholders: readonly string[
     sliceGameIds: [...left],
     resultIndex,
     resultOffset,
-    sliceLabels: names === null ? null : left.map((_, index) => names[index] ?? de.wheel.placeholderQ),
+    sliceLabels: names === null ? null : left.map((_, index) => names[index] ?? WHEEL_UNKNOWN),
   }
 }

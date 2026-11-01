@@ -7,6 +7,7 @@ import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import putBack from '../../server/api/e/[slug]/rounds/[id].delete'
 import setGame from '../../server/api/e/[slug]/rounds/index.post'
+import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
 import changeSettings from '../../server/api/e/[slug]/settings.patch'
 import endSession from '../../server/api/e/[slug]/sessions/end.post'
 import startSession from '../../server/api/e/[slug]/sessions/start.post'
@@ -53,6 +54,7 @@ describe('Rounds', () => {
       'POST /api/e/:slug/sessions/start': startSession,
       'POST /api/e/:slug/sessions/end': endSession,
       'POST /api/e/:slug/rounds': setGame,
+      'POST /api/e/:slug/rounds/spin': spinWheel,
       'DELETE /api/e/:slug/rounds/:id': putBack,
     }, { roomNotifier: notifier, clock })
   })
@@ -97,8 +99,9 @@ describe('Rounds', () => {
   /**
    * A Running Session of an Event with two teams of two (One and Two in team 1, Three and Four in team 2) and three games:
    * Halo and Kart in the Game pool, Schach only in the library. Every game has notes. The Game count is `gameCount`.
+   * With `wheel` the Selection mode is the Lucky Wheel (visible, the Pool preview on unless `poolPreview` says otherwise).
    */
-  async function running({ gameCount = 10 }: { gameCount?: number } = {}) {
+  async function running({ gameCount = 10, wheel = false, poolPreview }: { gameCount?: number, wheel?: boolean, poolPreview?: boolean } = {}) {
     setAllowlist({ hosts: 'discord:1' })
     const hostCookie = (await signIn(testDb.db, host)).cookie
     const cookies: Record<keyof typeof players, string> = {
@@ -107,7 +110,7 @@ describe('Rounds', () => {
       three: (await signIn(testDb.db, players.three)).cookie,
       four: (await signIn(testDb.db, players.four)).cookie,
     }
-    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings: { ...TEST_SETTINGS, teamSize: 2, gameCount } })
+    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings: { ...TEST_SETTINGS, teamSize: 2, gameCount, ...(wheel ? { selectionMode: 'lucky_wheel' } : {}), ...(poolPreview === undefined ? {} : { poolPreview }) } })
     const { slug } = await created.json() as { slug: string }
     const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
     const eventId = eventRow!.id
@@ -211,7 +214,7 @@ describe('Rounds', () => {
     it('says in the Event read, for the Host only, whether a game can be set now', async () => {
       const game = await running()
 
-      expect((await read(game)).setGame).toEqual({ rejection: null, left: expect.any(Array) })
+      expect((await read(game)).setGame).toEqual({ rejection: null, spinRejection: 'no_wheel', left: expect.any(Array) })
       expect((await read(game, game.cookies.one)).setGame).toBeNull()
     })
 
@@ -457,6 +460,293 @@ describe('Rounds', () => {
 
       expect((await read(game)).settingsFloors).toMatchObject({ gameCount: 0 })
       expect((await patchCount(game, 1)).status).toBe(200)
+    })
+  })
+
+  // Spinning the wheel (#229, spec #218 § Drawing, § Deadlines): the server draws, the spin starts a lead after the commit and
+  // stops 6 s later, and the game is set by whichever read or write comes first after the stop. The Hidden wheel's secrecy is
+  // in hidden-wheel.test.ts.
+  describe('spinning the wheel', () => {
+    const LEAD = 1500
+    const STOP = LEAD + 6000
+    const iso = (offsetMs: number) => new Date(new Date(T0).getTime() + offsetMs).toISOString()
+    const spin = (game: Game, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/rounds/spin`, cookie)
+    const feedOf = async (game: Game, cookie: string) => (await (await send('GET', `/api/e/${game.slug}/activity`, cookie)).json() as ActivityPage).entries
+    const nameOf = (game: Game, id: string) => [game.halo, game.kart, game.schach].find(candidate => candidate.id === id)!.name
+
+    /** Spins and answers the Round's and the draw's ids. */
+    async function spun(game: Game) {
+      const response = await spin(game)
+      expect(response.status).toBe(200)
+      return await response.json() as { roundId: string, drawId: string }
+    }
+
+    it('draws a Round that is being drawn: the instants come from the server clock, the draw is stored to replay', async () => {
+      const game = await running({ wheel: true })
+
+      const { roundId, drawId } = await spun(game)
+
+      const [round] = await roundRows(game)
+      expect(round).toMatchObject({ id: roundId, gameId: null, setAt: null, putBackAt: null, startedAt: new Date(T0) })
+      const [row] = await drawRows()
+      expect(row).toMatchObject({
+        id: drawId, roundId, source: 'pool', kind: 'spin', committedAt: new Date(T0), spinStartAt: new Date(iso(LEAD)), stopAt: new Date(iso(STOP)),
+        vetoEndsAt: null, outcome: null, settledAt: null, sliceLabels: null, sliceGameIds: [game.halo.id, game.kart.id],
+      })
+      expect(row!.sliceGameIds![row!.resultIndex!]).toBe(row!.gameId)
+      expect(row!.resultOffset).toBeGreaterThanOrEqual(0.2)
+      expect(row!.resultOffset).toBeLessThan(0.8)
+    })
+
+    it('tells the room the spin without any game: the slices counted, the result slice, and the instants', async () => {
+      const game = await running({ wheel: true })
+
+      const { roundId, drawId } = await spun(game)
+
+      const [row] = await drawRows()
+      const messages = notifier.messages(game.eventId)
+      expect(messages.map(message => message.type)).toEqual(['event.changed', 'round.spun'])
+      expect(messages[1]).toEqual({
+        type: 'round.spun', roundId, drawId, spinStartAt: iso(LEAD), stopAt: iso(STOP), slices: 2, resultIndex: row!.resultIndex, resultOffset: row!.resultOffset, labels: null, v: 1, serverTime: new Date(T0).getTime(),
+      })
+    })
+
+    it('writes the feed entry „game drawn“ for the stop instant and does not publish it', async () => {
+      const game = await running({ wheel: true })
+
+      const { roundId, drawId } = await spun(game)
+
+      const [row] = await drawRows()
+      const entries = await testDb.db.select().from(activity).where(eq(activity.type, 'game_drawn'))
+      expect(entries).toMatchObject([{ type: 'game_drawn', actorId: null, at: new Date(iso(STOP)), params: { roundId, drawId, gameId: row!.gameId } }])
+      expect(notifier.messages(game.eventId).map(message => message.type)).not.toContain('activity.added')
+    })
+
+    it('answers the Round and the draw', async () => {
+      const game = await running({ wheel: true })
+
+      const response = await spin(game)
+
+      const [round] = await roundRows(game)
+      const [row] = await drawRows()
+      expect(await response.json()).toEqual({ roundId: round!.id, drawId: row!.id })
+    })
+
+    it('takes the drawn game off the wheel at once: the games left shrink, and the next spin draws from the rest', async () => {
+      const game = await running({ wheel: true })
+
+      await spun(game)
+
+      const [first] = await drawRows()
+      expect((await read(game)).setGame?.left).toEqual([first!.sliceGameIds!.find(id => id !== first!.gameId)])
+      clock.advance(STOP)
+      await spun(game)
+      const second = (await drawRows()).find(row => row.id !== first!.id)!
+      expect(second.sliceGameIds).toEqual([second.gameId])
+      expect(second.gameId).not.toBe(first!.gameId)
+    })
+
+    it('refuses to set or spin until the stop, with 409 round_being_drawn, and does not settle early', async () => {
+      const game = await running({ wheel: true })
+      await spun(game)
+      clock.advance(STOP - 1)
+
+      expect(await errorOf(await set(game, game.schach.id))).toEqual({ status: 409, code: 'round_being_drawn' })
+      expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'round_being_drawn' })
+      expect((await read(game)).setGame).toMatchObject({ rejection: 'round_being_drawn', spinRejection: 'round_being_drawn' })
+      expect((await roundRows(game))[0]).toMatchObject({ gameId: null, setAt: null })
+    })
+
+    it('settles at the first read after the stop: the Round is set with the drawn game, at the stop instant, not at the read', async () => {
+      const game = await running({ wheel: true })
+      await spun(game)
+      const [row] = await drawRows()
+      clock.advance(STOP + 90_000)
+
+      const view = await read(game, game.cookies.three)
+
+      expect(await roundRows(game)).toMatchObject([{ gameId: row!.gameId, setAt: new Date(iso(STOP)) }])
+      expect(await drawRows()).toMatchObject([{ outcome: 'set', settledAt: new Date(iso(STOP)) }])
+      expect(view.rounds.map(round => round.game.id)).toEqual([row!.gameId])
+      expect(view.rounds[0]!.setAt).toBe(iso(STOP))
+    })
+
+    it('settles once: reading again changes nothing', async () => {
+      const game = await running({ wheel: true })
+      await spun(game)
+      clock.advance(STOP)
+      await read(game)
+      const rounds = await roundRows(game)
+      const draws = await drawRows()
+
+      clock.advance(60_000)
+      await read(game)
+      await read(game, game.cookies.one)
+
+      expect(await roundRows(game)).toEqual(rounds)
+      expect(await drawRows()).toEqual(draws)
+    })
+
+    it('settles before a write: the Host can set the next game at the stop without a read in between, and put the drawn Round back', async () => {
+      const game = await running({ wheel: true })
+      const { roundId } = await spun(game)
+      const [row] = await drawRows()
+      clock.advance(STOP)
+
+      expect((await set(game, game.schach.id)).status).toBe(200)
+
+      expect((await roundRows(game)).find(round => round.id === roundId)).toMatchObject({ gameId: row!.gameId, setAt: new Date(iso(STOP)) })
+      expect((await putBackRound(game, roundId)).status).toBe(200)
+      expect((await read(game)).setGame?.left).toContain(row!.gameId)
+    })
+
+    it('lets the Host spin again at the stop, and a game drawn once is not drawn again', async () => {
+      const game = await running({ wheel: true })
+      await spun(game)
+      clock.advance(STOP)
+
+      expect((await spin(game)).status).toBe(200)
+
+      expect(new Set((await drawRows()).map(row => row.gameId)).size).toBe(2)
+    })
+
+    describe('the refusals', () => {
+      it('answers 403 not_host to a Member, and 401 to nobody', async () => {
+        const game = await running({ wheel: true })
+
+        expect(await errorOf(await spin(game, game.cookies.one))).toEqual({ status: 403, code: 'not_host' })
+        expect((await send('POST', `/api/e/${game.slug}/rounds/spin`, undefined)).status).toBe(401)
+        expect(await roundRows(game)).toEqual([])
+      })
+
+      it('answers 409 no_running_session without a running Session', async () => {
+        const game = await running({ wheel: true })
+        await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)
+
+        expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'no_running_session' })
+      })
+
+      it('answers 409 teams_uneven with uneven teams', async () => {
+        const game = await running({ wheel: true })
+        await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+
+        expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'teams_uneven' })
+        expect((await read(game)).setGame?.spinRejection).toBe('teams_uneven')
+      })
+
+      it('answers 409 game_count_reached once as many Rounds have started as the Game count', async () => {
+        const game = await running({ wheel: true, gameCount: 1 })
+        await set(game, game.schach.id)
+
+        expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'game_count_reached' })
+      })
+
+      it('answers 409 round_being_drawn while a Round is being drawn', async () => {
+        const game = await running({ wheel: true })
+        await spun(game)
+
+        expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'round_being_drawn' })
+      })
+
+      it('answers 409 no_wheel under Host pick', async () => {
+        const game = await running()
+
+        expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'no_wheel' })
+        expect((await read(game)).setGame?.spinRejection).toBe('no_wheel')
+      })
+
+      it('answers 409 pool_empty when no game is left on the wheel', async () => {
+        const game = await running({ wheel: true })
+        await spun(game)
+        clock.advance(STOP)
+        await spun(game)
+        clock.advance(STOP)
+
+        expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'pool_empty' })
+        expect((await read(game)).setGame?.spinRejection).toBe('pool_empty')
+      })
+
+      it('writes and tells nothing when it refuses', async () => {
+        const game = await running()
+
+        await spin(game)
+
+        expect(await roundRows(game)).toEqual([])
+        expect(await drawRows()).toEqual([])
+        expect(await testDb.db.select().from(activity)).toEqual([])
+        expect(notifier.messages(game.eventId)).toEqual([])
+      })
+    })
+
+    describe('the wheel in the Event read', () => {
+      it('has no wheel outside a Lucky Wheel Event', async () => {
+        const game = await running()
+
+        expect((await read(game)).wheel).toBeNull()
+        expect((await read(game, game.cookies.one)).wheel).toBeNull()
+      })
+
+      it('has no wheel without a running Session', async () => {
+        const game = await running({ wheel: true })
+        await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)
+
+        expect((await read(game)).wheel).toBeNull()
+      })
+
+      it('shows a visible wheel to every Member, also with the Pool preview off: the games left in slice order, and no spin yet', async () => {
+        const game = await running({ wheel: true, poolPreview: false })
+
+        for (const cookie of [game.hostCookie, game.cookies.three]) {
+          expect((await read(game, cookie)).wheel).toEqual({ count: 2, slices: [{ id: game.halo.id, name: 'Halo' }, { id: game.kart.id, name: 'Kart' }], spin: null })
+        }
+        expect((await read(game, game.cookies.three)).pools).toBeNull()
+      })
+
+      it('carries the spin: the names of the slices as they were, and the drawn game for a Member only from the stop', async () => {
+        const game = await running({ wheel: true, poolPreview: false })
+        await spun(game)
+        const [row] = await drawRows()
+        const drawn = nameOf(game, row!.gameId)
+        const expected = { roundId: row!.roundId, drawId: row!.id, spinStartAt: iso(LEAD), stopAt: iso(STOP), slices: 2, resultIndex: row!.resultIndex, resultOffset: row!.resultOffset, labels: ['Halo', 'Kart'] }
+
+        const before = await read(game, game.cookies.three)
+        expect(before.wheel).toMatchObject({ count: 1, spin: { ...expected, game: null } })
+        expect(JSON.stringify(before.wheel)).not.toContain(row!.gameId)
+
+        clock.advance(STOP)
+        const after = await read(game, game.cookies.three)
+        expect(after.wheel?.spin).toMatchObject({ ...expected, game: { id: row!.gameId, name: drawn } })
+      })
+
+      it('gives the Host the drawn game from the start', async () => {
+        const game = await running({ wheel: true })
+        await spun(game)
+        const [row] = await drawRows()
+
+        expect((await read(game)).wheel?.spin).toMatchObject({ game: { id: row!.gameId, name: nameOf(game, row!.gameId) } })
+      })
+    })
+
+    describe('the feed', () => {
+      it('shows „game drawn“ from the stop on, with the game\'s name, and not before', async () => {
+        const game = await running({ wheel: true })
+        await spun(game)
+        const [row] = await drawRows()
+
+        clock.advance(STOP - 1)
+        expect((await feedOf(game, game.cookies.three)).map(entry => entry.type)).toEqual([])
+
+        clock.advance(1)
+        const entries = await feedOf(game, game.cookies.three)
+        expect(entries).toMatchObject([{ type: 'game_drawn', params: { gameId: row!.gameId }, games: { [row!.gameId]: nameOf(game, row!.gameId) } }])
+      })
+
+      it('lets an entry that is no draw\'s through the clock: the others have the database\'s own time', async () => {
+        const game = await running({ wheel: true })
+        await set(game, game.schach.id)
+
+        expect((await feedOf(game, game.cookies.three)).map(entry => entry.type)).toEqual(['game_set'])
+      })
     })
   })
 })
