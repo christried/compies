@@ -212,7 +212,9 @@ describe('Hidden wheel secrecy (#148)', () => {
     await setWheelHidden(false)
     const open = await rawRead(playerCookie, slug)
     expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
-    for (const trace of secrets.flatMap(traces)) expect(open).toContain(trace)
+    // A Player gets picture and name only (#224): everything but the notes.
+    for (const trace of secrets.flatMap(traces).filter(trace => !secrets.some(secret => secret.notes === trace))) expect(open).toContain(trace)
+    for (const secret of secrets) expect(open).not.toContain(secret.notes)
 
     await setWheelHidden(true)
     const closed = await rawRead(playerCookie, slug)
@@ -466,7 +468,11 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       const open = await rawRead(playerCookie, slug)
       expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Delta Dart' }], tiebreaker: [{ name: 'Gamma Garten' }] })
-      for (const game of [a, c, d]) for (const trace of traces(game)) expect(open, `the open Event read lacks ${trace}`).toContain(trace)
+      // Picture and name only (#224): the notes stay the Host's.
+      for (const game of [a, c, d]) {
+        for (const trace of traces(game).filter(trace => trace !== game.notes)) expect(open, `the open Event read lacks ${trace}`).toContain(trace)
+        expect(open).not.toContain(game.notes)
+      }
       expectNoTrace('the room', JSON.stringify(notifier.messages(eventId)), games)
 
       const hostRaw = await rawRead(hostCookie, slug)

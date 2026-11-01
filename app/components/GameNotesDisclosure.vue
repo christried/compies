@@ -3,7 +3,7 @@ import { ChevronDown } from '@lucide/vue'
 
 // The Game notes of a game (#224, GLOSSARY: Game notes) as a disclosure: collapsed by default, announced as open or
 // closed, and plain text with its line breaks, never formatted or linked. The panel is rendered only while it is open.
-// 0.7 reuses it on the Round card (#217).
+// Only the Host gets the notes of a pool game (#224); 0.7 reuses it for the Host on the Round card (#217).
 defineProps<{ notes: string }>()
 
 const { t } = useI18n()

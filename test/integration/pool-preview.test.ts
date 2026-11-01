@@ -118,6 +118,8 @@ describe('Pool preview secrecy (#225)', () => {
 
   // Everything a pool game shows: the Event read of a viewer who may see the pools holds all of it, that of one who may not holds none of it (notes too, #223, #224).
   const traces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId, game.notes]
+  // What a Member who may see the pools gets of a game: its picture and name only; the notes are the Host's (#224).
+  const memberTraces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId]
 
   function fetchImage(game: PoolGame, cookie: string) {
     return request(game.imageUrl, { headers: { cookie } })
@@ -187,7 +189,7 @@ describe('Pool preview secrecy (#225)', () => {
       expect((await patch(slug, { poolPreview: true })).status).toBe(200)
       const open = await rawRead(playerCookie, slug)
       expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
-      for (const trace of pool.flatMap(traces)) expect(open).toContain(trace)
+      for (const trace of pool.flatMap(memberTraces)) expect(open).toContain(trace)
       for (const game of pool) expect((await fetchImage(game, playerCookie)).status).toBe(200)
 
       expect((await patch(slug, { poolPreview: false })).status).toBe(200)
@@ -204,7 +206,23 @@ describe('Pool preview secrecy (#225)', () => {
     const raw = await rawRead(playerCookie, slug)
 
     expect((JSON.parse(raw) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
-    for (const trace of pool.flatMap(traces)) expect(raw).toContain(trace)
+    for (const trace of pool.flatMap(memberTraces)) expect(raw).toContain(trace)
     for (const game of pool) expect((await fetchImage(game, playerCookie)).status).toBe(200)
+  })
+
+  it('gives a Player who may see the pools only the id, name, picture and video id of each game, never its notes, players, Suitabilities or clip', async () => {
+    const { slug, pool } = await setUp(TEST_SETTINGS)
+
+    const raw = await rawRead(playerCookie, slug)
+    const { pools } = JSON.parse(raw) as EventView
+
+    for (const game of [...pools!.main, ...pools!.tiebreaker]) {
+      expect(Object.keys(game).sort()).toEqual(['id', 'imageUrl', 'name', 'youtubeId'])
+    }
+    for (const game of pool) expect(raw).not.toContain(game.notes)
+    // The control: the Host's game carries every field, the notes too.
+    const hostPools = (JSON.parse(await rawRead(hostCookie, slug)) as EventView).pools!
+    expect(Object.keys(hostPools.main[0]!).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'suitabilities', 'youtubeId'])
+    expect(hostPools.main[0]).toMatchObject({ notes: pool[0]!.notes })
   })
 })

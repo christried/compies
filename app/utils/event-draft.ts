@@ -1,5 +1,5 @@
 import type { EventView } from '~~/shared/event'
-import type { PoolGame } from '~~/shared/game'
+import { isFullPoolGame, type PoolGame } from '~~/shared/game'
 import { defaultSettings, defaultVetoAllowance, hasWheel, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
 
 // What the Host has entered in the stepper so far (#144). Nothing is sent until „Event erstellen“; then
@@ -107,8 +107,10 @@ export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): Eve
     hiddenWheel,
     poolPreview,
     vetoAllowance,
-    // The Host always gets the games; null only narrows the type (a viewer without them has no editor).
-    pools: view.pools ? { main: [...view.pools.main], tiebreaker: [...view.pools.tiebreaker] } : { main: [], tiebreaker: [] },
+    // The Host always gets the games whole; null and the face only (a Member's) only narrow the type, a Member has no editor.
+    pools: view.pools
+      ? { main: view.pools.main.filter(isFullPoolGame), tiebreaker: view.pools.tiebreaker.filter(isFullPoolGame) }
+      : { main: [], tiebreaker: [] },
   }
 }
 

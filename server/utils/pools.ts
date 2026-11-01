@@ -3,7 +3,7 @@ import { eventMembers, eventPoolGames, events, games } from '../db/schema'
 import type { PoolFacts } from '../domain/pool-preview'
 import type { Db } from './db'
 import { apiError } from './errors'
-import { poolGameView } from './library'
+import { poolGameFace, poolGameView } from './library'
 import type { EventPools } from '../../shared/event'
 import { storedPoolPreview, type Pool } from '../../shared/settings'
 
@@ -12,15 +12,16 @@ import { storedPoolPreview, type Pool } from '../../shared/settings'
 /**
  * Both pools of an Event, each sorted by name. The caller decides whether the viewer may see them (canSeePoolGames) and
  * does not call this otherwise, so nothing about the pools is selected for a viewer who may not see them (#148, #222, #225).
+ * Only the Host gets the games whole; every other Member gets picture and name (#224).
  */
-export async function eventPools(db: Db, eventId: string): Promise<EventPools> {
+export async function eventPools(db: Db, eventId: string, isHost: boolean): Promise<EventPools> {
   const rows = await db
     .select({ pool: eventPoolGames.pool, game: games })
     .from(eventPoolGames)
     .innerJoin(games, eq(eventPoolGames.gameId, games.id))
     .where(eq(eventPoolGames.eventId, eventId))
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
-  const inPool = (pool: Pool) => rows.filter(row => row.pool === pool).map(row => poolGameView(row.game))
+  const inPool = (pool: Pool) => rows.filter(row => row.pool === pool).map(row => (isHost ? poolGameView(row.game) : poolGameFace(row.game)))
   return { main: inPool('main'), tiebreaker: inPool('tiebreaker') }
 }
 
