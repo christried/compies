@@ -1,4 +1,4 @@
-import { CalendarCheck, CalendarClock, Dices, Flag, Gamepad2, Link as LinkIcon, Play, Settings2 } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, Dices, Flag, Gamepad2, Link as LinkIcon, Play, Settings2, Timer } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { dockLayout, hostDockState, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
@@ -27,6 +27,8 @@ export interface HostActionHandlers {
   setGame: () => void
   /** Spins the Lucky Wheel (#229). */
   spin: () => void
+  /** Opens the sheet that sets the Countdown (#236). */
+  countdown: () => void
 }
 
 export function useHostActions(
@@ -100,6 +102,14 @@ export function useHostActions(
         group: t('dock.group.game'),
         disabledReason: spinReason,
         run: guarded(spinReason, handlers.spin),
+      },
+      // The sheet itself says when a Countdown runs (CountdownSheet); the action always opens it (#236).
+      countdown: {
+        key: 'countdown',
+        label: t('countdown.title'),
+        icon: Timer,
+        group: t('dock.group.game'),
+        run: handlers.countdown,
       },
     }
 

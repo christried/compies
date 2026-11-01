@@ -79,6 +79,10 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   pool_empty: 'dock.setBlocked.pool_empty',
   round_not_found: 'error.roundNotFound',
   game_count_below_started: 'error.gameCountBelowStarted',
+  no_countdown: 'error.noCountdown',
+  countdown_running: 'error.countdownRunning',
+  countdown_not_running: 'error.countdownNotRunning',
+  countdown_ended: 'error.countdownEnded',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

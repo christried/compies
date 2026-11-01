@@ -49,6 +49,8 @@ export type RoomMessage
    * visible wheel, whose names the clients take from the Event read.
    */
     | { type: 'round.spun', roundId: string, drawId: string, spinStartAt: string, stopAt: string, slices: number, resultIndex: number, resultOffset: number, labels: string[] | null }
+  /** The Host changed the Countdown (#236): set, started, paused, reset or cleared. No payload; the client refetches the Event read. */
+    | { type: 'countdown.changed' }
 
 export type RoomMessageType = RoomMessage['type']
 

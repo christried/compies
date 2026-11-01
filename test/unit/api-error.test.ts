@@ -36,6 +36,13 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(400, 'invalid_settings'))).toBe('error.saveFailed')
   })
 
+  it('explains the Countdown refusals (#236)', () => {
+    expect(apiErrorKey(refusal(409, 'no_countdown'))).toBe('error.noCountdown')
+    expect(apiErrorKey(refusal(409, 'countdown_running'))).toBe('error.countdownRunning')
+    expect(apiErrorKey(refusal(409, 'countdown_not_running'))).toBe('error.countdownNotRunning')
+    expect(apiErrorKey(refusal(409, 'countdown_ended'))).toBe('error.countdownEnded')
+  })
+
   it('explains the refusals of the Game library (#141)', () => {
     expect(apiErrorKey(refusal(400, 'invalid_game_name'))).toBe('error.gameNameInvalid')
     expect(apiErrorKey(refusal(400, 'invalid_youtube'))).toBe('gameEdit.badLink')

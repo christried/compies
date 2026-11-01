@@ -179,6 +179,12 @@ export interface WheelView {
   spin: SpinView | null
 }
 
+/**
+ * The Event's Countdown (#236, spec #218 § Countdown): its stored facts, the duration and either the remaining time (paused, ready)
+ * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt).
+ */
+export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null }
+
 /** What `POST /api/e/:slug/rounds` returns: the Round that was opened (#228). */
 export interface RoundSet { roundId: string }
 /** What `POST /api/e/:slug/rounds/spin` returns: the Round being drawn and its draw (#229). */
@@ -256,6 +262,8 @@ export interface EventView {
   setGame: SetGameView | null
   /** The Lucky Wheel (#229): in a running Session of a Lucky Wheel Event, else null. */
   wheel: WheelView | null
+  /** The Countdown of the running Session (#236): every Member gets it while a Session runs, null otherwise. */
+  countdown: CountdownView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

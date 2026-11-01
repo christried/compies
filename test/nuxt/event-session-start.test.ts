@@ -100,7 +100,7 @@ describe('the Host dock per state', () => {
 
     expect(pill(page)).toEqual(['Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
     const menu = await openHostMenu(page)
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Einladen', 'Nächstes Spiel setzen', 'Einstellungen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Einladen', 'Nächstes Spiel setzen', 'Countdown', 'Einstellungen'])
   })
 
   it('offers Session 2 starten between Sessions', async () => {
@@ -135,7 +135,7 @@ describe('the Host dock per state', () => {
 
     const menu = await openHostMenu(page)
 
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Nächstes Spiel setzen', 'Einladen', 'Einstellungen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Nächstes Spiel setzen', 'Countdown', 'Einladen', 'Einstellungen'])
   })
 })
 

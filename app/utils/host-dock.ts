@@ -56,7 +56,7 @@ export function hostDockState(input: DockInput): HostDockState {
 }
 
 /** The actions the dock can hold, by key. */
-export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin'
+export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'countdown'
 
 /**
  * Which actions the dock holds per state, in named parts (review 1.4 A4, #228): the `primary` action(s), the `secondary` ones
@@ -72,9 +72,10 @@ export function dockLayout(state: HostDockState, pollOpen: boolean): DockLayout 
   if (state.kind === 'setup') return { primary: ['settings'], secondary: ['invite'], more: [...dates, ...slots] }
   switch (state.primary) {
     case 'start': return { primary: ['start'], secondary: [...dates, 'invite'], more: [...slots, 'settings'] }
-    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, 'settings'] }
-    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, 'settings'] }
-    case 'end': return { primary: ['end'], secondary: ['invite'], more: ['setGame', ...dates, ...slots, 'settings'] }
+    // The running layouts put the Countdown (#236) in Mehr, beside the other game actions and before the settings.
+    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, 'countdown', 'settings'] }
+    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, 'countdown', 'settings'] }
+    case 'end': return { primary: ['end'], secondary: ['invite'], more: ['setGame', ...dates, ...slots, 'countdown', 'settings'] }
     case 'setDate': return { primary: dates, secondary: ['invite'], more: [...slots, 'settings'] }
     default: return { primary: [], secondary: ['invite'], more: ['settings'] }
   }

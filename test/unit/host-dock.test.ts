@@ -143,12 +143,19 @@ describe('dockLayout', () => {
   })
 
   it('under Host pick puts Nächstes Spiel setzen first in a running Session, with Session beenden beside it', () => {
-    expect(layout({ settings: hostPick, sessions: RUNNING })).toEqual({ primary: ['setGame'], secondary: ['end', 'invite'], more: ['settings'] })
+    expect(layout({ settings: hostPick, sessions: RUNNING })).toEqual({ primary: ['setGame'], secondary: ['end', 'invite'], more: ['countdown', 'settings'] })
   })
 
   it('in the Lucky Wheel puts Rad drehen first, Session beenden beside it and Nächstes Spiel setzen in Mehr (#229)', () => {
-    expect(layout({ settings, sessions: RUNNING })).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'settings'] })
-    expect(layout({ settings, sessions: [...RUNNING, undated('b')] }, true)).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'setDate', 'slots', 'settings'] })
+    expect(layout({ settings, sessions: RUNNING })).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'countdown', 'settings'] })
+    expect(layout({ settings, sessions: [...RUNNING, undated('b')] }, true)).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'setDate', 'slots', 'countdown', 'settings'] })
+  })
+
+  it('puts Countdown in Mehr in both running layouts (#236), and in no other state', () => {
+    expect(layout({ settings: hostPick, sessions: RUNNING }).more).toContain('countdown')
+    expect(layout({ settings, sessions: RUNNING }).more).toContain('countdown')
+    expect(layout({ sessions: [dated('a', 1), dated('b', 2)] }).more).not.toContain('countdown')
+    expect(layout({ sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' })], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }).more).not.toContain('countdown')
   })
 
   it('has only Einladen and Einstellungen after the last Session', () => {
