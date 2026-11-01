@@ -114,6 +114,39 @@ export function activityPeople<T extends ActivityType>(type: T, params: Activity
   return ACTIVITY_PEOPLE[type](params)
 }
 
+/** Which games an entry names: the ids of the games in its params, whose names the sentence needs (`games`, #228). */
+export type ActivityGames = { [T in ActivityType]: (params: ActivityParams[T]) => string[] }
+
+/**
+ * Every entry type says which games it names, as it says whom (ACTIVITY_PEOPLE): a type without an entry here does not
+ * compile. The server resolves a name only for a game this viewer may know (server/utils/activity.ts).
+ */
+export const ACTIVITY_GAMES: ActivityGames = {
+  member_joined: () => [],
+  member_moved: () => [],
+  date_set: () => [],
+  date_rescheduled: () => [],
+  date_reopened: () => [],
+  session_added: () => [],
+  session_removed: () => [],
+  session_started: () => [],
+  session_ended: () => [],
+  team_name_reset: () => [],
+  game_count_changed: () => [],
+  team_size_changed: () => [],
+  game_drawn: params => [params.gameId],
+  vetoes_revealed: params => [params.gameId],
+  game_set: params => [params.gameId],
+  game_put_back: params => [params.gameId],
+  bonus_veto_granted: () => [],
+  coin_tossed: () => [],
+}
+
+/** The game ids an entry's params name (ACTIVITY_GAMES), for one entry of this type. */
+export function activityGames<T extends ActivityType>(type: T, params: ActivityParams[T]): string[] {
+  return ACTIVITY_GAMES[type](params)
+}
+
 interface EntryBase {
   id: string
   /** ISO instant. */
@@ -122,6 +155,11 @@ interface EntryBase {
   actor: { id: string, name: string } | null
   /** The name of every User id inside `params`, so the client never needs the members list (`shownName`). */
   people: Record<string, string>
+  /**
+   * The name of every game id inside `params` that this viewer may know yet (#228): a game that was set, from the moment it
+   * was set. An id that is missing here is a game nobody may name yet, and the sentence is left out. Never a game's picture or notes.
+   */
+  games: Record<string, string>
 }
 
 /** One entry as the feed endpoint and the room send it: the type decides the shape of the params. */

@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { ACTIVITY_PEOPLE, ACTIVITY_TYPES, activityPeople, isoInstant, type ActivityParams, type ActivityPeople, type ActivityType, type CheckedParams, type IsoInstant, type ParamsSafe } from '../../shared/activity'
+import { ACTIVITY_GAMES, ACTIVITY_PEOPLE, ACTIVITY_TYPES, activityGames, activityPeople, isoInstant, type ActivityParams, type ActivityPeople, type ActivityType, type CheckedParams, type IsoInstant, type ParamsSafe } from '../../shared/activity'
 import type { Place } from '../../shared/board'
 
 // Whom an Activity entry names, and what its params may hold (#226, review 1.4 A6). Most of this is checked by the
@@ -41,6 +41,21 @@ describe('ACTIVITY_PEOPLE', () => {
     const vetoes = [{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }]
 
     expect(activityPeople('vetoes_revealed', { roundId: 'r', drawId: 'd', gameId: 'g', vetoes })).toEqual(['u1', 'u2'])
+  })
+})
+
+describe('ACTIVITY_GAMES (#228)', () => {
+  it('has an entry for every Activity type, as ACTIVITY_PEOPLE has', () => {
+    expect(Object.keys(ACTIVITY_GAMES).sort()).toEqual([...ACTIVITY_TYPES].sort())
+  })
+
+  it('names the game of a draw, a Veto reveal, a set and a put back, and no game in the other entries', () => {
+    expect(activityGames('game_set', { roundId: 'r', gameId: 'g1' })).toEqual(['g1'])
+    expect(activityGames('game_put_back', { roundId: 'r', gameId: 'g1' })).toEqual(['g1'])
+    expect(activityGames('game_drawn', { roundId: 'r', drawId: 'd', gameId: 'g1' })).toEqual(['g1'])
+    expect(activityGames('vetoes_revealed', { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [] })).toEqual(['g1'])
+    expect(activityGames('session_started', { sessionId: 's', number: 1 })).toEqual([])
+    expect(activityGames('coin_tossed', { side: 'tails' })).toEqual([])
   })
 })
 

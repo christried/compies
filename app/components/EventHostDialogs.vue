@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Lock, Play } from '@lucide/vue'
 import { dateBlockedKey } from '~/utils/event-page'
+import { isFullPoolGame } from '~~/shared/game'
 import { hasStarted } from '~~/shared/session-state'
 import type { DatedSessionView, EventView } from '~~/shared/event'
 
 // The Host's dialogs and sheets of the Event page (#52, #55, #164): the Date confirm dialog, the reschedule dialog, the
-// Slot editor, the add-Session sheet and the start dialog. The page opens them (from the dock, the poll and the Sessions
+// Slot editor, the add-Session sheet, the start dialog and the picker of the next game (#228). The page opens them (from the dock, the poll and the Sessions
 // card) through the methods this component exposes.
 // Each closes only when the server took the change (useEventMutation's `send`, #74).
 const props = defineProps<{
@@ -105,8 +106,22 @@ function startSession() {
   return send('POST', 'sessions/start', { busy: starting, done: () => (startOpen.value = false) })
 }
 
+// Setting the next game (#228): the picker lists the games left in the Game pool, whole, as the Host reads them.
+const pickerOpen = ref(false)
+const setting = ref(false)
+const poolLeft = computed(() => {
+  const left = new Set(props.view.setGame?.left ?? [])
+  return (props.view.pools?.main ?? []).filter(isFullPoolGame).filter(game => left.has(game.id))
+})
+
+/** Sets the game as the next Round; the picker closes once the server took it. */
+function setNextGame(gameId: string) {
+  return send('POST', 'rounds', { body: { gameId }, busy: setting, done: () => (pickerOpen.value = false) })
+}
+
 defineExpose({
   openConfirm,
+  openSetGame: () => (pickerOpen.value = true),
   openReschedule,
   openAdd: () => (addOpen.value = true),
   openSlotEditor: () => (editing.value = true),
@@ -165,6 +180,15 @@ defineExpose({
     :loading="rescheduling"
     @confirm="rescheduleDate"
     @cancel="rescheduleOpen = false"
+  />
+
+  <NextGamePicker
+    v-if="view.setGame"
+    :open="pickerOpen"
+    :pool="poolLeft"
+    :busy="setting"
+    @close="pickerOpen = false"
+    @pick="setNextGame"
   />
 
   <SessionAddSheet

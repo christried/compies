@@ -53,7 +53,7 @@ async function mountEvent() {
 }
 
 function joined(id: string) {
-  const entry = { id, type: 'member_joined', at: new Date().toISOString(), actor: { id: 'u1', name: 'Larsi' }, params: {}, people: {} }
+  const entry = { id, type: 'member_joined', at: new Date().toISOString(), actor: { id: 'u1', name: 'Larsi' }, params: {}, people: {}, games: {} }
   lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'activity.added', entry } as RoomMessage, Date.now())))
   return settle()
 }

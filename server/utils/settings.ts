@@ -1,14 +1,14 @@
 import { and, eq } from 'drizzle-orm'
 import { eventPoolGames, events } from '../db/schema'
 import { parsePoolChange } from '../domain/pools'
-import { POOLS, checkSettingsChange, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
+import { POOLS, checkSettingsChange, floorsAt, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Place } from '../../shared/board'
 import { moveMember, readSeats } from './board'
 import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange, EventRow } from './event-access'
 import { assertGamesExist } from './pools'
-import { settingsFloors } from './settings-floors'
+import { floorFacts } from './settings-floors'
 import { asRecord } from '../../shared/record'
 
 const BENCH: Place = { zone: 'bench' }
@@ -39,7 +39,8 @@ export async function applySettingsChange(
   const before = settingsFromRow(eventRow)
   let after: EventSettings
   if (change !== undefined) {
-    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: await settingsFloors(tx, eventRow.id) })
+    const facts = await floorFacts(tx, eventRow.id)
+    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: teamCount => floorsAt(facts, teamCount) })
     if (!checked.ok) throw apiError(checked.error)
     after = checked.settings
   }

@@ -3,6 +3,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import getActivity from '../../server/api/e/[slug]/activity.get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import moveMember from '../../server/api/e/[slug]/move.post'
+import putBackRound from '../../server/api/e/[slug]/rounds/[id].delete'
+import setRound from '../../server/api/e/[slug]/rounds/index.post'
 import rotateInvite from '../../server/api/e/[slug]/rotate.post'
 import changeSettings from '../../server/api/e/[slug]/settings.patch'
 import addSession from '../../server/api/e/[slug]/sessions/index.post'
@@ -33,6 +35,7 @@ import type { GameView } from '../../shared/game'
 import type { RoomMessageType } from '../../shared/realtime'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
+import { hostPutsBack, hostSets, startRunningSession } from './running-session'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // THE secrecy test of release 1.3 (#148): under a Hidden wheel nobody but the Host learns which games are in the
@@ -85,6 +88,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       'POST /api/e/:slug/sessions/end': endSession,
       'PATCH /api/e/:slug/settings': changeSettings,
       'POST /api/e/:slug/rotate': rotateInvite,
+      'POST /api/e/:slug/rounds': setRound,
+      'DELETE /api/e/:slug/rounds/:id': putBackRound,
     }, { imageStore: store, roomNotifier: notifier })
   })
 
@@ -320,7 +325,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
   // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended'] as const satisfies readonly RoomMessageType[]
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'round.set', 'round.putBack'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
@@ -435,11 +440,15 @@ describe('Hidden wheel secrecy (#148)', () => {
       // 9. The Host rotates the Invite link.
       expect((await send('POST', `/api/e/${slug}/rotate`, hostCookie)).status).toBe(200)
 
-      // 10. The Host starts the Session, then ends it (session.started, team.nameFrozen, session.ended).
+      // 10. The Host starts the Session, sets a game that is in no pool and puts it back (round.set, round.putBack), then ends
+      // the Session (session.started, team.nameFrozen, session.ended). That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
+      const e = await newGame('Epsilon Eck', 'eeeeeeeeeee')
+      const roundId = await hostSets(request, slug, hostCookie, e.id)
+      await hostPutsBack(request, slug, hostCookie, roundId)
       expect((await send('POST', `/api/e/${slug}/sessions/end`, hostCookie)).status).toBe(200)
 
-      return { slug, eventId, games: [a, b, c, d] as const, player2Cookie }
+      return { slug, eventId, games: [a, b, c, d] as const, set: e, player2Cookie }
     }
 
     it('produces every message type Nuxt sends to the room, and writes every Activity type', async () => {
@@ -448,8 +457,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(everyTypeListed).toBe(true)
       const sent = new Set(notifier.messages(eventId).map(message => message.type))
       for (const type of SERVER_SENT) expect(sent.has(type), `the flow sends no ${type}`).toBe(true)
-      // The six 0.7 kinds (#226) are in the enum, but nothing writes them before #228, #229, #231, #233 and #235.
-      const written = ACTIVITY_TYPES.filter(type => !['game_drawn', 'vetoes_revealed', 'game_set', 'game_put_back', 'bonus_veto_granted', 'coin_tossed'].includes(type))
+      // The 0.7 kinds (#226) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228).
+      // The rest come with #229 (game_drawn), #231 (vetoes_revealed), #233 (bonus_veto_granted) and #235 (coin_tossed).
+      const written = ACTIVITY_TYPES.filter(type => !['game_drawn', 'vetoes_revealed', 'bonus_veto_granted', 'coin_tossed'].includes(type))
       expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
     })
 
@@ -479,6 +489,116 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       const hostRaw = await rawRead(hostCookie, slug)
       for (const game of [a, c, d]) expect(hostRaw).toContain(game.name)
+    })
+  })
+
+  // A game the Host sets is every Member's from the moment it is set, and nothing else becomes known with it (#228).
+  describe('a game the Host sets (#228)', () => {
+    const second = { provider: 'twitch', id: '5', name: 'Zweite', email: 'second@example.com', image: undefined } as const
+    const LOBBY = { ...HIDDEN_WHEEL, teamCount: 2, teamSize: 1 } as const
+
+    /** A Running Session under a Hidden wheel: Alpha and Beta in the Game pool, Gamma in the Tiebreaker pool, Epsilon only in the library. */
+    async function runningEvent() {
+      const [a, b, c, e] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
+      const created = await request('/api/e', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
+        body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: LOBBY, pools: { main: [a.id, b.id], tiebreaker: [c.id] } }),
+      })
+      const { slug, inviteUrl } = await created.json() as CreatedEvent
+      const token = new URL(inviteUrl).pathname.slice('/e/'.length)
+      const secondCookie = (await signIn(testDb.db, second)).cookie
+      for (const cookie of [playerCookie, secondCookie]) expect((await request(`/api/invite/${token}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
+      await startRunningSession(request, testDb.db, { slug, hostCookie, seated: [{ cookie: playerCookie, email: player.email }, { cookie: secondCookie, email: second.email }] })
+      notifier.clear()
+      const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+      return { slug, eventId: eventRow!.id, a, b, c, e }
+    }
+
+    const imageStatus = async (secret: Secret) => (await request(secret.imageUrl, { headers: { cookie: playerCookie } })).status
+
+    /** Everything the Player can read: the Event read, the feed and the room. */
+    async function whatThePlayerGets(slug: string, eventId: string) {
+      const feed = await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie: playerCookie } })
+      return { event: await rawRead(playerCookie, slug), feed: await feed.text(), room: JSON.stringify(notifier.messages(eventId)) }
+    }
+
+    function expectNone(what: Record<string, string>, secrets: readonly Secret[], include: (secret: Secret) => string[] = traces) {
+      for (const [place, raw] of Object.entries(what)) {
+        for (const secret of secrets) for (const trace of include(secret)) expect(raw, `${place} leaks ${trace}`).not.toContain(trace)
+      }
+    }
+
+    it('shows a Player no game of the pools before a set: nothing in the Event read, the feed or the room, and no image', async () => {
+      const { slug, eventId, a, b, c, e } = await runningEvent()
+
+      expectNone(await whatThePlayerGets(slug, eventId), [a, b, c, e])
+      expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView)).toMatchObject({ pools: null, rounds: [], setGame: null })
+      for (const secret of [a, b, c, e]) expect(await imageStatus(secret)).toBe(404)
+    })
+
+    it('shows a Player exactly the game that is set, never its notes, and nothing else of the pools', async () => {
+      const { slug, eventId, a, b, c, e } = await runningEvent()
+
+      await hostSets(request, slug, hostCookie, a.id)
+
+      const got = await whatThePlayerGets(slug, eventId)
+      expect(got.event).toContain('Alpha Arena')
+      expect(got.event).toContain(a.imageKey)
+      expect((JSON.parse(got.event) as EventView)).toMatchObject({ pools: null, rounds: [{ game: { id: a.id, name: 'Alpha Arena', youtubeId: 'aaaaaaaaaaa' } }] })
+      expect(got.feed).toContain('Alpha Arena')
+      expectNone(got, [a], secret => [secret.notes])
+      expectNone(got, [b, c, e])
+      expect(await imageStatus(a)).toBe(200)
+      for (const secret of [b, c, e]) expect(await imageStatus(secret)).toBe(404)
+    })
+
+    it('shows a Player a game from the library when the Host sets it, and none of the pool\'s games', async () => {
+      const { slug, eventId, a, b, c, e } = await runningEvent()
+
+      await hostSets(request, slug, hostCookie, e.id)
+
+      const got = await whatThePlayerGets(slug, eventId)
+      expect((JSON.parse(got.event) as EventView).rounds).toMatchObject([{ game: { id: e.id, name: 'Epsilon Eck' } }])
+      expectNone(got, [a, b, c])
+      expectNone(got, [e], secret => [secret.notes])
+      expect(await imageStatus(e)).toBe(200)
+      for (const secret of [a, b, c]) expect(await imageStatus(secret)).toBe(404)
+    })
+
+    it('gives the Host the notes of the set game on its Round, and every game of the pools', async () => {
+      const { slug, a } = await runningEvent()
+      await hostSets(request, slug, hostCookie, a.id)
+
+      const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
+
+      expect(view.rounds).toMatchObject([{ game: { name: 'Alpha Arena' }, notes: a.notes }])
+      expect(view.pools?.main.map(game => game.name)).toEqual(['Alpha Arena', 'Beta Bowling'])
+    })
+
+    it('reveals nothing more when the Host puts the Round back: the pools stay hidden, the games not set stay unknown', async () => {
+      const { slug, eventId, a, b, c, e } = await runningEvent()
+      const roundId = await hostSets(request, slug, hostCookie, a.id)
+
+      await hostPutsBack(request, slug, hostCookie, roundId)
+
+      const got = await whatThePlayerGets(slug, eventId)
+      expect(JSON.parse(got.event)).toMatchObject({ pools: null, rounds: [] })
+      expectNone(got, [b, c, e])
+      expectNone(got, [a], secret => [secret.notes])
+      for (const secret of [b, c, e]) expect(await imageStatus(secret)).toBe(404)
+    })
+
+    it('keeps the Player\'s read the same however many games the pools hold after a set', async () => {
+      const { slug, eventId, a } = await runningEvent()
+      await hostSets(request, slug, hostCookie, a.id)
+      const before = await rawRead(playerCookie, slug)
+
+      const delta = await newGame('Delta Dart', 'ddddddddddd')
+      await testDb.db.insert(eventPoolGames).values({ eventId, gameId: delta.id, pool: 'main' })
+
+      expect(await rawRead(hostCookie, slug)).toContain('Delta Dart')
+      expect(await rawRead(playerCookie, slug)).toBe(before)
     })
   })
 })

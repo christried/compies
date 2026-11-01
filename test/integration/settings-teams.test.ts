@@ -154,7 +154,7 @@ describe('settings follow the teams (#163)', () => {
       await seat(game, 'four', team(1))
       await testDb.db.delete(activity)
       notifier.clear()
-      expect((await read(game)).settingsFloors).toEqual({ teamSize: 2, vetoAllowance: 0 })
+      expect((await read(game)).settingsFloors).toEqual({ teamSize: 2, vetoAllowance: 0, gameCount: 0 })
 
       const refused = await patch(game, { settings: { teamSize: 1 } })
 
@@ -173,7 +173,7 @@ describe('settings follow the teams (#163)', () => {
       await seatTeams(game)
 
       // Team 1 holds two Players, teams 3 and 4 one each: the floor is 2, not 4.
-      expect((await read(game)).settingsFloors).toEqual({ teamSize: 2, vetoAllowance: 0 })
+      expect((await read(game)).settingsFloors).toEqual({ teamSize: 2, vetoAllowance: 0, gameCount: 0 })
     })
   })
 
@@ -286,7 +286,7 @@ describe('settings follow the teams (#163)', () => {
       await seat(game, 'three', team(4))
       await seat(game, 'four', team(1))
       await seat(game, 'host', team(2))
-      expect((await read(game)).settingsFloors).toEqual({ teamSize: 3, vetoAllowance: 0 })
+      expect((await read(game)).settingsFloors).toEqual({ teamSize: 3, vetoAllowance: 0, gameCount: 0 })
 
       const response = await patch(game, { settings: { teamCount: 2, teamSize: 2, pointsTable: LINEAR_2 } })
 

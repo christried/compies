@@ -1,9 +1,10 @@
 import type { Place, Zone } from './board'
+import type { SetRejection } from './rounds'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
 import type { EventSettings, SettingsFloors } from './settings'
-import type { PoolGame, PoolGameFace } from './game'
+import type { PoolGame, PoolGameFace, RoundGame } from './game'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -126,6 +127,29 @@ export interface SessionEnded { sessionId: string, phase: Phase }
  */
 export interface StartView { sessionId: string | null, number: number | null, rejection: StartRejection | null }
 
+/**
+ * An open Round on the stage (#228, GLOSSARY: Round): its game is set and it was not put back. It has no number (0.8 numbers a
+ * Round when its result is entered). `notes` are the game's Game notes, only for the Host and only when it has some.
+ */
+export interface RoundView {
+  id: string
+  startedAt: string
+  setAt: string
+  game: RoundGame
+  notes?: string
+}
+
+/**
+ * What the Host sees of setting the next game (#228): why it cannot be set now, or null, and the games of the Game pool that
+ * are still left (shared/rounds.ts gamesLeft), which the picker lists first.
+ */
+export interface SetGameView { rejection: SetRejection | null, left: string[] }
+
+/** What `POST /api/e/:slug/rounds` returns: the Round that was opened (#228). */
+export interface RoundSet { roundId: string }
+/** What `DELETE /api/e/:slug/rounds/:id` returns: the Round that was put back (#228). */
+export interface RoundPutBack { roundId: string }
+
 /** What `POST /api/e/:slug/team-word` returns: the team and the word as saved, null when it was removed (#161). */
 export interface TeamWordSet { team: number, word: string | null }
 
@@ -187,6 +211,13 @@ export interface EventView {
   runningSessionId: string | null
   /** The start rule's answer for the next Session (#164). Only the Host gets it; null for every other Member. */
   start: StartView | null
+  /**
+   * The open Rounds in start order (#228). Their games are visible to every Member from the moment they are set, with the
+   * Pool preview off and under a Hidden wheel alike; nothing else about the pools is.
+   */
+  rounds: RoundView[]
+  /** Setting the next game (#228). Only the Host gets it; null for every other Member. */
+  setGame: SetGameView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

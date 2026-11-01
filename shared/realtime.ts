@@ -1,6 +1,7 @@
 // What the room and the app say to each other (spec #153 § Protocol, ADR 0012, ADR 0013). The app and the Worker
 // (realtime/) import this file, so it holds types and tiny helpers only. No message carries a game's name, id,
-// image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer.
+// image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer. The one
+// exception is an Activity entry of a game everyone may know (`activity.added`: a game that was set, #228).
 
 import type { ActivityEntry } from './activity'
 import type { Place } from './board'
@@ -38,6 +39,10 @@ export type RoomMessage
     | { type: 'session.ended', sessionId: string }
   /** The first Session started: every team's Team name is frozen (#164). */
     | { type: 'team.nameFrozen' }
+  /** The Host set the next game: a Round is open (#228). No game data; the client refetches the Event read. */
+    | { type: 'round.set', roundId: string }
+  /** The Host put an open Round back (#228). No game data. */
+    | { type: 'round.putBack', roundId: string }
 
 export type RoomMessageType = RoomMessage['type']
 

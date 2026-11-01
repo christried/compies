@@ -126,7 +126,7 @@ describe('the Activity feed', () => {
 
       const { entries } = await feed(hostCookie, slug)
       expect(entries).toEqual([
-        { id: expect.any(String), type: 'member_joined', at: expect.any(String), actor: { id: strangerId, name: 'Fremd' }, params: {}, people: {} },
+        { id: expect.any(String), type: 'member_joined', at: expect.any(String), actor: { id: strangerId, name: 'Fremd' }, params: {}, people: {}, games: {} },
       ])
       expect(notifier.messages(eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added', 'member.joined'])
       expect(added(eventId)).toEqual(entries)
@@ -153,7 +153,7 @@ describe('the Activity feed', () => {
       const session = await datedSession(eventId)
       const { entries } = await feed(hostCookie, slug)
       expect(entries).toEqual([
-        { id: expect.any(String), type: 'date_set', at: expect.any(String), actor: { id: hostId, name: 'Hostess' }, params: { sessionId: session.id, number: 1, startsAt }, people: {} },
+        { id: expect.any(String), type: 'date_set', at: expect.any(String), actor: { id: hostId, name: 'Hostess' }, params: { sessionId: session.id, number: 1, startsAt }, people: {}, games: {} },
       ])
       expect(added(eventId)).toEqual(entries)
     })

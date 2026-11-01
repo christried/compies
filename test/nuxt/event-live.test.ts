@@ -108,7 +108,7 @@ describe('the live Event page', () => {
   it('shows an Activity feed entry the room sends in the side panel under „Aktivität“, on the same socket', async () => {
     stubScreen(true)
     const { page } = await mountLive()
-    const entry = { id: 'entry-1', type: 'member_joined', at: new Date().toISOString(), actor: { id: 'u1', name: 'Larsi' }, params: {}, people: {} }
+    const entry = { id: 'entry-1', type: 'member_joined', at: new Date().toISOString(), actor: { id: 'u1', name: 'Larsi' }, params: {}, people: {}, games: {} }
 
     lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'activity.added', entry } as RoomMessage, Date.now())))
 
