@@ -229,7 +229,7 @@ describe('changing the settings of an Event (#147)', () => {
     it('shows the games to a Member once the Hidden wheel is switched off, and hides them again when it is switched on', async () => {
       const kart = await newGame('Mario Kart')
       const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true }, pools: { main: [kart.id], tiebreaker: [] } })
-      expect((await read(slug, memberCookie)).pools).toEqual({ hidden: true, mainCount: 1, tiebreakerCount: 0 })
+      expect((await read(slug, memberCookie)).pools).toEqual({ hidden: true })
 
       expect((await patch(slug, { settings: { hiddenWheel: false } })).status).toBe(200)
       const revealed = (await read(slug, memberCookie)).pools
@@ -239,7 +239,7 @@ describe('changing the settings of an Event (#147)', () => {
       expect((await patch(slug, { settings: { hiddenWheel: true } })).status).toBe(200)
       const hiddenAgain = await request(`/api/e/${slug}`, { headers: { cookie: memberCookie } })
       const raw = await hiddenAgain.text()
-      expect(JSON.parse(raw).pools).toEqual({ hidden: true, mainCount: 1, tiebreakerCount: 0 })
+      expect(JSON.parse(raw).pools).toEqual({ hidden: true })
       expect(raw).not.toContain('Mario Kart')
       expect(raw).not.toContain(kart.id)
     })

@@ -2,7 +2,17 @@
 
 ## [Unreleased]
 
-## [1.4.0] - 2026-10-31 – Teams
+## [0.5.1] - 2026-11-01 – Neue Nummern
+
+Ein kleines Update ohne neue Funktion: neue Versionsnummern, eine eigene Kontaktadresse, und ein verdecktes Rad verrät noch weniger.
+
+### Geändert
+
+- Die Versionsnummern fangen jetzt bei 0.1 an: Compies ist noch im Aufbau, 1.0 kommt, wenn alles fertig ist. Aus 1.0 bis 1.4 werden 0.1 bis 0.5. ([#220](https://github.com/christried/compies/issues/220))
+- Ist das Rad verdeckt, siehst du nicht mehr, wie viele Spiele im Pool sind. Das zeigt dir erst das Rad. ([#222](https://github.com/christried/compies/issues/222))
+- Im Impressum und in der Datenschutzerklärung steht jetzt die Kontaktadresse compies@christried.me. ([#221](https://github.com/christried/compies/issues/221))
+
+## [0.5.0] - 2026-10-31 – Teams
 
 Die Event-Seite ist jetzt live: Ihr seht, wer gerade da ist, setzt euch auf dem Spielbrett in Teams, gebt eurem Team gemeinsam einen Namen, und der Host startet die Sessions. Unter **Aktivität** steht, was im Event passiert ist.
 
@@ -24,7 +34,7 @@ Die Event-Seite ist jetzt live: Ihr seht, wer gerade da ist, setzt euch auf dem 
 - Die Datenschutzerklärung beschreibt jetzt auch das Spielbrett, den Aktivitäts-Feed, die Live-Verbindung und „Was ist neu“. ([#153](https://github.com/christried/compies/issues/153))
 - Ein Event bleibt jetzt auf der Startseite, bis alle seine Sessions gespielt sind, auch wenn ihr Termin schon vorbei ist. Einen Tag nach dem Ende der letzten Session verschwindet es von dort. ([#199](https://github.com/christried/compies/issues/199))
 
-## [1.3.0] - 2026-10-29 – Spielvorbereitung
+## [0.4.0] - 2026-10-29 – Spielvorbereitung
 
 Eine Bibliothek für eure Spiele und ein Event, das du Schritt für Schritt einrichtest: Format, Punkte, Glücksrad oder Host-Wahl, Vetos und die Spielepools.
 
@@ -55,7 +65,7 @@ Eine Bibliothek für eure Spiele und ein Event, das du Schritt für Schritt einr
 
 - Bei verdecktem Rad erfährt niemand außer dem Host, welche Spiele im Pool sind, auch nicht über die Netzwerkdaten. ([#148](https://github.com/christried/compies/issues/148))
 
-## [1.2.0] - 2026-10-28 – Mehr Termine
+## [0.3.0] - 2026-10-28 – Mehr Termine
 
 Bis zu 16 Termine pro Umfrage, eine Anmerkung zu deiner Stimme, Google Kalender oder Outlook mit einem Klick und eine Seite, auf der du siehst, was neu ist.
 
@@ -83,20 +93,20 @@ Bis zu 16 Termine pro Umfrage, eine Anmerkung zu deiner Stimme, Google Kalender 
 - Wenn du in einem ausgefüllten Datum oder einer Uhrzeit nur einen Teil änderst, bleibt jetzt genau das stehen, was du tippst. ([#113](https://github.com/christried/compies/issues/113))
 - Emojis wie 👍🏽, 🇩🇪 oder 👨‍👩‍👧 zählen in Namen jetzt als ein Zeichen, so wie du sie siehst. ([#76](https://github.com/christried/compies/issues/76))
 
-## [1.1.2] - 2026-10-24 – Angemeldet bleiben
+## [0.2.2] - 2026-10-24 – Angemeldet bleiben
 
 ### Behoben
 
 - Du bleibst angemeldet, solange du die App mindestens einmal pro Woche nutzt. Bisher wurdest du nach 7 Tagen abgemeldet. ([#64](https://github.com/christried/compies/issues/64))
 - Läuft deine Anmeldung ab oder meldest du dich in einem anderen Tab ab, landest du auf der Anmeldeseite und danach wieder dort, wo du warst, statt bei einer Fehlermeldung. ([#66](https://github.com/christried/compies/issues/66))
 
-## [1.1.1] - 2026-10-24 – Tab-Titel
+## [0.2.1] - 2026-10-24 – Tab-Titel
 
 ### Behoben
 
 - Der Titel des Browser-Tabs zeigt jetzt, wo du gerade bist: bei einer Einladung, beim Anmelden und auf Fehlerseiten. ([#10](https://github.com/christried/compies/issues/10))
 
-## [1.1.0] - 2026-10-24 – Feinschliff
+## [0.2.0] - 2026-10-24 – Feinschliff
 
 Nach den ersten Runden mit der Gruppe: klarere Abstimmung, mehrere Termine pro Event und ein paar Ecken, die vorher hakten.
 
@@ -118,7 +128,7 @@ Nach den ersten Runden mit der Gruppe: klarere Abstimmung, mehrere Termine pro E
 - Die Uhrzeit füllt sich beim Tippen von links nach rechts aus, auch mit „930“. ([#34](https://github.com/christried/compies/issues/34))
 - Der Termin „Aufgehoben“ bleibt sichtbar, wenn du eine Session wieder öffnest. ([#36](https://github.com/christried/compies/issues/36))
 
-## [1.0.0] - 2026-10-22 – Terminfindung
+## [0.1.0] - 2026-10-22 – Terminfindung
 
 Die erste Version: ein Event anlegen, Termine vorschlagen, abstimmen und den Termin festlegen.
 

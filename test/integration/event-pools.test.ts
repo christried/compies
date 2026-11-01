@@ -12,7 +12,7 @@ import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Game pool and the Tiebreaker pool of an Event (#146): created with the Event, read back by the Host in full
-// and by every other Member as counts only.
+// by every other Member only while the wheel is not hidden (#148), and otherwise learns nothing about them (#222).
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
@@ -161,7 +161,7 @@ describe('the pools of an Event (#146)', () => {
       expect((await read(hostCookie, slug)).pools).toEqual({ hidden: false, main: [], tiebreaker: [] })
     })
 
-    it('gives every other Member only the counts under a Hidden wheel, and not a trace of the games (the full test is hidden-wheel.test.ts, #148)', async () => {
+    it('gives every other Member nothing about the pools under a Hidden wheel, no count and not a trace of the games (the full test is hidden-wheel.test.ts, #148, #222)', async () => {
       const secret = await newGame('Geheimes Spiel')
       const other = await newGame('Anderes Spiel')
       const settings = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 }
@@ -174,7 +174,7 @@ describe('the pools of an Event (#146)', () => {
       const raw = await response.text()
       const view = JSON.parse(raw) as EventView
 
-      expect(view.pools).toEqual({ hidden: true, mainCount: 2, tiebreakerCount: 1 })
+      expect(view.pools).toEqual({ hidden: true })
       expect(raw).not.toContain('Geheimes Spiel')
       expect(raw).not.toContain('Anderes Spiel')
       expect(raw).not.toContain(secret.id)

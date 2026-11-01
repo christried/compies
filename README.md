@@ -70,6 +70,7 @@ Edit `server/db/schema.ts`, then run `pnpm db:generate` and commit the generated
 |---|---|
 | `pnpm typecheck` | `nuxt typecheck` (vue-tsc) over app, server, tests and configs |
 | `pnpm lint` | ESLint (`@nuxt/eslint`, stylistic rules) |
+| `pnpm knip` | Unused files, exports and dependencies (`knip.jsonc`); an export only a test uses counts as unused |
 | `pnpm test` | All Vitest projects; `pnpm vitest --project unit` (or `integration`, `nuxt`) runs one |
 
 The test projects:

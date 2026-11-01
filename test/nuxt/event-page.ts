@@ -33,7 +33,7 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     // An Event that was never set up (#144) unless a test says otherwise: no settings, hidden empty pools (#148, #147).
     settings: overrides.settings === undefined ? null as EventSettings | null : overrides.settings,
     settingsFloors: overrides.settingsFloors === undefined ? (event.isHost ? { teamSize: 1, vetoAllowance: 0 } : null) : overrides.settingsFloors,
-    pools: overrides.pools ?? { hidden: true, mainCount: 0, tiebreakerCount: 0 } as EventPools,
+    pools: overrides.pools ?? { hidden: true } as EventPools,
     // The Event's one Session, which the server sends without a number (#70).
     sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[], startedAt: null as string | null, endedAt: null as string | null }],
     removedSessions: overrides.removedSessions ?? [],
@@ -48,9 +48,9 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     votes: votes.map(vote => ({ note: null, ...vote })),
     // Everyone on the Bench, no teams and Team choice closed, unless a test says otherwise (#160).
     members: overrides.members ?? [
-      { id: kitty.id, name: 'Kitty', image: null, isHost: false, zone: 'bench', team: null, teamWord: null },
-      { id: LARSI, name: 'Larsi', image: null, isHost: false, zone: 'bench', team: null, teamWord: null },
-      { id: SANNE, name: 'Sanne', image: null, isHost: true, zone: 'bench', team: null, teamWord: null },
+      { id: kitty.id, name: 'Kitty', image: 'https://example.com/kitty.png', isHost: false, zone: 'bench', team: null, teamWord: null },
+      { id: LARSI, name: 'Larsi', image: 'https://example.com/larsi.png', isHost: false, zone: 'bench', team: null, teamWord: null },
+      { id: SANNE, name: 'Sanne', image: 'https://example.com/sanne.png', isHost: true, zone: 'bench', team: null, teamWord: null },
     ] satisfies MemberView[],
     teams: overrides.teams ?? [] as BoardTeam[],
     teamChoiceOpen: overrides.teamChoiceOpen ?? false,

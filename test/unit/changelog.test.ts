@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareVersions, parseChangelog, unseenReleases } from '~~/shared/changelog'
+import { compareVersions, parseChangelog, seenAfter, unseenReleases } from '~~/shared/changelog'
 
 // The Changelog parser (CHANGELOG.md, Keep a Changelog, German for Users). Each block type gets a case;
 // anything the parser does not know throws, so a broken file never reaches the Neuigkeiten page.
@@ -152,5 +152,43 @@ describe('unseenReleases', () => {
 
   it('shows nothing when there are no Releases', () => {
     expect(unseenReleases([], null)).toEqual([])
+  })
+})
+
+// A User who saw 1.4.0 has the stored version 0.5.0 after the renumbering (#220): only the newer Release is shown.
+describe('unseenReleases after the renumbering', () => {
+  const renumbered = ['0.5.1', '0.5.0', '0.4.0', '0.3.0'].map(version => ({
+    version, date: '2026-10-31', name: `Release ${version}`, intro: null, groups: [],
+  }))
+
+  it('shows only the Releases newer than a mapped 0.5.0', () => {
+    expect(unseenReleases(renumbered, '0.5.0').map(r => r.version)).toEqual(['0.5.1'])
+  })
+
+  it('shows every newer Release to a User whose stored version was mapped from the middle of the list', () => {
+    // A User who saw 1.2.0 is stored as 0.3.0 (#220): 0.5.1, 0.5.0 and 0.4.0 are the Releases since.
+    expect(unseenReleases(renumbered, '0.3.0').map(r => r.version)).toEqual(['0.5.1', '0.5.0', '0.4.0'])
+  })
+})
+
+// „Was ist neu“ (#242): the one rule for a stored version when a User marks a Release seen, on the server and on the
+// client. A stored version above the newest Release is old code’s value from a deploy and counts as unknown.
+describe('seenAfter', () => {
+  it('takes the version for a User who has seen nothing', () => {
+    expect(seenAfter(null, '0.5.1', '0.5.1')).toBe('0.5.1')
+  })
+
+  it('replaces an older stored version with the newer one', () => {
+    expect(seenAfter('0.3.0', '0.5.0', '0.5.1')).toBe('0.5.0')
+  })
+
+  it('keeps a stored version that is newer than or equal to the one marked', () => {
+    expect(seenAfter('0.5.0', '0.3.0', '0.5.1')).toBe('0.5.0')
+    expect(seenAfter('0.5.0', '0.5.0', '0.5.1')).toBe('0.5.0')
+  })
+
+  it('replaces a stored version above the newest Release, which old code stores during a deploy', () => {
+    expect(seenAfter('1.4.0', '0.5.1', '0.5.1')).toBe('0.5.1')
+    expect(seenAfter('1.4.0', '0.5.0', '0.5.1')).toBe('0.5.0')
   })
 })

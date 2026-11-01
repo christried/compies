@@ -56,6 +56,21 @@ describe('copy rules', () => {
   it('ships the offline page light only, whatever the system uses', () => {
     expect(offlinePage).not.toMatch(/prefers-color-scheme:\s*dark/)
   })
+
+  // The contact address (#221): the only email address in the copy is the operator's contact address on
+  // christried.me. The vue-i18n escape `{'@'}` is normalised first; addresses are found by pattern.
+  it('names compies@christried.me as the only email address in the legal texts, in the Impressum and in § 1 of the Datenschutzerklärung', () => {
+    const address = 'compies@christried.me'
+    const normalise = (text: string) => text.replace(/\{'@'\}/g, '@')
+    const addressesIn = (text: string) => [...new Set(normalise(text).match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g) ?? [])]
+    const legalText = entries.filter(e => isLegal(e.key)).map(e => e.value).join('\n')
+    const valueOf = (key: string) => entries.find(e => e.key === key)?.value ?? ''
+
+    expect(addressesIn(legalText)).toEqual([address])
+    expect(addressesIn(entries.map(e => e.value).join('\n'))).toEqual([address])
+    expect(normalise(valueOf('legal.impressum.contact.text'))).toContain(address)
+    expect(normalise(valueOf('legal.datenschutz.controller.text'))).toContain(address)
+  })
 })
 
 // The words of GLOSSARY.md (#175). A UI word the glossary replaces goes into RETIRED with its successor

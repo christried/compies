@@ -42,6 +42,10 @@ Matt Pocock's skills live in `.claude/skills/` with COMPIES patches, so cloud se
 
 Record new standing rules in this file or `docs/agents/`, never only in auto-memory: cloud sessions see just what's committed.
 
+### Personal data
+
+Never send the operator's personal data or any data of the app's Users (names, email addresses, Discord/Twitch ids, Votes, Notes, anything from a database or a log) outside the app without the user's explicit approval for that case. Outside includes GitHub (the repo is public: issues, PRs, commits and committed docs), request headers, URLs and payloads to third-party services, Claude Design prompts and screenshots. Already published, and fine to repeat: what the Impressum and the Datenschutzerklärung state.
+
 ### Scripting
 
 Script with `node`. The user's Windows machine has only the Python Store alias; install the latest stable Python only when a task really needs it.

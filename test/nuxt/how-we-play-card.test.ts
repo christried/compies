@@ -8,8 +8,8 @@ import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { serve, view, viewWithSessions } from './event-page'
 
-// „So wird gespielt“ (#148): the settings of the Event for every Member, and the pools as names or, under a
-// Hidden wheel, as counts.
+// „So wird gespielt“ (#148): the settings of the Event for every Member, and the pools as names; under a Hidden
+// wheel a Player sees nothing about them (#222).
 
 function poolGame(name: string, overrides: Partial<PoolGame> = {}): PoolGame {
   return {
@@ -73,26 +73,22 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.text()).toContain('Noch keine Spiele.')
   })
 
-  it('shows only the counts under a Hidden wheel, and no game', async () => {
-    const card = await mountCard({ settings: hiddenWheel, pools: { hidden: true, mainCount: 2, tiebreakerCount: 3 } })
+  it('shows a Player nothing about the pools under a Hidden wheel: no count, no game, no note', async () => {
+    const card = await mountCard({ settings: hiddenWheel, pools: { hidden: true } })
 
-    expect(card.text()).toContain('2 Spiele im Spielepool, 3 im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen.')
     expect(card.text()).toContain('Glücksrad (verdeckt)')
     expect(card.find('ul').exists()).toBe(false)
+    expect(card.text()).not.toContain('Spielepool')
+    expect(card.text()).not.toContain('Tiebreaker-Pool')
+    expect(card.text()).not.toContain('verrät')
     expect(card.text()).not.toContain('Das Rad ist verdeckt')
-  })
-
-  it('says „1 Spiel“ for a single game and counts an empty pool as 0', async () => {
-    const card = await mountCard({ settings: hiddenWheel, pools: { hidden: true, mainCount: 1, tiebreakerCount: 0 } })
-
-    expect(card.text()).toContain('1 Spiel im Spielepool, 0 im Tiebreaker-Pool.')
   })
 
   it('shows the Host the games under a Hidden wheel, with the note that only they see them', async () => {
     const card = await mountCard({ settings: hiddenWheel, pools: visiblePools, isHost: true })
 
     expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong', 'Schach'])
-    expect(card.text()).toContain('Das Rad ist verdeckt: Die anderen sehen nur, wie viele Spiele im Pool sind.')
+    expect(card.text()).toContain('Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.')
   })
 
   it('does not add the note for the Host while the wheel is visible', async () => {
@@ -102,7 +98,7 @@ describe('HowWePlayCard (#148)', () => {
   })
 
   it('says what is missing without settings, to the Host and to a Member by name, and shows no rows and no pools', async () => {
-    const pools: EventPools = { hidden: true, mainCount: 0, tiebreakerCount: 0 }
+    const pools: EventPools = { hidden: true }
     const host = await mountCard({ settings: null, pools, isHost: true })
     const member = await mountCard({ settings: null, pools, hostName: 'Sanne' })
 
@@ -170,14 +166,14 @@ describe('the card on the Event page (#148)', () => {
     const { slug } = serve(s => ({
       ...view(s, []),
       settings: wheel,
-      pools: { hidden: true, mainCount: 2, tiebreakerCount: 1 },
+      pools: { hidden: true },
     }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     const text = page.text()
     expect(text).toContain('So wird gespielt')
-    expect(text).toContain('2 Spiele im Spielepool, 1 im Tiebreaker-Pool.')
+    expect(text).not.toContain('Spielepool')
     expect(text.indexOf('Sessions')).toBeLessThan(text.indexOf('So wird gespielt'))
   })
 

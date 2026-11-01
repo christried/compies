@@ -6,10 +6,11 @@ import { hasWheel, LOCKED_WHEN_RUNNING, type EventSettings } from '~~/shared/set
 
 // „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl and Punkte of
 // the Event's settings for every Member, and the pools below them. `pools` is what the server decided this viewer may see
-// (poolsVisibleTo): the games, or under a Hidden wheel only how many. This component shows what it is given and never asks
-// for more. The Host gets the games under a Hidden wheel too, with a note that nobody else sees them. The Host can edit the
-// settings for as long as the Event allows (`editTo` is the settings page, null when they cannot). From the first Session
-// on, the rows of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry a lock, for Members too.
+// (poolsVisibleTo): the games, or under a Hidden wheel nothing about the pools, not even how many (#222). This component
+// shows what it is given and never asks for more. The Host gets the games under a Hidden wheel too, with a note that
+// nobody else sees them. The Host can edit the settings for as long as the Event allows (`editTo` is the settings page,
+// null when they cannot). From the first Session on, the rows of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry
+// a lock, for Members too.
 const props = withDefaults(defineProps<{
   settings: EventSettings | null
   pools: EventPools
@@ -24,13 +25,6 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 const headingId = useId()
-
-const counts = computed(() => (props.pools.hidden
-  ? { main: props.pools.mainCount, tiebreaker: props.pools.tiebreakerCount }
-  : { main: props.pools.main.length, tiebreaker: props.pools.tiebreaker.length }))
-
-/** „2 Spiele im Spielepool, 1 im Tiebreaker-Pool. …“: the plural follows the Game pool; the Tiebreaker pool is a bare number. */
-const hiddenText = computed(() => t('howWePlay.counts', counts.value, counts.value.main))
 
 /** The settings each row shows; a row is fixed once the Event runs when any of them is in LOCKED_WHEN_RUNNING. */
 const ROW_SETTINGS = {
@@ -121,14 +115,7 @@ const lists = computed(() => (props.pools.hidden
         </div>
       </dl>
 
-      <p
-        v-if="pools.hidden"
-        class="m-0 text-[14px] text-ink-2"
-      >
-        {{ hiddenText }}
-      </p>
-
-      <template v-else>
+      <template v-if="!pools.hidden">
         <NoticeBanner
           v-if="isHost && settings.hiddenWheel"
           tone="info"

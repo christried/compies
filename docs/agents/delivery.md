@@ -16,7 +16,7 @@ Committed drizzle-kit migrations run in the Vercel build, so merging into `stagi
 ## Issues
 
 - **Comments are your job.** Record what later issues will need: decisions, deviations, verification results.
-- **Verify on staging, then close.** Once an issue's work is merged into `staging` and deployed there, check it against the issue's requirements on staging (not just CI), post the result as a comment, and close the issue yourself, without waiting for the Release. Staging sits behind Vercel Authentication, so `curl` only gets a redirect to the login: read a page through the Vercel connector's `web_fetch_vercel_url`, which saves a large page to a file you then search.
+- **Verify on staging, then close.** Once an issue's work is merged into `staging` and deployed there, check it against the issue's requirements on staging (not just CI), post the result as a comment, and close the issue yourself, without waiting for the Release. Staging sits behind Vercel Authentication, so `curl` only gets a redirect to the login: read a page through the Vercel connector's `web_fetch_vercel_url`, which saves a large page to a file you then search. A page behind sign-in needs Claude in Chrome, which loads only when the session starts with `claude --chrome`; without it, say so at the session's first check and leave that check to the user.
 - **Name it in the Release PR.** The next Release PR into `main` lists every issue it ships (`Closes #n` or `Refs #n`), already closed ones included. Keep a running list as issues land.
 - **Advise on Release timing.** After each finished issue, end your report with a go/no-go recommendation for a Release to `main` and why: what is on staging, open risks, pending migrations. The user decides.
 

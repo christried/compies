@@ -21,7 +21,10 @@ declare module 'h3' {
 /** How long a publish waits for the Worker before it gives up on the message (#202: after the response). */
 export const ROOM_PUBLISH_TIMEOUT_MS = 2000
 
-/** Records the messages per Event, for tests (like the in-memory image store). */
+/**
+ * Records the messages per Event, for tests (like the in-memory image store).
+ * @public Only tests call it, so knip would report it; the test doubles live next to the interface they stand in for.
+ */
 export function memoryRoomNotifier(): RoomNotifier & { messages(eventId: string): Envelope[], clear(): void } {
   const published = new Map<string, Envelope[]>()
   return {

@@ -15,7 +15,10 @@ declare module 'h3' {
   }
 }
 
-/** A Map-backed store, for tests. */
+/**
+ * A Map-backed store, for tests.
+ * @public Only tests call it, so knip would report it; the test doubles live next to the interface they stand in for.
+ */
 export function memoryImageStore(): ImageStore & { keys(): string[], clear(): void } {
   const objects = new Map<string, Uint8Array>()
   return {

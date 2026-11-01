@@ -222,7 +222,7 @@ describe('the editor draft', () => {
   })
 
   it('has no games when the pools are hidden from the viewer', () => {
-    const draft = draftFromEvent(view(defaultSettings(), { hidden: true, mainCount: 2, tiebreakerCount: 1 }))
+    const draft = draftFromEvent(view(defaultSettings(), { hidden: true }))
 
     expect(draft.pools).toEqual({ main: [], tiebreaker: [] })
   })

@@ -1,4 +1,5 @@
-import { compareVersions } from '~~/shared/changelog'
+import { seenAfter } from '~~/shared/changelog'
+import { RELEASES } from '~/utils/changelog'
 
 // The newest Release the viewer has seen: the „Neu“ stamp on Neuigkeiten celebrates once per Release, the NewChip
 // on the PageFooter's version link shows until then (10 § NewChip), and „Was ist neu“ (#184) shows what came after.
@@ -29,9 +30,11 @@ export function useNewsSeen() {
 
   async function markSeen(version: string) {
     if (user.value) {
-      // Shown at once and never lowered, like the server; a failed save is only seen again after a reload.
-      if (user.value.newsSeen !== null && compareVersions(version, user.value.newsSeen) <= 0) return
-      user.value = { ...user.value, newsSeen: version }
+      // Shown at once and never lowered, like the server; a value above the newest Release is replaced (#242).
+      // A failed save is only seen again after a reload.
+      const next = seenAfter(user.value.newsSeen, version, RELEASES[0]?.version ?? version)
+      if (next === user.value.newsSeen) return
+      user.value = { ...user.value, newsSeen: next }
       try {
         await $fetch('/api/me/news-seen', { method: 'POST', body: { version } })
       }
