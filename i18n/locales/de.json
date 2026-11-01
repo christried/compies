@@ -70,7 +70,7 @@
     "checkTeams": "Teams prüfen",
     "fillFromBench": "Von der Bench nachziehen",
     "spin": "Rad drehen",
-    "setGame": "Spiel direkt setzen",
+    "setGame": "Nächstes Spiel setzen",
     "skipClip": "Clip überspringen",
     "vetoRunning": "Veto-Fenster läuft",
     "enterResult": "Ergebnis eintragen",
@@ -89,6 +89,11 @@
       "teams_empty": "Geht erst, wenn in jedem Team jemand ist.",
       "teams_uneven": "Geht erst, wenn alle Teams gleich groß sind."
     },
+    "setBlocked": {
+      "no_running_session": "Geht erst in einer laufenden Session.",
+      "game_count_reached": "Alle Spiele dieses Events sind schon gestartet.",
+      "round_being_drawn": "Gerade wird ein Spiel gezogen."
+    },
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
       "title": "Los geht’s?",
@@ -100,7 +105,8 @@
     "group": {
       "dates": "Termine",
       "people": "Leute",
-      "event": "Event"
+      "event": "Event",
+      "game": "Spiel"
     }
   },
   "event": {
@@ -569,7 +575,8 @@
     "ban": "{team} hat {game} gebannt",
     "win": "{team} gewinnt Spiel {n}",
     "fix": "{name} hat Spiel {n} korrigiert",
-    "hostSet": "{name} hat {game} gesetzt"
+    "hostSet": "{name} hat {game} gesetzt",
+    "gamePutBack": "{name} hat {game} zurückgelegt"
   },
   "emote": {
     "send": "Emote senden: {name}",
@@ -1363,6 +1370,7 @@
       "label": "Anzahl Spiele",
       "min": "Mindestens 1 Spiel.",
       "max": "Höchstens 30 Spiele.",
+      "floor": "Schon {n} gestartet.",
       "help": "Nach {n} Spiel ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1. | Nach {n} Spielen ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1."
     },
     "points": {
@@ -1435,6 +1443,25 @@
     "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
     "previewOffPick": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt."
   },
+  "rounds": {
+    "title": "Gerade dran",
+    "list": "Offene Spiele",
+    "playing": "wird gespielt",
+    "putBack": "Zurücklegen"
+  },
+  "nextGame": {
+    "title": "Nächstes Spiel setzen",
+    "pool": "Aus dem Pool",
+    "poolCount": "Aus dem Pool: noch {n}",
+    "poolList": "Spiele, die im Pool noch übrig sind",
+    "poolEmpty": "Im Pool ist nichts mehr übrig. Such unten in der ganzen Bibliothek.",
+    "library": "Oder aus der ganzen Bibliothek",
+    "select": "{name} auswählen",
+    "selected": "{name} ist ausgewählt",
+    "choose": "Such dir ein Spiel aus.",
+    "chosen": "Alle sehen es sofort.",
+    "confirm": "Setzen"
+  },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
@@ -1457,6 +1484,8 @@
     "memberNotFound": "Diese Person ist nicht mehr im Event.",
     "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
+    "gameCountBelowStarted": "So wenige geht nicht: Es sind schon mehr Spiele gestartet.",
+    "roundNotFound": "Dieses Spiel ist nicht mehr dran.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Der Host setzt in der laufenden Session das nächste Spiel direkt, aus dem Pool oder der ganzen Bibliothek. Mehrere Spiele können gleichzeitig laufen, und ein Spiel lässt sich zurücklegen. ([#228](https://github.com/christried/compies/issues/228))
+
 ## [0.6.0] - 2026-11-01 – Notizen
 
 Spiele bekommen Notizen für Einstellungen und Hausregeln, und als Host entscheidest du, ob die anderen den Spielepool schon vorher sehen.

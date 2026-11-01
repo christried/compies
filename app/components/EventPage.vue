@@ -12,8 +12,9 @@ import { settingsEditable } from '~~/shared/settings'
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). This page loads the Event through
 // useEventView (live through the Event's room, polling every 15 s while that is down, #156), shows the
 // ConnectionBanner under the header, and holds the Host's dialogs and the error states. The stage is the Head and the
-// blocks in the order of the page's state (#166, 11-event-seite § EventPage: what has to happen now goes on top):
-// EventSessions with „So wird gespielt“, EventPoll while a Session waits for a Date, the Game board and the notices.
+// blocks the page's state lists, in its order (#166, 11-event-seite § EventPage: what has to happen now goes on top; the
+// list is `eventPageState(...).blocks`, A4): EventSessions with „So wird gespielt“, EventPoll while a Session waits for a
+// Date, the open Rounds of a running Session (#228), the Game board and the notices.
 // The Activity feed has the side panel from md up and a tab of its own on a phone. Votes show at once and roll back with
 // a toast when saving fails (useOptimisticVotes, ADR 0001). The Host's dialogs are EventHostDialogs (the Date is set in
 // the confirm dialog from a Slot card or the dock, #13); the dock's actions are built by useHostActions.
@@ -66,6 +67,9 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 /** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
 const endSession = () => send('POST', 'sessions/end')
 
+/** Puts an open Round back (#228); the hold on its card learns whether the server took it. */
+const putBackRound = (roundId: string) => send('DELETE', `rounds/${roundId}`)
+
 // The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
 const canEditSettings = computed(() => (data.value ? data.value.event.isHost && settingsEditable(data.value.event.phase) : false))
 const needsSetup = computed(() => canEditSettings.value && data.value?.settings === null)
@@ -87,32 +91,12 @@ const hostActions = useHostActions(
     setDate: () => dialogs.value?.openConfirm(),
     start: () => dialogs.value?.openStart(),
     end: endSession,
+    setGame: () => dialogs.value?.openSetGame(),
   },
 )
 
-// The state of the page for everybody (#166) and the blocks of the stage in the order that state wants. „What has to happen
-// now goes on top“: the poll while no Session is dated, the Game board from the first Date on, the Sessions card between two
-// Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits for a Date has its poll
-// (compact) below the board once another Session is dated or started.
-type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'board' | 'cards' | 'stay'
+// The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4).
 const pageState = computed(() => (data.value ? eventPageState(data.value) : null))
-const order = computed((): Block[] => {
-  const state = pageState.value
-  if (!state) return []
-  const poll: Block[] = pollOpen.value ? ['poll'] : []
-  switch (state.kind) {
-    case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
-    case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
-    case 'running': return ['head', 'reopen', 'board', ...poll, 'cards']
-    case 'between': return ['head', 'reopen', 'cards', 'stay', 'board', ...poll]
-    case 'done': return ['head', 'reopen', 'cards', 'board']
-    default: return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
-  }
-})
-/** The poll is the quiet one below the board as soon as the page is about something else than the Date. */
-const pollCompact = computed(() => pageState.value !== null && !['poll', 'setup'].includes(pageState.value.kind))
-/** Between two Sessions and after the last the Sessions card is the news of the page and gets a shadow. */
-const cardsStandOut = computed(() => pageState.value?.kind === 'between' || pageState.value?.kind === 'done')
 
 const hostName = computed(() => data.value?.members.find(member => member.isHost)?.name ?? '')
 
@@ -262,7 +246,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       :class="data.event.isHost ? 'pb-[92px]' : 'pb-7'"
     >
       <div
-        v-for="block in order"
+        v-for="block in pageState.blocks"
         :key="block"
         class="min-w-0 empty:hidden"
       >
@@ -324,9 +308,16 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           :slots="slots"
           :votes="votes"
           :number="pageState.pollNumber"
-          :compact="pollCompact"
+          :compact="pageState.pollCompact"
           @pick="dialogs?.openConfirm($event)"
           @remove-session="removeSession"
+        />
+
+        <EventRounds
+          v-else-if="block === 'rounds'"
+          :rounds="data.rounds"
+          :is-host="data.event.isHost"
+          :put-back="putBackRound"
         />
 
         <GameBoard
@@ -363,7 +354,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :remove="removeSession"
             :poll-number="pageState.pollNumber"
             :poll-open="pollOpen"
-            :shadow="cardsStandOut"
+            :shadow="pageState.cardsStandOut"
             @reschedule="dialogs?.openReschedule($event)"
             @add="dialogs?.openAdd()"
             @calendar="calendarOpen = true"

@@ -69,6 +69,10 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   teams_empty: 'dock.startBlocked.teams_empty',
   teams_uneven: 'dock.startBlocked.teams_uneven',
   no_running_session: 'error.noRunningSession',
+  game_count_reached: 'dock.setBlocked.game_count_reached',
+  round_being_drawn: 'dock.setBlocked.round_being_drawn',
+  round_not_found: 'error.roundNotFound',
+  game_count_below_started: 'error.gameCountBelowStarted',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

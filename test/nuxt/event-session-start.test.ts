@@ -76,7 +76,7 @@ describe('the Host dock per state', () => {
     expect(pill(page)).toEqual(['Session starten', 'Einladen', 'Mehr'])
   })
 
-  it('offers Session 1 beenden as a hold while it runs', async () => {
+  it('offers Nächstes Spiel setzen first under Host pick while a Session runs, with Session 1 beenden as a hold beside it (#228)', async () => {
     const { slug } = serve(s => hostView(s, [{ number: 1, startsAt: FIRST, startedAt: STARTED }, { number: 2, startsAt: SECOND }], {
       event: { isHost: true, phase: 'running' },
       running: 0,
@@ -85,8 +85,22 @@ describe('the Host dock per state', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(pill(page)).toEqual(['Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Nächstes Spiel setzen', 'Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
     expect(page.get('[role="toolbar"]').text()).toContain('1 Sekunde halten')
+  })
+
+  it('offers Session 1 beenden as the hold that comes first in the Lucky Wheel, with Nächstes Spiel setzen in Mehr (#228)', async () => {
+    const { slug } = serve(s => hostView(s, [{ number: 1, startsAt: FIRST, startedAt: STARTED }, { number: 2, startsAt: SECOND }], {
+      event: { isHost: true, phase: 'running' },
+      settings: { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3 },
+      running: 0,
+    }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(pill(page)).toEqual(['Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
+    const menu = await openHostMenu(page)
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Einladen', 'Nächstes Spiel setzen', 'Einstellungen'])
   })
 
   it('offers Session 2 starten between Sessions', async () => {
@@ -121,7 +135,7 @@ describe('the Host dock per state', () => {
 
     const menu = await openHostMenu(page)
 
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Einladen', 'Einstellungen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Nächstes Spiel setzen', 'Einladen', 'Einstellungen'])
   })
 })
 

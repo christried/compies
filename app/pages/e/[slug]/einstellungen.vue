@@ -5,7 +5,7 @@ import { draftFromEvent, settingsBody, type EventDraft, type StepKey } from '~/u
 import { countSeats, placeOf } from '~~/shared/board'
 import { canSeeLibrary } from '~~/shared/game'
 import { eventPath } from '~~/shared/links'
-import { settingsEditable, settingsLocked } from '~~/shared/settings'
+import { playersPerTeam, settingsEditable, settingsLocked } from '~~/shared/settings'
 
 // The settings editor (`/e/<slug>/einstellungen`, #147): the setup wizard's steps 2 to 7 (#170) on an Event that exists,
 // prefilled from it. Only the Host gets it; everyone else (and a link that leads nowhere) sees the generic
@@ -30,10 +30,7 @@ const lockedReason = computed(() => (view.value && !notSetUp.value && settingsLo
 const user = useAuthUser()
 // The Players per saved team (#163): one entry per team the Event has now, so the Format step can count the Players a
 // lower team count would send to the Bench.
-const teamPlayers = computed(() => {
-  const seats = countSeats((view.value?.members ?? []).map(member => placeOf(member)))
-  return (view.value?.teams ?? []).map(team => seats[team.position] ?? 0)
-})
+const teamPlayers = computed(() => playersPerTeam(countSeats((view.value?.members ?? []).map(member => placeOf(member))), view.value?.teams.length ?? 0))
 const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value }))
 
 const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { main: [], tiebreaker: [] } }))

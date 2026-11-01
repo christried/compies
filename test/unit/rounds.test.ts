@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gamesLeft, isOpen, openRounds, roundsStarted, roundState, setRejection, type DrawFacts, type RoundFacts, type SetInput } from '../../shared/rounds'
+import { gamesLeft, isOpen, roundsStarted, roundState, setRejection, type DrawFacts, type RoundFacts, type SetInput } from '../../shared/rounds'
 import type { SessionTimes } from '../../shared/session-state'
 import { floorsAt } from '../../shared/settings'
 
@@ -29,7 +29,6 @@ describe('open Rounds and Rounds started', () => {
     const rounds = [round('a'), round('b', { setAt: null }), round('c', { putBackAt: at(20) })]
 
     expect(rounds.filter(isOpen).map(row => row.id)).toEqual(['a'])
-    expect(openRounds(rounds).map(row => row.id)).toEqual(['a'])
   })
 })
 

@@ -299,6 +299,20 @@ describe('the settings editor', () => {
       expect(less.attributes('title')).toBe('Eine Partei hat schon 2 Vetos eingesetzt.')
     })
 
+    it('keeps the Game count from going below the Rounds already started, and says why (#228)', async () => {
+      const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 4 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 3 } })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spiele')
+
+      const less = button(page, 'Anzahl Spiele: weniger')
+      expect(less.attributes('aria-disabled')).toBeUndefined()
+      await less.trigger('click')
+
+      expect(spin(page, 'Anzahl Spiele').text()).toBe('3')
+      expect(button(page, 'Anzahl Spiele: weniger').attributes('title')).toBe('Schon 3 gestartet.')
+      expect(button(page, 'Anzahl Spiele: weniger').attributes('aria-disabled')).toBe('true')
+    })
+
     it('has the usual limits when nothing is spent yet', async () => {
       const { slug } = setUp({ settings: { ...wheel, teamSize: 1 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 0 } })
       const page = await mountEditor(slug)

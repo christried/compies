@@ -13,7 +13,6 @@ export type DrawSource = (typeof DRAW_SOURCES)[number]
 
 /** How a game was determined: the wheel spun it, or the Host set it. */
 export const DRAW_KINDS = ['spin', 'set'] as const
-export type DrawKind = (typeof DRAW_KINDS)[number]
 
 /** How a draw ended: its game was vetoed, or it was set. A draw has none until it settles. */
 export const DRAW_OUTCOMES = ['vetoed', 'set'] as const
@@ -21,7 +20,6 @@ export type DrawOutcome = (typeof DRAW_OUTCOMES)[number]
 
 /** The sides of the coin (`coin_tossed` has the same two). */
 export const COIN_SIDES = ['heads', 'tails'] as const
-export type CoinSide = (typeof COIN_SIDES)[number]
 
 /** What the rules need of a Round: its id and the two instants that decide its state. */
 export interface RoundFacts {
@@ -53,13 +51,8 @@ function stands<R extends Pick<RoundFacts, 'putBackAt'>>(round: R): boolean {
 }
 
 /** Whether the Round is open (waits for its result): its game is set and it was not put back. */
-export function isOpen<R extends RoundFacts>(round: R): boolean {
+export function isOpen(round: RoundFacts): boolean {
   return stands(round) && roundState(round) === 'set'
-}
-
-/** The open Rounds, in the order they were given (the callers sort by start). */
-export function openRounds<R extends RoundFacts>(rounds: readonly R[]): R[] {
-  return rounds.filter(isOpen)
 }
 
 /** How many Rounds have started: every Round the Host has not put back, being drawn or set. The Game count never drops below it. */

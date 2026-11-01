@@ -154,6 +154,37 @@ describe('the sentence of an entry', () => {
     expect(text({ ...base, type: 'session_ended', params: { sessionId: 's', number: 2 } })).toBe('Sanne hat Session 2 beendet')
     expect(text({ ...base, type: 'session_ended', params: { sessionId: 's', number: null } })).toBe('Sanne hat die Session beendet')
   })
+
+  it('says who set a game and who put it back, naming the game the entry carries (#228)', () => {
+    const named = { ...base, games: { g1: 'Halo' } }
+
+    expect(text({ ...named, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })).toBe('Sanne hat Halo gesetzt')
+    expect(text({ ...named, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })).toBe('Sanne hat Halo zurückgelegt')
+  })
+
+  it('sets the game in bold like the names', () => {
+    const parts = activityParts({ ...base, games: { g1: 'Halo' }, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } }, t)
+
+    expect(parts).toEqual([{ text: 'Sanne', strong: true }, { text: ' hat ', strong: false }, { text: 'Halo', strong: true }, { text: ' gesetzt', strong: false }])
+  })
+
+  it('leaves out a sentence about a game the viewer may not name yet', () => {
+    expect(text({ ...base, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })).toBeNull()
+    expect(text({ ...base, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })).toBeNull()
+  })
+
+  it('still has no sentence for the kinds whose tickets come later', () => {
+    expect(text({ ...base, type: 'game_drawn', params: { roundId: 'r', drawId: 'd', gameId: 'g1' } })).toBeNull()
+    expect(text({ ...base, type: 'coin_tossed', params: { side: 'heads' } })).toBeNull()
+  })
+
+  it('draws a game set and a game put back with an icon of their own', () => {
+    const set = activityIcon({ ...base, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })
+    const back = activityIcon({ ...base, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })
+
+    expect(set.icon).not.toBe(back.icon)
+    expect(set.tone).toBe('surface')
+  })
 })
 
 describe('readEntry', () => {
@@ -166,6 +197,12 @@ describe('readEntry', () => {
     expect(readEntry({ ...entry, type: 'nobody_knows' })).toBeNull()
     expect(readEntry({ ...entry, params: 'x' })).toBeNull()
     expect(readEntry({ ...entry, at: undefined })).toBeNull()
+  })
+
+  it('reads an entry without the names of games as one that names none', () => {
+    const { games: _games, ...without } = entry
+
+    expect(readEntry(without)).toEqual({ ...without, games: {} })
   })
 })
 
