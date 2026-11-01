@@ -2,14 +2,14 @@
 
 The brief of a merge job (`docs/agents/subagents.md`, model `haiku`): one reviewed ticket branch into the integration branch, checked. The orchestrator's spawn prompt names both branches and the ticket number. One merge job runs at a time.
 
-- Work in the main checkout `C:\Users\gilge\Desktop\compies` (Git Bash, Windows).
+- Work in the main checkout of the repo, the orchestrator's working directory (not a worktree under `.claude/worktrees/`), in Git Bash on Windows.
 - The orchestrator has already reviewed the diff. Change code only to resolve merge conflicts.
 - Leave running dev servers alone; the orchestrator may be using them.
 
 ## Steps
 
 1. Get onto the integration branch:
-   - `cd /c/Users/gilge/Desktop/compies && git status --short` must be clean. If it isn't, stop and report.
+   - `cd "$(git rev-parse --show-toplevel)" && git status --short` must be clean. If it isn't, stop and report.
    - `git fetch origin && git checkout <integration branch> && git merge --ff-only origin/<integration branch>`.
 2. Merge: `git merge --no-ff origin/<ticket branch> -m "Merge <ticket branch> (#<n>)" -m "<the Co-Authored-By line your attribution reminder gives>"`.
    - On a conflict, keep both sides:
