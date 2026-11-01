@@ -8,9 +8,10 @@ import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/setti
 // of a Lucky Wheel) and Punkte of the Event's settings for every Member, and the pools below them. `pools` is what the server
 // decided this viewer may see (canSeePoolGames): the games, or null: nothing about the pools, not even how many (#222, #225).
 // This component shows what it is given and never asks for more. The Host gets the games with the Pool preview off or under
-// a Hidden wheel too, with a note that nobody else sees them. The Host can edit the settings for as long as the Event allows
-// (`editTo` is the settings page, null when they cannot). From the first Session on, the rows of the settings that stay fixed
-// (LOCKED_WHEN_RUNNING) carry a lock, for Members too.
+// a Hidden wheel too, with a note that nobody else sees them. Under a game with notes (#224) a collapsed „Notizen“
+// disclosure; the notes come with the game, so they are seen exactly where the game is. The Host can edit the settings for
+// as long as the Event allows (`editTo` is the settings page, null when they cannot). From the first Session on, the rows
+// of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry a lock, for Members too.
 const props = withDefaults(defineProps<{
   settings: EventSettings | null
   pools: EventPools | null
@@ -136,6 +137,10 @@ const lists = computed(() => (props.pools
                 <GameCard
                   :game="game"
                   layout="row"
+                />
+                <GameNotesDisclosure
+                  v-if="game.notes"
+                  :notes="game.notes"
                 />
               </li>
             </ul>

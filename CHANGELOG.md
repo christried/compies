@@ -5,6 +5,7 @@
 ### Neu
 
 - Spiele in der Bibliothek haben jetzt **Notizen**: Einstellungen, Aufwärmen, Siegbedingung und Hausregeln, bis zu 1000 Zeichen. Wer das Spiel angelegt hat, schreibt sie, auch gleich beim Anlegen im Event-Assistenten; alle Hosts lesen sie auf der Seite des Spiels. ([#223](https://github.com/christried/compies/issues/223))
+- In „So wird gespielt“ kannst du unter jedem Spiel im Pool seine **Notizen** aufklappen, sobald du die Spiele des Pools siehst. ([#224](https://github.com/christried/compies/issues/224))
 - Neue Einstellung **Pool vorher zeigen** bei Host-Wahl und Glücksrad: Ist sie aus, sehen die anderen weder die Spiele im Spielepool und im Tiebreaker-Pool noch, wie viele es sind. Du kannst sie jederzeit ändern, auch während das Event läuft; beim verdeckten Rad ist sie immer aus. ([#225](https://github.com/christried/compies/issues/225))
 
 ## [0.5.1] - 2026-11-01 – Neue Nummern

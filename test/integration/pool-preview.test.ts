@@ -116,9 +116,8 @@ describe('Pool preview secrecy (#225)', () => {
     return await response.text()
   }
 
-  // What the Event read of a viewer who may see the pools holds, and what it must not hold for one who may not (notes too: the pool view carries none yet, #224 adds them).
-  const shown = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId]
-  const traces = (game: PoolGame) => [...shown(game), game.notes]
+  // Everything a pool game shows: the Event read of a viewer who may see the pools holds all of it, that of one who may not holds none of it (notes too, #223, #224).
+  const traces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId, game.notes]
 
   function fetchImage(game: PoolGame, cookie: string) {
     return request(game.imageUrl, { headers: { cookie } })
@@ -173,7 +172,7 @@ describe('Pool preview secrecy (#225)', () => {
 
       const raw = await rawRead(hostCookie, slug)
 
-      for (const trace of pool.flatMap(shown)) expect(raw).toContain(trace)
+      for (const trace of pool.flatMap(traces)) expect(raw).toContain(trace)
       expect((JSON.parse(raw) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
       for (const game of pool) {
         const response = await fetchImage(game, hostCookie)
@@ -188,7 +187,7 @@ describe('Pool preview secrecy (#225)', () => {
       expect((await patch(slug, { poolPreview: true })).status).toBe(200)
       const open = await rawRead(playerCookie, slug)
       expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
-      for (const trace of pool.flatMap(shown)) expect(open).toContain(trace)
+      for (const trace of pool.flatMap(traces)) expect(open).toContain(trace)
       for (const game of pool) expect((await fetchImage(game, playerCookie)).status).toBe(200)
 
       expect((await patch(slug, { poolPreview: false })).status).toBe(200)
@@ -205,7 +204,7 @@ describe('Pool preview secrecy (#225)', () => {
     const raw = await rawRead(playerCookie, slug)
 
     expect((JSON.parse(raw) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
-    for (const trace of pool.flatMap(shown)) expect(raw).toContain(trace)
+    for (const trace of pool.flatMap(traces)) expect(raw).toContain(trace)
     for (const game of pool) expect((await fetchImage(game, playerCookie)).status).toBe(200)
   })
 })
