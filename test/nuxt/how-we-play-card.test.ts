@@ -90,6 +90,8 @@ describe('HowWePlayCard (#148)', () => {
 
     const buttons = card.findAll('button').filter(button => button.text() === 'Notizen')
     expect(buttons).toHaveLength(2)
+    // A closed disclosure controls no panel (aria-controls only while open).
+    for (const button of buttons) await button.trigger('click')
     expect(buttons[0]!.attributes('aria-controls')).not.toBe(buttons[1]!.attributes('aria-controls'))
   })
 

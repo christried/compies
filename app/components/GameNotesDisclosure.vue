@@ -15,9 +15,9 @@ const open = ref(false)
   <div class="flex flex-col gap-2">
     <button
       type="button"
-      class="outline-memphis inline-flex h-11 items-center gap-1.5 self-start px-1 text-[13px] font-bold text-ink"
+      class="inline-flex h-11 items-center gap-1.5 self-start px-1 text-[13px] font-bold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
       :aria-expanded="open"
-      :aria-controls="panelId"
+      :aria-controls="open ? panelId : undefined"
       @click="open = !open"
     >
       {{ t('howWePlay.notes') }}
