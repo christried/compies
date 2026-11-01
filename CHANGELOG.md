@@ -2,10 +2,14 @@
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-01 – Neue Nummern
+
+Ein kleines Update ohne neue Funktion: neue Versionsnummern, eine eigene Kontaktadresse, und ein verdecktes Rad verrät noch weniger.
+
 ### Geändert
 
-- Ist das Rad verdeckt, siehst du nicht mehr, wie viele Spiele im Pool sind. Das zeigt dir erst das Rad. ([#222](https://github.com/christried/compies/issues/222))
 - Die Versionsnummern fangen jetzt bei 0.1 an: Compies ist noch im Aufbau, 1.0 kommt, wenn alles fertig ist. Aus 1.0 bis 1.4 werden 0.1 bis 0.5. ([#220](https://github.com/christried/compies/issues/220))
+- Ist das Rad verdeckt, siehst du nicht mehr, wie viele Spiele im Pool sind. Das zeigt dir erst das Rad. ([#222](https://github.com/christried/compies/issues/222))
 - Im Impressum und in der Datenschutzerklärung steht jetzt die Kontaktadresse compies@christried.me. ([#221](https://github.com/christried/compies/issues/221))
 
 ## [0.5.0] - 2026-10-31 – Teams
