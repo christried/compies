@@ -5,6 +5,7 @@ import { shownSessionNumbers } from '~/utils/event-page'
 import { jumpTo, pollHeadingId } from '~/utils/jump'
 import { noteRows } from '~/utils/notes'
 import { SESSIONS_MAX, sessionsEditable, type EventView } from '~~/shared/event'
+import { isStarted, sessionState, type SessionState } from '~~/shared/session-state'
 
 // The Sessions card of the Event page (#49, #55, #166, 11-event-seite § EventSessions): one row per Session with its
 // number, when it is (or who still has to vote), its state and what the viewer can do. Sessions that wait for a Date are
@@ -38,10 +39,9 @@ const isHost = computed(() => props.view.event.isHost)
 const canChangeSessions = computed(() => sessionsEditable(props.view.event.phase))
 const full = computed(() => props.view.sessions.length >= SESSIONS_MAX)
 
-type RowKind = 'poll' | 'set' | 'running' | 'ended'
 // The look of the state pill (design `PILL`): the text carries the meaning, the dot only adds colour.
-const PILL: Record<RowKind, { label: string, background: string, dot: string }> = {
-  poll: { label: 'phase.poll', background: 'bg-surface text-ink', dot: 'bg-info' },
+const PILL: Record<SessionState, { label: string, background: string, dot: string }> = {
+  undated: { label: 'phase.poll', background: 'bg-surface text-ink', dot: 'bg-info' },
   set: { label: 'phase.dateSet', background: 'bg-surface text-ink', dot: 'bg-success' },
   running: { label: 'phase.running', background: 'bg-primary text-on-primary', dot: 'bg-hot' },
   ended: { label: 'phase.finished', background: 'bg-surface text-ink', dot: 'bg-ink' },
@@ -51,8 +51,8 @@ const rows = computed(() => {
   const numbers = shownSessionNumbers(props.view.sessions, props.view.missingDates)
   return props.view.sessions.map((session, index) => {
     const number = numbers[index] ?? null
-    const kind: RowKind = session.startsAt === null ? 'poll' : session.endedAt ? 'ended' : session.startedAt ? 'running' : 'set'
-    const started = session.startedAt ? new Date(session.startedAt) : null
+    const kind = sessionState(session)
+    const started = isStarted(session) ? new Date(session.startedAt) : null
     return {
       id: session.id,
       number,
@@ -126,7 +126,7 @@ const title = (number: number | null) => (number === null ? t('event.sessions.se
         </span>
 
         <div
-          v-if="row.kind === 'set' || (row.kind === 'poll' && pollOpen)"
+          v-if="row.kind === 'set' || (row.kind === 'undated' && pollOpen)"
           class="flex flex-wrap items-center gap-2"
         >
           <template v-if="row.kind === 'set'">

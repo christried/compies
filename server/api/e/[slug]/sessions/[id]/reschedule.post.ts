@@ -7,7 +7,9 @@ import { hasDateAt } from '../../../../../domain/session'
 import { recordActivity } from '../../../../../utils/activity'
 import { apiError } from '../../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../../utils/sessions'
+import { useClock } from '../../../../../utils/clock'
 import type { SessionRescheduled } from '../../../../../../shared/event'
+import { isStarted } from '../../../../../../shared/session-state'
 
 // Reschedule of one Session (#53, ADR 0011): the Host moves that Session's set Date to another future Berlin
 // time. The other Sessions keep their Dates and Slots; the moved Session keeps its Slot taken. Every Session
@@ -18,7 +20,7 @@ export default defineEventHandler((event): Promise<SessionRescheduled> => change
   const startsAt = parseLocalTime(body.startsAt)
   if (!startsAt) throw apiError('invalid_time')
 
-  const rejection = rescheduleRejection({ hasDate: session.startsAt !== null, started: session.startedAt !== null, startsAt, now: new Date(), duplicate: hasDateAt(before, startsAt, session.id) })
+  const rejection = rescheduleRejection({ hasDate: session.startsAt !== null, started: isStarted(session), startsAt, now: useClock(event).now(), duplicate: hasDateAt(before, startsAt, session.id) })
   if (rejection) throw apiError(rejection)
 
   await tx.update(sessions).set({ startsAt, previousStartsAt: null }).where(eq(sessions.id, session.id))

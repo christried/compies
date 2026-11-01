@@ -1,7 +1,7 @@
 import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Eye, Flag, Play, RotateCcw, SlidersHorizontal, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
-import { nextSession } from '~~/shared/board'
+import { isStarted, nextSession } from '~~/shared/session-state'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
 import { teamName } from './board'
@@ -162,7 +162,7 @@ export function groupActivity(entries: ActivityEntry[], sessions: FeedSession[],
  * dated Session that has not (null when there is none, or the Event has one Session). `sessions` is the Event read's.
  */
 export function feedSessions(sessions: { id: string, number: number | null, startsAt: string | null, startedAt: string | null, endedAt: string | null }[]): { started: FeedSession[], nextNumber: number | null } {
-  const started = sessions.flatMap(session => (session.startedAt === null ? [] : [{ id: session.id, number: session.number, startedAt: session.startedAt, endedAt: session.endedAt }]))
+  const started = sessions.flatMap(session => (isStarted(session) ? [{ id: session.id, number: session.number, startedAt: session.startedAt, endedAt: session.endedAt }] : []))
   return { started, nextNumber: nextSession(sessions)?.number ?? null }
 }
 

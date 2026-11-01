@@ -5,7 +5,7 @@ import { recordActivity } from '../../../../utils/activity'
 import { apiError } from '../../../../utils/errors'
 import { changeEvent } from '../../../../utils/event-access'
 import { eventSessions, shownNumber } from '../../../../utils/sessions'
-import { runningOf } from '../../../../../shared/board'
+import { runningOf } from '../../../../../shared/session-state'
 import type { SessionEnded } from '../../../../../shared/event'
 
 // The Host ends the Running Session (#164, spec #153 § API contracts): the one that is started and not ended. The Event

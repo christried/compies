@@ -1,10 +1,10 @@
 import { and, eq } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
 import { eventMembers } from '../../../db/schema'
-import { readSeats, teamChoiceOf } from '../../../utils/board'
+import { readSeats } from '../../../utils/board'
 import { apiError } from '../../../utils/errors'
 import { changeEvent } from '../../../utils/event-access'
-import { eventSessions } from '../../../utils/sessions'
+import { eventHasStarted } from '../../../utils/sessions'
 import type { TeamWordSet } from '../../../../shared/event'
 import { asRecord } from '../../../../shared/record'
 import { parseTeamWord } from '../../../../shared/team-word'
@@ -16,7 +16,7 @@ export default defineEventHandler((event): Promise<TeamWordSet> => changeEvent(e
   if (seat?.place.zone !== 'team') throw apiError('not_in_team')
 
   // After the first Session start (#164) the Team names are frozen, so a word changes nothing any more.
-  if (teamChoiceOf(eventRow, await eventSessions(tx, eventRow.id)).started) throw apiError('teams_locked')
+  if (await eventHasStarted(tx, eventRow.id)) throw apiError('teams_locked')
 
   const parsed = parseTeamWord(asRecord(body).word)
   if (!parsed.ok) throw apiError(parsed.error)

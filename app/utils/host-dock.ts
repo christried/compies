@@ -1,4 +1,4 @@
-import type { StartRejection } from '~~/shared/board'
+import type { StartRejection } from '~~/shared/session-state'
 import type { EventView } from '~~/shared/event'
 import { eventPageState, type EventPageState } from './event-page'
 

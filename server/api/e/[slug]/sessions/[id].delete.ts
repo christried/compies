@@ -6,6 +6,7 @@ import { recordActivity } from '../../../../utils/activity'
 import { apiError } from '../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../utils/sessions'
 import type { SessionRemoved } from '../../../../../shared/event'
+import { isStarted } from '../../../../../shared/session-state'
 
 // Removes one Session of an Event (#55, ADR 0011), dated or not. Its Slot, if its Date came from one, goes back
 // to the poll with its Votes, because the Slot is open again once no Session refers to it. The last Session
@@ -17,7 +18,7 @@ import type { SessionRemoved } from '../../../../../shared/event'
 // removed at all (#164).
 export default defineEventHandler((event): Promise<SessionRemoved> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before }) => {
   const session = findSession(before, getRouterParam(event, 'id'))
-  const rejection = removeSessionRejection({ phase: eventRow.phase, count: before.length, started: session.startedAt !== null })
+  const rejection = removeSessionRejection({ phase: eventRow.phase, count: before.length, started: isStarted(session) })
   if (rejection) throw apiError(rejection)
 
   // The number the Session was shown with, before it is gone (#159).

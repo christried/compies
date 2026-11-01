@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Lock, Play } from '@lucide/vue'
 import { dateBlockedKey } from '~/utils/event-page'
-import { hasStarted } from '~~/shared/board'
+import { hasStarted } from '~~/shared/session-state'
 import { datePollOpen, sessionsEditable, type DatedSessionView, type EventView } from '~~/shared/event'
 
 // The Host's dialogs and sheets of the Event page (#52, #55, #164): the Date confirm dialog, the reschedule dialog, the

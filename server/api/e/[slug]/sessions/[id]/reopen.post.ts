@@ -6,6 +6,7 @@ import { recordActivity } from '../../../../../utils/activity'
 import { apiError } from '../../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../../utils/sessions'
 import type { SessionReopened } from '../../../../../../shared/event'
+import { isStarted } from '../../../../../../shared/session-state'
 
 // Reopen of one Session (#14, #55, ADR 0011): the Host withdraws that Session's set Date. The old Date is kept
 // as its previousStartsAt, so every Member sees the notice to delete it from their calendar. The Session's
@@ -14,7 +15,7 @@ import type { SessionReopened } from '../../../../../../shared/event'
 // Session whose entry changed gets its calendar SEQUENCE raised, the withdrawn one included.
 export default defineEventHandler((event): Promise<SessionReopened> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before }) => {
   const session = findSession(before, getRouterParam(event, 'id'))
-  const rejection = reopenRejection({ phase: eventRow.phase, hasDate: session.startsAt !== null, started: session.startedAt !== null })
+  const rejection = reopenRejection({ phase: eventRow.phase, hasDate: session.startsAt !== null, started: isStarted(session) })
   if (rejection) throw apiError(rejection)
 
   // The number the Session was shown with, before it loses its Date (#159); reopenRejection saw that it had one.

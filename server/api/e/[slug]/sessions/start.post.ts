@@ -6,7 +6,7 @@ import { freezeTeamNames, readSeats, startOf } from '../../../../utils/board'
 import { apiError } from '../../../../utils/errors'
 import { changeEvent } from '../../../../utils/event-access'
 import { eventSessions, shownNumber } from '../../../../utils/sessions'
-import { hasStarted } from '../../../../../shared/board'
+import { hasStarted } from '../../../../../shared/session-state'
 import type { SessionStarted } from '../../../../../shared/event'
 import { settingsFromRow } from '../../../../../shared/settings'
 
