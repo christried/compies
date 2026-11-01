@@ -462,12 +462,17 @@
     "by": "Veto von {name} ({team})"
   },
   "coin": {
+    "title": "Münzwurf",
     "throw": "Münze werfen",
     "flying": "Fliegt …",
     "ready": "Bereit",
     "head": "Kopf!",
     "tail": "Schwanz!",
-    "starts": "{team} fängt an"
+    "starts": "{team} fängt an",
+    "side": {
+      "heads": "Kopf",
+      "tails": "Schwanz"
+    }
   },
   "pickBan": {
     "bans": "{team} bannt, {n} von {total}",
@@ -573,6 +578,7 @@
     "date": "Termin steht: {date}",
     "start": "{name} hat die Session gestartet",
     "wheel": "Glücksrad: {game}",
+    "coin": "Münzwurf: {side}",
     "veto": "Veto von {list}",
     "ban": "{team} hat {game} gebannt",
     "win": "{team} gewinnt Spiel {n}",
@@ -1507,6 +1513,7 @@
     "countdownRunning": "Der Countdown läuft schon.",
     "countdownNotRunning": "Der Countdown läuft gerade nicht.",
     "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
+    "coinInAir": "Die Münze fliegt noch.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

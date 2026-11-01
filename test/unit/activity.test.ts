@@ -181,8 +181,14 @@ describe('the sentence of an entry', () => {
     expect(text(drawn)).toBeNull()
   })
 
+  it('says a coin toss with its side, Kopf or Schwanz (#235)', () => {
+    expect(text({ ...base, type: 'coin_tossed', params: { side: 'heads' } })).toBe('Münzwurf: Kopf')
+    expect(text({ ...base, type: 'coin_tossed', params: { side: 'tails' } })).toBe('Münzwurf: Schwanz')
+  })
+
   it('still has no sentence for the kinds whose tickets come later', () => {
-    expect(text({ ...base, type: 'coin_tossed', params: { side: 'heads' } })).toBeNull()
+    expect(text({ ...base, type: 'vetoes_revealed', params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [] } })).toBeNull()
+    expect(text({ ...base, type: 'bonus_veto_granted', params: { team: 1 } })).toBeNull()
   })
 
   it('draws a game set, a game put back and a game drawn with an icon of their own', () => {

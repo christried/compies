@@ -83,6 +83,7 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   countdown_running: 'error.countdownRunning',
   countdown_not_running: 'error.countdownNotRunning',
   countdown_ended: 'error.countdownEnded',
+  coin_in_air: 'error.coinInAir',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

@@ -101,10 +101,12 @@ function sentence(entry: ActivityEntry, t: Translate): string | null {
     // What the wheel drew (#229) is in the feed from its stop on, and the server names the game only then (the same rule).
     case 'game_drawn':
       return entry.games[entry.params.gameId] === undefined ? null : t('activity.wheel', { game: entry.games[entry.params.gameId] })
-    // The other 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #231 Vetoes revealed, #233 Bonus Veto, #235 coin toss.
+    // A coin toss says its side from the landing on (#235): the entry is written with the landing as its instant, so the feed has it then.
+    case 'coin_tossed':
+      return t('activity.coin', { side: t(`coin.side.${entry.params.side}`) })
+    // The other 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #231 Vetoes revealed, #233 Bonus Veto.
     case 'vetoes_revealed':
     case 'bonus_veto_granted':
-    case 'coin_tossed':
       return null
   }
 }
