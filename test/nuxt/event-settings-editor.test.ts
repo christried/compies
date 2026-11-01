@@ -64,7 +64,7 @@ function setUp(setup: Setup = {}) {
     event: { isHost: setup.isHost ?? true, phase: setup.phase ?? 'poll' },
     settings: setup.settings === undefined ? defaultSettings() : setup.settings,
     settingsFloors: setup.floors,
-    pools: { hidden: false, ...(setup.pools ?? { main: [], tiebreaker: [] }) },
+    pools: setup.pools ?? { main: [], tiebreaker: [] },
     members: setup.members,
     teams: setup.teams,
   }))
@@ -112,7 +112,7 @@ async function settle(page: Page) {
   await vi.waitFor(() => expect(page.find('ul[aria-label="Bibliothek"]').exists()).toBe(true))
 }
 
-const wheel: EventSettings = { ...defaultSettings(), teamSize: 4, gameCount: 7, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 }
+const wheel: EventSettings = { ...defaultSettings(), teamSize: 4, gameCount: 7, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2, poolPreview: false }
 
 describe('the settings editor', () => {
   beforeEach(() => {
@@ -221,7 +221,7 @@ describe('the settings editor', () => {
     const eventSettings = () => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'So wird gespielt'))!
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
-    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { hidden: false, main: [kart], tiebreaker: [] } }))
+    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { main: [kart], tiebreaker: [] } }))
     await goTo(page, 'Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Tiebreaker-Pool')
@@ -439,6 +439,23 @@ describe('the settings editor', () => {
       expect(page.get('[role="switch"]').attributes('aria-checked')).toBe('false')
       await button(page, 'Vetos pro Partei: mehr').trigger('click')
       expect(spin(page, 'Vetos pro Partei').text()).toBe('3')
+    })
+
+    it('lets „Pool vorher zeigen“ change while the Selection mode is locked, and saves it (#225)', async () => {
+      const { slug, patched } = setUp({ settings: defaultSettings(), phase: 'running' })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Auswahlmodus')
+
+      const preview = page.findAll('[role="switch"]').find(sw => sw.text().includes('Pool vorher zeigen'))!
+      expect(preview.attributes('aria-checked')).toBe('true')
+      expect(preview.attributes('aria-disabled')).toBeUndefined()
+      await preview.trigger('click')
+      await goTo(page, 'Tiebreaker-Pool')
+      await settle(page)
+      await cta(page).trigger('click')
+
+      await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
+      expect(patched.mock.calls[0]![0].settings).toEqual({ ...defaultSettings(), poolPreview: false })
     })
 
     it('lets the Game count change and shows no lock on that step', async () => {

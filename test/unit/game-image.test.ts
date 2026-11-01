@@ -36,26 +36,26 @@ describe('canSeeImage (#143, #148)', () => {
   it('lets library viewers see it', () => {
     expect(canSeeImage({ viewer: libraryViewer, poolEvents: [] })).toBe(true)
     expect(canSeeImage({ viewer: { canHost: false, isAdmin: true }, poolEvents: [] })).toBe(true)
-    expect(canSeeImage({ viewer: libraryViewer, poolEvents: [{ isHost: false, hiddenWheel: true }] })).toBe(true)
+    expect(canSeeImage({ viewer: libraryViewer, poolEvents: [{ isHost: false, poolPreview: false }] })).toBe(true)
   })
 
-  it('lets a Member of an Event whose pool holds the game see it while that wheel is not hidden', () => {
-    expect(canSeeImage({ viewer: nobody, poolEvents: [{ isHost: false, hiddenWheel: false }] })).toBe(true)
+  it('lets a Member of an Event whose pool holds the game see it while its Pool preview is on', () => {
+    expect(canSeeImage({ viewer: nobody, poolEvents: [{ isHost: false, poolPreview: true }] })).toBe(true)
   })
 
-  it('lets a Member see it when only one of several Events has a visible wheel', () => {
-    const poolEvents = [{ isHost: false, hiddenWheel: true }, { isHost: false, hiddenWheel: false }]
+  it('lets a Member see it when only one of several Events has its Pool preview on', () => {
+    const poolEvents = [{ isHost: false, poolPreview: false }, { isHost: false, poolPreview: true }]
 
     expect(canSeeImage({ viewer: nobody, poolEvents })).toBe(true)
   })
 
-  it('refuses a Member who is in hidden-wheel Events only', () => {
-    expect(canSeeImage({ viewer: nobody, poolEvents: [{ isHost: false, hiddenWheel: true }] })).toBe(false)
-    expect(canSeeImage({ viewer: nobody, poolEvents: [{ isHost: false, hiddenWheel: true }, { isHost: false, hiddenWheel: true }] })).toBe(false)
+  it('refuses a Member who is in Events with the Pool preview off only', () => {
+    expect(canSeeImage({ viewer: nobody, poolEvents: [{ isHost: false, poolPreview: false }] })).toBe(false)
+    expect(canSeeImage({ viewer: nobody, poolEvents: [{ isHost: false, poolPreview: false }, { isHost: false, poolPreview: false }] })).toBe(false)
   })
 
-  it('lets the Host of a hidden-wheel Event see it even without the library permission', () => {
-    expect(canSeeImage({ viewer: nobody, poolEvents: [{ isHost: true, hiddenWheel: true }] })).toBe(true)
+  it('lets the Host of an Event with the Pool preview off see it even without the library permission', () => {
+    expect(canSeeImage({ viewer: nobody, poolEvents: [{ isHost: true, poolPreview: false }] })).toBe(true)
   })
 
   it('refuses everyone else: no pool Event, or signed out', () => {
@@ -64,6 +64,6 @@ describe('canSeeImage (#143, #148)', () => {
   })
 
   it('refuses a signed-out viewer whatever the Events say', () => {
-    expect(canSeeImage({ viewer: null, poolEvents: [{ isHost: true, hiddenWheel: false }] })).toBe(false)
+    expect(canSeeImage({ viewer: null, poolEvents: [{ isHost: true, poolPreview: true }] })).toBe(false)
   })
 })

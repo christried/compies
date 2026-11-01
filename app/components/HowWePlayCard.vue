@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { EyeOff, Lock, Pencil } from '@lucide/vue'
-import { modeText, pointsText, teamsText } from '~/utils/settings-summary'
+import { summaryRows } from '~/utils/settings-summary'
 import type { EventPools } from '~~/shared/event'
-import { hasWheel, LOCKED_WHEN_RUNNING, type EventSettings } from '~~/shared/settings'
+import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/settings'
 
-// „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl and Punkte of
-// the Event's settings for every Member, and the pools below them. `pools` is what the server decided this viewer may see
-// (poolsVisibleTo): the games, or under a Hidden wheel nothing about the pools, not even how many (#222). This component
-// shows what it is given and never asks for more. The Host gets the games under a Hidden wheel too, with a note that
-// nobody else sees them. Under a game with notes (#224) a collapsed „Notizen“ disclosure; the notes come with the game,
-// so they are seen exactly where the game is. The Host can edit the settings for as long as the Event allows (`editTo` is the settings page,
-// null when they cannot). From the first Session on, the rows of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry
-// a lock, for Members too.
+// „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl (with the Vetos
+// of a Lucky Wheel) and Punkte of the Event's settings for every Member, and the pools below them. `pools` is what the server
+// decided this viewer may see (canSeePoolGames): the games, or null: nothing about the pools, not even how many (#222, #225).
+// This component shows what it is given and never asks for more. The Host gets the games with the Pool preview off or under
+// a Hidden wheel too, with a note that nobody else sees them. Under a game with notes (#224) a collapsed „Notizen“
+// disclosure; the notes come with the game, so they are seen exactly where the game is. The Host can edit the settings for
+// as long as the Event allows (`editTo` is the settings page, null when they cannot). From the first Session on, the rows
+// of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry a lock, for Members too.
 const props = withDefaults(defineProps<{
   settings: EventSettings | null
-  pools: EventPools
+  pools: EventPools | null
   isHost: boolean
   /** The settings page, while the Host can still change the settings; null otherwise. */
   editTo?: string | null
@@ -27,34 +27,17 @@ const props = withDefaults(defineProps<{
 const { t } = useI18n()
 const headingId = useId()
 
-/** The settings each row shows; a row is fixed once the Event runs when any of them is in LOCKED_WHEN_RUNNING. */
-const ROW_SETTINGS = {
-  format: ['format', 'teamCount', 'teamSize'],
-  games: ['gameCount'],
-  mode: ['selectionMode', 'hiddenWheel', 'vetoAllowance'],
-  points: ['pointsTable'],
-} as const satisfies Record<string, readonly (keyof EventSettings)[]>
-const fixedWhenRunning = (row: keyof typeof ROW_SETTINGS) => ROW_SETTINGS[row].some(key => (LOCKED_WHEN_RUNNING as readonly string[]).includes(key))
-
-const rows = computed(() => {
-  const settings = props.settings
-  if (settings === null) return []
-  // Only the Lucky Wheel has vetoes (#145).
-  const mode = hasWheel(settings.selectionMode) ? `${modeText(settings, t)}, ${t('howWePlay.vetoes', { n: settings.vetoAllowance ?? 0 }, settings.vetoAllowance ?? 0)}` : modeText(settings, t)
-  return [
-    { key: 'format' as const, label: t('stepper.summary.format'), value: teamsText(settings, t) },
-    { key: 'games' as const, label: t('stepper.summary.gamesLabel'), value: t('stepper.summary.games', { n: settings.gameCount }, settings.gameCount) },
-    { key: 'mode' as const, label: t('howWePlay.mode'), value: mode },
-    { key: 'points' as const, label: t('stepper.summary.points'), value: pointsText(settings.pointsTable, t) },
-  ].map(row => ({ ...row, locked: props.locked && fixedWhenRunning(row.key) }))
-})
-
-const lists = computed(() => (props.pools.hidden
+// The rows are the ones „Fertig“ shows (summaryRows, #225); a row is fixed once the Event runs when any of its settings is.
+const rows = computed(() => (props.settings === null
   ? []
-  : [
+  : summaryRows(props.settings, t).map(row => ({ ...row, locked: props.locked && lockedWhenRunning(row.settings) }))))
+
+const lists = computed(() => (props.pools
+  ? [
       { key: 'main', title: t('howWePlay.mainPool'), games: props.pools.main },
       { key: 'tiebreaker', title: t('howWePlay.tiebreakerPool'), games: props.pools.tiebreaker },
-    ]))
+    ]
+  : []))
 </script>
 
 <template>
@@ -116,7 +99,7 @@ const lists = computed(() => (props.pools.hidden
         </div>
       </dl>
 
-      <template v-if="!pools.hidden">
+      <template v-if="pools">
         <NoticeBanner
           v-if="isHost && settings.hiddenWheel"
           tone="info"
@@ -124,6 +107,14 @@ const lists = computed(() => (props.pools.hidden
           host-only
         >
           {{ t('howWePlay.hostOnly') }}
+        </NoticeBanner>
+        <NoticeBanner
+          v-else-if="isHost && !settings.poolPreview"
+          tone="info"
+          :icon="EyeOff"
+          host-only
+        >
+          {{ t(hasWheel(settings.selectionMode) ? 'howWePlay.previewOffWheel' : 'howWePlay.previewOffPick') }}
         </NoticeBanner>
 
         <div class="flex flex-col gap-3">

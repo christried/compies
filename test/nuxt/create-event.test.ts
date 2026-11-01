@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS = {
   selectionMode: 'admin_pick',
   hiddenWheel: false,
   vetoAllowance: null,
+  poolPreview: true,
 }
 
 type Page = VueWrapper

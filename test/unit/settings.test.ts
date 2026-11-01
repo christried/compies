@@ -14,12 +14,14 @@ import {
   isFlat,
   mergeSettings,
   linearPoints,
+  lockedWhenRunning,
   parseSettings,
   poolHint,
   pointsFor,
   recommendedPoolSize,
   risingPlace,
   settingsFromRow,
+  storedPoolPreview,
   storedHiddenWheel,
   TEAM_SIZE_MIN,
   teamSizeFloor,
@@ -130,6 +132,7 @@ describe('defaults and helpers', () => {
       selectionMode: 'admin_pick',
       hiddenWheel: false,
       vetoAllowance: null,
+      poolPreview: true,
     })
     expect(GAME_COUNT_DEFAULT).toBe(10)
   })
@@ -169,7 +172,7 @@ describe('poolHint', () => {
 })
 
 describe('settingsFromRow', () => {
-  const empty = { format: null, teamCount: null, teamSize: null, gameCount: null, pointsTable: null, selectionMode: null, hiddenWheel: null, vetoAllowance: null }
+  const empty = { format: null, teamCount: null, teamSize: null, gameCount: null, pointsTable: null, selectionMode: null, hiddenWheel: null, vetoAllowance: null, poolPreview: null }
 
   it('an Event from before 1.3 (all null) is not set up', () => {
     expect(settingsFromRow(empty)).toBeNull()
@@ -177,7 +180,7 @@ describe('settingsFromRow', () => {
 
   it('any missing required column means not set up', () => {
     const full = { ...empty, format: 'teams' as const, teamCount: 2, teamSize: 3, gameCount: 10, pointsTable: { preset: 'linear' as const, values: [1, 0] }, selectionMode: 'admin_pick' as const, hiddenWheel: false }
-    expect(settingsFromRow(full)).toEqual({ ...full, vetoAllowance: null })
+    expect(settingsFromRow(full)).toEqual({ ...full, vetoAllowance: null, poolPreview: true })
     expect(settingsFromRow({ ...full, gameCount: null })).toBeNull()
     expect(settingsFromRow({ ...full, pointsTable: null })).toBeNull()
   })
@@ -190,8 +193,20 @@ describe('settingsFromRow', () => {
     expect(storedHiddenWheel(true)).toBe(true)
   })
 
+  it('reads the Pool preview of a row: off under a Hidden wheel, else the stored value, and on when the old code left it null (#225)', () => {
+    // Under a Hidden wheel the stored value does not matter, and neither does a null wheel (fail-closed).
+    expect(storedPoolPreview(true, true)).toBe(false)
+    expect(storedPoolPreview(null, true)).toBe(false)
+    expect(storedPoolPreview(true, null)).toBe(false)
+    expect(storedPoolPreview(null, null)).toBe(false)
+    // A visible wheel (or Host pick) shows what the Host chose; a null is the code before 0.6, which showed the pools.
+    expect(storedPoolPreview(false, false)).toBe(false)
+    expect(storedPoolPreview(true, false)).toBe(true)
+    expect(storedPoolPreview(null, false)).toBe(true)
+  })
+
   it('keeps the wheel options of a Glücksrad Event', () => {
-    const row = { format: 'teams' as const, teamCount: 4, teamSize: 2, gameCount: 6, pointsTable: { preset: 'linear' as const, values: [3, 2, 1, 0] }, selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 4 }
+    const row = { format: 'teams' as const, teamCount: 4, teamSize: 2, gameCount: 6, pointsTable: { preset: 'linear' as const, values: [3, 2, 1, 0] }, selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 4, poolPreview: false }
     expect(settingsFromRow(row)).toEqual(row)
   })
 })
@@ -202,7 +217,7 @@ describe('parseSettings', () => {
       ok: true,
       settings: {
         format: 'teams', teamCount: 2, teamSize: 3, gameCount: 10, pointsTable: { preset: 'linear', values: [1, 0] },
-        selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null,
+        selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null, poolPreview: true,
       },
     })
   })
@@ -339,6 +354,30 @@ describe('parseSettings', () => {
       expect(errorOf(payload({ selectionMode: 'lucky_wheel', hiddenWheel: 'yes' }))).toBe('invalid_settings')
     })
 
+    describe('Pool preview (#225)', () => {
+      it('is on by default for Host pick and for a visible wheel', () => {
+        expect(parseSettings(payload())).toMatchObject({ ok: true, settings: { poolPreview: true } })
+        expect(parseSettings(payload({ selectionMode: 'lucky_wheel' }))).toMatchObject({ ok: true, settings: { hiddenWheel: false, poolPreview: true } })
+      })
+
+      it('takes a Host choice for Host pick and for a visible wheel', () => {
+        expect(parseSettings(payload({ poolPreview: false }))).toMatchObject({ ok: true, settings: { poolPreview: false } })
+        expect(parseSettings(payload({ selectionMode: 'lucky_wheel', poolPreview: false }))).toMatchObject({ ok: true, settings: { poolPreview: false } })
+        expect(parseSettings(payload({ selectionMode: 'lucky_wheel', poolPreview: true }))).toMatchObject({ ok: true, settings: { poolPreview: true } })
+      })
+
+      it('is off under a Hidden wheel when it is left out or off, and refused when it is on', () => {
+        expect(parseSettings(payload({ selectionMode: 'lucky_wheel', hiddenWheel: true }))).toMatchObject({ ok: true, settings: { poolPreview: false } })
+        expect(parseSettings(payload({ selectionMode: 'lucky_wheel', hiddenWheel: true, poolPreview: false }))).toMatchObject({ ok: true, settings: { poolPreview: false } })
+        expect(errorOf(payload({ selectionMode: 'lucky_wheel', hiddenWheel: true, poolPreview: true }))).toBe('pool_preview_hidden_wheel')
+      })
+
+      it.each(['yes', 1, null])('refuses %j as a Pool preview', (poolPreview) => {
+        expect(errorOf(payload({ poolPreview }))).toBe('invalid_settings')
+        expect(errorOf(payload({ selectionMode: 'lucky_wheel', poolPreview }))).toBe('invalid_settings')
+      })
+    })
+
     it('Host pick has no wheel options', () => {
       expect(errorOf(payload({ hiddenWheel: true }))).toBe('wheel_options_without_wheel')
       expect(errorOf(payload({ vetoAllowance: 3 }))).toBe('wheel_options_without_wheel')
@@ -368,7 +407,7 @@ describe('Phases of the settings (#147)', () => {
 })
 
 describe('mergeSettings', () => {
-  const wheelSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 4 }
+  const wheelSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel' as const, hiddenWheel: true, vetoAllowance: 4, poolPreview: false }
 
   it('puts the change over the current settings', () => {
     expect(mergeSettings(defaultSettings(), { gameCount: 5, teamSize: 2 })).toMatchObject({ teamCount: 2, teamSize: 2, gameCount: 5 })
@@ -377,7 +416,7 @@ describe('mergeSettings', () => {
   it('drops the wheel values that are left over when the change switches to Host pick', () => {
     const merged = mergeSettings(wheelSettings, { selectionMode: 'admin_pick' })
 
-    expect(merged).toEqual({ ...defaultSettings(), hiddenWheel: undefined, vetoAllowance: undefined, selectionMode: 'admin_pick' })
+    expect(merged).toEqual({ ...defaultSettings(), hiddenWheel: undefined, vetoAllowance: undefined, poolPreview: false, selectionMode: 'admin_pick' })
     expect('hiddenWheel' in merged).toBe(false)
     expect('vetoAllowance' in merged).toBe(false)
   })
@@ -391,6 +430,39 @@ describe('mergeSettings', () => {
 
   it('keeps the wheel values while the Lucky Wheel stays', () => {
     expect(mergeSettings(wheelSettings, { gameCount: 5 })).toMatchObject({ hiddenWheel: true, vetoAllowance: 4 })
+  })
+
+  it('drops the Pool preview that is carried over when the change hides the wheel without saying anything about it (#225)', () => {
+    const visible = { ...wheelSettings, hiddenWheel: false, poolPreview: true }
+
+    const merged = mergeSettings(visible, { hiddenWheel: true })
+
+    expect('poolPreview' in merged).toBe(false)
+  })
+
+  it('keeps a Pool preview the change itself sends, so parseSettings can refuse it with a Hidden wheel (#225)', () => {
+    expect(mergeSettings(wheelSettings, { hiddenWheel: true, poolPreview: true }).poolPreview).toBe(true)
+  })
+
+  it('keeps the Pool preview while the wheel stays visible or is made visible again (#225)', () => {
+    expect(mergeSettings({ ...wheelSettings, hiddenWheel: false, poolPreview: true }, { gameCount: 5 }).poolPreview).toBe(true)
+    // Off after the Hidden wheel: the wheel turning visible leaves it off.
+    expect(mergeSettings(wheelSettings, { hiddenWheel: false }).poolPreview).toBe(false)
+  })
+})
+
+describe('lockedWhenRunning (#225)', () => {
+  it('is true when any of the settings stays fixed once the Event runs', () => {
+    expect(lockedWhenRunning(['format', 'teamCount', 'teamSize'])).toBe(true)
+    expect(lockedWhenRunning(['selectionMode', 'hiddenWheel', 'poolPreview'])).toBe(true)
+    expect(lockedWhenRunning(['pointsTable'])).toBe(true)
+  })
+
+  it('is false for settings that stay editable', () => {
+    expect(lockedWhenRunning(['gameCount'])).toBe(false)
+    expect(lockedWhenRunning(['vetoAllowance'])).toBe(false)
+    expect(lockedWhenRunning(['hiddenWheel', 'poolPreview'])).toBe(false)
+    expect(lockedWhenRunning([])).toBe(false)
   })
 })
 
@@ -454,7 +526,28 @@ describe('checkSettingsChange', () => {
 
   it('lets Game count, Team size, Veto allowance and Hidden wheel change while running', () => {
     const result = check({ gameCount: 5, teamSize: 4, vetoAllowance: 5, hiddenWheel: true }, { phase: 'running' })
-    expect(result).toEqual({ ok: true, settings: { ...current, gameCount: 5, teamSize: 4, vetoAllowance: 5, hiddenWheel: true } })
+    expect(result).toEqual({ ok: true, settings: { ...current, gameCount: 5, teamSize: 4, vetoAllowance: 5, hiddenWheel: true, poolPreview: false } })
+  })
+
+  describe('Pool preview (#225)', () => {
+    it('is not locked: it changes while the Event runs', () => {
+      expect([...LOCKED_WHEN_RUNNING]).not.toContain('poolPreview')
+      expect(check({ poolPreview: false }, { phase: 'running' })).toEqual({ ok: true, settings: { ...current, poolPreview: false } })
+      expect(check({ poolPreview: true }, { phase: 'running' }, { ...current, poolPreview: false })).toEqual({ ok: true, settings: { ...current, poolPreview: true } })
+    })
+
+    it('turns off when the change hides the wheel, and stays off when the wheel is made visible again', () => {
+      const hidden = check({ hiddenWheel: true })
+      expect(hidden).toEqual({ ok: true, settings: { ...current, hiddenWheel: true, poolPreview: false } })
+
+      const visibleAgain = check({ hiddenWheel: false }, {}, hidden.ok ? hidden.settings : current)
+      expect(visibleAgain).toEqual({ ok: true, settings: { ...current, hiddenWheel: false, poolPreview: false } })
+    })
+
+    it('refuses a change that turns it on together with a Hidden wheel, also with the wheel hidden already', () => {
+      expect(check({ hiddenWheel: true, poolPreview: true })).toEqual({ ok: false, error: 'pool_preview_hidden_wheel' })
+      expect(check({ poolPreview: true }, {}, { ...current, hiddenWheel: true, poolPreview: false })).toEqual({ ok: false, error: 'pool_preview_hidden_wheel' })
+    })
   })
 
   it.each(['finished', 'archived'] as Phase[])('refuses everything in the %s Phase', (phase) => {
@@ -492,7 +585,7 @@ describe('checkSettingsChange', () => {
 
   it('switches to the Glücksrad with its options before the first Session', () => {
     const result = check({ selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 }, {}, admin)
-    expect(result).toEqual({ ok: true, settings: { ...admin, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2 } })
+    expect(result).toEqual({ ok: true, settings: { ...admin, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 2, poolPreview: false } })
   })
 
   describe('floors', () => {

@@ -225,7 +225,7 @@ describe('Team names', () => {
       expect((await word(game, game.cookies.one, 'Wilde')).status).toBe(200)
 
       const view = await read(game, game.cookies.two)
-      expect(view.pools.hidden).toBe(true)
+      expect(view.pools).toBeNull()
       expect(view.teams[0]?.name).toBe('Wilde')
     })
   })

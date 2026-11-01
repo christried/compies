@@ -325,6 +325,9 @@
       "goodFor": "Gut für",
       "hideWheel": "Rad verdecken",
       "hideWheelHelp": "Erfundene Namen, bis das Rad stoppt.",
+      "poolPreview": "Pool vorher zeigen",
+      "poolPreviewHelp": "Die anderen sehen Spielepool und Tiebreaker-Pool schon vorher.",
+      "poolPreviewHidden": "Beim verdeckten Rad sieht niemand den Pool.",
       "spinDuration": "Drehdauer",
       "seconds": "{n} s"
     },
@@ -1056,7 +1059,7 @@
       },
       "storage": {
         "heading": "5. Spielbilder (Cloudflare R2)",
-        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, dessen Spielepool das Spiel enthält, solange das Rad nicht verdeckt ist. Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
+        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
       },
       "signIn": {
         "heading": "6. Anmeldung über Discord oder Twitch und Anzeigename",
@@ -1068,7 +1071,7 @@
       },
       "youtube": {
         "heading": "8. Videos (YouTube)",
-        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen. Er startet nicht von selbst und zeigt nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und in einer Liste erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek. Vorschaubilder sehen außerdem Mitglieder eines Events, dessen Spielepool das Spiel enthält, solange das Rad nicht verdeckt ist. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen)."
+        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen. Er startet nicht von selbst und zeigt nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und in einer Liste erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek. Vorschaubilder sehen außerdem Mitglieder eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen)."
       },
       "cookies": {
         "heading": "9. Cookies und Speicher im Browser",
@@ -1399,11 +1402,13 @@
       "teams": "{n} Teams à {s}",
       "games": "{n} Spiel | {n} Spiele",
       "hidden": "{mode} (verdeckt)",
+      "previewOffWheel": "{mode}, Spiele erst am Rad",
+      "previewOffPick": "{mode}, Spiele erst beim Setzen",
       "sentence": "{teams}, {mode}, {games}.",
       "format": "Format",
       "gamesLabel": "Spiele",
       "points": "Punkte",
-      "mode": "Modus",
+      "mode": "Auswahl",
       "vetoes": "Vetos",
       "vetoValue": "{n} pro Partei",
       "pool": "Pool",
@@ -1418,8 +1423,6 @@
   },
   "howWePlay": {
     "title": "So wird gespielt",
-    "mode": "Auswahl",
-    "vetoes": "{n} Veto pro Partei | {n} Vetos pro Partei",
     "edit": "Bearbeiten",
     "notes": "Notizen",
     "locked": "Fest seit dem Start",
@@ -1428,7 +1431,9 @@
     "mainPool": "Spielepool",
     "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",
-    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden."
+    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.",
+    "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
+    "previewOffPick": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt."
   },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
@@ -1444,6 +1449,7 @@
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",
     "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
+    "poolPreviewHiddenWheel": "Beim verdeckten Rad sieht niemand den Pool.",
     "unknownGame": "Ein Spiel aus dem Pool gibt es nicht mehr.",
     "settingLocked": "Das lässt sich nicht mehr ändern, seit die erste Session läuft.",
     "sessionStarted": "Diese Session hat schon begonnen. Sie bleibt, wie sie ist.",
