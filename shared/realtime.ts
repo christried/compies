@@ -51,6 +51,11 @@ export type RoomMessage
     | { type: 'round.spun', roundId: string, drawId: string, spinStartAt: string, stopAt: string, slices: number, resultIndex: number, resultOffset: number, labels: string[] | null }
   /** The Host changed the Countdown (#236): set, started, paused, reset or cleared. No payload; the client refetches the Event read. */
     | { type: 'countdown.changed' }
+  /**
+   * The Host tossed the Coin flip (#235, spec #218 § Coin flip). Instants are ISO strings: the flight starts at `startedAt` and the
+   * coin lands at `landsAt`. The side rides along; the UI and the feed show it only at the landing.
+   */
+    | { type: 'coin.tossed', tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
 
 export type RoomMessageType = RoomMessage['type']
 

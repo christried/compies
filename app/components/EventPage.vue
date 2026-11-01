@@ -42,7 +42,11 @@ const votes = useOptimisticVotes(slug, data, refresh)
 // No timer runs on the server (ADR 0013, amended 2026-10-31): the first read after an instant settles it, so the page reads the Event
 // and the Activity feed again when an instant it knows passes (#229: the wheel's stop; the next tickets add their own).
 const feedTick = ref(0)
-const knownInstants = computed(() => (data.value?.wheel?.spin ? [Date.parse(data.value.wheel.spin.stopAt)] : []))
+// The coin's landing (#235) is one of them: the feed shows its entry from then on, and the toss's result is the page's from then on.
+const knownInstants = computed(() => [
+  ...(data.value?.wheel?.spin ? [Date.parse(data.value.wheel.spin.stopAt)] : []),
+  ...(data.value?.coin ? [Date.parse(data.value.coin.landsAt)] : []),
+])
 useInstantRefresh(knownInstants, serverClock.now, () => {
   void refresh()
   feedTick.value += 1
@@ -95,7 +99,7 @@ const setBlocked = computed(() => {
 const hostActions = useHostActions(
   () => data.value,
   slug,
-  { pollOpen, setBlocked },
+  { pollOpen, setBlocked, serverNow: serverClock.now },
   {
     invite: () => (inviteOpen.value = true),
     editSlots: () => dialogs.value?.openSlotEditor(),
@@ -105,6 +109,7 @@ const hostActions = useHostActions(
     setGame: () => dialogs.value?.openSetGame(),
     spin: () => void send('POST', 'rounds/spin'),
     countdown: () => dialogs.value?.openCountdown(),
+    coin: () => void send('POST', 'coin'),
   },
 )
 
@@ -348,6 +353,12 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           :server-now="serverClock.now"
           :is-host="data.event.isHost"
           :command="(action) => send('POST', 'countdown/' + action)"
+        />
+
+        <CoinFlip
+          v-else-if="block === 'coin' && data.coin"
+          :toss="data.coin"
+          :server-now="serverClock.now"
         />
 
         <GameBoard
