@@ -19,7 +19,7 @@ describe('legal pages', () => {
     expect(page.get('h1').text()).toBe('Impressum')
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(false)
     expect(page.get('main').text()).toContain('Dominik Christian Gilges')
-    expect(page.get('main').text()).toContain('foodieflip.dev@gmail.com')
+    expect(page.get('main').text()).toContain('compies@christried.me')
   })
 
   it('render the Datenschutzerklärung signed out, in the bare shell', async () => {
