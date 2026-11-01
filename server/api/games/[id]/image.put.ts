@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { defineEventHandler, getHeader, getRequestWebStream, getRouterParam } from 'h3'
 import { games } from '../../../db/schema'
 import { imageKey, isWebp, readUpTo } from '../../../domain/image'
+import { useClock } from '../../../utils/clock'
 import { useDb } from '../../../utils/db'
 import { apiError } from '../../../utils/errors'
 import { useImageStore } from '../../../utils/image-store'
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event): Promise<GameView> => {
   await store.put(key, body, 'image/webp')
   let updated
   try {
-    ;[updated] = await db.update(games).set({ imageKey: key, updatedAt: new Date() }).where(eq(games.id, game.id)).returning()
+    ;[updated] = await db.update(games).set({ imageKey: key, updatedAt: useClock(event).now() }).where(eq(games.id, game.id)).returning()
   }
   catch (error) {
     // The row still points at the old object, so the new one would be an orphan.

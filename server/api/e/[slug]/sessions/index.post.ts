@@ -4,6 +4,7 @@ import { parseLocalTime } from '../../../../domain/event'
 import { addSessionRejection } from '../../../../domain/phase'
 import { hasDateAt } from '../../../../domain/session'
 import { recordActivity } from '../../../../utils/activity'
+import { useClock } from '../../../../utils/clock'
 import { apiError } from '../../../../utils/errors'
 import { changeSessions, slotAt } from '../../../../utils/sessions'
 import type { SessionAdded } from '../../../../../shared/event'
@@ -21,7 +22,7 @@ export default defineEventHandler((event): Promise<SessionAdded> => changeSessio
     phase: eventRow.phase,
     count: before.length,
     startsAt,
-    now: new Date(),
+    now: useClock(event).now(),
     duplicate: startsAt !== null && hasDateAt(before, startsAt),
   })
   if (rejection) throw apiError(rejection)

@@ -4,6 +4,7 @@ import { sessions } from '../../../db/schema'
 import { setDateRejection } from '../../../domain/phase'
 import { hasDateAt } from '../../../domain/session'
 import { recordActivity } from '../../../utils/activity'
+import { useClock } from '../../../utils/clock'
 import { apiError, slotNotFound } from '../../../utils/errors'
 import { findSlot } from '../../../utils/slots'
 import { changeSessions, shownNumber } from '../../../utils/sessions'
@@ -23,7 +24,7 @@ export default defineEventHandler((event): Promise<DateConfirmed> => changeSessi
   const rejection = setDateRejection({
     phase: eventRow.phase,
     startsAt: slot.startsAt,
-    now: new Date(),
+    now: useClock(event).now(),
     taken: before.some(row => row.slotId === slot.id),
     undated: undated.length,
     duplicate: hasDateAt(before, slot.startsAt),
