@@ -161,7 +161,8 @@ describe('Hidden wheel secrecy (#148)', () => {
   const traces = (secret: Secret) => [secret.name, secret.id, secret.imageKey, secret.videoId]
 
   function setWheelHidden(hidden: boolean) {
-    return testDb.db.update(events).set({ hiddenWheel: hidden })
+    // The Pool preview follows the wheel here, as a Host who made the wheel visible and turned the preview on (#225).
+    return testDb.db.update(events).set({ hiddenWheel: hidden, poolPreview: !hidden })
   }
 
   it('gives a Player under a Hidden wheel nothing about the pools: not a count, name, id, image key or video id anywhere in the raw response', async () => {
@@ -454,11 +455,11 @@ describe('Hidden wheel secrecy (#148)', () => {
       expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
     })
 
-    it('shows the pools to a Player once the Hidden wheel is off, and the room still carries no game', async () => {
+    it('shows the pools to a Player once the Hidden wheel is off and the Pool preview on, and the room still carries no game', async () => {
       const { slug, eventId, games } = await lobbyFlow()
       const [a, , c, d] = games
 
-      expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { hiddenWheel: false } })).status).toBe(200)
+      expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { hiddenWheel: false, poolPreview: true } })).status).toBe(200)
 
       const open = await rawRead(playerCookie, slug)
       expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Delta Dart' }], tiebreaker: [{ name: 'Gamma Garten' }] })

@@ -101,7 +101,9 @@ describe('changing the settings of an Event (#147)', () => {
     return (await testDb.db.select().from(eventPoolGames).where(eq(eventPoolGames.eventId, id))).filter(entry => entry.pool === pool).map(entry => entry.gameId)
   }
 
-  const luckyWheel: EventSettings = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 3 }
+  const luckyWheel: Omit<EventSettings, 'poolPreview'> = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 3 }
+  /** What a Host pick Event created from TEST_SETTINGS stores: the Pool preview defaults to on (#225). */
+  const STORED_SETTINGS: EventSettings = { ...TEST_SETTINGS, poolPreview: true }
 
   describe('before the first Session', () => {
     it('stores a new Game count, Team size, Veto allowance and Hidden wheel, and answers with the new settings', async () => {
@@ -109,7 +111,7 @@ describe('changing the settings of an Event (#147)', () => {
 
       const response = await patch(slug, { settings: { gameCount: 6, teamSize: 4, vetoAllowance: 5, hiddenWheel: true } })
 
-      const expected = { ...luckyWheel, gameCount: 6, teamSize: 4, vetoAllowance: 5, hiddenWheel: true }
+      const expected = { ...luckyWheel, gameCount: 6, teamSize: 4, vetoAllowance: 5, hiddenWheel: true, poolPreview: false }
       expect(response.status).toBe(200)
       expect(await response.json()).toEqual({ settings: expected })
       expect(settingsFromRow(await row(slug))).toEqual(expected)
@@ -135,7 +137,7 @@ describe('changing the settings of an Event (#147)', () => {
         expect(response.status).toBe(400)
         expect(response.statusText).toBe('wheel_options_without_wheel')
       }
-      expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
+      expect(settingsFromRow(await row(slug))).toEqual(STORED_SETTINGS)
     })
 
     it('switches a Glücksrad Event to Host pick without wheel keys and drops its wheel options', async () => {
@@ -144,7 +146,7 @@ describe('changing the settings of an Event (#147)', () => {
       const response = await patch(slug, { settings: { selectionMode: 'admin_pick' } })
 
       expect(response.status).toBe(200)
-      expect(settingsFromRow(await row(slug))).toEqual({ ...luckyWheel, selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null })
+      expect(settingsFromRow(await row(slug))).toEqual({ ...luckyWheel, selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null, poolPreview: false })
     })
 
     it('refuses a change that breaks a settings rule and keeps the row', async () => {
@@ -154,7 +156,7 @@ describe('changing the settings of an Event (#147)', () => {
 
       expect(response.status).toBe(400)
       expect(response.statusText).toBe('game_count_range')
-      expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
+      expect(settingsFromRow(await row(slug))).toEqual(STORED_SETTINGS)
     })
 
     it('refuses a flat points table with points_flat and keeps the row, and takes 5/5/5/4 (#175)', async () => {
@@ -163,7 +165,7 @@ describe('changing the settings of an Event (#147)', () => {
       const flat = await patch(slug, { settings: { pointsTable: { preset: 'custom', values: [2, 2] } } })
       expect(flat.status).toBe(400)
       expect(flat.statusText).toBe('points_flat')
-      expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
+      expect(settingsFromRow(await row(slug))).toEqual(STORED_SETTINGS)
 
       const valid = await patch(slug, { settings: { teamCount: 4, pointsTable: { preset: 'custom', values: [5, 5, 5, 4] } } })
       expect(valid.status).toBe(200)
@@ -226,12 +228,16 @@ describe('changing the settings of an Event (#147)', () => {
       expect((await row(slug)).gameCount).toBe(10)
     })
 
-    it('shows the games to a Member once the Hidden wheel is switched off, and hides them again when it is switched on', async () => {
+    it('shows the games to a Member once the Hidden wheel is switched off and the Pool preview on, and hides them again when the wheel is hidden again', async () => {
       const kart = await newGame('Mario Kart')
       const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true }, pools: { main: [kart.id], tiebreaker: [] } })
       expect((await read(slug, memberCookie)).pools).toBeNull()
 
+      // The wheel being visible again reveals nothing: the Pool preview stays off until the Host turns it on (#225).
       expect((await patch(slug, { settings: { hiddenWheel: false } })).status).toBe(200)
+      expect((await read(slug, memberCookie)).pools).toBeNull()
+
+      expect((await patch(slug, { settings: { poolPreview: true } })).status).toBe(200)
       const revealed = (await read(slug, memberCookie)).pools
       expect(JSON.stringify(revealed)).toContain('Mario Kart')
 
@@ -267,7 +273,7 @@ describe('changing the settings of an Event (#147)', () => {
 
       expect(response.status).toBe(409)
       expect(response.statusText).toBe('setting_locked')
-      expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
+      expect(settingsFromRow(await row(slug))).toEqual(STORED_SETTINGS)
     })
 
     it('accepts the locked values unchanged together with a new Game count', async () => {
@@ -277,7 +283,7 @@ describe('changing the settings of an Event (#147)', () => {
       const response = await patch(slug, { settings: { ...TEST_SETTINGS, gameCount: 5 } })
 
       expect(response.status).toBe(200)
-      expect(settingsFromRow(await row(slug))).toEqual({ ...TEST_SETTINGS, gameCount: 5 })
+      expect(settingsFromRow(await row(slug))).toEqual({ ...STORED_SETTINGS, gameCount: 5 })
     })
 
     it('still changes Team size, Veto allowance, Hidden wheel and the pools', async () => {
@@ -288,8 +294,90 @@ describe('changing the settings of an Event (#147)', () => {
       const response = await patch(slug, { settings: { teamSize: 2, vetoAllowance: 1, hiddenWheel: true }, pools: { tiebreaker: [kart.id] } })
 
       expect(response.status).toBe(200)
-      expect(settingsFromRow(await row(slug))).toEqual({ ...luckyWheel, teamSize: 2, vetoAllowance: 1, hiddenWheel: true })
+      expect(settingsFromRow(await row(slug))).toEqual({ ...luckyWheel, teamSize: 2, vetoAllowance: 1, hiddenWheel: true, poolPreview: false })
       expect(await poolOf(slug, 'tiebreaker')).toEqual([kart.id])
+    })
+  })
+
+  describe('Pool preview (#225)', () => {
+    it('is on by default for Host pick and for a visible wheel, and off for a Hidden wheel', async () => {
+      const hostPick = await createdEvent()
+      const visibleWheel = await createdEvent({ settings: luckyWheel })
+      const hiddenWheel = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true } })
+
+      expect((await read(hostPick)).settings?.poolPreview).toBe(true)
+      expect((await read(visibleWheel)).settings?.poolPreview).toBe(true)
+      expect((await read(hiddenWheel)).settings?.poolPreview).toBe(false)
+      expect(await Promise.all([hostPick, visibleWheel, hiddenWheel].map(async slug => (await row(slug)).poolPreview))).toEqual([true, true, false])
+    })
+
+    it('is stored as the Host chose it on create, for Host pick and for a visible wheel', async () => {
+      const hostPick = await createdEvent({ settings: { ...TEST_SETTINGS, poolPreview: false } })
+      const wheel = await createdEvent({ settings: { ...luckyWheel, poolPreview: false } })
+
+      expect((await row(hostPick)).poolPreview).toBe(false)
+      expect((await row(wheel)).poolPreview).toBe(false)
+    })
+
+    it('refuses it together with a Hidden wheel on create, and creates no Event', async () => {
+      const response = await request('/api/e', {
+        method: 'POST',
+        headers: json(hostCookie),
+        body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: { ...luckyWheel, hiddenWheel: true, poolPreview: true } }),
+      })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('pool_preview_hidden_wheel')
+      expect(await testDb.db.select().from(events)).toEqual([])
+    })
+
+    it('refuses it together with a Hidden wheel on change and keeps the row', async () => {
+      const slug = await createdEvent({ settings: luckyWheel })
+
+      const hiding = await patch(slug, { settings: { hiddenWheel: true, poolPreview: true } })
+      expect(hiding.status).toBe(400)
+      expect(hiding.statusText).toBe('pool_preview_hidden_wheel')
+      const hidden = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true } })
+      const turnedOn = await patch(hidden, { settings: { poolPreview: true } })
+      expect(turnedOn.status).toBe(400)
+      expect(turnedOn.statusText).toBe('pool_preview_hidden_wheel')
+      expect(settingsFromRow(await row(slug))).toEqual({ ...luckyWheel, poolPreview: true })
+      expect(settingsFromRow(await row(hidden))).toEqual({ ...luckyWheel, hiddenWheel: true, poolPreview: false })
+    })
+
+    it('turns off when the change hides the wheel, and stays off when the wheel is made visible again', async () => {
+      const slug = await createdEvent({ settings: luckyWheel })
+
+      expect((await patch(slug, { settings: { hiddenWheel: true } })).status).toBe(200)
+      expect((await row(slug)).poolPreview).toBe(false)
+
+      expect((await patch(slug, { settings: { hiddenWheel: false } })).status).toBe(200)
+      expect((await row(slug)).poolPreview).toBe(false)
+      expect((await read(slug)).settings).toMatchObject({ hiddenWheel: false, poolPreview: false })
+    })
+
+    it('is changed on its own, before the first Session and while the Event runs', async () => {
+      const slug = await createdEvent()
+
+      expect((await patch(slug, { settings: { poolPreview: false } })).status).toBe(200)
+      expect(settingsFromRow(await row(slug))).toEqual({ ...STORED_SETTINGS, poolPreview: false })
+
+      await setPhase(slug, 'running')
+      const response = await patch(slug, { settings: { poolPreview: true } })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ settings: STORED_SETTINGS })
+      expect(settingsFromRow(await row(slug))).toEqual(STORED_SETTINGS)
+    })
+
+    it('refuses a Pool preview that is not a boolean and keeps the row', async () => {
+      const slug = await createdEvent()
+
+      const response = await patch(slug, { settings: { poolPreview: 'yes' } })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_settings')
+      expect((await row(slug)).poolPreview).toBe(true)
     })
   })
 
@@ -364,8 +452,8 @@ describe('changing the settings of an Event (#147)', () => {
       const response = await patch(slug, { settings: TEST_SETTINGS })
 
       expect(response.status).toBe(200)
-      expect(settingsFromRow(await row(slug))).toEqual(TEST_SETTINGS)
-      expect((await read(slug)).settings).toEqual(TEST_SETTINGS)
+      expect(settingsFromRow(await row(slug))).toEqual(STORED_SETTINGS)
+      expect((await read(slug)).settings).toEqual(STORED_SETTINGS)
     })
   })
 
