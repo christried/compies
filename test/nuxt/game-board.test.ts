@@ -2,6 +2,7 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 import GameBoard from '~/components/GameBoard.vue'
+import type { EventPageState } from '~/utils/event-page'
 import type { Place } from '~~/shared/board'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
@@ -52,8 +53,7 @@ interface Options {
   viewerId?: string
   isHost?: boolean
   /** The page's say on the uneven and the locked notice (#166); without it the board decides itself. */
-  unevenNotice?: boolean
-  lockedNotice?: boolean
+  pageKind?: EventPageState['kind']
   /** What the move endpoint answers; it may wait and throw. */
   answer?: (body: { userId: string, to: Place }) => Promise<unknown> | unknown
 }
@@ -80,12 +80,10 @@ async function mountBoard(options: Options = {}) {
       teams: resolvedSettings ? (options.started ? teams.map(entry => ({ ...entry, frozen: true })) : teams) : [],
       settings: resolvedSettings,
       teamChoiceOpen: options.started ? false : (options.teamChoiceOpen ?? true),
-      started: options.started ?? false,
+      pageKind: options.pageKind ?? (options.started ? 'running' : 'teams'),
       viewerId: options.viewerId ?? kitty.id,
       isHost: options.isHost ?? false,
       room: live.room,
-      ...(options.unevenNotice === undefined ? {} : { unevenNotice: options.unevenNotice }),
-      ...(options.lockedNotice === undefined ? {} : { lockedNotice: options.lockedNotice }),
     },
   })
   return { page, posted, ...live }
@@ -189,7 +187,7 @@ describe('GameBoard', () => {
     })
 
     it('leaves out the locked notice where the page says so, between two Sessions', async () => {
-      const { page } = await mountBoard({ started: true, lockedNotice: false })
+      const { page } = await mountBoard({ started: true, pageKind: 'between' })
 
       expect(page.text()).not.toContain('Das Event läuft')
       expect(page.text()).not.toContain('Gesperrt seit dem Start')
@@ -636,19 +634,130 @@ describe('GameBoard', () => {
       expect(landingsOf(animate)).toEqual([person(page, LARSI).element.firstElementChild])
     })
 
-    it('places the avatar without any animation when motion is reduced', async () => {
+    it('places the avatar with a 0.14 s fade instead of a glide or a pop when motion is reduced (#237)', async () => {
       layOutBoard()
       const animate = vi.fn()
       Element.prototype.animate = animate
-      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : '') } as CSSStyleDeclaration)
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : name === '--cp-dur-fast' ? '140ms' : '') } as CSSStyleDeclaration)
       const { page, send } = await mountBoard()
 
       send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
       await nextTick()
       await nextTick()
 
-      expect(animate).not.toHaveBeenCalled()
+      expect(animate).toHaveBeenCalledTimes(1)
+      expect(animate.mock.contexts[0]).toBe(person(page, LARSI).element)
+      const [keyframes, options] = animate.mock.calls[0] as [{ opacity?: number }[], { duration: number }]
+      expect(keyframes.map(frame => frame.opacity)).toEqual([0, 1])
+      expect(options.duration).toBe(140)
       expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
+    })
+
+    it('fades only the Member whose place changed, not the ones who shift because of it (#237)', async () => {
+      layOutBoard()
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : '') } as CSSStyleDeclaration)
+      const { page, send } = await mountBoard({ members: [kittyAt(team(2)), larsiAt(), sanneAt()] })
+
+      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      await nextTick()
+      await nextTick()
+
+      expect(animate.mock.contexts).toEqual([person(page, LARSI).element])
+    })
+
+    it('puts an own move and its bounce-back home with the fade under reduced motion (#237)', async () => {
+      layOutBoard()
+      const animate = vi.fn()
+      Element.prototype.animate = animate
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : '') } as CSSStyleDeclaration)
+      const { page } = await mountBoard({ answer: () => {
+        throw createError({ statusCode: 409, statusMessage: 'team_choice_closed' })
+      } })
+
+      await person(page, kitty.id).trigger('click')
+      menuItem('Nach Team Rot').click()
+
+      await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Teamwahl öffnet, sobald der Termin steht.'))
+      await nextTick()
+      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
+      // Once for the move that showed at once, once for the way back.
+      expect(animate).toHaveBeenCalledTimes(2)
+      // Each zone draws its own element, so the first fade ran on the one in the team and the second on the one back on the Bench.
+      expect((animate.mock.contexts as Element[]).map(element => element.getAttribute('aria-label'))).toEqual(['Kitty, Team Rot', 'Kitty, Bench'])
+      expect(animate.mock.contexts[1]).toBe(person(page, kitty.id).element)
+    })
+
+    describe('a move the refetch never confirms (#237)', () => {
+      const HEARD_MS = 5000
+
+      it('goes back to the server’s place after 5 s with the glide and the landing pop, not a jump', async () => {
+        layOutBoard()
+        const animate = vi.fn()
+        Element.prototype.animate = animate
+        vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        const { page, send } = await mountBoard()
+
+        send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+        await nextTick()
+        await nextTick()
+        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
+        animate.mockClear()
+
+        vi.advanceTimersByTime(HEARD_MS - 1)
+        await nextTick()
+        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
+        expect(animate).not.toHaveBeenCalled()
+
+        vi.advanceTimersByTime(1)
+        await nextTick()
+        await nextTick()
+
+        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Bench')
+        const glides = animate.mock.calls.filter(([keyframes]) => (keyframes as { transform: string }[])[0]?.transform.startsWith('translate('))
+        expect(glides).toHaveLength(1)
+        expect((glides[0]![0] as { transform: string }[])[0]!.transform).toBe('translate(300px, -300px)')
+        expect(glides[0]![1]).toMatchObject({ duration: 360, easing: 'cubic-bezier(.34,1.56,.64,1)' })
+        expect(landingsOf(animate)).toEqual([person(page, LARSI).element.firstElementChild])
+      })
+
+      it('goes back with the fade under reduced motion', async () => {
+        layOutBoard()
+        const animate = vi.fn()
+        Element.prototype.animate = animate
+        vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : '') } as CSSStyleDeclaration)
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        const { page, send } = await mountBoard()
+
+        send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+        await nextTick()
+        await nextTick()
+        animate.mockClear()
+
+        vi.advanceTimersByTime(HEARD_MS)
+        await nextTick()
+        await nextTick()
+
+        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Bench')
+        expect(animate).toHaveBeenCalledTimes(1)
+        expect(animate.mock.contexts[0]).toBe(person(page, LARSI).element)
+        expect((animate.mock.calls[0]![0] as { opacity?: number }[]).map(frame => frame.opacity)).toEqual([0, 1])
+      })
+
+      it('keeps a move the refetch confirmed where it is', async () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        const { page, send } = await mountBoard()
+
+        send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+        await nextTick()
+        await page.setProps({ members: [kittyAt(), larsiAt(team(2)), sanneAt()] })
+        vi.advanceTimersByTime(HEARD_MS * 2)
+        await nextTick()
+
+        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
+      })
     })
   })
 
@@ -694,7 +803,7 @@ describe('GameBoard', () => {
       const closed = await mountBoard({ members: uneven, teamChoiceOpen: false })
       expect(closed.page.text()).not.toContain('sucht noch jemanden')
 
-      const host = await mountBoard({ members: uneven, viewerId: SANNE, isHost: true, unevenNotice: false })
+      const host = await mountBoard({ members: uneven, viewerId: SANNE, isHost: true, started: true, pageKind: 'done' })
       expect(host.page.text()).not.toContain('Die Session startet erst')
     })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { composedTeamName, moveRejection, placeOf, teamChoiceOpen, teamNameOf, teamWords, type MoveCheck, type Place } from '../../shared/board'
+import { composedTeamName, moveRejection, placeOf, teamChoiceOpen, composeTeamName, teamWords, type MoveCheck, type Place } from '../../shared/board'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -169,21 +169,21 @@ describe('composedTeamName', () => {
   })
 })
 
-describe('teamNameOf', () => {
+describe('composeTeamName', () => {
   const member = (team: number | null, teamWord: string | null, joined: number) => ({ team, teamWord, teamJoinedAt: new Date(joined) })
   const members = [member(1, 'Gurken', 5), member(1, 'Wilde', 1), member(2, 'Hasen', 2), member(null, 'Stray', 0), member(1, null, 3)]
 
   it('composes the name of one team from its Members\' words, in the order they joined', () => {
-    expect(teamNameOf(members, 1)).toBe('Wilde Gurken')
-    expect(teamNameOf(members, 2)).toBe('Hasen')
+    expect(composeTeamName(members, 1)).toBe('Wilde Gurken')
+    expect(composeTeamName(members, 2)).toBe('Hasen')
   })
 
   it('is null for a team without words, so the colour name shows', () => {
-    expect(teamNameOf(members, 3)).toBeNull()
+    expect(composeTeamName(members, 3)).toBeNull()
   })
 
   it('gives the frozen name when there is one, also null for a reset name', () => {
-    expect(teamNameOf(members, 1, 'Alte Hasen')).toBe('Alte Hasen')
-    expect(teamNameOf(members, 1, null)).toBeNull()
+    expect(composeTeamName(members, 1, 'Alte Hasen')).toBe('Alte Hasen')
+    expect(composeTeamName(members, 1, null)).toBeNull()
   })
 })
