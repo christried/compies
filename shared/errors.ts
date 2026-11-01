@@ -122,6 +122,10 @@ export const API_ERROR_STATUS = {
   game_count_reached: 409,
   /** A Round is being drawn: no game can be set, and that Round cannot be put back (#228). */
   round_being_drawn: 409,
+  /** The Selection mode has no wheel to spin (#229). */
+  no_wheel: 409,
+  /** No game is left on the wheel (#229). */
+  pool_empty: 409,
   /** A Round id the Event does not hold, or one that was put back already (#228). */
   round_not_found: 404,
   wrong_phase: 409,

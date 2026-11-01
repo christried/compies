@@ -92,7 +92,9 @@
     "setBlocked": {
       "no_running_session": "Geht erst in einer laufenden Session.",
       "game_count_reached": "Alle Spiele dieses Events sind schon gestartet.",
-      "round_being_drawn": "Gerade wird ein Spiel gezogen."
+      "round_being_drawn": "Gerade wird ein Spiel gezogen.",
+      "no_wheel": "Geht nur mit dem Glücksrad.",
+      "pool_empty": "Auf dem Rad ist kein Spiel mehr."
     },
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
