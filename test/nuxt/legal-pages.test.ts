@@ -48,6 +48,14 @@ describe('legal pages', () => {
     expect(text).not.toContain('solange das Rad nicht verdeckt ist')
   })
 
+  it('say in the events section that only Hosts, the Host of the Event whose pool holds the game, and admins read a game\'s notes (#224)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+
+    const text = page.get('main').text()
+    expect(text).toContain('Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält.')
+    expect(text).not.toContain('das Spiel enthält, solange sie die Spiele dieses Pools sehen')
+  })
+
   it('name the live connection to Cloudflare Workers, since the browser connects there itself (#156)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const live = page.findAll('section').find(s => s.get('h2').text().includes('Live-Verbindung'))
