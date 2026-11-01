@@ -14,3 +14,5 @@ A new check imports `cdp.mjs`: `launch(account, port)`, `open(tab, path, width, 
 Limits:
 - Headless Chrome never starts the browser's own image drag, so a native drag problem shows only on a real device. `nativeDrags` catches the ones it does start.
 - It signs in through `/api/dev/sign-in` only. Staging and production need Claude in Chrome (`claude --chrome`) or the user.
+- `shots.mjs` without a selector captures the viewport: pass the selector of anything below the fold (e.g. `'section:has(> dl)'` for „So wird gespielt“).
+- A `pnpm dev` started in the background outlives its stopped shell: stop the `nuxt dev` process listening on port 3000.
