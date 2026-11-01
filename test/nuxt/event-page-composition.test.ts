@@ -4,7 +4,7 @@ import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { clickButton, LARSI, regionHeadings, restoreScreen, SANNE, serve, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
+import { clickButton, LARSI, memberView, regionHeadings, restoreScreen, SANNE, serve, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
 
 // The composition of the Event page (#166, 11-event-seite § EventPage): what has to happen now goes on top. The order of
 // the regions' headings per state of the page, for the Host and for a Member, the poll that is only there while a Session
@@ -20,8 +20,8 @@ const team = (position: number, name: string | null = null): BoardTeam => ({ pos
 
 /** Kitty, Larsi and Sanne (the Host) with the seats a test gives them; everyone else sits on the Bench. */
 function members(seats: { kitty?: Seat, larsi?: Seat, sanne?: Seat } = {}): MemberView[] {
-  const member = (id: string, name: string, isHost: boolean, seat: Seat = { zone: 'bench' }): MemberView => ({
-    id, name, image: `https://example.com/${name}.png`, isHost, zone: seat.zone, team: seat.zone === 'team' ? seat.team ?? 1 : null, teamWord: null,
+  const member = (id: string, name: string, isHost: boolean, seat: Seat = { zone: 'bench' }) => memberView({
+    id, name, isHost, zone: seat.zone, team: seat.zone === 'team' ? seat.team ?? 1 : null,
   })
   return [member(kitty.id, 'Kitty', false, seats.kitty), member(LARSI, 'Larsi', false, seats.larsi), member(SANNE, 'Sanne', true, seats.sanne)]
 }

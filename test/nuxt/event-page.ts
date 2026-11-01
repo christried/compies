@@ -25,6 +25,14 @@ function defaultStart(slug: string, startsAt: string | null, setUp: boolean): St
   return startsAt ? { sessionId: `session-${slug}`, number: null, rejection: 'teams_empty' } : { sessionId: null, number: null, rejection: 'no_dated_session' }
 }
 
+/**
+ * A Member as the Event read sends them: with a picture, as every Discord and Twitch account has one (#207). A test
+ * gives the id, the name and whatever it asserts on; everything else is the Bench of an ordinary Member.
+ */
+export function memberView(overrides: Partial<MemberView> & Pick<MemberView, 'id' | 'name'>): MemberView {
+  return { image: `https://example.com/${overrides.name}.png`, isHost: false, zone: 'stands', team: null, teamWord: null, ...overrides }
+}
+
 /** The `GET /api/e/:slug` body for a Member (Kitty) in a poll with Slots Fr, Sa and a past Di. */
 export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}) {
   const { startsAt = null, previousStartsAt = null, ...event } = { ...eventOf(slug), ...overrides.event }
@@ -48,10 +56,10 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     votes: votes.map(vote => ({ note: null, ...vote })),
     // Everyone on the Bench, no teams and Team choice closed, unless a test says otherwise (#160).
     members: overrides.members ?? [
-      { id: kitty.id, name: 'Kitty', image: 'https://example.com/kitty.png', isHost: false, zone: 'bench', team: null, teamWord: null },
-      { id: LARSI, name: 'Larsi', image: 'https://example.com/larsi.png', isHost: false, zone: 'bench', team: null, teamWord: null },
-      { id: SANNE, name: 'Sanne', image: 'https://example.com/sanne.png', isHost: true, zone: 'bench', team: null, teamWord: null },
-    ] satisfies MemberView[],
+      memberView({ id: kitty.id, name: 'Kitty', zone: 'bench' }),
+      memberView({ id: LARSI, name: 'Larsi', zone: 'bench' }),
+      memberView({ id: SANNE, name: 'Sanne', isHost: true, zone: 'bench' }),
+    ],
     teams: overrides.teams ?? [] as BoardTeam[],
     teamChoiceOpen: overrides.teamChoiceOpen ?? false,
     // No Session has started (#164) unless a test says so. The Host's start rule defaults to the Event's one Session:

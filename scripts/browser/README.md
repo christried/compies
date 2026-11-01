@@ -9,7 +9,7 @@ Needs `pnpm dev` and, for anything live, `pnpm dev:realtime` (README § Realtime
 | `node scripts/browser/shots.mjs <path> [selector]` | Screenshots of a page (or one element) as Host and Member, at 1440 and 390 px. The path goes without its leading slash (`e/my-event`): Git Bash turns `/e/…` into a Windows path |
 | `node scripts/browser/moves.mjs <slug>` | Host at 1440 px, Member at 390 px on one Event with Team choice open: moves by API and by dragging the avatar picture (mouse and long press), every animation both sides draw (curve, duration, who), the seats after it, native drags, page errors |
 
-A new check imports `cdp.mjs`: `launch(account, port)`, `open(tab, path, width, height, selector)`, `api(tab, method, path, body)`, `drag(tab, from, to, { touch })`, `animations(tab)`, `shot(tab, name, selector)`. Each account needs its own port.
+A new check imports `cdp.mjs`: `launch(account)`, `open(tab, path, width, height, waitFor, { news })`, `api(tab, method, path, body)`, `drag(tab, from, to, { touch })`, `animations(tab)`, `shot(tab, name, selector)`. Ports per account in `PORTS`.
 
 Limits:
 - Headless Chrome never starts the browser's own image drag, so a native drag problem shows only on a real device. `nativeDrags` catches the ones it does start.
