@@ -43,6 +43,8 @@ export type RoomMessage
     | { type: 'round.set', roundId: string }
   /** The Host put an open Round back (#228). No game data. */
     | { type: 'round.putBack', roundId: string }
+  /** The Host changed the Countdown (#236): set, started, paused, reset or cleared. No payload; the client refetches the Event read. */
+    | { type: 'countdown.changed' }
 
 export type RoomMessageType = RoomMessage['type']
 

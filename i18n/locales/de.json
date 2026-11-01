@@ -1443,6 +1443,21 @@
     "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
     "previewOffPick": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt."
   },
+  "countdown": {
+    "title": "Countdown",
+    "paused": "Pausiert",
+    "ended": "Zeit ist um",
+    "start": "Starten",
+    "pause": "Pausieren",
+    "resume": "Fortsetzen",
+    "reset": "Zurücksetzen",
+    "sheetTitle": "Countdown stellen",
+    "minutes": "Minuten",
+    "seconds": "Sekunden",
+    "set": "Stellen",
+    "range": "Zwischen 5 Sekunden und 99:59.",
+    "running": "Der Countdown läuft schon."
+  },
   "rounds": {
     "title": "Gerade dran",
     "list": "Offene Spiele",
@@ -1486,6 +1501,10 @@
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "gameCountBelowStarted": "So wenige geht nicht: Es sind schon mehr Spiele gestartet.",
     "roundNotFound": "Dieses Spiel ist nicht mehr dran.",
+    "noCountdown": "Es läuft kein Countdown.",
+    "countdownRunning": "Der Countdown läuft schon.",
+    "countdownNotRunning": "Der Countdown läuft gerade nicht.",
+    "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

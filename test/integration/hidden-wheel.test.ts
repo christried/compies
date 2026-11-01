@@ -2,6 +2,10 @@ import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import getActivity from '../../server/api/e/[slug]/activity.get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
+import pauseCountdown from '../../server/api/e/[slug]/countdown/pause.post'
+import resetCountdown from '../../server/api/e/[slug]/countdown/reset.post'
+import startCountdown from '../../server/api/e/[slug]/countdown/start.post'
+import setCountdown from '../../server/api/e/[slug]/countdown/index.put'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import putBackRound from '../../server/api/e/[slug]/rounds/[id].delete'
 import setRound from '../../server/api/e/[slug]/rounds/index.post'
@@ -90,6 +94,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       'POST /api/e/:slug/rotate': rotateInvite,
       'POST /api/e/:slug/rounds': setRound,
       'DELETE /api/e/:slug/rounds/:id': putBackRound,
+      'PUT /api/e/:slug/countdown': setCountdown,
+      'POST /api/e/:slug/countdown/start': startCountdown,
+      'POST /api/e/:slug/countdown/pause': pauseCountdown,
+      'POST /api/e/:slug/countdown/reset': resetCountdown,
     }, { imageStore: store, roomNotifier: notifier })
   })
 
@@ -325,7 +333,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
   // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'round.set', 'round.putBack'] as const satisfies readonly RoomMessageType[]
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'round.set', 'round.putBack', 'countdown.changed'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
@@ -446,6 +454,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       const e = await newGame('Epsilon Eck', 'eeeeeeeeeee')
       const roundId = await hostSets(request, slug, hostCookie, e.id)
       await hostPutsBack(request, slug, hostCookie, roundId)
+      // The Host sets a Countdown and starts it (countdown.changed, #236); ending the Session clears it.
+      expect((await send('PUT', `/api/e/${slug}/countdown`, hostCookie, { seconds: 60 })).status).toBe(200)
+      expect((await send('POST', `/api/e/${slug}/countdown/start`, hostCookie)).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/sessions/end`, hostCookie)).status).toBe(200)
 
       return { slug, eventId, games: [a, b, c, d] as const, set: e, player2Cookie }
