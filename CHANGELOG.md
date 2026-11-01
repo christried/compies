@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- Ist das Rad verdeckt, siehst du nicht mehr, wie viele Spiele im Pool sind. Das zeigt dir erst das Rad. ([#222](https://github.com/christried/compies/issues/222))
+
 ## [1.4.0] - 2026-10-31 – Teams
 
 Die Event-Seite ist jetzt live: Ihr seht, wer gerade da ist, setzt euch auf dem Spielbrett in Teams, gebt eurem Team gemeinsam einen Namen, und der Host startet die Sessions. Unter **Aktivität** steht, was im Event passiert ist.

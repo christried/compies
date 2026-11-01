@@ -10,19 +10,11 @@ import type { Pool } from '../../shared/settings'
 // The pools of an Event as `GET /api/e/:slug` shows them (#146).
 
 /**
- * Both pools of an Event. With `visible` the games, each pool sorted by name; without it only the counts, and no
- * game name or id is even selected, so none can leak into the response (#148).
+ * Both pools of an Event. With `visible` the games, each pool sorted by name; without it nothing about the pools is
+ * selected, so neither a game nor a count can leak into the response (#148, #222).
  */
 export async function eventPools(db: Db, eventId: string, visible: boolean): Promise<EventPools> {
-  if (!visible) {
-    const counts = await db
-      .select({ pool: eventPoolGames.pool, count: sql<number>`count(*)::int` })
-      .from(eventPoolGames)
-      .where(eq(eventPoolGames.eventId, eventId))
-      .groupBy(eventPoolGames.pool)
-    const countOf = (pool: Pool) => counts.find(row => row.pool === pool)?.count ?? 0
-    return { hidden: true, mainCount: countOf('main'), tiebreakerCount: countOf('tiebreaker') }
-  }
+  if (!visible) return { hidden: true }
   const rows = await db
     .select({ pool: eventPoolGames.pool, game: games })
     .from(eventPoolGames)

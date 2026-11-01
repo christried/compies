@@ -174,7 +174,7 @@ describe('the pools of an Event (#146)', () => {
       const raw = await response.text()
       const view = JSON.parse(raw) as EventView
 
-      expect(view.pools).toEqual({ hidden: true, mainCount: 2, tiebreakerCount: 1 })
+      expect(view.pools).toEqual({ hidden: true })
       expect(raw).not.toContain('Geheimes Spiel')
       expect(raw).not.toContain('Anderes Spiel')
       expect(raw).not.toContain(secret.id)

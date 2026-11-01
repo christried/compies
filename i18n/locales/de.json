@@ -1423,8 +1423,7 @@
     "mainPool": "Spielepool",
     "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",
-    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen nur, wie viele Spiele im Pool sind.",
-    "counts": "{main} Spiel im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen. | {main} Spiele im Spielepool, {tiebreaker} im Tiebreaker-Pool. Welche, verrät das Rad erst beim Drehen."
+    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden."
   },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
