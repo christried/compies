@@ -1,21 +1,29 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { eventMembers, eventTeams, pollSlots, pollVotes, users } from '../db/schema'
+import { eventMembers, eventTeams, games, pollSlots, pollVotes, rounds, users } from '../db/schema'
 import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
+import { WHEEL_UNKNOWN } from '../domain/wheel'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
-import { placeOf, runningOf, teamNameOf } from '../../shared/board'
-import type { EventView, SessionNote, SessionView } from '../../shared/event'
+import { placeOf, composeTeamName, type Zone } from '../../shared/board'
+import { gamesLeft, isOpen } from '../../shared/rounds'
+import { runningOf } from '../../shared/session-state'
+import type { EventView, RoundView, SessionNote, SessionView, WheelView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
-import { settingsFromRow } from '../../shared/settings'
+import { floorsAt, hasWheel, settingsFromRow } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
 import { inviteUrl } from './links'
 import { startOf, teamChoiceOf } from './board'
+import { roundGameView } from './library'
 import { eventPools } from './pools'
+import { readClip } from './clip'
+import { countdownView, readCountdown } from './countdown'
+import { coinView, readShownToss } from './coin'
+import { readDraws, readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
-import { settingsFloors } from './settings-floors'
+import { floorFacts } from './settings-floors'
 
 // The Event read (`GET /api/e/:slug`) as section builders (#183). Each builder returns its slice of EventView and the
 // handler composes them. Rows that more than one section needs are read once, together, by readEventRows; the pools
@@ -36,13 +44,15 @@ export interface EventRows {
   slots: { id: string, startsAt: Date }[]
   votes: VoteRow[]
   /** The Members in the order they joined. */
-  members: { id: string, name: string, displayName: string | null, image: string | null, zone: 'bench' | 'stands' | 'team', team: number | null, teamWord: string | null, teamJoinedAt: Date | null }[]
+  members: { id: string, name: string, displayName: string | null, image: string | null, zone: Zone, team: number | null, teamWord: string | null, teamJoinedAt: Date | null }[]
   /** The frozen teams (#164): none before the first Session start. A null name is the Team colour's name. */
   frozenTeams: { position: number, frozenName: string | null }[]
+  /** Every Round of the Event in start order with its game (null while it is being drawn), the put-back ones too (#228). */
+  rounds: { round: RoundRow, game: typeof games.$inferSelect | null }[]
 }
 
 export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRows> {
-  const [sessions, removedSessions, slots, votes, members, frozenTeams] = await Promise.all([
+  const [sessions, removedSessions, slots, votes, members, frozenTeams, roundRows] = await Promise.all([
     eventSessions(db, eventRow.id),
     removedSessionNotices(db, eventRow.id),
     db
@@ -65,8 +75,14 @@ export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRo
       .select({ position: eventTeams.position, frozenName: eventTeams.frozenName })
       .from(eventTeams)
       .where(eq(eventTeams.eventId, eventRow.id)),
+    db
+      .select({ round: rounds, game: games })
+      .from(rounds)
+      .leftJoin(games, eq(rounds.gameId, games.id))
+      .where(eq(rounds.eventId, eventRow.id))
+      .orderBy(asc(rounds.startedAt), asc(rounds.id)),
   ])
-  return { sessions, removedSessions, slots, votes, members, frozenTeams }
+  return { sessions, removedSessions, slots, votes, members, frozenTeams, rounds: roundRows }
 }
 
 /**
@@ -126,7 +142,7 @@ export function boardSection(eventRow: EventRow, rows: EventRows): Pick<EventVie
     teams: Array.from({ length: settings?.teamCount ?? 0 }, (_, index) => {
       const position = index + 1
       const frozen = rows.frozenTeams.find(row => row.position === position)
-      return { position, name: teamNameOf(rows.members, position, frozen?.frozenName), frozen: frozen !== undefined }
+      return { position, name: composeTeamName(rows.members, position, frozen?.frozenName), frozen: frozen !== undefined }
     }),
     teamChoiceOpen: open,
   }
@@ -139,15 +155,14 @@ export function boardSection(eventRow: EventRow, rows: EventRows): Pick<EventVie
 export function startSection(eventRow: EventRow, rows: EventRows, viewer: Viewer): Pick<EventView, 'start'> {
   if (!viewer.isHost) return { start: null }
   const { next, rejection } = startOf(eventRow, rows.sessions, rows.members.map(row => placeOf(row)))
-  const number = next === null ? null : numberedSessions(rows.sessions).find(row => row.id === next.id)?.number ?? null
-  return { start: { sessionId: next?.id ?? null, number, rejection } }
+  return { start: { sessionId: next?.id ?? null, number: next?.number ?? null, rejection } }
 }
 
 export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'settings' | 'settingsFloors' | 'pools'>> {
   const settings = settingsFromRow(eventRow)
   const [floors, pools] = await Promise.all([
     // The floors at the saved team count; an Event that is not set up counts all teams (#197).
-    viewer.isHost ? settingsFloors(db, eventRow.id).then(floorsAt => floorsAt(settings?.teamCount ?? Number.POSITIVE_INFINITY)) : null,
+    viewer.isHost ? floorFacts(db, eventRow.id).then(facts => floorsAt(facts, settings?.teamCount)) : null,
     // Nothing about the pools is selected for a viewer who may not see them (#222).
     canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings })) ? eventPools(db, eventRow.id, viewer.isHost) : null,
   ])
@@ -157,9 +172,101 @@ export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): 
     // The Host sees the games of both pools; every other Member only while the Pool preview is on, else null: nothing
     // about the pools, not even how many (#146, #148, #222, #225). Then NO other field of this response may carry a pool
     // game (name, id, image key, video id, notes): the Members, Sessions and Votes in the other sections must stay free
-    // of them. The tests hidden-wheel.test.ts and pool-preview.test.ts read the raw response to keep it so.
+    // of them. The one exception is a game a Round has set (roundsSection): it is every Member's from the moment it is set,
+    // its notes the Host's alone. The tests hidden-wheel.test.ts and pool-preview.test.ts read the raw response to keep it so.
     pools,
   }
+}
+
+/**
+ * The open Rounds (#228), in start order, and for the Host the answer to setting the next game. A set game is visible to
+ * every Member from the moment it is set, with the Pool preview off and under a Hidden wheel alike, and its Game notes are
+ * the Host's alone (decided 2026-11-01). Nothing else about the pools reaches a Member through here. A Round that is being drawn
+ * is not listed: its game is not known yet; the read settles a draw that is due before this runs (settleBeforeRead, #229).
+ * The Lucky Wheel (#229) comes with them, since it reads the same draws and the games left.
+ */
+export async function roundsSection(db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer, now: Date): Promise<Pick<EventView, 'rounds' | 'setGame' | 'wheel'>> {
+  const roundRows = rows.rounds.map(({ round }) => round)
+  const open: RoundView[] = rows.rounds.flatMap(({ round, game }) => (isOpen(round) && game
+    ? [{ id: round.id, startedAt: round.startedAt.toISOString(), setAt: round.setAt!.toISOString(), game: roundGameView(game), ...(viewer.isHost && game.notes ? { notes: game.notes } : {}) }]
+    : []))
+  const settings = settingsFromRow(eventRow)
+  const onWheel = settings !== null && hasWheel(settings.selectionMode) && runningOf(rows.sessions) !== undefined
+  if (!viewer.isHost && !onWheel) return { rounds: open, setGame: null, wheel: null }
+  const [draws, pool] = await Promise.all([readDraws(db, eventRow.id), readGamePool(db, eventRow.id)])
+  const left = gamesLeft(pool, draws, roundRows)
+  const places = rows.members.map(row => placeOf(row))
+  return {
+    rounds: open,
+    setGame: viewer.isHost
+      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, left, true), left }
+      : null,
+    wheel: onWheel ? await wheelView(db, viewer, settings.hiddenWheel, left, draws, now) : null,
+  }
+}
+
+/**
+ * The Lucky Wheel of a running Session, for one viewer (#229, spec #218 § Hidden wheel on the wire). The Host and every Member
+ * of a visible wheel get the names of the slices; a Member under a Hidden wheel gets the count and, for a spin, the placeholders
+ * of that spin, and the drawn game's name and card only from the stop instant on, the Host's always. Nothing about any other
+ * game reaches that Member: the games are selected only when the viewer may read them.
+ */
+async function wheelView(db: Db, viewer: Viewer, hidden: boolean, left: string[], draws: DrawRow[], now: Date): Promise<WheelView> {
+  const spin = draws.filter(draw => draw.kind === 'spin').sort((a, b) => b.committedAt.getTime() - a.committedAt.getTime() || (a.id < b.id ? 1 : -1))[0]
+  const stopped = spin !== undefined && spin.stopAt <= now
+  const sees = viewer.isHost || !hidden
+  const ids = new Set<string>()
+  if (sees) for (const id of [...left, ...(spin?.sliceGameIds ?? [])]) ids.add(id)
+  if (spin && (viewer.isHost || stopped)) ids.add(spin.gameId)
+  const found = ids.size === 0 ? [] : await db.select().from(games).where(inArray(games.id, [...ids]))
+  const byId = new Map(found.map(game => [game.id, game]))
+  const nameOf = (id: string) => byId.get(id)?.name ?? ''
+  const drawn = spin ? byId.get(spin.gameId) : undefined
+  return {
+    count: left.length,
+    slices: sees ? left.map(id => ({ id, name: nameOf(id) })) : null,
+    spin: spin
+      ? {
+          roundId: spin.roundId,
+          drawId: spin.id,
+          spinStartAt: spin.spinStartAt!.toISOString(),
+          stopAt: spin.stopAt.toISOString(),
+          slices: spin.sliceGameIds!.length,
+          resultIndex: spin.resultIndex!,
+          resultOffset: spin.resultOffset!,
+          // The stored placeholders keep their order; the result slice's turns real at the stop. A spin from a visible wheel that was hidden since has none.
+          labels: sees
+            ? spin.sliceGameIds!.map(nameOf)
+            : (spin.sliceLabels ?? spin.sliceGameIds!.map(() => WHEEL_UNKNOWN)).map((label, index) => (stopped && index === spin.resultIndex ? nameOf(spin.gameId) : label)),
+          // The names of a visible wheel are public, the drawn card is not: a Member gets it from the stop on.
+          game: drawn && (viewer.isHost || stopped) ? roundGameView(drawn) : null,
+        }
+      : null,
+  }
+}
+
+/** The clip that runs now (#230, spec #218 § Clip): every Member gets the same one while a Session runs, from the draw's stop on. */
+export async function clipSection(db: Db, eventRow: EventRow, rows: EventRows, now: Date): Promise<Pick<EventView, 'clip'>> {
+  return { clip: await readClip(db, eventRow.id, rows.sessions, now) }
+}
+
+/**
+ * The Countdown (#236, spec #218 § Countdown): every Member gets it while a Session runs, and nothing otherwise, even when a row
+ * was left behind (the Session end deletes it, but the read does not rely on that).
+ */
+export async function countdownSection(db: Db, eventRow: EventRow, rows: EventRows): Promise<Pick<EventView, 'countdown'>> {
+  if (!runningOf(rows.sessions)) return { countdown: null }
+  const row = await readCountdown(db, eventRow.id)
+  return { countdown: row ? countdownView(row) : null }
+}
+
+/**
+ * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member; null otherwise. Its
+ * side is in the read for everybody, since the page shows it only from the landing on (the room carries it too).
+ */
+export async function coinSection(db: Db, eventRow: EventRow, rows: EventRows): Promise<Pick<EventView, 'coin'>> {
+  const toss = await readShownToss(db, eventRow, rows.sessions)
+  return { coin: toss ? coinView(toss) : null }
 }
 
 /** The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on. */

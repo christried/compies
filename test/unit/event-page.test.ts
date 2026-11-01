@@ -12,7 +12,7 @@ const dated = (id: string, number: number | null, startsAt: string, times: { sta
 const undated = (id: string): PageInput['sessions'][number] => ({ id, number: null, startsAt: null, previousStartsAt: null, startedAt: null, endedAt: null })
 
 function input(sessions: PageInput['sessions'], fields: Partial<PageInput> = {}): PageInput {
-  return { settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, runningSessionId: null, ...fields }
+  return { settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, ...fields }
 }
 
 const SAT = '2090-10-25T18:30:00.000Z'
@@ -48,7 +48,7 @@ describe('eventPageState', () => {
   })
 
   it('is running while a Session runs, with its number and when it started', () => {
-    const state = eventPageState(input([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { runningSessionId: 'a' }))
+    const state = eventPageState(input([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { event: { phase: 'running' } }))
 
     expect(state).toMatchObject({ kind: 'running', total: 2, running: { number: 1, startedAt: SAT }, next: { number: 2 } })
   })
@@ -75,7 +75,7 @@ describe('eventPageState', () => {
 
     expect(pill([undated('a')])).toEqual({ phase: 'poll', ended: false })
     expect(pill([dated('a', 1, SAT), undated('b')])).toEqual({ phase: 'date_set', ended: false })
-    expect(pill([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { runningSessionId: 'a' })).toEqual({ phase: 'running', ended: false })
+    expect(pill([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)])).toEqual({ phase: 'running', ended: false })
     expect(pill([ended, dated('b', 2, SUN)])).toEqual({ phase: 'date_set', ended: false })
     expect(pill([ended, undated('b')])).toEqual({ phase: 'poll', ended: false })
     expect(pill([ended])).toEqual({ phase: 'finished', ended: true })
@@ -128,5 +128,83 @@ describe('dateBlockedKey', () => {
 
   it('is null while one open future Slot can become a Date', () => {
     expect(dateBlockedKey([{ past: true }, { past: false }])).toBeNull()
+  })
+})
+
+// The stage's blocks per state (review 1.4 A4, #228): the state says which blocks the page shows and in which order, so a
+// new block is one entry in pageBlocks.
+describe('the blocks of the stage', () => {
+  const blocks = (sessions: PageInput['sessions'], fields: Partial<PageInput> = {}) => eventPageState(input(sessions, fields)).blocks
+  const ENDED = { startedAt: SAT, endedAt: SUN }
+
+  it('puts the poll first while no Session is dated, then the Game board and the cards', () => {
+    expect(blocks([undated('a'), undated('b')])).toEqual(['head', 'reopen', 'poll', 'board', 'cards'])
+  })
+
+  it('puts the Game board first once a Session is dated, with the poll of another one below it', () => {
+    expect(blocks([dated('a', 1, SAT), undated('b')])).toEqual(['head', 'reopen', 'seat', 'board', 'poll', 'cards'])
+  })
+
+  it('has no poll once every Session is dated', () => {
+    expect(blocks([dated('a', 1, SAT), dated('b', 2, SUN)], { event: { phase: 'date_set' } })).toEqual(['head', 'reopen', 'seat', 'board', 'cards'])
+  })
+
+  it('shows the open Rounds above the Game board while a Session runs, and only then', () => {
+    const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
+
+    expect(blocks(running, { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'countdown', 'coin', 'board', 'poll', 'cards'])
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).not.toContain('rounds')
+    expect(blocks([dated('a', 1, SAT)])).not.toContain('rounds')
+  })
+
+  it('shows the coin under the Countdown while a Session runs, and nowhere else (#235)', () => {
+    const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
+
+    expect(blocks(running, { event: { phase: 'running' } })).toEqual(expect.arrayContaining(['countdown', 'coin']))
+    expect(blocks(running, { event: { phase: 'running' } }).indexOf('coin')).toBe(blocks(running, { event: { phase: 'running' } }).indexOf('countdown') + 1)
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).not.toContain('coin')
+    expect(blocks([dated('a', 1, SAT)])).not.toContain('coin')
+  })
+
+  it('puts the wheel on top of the open Rounds in a running Lucky Wheel Event, and nowhere else (#229)', () => {
+    const wheel = { settings: { ...settings, selectionMode: 'lucky_wheel' } as PageInput['settings'] }
+    const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
+
+    expect(blocks(running, { event: { phase: 'running' }, ...wheel })).toEqual(['head', 'reopen', 'wheel', 'rounds', 'countdown', 'coin', 'board', 'poll', 'cards'])
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' }, ...wheel })).not.toContain('wheel')
+    expect(blocks([dated('a', 1, SAT)], wheel)).not.toContain('wheel')
+    expect(blocks(running, { event: { phase: 'running' }, settings: { ...settings, selectionMode: 'admin_pick' } as PageInput['settings'] })).not.toContain('wheel')
+  })
+
+  it('puts the cards first between two Sessions, with the notice that the teams stay', () => {
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'cards', 'stay', 'board'])
+  })
+
+  it('keeps the poll below the board between two Sessions while another one waits for its Date', () => {
+    expect(blocks([dated('a', 1, SAT, ENDED), undated('b')], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'cards', 'stay', 'board', 'poll'])
+  })
+
+  it('ends with the cards and the board after the last Session', () => {
+    expect(blocks([dated('a', 1, SAT, ENDED)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'cards', 'board'])
+  })
+
+  it('asks the Event to be set up first, and shows the poll when one is open', () => {
+    expect(blocks([undated('a')], { settings: null })).toEqual(['head', 'reopen', 'setup', 'poll', 'board', 'cards'])
+  })
+
+  it('keeps the poll quiet as soon as the page is about something else than the Date', () => {
+    const compact = (sessions: PageInput['sessions'], fields: Partial<PageInput> = {}) => eventPageState(input(sessions, fields)).pollCompact
+
+    expect(compact([undated('a')])).toBe(false)
+    expect(compact([undated('a')], { settings: null })).toBe(false)
+    expect(compact([dated('a', 1, SAT), undated('b')])).toBe(true)
+  })
+
+  it('lets the cards stand out between two Sessions and after the last', () => {
+    const standOut = (sessions: PageInput['sessions'], fields: Partial<PageInput> = {}) => eventPageState(input(sessions, fields)).cardsStandOut
+
+    expect(standOut([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)])).toBe(true)
+    expect(standOut([dated('a', 1, SAT, ENDED)])).toBe(true)
+    expect(standOut([dated('a', 1, SAT), dated('b', 2, SUN)])).toBe(false)
   })
 })

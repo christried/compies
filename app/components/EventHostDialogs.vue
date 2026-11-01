@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Lock, Play } from '@lucide/vue'
 import { dateBlockedKey } from '~/utils/event-page'
-import { hasStarted } from '~~/shared/board'
-import { datePollOpen, sessionsEditable, type DatedSessionView, type EventView } from '~~/shared/event'
+import { isFullPoolGame } from '~~/shared/game'
+import { hasStarted } from '~~/shared/session-state'
+import type { DatedSessionView, EventView } from '~~/shared/event'
 
 // The Host's dialogs and sheets of the Event page (#52, #55, #164): the Date confirm dialog, the reschedule dialog, the
-// Slot editor, the add-Session sheet and the start dialog. The page opens them (from the dock, the poll and the Sessions
+// Slot editor, the add-Session sheet, the start dialog and the picker of the next game (#228). The page opens them (from the dock, the poll and the Sessions
 // card) through the methods this component exposes.
 // Each closes only when the server took the change (useEventMutation's `send`, #74).
 const props = defineProps<{
@@ -16,6 +17,12 @@ const props = defineProps<{
   votes: ReturnType<typeof useOptimisticVotes>
   /** Refetches the Event, after the Slot editor changed it. */
   refresh: () => unknown
+  /** The Date poll is open (the page's datePollOpen, #238): the Slot editor is there. */
+  pollOpen: boolean
+  /** Sessions can be added in this Phase (the page's sessionsEditable, #238). */
+  canChangeSessions: boolean
+  /** The server's clock (the page's useServerClock): the Countdown sheet asks whether one runs (#236). */
+  serverNow: () => number
 }>()
 
 const { t } = useI18n()
@@ -70,8 +77,7 @@ function rescheduleDate(startsAt: string) {
   return send('POST', `sessions/${rescheduleSessionId.value}/reschedule`, { body: { startsAt }, busy: rescheduling, done: () => (rescheduleOpen.value = false) })
 }
 
-// Adding a Session (#55): in every Phase before the Event finishes (sessionsEditable).
-const canChangeSessions = computed(() => sessionsEditable(props.view.event.phase))
+// Adding a Session (#55): in every Phase before the Event finishes (the page's canChangeSessions).
 const addOpen = ref(false)
 const adding = ref(false)
 
@@ -80,8 +86,7 @@ function addSession(startsAt: string | null) {
   return send('POST', 'sessions', { body: startsAt === null ? {} : { startsAt }, busy: adding, done: () => (addOpen.value = false) })
 }
 
-// The Slot editor (#15) is there while the Date poll is open (#164, datePollOpen).
-const pollOpen = computed(() => datePollOpen(props.view.event.phase, props.view.missingDates))
+// The Slot editor (#15) is there while the Date poll is open (#164, the page's pollOpen).
 const editing = ref(false)
 const editableSlots = computed(() => props.view.slots.map(slot => ({
   id: slot.id,
@@ -103,8 +108,31 @@ function startSession() {
   return send('POST', 'sessions/start', { busy: starting, done: () => (startOpen.value = false) })
 }
 
+// Setting the next game (#228): the picker lists the games left in the Game pool, whole, as the Host reads them.
+const pickerOpen = ref(false)
+const setting = ref(false)
+const poolLeft = computed(() => {
+  const left = new Set(props.view.setGame?.left ?? [])
+  return (props.view.pools?.main ?? []).filter(isFullPoolGame).filter(game => left.has(game.id))
+})
+
+/** Sets the game as the next Round; the picker closes once the server took it. */
+function setNextGame(gameId: string) {
+  return send('POST', 'rounds', { body: { gameId }, busy: setting, done: () => (pickerOpen.value = false) })
+}
+
+// The Countdown (#236): the sheet sends the length in seconds; it closes once the server took it.
+const countdownOpen = ref(false)
+const countdownSetting = ref(false)
+
+function setCountdown(seconds: number) {
+  return send('PUT', 'countdown', { body: { seconds }, busy: countdownSetting, done: () => (countdownOpen.value = false) })
+}
+
 defineExpose({
   openConfirm,
+  openSetGame: () => (pickerOpen.value = true),
+  openCountdown: () => (countdownOpen.value = true),
   openReschedule,
   openAdd: () => (addOpen.value = true),
   openSlotEditor: () => (editing.value = true),
@@ -163,6 +191,24 @@ defineExpose({
     :loading="rescheduling"
     @confirm="rescheduleDate"
     @cancel="rescheduleOpen = false"
+  />
+
+  <NextGamePicker
+    v-if="view.setGame"
+    :open="pickerOpen"
+    :pool="poolLeft"
+    :busy="setting"
+    @close="pickerOpen = false"
+    @pick="setNextGame"
+  />
+
+  <CountdownSheet
+    :open="countdownOpen"
+    :busy="countdownSetting"
+    :countdown="view.countdown"
+    :server-now="serverNow"
+    @close="countdownOpen = false"
+    @set="setCountdown"
   />
 
   <SessionAddSheet

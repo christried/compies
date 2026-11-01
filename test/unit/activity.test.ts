@@ -11,7 +11,7 @@ function t(key: string, named: Record<string, unknown> = {}): string {
   return template.replace(/\{(\w+)\}/g, (_, name: string) => String(named[name]))
 }
 
-const base = { id: 'e', at: '2090-10-30T18:00:00.000Z', actor: { id: 'u1', name: 'Sanne' }, people: {} }
+const base = { id: 'e', at: '2090-10-30T18:00:00.000Z', actor: { id: 'u1', name: 'Sanne' }, people: {}, games: {} }
 
 describe('groupActivity', () => {
   const entry = (id: string, at: string): ActivityEntry => ({ ...base, id, at, type: 'member_joined', params: {} })
@@ -154,6 +154,51 @@ describe('the sentence of an entry', () => {
     expect(text({ ...base, type: 'session_ended', params: { sessionId: 's', number: 2 } })).toBe('Sanne hat Session 2 beendet')
     expect(text({ ...base, type: 'session_ended', params: { sessionId: 's', number: null } })).toBe('Sanne hat die Session beendet')
   })
+
+  it('says who set a game and who put it back, naming the game the entry carries (#228)', () => {
+    const named = { ...base, games: { g1: 'Halo' } }
+
+    expect(text({ ...named, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })).toBe('Sanne hat Halo gesetzt')
+    expect(text({ ...named, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })).toBe('Sanne hat Halo zurückgelegt')
+  })
+
+  it('sets the game in bold like the names', () => {
+    const parts = activityParts({ ...base, games: { g1: 'Halo' }, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } }, t)
+
+    expect(parts).toEqual([{ text: 'Sanne', strong: true }, { text: ' hat ', strong: false }, { text: 'Halo', strong: true }, { text: ' gesetzt', strong: false }])
+  })
+
+  it('leaves out a sentence about a game the viewer may not name yet', () => {
+    expect(text({ ...base, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })).toBeNull()
+    expect(text({ ...base, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })).toBeNull()
+  })
+
+  it('says what the wheel drew, naming the game, with the game in bold, and nothing while the viewer may not name it yet (#229)', () => {
+    const drawn = { ...base, type: 'game_drawn', params: { roundId: 'r', drawId: 'd', gameId: 'g1' } } as const
+
+    expect(text({ ...drawn, games: { g1: 'Halo' } })).toBe('Glücksrad: Halo')
+    expect(activityParts({ ...drawn, games: { g1: 'Halo' } }, t)).toEqual([{ text: 'Glücksrad: ', strong: false }, { text: 'Halo', strong: true }])
+    expect(text(drawn)).toBeNull()
+  })
+
+  it('says a coin toss with its side, Kopf or Schwanz (#235)', () => {
+    expect(text({ ...base, type: 'coin_tossed', params: { side: 'heads' } })).toBe('Münzwurf: Kopf')
+    expect(text({ ...base, type: 'coin_tossed', params: { side: 'tails' } })).toBe('Münzwurf: Schwanz')
+  })
+
+  it('still has no sentence for the kinds whose tickets come later', () => {
+    expect(text({ ...base, type: 'vetoes_revealed', params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [] } })).toBeNull()
+    expect(text({ ...base, type: 'bonus_veto_granted', params: { team: 1 } })).toBeNull()
+  })
+
+  it('draws a game set, a game put back and a game drawn with an icon of their own', () => {
+    const set = activityIcon({ ...base, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })
+    const back = activityIcon({ ...base, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })
+    const drawn = activityIcon({ ...base, type: 'game_drawn', params: { roundId: 'r', drawId: 'd', gameId: 'g1' } })
+
+    expect(new Set([set.icon, back.icon, drawn.icon]).size).toBe(3)
+    expect(set.tone).toBe('surface')
+  })
 })
 
 describe('readEntry', () => {
@@ -166,6 +211,12 @@ describe('readEntry', () => {
     expect(readEntry({ ...entry, type: 'nobody_knows' })).toBeNull()
     expect(readEntry({ ...entry, params: 'x' })).toBeNull()
     expect(readEntry({ ...entry, at: undefined })).toBeNull()
+  })
+
+  it('reads an entry without the names of games as one that names none', () => {
+    const { games: _games, ...without } = entry
+
+    expect(readEntry(without)).toEqual({ ...without, games: {} })
   })
 })
 

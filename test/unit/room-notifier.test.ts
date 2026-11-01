@@ -34,6 +34,35 @@ describe('httpRoomNotifier', () => {
     })).toBe(true)
   })
 
+  it('posts a send to named Users as { to, direct } with no messages key, signed (#227)', async () => {
+    const send = vi.fn(async (..._args: Parameters<typeof fetch>) => new Response(null, { status: 204 }))
+    const notifier = httpRoomNotifier({ url: 'https://rt.example.workers.dev', secret: 'internal', fetch: send, now: () => NOW })
+
+    await notifier.publish('event-1', [changed], ['user-1', 'user-2'])
+
+    expect(send).toHaveBeenCalledTimes(1)
+    const [url, init] = send.mock.calls[0]!
+    expect(String(url)).toBe('https://rt.example.workers.dev/parties/event-room/event-1')
+    const body = String(init?.body)
+    expect(JSON.parse(body)).toEqual({ to: ['user-1', 'user-2'], direct: [changed] })
+    expect(JSON.parse(body)).not.toHaveProperty('messages')
+    const headers = new Headers(init?.headers)
+    expect(await verifyRoomCall({
+      body,
+      timestamp: headers.get(ROOM_CALL_TIMESTAMP_HEADER),
+      signature: headers.get(ROOM_CALL_SIGNATURE_HEADER),
+      secrets: ['internal'],
+      now: NOW,
+    })).toBe(true)
+  })
+
+  it('sends nothing to an empty list of Users (#227)', async () => {
+    const send = vi.fn()
+    await httpRoomNotifier({ url: 'https://rt.example.workers.dev', secret: 'internal', fetch: send }).publish('event-1', [changed], [])
+
+    expect(send).not.toHaveBeenCalled()
+  })
+
   it('sends nothing for no messages', async () => {
     const send = vi.fn()
     await httpRoomNotifier({ url: 'https://rt.example.workers.dev', secret: 'internal', fetch: send }).publish('event-1', [])
@@ -77,5 +106,22 @@ describe('memoryRoomNotifier', () => {
 
     notifier.clear()
     expect(notifier.messages('event-1')).toEqual([])
+  })
+
+  it('records the named Users of a send, and messages() returns broadcast and named messages (#227)', async () => {
+    const notifier = memoryRoomNotifier()
+    const member = envelope({ type: 'member.joined', userId: 'user-1' }, NOW)
+    await notifier.publish('event-1', [changed])
+    await notifier.publish('event-1', [member], ['user-1'])
+    await notifier.publish('event-1', [changed], [])
+
+    expect(notifier.sends('event-1')).toEqual([
+      { to: null, messages: [changed] },
+      { to: ['user-1'], messages: [member] },
+    ])
+    expect(notifier.messages('event-1')).toEqual([changed, member])
+
+    notifier.clear()
+    expect(notifier.sends('event-1')).toEqual([])
   })
 })

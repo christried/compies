@@ -1,4 +1,5 @@
 import type { ApiErrorCode } from '~~/shared/errors'
+import { isRecord } from '~~/shared/record'
 
 // What a failed API call tells the UI (shared/errors.ts). `$fetch` puts the answer's statusMessage in
 // `data.statusMessage`; the status code is on the error itself.
@@ -6,11 +7,14 @@ import type { ApiErrorCode } from '~~/shared/errors'
 export interface ApiFailure {
   status: number | undefined
   code: string | undefined
+  /** The payload the server sent with the refusal (`apiError`'s `data`, e.g. the `winnerId` of a lost race), when it is an object (#237). */
+  data: Record<string, unknown> | undefined
 }
 
 export function apiFailure(failure: unknown): ApiFailure {
-  const error = failure as { statusCode?: number, statusMessage?: string, data?: { statusMessage?: string } } | null
-  return { status: error?.statusCode, code: error?.data?.statusMessage ?? error?.statusMessage }
+  const error = failure as { statusCode?: number, statusMessage?: string, data?: { statusMessage?: string, data?: unknown } } | null
+  const data = error?.data?.data
+  return { status: error?.statusCode, code: error?.data?.statusMessage ?? error?.statusMessage, data: isRecord(data) ? data : undefined }
 }
 
 /** The copy for each error code the UI can explain. Codes not listed fall back to the caller's copy. */
@@ -69,6 +73,18 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   teams_empty: 'dock.startBlocked.teams_empty',
   teams_uneven: 'dock.startBlocked.teams_uneven',
   no_running_session: 'error.noRunningSession',
+  game_count_reached: 'dock.setBlocked.game_count_reached',
+  round_being_drawn: 'dock.setBlocked.round_being_drawn',
+  no_wheel: 'dock.setBlocked.no_wheel',
+  pool_empty: 'dock.setBlocked.pool_empty',
+  no_clip: 'error.noClip',
+  round_not_found: 'error.roundNotFound',
+  game_count_below_started: 'error.gameCountBelowStarted',
+  no_countdown: 'error.noCountdown',
+  countdown_running: 'error.countdownRunning',
+  countdown_not_running: 'error.countdownNotRunning',
+  countdown_ended: 'error.countdownEnded',
+  coin_in_air: 'error.coinInAir',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

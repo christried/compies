@@ -4,16 +4,17 @@ import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { teamName } from '~/utils/board'
 import { dateBlockedKey, eventPageState, pagePill } from '~/utils/event-page'
-import { hasStarted } from '~~/shared/board'
-import { datePollOpen } from '~~/shared/event'
+import { hasStarted } from '~~/shared/session-state'
+import { datePollOpen, sessionsEditable } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { settingsEditable } from '~~/shared/settings'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). This page loads the Event through
 // useEventView (live through the Event's room, polling every 15 s while that is down, #156), shows the
 // ConnectionBanner under the header, and holds the Host's dialogs and the error states. The stage is the Head and the
-// blocks in the order of the page's state (#166, 11-event-seite § EventPage: what has to happen now goes on top):
-// EventSessions with „So wird gespielt“, EventPoll while a Session waits for a Date, the Game board and the notices.
+// blocks the page's state lists, in its order (#166, 11-event-seite § EventPage: what has to happen now goes on top; the
+// list is `eventPageState(...).blocks`, A4): EventSessions with „So wird gespielt“, EventPoll while a Session waits for a
+// Date, the open Rounds of a running Session (#228), the Game board and the notices.
 // The Activity feed has the side panel from md up and a tab of its own on a phone. Votes show at once and roll back with
 // a toast when saving fails (useOptimisticVotes, ADR 0001). The Host's dialogs are EventHostDialogs (the Date is set in
 // the confirm dialog from a Slot card or the dock, #13); the dock's actions are built by useHostActions.
@@ -24,10 +25,10 @@ const slug = toRef(() => props.slug)
 const { data, error, refresh, room } = await useEventView(slug)
 const connection = useConnectionBanner(room.state, room.enabled)
 
-// Who is online (#162) goes to the Game board's dots. The server clock is kept here, on the page's one socket, for the
-// timers of Glücksrad (0.7) (which will provide it from here); nothing reads it yet.
+// Who is online (#162) goes to the Game board's dots. The server clock is kept here, on the page's one socket: the blocks that
+// run toward an instant (the wheel #229, the Countdown #236, and the other timers of 0.7) get its `now` as `server-now`.
 const presence = usePresence(room)
-useServerClock(room)
+const serverClock = useServerClock(room)
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 const notFound = computed(() => error.value?.statusCode === 404)
@@ -37,6 +38,21 @@ const failed = computed(() => error.value !== null && !notFound.value && !delete
 useHead({ title: () => data.value?.event.name })
 
 const votes = useOptimisticVotes(slug, data, refresh)
+
+// No timer runs on the server (ADR 0013, amended 2026-10-31): the first read after an instant settles it, so the page reads the Event
+// and the Activity feed again when an instant it knows passes (#229: the wheel's stop; #230: the end of the clip, which the
+// overlay closes at by itself and the read then drops; the next tickets add their own).
+const feedTick = ref(0)
+// The coin's landing (#235) is one of them: the feed shows its entry from then on, and the toss's result is the page's from then on.
+const knownInstants = computed(() => [
+  ...(data.value?.wheel?.spin ? [Date.parse(data.value.wheel.spin.stopAt)] : []),
+  ...(data.value?.coin ? [Date.parse(data.value.coin.landsAt)] : []),
+  ...(data.value?.clip ? [Date.parse(data.value.clip.endsAt)] : []),
+])
+useInstantRefresh(knownInstants, serverClock.now, () => {
+  void refresh()
+  feedTick.value += 1
+})
 
 /** The open Slots with their day and time in Berlin, for the poll and the confirm dialog. */
 const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
@@ -57,6 +73,8 @@ const calendarOpen = ref(false)
 
 /** The Date poll is open while a Session waits for a Date, in the poll Phase and in a running Event (#164, datePollOpen). */
 const pollOpen = computed(() => (data.value ? datePollOpen(data.value.event.phase, data.value.missingDates) : false))
+/** Sessions can be added, moved and removed in this Phase (sessionsEditable): computed once here for the cards and the dialogs (#238). */
+const canChangeSessions = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
 
 /** The first Session has started: the teams and their names are locked for Players. */
 const started = computed(() => hasStarted(data.value?.sessions ?? []))
@@ -65,6 +83,12 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
 /** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
 const endSession = () => send('POST', 'sessions/end')
+
+/** The Host skips the clip for everyone (#230); the overlay learns whether the server took it. */
+const skipClip = () => send('POST', 'clip/skip')
+
+/** Puts an open Round back (#228); the hold on its card learns whether the server took it. */
+const putBackRound = (roundId: string) => send('DELETE', `rounds/${roundId}`)
 
 // The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
 const canEditSettings = computed(() => (data.value ? data.value.event.isHost && settingsEditable(data.value.event.phase) : false))
@@ -80,39 +104,22 @@ const setBlocked = computed(() => {
 const hostActions = useHostActions(
   () => data.value,
   slug,
-  { pollOpen, setBlocked },
+  { pollOpen, setBlocked, serverNow: serverClock.now },
   {
     invite: () => (inviteOpen.value = true),
     editSlots: () => dialogs.value?.openSlotEditor(),
     setDate: () => dialogs.value?.openConfirm(),
     start: () => dialogs.value?.openStart(),
     end: endSession,
+    setGame: () => dialogs.value?.openSetGame(),
+    spin: () => void send('POST', 'rounds/spin'),
+    countdown: () => dialogs.value?.openCountdown(),
+    coin: () => void send('POST', 'coin'),
   },
 )
 
-// The state of the page for everybody (#166) and the blocks of the stage in the order that state wants. „What has to happen
-// now goes on top“: the poll while no Session is dated, the Game board from the first Date on, the Sessions card between two
-// Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits for a Date has its poll
-// (compact) below the board once another Session is dated or started.
-type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'board' | 'cards' | 'stay'
+// The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4).
 const pageState = computed(() => (data.value ? eventPageState(data.value) : null))
-const order = computed((): Block[] => {
-  const state = pageState.value
-  if (!state) return []
-  const poll: Block[] = pollOpen.value ? ['poll'] : []
-  switch (state.kind) {
-    case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
-    case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
-    case 'running': return ['head', 'reopen', 'board', ...poll, 'cards']
-    case 'between': return ['head', 'reopen', 'cards', 'stay', 'board', ...poll]
-    case 'done': return ['head', 'reopen', 'cards', 'board']
-    default: return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
-  }
-})
-/** The poll is the quiet one below the board as soon as the page is about something else than the Date. */
-const pollCompact = computed(() => pageState.value !== null && !['poll', 'setup'].includes(pageState.value.kind))
-/** Between two Sessions and after the last the Sessions card is the news of the page and gets a shadow. */
-const cardsStandOut = computed(() => pageState.value?.kind === 'between' || pageState.value?.kind === 'done')
 
 const hostName = computed(() => data.value?.members.find(member => member.isHost)?.name ?? '')
 
@@ -238,6 +245,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :room="room"
             :sessions="feed.started"
             :next-number="feed.nextNumber"
+            :refresh-tick="feedTick"
           />
         </template>
       </SidePanel>
@@ -262,7 +270,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       :class="data.event.isHost ? 'pb-[92px]' : 'pb-7'"
     >
       <div
-        v-for="block in order"
+        v-for="block in pageState.blocks"
         :key="block"
         class="min-w-0 empty:hidden"
       >
@@ -324,9 +332,38 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           :slots="slots"
           :votes="votes"
           :number="pageState.pollNumber"
-          :compact="pollCompact"
+          :compact="pageState.pollCompact"
           @pick="dialogs?.openConfirm($event)"
           @remove-session="removeSession"
+        />
+
+        <LuckyWheel
+          v-else-if="block === 'wheel' && data.wheel"
+          :wheel="data.wheel"
+          :hidden="data.settings?.hiddenWheel ?? false"
+          :is-host="data.event.isHost"
+          :server-now="serverClock.now"
+        />
+
+        <EventRounds
+          v-else-if="block === 'rounds'"
+          :rounds="data.rounds"
+          :is-host="data.event.isHost"
+          :put-back="putBackRound"
+        />
+
+        <EventCountdown
+          v-else-if="block === 'countdown' && data.countdown"
+          :countdown="data.countdown"
+          :server-now="serverClock.now"
+          :is-host="data.event.isHost"
+          :command="(action) => send('POST', 'countdown/' + action)"
+        />
+
+        <CoinFlip
+          v-else-if="block === 'coin' && data.coin"
+          :toss="data.coin"
+          :server-now="serverClock.now"
         />
 
         <GameBoard
@@ -336,9 +373,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           :teams="data.teams"
           :settings="data.settings"
           :team-choice-open="data.teamChoiceOpen"
-          :started="started"
-          :locked-notice="pageState.kind === 'running'"
-          :uneven-notice="pageState.kind !== 'running' && pageState.kind !== 'done'"
+          :page-kind="pageState.kind"
           :viewer-id="data.viewerId"
           :is-host="data.event.isHost"
           :room="room"
@@ -363,7 +398,8 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :remove="removeSession"
             :poll-number="pageState.pollNumber"
             :poll-open="pollOpen"
-            :shadow="cardsStandOut"
+            :can-change-sessions="canChangeSessions"
+            :shadow="pageState.cardsStandOut"
             @reschedule="dialogs?.openReschedule($event)"
             @add="dialogs?.openAdd()"
             @calendar="calendarOpen = true"
@@ -401,6 +437,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :room="room"
             :sessions="feed.started"
             :next-number="feed.nextNumber"
+            :refresh-tick="feedTick"
           />
         </div>
       </section>
@@ -426,6 +463,16 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       kind="generic"
     />
 
+    <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. -->
+    <ClipOverlay
+      v-if="data?.clip"
+      :key="data.clip.drawId"
+      :clip="data.clip"
+      :server-now="serverClock.now"
+      :is-host="data.event.isHost"
+      :skip="skipClip"
+    />
+
     <HostDock
       v-if="canEditSettings"
       :actions="hostActions"
@@ -440,6 +487,9 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       :slots="slots"
       :votes="votes"
       :refresh="refresh"
+      :poll-open="pollOpen"
+      :can-change-sessions="canChangeSessions"
+      :server-now="serverClock.now"
     />
 
     <InviteSheet

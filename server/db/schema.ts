@@ -1,8 +1,10 @@
 import { sql } from 'drizzle-orm'
-import { boolean, check, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, check, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
+import { ZONES } from '../../shared/board'
 import { SUITABILITIES } from '../../shared/game'
+import { COIN_SIDES, DRAW_KINDS, DRAW_OUTCOMES, DRAW_SOURCES } from '../../shared/rounds'
 import { FORMATS, POOLS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
 
 // MVP schema (#1). Every instant is timestamptz in UTC (ADR 0003); every id is a database-generated uuid.
@@ -127,7 +129,7 @@ export const eventTeams = pgTable('event_teams', {
   check('event_teams_position_check', sql`${table.position} >= 1`),
 ])
 
-export const memberZone = pgEnum('member_zone', ['bench', 'stands', 'team'])
+export const memberZone = pgEnum('member_zone', ZONES)
 
 export const eventMembers = pgTable('event_members', {
   eventId: uuid('event_id').notNull().references(() => events.id),
@@ -212,7 +214,7 @@ export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)
 
 // The Activity feed (#159, GLOSSARY: Activity feed): what happened in an Event, written in the same transaction as the
 // change it records (server/utils/activity.ts). `actorId` is null when the app did it. `params` holds ids, numbers and
-// instants only, never a game. The feed reads one Event's entries by time, so that is the index. Entries go with their Event.
+// instants only, never a game's name (ActivityParams checks it). The feed reads one Event's entries by time, so that is the index. Entries go with their Event.
 export const activity = pgTable('activity', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -221,3 +223,125 @@ export const activity = pgTable('activity', {
   params: jsonb('params').$type<ActivityParams[ActivityType]>().default({}).notNull(),
   at: timestamp('at', { withTimezone: true }).defaultNow().notNull(),
 }, table => [index('activity_event_id_at_idx').on(table.eventId, table.at)])
+
+// The game round of Glücksrad (0.7, spec #218 § Schema, #228): Rounds, their draws, Vetoes, Bonus Vetoes, coin tosses and
+// the Countdown. One migration (0017) adds all six tables, though #228 uses only the first two: the later tickets (#229
+// spin, #231 Vetoes, #233 Bonus Vetoes, #235 coin, #236 Countdown) then need no schema change. The tables are new, so the
+// code that serves during the switch-over (ADR 0007) neither reads nor writes them. Every instant a rule compares with
+// "now" is written from `useClock(event).now()`, never the database's `now()`: Nuxt stamps each instant and tests move
+// the clock past it (ADR 0013, amended 2026-10-31).
+
+export const drawSource = pgEnum('draw_source', DRAW_SOURCES)
+export const drawKind = pgEnum('draw_kind', DRAW_KINDS)
+export const drawOutcome = pgEnum('draw_outcome', DRAW_OUTCOMES)
+export const coinSide = pgEnum('coin_side', COIN_SIDES)
+
+// One of the games an Event plays (GLOSSARY: Round). It begins with a spin or with the Host setting a game and keeps going
+// through vetoed draws until no Veto stops its game. `gameId` and `setAt` are null while it is being drawn and set
+// together; `setAt` is when the game was set (the end of the Veto window for a draw that had one). `putBackAt` is the Host's
+// put-back: a soft removal, because Vetoes spent in a put-back Round stay spent and the history stays. 0.8 adds the
+// result to this table. Only one Round per Event can be in its draw at a time (the partial unique index).
+export const rounds = pgTable('rounds', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  gameId: uuid('game_id').references(() => games.id),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+  setAt: timestamp('set_at', { withTimezone: true }),
+  putBackAt: timestamp('put_back_at', { withTimezone: true }),
+}, table => [
+  check('rounds_set_game_check', sql`(${table.setAt} IS NULL) = (${table.gameId} IS NULL)`),
+  check('rounds_put_back_after_set_check', sql`${table.putBackAt} IS NULL OR ${table.setAt} IS NOT NULL`),
+  uniqueIndex('rounds_one_drawn_per_event_idx').on(table.eventId).where(sql`${table.setAt} IS NULL AND ${table.putBackAt} IS NULL`),
+  // The Event read lists an Event's Rounds in start order; the image route and the feed look a Round up by its game.
+  index('rounds_event_id_started_at_idx').on(table.eventId, table.startedAt),
+  index('rounds_game_id_idx').on(table.gameId),
+])
+
+// A Round's draws: a spin or a set; vetoed ones stay in their Round. `source` says where the game came from (a library game
+// never returns to a pool). The instants: `committedAt` (the server drew or the Host set it), `spinStartAt` (a spin only: the
+// wheel starts a short lead after the commit), `stopAt` (the wheel's stop; for a set draw the commit itself; the clip starts
+// here) and `vetoEndsAt` (the end of the Veto window, null when no window opens). A draw settles at the first read or write
+// after its last instant: `outcome` and `settledAt` are null until then. A spin keeps what #229 needs to replay it
+// identically on reload: the games of the slices in order, the placeholder labels shuffled for that spin (null on a visible
+// wheel), the result index and the offset within the slice (a fraction from 0 up to 1). `clipSkippedAt` (0018, #230) is when the
+// Host skipped the draw's clip for everyone: the clip is a read of the instants, so the skip has to be stored to reach Members who
+// join later. It is nullable and new, so the code that serves during the switch-over (ADR 0007) neither reads nor writes it.
+export const draws = pgTable('draws', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  roundId: uuid('round_id').notNull().references(() => rounds.id, { onDelete: 'cascade' }),
+  gameId: uuid('game_id').notNull().references(() => games.id),
+  source: drawSource('source').notNull(),
+  kind: drawKind('kind').notNull(),
+  committedAt: timestamp('committed_at', { withTimezone: true }).notNull(),
+  spinStartAt: timestamp('spin_start_at', { withTimezone: true }),
+  stopAt: timestamp('stop_at', { withTimezone: true }).notNull(),
+  vetoEndsAt: timestamp('veto_ends_at', { withTimezone: true }),
+  clipSkippedAt: timestamp('clip_skipped_at', { withTimezone: true }),
+  outcome: drawOutcome('outcome'),
+  settledAt: timestamp('settled_at', { withTimezone: true }),
+  sliceGameIds: uuid('slice_game_ids').array(),
+  sliceLabels: text('slice_labels').array(),
+  resultIndex: integer('result_index'),
+  resultOffset: doublePrecision('result_offset'),
+}, table => [
+  check('draws_settled_check', sql`(${table.outcome} IS NULL) = (${table.settledAt} IS NULL)`),
+  check('draws_instants_check', sql`${table.stopAt} >= ${table.committedAt} AND (${table.spinStartAt} IS NULL OR (${table.spinStartAt} >= ${table.committedAt} AND ${table.stopAt} >= ${table.spinStartAt})) AND (${table.vetoEndsAt} IS NULL OR ${table.vetoEndsAt} >= ${table.stopAt})`),
+  // A spin has its slices and its result, a set has none of them; the result slice is the drawn game.
+  check('draws_spin_check', sql`CASE WHEN ${table.kind} = 'spin' THEN ${table.spinStartAt} IS NOT NULL AND ${table.sliceGameIds} IS NOT NULL AND ${table.resultIndex} IS NOT NULL AND ${table.resultOffset} IS NOT NULL ELSE ${table.spinStartAt} IS NULL AND ${table.sliceGameIds} IS NULL AND ${table.sliceLabels} IS NULL AND ${table.resultIndex} IS NULL AND ${table.resultOffset} IS NULL END`),
+  check('draws_result_check', sql`${table.kind} <> 'spin' OR (${table.resultIndex} >= 0 AND ${table.resultIndex} < cardinality(${table.sliceGameIds}) AND ${table.sliceGameIds}[${table.resultIndex} + 1] = ${table.gameId} AND (${table.sliceLabels} IS NULL OR cardinality(${table.sliceLabels}) = cardinality(${table.sliceGameIds})) AND ${table.resultOffset} >= 0 AND ${table.resultOffset} < 1)`),
+  index('draws_round_id_idx').on(table.roundId),
+])
+
+// A Party's Veto on a draw (GLOSSARY: Veto): the Party is a team number, `userId` is the Player who cast it. A Party casts at
+// most one per draw, which the primary key enforces in the database. Vetoes cast on a draw are used up when it settles as
+// vetoed; the allowance spent is counted from these rows.
+export const vetoes = pgTable('vetoes', {
+  drawId: uuid('draw_id').notNull().references(() => draws.id, { onDelete: 'cascade' }),
+  team: integer('team').notNull(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  castAt: timestamp('cast_at', { withTimezone: true }).notNull(),
+}, table => [
+  primaryKey({ columns: [table.drawId, table.team] }),
+  check('vetoes_team_check', sql`${table.team} >= 1`),
+])
+
+// A Veto the Host granted a Party on top of the Veto allowance (GLOSSARY: Bonus Veto), at most 9 per Party over the Event
+// (checked in code under the Event lock). Nobody takes one away, so there is no undo and no update.
+export const bonusVetoes = pgTable('bonus_vetoes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  team: integer('team').notNull(),
+  grantedBy: uuid('granted_by').notNull().references(() => users.id),
+  grantedAt: timestamp('granted_at', { withTimezone: true }).notNull(),
+}, table => [
+  check('bonus_vetoes_team_check', sql`${table.team} >= 1`),
+  index('bonus_vetoes_event_id_team_idx').on(table.eventId, table.team),
+])
+
+// A toss of the Coin flip (GLOSSARY: Coin flip): the server picks `side`; the toss runs from `startedAt` and lands at
+// `landsAt`. The side reaches clients with the toss, but the UI and the feed show it only at the landing.
+export const coinTosses = pgTable('coin_tosses', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  side: coinSide('side').notNull(),
+  tossedBy: uuid('tossed_by').notNull().references(() => users.id),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+  landsAt: timestamp('lands_at', { withTimezone: true }).notNull(),
+}, table => [
+  check('coin_tosses_lands_after_start_check', sql`${table.landsAt} >= ${table.startedAt}`),
+  index('coin_tosses_event_id_started_at_idx').on(table.eventId, table.startedAt),
+])
+
+// The Countdown (GLOSSARY: Countdown): one per Event, during a running Session; ending the Session deletes it. `durationMs`
+// is what the Host set (5 s to 99:59). `remainingMs` is the time left, and `startedAt` is set while it runs: it then ends at
+// `startedAt + remainingMs`; paused (no `startedAt`) it stands at `remainingMs`, and a reset sets `remainingMs` back to the
+// duration.
+export const countdowns = pgTable('countdowns', {
+  eventId: uuid('event_id').primaryKey().references(() => events.id, { onDelete: 'cascade' }),
+  durationMs: integer('duration_ms').notNull(),
+  remainingMs: integer('remaining_ms').notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }),
+}, table => [
+  check('countdowns_duration_check', sql`${table.durationMs} BETWEEN 5000 AND 5999000`),
+  check('countdowns_remaining_check', sql`${table.remainingMs} BETWEEN 0 AND ${table.durationMs}`),
+])

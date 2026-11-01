@@ -87,6 +87,12 @@ export interface PoolGame {
  */
 export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId'>
 
+/**
+ * A set game as its Round shows it to every Member (#228): the whole PoolGame but the notes, which only the Host reads
+ * (decided 2026-11-01, #217 comment). The player count and the clip are there because the Round card and the clip show them.
+ */
+export type RoundGame = Omit<PoolGame, 'notes'>
+
 /** Whether a pool game came whole, as the Host gets it (the notes are there, even when null), or as the face only. */
 export function isFullPoolGame(game: PoolGame | PoolGameFace): game is PoolGame {
   return 'notes' in game

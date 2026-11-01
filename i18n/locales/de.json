@@ -70,7 +70,7 @@
     "checkTeams": "Teams prüfen",
     "fillFromBench": "Von der Bench nachziehen",
     "spin": "Rad drehen",
-    "setGame": "Spiel direkt setzen",
+    "setGame": "Nächstes Spiel setzen",
     "skipClip": "Clip überspringen",
     "vetoRunning": "Veto-Fenster läuft",
     "enterResult": "Ergebnis eintragen",
@@ -89,6 +89,13 @@
       "teams_empty": "Geht erst, wenn in jedem Team jemand ist.",
       "teams_uneven": "Geht erst, wenn alle Teams gleich groß sind."
     },
+    "setBlocked": {
+      "no_running_session": "Geht erst in einer laufenden Session.",
+      "game_count_reached": "Alle Spiele dieses Events sind schon gestartet.",
+      "round_being_drawn": "Gerade wird ein Spiel gezogen.",
+      "no_wheel": "Geht nur mit dem Glücksrad.",
+      "pool_empty": "Auf dem Rad ist kein Spiel mehr."
+    },
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
       "title": "Los geht’s?",
@@ -100,7 +107,8 @@
     "group": {
       "dates": "Termine",
       "people": "Leute",
-      "event": "Event"
+      "event": "Event",
+      "game": "Spiel"
     }
   },
   "event": {
@@ -177,7 +185,7 @@
   "board": {
     "title": "Spielbrett",
     "bench": "Bench",
-    "benchSub": "Ersatz, unbegrenzt",
+    "benchSub": "Noch ohne Team, unbegrenzt",
     "stands": "Tribüne",
     "standsSub": "Zuschauer, spielen nicht mit",
     "benchEmpty": "Niemand auf der Bench.",
@@ -454,12 +462,17 @@
     "by": "Veto von {name} ({team})"
   },
   "coin": {
+    "title": "Münzwurf",
     "throw": "Münze werfen",
     "flying": "Fliegt …",
     "ready": "Bereit",
     "head": "Kopf!",
     "tail": "Schwanz!",
-    "starts": "{team} fängt an"
+    "starts": "{team} fängt an",
+    "side": {
+      "heads": "Kopf",
+      "tails": "Schwanz"
+    }
   },
   "pickBan": {
     "bans": "{team} bannt, {n} von {total}",
@@ -565,11 +578,13 @@
     "date": "Termin steht: {date}",
     "start": "{name} hat die Session gestartet",
     "wheel": "Glücksrad: {game}",
+    "coin": "Münzwurf: {side}",
     "veto": "Veto von {list}",
     "ban": "{team} hat {game} gebannt",
     "win": "{team} gewinnt Spiel {n}",
     "fix": "{name} hat Spiel {n} korrigiert",
-    "hostSet": "{name} hat {game} gesetzt"
+    "hostSet": "{name} hat {game} gesetzt",
+    "gamePutBack": "{name} hat {game} zurückgelegt"
   },
   "emote": {
     "send": "Emote senden: {name}",
@@ -1363,6 +1378,7 @@
       "label": "Anzahl Spiele",
       "min": "Mindestens 1 Spiel.",
       "max": "Höchstens 30 Spiele.",
+      "floor": "Schon {n} gestartet.",
       "help": "Nach {n} Spiel ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1. | Nach {n} Spielen ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1."
     },
     "points": {
@@ -1435,6 +1451,45 @@
     "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
     "previewOffPick": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt."
   },
+  "countdown": {
+    "title": "Countdown",
+    "paused": "Pausiert",
+    "ended": "Zeit ist um",
+    "start": "Starten",
+    "pause": "Pausieren",
+    "resume": "Fortsetzen",
+    "reset": "Zurücksetzen",
+    "sheetTitle": "Countdown stellen",
+    "minutes": "Minuten",
+    "seconds": "Sekunden",
+    "set": "Stellen",
+    "range": "Zwischen 5 Sekunden und 99:59.",
+    "running": "Der Countdown läuft schon."
+  },
+  "clip": {
+    "label": "Clip: {name}",
+    "live": "Clip läuft für alle",
+    "closeForMe": "Für mich schließen"
+  },
+  "rounds": {
+    "title": "Gerade dran",
+    "list": "Offene Spiele",
+    "playing": "wird gespielt",
+    "putBack": "Zurücklegen"
+  },
+  "nextGame": {
+    "title": "Nächstes Spiel setzen",
+    "pool": "Aus dem Pool",
+    "poolCount": "Aus dem Pool: noch {n}",
+    "poolList": "Spiele, die im Pool noch übrig sind",
+    "poolEmpty": "Im Pool ist nichts mehr übrig. Such unten in der ganzen Bibliothek.",
+    "library": "Oder aus der ganzen Bibliothek",
+    "select": "{name} auswählen",
+    "selected": "{name} ist ausgewählt",
+    "choose": "Such dir ein Spiel aus.",
+    "chosen": "Alle sehen es sofort.",
+    "confirm": "Setzen"
+  },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
@@ -1457,6 +1512,14 @@
     "memberNotFound": "Diese Person ist nicht mehr im Event.",
     "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
+    "gameCountBelowStarted": "So wenige geht nicht: Es sind schon mehr Spiele gestartet.",
+    "roundNotFound": "Dieses Spiel ist nicht mehr dran.",
+    "noClip": "Gerade läuft kein Clip.",
+    "noCountdown": "Es läuft kein Countdown.",
+    "countdownRunning": "Der Countdown läuft schon.",
+    "countdownNotRunning": "Der Countdown läuft gerade nicht.",
+    "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
+    "coinInAir": "Die Münze fliegt noch.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

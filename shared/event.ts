@@ -1,8 +1,10 @@
-import type { Place, StartRejection } from './board'
+import type { Place, Zone } from './board'
+import type { SetRejection, SpinRejection } from './rounds'
+import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
 import type { EventSettings, SettingsFloors } from './settings'
-import type { PoolGame, PoolGameFace } from './game'
+import type { PoolGame, PoolGameFace, RoundGame } from './game'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -125,6 +127,89 @@ export interface SessionEnded { sessionId: string, phase: Phase }
  */
 export interface StartView { sessionId: string | null, number: number | null, rejection: StartRejection | null }
 
+/**
+ * An open Round on the stage (#228, GLOSSARY: Round): its game is set and it was not put back. It has no number (0.8 numbers a
+ * Round when its result is entered). `notes` are the game's Game notes, only for the Host and only when it has some.
+ */
+export interface RoundView {
+  id: string
+  startedAt: string
+  setAt: string
+  game: RoundGame
+  notes?: string
+}
+
+/**
+ * What the Host sees of setting the next game (#228): why it cannot be set now, or null, and the games of the Game pool that
+ * are still left (shared/rounds.ts gamesLeft), which the picker lists first.
+ */
+export interface SetGameView {
+  rejection: SetRejection | null
+  /** Why the wheel cannot be spun now, or null (#229): the dock's „Rad drehen“. A Selection mode without a wheel says `no_wheel`. */
+  spinRejection: SpinRejection | null
+  left: string[]
+}
+
+/**
+ * A spin of the Lucky Wheel as a Member reads it (#229, spec #218 § Hidden wheel on the wire): the instants (ISO), the slice count,
+ * the result slice and where the pointer rests in it, and the slices' labels. `labels` are the real names for the Host and on
+ * a visible wheel; for a Member under a Hidden wheel the placeholders shuffled for this spin, the result slice's label turning
+ * into the real name from `stopAt` on. `game` is the drawn game: for a Member only from `stopAt` on, for the Host always.
+ */
+export interface SpinView {
+  roundId: string
+  drawId: string
+  spinStartAt: string
+  stopAt: string
+  slices: number
+  resultIndex: number
+  resultOffset: number
+  labels: string[] | null
+  game: RoundGame | null
+}
+
+/**
+ * The Lucky Wheel of a running Session (#229). `count` is how many slices it has now (the games left). `slices` are those games
+ * in slice order, for the Host and on a visible wheel (also with the Pool preview off); null for a Member under a Hidden wheel,
+ * who learns the count from the wheel only. `spin` is the Event's latest spin, null before the first.
+ */
+export interface WheelView {
+  count: number
+  slices: { id: string, name: string }[] | null
+  spin: SpinView | null
+}
+
+/**
+ * The clip that runs now (#230, GLOSSARY: Clip, spec #218 § Clip): the latest draw's, from its stop to the end of the game's clip length,
+ * for every Member alike. The instants are ISO; the client plays `clipPosition` of them against the server clock. `game.youtubeId`
+ * may be null: then the client shows the game's card for the clip's length. It is keyed by the draw, not by the Round: a Veto
+ * window (0.7-06) plays the clip of a draw that is not set yet.
+ */
+export interface ClipView { drawId: string, startAt: string, endsAt: string, game: RoundGame }
+
+/**
+ * The Event's Countdown (#236, spec #218 § Countdown): its stored facts, the duration and either the remaining time (paused, ready)
+ * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt).
+ */
+export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null }
+
+/**
+ * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member, null otherwise. The
+ * stored facts (ISO instants); the side shows in the UI only from `landsAt`.
+ */
+export interface CoinView { id: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
+/** What `POST /api/e/:slug/coin` returns: the toss and its instants (ISO), #235. */
+export interface CoinTossed { tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
+
+/** What `POST /api/e/:slug/rounds` returns: the Round that was opened (#228). */
+export interface RoundSet { roundId: string }
+/** What `POST /api/e/:slug/rounds/spin` returns: the Round being drawn and its draw (#229). */
+export interface RoundSpun { roundId: string, drawId: string }
+/** What `POST /api/e/:slug/clip/skip` returns: the draw whose clip was skipped (#230). */
+export interface ClipSkipped { drawId: string }
+/** What `DELETE /api/e/:slug/rounds/:id` returns: the Round that was put back (#228). */
+export interface RoundPutBack { roundId: string }
+
 /** What `POST /api/e/:slug/team-word` returns: the team and the word as saved, null when it was removed (#161). */
 export interface TeamWordSet { team: number, word: string | null }
 
@@ -144,7 +229,7 @@ export interface MemberView {
   name: string
   image: string | null
   isHost: boolean
-  zone: 'bench' | 'stands' | 'team'
+  zone: Zone
   team: number | null
   /** The Member's Team word; null without one, and always null outside a team (#161). */
   teamWord: string | null
@@ -186,6 +271,21 @@ export interface EventView {
   runningSessionId: string | null
   /** The start rule's answer for the next Session (#164). Only the Host gets it; null for every other Member. */
   start: StartView | null
+  /**
+   * The open Rounds in start order (#228). Their games are visible to every Member from the moment they are set, with the
+   * Pool preview off and under a Hidden wheel alike; nothing else about the pools is.
+   */
+  rounds: RoundView[]
+  /** Setting the next game (#228). Only the Host gets it; null for every other Member. */
+  setGame: SetGameView | null
+  /** The Lucky Wheel (#229): in a running Session of a Lucky Wheel Event, else null. */
+  wheel: WheelView | null
+  /** The clip that runs now (#230): while a Session runs, from a draw's stop to the end of its clip, unless the Host skipped it. Else null. */
+  clip: ClipView | null
+  /** The Countdown of the running Session (#236): every Member gets it while a Session runs, null otherwise. */
+  countdown: CountdownView | null
+  /** The Coin flip (#235): the latest toss of the running Session; every Member gets it, null otherwise. */
+  coin: CoinView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

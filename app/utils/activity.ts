@@ -1,7 +1,7 @@
-import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Eye, Flag, Play, RotateCcw, SlidersHorizontal, UserPlus, Users } from '@lucide/vue'
+import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Eye, Flag, Gamepad2, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Undo2, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
-import { nextSession } from '~~/shared/board'
+import { isStarted, nextSession } from '~~/shared/session-state'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
 import { teamName } from './board'
@@ -14,7 +14,7 @@ import type { Translate } from './settings-summary'
 // markers around those values, so no sentence is written twice.
 const OPEN = '\u0001'
 const CLOSE = '\u0002'
-const STRONG = new Set(['name', 'actor', 'team', 'date'])
+const STRONG = new Set(['name', 'actor', 'team', 'date', 'game'])
 
 /** The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. */
 export function activityParts(entry: ActivityEntry, t: Translate): { text: string, strong: boolean }[] | null {
@@ -43,6 +43,14 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
     case 'team_name_reset': return { icon: RotateCcw, tone: 'surface' }
     case 'game_count_changed':
     case 'team_size_changed': return { icon: SlidersHorizontal, tone: 'surface' }
+    // The 0.7 kinds (#226 adds them to the enum; their sentences come with the tickets that write them, see `sentence`). A game set
+    // and put back have theirs (#228), and a game drawn (#229, the dice); the icons of the others are placeholders until their tickets.
+    case 'game_drawn': return { icon: Dices, tone: 'surface' }
+    case 'vetoes_revealed': return { icon: ShieldX, tone: 'surface' }
+    case 'game_set': return { icon: Gamepad2, tone: 'surface' }
+    case 'game_put_back': return { icon: Undo2, tone: 'surface' }
+    case 'bonus_veto_granted': return { icon: ShieldPlus, tone: 'surface' }
+    case 'coin_tossed': return { icon: Coins, tone: 'surface' }
   }
 }
 
@@ -84,7 +92,29 @@ function sentence(entry: ActivityEntry, t: Translate): string | null {
       return entry.params.number === null ? t('activity.sessionStartedSingle', { name }) : t('activity.sessionStarted', { name, n: entry.params.number })
     case 'session_ended':
       return entry.params.number === null ? t('activity.sessionEndedSingle', { name }) : t('activity.sessionEnded', { name, n: entry.params.number })
+    // A game set and put back name the game, from the entry's `games`: the server names only a game everyone may know (a game that was
+    // set, from the moment it is set). Without a name there is no sentence, so a Hidden wheel stays hidden in the feed (#228).
+    case 'game_set':
+      return gameSentence(entry, 'activity.hostSet', t)
+    case 'game_put_back':
+      return gameSentence(entry, 'activity.gamePutBack', t)
+    // What the wheel drew (#229) is in the feed from its stop on, and the server names the game only then (the same rule).
+    case 'game_drawn':
+      return entry.games[entry.params.gameId] === undefined ? null : t('activity.wheel', { game: entry.games[entry.params.gameId] })
+    // A coin toss says its side from the landing on (#235): the entry is written with the landing as its instant, so the feed has it then.
+    case 'coin_tossed':
+      return t('activity.coin', { side: t(`coin.side.${entry.params.side}`) })
+    // The other 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #231 Vetoes revealed, #233 Bonus Veto.
+    case 'vetoes_revealed':
+    case 'bonus_veto_granted':
+      return null
   }
+}
+
+/** The sentence of an entry about one game (`params.gameId`): the actor and the game's name, or null while the viewer may not name the game. */
+function gameSentence(entry: Extract<ActivityEntry, { type: 'game_set' | 'game_put_back' }>, key: string, t: Translate): string | null {
+  const game = entry.games[entry.params.gameId]
+  return game === undefined ? null : t(key, { name: entry.actor?.name ?? '', game })
 }
 
 /**
@@ -162,16 +192,17 @@ export function groupActivity(entries: ActivityEntry[], sessions: FeedSession[],
  * dated Session that has not (null when there is none, or the Event has one Session). `sessions` is the Event read's.
  */
 export function feedSessions(sessions: { id: string, number: number | null, startsAt: string | null, startedAt: string | null, endedAt: string | null }[]): { started: FeedSession[], nextNumber: number | null } {
-  const started = sessions.flatMap(session => (session.startedAt === null ? [] : [{ id: session.id, number: session.number, startedAt: session.startedAt, endedAt: session.endedAt }]))
+  const started = sessions.flatMap(session => (isStarted(session) ? [{ id: session.id, number: session.number, startedAt: session.startedAt, endedAt: session.endedAt }] : []))
   return { started, nextNumber: nextSession(sessions)?.number ?? null }
 }
 
 /** An entry from the room or the feed endpoint, or null when it is not one (a malformed message is ignored). */
 export function readEntry(value: unknown): ActivityEntry | null {
   if (!isRecord(value)) return null
-  const { id, at, type, params, people, actor } = value
+  const { id, at, type, params, people, actor, games } = value
   if (typeof id !== 'string' || typeof at !== 'string' || !ACTIVITY_TYPES.some(known => known === type)) return null
   if (!isRecord(params) || !isRecord(people) || (actor !== null && !isRecord(actor))) return null
-  // The server wrote this entry (shared/activity.ts); only its outer shape is checked here.
-  return value as unknown as ActivityEntry
+  // The server wrote this entry (shared/activity.ts); only its outer shape is checked here. An entry without `games` (from before
+  // #228) names no game.
+  return { ...value, games: isRecord(games) ? games : {} } as unknown as ActivityEntry
 }

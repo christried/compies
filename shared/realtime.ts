@@ -1,6 +1,7 @@
 // What the room and the app say to each other (spec #153 § Protocol, ADR 0012, ADR 0013). The app and the Worker
 // (realtime/) import this file, so it holds types and tiny helpers only. No message carries a game's name, id,
-// image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer.
+// image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer. The one
+// exception is an Activity entry of a game everyone may know (`activity.added`: a game that was set, #228).
 
 import type { ActivityEntry } from './activity'
 import type { Place } from './board'
@@ -8,9 +9,9 @@ import type { Place } from './board'
 export const ROOM_PROTOCOL_VERSION = 1
 
 /**
- * The message types of the room, a union that later tickets extend with presence, moves, Sessions, the Activity feed
- * and the clock. A change of an Event queues these with `publish`. `event.changed`: something about the Event
- * changed, the client refetches the Event read.
+ * The message types of the room: the union of every message the room sends; Nuxt adds a type without a Worker deploy,
+ * since the Worker checks only `v` and `type`. A change of an Event queues these with `publish`. `event.changed`:
+ * something about the Event changed, the client refetches the Event read.
  */
 export type RoomMessage
   = | { type: 'event.changed' }
@@ -38,6 +39,23 @@ export type RoomMessage
     | { type: 'session.ended', sessionId: string }
   /** The first Session started: every team's Team name is frozen (#164). */
     | { type: 'team.nameFrozen' }
+  /** The Host set the next game: a Round is open (#228). No game data; the client refetches the Event read. */
+    | { type: 'round.set', roundId: string }
+  /** The Host put an open Round back (#228). No game data. */
+    | { type: 'round.putBack', roundId: string }
+  /**
+   * The Host spun the Lucky Wheel (#229, spec #218 § Hidden wheel on the wire). Instants are ISO strings; `slices` is how many
+   * slices the wheel had. Never a game: `labels` are the placeholders of a Hidden wheel (shuffled for this spin), null on a
+   * visible wheel, whose names the clients take from the Event read.
+   */
+    | { type: 'round.spun', roundId: string, drawId: string, spinStartAt: string, stopAt: string, slices: number, resultIndex: number, resultOffset: number, labels: string[] | null }
+  /** The Host changed the Countdown (#236): set, started, paused, reset or cleared. No payload; the client refetches the Event read. */
+    | { type: 'countdown.changed' }
+  /**
+   * The Host tossed the Coin flip (#235, spec #218 § Coin flip). Instants are ISO strings: the flight starts at `startedAt` and the
+   * coin lands at `landsAt`. The side rides along; the UI and the feed show it only at the landing.
+   */
+    | { type: 'coin.tossed', tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
 
 export type RoomMessageType = RoomMessage['type']
 
@@ -65,10 +83,15 @@ export const HEARTBEAT_MS = 10_000
  * 75 s, not 30: a hidden tab's throttled heartbeat fires about once a minute, so 30 s dropped such tabs and the dot flapped. */
 export const SILENT_AFTER_MS = 75_000
 
-/** The body of a call to a room (Nuxt to Worker): the messages to send to every socket of the Event. */
-export interface RoomPublishBody {
-  messages: Envelope[]
-}
+/**
+ * The body of a call to a room (Nuxt to Worker): the messages for every socket of the Event, or (#227) for the
+ * sockets of the named Users only. The named send is its own shape, not `messages` + `to`: the Worker that runs in
+ * production ignores unknown keys and would broadcast `messages`, so if Nuxt shipped first a sealed Veto would reach
+ * every Party. With `direct`, the old Worker answers 400 (no `messages` array) and sends nothing: it fails closed.
+ */
+export type RoomPublishBody
+  = | { messages: Envelope[] }
+    | { to: string[], direct: Envelope[] }
 
 /** PartyServer's name for the room class: the kebab-case of its binding `EventRoom` (partyserver's routing). */
 export const ROOM_PARTY = 'event-room'

@@ -24,7 +24,8 @@ export interface RoomConnectionState {
  * Event state, so nothing is lost when it hibernates or the Worker is deployed. Nuxt decides everything and tells
  * the room what to send through the Worker's signed publish call. The room's own messages are presence (#162: who
  * is online, derived from the open sockets so it survives hibernation) and the clock (`clock.pong`); what else a
- * client sends is ignored.
+ * client sends is ignored. Nuxt's publish reaches every socket, or only the sockets of named Users (#227, sealed
+ * Vetoes), and the room keeps no Event state either way.
  */
 export class EventRoom extends Server {
   static options = { hibernate: true }
@@ -123,7 +124,10 @@ export class EventRoom extends Server {
     if (open > 0) await this.ctx.storage.setAlarm(now + SWEEP_EVERY_MS)
   }
 
-  /** The signed publish call, already verified by the Worker: send each message to every socket of this Event. */
+  /**
+   * The signed publish call, already verified by the Worker: send each message to every socket of this Event, or, with
+   * `to` (#227), to the sockets of the named Users only. A body that is neither shape is refused with nothing sent.
+   */
   async onRequest(request: Request): Promise<Response> {
     if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 })
     let body: unknown
@@ -133,11 +137,33 @@ export class EventRoom extends Server {
     catch {
       return new Response('Bad request', { status: 400 })
     }
-    const messages = isRecord(body) && Array.isArray(body.messages) ? body.messages : null
-    if (!messages || !messages.every(message => isRecord(message) && message.v === ROOM_PROTOCOL_VERSION && typeof message.type === 'string')) {
-      return new Response('Bad request', { status: 400 })
+    const call = publishCall(body)
+    if (!call || !call.messages.every(isEnvelope)) return new Response('Bad request', { status: 400 })
+    if (call.to === null) {
+      for (const message of call.messages) this.broadcast(JSON.stringify(message))
+      return new Response(null, { status: 204 })
     }
-    for (const message of messages) this.broadcast(JSON.stringify(message))
+    for (const connection of this.getConnections<RoomConnectionState>()) {
+      const state = connection.state
+      if (!state || state.dropped || !call.to.includes(state.sub)) continue
+      for (const message of call.messages) connection.send(JSON.stringify(message))
+    }
     return new Response(null, { status: 204 })
   }
+}
+
+/** A message is an envelope of this protocol version with a type. */
+function isEnvelope(message: unknown): boolean {
+  return isRecord(message) && message.v === ROOM_PROTOCOL_VERSION && typeof message.type === 'string'
+}
+
+/** The messages of a publish call and, for a send to named Users, who gets them (`null`: everyone). Null for any other body. */
+function publishCall(body: unknown): { to: string[] | null, messages: unknown[] } | null {
+  if (!isRecord(body)) return null
+  if ('messages' in body) {
+    return 'to' in body || 'direct' in body || !Array.isArray(body.messages) ? null : { to: null, messages: body.messages }
+  }
+  const { to, direct } = body
+  if (!Array.isArray(to) || !to.every(id => typeof id === 'string') || !Array.isArray(direct)) return null
+  return { to, messages: direct }
 }

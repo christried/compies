@@ -274,7 +274,7 @@ describe('the settings editor', () => {
     it('keeps the Team size from going below the fullest team, and says why', async () => {
       const { slug } = setUp({
         settings: { ...defaultSettings(), teamSize: 4 },
-        floors: { teamSize: 4, vetoAllowance: 0 },
+        floors: { teamSize: 4, vetoAllowance: 0, gameCount: 0 },
         teams: [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }],
         members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 1), seated(SANNE, 'team', 1), seated(FOUR, 'team', 1)],
       })
@@ -289,7 +289,7 @@ describe('the settings editor', () => {
     })
 
     it('keeps the Veto allowance from going below the most Vetoes a Party has spent, and says why', async () => {
-      const { slug } = setUp({ settings: wheel, floors: { teamSize: 1, vetoAllowance: 2 } })
+      const { slug } = setUp({ settings: wheel, floors: { teamSize: 1, vetoAllowance: 2, gameCount: 0 } })
       const page = await mountEditor(slug)
       await goTo(page, 'Auswahlmodus')
 
@@ -299,8 +299,22 @@ describe('the settings editor', () => {
       expect(less.attributes('title')).toBe('Eine Partei hat schon 2 Vetos eingesetzt.')
     })
 
+    it('keeps the Game count from going below the Rounds already started, and says why (#228)', async () => {
+      const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 4 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 3 } })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spiele')
+
+      const less = button(page, 'Anzahl Spiele: weniger')
+      expect(less.attributes('aria-disabled')).toBeUndefined()
+      await less.trigger('click')
+
+      expect(spin(page, 'Anzahl Spiele').text()).toBe('3')
+      expect(button(page, 'Anzahl Spiele: weniger').attributes('title')).toBe('Schon 3 gestartet.')
+      expect(button(page, 'Anzahl Spiele: weniger').attributes('aria-disabled')).toBe('true')
+    })
+
     it('has the usual limits when nothing is spent yet', async () => {
-      const { slug } = setUp({ settings: { ...wheel, teamSize: 1 }, floors: { teamSize: 1, vetoAllowance: 0 } })
+      const { slug } = setUp({ settings: { ...wheel, teamSize: 1 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 0 } })
       const page = await mountEditor(slug)
       expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
     })
@@ -313,7 +327,7 @@ describe('the settings editor', () => {
     it('shows the Team size floor the Event read gives, the fullest team, and says why', async () => {
       const { slug } = setUp({
         settings: four,
-        floors: { teamSize: 2, vetoAllowance: 0 },
+        floors: { teamSize: 2, vetoAllowance: 0, gameCount: 0 },
         teams: teamsOf4,
         members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 3), seated(SANNE, 'team', 3), seated(FOUR, 'bench')],
       })

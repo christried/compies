@@ -17,14 +17,23 @@ async function join(event: string, overrides: Partial<Parameters<typeof claims>[
   return published
 }
 
-async function publish(event: string, messages: Envelope[], { secret = INTERNAL_SECRET, at = Date.now() } = {}) {
-  const body = JSON.stringify({ messages })
+/** A signed publish call with the given body, sent to the event's room. */
+async function post(event: string, body: string, { secret = INTERNAL_SECRET, at = Date.now() } = {}) {
   const call = await signRoomCall(body, secret, at)
   return exports.default.fetch(`https://rt.test${roomPath(event)}`, {
     method: 'POST',
     headers: { [ROOM_CALL_TIMESTAMP_HEADER]: call.timestamp, [ROOM_CALL_SIGNATURE_HEADER]: call.signature },
     body,
   })
+}
+
+async function publish(event: string, messages: Envelope[], options?: { secret?: string, at?: number }) {
+  return post(event, JSON.stringify({ messages }), options)
+}
+
+/** A send to the named Users of the Event only (#227). */
+async function publishTo(event: string, to: unknown, direct: unknown, options?: { secret?: string, at?: number }) {
+  return post(event, JSON.stringify({ to, direct }), options)
 }
 
 const changed = () => envelope({ type: 'event.changed' }, Date.now())
@@ -156,5 +165,109 @@ describe('publishing', () => {
 
   it('answers 404 for a path that is no room', async () => {
     expect((await exports.default.fetch('https://rt.test/')).status).toBe(404)
+  })
+})
+
+describe('sending to named Users (#227)', () => {
+  it('reaches every socket of the named Users and none of anyone else in the Event', async () => {
+    const ada = await join('event-1', { sub: 'ada' })
+    const adaOtherTab = await join('event-1', { sub: 'ada' })
+    const bob = await join('event-1', { sub: 'bob' })
+    const message = changed()
+
+    const response = await publishTo('event-1', ['ada'], [message])
+    await settle()
+
+    expect(response.status).toBe(204)
+    expect(ada).toEqual([message])
+    expect(adaOtherTab).toEqual([message])
+    expect(bob).toEqual([])
+  })
+
+  it('answers 204 and sends nothing to an unknown User', async () => {
+    const ada = await join('event-1', { sub: 'ada' })
+
+    const response = await publishTo('event-1', ['nobody'], [changed()])
+    await settle()
+
+    expect(response.status).toBe(204)
+    expect(ada).toEqual([])
+  })
+
+  it('reaches no socket of another Event, even of a User with the same sub', async () => {
+    const here = await join('event-1', { sub: 'ada' })
+    const there = await join('event-2', { sub: 'ada' })
+
+    await publishTo('event-1', ['ada'], [changed()])
+    await settle()
+
+    expect(here).toHaveLength(1)
+    expect(there).toEqual([])
+  })
+
+  it('sends the named messages in order', async () => {
+    const ada = await join('event-1', { sub: 'ada' })
+    const messages = [changed(), envelope({ type: 'member.joined', userId: 'ada' }, Date.now())]
+
+    await publishTo('event-1', ['ada'], messages)
+    await settle()
+
+    expect(ada).toEqual(messages)
+  })
+
+  it('sends nothing for an empty list of Users', async () => {
+    const ada = await join('event-1', { sub: 'ada' })
+
+    const response = await publishTo('event-1', [], [changed()])
+    await settle()
+
+    expect(response.status).toBe(204)
+    expect(ada).toEqual([])
+  })
+
+  it('refuses a malformed send with 400 and sends nothing', async () => {
+    const ada = await join('event-1', { sub: 'ada' })
+    const message = changed()
+    const malformed: [string, unknown, unknown][] = [
+      ['to not an array', 'ada', [message]],
+      ['to with a non-string', ['ada', 1], [message]],
+      ['direct missing', ['ada'], undefined],
+      ['direct with another protocol version', ['ada'], [{ ...message, v: 2 }]],
+      ['direct with no type', ['ada'], [{ v: 1, serverTime: 1 }]],
+    ]
+
+    for (const [name, to, direct] of malformed) {
+      const response = await publishTo('event-1', to, direct)
+      expect(response.status, name).toBe(400)
+    }
+    await settle()
+
+    expect(ada).toEqual([])
+  })
+
+  it('refuses a body with both messages and a send, and sends nothing', async () => {
+    const ada = await join('event-1', { sub: 'ada' })
+    const message = changed()
+
+    const response = await post('event-1', JSON.stringify({ messages: [message], to: ['ada'], direct: [message] }))
+    await settle()
+
+    expect(response.status).toBe(400)
+    expect(ada).toEqual([])
+  })
+
+  it('refuses a named send whose body was changed after it was signed', async () => {
+    const ada = await join('event-1', { sub: 'ada' })
+    const call = await signRoomCall(JSON.stringify({ to: ['ada'], direct: [changed()] }), INTERNAL_SECRET, Date.now())
+
+    const response = await exports.default.fetch(`https://rt.test${roomPath('event-1')}`, {
+      method: 'POST',
+      headers: { [ROOM_CALL_TIMESTAMP_HEADER]: call.timestamp, [ROOM_CALL_SIGNATURE_HEADER]: call.signature },
+      body: JSON.stringify({ to: ['bob'], direct: [changed()] }),
+    })
+    await settle()
+
+    expect(response.status).toBe(401)
+    expect(ada).toEqual([])
   })
 })

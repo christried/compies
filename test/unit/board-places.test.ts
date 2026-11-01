@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { placeFromKey, placeKey, teamName } from '../../app/utils/board'
+import { parseTeamPosition } from '../../shared/board'
 import de from '../../i18n/locales/de.json'
 
 // The Game board's places as the client names them (#160): the zone key in the DOM and back,
@@ -29,5 +30,17 @@ describe('teamName', () => {
   it('names a team after its colour', () => {
     expect(teamName(1, t)).toBe('Team Rot')
     expect(teamName(8, t)).toBe('Team Nacht')
+  })
+})
+
+describe('parseTeamPosition', () => {
+  // The team position in a request path (N5): a whole number from 1; its range is the Event's team count.
+  it('reads a whole number from 1', () => {
+    expect(parseTeamPosition('1')).toBe(1)
+    expect(parseTeamPosition('12')).toBe(12)
+  })
+
+  it('refuses zero, signs, decimals, words and the empty path with null', () => {
+    for (const raw of ['0', '', '-1', '1.5', 'eins', ' 2']) expect(parseTeamPosition(raw), raw).toBeNull()
   })
 })

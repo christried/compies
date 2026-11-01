@@ -138,6 +138,7 @@
   --animate-pop-in: cp-pop-in var(--cp-dur-slow) var(--cp-ease-pop) both;   /* physical landings only */
   --animate-enter: cp-fade-in var(--cp-dur-base) var(--cp-ease-out) both;    /* UI: toasts, badges, modals */
   --animate-fade-in: cp-fade-in var(--cp-dur-fast) var(--cp-ease-out) both;
+  --animate-clip-in: cp-clip-in var(--cp-dur-slow) var(--cp-ease-out) both;     /* the synced clip opens (04-motion § Clip overlay) */
   --animate-sheet-in: cp-sheet-in var(--cp-dur-slow) var(--cp-ease-out) both;
   --animate-bounce-back: cp-bounce-back var(--cp-dur-slower) var(--cp-ease-spring) both;
   --animate-emote-rise: cp-emote-rise 1400ms var(--cp-ease-out) both;
@@ -146,6 +147,7 @@
 
   @keyframes cp-pop-in { 0% { opacity: 0; transform: scale(.6) rotate(-6deg); } 70% { opacity: 1; transform: scale(1.06) rotate(1deg); } 100% { transform: none; } }
   @keyframes cp-fade-in { from { opacity: 0; } }
+  @keyframes cp-clip-in { from { opacity: 0; transform: scale(.96); } }
   @keyframes cp-sheet-in { from { transform: translateX(100%); } }
   @keyframes cp-bounce-back { 0% { transform: translate(var(--cp-from-x,0), var(--cp-from-y,0)); } 100% { transform: none; } }
   @keyframes cp-emote-rise { 0% { opacity: 0; transform: translateY(8px) scale(.6); } 15% { opacity: 1; transform: translateY(-6px) scale(1.08); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-64px) scale(1); } }
@@ -155,11 +157,11 @@
 
 /* every animate-* class has a calm twin under reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .animate-pop-in, .animate-sheet-in, .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
+  .animate-pop-in, .animate-clip-in, .animate-sheet-in, .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
   .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
   .animate-tick, .animate-wiggle { animation: none; }
 }
-[data-motion=reduced] .animate-pop-in, [data-motion=reduced] .animate-sheet-in, [data-motion=reduced] .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
+[data-motion=reduced] .animate-pop-in, [data-motion=reduced] .animate-clip-in, [data-motion=reduced] .animate-sheet-in, [data-motion=reduced] .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
 [data-motion=reduced] .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
 [data-motion=reduced] .animate-tick, [data-motion=reduced] .animate-wiggle { animation: none; }
 

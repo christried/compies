@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { YOUTUBE_HOST, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
 import { clipTime } from '~~/shared/game'
 
 // The clip as it will run in a Session (#141, screen 24): the YouTube player, cued to the start second and
@@ -18,51 +19,6 @@ const emit = defineEmits<{
   /** The player cannot play the video (missing, private, not embeddable). */
   error: []
 }>()
-
-// Just what we call of the IFrame Player API.
-interface YouTubePlayer {
-  getDuration: () => number
-  cueVideoById: (options: { videoId: string, startSeconds: number, endSeconds: number }) => void
-  stopVideo: () => void
-  destroy: () => void
-}
-interface YouTubeApi {
-  Player: new (element: HTMLElement, options: {
-    videoId: string
-    host: string
-    playerVars: Record<string, number>
-    events: { onReady: () => void, onStateChange: () => void, onError: () => void }
-  }) => YouTubePlayer
-}
-declare global {
-  interface Window {
-    YT?: YouTubeApi
-    onYouTubeIframeAPIReady?: () => void
-  }
-}
-
-let apiLoad: Promise<YouTubeApi> | null = null
-
-/** The IFrame API, loaded once per page. Rejects when the script cannot load, so a later preview can try again. */
-function loadYouTubeApi(): Promise<YouTubeApi> {
-  if (window.YT?.Player) return Promise.resolve(window.YT)
-  apiLoad ??= new Promise<YouTubeApi>((resolve, reject) => {
-    const previous = window.onYouTubeIframeAPIReady
-    window.onYouTubeIframeAPIReady = () => {
-      previous?.()
-      resolve(window.YT!)
-    }
-    const script = document.createElement('script')
-    script.src = 'https://www.youtube.com/iframe_api'
-    script.onerror = () => {
-      apiLoad = null
-      script.remove()
-      reject(new Error('YouTube IFrame API did not load'))
-    }
-    document.head.append(script)
-  })
-  return apiLoad
-}
 
 const DEBOUNCE_MS = 400
 
@@ -103,7 +59,7 @@ async function createPlayer(videoId: string) {
   stage.value.replaceChildren(host)
   player = new api.Player(host, {
     videoId,
-    host: 'https://www.youtube-nocookie.com',
+    host: YOUTUBE_HOST,
     playerVars: { start: props.start, end: end.value, rel: 0, playsinline: 1, modestbranding: 1 },
     events: { onReady: readDuration, onStateChange: readDuration, onError: () => emit('error') },
   })

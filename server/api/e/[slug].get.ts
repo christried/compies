@@ -1,7 +1,9 @@
 import { defineEventHandler, getRouterParam } from 'h3'
+import { useClock } from '../../utils/clock'
 import { useDb } from '../../utils/db'
 import { loadEvent } from '../../utils/event-access'
-import { boardSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, sessionSection, startSection } from '../../utils/event-read'
+import { boardSection, clipSection, coinSection, countdownSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, roundsSection, sessionSection, startSection } from '../../utils/event-read'
+import { settleBeforeRead } from '../../utils/rounds'
 import { requireUser } from '../../utils/user'
 import type { EventView } from '../../../shared/event'
 
@@ -10,13 +12,19 @@ import type { EventView } from '../../../shared/event'
 // 410 "Event deleted" instead (#10).
 // The poll UI refetches this every 15 s (ADR 0001). The answer is composed from the section builders of
 // server/utils/event-read.ts, whose reads run at the same time (#183).
+// A draw whose stop has passed is settled first (#229, ADR 0013: no timer runs, the first read or write after an instant settles
+// it): a cheap select finds it, and only then a locked transaction sets its game. A read with nothing due takes no lock.
 export default defineEventHandler(async (event): Promise<EventView> => {
   const user = await requireUser(event)
   const db = useDb(event)
+  const now = useClock(event).now()
   const eventRow = await loadEvent(db, getRouterParam(event, 'slug') ?? '', user.id)
   const viewer = { id: user.id, isHost: eventRow.hostId === user.id }
+  await settleBeforeRead(db, eventRow, now)
 
   const [rows, pools] = await Promise.all([readEventRows(db, eventRow), poolsSection(db, eventRow, viewer)])
+  const roundSections = await roundsSection(db, eventRow, rows, viewer, now)
+  const [clip, countdown, coin] = await Promise.all([clipSection(db, eventRow, rows, now), countdownSection(db, eventRow, rows), coinSection(db, eventRow, rows)])
   return {
     event: {
       slug: eventRow.slug,
@@ -28,9 +36,13 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     ...sessionSection(rows),
     ...inviteSection(event, eventRow, viewer),
     viewerId: user.id,
-    ...pollSection(rows, viewer, new Date()),
+    ...pollSection(rows, viewer, now),
     ...membersSection(eventRow, rows),
     ...boardSection(eventRow, rows),
     ...startSection(eventRow, rows, viewer),
+    ...roundSections,
+    ...clip,
+    ...countdown,
+    ...coin,
   }
 })

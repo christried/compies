@@ -82,6 +82,8 @@ export const API_ERROR_STATUS = {
   team_size_below_fullest: 409,
   /** A Veto allowance below the most Vetoes a Party has spent (#147). */
   veto_allowance_below_spent: 409,
+  /** A Game count below the Rounds already started (#228). */
+  game_count_below_started: 409,
   /** The Activity feed's `before` is not the id of an entry of this Event, or its `limit` is not a whole number from 1 to 100 (#159). */
   invalid_cursor: 400,
   /** Only the Host moves another Member on the Game board (#160). */
@@ -114,8 +116,30 @@ export const API_ERROR_STATUS = {
   teams_empty: 409,
   /** The teams differ in size (#164, start rule). */
   teams_uneven: 409,
-  /** No Session is running, so none can end (#164). */
+  /** No Session is running, so none can end (#164), and no game can be set (#228). */
   no_running_session: 409,
+  /** The Event has started as many Rounds as its Game count: no game can be set (#228). */
+  game_count_reached: 409,
+  /** A Round is being drawn: no game can be set, and that Round cannot be put back (#228). */
+  round_being_drawn: 409,
+  /** The Selection mode has no wheel to spin (#229). */
+  no_wheel: 409,
+  /** No game is left on the wheel (#229). */
+  pool_empty: 409,
+  /** No clip is running, so the Host has none to skip (#230). */
+  no_clip: 409,
+  /** A Round id the Event does not hold, or one that was put back already (#228). */
+  round_not_found: 404,
+  /** No Countdown is set in this Event, so there is none to start, pause or reset (#236). */
+  no_countdown: 409,
+  /** The Countdown runs already: it cannot be set again, nor started (#236). */
+  countdown_running: 409,
+  /** The Countdown has run out: start is refused until the Host resets it (#236). */
+  countdown_ended: 409,
+  /** The Countdown does not run, so there is nothing to pause (#236). */
+  countdown_not_running: 409,
+  /** The Coin flip has a toss in the air: one coin at a time, the next toss waits for the landing (#235). */
+  coin_in_air: 409,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

@@ -471,7 +471,7 @@ describe('changing the settings of an Event (#147)', () => {
     it('gives the Host the floors and every other Member null', async () => {
       const slug = await createdEvent()
 
-      expect((await read(slug)).settingsFloors).toEqual({ teamSize: 1, vetoAllowance: 0 })
+      expect((await read(slug)).settingsFloors).toEqual({ teamSize: 1, vetoAllowance: 0, gameCount: 0 })
       expect((await read(slug, memberCookie)).settingsFloors).toBeNull()
     })
   })
