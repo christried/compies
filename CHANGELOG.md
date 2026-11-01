@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-01 – Notizen
+
+Spiele bekommen Notizen für Einstellungen und Hausregeln, und als Host entscheidest du, ob die anderen den Spielepool schon vorher sehen.
+
 ### Neu
 
 - Spiele in der Bibliothek haben jetzt **Notizen**: Einstellungen, Aufwärmen, Siegbedingung und Hausregeln, bis zu 1000 Zeichen. Wer das Spiel angelegt hat, schreibt sie, auch gleich beim Anlegen im Event-Assistenten; alle Hosts lesen sie auf der Seite des Spiels. ([#223](https://github.com/christried/compies/issues/223))
