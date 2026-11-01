@@ -22,6 +22,8 @@ export const API_ERROR_STATUS = {
   invalid_players: 400,
   /** A game's Suitabilities are unknown or repeated (#171). */
   invalid_suitabilities: 400,
+  /** A game's notes are longer than GAME_NOTES_MAX characters (#223). */
+  invalid_game_notes: 400,
   /** Only the creator of a game and the Platform admin may edit it (#142). */
   not_game_editor: 403,
   /** A game image is larger than GAME_IMAGE_MAX_BYTES (#143). */
