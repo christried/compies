@@ -74,7 +74,7 @@ export type SettingsError
     | 'wheel_options_without_wheel' // hiddenWheel true or vetoAllowance set with a mode other than lucky_wheel
     | 'pool_preview_hidden_wheel' // poolPreview true together with a Hidden wheel (#225)
 
-/** Whether the Selection mode spins a Lucky Wheel: only then the Hidden wheel and the Veto allowance apply. 1.5/1.6 modes add their own branches here. */
+/** Whether the Selection mode spins a Lucky Wheel: only then the Hidden wheel and the Veto allowance apply. Later modes add their own branches here. */
 export function hasWheel(mode: SelectionMode): boolean {
   return mode === 'lucky_wheel'
 }

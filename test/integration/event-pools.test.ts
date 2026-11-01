@@ -11,8 +11,8 @@ import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
-// The Game pool and the Tiebreaker pool of an Event (#146): created with the Event, read back by the Host in full
-// by every other Member only while the wheel is not hidden (#148), and otherwise learns nothing about them (#222).
+// The Game pool and the Tiebreaker pool of an Event (#146): created with the Event, read back by the Host in full,
+// by every other Member as picture and name only while the Pool preview is on (#148, #224, #225), and otherwise they learn nothing about them (#222).
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const

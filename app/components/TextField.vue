@@ -2,7 +2,7 @@
 import { CircleAlert } from '@lucide/vue'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 
-// Labelled single-line input (02-components § TextField). Help and error are linked with
+// Labelled input or, with `multiline`, text area (02-components § TextField). Help and error are linked with
 // aria-describedby. With `maxlength` it shows a counter, announced only from 80 % of the maximum.
 // `invalid` turns the help text into the reason for an invalid field (announced); `cutAtMax` cuts longer input
 // to the maximum instead of showing an error. `multiline` (#223) is a text area that grows with its text and keeps

@@ -27,7 +27,7 @@ export interface StepLocks {
   teamPlayers?: number[]
 }
 
-/** The settings as the steps edit them. The Lucky Wheel's options sit beside them in the draft; `settingsOf` joins both. */
+/** The settings as the steps edit them. The Lucky Wheel's options and the Pool preview sit beside them in the draft; `settingsOf` joins them. */
 export type DraftSettings = Omit<EventSettings, 'hiddenWheel' | 'vetoAllowance' | 'poolPreview'>
 
 export interface EventDraft {

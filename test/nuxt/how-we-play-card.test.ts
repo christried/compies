@@ -58,7 +58,7 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.text()).not.toContain('Veto')
   })
 
-  it('lists the games of both pools while the wheel is not hidden', async () => {
+  it('lists the games of both pools it is given', async () => {
     const card = await mountCard({ settings: wheel, pools: visiblePools })
 
     const lists = card.findAll('ul')
