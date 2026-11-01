@@ -168,6 +168,19 @@ const suitabilities = computed(() => description.value?.suitabilities ?? null)
       >
         <SkeletonCard />
       </div>
+
+      <!-- Game notes (#223): plain text with the line breaks the Host wrote; {{ }} only, so no formatting and no links. -->
+      <section
+        v-if="game?.notes"
+        class="flex flex-col gap-2"
+      >
+        <h2 class="m-0 text-[16px] font-extrabold">
+          {{ t('library.notes') }}
+        </h2>
+        <p class="m-0 text-[15px] leading-[1.5] whitespace-pre-wrap [overflow-wrap:anywhere]">
+          {{ game.notes }}
+        </p>
+      </section>
     </div>
   </AppShell>
 </template>
