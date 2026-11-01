@@ -42,7 +42,7 @@ export async function loadGame(db: Db, id: string): Promise<{ game: typeof games
   return { game: row.game, creatorName: creatorNameOf(row) }
 }
 
-/** A games row as an Event's pool shows it (#146): what GameCard needs, no creator and no edit rights. */
+/** A games row as an Event's pool shows it (#146): what GameCard needs and the notes (#224), no creator and no edit rights. */
 export function poolGameView(row: typeof games.$inferSelect): PoolGame {
   return {
     id: row.id,
@@ -55,6 +55,7 @@ export function poolGameView(row: typeof games.$inferSelect): PoolGame {
     playersMin: row.playersMin,
     playersMax: row.playersMax,
     suitabilities: row.suitabilities,
+    notes: row.notes,
   }
 }
 
@@ -65,6 +66,5 @@ export function gameView(row: typeof games.$inferSelect, creatorName: string, vi
     createdBy: { id: row.createdBy, name: creatorName },
     createdAt: row.createdAt.toISOString(),
     canEdit: canEditGame(viewer, row),
-    notes: row.notes,
   }
 }
