@@ -32,7 +32,9 @@ const library = computed(() => props.locks?.library !== false)
 const filters = ref<GameFilters>({ ...NO_FILTERS })
 const pooled = computed(() => new Set(games.value.map(game => game.id)))
 
-const hint = computed(() => (props.kind === 'main' ? poolHint(settingsOf(draft.value), games.value.length) : null))
+// The setup hint of the Game pool (#146), and on a running Event the Host's live warning (#234) instead: its lock is present there.
+const hint = computed(() => (props.kind === 'main' && props.locks?.poolWarning === undefined ? poolHint(settingsOf(draft.value), games.value.length) : null))
+const liveWarning = computed(() => (props.kind === 'main' ? (props.locks?.poolWarning ?? null) : null))
 const hintText = computed(() => {
   const numbers = hint.value
   if (!numbers) return ''
@@ -62,6 +64,10 @@ async function onSaved(game: GameView) {
 
 <template>
   <div class="flex flex-col gap-[18px]">
+    <PoolWarning
+      v-if="liveWarning"
+      :warning="liveWarning"
+    />
     <NoticeBanner
       v-if="hint"
       tone="warning"

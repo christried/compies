@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, Fragment, h } from 'vue'
 import EditorPage from '~/pages/e/[slug]/einstellungen.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { BoardTeam, MemberView, SetGameView } from '~~/shared/event'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
@@ -53,6 +53,8 @@ interface Setup {
   /** The Members with their seats, and the teams of the board (the Event read's `members` and `teams`, #160). */
   members?: MemberView[]
   teams?: BoardTeam[]
+  /** The Host's set-game read (the live pool warning of a running Event, #234); the view's default when unset. */
+  setGame?: SetGameView | null
   /** The refusal the PATCH answers with, or null to accept. */
   refuse?: { statusCode: number, statusMessage: string } | null
 }
@@ -67,6 +69,7 @@ function setUp(setup: Setup = {}) {
     pools: setup.pools ?? { main: [], tiebreaker: [] },
     members: setup.members,
     teams: setup.teams,
+    setGame: setup.setGame,
   }))
   registerEndpoint(`/api/e/${slug}/settings`, {
     method: 'PATCH',
@@ -493,6 +496,38 @@ describe('the settings editor', () => {
 
       expect(page.text()).not.toContain(LOCKED)
       expect(button(page, 'Anzahl Teams: mehr').attributes('aria-disabled')).toBeUndefined()
+    })
+  })
+
+  describe('the pool warning of a running Event (#234)', () => {
+    const live = (poolWarning: SetGameView['poolWarning']): SetGameView => ({ rejection: null, spinRejection: null, respin: false, left: [], poolWarning })
+
+    it('shows the live warning under the Game pool instead of the setup hint', async () => {
+      const { slug } = setUp({ settings: wheel, phase: 'running', setGame: live({ needed: 14, have: 4 }) })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+
+      expect(page.text()).toContain('Wird knapp.')
+      expect(page.text()).toContain('Im schlimmsten Fall brauchst du noch 14 Spiele, übrig sind 4.')
+      expect(page.text()).not.toContain('im Pool sind 0.')
+    })
+
+    it('shows nothing under the Game pool while the games left cover the worst case, where the setup hint would warn', async () => {
+      const { slug } = setUp({ settings: wheel, phase: 'running', setGame: live(null) })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+
+      expect(page.text()).not.toContain('Wird knapp.')
+      expect(page.text()).not.toContain('im Pool sind 0.')
+    })
+
+    it('keeps the setup hint before the first Session', async () => {
+      const { slug } = setUp({ settings: wheel, phase: 'poll', setGame: live(null) })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+
+      expect(page.text()).toContain('Wird knapp.')
+      expect(page.text()).toContain('im Pool sind 0.')
     })
   })
 })
