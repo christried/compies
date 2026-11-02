@@ -1,6 +1,5 @@
 import { defineEventHandler } from 'h3'
 import { parseGrantBonusVeto } from '../../../domain/bonus-vetoes'
-import { useClock } from '../../../utils/clock'
 import { changeEvent } from '../../../utils/event-access'
 import { apiError } from '../../../utils/errors'
 import { grantBonusVeto } from '../../../utils/vetoes'
@@ -11,5 +10,5 @@ import type { BonusVetoGranted } from '../../../../shared/event'
 export default defineEventHandler((event): Promise<BonusVetoGranted> => changeEvent(event, { hostOnly: true, lock: 'update' }, async (change) => {
   const parsed = parseGrantBonusVeto(change.body)
   if (!parsed.ok) throw apiError(parsed.error)
-  return await grantBonusVeto(change, useClock(event).now(), parsed.team)
+  return await grantBonusVeto(change, parsed.team)
 }))

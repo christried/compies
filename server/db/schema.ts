@@ -321,10 +321,13 @@ export const bonusVetoes = pgTable('bonus_vetoes', {
 ])
 
 // A toss of the Coin flip (GLOSSARY: Coin flip): the server picks `side`; the toss runs from `startedAt` and lands at
-// `landsAt`. The side reaches clients with the toss, but the UI and the feed show it only at the landing.
+// `landsAt`. The side reaches clients with the toss, but the UI and the feed show it only at the landing. A toss belongs to the
+// Session it was made in (`sessionId`, 0020, #259); no time comparison decides it. Nullable: tosses from before and those the code
+// that serves during the switch-over writes (ADR 0007) have none, and are shown in no Session.
 export const coinTosses = pgTable('coin_tosses', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'cascade' }),
   side: coinSide('side').notNull(),
   tossedBy: uuid('tossed_by').notNull().references(() => users.id),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
@@ -332,6 +335,7 @@ export const coinTosses = pgTable('coin_tosses', {
 }, table => [
   check('coin_tosses_lands_after_start_check', sql`${table.landsAt} >= ${table.startedAt}`),
   index('coin_tosses_event_id_started_at_idx').on(table.eventId, table.startedAt),
+  index('coin_tosses_session_id_started_at_idx').on(table.sessionId, table.startedAt),
 ])
 
 // The Countdown (GLOSSARY: Countdown): one per Event, during a running Session; ending the Session deletes it. `durationMs`

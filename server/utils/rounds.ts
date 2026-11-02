@@ -1,10 +1,10 @@
-import { and, asc, eq, isNull, lte, or, sql } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import { draws, eventMembers, eventPoolGames, events, games, rounds, vetoes } from '../db/schema'
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import { countSeats, type Place } from '../../shared/board'
 import { isoInstant } from '../../shared/activity'
 import type { RoundSpun, VetoCast } from '../../shared/event'
-import { SPIN_DURATION_MS, SPIN_LEAD_MS, VETO_WINDOW_MS, drawOutcome, gameTaken, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
+import { SPIN_DURATION_MS, SPIN_LEAD_MS, VETO_WINDOW_MS, gameTaken, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import { hasWheel, settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
@@ -13,6 +13,7 @@ import { apiError } from './errors'
 import type { EventChange, EventRow } from './event-access'
 import { readSeats } from './board'
 import { eventSessions, type SessionRow } from './sessions'
+import { dueDraws, settleDue } from './settle'
 import { partyVetoesLeft, readBonusTeams, readVetoes } from './vetoes'
 
 // The Event's Rounds (GLOSSARY: Round, #228): the reads the rules and the Event read share, and the changes the Host
@@ -61,39 +62,6 @@ export function spinRejectionOf(eventRow: EventRow, sessions: readonly SessionRo
 }
 
 /**
- * The draws that are due at `now` (#229, #231, spec #218 § Deadlines): not settled, and past their last instant: the stop for a draw
- * without a Veto window, the end of the window for one with it.
- */
-function dueDraws(db: Db, eventId: string, now: Date) {
-  return db
-    .select({ id: draws.id, roundId: draws.roundId, gameId: draws.gameId, stopAt: draws.stopAt, vetoEndsAt: draws.vetoEndsAt })
-    .from(draws)
-    .innerJoin(rounds, eq(draws.roundId, rounds.id))
-    .where(and(eq(rounds.eventId, eventId), isNull(draws.outcome), or(and(isNull(draws.vetoEndsAt), lte(draws.stopAt, now)), lte(draws.vetoEndsAt, now))))
-}
-
-/**
- * Settles what an instant that has passed decides (#229, #231, spec #218 § Deadlines: no timer runs, the first read or write after
- * the instant settles it), in the caller's transaction under the Event row lock. One arm per kind of instant. A draw without a
- * Veto window is set at its stop. A draw with one settles at the end of the window: its outcome follows from its Vetoes
- * (drawOutcome). Set, its Round has the game; vetoed, the Round stays without a game and waits for a respin, and the feed gets
- * „vetoes_revealed“ with who cast them. Everything is stamped with the instant that decided it, not with `now`. Idempotent: a
- * settled draw has an outcome and is not due again.
- */
-export async function settleDue(tx: Db, eventRow: Pick<EventRow, 'id'>, now: Date): Promise<void> {
-  for (const draw of await dueDraws(tx, eventRow.id, now)) {
-    const settledAt = draw.vetoEndsAt ?? draw.stopAt
-    const casts = draw.vetoEndsAt ? await tx.select({ team: vetoes.team, userId: vetoes.userId }).from(vetoes).where(eq(vetoes.drawId, draw.id)).orderBy(asc(vetoes.team)) : []
-    const outcome = drawOutcome(casts.length)
-    const [settled] = await tx.update(draws).set({ outcome, settledAt }).where(and(eq(draws.id, draw.id), isNull(draws.outcome))).returning({ id: draws.id })
-    if (!settled) continue
-    if (outcome === 'set') await tx.update(rounds).set({ gameId: draw.gameId, setAt: settledAt }).where(eq(rounds.id, draw.roundId))
-    // The entry waits for the instant it carries (`at`), so nothing is published: the clients refetch the feed when it passes.
-    else await recordActivity(tx, () => {}, eventRow.id, { type: 'vetoes_revealed', actorId: null, params: { roundId: draw.roundId, drawId: draw.id, gameId: draw.gameId, vetoes: casts }, at: settledAt })
-  }
-}
-
-/**
  * The Event read's share (#229): when a draw is due, settle it in a locked transaction before reading. The check is one cheap
  * select, so a read with nothing due stays lock-free; the settle re-checks under the lock, so two readers settle it once.
  */
@@ -105,7 +73,7 @@ export async function settleBeforeRead(db: Db, eventRow: Pick<EventRow, 'id'>, n
   })
 }
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish'>
+type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
 
 /** What the rules of a round change read in its transaction, all at the same time. */
 async function readRoundFacts(tx: Db, eventRow: EventRow) {
@@ -120,6 +88,26 @@ async function readRoundFacts(tx: Db, eventRow: EventRow) {
 }
 
 /**
+ * The Round a new draw belongs to (#231, #259): the one that waits for a respin (all its draws vetoed) takes the draw itself, else a new Round
+ * starts at `now`. `patch` is what the Round takes at once (the set game); `{}` when the draw settles later.
+ */
+async function roundForDraw(tx: Db, eventId: string, roundRows: readonly RoundRow[], drawRows: readonly DrawRow[], now: Date, patch: { gameId?: string, setAt?: Date }): Promise<string> {
+  const waiting = roundRows.find(round => waitsForRespin(round, drawRows))
+  if (waiting) {
+    if (Object.keys(patch).length > 0) await tx.update(rounds).set(patch).where(eq(rounds.id, waiting.id))
+    return waiting.id
+  }
+  const [round] = await tx.insert(rounds).values({ eventId, startedAt: now, ...patch }).returning({ id: rounds.id })
+  return round!.id
+}
+
+/** Stores one draw of a Round, committed at `now`; answers its id. */
+async function insertDraw(tx: Db, roundId: string, now: Date, fields: Omit<typeof draws.$inferInsert, 'roundId' | 'committedAt'>): Promise<string> {
+  const [draw] = await tx.insert(draws).values({ ...fields, roundId, committedAt: now }).returning({ id: draws.id })
+  return draw!.id
+}
+
+/**
  * The Host sets the next game (#228): a Round with one `set` draw. A game that is in the Game pool and still left comes from the
  * pool and leaves it; any other library game comes from the library and never joins a pool. The Round is set at once, unless the
  * Host allowed a Veto (#232, „Veto erlauben“) and some Party has one left (opensWindow): then the draw carries a Veto window from
@@ -127,8 +115,7 @@ async function readRoundFacts(tx: Db, eventRow: EventRow) {
  * mode without a wheel is `no_wheel`. A Round that waits for a respin takes the game itself (#231). Refused with the reason of
  * setRejection, `no_wheel`, or `unknown_game`.
  */
-export async function setNextGame({ tx, eventRow, user, publish }: Change, now: Date, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
-  await settleDue(tx, eventRow, now)
+export async function setNextGame({ tx, eventRow, user, publish, now }: Change, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
   const { sessions, places, roundRows, drawRows, pool } = await readRoundFacts(tx, eventRow)
   const rejection = setRejectionOf(eventRow, sessions, places, roundRows, drawRows, eventRow.hostId === user.id)
   if (rejection) throw apiError(rejection)
@@ -141,23 +128,12 @@ export async function setNextGame({ tx, eventRow, user, publish }: Change, now: 
   const windowOpens = vetoAllowed && opensWindow(partyVetoesLeft(eventRow, await readVetoes(tx, eventRow.id), await readBonusTeams(tx, eventRow.id)))
 
   const source = gamesLeft(pool, drawRows, roundRows).includes(game.id) ? 'pool' : 'library'
-  // A Round that waits for a respin (all its draws vetoed) takes this game itself; otherwise a new Round starts (#231).
-  const waiting = roundRows.find(round => waitsForRespin(round, drawRows))
-  let roundId: string
   // With a window the Round takes its game when the draw settles, so it stays without one (and without `setAt`) until then.
-  const roundGame = windowOpens ? {} : { gameId: game.id, setAt: now }
-  if (waiting) {
-    if (!windowOpens) await tx.update(rounds).set(roundGame).where(eq(rounds.id, waiting.id))
-    roundId = waiting.id
-  }
-  else {
-    const [round] = await tx.insert(rounds).values({ eventId: eventRow.id, startedAt: now, ...roundGame }).returning({ id: rounds.id })
-    roundId = round!.id
-  }
+  const roundId = await roundForDraw(tx, eventRow.id, roundRows, drawRows, now, windowOpens ? {} : { gameId: game.id, setAt: now })
   const timing = windowOpens
     ? { stopAt: now, vetoEndsAt: new Date(now.getTime() + VETO_WINDOW_MS) }
     : { stopAt: now, outcome: 'set' as const, settledAt: now }
-  await tx.insert(draws).values({ roundId, gameId: game.id, source, kind: 'set', committedAt: now, ...timing })
+  await insertDraw(tx, roundId, now, { gameId: game.id, source, kind: 'set', ...timing })
   await recordActivity(tx, publish, eventRow.id, { type: 'game_set', actorId: user.id, params: { roundId, gameId: game.id }, now })
   publish({ type: 'round.set', roundId })
   return { roundId }
@@ -172,8 +148,7 @@ export async function setNextGame({ tx, eventRow, user, publish }: Change, now: 
  * starts. The feed's entry waits for the stop (`at`, not published). The message carries the slice count, the placeholders of
  * a Hidden wheel and the instants, never a game. Refused with the reason of spinRejection.
  */
-export async function spinWheel({ tx, eventRow, user, publish }: Change, now: Date, randomInt: (n: number) => number): Promise<RoundSpun> {
-  await settleDue(tx, eventRow, now)
+export async function spinWheel({ tx, eventRow, user, publish, now }: Change, randomInt: (n: number) => number): Promise<RoundSpun> {
   const { sessions, places, roundRows, drawRows, pool } = await readRoundFacts(tx, eventRow)
   const left = gamesLeft(pool, drawRows, roundRows)
   const rejection = spinRejectionOf(eventRow, sessions, places, roundRows, drawRows, left, eventRow.hostId === user.id)
@@ -187,14 +162,11 @@ export async function spinWheel({ tx, eventRow, user, publish }: Change, now: Da
   const stopAt = new Date(spinStartAt.getTime() + SPIN_DURATION_MS)
   const gameId = spin.sliceGameIds[spin.resultIndex]!
   const vetoEndsAt = opensWindow(vetoesLeft) ? new Date(stopAt.getTime() + VETO_WINDOW_MS) : null
-  const waiting = roundRows.find(row => waitsForRespin(row, drawRows))
-  const roundId = waiting?.id ?? (await tx.insert(rounds).values({ eventId: eventRow.id, startedAt: now }).returning({ id: rounds.id }))[0]!.id
-  const [draw] = await tx.insert(draws).values({
-    roundId,
+  const roundId = await roundForDraw(tx, eventRow.id, roundRows, drawRows, now, {})
+  const drawId = await insertDraw(tx, roundId, now, {
     gameId,
     source: 'pool',
     kind: 'spin',
-    committedAt: now,
     spinStartAt,
     stopAt,
     vetoEndsAt,
@@ -202,12 +174,12 @@ export async function spinWheel({ tx, eventRow, user, publish }: Change, now: Da
     sliceLabels: spin.sliceLabels,
     resultIndex: spin.resultIndex,
     resultOffset: spin.resultOffset,
-  }).returning({ id: draws.id })
-  await recordActivity(tx, publish, eventRow.id, { type: 'game_drawn', actorId: null, params: { roundId, drawId: draw!.id, gameId }, at: stopAt })
+  })
+  await recordActivity(tx, publish, eventRow.id, { type: 'game_drawn', actorId: null, params: { roundId, drawId, gameId }, at: stopAt })
   publish({
     type: 'round.spun',
     roundId,
-    drawId: draw!.id,
+    drawId,
     spinStartAt: isoInstant(spinStartAt),
     stopAt: isoInstant(stopAt),
     slices: spin.sliceGameIds.length,
@@ -215,7 +187,7 @@ export async function spinWheel({ tx, eventRow, user, publish }: Change, now: Da
     resultOffset: spin.resultOffset,
     labels: spin.sliceLabels,
   })
-  return { roundId, drawId: draw!.id }
+  return { roundId, drawId }
 }
 
 /**
@@ -225,8 +197,7 @@ export async function spinWheel({ tx, eventRow, user, publish }: Change, now: Da
  * first. Refused with the reason of vetoRejection; the table's primary key is the Party's one Veto per draw, and a clash that
  * got past the check (it cannot under the lock) answers `veto_already_cast` too.
  */
-export async function castVeto({ tx, eventRow, user, publishTo }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publishTo'>, now: Date, drawId: string): Promise<VetoCast> {
-  await settleDue(tx, eventRow, now)
+export async function castVeto({ tx, eventRow, user, publishTo, now }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publishTo' | 'now'>, drawId: string): Promise<VetoCast> {
   const [sessions, drawRows, vetoRows, bonusTeams, [member]] = await Promise.all([
     eventSessions(tx, eventRow.id),
     readDraws(tx, eventRow.id),
@@ -259,8 +230,7 @@ export async function castVeto({ tx, eventRow, user, publishTo }: Pick<EventChan
  * library game returns nowhere), and Vetoes spent in it stay spent (the rows stay). Only a set Round that stands can be put
  * back: an unknown or put-back one is `round_not_found`, one being drawn `round_being_drawn`.
  */
-export async function putBackRound({ tx, eventRow, user, publish }: Change, now: Date, roundId: string | undefined): Promise<{ roundId: string }> {
-  await settleDue(tx, eventRow, now)
+export async function putBackRound({ tx, eventRow, user, publish, now }: Change, roundId: string | undefined): Promise<{ roundId: string }> {
   const round = (await readRounds(tx, eventRow.id)).find(row => row.id === roundId && row.putBackAt === null)
   if (!round) throw apiError('round_not_found')
   if (roundState(round) === 'drawn') throw apiError('round_being_drawn')

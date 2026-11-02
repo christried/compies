@@ -1,7 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { parseSetGame } from '../../../../domain/rounds'
 import { apiError } from '../../../../utils/errors'
-import { useClock } from '../../../../utils/clock'
 import { changeEvent } from '../../../../utils/event-access'
 import { setNextGame } from '../../../../utils/rounds'
 import type { RoundSet } from '../../../../../shared/event'
@@ -12,5 +11,5 @@ import type { RoundSet } from '../../../../../shared/event'
 export default defineEventHandler((event): Promise<RoundSet> => changeEvent(event, { hostOnly: true, lock: 'update' }, async (change) => {
   const parsed = parseSetGame(change.body)
   if (!parsed.ok) throw apiError(parsed.error)
-  return await setNextGame(change, useClock(event).now(), parsed.gameId, parsed.vetoAllowed)
+  return await setNextGame(change, parsed.gameId, parsed.vetoAllowed)
 }))
