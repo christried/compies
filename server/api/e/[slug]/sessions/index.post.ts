@@ -4,7 +4,6 @@ import { parseLocalTime } from '../../../../domain/event'
 import { addSessionRejection } from '../../../../domain/phase'
 import { hasDateAt } from '../../../../domain/session'
 import { recordActivity } from '../../../../utils/activity'
-import { useClock } from '../../../../utils/clock'
 import { apiError } from '../../../../utils/errors'
 import { changeSessions, slotAt } from '../../../../utils/sessions'
 import { isoInstant } from '../../../../../shared/activity'
@@ -14,7 +13,7 @@ import type { SessionAdded } from '../../../../../shared/event'
 // no `startsAt`. A given Date is future and not another Session's; when an open Slot has that time, the Session
 // takes the Slot. Adding an undated Session sends a date-set Event back to the poll. The Event row is locked
 // for the whole write, so an add cannot race a confirm into a wrong Phase or the 8-Session limit.
-export default defineEventHandler((event): Promise<SessionAdded> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before, body }) => {
+export default defineEventHandler((event): Promise<SessionAdded> => changeSessions(event, async ({ tx, now, eventRow, user, publish, sessions: before, body }) => {
   const given = body.startsAt !== undefined && body.startsAt !== null
   const startsAt = given ? parseLocalTime(body.startsAt) : null
   if (given && startsAt === null) throw apiError('invalid_time')
@@ -23,7 +22,7 @@ export default defineEventHandler((event): Promise<SessionAdded> => changeSessio
     phase: eventRow.phase,
     count: before.length,
     startsAt,
-    now: useClock(event).now(),
+    now,
     duplicate: startsAt !== null && hasDateAt(before, startsAt),
   })
   if (rejection) throw apiError(rejection)
@@ -35,6 +34,6 @@ export default defineEventHandler((event): Promise<SessionAdded> => changeSessio
     .insert(sessions)
     .values({ eventId: eventRow.id, startsAt, slotId: takenSlot ? null : slotId })
     .returning({ id: sessions.id })
-  await recordActivity(tx, publish, eventRow.id, { type: 'session_added', actorId: user.id, params: { sessionId: row!.id, startsAt: startsAt ? isoInstant(startsAt) : null }, now: useClock(event).now() })
+  await recordActivity(tx, publish, eventRow.id, { type: 'session_added', actorId: user.id, params: { sessionId: row!.id, startsAt: startsAt ? isoInstant(startsAt) : null }, now })
   return { id: row!.id }
 }))

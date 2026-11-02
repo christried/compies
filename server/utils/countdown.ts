@@ -25,7 +25,7 @@ export function countdownView(row: Pick<CountdownRow, 'durationMs' | 'remainingM
   return { durationMs: row.durationMs, remainingMs: row.remainingMs, startedAt: row.startedAt?.toISOString() ?? null }
 }
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'publish'>
+type Change = Pick<EventChange, 'tx' | 'eventRow' | 'publish' | 'now'>
 
 /** Refuses with no_running_session unless the Event has a Running Session (the same answer as ending one). */
 async function requireRunningSession({ tx, eventRow }: Change): Promise<void> {
@@ -33,10 +33,10 @@ async function requireRunningSession({ tx, eventRow }: Change): Promise<void> {
 }
 
 /** The Host sets the Countdown to `seconds` (ready at its full duration), creating it or replacing a paused or ended one. */
-export async function setCountdown(change: Change, now: Date, seconds: number): Promise<CountdownView> {
+export async function setCountdown(change: Change, seconds: number): Promise<CountdownView> {
   await requireRunningSession(change)
   const current = await readCountdown(change.tx, change.eventRow.id)
-  const rejection = countdownRejection('set', current ?? null, now.getTime())
+  const rejection = countdownRejection('set', current ?? null, change.now.getTime())
   if (rejection) throw apiError(rejection)
 
   const durationMs = seconds * 1000
@@ -50,21 +50,22 @@ export async function setCountdown(change: Change, now: Date, seconds: number): 
 }
 
 /** Starts the Countdown from ready or paused (a paused one resumes from the time it has left). */
-export function startCountdown(change: Change, now: Date): Promise<CountdownView> {
-  return changeRunning('start', change, now)
+export function startCountdown(change: Change): Promise<CountdownView> {
+  return changeRunning('start', change)
 }
 
 /** Pauses the running Countdown with the time it has left at `now`. */
-export function pauseCountdown(change: Change, now: Date): Promise<CountdownView> {
-  return changeRunning('pause', change, now)
+export function pauseCountdown(change: Change): Promise<CountdownView> {
+  return changeRunning('pause', change)
 }
 
 /** Resets the Countdown to its full duration, not running. */
-export function resetCountdown(change: Change, now: Date): Promise<CountdownView> {
-  return changeRunning('reset', change, now)
+export function resetCountdown(change: Change): Promise<CountdownView> {
+  return changeRunning('reset', change)
 }
 
-async function changeRunning(action: Exclude<CountdownAction, 'set'>, change: Change, now: Date): Promise<CountdownView> {
+async function changeRunning(action: Exclude<CountdownAction, 'set'>, change: Change): Promise<CountdownView> {
+  const { now } = change
   await requireRunningSession(change)
   const row = await readCountdown(change.tx, change.eventRow.id)
   const rejection = countdownRejection(action, row ?? null, now.getTime())

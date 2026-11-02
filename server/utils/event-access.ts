@@ -9,6 +9,7 @@ import { apiError, eventDeleted, eventNotFound } from './errors'
 import { isMember } from './invite'
 import { useDb, type Db } from './db'
 import { publishAfterResponse } from './room-notifier'
+import { settleDue } from './settle'
 import { requireUser } from './user'
 
 export type EventRow = typeof events.$inferSelect
@@ -30,6 +31,8 @@ export interface EventChange {
   eventRow: EventRow
   user: AuthUser
   body: unknown
+  /** The request's clock, read once (ADR 0013). Every instant a change stamps or compares comes from here, never from `useClock` in a handler. */
+  now: Date
   /** Queues messages for after the commit. A change that throws drops them with its transaction. */
   publish: (...messages: RoomMessage[]) => void
   /** Queues messages for after the commit that only these Users' sockets get (#227, the sealed Vetoes of 0.7). A change that throws drops them too. */
@@ -44,7 +47,8 @@ interface NamedMessages {
 
 /**
  * The one way to change an Event (#183). Order matters and the tests pin it: 401 first, then the body is read (before
- * the lock), then one transaction in which `loadEvent` answers 404, 410 or 403 before the change runs any rule.
+ * the lock), then one transaction in which `loadEvent` answers 404, 410 or 403 before the change runs any rule, the request's
+ * clock is read once (`EventChange.now`) and, for a `lock: 'update'` change, due draws are settled (#259).
  * After the transaction commits, `afterCommit` runs with the messages the change queued; a change that throws never
  * reaches it. Joining through the Invite link loads the Event by its token instead and calls `afterCommit` itself.
  * The publish runs after the response (#202), so the change answers without waiting for the Worker.
@@ -62,9 +66,14 @@ export async function changeEvent<T>(
   const named: NamedMessages[] = []
   const { result, eventRow } = await useDb(event).transaction(async (tx) => {
     const eventRow = await loadEvent(tx, slug, user.id, load)
+    // Read after the row lock is taken, so the instants of writes queued on one Event follow the lock order.
+    const now = useClock(event).now()
+    // A draw whose last instant has passed is settled first, whatever the change reads (#229, #259): a writer cannot forget it, and the
+    // lock on „Rad verdecken“ is free again at the end of a draw (#231). A `share` lock (Votes) never settles: the settle writes.
+    if (load.lock === 'update') await settleDue(tx, eventRow, now)
     const publish = (...queued: RoomMessage[]) => void messages.push(...queued)
     const publishTo = (to: readonly string[], ...queued: RoomMessage[]) => void named.push({ to, messages: queued })
-    const result = await change({ tx, eventRow, user, body, publish, publishTo })
+    const result = await change({ tx, eventRow, user, body, now, publish, publishTo })
     return { result, eventRow }
   })
   afterCommit(event, eventRow, messages, named, broadcast)

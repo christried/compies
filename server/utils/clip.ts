@@ -7,7 +7,6 @@ import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange } from './event-access'
 import { roundGameView } from './library'
-import { settleDue } from './rounds'
 import { eventSessions, type SessionRow } from './sessions'
 
 // The synced clip (GLOSSARY: Clip; spec #218 § Clip, #230). A clip is a read of a draw's instants, not a row: no timer runs, and
@@ -33,15 +32,14 @@ export async function readClip(db: Db, eventId: string, sessions: readonly Sessi
   return { drawId: latest.draw.id, startAt: new Date(window.startAt).toISOString(), endsAt: new Date(window.endsAt).toISOString(), game: roundGameView(latest.game) }
 }
 
-type Change = Pick<EventChange, 'tx' | 'eventRow'>
+type Change = Pick<EventChange, 'tx' | 'eventRow' | 'now'>
 
 /**
  * The Host skips the clip that runs (#230, spec #218 § Clip): for everyone, also for those who join later, because the instant is
- * stored on the draw. A draw that stopped is settled first (#229), then the clip is the one the read would show at `now`; none
+ * stored on the draw. A draw that stopped is settled first (`changeEvent`, #229), then the clip is the one the read would show at `now`; none
  * is `no_clip`. `changeEvent` publishes `event.changed` after the commit, so every client refetches and closes its player.
  */
-export async function skipClip({ tx, eventRow }: Change, now: Date): Promise<ClipSkipped> {
-  await settleDue(tx, eventRow, now)
+export async function skipClip({ tx, eventRow, now }: Change): Promise<ClipSkipped> {
   const clip = await readClip(tx, eventRow.id, await eventSessions(tx, eventRow.id), now)
   if (!clip) throw apiError('no_clip')
   await tx.update(draws).set({ clipSkippedAt: now }).where(eq(draws.id, clip.drawId))

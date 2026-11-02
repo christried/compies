@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { events, pollSlots, sessions } from '../db/schema'
+import { countdowns, events, pollSlots, sessions } from '../db/schema'
 import { phaseAfterChange } from '../domain/phase'
 import { numberedSessions, sequenceRaises } from '../domain/session'
 import type { Phase } from '../../shared/event'
@@ -26,17 +26,22 @@ export type SessionRow = typeof sessions.$inferSelect
  */
 export function changeSessions<T extends object>(
   event: H3Event,
-  change: (ctx: { tx: Db, eventRow: EventRow, user: AuthUser, publish: (...messages: RoomMessage[]) => void, sessions: SessionRow[], body: Record<string, unknown> }) => Promise<T>,
+  change: (ctx: { tx: Db, eventRow: EventRow, user: AuthUser, now: Date, publish: (...messages: RoomMessage[]) => void, sessions: SessionRow[], body: Record<string, unknown> }) => Promise<T>,
 ): Promise<T & { phase: Phase }> {
-  return changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, user, publish, body }) => {
+  return changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, user, now, publish, body }) => {
     const before = await eventSessions(tx, eventRow.id)
-    const result = await change({ tx, eventRow, user, publish, sessions: before, body: asRecord(body) })
+    const result = await change({ tx, eventRow, user, now, publish, sessions: before, body: asRecord(body) })
     const after = await eventSessions(tx, eventRow.id)
     await raiseSequences(tx, sequenceRaises(before, after))
     const phase = phaseAfterChange(eventRow.phase, after.map(row => row.startsAt))
     await tx.update(events).set({ phase }).where(eq(events.id, eventRow.id))
     return { ...result, phase }
   })
+}
+
+/** What ends with a Session: the Countdown (#236). 0.8 adds the open results here. The caller holds the Event lock. */
+export async function onSessionEnded(tx: Db, eventRow: Pick<EventRow, 'id'>): Promise<void> {
+  await tx.delete(countdowns).where(eq(countdowns.eventId, eventRow.id))
 }
 
 /**

@@ -4,6 +4,7 @@ import getActivity from '../../server/api/e/[slug]/activity.get'
 import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
+import tossCoin from '../../server/api/e/[slug]/coin.post'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import putBack from '../../server/api/e/[slug]/rounds/[id].delete'
 import setGame from '../../server/api/e/[slug]/rounds/index.post'
@@ -53,6 +54,7 @@ describe('Rounds', () => {
       'PATCH /api/e/:slug/settings': changeSettings,
       'POST /api/e/:slug/sessions/start': startSession,
       'POST /api/e/:slug/sessions/end': endSession,
+      'POST /api/e/:slug/coin': tossCoin,
       'POST /api/e/:slug/rounds': setGame,
       'POST /api/e/:slug/rounds/spin': spinWheel,
       'DELETE /api/e/:slug/rounds/:id': putBack,
@@ -624,6 +626,18 @@ describe('Rounds', () => {
       expect((await roundRows(game)).find(round => round.id === roundId)).toMatchObject({ gameId: row!.gameId, setAt: new Date(iso(STOP)) })
       expect((await putBackRound(game, roundId)).status).toBe(200)
       expect((await read(game)).setGame?.left).toContain(row!.gameId)
+    })
+
+    it('settles a due draw before any write that holds the Event lock, even one that reads no Round state (#259)', async () => {
+      const game = await running({ wheel: true })
+      const { roundId } = await spun(game)
+      clock.advance(STOP)
+
+      expect((await send('POST', `/api/e/${game.slug}/coin`, game.hostCookie)).status).toBe(200)
+
+      const [row] = await drawRows()
+      expect(row).toMatchObject({ outcome: 'set' })
+      expect((await roundRows(game)).find(round => round.id === roundId)).toMatchObject({ gameId: row!.gameId, setAt: new Date(iso(STOP)) })
     })
 
     it('lets the Host spin again at the stop, and a game drawn once is not drawn again', async () => {
