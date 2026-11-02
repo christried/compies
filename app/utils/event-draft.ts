@@ -1,4 +1,5 @@
 import type { EventView } from '~~/shared/event'
+import type { PoolWarning } from '~~/shared/rounds'
 import { isFullPoolGame, type PoolGame } from '~~/shared/game'
 import { defaultSettings, defaultVetoAllowance, hasWheel, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
 
@@ -25,6 +26,8 @@ export interface StepLocks {
   floors?: SettingsFloors
   /** False when the Host may not browse the Game library (the Host permission was revoked, #173); the pool steps then offer no search. */
   library?: boolean
+  /** The Host's live pool warning of a running Event (#234): null when the pool covers it, and absent (undefined) elsewhere, where the setup hint (poolHint) shows instead. */
+  poolWarning?: PoolWarning | null
   /** The Players per team of the Event as it is saved, index 0 = team 1, one entry per saved team (#163). The Format step counts the Bench hint from it. */
   teamPlayers?: number[]
 }
