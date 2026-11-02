@@ -29,7 +29,11 @@ const FILLS = ['var(--cp-primary)', 'var(--cp-mint)', 'var(--cp-pop)', 'var(--cp
 /** How long past the stop the loop keeps running: the removal ends at 2.8 s + 0.6 s on a Hidden wheel. */
 const TAIL_MS = 100
 const RADIUS = 180
+const HUB_RADIUS = 22
 const LABEL_MAX = 22
+/** The run a label has from its end (RADIUS - 12) to the hub's rim plus 4 units (#263), and the width of a glyph at weight 800 in em (an estimate). */
+const LABEL_RUN = RADIUS - 12 - HUB_RADIUS - 4
+const GLYPH_EM = 0.66
 
 const mounted = ref(false)
 const reduced = ref(false)
@@ -108,6 +112,8 @@ function labelOf(index: number): { text: string, opacity: number } {
 
 const shortened = (text: string) => (characterCount(text) > LABEL_MAX ? `${cutToCharacters(text, LABEL_MAX - 1)}…` : text)
 const fontSize = computed(() => Math.max(10, Math.min(19, 230 / Math.max(count.value, 1) + 6)))
+/** A label's size: the slice's size, or less so the shortened text fits the run from the rim to the hub; the hub would cover a long name (#263). */
+const labelSize = (text: string) => Math.max(9, Math.min(fontSize.value, Math.floor(LABEL_RUN / (characterCount(text) * GLYPH_EM))))
 
 /** A point on the wheel `degrees` clockwise from the top. */
 const point = (degrees: number, radius: number) => `${(200 + radius * Math.sin((degrees * Math.PI) / 180)).toFixed(2)},${(200 - radius * Math.cos((degrees * Math.PI) / 180)).toFixed(2)}`
@@ -116,7 +122,8 @@ function pathOf({ start, end }: { start: number, end: number }): string {
   if (end - start >= 359.99) return `M200,${200 - RADIUS}A${RADIUS},${RADIUS} 0 1 1 200,${200 + RADIUS}A${RADIUS},${RADIUS} 0 1 1 200,${200 - RADIUS}Z`
   return `M200,200L${point(start, RADIUS)}A${RADIUS},${RADIUS} 0 ${end - start > 180 ? 1 : 0} 1 ${point(end, RADIUS)}Z`
 }
-const fillOf = (index: number) => (index === count.value - 1 && count.value % FILLS.length === 1 ? 'var(--cp-surface-2)' : FILLS[index % FILLS.length])
+// The last slice takes the surface colour when it would otherwise share the first one's fill (#263): a single slice has no neighbour, so it keeps FILLS[0].
+const fillOf = (index: number) => (count.value > 1 && index === count.value - 1 && count.value % FILLS.length === 1 ? 'var(--cp-surface-2)' : FILLS[index % FILLS.length])
 
 /** The drawn slice has its outline from the stop on, until it leaves. */
 const winner = computed(() => (running.value && stopped.value && timing.value ? timing.value.resultIndex : -1))
@@ -132,7 +139,7 @@ const drawnOpacity = computed(() => {
 const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
 const status = computed(() => {
   if (timing.value && clock.value !== null && clock.value < timing.value.stopAt) return t('wheel.spinning')
-  return count.value === 0 ? t('wheel.empty') : t('wheel.count', { n: count.value })
+  return count.value === 0 ? t('wheel.empty') : t('wheel.count', { n: count.value }, count.value)
 })
 const headingId = useId()
 </script>
@@ -158,7 +165,7 @@ const headingId = useId()
       <svg
         viewBox="0 0 400 400"
         role="img"
-        :aria-label="t('wheel.aria', { n: count })"
+        :aria-label="t('wheel.aria', { n: count }, count)"
         class="size-full overflow-visible"
       >
         <g
@@ -195,7 +202,7 @@ const headingId = useId()
               y="200"
               text-anchor="end"
               dominant-baseline="central"
-              :font-size="fontSize"
+              :font-size="labelSize(shortened(labelOf(index).text))"
               font-weight="800"
               fill="var(--cp-on-primary)"
               :opacity="labelOf(index).opacity"
@@ -205,7 +212,7 @@ const headingId = useId()
         <circle
           cx="200"
           cy="200"
-          r="22"
+          :r="HUB_RADIUS"
           fill="var(--cp-surface)"
           stroke="var(--cp-line)"
           stroke-width="4"
