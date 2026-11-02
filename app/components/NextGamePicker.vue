@@ -13,20 +13,24 @@ const props = defineProps<{
   pool: PoolGame[]
   /** True while the request runs. */
   busy: boolean
+  /** Whether the Selection mode has Vetoes (a wheel, #232): then the Host decides with a switch whether the Parties may veto the game. */
+  vetoSwitch?: boolean
 }>()
 
-const emit = defineEmits<{ close: [], pick: [gameId: string] }>()
+const emit = defineEmits<{ close: [], pick: [gameId: string, vetoAllowed: boolean] }>()
 
 const { t } = useI18n()
 const user = useAuthUser()
 const library = computed(() => canSeeLibrary(user.value))
 const filters = ref<GameFilters>({ ...NO_FILTERS })
 const chosen = ref<{ id: string, name: string } | null>(null)
+const vetoAllowed = ref(false)
 
-// A sheet that opens again starts with nothing picked.
+// A sheet that opens again starts with nothing picked and the Veto off.
 watch(() => props.open, (open) => {
   if (open) {
     chosen.value = null
+    vetoAllowed.value = false
     filters.value = { ...NO_FILTERS }
   }
 })
@@ -102,6 +106,13 @@ const isChosen = (id: string) => chosen.value?.id === id
     </section>
 
     <template #footer>
+      <ToggleSwitch
+        v-if="vetoSwitch"
+        v-model="vetoAllowed"
+        :label="t('nextGame.vetoAllowed')"
+        :help="t('nextGame.vetoAllowedHelp')"
+        class="mb-2"
+      />
       <div class="flex items-center gap-3">
         <p class="m-0 flex min-w-0 flex-1 flex-col leading-tight">
           <b class="truncate text-[15px]">{{ chosen?.name ?? t('nextGame.choose') }}</b>
@@ -112,7 +123,7 @@ const isChosen = (id: string) => chosen.value?.id === id
         </p>
         <AppButton
           :disabled="chosen === null || busy"
-          @click="chosen && emit('pick', chosen.id)"
+          @click="chosen && emit('pick', chosen.id, vetoAllowed)"
         >
           {{ t('nextGame.confirm') }}
         </AppButton>

@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VetoWindow from '~/components/VetoWindow.vue'
-import type { MemberView, SpinView, VetoView, WheelView } from '~~/shared/event'
+import type { MemberView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/event'
 import { VETO_WINDOW_MS } from '~~/shared/rounds'
 
 // The Veto window on the stage (#231, 02-components § VetoWindow): the time left from the server's clock, every Party's Vetoes left
@@ -18,14 +18,16 @@ const members = [member('me', 'Eins', 1), member('mate', 'Zwei', 1), member('oth
 
 const spin = (fields: Partial<SpinView> = {}): SpinView => ({
   roundId: 'r1', drawId: 'd1', spinStartAt: iso(STOP - 6000), stopAt: iso(STOP), slices: 4, resultIndex: 0, resultOffset: 0.5,
-  labels: null, game: halo, vetoEndsAt: iso(END), ...fields,
+  labels: null, game: halo, ...fields,
 })
-const wheelOf = (vetoes: VetoView, fields: Partial<SpinView> = {}): WheelView => ({ count: 3, slices: null, spin: spin(fields), vetoes })
+const windowOf = (fields: Partial<VetoDrawView> = {}): VetoDrawView => ({ drawId: 'd1', kind: 'spin', stopAt: iso(STOP), vetoEndsAt: iso(END), game: halo, ...fields })
+/** The wheel with the Veto window of the latest draw (a spin's by default), or none (`null`: the latest draw has no window). */
+const wheelOf = (vetoes: Omit<VetoView, 'draw'>, draw: Partial<VetoDrawView> | null = {}): WheelView => ({ count: 3, slices: null, spin: spin(), vetoes: { ...vetoes, draw: draw && windowOf(draw) } })
 
 let serverMs = STOP
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(wheel: WheelView, props: { cast?: () => Promise<boolean> } = {}) {
+async function mount(wheel: WheelView, props: { cast?: (drawId: string) => Promise<boolean> } = {}) {
   page = await mountSuspended(VetoWindow, { props: { wheel, teams, members, viewerId: 'me', serverNow: () => serverMs, cast: () => Promise.resolve(true), ...props } })
   await vi.advanceTimersByTimeAsync(300)
   await flushPromises()
@@ -65,7 +67,7 @@ describe('the Veto window', () => {
     page!.unmount()
 
     serverMs = STOP + 1000
-    await mount(wheelOf({ left: [0, 0], own: null, revealed: null }, { vetoEndsAt: null }))
+    await mount(wheelOf({ left: [0, 0], own: null, revealed: null }, null))
     expect(page!.find('[data-testid="veto-tile"]').exists()).toBe(false)
   })
 
@@ -86,6 +88,40 @@ describe('the Veto window', () => {
     await mount(wheelOf({ left: [2, 2], own: { team: 1, castBy: null, rejection: 'veto_window_closed' }, revealed: [] }))
 
     expect(text()).toContain('Kein Veto. Halo wird gespielt.')
+  })
+
+  it('says a vetoed game the Host set is chosen anew, not that it flies off the wheel (#232)', async () => {
+    serverMs = END + 100
+    await mount(wheelOf({ left: [1, 2], own: { team: 1, castBy: 'mate', rejection: 'veto_window_closed' }, revealed: [{ team: 1, userId: 'mate' }] }, { kind: 'set' }))
+
+    expect(text()).toContain('Veto von Zwei. Halo fliegt raus, es wird neu gewählt.')
+  })
+
+  it('says a set game is played when nobody vetoed it (#232)', async () => {
+    serverMs = END + 100
+    await mount(wheelOf({ left: [2, 2], own: { team: 1, castBy: null, rejection: 'veto_window_closed' }, revealed: [] }, { kind: 'set' }))
+
+    expect(text()).toContain('Kein Veto. Halo wird gespielt.')
+  })
+
+  it('runs from the set instant for a game the Host set, with no spin on the wheel at all (#232)', async () => {
+    serverMs = STOP + 20_000
+    const wheel: WheelView = { ...wheelOf({ left: [2, 2], own: { team: 1, castBy: null, rejection: null }, revealed: null }, { kind: 'set' }), spin: null }
+    await mount(wheel)
+
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 40 Sekunden')
+    expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(true)
+  })
+
+  it('casts on the draw of the window, not on the latest spin (#232)', async () => {
+    serverMs = STOP + 1000
+    const cast = vi.fn((_drawId: string) => Promise.resolve(true))
+    await mount(wheelOf({ left: [2, 2], own: { team: 1, castBy: null, rejection: null }, revealed: null }, { drawId: 'set-draw', kind: 'set' }), { cast })
+
+    await page!.get('button').trigger('pointerdown')
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(cast).toHaveBeenCalledWith('set-draw')
   })
 
   it('waits for the reveal after the end: the numbers stay hidden until the page has read again', async () => {

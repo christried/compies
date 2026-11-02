@@ -5,7 +5,7 @@ import { countSeats, type Place } from '../../shared/board'
 import { isoInstant } from '../../shared/activity'
 import type { RoundSpun, VetoCast } from '../../shared/event'
 import { SPIN_DURATION_MS, SPIN_LEAD_MS, VETO_WINDOW_MS, drawOutcome, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
-import { settingsFromRow } from '../../shared/settings'
+import { hasWheel, settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
@@ -119,32 +119,42 @@ async function readRoundFacts(tx: Db, eventRow: EventRow) {
 }
 
 /**
- * The Host sets the next game (#228): a Round that is set at once, with one `set` draw. A game that is in the Game pool and
- * still left comes from the pool and leaves it; any other library game comes from the library and never joins a pool. No Veto
- * window opens yet (#232 adds „Veto erlauben“). A Round that waits for a respin takes the game itself (#231). Refused with the
- * reason of setRejection, or `unknown_game`.
+ * The Host sets the next game (#228): a Round with one `set` draw. A game that is in the Game pool and still left comes from the
+ * pool and leaves it; any other library game comes from the library and never joins a pool. The Round is set at once, unless the
+ * Host allowed a Veto (#232, „Veto erlauben“) and some Party has one left (opensWindow): then the draw carries a Veto window from
+ * now, the Round gets no game until it settles (settleDue), and everyone sees the game from now on. A Veto allowed in a Selection
+ * mode without a wheel is `no_wheel`. A Round that waits for a respin takes the game itself (#231). Refused with the reason of
+ * setRejection, `no_wheel`, or `unknown_game`.
  */
-export async function setNextGame({ tx, eventRow, user, publish }: Change, now: Date, gameId: string): Promise<{ roundId: string }> {
+export async function setNextGame({ tx, eventRow, user, publish }: Change, now: Date, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
   await settleDue(tx, eventRow, now)
   const { sessions, places, roundRows, drawRows, pool } = await readRoundFacts(tx, eventRow)
   const rejection = setRejectionOf(eventRow, sessions, places, roundRows, drawRows, eventRow.hostId === user.id)
   if (rejection) throw apiError(rejection)
+  // The rules above refused an Event without settings. Host pick has no Vetoes (spec #218 § Vetoes).
+  if (vetoAllowed && !hasWheel(settingsFromRow(eventRow)!.selectionMode)) throw apiError('no_wheel')
   const [game] = await tx.select({ id: games.id }).from(games).where(eq(games.id, gameId))
   if (!game) throw apiError('unknown_game')
+  const windowOpens = vetoAllowed && opensWindow(partyVetoesLeft(eventRow, await readVetoes(tx, eventRow.id), await readBonusTeams(tx, eventRow.id)))
 
   const source = gamesLeft(pool, drawRows, roundRows).includes(game.id) ? 'pool' : 'library'
   // A Round that waits for a respin (all its draws vetoed) takes this game itself; otherwise a new Round starts (#231).
   const waiting = roundRows.find(round => waitsForRespin(round, drawRows))
   let roundId: string
+  // With a window the Round takes its game when the draw settles, so it stays without one (and without `setAt`) until then.
+  const roundGame = windowOpens ? {} : { gameId: game.id, setAt: now }
   if (waiting) {
-    await tx.update(rounds).set({ gameId: game.id, setAt: now }).where(eq(rounds.id, waiting.id))
+    if (!windowOpens) await tx.update(rounds).set(roundGame).where(eq(rounds.id, waiting.id))
     roundId = waiting.id
   }
   else {
-    const [round] = await tx.insert(rounds).values({ eventId: eventRow.id, gameId: game.id, startedAt: now, setAt: now }).returning({ id: rounds.id })
+    const [round] = await tx.insert(rounds).values({ eventId: eventRow.id, startedAt: now, ...roundGame }).returning({ id: rounds.id })
     roundId = round!.id
   }
-  await tx.insert(draws).values({ roundId, gameId: game.id, source, kind: 'set', committedAt: now, stopAt: now, outcome: 'set', settledAt: now })
+  const timing = windowOpens
+    ? { stopAt: now, vetoEndsAt: new Date(now.getTime() + VETO_WINDOW_MS) }
+    : { stopAt: now, outcome: 'set' as const, settledAt: now }
+  await tx.insert(draws).values({ roundId, gameId: game.id, source, kind: 'set', committedAt: now, ...timing })
   await recordActivity(tx, publish, eventRow.id, { type: 'game_set', actorId: user.id, params: { roundId, gameId: game.id } })
   publish({ type: 'round.set', roundId })
   return { roundId }

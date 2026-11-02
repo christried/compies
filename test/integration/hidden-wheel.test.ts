@@ -687,9 +687,9 @@ describe('Hidden wheel secrecy (#148)', () => {
         count: 1,
         slices: null,
         spin: {
-          roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null, vetoEndsAt: null,
+          roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null,
         },
-        vetoes: { left: [0, 0], own: { team: 1, castBy: null, rejection: 'no_veto_window' }, revealed: null },
+        vetoes: { left: [0, 0], own: { team: 1, castBy: null, rejection: 'no_veto_window' }, revealed: null, draw: null },
       })
       expect(row.sliceLabels).toHaveLength(2)
       expect(new Set(row.sliceLabels).size).toBe(2)
@@ -778,7 +778,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const { slug, eventId, playerId, secondId } = await castByPlayer()
 
       const other = await wheelOf((await signIn(testDb.db, second)).cookie, slug)
-      expect(other.vetoes).toEqual({ left: [3, 3], own: { team: 2, castBy: null, rejection: null }, revealed: null })
+      expect(other.vetoes).toEqual({ left: [3, 3], own: { team: 2, castBy: null, rejection: null }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
       expect(await wheelOf(hostCookie, slug)).toMatchObject({ vetoes: { left: [3, 3], own: null, revealed: null } })
       for (const cookie of [hostCookie, (await signIn(testDb.db, second)).cookie]) {
         expect(await rawRead(cookie, slug), 'the Event read').not.toContain(`"castBy":"${playerId}"`)
@@ -786,7 +786,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         expect(feed.entries.map(entry => entry.type)).not.toContain('vetoes_revealed')
       }
       // The Party's own Player sees it at once.
-      expect((await wheelOf(playerCookie, slug)).vetoes).toEqual({ left: [2, 3], own: { team: 1, castBy: playerId, rejection: 'veto_already_cast' }, revealed: null })
+      expect((await wheelOf(playerCookie, slug)).vetoes).toEqual({ left: [2, 3], own: { team: 1, castBy: playerId, rejection: 'veto_already_cast' }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
       // The room: only the named send to the Party's Users, and neither event.changed nor any other message.
       expect(notifier.sends(eventId)).toEqual([{ to: [playerId], messages: [expect.objectContaining({ type: 'veto.cast', team: 1 })] }])
       expect(JSON.stringify(notifier.messages(eventId))).not.toContain(secondId)
@@ -812,7 +812,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       const other = await wheelOf((await signIn(testDb.db, second)).cookie, slug)
 
-      expect(other.vetoes).toEqual({ left: [2, 3], own: { team: 2, castBy: null, rejection: 'veto_window_closed' }, revealed: [{ team: 1, userId: playerId }] })
+      expect(other.vetoes).toEqual({ left: [2, 3], own: { team: 2, castBy: null, rejection: 'veto_window_closed' }, revealed: [{ team: 1, userId: playerId }], draw: expect.objectContaining({ kind: 'spin' }) })
     })
   })
 })
