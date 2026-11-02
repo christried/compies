@@ -4,5 +4,5 @@ import { startCountdown } from '../../../../utils/countdown'
 import type { CountdownView } from '../../../../../shared/stage'
 
 // The Host starts the Countdown, from ready or paused (#236, spec #218 § Countdown). Refused by the rules of shared/countdown.ts.
-// The room hears `countdown.changed`; the client refetches the Event read.
+// The room hears `event.changed`; the client refetches the Event read.
 export default defineEventHandler((event): Promise<CountdownView> => changeEvent(event, { hostOnly: true, lock: 'update' }, change => startCountdown(change)))

@@ -1,9 +1,10 @@
-import { and, desc, eq, lte } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { draws, games, rounds } from '../db/schema'
 import { clipWindow } from '../../shared/clip'
 import type { ClipSkipped, ClipView } from '../../shared/stage'
 import { runningOf } from '../../shared/session-state'
 import type { Db } from './db'
+import { stoppedDraws } from './draws'
 import { apiError } from './errors'
 import type { EventChange } from './event-access'
 import { roundGameView } from './library'
@@ -17,13 +18,13 @@ import { eventSessions, type SessionRow } from './sessions'
 export async function readClip(db: Db, eventId: string, sessions: readonly SessionRow[], now: Date): Promise<ClipView | null> {
   if (!runningOf(sessions)) return null
   // The latest draw that has stopped, and only that one: a draw skipped or put back does not hand its clip back to an earlier one.
-  // Selecting only draws with `stopAt <= now` keeps the game out of a read before the stop (secrecy under a Hidden wheel).
+  // Selecting only stopped draws (stoppedDraws, #258) keeps the game out of a read before the stop (secrecy under a Hidden wheel).
   const [latest] = await db
     .select({ draw: draws, game: games, putBackAt: rounds.putBackAt })
     .from(draws)
     .innerJoin(rounds, eq(draws.roundId, rounds.id))
     .innerJoin(games, eq(draws.gameId, games.id))
-    .where(and(eq(rounds.eventId, eventId), lte(draws.stopAt, now)))
+    .where(stoppedDraws([eventId], now))
     .orderBy(desc(draws.stopAt), desc(draws.committedAt), desc(draws.id))
     .limit(1)
   if (!latest || latest.draw.clipSkippedAt !== null || latest.putBackAt !== null) return null

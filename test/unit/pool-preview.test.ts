@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canSeePoolGames, poolFactsOf } from '../../server/domain/pool-preview'
+import { canSeePoolGames, drawGameKnown, poolFactsOf } from '../../server/domain/pool-preview'
 import { defaultSettings } from '../../shared/settings'
 
 // Who sees the games of the pools, and who learns nothing about them (#146, #148, #183, #222, #225).
@@ -36,5 +36,28 @@ describe('poolFactsOf (#148, #225)', () => {
   it('gives another Member nothing for an Event that is not set up', () => {
     expect(canSeePoolGames(poolFactsOf({ isHost: false, settings: null }))).toBe(false)
     expect(canSeePoolGames(poolFactsOf({ isHost: true, settings: null }))).toBe(true)
+  })
+})
+
+// The game of a draw is known from its stop on, to every Member, and to the Host before it (#258).
+describe('drawGameKnown (#258)', () => {
+  const now = new Date('2090-10-30T10:00:00.000Z')
+  const at = (ms: number) => new Date(now.getTime() + ms)
+
+  it('gives a Member the game at the exact stop instant', () => {
+    expect(drawGameKnown({ isHost: false, draw: { stopAt: now }, now })).toBe(true)
+  })
+
+  it('keeps a Member from the game one millisecond before the stop', () => {
+    expect(drawGameKnown({ isHost: false, draw: { stopAt: at(1) }, now })).toBe(false)
+  })
+
+  it('gives a Member the game from one millisecond after the stop', () => {
+    expect(drawGameKnown({ isHost: false, draw: { stopAt: at(-1) }, now })).toBe(true)
+  })
+
+  it('gives the Host the game before the stop and after it', () => {
+    expect(drawGameKnown({ isHost: true, draw: { stopAt: at(60 * 60_000) }, now })).toBe(true)
+    expect(drawGameKnown({ isHost: true, draw: { stopAt: at(-60 * 60_000) }, now })).toBe(true)
   })
 })

@@ -18,6 +18,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | A notice, hint or error line in a page | `NoticeBanner` with its tone |
 | Searching and filtering games | `GameBrowser` |
 | Creating or editing an Event's settings | `EventSetupWizard` |
+| What a viewer may know of a drawn game | `drawGameKnown` (pure) in `server/domain/pool-preview.ts`, `stoppedDraws` (SQL) in `server/utils/draws.ts` (#258) |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 
@@ -36,6 +37,7 @@ What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its s
 - A change whose existence is secret commits with `changeEvent(…, { broadcast: false })` (ADR 0013). The `event.changed` that follows every other commit tells every Party that something happened.
 - A value derived from secret rows is secret too, in every section of the read and in every message, Host-only ones included. The Host's `floors.vetoAllowance` counted sealed casts (#231), and the Hidden wheel's slice order gave its result away (review 0.7, spec S1). `knownVetoRows` in `server/utils/vetoes.ts` is the one filter for what a viewer may know of the Vetoes.
 - A feature that shows Members something they didn't see before (a player, a picture, a thumbnail, an image route) is checked against every section of the Datenschutzerklärung that says who sees what. In 0.7 both the YouTube section and the image section still said only Hosts; the user approves the new text (§ Copy).
+- A read, feed entry or message that names a drawn game goes through `drawGameKnown` or `stoppedDraws` (#258). A copy of the `stopAt <= now` comparison is a finding: `<` instead of `<=` leaks under a Hidden wheel, and the room carries no game data but `activity.added`.
 
 ## Motion
 
