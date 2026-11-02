@@ -283,24 +283,11 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           @remove-session="actions.removeSession"
         />
 
-        <div
+        <StageWheel
           v-else-if="block === 'wheel'"
-          class="flex flex-col gap-[18px] md:gap-[22px]"
-        >
-          <LuckyWheel
-            :wheel="data.wheel!"
-            :hidden="data.settings?.hiddenWheel ?? false"
-            :is-host="data.event.isHost"
-            :server-now="serverClock.now"
-          />
-          <VetoWindow
-            v-if="data.wheel!.vetoes.draw"
-            :wheel="data.wheel!"
-            :teams="data.teams"
-            :members="data.members"
-            :server-now="serverClock.now"
-          />
-        </div>
+          :view="data"
+          :server-now="serverClock.now"
+        />
 
         <EventRounds
           v-else-if="block === 'rounds'"
