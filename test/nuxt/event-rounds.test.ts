@@ -256,8 +256,45 @@ describe('„Nächstes Spiel setzen“', () => {
     expect(dialog()!.textContent).toContain('Alle sehen es sofort.')
     await clickButton(dialog(), 'Setzen')
 
-    await vi.waitFor(() => expect(posted).toEqual([{ gameId: pong.id }]))
+    await vi.waitFor(() => expect(posted).toEqual([{ gameId: pong.id, vetoAllowed: false }]))
     await vi.waitFor(() => expect(dialog()).toBeNull())
+  })
+
+  it('has no Veto switch under Host pick (#232)', async () => {
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id], poolWarning: null })
+    const stage = await mount(slug)
+
+    await clickHostAction(stage, 'Nächstes Spiel setzen')
+
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    expect(dialog()!.querySelector('button[role="switch"]')).toBeNull()
+  })
+
+  it('sets the game with the Veto allowed when the Host switches „Veto erlauben“ on in the Lucky Wheel (#232)', async () => {
+    const served = serve(slug => viewWithSessions(slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+      event: { isHost: true, phase: 'running' },
+      settings: { ...defaultSettings(), selectionMode: 'lucky_wheel' },
+      runningSessionId: `session-${slug}-0`,
+      pools,
+      setGame: { rejection: null, spinRejection: null, respin: false, left: [halo.id, pong.id], poolWarning: null },
+    }))
+    registerEndpoint(`/api/e/${served.slug}/rounds`, { method: 'POST', handler: async (event) => {
+      posted.push(await readBody(event))
+      return { roundId: 'r-new' }
+    } })
+    const stage = await mount(served.slug)
+    await clickHostAction(stage, 'Nächstes Spiel setzen')
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+
+    const toggle = dialog()!.querySelector<HTMLButtonElement>('button[role="switch"]')!
+    expect(toggle.getAttribute('aria-checked')).toBe('false')
+    toggle.click()
+    await flushPromises()
+    dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Pong auswählen"]')!.click()
+    await flushPromises()
+    await clickButton(dialog(), 'Setzen')
+
+    await vi.waitFor(() => expect(posted).toEqual([{ gameId: pong.id, vetoAllowed: true }]))
   })
 
   it('can pick a game of the library that is not in the pool', async () => {
@@ -272,7 +309,7 @@ describe('„Nächstes Spiel setzen“', () => {
     await flushPromises()
     await clickButton(dialog(), 'Setzen')
 
-    await vi.waitFor(() => expect(posted).toEqual([{ gameId: schach.id }]))
+    await vi.waitFor(() => expect(posted).toEqual([{ gameId: schach.id, vetoAllowed: false }]))
   })
 
   it('offers the pool only to a Host without the library permission', async () => {
@@ -309,7 +346,7 @@ describe('„Nächstes Spiel setzen“', () => {
 
 describe('the Lucky Wheel on the stage (#229)', () => {
   const wheelSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3 } as const
-  const wheel = { count: 2, slices: [{ id: halo.id, name: 'Halo' }, { id: pong.id, name: 'Pong' }], spin: null, vetoes: { left: [3, 3], own: null, revealed: null } }
+  const wheel = { count: 2, slices: [{ id: halo.id, name: 'Halo' }, { id: pong.id, name: 'Pong' }], spin: null, vetoes: { left: [3, 3], own: null, revealed: null, draw: null } }
   let posted: number
 
   beforeEach(() => {

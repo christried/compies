@@ -10,6 +10,7 @@
 - Der Host wirft in der laufenden Session eine Münze, die bei allen im selben Moment auf Kopf oder Schwanz landet. ([#235](https://github.com/christried/compies/issues/235))
 - Der Clip des Spiels läuft bei allen im selben Moment, ab dem Stopp des Rads oder sobald der Host das Spiel setzt, und wer später kommt, landet an der richtigen Stelle. Der Host kann ihn für alle überspringen. ([#230](https://github.com/christried/compies/issues/230))
 - Nach dem Stopp hat jede Partei mit Veto 60 Sekunden, das Spiel abzulehnen. Das Veto bleibt versiegelt, bis alle es im selben Moment sehen; ein abgelehntes Spiel fliegt raus, und das Rad dreht neu. ([#231](https://github.com/christried/compies/issues/231))
+- Beim Setzen eines Spiels im Glücksrad lässt sich ein Veto erlauben: Dann haben die Parteien wie nach einem Dreh 60 Sekunden, es abzulehnen. ([#232](https://github.com/christried/compies/issues/232))
 - Wird der Pool während des Events knapp, sieht der Host einen Hinweis auf der Bühne und in den Einstellungen; die anderen merken davon nichts. ([#234](https://github.com/christried/compies/issues/234))
 
 ### Behoben

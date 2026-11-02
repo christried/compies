@@ -33,14 +33,15 @@ onMounted(() => {
 })
 onBeforeUnmount(() => clearInterval(interval))
 
-const spin = computed(() => props.wheel.spin)
 const vetoes = computed(() => props.wheel.vetoes)
-const stopAt = computed(() => (spin.value ? Date.parse(spin.value.stopAt) : 0))
-const endsAt = computed(() => (spin.value?.vetoEndsAt ? Date.parse(spin.value.vetoEndsAt) : null))
+// The draw the window belongs to: the latest one of any kind (#232), a spin or a game the Host set; a set draw's window opens at once.
+const draw = computed(() => vetoes.value.draw)
+const stopAt = computed(() => (draw.value ? Date.parse(draw.value.stopAt) : 0))
+const endsAt = computed(() => (draw.value ? Date.parse(draw.value.vetoEndsAt) : null))
 /** The window is open: after the stop, before its end. Before the page has mounted nothing is, so the server's render and the first client render agree. */
 const open = computed(() => mounted.value && endsAt.value !== null && now.value >= stopAt.value && now.value < endsAt.value)
 const revealed = computed(() => vetoes.value.revealed)
-/** Shown from the stop on while the window runs, and after it as long as this spin is the latest. */
+/** Shown from the stop on while the window runs, and after it as long as this draw is the latest with a window. */
 const shown = computed(() => endsAt.value !== null && (open.value || (mounted.value && now.value >= endsAt.value)))
 /** The window has ended but the reveal has not come in yet: the page reads again in a moment. */
 const revealing = computed(() => shown.value && !open.value && revealed.value === null)
@@ -74,10 +75,11 @@ const tiles = computed((): Tile[] => vetoes.value.left.map((left, index) => {
 const vetoed = computed(() => (revealed.value?.length ?? 0) > 0)
 const outcome = computed(() => {
   if (revealed.value === null) return null
-  const game = spin.value?.game?.name ?? ''
+  const game = draw.value?.game?.name ?? ''
   if (!vetoed.value) return t('veto.outcomeSet', { game })
   const list = new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(revealed.value.map(entry => props.members.find(member => member.id === entry.userId)?.name ?? ''))
-  return t('veto.outcomeVeto', { list, game })
+  // A vetoed spin flies off the wheel and the wheel spins again; a vetoed set game is chosen anew (#232).
+  return t(draw.value?.kind === 'set' ? 'veto.outcomeVetoSet' : 'veto.outcomeVeto', { list, game })
 })
 
 // The tiles turn over when the reveal arrives while the page is open, not when a reload shows a window that ended long ago.
@@ -165,7 +167,7 @@ watch(revealed, (now, before) => {
       :open="open"
       :viewer-id="viewerId"
       :members="members"
-      :cast="() => cast(spin!.drawId)"
+      :cast="() => cast(draw!.drawId)"
     />
 
     <p

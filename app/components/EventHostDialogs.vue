@@ -3,6 +3,7 @@ import { Lock, Play } from '@lucide/vue'
 import { dateBlockedKey } from '~/utils/event-page'
 import { isFullPoolGame } from '~~/shared/game'
 import { hasStarted } from '~~/shared/session-state'
+import { hasWheel } from '~~/shared/settings'
 import type { DatedSessionView, EventView } from '~~/shared/event'
 
 // The Host's dialogs and sheets of the Event page (#52, #55, #164): the Date confirm dialog, the reschedule dialog, the
@@ -116,9 +117,12 @@ const poolLeft = computed(() => {
   return (props.view.pools?.main ?? []).filter(isFullPoolGame).filter(game => left.has(game.id))
 })
 
-/** Sets the game as the next Round; the picker closes once the server took it. */
-function setNextGame(gameId: string) {
-  return send('POST', 'rounds', { body: { gameId }, busy: setting, done: () => (pickerOpen.value = false) })
+// Only a Selection mode with a wheel has Vetoes (#232): there the Host can allow one on the game they set.
+const vetoSwitch = computed(() => props.view.settings !== null && hasWheel(props.view.settings.selectionMode))
+
+/** Sets the game as the next Round, with a Veto window when the Host allowed one; the picker closes once the server took it. */
+function setNextGame(gameId: string, vetoAllowed: boolean) {
+  return send('POST', 'rounds', { body: { gameId, vetoAllowed }, busy: setting, done: () => (pickerOpen.value = false) })
 }
 
 // The Countdown (#236): the sheet sends the length in seconds; it closes once the server took it.
@@ -198,6 +202,7 @@ defineExpose({
     :open="pickerOpen"
     :pool="poolLeft"
     :busy="setting"
+    :veto-switch="vetoSwitch"
     @close="pickerOpen = false"
     @pick="setNextGame"
   />
