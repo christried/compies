@@ -27,11 +27,11 @@ const wheelOf = (vetoes: Omit<VetoView, 'draw'>, draw: Partial<VetoDrawView> | n
 
 let serverMs = STOP
 /** How often the window looked at the server's clock. */
-let reads = 0
+const serverNow = vi.fn(() => serverMs)
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(wheel: WheelView) {
-  page = await mountSuspended(VetoWindow, { props: { wheel, teams, members, serverNow: () => { reads += 1; return serverMs } } })
+  page = await mountSuspended(VetoWindow, { props: { wheel, teams, members, serverNow } })
   await vi.advanceTimersByTimeAsync(300)
   await flushPromises()
   return page
@@ -41,7 +41,7 @@ const text = () => page!.text().replace(/\s+/g, ' ')
 beforeEach(() => {
   vi.useFakeTimers()
   serverMs = STOP
-  reads = 0
+  serverNow.mockClear()
 })
 
 afterEach(() => {
@@ -139,17 +139,17 @@ describe('the Veto window', () => {
   it('reads the clock every frame until the end, then no more (#257)', async () => {
     serverMs = END - 1000
     await mount(wheelOf({ left: [2, 2], own: null, revealed: null }))
-    reads = 0
+    serverNow.mockClear()
 
     await vi.advanceTimersByTimeAsync(64)
-    expect(reads).toBe(4)
+    expect(serverNow).toHaveBeenCalledTimes(4)
 
     serverMs = END + 100
     await vi.advanceTimersByTimeAsync(16)
     expect(page!.get('[role="timer"]').text()).toBe('Aufdecken …')
-    reads = 0
+    serverNow.mockClear()
     await vi.advanceTimersByTimeAsync(1000)
-    expect(reads).toBe(0)
+    expect(serverNow).not.toHaveBeenCalled()
   })
 
   it('waits for the reveal after the end: the numbers stay hidden until the page has read again', async () => {

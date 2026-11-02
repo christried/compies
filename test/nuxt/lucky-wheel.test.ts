@@ -31,11 +31,11 @@ const wheelOf = (spin: SpinView | null, fields: Partial<WheelView> = {}): WheelV
 
 let serverMs = START - 1000
 /** How often the wheel looked at the server's clock. */
-let reads = 0
+const serverNow = vi.fn(() => serverMs)
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean } = {}) {
-  page = await mountSuspended(LuckyWheel, { props: { wheel, hidden: false, isHost: false, serverNow: () => { reads += 1; return serverMs }, ...props } })
+  page = await mountSuspended(LuckyWheel, { props: { wheel, hidden: false, isHost: false, serverNow, ...props } })
   await flushPromises()
   return page
 }
@@ -53,7 +53,7 @@ const text = () => page!.text().replace(/\s+/g, ' ')
 beforeEach(() => {
   vi.useFakeTimers()
   serverMs = START - 1000
-  reads = 0
+  serverNow.mockClear()
 })
 
 afterEach(() => {
@@ -179,22 +179,22 @@ describe('the spin toward its stop', () => {
 describe('the clock it runs on (#257)', () => {
   it('reads the clock only at mount while at rest', async () => {
     await mount(wheelOf(null))
-    reads = 0
+    serverNow.mockClear()
 
     await at(START + 5000)
 
-    expect(reads).toBe(0)
+    expect(serverNow).not.toHaveBeenCalled()
   })
 
   it('stands at the final angle for a Member who opens the page after the spin has ended, without running a loop', async () => {
     serverMs = STOP + 10_000
     await mount(wheelOf(spinOf()))
-    reads = 0
+    serverNow.mockClear()
 
     await at(STOP + 20_000)
 
     expect(rotation()).toBeCloseTo(FINAL % 360, 3)
-    expect(reads).toBe(0)
+    expect(serverNow).not.toHaveBeenCalled()
   })
 
   it('stops reading the clock while scrolled out of view mid-spin, and is at the right angle at once on return', async () => {
@@ -204,9 +204,9 @@ describe('the clock it runs on (#257)', () => {
     await at(START + 1000)
 
     view.see(false)
-    reads = 0
+    serverNow.mockClear()
     await at(START + 4000)
-    expect(reads).toBe(0)
+    expect(serverNow).not.toHaveBeenCalled()
 
     view.see(true)
     await flushPromises()
