@@ -4,7 +4,7 @@
 
 ### Behoben
 
-- Steht eine Zahl auf eins, folgt ihr jetzt die Einzahl: „1 Person da“ auf dem Board, „1 Spiel durchsuchen“ in der Bibliothek, „schon 1 Veto eingesetzt“ in den Einstellungen und „mindestens einen Termin“ beim Erstellen eines Events. ([#268](https://github.com/christried/compies/issues/268))
+- Steht eine Zahl auf eins, folgt ihr jetzt die Einzahl: „1 Person da“ auf dem Board, „1 Spiel durchsuchen“ in der Bibliothek und „schon 1 Veto eingesetzt“ in den Einstellungen. ([#268](https://github.com/christried/compies/issues/268))
 
 ## [0.7.0] - 2026-11-02 – Glücksrad
 
