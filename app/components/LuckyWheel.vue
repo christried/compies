@@ -29,7 +29,11 @@ const FILLS = ['var(--cp-primary)', 'var(--cp-mint)', 'var(--cp-pop)', 'var(--cp
 /** How long past the stop the loop keeps running: the removal ends at 2.8 s + 0.6 s on a Hidden wheel. */
 const TAIL_MS = 100
 const RADIUS = 180
+const HUB_RADIUS = 22
 const LABEL_MAX = 22
+/** The run a label has from its end (RADIUS - 12) to the hub's rim plus 4 units (#263), and the width of a glyph at weight 800 in em (an estimate). */
+const LABEL_RUN = RADIUS - 12 - HUB_RADIUS - 4
+const GLYPH_EM = 0.66
 
 const mounted = ref(false)
 const reduced = ref(false)
@@ -108,6 +112,8 @@ function labelOf(index: number): { text: string, opacity: number } {
 
 const shortened = (text: string) => (characterCount(text) > LABEL_MAX ? `${cutToCharacters(text, LABEL_MAX - 1)}…` : text)
 const fontSize = computed(() => Math.max(10, Math.min(19, 230 / Math.max(count.value, 1) + 6)))
+/** A label's size: the slice's size, or less so the shortened text fits the run from the rim to the hub; the hub would cover a long name (#263). */
+const labelSize = (text: string) => Math.max(9, Math.min(fontSize.value, Math.floor(LABEL_RUN / (characterCount(text) * GLYPH_EM))))
 
 /** A point on the wheel `degrees` clockwise from the top. */
 const point = (degrees: number, radius: number) => `${(200 + radius * Math.sin((degrees * Math.PI) / 180)).toFixed(2)},${(200 - radius * Math.cos((degrees * Math.PI) / 180)).toFixed(2)}`
@@ -196,7 +202,7 @@ const headingId = useId()
               y="200"
               text-anchor="end"
               dominant-baseline="central"
-              :font-size="fontSize"
+              :font-size="labelSize(shortened(labelOf(index).text))"
               font-weight="800"
               fill="var(--cp-on-primary)"
               :opacity="labelOf(index).opacity"
@@ -206,7 +212,7 @@ const headingId = useId()
         <circle
           cx="200"
           cy="200"
-          r="22"
+          :r="HUB_RADIUS"
           fill="var(--cp-surface)"
           stroke="var(--cp-line)"
           stroke-width="4"

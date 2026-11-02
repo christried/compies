@@ -68,6 +68,23 @@ describe('the wheel at rest', () => {
     expect(text()).not.toContain('Das Glücksrad sagt')
   })
 
+  it('shrinks a long label to fit between the rim and the hub, and keeps a short one at full size (#263)', async () => {
+    await mount(wheelOf(null, { count: 2, slices: [{ id: 'a', name: 'Counter-Strike 2' }, { id: 'b', name: 'Kart' }] }))
+
+    const long = page!.get('[data-testid="wheel-label-0"]')
+    expect(Number(long.attributes('font-size'))).toBeLessThan(19)
+    expect(Number(long.attributes('font-size')) * 16 * 0.66).toBeLessThanOrEqual(142)
+    expect(Number(page!.get('[data-testid="wheel-label-1"]').attributes('font-size'))).toBe(19)
+  })
+
+  it('cuts a 25-character label to 22 characters and sets it at the smallest size (#263)', async () => {
+    await mount(wheelOf(null, { count: 2, slices: [{ id: 'a', name: 'Abcdefghijklmnopqrstuvwxy' }, { id: 'b', name: 'Kart' }] }))
+
+    const label = page!.get('[data-testid="wheel-label-0"]')
+    expect(label.text()).toBe('Abcdefghijklmnopqrstu…')
+    expect(label.attributes('font-size')).toBe('9')
+  })
+
   it('counts one game in the singular, and its slice keeps the first fill rather than the surface colour (#263)', async () => {
     await mount(wheelOf(null, { count: 1, slices: [{ id: 'a', name: 'Halo' }] }))
 
