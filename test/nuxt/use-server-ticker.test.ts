@@ -2,6 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { useServerTicker, type ServerTickerOptions } from '~/composables/useServerTicker'
+import { stubInView } from './in-view'
 
 // The one ticker behind the stage's moving parts (#257, review 0.7 Q5, 04-motion § Synchronised moments): the server's time as a ref
 // that is null until mount, runs only while a moment is pending, stops at it, restarts when the moment changes, and pauses off-screen.
@@ -12,28 +13,6 @@ const FRAME_MS = 16
 
 let skew: number
 const serverNow = vi.fn(() => Date.now() + skew)
-
-/** The stand-in for IntersectionObserver: records its options and what it watches, and lets a test say what it sees. */
-class ObserverStub {
-  static instances: ObserverStub[] = []
-  observed: Element[] = []
-  disconnected = false
-  constructor(private callback: IntersectionObserverCallback, public options: IntersectionObserverInit) {
-    ObserverStub.instances.push(this)
-  }
-
-  observe(element: Element) {
-    this.observed.push(element)
-  }
-
-  disconnect() {
-    this.disconnected = true
-  }
-
-  see(isIntersecting: boolean) {
-    this.callback([{ isIntersecting } as IntersectionObserverEntry], this as unknown as IntersectionObserver)
-  }
-}
 
 interface Setup {
   until?: number | null
@@ -65,7 +44,6 @@ beforeEach(() => {
   vi.setSystemTime(START)
   skew = 0
   serverNow.mockClear()
-  ObserverStub.instances = []
   vi.stubGlobal('IntersectionObserver', undefined)
 })
 
@@ -211,14 +189,15 @@ describe('useServerTicker', () => {
   })
 
   describe('with a target', () => {
+    let view: ReturnType<typeof stubInView>
     beforeEach(() => {
-      vi.stubGlobal('IntersectionObserver', ObserverStub)
+      view = stubInView()
     })
 
     it('watches the element with a margin of 120 px and runs while it is on screen', async () => {
       const { page } = await setUp({ until: START + 5000, withTarget: true })
 
-      const [observer] = ObserverStub.instances
+      const [observer] = view.observers
       expect(observer!.options.rootMargin).toBe('120px')
       expect(observer!.observed).toEqual([page.get('section').element])
 
@@ -229,7 +208,7 @@ describe('useServerTicker', () => {
 
     it('stops reading off-screen, keeps the value, and reads again at once on return', async () => {
       const { value } = await setUp({ until: START + 60_000, withTarget: true })
-      const [observer] = ObserverStub.instances
+      const [observer] = view.observers
       vi.advanceTimersByTime(FRAME_MS * 3)
 
       observer!.see(false)
@@ -248,10 +227,10 @@ describe('useServerTicker', () => {
 
     it('takes a moment that ended while off-screen as it is on return, without a loop', async () => {
       const { value } = await setUp({ until: START + 1000, withTarget: true })
-      ObserverStub.instances[0]!.see(false)
+      view.observers[0]!.see(false)
       vi.advanceTimersByTime(5000)
 
-      ObserverStub.instances[0]!.see(true)
+      view.observers[0]!.see(true)
       expect(value()).toBe(START + 5000)
       serverNow.mockClear()
       vi.advanceTimersByTime(1000)
@@ -266,7 +245,7 @@ describe('useServerTicker', () => {
       shown.value = true
       await nextTick()
 
-      const last = ObserverStub.instances.at(-1)!
+      const last = view.observers.at(-1)!
       expect(last.observed).toEqual([page.get('section').element])
     })
 
@@ -275,7 +254,7 @@ describe('useServerTicker', () => {
 
       page.unmount()
 
-      expect(ObserverStub.instances.every(observer => observer.disconnected)).toBe(true)
+      expect(view.observers.every(observer => observer.disconnected)).toBe(true)
     })
 
     it('treats a missing IntersectionObserver as on screen', async () => {
