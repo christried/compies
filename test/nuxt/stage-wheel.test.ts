@@ -1,5 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
+import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import StageWheel from '~/components/StageWheel.vue'
 import type { EventSettings } from '~~/shared/settings'
@@ -51,7 +52,7 @@ async function mount(props: EventView) {
   return page
 }
 const text = () => page!.text().replace(/\s+/g, ' ')
-const headings = () => page!.findAll('h2').map(heading => heading.text())
+const headings = () => page!.findAll('h2').map((heading: DOMWrapper<Element>) => heading.text())
 
 beforeEach(() => {
   vi.useFakeTimers()

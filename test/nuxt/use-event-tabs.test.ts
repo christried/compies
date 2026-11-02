@@ -2,6 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { useEventTabs } from '~/composables/useEventTabs'
+import type { useEventRoom } from '~/composables/useEventRoom'
 import { restoreScreen, stubScreen } from './event-page'
 
 // The Event page's phone tabs and side panel tabs (#257, B2): one table says which tabs exist, and the state of the views
@@ -10,17 +11,19 @@ import { restoreScreen, stubScreen } from './event-page'
 
 function fakeRoom() {
   const handlers = new Map<string, () => void>()
+  const on = (type: string, handler: () => void) => {
+    handlers.set(type, handler)
+    return () => void handlers.delete(type)
+  }
   return {
     fire: (type: string) => handlers.get(type)?.(),
-    on: (type: string, handler: () => void) => {
-      handlers.set(type, handler)
-      return () => void handlers.delete(type)
-    },
+    // The real room's `on` is typed by its messages; the test fires without one, so the fake is cast to that type.
+    room: { on } as unknown as Pick<ReturnType<typeof useEventRoom>, 'on'>,
   }
 }
 
 async function setUp() {
-  const room = fakeRoom()
+  const { fire, room } = fakeRoom()
   let tabs: ReturnType<typeof useEventTabs> | undefined
   await mountSuspended(defineComponent({
     setup() {
@@ -30,7 +33,7 @@ async function setUp() {
   }))
   await nextTick()
   const current = () => tabs!
-  return { room, tabs: current }
+  return { room: { fire }, tabs: current }
 }
 
 afterEach(() => {
