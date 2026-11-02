@@ -175,7 +175,7 @@ export interface VetoCastView { team: number, userId: string }
 
 /**
  * The viewer's own Party in the Veto window (#231): its team, the Player of it who cast (null: not yet, the Party's Players learn it
- * at once, nobody else before the end of the window), and why the Party cannot cast on the spin's draw now, or null when it may.
+ * at once, nobody else before the end of the window), and why the Party cannot cast on the window's draw (VetoView.draw) now, or null when it may.
  * Only a Player of a Party gets it: the Bench, the Stands and a Host outside the teams get `own: null`.
  */
 export interface OwnVetoView { team: number, castBy: string | null, rejection: VetoRejection | null }

@@ -47,7 +47,7 @@ const feedTick = ref(0)
 // The Veto window's end (#231) is one too: it reveals every Party's Veto.
 const knownInstants = computed(() => [
   ...(data.value?.wheel?.spin ? [Date.parse(data.value.wheel.spin.stopAt)] : []),
-  ...(data.value?.wheel?.spin?.vetoEndsAt ? [Date.parse(data.value.wheel.spin.vetoEndsAt)] : []),
+  ...(data.value?.wheel?.vetoes.draw ? [Date.parse(data.value.wheel.vetoes.draw.vetoEndsAt)] : []),
   ...(data.value?.coin ? [Date.parse(data.value.coin.landsAt)] : []),
   ...(data.value?.clip ? [Date.parse(data.value.clip.endsAt)] : []),
 ])
@@ -355,7 +355,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :server-now="serverClock.now"
           />
           <VetoWindow
-            v-if="data.wheel.spin?.vetoEndsAt"
+            v-if="data.wheel.vetoes.draw"
             :wheel="data.wheel"
             :teams="data.teams"
             :members="data.members"
