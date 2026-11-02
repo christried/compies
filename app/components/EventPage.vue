@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, Crown, History, Hourglass, LayoutGrid, Link as LinkIcon, Lock, Settings2 } from '@lucide/vue'
+import { ChevronRight, Crown, Hourglass, Link as LinkIcon, Lock, Settings2 } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
@@ -135,35 +135,8 @@ const stay = computed(() => teamsStay(pageState.value?.next ?? null, data.value?
 // The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
 const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
 
-// The phone's views (11-event-seite § TabBar): the Event page or the Activity feed. The feed is mounted once, in the side panel
-// from md up and in its own view below; the wide layout is known after mount only, so nothing of the feed renders before.
-const wide = useMediaQuery('(min-width: 61.25rem)')
-const panelTab = ref('activity')
-const activeView = ref<'event' | 'activity'>('event')
-const unread = ref(0)
-// Only the phone counts: on a desktop the panel shows the feed, and a count from there would be stale once the window narrows.
-room.on('activity.added', () => {
-  if (wide.value === false && activeView.value !== 'activity') unread.value += 1
-})
-watch(wide, (isWide) => {
-  if (isWide) unread.value = 0
-})
-function selectView(key: string) {
-  activeView.value = key === 'activity' ? 'activity' : 'event'
-  if (activeView.value === 'activity') unread.value = 0
-}
-const tabs = computed(() => [
-  { key: 'event', label: t('event.tabs.event'), icon: LayoutGrid, current: activeView.value === 'event' },
-  {
-    key: 'activity',
-    label: t('nav.tabs.activity'),
-    icon: History,
-    current: activeView.value === 'activity',
-    badge: activeView.value === 'activity' ? 0 : unread.value,
-    ariaLabel: activeView.value !== 'activity' && unread.value > 0 ? t('event.tabs.unread', { label: t('nav.tabs.activity'), n: unread.value }) : undefined,
-  },
-])
-const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity'), icon: History }])
+// The phone's views and the side panel's tabs are useEventTabs' (#257): the Event page or the Activity feed.
+const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs(room)
 </script>
 
 <template>
