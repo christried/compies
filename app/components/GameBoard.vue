@@ -3,9 +3,9 @@ import { Armchair, Eye, Hand, Hourglass, Lock, Users } from '@lucide/vue'
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { errorCopyKey } from '~/utils/api-error'
 import { placeFromKey, placeKey, teamName } from '~/utils/board'
-import { eventDataKey } from '~/utils/event-data'
-import { glide, pop } from '~/utils/motion'
-import { countSeats, moveRejection, placeOf, type Place } from '~~/shared/board'
+import type { EventPageState } from '~/utils/event-page'
+import { fade, glide, pop } from '~/utils/motion'
+import { countSeats, moveRejection, type Place } from '~~/shared/board'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { EventSettings } from '~~/shared/settings'
 
@@ -23,66 +23,39 @@ const props = withDefaults(defineProps<{
   teams: BoardTeam[]
   settings: EventSettings | null
   teamChoiceOpen: boolean
-  /** The first Session has started (#164). */
-  started?: boolean
-  /** Whether the board says why it is locked once a Session has started. The page leaves it out between Sessions, where its own notice says it (#166). */
-  lockedNotice?: boolean
-  /** Whether the board says teams are uneven. The page says no while a Session runs and once every Session is over; without it the board says so until the first Session starts (#166). */
-  unevenNotice?: boolean
+  /**
+   * The page's state (`pageState.kind`, #166), from which the board takes whether the first Session has started (#164)
+   * and which notices it says: the locked one only while a Session runs (between Sessions the page's own notice says
+   * it), the uneven one until a Session runs or every Session is over (#237, review 1.4 N11; one prop, because the
+   * three facts are one).
+   */
+  pageKind: EventPageState['kind']
   viewerId: string
   isHost: boolean
   room: Pick<ReturnType<typeof useEventRoom>, 'on'>
   /** Whether somebody is online in the room (#162); undefined while presence is not known (no dots then). */
   online?: (userId: string) => boolean | undefined
-}>(), { started: false, lockedNotice: true, unevenNotice: undefined, online: undefined })
+}>(), { online: undefined })
 
 const { t } = useI18n()
 const root = useTemplateRef<HTMLElement>('root')
 const slug = toRef(() => props.slug)
 
-const phase = computed<'setup' | 'poll' | 'open' | 'running'>(() => (props.settings === null ? 'setup' : props.started ? 'running' : props.teamChoiceOpen ? 'open' : 'poll'))
+/** The first Session has started (#164): from the page's state, every one but the two before the first start. */
+const started = computed(() => ['running', 'between', 'done'].includes(props.pageKind))
+const phase = computed<'setup' | 'poll' | 'open' | 'running'>(() => (props.settings === null ? 'setup' : started.value ? 'running' : props.teamChoiceOpen ? 'open' : 'poll'))
 
-// Where everybody is drawn: the server's place, under the moves other people made (from the room, until the refetch
-// agrees) and the moves this viewer is making (until the server has answered).
 // A team's name as it is shown: its Team name, else its colour's name (teamName).
 const nameOfTeam = (position: number) => teamName(props.teams.find(team => team.position === position) ?? position, t)
 const nameOf = (userId: string) => props.members.find(member => member.id === userId)?.name ?? ''
-const moves = useBoardMoves(slug, () => refreshNuxtData(eventDataKey(props.slug)), { nameOf, teamNameOf: nameOfTeam })
-const heard = ref<Record<string, Place>>({})
+// Where everybody is drawn (useBoardPlaces): the server's place, under the moves other people made and the moves this viewer is making.
+const places = useBoardPlaces({ slug, members: () => props.members, room: props.room, refresh: () => refreshEvent(props.slug), people: { nameOf, teamName: nameOfTeam } })
 
-const people = computed(() => props.members.map(member => ({
-  ...member,
-  place: moves.pending.value[member.id] ?? heard.value[member.id] ?? placeOf(member),
-})))
+const people = computed(() => props.members.map(member => ({ ...member, place: places.placeOf(member.id) })))
 const seats = computed(() => countSeats(people.value.map(person => person.place)))
-const currentPlace = (userId: string): Place => people.value.find(person => person.id === userId)?.place ?? { zone: 'bench' }
+const currentPlace = (userId: string): Place => places.placeOf(userId)
 const inPlace = (place: Place) => people.value.filter(person => placeKey(person.place) === placeKey(place))
 const whereText = (place: Place) => (place.zone === 'team' ? nameOfTeam(place.team) : t(place.zone === 'bench' ? 'board.bench' : 'board.stands'))
-
-// What the room says about other people's moves is true at once; the refetch it triggers brings the same and drops it.
-// A message the refetch never confirms (a move that was undone meanwhile) is dropped after a while.
-const HEARD_MS = 5000
-const heardTimers = new Map<string, ReturnType<typeof setTimeout>>()
-function hear(userId: string, to: Place) {
-  heard.value = { ...heard.value, [userId]: to }
-  clearTimeout(heardTimers.get(userId))
-  heardTimers.set(userId, setTimeout(() => forget(userId, to), HEARD_MS))
-}
-function forget(userId: string, to?: Place) {
-  const current = heard.value[userId]
-  if (current && (!to || placeKey(current) === placeKey(to))) heard.value = Object.fromEntries(Object.entries(heard.value).filter(([key]) => key !== userId))
-}
-watch(() => props.members, (members) => {
-  for (const member of members) {
-    const heardPlace = heard.value[member.id]
-    if (heardPlace && placeKey(heardPlace) === placeKey(placeOf(member))) forget(member.id)
-  }
-})
-const stopHearing = props.room.on('member.moved', message => hear(message.userId, message.to))
-onBeforeUnmount(() => {
-  stopHearing()
-  for (const timer of heardTimers.values()) clearTimeout(timer)
-})
 
 /** Why the viewer cannot put this Member there (`moveRejection`, the server's rule), or null. */
 function rejectionFor(userId: string, to: Place) {
@@ -94,7 +67,7 @@ function rejectionFor(userId: string, to: Place) {
     to,
     settings: props.settings,
     teamChoiceOpen: props.teamChoiceOpen,
-    started: props.started,
+    started: started.value,
     seats: seats.value,
   })
 }
@@ -121,7 +94,7 @@ function personEl(userId: string): HTMLElement | null {
 /** Moves somebody, from a drop or from the menu: drawn at once, announced when the server took it. */
 async function requestMove(userId: string, to: Place) {
   if (rejectionFor(userId, to)) return
-  const taken = moves.move(userId, to)
+  const taken = places.move(userId, to)
   if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : to.zone === 'bench' ? 'board.movedBench' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
 }
 
@@ -162,7 +135,8 @@ watch(drag.overZone, (key) => {
 // A change of anyone's place glides their avatar from the old slot to the new one (Flip). The pre-flush watcher sees the
 // old layout, the post-flush one the new; the avatars are found by user id because each zone draws its own element.
 // Whoever's place changed lands with a pop (04-motion § Avatar, #208), the own drop as much as somebody else's; a refused
-// move bounces home without a second pop, and people who only shift because others moved glide without a pop.
+// move bounces home without a second pop, and people who only shift because others moved glide without a pop. A move
+// the room announced and the refetch never confirmed goes back after HEARD_MS the same way: the place changes, the glide runs.
 const layout = computed(() => people.value.map(person => `${person.id}:${placeKey(person.place)}`).join('|'))
 const placesOf = (list: typeof people.value) => new Map(list.map(person => [person.id, placeKey(person.place)] as const))
 // The places the board last drew: a landing is a place that differs from them.
@@ -175,10 +149,16 @@ watch(layout, () => {
   for (const element of root.value?.querySelectorAll<HTMLElement>('[data-user-id]') ?? []) {
     const id = element.dataset.userId ?? ''
     const from = before.get(id)
-    const bounced = moves.bounced.has(id)
+    const bounced = places.bounced.has(id)
+    const landed = placesShown.has(id) && placesShown.get(id) !== placesNow.get(id)
     if (from) glide(element, from, element.getBoundingClientRect(), bounced ? 'bounce' : 'glide')
-    if (!bounced && placesShown.has(id) && placesShown.get(id) !== placesNow.get(id)) pop(element)
-    moves.bounced.delete(id)
+    if (landed) {
+      // Under reduced motion neither the glide nor the pop runs: whoever took a new place, by their own move, somebody
+      // else's, a bounce-back or a heard move the refetch never confirmed, fades in there instead (#237).
+      fade(element)
+      if (!bounced) pop(element)
+    }
+    places.bounced.delete(id)
   }
   before = new Map()
   placesShown = placesNow
@@ -240,7 +220,7 @@ const authorsIn = (team: number) => inPlace({ zone: 'team', team }).filter(perso
 // between two Sessions, where the next start is blocked again (#166); a Player's says the team looks for somebody, only
 // while Team choice is open (11-event-seite § NoticeBanner).
 const uneven = computed(() => {
-  if (!(props.unevenNotice ?? !props.started) || props.settings === null || props.teams.length < 2) return null
+  if (['running', 'done'].includes(props.pageKind) || props.settings === null || props.teams.length < 2) return null
   if (!props.isHost && phase.value !== 'open') return null
   const counts = props.teams.map(team => ({ team: team.position, count: seats.value[team.position] ?? 0 }))
   const small = counts.reduce((least, next) => (next.count < least.count ? next : least))
@@ -269,7 +249,7 @@ const meta = computed(() => {
     aria-labelledby="board-title"
   >
     <NoticeBanner
-      v-if="phase === 'running' && lockedNotice"
+      v-if="pageKind === 'running'"
       tone="info"
       :icon="Lock"
     >

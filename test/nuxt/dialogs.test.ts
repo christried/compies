@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { h } from 'vue'
 import AppSheet from '~/components/AppSheet.vue'
 import ConfirmModal from '~/components/ConfirmModal.vue'
 import DateConfirmDialog from '~/components/DateConfirmDialog.vue'
@@ -28,6 +29,30 @@ describe('AppSheet', () => {
     await mountSuspended(AppSheet, { props: { open: false, title: 'Host-Steuerung' } })
 
     expect(document.querySelector('[role="dialog"]')).toBeNull()
+  })
+
+  it('keeps its footer in a sticky band at the bottom of the scrolling sheet, while the content scrolls above it (#218)', async () => {
+    await mountSuspended(AppSheet, {
+      props: { open: true, title: 'Nächstes Spiel setzen' },
+      slots: {
+        default: () => h('ul', Array.from({ length: 60 }, (_, index) => h('li', `Spiel ${index}`))),
+        footer: () => h('button', 'Setzen'),
+      },
+    })
+
+    const dialog = document.querySelector('[role="dialog"]')!
+    const footer = dialog.querySelector('footer')!
+    expect(footer.textContent).toContain('Setzen')
+    // The footer is a child of the sheet that scrolls, and it sticks to that scroll's bottom edge.
+    expect(footer.parentElement).toBe(dialog)
+    expect(dialog.className).toContain('overflow-y-auto')
+    expect([...footer.classList]).toEqual(expect.arrayContaining(['sticky', 'bottom-0', 'layer-sticky', 'bg-surface', 'border-t-(length:--cp-bw)']))
+  })
+
+  it('takes no sticky band when it has no footer', async () => {
+    await mountSuspended(AppSheet, { props: { open: true, title: 'Host-Steuerung' }, slots: { default: () => h('p', 'Inhalt') } })
+
+    expect(document.querySelector('[role="dialog"] footer')).toBeNull()
   })
 })
 

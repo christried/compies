@@ -18,6 +18,8 @@ async function blockedBecause() {
   const timestamp = String(Date.now())
   const signature = createHmac('sha256', secret).update(`${timestamp}.`).digest('hex')
 
+  // The URL is printed before the call, so a run without DEPLOY_CHECK_URL shows in its log which app it asked (A9).
+  console.log(`Asking ${url} whether a Session is dated today.`)
   let response
   try {
     response = await fetch(url, {

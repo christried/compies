@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { pollSlots } from '../../../../db/schema'
 import { parseEditedSlot } from '../../../../domain/event'
+import { useClock } from '../../../../utils/clock'
 import { apiError, slotNotFound } from '../../../../utils/errors'
 import { changeSlots } from '../../../../utils/host-event'
 import { isSlotTaken } from '../../../../utils/sessions'
@@ -18,7 +19,7 @@ export default defineEventHandler((event): Promise<ChangedSlot> => changeSlots(e
   if (!slot) throw slotNotFound()
   if (await isSlotTaken(tx, eventRow.id, slot.id)) throw apiError('slot_taken')
 
-  const parsed = parseEditedSlot(asRecord(body).startsAt, await eventSlots(tx, eventRow.id), new Date(), slot.id)
+  const parsed = parseEditedSlot(asRecord(body).startsAt, await eventSlots(tx, eventRow.id), useClock(event).now(), slot.id)
   if (!parsed.ok) throw apiError(parsed.error)
 
   await tx.update(pollSlots).set({ startsAt: parsed.startsAt }).where(eq(pollSlots.id, slot.id))

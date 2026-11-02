@@ -2,11 +2,12 @@ import { eq, sql } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
 import { events, sessions } from '../../../../db/schema'
 import { recordActivity } from '../../../../utils/activity'
+import { useClock } from '../../../../utils/clock'
 import { freezeTeamNames, readSeats, startOf } from '../../../../utils/board'
 import { apiError } from '../../../../utils/errors'
 import { changeEvent } from '../../../../utils/event-access'
 import { eventSessions, shownNumber } from '../../../../utils/sessions'
-import { hasStarted } from '../../../../../shared/board'
+import { hasStarted } from '../../../../../shared/session-state'
 import type { SessionStarted } from '../../../../../shared/event'
 import { settingsFromRow } from '../../../../../shared/settings'
 
@@ -25,7 +26,7 @@ export default defineEventHandler((event): Promise<SessionStarted> => changeEven
     await freezeTeamNames(tx, eventRow.id, settingsFromRow(eventRow)!.teamCount)
     await tx.update(events).set({ phase: 'running' }).where(eq(events.id, eventRow.id))
   }
-  await recordActivity(tx, publish, eventRow.id, { type: 'session_started', actorId: user.id, params: { sessionId: next.id, number: await shownNumber(tx, eventRow.id, next.id) } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'session_started', actorId: user.id, params: { sessionId: next.id, number: await shownNumber(tx, eventRow.id, next.id) }, now: useClock(event).now() })
   publish({ type: 'session.started', sessionId: next.id })
   if (first) publish({ type: 'team.nameFrozen' })
   return { sessionId: next.id, phase: 'running' }

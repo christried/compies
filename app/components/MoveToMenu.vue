@@ -20,13 +20,13 @@ const title = computed(() => t('board.whereTo', { name: props.name }))
 const popover = useTemplateRef<HTMLElement>('popover')
 const list = useTemplateRef<{ focusFirst: () => void }>('list')
 
-// The shell's own breakpoint: below it the page has a tab bar and sheets come from the bottom.
-const narrow = ref(false)
+// The shell's own breakpoint (N8, the page's `wide`): below it the page has a tab bar and sheets come from the bottom.
+const wide = useMediaQuery('(min-width: 61.25rem)')
+const narrow = computed(() => wide.value === false)
 const position = ref({ top: 0, left: 0 })
 
 watch(() => props.open, async (open) => {
   if (!open) return
-  narrow.value = window.matchMedia?.('(max-width: 979px)').matches ?? false
   const rect = props.anchor?.getBoundingClientRect()
   if (rect) position.value = { top: rect.bottom + 6, left: Math.max(8, Math.min(rect.left, window.innerWidth - 288)) }
   await nextTick()

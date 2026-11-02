@@ -53,6 +53,17 @@ describe('GameNotesDisclosure (#224)', () => {
     expect(disclosure.find('p').exists()).toBe(false)
   })
 
+  it('starts open on the Round card, with its panel and the notes (#228)', async () => {
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: NOTES, startOpen: true } })
+
+    const button = disclosure.get('button')
+    expect(button.attributes('aria-expanded')).toBe('true')
+    expect(disclosure.get(`[id="${button.attributes('aria-controls')}"]`).get('p').element.textContent).toBe(NOTES)
+
+    await button.trigger('click')
+    expect(button.attributes('aria-expanded')).toBe('false')
+  })
+
   it('shows markup in the notes as text, never as an element or a link', async () => {
     const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: '<b>x</b> https://example.com' } })
 

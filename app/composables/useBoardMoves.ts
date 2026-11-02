@@ -1,6 +1,5 @@
 import { apiFailure } from '~/utils/api-error'
 import type { Place } from '~~/shared/board'
-import { asRecord } from '~~/shared/record'
 
 // A move on the Game board as the person who makes it sees it (#160): the avatar is in its new place at once and
 // stays there until the server has answered and the Event is refetched. A refusal sends it back (the board glides
@@ -12,7 +11,7 @@ import { asRecord } from '~~/shared/record'
 /** Who stands where and what the teams are called, for the lost-race toast. */
 export interface BoardPeople {
   nameOf: (userId: string) => string
-  teamNameOf: (position: number) => string
+  teamName: (position: number) => string
 }
 
 export function useBoardMoves(slug: Readonly<Ref<string>>, refresh: () => Promise<unknown>, people: BoardPeople) {
@@ -45,9 +44,10 @@ export function useBoardMoves(slug: Readonly<Ref<string>>, refresh: () => Promis
 
   /** The toast for the lost race, which names the winner; every other refusal keeps its shared copy. */
   function lostRaceText(failure: unknown, to: Place): string | undefined {
-    const winnerId = asRecord(asRecord(asRecord(failure).data).data).winnerId
-    if (apiFailure(failure).code === 'team_full' && to.zone === 'team' && typeof winnerId === 'string') {
-      return t('board.reason.lostRace', { name: people.nameOf(winnerId), team: people.teamNameOf(to.team) })
+    const { code, data } = apiFailure(failure)
+    const winnerId = data?.winnerId
+    if (code === 'team_full' && to.zone === 'team' && typeof winnerId === 'string') {
+      return t('board.reason.lostRace', { name: people.nameOf(winnerId), team: people.teamName(to.team) })
     }
     return undefined
   }

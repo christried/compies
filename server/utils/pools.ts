@@ -1,6 +1,6 @@
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
-import { eventMembers, eventPoolGames, events, games } from '../db/schema'
-import type { PoolFacts } from '../domain/pool-preview'
+import { and, asc, eq, exists, inArray, isNull, lte, or, sql } from 'drizzle-orm'
+import { draws, eventMembers, eventPoolGames, events, games, rounds } from '../db/schema'
+import type { GameFacts } from '../domain/pool-preview'
 import type { Db } from './db'
 import { apiError } from './errors'
 import { poolGameFace, poolGameView } from './library'
@@ -34,16 +34,21 @@ export async function assertGamesExist(tx: Db, ...lists: string[][]): Promise<vo
 }
 
 /**
- * The live Events `userId` is a Member of whose Game pool or Tiebreaker pool holds the game, with whether they host
- * it and whether their Pool preview is on: what the image route needs (#148, #225). One query, deleted Events left out.
+ * The live Events `userId` is a Member of whose Game pool or Tiebreaker pool holds the game, or in which a Round has set
+ * it, with whether they host it, whether their Pool preview is on and whether a Round set the game: what the image route
+ * needs (#148, #225, #228). One query, deleted Events left out. A Round that was put back still counts as set: everyone saw it.
  */
-export async function poolEventsOf(db: Db, userId: string, gameId: string): Promise<PoolFacts[]> {
-  const rows = await db
-    .selectDistinct({ isHost: sql<boolean>`${events.hostId} = ${userId}`, hiddenWheel: events.hiddenWheel, poolPreview: events.poolPreview })
-    .from(eventPoolGames)
-    .innerJoin(events, eq(eventPoolGames.eventId, events.id))
+export async function gameEventsOf(db: Db, userId: string, gameId: string, now: Date): Promise<GameFacts[]> {
+  const inPool = exists(db.select({ one: sql`1` }).from(eventPoolGames).where(and(eq(eventPoolGames.eventId, events.id), eq(eventPoolGames.gameId, gameId))))
+  // A game is set once a Round has it, or a draw of the Event has it and stopped (#229): a draw whose stop has passed but nobody has
+  // read since is not settled yet, and its image must not wait for that.
+  const stopped = exists(db.select({ one: sql`1` }).from(draws).innerJoin(rounds, eq(draws.roundId, rounds.id)).where(and(eq(rounds.eventId, events.id), eq(draws.gameId, gameId), lte(draws.stopAt, now))))
+  const wasSet = or(exists(db.select({ one: sql`1` }).from(rounds).where(and(eq(rounds.eventId, events.id), eq(rounds.gameId, gameId)))), stopped)
+  const found = await db
+    .selectDistinct({ isHost: sql<boolean>`${events.hostId} = ${userId}`, hiddenWheel: events.hiddenWheel, poolPreview: events.poolPreview, set: sql<boolean>`${wasSet}` })
+    .from(events)
     .innerJoin(eventMembers, and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)))
-    .where(and(eq(eventPoolGames.gameId, gameId), isNull(events.deletedAt)))
+    .where(and(isNull(events.deletedAt), or(inPool, wasSet)))
   // An Event that is not set up has no Pool preview (the safe default, #183); rows the code before 0.6 wrote read as on (storedPoolPreview, #225).
-  return rows.map(({ isHost, hiddenWheel, poolPreview }) => ({ isHost, poolPreview: storedPoolPreview(poolPreview, hiddenWheel) }))
+  return found.map(({ isHost, hiddenWheel, poolPreview, set }) => ({ isHost, poolPreview: storedPoolPreview(poolPreview, hiddenWheel), set }))
 }

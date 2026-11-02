@@ -1,0 +1,2 @@
+-- Index on draws.game_id (0.7 review, F18): the Rounds rules and the games-left query look a game up in the draws. An index only adds: the previous deployment, which serves until the switch-over (ADR 0007), neither reads nor writes it, and the rows it writes during the build are indexed as they come, so nothing here needs a second step.
+CREATE INDEX "draws_game_id_idx" ON "draws" USING btree ("game_id");

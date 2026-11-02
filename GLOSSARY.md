@@ -180,6 +180,18 @@ _Avoid_: Pool visibility, open pool
 A Party's rejection of a game the wheel has just drawn, or that the Host has set and allowed a Veto on, cast within the veto window; the game leaves the Game pool, and the wheel or the Host determines another. Any Player of the Party can cast any of its Vetoes, a Party casts at most one per drawn game, and a cast Veto cannot be withdrawn.
 _Avoid_: Ban (a ban removes a game before it is drawn), skip, reject
 
+**Draw**:
+One try at a Round's game: a spin of the Lucky Wheel or a game the Host sets. It stays open while its Veto window runs and then settles as set or vetoed; a Round has one Draw, or several when Vetoes reject the earlier ones.
+_Avoid_: Spin (a spin is only one kind of Draw), pick, roll
+
+**Veto window**:
+The 60 seconds after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session (UI: Veto-Fenster).
+_Avoid_: Veto round, voting time, grace period
+
+**Clip**:
+The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead.
+_Avoid_: Trailer, preview, video
+
 **Veto allowance**:
 The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host. Bonus Vetoes come on top.
 _Avoid_: Vetoes per player, veto budget

@@ -11,7 +11,7 @@ function t(key: string, named: Record<string, unknown> = {}): string {
   return template.replace(/\{(\w+)\}/g, (_, name: string) => String(named[name]))
 }
 
-const base = { id: 'e', at: '2090-10-30T18:00:00.000Z', actor: { id: 'u1', name: 'Sanne' }, people: {} }
+const base = { id: 'e', at: '2090-10-30T18:00:00.000Z', actor: { id: 'u1', name: 'Sanne' }, people: {}, games: {} }
 
 describe('groupActivity', () => {
   const entry = (id: string, at: string): ActivityEntry => ({ ...base, id, at, type: 'member_joined', params: {} })
@@ -154,6 +154,59 @@ describe('the sentence of an entry', () => {
     expect(text({ ...base, type: 'session_ended', params: { sessionId: 's', number: 2 } })).toBe('Sanne hat Session 2 beendet')
     expect(text({ ...base, type: 'session_ended', params: { sessionId: 's', number: null } })).toBe('Sanne hat die Session beendet')
   })
+
+  it('says who set a game and who put it back, naming the game the entry carries (#228)', () => {
+    const named = { ...base, games: { g1: 'Halo' } }
+
+    expect(text({ ...named, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })).toBe('Sanne hat Halo gesetzt')
+    expect(text({ ...named, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })).toBe('Sanne hat Halo zurückgelegt')
+  })
+
+  it('sets the game in bold like the names', () => {
+    const parts = activityParts({ ...base, games: { g1: 'Halo' }, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } }, t)
+
+    expect(parts).toEqual([{ text: 'Sanne', strong: true }, { text: ' hat ', strong: false }, { text: 'Halo', strong: true }, { text: ' gesetzt', strong: false }])
+  })
+
+  it('leaves out a sentence about a game the viewer may not name yet', () => {
+    expect(text({ ...base, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })).toBeNull()
+    expect(text({ ...base, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })).toBeNull()
+  })
+
+  it('says what the wheel drew, naming the game, with the game in bold, and nothing while the viewer may not name it yet (#229)', () => {
+    const drawn = { ...base, type: 'game_drawn', params: { roundId: 'r', drawId: 'd', gameId: 'g1' } } as const
+
+    expect(text({ ...drawn, games: { g1: 'Halo' } })).toBe('Glücksrad: Halo')
+    expect(activityParts({ ...drawn, games: { g1: 'Halo' } }, t)).toEqual([{ text: 'Glücksrad: ', strong: false }, { text: 'Halo', strong: true }])
+    expect(text(drawn)).toBeNull()
+  })
+
+  it('says who vetoed once the Vetoes are revealed, the Players in bold, and names no game (#231)', () => {
+    const revealed = (vetoes: { team: number, userId: string }[]): ActivityEntry => ({ ...base, type: 'vetoes_revealed', people: { u1: 'Eins', u2: 'Zwei', u3: 'Drei' }, params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes } })
+
+    expect(text(revealed([{ team: 1, userId: 'u1' }]))).toBe('Veto von Eins')
+    expect(text(revealed([{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }]))).toBe('Veto von Eins und Zwei')
+    expect(text(revealed([{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }, { team: 3, userId: 'u3' }]))).toBe('Veto von Eins, Zwei und Drei')
+    expect(activityParts(revealed([{ team: 1, userId: 'u1' }]), t)).toEqual([{ text: 'Veto von ', strong: false }, { text: 'Eins', strong: true }])
+  })
+
+  it('says a coin toss with its side, Kopf or Schwanz (#235)', () => {
+    expect(text({ ...base, type: 'coin_tossed', params: { side: 'heads' } })).toBe('Münzwurf: Kopf')
+    expect(text({ ...base, type: 'coin_tossed', params: { side: 'tails' } })).toBe('Münzwurf: Schwanz')
+  })
+
+  it('says which Party got a Bonus Veto, by its Team, from the Host who granted it (#233)', () => {
+    expect(text({ ...base, type: 'bonus_veto_granted', params: { team: 2 } })).toBe('Sanne hat Team Orange ein Bonus-Veto gegeben')
+  })
+
+  it('draws a game set, a game put back and a game drawn with an icon of their own', () => {
+    const set = activityIcon({ ...base, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })
+    const back = activityIcon({ ...base, type: 'game_put_back', params: { roundId: 'r', gameId: 'g1' } })
+    const drawn = activityIcon({ ...base, type: 'game_drawn', params: { roundId: 'r', drawId: 'd', gameId: 'g1' } })
+
+    expect(new Set([set.icon, back.icon, drawn.icon]).size).toBe(3)
+    expect(set.tone).toBe('surface')
+  })
 })
 
 describe('readEntry', () => {
@@ -166,6 +219,12 @@ describe('readEntry', () => {
     expect(readEntry({ ...entry, type: 'nobody_knows' })).toBeNull()
     expect(readEntry({ ...entry, params: 'x' })).toBeNull()
     expect(readEntry({ ...entry, at: undefined })).toBeNull()
+  })
+
+  it('reads an entry without the names of games as one that names none', () => {
+    const { games: _games, ...without } = entry
+
+    expect(readEntry(without)).toEqual({ ...without, games: {} })
   })
 })
 

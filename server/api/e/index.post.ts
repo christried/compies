@@ -5,6 +5,7 @@ import { parseNewEvent } from '../../domain/event'
 import { phaseOf } from '../../domain/phase'
 import { parsePools } from '../../domain/pools'
 import { createInviteToken, createSlug } from '../../domain/slug'
+import { useClock } from '../../utils/clock'
 import { useDb, type Db } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { addMember } from '../../utils/invite'
@@ -26,7 +27,7 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   if (!user.canHost) throw apiError('no_host_permission')
 
   const body = await readBody(event)
-  const parsed = parseNewEvent(body, new Date())
+  const parsed = parseNewEvent(body, useClock(event).now())
   if (!parsed.ok) throw apiError(parsed.error)
   const input = parsed.event
   const parsedSettings = parseSettings(asRecord(body).settings)

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
-import { eventDataKey } from '~/utils/event-data'
 import { draftFromEvent, settingsBody, type EventDraft, type StepKey } from '~/utils/event-draft'
 import { countSeats, placeOf } from '~~/shared/board'
 import { canSeeLibrary } from '~~/shared/game'
 import { eventPath } from '~~/shared/links'
-import { settingsEditable, settingsLocked } from '~~/shared/settings'
+import { playersPerTeam, settingsEditable, settingsLocked } from '~~/shared/settings'
 
 // The settings editor (`/e/<slug>/einstellungen`, #147): the setup wizard's steps 2 to 7 (#170) on an Event that exists,
 // prefilled from it. Only the Host gets it; everyone else (and a link that leads nowhere) sees the generic
@@ -30,11 +29,12 @@ const lockedReason = computed(() => (view.value && !notSetUp.value && settingsLo
 const user = useAuthUser()
 // The Players per saved team (#163): one entry per team the Event has now, so the Format step can count the Players a
 // lower team count would send to the Bench.
-const teamPlayers = computed(() => {
-  const seats = countSeats((view.value?.members ?? []).map(member => placeOf(member)))
-  return (view.value?.teams ?? []).map(team => seats[team.position] ?? 0)
-})
-const locks = computed(() => ({ reason: lockedReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value }))
+const teamPlayers = computed(() => playersPerTeam(countSeats((view.value?.members ?? []).map(member => placeOf(member))), view.value?.teams.length ?? 0))
+// „Rad verdecken“ and the Veto allowance are locked while a game is being drawn (#231, LOCKED_WHILE_DRAWN); the server refuses the change too (locked_while_drawn).
+const drawingReason = computed(() => (view.value?.roundBeingDrawn ? t('eventSettings.lockedDrawing') : undefined))
+// The live pool warning of a running Event (#234) replaces the setup hint under the Game pool; before the first Session the hint stays (undefined).
+const poolWarning = computed(() => (view.value?.event.phase === 'running' ? (view.value.setGame?.poolWarning ?? null) : undefined))
+const locks = computed(() => ({ reason: lockedReason.value, drawing: drawingReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value, poolWarning: poolWarning.value }))
 
 const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { main: [], tiebreaker: [] } }))
 
@@ -44,7 +44,7 @@ useHead({ title: () => `${heading.value} · ${data.value?.event.name ?? ''}` })
 async function save(sent: EventDraft) {
   await $fetch(`/api/e/${slug.value}/settings`, { method: 'PATCH', body: settingsBody(sent) })
   // The Event page reads the same key: refresh it now, so it shows the saved settings at once, not after the next poll (#174).
-  await refreshNuxtData(eventDataKey(slug.value))
+  await refreshEvent(slug.value)
   toast({ tone: 'success', text: t('eventSettings.saved') })
   await navigateTo(eventPath(slug.value))
 }

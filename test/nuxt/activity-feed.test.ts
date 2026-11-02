@@ -14,7 +14,7 @@ const sanne = { id: 'u-sanne', name: 'Sanne' }
 let testNumber = 0
 
 function entry(id: string, minutesAgo: number, extra: Partial<ActivityEntry> = {}): ActivityEntry {
-  return { id, at: new Date(Date.now() - minutesAgo * 60_000).toISOString(), actor: sanne, people: {}, type: 'member_joined', params: {}, ...extra } as ActivityEntry
+  return { id, at: new Date(Date.now() - minutesAgo * 60_000).toISOString(), actor: sanne, people: {}, games: {}, type: 'member_joined', params: {}, ...extra } as ActivityEntry
 }
 
 /** A feed endpoint for one test: pages by `before`, newest first, `limit` entries; counts its reads. */

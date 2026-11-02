@@ -4,6 +4,7 @@ import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../
 import { arrangeHome, homeAction, homeSession, needsVote } from '../../domain/home'
 import { pollStanding } from '../../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../../domain/session'
+import { useClock } from '../../utils/clock'
 import { useDb } from '../../utils/db'
 import { sessionNotRemoved } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
@@ -18,7 +19,7 @@ import type { HomeEvent, HomeView } from '../../../shared/event'
 export default defineEventHandler(async (event): Promise<HomeView> => {
   const user = await requireUser(event)
   const db = useDb(event)
-  const now = new Date()
+  const now = useClock(event).now()
 
   const rows = await db
     .select({
