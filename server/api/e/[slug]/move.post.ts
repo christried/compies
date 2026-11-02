@@ -1,6 +1,7 @@
 import { defineEventHandler } from 'h3'
 import { isUuid } from '../../../domain/uuid'
 import { lastToJoin, moveMember, readSeats, teamChoiceOf } from '../../../utils/board'
+import { useClock } from '../../../utils/clock'
 import { apiError } from '../../../utils/errors'
 import { changeEvent } from '../../../utils/event-access'
 import { eventSessions } from '../../../utils/sessions'
@@ -39,6 +40,6 @@ export default defineEventHandler((event): Promise<MovedMember> => changeEvent(e
   }
   if (rejection) throw apiError(rejection)
 
-  await moveMember(tx, publish, eventRow.id, user.id, userId, from, to)
+  await moveMember(tx, publish, useClock(event).now(), eventRow.id, user.id, userId, from, to)
   return { userId, to }
 }))

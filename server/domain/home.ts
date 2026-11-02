@@ -7,10 +7,9 @@ import { isDated, missingDates } from './session'
 
 export const HOME_END_GRACE_MS = 24 * 60 * 60 * 1000
 
-/** What Home needs of a Session: its Date, and when it started and ended (null while it hasn't). */
+/** What Home needs of a Session: its Date, and when it ended (null while it hasn't). */
 export interface HomeSessionTimes {
   startsAt: Date | null
-  startedAt: Date | null
   endedAt: Date | null
 }
 
@@ -57,7 +56,7 @@ export function homeAction(input: { isHost: boolean, needsVote: boolean }): Home
 export interface HomeOrderable {
   phase: Phase
   needsVote: boolean
-  /** Each Session's Date and start and end times (staysOnHome). */
+  /** Each Session's Date and end time (staysOnHome). */
   sessions: HomeSessionTimes[]
   /** The Date of the Session Home shows (homeSession), null while no Session has a Date. */
   homeDate: Date | null

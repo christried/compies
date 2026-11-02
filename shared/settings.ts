@@ -1,5 +1,6 @@
 // Event settings (#138, release 1.3): the values the stepper, the settings rules and the schema share.
 
+import type { Seats } from './board'
 import { beforeFinish, type Phase } from './event'
 import { isRecord } from './record'
 
@@ -269,7 +270,7 @@ export function lockedWhenRunning(keys: readonly (keyof EventSettings)[]): boole
   return keys.some(key => (LOCKED_WHEN_RUNNING as readonly string[]).includes(key))
 }
 
-/** Phase running or later: the first Session has started. */
+/** Phase running or later: the first Session has started. The Phase rule; it equals `hasStarted` (shared/session-state.ts) because the first start sets the Phase in its transaction. */
 export function settingsLocked(phase: Phase): boolean {
   return phase === 'running' || phase === 'finished' || phase === 'archived'
 }
@@ -279,10 +280,27 @@ export function settingsEditable(phase: Phase): boolean {
   return beforeFinish(phase)
 }
 
-/** The lowest values the Event allows now: Team size never below the fullest team, Veto allowance never below the most Vetoes a Party has spent. */
+/**
+ * The lowest values the Event allows now: Team size never below the fullest team, Veto allowance never below the most
+ * Vetoes a Party has spent, Game count never below the Rounds started (#228).
+ */
 export interface SettingsFloors {
   teamSize: number
   vetoAllowance: number
+  gameCount: number
+}
+
+/** What the floors are read from: the Players seated in each team (index 0 = team 1), the Rounds started and the most Vetoes any Party has cast. */
+export interface FloorFacts {
+  playersPerTeam: readonly number[]
+  roundsStarted: number
+  /** The most Vetoes any one Party has cast in the Event, settled or not (#231). */
+  vetoesSpent: number
+}
+
+/** The Players per team, index 0 = team 1, for `teamCount` teams: the server's seats and the editor's members both count here (#195). */
+export function playersPerTeam(seats: Seats, teamCount: number): number[] {
+  return Array.from({ length: teamCount }, (_, index) => seats[index + 1] ?? 0)
 }
 
 /**
@@ -294,7 +312,22 @@ export function teamSizeFloor(playersPerTeam: readonly number[], teamCount: numb
   return Math.max(TEAM_SIZE_MIN, ...playersPerTeam.slice(0, teamCount))
 }
 
-export type SettingsChangeError = SettingsError | 'setting_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'wrong_phase'
+/**
+ * The floors at `teamCount` teams (#195, #228). Without a team count (an Event that is not set up) every team counts,
+ * so no Team size is offered below the fullest one. The Veto allowance floor is the most Vetoes any Party has cast (#231).
+ */
+export function floorsAt({ playersPerTeam: players, roundsStarted, vetoesSpent }: FloorFacts, teamCount: number = players.length): SettingsFloors {
+  return { teamSize: teamSizeFloor(players, teamCount), vetoAllowance: vetoesSpent, gameCount: roundsStarted }
+}
+
+/**
+ * Settings that stay fixed while a Round is being drawn (#231, review 1.4 A3): the wheel spins or a Veto window runs. „Rad
+ * verdecken“ would change what the Players see of a draw that is under way; the Veto allowance decides who may veto in the open
+ * window, and may never fall below a sealed Veto (the floor counts the casts only once their window is over).
+ */
+export const LOCKED_WHILE_DRAWN = ['hiddenWheel', 'vetoAllowance'] as const
+
+export type SettingsChangeError = SettingsError | 'setting_locked' | 'locked_while_drawn' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'game_count_below_started' | 'wrong_phase'
 
 /**
  * The change put over the current settings, ready for parseSettings. Wheel values left over from the Lucky Wheel (from
@@ -315,14 +348,15 @@ export function mergeSettings(current: EventSettings, change: Record<string, unk
 /**
  * Checks a change of an Event's settings. `current` null = not set up: the change must then be a full payload (parseSettings).
  * Otherwise the change is merged over `current` (only keys present in `change`), then: wrong_phase when the Phase is not
- * settingsEditable; in a settingsLocked Phase any LOCKED_WHEN_RUNNING key whose value differs → setting_locked; then
+ * settingsEditable; in a settingsLocked Phase any LOCKED_WHEN_RUNNING key whose value differs → setting_locked; while a Round
+ * is being drawn any LOCKED_WHILE_DRAWN key whose value differs → locked_while_drawn (#231); then
  * parseSettings on the merged settings; then the floors. The floors come as a function of the team count, called with the
  * parsed one: a change that lowers the team count is measured against the teams that remain (#197).
  */
 export function checkSettingsChange(
   current: EventSettings | null,
   change: unknown,
-  context: { phase: Phase, floors: (teamCount: number) => SettingsFloors },
+  context: { phase: Phase, floors: (teamCount: number) => SettingsFloors, roundBeingDrawn: boolean },
 ): { ok: true, settings: EventSettings } | { ok: false, error: SettingsChangeError } {
   if (!settingsEditable(context.phase)) return { ok: false, error: 'wrong_phase' }
   if (!isRecord(change)) return { ok: false, error: 'invalid_settings' }
@@ -331,6 +365,9 @@ export function checkSettingsChange(
   if (current !== null) {
     if (settingsLocked(context.phase) && LOCKED_WHEN_RUNNING.some(key => key in change && !sameValue(change[key], current[key]))) {
       return { ok: false, error: 'setting_locked' }
+    }
+    if (context.roundBeingDrawn && LOCKED_WHILE_DRAWN.some(key => key in change && !sameValue(change[key], current[key]))) {
+      return { ok: false, error: 'locked_while_drawn' }
     }
     merged = mergeSettings(current, change)
   }
@@ -341,6 +378,7 @@ export function checkSettingsChange(
   const floors = context.floors(settings.teamCount)
   if (settings.teamSize < floors.teamSize) return { ok: false, error: 'team_size_below_fullest' }
   if (settings.vetoAllowance !== null && settings.vetoAllowance < floors.vetoAllowance) return { ok: false, error: 'veto_allowance_below_spent' }
+  if (settings.gameCount < floors.gameCount) return { ok: false, error: 'game_count_below_started' }
   return parsed
 }
 

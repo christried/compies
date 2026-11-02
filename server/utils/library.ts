@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { canEditGame, canSeeLibrary, type GameView, type PoolGame, type PoolGameFace } from '../../shared/game'
+import { canEditGame, canSeeLibrary, type GameView, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
 import { shownName, type AuthUser } from '../../shared/auth'
 import { games, users } from '../db/schema'
 import { isUuid } from '../domain/uuid'
@@ -64,6 +64,12 @@ export function poolGameView(row: typeof games.$inferSelect): PoolGame {
     suitabilities: row.suitabilities,
     notes: row.notes,
   }
+}
+
+/** A games row as an Event's Round shows its set game to every Member (#228): the Host's pool view without the notes. */
+export function roundGameView(row: typeof games.$inferSelect): RoundGame {
+  const { notes: _notes, ...game } = poolGameView(row)
+  return game
 }
 
 /** A games row as the library shows it to `viewer`: the pool view plus creator and edit rights. */

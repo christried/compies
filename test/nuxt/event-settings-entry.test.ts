@@ -104,8 +104,9 @@ describe('Einstellungen in the Host controls', () => {
       runningSessionId: `session-${s}-0`,
     }))
     const runningPage = await mountSuspended(EventPage, { route: `/e/${running.slug}` })
-    expect(toolbarLabels(runningPage)).toEqual(['Session beenden 1 s halten', 'Einladen', 'Mehr'])
-    expect(await menuLabels(runningPage)).toEqual(['Einladen', 'Einstellungen'])
+    // Host pick (the default): Nächstes Spiel setzen is the primary (#228), Session beenden the hold beside it.
+    expect(toolbarLabels(runningPage)).toEqual(['Nächstes Spiel setzen', 'Session beenden 1 s halten', 'Einladen', 'Mehr'])
+    expect(await menuLabels(runningPage)).toEqual(['Nächstes Spiel setzen', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen'])
 
     const finished = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'finished' }, settings: defaultSettings() }))
     const finishedPage = await mountSuspended(EventPage, { route: `/e/${finished.slug}` })

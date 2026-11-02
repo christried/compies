@@ -1,6 +1,7 @@
 import { createError, defineEventHandler, getRouterParam, setHeader } from 'h3'
 import de from '../../../../i18n/locales/de.json'
 import { buildIcs, sessionEntries } from '../../../domain/ics'
+import { useClock } from '../../../utils/clock'
 import { useDb } from '../../../utils/db'
 import { eventUrl } from '../../../utils/links'
 import { loadEvent } from '../../../utils/event-access'
@@ -25,7 +26,7 @@ export default defineEventHandler(async (event) => {
   })
   if (entries.length === 0) throw createError({ statusCode: 404, statusMessage: 'No Date set' })
 
-  const file = buildIcs(entries, new Date())
+  const file = buildIcs(entries, useClock(event).now())
 
   setHeader(event, 'content-type', 'text/calendar; charset=utf-8')
   setHeader(event, 'content-disposition', `attachment; filename="${eventRow.slug}.ics"`)

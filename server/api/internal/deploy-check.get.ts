@@ -2,8 +2,9 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { createError, defineEventHandler, getRequestHeader } from 'h3'
 import { deployCheck, type DeployCheck } from '../../domain/game-day'
 import { events, sessions } from '../../db/schema'
-import { isRunning } from '../../../shared/board'
+import { isRunning } from '../../../shared/session-state'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, verifyRoomCall } from '../../../shared/room-auth'
+import { useClock } from '../../utils/clock'
 import { useDb } from '../../utils/db'
 import { sessionNotRemoved } from '../../utils/sessions'
 
@@ -27,6 +28,6 @@ export default defineEventHandler(async (event): Promise<DeployCheck> => {
     .where(and(isNull(events.deletedAt), sessionNotRemoved))
   // A Running Session (#164) is started and not ended; a removed Session and a deleted Event are left out by the query.
   // It counts while it started less than 16 h ago (#200), so a Session nobody ended stops blocking the deploy.
-  const runningSince = rows.flatMap(row => (isRunning(row) && row.startedAt ? [row.startedAt] : []))
-  return deployCheck({ startsAt: rows.map(row => row.startsAt), runningSince, now: new Date() })
+  const runningSince = rows.flatMap(row => (isRunning(row) ? [row.startedAt] : []))
+  return deployCheck({ startsAt: rows.map(row => row.startsAt), runningSince, now: useClock(event).now() })
 })

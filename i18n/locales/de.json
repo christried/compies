@@ -70,9 +70,10 @@
     "checkTeams": "Teams prüfen",
     "fillFromBench": "Von der Bench nachziehen",
     "spin": "Rad drehen",
-    "setGame": "Spiel direkt setzen",
+    "respin": "Neu drehen",
+    "setGame": "Nächstes Spiel setzen",
+    "bonusVeto": "Bonus-Veto geben",
     "skipClip": "Clip überspringen",
-    "vetoRunning": "Veto-Fenster läuft",
     "enterResult": "Ergebnis eintragen",
     "swapGame": "Spiel tauschen",
     "renewLink": "Link erneuern",
@@ -89,6 +90,13 @@
       "teams_empty": "Geht erst, wenn in jedem Team jemand ist.",
       "teams_uneven": "Geht erst, wenn alle Teams gleich groß sind."
     },
+    "setBlocked": {
+      "no_running_session": "Geht erst in einer laufenden Session.",
+      "game_count_reached": "Alle Spiele dieses Events sind schon gestartet.",
+      "round_being_drawn": "Gerade wird ein Spiel gezogen.",
+      "no_wheel": "Geht nur mit dem Glücksrad.",
+      "pool_empty": "Auf dem Rad ist kein Spiel mehr."
+    },
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
       "title": "Los geht’s?",
@@ -100,7 +108,8 @@
     "group": {
       "dates": "Termine",
       "people": "Leute",
-      "event": "Event"
+      "event": "Event",
+      "game": "Spiel"
     }
   },
   "event": {
@@ -177,7 +186,7 @@
   "board": {
     "title": "Spielbrett",
     "bench": "Bench",
-    "benchSub": "Ersatz, unbegrenzt",
+    "benchSub": "Noch ohne Team, unbegrenzt",
     "stands": "Tribüne",
     "standsSub": "Zuschauer, spielen nicht mit",
     "benchEmpty": "Niemand auf der Bench.",
@@ -407,7 +416,7 @@
   },
   "wheel": {
     "title": "Glücksrad",
-    "count": "{n} Spiele auf dem Rad",
+    "count": "{n} Spiel auf dem Rad | {n} Spiele auf dem Rad",
     "empty": "Das Rad ist leer",
     "spinning": "Das Rad dreht …",
     "where": "Wo bleibt es stehen?",
@@ -419,7 +428,7 @@
     "putBack": "{game} zurück aufs Rad",
     "refill": "Rad neu befüllen",
     "drawn": "Vom Rad:",
-    "aria": "Glücksrad mit {n} Spielen",
+    "aria": "Glücksrad mit {n} Spiel | Glücksrad mit {n} Spielen",
     "banner": "Spiel {n} von {total}: {host} dreht das Glücksrad.",
     "tiebreaker": "Tiebreaker",
     "placeholders": [
@@ -447,19 +456,51 @@
     "placeholderQ": "???"
   },
   "veto": {
-    "window": "{seconds} Sekunden für Vetos",
-    "banner": "Das Glücksrad sagt: {game}. {seconds} Sekunden für Vetos.",
-    "hold": "Veto gedrückt halten",
-    "sealed": "Veto abgegeben. Wird nach Ablauf aufgedeckt.",
-    "by": "Veto von {name} ({team})"
+    "hold": "Veto",
+    "title": "Veto-Fenster",
+    "left": "Keine Vetos mehr | Noch 1 Veto | Noch {n} Vetos",
+    "partyLeft": "Euer Team: kein Veto mehr | Euer Team: 1 Veto übrig | Euer Team: {n} Vetos übrig",
+    "soloLeft": "Du hast kein Veto mehr | Du hast noch 1 Veto | Du hast noch {n} Vetos",
+    "timeLeft": "Noch 1 Sekunde | Noch {n} Sekunden",
+    "timeLabel": "Veto-Zeit",
+    "holding": "Halten …",
+    "cast": "Veto eingelegt",
+    "locked": "Veto ist drin",
+    "stamp": "Versiegelt",
+    "byMate": "{name} hat schon gevetot",
+    "hint": "Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.",
+    "hintSealed": "Die anderen sehen es erst beim Aufdecken.",
+    "hintMate": "Ein Veto pro Team und Spiel. Euer Team hat für dieses Spiel schon gevetot.",
+    "revealing": "Aufdecken …",
+    "revealed": "Aufgedeckt",
+    "tileVeto": "Veto",
+    "tileNone": "Kein Veto",
+    "tileBy": "von {name}",
+    "tileSpared": "Vetos gespart",
+    "outcomeVeto": "Veto von {list}. {game} fliegt vom Rad, es wird neu gedreht.",
+    "outcomeVetoSet": "Veto von {list}. {game} fliegt raus, es wird neu gewählt.",
+    "outcomeSet": "Kein Veto. {game} wird gespielt. Viel Glück!",
+    "parties": "Vetos der Parteien"
+  },
+  "bonusVeto": {
+    "title": "Bonus-Veto geben",
+    "help": "Die Partei kann es sofort einsetzen, auch in einem laufenden Veto-Fenster. Ein Bonus-Veto lässt sich nicht zurücknehmen.",
+    "count": "Noch kein Bonus-Veto | 1 Bonus-Veto | {n} Bonus-Vetos",
+    "grant": "Bonus-Veto geben",
+    "done": "Gegeben"
   },
   "coin": {
+    "title": "Münzwurf",
     "throw": "Münze werfen",
     "flying": "Fliegt …",
     "ready": "Bereit",
     "head": "Kopf!",
     "tail": "Schwanz!",
-    "starts": "{team} fängt an"
+    "starts": "{team} fängt an",
+    "side": {
+      "heads": "Kopf",
+      "tails": "Schwanz"
+    }
   },
   "pickBan": {
     "bans": "{team} bannt, {n} von {total}",
@@ -565,11 +606,14 @@
     "date": "Termin steht: {date}",
     "start": "{name} hat die Session gestartet",
     "wheel": "Glücksrad: {game}",
+    "coin": "Münzwurf: {side}",
     "veto": "Veto von {list}",
     "ban": "{team} hat {game} gebannt",
     "win": "{team} gewinnt Spiel {n}",
     "fix": "{name} hat Spiel {n} korrigiert",
-    "hostSet": "{name} hat {game} gesetzt"
+    "hostSet": "{name} hat {game} gesetzt",
+    "gamePutBack": "{name} hat {game} zurückgelegt",
+    "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben"
   },
   "emote": {
     "send": "Emote senden: {name}",
@@ -931,6 +975,7 @@
     "saved": "Gespeichert.",
     "back": "Zurück zum Event",
     "locked": "Gesperrt, seit die erste Session läuft: Schon gespielte Spiele behalten ihre Regeln.",
+    "lockedDrawing": "Gesperrt, solange ein Spiel gezogen wird: Rad verdecken und Vetos lassen sich wieder ändern, sobald das Spiel feststeht.",
     "wrongPhase": "Das Event ist beendet. Die Einstellungen lassen sich nicht mehr ändern."
   },
   "connectionG": {
@@ -1059,7 +1104,7 @@
       },
       "storage": {
         "heading": "5. Spielbilder (Cloudflare R2)",
-        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
+        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, sobald das Spiel dort gezogen oder gesetzt ist, und vorher, wenn der Spielepool oder Tiebreaker-Pool des Events das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
       },
       "signIn": {
         "heading": "6. Anmeldung über Discord oder Twitch und Anzeigename",
@@ -1071,7 +1116,7 @@
       },
       "youtube": {
         "heading": "8. Videos (YouTube)",
-        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen. Er startet nicht von selbst und zeigt nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und in einer Liste erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek. Vorschaubilder sehen außerdem Mitglieder eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen)."
+        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen; dort startet er nicht von selbst. Hast du die Seite eines Events geöffnet, lädt dein Browser den Player außerdem, sobald in einer laufenden Session ein Spiel mit Videoausschnitt gezogen oder gesetzt ist. Dann startet er von selbst, auf allen Geräten an derselben Stelle: auf einem großen Bildschirm wie am Computer mit Ton, wenn du die Sounds eingeschaltet hast und dein Browser es zulässt, sonst stumm; auf einem Handy stumm. Du kannst ihn stumm schalten oder für dich schließen. Der Player zeigt immer nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und als Karte erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek, außerdem alle Mitglieder eines Events, die dessen Seite geöffnet haben, wenn in einer laufenden Session ein Spiel mit Videoausschnitt gezogen oder gesetzt wird. Vorschaubilder sehen Mitglieder eines Events von jedem Spiel, sobald es gezogen oder gesetzt ist, und vorher von den Spielen im Spielepool oder Tiebreaker-Pool, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen und den Ausschnitt eines gezogenen oder gesetzten Spiels allen Mitgliedern zur selben Zeit vorzuspielen)."
       },
       "cookies": {
         "heading": "9. Cookies und Speicher im Browser",
@@ -1127,7 +1172,7 @@
       },
       "changes": {
         "heading": "22. Änderungen und Stand",
-        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 31. Oktober 2026."
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 2. November 2026."
       }
     }
   },
@@ -1363,6 +1408,7 @@
       "label": "Anzahl Spiele",
       "min": "Mindestens 1 Spiel.",
       "max": "Höchstens 30 Spiele.",
+      "floor": "Schon {n} gestartet.",
       "help": "Nach {n} Spiel ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1. | Nach {n} Spielen ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1."
     },
     "points": {
@@ -1435,6 +1481,52 @@
     "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
     "previewOffPick": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt."
   },
+  "countdown": {
+    "title": "Countdown",
+    "paused": "Pausiert",
+    "ended": "Zeit ist um",
+    "start": "Starten",
+    "pause": "Pausieren",
+    "resume": "Fortsetzen",
+    "reset": "Zurücksetzen",
+    "sheetTitle": "Countdown stellen",
+    "minutes": "Minuten",
+    "seconds": "Sekunden",
+    "set": "Stellen",
+    "range": "Zwischen 5 Sekunden und 99:59.",
+    "running": "Der Countdown läuft schon."
+  },
+  "clip": {
+    "label": "Clip: {name}",
+    "live": "Clip läuft für alle",
+    "closeForMe": "Für mich schließen"
+  },
+  "poolWarning": {
+    "title": "Wird knapp.",
+    "needed": "1 Spiel | {n} Spiele",
+    "text": "Im schlimmsten Fall brauchst du noch {needed}, übrig ist {have}. Blockiert nichts, nur damit du’s weißt. | Im schlimmsten Fall brauchst du noch {needed}, übrig sind {have}. Blockiert nichts, nur damit du’s weißt."
+  },
+  "rounds": {
+    "title": "Gerade dran",
+    "list": "Offene Spiele",
+    "playing": "wird gespielt",
+    "putBack": "Zurücklegen"
+  },
+  "nextGame": {
+    "title": "Nächstes Spiel setzen",
+    "pool": "Aus dem Pool",
+    "poolCount": "Aus dem Pool: noch {n}",
+    "poolList": "Spiele, die im Pool noch übrig sind",
+    "poolEmpty": "Im Pool ist nichts mehr übrig. Such unten in der ganzen Bibliothek.",
+    "library": "Oder aus der ganzen Bibliothek",
+    "select": "{name} auswählen",
+    "selected": "{name} ist ausgewählt",
+    "choose": "Such dir ein Spiel aus.",
+    "chosen": "Alle sehen es sofort.",
+    "vetoAllowed": "Veto erlauben",
+    "vetoAllowedHelp": "Die Parteien haben dann 60 Sekunden, das Spiel abzulehnen.",
+    "confirm": "Setzen"
+  },
   "error": {
     "network": "Keine Verbindung. Wir versuchen es gleich nochmal.",
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
@@ -1457,6 +1549,15 @@
     "memberNotFound": "Diese Person ist nicht mehr im Event.",
     "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
+    "gameCountBelowStarted": "So wenige geht nicht: Es sind schon mehr Spiele gestartet.",
+    "roundNotFound": "Dieses Spiel ist nicht mehr dran.",
+    "gameAlreadyDrawn": "Dieses Spiel wurde in diesem Event schon gezogen oder gesetzt.",
+    "noClip": "Gerade läuft kein Clip.",
+    "noCountdown": "Es läuft kein Countdown.",
+    "countdownRunning": "Der Countdown läuft schon.",
+    "countdownNotRunning": "Der Countdown läuft gerade nicht.",
+    "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
+    "coinInAir": "Die Münze fliegt noch.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",
@@ -1479,8 +1580,13 @@
     "teamWordTooLong": "Höchstens 12 Zeichen.",
     "slotTaken": "{name} war schneller.",
     "unevenTeams": "Alle Teams müssen gleich groß sein.",
+    "notAPlayer": "Ein Veto können nur Spieler in einem Team einlegen.",
+    "noVetoWindow": "Dafür läuft gerade kein Veto-Fenster.",
+    "vetoWindowClosed": "Das Veto-Fenster ist zu.",
+    "lockedWhileDrawn": "Das lässt sich nicht ändern, solange ein Spiel gezogen wird.",
     "vetoUsed": "Euer Team hat für dieses Spiel schon ein Veto eingelegt.",
     "noVetosLeft": "Keine Vetos mehr übrig.",
+    "bonusVetoLimit": "Diese Partei hat schon 9 Bonus-Vetos.",
     "uploadType": "Nur JPG, PNG oder WebP.",
     "uploadTooLarge": "Das Bild ist zu groß (max. {max} MB).",
     "youtubeInvalid": "Das sieht nicht nach einem YouTube-Link aus.",

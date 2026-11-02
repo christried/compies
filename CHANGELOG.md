@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-02 – Glücksrad
+
+Das Glücksrad dreht sich jetzt bei allen im selben Moment, mit Clip, versiegelten Vetos und mehreren Spielen gleichzeitig. Dazu wirft der Host eine Münze und stellt einen Countdown.
+
+### Neu
+
+- Der Host setzt in der laufenden Session das nächste Spiel direkt, aus dem Pool oder der ganzen Bibliothek. Mehrere Spiele können gleichzeitig laufen, und ein Spiel lässt sich zurücklegen. ([#228](https://github.com/christried/compies/issues/228))
+- Das Glücksrad dreht sich: Der Host dreht, und alle sehen denselben Dreh mit demselben Ergebnis im selben Moment. Beim verdeckten Rad stehen Platzhalter auf dem Rad, bis es stoppt. ([#229](https://github.com/christried/compies/issues/229))
+- Der Host kann in der laufenden Session einen Countdown stellen, der bei allen gleichzeitig abläuft, auch für alle, die später dazukommen. ([#236](https://github.com/christried/compies/issues/236))
+- Der Host wirft in der laufenden Session eine Münze, die bei allen im selben Moment auf Kopf oder Schwanz landet. ([#235](https://github.com/christried/compies/issues/235))
+- Der Clip des Spiels läuft bei allen im selben Moment, ab dem Stopp des Rads oder sobald der Host das Spiel setzt, und wer später kommt, landet an der richtigen Stelle. Der Host kann ihn für alle überspringen. ([#230](https://github.com/christried/compies/issues/230))
+- Nach dem Stopp hat jede Partei mit Veto 60 Sekunden, das Spiel abzulehnen. Das Veto bleibt versiegelt, bis alle es im selben Moment sehen; ein abgelehntes Spiel fliegt raus, und das Rad dreht neu. ([#231](https://github.com/christried/compies/issues/231))
+- Beim Setzen eines Spiels im Glücksrad lässt sich ein Veto erlauben: Dann haben die Parteien wie nach einem Dreh 60 Sekunden, es abzulehnen. ([#232](https://github.com/christried/compies/issues/232))
+- Der Host kann einer Partei ein Bonus-Veto geben, bis zu 9 pro Partei. Sie kann es sofort einsetzen, auch in einem laufenden Veto-Fenster. ([#233](https://github.com/christried/compies/issues/233))
+- Wird der Pool während des Events knapp, sieht der Host einen Hinweis auf der Bühne und in den Einstellungen; die anderen merken davon nichts. ([#234](https://github.com/christried/compies/issues/234))
+
+### Geändert
+
+- Als Host kannst du „Rad verdecken“ und die Vetos pro Partei nicht mehr ändern, solange ein Spiel gezogen wird. ([#231](https://github.com/christried/compies/issues/231))
+- Als Host kannst du die Anzahl der Spiele nicht mehr unter die Spiele senken, die schon gestartet sind. ([#228](https://github.com/christried/compies/issues/228))
+- Unter der Bench steht jetzt „Noch ohne Team, unbegrenzt“ statt „Ersatz, unbegrenzt“. ([#238](https://github.com/christried/compies/issues/238))
+- Mit reduzierter Bewegung blendet sich ein verschobenes Mitglied am neuen Platz ein, statt dorthin zu gleiten. ([#237](https://github.com/christried/compies/issues/237))
+
+### Behoben
+
+- Schlägt schon die erste Verbindung fehl, zeigt die Event-Seite jetzt den Hinweis zur Verbindung. ([#238](https://github.com/christried/compies/issues/238))
+
 ## [0.6.0] - 2026-11-01 – Notizen
 
 Spiele bekommen Notizen für Einstellungen und Hausregeln, und als Host entscheidest du, ob die anderen den Spielepool schon vorher sehen.

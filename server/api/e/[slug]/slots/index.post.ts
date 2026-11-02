@@ -1,6 +1,7 @@
 import { defineEventHandler } from 'h3'
 import { pollSlots } from '../../../../db/schema'
 import { parseEditedSlot } from '../../../../domain/event'
+import { useClock } from '../../../../utils/clock'
 import { apiError } from '../../../../utils/errors'
 import { changeSlots } from '../../../../utils/host-event'
 import { eventSlots } from '../../../../utils/slots'
@@ -13,7 +14,7 @@ import { asRecord } from '../../../../../shared/record'
 export default defineEventHandler((event): Promise<SlotAdded> => changeSlots(event, async ({ tx, eventRow, body }) => {
   const existing = await eventSlots(tx, eventRow.id)
 
-  const parsed = parseEditedSlot(asRecord(body).startsAt, existing, new Date())
+  const parsed = parseEditedSlot(asRecord(body).startsAt, existing, useClock(event).now())
   if (!parsed.ok) throw apiError(parsed.error)
 
   const [slot] = await tx

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import deployCheck from '../../server/api/internal/deploy-check.get'
 import { events, sessions, users } from '../../server/db/schema'
+import { testClock } from '../../server/utils/clock'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall } from '../../shared/room-auth'
 import { createTestDb, createTestServer } from './harness'
 
@@ -127,6 +128,21 @@ describe('GET /api/internal/deploy-check', () => {
     await testDb.db.insert(sessions).values({ eventId: ended!.id, startsAt: hoursFromNow(-36), startedAt: hoursFromNow(-35), endedAt: hoursFromNow(-30) })
 
     expect(await (await ask()).json()).toEqual({ ok: true, reason: null })
+  })
+
+  // The server's clock comes from the request context (#226): the same Session is a game day until the clock passes its day.
+  it('answers by the server clock: busy on the Session\'s day, free once the clock is past it', async () => {
+    const clock = testClock('2026-11-07T10:00:00Z')
+    const clocked = createTestServer(testDb.db, { 'GET /api/internal/deploy-check': deployCheck }, { clock })
+    const call = await signRoomCall('', 'internal-secret', Date.now())
+    const headers = { [ROOM_CALL_TIMESTAMP_HEADER]: call.timestamp, [ROOM_CALL_SIGNATURE_HEADER]: call.signature }
+    await eventWith([new Date('2026-11-07T18:00:00Z')])
+
+    expect(await (await clocked('/api/internal/deploy-check', { headers })).json()).toEqual({ ok: false, reason: expect.stringContaining('game day') })
+
+    clock.set('2026-11-08T12:00:00Z')
+
+    expect(await (await clocked('/api/internal/deploy-check', { headers })).json()).toEqual({ ok: true, reason: null })
   })
 
   it('accepts a call signed with the previous key while a key rotates', async () => {

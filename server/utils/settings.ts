@@ -1,14 +1,15 @@
 import { and, eq } from 'drizzle-orm'
 import { eventPoolGames, events } from '../db/schema'
 import { parsePoolChange } from '../domain/pools'
-import { POOLS, checkSettingsChange, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
+import { POOLS, checkSettingsChange, floorsAt, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Place } from '../../shared/board'
 import { moveMember, readSeats } from './board'
 import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange, EventRow } from './event-access'
 import { assertGamesExist } from './pools'
-import { settingsFloors } from './settings-floors'
+import { roundBeingDrawn, settleDue } from './rounds'
+import { floorFacts } from './settings-floors'
 import { asRecord } from '../../shared/record'
 
 const BENCH: Place = { zone: 'bench' }
@@ -25,7 +26,7 @@ export async function applySettingsChange(
   tx: Db,
   eventRow: EventRow,
   body: unknown,
-  { publish, hostId }: { publish: EventChange['publish'], hostId: string },
+  { publish, hostId, now }: { publish: EventChange['publish'], hostId: string, now: Date },
 ): Promise<{ before: EventSettings | null, after: EventSettings }> {
   const { settings: change, pools: rawPools } = asRecord(body)
   const parsedPools = parsePoolChange(rawPools)
@@ -34,10 +35,15 @@ export async function applySettingsChange(
 
   // checkSettingsChange checks the Phase too, but a request with pools only never reaches it.
   if (!settingsEditable(eventRow.phase)) throw apiError('wrong_phase')
+  // A body with neither key would change nothing; a top-level `{ poolPreview }` is the likely slip, so refuse it (retro 0.6).
+  if (change === undefined && rawPools === undefined) throw apiError('invalid_settings')
   const before = settingsFromRow(eventRow)
   let after: EventSettings
   if (change !== undefined) {
-    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: await settingsFloors(tx, eventRow.id) })
+    // A draw whose last instant has passed is settled first, so the lock on „Rad verdecken“ is free again at its end (#231).
+    await settleDue(tx, eventRow, now)
+    const facts = await floorFacts(tx, eventRow.id)
+    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: teamCount => floorsAt(facts, teamCount), roundBeingDrawn: await roundBeingDrawn(tx, eventRow.id) })
     if (!checked.ok) throw apiError(checked.error)
     after = checked.settings
   }
@@ -55,7 +61,7 @@ export async function applySettingsChange(
     await tx.delete(eventPoolGames).where(and(eq(eventPoolGames.eventId, eventRow.id), eq(eventPoolGames.pool, pool)))
     if (ids.length > 0) await tx.insert(eventPoolGames).values(ids.map(gameId => ({ eventId: eventRow.id, gameId, pool })))
   }
-  if (before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, eventRow.id, after.teamCount, hostId)
+  if (before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, now, eventRow.id, after.teamCount, hostId)
   return { before, after }
 }
 
@@ -63,9 +69,9 @@ export async function applySettingsChange(
  * Every Player seated in a team the lowered team count removes goes to the Bench (#163). Each one is a move made by the
  * Host, written the way the move endpoint writes it (moveMember).
  */
-async function benchRemovedTeams(tx: Db, publish: EventChange['publish'], eventId: string, teamCount: number, hostId: string): Promise<void> {
+async function benchRemovedTeams(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, teamCount: number, hostId: string): Promise<void> {
   const removed = (await readSeats(tx, eventId)).filter(seat => seat.place.zone === 'team' && seat.place.team > teamCount)
   for (const { userId, place } of removed) {
-    await moveMember(tx, publish, eventId, hostId, userId, place, BENCH)
+    await moveMember(tx, publish, now, eventId, hostId, userId, place, BENCH)
   }
 }

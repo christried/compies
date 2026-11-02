@@ -4,6 +4,7 @@ import { events } from '../db/schema'
 import { eventAccessRejection } from '../domain/access'
 import type { AuthUser } from '../../shared/auth'
 import { envelope, type RoomMessage } from '../../shared/realtime'
+import { useClock } from './clock'
 import { apiError, eventDeleted, eventNotFound } from './errors'
 import { isMember } from './invite'
 import { useDb, type Db } from './db'
@@ -15,6 +16,12 @@ export type EventRow = typeof events.$inferSelect
 export interface ChangeEventOptions extends LoadEventOptions {
   /** Runs once the User is known and before the body is read, e.g. a rate limit. It throws to refuse. */
   beforeBody?: (user: AuthUser) => void
+  /**
+   * Whether the commit broadcasts `event.changed` to the whole room (default true). A change that must not tell every Party
+   * that it happened sets `false` (a sealed Veto, #231): then only the messages the change queued itself go out, the named
+   * sends included.
+   */
+  broadcast?: boolean
 }
 
 /** What a change of an Event gets. `body` is `unknown` until the handler's parser has checked it. */
@@ -25,6 +32,14 @@ export interface EventChange {
   body: unknown
   /** Queues messages for after the commit. A change that throws drops them with its transaction. */
   publish: (...messages: RoomMessage[]) => void
+  /** Queues messages for after the commit that only these Users' sockets get (#227, the sealed Vetoes of 0.7). A change that throws drops them too. */
+  publishTo: (userIds: readonly string[], ...messages: RoomMessage[]) => void
+}
+
+/** Messages of a change that go to the sockets of named Users only (#227). */
+interface NamedMessages {
+  to: readonly string[]
+  messages: RoomMessage[]
 }
 
 /**
@@ -36,7 +51,7 @@ export interface EventChange {
  */
 export async function changeEvent<T>(
   event: H3Event,
-  { beforeBody, ...load }: ChangeEventOptions,
+  { beforeBody, broadcast, ...load }: ChangeEventOptions,
   change: (ctx: EventChange) => Promise<T>,
 ): Promise<T> {
   const user = await requireUser(event)
@@ -44,26 +59,30 @@ export async function changeEvent<T>(
   const body: unknown = await readBody(event)
   const slug = getRouterParam(event, 'slug') ?? ''
   const messages: RoomMessage[] = []
+  const named: NamedMessages[] = []
   const { result, eventRow } = await useDb(event).transaction(async (tx) => {
     const eventRow = await loadEvent(tx, slug, user.id, load)
     const publish = (...queued: RoomMessage[]) => void messages.push(...queued)
-    const result = await change({ tx, eventRow, user, body, publish })
+    const publishTo = (to: readonly string[], ...queued: RoomMessage[]) => void named.push({ to, messages: queued })
+    const result = await change({ tx, eventRow, user, body, publish, publishTo })
     return { result, eventRow }
   })
-  afterCommit(event, eventRow, messages)
+  afterCommit(event, eventRow, messages, named, broadcast)
   return result
 }
 
 /**
  * The single step that runs after a change to an Event has committed (#183): it tells the Event's room (#156). Every
  * committed change publishes `event.changed` (the client refetches the Event read) plus the messages the change
- * queued, so no endpoint can forget to. The publish runs after the response (#202): the notifier never throws and a
+ * queued, so no endpoint can forget to (unless it opts out with `broadcast: false`, #231). The publish runs after the response (#202): the notifier never throws and a
  * missed message is made up by the client's refetch, so this never fails the request.
  */
-export function afterCommit(event: H3Event, eventRow: EventRow, messages: RoomMessage[]): void {
-  const now = Date.now()
-  const all: RoomMessage[] = messages.some(message => message.type === 'event.changed') ? messages : [{ type: 'event.changed' }, ...messages]
+export function afterCommit(event: H3Event, eventRow: EventRow, messages: RoomMessage[], named: NamedMessages[] = [], broadcast = true): void {
+  const now = useClock(event).now().getTime()
+  const all: RoomMessage[] = !broadcast || messages.some(message => message.type === 'event.changed') ? messages : [{ type: 'event.changed' }, ...messages]
   publishAfterResponse(event, eventRow.id, all.map(message => envelope(message, now)))
+  // A named send never adds `event.changed`: it reaches some Users only, and the broadcast above already says the Event changed (#227).
+  for (const group of named) publishAfterResponse(event, eventRow.id, group.messages.map(message => envelope(message, now)), group.to)
 }
 
 export interface LoadEventOptions {

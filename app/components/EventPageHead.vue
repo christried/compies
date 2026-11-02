@@ -6,7 +6,8 @@ import { jumpTo, pollHeadingId } from '~/utils/jump'
 
 // The Head of the Event page (#166, 11-event-seite § EventPageHead): the kicker says where the Event stands, the one
 // `<h1>` says what is on now, and while another Session still polls a link jumps to that poll. The copy follows the
-// page state (eventPageState); the Event's name is in the header, not here.
+// page state (eventPageState), a union by `kind`: each kind reads what it guarantees, with no assertion (review 1.4 N10). The
+// Event's name is in the header, not here.
 const props = defineProps<{
   state: EventPageState
   isHost: boolean
@@ -15,26 +16,28 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const copy = computed(() => {
-  const { kind, total, next, running, lastEnded, pollNumber } = props.state
+  const state = props.state
+  const { total, next, lastEnded, pollNumber } = state
   const single = total === 1
-  switch (kind) {
+  switch (state.kind) {
     case 'poll':
       return {
         kicker: single ? t('event.head.poll.kickerSingle') : t('event.head.poll.kicker', { n: pollNumber, total }),
         title: t('event.head.poll.title'),
       }
     case 'teams': {
-      const date = formatSessionWhen(new Date(next!.startsAt))
+      const date = formatSessionWhen(new Date(state.next.startsAt))
       return {
-        kicker: single ? t('event.head.teams.kickerSingle', { date }) : t('event.head.teams.kicker', { n: next!.number, date }),
+        kicker: single ? t('event.head.teams.kickerSingle', { date }) : t('event.head.teams.kicker', { n: state.next.number, date }),
         title: t('event.head.teams.title'),
       }
     }
     case 'running': {
-      const time = formatSlotTime(new Date(running!.startedAt))
+      const { running } = state
+      const time = formatSlotTime(new Date(running.startedAt))
       return {
-        kicker: single ? t('event.head.running.kickerSingle', { time }) : t('event.head.running.kicker', { n: running!.number, total, time }),
-        title: single ? t('event.head.running.titleSingle') : t('event.head.running.title', { n: running!.number }),
+        kicker: single ? t('event.head.running.kickerSingle', { time }) : t('event.head.running.kicker', { n: running.number, total, time }),
+        title: single ? t('event.head.running.titleSingle') : t('event.head.running.title', { n: running.number }),
       }
     }
     case 'between': {

@@ -18,7 +18,7 @@ const SUN = '2090-06-26T18:30:00.000Z'
 const STARTED = '2090-06-25T18:34:00.000Z'
 
 function mountHead(sessions: PageInput['sessions'], fields: Partial<PageInput> = {}, isHost = false) {
-  const state = eventPageState({ settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, runningSessionId: null, ...fields })
+  const state = eventPageState({ settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, ...fields })
   return mountSuspended(EventPageHead, { props: { state, isHost }, attachTo: document.body })
 }
 
@@ -73,14 +73,14 @@ describe('EventPageHead', () => {
   })
 
   it('says since when the Session runs', async () => {
-    const head = await mountHead([dated('a', 1, SAT, { startedAt: STARTED }), dated('b', 2, SUN)], { runningSessionId: 'a' })
+    const head = await mountHead([dated('a', 1, SAT, { startedAt: STARTED }), dated('b', 2, SUN)])
 
     expect(head.text()).toContain('Session 1 von 2 läuft seit 20:34')
     expect(head.get('h1').text()).toBe('Session 1 läuft')
   })
 
   it('says the only Session runs, without a number', async () => {
-    const head = await mountHead([dated('a', null, SAT, { startedAt: STARTED })], { runningSessionId: 'a' })
+    const head = await mountHead([dated('a', null, SAT, { startedAt: STARTED })])
 
     expect(head.text()).toContain('Läuft seit 20:34')
     expect(head.get('h1').text()).toBe('Die Session läuft')

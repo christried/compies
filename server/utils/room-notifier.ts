@@ -9,7 +9,8 @@ import { keepRunningAfterResponse } from './after-response'
  * by the client's refetch on reconnect and its fallback polling.
  */
 export interface RoomNotifier {
-  publish(eventId: string, messages: Envelope[]): Promise<void>
+  /** Without `to`, the messages go to every socket of the Event; with `to` (#227), to the sockets of those Users only. */
+  publish(eventId: string, messages: Envelope[], to?: readonly string[]): Promise<void>
 }
 
 declare module 'h3' {
@@ -21,18 +22,27 @@ declare module 'h3' {
 /** How long a publish waits for the Worker before it gives up on the message (#202: after the response). */
 export const ROOM_PUBLISH_TIMEOUT_MS = 2000
 
+/** One call of the notifier: the messages, and the named Users they went to (null: every socket of the Event). */
+export interface RoomSend {
+  to: string[] | null
+  messages: Envelope[]
+}
+
 /**
- * Records the messages per Event, for tests (like the in-memory image store).
+ * Records the messages per Event, for tests (like the in-memory image store). `messages` returns every message of an
+ * Event, broadcast and named alike; `sends` keeps each call with its named Users (#227).
  * @public Only tests call it, so knip would report it; the test doubles live next to the interface they stand in for.
  */
-export function memoryRoomNotifier(): RoomNotifier & { messages(eventId: string): Envelope[], clear(): void } {
-  const published = new Map<string, Envelope[]>()
+export function memoryRoomNotifier(): RoomNotifier & { messages(eventId: string): Envelope[], sends(eventId: string): RoomSend[], clear(): void } {
+  const sent = new Map<string, RoomSend[]>()
   return {
-    async publish(eventId, messages) {
-      published.set(eventId, [...(published.get(eventId) ?? []), ...messages])
+    async publish(eventId, messages, to) {
+      if (messages.length === 0 || to?.length === 0) return
+      sent.set(eventId, [...(sent.get(eventId) ?? []), { to: to ? [...to] : null, messages }])
     },
-    messages: eventId => published.get(eventId) ?? [],
-    clear: () => published.clear(),
+    messages: eventId => (sent.get(eventId) ?? []).flatMap(send => send.messages),
+    sends: eventId => sent.get(eventId) ?? [],
+    clear: () => sent.clear(),
   }
 }
 
@@ -49,10 +59,10 @@ export interface HttpRoomNotifierOptions {
 /** Signs the messages and posts them to the Event's room on the Worker. */
 export function httpRoomNotifier({ url, secret, timeoutMs = ROOM_PUBLISH_TIMEOUT_MS, fetch: send = fetch, now = Date.now }: HttpRoomNotifierOptions): RoomNotifier {
   return {
-    async publish(eventId, messages) {
-      if (messages.length === 0) return
+    async publish(eventId, messages, to) {
+      if (messages.length === 0 || to?.length === 0) return
       try {
-        const body = JSON.stringify({ messages } satisfies RoomPublishBody)
+        const body = JSON.stringify((to ? { to: [...to], direct: messages } : { messages }) satisfies RoomPublishBody)
         const call = await signRoomCall(body, secret, now())
         const response = await send(new URL(roomPath(eventId), url), {
           method: 'POST',
@@ -83,9 +93,10 @@ export function realtimeUrl(): string | null {
  * Vercel, `waitUntil` keeps the function alive until the publish is done (Nitro's Vercel preset doesn't hand
  * `event.waitUntil` to the platform); elsewhere the promise simply runs. A publish never fails the request.
  */
-export function publishAfterResponse(event: H3Event, eventId: string, messages: Envelope[]): void {
-  const sent = useRoomNotifier(event).publish(eventId, messages).catch((error: unknown) => {
-    console.error(`Room publish for Event ${eventId} failed`, error)
+export function publishAfterResponse(event: H3Event, eventId: string, messages: Envelope[], to?: readonly string[]): void {
+  // The notifier logs its own failures and never throws; this guard only logs what it did not expect (#195 leftover, #238).
+  const sent = useRoomNotifier(event).publish(eventId, messages, to).catch((error: unknown) => {
+    console.error(`Room notifier threw for Event ${eventId}`, error)
   })
   keepRunningAfterResponse(sent)
 }

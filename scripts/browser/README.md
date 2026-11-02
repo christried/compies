@@ -8,8 +8,11 @@ Needs `pnpm dev` and, for anything live, `pnpm dev:realtime` (README § Realtime
 |---|---|
 | `node scripts/browser/shots.mjs <path> [selector]` | Screenshots of a page (or one element) as Host and Member, at 1440 and 390 px. The path goes without its leading slash (`e/my-event`): Git Bash turns `/e/…` into a Windows path |
 | `node scripts/browser/moves.mjs <slug>` | Host at 1440 px, Member at 390 px on one Event with Team choice open: moves by API and by dragging the avatar picture (mouse and long press), every animation both sides draw (curve, duration, who), the seats after it, native drags, page errors |
+| `node scripts/browser/pool-preview.mjs` | Host at 1440 px, Member at 390 px on an Event the script creates (Host pick, Pool preview on, one game with notes): what a Member sees of a pool game (picture and name; no notes, no player count), and the Pool preview switched off and on while the Member's page stays open. One PASS or FAIL line per check, exit code 1 on any FAIL |
 
-A new check imports `cdp.mjs`: `launch(account)`, `open(tab, path, width, height, waitFor, { news })`, `api(tab, method, path, body)`, `drag(tab, from, to, { touch })`, `animations(tab)`, `shot(tab, name, selector)`. Ports per account in `PORTS`.
+A new check imports two modules. `chrome.mjs` is the DevTools protocol and knows nothing about COMPIES: `launch(account)` (ports per account in `PORTS`), `tab.send` / `tab.evaluate`, `resize`, `shot(tab, name, selector)`, `sleep`. `kit.mjs` is what a COMPIES check needs on top: `open(tab, path, width, height, waitFor, { news })` (the dev sign-in), `api(tab, method, path, body)`, `drag(tab, from, to, { touch })`, `animations(tab)`, and the scenario helpers `createGame`, `createEvent`, `joinEvent`, `patchSettings` (throws when the answer lacks the change), `clickText`, `typeInto`, `switches`, `stepperNext`.
+
+The game edit route is `/bibliothek/<id>/bearbeiten`; `?s=edit` is an artboard state, not a route.
 
 Limits:
 - Headless Chrome never starts the browser's own image drag, so a native drag problem shows only on a real device. `nativeDrags` catches the ones it does start.

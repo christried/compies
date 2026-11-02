@@ -9,6 +9,14 @@ describe('apiFailure', () => {
     expect(apiFailure(refusal(403, 'not_host'))).toEqual({ status: 403, code: 'not_host' })
     expect(apiFailure(new Error('offline'))).toEqual({ status: undefined, code: undefined })
   })
+
+  it('hands on the payload the server sent with the refusal (#237)', () => {
+    const lostRace = { statusCode: 409, data: { statusMessage: 'team_full', data: { winnerId: 'u-1' } } }
+
+    expect(apiFailure(lostRace).data?.winnerId).toBe('u-1')
+    expect(apiFailure(refusal(403, 'not_host')).data).toBeUndefined()
+    expect(apiFailure({ statusCode: 500, data: { statusMessage: 'x', data: 'text' } }).data).toBeUndefined()
+  })
 })
 
 describe('apiErrorKey', () => {
@@ -26,6 +34,17 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(400, 'points_flat'))).toBe('error.pointsFlat')
     expect(apiErrorKey(refusal(400, 'team_count_range'))).toBe('error.teamCountRange')
     expect(apiErrorKey(refusal(400, 'invalid_settings'))).toBe('error.saveFailed')
+  })
+
+  it('explains the Countdown refusals (#236)', () => {
+    expect(apiErrorKey(refusal(409, 'no_countdown'))).toBe('error.noCountdown')
+    expect(apiErrorKey(refusal(409, 'countdown_running'))).toBe('error.countdownRunning')
+    expect(apiErrorKey(refusal(409, 'countdown_not_running'))).toBe('error.countdownNotRunning')
+    expect(apiErrorKey(refusal(409, 'countdown_ended'))).toBe('error.countdownEnded')
+  })
+
+  it('explains the skip of a clip that is not running (#230)', () => {
+    expect(apiErrorKey(refusal(409, 'no_clip'))).toBe('error.noClip')
   })
 
   it('explains the refusals of the Game library (#141)', () => {

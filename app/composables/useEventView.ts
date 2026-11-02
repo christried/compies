@@ -31,3 +31,8 @@ export function useEventView(slug: MaybeRefOrGetter<string>) {
   const view = { data, error, refresh, room }
   return Object.assign(fetched.then(() => view), view)
 }
+
+/** Refetches an Event's read under the shared key (`eventDataKey`), for a component that changed something on the page and has no `refresh` of its own (#237, review 1.4 N11). */
+export function refreshEvent(slug: string) {
+  return refreshNuxtData(eventDataKey(slug))
+}

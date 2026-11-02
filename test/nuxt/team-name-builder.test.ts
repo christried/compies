@@ -67,7 +67,7 @@ async function mountBoard(options: Options) {
       teams: options.teams ?? teamsNamed(null),
       settings,
       teamChoiceOpen: !options.started,
-      started: options.started ?? false,
+      pageKind: options.started ? 'running' : 'teams',
       viewerId: options.viewerId ?? kitty.id,
       isHost: options.isHost ?? false,
       room: noRoom,
