@@ -124,6 +124,26 @@ describe('who gets the bar and when', () => {
     expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(false)
   })
 
+  it('lets the button column take the locked pill\'s width at the desktop width, label and stamp side by side (#218)', async () => {
+    serverMs = STOP + 1000
+    await mount(wheelOf({ own: own({ castBy: 'me', rejection: 'veto_already_cast' }) }))
+
+    // The column is the bar's last child. A fixed desktop width cut the pill's label to „Vet…“ under the stamp.
+    const column = bar().element.lastElementChild as HTMLElement
+    expect(column.className).not.toMatch(/(^|\s)md:w-\[260px\]/)
+    expect(column.querySelector('[data-testid="veto-locked"]')?.textContent).toContain('Veto ist drin')
+    expect(column.querySelector('[data-testid="veto-seal"]')?.textContent).toBe('Versiegelt')
+  })
+
+  it('keeps the hold button at its 260 px minimum at the desktop width in the ready state (#218)', async () => {
+    await mount(wheelOf())
+
+    const column = bar().element.lastElementChild as HTMLElement
+    expect(column.querySelector('[data-testid="veto-hold"]')).not.toBeNull()
+    expect(column.className).toContain('md:min-w-[260px]')
+    expect(column.className).not.toMatch(/(^|\s)md:w-\[260px\]/)
+  })
+
   it('names the teammate who cast for the Party, with no stamp', async () => {
     serverMs = STOP + 1000
     await mount(wheelOf({ own: own({ castBy: 'mate', rejection: 'veto_already_cast' }) }))
