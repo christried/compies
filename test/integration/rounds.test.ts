@@ -215,7 +215,7 @@ describe('Rounds', () => {
     it('says in the Event read, for the Host only, whether a game can be set now', async () => {
       const game = await running()
 
-      expect((await read(game)).setGame).toEqual({ rejection: null, spinRejection: 'no_wheel', left: expect.any(Array) })
+      expect((await read(game)).setGame).toEqual({ rejection: null, spinRejection: 'no_wheel', respin: false, left: expect.any(Array) })
       expect((await read(game, game.cookies.one)).setGame).toBeNull()
     })
 
@@ -305,6 +305,16 @@ describe('Rounds', () => {
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'round_being_drawn' })
       expect((await read(game)).setGame?.rejection).toBe('round_being_drawn')
       expect(await errorOf(await putBackRound(game, drawn!.id))).toEqual({ status: 409, code: 'round_being_drawn' })
+    })
+
+    it('refuses a Veto allowed under Host pick with 409 no_wheel (#232): Host pick has no Vetoes, the same set without it works', async () => {
+      const game = await running()
+      const withVeto = (vetoAllowed: boolean) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, { gameId: game.halo.id, vetoAllowed })
+
+      expect(await errorOf(await withVeto(true))).toEqual({ status: 409, code: 'no_wheel' })
+      expect(await roundRows(game)).toEqual([])
+      expect(await drawRows()).toEqual([])
+      expect((await withVeto(false)).status).toBe(200)
     })
 
     it('writes and tells nothing when it refuses', async () => {
