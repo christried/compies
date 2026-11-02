@@ -34,9 +34,10 @@ export type ActivityType = (typeof ACTIVITY_TYPES)[number]
  * The entry types whose entry waits for its instant (#229, spec #218 § Deadlines): written with `at` set to the instant they
  * may be read from, not published, and left out of the feed until then (the clients refetch it when the instant passes). The
  * others have an `at` the database stamps, which a test clock must not hide. `vetoes_revealed` (#231) waits for the end of its
- * Veto window. #235 adds `coin_tossed`.
+ * Veto window, `coin_tossed` (#235) for the coin's landing. recordActivity takes `at` for exactly these types (review 0.7, F16).
  */
-export const INSTANT_ACTIVITY_TYPES: readonly ActivityType[] = ['game_drawn', 'vetoes_revealed', 'coin_tossed']
+export const INSTANT_ACTIVITY_TYPES = ['game_drawn', 'vetoes_revealed', 'coin_tossed'] as const satisfies readonly ActivityType[]
+export type InstantActivityType = (typeof INSTANT_ACTIVITY_TYPES)[number]
 
 /** An instant in the params: an ISO string, built from a `Date` by `isoInstant` (the stored rows already hold these). */
 export type IsoInstant = `${number}-${number}-${number}T${string}`

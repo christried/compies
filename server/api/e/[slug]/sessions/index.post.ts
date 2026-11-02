@@ -35,6 +35,6 @@ export default defineEventHandler((event): Promise<SessionAdded> => changeSessio
     .insert(sessions)
     .values({ eventId: eventRow.id, startsAt, slotId: takenSlot ? null : slotId })
     .returning({ id: sessions.id })
-  await recordActivity(tx, publish, eventRow.id, { type: 'session_added', actorId: user.id, params: { sessionId: row!.id, startsAt: startsAt ? isoInstant(startsAt) : null } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'session_added', actorId: user.id, params: { sessionId: row!.id, startsAt: startsAt ? isoInstant(startsAt) : null }, now: useClock(event).now() })
   return { id: row!.id }
 }))

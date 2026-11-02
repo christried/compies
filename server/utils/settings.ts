@@ -61,7 +61,7 @@ export async function applySettingsChange(
     await tx.delete(eventPoolGames).where(and(eq(eventPoolGames.eventId, eventRow.id), eq(eventPoolGames.pool, pool)))
     if (ids.length > 0) await tx.insert(eventPoolGames).values(ids.map(gameId => ({ eventId: eventRow.id, gameId, pool })))
   }
-  if (before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, eventRow.id, after.teamCount, hostId)
+  if (before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, now, eventRow.id, after.teamCount, hostId)
   return { before, after }
 }
 
@@ -69,9 +69,9 @@ export async function applySettingsChange(
  * Every Player seated in a team the lowered team count removes goes to the Bench (#163). Each one is a move made by the
  * Host, written the way the move endpoint writes it (moveMember).
  */
-async function benchRemovedTeams(tx: Db, publish: EventChange['publish'], eventId: string, teamCount: number, hostId: string): Promise<void> {
+async function benchRemovedTeams(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, teamCount: number, hostId: string): Promise<void> {
   const removed = (await readSeats(tx, eventId)).filter(seat => seat.place.zone === 'team' && seat.place.team > teamCount)
   for (const { userId, place } of removed) {
-    await moveMember(tx, publish, eventId, hostId, userId, place, BENCH)
+    await moveMember(tx, publish, now, eventId, hostId, userId, place, BENCH)
   }
 }

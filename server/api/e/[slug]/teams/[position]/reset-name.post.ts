@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { eventMembers, eventTeams } from '../../../../../db/schema'
 import { recordActivity } from '../../../../../utils/activity'
+import { useClock } from '../../../../../utils/clock'
 import { apiError } from '../../../../../utils/errors'
 import { changeEvent } from '../../../../../utils/event-access'
 import { eventHasStarted } from '../../../../../utils/sessions'
@@ -30,7 +31,7 @@ export default defineEventHandler((event): Promise<TeamNameReset> => changeEvent
       .set({ teamWord: null })
       .where(and(eq(eventMembers.eventId, eventRow.id), eq(eventMembers.team, position)))
   }
-  await recordActivity(tx, publish, eventRow.id, { type: 'team_name_reset', actorId: user.id, params: { team: position } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'team_name_reset', actorId: user.id, params: { team: position }, now: useClock(event).now() })
   publish({ type: 'team.nameReset', team: position })
   return { team: position }
 }))

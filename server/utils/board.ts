@@ -45,9 +45,9 @@ export async function seatMember(tx: Db, eventId: string, userId: string, to: Pl
  * commit. The move endpoint and the lowering of the team count (the removed teams' Players go to the Bench, in the Host's
  * name) both end here, so a move reads the same wherever it came from. The rules that allow it are the caller's.
  */
-export async function moveMember(tx: Db, publish: EventChange['publish'], eventId: string, actorId: string, userId: string, from: Place, to: Place): Promise<void> {
+export async function moveMember(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, actorId: string, userId: string, from: Place, to: Place): Promise<void> {
   await seatMember(tx, eventId, userId, to)
-  await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId, params: { userId, from, to } })
+  await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId, params: { userId, from, to }, now: now })
   publish({ type: 'member.moved', userId, from, to, by: actorId })
 }
 

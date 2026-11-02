@@ -39,6 +39,6 @@ export default defineEventHandler((event): Promise<DateConfirmed> => changeSessi
     .where(eq(sessions.id, sessionId))
   // The number is the one the Session has with its new Date (#159).
   const number = await shownNumber(tx, eventRow.id, sessionId)
-  await recordActivity(tx, publish, eventRow.id, { type: 'date_set', actorId: user.id, params: { sessionId, number, startsAt: isoInstant(slot.startsAt) } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'date_set', actorId: user.id, params: { sessionId, number, startsAt: isoInstant(slot.startsAt) }, now: useClock(event).now() })
   return { startsAt: slot.startsAt.toISOString() }
 }))
