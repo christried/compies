@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventCountdown from '~/components/EventCountdown.vue'
 import type { CountdownView } from '~~/shared/stage'
+import { stubInView } from './in-view'
 
 // The Countdown on the stage (#236, spec #218 § Countdown): the time left as mm:ss from the server's clock, every animation frame
 // while it runs, „Pausiert“ and „Zeit ist um“, and the Host's controls by state. The server clock is a fake here: the test moves it.
@@ -46,6 +47,7 @@ afterEach(() => {
   mounted?.unmount()
   mounted = undefined
   vi.useRealTimers()
+  vi.unstubAllGlobals()
 })
 
 describe('the time left while it runs', () => {
@@ -118,6 +120,61 @@ describe('the time left while it runs', () => {
     await passTime(5_000)
 
     expect(serverNow.mock.calls.length).toBe(unmountedReads)
+  })
+})
+
+describe('its ticker (#257)', () => {
+  it('stops reading the server clock while the card is scrolled out of view, and shows the right time on return', async () => {
+    const view = stubInView()
+    const page = await mount(MINUTE)
+    expect(view.observers[0]!.options.rootMargin).toBe('120px')
+    await passTime(5_000)
+
+    view.see(false)
+    const awayReads = serverNow.mock.calls.length
+    await passTime(20_000)
+    expect(serverNow.mock.calls.length).toBe(awayReads)
+
+    view.see(true)
+    await nextTick()
+    expect(timeOf(page).text()).toBe('00:35')
+    await passTime(5_000)
+    expect(timeOf(page).text()).toBe('00:30')
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the zero at once when the Countdown ran out before the page mounted, and runs no frames', async () => {
+    serverTime = T0 + 90_000
+
+    const page = await mount(MINUTE)
+    const reads = serverNow.mock.calls.length
+    await passTime(5_000)
+
+    expect(timeOf(page).text()).toBe('00:00')
+    expect(page.text()).toContain('Zeit ist um')
+    expect(serverNow.mock.calls.length).toBe(reads)
+  })
+
+  it('goes back to the full duration and stops its frames when the Host resets a running Countdown', async () => {
+    const page = await mount(MINUTE)
+    await passTime(10_000)
+
+    await page.setProps({ countdown: { durationMs: 60_000, remainingMs: 60_000, startedAt: null } })
+    const reads = serverNow.mock.calls.length
+    await passTime(5_000)
+
+    expect(timeOf(page).text()).toBe('01:00')
+    expect(serverNow.mock.calls.length).toBe(reads)
+  })
+
+  it('runs again from the new start when the Host resumes a paused Countdown', async () => {
+    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null })
+
+    await passTime(10_000)
+    await page.setProps({ countdown: { durationMs: 60_000, remainingMs: 25_000, startedAt: new Date(serverTime).toISOString() } })
+    await passTime(5_000)
+
+    expect(timeOf(page).text()).toBe('00:20')
   })
 })
 

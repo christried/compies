@@ -34,6 +34,11 @@ function endsAtMs(startedAt: Instant, remainingMs: number): number {
   return msOf(startedAt) + remainingMs
 }
 
+/** The instant a started Countdown ends, in epoch ms, or null while it is not started: nothing is pending then (#257, the ticker's `until`). */
+export function countdownEndsAt(c: CountdownFacts): number | null {
+  return c.startedAt === null ? null : endsAtMs(c.startedAt, c.remainingMs)
+}
+
 /**
  * The length the Host typed, in seconds, from the minutes (0 to 99) and seconds (0 to 59) fields (#236), or null when a field is not
  * a whole number in that range or the length is outside 5 s to 99:59. Both the sheet and the rule's limits come from here.
