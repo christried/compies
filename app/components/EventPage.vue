@@ -290,9 +290,10 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           :view="data"
         />
 
+        <!-- A block is listed only when its data is there (eventPageState, #256): the data props of the four below are not optional. -->
         <PoolWarning
-          v-else-if="block === 'pool' && data.setGame?.poolWarning"
-          :warning="data.setGame.poolWarning"
+          v-else-if="block === 'pool'"
+          :warning="data.setGame!.poolWarning!"
         />
 
         <template v-else-if="block === 'setup'">
@@ -348,18 +349,18 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
         />
 
         <div
-          v-else-if="block === 'wheel' && data.wheel"
+          v-else-if="block === 'wheel'"
           class="flex flex-col gap-[18px] md:gap-[22px]"
         >
           <LuckyWheel
-            :wheel="data.wheel"
+            :wheel="data.wheel!"
             :hidden="data.settings?.hiddenWheel ?? false"
             :is-host="data.event.isHost"
             :server-now="serverClock.now"
           />
           <VetoWindow
-            v-if="data.wheel.vetoes.draw"
-            :wheel="data.wheel"
+            v-if="data.wheel!.vetoes.draw"
+            :wheel="data.wheel!"
             :teams="data.teams"
             :members="data.members"
             :server-now="serverClock.now"
@@ -374,16 +375,16 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
         />
 
         <EventCountdown
-          v-else-if="block === 'countdown' && data.countdown"
-          :countdown="data.countdown"
+          v-else-if="block === 'countdown'"
+          :countdown="data.countdown!"
           :server-now="serverClock.now"
           :is-host="data.event.isHost"
           :command="(action) => send('POST', 'countdown/' + action)"
         />
 
         <CoinFlip
-          v-else-if="block === 'coin' && data.coin"
-          :toss="data.coin"
+          v-else-if="block === 'coin'"
+          :toss="data.coin!"
           :server-now="serverClock.now"
         />
 

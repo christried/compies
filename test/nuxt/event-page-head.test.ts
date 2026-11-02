@@ -18,7 +18,7 @@ const SUN = '2090-06-26T18:30:00.000Z'
 const STARTED = '2090-06-25T18:34:00.000Z'
 
 function mountHead(sessions: PageInput['sessions'], fields: Partial<PageInput> = {}, isHost = false) {
-  const state = eventPageState({ settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, ...fields })
+  const state = eventPageState({ settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, setGame: null, wheel: null, countdown: null, coin: null, ...fields })
   return mountSuspended(EventPageHead, { props: { state, isHost }, attachTo: document.body })
 }
 

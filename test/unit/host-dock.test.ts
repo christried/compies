@@ -21,6 +21,9 @@ function input(fields: Partial<DockInput>): DockInput {
     missingDates: sessions.filter(session => session.startsAt === null).length,
     event: { phase: 'poll' },
     setGame: null,
+    wheel: null,
+    countdown: null,
+    coin: null,
     start: { sessionId: 'a', number: null, rejection: null },
     ...fields,
   }

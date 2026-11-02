@@ -12,7 +12,7 @@ import { eventPageState, type EventPageState } from './event-page'
 // so after the last Session ended the dock has no primary. In a running Session „Nächstes Spiel setzen“ is the primary of
 // Host pick; in the Lucky Wheel „Rad drehen“ is (#229), disabled with its reason, and „Nächstes Spiel setzen“ waits in „Mehr“.
 
-export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame'> & { event: Pick<EventView['event'], 'phase'> }
+export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'wheel' | 'countdown' | 'coin'> & { event: Pick<EventView['event'], 'phase'> }
 
 export interface HostDockState {
   /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between` or `done`. */
