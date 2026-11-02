@@ -215,7 +215,7 @@ describe('Rounds', () => {
     it('says in the Event read, for the Host only, whether a game can be set now', async () => {
       const game = await running()
 
-      expect((await read(game)).setGame).toEqual({ rejection: null, spinRejection: 'no_wheel', left: expect.any(Array) })
+      expect((await read(game)).setGame).toEqual({ rejection: null, spinRejection: 'no_wheel', respin: false, left: expect.any(Array), poolWarning: { needed: 10, have: 2 } })
       expect((await read(game, game.cookies.one)).setGame).toBeNull()
     })
 
