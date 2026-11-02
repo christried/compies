@@ -290,6 +290,8 @@ export const draws = pgTable('draws', {
   check('draws_spin_check', sql`CASE WHEN ${table.kind} = 'spin' THEN ${table.spinStartAt} IS NOT NULL AND ${table.sliceGameIds} IS NOT NULL AND ${table.resultIndex} IS NOT NULL AND ${table.resultOffset} IS NOT NULL ELSE ${table.spinStartAt} IS NULL AND ${table.sliceGameIds} IS NULL AND ${table.sliceLabels} IS NULL AND ${table.resultIndex} IS NULL AND ${table.resultOffset} IS NULL END`),
   check('draws_result_check', sql`${table.kind} <> 'spin' OR (${table.resultIndex} >= 0 AND ${table.resultIndex} < cardinality(${table.sliceGameIds}) AND ${table.sliceGameIds}[${table.resultIndex} + 1] = ${table.gameId} AND (${table.sliceLabels} IS NULL OR cardinality(${table.sliceLabels}) = cardinality(${table.sliceGameIds})) AND ${table.resultOffset} >= 0 AND ${table.resultOffset} < 1)`),
   index('draws_round_id_idx').on(table.roundId),
+  // The Rounds rules ask which draws take a game (gameTaken, the pool's games left), and a game cannot be deleted while a draw names it (F18).
+  index('draws_game_id_idx').on(table.gameId),
 ])
 
 // A Party's Veto on a draw (GLOSSARY: Veto): the Party is a team number, `userId` is the Player who cast it. A Party casts at
