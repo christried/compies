@@ -3,7 +3,7 @@ import { parseSetGame } from '../../../../domain/rounds'
 import { apiError } from '../../../../utils/errors'
 import { changeEvent } from '../../../../utils/event-access'
 import { setNextGame } from '../../../../utils/rounds'
-import type { RoundSet } from '../../../../../shared/event'
+import type { RoundSet } from '../../../../../shared/stage'
 
 // The Host sets the next game (#228, spec #218 § „Nächstes Spiel setzen“): `{ gameId, vetoAllowed? }`, any game of the library. A Round
 // is set at once, with one `set` draw, or after a Veto window when the Host allowed one (#232); several Rounds can be open at the same time. The Event row is locked, so two sets cannot

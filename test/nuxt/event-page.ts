@@ -1,6 +1,7 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
-import type { BoardTeam, BonusVetoView, ClipView, CountdownView, EventPools, MemberView, RoundView, SessionNote, SetGameView, StartView, WheelView } from '~~/shared/event'
+import type { BoardTeam, EventPools, MemberView, SessionNote, StartView } from '~~/shared/event'
+import type { BonusVetoView, ClipView, CountdownView, CoinView, RoundView, SetGameView, WheelView } from '~~/shared/stage'
 import type { EventSettings, SettingsFloors } from '~~/shared/settings'
 import { kitty } from './auth'
 
@@ -13,7 +14,7 @@ export const LARSI = '00000000-0000-4000-8000-000000000002'
 export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pools?: EventPools | null, removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null }
+export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pools?: EventPools | null, removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
@@ -75,6 +76,8 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     clip: overrides.clip ?? null as ClipView | null,
     // No Countdown (#236) unless a test sets one: the Event read shows it only while a Session runs.
     countdown: overrides.countdown ?? null as CountdownView | null,
+    // No coin toss (#235) unless a test tosses one: the Event read has one only while a Session runs.
+    coin: overrides.coin ?? null as CoinView | null,
     // No Bonus Veto (#233) unless a test gives the Host one: the read has it for the Host of a Lucky Wheel Event only.
     bonusVetoes: overrides.bonusVetoes ?? null as BonusVetoView | null,
     bestSlotId: overrides.bestSlotId === undefined ? 'sat' : overrides.bestSlotId,

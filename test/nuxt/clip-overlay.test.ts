@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ClipOverlay from '~/components/ClipOverlay.vue'
-import type { ClipView } from '~~/shared/event'
+import type { ClipView } from '~~/shared/stage'
 import type { RoundGame } from '~~/shared/game'
 import { restoreScreen, stubScreen } from './event-page'
 

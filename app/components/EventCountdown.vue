@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { countdownState, remainingMsAt, type CountdownState } from '~~/shared/countdown'
-import type { CountdownView } from '~~/shared/event'
+import type { CountdownView } from '~~/shared/stage'
 
 // The Countdown on the stage (#236, spec #218 § Countdown, 04-motion § Synchronised moments): the time left as mm:ss, computed from
 // the server's clock and the stored facts on every animation frame while it runs, rounded up to whole seconds. Nothing counts down

@@ -1,7 +1,7 @@
 import { defineEventHandler, getRouterParam } from 'h3'
 import { changeEvent } from '../../../../../utils/event-access'
 import { castVeto } from '../../../../../utils/rounds'
-import type { VetoCast } from '../../../../../../shared/event'
+import type { VetoCast } from '../../../../../../shared/stage'
 
 // A Player casts their Party's Veto on a draw (#231, spec #218 § Vetoes): no body, any Member (the rule decides who may). The Event
 // row is locked, so two teammates racing for the Party's one Veto cannot both pass. The cast is sealed until the window ends:

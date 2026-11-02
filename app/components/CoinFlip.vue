@@ -3,7 +3,7 @@ import tailSvg from '~/assets/compibert/coin-tail.svg?raw'
 import { coinFinalPose, coinStandPose, FLIGHT_OPTIONS, flightKeyframes, HEAD_FACE_TRANSFORM, TAIL_FACE_TRANSFORM, type CoinPose } from '~/utils/coin-flight'
 import { motionToken, reducedMotion } from '~/utils/motion'
 import { COIN_DURATION_MS, coinLanded } from '~~/shared/coin'
-import type { CoinView } from '~~/shared/event'
+import type { CoinView } from '~~/shared/stage'
 
 // The Coin flip on the stage (#235, spec #218 § Coin flip, 04-motion § Coin, reference Coin3D): the coin of the Event's latest toss.
 // Every Member's coin flies from the same start instant and lands at the same instant: before the start it stands, after it the flight

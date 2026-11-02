@@ -80,6 +80,11 @@ export function hasWheel(mode: SelectionMode): boolean {
   return mode === 'lucky_wheel'
 }
 
+/** Whether the Event plays with a Lucky Wheel: set up, and a Selection mode that spins one. Not a type predicate: its false branch would narrow `settings` to null (#256). */
+export function eventHasWheel(settings: Pick<EventSettings, 'selectionMode'> | null): boolean {
+  return settings !== null && hasWheel(settings.selectionMode)
+}
+
 /** The Veto allowance a Lucky Wheel starts with: at least 3, or one per Player of a team. */
 export function defaultVetoAllowance(teamSize: number): number {
   return Math.max(3, teamSize)

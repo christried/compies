@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CoinFlip from '~/components/CoinFlip.vue'
 import { COIN_DURATION_MS, COIN_LEAD_MS } from '~~/shared/coin'
-import type { CoinView } from '~~/shared/event'
+import type { CoinView } from '~~/shared/stage'
 
 // The Coin flip on the stage (#235, spec #218 § Coin flip, 04-motion § Coin): every Member's coin flies from the same start instant and
 // lands at the same instant; the result shows only at the landing, in a live region; a late joiner is seeked into the flight; reduced

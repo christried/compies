@@ -4,7 +4,7 @@ import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import type { RoundGame } from '~~/shared/game'
-import type { SpinView, WheelView } from '~~/shared/event'
+import type { SpinView, WheelView } from '~~/shared/stage'
 
 // The Lucky Wheel (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel): its rotation toward a fixed stop instant at a given
 // server time, the result card that comes at the stop and not before, and the Hidden wheel's label that turns into the real game.

@@ -1,4 +1,4 @@
-import { hasWheel } from '~~/shared/settings'
+import { eventHasWheel } from '~~/shared/settings'
 import { coinRejection } from '~~/shared/coin'
 import { errorCopyKey } from './api-error'
 import type { SetRejection, SpinRejection } from '~~/shared/rounds'
@@ -12,7 +12,7 @@ import { eventPageState, type EventPageState } from './event-page'
 // so after the last Session ended the dock has no primary. In a running Session „Nächstes Spiel setzen“ is the primary of
 // Host pick; in the Lucky Wheel „Rad drehen“ is (#229), disabled with its reason, and „Nächstes Spiel setzen“ waits in „Mehr“.
 
-export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame'> & { event: Pick<EventView['event'], 'phase'> }
+export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'wheel' | 'countdown' | 'coin'> & { event: Pick<EventView['event'], 'phase'> }
 
 export interface HostDockState {
   /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between` or `done`. */
@@ -39,7 +39,7 @@ export function hostDockState(input: DockInput): HostDockState {
     case 'setup': return { ...base, primary: 'setup' }
     case 'poll': return { ...base, primary: 'setDate' }
     case 'running': {
-      const wheel = input.settings !== null && hasWheel(input.settings.selectionMode)
+      const wheel = eventHasWheel(input.settings)
       return {
         ...base,
         primary: wheel ? 'spin' : 'setGame',
@@ -68,19 +68,27 @@ export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'e
 export interface DockLayout { primary: DockKey[], secondary: DockKey[], more: DockKey[] }
 
 /**
+ * The game actions of a running Session (#233, #235, #236): they sit in Mehr, before the settings, in this order. The Bonus Veto is
+ * one of them only while the Host may grant it (dockLayout's `bonusVetoOpen`).
+ */
+export const GAME_ACTIONS: DockKey[] = ['bonusVeto', 'coin', 'countdown']
+
+/**
  * The dock's layout for a state. `pollOpen`: the Date poll is open, so the Dates can be set and the Slots edited. `bonusVetoOpen`: the Host
  * may grant a Bonus Veto (#233: the Event has a Lucky Wheel and no reason refuses it), so the action sits in Mehr in every layout but setup.
  */
-export function dockLayout(state: HostDockState, pollOpen: boolean, bonusVetoOpen: boolean): DockLayout {
+export function dockLayout(state: HostDockState, open: { pollOpen: boolean, bonusVetoOpen: boolean }): DockLayout {
+  const { pollOpen, bonusVetoOpen } = open
   const dates: DockKey[] = pollOpen ? ['setDate'] : []
   const slots: DockKey[] = pollOpen ? ['slots'] : []
   const bonus: DockKey[] = bonusVetoOpen ? ['bonusVeto'] : []
   if (state.kind === 'setup') return { primary: ['settings'], secondary: ['invite'], more: [...dates, ...slots] }
+  // The running layouts compose the game actions once (GAME_ACTIONS), in Mehr before the settings.
+  const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || bonusVetoOpen)
   switch (state.primary) {
     case 'start': return { primary: ['start'], secondary: [...dates, 'invite'], more: [...slots, ...bonus, 'settings'] }
-    // The running layouts put the Bonus Veto (#233), the Coin flip (#235) and the Countdown (#236) in Mehr, beside the other game actions and before the settings.
-    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
-    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
+    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, ...game, 'settings'] }
+    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, ...game, 'settings'] }
     case 'setDate': return { primary: dates, secondary: ['invite'], more: [...slots, ...bonus, 'settings'] }
     default: return { primary: [], secondary: ['invite'], more: [...bonus, 'settings'] }
   }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { countdownRejection, countdownSeconds } from '~~/shared/countdown'
-import type { CountdownView } from '~~/shared/event'
+import type { CountdownView } from '~~/shared/stage'
 
 // The Host sets the Countdown (#236, spec #218 § Countdown): the minutes (0 to 99) and seconds (0 to 59) it runs for, 5 s to 99:59.
 // The dock's „Countdown“ opens it. While one runs the sheet says so and does not let the Host set another (the server refuses it

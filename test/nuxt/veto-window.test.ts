@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VetoWindow from '~/components/VetoWindow.vue'
-import type { SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/event'
+import type { SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
 import { VETO_WINDOW_MS } from '~~/shared/rounds'
 import { memberView } from './event-page'
 

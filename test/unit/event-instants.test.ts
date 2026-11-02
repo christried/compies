@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { waitsForSettle } from '../../app/utils/event-instants'
-import type { EventView, SpinView, VetoView } from '../../shared/event'
+import { viewInstants, waitsForSettle } from '../../app/utils/event-instants'
+import type { EventView } from '../../shared/event'
+import type { SpinView, VetoView } from '../../shared/stage'
 
 // When a read still misses what a passed instant decides (review 0.7, F13): the page reads again while this holds.
 
@@ -16,6 +17,38 @@ const vetoes = (draw: { endsOffset: number } | null, revealed: VetoView['reveale
 })
 const view = (wheel: { spin?: SpinView | null, vetoes?: VetoView } | null): Pick<EventView, 'wheel'> => ({
   wheel: wheel && { count: 3, slices: null, spin: wheel.spin ?? null, vetoes: wheel.vetoes ?? vetoes(null, null) },
+})
+
+const coinOf = (landOffset: number): NonNullable<EventView['coin']> => ({ id: 'toss-1', side: 'heads', startedAt: iso(landOffset - 2000), landsAt: iso(landOffset) })
+const clipOf = (endOffset: number): NonNullable<EventView['clip']> => ({ drawId: 'd1', startAt: iso(endOffset - 60_000), endsAt: iso(endOffset), game })
+
+describe('viewInstants', () => {
+  it('has the spin\'s stop as an instant (#256)', () => {
+    expect(viewInstants(view({ spin: spin(1000, true) }))).toEqual([NOW + 1000])
+  })
+
+  it('has the Veto window\'s end as an instant (#256)', () => {
+    expect(viewInstants(view({ vetoes: vetoes({ endsOffset: 2000 }, null) }))).toEqual([NOW + 2000])
+  })
+
+  it('has the coin\'s landing as an instant (#256)', () => {
+    expect(viewInstants({ coin: coinOf(3000) })).toEqual([NOW + 3000])
+  })
+
+  it('has the clip\'s end as an instant (#256)', () => {
+    expect(viewInstants({ clip: clipOf(4000) })).toEqual([NOW + 4000])
+  })
+
+  it('has one instant per piece that has one, in the order the page had them', () => {
+    const wheel = view({ spin: spin(1000, true), vetoes: vetoes({ endsOffset: 2000 }, null) })
+    expect(viewInstants({ ...wheel, coin: coinOf(3000), clip: clipOf(4000) })).toEqual([NOW + 1000, NOW + 2000, NOW + 3000, NOW + 4000])
+  })
+
+  it('has none without a wheel, a toss or a clip, and none for a wheel without a spin or a window', () => {
+    expect(viewInstants({})).toEqual([])
+    expect(viewInstants({ wheel: null, coin: null, clip: null })).toEqual([])
+    expect(viewInstants(view({ spin: null, vetoes: vetoes(null, null) }))).toEqual([])
+  })
 })
 
 describe('waitsForSettle', () => {

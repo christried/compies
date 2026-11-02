@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto'
 import { defineEventHandler } from 'h3'
 import { changeEvent } from '../../../../utils/event-access'
 import { spinWheel } from '../../../../utils/rounds'
-import type { RoundSpun } from '../../../../../shared/event'
+import type { RoundSpun } from '../../../../../shared/stage'
 
 // The Host spins the Lucky Wheel (#229, spec #218 § Drawing): no body. The server draws one of the games left with the
 // platform's random source, stamps the instants with the request's clock and answers the Round and the draw. The Event row is

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { bonusVetoes, draws, rounds, vetoes } from '../db/schema'
-import type { BonusVetoGranted } from '../../shared/event'
+import type { BonusVetoGranted } from '../../shared/stage'
 import { bonusVetoCounts, bonusVetoRejection, vetoesLeftByParty } from '../../shared/rounds'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'

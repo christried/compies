@@ -12,7 +12,7 @@ const dated = (id: string, number: number | null, startsAt: string, times: { sta
 const undated = (id: string): PageInput['sessions'][number] => ({ id, number: null, startsAt: null, previousStartsAt: null, startedAt: null, endedAt: null })
 
 function input(sessions: PageInput['sessions'], fields: Partial<PageInput> = {}): PageInput {
-  return { settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, ...fields }
+  return { settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, setGame: null, wheel: null, countdown: null, coin: null, ...fields }
 }
 
 const SAT = '2090-10-25T18:30:00.000Z'
@@ -149,31 +149,60 @@ describe('the blocks of the stage', () => {
     expect(blocks([dated('a', 1, SAT), dated('b', 2, SUN)], { event: { phase: 'date_set' } })).toEqual(['head', 'reopen', 'seat', 'board', 'cards'])
   })
 
-  it('shows the open Rounds above the Game board while a Session runs, and only then', () => {
-    const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
+  // A running Session, and the data each block shows (#256): a block is listed only while its data is in the view.
+  const ONE_RUNNING = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
+  const RUNNING: Partial<PageInput> = { event: { phase: 'running' } }
+  const WHEEL: Partial<PageInput> = { wheel: { count: 2, slices: null, spin: null, vetoes: { left: [2, 2], own: null, revealed: null, draw: null } } }
+  const COUNTDOWN: Partial<PageInput> = { countdown: { durationMs: 60_000, remainingMs: 60_000, startedAt: null } }
+  const TOSS: Partial<PageInput> = { coin: { id: 'toss-1', side: 'heads', startedAt: SAT, landsAt: SUN } }
+  const POOL_WARNING: Partial<PageInput> = { setGame: { rejection: null, spinRejection: null, respin: false, left: [], poolWarning: { needed: 10, have: 2 } } }
 
-    expect(blocks(running, { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'pool', 'countdown', 'coin', 'board', 'poll', 'cards'])
-    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).not.toContain('rounds')
+  it('shows the open Rounds above the Game board while a Session runs, and only then', () => {
+    expect(blocks(ONE_RUNNING, RUNNING)).toEqual(['head', 'reopen', 'rounds', 'board', 'poll', 'cards'])
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], RUNNING)).not.toContain('rounds')
     expect(blocks([dated('a', 1, SAT)])).not.toContain('rounds')
   })
 
-  it('shows the coin under the Countdown while a Session runs, and nowhere else (#235)', () => {
-    const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
-
-    expect(blocks(running, { event: { phase: 'running' } })).toEqual(expect.arrayContaining(['countdown', 'coin']))
-    expect(blocks(running, { event: { phase: 'running' } }).indexOf('coin')).toBe(blocks(running, { event: { phase: 'running' } }).indexOf('countdown') + 1)
-    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).not.toContain('coin')
-    expect(blocks([dated('a', 1, SAT)])).not.toContain('coin')
+  it('lists the Countdown only when the view has one, right under the Rounds (#236)', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...COUNTDOWN })).toEqual(['head', 'reopen', 'rounds', 'countdown', 'board', 'poll', 'cards'])
+    expect(blocks(ONE_RUNNING, RUNNING)).not.toContain('countdown')
   })
 
-  it('puts the wheel on top of the open Rounds in a running Lucky Wheel Event, and nowhere else (#229)', () => {
-    const wheel = { settings: { ...settings, selectionMode: 'lucky_wheel' } as PageInput['settings'] }
-    const running = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
+  it('lists the coin only with a toss, and right under the Countdown (#235)', () => {
+    const list = blocks(ONE_RUNNING, { ...RUNNING, ...COUNTDOWN, ...TOSS })
 
-    expect(blocks(running, { event: { phase: 'running' }, ...wheel })).toEqual(['head', 'reopen', 'wheel', 'rounds', 'pool', 'countdown', 'coin', 'board', 'poll', 'cards'])
-    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' }, ...wheel })).not.toContain('wheel')
-    expect(blocks([dated('a', 1, SAT)], wheel)).not.toContain('wheel')
-    expect(blocks(running, { event: { phase: 'running' }, settings: { ...settings, selectionMode: 'admin_pick' } as PageInput['settings'] })).not.toContain('wheel')
+    expect(list.indexOf('coin')).toBe(list.indexOf('countdown') + 1)
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...TOSS })).toEqual(['head', 'reopen', 'rounds', 'coin', 'board', 'poll', 'cards'])
+    expect(blocks(ONE_RUNNING, RUNNING)).not.toContain('coin')
+  })
+
+  it('lists the pool warning only with one, under the open Rounds (#234)', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...POOL_WARNING })).toEqual(['head', 'reopen', 'rounds', 'pool', 'board', 'poll', 'cards'])
+    expect(blocks(ONE_RUNNING, RUNNING)).not.toContain('pool')
+  })
+
+  it('lists the wheel only with wheel data, on top of the open Rounds (#229)', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...WHEEL })).toEqual(['head', 'reopen', 'wheel', 'rounds', 'board', 'poll', 'cards'])
+    expect(blocks(ONE_RUNNING, RUNNING)).not.toContain('wheel')
+  })
+
+  it('keeps the order of the stage when every block has its data', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...WHEEL, ...POOL_WARNING, ...COUNTDOWN, ...TOSS })).toEqual(['head', 'reopen', 'wheel', 'rounds', 'pool', 'countdown', 'coin', 'board', 'poll', 'cards'])
+  })
+
+  it('lists none of the data blocks outside the running state, even with their data', () => {
+    const everything = { ...WHEEL, ...COUNTDOWN, ...TOSS, ...POOL_WARNING }
+    const cases: [PageInput['sessions'], Partial<PageInput>][] = [
+      [[undated('a'), undated('b')], {}],
+      [[dated('a', 1, SAT)], {}],
+      [[dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], {}],
+      [[dated('a', 1, SAT, ENDED)], {}],
+      [[undated('a')], { settings: null }],
+    ]
+    for (const [sessions, fields] of cases) {
+      const list = blocks(sessions, { ...everything, ...fields })
+      for (const block of ['wheel', 'pool', 'countdown', 'coin']) expect(list).not.toContain(block)
+    }
   })
 
   it('puts the cards first between two Sessions, with the notice that the teams stay', () => {

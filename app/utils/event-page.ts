@@ -1,12 +1,17 @@
 import { hasStarted, nextSession, runningOf, sessionState } from '~~/shared/session-state'
-import { hasWheel } from '~~/shared/settings'
 import { datePollOpen, type EventView, type Phase, type SessionView } from '~~/shared/event'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the blocks of the stage
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too. Adding a block, a dock action or a
 // page state touches this one list (review 1.4 A4, #228): the state says which blocks the stage shows and in which order.
 
-export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates'> & { event: Pick<EventView['event'], 'phase'> }
+export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin'> & { event: Pick<EventView['event'], 'phase'> }
+
+/**
+ * Which data blocks the stage has, from the view (#256): a block that shows data is listed only while its data is there, so the
+ * template checks nothing of its own. `pool` is the Host's pool warning (#234).
+ */
+export interface StagePresent { wheel: boolean, pool: boolean, countdown: boolean, coin: boolean }
 
 /**
  * The blocks of the stage (#166, #228). `head`: kicker and title. `reopen`: the notices of reopened Dates. `pool`: the Host's live pool warning (#234), shown to the Host only. `setup`: the Event
@@ -53,19 +58,21 @@ type Kind = EventPageState['kind']
 /**
  * The blocks of the stage per state (11-event-seite § EventPage): what has to happen now goes on top. The poll while no
  * Session is dated, the Game board from the first Date on, the open Rounds above it while a Session runs, with the wheel on top
- * of them when the Event plays with the Lucky Wheel (`lucky`, #229) and the Countdown (#236) under them, the Sessions card
- * between two Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits for a Date has its
- * poll (compact) below the board once another Session is dated or started.
+ * of them when the view has wheel data (`present.wheel`, #229) and the Countdown (#236) and the coin toss (#235) under them,
+ * the Sessions card between two Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits
+ * for a Date has its poll (compact) below the board once another Session is dated or started.
  */
-export function pageBlocks(kind: Kind, pollOpen: boolean, lucky = false): Block[] {
+export function pageBlocks(kind: Kind, pollOpen: boolean, present: StagePresent): Block[] {
   const poll: Block[] = pollOpen ? ['poll'] : []
-  const wheel: Block[] = lucky ? ['wheel'] : []
+  const wheel: Block[] = present.wheel ? ['wheel'] : []
+  const pool: Block[] = present.pool ? ['pool'] : []
+  const countdown: Block[] = present.countdown ? ['countdown'] : []
+  const coin: Block[] = present.coin ? ['coin'] : []
   switch (kind) {
     case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
     case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
-    // The Countdown (#236) sits under the open Rounds and is shown only while the Event has one (the page checks it).
     // The Host's pool warning (#234) comes after the drawn Round: wheel and open Rounds first (story 15, review 0.7 F12).
-    case 'running': return ['head', 'reopen', ...wheel, 'rounds', 'pool', 'countdown', 'coin', 'board', ...poll, 'cards']
+    case 'running': return ['head', 'reopen', ...wheel, 'rounds', ...pool, ...countdown, ...coin, 'board', ...poll, 'cards']
     case 'between': return ['head', 'reopen', 'cards', 'stay', 'board', ...poll]
     case 'done': return ['head', 'reopen', 'cards', 'board']
     case 'setup': return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
@@ -126,13 +133,14 @@ export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase:
   }
 }
 
-export function eventPageState({ settings, sessions, missingDates, event }: PageInput): EventPageState {
+export function eventPageState({ settings, sessions, missingDates, event, setGame, wheel, countdown, coin }: PageInput): EventPageState {
   const waiting = nextSession(sessions)
   const runningSession = runningOf(sessions)
   const ended = sessions
     .filter(session => sessionState(session) === 'ended')
     .sort((a, b) => Date.parse(b.endedAt!) - Date.parse(a.endedAt!))[0]
   const pollOpen = datePollOpen(event.phase, missingDates)
+  const present: StagePresent = { wheel: Boolean(wheel), pool: Boolean(setGame?.poolWarning), countdown: Boolean(countdown), coin: Boolean(coin) }
 
   const next = waiting ? { number: waiting.number, startsAt: waiting.startsAt } : null
   /** The state of kind `kind`, with the lists that follow from the kind. */
@@ -141,7 +149,7 @@ export function eventPageState({ settings, sessions, missingDates, event }: Page
     next,
     lastEnded: ended ? { number: ended.number } : null,
     pollNumber: pollingNumber(sessions, missingDates),
-    blocks: pageBlocks(kind, pollOpen, settings !== null && hasWheel(settings.selectionMode)),
+    blocks: pageBlocks(kind, pollOpen, present),
     pollCompact: pollCompactIn(kind),
     cardsStandOut: cardsStandOutIn(kind),
   })

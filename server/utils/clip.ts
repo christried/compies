@@ -1,7 +1,7 @@
 import { and, desc, eq, lte } from 'drizzle-orm'
 import { draws, games, rounds } from '../db/schema'
 import { clipWindow } from '../../shared/clip'
-import type { ClipSkipped, ClipView } from '../../shared/event'
+import type { ClipSkipped, ClipView } from '../../shared/stage'
 import { runningOf } from '../../shared/session-state'
 import type { Db } from './db'
 import { apiError } from './errors'

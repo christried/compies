@@ -12,6 +12,7 @@ import {
   settingsLocked,
   defaultSettings,
   defaultVetoAllowance,
+  eventHasWheel,
   floorsAt,
   isFlat,
   mergeSettings,
@@ -149,6 +150,17 @@ describe('defaults and helpers', () => {
     expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'admin_pick', vetoAllowance: null })).toBe(10)
     expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'lucky_wheel', vetoAllowance: 3 })).toBe(22)
     expect(recommendedPoolSize({ gameCount: 6, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 0 })).toBe(6)
+  })
+})
+
+describe('eventHasWheel', () => {
+  it('an Event without settings has no wheel', () => {
+    expect(eventHasWheel(null)).toBe(false)
+  })
+
+  it('a Lucky Wheel Event has a wheel, a Host pick Event none (#256)', () => {
+    expect(eventHasWheel({ selectionMode: 'lucky_wheel' })).toBe(true)
+    expect(eventHasWheel({ selectionMode: 'admin_pick' })).toBe(false)
   })
 })
 
