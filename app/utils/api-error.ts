@@ -83,12 +83,14 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   hidden_wheel_locked: 'error.hiddenWheelLocked',
   no_wheel: 'dock.setBlocked.no_wheel',
   pool_empty: 'dock.setBlocked.pool_empty',
+  no_clip: 'error.noClip',
   round_not_found: 'error.roundNotFound',
   game_count_below_started: 'error.gameCountBelowStarted',
   no_countdown: 'error.noCountdown',
   countdown_running: 'error.countdownRunning',
   countdown_not_running: 'error.countdownNotRunning',
   countdown_ended: 'error.countdownEnded',
+  coin_in_air: 'error.coinInAir',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

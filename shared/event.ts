@@ -207,10 +207,26 @@ export interface WheelView {
 }
 
 /**
+ * The clip that runs now (#230, GLOSSARY: Clip, spec #218 § Clip): the latest draw's, from its stop to the end of the game's clip length,
+ * for every Member alike. The instants are ISO; the client plays `clipPosition` of them against the server clock. `game.youtubeId`
+ * may be null: then the client shows the game's card for the clip's length. It is keyed by the draw, not by the Round: a Veto
+ * window (0.7-06) plays the clip of a draw that is not set yet.
+ */
+export interface ClipView { drawId: string, startAt: string, endsAt: string, game: RoundGame }
+
+/**
  * The Event's Countdown (#236, spec #218 § Countdown): its stored facts, the duration and either the remaining time (paused, ready)
  * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt).
  */
 export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null }
+
+/**
+ * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member, null otherwise. The
+ * stored facts (ISO instants); the side shows in the UI only from `landsAt`.
+ */
+export interface CoinView { id: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
+/** What `POST /api/e/:slug/coin` returns: the toss and its instants (ISO), #235. */
+export interface CoinTossed { tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
 
 /** What `POST /api/e/:slug/rounds` returns: the Round that was opened (#228). */
 export interface RoundSet { roundId: string }
@@ -218,6 +234,8 @@ export interface RoundSet { roundId: string }
 export interface RoundSpun { roundId: string, drawId: string }
 /** What `POST /api/e/:slug/draws/:drawId/veto` returns: the draw and the Party whose Veto was cast (#231). */
 export interface VetoCast { drawId: string, team: number }
+/** What `POST /api/e/:slug/clip/skip` returns: the draw whose clip was skipped (#230). */
+export interface ClipSkipped { drawId: string }
 /** What `DELETE /api/e/:slug/rounds/:id` returns: the Round that was put back (#228). */
 export interface RoundPutBack { roundId: string }
 
@@ -293,8 +311,12 @@ export interface EventView {
   wheel: WheelView | null
   /** Whether a game is being drawn now (#231): the wheel spins or its Veto window runs. „Rad verdecken“ is locked meanwhile (LOCKED_WHILE_DRAWN). Only the Host's page needs it; false for every other Member. */
   roundBeingDrawn: boolean
+  /** The clip that runs now (#230): while a Session runs, from a draw's stop to the end of its clip, unless the Host skipped it. Else null. */
+  clip: ClipView | null
   /** The Countdown of the running Session (#236): every Member gets it while a Session runs, null otherwise. */
   countdown: CountdownView | null
+  /** The Coin flip (#235): the latest toss of the running Session; every Member gets it, null otherwise. */
+  coin: CoinView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

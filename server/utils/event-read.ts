@@ -18,7 +18,9 @@ import { inviteUrl } from './links'
 import { startOf, teamChoiceOf } from './board'
 import { roundGameView } from './library'
 import { eventPools } from './pools'
+import { readClip } from './clip'
 import { countdownView, readCountdown } from './countdown'
+import { coinView, readShownToss } from './coin'
 import { readDraws, readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { floorFacts } from './settings-floors'
@@ -280,6 +282,11 @@ async function wheelView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Vi
   }
 }
 
+/** The clip that runs now (#230, spec #218 § Clip): every Member gets the same one while a Session runs, from the draw's stop on. */
+export async function clipSection(db: Db, eventRow: EventRow, rows: EventRows, now: Date): Promise<Pick<EventView, 'clip'>> {
+  return { clip: await readClip(db, eventRow.id, rows.sessions, now) }
+}
+
 /**
  * The Countdown (#236, spec #218 § Countdown): every Member gets it while a Session runs, and nothing otherwise, even when a row
  * was left behind (the Session end deletes it, but the read does not rely on that).
@@ -288,6 +295,15 @@ export async function countdownSection(db: Db, eventRow: EventRow, rows: EventRo
   if (!runningOf(rows.sessions)) return { countdown: null }
   const row = await readCountdown(db, eventRow.id)
   return { countdown: row ? countdownView(row) : null }
+}
+
+/**
+ * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member; null otherwise. Its
+ * side is in the read for everybody, since the page shows it only from the landing on (the room carries it too).
+ */
+export async function coinSection(db: Db, eventRow: EventRow, rows: EventRows): Promise<Pick<EventView, 'coin'>> {
+  const toss = await readShownToss(db, eventRow, rows.sessions)
+  return { coin: toss ? coinView(toss) : null }
 }
 
 /** The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on. */

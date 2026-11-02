@@ -1,4 +1,6 @@
 import { hasWheel } from '~~/shared/settings'
+import { coinRejection } from '~~/shared/coin'
+import { errorCopyKey } from './api-error'
 import type { SetRejection, SpinRejection } from '~~/shared/rounds'
 import type { StartRejection } from '~~/shared/session-state'
 import type { EventView } from '~~/shared/event'
@@ -56,7 +58,7 @@ export function hostDockState(input: DockInput): HostDockState {
 }
 
 /** The actions the dock can hold, by key. */
-export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'countdown'
+export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown'
 
 /**
  * Which actions the dock holds per state, in named parts (review 1.4 A4, #228): the `primary` action(s), the `secondary` ones
@@ -72,13 +74,22 @@ export function dockLayout(state: HostDockState, pollOpen: boolean): DockLayout 
   if (state.kind === 'setup') return { primary: ['settings'], secondary: ['invite'], more: [...dates, ...slots] }
   switch (state.primary) {
     case 'start': return { primary: ['start'], secondary: [...dates, 'invite'], more: [...slots, 'settings'] }
-    // The running layouts put the Countdown (#236) in Mehr, beside the other game actions and before the settings.
-    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, 'countdown', 'settings'] }
-    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, 'countdown', 'settings'] }
-    case 'end': return { primary: ['end'], secondary: ['invite'], more: ['setGame', ...dates, ...slots, 'countdown', 'settings'] }
+    // The running layouts put the Coin flip (#235) and the Countdown (#236) in Mehr, beside the other game actions and before the settings.
+    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, 'coin', 'countdown', 'settings'] }
+    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, 'coin', 'countdown', 'settings'] }
+    case 'end': return { primary: ['end'], secondary: ['invite'], more: ['setGame', ...dates, ...slots, 'coin', 'countdown', 'settings'] }
     case 'setDate': return { primary: dates, secondary: ['invite'], more: [...slots, 'settings'] }
     default: return { primary: [], secondary: ['invite'], more: ['settings'] }
   }
+}
+
+/**
+ * The copy key of the reason the coin cannot be tossed now, or null (#235): the dock's disabled reason while a toss flies, from the
+ * Event read's toss and the server clock. The reason is the rule's (coinRejection, the Host asks here); its copy is the API's.
+ */
+export function coinBlockedKey({ sessions, coin }: Pick<EventView, 'sessions' | 'coin'>, nowMs: number): string | null {
+  const rejection = coinRejection({ isHost: true, sessions, latest: coin, nowMs })
+  return rejection === null ? null : errorCopyKey(rejection)
 }
 
 /** The i18n key of the reason a game cannot be set or the wheel not spun now: the start rule's words for the teams, the dock's own for the rest. */

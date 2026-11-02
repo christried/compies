@@ -56,6 +56,10 @@ export type RoomMessage
    * send, #227), the Host only when the Host plays in it; never broadcast, so no other Party learns that someone vetoed.
    */
     | { type: 'veto.cast', drawId: string, team: number }
+   * The Host tossed the Coin flip (#235, spec #218 § Coin flip). Instants are ISO strings: the flight starts at `startedAt` and the
+   * coin lands at `landsAt`. The side rides along; the UI and the feed show it only at the landing.
+   */
+    | { type: 'coin.tossed', tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
 
 export type RoomMessageType = RoomMessage['type']
 

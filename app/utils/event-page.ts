@@ -11,10 +11,10 @@ export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates'
 /**
  * The blocks of the stage (#166, #228). `head`: kicker and title. `reopen`: the notices of reopened Dates. `setup`: the Event
  * is not set up. `seat`: where the Host sits. `poll`: the Date poll. `wheel`: the Lucky Wheel, on top of the Rounds (#229).
- * `rounds`: the open Rounds, in a running Session. `countdown`: the Countdown (#236). `board`: the Game board. `cards`: the
+ * `rounds`: the open Rounds, in a running Session. `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
  * Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions.
  */
-export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'wheel' | 'rounds' | 'countdown' | 'board' | 'cards' | 'stay'
+export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'wheel' | 'rounds' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
 
 /** The next Session to start (the earliest dated one that has not started): its shown number (null for an only Session) and Date. */
 export interface NextSession { number: number | null, startsAt: string }
@@ -64,7 +64,7 @@ export function pageBlocks(kind: Kind, pollOpen: boolean, lucky = false): Block[
     case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
     case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
     // The Countdown (#236) sits under the open Rounds and is shown only while the Event has one (the page checks it).
-    case 'running': return ['head', 'reopen', ...wheel, 'rounds', 'countdown', 'board', ...poll, 'cards']
+    case 'running': return ['head', 'reopen', ...wheel, 'rounds', 'countdown', 'coin', 'board', ...poll, 'cards']
     case 'between': return ['head', 'reopen', 'cards', 'stay', 'board', ...poll]
     case 'done': return ['head', 'reopen', 'cards', 'board']
     case 'setup': return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']

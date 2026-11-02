@@ -4,7 +4,7 @@ export function reducedMotion() {
 }
 
 /** A duration or easing token (`--cp-dur-slow`, `--cp-ease-out`) for the Web Animations API, with a fallback when the stylesheet has none. */
-function motionToken(name: string, fallback: string): string {
+export function motionToken(name: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
 }
 

@@ -138,6 +138,8 @@ export const API_ERROR_STATUS = {
   no_wheel: 409,
   /** No game is left on the wheel (#229). */
   pool_empty: 409,
+  /** No clip is running, so the Host has none to skip (#230). */
+  no_clip: 409,
   /** A Round id the Event does not hold, or one that was put back already (#228). */
   round_not_found: 404,
   /** No Countdown is set in this Event, so there is none to start, pause or reset (#236). */
@@ -148,6 +150,8 @@ export const API_ERROR_STATUS = {
   countdown_ended: 409,
   /** The Countdown does not run, so there is nothing to pause (#236). */
   countdown_not_running: 409,
+  /** The Coin flip has a toss in the air: one coin at a time, the next toss waits for the landing (#235). */
+  coin_in_air: 409,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

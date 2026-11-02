@@ -36,7 +36,7 @@ export type ActivityType = (typeof ACTIVITY_TYPES)[number]
  * others have an `at` the database stamps, which a test clock must not hide. `vetoes_revealed` (#231) waits for the end of its
  * Veto window. #235 adds `coin_tossed`.
  */
-export const INSTANT_ACTIVITY_TYPES: readonly ActivityType[] = ['game_drawn', 'vetoes_revealed']
+export const INSTANT_ACTIVITY_TYPES: readonly ActivityType[] = ['game_drawn', 'vetoes_revealed', 'coin_tossed']
 
 /** An instant in the params: an ISO string, built from a `Date` by `isoInstant` (the stored rows already hold these). */
 export type IsoInstant = `${number}-${number}-${number}T${string}`

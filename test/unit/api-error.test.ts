@@ -43,6 +43,10 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(409, 'countdown_ended'))).toBe('error.countdownEnded')
   })
 
+  it('explains the skip of a clip that is not running (#230)', () => {
+    expect(apiErrorKey(refusal(409, 'no_clip'))).toBe('error.noClip')
+  })
+
   it('explains the refusals of the Game library (#141)', () => {
     expect(apiErrorKey(refusal(400, 'invalid_game_name'))).toBe('error.gameNameInvalid')
     expect(apiErrorKey(refusal(400, 'invalid_youtube'))).toBe('gameEdit.badLink')
