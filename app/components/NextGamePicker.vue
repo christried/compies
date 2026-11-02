@@ -121,8 +121,10 @@ const isChosen = (id: string) => chosen.value?.id === id
             class="text-[12px] text-ink-2"
           >{{ t('nextGame.chosen') }}</span>
         </p>
+        <!-- A natively disabled button has no look of its own in AppButton (only aria-disabled does), so the dashed look is set here (#228). -->
         <AppButton
           :disabled="chosen === null || busy"
+          class="disabled:border-dashed disabled:border-ink-3 disabled:bg-paper-2 disabled:text-ink-3 disabled:shadow-none"
           @click="chosen && emit('pick', chosen.id, vetoAllowed)"
         >
           {{ t('nextGame.confirm') }}

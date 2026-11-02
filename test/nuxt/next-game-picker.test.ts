@@ -52,6 +52,15 @@ describe('the Veto switch of the picker', () => {
     expect(dialog()!.textContent).not.toContain('Veto erlauben')
   })
 
+  it('shows "Setzen" as disabled (dashed, flat) until a game is chosen (F22)', async () => {
+    await mount()
+
+    const button = [...dialog()!.querySelectorAll('button')].find(element => element.textContent?.trim() === 'Setzen')!
+    expect(button.disabled).toBe(true)
+    expect(button.className).toContain('disabled:border-dashed')
+    expect(button.className).toContain('disabled:bg-paper-2')
+  })
+
   it('sends the game with no Veto allowed when the switch stays off', async () => {
     await mount({ vetoSwitch: true })
     await pickHalo()
