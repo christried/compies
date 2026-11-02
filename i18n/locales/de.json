@@ -74,7 +74,6 @@
     "setGame": "Nächstes Spiel setzen",
     "bonusVeto": "Bonus-Veto geben",
     "skipClip": "Clip überspringen",
-    "vetoRunning": "Veto-Fenster läuft",
     "enterResult": "Ergebnis eintragen",
     "swapGame": "Spiel tauschen",
     "renewLink": "Link erneuern",
@@ -457,16 +456,16 @@
     "placeholderQ": "???"
   },
   "veto": {
-    "window": "{seconds} Sekunden für Vetos",
-    "banner": "Das Glücksrad sagt: {game}. {seconds} Sekunden für Vetos.",
-    "hold": "Veto gedrückt halten",
-    "sealed": "Veto abgegeben. Wird nach Ablauf aufgedeckt.",
-    "by": "Veto von {name} ({team})",
+    "hold": "Veto",
     "title": "Veto-Fenster",
     "left": "Keine Vetos mehr | Noch 1 Veto | Noch {n} Vetos",
-    "timeLeft": "Noch {seconds} Sekunden",
+    "partyLeft": "Euer Team: kein Veto mehr | Euer Team: 1 Veto übrig | Euer Team: {n} Vetos übrig",
+    "soloLeft": "Du hast kein Veto mehr | Du hast noch 1 Veto | Du hast noch {n} Vetos",
+    "timeLeft": "Noch 1 Sekunde | Noch {n} Sekunden",
+    "timeLabel": "Veto-Zeit",
     "holding": "Halten …",
     "cast": "Veto eingelegt",
+    "locked": "Veto ist drin",
     "stamp": "Versiegelt",
     "byMate": "{name} hat schon gevetot",
     "hint": "Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.",
@@ -1504,7 +1503,8 @@
   },
   "poolWarning": {
     "title": "Wird knapp.",
-    "text": "Im schlimmsten Fall brauchst du noch {needed} Spiele, übrig ist {have}. Blockiert nichts, nur damit du’s weißt. | Im schlimmsten Fall brauchst du noch {needed} Spiele, übrig sind {have}. Blockiert nichts, nur damit du’s weißt."
+    "needed": "1 Spiel | {n} Spiele",
+    "text": "Im schlimmsten Fall brauchst du noch {needed}, übrig ist {have}. Blockiert nichts, nur damit du’s weißt. | Im schlimmsten Fall brauchst du noch {needed}, übrig sind {have}. Blockiert nichts, nur damit du’s weißt."
   },
   "rounds": {
     "title": "Gerade dran",
@@ -1551,6 +1551,7 @@
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "gameCountBelowStarted": "So wenige geht nicht: Es sind schon mehr Spiele gestartet.",
     "roundNotFound": "Dieses Spiel ist nicht mehr dran.",
+    "gameAlreadyDrawn": "Dieses Spiel wurde in diesem Event schon gezogen oder gesetzt.",
     "noClip": "Gerade läuft kein Clip.",
     "noCountdown": "Es läuft kein Countdown.",
     "countdownRunning": "Der Countdown läuft schon.",

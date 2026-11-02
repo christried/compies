@@ -1,6 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { ACTIVITY_GAMES, ACTIVITY_PEOPLE, ACTIVITY_TYPES, activityGames, activityPeople, isoInstant, type ActivityParams, type ActivityPeople, type ActivityType, type CheckedParams, type IsoInstant, type ParamsSafe } from '../../shared/activity'
+import { ACTIVITY_GAMES, ACTIVITY_PEOPLE, ACTIVITY_TYPES, INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, isoInstant, type ActivityParams, type ActivityPeople, type ActivityType, type CheckedParams, type IsoInstant, type ParamsSafe } from '../../shared/activity'
 import type { Place } from '../../shared/board'
+import { recordActivity } from '../../server/utils/activity'
+import type { Db } from '../../server/utils/db'
 
 // Whom an Activity entry names, and what its params may hold (#226, review 1.4 A6). Most of this is checked by the
 // compiler (`pnpm typecheck` reads this file): a line with `@ts-expect-error` fails the check when the error goes away.
@@ -88,5 +90,30 @@ describe('the params rule', () => {
 
   it('writes an instant as the ISO string of a Date', () => {
     expect(isoInstant(new Date('2090-11-01T19:30:00Z'))).toBe('2090-11-01T19:30:00.000Z')
+  })
+})
+
+// recordActivity ties `at` to INSTANT_ACTIVITY_TYPES (review 0.7, F16). Nothing runs: `pnpm typecheck` reads these calls, and
+// a `@ts-expect-error` fails it when the error goes away.
+describe('recordActivity and INSTANT_ACTIVITY_TYPES', () => {
+  const noop = (): void => {}
+  const at = new Date('2090-11-01T19:30:00Z')
+
+  it('takes `at` for an instant type and the request clock for any other, and refuses each the other way round', () => {
+    const calls = (tx: Db): void => {
+      void recordActivity(tx, noop, 'e', { type: 'coin_tossed', actorId: null, params: { side: 'heads' }, at })
+      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1 }, now: at })
+      // @ts-expect-error an instant type needs the `at` it may be read from
+      void recordActivity(tx, noop, 'e', { type: 'coin_tossed', actorId: null, params: { side: 'heads' }, now: at })
+      // @ts-expect-error a type outside INSTANT_ACTIVITY_TYPES is published at once and takes no `at`
+      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1 }, at })
+      // @ts-expect-error a type outside INSTANT_ACTIVITY_TYPES needs the request's clock
+      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1 } })
+    }
+    expect(calls).toBeTypeOf('function')
+  })
+
+  it('lists exactly the types whose entries wait for their instant', () => {
+    expect([...INSTANT_ACTIVITY_TYPES].sort()).toEqual(['coin_tossed', 'game_drawn', 'vetoes_revealed'])
   })
 })

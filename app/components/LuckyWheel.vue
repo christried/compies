@@ -2,6 +2,7 @@
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import type { WheelView } from '~~/shared/event'
+import { characterCount, cutToCharacters } from '~~/shared/text'
 
 // The Lucky Wheel on the stage (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel, reference App Spielrunde ?s=wheel).
 // It shows the games left on the wheel and, from the server's spin, turns toward a fixed stop: the angle is a function of the
@@ -105,7 +106,7 @@ function labelOf(index: number): { text: string, opacity: number } {
   return reduced.value ? { text, opacity: stage.progress } : { text: scramble(text, Math.floor(stage.progress * (300 / SCRAMBLE_FRAME_MS))), opacity: 1 }
 }
 
-const shortened = (text: string) => (text.length > LABEL_MAX ? `${text.slice(0, LABEL_MAX - 1)}…` : text)
+const shortened = (text: string) => (characterCount(text) > LABEL_MAX ? `${cutToCharacters(text, LABEL_MAX - 1)}…` : text)
 const fontSize = computed(() => Math.max(10, Math.min(19, 230 / Math.max(count.value, 1) + 6)))
 
 /** A point on the wheel `degrees` clockwise from the top. */
@@ -126,7 +127,9 @@ const drawnOpacity = computed(() => {
   return removalEase(current, clock.value, props.hidden, true) === 1 ? 0 : 1
 })
 
-const card = computed(() => (stopped.value && spin.value?.game ? spin.value.game : null))
+// The result card names the game only while its spin is the latest draw (a later set, a veto or a put back takes it away, F6); a vetoed
+// game is then named in the Veto window's outcome line only.
+const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
 const status = computed(() => {
   if (timing.value && clock.value !== null && clock.value < timing.value.stopAt) return t('wheel.spinning')
   return count.value === 0 ? t('wheel.empty') : t('wheel.count', { n: count.value })

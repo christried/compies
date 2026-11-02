@@ -80,15 +80,22 @@ export function roundsStarted(rounds: readonly Pick<RoundFacts, 'putBackAt'>[]):
 }
 
 /**
- * The games left in the Game pool (spec #218 § Drawing): the pool minus every game drawn or set in this Event, played,
- * vetoed or open, in the pool's order. Only one thing returns a game: the Host putting back the Round it was set in, and
- * only a game that came from the pool (a library game was never in it). A vetoed game never comes back.
+ * Whether a game has been drawn or set in this Event (review 0.7, F14): it has a draw in a Round that was not put back, whether
+ * that draw is open, played, vetoed or waits for a respin. Only one thing frees a game: the Host putting back the Round it was
+ * set in. A vetoed game never comes back, also when its Round was put back after a later set. Setting a taken game is refused
+ * (`game_already_drawn`), and a taken game is not left on the wheel.
+ */
+export function gameTaken(gameId: string, draws: readonly DrawFacts[], rounds: readonly RoundFacts[]): boolean {
+  const putBack = new Set(rounds.filter(round => !stands(round)).map(round => round.id))
+  return draws.some(draw => draw.gameId === gameId && !(putBack.has(draw.roundId) && draw.outcome === 'set'))
+}
+
+/**
+ * The games left in the Game pool (spec #218 § Drawing): the pool minus every game taken in this Event (gameTaken), in the
+ * pool's order. A library game was never in the pool, so putting its Round back leaves the pool as it was.
  */
 export function gamesLeft(pool: readonly string[], draws: readonly DrawFacts[], rounds: readonly RoundFacts[]): string[] {
-  const putBack = new Set(rounds.filter(round => !stands(round)).map(round => round.id))
-  const returned = (draw: DrawFacts) => putBack.has(draw.roundId) && draw.outcome === 'set' && draw.source === 'pool'
-  const gone = new Set(draws.filter(draw => !returned(draw)).map(draw => draw.gameId))
-  return pool.filter(id => !gone.has(id))
+  return pool.filter(id => !gameTaken(id, draws, rounds))
 }
 
 /** Why the Host cannot set the next game now, in the order they are checked. */
@@ -180,7 +187,7 @@ export function drawOutcome(vetoCount: number): DrawOutcome {
 }
 
 /** Why a Veto cannot be cast now, in the order they are checked. */
-export type VetoRejection = 'not_a_player' | 'no_veto_window' | 'veto_window_closed' | 'veto_already_cast' | 'no_vetoes_left'
+export type VetoRejection = 'not_a_player' | 'no_running_session' | 'no_veto_window' | 'veto_window_closed' | 'veto_already_cast' | 'no_vetoes_left'
 
 export interface VetoInput {
   /** The viewer's Party; null for the Bench, the Stands and a viewer without a Member. */
@@ -188,6 +195,8 @@ export interface VetoInput {
   /** The draw the Veto is for; null when the Event has none by that id. */
   draw: { stopAt: Instant, vetoEndsAt: Instant | null, outcome: DrawOutcome | null } | null
   now: Instant
+  /** Whether a Session is running: a Veto window does not outlive its Session (review 0.7, F15). */
+  running: boolean
   /** The teams that cast a Veto on this draw. */
   castTeams: readonly number[]
   /** The viewer's Party's Vetoes left (vetoesLeftByParty). */
@@ -195,12 +204,13 @@ export interface VetoInput {
 }
 
 /**
- * The reason the viewer cannot cast a Veto on the draw now, or null (#231): they are no Player, the draw has no window (or is
+ * The reason the viewer cannot cast a Veto on the draw now, or null (#231): they are no Player, no Session runs, the draw has no window (or is
  * unknown), the window is closed (from its end on, before the stop, or the draw settled), their Party cast on this draw already,
  * or their Party has no Veto left.
  */
-export function vetoRejection({ viewerTeam, draw, now, castTeams, left }: VetoInput): VetoRejection | null {
+export function vetoRejection({ viewerTeam, draw, now, running, castTeams, left }: VetoInput): VetoRejection | null {
   if (viewerTeam === null) return 'not_a_player'
+  if (!running) return 'no_running_session'
   if (draw === null || draw.vetoEndsAt === null) return 'no_veto_window'
   const at = new Date(now).getTime()
   if (draw.outcome !== null || at >= new Date(draw.vetoEndsAt).getTime() || at < new Date(draw.stopAt).getTime()) return 'veto_window_closed'

@@ -42,10 +42,12 @@ export function drawSpin(left: readonly string[], placeholders: readonly string[
   const resultIndex = randomInt(left.length)
   const resultOffset = 0.2 + randomInt(OFFSET_STEPS) / 1000
   const names = placeholders === null ? null : shuffled(placeholders, randomInt)
+  // A Hidden wheel lays its slices out in a fresh order too: in the pool's order the result index would name the game for anyone who knows the pool (review 0.7, F2). Drawn last, so scripted sources keep their meaning.
+  const slices = placeholders === null ? [...left] : shuffled(left, randomInt)
   return {
-    sliceGameIds: [...left],
+    sliceGameIds: slices,
     resultIndex,
     resultOffset,
-    sliceLabels: names === null ? null : left.map((_, index) => names[index] ?? WHEEL_UNKNOWN),
+    sliceLabels: names === null ? null : slices.map((_, index) => names[index] ?? WHEEL_UNKNOWN),
   }
 }

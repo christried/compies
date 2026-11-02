@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BONUS_VETO_MAX, VETO_WINDOW_MS, bonusVetoCounts, bonusVetoRejection, drawOutcome, gamesLeft, isBeingDrawn, isOpen, opensWindow, poolWarning, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
+import { BONUS_VETO_MAX, VETO_WINDOW_MS, bonusVetoCounts, bonusVetoRejection, drawOutcome, gameTaken, gamesLeft, isBeingDrawn, isOpen, opensWindow, poolWarning, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
 import type { SessionTimes } from '../../shared/session-state'
 import { floorsAt } from '../../shared/settings'
 
@@ -74,6 +74,30 @@ describe('gamesLeft', () => {
 
   it('ignores a drawn game that is not in the pool any more', () => {
     expect(gamesLeft(['halo'], [draw('a', 'removed')], [round('a')])).toEqual(['halo'])
+  })
+})
+
+describe('gameTaken (F14)', () => {
+  it('is true for a game with a draw in a Round that stands: open, played or set', () => {
+    const rounds = [round('a'), round('b', { setAt: null })]
+
+    expect(gameTaken('kart', [draw('a', 'kart')], rounds)).toBe(true)
+    expect(gameTaken('uno', [draw('b', 'uno', { outcome: null })], rounds)).toBe(true)
+  })
+
+  it('is true for a vetoed game, also when its Round waits for a respin and when it was put back later', () => {
+    expect(gameTaken('kart', [vetoed('a', 'kart')], [round('a', { setAt: null })])).toBe(true)
+    expect(gameTaken('kart', [vetoed('a', 'kart'), draw('a', 'uno')], [round('a', { putBackAt: at(20) })])).toBe(true)
+  })
+
+  it('is false for a game nobody drew, and for a game whose set Round was put back', () => {
+    expect(gameTaken('kart', [draw('a', 'halo')], [round('a')])).toBe(false)
+    expect(gameTaken('kart', [draw('a', 'kart')], [round('a', { putBackAt: at(20) })])).toBe(false)
+  })
+
+  it('treats a library game like a pool game', () => {
+    expect(gameTaken('zelda', [draw('a', 'zelda', { source: 'library' })], [round('a')])).toBe(true)
+    expect(gameTaken('zelda', [draw('a', 'zelda', { source: 'library' })], [round('a', { putBackAt: at(20) })])).toBe(false)
   })
 })
 
@@ -244,6 +268,7 @@ describe('vetoRejection', () => {
     viewerTeam: 1,
     draw: open_,
     now: stopAt + 1000,
+    running: true,
     castTeams: [],
     left: 2,
     ...fields,
@@ -255,6 +280,10 @@ describe('vetoRejection', () => {
 
   it('refuses a viewer who is no Player: on the Bench, in the Stands or without a Member', () => {
     expect(vetoRejection(input({ viewerTeam: null }))).toBe('not_a_player')
+  })
+
+  it('refuses once the Session has ended: a window does not outlive its Session (F15)', () => {
+    expect(vetoRejection(input({ running: false }))).toBe('no_running_session')
   })
 
   it('refuses a draw without a window, and a draw that does not exist', () => {
@@ -282,14 +311,15 @@ describe('vetoRejection', () => {
     expect(vetoRejection(input({ left: 0 }))).toBe('no_vetoes_left')
   })
 
-  it('names the first reason in this order: Player, window, closed, already cast, none left', () => {
-    const worst = input({ viewerTeam: null, draw: null, now: vetoEndsAt + 1, castTeams: [1], left: 0 })
+  it('names the first reason in this order: Player, Session, window, closed, already cast, none left', () => {
+    const worst = input({ viewerTeam: null, running: false, draw: null, now: vetoEndsAt + 1, castTeams: [1], left: 0 })
 
     expect(vetoRejection(worst)).toBe('not_a_player')
-    expect(vetoRejection({ ...worst, viewerTeam: 1 })).toBe('no_veto_window')
-    expect(vetoRejection({ ...worst, viewerTeam: 1, draw: open_ })).toBe('veto_window_closed')
-    expect(vetoRejection({ ...worst, viewerTeam: 1, draw: open_, now: stopAt })).toBe('veto_already_cast')
-    expect(vetoRejection({ ...worst, viewerTeam: 1, draw: open_, now: stopAt, castTeams: [] })).toBe('no_vetoes_left')
+    expect(vetoRejection({ ...worst, viewerTeam: 1 })).toBe('no_running_session')
+    expect(vetoRejection({ ...worst, viewerTeam: 1, running: true })).toBe('no_veto_window')
+    expect(vetoRejection({ ...worst, viewerTeam: 1, running: true, draw: open_ })).toBe('veto_window_closed')
+    expect(vetoRejection({ ...worst, viewerTeam: 1, running: true, draw: open_, now: stopAt })).toBe('veto_already_cast')
+    expect(vetoRejection({ ...worst, viewerTeam: 1, running: true, draw: open_, now: stopAt, castTeams: [] })).toBe('no_vetoes_left')
   })
 })
 

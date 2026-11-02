@@ -134,6 +134,8 @@ export const API_ERROR_STATUS = {
   no_vetoes_left: 409,
   /** Rad verdecken and the Veto allowance cannot change while a Round is being drawn (#231, review 1.4 A3). */
   locked_while_drawn: 409,
+  /** The game has a draw in a Round that was not put back: it was drawn, set or vetoed already, and cannot be set again (review 0.7, F14). */
+  game_already_drawn: 409,
   /** The Selection mode has no wheel to spin (#229). */
   no_wheel: 409,
   /** No game is left on the wheel (#229). */

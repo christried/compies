@@ -69,6 +69,25 @@ describe('the Bonus Veto sheet', () => {
     expect(grant).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps „Gegeben“ on the button when the refetch raises the count, then readies it for the next grant, which needs its own hold (F7)', async () => {
+    const grant = vi.fn(async (_team: number) => true)
+    const sheet = await mountSuspended(BonusVetoSheet, { props: { open: true, teams, granted: [0, 0], grant } })
+
+    hold(rows()[1]!)
+    await vi.waitFor(() => expect(grant).toHaveBeenCalledWith(2), { timeout: 3000 })
+    // The page reads the Event again and the count follows, before the done state has painted for long.
+    await sheet.setProps({ granted: [0, 1] })
+
+    await vi.waitFor(() => expect(buttonOf(rows()[1]!).textContent).toContain('Gegeben'))
+    expect(rows()[1]!.textContent).toContain('1 Bonus-Veto')
+    await vi.waitFor(() => expect(buttonOf(rows()[1]!).textContent).not.toContain('Gegeben'), { timeout: 3000 })
+    expect(buttonOf(rows()[1]!).textContent).toContain('Bonus-Veto geben')
+    expect(grant).toHaveBeenCalledTimes(1)
+
+    hold(rows()[1]!)
+    await vi.waitFor(() => expect(grant).toHaveBeenCalledTimes(2), { timeout: 3000 })
+  })
+
   it('leaves the button idle when the server refuses the grant', async () => {
     const grant = vi.fn(async (_team: number) => false)
     await mountSuspended(BonusVetoSheet, { props: { open: true, teams, granted: [0, 0], grant } })

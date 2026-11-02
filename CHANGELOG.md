@@ -14,6 +14,13 @@
 - Der Host kann einer Partei ein Bonus-Veto geben, bis zu 9 pro Partei. Sie kann es sofort einsetzen, auch in einem laufenden Veto-Fenster. ([#233](https://github.com/christried/compies/issues/233))
 - Wird der Pool während des Events knapp, sieht der Host einen Hinweis auf der Bühne und in den Einstellungen; die anderen merken davon nichts. ([#234](https://github.com/christried/compies/issues/234))
 
+### Geändert
+
+- Als Host kannst du „Rad verdecken“ und die Vetos pro Partei nicht mehr ändern, solange ein Spiel gezogen wird. ([#231](https://github.com/christried/compies/issues/231))
+- Als Host kannst du die Anzahl der Spiele nicht mehr unter die Spiele senken, die schon gestartet sind. ([#228](https://github.com/christried/compies/issues/228))
+- Die Bench heißt jetzt „Noch ohne Team, unbegrenzt“. ([#238](https://github.com/christried/compies/issues/238))
+- Mit reduzierter Bewegung blendet sich ein verschobenes Mitglied am neuen Platz ein, statt dorthin zu gleiten. ([#237](https://github.com/christried/compies/issues/237))
+
 ### Behoben
 
 - Schlägt schon die erste Verbindung fehl, zeigt die Event-Seite jetzt den Hinweis zur Verbindung. ([#238](https://github.com/christried/compies/issues/238))

@@ -12,8 +12,8 @@ export default defineEventHandler((event): Promise<{ settings: EventSettings }> 
   const { before, after } = await applySettingsChange(tx, eventRow, body, { publish, hostId: user.id, now: useClock(event).now() })
   if (before !== null) {
     const changed = changedKeys(before, after)
-    if (changed.includes('gameCount')) await recordActivity(tx, publish, eventRow.id, { type: 'game_count_changed', actorId: user.id, params: { from: before.gameCount, to: after.gameCount } })
-    if (changed.includes('teamSize')) await recordActivity(tx, publish, eventRow.id, { type: 'team_size_changed', actorId: user.id, params: { from: before.teamSize, to: after.teamSize } })
+    if (changed.includes('gameCount')) await recordActivity(tx, publish, eventRow.id, { type: 'game_count_changed', actorId: user.id, params: { from: before.gameCount, to: after.gameCount }, now: useClock(event).now() })
+    if (changed.includes('teamSize')) await recordActivity(tx, publish, eventRow.id, { type: 'team_size_changed', actorId: user.id, params: { from: before.teamSize, to: after.teamSize }, now: useClock(event).now() })
   }
   return { settings: after }
 }))

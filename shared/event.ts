@@ -158,7 +158,9 @@ export interface SetGameView {
  * A spin of the Lucky Wheel as a Member reads it (#229, spec #218 § Hidden wheel on the wire): the instants (ISO), the slice count,
  * the result slice and where the pointer rests in it, and the slices' labels. `labels` are the real names for the Host and on
  * a visible wheel; for a Member under a Hidden wheel the placeholders shuffled for this spin, the result slice's label turning
- * into the real name from `stopAt` on. `game` is the drawn game: for a Member only from `stopAt` on, for the Host always.
+ * into the real name from `stopAt` on. `game` is the drawn game: for a Member only from `stopAt` on, for the Host always. `current`
+ * says the spin is still the Event's latest draw, its Round stands and it was not vetoed: the wheel's result card shows only then
+ * (review 0.7, F6). A draw settles as vetoed at the end of its window, so this tells nothing before it.
  */
 export interface SpinView {
   roundId: string
@@ -170,6 +172,7 @@ export interface SpinView {
   resultOffset: number
   labels: string[] | null
   game: RoundGame | null
+  current: boolean
 }
 
 /** A Veto of a Party and the Player who cast it (#231); the Event read shows it from the end of the window on. */

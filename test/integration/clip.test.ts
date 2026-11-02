@@ -14,6 +14,7 @@ import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
+import de from '../../i18n/locales/de.json'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -115,8 +116,8 @@ describe('the synced clip', () => {
     for (const key of Object.keys(players) as (keyof typeof players)[]) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
 
     const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo', createdBy: ids.host, youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30 },
-      { name: 'Kart', createdBy: ids.host },
+      { name: 'Halo Infinite', createdBy: ids.host, youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30 },
+      { name: 'Kart Racer', createdBy: ids.host },
     ]).returning()
     const [halo, kart] = inserted as [typeof inserted[number], typeof inserted[number]]
     await testDb.db.insert(eventPoolGames).values([{ eventId, gameId: halo.id, pool: 'main' }, { eventId, gameId: kart.id, pool: 'main' }])
@@ -165,7 +166,7 @@ describe('the synced clip', () => {
           drawId: (await testDb.db.select().from(draws))[0]!.id,
           startAt: iso(0),
           endsAt: iso(CLIP_MS),
-          game: { id: game.halo.id, name: 'Halo', youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30 },
+          game: { id: game.halo.id, name: 'Halo Infinite', youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30 },
         })
       }
     })
@@ -186,7 +187,7 @@ describe('the synced clip', () => {
 
       await set(game, game.kart.id)
 
-      expect((await read(game, game.cookies.two)).clip?.game).toMatchObject({ id: game.kart.id, name: 'Kart', youtubeId: null })
+      expect((await read(game, game.cookies.two)).clip?.game).toMatchObject({ id: game.kart.id, name: 'Kart Racer', youtubeId: null })
     })
 
     it('is the latest draw\'s: a game set during a clip takes over', async () => {
@@ -241,7 +242,9 @@ describe('the synced clip', () => {
       const text = await readText(game, game.cookies.one)
 
       expect(JSON.parse(text).clip).toBeNull()
-      for (const secret of [game.halo.id, 'Halo', 'aaaaaaaaaaa', game.kart.id, 'Kart']) expect(text).not.toContain(secret)
+      // The names are ones no placeholder contains: "Kart" is in "Mario Kartoffel" and "Halo" in "Halo Hallo", which a Hidden wheel shows (F21).
+      expect(de.wheel.placeholders.filter(placeholder => placeholder.includes('Halo Infinite') || placeholder.includes('Kart Racer'))).toEqual([])
+      for (const secret of [game.halo.id, 'Halo Infinite', 'aaaaaaaaaaa', game.kart.id, 'Kart Racer']) expect(text).not.toContain(secret)
     })
 
     it('gives that Player the clip from the stop on', async () => {

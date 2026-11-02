@@ -3,6 +3,7 @@ import { defineEventHandler, getRouterParam } from 'h3'
 import { sessions } from '../../../../../db/schema'
 import { reopenRejection } from '../../../../../domain/phase'
 import { recordActivity } from '../../../../../utils/activity'
+import { useClock } from '../../../../../utils/clock'
 import { apiError } from '../../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../../utils/sessions'
 import { isoInstant } from '../../../../../../shared/activity'
@@ -26,6 +27,6 @@ export default defineEventHandler((event): Promise<SessionReopened> => changeSes
     .update(sessions)
     .set({ startsAt: null, slotId: null, previousStartsAt: sql`${sessions.startsAt}` })
     .where(eq(sessions.id, session.id))
-  await recordActivity(tx, publish, eventRow.id, { type: 'date_reopened', actorId: user.id, params: { sessionId: session.id, number, previousStartsAt: isoInstant(session.startsAt!) } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'date_reopened', actorId: user.id, params: { sessionId: session.id, number, previousStartsAt: isoInstant(session.startsAt!) }, now: useClock(event).now() })
   return {}
 }))

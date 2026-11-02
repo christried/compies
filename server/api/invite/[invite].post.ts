@@ -1,5 +1,6 @@
 import { defineEventHandler, getRouterParam } from 'h3'
 import { recordActivity } from '../../utils/activity'
+import { useClock } from '../../utils/clock'
 import { useDb } from '../../utils/db'
 import { eventDeleted, eventNotFound } from '../../utils/errors'
 import { afterCommit } from '../../utils/event-access'
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event): Promise<JoinedEvent> => {
   const joined = await db.transaction(async (tx) => {
     const added = await addMember(tx, eventRow.id, user.id)
     if (added) {
-      await recordActivity(tx, (...queued) => void messages.push(...queued), eventRow.id, { type: 'member_joined', actorId: user.id, params: {} })
+      await recordActivity(tx, (...queued) => void messages.push(...queued), eventRow.id, { type: 'member_joined', actorId: user.id, params: {}, now: useClock(event).now() })
       messages.push({ type: 'member.joined', userId: user.id })
     }
     return added

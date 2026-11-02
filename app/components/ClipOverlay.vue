@@ -41,9 +41,11 @@ const endsAt = Date.parse(props.clip.endsAt)
 /** The video's last second of the clip. */
 const endSecond = props.clip.game.clipStart + props.clip.game.clipLength
 
-const now = ref(props.serverNow())
+// The server's time of this tick; null before the page has mounted, so the progress bar renders the same on the server and on a
+// hard load's first client render (review 0.7, F11). The read carries a clip only while it runs, so it has not ended before mount.
+const now = ref<number | null>(null)
 const closedByMe = ref(false)
-const ended = ref(now.value >= endsAt)
+const ended = ref(false)
 const open = computed(() => !closedByMe.value && !ended.value)
 /** The player could not be made or cannot play the video: the game's card stands in for it. */
 const playerFailed = ref(false)
@@ -52,8 +54,10 @@ const showsPlayer = computed(() => videoId.value !== null && !playerFailed.value
 const muted = ref(true)
 /** The sound is muted by the device or the browser, not by a choice: „Ton aktivieren“ is offered. */
 const soundBlocked = ref(false)
+/** „Ton aktivieren“ is offered only with a player: a game without a video (or a failed player) has no sound to unlock (F22). */
+const offersSound = computed(() => soundBlocked.value && showsPlayer.value)
 /** How far the clip has run, 0 to 1, for the bar. */
-const progress = computed(() => Math.min(1, Math.max(0, (now.value - startAt) / (endsAt - startAt))))
+const progress = computed(() => (now.value === null ? 0 : Math.min(1, Math.max(0, (now.value - startAt) / (endsAt - startAt)))))
 
 let player: YouTubePlayer | null = null
 let started = false
@@ -159,10 +163,12 @@ onMounted(() => {
   // would block the unmuted start anyway).
   muted.value = !(wide.value === true && sound.enabled.value)
   soundBlocked.value = muted.value && sound.enabled.value
-  tickTimer = setInterval(() => {
+  const tick = () => {
     now.value = props.serverNow()
     if (now.value >= endsAt) ended.value = true
-  }, TICK_MS)
+  }
+  tick()
+  tickTimer = setInterval(tick, TICK_MS)
   if (open.value && videoId.value) void createPlayer()
 })
 
@@ -219,7 +225,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="flex flex-wrap items-center gap-2 px-3 py-2.5">
         <AppButton
-          v-if="soundBlocked"
+          v-if="offersSound"
           variant="primary"
           size="md"
           @click="enableSound"
@@ -256,7 +262,7 @@ onBeforeUnmount(() => {
         />
       </div>
       <p
-        v-if="soundBlocked && wide"
+        v-if="offersSound && wide"
         class="m-0 px-3 pb-2.5 text-small text-pretty text-ink-2"
       >
         {{ t('sound.blocked') }}

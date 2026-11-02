@@ -175,16 +175,29 @@ describe('Rounds', () => {
       expect((view.pools?.main ?? []).map(poolGame => poolGame.name)).toEqual(['Halo', 'Kart'])
     })
 
-    it('takes a pool game out of the games left, and not twice: set again, it comes from the library', async () => {
+    it('takes a pool game out of the games left, and not twice: set again, it is refused with 409 game_already_drawn and opens no second Round (F14)', async () => {
       const game = await running()
       expect((await read(game)).setGame?.left.sort()).toEqual([game.halo.id, game.kart.id].sort())
 
       await set(game, game.halo.id)
       expect((await read(game)).setGame?.left).toEqual([game.kart.id])
 
-      await set(game, game.halo.id)
-      expect((await drawRows()).map(draw => draw.source)).toEqual(['pool', 'library'])
+      expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'game_already_drawn' })
+      expect((await drawRows()).map(draw => draw.source)).toEqual(['pool'])
+      expect(await roundRows(game)).toHaveLength(1)
       expect((await read(game)).setGame?.left).toEqual([game.kart.id])
+    })
+
+    it('refuses a library game that is set twice just the same, and lets a put-back game be set again (F14)', async () => {
+      const game = await running()
+      await set(game, game.schach.id)
+      expect(await errorOf(await set(game, game.schach.id))).toEqual({ status: 409, code: 'game_already_drawn' })
+
+      await set(game, game.halo.id)
+      const [, haloRound] = await roundRows(game)
+      await putBackRound(game, haloRound!.id)
+      expect((await set(game, game.halo.id)).status).toBe(200)
+      expect((await drawRows()).filter(draw => draw.gameId === game.halo.id).map(draw => draw.source)).toEqual(['pool', 'pool'])
     })
 
     it('lets several Rounds be open at the same time, listed in the order they started', async () => {
@@ -729,6 +742,33 @@ describe('Rounds', () => {
         clock.advance(STOP)
         const after = await read(game, game.cookies.three)
         expect(after.wheel?.spin).toMatchObject({ ...expected, game: { id: row!.gameId, name: drawn } })
+      })
+
+      it('says whether the spin is still the latest draw, for the card „zuletzt gezogen“ (F6)', async () => {
+        const game = await running({ wheel: true })
+        await spun(game)
+        expect((await read(game, game.cookies.three)).wheel?.spin?.current).toBe(true)
+
+        // A game the Host sets afterwards is the latest draw: the wheel's card gives way to it.
+        clock.advance(STOP)
+        const [spunRow] = await drawRows()
+        const other = spunRow!.gameId === game.halo.id ? game.kart : game.halo
+        expect((await set(game, other.id)).status).toBe(200)
+
+        expect((await read(game, game.cookies.three)).wheel?.spin?.current).toBe(false)
+        expect((await read(game)).wheel?.spin?.current).toBe(false)
+      })
+
+      it('is not current once the Host put the spin\'s Round back', async () => {
+        const game = await running({ wheel: true })
+        const { roundId } = await spun(game)
+        clock.advance(STOP)
+        expect((await read(game)).wheel?.spin?.current).toBe(true)
+
+        expect((await putBackRound(game, roundId)).status).toBe(200)
+
+        expect((await read(game)).wheel?.spin?.current).toBe(false)
+        expect((await read(game, game.cookies.three)).wheel?.spin?.current).toBe(false)
       })
 
       it('gives the Host the drawn game from the start', async () => {

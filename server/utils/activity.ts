@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, lte, notInArray, or, sql } from 'drizzle-orm'
 import { activity, draws, games, rounds, users } from '../db/schema'
 import { shownName } from '../../shared/auth'
-import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType } from '../../shared/activity'
+import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType, type InstantActivityType } from '../../shared/activity'
 import type { RoomMessage } from '../../shared/realtime'
 import type { Db } from './db'
 import { apiError } from './errors'
@@ -10,6 +10,13 @@ import { apiError } from './errors'
 // entry leaves the server through activityEntries, so the API and the room send the same shape.
 
 type ActivityRow = typeof activity.$inferSelect
+
+/**
+ * What an entry's moment is, by its type (review 0.7, F16). An instant type (INSTANT_ACTIVITY_TYPES) takes the `at` it may be
+ * read from and is not published; any other type is published at once and takes the request's clock (`now`), which decides
+ * the games its message may name. The other one is refused by the compiler.
+ */
+type ActivityMoment<T extends ActivityType> = T extends InstantActivityType ? { at: Date, now?: never } : { at?: never, now: Date }
 
 /**
  * Writes one entry in the caller's transaction and queues `activity.added` for after the commit (changeEvent's
@@ -22,7 +29,7 @@ export async function recordActivity<T extends ActivityType>(
   tx: Db,
   publish: (...messages: RoomMessage[]) => void,
   eventId: string,
-  { type, actorId, params, at }: { type: T, actorId: string | null, params: ActivityParams[T], at?: Date },
+  { type, actorId, params, at, now }: { type: T, actorId: string | null, params: ActivityParams[T] } & ActivityMoment<T>,
 ): Promise<void> {
   const [row] = await tx
     .insert(activity)
@@ -30,7 +37,7 @@ export async function recordActivity<T extends ActivityType>(
     .returning()
   if (at) return
   // The change that wrote the entry has just set or put back its game: a settled Round names it, whatever the clock says.
-  const [entry] = await activityEntries(tx, [row!], new Date())
+  const [entry] = await activityEntries(tx, [row!], now!)
   publish({ type: 'activity.added', entry: entry! })
 }
 

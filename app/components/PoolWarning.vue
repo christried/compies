@@ -7,7 +7,7 @@ import type { PoolWarning } from '~~/shared/rounds'
 const props = defineProps<{ warning: PoolWarning }>()
 
 const { t } = useI18n()
-const text = computed(() => t('poolWarning.text', { needed: props.warning.needed, have: props.warning.have }, props.warning.have))
+const text = computed(() => t('poolWarning.text', { needed: t('poolWarning.needed', props.warning.needed), have: props.warning.have }, props.warning.have))
 </script>
 
 <template>

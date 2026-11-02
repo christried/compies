@@ -32,6 +32,24 @@ describe('drawSpin', () => {
     expect(drawSpin(left, null, scripted(0, 0).randomInt).sliceGameIds).toEqual(left)
   })
 
+  it('reorders the slices on a Hidden wheel, so the result index says nothing about the pool (F2)', () => {
+    // The source always answers 0, so both Fisher-Yates passes (placeholders, then slices) have a known result.
+    const spin = drawSpin(left, ['A', 'B', 'C', 'D'], () => 0)
+
+    expect(spin.sliceGameIds).toEqual(['kart', 'pong', 'schach', 'halo'])
+    expect([...spin.sliceGameIds].sort()).toEqual(left)
+    expect(spin.sliceGameIds[spin.resultIndex]).toBe('kart')
+  })
+
+  it('asks for the slice shuffle after the result, the offset and the placeholders, so scripted sources keep their meaning', () => {
+    const source = scripted(2, 0)
+
+    drawSpin(left, ['A', 'B', 'C', 'D'], source.randomInt)
+
+    // result (4), offset (600), placeholders (4, 3, 2), then the slices (4, 3, 2).
+    expect(source.asked).toEqual([4, 600, 4, 3, 2, 4, 3, 2])
+  })
+
   it('keeps the pointer inside the slice: the offset is from 0.2 up to, not including, 0.8', () => {
     const lowest = drawSpin(left, null, scripted(0, 0).randomInt).resultOffset
     const highest = drawSpin(left, null, (n: number) => n - 1).resultOffset

@@ -38,15 +38,15 @@ export function fade(element: Element): void {
   element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: Number.parseFloat(motionToken('--cp-dur-fast', '140ms')), easing: motionToken('--cp-ease-out', 'ease-out') })
 }
 
-// The Veto window (04-motion § Veto window, #231). Under reduced motion each of these is a 0.2 s fade at the same moment.
+// The Veto window (04-motion § Veto window, #231). Under reduced motion each of these is a 0.2 s fade at the same moment: no stagger, no delay (F10).
 
-/** The fade every Veto-window animation becomes under reduced motion: 0.2 s, after the same delay. */
+/** The fade every Veto-window animation becomes under reduced motion: 0.2 s, with no delay. */
 const REDUCED_FADE_MS = 200
 
-/** Runs `keyframes` on the element, or under reduced motion a fade with the same delay. */
+/** Runs `keyframes` on the element, or under reduced motion a fade at once (the tiles and stamps show at the same moment). */
 function veto(element: Element, keyframes: Keyframe[], options: { duration: number, delay?: number, easing: string }): void {
   if (typeof element.animate !== 'function') return
-  if (reducedMotion()) element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: REDUCED_FADE_MS, delay: options.delay ?? 0, easing: motionToken('--cp-ease-out', 'ease-out'), fill: 'backwards' })
+  if (reducedMotion()) element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: REDUCED_FADE_MS, easing: motionToken('--cp-ease-out', 'ease-out'), fill: 'backwards' })
   else element.animate(keyframes, { ...options, fill: 'backwards' })
 }
 

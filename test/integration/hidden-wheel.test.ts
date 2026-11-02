@@ -47,6 +47,14 @@ import { createTestDb, createTestServer } from './harness'
 import { hostPutsBack, hostSets, startRunningSession } from './running-session'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
+// The platform's random source with an override the slice-order test sets (F2): otherwise it is the real one, so every other test draws as production does.
+const source = vi.hoisted(() => ({ override: null as ((n: number) => number) | null }))
+vi.mock('node:crypto', async (importOriginal) => {
+  const real = await importOriginal<typeof import('node:crypto')>()
+  const randomInt = ((...args: unknown[]) => (source.override && args.length === 1 ? source.override(args[0] as number) : (real.randomInt as (...a: unknown[]) => unknown)(...args))) as typeof real.randomInt
+  return { ...real, default: { ...real, randomInt }, randomInt }
+})
+
 // THE secrecy test of release 1.3 (#148): under a Hidden wheel nobody but the Host learns which games are in the
 // pools, not through the Event read, not through the image route, not through the library.
 
@@ -134,6 +142,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   })
 
   afterEach(() => {
+    source.override = null
     vi.unstubAllEnvs()
   })
 
@@ -397,7 +406,8 @@ describe('Hidden wheel secrecy (#148)', () => {
      * The lobby of 1.4 under a Hidden wheel: a Host, two Players in two teams of one, and every step a Player could see
      * through the room or the feed. Returns the Event and the four games that sit in its pools at some point (#165).
      */
-    async function lobbyFlow() {
+    /** With `castVeto` Player 1 casts a Veto in the open window before the Session ends: a Veto is refused after it (F15). */
+    async function lobbyFlow({ castVeto = false }: { castVeto?: boolean } = {}) {
       const a = await newGame('Alpha Arena', 'aaaaaaaaaaa')
       const b = await newGame('Beta Bowling', 'bbbbbbbbbbb')
       const c = await newGame('Gamma Garten', 'ccccccccccc')
@@ -469,6 +479,12 @@ describe('Hidden wheel secrecy (#148)', () => {
       await hostPutsBack(request, slug, hostCookie, roundId)
       // The Host spins the wheel (round.spun, game_drawn); the Session ends with that Round still being drawn.
       expect((await send('POST', `/api/e/${slug}/rounds/spin`, hostCookie)).status).toBe(200)
+      if (castVeto) {
+        // The wheel stops (the clock moves past it) and Player 1 casts a Veto: veto.cast goes to Player 1's Party only (#231).
+        const [drawn] = (await testDb.db.select().from(draws)).filter(row => row.kind === 'spin')
+        clock.advance(8000)
+        expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
+      }
       // The Host sets a Countdown and starts it (countdown.changed, #236); ending the Session clears it.
       expect((await send('PUT', `/api/e/${slug}/countdown`, hostCookie, { seconds: 60 })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/countdown/start`, hostCookie)).status).toBe(200)
@@ -480,12 +496,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     }
 
     it('produces every message type Nuxt sends to the room, and writes every Activity type', async () => {
-      const { slug, eventId } = await lobbyFlow()
-      // The wheel stops (the clock moves past it) and Player 1 casts a Veto after the Session ended: veto.cast goes to Player 1's
-      // Party only (#231). The flow's leak tests below stay before the stop.
-      const [drawn] = (await testDb.db.select().from(draws)).filter(row => row.kind === 'spin')
-      clock.advance(8000)
-      expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
+      // The flow's leak tests below stay before the stop; this one casts a Veto after it, while the Session still runs.
+      const { slug, eventId } = await lobbyFlow({ castVeto: true })
 
       expect(everyTypeListed).toBe(true)
       const sent = new Set(notifier.messages(eventId).map(message => message.type))
@@ -535,12 +547,14 @@ describe('Hidden wheel secrecy (#148)', () => {
   const NO_WINDOW = { ...LOBBY, vetoAllowance: 0 } as const
 
   /** A Running Session under a Hidden wheel: Alpha and Beta in the Game pool, Gamma in the Tiebreaker pool, Epsilon only in the library. */
-  async function runningEvent(settings: Record<string, unknown> = LOBBY) {
+  async function runningEvent(settings: Record<string, unknown> = LOBBY, extraGames = 0) {
     const [a, b, c, e] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
+    // More games for the Game pool, for a test that needs a wheel with many slices.
+    const more = await Promise.all(Array.from({ length: extraGames }, (_, index) => newGame(`Zusatz ${index}`, `zzzzzzzzzz${index}`)))
     const created = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings, pools: { main: [a.id, b.id], tiebreaker: [c.id] } }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings, pools: { main: [a.id, b.id, ...more.map(game => game.id)], tiebreaker: [c.id] } }),
     })
     const { slug, inviteUrl } = await created.json() as CreatedEvent
     const token = new URL(inviteUrl).pathname.slice('/e/'.length)
@@ -691,7 +705,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         count: 1,
         slices: null,
         spin: {
-          roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null,
+          roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null, current: true,
         },
         vetoes: { left: [0, 0], own: { team: 1, castBy: null, rejection: 'no_veto_window' }, revealed: null, draw: null },
       })
@@ -748,6 +762,27 @@ describe('Hidden wheel secrecy (#148)', () => {
       clock.set(new Date(stopAt))
       const after = JSON.parse(await rawRead(hostCookie, slug)) as EventView
       expect(after.wheel?.spin?.labels).toEqual(before.wheel?.spin?.labels)
+    })
+
+    it('lays a Hidden wheel out in an order of its own, not that of the pool, and the drawn game is the slice at the result index (F2)', async () => {
+      // Every draw of the source answers 0: result 0, and Fisher-Yates then turns the games left one place, whatever the pool's order.
+      source.override = () => 0
+      const running = await runningEvent(NO_WINDOW, 4)
+      const before = JSON.parse(await rawRead(hostCookie, running.slug)) as EventView
+      const poolOrder = before.wheel!.slices!.map(slice => slice.id)
+      expect(poolOrder).toHaveLength(6)
+
+      expect((await spin(running.slug)).status).toBe(200)
+
+      const [row] = await testDb.db.select().from(draws)
+      expect(row!.sliceGameIds).not.toEqual(poolOrder)
+      expect([...row!.sliceGameIds!].sort()).toEqual([...poolOrder].sort())
+      expect(row!.gameId).toBe(row!.sliceGameIds![row!.resultIndex!])
+      // The Host's names follow the spin's own order, and the Player's placeholders have as many labels.
+      const hostView = JSON.parse(await rawRead(hostCookie, running.slug)) as EventView
+      expect(hostView.wheel!.spin!.labels).toEqual(row!.sliceGameIds!.map(id => before.wheel!.slices!.find(slice => slice.id === id)!.name))
+      const playerView = JSON.parse(await rawRead(playerCookie, running.slug)) as EventView
+      expect(playerView.wheel!.spin!.labels).toHaveLength(6)
     })
 
     it('hides the drawn game up to the last millisecond before the stop', async () => {

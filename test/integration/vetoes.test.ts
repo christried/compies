@@ -10,6 +10,7 @@ import putBack from '../../server/api/e/[slug]/rounds/[id].delete'
 import setGame from '../../server/api/e/[slug]/rounds/index.post'
 import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
 import changeSettings from '../../server/api/e/[slug]/settings.patch'
+import endSession from '../../server/api/e/[slug]/sessions/end.post'
 import startSession from '../../server/api/e/[slug]/sessions/start.post'
 import { activity, bonusVetoes, draws, eventMembers, eventPoolGames, events, games, pollSlots, rounds, users, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
@@ -58,6 +59,7 @@ describe('Vetoes', () => {
       'POST /api/e/:slug/move': moveMember,
       'PATCH /api/e/:slug/settings': changeSettings,
       'POST /api/e/:slug/sessions/start': startSession,
+      'POST /api/e/:slug/sessions/end': endSession,
       'POST /api/e/:slug/rounds': setGame,
       'POST /api/e/:slug/rounds/spin': spinWheel,
       'DELETE /api/e/:slug/rounds/:id': putBack,
@@ -287,6 +289,17 @@ describe('Vetoes', () => {
       expect((await drawRows()).map(row => row.outcome)).toEqual(['vetoed', 'set'])
     })
 
+    it('refuses a vetoed game from the library: a vetoed game cannot come back (F14)', async () => {
+      const party = await running()
+      const [library] = await testDb.db.insert(games).values({ name: 'Bibliothek', createdBy: party.ids.host }).returning()
+      const { drawId } = await setWithVeto(party, library!.id)
+      await cast(party, drawId, party.cookies.one)
+      clock.advance(VETO_WINDOW_MS)
+
+      expect(await errorOf(await set(party, library!.id))).toEqual({ status: 409, code: 'game_already_drawn' })
+      expect(await errorOf(await set(party, party.games[0]!.id))).not.toEqual({ status: 409, code: 'game_already_drawn' })
+    })
+
     it('loses a library game too, and the pool stays as it was', async () => {
       const party = await running()
       const [library] = await testDb.db.insert(games).values({ name: 'Bibliothek', createdBy: party.ids.host }).returning()
@@ -450,6 +463,20 @@ describe('Vetoes', () => {
       expect(view.setGame?.respin).toBe(true)
     })
 
+    it('is no longer the wheel\'s current spin once it was vetoed: the card names it no more (F6)', async () => {
+      const party = await running()
+      const { drawId } = await spun(party)
+      clock.advance(STOP)
+      await cast(party, drawId, party.cookies.one)
+      // Sealed and open: the spin is still the latest draw, and nothing has settled.
+      expect((await read(party, party.cookies.three)).wheel?.spin?.current).toBe(true)
+
+      clock.advance(VETO_WINDOW_MS)
+
+      expect((await read(party, party.cookies.three)).wheel?.spin?.current).toBe(false)
+      expect((await read(party)).wheel?.spin?.current).toBe(false)
+    })
+
     it('spins into the same Round: no new Round, and the Game count counts it once', async () => {
       const party = await running({ gameCount: 1 })
       const { roundId, drawId } = await spun(party)
@@ -571,6 +598,17 @@ describe('Vetoes', () => {
         clock.set(iso(END + 120_000))
         expect(await errorOf(await cast(party, drawId, party.cookies.three))).toEqual({ status: 409, code: 'veto_window_closed' })
         expect((await vetoRows()).map(row => row.team)).toEqual([1])
+      })
+
+      it('answers 409 no_running_session once the Session has ended, though the window was open (F15)', async () => {
+        const party = await running()
+        const { drawId } = await spun(party)
+        clock.set(iso(STOP))
+        expect((await send('POST', `/api/e/${party.slug}/sessions/end`, party.hostCookie)).status).toBe(200)
+
+        expect(await errorOf(await cast(party, drawId, party.cookies.one))).toEqual({ status: 409, code: 'no_running_session' })
+        expect(await vetoRows()).toEqual([])
+        expect((await read(party, party.cookies.one)).wheel).toBeNull()
       })
 
       it('answers 409 veto_already_cast to a second Veto of a Party: the same Player, or a teammate', async () => {

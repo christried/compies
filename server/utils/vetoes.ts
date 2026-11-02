@@ -60,6 +60,6 @@ export async function grantBonusVeto({ tx, eventRow, user, publish }: Change, no
   if (rejection) throw apiError(rejection)
 
   await tx.insert(bonusVetoes).values({ eventId: eventRow.id, team, grantedBy: user.id, grantedAt: now })
-  await recordActivity(tx, publish, eventRow.id, { type: 'bonus_veto_granted', actorId: user.id, params: { team } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'bonus_veto_granted', actorId: user.id, params: { team }, now })
   return { team, granted: granted[team - 1]! + 1 }
 }

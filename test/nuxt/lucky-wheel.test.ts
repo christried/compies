@@ -20,7 +20,7 @@ const FINAL = -2002.5
 function spinOf(fields: Partial<SpinView> = {}): SpinView {
   return {
     roundId: 'r1', drawId: 'd1', spinStartAt: iso(START), stopAt: iso(STOP), slices: 4, resultIndex: 2, resultOffset: 0.25,
-    labels: ['Halo', 'Kart', 'Pong', 'Schach'], game: null, ...fields,
+    labels: ['Halo', 'Kart', 'Pong', 'Schach'], game: null, current: true, ...fields,
   }
 }
 const wheelOf = (spin: SpinView | null, fields: Partial<WheelView> = {}): WheelView => ({
@@ -65,6 +65,14 @@ describe('the wheel at rest', () => {
     expect(text()).toContain('3 Spiele auf dem Rad')
     for (const name of ['Halo', 'Kart', 'Schach']) expect(text()).toContain(name)
     expect(text()).not.toContain('Das Glücksrad sagt')
+  })
+
+  it('cuts a long name at 22 characters as the User sees them, so an emoji is never torn in two (F19)', async () => {
+    const name = '🎮'.repeat(25)
+    await mount(wheelOf(null, { slices: [{ id: 'a', name }, { id: 'b', name: 'Kart' }, { id: 'c', name: 'Schach' }] }))
+
+    expect(page!.get('[data-testid="wheel-label-0"]').text()).toBe(`${'🎮'.repeat(21)}…`)
+    expect(page!.get('[data-testid="wheel-label-1"]').text()).toBe('Kart')
   })
 
   it('says so when the wheel is empty', async () => {
@@ -136,6 +144,15 @@ describe('the result', () => {
     expect(text()).toContain('Das Glücksrad sagt')
     expect(text()).toContain('Halo')
     expect(page!.get('[role="status"]').text()).toBe('Glücksrad: Halo')
+  })
+
+  it('names no game once the spin is no longer the latest draw: a vetoed, replaced or put-back game (F6)', async () => {
+    await mount(wheelOf(spinOf({ game: halo, current: false })))
+    await at(STOP + 100)
+
+    expect(text()).not.toContain('Das Glücksrad sagt')
+    expect(text()).not.toContain('Zuletzt gezogen')
+    expect(page!.get('[role="status"]').text()).toBe('')
   })
 
   it('lets the drawn slice leave 2.2 s after the stop and the others close the gap', async () => {

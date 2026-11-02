@@ -3,6 +3,7 @@ import { defineEventHandler, getRouterParam } from 'h3'
 import { sessions } from '../../../../db/schema'
 import { removeSessionRejection } from '../../../../domain/phase'
 import { recordActivity } from '../../../../utils/activity'
+import { useClock } from '../../../../utils/clock'
 import { apiError } from '../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../utils/sessions'
 import { isoInstant } from '../../../../../shared/activity'
@@ -34,6 +35,6 @@ export default defineEventHandler((event): Promise<SessionRemoved> => changeSess
       .set({ removedAt: sql`now()`, previousStartsAt: withdrawn, startsAt: null, slotId: null })
       .where(eq(sessions.id, session.id))
   }
-  await recordActivity(tx, publish, eventRow.id, { type: 'session_removed', actorId: user.id, params: { sessionId: session.id, number, startsAt: session.startsAt ? isoInstant(session.startsAt) : null } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'session_removed', actorId: user.id, params: { sessionId: session.id, number, startsAt: session.startsAt ? isoInstant(session.startsAt) : null }, now: useClock(event).now() })
   return { id: session.id }
 }))
