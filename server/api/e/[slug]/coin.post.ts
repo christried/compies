@@ -6,5 +6,5 @@ import type { CoinTossed } from '../../../../shared/stage'
 
 // The Host tosses the Coin flip (#235, spec #218 § Coin flip): no body. The server picks the side with the platform's random source,
 // stamps the instants with the request's clock and answers the toss. The Event row is locked, so two tosses cannot both pass the rule
-// (one coin at a time). The room hears `coin.tossed`; the client refetches the Event read, which carries the toss.
+// (one coin at a time). The room hears `event.changed`; the client refetches the Event read, which carries the toss.
 export default defineEventHandler((event): Promise<CoinTossed> => changeEvent(event, { hostOnly: true, lock: 'update' }, change => tossCoin(change, randomInt)))

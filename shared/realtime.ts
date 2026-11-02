@@ -1,7 +1,7 @@
 // What the room and the app say to each other (spec #153 § Protocol, ADR 0012, ADR 0013). The app and the Worker
 // (realtime/) import this file, so it holds types and tiny helpers only. No message carries a game's name, id,
-// image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer. The one
-// exception is an Activity entry of a game everyone may know (`activity.added`: a game that was set, #228).
+// image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer (#258).
+// The one exception is an Activity entry of a game everyone may know (`activity.added`, #228, #229).
 
 import type { ActivityEntry } from './activity'
 import type { Place } from './board'
@@ -39,28 +39,11 @@ export type RoomMessage
     | { type: 'session.ended', sessionId: string }
   /** The first Session started: every team's Team name is frozen (#164). */
     | { type: 'team.nameFrozen' }
-  /** The Host set the next game: a Round is open (#228). No game data; the client refetches the Event read. */
-    | { type: 'round.set', roundId: string }
-  /** The Host put an open Round back (#228). No game data. */
-    | { type: 'round.putBack', roundId: string }
-  /**
-   * The Host spun the Lucky Wheel (#229, spec #218 § Hidden wheel on the wire). Instants are ISO strings; `slices` is how many
-   * slices the wheel had. Never a game: `labels` are the placeholders of a Hidden wheel (shuffled for this spin), null on a
-   * visible wheel, whose names the clients take from the Event read.
-   */
-    | { type: 'round.spun', roundId: string, drawId: string, spinStartAt: string, stopAt: string, slices: number, resultIndex: number, resultOffset: number, labels: string[] | null }
-  /** The Host changed the Countdown (#236): set, started, paused, reset or cleared. No payload; the client refetches the Event read. */
-    | { type: 'countdown.changed' }
   /**
    * A Player of `team` cast a Veto on `drawId` (#231, spec #218 § Realtime room). Sent to the Users of that Party only (the named
    * send, #227), the Host only when the Host plays in it; never broadcast, so no other Party learns that someone vetoed.
    */
     | { type: 'veto.cast', drawId: string, team: number }
-  /**
-   * The Host tossed the Coin flip (#235, spec #218 § Coin flip). Instants are ISO strings: the flight starts at `startedAt` and the
-   * coin lands at `landsAt`. The side rides along; the UI and the feed show it only at the landing.
-   */
-    | { type: 'coin.tossed', tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
 
 export type RoomMessageType = RoomMessage['type']
 
