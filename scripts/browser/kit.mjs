@@ -112,7 +112,7 @@ function inTwoWeeks() {
 
 /**
  * An Event of the tab's account (`POST /api/e`) with one direct Session: `settings` over the defaults, `pools` as
- * `{ main: [ids], tiebreaker: [ids] }`, `startsAt` as Berlin wall-clock `YYYY-MM-DDTHH:mm` (default: in two weeks).
+ * `{ main: [ids] }`, `startsAt` as Berlin wall-clock `YYYY-MM-DDTHH:mm` (default: in two weeks).
  * Returns `{ slug, inviteUrl }`.
  */
 export async function createEvent(tab, { name, settings = {}, pools, startsAt = inTwoWeeks() }) {

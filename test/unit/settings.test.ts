@@ -27,6 +27,7 @@ import {
   settingsFromRow,
   storedPoolPreview,
   storedHiddenWheel,
+  tiePossible,
   type SettingsFloors,
   TEAM_SIZE_MIN,
   teamSizeFloor,
@@ -146,10 +147,29 @@ describe('defaults and helpers', () => {
     expect(parseSettings(defaultSettings())).toEqual({ ok: true, settings: defaultSettings() })
   })
 
-  it('the recommended pool is the Game count, plus the vetoes of all Parties on the Glücksrad', () => {
-    expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'admin_pick', vetoAllowance: null })).toBe(10)
-    expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'lucky_wheel', vetoAllowance: 3 })).toBe(22)
-    expect(recommendedPoolSize({ gameCount: 6, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 0 })).toBe(6)
+  it('a Tie is possible at an even Game count, or with more than two Parties', () => {
+    expect(tiePossible(10, 2)).toBe(true)
+    expect(tiePossible(9, 2)).toBe(false)
+    expect(tiePossible(9, 3)).toBe(true)
+    expect(tiePossible(1, 2)).toBe(false)
+    expect(tiePossible(1, 3)).toBe(true)
+    expect(tiePossible(2, 2)).toBe(true)
+    expect(tiePossible(30, 2)).toBe(true)
+    expect(tiePossible(30, 8)).toBe(true)
+  })
+
+  it('the recommended pool is the Game count, plus one for a possible Tie, plus the vetoes of all Parties on the Glücksrad', () => {
+    expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'admin_pick', vetoAllowance: null })).toBe(11)
+    expect(recommendedPoolSize({ gameCount: 9, teamCount: 2, selectionMode: 'admin_pick', vetoAllowance: null })).toBe(9)
+    expect(recommendedPoolSize({ gameCount: 9, teamCount: 3, selectionMode: 'admin_pick', vetoAllowance: null })).toBe(10)
+    expect(recommendedPoolSize({ gameCount: 10, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 5 })).toBe(21)
+    expect(recommendedPoolSize({ gameCount: 9, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 5 })).toBe(19)
+    expect(recommendedPoolSize({ gameCount: 10, teamCount: 4, selectionMode: 'lucky_wheel', vetoAllowance: 3 })).toBe(23)
+    expect(recommendedPoolSize({ gameCount: 6, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 0 })).toBe(7)
+  })
+
+  it('a Lucky Wheel without a Veto allowance counts no vetoes', () => {
+    expect(recommendedPoolSize({ gameCount: 9, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: null })).toBe(9)
   })
 })
 
@@ -168,22 +188,32 @@ describe('poolHint', () => {
   const lucky = { gameCount: 10, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 3 } as const
   const admin = { gameCount: 10, teamCount: 2, selectionMode: 'admin_pick', vetoAllowance: null } as const
 
-  it('names the worst case on the Glücksrad: Games plus the vetoes of all Parties', () => {
-    expect(poolHint(lucky, 12)).toEqual({ games: 10, vetoes: 6, needed: 16, have: 12 })
+  it('names the worst case on the Glücksrad: Games, the vetoes of all Parties and the possible last game', () => {
+    expect(poolHint(lucky, 12)).toEqual({ games: 10, vetoes: 6, extra: 1, needed: 17, have: 12 })
   })
 
   it('is null at and above the recommended size', () => {
-    expect(poolHint(lucky, 16)).toBeNull()
+    expect(poolHint(lucky, 17)).toBeNull()
     expect(poolHint(lucky, 30)).toBeNull()
   })
 
-  it('needs only the Game count with Host pick', () => {
-    expect(poolHint(admin, 9)).toEqual({ games: 10, vetoes: 0, needed: 10, have: 9 })
-    expect(poolHint(admin, 10)).toBeNull()
+  it('has no possible last game at an odd Game count with two Parties', () => {
+    expect(poolHint({ ...lucky, gameCount: 9 }, 12)).toEqual({ games: 9, vetoes: 6, extra: 0, needed: 15, have: 12 })
   })
 
-  it('counts an empty pool', () => {
-    expect(poolHint(admin, 0)).toEqual({ games: 10, vetoes: 0, needed: 10, have: 0 })
+  it('needs the Game count plus the possible last game with Host pick', () => {
+    expect(poolHint(admin, 10)).toEqual({ games: 10, vetoes: 0, extra: 1, needed: 11, have: 10 })
+    expect(poolHint(admin, 11)).toBeNull()
+  })
+
+  it('needs only the Game count with Host pick at an odd Game count', () => {
+    expect(poolHint({ ...admin, gameCount: 9 }, 8)).toEqual({ games: 9, vetoes: 0, extra: 0, needed: 9, have: 8 })
+    expect(poolHint({ ...admin, gameCount: 9 }, 9)).toBeNull()
+  })
+
+  it('counts an empty pool, with and without the possible last game', () => {
+    expect(poolHint({ ...admin, gameCount: 1 }, 0)).toEqual({ games: 1, vetoes: 0, extra: 0, needed: 1, have: 0 })
+    expect(poolHint({ ...admin, gameCount: 1, teamCount: 3 }, 0)).toEqual({ games: 1, vetoes: 0, extra: 1, needed: 2, have: 0 })
   })
 })
 

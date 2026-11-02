@@ -5,7 +5,7 @@ import { PHASES } from '../../shared/event'
 import { ZONES } from '../../shared/board'
 import { SUITABILITIES } from '../../shared/game'
 import { COIN_SIDES, DRAW_KINDS, DRAW_OUTCOMES, DRAW_SOURCES } from '../../shared/rounds'
-import { FORMATS, POOLS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
+import { FORMATS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
 
 // MVP schema (#1). Every instant is timestamptz in UTC (ADR 0003); every id is a database-generated uuid.
 
@@ -197,9 +197,11 @@ export const games = pgTable('games', {
   index('games_image_key_idx').on(table.imageKey),
 ])
 
-export const poolKind = pgEnum('pool_kind', POOLS)
+// Postgres cannot drop an enum value safely, so `tiebreaker` stays in the type although nothing reads or writes it (ADR 0014, #279).
+// Migration 0021 deleted its rows; the 0.7 code serving during the switch-over can still insert one.
+export const poolKind = pgEnum('pool_kind', ['main', 'tiebreaker'])
 
-// The games of an Event's Game pool and Tiebreaker pool (#146). A game may sit in both pools.
+// The games of an Event's Game pool (#146). Game pool; Tiebreaker pool removed in 0.8 (ADR 0014, #279).
 export const eventPoolGames = pgTable('event_pool_games', {
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   gameId: uuid('game_id').notNull().references(() => games.id),

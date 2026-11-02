@@ -110,8 +110,8 @@ export interface RemovedSessionView {
   previousStartsAt: string
 }
 
-/** The Event's Game pool and Tiebreaker pool, with their games (#146): whole for the Host, the face only for every other Member (#224). */
-export interface EventPools { main: (PoolGame | PoolGameFace)[], tiebreaker: (PoolGame | PoolGameFace)[] }
+/** The Event's Game pool, with its games (#146, #279 dropped the Tiebreaker pool): whole for the Host, the face only for every other Member (#224). */
+export interface EventPools { main: (PoolGame | PoolGameFace)[] }
 
 /** What `POST /api/e/:slug/move` returns: the Member and the place they stand in now (#160). */
 export interface MovedMember { userId: string, to: Place }
