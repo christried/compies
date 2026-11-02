@@ -13,7 +13,7 @@ const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: 
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(props: { open?: boolean, vetoSwitch?: boolean } = {}) {
+async function mount(props: { open?: boolean, vetoSwitch?: boolean, pool?: PoolGame[] } = {}) {
   page = await mountSuspended(NextGamePicker, { props: { open: true, pool: [halo], busy: false, ...props } })
   await flushPromises()
   return page
@@ -93,5 +93,17 @@ describe('the Veto switch of the picker', () => {
     await flushPromises()
 
     expect(vetoSwitch()!.getAttribute('aria-checked')).toBe('false')
+  })
+})
+
+describe('the sheet\'s footer', () => {
+  it('keeps „Setzen“ in the sticky footer, so it stays in view under a long library list (#218)', async () => {
+    const pool = Array.from({ length: 40 }, (_, index) => ({ ...halo, id: `g-${index}`, name: `Spiel ${index}` }))
+    await mount({ vetoSwitch: true, pool })
+
+    const footer = dialog()!.querySelector('footer')!
+    expect(footer.textContent).toContain('Setzen')
+    expect(footer.className).toContain('sticky')
+    expect(footer.className).toContain('bottom-0')
   })
 })

@@ -55,7 +55,12 @@ const { onKeydown } = useDialog(toRef(props, 'open'), panel, () => emit('close')
           />
         </header>
         <slot />
-        <footer v-if="$slots.footer">
+        <!-- The footer sticks to the bottom of the sheet while the content scrolls above it (#218). -Mx-5 and -mb-5 take it to the
+             sheet's edges, where its own padding puts the content back, so it is flush whether it sticks or follows the content. -->
+        <footer
+          v-if="$slots.footer"
+          class="sticky bottom-0 layer-sticky mt-auto -mx-5 -mb-5 border-t-(length:--cp-bw) border-line bg-surface px-5 pt-3 pb-5"
+        >
           <slot name="footer" />
         </footer>
       </section>

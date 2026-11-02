@@ -77,7 +77,8 @@ watch(secondsLeft, () => {
           class="text-[12px] text-ink-2"
         >{{ sub }}</span>
       </div>
-      <div class="w-full flex-none md:w-[260px]">
+      <!-- The column takes the locked pill's width at md (#218): a fixed 260 px cut its label to „Vet…“ beside the stamp. The ready hold keeps its 260 px minimum. -->
+      <div class="w-full flex-none md:w-auto md:min-w-[260px]">
         <VetoButton
           :own="own"
           :open="open"
