@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-02 – Glücksrad
+
+Das Glücksrad dreht sich jetzt bei allen im selben Moment, mit Clip, versiegelten Vetos und mehreren Spielen gleichzeitig. Dazu wirft der Host eine Münze und stellt einen Countdown.
+
 ### Neu
 
 - Der Host setzt in der laufenden Session das nächste Spiel direkt, aus dem Pool oder der ganzen Bibliothek. Mehrere Spiele können gleichzeitig laufen, und ein Spiel lässt sich zurücklegen. ([#228](https://github.com/christried/compies/issues/228))
