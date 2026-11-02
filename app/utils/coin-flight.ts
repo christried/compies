@@ -16,12 +16,15 @@ export interface CoinPose {
   shadowOpacity: number
 }
 
+/** One keyframe of the flight: the Web Animations API's own shape for what the flight uses, so the unit tests need no DOM types. */
+export type FlightFrame = { transform: string, offset: number, easing?: string, opacity?: number }
+
 /** The four animations' keyframes, in the order the component plays them. */
 export interface CoinFlight {
-  camera: Keyframe[]
-  position: Keyframe[]
-  spin: Keyframe[]
-  shadow: Keyframe[]
+  camera: FlightFrame[]
+  position: FlightFrame[]
+  spin: FlightFrame[]
+  shadow: FlightFrame[]
 }
 
 const GROUND = 83

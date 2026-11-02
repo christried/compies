@@ -107,7 +107,7 @@ describe('useInstantRefresh', () => {
     it('reads again every 500 ms until it settles, and then stops', async () => {
       let reads = 0
       // The read settles with the third one: the first two reach the server before the instant took effect.
-      const { passed } = await setUp([START + 1000], () => reads < 3, () => { reads += 1 })
+      const { passed } = await setUp([START + 1000], () => reads < 3, () => void (reads += 1))
 
       vi.advanceTimersByTime(1000 + INSTANT_MARGIN_MS)
       expect(passed).toHaveBeenCalledTimes(1)

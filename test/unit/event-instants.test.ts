@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { waitsForSettle } from '../../app/utils/event-instants'
-import type { EventView, RoundGame, SpinView, VetoView } from '../../shared/event'
+import type { EventView, SpinView, VetoView } from '../../shared/event'
 
 // When a read still misses what a passed instant decides (review 0.7, F13): the page reads again while this holds.
 
 const NOW = Date.UTC(2090, 10, 7, 20, 0, 0)
 const iso = (offsetMs: number) => new Date(NOW + offsetMs).toISOString()
-const game = { id: 'g1', name: 'Halo' } as RoundGame
+const game = { id: 'g1', name: 'Halo' } as NonNullable<SpinView['game']>
 
 const spin = (stopOffset: number, withGame: boolean): SpinView => ({
   roundId: 'r1', drawId: 'd1', spinStartAt: iso(stopOffset - 6000), stopAt: iso(stopOffset), slices: 4, resultIndex: 1, resultOffset: 0.5, labels: null, game: withGame ? game : null,
