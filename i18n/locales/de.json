@@ -460,6 +460,7 @@
     "title": "Veto-Fenster",
     "left": "Keine Vetos mehr | Noch 1 Veto | Noch {n} Vetos",
     "partyLeft": "Euer Team: kein Veto mehr | Euer Team: 1 Veto übrig | Euer Team: {n} Vetos übrig",
+    "soloLeft": "Du hast kein Veto mehr | Du hast noch 1 Veto | Du hast noch {n} Vetos",
     "timeLeft": "Noch 1 Sekunde | Noch {n} Sekunden",
     "timeLabel": "Veto-Zeit",
     "holding": "Halten …",

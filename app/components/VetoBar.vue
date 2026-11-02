@@ -13,6 +13,8 @@ const props = defineProps<{
   wheel: WheelView
   members: readonly { id: string, name: string }[]
   viewerId: string
+  /** A Party is a single Player (team size 1): the bar speaks to „du“ instead of „euer Team“. */
+  solo?: boolean
   /** The server's time in epoch ms (useServerClock). */
   serverNow: () => number
   /** Casts the viewer's Party's Veto on a draw; resolves to whether the server took it. */
@@ -34,7 +36,7 @@ const left = computed(() => vetoes.value.left[(own.value?.team ?? 1) - 1] ?? 0)
 const title = computed(() => {
   if (state.value === 'mine') return t('veto.cast')
   if (state.value === 'mate') return t('veto.byMate', { name: props.members.find(member => member.id === own.value?.castBy)?.name ?? '' })
-  return t('veto.partyLeft', left.value)
+  return t(props.solo ? 'veto.soloLeft' : 'veto.partyLeft', left.value)
 })
 const sub = computed(() => ({ ready: t('veto.hint'), mine: t('veto.hintSealed'), mate: t('veto.hintMate'), none: '' })[state.value])
 

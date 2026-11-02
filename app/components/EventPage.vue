@@ -508,6 +508,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       :wheel="data.wheel"
       :members="data.members"
       :viewer-id="data.viewerId"
+      :solo="data.settings?.teamSize === 1"
       :server-now="serverClock.now"
       :cast="castVeto"
       @shown="vetoBarShown = $event"

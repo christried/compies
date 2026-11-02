@@ -24,7 +24,7 @@ const wheelOf = (vetoes: Partial<VetoView> = {}): WheelView => ({ count: 3, slic
 let serverMs = STOP
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(wheel: WheelView, props: { cast?: (drawId: string) => Promise<boolean> } = {}) {
+async function mount(wheel: WheelView, props: { cast?: (drawId: string) => Promise<boolean>, solo?: boolean } = {}) {
   page = await mountSuspended(VetoBar, { props: { wheel, members, viewerId: 'me', serverNow: () => serverMs, cast: () => Promise.resolve(true), ...props } })
   await vi.advanceTimersByTimeAsync(300)
   await flushPromises()
@@ -139,6 +139,17 @@ describe('who gets the bar and when', () => {
 
     expect(text()).toContain('Euer Team: kein Veto mehr')
     expect(page!.get('[data-testid="veto-hold"] button, button').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('speaks to a single Player as „du“ when a Party is one Player', async () => {
+    serverMs = STOP + 1000
+    await mount(wheelOf({ left: [1, 2] }), { solo: true })
+    expect(text()).toContain('Du hast noch 1 Veto')
+    expect(text()).not.toContain('Euer Team')
+    page!.unmount()
+
+    await mount(wheelOf({ left: [0, 2], own: own({ rejection: 'no_vetoes_left' }) }), { solo: true })
+    expect(text()).toContain('Du hast kein Veto mehr')
   })
 
   it('turns the last ten seconds red', async () => {

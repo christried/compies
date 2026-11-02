@@ -46,7 +46,8 @@ async function passTo(ms: number) {
   await nextTick()
 }
 
-const liveText = (page: NonNullable<typeof mounted>) => page.get('[aria-live="polite"]').text()
+/** The card's live region: the card may sit in the overlay on the body, so it is looked up in the document. */
+const liveText = (page: NonNullable<typeof mounted>) => (document.querySelector('[aria-live="polite"]') ?? new DOMParser().parseFromString(page.html(), 'text/html').querySelector('[aria-live="polite"]'))?.textContent?.trim() ?? ''
 /** The flight's animations: the ones that run the coin's 3.6 s, in the order the component starts them. */
 const flights = () => animate.mock.calls.flatMap((call, index) => (call[1]?.duration === COIN_DURATION_MS ? [animate.mock.results[index]!.value as { currentTime: number }] : []))
 /** The animations that run for `duration` ms. */
@@ -79,7 +80,7 @@ describe('the result, which shows only at the landing (#235)', () => {
     expect(liveText(page)).toBe('')
     await passTo(COIN_LEAD_MS + COIN_DURATION_MS - 1)
     expect(liveText(page)).toBe('')
-    expect(page.text()).not.toMatch(/Kopf|Schwanz/)
+    expect(document.body.textContent).not.toMatch(/Kopf|Schwanz/)
   })
 
   it('announces „Kopf!“ in the live region at the landing', async () => {
@@ -135,6 +136,49 @@ describe('the flight (#235, 04-motion § Coin: 3.6 s)', () => {
   })
 })
 
+// The coin shows in a fixed overlay from the toss's start until 1.5 s after the landing (review 0.7, F5), moved there by a Teleport so the
+// flight is not restarted; the inline card keeps the result before and after.
+const card = () => document.querySelector<HTMLElement>('[data-testid="coin-card"]') ?? (mounted ? new DOMParser().parseFromString(mounted.html(), 'text/html').querySelector<HTMLElement>('[data-testid="coin-card"]') : null)
+const inOverlay = () => card()?.parentElement === document.body
+const HOLD_MS = 1500
+const LEAVE_MS = 220
+
+describe('the overlay (F5)', () => {
+  it('is inline before the toss starts, in the overlay from the start, and inline again 1.5 s after the landing, with one flight throughout', async () => {
+    await mount(toss('heads'), T0)
+    expect(inOverlay()).toBe(false)
+
+    await passTo(COIN_LEAD_MS + 1)
+    expect(inOverlay()).toBe(true)
+    expect(card()!.className).toContain('layer-veto')
+    expect(card()!.className).toContain('animate-clip-in')
+
+    await passTo(COIN_LEAD_MS + COIN_DURATION_MS + HOLD_MS - 1)
+    expect(inOverlay()).toBe(true)
+    expect(card()!.className).not.toContain('opacity-0')
+
+    await passTo(COIN_LEAD_MS + COIN_DURATION_MS + HOLD_MS)
+    expect(inOverlay()).toBe(true)
+    expect(card()!.className).toContain('opacity-0')
+
+    await passTo(COIN_LEAD_MS + COIN_DURATION_MS + HOLD_MS + LEAVE_MS)
+    expect(inOverlay()).toBe(false)
+    expect(liveText(mounted!)).toBe('Kopf!')
+    expect(flights()).toHaveLength(4)
+  })
+
+  it('shows a late joiner mid-flight the overlay, and one who comes after it the inline card with the result', async () => {
+    await mount(toss('heads'), STARTS + 1000)
+    expect(inOverlay()).toBe(true)
+    mounted!.unmount()
+
+    await mount(toss('heads'), LANDS + HOLD_MS + LEAVE_MS)
+    expect(card()).not.toBeNull()
+    expect(inOverlay()).toBe(false)
+    expect(liveText(mounted!)).toBe('Kopf!')
+  })
+})
+
 describe('reduced motion (#235, 04-motion § Coin: fades to the final face)', () => {
   it('runs no flight, and at the landing fades the coin out and in over 0.5 s and shows the result', async () => {
     motion('reduced')
@@ -150,6 +194,19 @@ describe('reduced motion (#235, 04-motion § Coin: fades to the final face)', ()
     expect(runsOf(FADE_MS)).toHaveLength(1)
     expect(runsOf(FADE_MS)[0]![0]).toEqual([{ opacity: 1 }, { opacity: 0 }, { opacity: 1 }])
     expect(liveText(page)).toBe('Kopf!')
+  })
+
+  it('swaps to the final face at the middle of the fade, not before it (F22)', async () => {
+    motion('reduced')
+    await mount(toss('tails'), T0)
+    const stand = 'rotateX(0deg) rotateY(0deg) rotateZ(0deg)'
+
+    await passTo(COIN_LEAD_MS + COIN_DURATION_MS)
+    expect(document.querySelector<HTMLElement>('[data-testid="coin-spin"]')!.style.transform).toBe(stand)
+    vi.advanceTimersByTime(FADE_MS / 2)
+    await nextTick()
+
+    expect(document.querySelector<HTMLElement>('[data-testid="coin-spin"]')!.style.transform).not.toBe(stand)
   })
 
   it('shows the final face of a late joiner without a flight or a fade', async () => {

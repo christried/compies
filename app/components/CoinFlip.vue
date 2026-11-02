@@ -9,7 +9,17 @@ import type { CoinView } from '~~/shared/event'
 // Every Member's coin flies from the same start instant and lands at the same instant: before the start it stands, after it the flight
 // is seeked to the server's clock (a late joiner seeks in), and from the landing on the end frame shows at once. The result („Kopf!“ or
 // „Schwanz!“) appears only at the landing, in a live region. Under reduced motion no flight runs: at the landing the coin fades out and in
-// with its final face (0.5 s), and the result appears. The server picks the side; the page sends it with the toss (#235).
+// with its final face (0.5 s: the face changes at the fade's midpoint, F22), and the result appears. The server picks the side; the page sends
+// it with the toss (#235).
+// From the toss's start until OVERLAY_HOLD_MS after the landing the coin shows in a fixed, centred overlay above the clip (review 0.7, F5):
+// the stage is long and the coin sat below the fold. It is the same instance, moved by a Teleport, so the flight does not restart; it
+// rises in with the clip's animation, fades out with the clip's leave, and the inline card then keeps the result.
+
+/** The overlay stays this long after the landing, so the result is read, then fades out over LEAVE_MS (the clip's leave: dur-base). */
+const OVERLAY_HOLD_MS = 1500
+const LEAVE_MS = 220
+/** Under reduced motion the coin fades out and in over 0.5 s; the final face shows from the midpoint. */
+const REDUCED_FADE_MS = 500
 
 const props = defineProps<{
   toss: CoinView
@@ -38,16 +48,23 @@ const result = computed(() => (tails.value ? t('coin.tail') : t('coin.head')))
 
 /** Whether the toss has landed on the server's clock. Read on the client only, so the server's render and the first one agree. */
 const landed = ref(false)
-const pose = computed<CoinPose>(() => (landed.value ? coinFinalPose(tails.value) : coinStandPose))
+/** The final face is shown: at the landing, or under reduced motion at the midpoint of the fade (F22, 04-motion § Coin). */
+const faceFinal = ref(false)
+/** The coin shows in the fixed overlay, and whether it is on its way out. */
+const overlay = ref(false)
+const leaving = ref(false)
+const pose = computed<CoinPose>(() => (faceFinal.value ? coinFinalPose(tails.value) : coinStandPose))
 
 let flight: Animation[] = []
 let frame = 0
 let reduced = false
+let faceTimer: ReturnType<typeof setTimeout> | undefined
 
 /** Stops the flight and the frames: the coin keeps its pose until the next toss. */
 function stopFlight() {
   cancelAnimationFrame(frame)
   frame = 0
+  clearTimeout(faceTimer)
   for (const animation of flight) animation.cancel()
   flight = []
 }
@@ -71,7 +88,8 @@ function seek(at: number) {
 /** At the landing: the result pops in (04-motion § Coin: 0.38 s pop), or under reduced motion the coin fades with its final face. */
 function onLanded() {
   if (reduced) {
-    camera.value?.animate([{ opacity: 1 }, { opacity: 0 }, { opacity: 1 }], { duration: 500 })
+    camera.value?.animate([{ opacity: 1 }, { opacity: 0 }, { opacity: 1 }], { duration: REDUCED_FADE_MS })
+    faceTimer = setTimeout(() => (faceFinal.value = true), REDUCED_FADE_MS / 2)
     return
   }
   void nextTick(() => {
@@ -82,24 +100,34 @@ function onLanded() {
   })
 }
 
-/** One frame: reads the server's clock, seeks the flight to it, and waits for the landing. */
+/** One frame: reads the server's clock, seeks the flight to it, and waits for the landing and for the overlay to go. */
 function tick() {
   frame = 0
   const was = landed.value
   const at = props.serverNow()
   landed.value = coinLanded({ landsAt: landsMs.value }, at)
-  if (!reduced) seek(at)
+  if (!reduced) {
+    seek(at)
+    faceFinal.value = landed.value
+  }
+  const holdEnds = landsMs.value + OVERLAY_HOLD_MS
+  overlay.value = at >= startMs.value && at < holdEnds + LEAVE_MS
+  leaving.value = at >= holdEnds
   if (landed.value && !was) onLanded()
-  if (!landed.value) frame = requestAnimationFrame(tick)
+  if (at < holdEnds + LEAVE_MS) frame = requestAnimationFrame(tick)
 }
 
-/** Starts the toss the page shows: its flight (unless reduced motion) and the frames until it lands. */
+/** Starts the toss the page shows: its flight (unless reduced motion) and the frames until it lands and the overlay has gone. */
 function start() {
   stopFlight()
   reduced = reducedMotion()
-  landed.value = coinLanded({ landsAt: landsMs.value }, props.serverNow())
+  const at = props.serverNow()
+  landed.value = coinLanded({ landsAt: landsMs.value }, at)
+  faceFinal.value = landed.value
+  leaving.value = false
+  overlay.value = at >= startMs.value && at < landsMs.value + OVERLAY_HOLD_MS + LEAVE_MS
   if (!reduced) startFlight()
-  if (!landed.value) frame = requestAnimationFrame(tick)
+  if (at < landsMs.value + OVERLAY_HOLD_MS + LEAVE_MS) frame = requestAnimationFrame(tick)
 }
 
 onMounted(start)
@@ -108,9 +136,21 @@ onBeforeUnmount(stopFlight)
 </script>
 
 <template>
+  <!-- Keeps the card's place in the page while the coin is in the overlay, so nothing below jumps. -->
+  <div
+    v-if="overlay"
+    aria-hidden="true"
+    class="h-[440px] max-w-[340px]"
+  />
+  <Teleport
+    to="body"
+    :disabled="!overlay"
+  >
   <section
+    data-testid="coin-card"
     :aria-labelledby="headingId"
     class="flex flex-col items-center gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 text-ink"
+    :class="overlay ? ['fixed inset-x-0 top-1/2 layer-veto mx-auto w-[min(420px,calc(100%-1.75rem))] -translate-y-1/2 shadow-card', leaving ? 'opacity-0 transition-opacity dur-base ease-in' : 'animate-clip-in'] : ''"
   >
     <h2
       :id="headingId"
@@ -144,6 +184,7 @@ onBeforeUnmount(stopFlight)
         >
           <div
             ref="spin"
+            data-testid="coin-spin"
             class="absolute inset-0"
             :style="{ transformStyle: 'preserve-3d', transform: pose.spin }"
           >
@@ -191,4 +232,5 @@ onBeforeUnmount(stopFlight)
       </div>
     </div>
   </section>
+  </Teleport>
 </template>
