@@ -2,6 +2,7 @@
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import type { WheelView } from '~~/shared/event'
+import { characterCount, cutToCharacters } from '~~/shared/text'
 
 // The Lucky Wheel on the stage (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel, reference App Spielrunde ?s=wheel).
 // It shows the games left on the wheel and, from the server's spin, turns toward a fixed stop: the angle is a function of the
@@ -105,7 +106,7 @@ function labelOf(index: number): { text: string, opacity: number } {
   return reduced.value ? { text, opacity: stage.progress } : { text: scramble(text, Math.floor(stage.progress * (300 / SCRAMBLE_FRAME_MS))), opacity: 1 }
 }
 
-const shortened = (text: string) => (text.length > LABEL_MAX ? `${text.slice(0, LABEL_MAX - 1)}…` : text)
+const shortened = (text: string) => (characterCount(text) > LABEL_MAX ? `${cutToCharacters(text, LABEL_MAX - 1)}…` : text)
 const fontSize = computed(() => Math.max(10, Math.min(19, 230 / Math.max(count.value, 1) + 6)))
 
 /** A point on the wheel `degrees` clockwise from the top. */

@@ -67,6 +67,14 @@ describe('the wheel at rest', () => {
     expect(text()).not.toContain('Das Glücksrad sagt')
   })
 
+  it('cuts a long name at 22 characters as the User sees them, so an emoji is never torn in two (F19)', async () => {
+    const name = '🎮'.repeat(25)
+    await mount(wheelOf(null, { slices: [{ id: 'a', name }, { id: 'b', name: 'Kart' }, { id: 'c', name: 'Schach' }] }))
+
+    expect(page!.get('[data-testid="wheel-label-0"]').text()).toBe(`${'🎮'.repeat(21)}…`)
+    expect(page!.get('[data-testid="wheel-label-1"]').text()).toBe('Kart')
+  })
+
   it('says so when the wheel is empty', async () => {
     await mount(wheelOf(null, { count: 0, slices: [] }))
 
