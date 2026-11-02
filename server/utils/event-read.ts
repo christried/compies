@@ -1,36 +1,28 @@
-import { asc, eq, inArray } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { eventMembers, eventTeams, games, pollSlots, pollVotes, rounds, users } from '../db/schema'
 import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
-import { WHEEL_UNKNOWN } from '../domain/wheel'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
 import { placeOf, composeTeamName, type Zone } from '../../shared/board'
-import { bonusVetoCounts, bonusVetoRejection, gamesLeft, isBeingDrawn, isOpen, poolWarning, roundsStarted, vetoRejection, waitsForRespin, type PoolWarning } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
-import type { RoundView, VetoView, WheelView } from '../../shared/stage'
-import type { RoundGame } from '../../shared/game'
 import type { VoteRow } from '../../shared/poll'
-import { floorsAt, hasWheel, settingsFromRow, type EventSettings } from '../../shared/settings'
+import { floorsAt, settingsFromRow } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
 import { inviteUrl } from './links'
 import { startOf, teamChoiceOf } from './board'
-import { roundGameView } from './library'
 import { eventPools } from './pools'
-import { readClip } from './clip'
-import { countdownView, readCountdown } from './countdown'
-import { coinView, readShownToss } from './coin'
-import { readDraws, readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { floorFacts } from './settings-floors'
-import { knownVetoRows, partyVetoesLeft, readBonusTeams, readVetoes } from './vetoes'
 
 // The Event read (`GET /api/e/:slug`) as section builders (#183). Each builder returns its slice of EventView and the
 // handler composes them. Rows that more than one section needs are read once, together, by readEventRows; the pools
 // need nothing from them, so the handler reads both at the same time. The board (#160) is one such builder.
+// The stage (the rounds, the Lucky Wheel, the clip, the Countdown, the Coin flip, the Bonus Vetoes) is not here: its
+// sections live in stage-read.ts (#256), and the handler runs them after these.
 
 /** Who reads the Event. */
 export interface Viewer {
@@ -175,185 +167,10 @@ export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): 
     // The Host sees the games of both pools; every other Member only while the Pool preview is on, else null: nothing
     // about the pools, not even how many (#146, #148, #222, #225). Then NO other field of this response may carry a pool
     // game (name, id, image key, video id, notes): the Members, Sessions and Votes in the other sections must stay free
-    // of them. The one exception is a game a Round has set (roundsSection): it is every Member's from the moment it is set,
+    // of them. The one exception is a game a Round has set (roundsSection in stage-read.ts): it is every Member's from the moment it is set,
     // its notes the Host's alone. The tests hidden-wheel.test.ts and pool-preview.test.ts read the raw response to keep it so.
     pools,
   }
-}
-
-/**
- * The open Rounds (#228), in start order, and for the Host the answer to setting the next game. A set game is visible to
- * every Member from the moment it is set, with the Pool preview off and under a Hidden wheel alike, and its Game notes are
- * the Host's alone (decided 2026-11-01). Nothing else about the pools reaches a Member through here. A Round that is being drawn
- * is not listed: its game is not known yet; the read settles a draw that is due before this runs (settleBeforeRead, #229).
- * The Lucky Wheel (#229) comes with them, since it reads the same draws and the games left.
- */
-export async function roundsSection(db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer, now: Date): Promise<Pick<EventView, 'rounds' | 'setGame' | 'wheel' | 'roundBeingDrawn'>> {
-  const roundRows = rows.rounds.map(({ round }) => round)
-  const open: RoundView[] = rows.rounds.flatMap(({ round, game }) => (isOpen(round) && game
-    ? [{ id: round.id, startedAt: round.startedAt.toISOString(), setAt: round.setAt!.toISOString(), game: roundGameView(game), ...(viewer.isHost && game.notes ? { notes: game.notes } : {}) }]
-    : []))
-  const settings = settingsFromRow(eventRow)
-  const onWheel = settings !== null && hasWheel(settings.selectionMode) && runningOf(rows.sessions) !== undefined
-  if (!viewer.isHost && !onWheel) return { rounds: open, setGame: null, wheel: null, roundBeingDrawn: false }
-  const [draws, pool] = await Promise.all([readDraws(db, eventRow.id), readGamePool(db, eventRow.id)])
-  const left = gamesLeft(pool, draws, roundRows)
-  const places = rows.members.map(row => placeOf(row))
-  // The Host's pool warning (#234): only the Host reads it, and only while the Event runs (the setup hint covers the rest).
-  const warning = viewer.isHost && eventRow.phase === 'running' && settings !== null ? await poolWarningOf(db, eventRow, settings, rows, viewer, roundRows, draws, left.length, now) : null
-  return {
-    rounds: open,
-    roundBeingDrawn: viewer.isHost && roundRows.some(round => isBeingDrawn(round, draws)),
-    setGame: viewer.isHost
-      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, draws, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, draws, left, true), respin: roundRows.some(round => waitsForRespin(round, draws)), left, poolWarning: warning }
-      : null,
-    wheel: onWheel ? await wheelView(db, eventRow, rows, viewer, settings.hiddenWheel, left, draws, now) : null,
-  }
-}
-
-/**
- * The Vetoes of the Lucky Wheel for one viewer (#231, spec #218 § Vetoes: sealed until the end of the window). A Veto cast on a
- * draw whose window still runs is the casting Party's own business: it counts toward `left` and shows as cast only for that
- * Party's Players. From `vetoEndsAt` on (the draw is settled by then, settleBeforeRead) every Party's Vetoes count and the
- * Vetoes of the window's draw are listed with who cast them. Bench and Stands, and a Host outside the teams, get no own part.
- * The window's draw (#232) is the Event's latest draw of any kind, a spin or a game the Host set, and only while it has a window
- * (wheelView picks it): a later draw without one takes the panel away. `game` is its card, already cut to what the viewer may know.
- */
-async function vetoView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer, draws: readonly DrawRow[], windowDraw: DrawRow | undefined, game: RoundGame | null, now: Date): Promise<VetoView> {
-  const [vetoRows, bonusTeams] = await Promise.all([readVetoes(db, eventRow.id), readBonusTeams(db, eventRow.id)])
-  const viewerTeam = partyOf(rows, viewer)
-  const windowOpen = (draw: Pick<DrawRow, 'vetoEndsAt'>) => draw.vetoEndsAt !== null && draw.vetoEndsAt > now
-  // Another Party's cast on a draw whose window still runs does not exist for this viewer (knownVetoRows, shared with the pool warning).
-  const left = partyVetoesLeft(eventRow, knownVetoRows(vetoRows, draws, viewerTeam, now), bonusTeams)
-  const castOnDraw = vetoRows.filter(row => row.drawId === windowDraw?.id)
-  const own = viewerTeam === null
-    ? null
-    : {
-        team: viewerTeam,
-        castBy: castOnDraw.find(row => row.team === viewerTeam)?.userId ?? null,
-        rejection: vetoRejection({
-          viewerTeam,
-          draw: windowDraw ? { stopAt: windowDraw.stopAt, vetoEndsAt: windowDraw.vetoEndsAt, outcome: windowDraw.outcome } : null,
-          now,
-          running: runningOf(rows.sessions) !== undefined,
-          castTeams: castOnDraw.map(row => row.team),
-          left: left[viewerTeam - 1] ?? 0,
-        }),
-      }
-  const revealed = windowDraw && !windowOpen(windowDraw) ? castOnDraw.map(({ team, userId }) => ({ team, userId })).sort((a, b) => a.team - b.team) : null
-  const draw = windowDraw ? { drawId: windowDraw.id, kind: windowDraw.kind, stopAt: windowDraw.stopAt.toISOString(), vetoEndsAt: windowDraw.vetoEndsAt!.toISOString(), game } : null
-  return { left, own, revealed, draw }
-}
-
-/** The Party a viewer plays in: the team of a Member on a team seat; null on the Bench, in the Stands and for a viewer without a Member. */
-function partyOf(rows: EventRows, viewer: Viewer): number | null {
-  const member = rows.members.find(row => row.id === viewer.id)
-  return member?.zone === 'team' ? member.team : null
-}
-
-/**
- * The Host's pool warning (#234, spec #218 § Pool warning): the games left against the games the Host may still need. The Vetoes count
- * as the Host may know them (knownVetoRows): a Veto cast on a draw whose window still runs counts only when the Host plays in that
- * Party, so the warning does not flip when someone casts a sealed Veto. Under Host pick the Vetoes part drops out.
- */
-async function poolWarningOf(db: Db, eventRow: EventRow, settings: EventSettings, rows: EventRows, viewer: Viewer, roundRows: RoundRow[], draws: DrawRow[], left: number, now: Date): Promise<PoolWarning | null> {
-  let vetoesLeft: number[] | null = null
-  if (hasWheel(settings.selectionMode)) {
-    const [vetoRows, bonusTeams] = await Promise.all([readVetoes(db, eventRow.id), readBonusTeams(db, eventRow.id)])
-    vetoesLeft = partyVetoesLeft(eventRow, knownVetoRows(vetoRows, draws, partyOf(rows, viewer), now), bonusTeams)
-  }
-  return poolWarning({
-    left,
-    gameCount: settings.gameCount,
-    roundsStarted: roundsStarted(roundRows),
-    roundsWaiting: roundRows.filter(round => waitsForRespin(round, draws)).length,
-    vetoesLeft,
-  })
-}
-
-/**
- * The Lucky Wheel of a running Session, for one viewer (#229, spec #218 § Hidden wheel on the wire). The Host and every Member
- * of a visible wheel get the names of the slices; a Member under a Hidden wheel gets the count and, for a spin, the placeholders
- * of that spin, and the drawn game's name and card only from the stop instant on, the Host's always. Nothing about any other
- * game reaches that Member: the games are selected only when the viewer may read them.
- */
-async function wheelView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer, hidden: boolean, left: string[], draws: DrawRow[], now: Date): Promise<WheelView> {
-  const latestFirst = [...draws].sort((a, b) => b.committedAt.getTime() - a.committedAt.getTime() || (a.id < b.id ? 1 : -1))
-  const spin = latestFirst.find(draw => draw.kind === 'spin')
-  // The Veto window's draw (#232): the latest draw of any kind, when it has a window.
-  const windowDraw = latestFirst[0]?.vetoEndsAt ? latestFirst[0] : undefined
-  const stopped = spin !== undefined && spin.stopAt <= now
-  const sees = viewer.isHost || !hidden
-  const ids = new Set<string>()
-  if (sees) for (const id of [...left, ...(spin?.sliceGameIds ?? [])]) ids.add(id)
-  if (spin && (viewer.isHost || stopped)) ids.add(spin.gameId)
-  // A game the Host set is known from its stop (the set instant) on, the one thing of the pool a Member under a Hidden wheel learns from it.
-  const windowGameKnown = windowDraw !== undefined && (viewer.isHost || windowDraw.stopAt <= now)
-  if (windowDraw && windowGameKnown) ids.add(windowDraw.gameId)
-  const found = ids.size === 0 ? [] : await db.select().from(games).where(inArray(games.id, [...ids]))
-  const byId = new Map(found.map(game => [game.id, game]))
-  const nameOf = (id: string) => byId.get(id)?.name ?? ''
-  const drawn = spin ? byId.get(spin.gameId) : undefined
-  const windowGame = windowDraw && windowGameKnown ? byId.get(windowDraw.gameId) : undefined
-  return {
-    count: left.length,
-    slices: sees ? left.map(id => ({ id, name: nameOf(id) })) : null,
-    spin: spin
-      ? {
-          roundId: spin.roundId,
-          drawId: spin.id,
-          spinStartAt: spin.spinStartAt!.toISOString(),
-          stopAt: spin.stopAt.toISOString(),
-          slices: spin.sliceGameIds!.length,
-          resultIndex: spin.resultIndex!,
-          resultOffset: spin.resultOffset!,
-          // The stored placeholders keep their order; the result slice's turns real at the stop. A spin from a visible wheel that was hidden since has none.
-          labels: sees
-            ? spin.sliceGameIds!.map(nameOf)
-            : (spin.sliceLabels ?? spin.sliceGameIds!.map(() => WHEEL_UNKNOWN)).map((label, index) => (stopped && index === spin.resultIndex ? nameOf(spin.gameId) : label)),
-          // The names of a visible wheel are public, the drawn card is not: a Member gets it from the stop on.
-          game: drawn && (viewer.isHost || stopped) ? roundGameView(drawn) : null,
-          // The result card follows the latest draw: a later set, a veto or a put back takes it away (F6).
-          current: latestFirst[0]?.id === spin.id && spin.outcome !== 'vetoed' && rows.rounds.some(({ round }) => round.id === spin.roundId && round.putBackAt === null),
-        }
-      : null,
-    vetoes: await vetoView(db, eventRow, rows, viewer, draws, windowDraw, windowGame ? roundGameView(windowGame) : null, now),
-  }
-}
-
-/** The clip that runs now (#230, spec #218 § Clip): every Member gets the same one while a Session runs, from the draw's stop on. */
-export async function clipSection(db: Db, eventRow: EventRow, rows: EventRows, now: Date): Promise<Pick<EventView, 'clip'>> {
-  return { clip: await readClip(db, eventRow.id, rows.sessions, now) }
-}
-
-/**
- * The Countdown (#236, spec #218 § Countdown): every Member gets it while a Session runs, and nothing otherwise, even when a row
- * was left behind (the Session end deletes it, but the read does not rely on that).
- */
-export async function countdownSection(db: Db, eventRow: EventRow, rows: EventRows): Promise<Pick<EventView, 'countdown'>> {
-  if (!runningOf(rows.sessions)) return { countdown: null }
-  const row = await readCountdown(db, eventRow.id)
-  return { countdown: row ? countdownView(row) : null }
-}
-
-/**
- * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member; null otherwise. Its
- * side is in the read for everybody, since the page shows it only from the landing on (the room carries it too).
- */
-export async function coinSection(db: Db, eventRow: EventRow, rows: EventRows): Promise<Pick<EventView, 'coin'>> {
-  const toss = await readShownToss(db, eventRow, rows.sessions)
-  return { coin: toss ? coinView(toss) : null }
-}
-
-/**
- * The Bonus Vetoes (#233, spec #218 § Bonus Vetoes): the Host gets how many each Party has, and the Event-level reason it cannot grant
- * one now, while the Event has a Lucky Wheel. Null for every other viewer, and for an Event without the wheel or without settings.
- */
-export async function bonusVetoSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'bonusVetoes'>> {
-  const settings = settingsFromRow(eventRow)
-  if (!viewer.isHost || settings === null || !hasWheel(settings.selectionMode)) return { bonusVetoes: null }
-  const granted = bonusVetoCounts(await readBonusTeams(db, eventRow.id), settings.teamCount)
-  return { bonusVetoes: { granted, rejection: bonusVetoRejection({ isHost: viewer.isHost, settings, phase: eventRow.phase, team: null, granted }) } }
 }
 
 /** The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on. */

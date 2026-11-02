@@ -802,4 +802,44 @@ describe('Rounds', () => {
       })
     })
   })
+
+  // The stage sections (#256): each section returns all its fields in every case, so a section left out of the array
+  // would show here as a missing key. The shape is asserted per field, not with toEqual, since the stage grows.
+  describe('the stage sections of the Event read (#256)', () => {
+    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'bonusVetoes'] as const
+
+    it('gives every stage field to the Host of a Host pick Event, the null ones as null', async () => {
+      const game = await running()
+      const view = await read(game)
+
+      for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
+      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, bonusVetoes: null })
+    })
+
+    it('gives the Host of a Lucky Wheel Event its wheel and the Bonus Vetoes', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 3 })
+      const view = await read(game)
+
+      for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
+      expect(view.wheel).toMatchObject({ count: 2 })
+      expect(view.bonusVetoes).toMatchObject({ granted: [0, 0], rejection: null })
+    })
+
+    it('gives a Player of a Lucky Wheel Event the wheel, and no setting of the next game or Bonus Vetoes', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 3 })
+      const view = await read(game, game.cookies.three)
+
+      for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
+      expect(view.wheel).toMatchObject({ count: 2 })
+      expect(view).toMatchObject({ setGame: null, bonusVetoes: null })
+    })
+
+    it('gives a Player of a Host pick Event the early return: no rounds, no wheel, no draw', async () => {
+      const game = await running()
+      const view = await read(game, game.cookies.three)
+
+      for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
+      expect(view).toMatchObject({ rounds: [], setGame: null, wheel: null, roundBeingDrawn: false, bonusVetoes: null })
+    })
+  })
 })
