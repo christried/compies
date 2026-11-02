@@ -18,7 +18,7 @@
 
 - Als Host kannst du „Rad verdecken“ und die Vetos pro Partei nicht mehr ändern, solange ein Spiel gezogen wird. ([#231](https://github.com/christried/compies/issues/231))
 - Als Host kannst du die Anzahl der Spiele nicht mehr unter die Spiele senken, die schon gestartet sind. ([#228](https://github.com/christried/compies/issues/228))
-- Die Bench heißt jetzt „Noch ohne Team, unbegrenzt“. ([#238](https://github.com/christried/compies/issues/238))
+- Unter der Bench steht jetzt „Noch ohne Team, unbegrenzt“ statt „Ersatz, unbegrenzt“. ([#238](https://github.com/christried/compies/issues/238))
 - Mit reduzierter Bewegung blendet sich ein verschobenes Mitglied am neuen Platz ein, statt dorthin zu gleiten. ([#237](https://github.com/christried/compies/issues/237))
 
 ### Behoben
