@@ -1,5 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
+import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import type { RoundGame } from '~~/shared/game'
@@ -65,6 +66,31 @@ describe('the wheel at rest', () => {
     expect(text()).toContain('3 Spiele auf dem Rad')
     for (const name of ['Halo', 'Kart', 'Schach']) expect(text()).toContain(name)
     expect(text()).not.toContain('Das Glücksrad sagt')
+  })
+
+  it('counts one game in the singular, and its slice keeps the first fill rather than the surface colour (#263)', async () => {
+    await mount(wheelOf(null, { count: 1, slices: [{ id: 'a', name: 'Halo' }] }))
+
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 1 Spiel')
+    expect(text()).toContain('1 Spiel auf dem Rad')
+    expect(text()).not.toContain('1 Spiele')
+    expect(page!.get('[data-testid="wheel-slice"]').attributes('fill')).toBe('var(--cp-primary)')
+  })
+
+  it('counts two games in the plural (#263)', async () => {
+    await mount(wheelOf(null, { count: 2, slices: [{ id: 'a', name: 'Halo' }, { id: 'b', name: 'Kart' }] }))
+
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 2 Spielen')
+    expect(text()).toContain('2 Spiele auf dem Rad')
+  })
+
+  it('gives the last of five slices the surface colour, so it never shares the first slice\'s fill (#263)', async () => {
+    const names = ['Halo', 'Kart', 'Schach', 'Pong', 'Tetris']
+    await mount(wheelOf(null, { count: 5, slices: names.map((name, index) => ({ id: `s${index}`, name })) }))
+
+    const fills = page!.findAll('[data-testid="wheel-slice"]').map((slice: DOMWrapper<Element>) => slice.attributes('fill'))
+    expect(fills).toHaveLength(5)
+    expect(fills[4]).toBe('var(--cp-surface-2)')
   })
 
   it('cuts a long name at 22 characters as the User sees them, so an emoji is never torn in two (F19)', async () => {

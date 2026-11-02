@@ -116,7 +116,8 @@ function pathOf({ start, end }: { start: number, end: number }): string {
   if (end - start >= 359.99) return `M200,${200 - RADIUS}A${RADIUS},${RADIUS} 0 1 1 200,${200 + RADIUS}A${RADIUS},${RADIUS} 0 1 1 200,${200 - RADIUS}Z`
   return `M200,200L${point(start, RADIUS)}A${RADIUS},${RADIUS} 0 ${end - start > 180 ? 1 : 0} 1 ${point(end, RADIUS)}Z`
 }
-const fillOf = (index: number) => (index === count.value - 1 && count.value % FILLS.length === 1 ? 'var(--cp-surface-2)' : FILLS[index % FILLS.length])
+// The last slice takes the surface colour when it would otherwise share the first one's fill (#263): a single slice has no neighbour, so it keeps FILLS[0].
+const fillOf = (index: number) => (count.value > 1 && index === count.value - 1 && count.value % FILLS.length === 1 ? 'var(--cp-surface-2)' : FILLS[index % FILLS.length])
 
 /** The drawn slice has its outline from the stop on, until it leaves. */
 const winner = computed(() => (running.value && stopped.value && timing.value ? timing.value.resultIndex : -1))
@@ -132,7 +133,7 @@ const drawnOpacity = computed(() => {
 const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
 const status = computed(() => {
   if (timing.value && clock.value !== null && clock.value < timing.value.stopAt) return t('wheel.spinning')
-  return count.value === 0 ? t('wheel.empty') : t('wheel.count', { n: count.value })
+  return count.value === 0 ? t('wheel.empty') : t('wheel.count', { n: count.value }, count.value)
 })
 const headingId = useId()
 </script>
@@ -158,7 +159,7 @@ const headingId = useId()
       <svg
         viewBox="0 0 400 400"
         role="img"
-        :aria-label="t('wheel.aria', { n: count })"
+        :aria-label="t('wheel.aria', { n: count }, count)"
         class="size-full overflow-visible"
       >
         <g
