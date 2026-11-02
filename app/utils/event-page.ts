@@ -64,7 +64,8 @@ export function pageBlocks(kind: Kind, pollOpen: boolean, lucky = false): Block[
     case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
     case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
     // The Countdown (#236) sits under the open Rounds and is shown only while the Event has one (the page checks it).
-    case 'running': return ['head', 'reopen', 'pool', ...wheel, 'rounds', 'countdown', 'coin', 'board', ...poll, 'cards']
+    // The Host's pool warning (#234) comes after the drawn Round: wheel and open Rounds first (story 15, review 0.7 F12).
+    case 'running': return ['head', 'reopen', ...wheel, 'rounds', 'pool', 'countdown', 'coin', 'board', ...poll, 'cards']
     case 'between': return ['head', 'reopen', 'cards', 'stay', 'board', ...poll]
     case 'done': return ['head', 'reopen', 'cards', 'board']
     case 'setup': return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
