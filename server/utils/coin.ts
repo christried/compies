@@ -33,7 +33,8 @@ type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
 /**
  * The Host tosses the coin (#235): refused with the reason of coinRejection, else a toss that starts a lead after `now` and lands a
  * duration later. The side comes from the platform's random source (`randomInt`). The feed entry is written with the landing as
- * its `at` and is not published (INSTANT_ACTIVITY_TYPES); the room hears `coin.tossed` with the side and the instants. The toss is
+ * its `at` and is not published (INSTANT_ACTIVITY_TYPES); the room hears `event.changed` only, and the clients refetch the Event read,
+ * which carries the toss and shows its side from the landing on (#258). The toss is
  * stored with the Running Session, and only that Session's tosses count for `coin_in_air`: the flight of an earlier Session cannot block it (#259).
  */
 export async function tossCoin({ tx, eventRow, user, publish, now }: Change, randomInt: (n: number) => number): Promise<CoinTossed> {
@@ -56,7 +57,6 @@ export async function tossCoin({ tx, eventRow, user, publish, now }: Change, ran
     .values({ eventId: eventRow.id, sessionId: running!.id, side, tossedBy: user.id, startedAt, landsAt })
     .returning({ id: coinTosses.id })
   await recordActivity(tx, publish, eventRow.id, { type: 'coin_tossed', actorId: null, params: { side }, at: landsAt })
-  publish({ type: 'coin.tossed', tossId: toss!.id, side, startedAt: isoInstant(startedAt), landsAt: isoInstant(landsAt) })
   return { tossId: toss!.id, side, startedAt: isoInstant(startedAt), landsAt: isoInstant(landsAt) }
 }
 

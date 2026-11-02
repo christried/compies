@@ -4,6 +4,7 @@ import { shownName } from '../../shared/auth'
 import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType, type InstantActivityType } from '../../shared/activity'
 import type { RoomMessage } from '../../shared/realtime'
 import type { Db } from './db'
+import { stoppedDraws } from './draws'
 import { apiError } from './errors'
 
 // The Activity feed (#159, GLOSSARY: Activity feed). One home: every entry is written by recordActivity and every
@@ -62,7 +63,7 @@ async function namedGames(db: Db, rows: ActivityRow[], now: Date): Promise<Map<s
     .from(draws)
     .innerJoin(rounds, eq(draws.roundId, rounds.id))
     .innerJoin(games, eq(draws.gameId, games.id))
-    .where(and(inArray(draws.gameId, gameIds), inArray(rounds.eventId, eventIds), lte(draws.stopAt, now)))
+    .where(and(inArray(draws.gameId, gameIds), stoppedDraws(eventIds, now)))
   const set = await db
     .select({ eventId: rounds.eventId, gameId: games.id, name: games.name })
     .from(rounds)

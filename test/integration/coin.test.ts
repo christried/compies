@@ -167,12 +167,11 @@ describe('the Coin flip (#235)', () => {
   })
 
   describe('what the Members get', () => {
-    it('sends the toss with its side and instants in the room, and no feed message, since the feed waits for the landing', async () => {
+    it('tells the room only that the Event changed, and sends no feed message, since the feed waits for the landing', async () => {
       const game = await event()
 
-      const body = await (await toss(game)).json() as CoinTossed
-      expect(messagesOf(game).map(message => message.type)).toEqual(['event.changed', 'coin.tossed'])
-      expect(messagesOf(game)[1]).toMatchObject({ type: 'coin.tossed', tossId: body.tossId, side: body.side, startedAt: body.startedAt, landsAt: body.landsAt })
+      await toss(game)
+      expect(messagesOf(game).map(message => message.type)).toEqual(['event.changed'])
     })
 
     it('shows the entry in the feed only from the landing on, to a Member', async () => {

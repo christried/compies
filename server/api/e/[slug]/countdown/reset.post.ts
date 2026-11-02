@@ -4,5 +4,5 @@ import { resetCountdown } from '../../../../utils/countdown'
 import type { CountdownView } from '../../../../../shared/stage'
 
 // The Host resets the Countdown to its full duration, not running (#236, spec #218 § Countdown). The room hears
-// `countdown.changed`; the client refetches the Event read.
+// `event.changed`; the client refetches the Event read.
 export default defineEventHandler((event): Promise<CountdownView> => changeEvent(event, { hostOnly: true, lock: 'update' }, change => resetCountdown(change)))
