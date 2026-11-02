@@ -13,7 +13,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.5.1 | Neue Nummern | released on 2026-11-01: [#215](https://github.com/christried/compies/issues/215), [#242](https://github.com/christried/compies/issues/242) |
 | 0.6 | Notizen | released on 2026-11-01: [#217](https://github.com/christried/compies/issues/217) |
 | 0.7 | Glücksrad | released on 2026-11-02: [#218](https://github.com/christried/compies/issues/218), [#263](https://github.com/christried/compies/issues/263) |
-| 0.8 | Punkte | outline |
+| 0.8 | Punkte | specced: [#272](https://github.com/christried/compies/issues/272) |
 | 0.9 | Siegerehrung | outline; the minimum for the first Event |
 | 1.0 | | when the user declares COMPIES ready |
 
@@ -149,12 +149,39 @@ The game round up to „wird gespielt“. (T10; screens 10, 11, 15, 30.) Spec: [
 
 ## 0.8 Punkte
 
-Scores in the app and a winner. (T13, T14; screens 16, 17, 18.)
+Results in the app, Standings and a winner. (T13; screens 16, 17.) Spec: [#272](https://github.com/christried/compies/issues/272). Grilled on 2026-11-02 (`GLOSSARY.md` § Results, ADR 0014). There is no Tiebreaker (T14 and screen 18 are dropped).
 
-- Result entry for any open Round, in any order, with placements and „gleichauf“, optional cosmetic scores, points table, live leaderboard, corrections.
-- A Round gets its number („Spiel 3“) when its result is entered.
-- Tiebreaker from the Tiebreaker pool, with remaining Vetoes; the Hidden wheel and Pool preview settings apply.
-- The Event finishes once its Game count of Rounds have results (plus the Tiebreaker); afterwards the Event page is read-only with final standings and every Round's result.
+- **Ticket zero:** [#256](https://github.com/christried/compies/issues/256) (seams for stage pieces). Then, before the first result ticket: [#257](https://github.com/christried/compies/issues/257) (one server-time ticker, a slimmer Event page), [#258](https://github.com/christried/compies/issues/258) (one visibility rule for drawn games) and [#259](https://github.com/christried/compies/issues/259) (`changeEvent` owns `now` and the settle). [#261](https://github.com/christried/compies/issues/261) (nits) is its own ticket. [#260](https://github.com/christried/compies/issues/260) stays `ready-for-human`; idea [#38](https://github.com/christried/compies/issues/38) stays out.
+- **Result entry:**
+  - The Host enters a Result for any open Round, in any order, while the Event runs, with or without a running Session.
+  - Every Party gets a Place in every Round. A Shared place („gleichauf“) between neighbours earns the better Place's points and skips the next Place (1, 1, 3).
+  - Each Party gets an optional Score (free text, at most 7 characters) that never counts.
+  - „Ergebnis eintragen“ on the open Round's card opens a sheet on desktop and a full screen on a phone: drag plus arrow buttons, „gleichauf“, a Score per Party, a points preview and „Ergebnis speichern“.
+  - A Round gets its number („Spiel 3“) when its Result is entered.
+  - Everyone else sees „Das Ergebnis trägt der Host ein“ under each open Round; there is no live „trägt gerade ein“.
+- **Corrections:**
+  - The Host corrects any Result until the Event finishes, from the history („Korrigieren“ opens the same sheet), without a confirm dialog.
+  - The Round keeps its number and shows „korrigiert“.
+  - A Result is never withdrawn.
+- **Standings** („Tabelle“):
+  - Points only; equal points share a rank, listed in team order.
+  - They live in a new side panel tab „Tabelle“ next to „Aktivität“, with the history („Verlauf“), and in a third phone tab „Tabelle“.
+  - On the stage they stay calm once the first Result exists. A new Result reorders the rows, counts the points up and shows a delta pill; the game's winner gets the stamp and sticker confetti, with no Compibert. It plays when each device sees the Result; there is no shared instant.
+- **The end of an Event:**
+  - Once every Round up to the Game count has its Result, the Host finishes the Event by holding „Event abschließen“ in the Host dock. Nothing finishes by itself. To stop sooner, the Host lowers the Game count first.
+  - With a Tie on first place, Players see „Gleichstand auf Platz 1. Der Host entscheidet.“ The Host either holds „Unentschieden beenden“ (every Party on the first rank wins) or adds „Letztes Spiel hinzufügen“ (Game count + 1, a regular Round for every Party from the Game pool, in the Selection mode). If the Tie is still there afterwards, the same choice comes up again.
+  - Finishing ends the Running Session, removes the Sessions that have not started and closes the Date poll.
+  - The finished Event page is read-only for everyone, the Host included, and shows the final Standings („Unentschieden“ for a Tie), the history with every Result, and the Activity feed. There is no reopening.
+- **Stepper and settings:**
+  - The Tiebreaker pool goes: the stepper loses step 7, „So wird gespielt“ and the settings summary lose its list, and a migration deletes the stored entries (a changelog line says so).
+  - Step „Spiele“, the settings editor and the info sheet warn when the Event can end in a Tie: at an even Game count, or always with more than two teams.
+  - The pool recommendation becomes Game count + Veto allowance × Parties, + 1 when that warning shows (10 games, 2 teams × 5 Vetoes → 21). Under the Lucky Wheel a note adds that Bonus Vetoes need more games.
+  - The Host-only pool warning during the Event stays as it is.
+- **Activity feed:**
+  - New entries `result_entered` („Spiel 3: Mario Kart, Wilde Gurken gewinnt“), `result_corrected` and `event_finished` (the winner, or „Unentschieden“ with the names), in one enum migration.
+  - „Letztes Spiel hinzufügen“ logs as `game_count_changed`.
+- The Datenschutzerklärung gets a line on Results (Places and Scores per Round, readable by every Member, kept as long as the Event exists). The user approves the wording.
+- All UI _own build_ from `App Spielrunde` (result, board) and `DS Scoring`; no Claude Design hand-off.
 
 ## 0.9 Siegerehrung
 
@@ -162,6 +189,7 @@ The Award ceremony; the minimum for the first Event. (T15; screen 19.)
 
 - Started by the Host, seen by every Member at the same moment; late joiners jump in; the Host can start it again any time after the Event finished.
 - 2D podium, confetti, Compibert dancing, server-picked gag, share image in landscape and square.
+- An Event finished as „Unentschieden“ has several winners: every Party on the first rank stands on the top step and on the share image (ADR 0014).
 
 ## Nach dem ersten Event
 

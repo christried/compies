@@ -39,7 +39,7 @@ The Session the Host has started and not yet ended; an Event has at most one. Th
 _Avoid_: Active session, live session, game night
 
 **Game count**:
-The number of Rounds an Event runs for, changeable by the Host at any time but never below the Rounds already started. The Event finishes after its last Session once that many Rounds have their result (plus a Tiebreaker if needed), never after a set time. The Session that plays the last Round becomes the last one, and later Sessions are removed; if the last Session ends short of the count, the Event stays open until the Host adds a Session or lowers the count.
+The number of Rounds an Event runs for, changeable by the Host until the Event finishes but never below the Rounds already started. Once that many Rounds have their Result, the Host can finish the Event; it never finishes after a set time. If the last Session ends short of the count, the Event stays open until the Host adds a Session or lowers the count.
 _Avoid_: Games per Session, number of games
 
 **Phase**:
@@ -173,7 +173,7 @@ A Lucky Wheel option under which only the Host knows which games are on the whee
 _Avoid_: Blind wheel, secret wheel
 
 **Pool preview**:
-Whether Members other than the Host see an Event's Game pool and Tiebreaker pool before the games come up; the Host chooses it, and under a Hidden wheel it is always off. With it off, Members neither see the games nor learn how many there are; they meet them only on the Lucky Wheel or when the Host sets one (UI: „Pool vorher zeigen“).
+Whether Members other than the Host see an Event's Game pool before the games come up; the Host chooses it, and under a Hidden wheel it is always off. With it off, Members neither see the games nor learn how many there are; they meet them only on the Lucky Wheel or when the Host sets one (UI: „Pool vorher zeigen“).
 _Avoid_: Pool visibility, open pool
 
 **Veto**:
@@ -200,14 +200,6 @@ _Avoid_: Vetoes per player, veto budget
 A Veto the Host grants one Party on top of the Veto allowance, to make up for something that went wrong or to favour it over a Party being penalised. The Host never takes a Veto away.
 _Avoid_: Extra veto, refund, penalty veto
 
-**Tiebreaker**:
-An extra game after the Game count, played only by the Parties tied for first place and drawn by a Lucky Wheel from the Tiebreaker pool; it repeats until one Party wins.
-_Avoid_: Decider, overtime, sudden death
-
-**Tiebreaker pool**:
-The games an Event keeps apart for the Tiebreaker only.
-_Avoid_: Backup pool
-
 **Suitability**:
 What kind of play a game in the Game library works for: Teams, free-for-all or one against one, any number of them (UI: Passt zu). One against one is a Suitability, not a Format: such an Event is Teams with two teams of one.
 _Avoid_: Format (an Event has a Format, a game has Suitabilities), game mode
@@ -227,7 +219,7 @@ _Avoid_: Ceremony screen, finale, results screen
 ## During a Session
 
 **Round**:
-One of the games an Event plays. It begins with a spin or with the Host setting a game, keeps going through vetoed draws until no Veto stops its game, and ends with its result; if the Host puts its game back first, the Round is gone. Only one Round at a time is being drawn, but several can wait for their result, across Sessions too, and their results can be entered in any order. A Round gets its number („Spiel 3“) when its result is entered, and an Event never starts more Rounds than its Game count, apart from the Tiebreaker.
+One of the games an Event plays. It begins with a spin or with the Host setting a game, keeps going through vetoed draws until no Veto stops its game, and ends with its Result; if the Host puts its game back first, the Round is gone. Only one Round at a time is being drawn, but several can wait for their Result, across Sessions too, and their Results can be entered in any order. A Round gets its number („Spiel 3“) when its Result is entered, and an Event never starts more Rounds than its Game count.
 _Avoid_: Match, game (alone), Session
 
 **Coin flip**:
@@ -237,6 +229,44 @@ _Avoid_: Coin toss, random pick
 **Countdown**:
 A time the Host sets and starts that runs down to zero for every Member at the same moment, for games played against the clock.
 _Avoid_: Timer, stopwatch (it never counts up)
+
+## Results
+
+**Result**:
+The Places of every Party in one Round, with optional Scores, entered by the Host while the Event runs, also between Sessions. A Round has at most one Result; the Host can correct it but never withdraw it (UI: Ergebnis).
+_Avoid_: Outcome (a Draw settles with an outcome), score, placement
+
+**Place**:
+A Party's position in one Result, from 1 up. Every Party gets one in every Round (UI: Platz).
+_Avoid_: Rank (the Standings have ranks), position
+
+**Shared place**:
+Two or more Parties on the same Place in one Result, because the game ended level for them; they all get the better Place, and the next Place is skipped (1, 1, 3) (UI: gleichauf).
+_Avoid_: Tie, draw (a Draw is a try at a Round's game)
+
+**Points table**:
+The points each Place earns in an Event, from a preset or set by hand by the Host, and fixed once the first Session starts (UI: Punktetabelle).
+_Avoid_: Scoring, point system
+
+**Score**:
+What a Party reached in the game itself, such as 16 in 16:12, which the Host may add to a Result; it never changes the points (UI: Score).
+_Avoid_: Points, result
+
+**Standings**:
+Every Party's points over all Results, highest first; Parties with equal points share a rank, and nothing else orders them (UI: Tabelle).
+_Avoid_: Leaderboard, ranking, scoreboard
+
+**Correction**:
+The Host changing a Result after it was entered, possible until the Event finishes; the Round keeps its number and shows that it was corrected (UI: korrigiert).
+_Avoid_: Edit, fix, amendment
+
+**Tie**:
+Two or more Parties sharing the first rank in the Standings once every Round up to the Game count has its Result. The Host then finishes the Event with all of them as winners (UI: „Unentschieden beenden“), or raises the Game count by one for another Round that every Party plays like any other (UI: „Letztes Spiel hinzufügen“). Ties on other ranks just stay shared (UI: Gleichstand).
+_Avoid_: Draw (a Draw is a try at a Round's game), Shared place (that is inside one Result), Tiebreaker
+
+**Finish**:
+The Host closing an Event once every Round up to its Game count has its Result: it ends the Running Session, removes the Sessions that have not started, and leaves the Event read-only for good, with its final Standings (UI: „Event abschließen“).
+_Avoid_: Close, end (a Session ends), archive
 
 ## App
 
