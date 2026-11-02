@@ -32,7 +32,17 @@ const FINAL_TURNS = 360 * 4
 const camera = (z: number, tilt: number, orbit: number) => `translateZ(${z}px) rotateX(${tilt}deg) rotateY(${orbit}deg)`
 const position = (y: number) => `translate3d(0px,${y}px,0)`
 const spinOf = (x: number, z: number) => `rotateX(${x}deg) rotateY(0deg) rotateZ(${z}deg)`
-/** The rotation about the face's axis: the head face is up when the coin shows Kopf, the tail face when it shows Schwanz. */
+/**
+ * Where each face sits on the coin (review 0.7, F3). The landed camera (rotateX 90°) looks at the coin from the side that lies on
+ * the ground, so the face toward the viewer is the one whose normal points down the flip axis, and 04-motion's final rotation
+ * (finalTilt, faceRoll) turns the drawn face that way. With these transforms the drawn face then lies upright and unmirrored in
+ * front of the camera, for Kopf and Schwanz alike (test/unit/coin-flight.test.ts composes them). The head face is the back of the
+ * coin as the component builds it, so it carries the half turn; the tail face is the front.
+ */
+export const HEAD_FACE_TRANSFORM = 'rotateY(180deg) translateZ(7px)'
+export const TAIL_FACE_TRANSFORM = 'translateZ(7px)'
+
+/** The rotation about the face's axis that keeps the drawn face upright: 0 for Schwanz, a half turn for Kopf. */
 const faceRoll = (tails: boolean) => (tails ? 0 : 180)
 /** The rotation about the flip axis that puts the drawn face toward the camera. */
 const finalTilt = (tails: boolean) => (tails ? -90 : 90) + FINAL_TURNS

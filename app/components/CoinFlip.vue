@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import tailSvg from '~/assets/compibert/coin-tail.svg?raw'
-import { coinFinalPose, coinStandPose, FLIGHT_OPTIONS, flightKeyframes, type CoinPose } from '~/utils/coin-flight'
+import { coinFinalPose, coinStandPose, FLIGHT_OPTIONS, flightKeyframes, HEAD_FACE_TRANSFORM, TAIL_FACE_TRANSFORM, type CoinPose } from '~/utils/coin-flight'
 import { motionToken, reducedMotion } from '~/utils/motion'
 import { COIN_DURATION_MS, coinLanded } from '~~/shared/coin'
 import type { CoinView } from '~~/shared/event'
@@ -28,8 +28,8 @@ const banner = useTemplateRef<HTMLElement>('banner')
 /** The 13 stacked edge discs of the coin (Coin3D): every fourth one dark, the others gold. */
 const EDGES = Array.from({ length: 13 }, (_, index) => ({ z: index - 6, color: index % 4 === 0 ? '#151515' : '#c99a1a' }))
 const FACE = 'position:absolute;inset:0;border-radius:50%;box-sizing:border-box;border:5px solid #151515;backface-visibility:hidden;-webkit-backface-visibility:hidden'
-const HEAD_FACE = `${FACE};display:grid;place-items:center;background:var(--cp-primary);transform:translateZ(7px);box-shadow:inset 0 0 0 7px #fffdf8,inset 0 0 0 10px #151515`
-const TAIL_FACE = `${FACE};display:grid;place-items:center;background:#3a86ff;transform:rotateY(180deg) translateZ(7px);box-shadow:inset 0 0 0 7px #fffdf8,inset 0 0 0 10px #151515`
+const HEAD_FACE = `${FACE};display:grid;place-items:center;background:var(--cp-primary);transform:${HEAD_FACE_TRANSFORM};box-shadow:inset 0 0 0 7px #fffdf8,inset 0 0 0 10px #151515`
+const TAIL_FACE = `${FACE};display:grid;place-items:center;background:#3a86ff;transform:${TAIL_FACE_TRANSFORM};box-shadow:inset 0 0 0 7px #fffdf8,inset 0 0 0 10px #151515`
 
 const tails = computed(() => props.toss.side === 'tails')
 const startMs = computed(() => Date.parse(props.toss.startedAt))
