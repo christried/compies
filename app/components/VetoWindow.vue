@@ -2,7 +2,8 @@
 import { teamName } from '~/utils/board'
 import { clockTick, revealTile, vetoStamp } from '~/utils/motion'
 import { VETO_WINDOW_MS } from '~~/shared/rounds'
-import type { BoardTeam, MemberView, WheelView } from '~~/shared/event'
+import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { WheelView } from '~~/shared/stage'
 
 // The Veto window on the stage (#231, 02-components § VetoWindow, 04-motion § Veto window, reference App Spielrunde „Clip + Veto-Fenster“,
 // „Eigenes Veto versiegelt“, „Aufdecken“). It opens at the wheel's stop and runs until `vetoEndsAt`: the game it is about (for a game

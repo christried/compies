@@ -1,4 +1,4 @@
-import type { VetoDrawView } from '~~/shared/event'
+import type { VetoDrawView } from '~~/shared/stage'
 
 /** How often the Veto window's clock looks at the server's time. */
 const TICK_MS = 250

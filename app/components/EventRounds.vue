@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RoundView } from '~~/shared/event'
+import type { RoundView } from '~~/shared/stage'
 
 // The open Rounds on the stage (#228, 11-event-seite § EventPage, screen 15): every Round whose game is set and not put back,
 // as a GameCard row with „wird gespielt“, in the order they started. The Round has no number (0.8 numbers it when its result

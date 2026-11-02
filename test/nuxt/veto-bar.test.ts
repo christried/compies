@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VetoBar from '~/components/VetoBar.vue'
 import { clockTick, revealTile, sealStamp, vetoStamp } from '~/utils/motion'
-import type { OwnVetoView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/event'
+import type { OwnVetoView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
 import { VETO_WINDOW_MS } from '~~/shared/rounds'
 import { memberView } from './event-page'
 

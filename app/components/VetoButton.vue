@@ -2,7 +2,7 @@
 import { Ban, Lock } from '@lucide/vue'
 import { sealStamp } from '~/utils/motion'
 import { vetoActionShown } from '~/utils/veto-bar'
-import type { OwnVetoView } from '~~/shared/event'
+import type { OwnVetoView } from '~~/shared/stage'
 
 // The hold-to-veto button of a Player (#231, 04-motion § Hold to confirm, reference App Spielrunde „Eigenes Veto versiegelt“). It sits in
 // the VetoBar (review 0.7, F4). Only a Player of a Party sees it, and only while the Veto window is open. It is ready (a hold of one

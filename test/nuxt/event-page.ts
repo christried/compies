@@ -1,6 +1,7 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
-import type { BoardTeam, BonusVetoView, ClipView, CountdownView, EventPools, MemberView, RoundView, SessionNote, SetGameView, StartView, WheelView } from '~~/shared/event'
+import type { BoardTeam, EventPools, MemberView, SessionNote, StartView } from '~~/shared/event'
+import type { BonusVetoView, ClipView, CountdownView, RoundView, SetGameView, WheelView } from '~~/shared/stage'
 import type { EventSettings, SettingsFloors } from '~~/shared/settings'
 import { kitty } from './auth'
 

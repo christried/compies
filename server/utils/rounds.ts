@@ -3,7 +3,7 @@ import { draws, eventMembers, eventPoolGames, events, games, rounds, vetoes } fr
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import { countSeats, type Place } from '../../shared/board'
 import { isoInstant } from '../../shared/activity'
-import type { RoundSpun, VetoCast } from '../../shared/event'
+import type { RoundSpun, VetoCast } from '../../shared/stage'
 import { SPIN_DURATION_MS, SPIN_LEAD_MS, VETO_WINDOW_MS, drawOutcome, gameTaken, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import { hasWheel, settingsFromRow } from '../../shared/settings'

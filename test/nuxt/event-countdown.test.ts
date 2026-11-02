@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventCountdown from '~/components/EventCountdown.vue'
-import type { CountdownView } from '~~/shared/event'
+import type { CountdownView } from '~~/shared/stage'
 
 // The Countdown on the stage (#236, spec #218 § Countdown): the time left as mm:ss from the server's clock, every animation frame
 // while it runs, „Pausiert“ and „Zeit ist um“, and the Host's controls by state. The server clock is a fake here: the test moves it.

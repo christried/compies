@@ -1,4 +1,4 @@
-import { hasWheel } from '~~/shared/settings'
+import { eventHasWheel } from '~~/shared/settings'
 import { coinRejection } from '~~/shared/coin'
 import { errorCopyKey } from './api-error'
 import type { SetRejection, SpinRejection } from '~~/shared/rounds'
@@ -39,7 +39,7 @@ export function hostDockState(input: DockInput): HostDockState {
     case 'setup': return { ...base, primary: 'setup' }
     case 'poll': return { ...base, primary: 'setDate' }
     case 'running': {
-      const wheel = input.settings !== null && hasWheel(input.settings.selectionMode)
+      const wheel = eventHasWheel(input.settings)
       return {
         ...base,
         primary: wheel ? 'spin' : 'setGame',

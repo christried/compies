@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { waitsForSettle } from '../../app/utils/event-instants'
-import type { EventView, SpinView, VetoView } from '../../shared/event'
+import type { EventView } from '../../shared/event'
+import type { SpinView, VetoView } from '../../shared/stage'
 
 // When a read still misses what a passed instant decides (review 0.7, F13): the page reads again while this holds.
 

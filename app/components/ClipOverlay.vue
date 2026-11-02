@@ -2,7 +2,7 @@
 import { SkipForward, Volume2, VolumeX, X } from '@lucide/vue'
 import { YOUTUBE_HOST, YOUTUBE_PLAYING, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
 import { clipPosition } from '~~/shared/clip'
-import type { ClipView } from '~~/shared/event'
+import type { ClipView } from '~~/shared/stage'
 
 // The synced clip (#230, 04-motion § Clip overlay and § Synchronised moments, 02-components § ClipPlayer): the game's YouTube excerpt
 // over the stage, playing the same second on every device. It opens when the Event read carries the clip (the server clock is at

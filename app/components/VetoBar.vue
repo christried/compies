@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { clockTick } from '~/utils/motion'
 import { clockText, vetoActionShown, vetoBarState } from '~/utils/veto-bar'
-import type { WheelView } from '~~/shared/event'
+import type { WheelView } from '~~/shared/stage'
 
 // The Veto bar (review 0.7, F4; 02-components § VetoWindow, 04-motion § Veto window, reference App Spielrunde „Clip + Veto-Fenster“,
 // „Eigenes Veto versiegelt“): the Veto window's action in a fixed layer above the clip, because the stage is long and the hold button
