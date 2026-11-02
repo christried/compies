@@ -9,7 +9,7 @@ const iso = (offsetMs: number) => new Date(NOW + offsetMs).toISOString()
 const game = { id: 'g1', name: 'Halo' } as NonNullable<SpinView['game']>
 
 const spin = (stopOffset: number, withGame: boolean): SpinView => ({
-  roundId: 'r1', drawId: 'd1', spinStartAt: iso(stopOffset - 6000), stopAt: iso(stopOffset), slices: 4, resultIndex: 1, resultOffset: 0.5, labels: null, game: withGame ? game : null,
+  roundId: 'r1', drawId: 'd1', spinStartAt: iso(stopOffset - 6000), stopAt: iso(stopOffset), slices: 4, resultIndex: 1, resultOffset: 0.5, labels: null, game: withGame ? game : null, current: true,
 })
 const vetoes = (draw: { endsOffset: number } | null, revealed: VetoView['revealed']): VetoView => ({
   left: [1, 1], own: null, revealed, draw: draw && { drawId: 'd1', kind: 'spin', stopAt: iso(draw.endsOffset - 60_000), vetoEndsAt: iso(draw.endsOffset), game },

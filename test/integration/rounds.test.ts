@@ -744,6 +744,33 @@ describe('Rounds', () => {
         expect(after.wheel?.spin).toMatchObject({ ...expected, game: { id: row!.gameId, name: drawn } })
       })
 
+      it('says whether the spin is still the latest draw, for the card „zuletzt gezogen“ (F6)', async () => {
+        const game = await running({ wheel: true })
+        await spun(game)
+        expect((await read(game, game.cookies.three)).wheel?.spin?.current).toBe(true)
+
+        // A game the Host sets afterwards is the latest draw: the wheel's card gives way to it.
+        clock.advance(STOP)
+        const [spunRow] = await drawRows()
+        const other = spunRow!.gameId === game.halo.id ? game.kart : game.halo
+        expect((await set(game, other.id)).status).toBe(200)
+
+        expect((await read(game, game.cookies.three)).wheel?.spin?.current).toBe(false)
+        expect((await read(game)).wheel?.spin?.current).toBe(false)
+      })
+
+      it('is not current once the Host put the spin\'s Round back', async () => {
+        const game = await running({ wheel: true })
+        const { roundId } = await spun(game)
+        clock.advance(STOP)
+        expect((await read(game)).wheel?.spin?.current).toBe(true)
+
+        expect((await putBackRound(game, roundId)).status).toBe(200)
+
+        expect((await read(game)).wheel?.spin?.current).toBe(false)
+        expect((await read(game, game.cookies.three)).wheel?.spin?.current).toBe(false)
+      })
+
       it('gives the Host the drawn game from the start', async () => {
         const game = await running({ wheel: true })
         await spun(game)

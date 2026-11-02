@@ -20,7 +20,7 @@ const FINAL = -2002.5
 function spinOf(fields: Partial<SpinView> = {}): SpinView {
   return {
     roundId: 'r1', drawId: 'd1', spinStartAt: iso(START), stopAt: iso(STOP), slices: 4, resultIndex: 2, resultOffset: 0.25,
-    labels: ['Halo', 'Kart', 'Pong', 'Schach'], game: null, ...fields,
+    labels: ['Halo', 'Kart', 'Pong', 'Schach'], game: null, current: true, ...fields,
   }
 }
 const wheelOf = (spin: SpinView | null, fields: Partial<WheelView> = {}): WheelView => ({
@@ -136,6 +136,15 @@ describe('the result', () => {
     expect(text()).toContain('Das Glücksrad sagt')
     expect(text()).toContain('Halo')
     expect(page!.get('[role="status"]').text()).toBe('Glücksrad: Halo')
+  })
+
+  it('names no game once the spin is no longer the latest draw: a vetoed, replaced or put-back game (F6)', async () => {
+    await mount(wheelOf(spinOf({ game: halo, current: false })))
+    await at(STOP + 100)
+
+    expect(text()).not.toContain('Das Glücksrad sagt')
+    expect(text()).not.toContain('Zuletzt gezogen')
+    expect(page!.get('[role="status"]').text()).toBe('')
   })
 
   it('lets the drawn slice leave 2.2 s after the stop and the others close the gap', async () => {

@@ -19,7 +19,7 @@ const members = [memberView({ id: 'me', name: 'Eins', zone: 'team', team: 1 }), 
 
 const spin = (fields: Partial<SpinView> = {}): SpinView => ({
   roundId: 'r1', drawId: 'd1', spinStartAt: iso(STOP - 6000), stopAt: iso(STOP), slices: 4, resultIndex: 0, resultOffset: 0.5,
-  labels: null, game: halo, ...fields,
+  labels: null, game: halo, current: true, ...fields,
 })
 const windowOf = (fields: Partial<VetoDrawView> = {}): VetoDrawView => ({ drawId: 'd1', kind: 'spin', stopAt: iso(STOP), vetoEndsAt: iso(END), game: halo, ...fields })
 /** The wheel with the Veto window of the latest draw (a spin's by default), or none (`null`: the latest draw has no window). */

@@ -126,7 +126,9 @@ const drawnOpacity = computed(() => {
   return removalEase(current, clock.value, props.hidden, true) === 1 ? 0 : 1
 })
 
-const card = computed(() => (stopped.value && spin.value?.game ? spin.value.game : null))
+// The result card names the game only while its spin is the latest draw (a later set, a veto or a put back takes it away, F6); a vetoed
+// game is then named in the Veto window's outcome line only.
+const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
 const status = computed(() => {
   if (timing.value && clock.value !== null && clock.value < timing.value.stopAt) return t('wheel.spinning')
   return count.value === 0 ? t('wheel.empty') : t('wheel.count', { n: count.value })

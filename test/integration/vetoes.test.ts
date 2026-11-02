@@ -463,6 +463,20 @@ describe('Vetoes', () => {
       expect(view.setGame?.respin).toBe(true)
     })
 
+    it('is no longer the wheel\'s current spin once it was vetoed: the card names it no more (F6)', async () => {
+      const party = await running()
+      const { drawId } = await spun(party)
+      clock.advance(STOP)
+      await cast(party, drawId, party.cookies.one)
+      // Sealed and open: the spin is still the latest draw, and nothing has settled.
+      expect((await read(party, party.cookies.three)).wheel?.spin?.current).toBe(true)
+
+      clock.advance(VETO_WINDOW_MS)
+
+      expect((await read(party, party.cookies.three)).wheel?.spin?.current).toBe(false)
+      expect((await read(party)).wheel?.spin?.current).toBe(false)
+    })
+
     it('spins into the same Round: no new Round, and the Game count counts it once', async () => {
       const party = await running({ gameCount: 1 })
       const { roundId, drawId } = await spun(party)

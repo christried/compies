@@ -312,6 +312,8 @@ async function wheelView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Vi
             : (spin.sliceLabels ?? spin.sliceGameIds!.map(() => WHEEL_UNKNOWN)).map((label, index) => (stopped && index === spin.resultIndex ? nameOf(spin.gameId) : label)),
           // The names of a visible wheel are public, the drawn card is not: a Member gets it from the stop on.
           game: drawn && (viewer.isHost || stopped) ? roundGameView(drawn) : null,
+          // The result card follows the latest draw: a later set, a veto or a put back takes it away (F6).
+          current: latestFirst[0]?.id === spin.id && spin.outcome !== 'vetoed' && rows.rounds.some(({ round }) => round.id === spin.roundId && round.putBackAt === null),
         }
       : null,
     vetoes: await vetoView(db, eventRow, rows, viewer, draws, windowDraw, windowGame ? roundGameView(windowGame) : null, now),

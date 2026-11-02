@@ -406,7 +406,8 @@ describe('Hidden wheel secrecy (#148)', () => {
      * The lobby of 1.4 under a Hidden wheel: a Host, two Players in two teams of one, and every step a Player could see
      * through the room or the feed. Returns the Event and the four games that sit in its pools at some point (#165).
      */
-    async function lobbyFlow() {
+    /** With `castVeto` Player 1 casts a Veto in the open window before the Session ends: a Veto is refused after it (F15). */
+    async function lobbyFlow({ castVeto = false }: { castVeto?: boolean } = {}) {
       const a = await newGame('Alpha Arena', 'aaaaaaaaaaa')
       const b = await newGame('Beta Bowling', 'bbbbbbbbbbb')
       const c = await newGame('Gamma Garten', 'ccccccccccc')
@@ -478,6 +479,12 @@ describe('Hidden wheel secrecy (#148)', () => {
       await hostPutsBack(request, slug, hostCookie, roundId)
       // The Host spins the wheel (round.spun, game_drawn); the Session ends with that Round still being drawn.
       expect((await send('POST', `/api/e/${slug}/rounds/spin`, hostCookie)).status).toBe(200)
+      if (castVeto) {
+        // The wheel stops (the clock moves past it) and Player 1 casts a Veto: veto.cast goes to Player 1's Party only (#231).
+        const [drawn] = (await testDb.db.select().from(draws)).filter(row => row.kind === 'spin')
+        clock.advance(8000)
+        expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
+      }
       // The Host sets a Countdown and starts it (countdown.changed, #236); ending the Session clears it.
       expect((await send('PUT', `/api/e/${slug}/countdown`, hostCookie, { seconds: 60 })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/countdown/start`, hostCookie)).status).toBe(200)
@@ -489,12 +496,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     }
 
     it('produces every message type Nuxt sends to the room, and writes every Activity type', async () => {
-      const { slug, eventId } = await lobbyFlow()
-      // The wheel stops (the clock moves past it) and Player 1 casts a Veto after the Session ended: veto.cast goes to Player 1's
-      // Party only (#231). The flow's leak tests below stay before the stop.
-      const [drawn] = (await testDb.db.select().from(draws)).filter(row => row.kind === 'spin')
-      clock.advance(8000)
-      expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
+      // The flow's leak tests below stay before the stop; this one casts a Veto after it, while the Session still runs.
+      const { slug, eventId } = await lobbyFlow({ castVeto: true })
 
       expect(everyTypeListed).toBe(true)
       const sent = new Set(notifier.messages(eventId).map(message => message.type))
@@ -702,7 +705,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         count: 1,
         slices: null,
         spin: {
-          roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null,
+          roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null, current: true,
         },
         vetoes: { left: [0, 0], own: { team: 1, castBy: null, rejection: 'no_veto_window' }, revealed: null, draw: null },
       })
