@@ -25,7 +25,7 @@ export function countdownView(row: Pick<CountdownRow, 'durationMs' | 'remainingM
   return { durationMs: row.durationMs, remainingMs: row.remainingMs, startedAt: row.startedAt?.toISOString() ?? null }
 }
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'publish' | 'now'>
+type Change = Pick<EventChange, 'tx' | 'eventRow' | 'now'>
 
 /** Refuses with no_running_session unless the Event has a Running Session (the same answer as ending one). */
 async function requireRunningSession({ tx, eventRow }: Change): Promise<void> {
@@ -45,7 +45,6 @@ export async function setCountdown(change: Change, seconds: number): Promise<Cou
     .values({ eventId: change.eventRow.id, durationMs, remainingMs: durationMs, startedAt: null })
     .onConflictDoUpdate({ target: countdowns.eventId, set: { durationMs, remainingMs: durationMs, startedAt: null } })
     .returning()
-  change.publish({ type: 'countdown.changed' })
   return countdownView(row!)
 }
 
@@ -77,6 +76,5 @@ async function changeRunning(action: Exclude<CountdownAction, 'set'>, change: Ch
       ? { remainingMs: remainingMsAt(row!, now.getTime()), startedAt: null }
       : { remainingMs: row!.durationMs, startedAt: null }
   const [updated] = await change.tx.update(countdowns).set(next).where(eq(countdowns.eventId, change.eventRow.id)).returning()
-  change.publish({ type: 'countdown.changed' })
   return countdownView(updated!)
 }

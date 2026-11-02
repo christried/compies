@@ -2,7 +2,6 @@ import { and, asc, eq, sql } from 'drizzle-orm'
 import { draws, eventMembers, eventPoolGames, events, games, rounds, vetoes } from '../db/schema'
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import { countSeats, type Place } from '../../shared/board'
-import { isoInstant } from '../../shared/activity'
 import type { RoundSpun, VetoCast } from '../../shared/stage'
 import { SPIN_DURATION_MS, SPIN_LEAD_MS, VETO_WINDOW_MS, gameTaken, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
@@ -135,7 +134,6 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: Change, 
     : { stopAt: now, outcome: 'set' as const, settledAt: now }
   await insertDraw(tx, roundId, now, { gameId: game.id, source, kind: 'set', ...timing })
   await recordActivity(tx, publish, eventRow.id, { type: 'game_set', actorId: user.id, params: { roundId, gameId: game.id }, now })
-  publish({ type: 'round.set', roundId })
   return { roundId }
 }
 
@@ -145,8 +143,8 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: Change, 
  * commit, so every client has the message and starts together, and stops after its duration. When some Party has a Veto left
  * at the commit (opensWindow), the draw gets a Veto window that ends VETO_WINDOW_MS after the stop (#231), and settles at its
  * end; otherwise it settles at the stop (settleDue). A Round that waits for a respin takes the draw itself; otherwise a Round
- * starts. The feed's entry waits for the stop (`at`, not published). The message carries the slice count, the placeholders of
- * a Hidden wheel and the instants, never a game. Refused with the reason of spinRejection.
+ * starts. The feed's entry waits for the stop (`at`, not published). The room hears `event.changed` only; the clients refetch the
+ * Event read, which shows the wheel per viewer (#258). Refused with the reason of spinRejection.
  */
 export async function spinWheel({ tx, eventRow, user, publish, now }: Change, randomInt: (n: number) => number): Promise<RoundSpun> {
   const { sessions, places, roundRows, drawRows, pool } = await readRoundFacts(tx, eventRow)
@@ -176,17 +174,6 @@ export async function spinWheel({ tx, eventRow, user, publish, now }: Change, ra
     resultOffset: spin.resultOffset,
   })
   await recordActivity(tx, publish, eventRow.id, { type: 'game_drawn', actorId: null, params: { roundId, drawId, gameId }, at: stopAt })
-  publish({
-    type: 'round.spun',
-    roundId,
-    drawId,
-    spinStartAt: isoInstant(spinStartAt),
-    stopAt: isoInstant(stopAt),
-    slices: spin.sliceGameIds.length,
-    resultIndex: spin.resultIndex,
-    resultOffset: spin.resultOffset,
-    labels: spin.sliceLabels,
-  })
   return { roundId, drawId }
 }
 
@@ -237,6 +224,5 @@ export async function putBackRound({ tx, eventRow, user, publish, now }: Change,
 
   await tx.update(rounds).set({ putBackAt: now }).where(eq(rounds.id, round.id))
   await recordActivity(tx, publish, eventRow.id, { type: 'game_put_back', actorId: user.id, params: { roundId: round.id, gameId: round.gameId! }, now })
-  publish({ type: 'round.putBack', roundId: round.id })
   return { roundId: round.id }
 }
