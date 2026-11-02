@@ -312,6 +312,12 @@ describe('a game without a video', () => {
     expect(page!.find('section').exists()).toBe(false)
   })
 
+  it('offers no „Ton aktivieren“ on a phone: there is no sound to unlock (F22)', async () => {
+    await mount(clipOf(kart), { desktop: false })
+
+    expect(text()).not.toContain('Ton aktivieren')
+  })
+
   it('shows the card when the player cannot play the video', async () => {
     await mount(clipOf())
     players[0]!.options.events.onError?.()
