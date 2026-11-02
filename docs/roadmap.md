@@ -13,7 +13,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.5.1 | Neue Nummern | released on 2026-11-01: [#215](https://github.com/christried/compies/issues/215), [#242](https://github.com/christried/compies/issues/242) |
 | 0.6 | Notizen | released on 2026-11-01: [#217](https://github.com/christried/compies/issues/217) |
 | 0.7 | Glücksrad | released on 2026-11-02: [#218](https://github.com/christried/compies/issues/218), [#263](https://github.com/christried/compies/issues/263) |
-| 0.8 | Punkte | outline |
+| 0.8 | Punkte | specced: [#272](https://github.com/christried/compies/issues/272) |
 | 0.9 | Siegerehrung | outline; the minimum for the first Event |
 | 1.0 | | when the user declares COMPIES ready |
 
@@ -149,7 +149,7 @@ The game round up to „wird gespielt“. (T10; screens 10, 11, 15, 30.) Spec: [
 
 ## 0.8 Punkte
 
-Results in the app, Standings and a winner. (T13; screens 16, 17.) Grilled on 2026-11-02 (`GLOSSARY.md` § Results, ADR 0014). There is no Tiebreaker (T14 and screen 18 are dropped).
+Results in the app, Standings and a winner. (T13; screens 16, 17.) Spec: [#272](https://github.com/christried/compies/issues/272). Grilled on 2026-11-02 (`GLOSSARY.md` § Results, ADR 0014). There is no Tiebreaker (T14 and screen 18 are dropped).
 
 - **Ticket zero:** [#256](https://github.com/christried/compies/issues/256) (seams for stage pieces). Then, before the first result ticket: [#257](https://github.com/christried/compies/issues/257) (one server-time ticker, a slimmer Event page), [#258](https://github.com/christried/compies/issues/258) (one visibility rule for drawn games) and [#259](https://github.com/christried/compies/issues/259) (`changeEvent` owns `now` and the settle). [#261](https://github.com/christried/compies/issues/261) (nits) is its own ticket. [#260](https://github.com/christried/compies/issues/260) stays `ready-for-human`; idea [#38](https://github.com/christried/compies/issues/38) stays out.
 - **Result entry:**
