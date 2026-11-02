@@ -1551,6 +1551,7 @@
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "gameCountBelowStarted": "So wenige geht nicht: Es sind schon mehr Spiele gestartet.",
     "roundNotFound": "Dieses Spiel ist nicht mehr dran.",
+    "gameAlreadyDrawn": "Dieses Spiel wurde in diesem Event schon gezogen oder gesetzt.",
     "noClip": "Gerade läuft kein Clip.",
     "noCountdown": "Es läuft kein Countdown.",
     "countdownRunning": "Der Countdown läuft schon.",

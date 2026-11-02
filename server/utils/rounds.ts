@@ -4,7 +4,8 @@ import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import { countSeats, type Place } from '../../shared/board'
 import { isoInstant } from '../../shared/activity'
 import type { RoundSpun, VetoCast } from '../../shared/event'
-import { SPIN_DURATION_MS, SPIN_LEAD_MS, VETO_WINDOW_MS, drawOutcome, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
+import { SPIN_DURATION_MS, SPIN_LEAD_MS, VETO_WINDOW_MS, drawOutcome, gameTaken, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
+import { runningOf } from '../../shared/session-state'
 import { hasWheel, settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
 import type { Db } from './db'
@@ -135,6 +136,8 @@ export async function setNextGame({ tx, eventRow, user, publish }: Change, now: 
   if (vetoAllowed && !hasWheel(settingsFromRow(eventRow)!.selectionMode)) throw apiError('no_wheel')
   const [game] = await tx.select({ id: games.id }).from(games).where(eq(games.id, gameId))
   if (!game) throw apiError('unknown_game')
+  // A retried „Setzen“ would open a second Round of the same game, and a vetoed game stays vetoed, library or pool (review 0.7, F14).
+  if (gameTaken(game.id, drawRows, roundRows)) throw apiError('game_already_drawn')
   const windowOpens = vetoAllowed && opensWindow(partyVetoesLeft(eventRow, await readVetoes(tx, eventRow.id), await readBonusTeams(tx, eventRow.id)))
 
   const source = gamesLeft(pool, drawRows, roundRows).includes(game.id) ? 'pool' : 'library'
@@ -155,7 +158,7 @@ export async function setNextGame({ tx, eventRow, user, publish }: Change, now: 
     ? { stopAt: now, vetoEndsAt: new Date(now.getTime() + VETO_WINDOW_MS) }
     : { stopAt: now, outcome: 'set' as const, settledAt: now }
   await tx.insert(draws).values({ roundId, gameId: game.id, source, kind: 'set', committedAt: now, ...timing })
-  await recordActivity(tx, publish, eventRow.id, { type: 'game_set', actorId: user.id, params: { roundId, gameId: game.id } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'game_set', actorId: user.id, params: { roundId, gameId: game.id }, now })
   publish({ type: 'round.set', roundId })
   return { roundId }
 }
@@ -224,7 +227,8 @@ export async function spinWheel({ tx, eventRow, user, publish }: Change, now: Da
  */
 export async function castVeto({ tx, eventRow, user, publishTo }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publishTo'>, now: Date, drawId: string): Promise<VetoCast> {
   await settleDue(tx, eventRow, now)
-  const [drawRows, vetoRows, bonusTeams, [member]] = await Promise.all([
+  const [sessions, drawRows, vetoRows, bonusTeams, [member]] = await Promise.all([
+    eventSessions(tx, eventRow.id),
     readDraws(tx, eventRow.id),
     readVetoes(tx, eventRow.id),
     readBonusTeams(tx, eventRow.id),
@@ -236,6 +240,7 @@ export async function castVeto({ tx, eventRow, user, publishTo }: Pick<EventChan
     viewerTeam,
     draw,
     now,
+    running: runningOf(sessions) !== undefined,
     castTeams: vetoRows.filter(row => row.drawId === drawId).map(row => row.team),
     left: partyVetoesLeft(eventRow, vetoRows, bonusTeams)[(viewerTeam ?? 1) - 1] ?? 0,
   })
@@ -261,7 +266,7 @@ export async function putBackRound({ tx, eventRow, user, publish }: Change, now:
   if (roundState(round) === 'drawn') throw apiError('round_being_drawn')
 
   await tx.update(rounds).set({ putBackAt: now }).where(eq(rounds.id, round.id))
-  await recordActivity(tx, publish, eventRow.id, { type: 'game_put_back', actorId: user.id, params: { roundId: round.id, gameId: round.gameId! } })
+  await recordActivity(tx, publish, eventRow.id, { type: 'game_put_back', actorId: user.id, params: { roundId: round.id, gameId: round.gameId! }, now })
   publish({ type: 'round.putBack', roundId: round.id })
   return { roundId: round.id }
 }

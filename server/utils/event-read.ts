@@ -234,6 +234,7 @@ async function vetoView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Vie
           viewerTeam,
           draw: windowDraw ? { stopAt: windowDraw.stopAt, vetoEndsAt: windowDraw.vetoEndsAt, outcome: windowDraw.outcome } : null,
           now,
+          running: runningOf(rows.sessions) !== undefined,
           castTeams: castOnDraw.map(row => row.team),
           left: left[viewerTeam - 1] ?? 0,
         }),

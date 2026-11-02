@@ -175,16 +175,29 @@ describe('Rounds', () => {
       expect((view.pools?.main ?? []).map(poolGame => poolGame.name)).toEqual(['Halo', 'Kart'])
     })
 
-    it('takes a pool game out of the games left, and not twice: set again, it comes from the library', async () => {
+    it('takes a pool game out of the games left, and not twice: set again, it is refused with 409 game_already_drawn and opens no second Round (F14)', async () => {
       const game = await running()
       expect((await read(game)).setGame?.left.sort()).toEqual([game.halo.id, game.kart.id].sort())
 
       await set(game, game.halo.id)
       expect((await read(game)).setGame?.left).toEqual([game.kart.id])
 
-      await set(game, game.halo.id)
-      expect((await drawRows()).map(draw => draw.source)).toEqual(['pool', 'library'])
+      expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'game_already_drawn' })
+      expect((await drawRows()).map(draw => draw.source)).toEqual(['pool'])
+      expect(await roundRows(game)).toHaveLength(1)
       expect((await read(game)).setGame?.left).toEqual([game.kart.id])
+    })
+
+    it('refuses a library game that is set twice just the same, and lets a put-back game be set again (F14)', async () => {
+      const game = await running()
+      await set(game, game.schach.id)
+      expect(await errorOf(await set(game, game.schach.id))).toEqual({ status: 409, code: 'game_already_drawn' })
+
+      await set(game, game.halo.id)
+      const [, haloRound] = await roundRows(game)
+      await putBackRound(game, haloRound!.id)
+      expect((await set(game, game.halo.id)).status).toBe(200)
+      expect((await drawRows()).filter(draw => draw.gameId === game.halo.id).map(draw => draw.source)).toEqual(['pool', 'pool'])
     })
 
     it('lets several Rounds be open at the same time, listed in the order they started', async () => {
