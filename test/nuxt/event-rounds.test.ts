@@ -192,7 +192,7 @@ describe('„Nächstes Spiel setzen“', () => {
   }
 
   it('is disabled with its reason while the rule refuses, and answers a click with that reason and no sheet', async () => {
-    const { slug } = serveHostPick({ rejection: 'teams_uneven', spinRejection: 'no_wheel', respin: false, left: [] })
+    const { slug } = serveHostPick({ rejection: 'teams_uneven', spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null })
     const stage = await mount(slug)
 
     const action = stage.findAll('[role="toolbar"] button')[0]!
@@ -210,7 +210,7 @@ describe('„Nächstes Spiel setzen“', () => {
     ['game_count_reached', 'Alle Spiele dieses Events sind schon gestartet.'],
     ['round_being_drawn', 'Gerade wird ein Spiel gezogen.'],
   ] as const)('says %s in words', async (rejection, text) => {
-    const { slug } = serveHostPick({ rejection, spinRejection: 'no_wheel', respin: false, left: [] })
+    const { slug } = serveHostPick({ rejection, spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null })
     const stage = await mount(slug)
 
     const action = stage.findAll('[role="toolbar"] button')[0]!
@@ -220,7 +220,7 @@ describe('„Nächstes Spiel setzen“', () => {
   it('opens a sheet that lists the games left in the Game pool first, then the library', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
     signInAs({ ...kitty, canHost: true })
-    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
 
     await clickHostAction(stage, 'Nächstes Spiel setzen')
@@ -241,7 +241,7 @@ describe('„Nächstes Spiel setzen“', () => {
   it('sets the chosen game from the bar and closes once the server took it', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
     signInAs({ ...kitty, canHost: true })
-    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
     await clickHostAction(stage, 'Nächstes Spiel setzen')
     await vi.waitFor(() => expect(dialog()).not.toBeNull())
@@ -263,7 +263,7 @@ describe('„Nächstes Spiel setzen“', () => {
   it('can pick a game of the library that is not in the pool', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
     signInAs({ ...kitty, canHost: true })
-    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id], poolWarning: null })
     const stage = await mount(slug)
     await clickHostAction(stage, 'Nächstes Spiel setzen')
     await vi.waitFor(() => expect(dialog()?.querySelector('ul[aria-label="Bibliothek"]')).not.toBeNull())
@@ -276,7 +276,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('offers the pool only to a Host without the library permission', async () => {
-    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id], poolWarning: null })
     const stage = await mount(slug)
 
     await clickHostAction(stage, 'Nächstes Spiel setzen')
@@ -288,7 +288,7 @@ describe('„Nächstes Spiel setzen“', () => {
   it('says so when the pool has nothing left, and still offers the library', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [schach] }) })
     signInAs({ ...kitty, canHost: true })
-    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [] })
+    const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null })
     const stage = await mount(slug)
 
     await clickHostAction(stage, 'Nächstes Spiel setzen')
@@ -351,7 +351,7 @@ describe('the Lucky Wheel on the stage (#229)', () => {
   })
 
   it('makes Rad drehen the Host\'s primary with Session beenden beside it, and spins on a click', async () => {
-    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: null, respin: false, left: [halo.id, pong.id] } })
+    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: null, respin: false, left: [halo.id, pong.id], poolWarning: null } })
     const stage = await mount(slug)
 
     expect(pill(stage).slice(0, 2)).toEqual([expect.stringContaining('Rad drehen'), expect.stringContaining('Session beenden')])
@@ -361,7 +361,7 @@ describe('the Lucky Wheel on the stage (#229)', () => {
   })
 
   it('looks disabled with the reason while the wheel cannot be spun, and spins nothing on a click', async () => {
-    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: 'pool_empty', respin: false, left: [] } })
+    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: 'pool_empty', respin: false, left: [], poolWarning: null } })
     const stage = await mount(slug)
 
     const action = stage.findAll('[role="toolbar"] button')[0]!
@@ -376,7 +376,7 @@ describe('the Lucky Wheel on the stage (#229)', () => {
   })
 
   it('keeps Nächstes Spiel setzen in Mehr', async () => {
-    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: null, respin: false, left: [halo.id] } })
+    const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: null, respin: false, left: [halo.id], poolWarning: null } })
     const stage = await mount(slug)
 
     expect(pill(stage)).not.toContain('Nächstes Spiel setzen')

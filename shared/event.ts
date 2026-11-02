@@ -1,5 +1,5 @@
 import type { Place, Zone } from './board'
-import type { SetRejection, SpinRejection, VetoRejection } from './rounds'
+import type { PoolWarning, SetRejection, SpinRejection, VetoRejection } from './rounds'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
@@ -150,6 +150,8 @@ export interface SetGameView {
   /** Whether a Round waits for a respin (#231): every draw of it was vetoed. The dock then says „Neu drehen“, and the next spin or set goes into that Round. */
   respin: boolean
   left: string[]
+  /** The live pool warning (#234): for the Host of a running Event only; null when the games left cover the worst case, and in every other Phase. */
+  poolWarning: PoolWarning | null
 }
 
 /**
