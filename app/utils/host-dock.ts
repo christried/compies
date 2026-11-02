@@ -68,19 +68,27 @@ export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'e
 export interface DockLayout { primary: DockKey[], secondary: DockKey[], more: DockKey[] }
 
 /**
+ * The game actions of a running Session (#233, #235, #236): they sit in Mehr, before the settings, in this order. The Bonus Veto is
+ * one of them only while the Host may grant it (dockLayout's `bonusVetoOpen`).
+ */
+export const GAME_ACTIONS: DockKey[] = ['bonusVeto', 'coin', 'countdown']
+
+/**
  * The dock's layout for a state. `pollOpen`: the Date poll is open, so the Dates can be set and the Slots edited. `bonusVetoOpen`: the Host
  * may grant a Bonus Veto (#233: the Event has a Lucky Wheel and no reason refuses it), so the action sits in Mehr in every layout but setup.
  */
-export function dockLayout(state: HostDockState, pollOpen: boolean, bonusVetoOpen: boolean): DockLayout {
+export function dockLayout(state: HostDockState, open: { pollOpen: boolean, bonusVetoOpen: boolean }): DockLayout {
+  const { pollOpen, bonusVetoOpen } = open
   const dates: DockKey[] = pollOpen ? ['setDate'] : []
   const slots: DockKey[] = pollOpen ? ['slots'] : []
   const bonus: DockKey[] = bonusVetoOpen ? ['bonusVeto'] : []
   if (state.kind === 'setup') return { primary: ['settings'], secondary: ['invite'], more: [...dates, ...slots] }
+  // The running layouts compose the game actions once (GAME_ACTIONS), in Mehr before the settings.
+  const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || bonusVetoOpen)
   switch (state.primary) {
     case 'start': return { primary: ['start'], secondary: [...dates, 'invite'], more: [...slots, ...bonus, 'settings'] }
-    // The running layouts put the Bonus Veto (#233), the Coin flip (#235) and the Countdown (#236) in Mehr, beside the other game actions and before the settings.
-    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
-    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
+    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, ...game, 'settings'] }
+    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, ...game, 'settings'] }
     case 'setDate': return { primary: dates, secondary: ['invite'], more: [...slots, ...bonus, 'settings'] }
     default: return { primary: [], secondary: ['invite'], more: [...bonus, 'settings'] }
   }

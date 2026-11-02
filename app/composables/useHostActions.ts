@@ -5,10 +5,10 @@ import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 
 // The Host's dock actions (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers (Event
-// einrichten, Termin festlegen, Session starten or beenden, Nächstes Spiel setzen, Rad drehen, or none after the last Session) and
+// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, or none after the last Session) and
 // dockLayout which actions sit where (named parts: primary, secondary, more; review 1.4 A4). Each action is one entry below.
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
-// a hold. „Termin für Session m“ stays while another Session still polls, and „Termine bearbeiten“ while the Date poll is open.
+// a secondary hold. „Termin für Session m“ stays while another Session still polls, and „Termine bearbeiten“ while the Date poll is open.
 // Every Phase before the Event finishes has Einstellungen and Einladen (#147). „Termin festlegen“ looks disabled with its reason
 // when no open future Slot can become a Date (#52). What each action does is the page's: it passes the handlers.
 
@@ -49,7 +49,7 @@ export function useHostActions(
     if (!current) return []
     const state = hostDockState(current)
     // The Bonus Veto is in the dock while the Event's read allows one (#233): a Lucky Wheel, and no Event-level reason refuses it.
-    const layout = dockLayout(state, toValue(pollOpen), current.bonusVetoes?.rejection === null)
+    const layout = dockLayout(state, { pollOpen: toValue(pollOpen), bonusVetoOpen: current.bonusVetoes?.rejection === null })
     /** Runs `run`, or answers the click with the reason as a toast while the rule refuses. */
     const guarded = (reason: string | undefined, run: () => void) => () => (reason ? toast({ tone: 'info', text: reason }) : run())
 
