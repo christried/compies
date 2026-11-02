@@ -1503,7 +1503,8 @@
   },
   "poolWarning": {
     "title": "Wird knapp.",
-    "text": "Im schlimmsten Fall brauchst du noch {needed} Spiele, übrig ist {have}. Blockiert nichts, nur damit du’s weißt. | Im schlimmsten Fall brauchst du noch {needed} Spiele, übrig sind {have}. Blockiert nichts, nur damit du’s weißt."
+    "needed": "1 Spiel | {n} Spiele",
+    "text": "Im schlimmsten Fall brauchst du noch {needed}, übrig ist {have}. Blockiert nichts, nur damit du’s weißt. | Im schlimmsten Fall brauchst du noch {needed}, übrig sind {have}. Blockiert nichts, nur damit du’s weißt."
   },
   "rounds": {
     "title": "Gerade dran",

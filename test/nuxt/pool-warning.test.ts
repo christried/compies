@@ -59,6 +59,14 @@ describe('the pool warning on the stage (#234)', () => {
     expect(notice?.text()).toContain('Blockiert nichts')
   })
 
+  it('says „noch 1 Spiel“ in the singular (F22)', async () => {
+    const { slug } = serveRunning({ host: true, setGame: setGameOf({ needed: 1, have: 0 }) })
+
+    const stage = await mount(slug)
+
+    expect(warningOf(stage)?.text()).toContain('Im schlimmsten Fall brauchst du noch 1 Spiel, übrig sind 0.')
+  })
+
   it('shows no notice to the Host while the games left cover the worst case', async () => {
     const { slug } = serveRunning({ host: true, setGame: setGameOf(null) })
 

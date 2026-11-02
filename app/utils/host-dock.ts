@@ -18,7 +18,7 @@ export interface HostDockState {
   /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between` or `done`. */
   kind: EventPageState['kind']
   /** The one primary action, or null when there is none (`done`). */
-  primary: 'setup' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | null
+  primary: 'setup' | 'setDate' | 'start' | 'setGame' | 'spin' | null
   /** The shown number of the Session to start or end; null for the only Session of an Event, or without one. */
   number: number | null
   /** The shown number a Session that still polls will have (after the dated ones); null when none polls or the Event has one Session. */
@@ -81,7 +81,6 @@ export function dockLayout(state: HostDockState, pollOpen: boolean, bonusVetoOpe
     // The running layouts put the Bonus Veto (#233), the Coin flip (#235) and the Countdown (#236) in Mehr, beside the other game actions and before the settings.
     case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
     case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
-    case 'end': return { primary: ['end'], secondary: ['invite'], more: ['setGame', ...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
     case 'setDate': return { primary: dates, secondary: ['invite'], more: [...slots, ...bonus, 'settings'] }
     default: return { primary: [], secondary: ['invite'], more: [...bonus, 'settings'] }
   }

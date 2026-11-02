@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
-import { eventDataKey } from '~/utils/event-data'
 import { draftFromEvent, settingsBody, type EventDraft, type StepKey } from '~/utils/event-draft'
 import { countSeats, placeOf } from '~~/shared/board'
 import { canSeeLibrary } from '~~/shared/game'
@@ -45,7 +44,7 @@ useHead({ title: () => `${heading.value} · ${data.value?.event.name ?? ''}` })
 async function save(sent: EventDraft) {
   await $fetch(`/api/e/${slug.value}/settings`, { method: 'PATCH', body: settingsBody(sent) })
   // The Event page reads the same key: refresh it now, so it shows the saved settings at once, not after the next poll (#174).
-  await refreshNuxtData(eventDataKey(slug.value))
+  await refreshEvent(slug.value)
   toast({ tone: 'success', text: t('eventSettings.saved') })
   await navigateTo(eventPath(slug.value))
 }
