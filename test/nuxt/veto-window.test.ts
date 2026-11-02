@@ -51,7 +51,7 @@ describe('the Veto window', () => {
 
     expect(text()).toContain('Veto-Fenster')
     expect(page!.get('[role="timer"]').text()).toBe('Noch 45 Sekunden')
-    const tiles = page!.findAll('[data-testid="veto-tile"]').map(tile => tile.text().replace(/\s+/g, ' '))
+    const tiles = page!.findAll('[data-testid="veto-tile"]').map((tile: { text: () => string }) => tile.text().replace(/\s+/g, ' '))
     expect(tiles).toHaveLength(2)
     expect(tiles[0]).toContain('Noch 2 Vetos')
     expect(tiles[1]).toContain('Noch 1 Veto')
@@ -73,7 +73,7 @@ describe('the Veto window', () => {
     serverMs = END + 100
     await mount(wheelOf({ left: [1, 2], own: { team: 1, castBy: 'mate', rejection: 'veto_window_closed' }, revealed: [{ team: 1, userId: 'mate' }] }))
 
-    const tiles = page!.findAll('[data-testid="veto-tile"]').map(tile => tile.text().replace(/\s+/g, ' '))
+    const tiles = page!.findAll('[data-testid="veto-tile"]').map((tile: { text: () => string }) => tile.text().replace(/\s+/g, ' '))
     expect(tiles[0]).toContain('Veto')
     expect(tiles[0]).toContain('von Zwei')
     expect(tiles[1]).toContain('Kein Veto')
