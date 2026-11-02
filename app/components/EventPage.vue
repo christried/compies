@@ -3,6 +3,7 @@ import { ChevronRight, Crown, History, Hourglass, LayoutGrid, Link as LinkIcon, 
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { teamName } from '~/utils/board'
+import { waitsForSettle } from '~/utils/event-instants'
 import { dateBlockedKey, eventPageState, pagePill } from '~/utils/event-page'
 import { hasStarted } from '~~/shared/session-state'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
@@ -51,10 +52,11 @@ const knownInstants = computed(() => [
   ...(data.value?.coin ? [Date.parse(data.value.coin.landsAt)] : []),
   ...(data.value?.clip ? [Date.parse(data.value.clip.endsAt)] : []),
 ])
+// A read taken a hair before the instant can still miss what the instant decides: the page then reads again (F13, waitsForSettle).
 useInstantRefresh(knownInstants, serverClock.now, () => {
   void refresh()
   feedTick.value += 1
-})
+}, () => (data.value ? waitsForSettle(data.value, serverClock.now()) : false))
 
 /** The open Slots with their day and time in Berlin, for the poll and the confirm dialog. */
 const slots = computed(() => (data.value?.slots ?? []).map((slot) => {

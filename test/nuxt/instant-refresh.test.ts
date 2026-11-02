@@ -1,7 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
-import { INSTANT_MARGIN_MS, useInstantRefresh } from '~/composables/useInstantRefresh'
+import { INSTANT_MARGIN_MS, SETTLE_RETRY_MAX, SETTLE_RETRY_MS, useInstantRefresh } from '~/composables/useInstantRefresh'
 
 // Refetching at an instant (#229, spec #218 § Deadlines): no timer runs on the server, so the client reads the Event again when
 // an instant it knows passes (a wheel's stop). One timer to the next instant, re-armed when the instants change, cleared
@@ -9,12 +9,12 @@ import { INSTANT_MARGIN_MS, useInstantRefresh } from '~/composables/useInstantRe
 
 const START = Date.UTC(2090, 10, 7, 20, 0, 0)
 
-async function setUp(first: number[]) {
+async function setUp(first: number[], unsettled?: () => boolean, onPassed?: () => void) {
   const instants = ref(first)
-  const passed = vi.fn()
+  const passed = vi.fn(onPassed)
   const page = await mountSuspended(defineComponent({
     setup() {
-      useInstantRefresh(instants, () => Date.now(), passed)
+      useInstantRefresh(instants, () => Date.now(), passed, unsettled)
       return () => null
     },
   }))
@@ -101,5 +101,51 @@ describe('useInstantRefresh', () => {
     expect(passed).toHaveBeenCalledTimes(1)
     vi.advanceTimersByTime(60_000)
     expect(passed).toHaveBeenCalledTimes(1)
+  })
+
+  describe('while the read after an instant is unsettled (F13)', () => {
+    it('reads again every 500 ms until it settles, and then stops', async () => {
+      let reads = 0
+      // The read settles with the third one: the first two reach the server before the instant took effect.
+      const { passed } = await setUp([START + 1000], () => reads < 3, () => { reads += 1 })
+
+      vi.advanceTimersByTime(1000 + INSTANT_MARGIN_MS)
+      expect(passed).toHaveBeenCalledTimes(1)
+      vi.advanceTimersByTime(SETTLE_RETRY_MS - 1)
+      expect(passed).toHaveBeenCalledTimes(1)
+      vi.advanceTimersByTime(1)
+      expect(passed).toHaveBeenCalledTimes(2)
+      vi.advanceTimersByTime(SETTLE_RETRY_MS)
+      expect(passed).toHaveBeenCalledTimes(3)
+
+      vi.advanceTimersByTime(60_000)
+      expect(passed).toHaveBeenCalledTimes(3)
+    })
+
+    it('gives up after three more reads when it never settles', async () => {
+      const { passed } = await setUp([START + 1000], () => true)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(passed).toHaveBeenCalledTimes(1 + SETTLE_RETRY_MAX)
+    })
+
+    it('reads no more than the instant asked for when the read is settled at once', async () => {
+      const { passed } = await setUp([START + 1000], () => false)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(passed).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops reading when the page ends', async () => {
+      const { passed, page } = await setUp([START + 1000], () => true)
+
+      vi.advanceTimersByTime(1000 + INSTANT_MARGIN_MS)
+      page.unmount()
+      vi.advanceTimersByTime(60_000)
+
+      expect(passed).toHaveBeenCalledTimes(1)
+    })
   })
 })
