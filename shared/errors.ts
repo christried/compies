@@ -152,6 +152,8 @@ export const API_ERROR_STATUS = {
   countdown_not_running: 409,
   /** The Coin flip has a toss in the air: one coin at a time, the next toss waits for the landing (#235). */
   coin_in_air: 409,
+  /** The Party has its 9 Bonus Vetoes already: the Host cannot grant it another (#233). */
+  bonus_veto_limit: 409,
   wrong_phase: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */

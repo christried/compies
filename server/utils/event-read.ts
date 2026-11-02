@@ -7,7 +7,7 @@ import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
 import { placeOf, composeTeamName, type Zone } from '../../shared/board'
-import { gamesLeft, isBeingDrawn, isOpen, vetoRejection, waitsForRespin } from '../../shared/rounds'
+import { bonusVetoCounts, bonusVetoRejection, gamesLeft, isBeingDrawn, isOpen, vetoRejection, waitsForRespin } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import type { EventView, RoundView, SessionNote, SessionView, VetoView, WheelView } from '../../shared/event'
 import type { VoteRow } from '../../shared/poll'
@@ -304,6 +304,17 @@ export async function countdownSection(db: Db, eventRow: EventRow, rows: EventRo
 export async function coinSection(db: Db, eventRow: EventRow, rows: EventRows): Promise<Pick<EventView, 'coin'>> {
   const toss = await readShownToss(db, eventRow, rows.sessions)
   return { coin: toss ? coinView(toss) : null }
+}
+
+/**
+ * The Bonus Vetoes (#233, spec #218 § Bonus Vetoes): the Host gets how many each Party has, and the Event-level reason it cannot grant
+ * one now, while the Event has a Lucky Wheel. Null for every other viewer, and for an Event without the wheel or without settings.
+ */
+export async function bonusVetoSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'bonusVetoes'>> {
+  const settings = settingsFromRow(eventRow)
+  if (!viewer.isHost || settings === null || !hasWheel(settings.selectionMode)) return { bonusVetoes: null }
+  const granted = bonusVetoCounts(await readBonusTeams(db, eventRow.id), settings.teamCount)
+  return { bonusVetoes: { granted, rejection: bonusVetoRejection({ isHost: viewer.isHost, settings, phase: eventRow.phase, team: null, granted }) } }
 }
 
 /** The Invite link is for the Host to share (#16). Members never get it, so they cannot pass it on. */
