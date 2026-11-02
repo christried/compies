@@ -168,8 +168,6 @@ export interface SpinView {
   resultOffset: number
   labels: string[] | null
   game: RoundGame | null
-  /** The end of the Veto window (ISO, #231): it opens at `stopAt`. Null when no Party had a Veto left at the spin. */
-  vetoEndsAt: string | null
 }
 
 /** A Veto of a Party and the Player who cast it (#231); the Event read shows it from the end of the window on. */
@@ -177,7 +175,7 @@ export interface VetoCastView { team: number, userId: string }
 
 /**
  * The viewer's own Party in the Veto window (#231): its team, the Player of it who cast (null: not yet, the Party's Players learn it
- * at once, nobody else before the end of the window), and why the Party cannot cast on the spin's draw now, or null when it may.
+ * at once, nobody else before the end of the window), and why the Party cannot cast on the window's draw (VetoView.draw) now, or null when it may.
  * Only a Player of a Party gets it: the Bench, the Stands and a Host outside the teams get `own: null`.
  */
 export interface OwnVetoView { team: number, castBy: string | null, rejection: VetoRejection | null }
@@ -185,13 +183,29 @@ export interface OwnVetoView { team: number, castBy: string | null, rejection: V
 /**
  * The Vetoes of the Lucky Wheel (#231, spec #218 § Vetoes, sealed until the end of the window). `left` is every Party's Vetoes left
  * (index 0 = team 1) as THIS viewer may know them: a Veto cast on a draw whose window still runs counts only for the Players of the
- * casting Party, for everybody else from the end of the window on, so no number gives a sealed Veto away. `revealed` holds every
- * Party's Veto on the spin's draw from the end of its window on (null before, and without a window).
+ * casting Party, for everybody else from the end of the window on, so no number gives a sealed Veto away. `draw` is the Event's latest
+ * draw of any kind (#232: a spin or a game the Host set), and only when it has a Veto window; null when the latest draw has none, so
+ * the window's panel goes away. `own` and `revealed` follow that draw: `revealed` holds every Party's Veto on it from the end of its
+ * window on (null before, and without a window).
  */
 export interface VetoView {
   left: number[]
   own: OwnVetoView | null
   revealed: VetoCastView[] | null
+  draw: VetoDrawView | null
+}
+
+/**
+ * The draw a Veto window belongs to (#232). `stopAt` is where the window opens (the wheel's stop for a `spin`, the set instant for a
+ * `set`, so everybody sees a set game at once) and `vetoEndsAt` where it ends (ISO). `game` is the drawn or set game's card: the
+ * Host's always, everybody else's from `stopAt` on; a set draw reveals only that game (Hidden wheel, story 54).
+ */
+export interface VetoDrawView {
+  drawId: string
+  kind: 'spin' | 'set'
+  stopAt: string
+  vetoEndsAt: string
+  game: RoundGame | null
 }
 
 /**

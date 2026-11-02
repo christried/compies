@@ -479,6 +479,7 @@
     "tileBy": "von {name}",
     "tileSpared": "Vetos gespart",
     "outcomeVeto": "Veto von {list}. {game} fliegt vom Rad, es wird neu gedreht.",
+    "outcomeVetoSet": "Veto von {list}. {game} fliegt raus, es wird neu gewählt.",
     "outcomeSet": "Kein Veto. {game} wird gespielt. Viel Glück!",
     "parties": "Vetos der Parteien"
   },
@@ -1518,6 +1519,8 @@
     "selected": "{name} ist ausgewählt",
     "choose": "Such dir ein Spiel aus.",
     "chosen": "Alle sehen es sofort.",
+    "vetoAllowed": "Veto erlauben",
+    "vetoAllowedHelp": "Die Parteien haben dann 60 Sekunden, das Spiel abzulehnen.",
     "confirm": "Setzen"
   },
   "error": {
