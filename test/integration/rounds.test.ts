@@ -234,7 +234,7 @@ describe('Rounds', () => {
       expect((await read(game, game.cookies.one)).setGame).toBeNull()
     })
 
-    it('writes the feed entry „game set“ with the game\'s name for everyone, and tells the room without any game data', async () => {
+    it('writes the feed entry „game set“ with the game\'s name for everyone, and tells the room only that the Event changed', async () => {
       const game = await running()
 
       await set(game, game.halo.id)
@@ -243,8 +243,7 @@ describe('Rounds', () => {
       const page = await (await send('GET', `/api/e/${game.slug}/activity`, game.cookies.three)).json() as ActivityPage
       expect(page.entries).toMatchObject([{ type: 'game_set', actor: { name: 'Hostess' }, params: { roundId: round!.id, gameId: game.halo.id }, games: { [game.halo.id]: 'Halo' } }])
       const messages = notifier.messages(game.eventId)
-      expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added', 'round.set'])
-      expect(messages.find(message => message.type === 'round.set')).toEqual({ type: 'round.set', roundId: round!.id, v: 1, serverTime: new Date(T0).getTime() })
+      expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added'])
     })
 
     it('answers only the Host: a Member gets 403 not_host and nothing is written', async () => {
@@ -363,7 +362,7 @@ describe('Rounds', () => {
       expect(view.rounds).toEqual([])
       expect(view.setGame?.left.sort()).toEqual([game.halo.id, game.kart.id].sort())
       expect((await roundRows(game))[0]).toMatchObject({ gameId: game.halo.id, putBackAt: new Date('2090-10-30T10:05:00.000Z') })
-      expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added', 'round.putBack'])
+      expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added'])
     })
 
     it('returns a library game nowhere: the pool is as it was', async () => {
@@ -526,17 +525,12 @@ describe('Rounds', () => {
       expect(row!.resultOffset).toBeLessThan(0.8)
     })
 
-    it('tells the room the spin without any game: the slices counted, the result slice, and the instants', async () => {
+    it('tells the room only that the Event changed on a spin, and no message of the wheel', async () => {
       const game = await running({ wheel: true })
 
-      const { roundId, drawId } = await spun(game)
+      await spun(game)
 
-      const [row] = await drawRows()
-      const messages = notifier.messages(game.eventId)
-      expect(messages.map(message => message.type)).toEqual(['event.changed', 'round.spun'])
-      expect(messages[1]).toEqual({
-        type: 'round.spun', roundId, drawId, spinStartAt: iso(LEAD), stopAt: iso(STOP), slices: 2, resultIndex: row!.resultIndex, resultOffset: row!.resultOffset, labels: null, v: 1, serverTime: new Date(T0).getTime(),
-      })
+      expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed'])
     })
 
     it('writes the feed entry „game drawn“ for the stop instant and does not publish it', async () => {
