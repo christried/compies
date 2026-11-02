@@ -101,7 +101,7 @@ describe('the Bonus Veto on the Event page', () => {
       runningSessionId: `session-${slug}-0`,
       teams,
       bonusVetoes: host ? { granted, rejection } : null,
-      setGame: host ? { rejection: null, spinRejection: null, respin: false, left: [] } : null,
+      setGame: host ? { rejection: null, spinRejection: null, respin: false, left: [], poolWarning: null } : null,
     }))
   }
 

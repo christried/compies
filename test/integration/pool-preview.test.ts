@@ -284,6 +284,10 @@ describe('Pool preview secrecy (#225)', () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
 
       expectNone(await whatThePlayerGets(slug, eventId), [alpha, beta, gamma, library])
+      // The pool warning (#234) is the Host's: the Host's read carries it (2 games in the pool, at least 10 needed), the Player's does not.
+      expect((JSON.parse(await rawRead(hostCookie, slug)) as EventView).setGame?.poolWarning).not.toBeNull()
+      expect(JSON.parse(await rawRead(playerCookie, slug))).toMatchObject({ setGame: null })
+      expect(await rawRead(playerCookie, slug)).not.toContain('poolWarning')
       for (const game of [alpha, beta, gamma, library]) expect((await fetchImage(game, playerCookie)).status).toBe(404)
     })
 

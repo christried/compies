@@ -573,6 +573,10 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       expectNone(await whatThePlayerGets(slug, eventId), [a, b, c, e])
       expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView)).toMatchObject({ pools: null, rounds: [], setGame: null })
+      // The pool warning (#234) is the Host's: the Host's read carries it here (2 games in the pool, 16 needed), the Player's and the room's do not.
+      expect((JSON.parse(await rawRead(hostCookie, slug)) as EventView).setGame?.poolWarning).toEqual({ needed: 16, have: 2 })
+      expect(await rawRead(playerCookie, slug)).not.toContain('poolWarning')
+      expect(JSON.stringify(notifier.messages(eventId))).not.toContain('poolWarning')
       for (const secret of [a, b, c, e]) expect(await imageStatus(secret)).toBe(404)
     })
 

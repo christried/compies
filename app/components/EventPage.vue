@@ -293,6 +293,11 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           :view="data"
         />
 
+        <PoolWarning
+          v-else-if="block === 'pool' && data.setGame?.poolWarning"
+          :warning="data.setGame.poolWarning"
+        />
+
         <template v-else-if="block === 'setup'">
           <NoticeBanner
             v-if="needsSetup && !setupNoticeClosed"

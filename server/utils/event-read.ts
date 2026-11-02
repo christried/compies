@@ -7,12 +7,12 @@ import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
 import { placeOf, composeTeamName, type Zone } from '../../shared/board'
-import { bonusVetoCounts, bonusVetoRejection, gamesLeft, isBeingDrawn, isOpen, vetoRejection, waitsForRespin } from '../../shared/rounds'
+import { bonusVetoCounts, bonusVetoRejection, gamesLeft, isBeingDrawn, isOpen, poolWarning, roundsStarted, vetoRejection, waitsForRespin, type PoolWarning } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import type { EventView, RoundView, SessionNote, SessionView, VetoView, WheelView } from '../../shared/event'
 import type { RoundGame } from '../../shared/game'
 import type { VoteRow } from '../../shared/poll'
-import { floorsAt, hasWheel, settingsFromRow } from '../../shared/settings'
+import { floorsAt, hasWheel, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
 import { inviteUrl } from './links'
@@ -25,7 +25,7 @@ import { coinView, readShownToss } from './coin'
 import { readDraws, readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { floorFacts } from './settings-floors'
-import { partyVetoesLeft, readBonusTeams, readVetoes } from './vetoes'
+import { knownVetoRows, partyVetoesLeft, readBonusTeams, readVetoes } from './vetoes'
 
 // The Event read (`GET /api/e/:slug`) as section builders (#183). Each builder returns its slice of EventView and the
 // handler composes them. Rows that more than one section needs are read once, together, by readEventRows; the pools
@@ -198,11 +198,13 @@ export async function roundsSection(db: Db, eventRow: EventRow, rows: EventRows,
   const [draws, pool] = await Promise.all([readDraws(db, eventRow.id), readGamePool(db, eventRow.id)])
   const left = gamesLeft(pool, draws, roundRows)
   const places = rows.members.map(row => placeOf(row))
+  // The Host's pool warning (#234): only the Host reads it, and only while the Event runs (the setup hint covers the rest).
+  const warning = viewer.isHost && eventRow.phase === 'running' && settings !== null ? await poolWarningOf(db, eventRow, settings, rows, viewer, roundRows, draws, left.length, now) : null
   return {
     rounds: open,
     roundBeingDrawn: viewer.isHost && roundRows.some(round => isBeingDrawn(round, draws)),
     setGame: viewer.isHost
-      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, draws, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, draws, left, true), respin: roundRows.some(round => waitsForRespin(round, draws)), left }
+      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, draws, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, draws, left, true), respin: roundRows.some(round => waitsForRespin(round, draws)), left, poolWarning: warning }
       : null,
     wheel: onWheel ? await wheelView(db, eventRow, rows, viewer, settings.hiddenWheel, left, draws, now) : null,
   }
@@ -218,13 +220,10 @@ export async function roundsSection(db: Db, eventRow: EventRow, rows: EventRows,
  */
 async function vetoView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer, draws: readonly DrawRow[], windowDraw: DrawRow | undefined, game: RoundGame | null, now: Date): Promise<VetoView> {
   const [vetoRows, bonusTeams] = await Promise.all([readVetoes(db, eventRow.id), readBonusTeams(db, eventRow.id)])
-  const member = rows.members.find(row => row.id === viewer.id)
-  const viewerTeam = member?.zone === 'team' ? member.team : null
+  const viewerTeam = partyOf(rows, viewer)
   const windowOpen = (draw: Pick<DrawRow, 'vetoEndsAt'>) => draw.vetoEndsAt !== null && draw.vetoEndsAt > now
-  const open = new Set(draws.filter(windowOpen).map(draw => draw.id))
-  // Another Party's cast on a draw whose window still runs does not exist for this viewer.
-  const known = vetoRows.filter(row => !open.has(row.drawId) || row.team === viewerTeam)
-  const left = partyVetoesLeft(eventRow, known, bonusTeams)
+  // Another Party's cast on a draw whose window still runs does not exist for this viewer (knownVetoRows, shared with the pool warning).
+  const left = partyVetoesLeft(eventRow, knownVetoRows(vetoRows, draws, viewerTeam, now), bonusTeams)
   const castOnDraw = vetoRows.filter(row => row.drawId === windowDraw?.id)
   const own = viewerTeam === null
     ? null
@@ -242,6 +241,32 @@ async function vetoView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Vie
   const revealed = windowDraw && !windowOpen(windowDraw) ? castOnDraw.map(({ team, userId }) => ({ team, userId })).sort((a, b) => a.team - b.team) : null
   const draw = windowDraw ? { drawId: windowDraw.id, kind: windowDraw.kind, stopAt: windowDraw.stopAt.toISOString(), vetoEndsAt: windowDraw.vetoEndsAt!.toISOString(), game } : null
   return { left, own, revealed, draw }
+}
+
+/** The Party a viewer plays in: the team of a Member on a team seat; null on the Bench, in the Stands and for a viewer without a Member. */
+function partyOf(rows: EventRows, viewer: Viewer): number | null {
+  const member = rows.members.find(row => row.id === viewer.id)
+  return member?.zone === 'team' ? member.team : null
+}
+
+/**
+ * The Host's pool warning (#234, spec #218 § Pool warning): the games left against the games the Host may still need. The Vetoes count
+ * as the Host may know them (knownVetoRows): a Veto cast on a draw whose window still runs counts only when the Host plays in that
+ * Party, so the warning does not flip when someone casts a sealed Veto. Under Host pick the Vetoes part drops out.
+ */
+async function poolWarningOf(db: Db, eventRow: EventRow, settings: EventSettings, rows: EventRows, viewer: Viewer, roundRows: RoundRow[], draws: DrawRow[], left: number, now: Date): Promise<PoolWarning | null> {
+  let vetoesLeft: number[] | null = null
+  if (hasWheel(settings.selectionMode)) {
+    const [vetoRows, bonusTeams] = await Promise.all([readVetoes(db, eventRow.id), readBonusTeams(db, eventRow.id)])
+    vetoesLeft = partyVetoesLeft(eventRow, knownVetoRows(vetoRows, draws, partyOf(rows, viewer), now), bonusTeams)
+  }
+  return poolWarning({
+    left,
+    gameCount: settings.gameCount,
+    roundsStarted: roundsStarted(roundRows),
+    roundsWaiting: roundRows.filter(round => waitsForRespin(round, draws)).length,
+    vetoesLeft,
+  })
 }
 
 /**

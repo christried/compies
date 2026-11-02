@@ -109,18 +109,18 @@ describe('hostDockState', () => {
 
 describe('the primary of a running Session (#228)', () => {
   it('is Nächstes Spiel setzen under Host pick, with the reason the rule gives', () => {
-    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: null, spinRejection: null, respin: false, left: [] } }))).toMatchObject({ kind: 'running', primary: 'setGame', setRejection: null })
-    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: 'teams_uneven', spinRejection: 'teams_uneven', respin: false, left: [] } }))).toMatchObject({ primary: 'setGame', setRejection: 'teams_uneven' })
+    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: null, spinRejection: null, respin: false, left: [], poolWarning: null } }))).toMatchObject({ kind: 'running', primary: 'setGame', setRejection: null })
+    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: 'teams_uneven', spinRejection: 'teams_uneven', respin: false, left: [], poolWarning: null } }))).toMatchObject({ primary: 'setGame', setRejection: 'teams_uneven' })
   })
 
   it('is Rad drehen in the Lucky Wheel, with the reason the spin rule gives, where setting waits in Mehr (#229)', () => {
-    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: null, spinRejection: null, respin: false, left: [] } }))).toMatchObject({ kind: 'running', primary: 'spin', spinRejection: null })
-    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: null, spinRejection: 'pool_empty', respin: false, left: [] } }))).toMatchObject({ primary: 'spin', spinRejection: 'pool_empty' })
-    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: 'round_being_drawn', spinRejection: 'round_being_drawn', respin: false, left: [] } }))).toMatchObject({ primary: 'spin', spinRejection: 'round_being_drawn', setRejection: 'round_being_drawn' })
+    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: null, spinRejection: null, respin: false, left: [], poolWarning: null } }))).toMatchObject({ kind: 'running', primary: 'spin', spinRejection: null })
+    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: null, spinRejection: 'pool_empty', respin: false, left: [], poolWarning: null } }))).toMatchObject({ primary: 'spin', spinRejection: 'pool_empty' })
+    expect(hostDockState(input({ settings, sessions: RUNNING, setGame: { rejection: 'round_being_drawn', spinRejection: 'round_being_drawn', respin: false, left: [], poolWarning: null } }))).toMatchObject({ primary: 'spin', spinRejection: 'round_being_drawn', setRejection: 'round_being_drawn' })
   })
 
   it('has no spin reason under Host pick: the wheel is not there', () => {
-    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: null, spinRejection: 'no_wheel', respin: false, left: [] } }))).toMatchObject({ primary: 'setGame', spinRejection: null })
+    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, setGame: { rejection: null, spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null } }))).toMatchObject({ primary: 'setGame', spinRejection: null })
   })
 })
 

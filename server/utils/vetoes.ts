@@ -29,6 +29,17 @@ export async function readBonusTeams(db: Db, eventId: string): Promise<number[]>
   return found.map(row => row.team)
 }
 
+/**
+ * The Vetoes a viewer may know (#231, spec #218 § Vetoes: sealed until the end of the window). A Veto cast on a draw whose window
+ * still runs counts only for the viewer's own Party (`viewerTeam`, null outside the teams: no Party's open-window Veto); from the
+ * window's end on, every Veto counts for everybody. The Event read's Veto part and the Host's pool warning (#234) both use it, so
+ * no number gives a sealed Veto away.
+ */
+export function knownVetoRows<T extends { drawId: string, team: number }>(vetoRows: readonly T[], drawRows: readonly Pick<typeof draws.$inferSelect, 'id' | 'vetoEndsAt'>[], viewerTeam: number | null, now: Date): T[] {
+  const open = new Set(drawRows.filter(draw => draw.vetoEndsAt !== null && draw.vetoEndsAt > now).map(draw => draw.id))
+  return vetoRows.filter(row => !open.has(row.drawId) || row.team === viewerTeam)
+}
+
 /** Each Party's Vetoes left (index 0 = team 1) from the Event's settings and rows. An Event that is not set up has no Parties. */
 export function partyVetoesLeft(eventRow: EventRow, vetoRows: readonly Pick<VetoRow, 'team'>[], bonusTeams: readonly number[]): number[] {
   const settings = settingsFromRow(eventRow)

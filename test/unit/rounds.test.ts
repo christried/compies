@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BONUS_VETO_MAX, VETO_WINDOW_MS, bonusVetoCounts, bonusVetoRejection, drawOutcome, gamesLeft, isBeingDrawn, isOpen, opensWindow, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
+import { BONUS_VETO_MAX, VETO_WINDOW_MS, bonusVetoCounts, bonusVetoRejection, drawOutcome, gamesLeft, isBeingDrawn, isOpen, opensWindow, poolWarning, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
 import type { SessionTimes } from '../../shared/session-state'
 import { floorsAt } from '../../shared/settings'
 
@@ -379,5 +379,32 @@ describe('Bonus Vetoes (#233)', () => {
   it('counts the Bonus Vetoes of each Party, index 0 = team 1, zero for a Party without any', () => {
     expect(bonusVetoCounts([2, 1, 2], 3)).toEqual([1, 2, 0])
     expect(bonusVetoCounts([], 2)).toEqual([0, 0])
+  })
+})
+
+describe('the pool warning (#234)', () => {
+  it('under Host pick counts the Game count less the Rounds started, and drops the Vetoes part', () => {
+    expect(poolWarning({ left: 3, gameCount: 5, roundsStarted: 1, roundsWaiting: 0, vetoesLeft: null })).toEqual({ needed: 4, have: 3 })
+    expect(poolWarning({ left: 4, gameCount: 5, roundsStarted: 1, roundsWaiting: 0, vetoesLeft: null })).toBeNull()
+  })
+
+  it('under the Lucky Wheel adds the Vetoes left of every Party', () => {
+    expect(poolWarning({ left: 13, gameCount: 10, roundsStarted: 0, roundsWaiting: 0, vetoesLeft: [2, 2] })).toEqual({ needed: 14, have: 13 })
+    expect(poolWarning({ left: 14, gameCount: 10, roundsStarted: 0, roundsWaiting: 0, vetoesLeft: [2, 2] })).toBeNull()
+  })
+
+  it('counts Bonus Vetoes with the Vetoes left, cast ones spent', () => {
+    // Allowance 1 for both Parties, two Bonus Vetoes for team 2, one Veto of team 1 cast: team 1 has 0 left, team 2 has 4.
+    const vetoesLeft = vetoesLeftByParty({ allowance: 1, teamCount: 2, bonusTeams: [2, 2, 2], castTeams: [1] })
+
+    expect(vetoesLeft).toEqual([0, 4])
+    expect(poolWarning({ left: 5, gameCount: 3, roundsStarted: 0, roundsWaiting: 0, vetoesLeft })).toEqual({ needed: 7, have: 5 })
+    expect(poolWarning({ left: 7, gameCount: 3, roundsStarted: 0, roundsWaiting: 0, vetoesLeft })).toBeNull()
+  })
+
+  it('counts a Round waiting for a respin as not started, so it needs its game again', () => {
+    // Two Rounds started, one of them waiting for a respin: one game for it, one for the Round still to start.
+    expect(poolWarning({ left: 1, gameCount: 3, roundsStarted: 2, roundsWaiting: 1, vetoesLeft: [0, 0] })).toEqual({ needed: 2, have: 1 })
+    expect(poolWarning({ left: 2, gameCount: 3, roundsStarted: 2, roundsWaiting: 1, vetoesLeft: [0, 0] })).toBeNull()
   })
 })

@@ -244,3 +244,27 @@ export function bonusVetoRejection({ isHost, settings, phase, team, granted }: B
 export function bonusVetoCounts(bonusTeams: readonly number[], teamCount: number): number[] {
   return Array.from({ length: teamCount }, (_, index) => bonusTeams.filter(team => team === index + 1).length)
 }
+
+/** The live pool warning (#234, spec #218 § Pool warning): the games the Host may still need against the games left in the pool. */
+export interface PoolWarning { needed: number, have: number }
+
+interface PoolWarningInput {
+  /** The number of games left in the Game pool (gamesLeft, counted). */
+  left: number
+  gameCount: number
+  roundsStarted: number
+  /** The Rounds that wait for a respin (waitsForRespin). */
+  roundsWaiting: number
+  /** Every Party's Vetoes left, Bonus Vetoes included; null under a mode without a wheel (Host pick), where the Vetoes part drops out. */
+  vetoesLeft: readonly number[] | null
+}
+
+/**
+ * The warning when the games left may not cover the worst case (#234): every Round not started yet needs a game, and so does every
+ * Veto still left. A Round that waits for a respin needs one more game than the spec's „Rounds started“ counts, so it counts as not
+ * started. Null when the pool covers it, exactly enough included. It never blocks anything.
+ */
+export function poolWarning({ left, gameCount, roundsStarted: started, roundsWaiting, vetoesLeft }: PoolWarningInput): PoolWarning | null {
+  const needed = (gameCount - (started - roundsWaiting)) + (vetoesLeft ?? []).reduce((sum, vetoes) => sum + vetoes, 0)
+  return left < needed ? { needed, have: left } : null
+}
