@@ -43,9 +43,11 @@ const endSecond = props.clip.game.clipStart + props.clip.game.clipLength
 
 // The server's time of this tick; null before the page has mounted, so the progress bar renders the same on the server and on a
 // hard load's first client render (review 0.7, F11). The read carries a clip only while it runs, so it has not ended before mount.
-const now = ref<number | null>(null)
+// The ticker (#257) runs every TICK_MS and not every frame: the bar eases over 250 ms in CSS, so a write per frame would fight the
+// transition. The clip is not a countdown, and it ends at `endsAt` from the ticker without waiting for a refetch.
+const now = useServerTicker(() => props.serverNow(), { until: () => endsAt, every: TICK_MS })
 const closedByMe = ref(false)
-const ended = ref(false)
+const ended = computed(() => now.value !== null && now.value >= endsAt)
 const open = computed(() => !closedByMe.value && !ended.value)
 /** The player could not be made or cannot play the video: the game's card stands in for it. */
 const playerFailed = ref(false)
@@ -63,7 +65,6 @@ let player: YouTubePlayer | null = null
 let started = false
 let driftTimer: ReturnType<typeof setTimeout> | undefined
 let autoplayTimer: ReturnType<typeof setTimeout> | undefined
-let tickTimer: ReturnType<typeof setInterval> | undefined
 
 /** The second of the video that every device is at now; the start second when this device's estimate is a hair early. */
 const secondNow = () => clipPosition(props.clip, props.serverNow()) ?? props.clip.game.clipStart
@@ -163,17 +164,10 @@ onMounted(() => {
   // would block the unmuted start anyway).
   muted.value = !(wide.value === true && sound.enabled.value)
   soundBlocked.value = muted.value && sound.enabled.value
-  const tick = () => {
-    now.value = props.serverNow()
-    if (now.value >= endsAt) ended.value = true
-  }
-  tick()
-  tickTimer = setInterval(tick, TICK_MS)
   if (open.value && videoId.value) void createPlayer()
 })
 
 onBeforeUnmount(() => {
-  clearInterval(tickTimer)
   destroyPlayer()
 })
 </script>

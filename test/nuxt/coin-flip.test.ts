@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CoinFlip from '~/components/CoinFlip.vue'
 import { COIN_DURATION_MS, COIN_LEAD_MS } from '~~/shared/coin'
 import type { CoinView } from '~~/shared/stage'
+import { stubInView } from './in-view'
 
 // The Coin flip on the stage (#235, spec #218 § Coin flip, 04-motion § Coin): every Member's coin flies from the same start instant and
 // lands at the same instant; the result shows only at the landing, in a live region; a late joiner is seeked into the flight; reduced
@@ -69,6 +70,7 @@ afterEach(() => {
   Element.prototype.animate = originalAnimate
   vi.useRealTimers()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('the result, which shows only at the landing (#235)', () => {
@@ -176,6 +178,34 @@ describe('the overlay (F5)', () => {
     expect(card()).not.toBeNull()
     expect(inOverlay()).toBe(false)
     expect(liveText(mounted!)).toBe('Kopf!')
+  })
+})
+
+describe('its ticker (#257)', () => {
+  it('still shows the overlay when the inline card is scrolled out of view: the ticker never waits for the card (the overlay exists for that card)', async () => {
+    const view = stubInView()
+    await mount(toss('heads'), T0)
+    view.see(false)
+
+    await passTo(COIN_LEAD_MS + 1)
+
+    expect(inOverlay()).toBe(true)
+    expect(view.observers).toHaveLength(0)
+  })
+
+  it('takes a new toss while the old overlay is still up: the overlay stands down until the new start, and the flight begins anew', async () => {
+    await mount(toss('heads'), STARTS + 1000)
+    expect(inOverlay()).toBe(true)
+
+    const next = STARTS + 1000 + COIN_LEAD_MS
+    await mounted!.setProps({ toss: { id: 'toss-2', side: 'tails', startedAt: new Date(next).toISOString(), landsAt: new Date(next + COIN_DURATION_MS).toISOString() } })
+    expect(inOverlay()).toBe(false)
+    expect(liveText(mounted!)).toBe('')
+
+    await passTo(COIN_LEAD_MS + 1000 + COIN_LEAD_MS + 1)
+    expect(inOverlay()).toBe(true)
+    await passTo(COIN_LEAD_MS + 1000 + COIN_LEAD_MS + COIN_DURATION_MS)
+    expect(liveText(mounted!)).toBe('Schwanz!')
   })
 })
 

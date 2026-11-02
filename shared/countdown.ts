@@ -24,6 +24,9 @@ export type CountdownState = 'ready' | 'paused' | 'running' | 'ended'
 /** The changes the Host makes to a Countdown. */
 export type CountdownAction = 'start' | 'pause' | 'reset' | 'set'
 
+/** What the Host sends from the stage: every action but `set`, which the sheet makes (#236). */
+export type CountdownCommand = Exclude<CountdownAction, 'set'>
+
 /** Why a change is refused: no Countdown to change, one that runs, one that ended (start only), or one that does not run (pause only). */
 export type CountdownRejection = 'no_countdown' | 'countdown_running' | 'countdown_ended' | 'countdown_not_running'
 
@@ -32,6 +35,11 @@ const msOf = (at: Instant): number => (typeof at === 'number' ? at : new Date(at
 /** The instant a started Countdown ends, in epoch ms: its start plus the time it was started with. */
 function endsAtMs(startedAt: Instant, remainingMs: number): number {
   return msOf(startedAt) + remainingMs
+}
+
+/** The instant a started Countdown ends, in epoch ms, or null while it is not started: nothing is pending then (#257, the ticker's `until`). */
+export function countdownEndsAt(c: CountdownFacts): number | null {
+  return c.startedAt === null ? null : endsAtMs(c.startedAt, c.remainingMs)
 }
 
 /**

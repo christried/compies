@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COUNTDOWN_MAX_S, COUNTDOWN_MIN_S, countdownRejection, countdownSeconds, countdownState, remainingMsAt, type CountdownFacts } from '../../shared/countdown'
+import { COUNTDOWN_MAX_S, COUNTDOWN_MIN_S, countdownEndsAt, countdownRejection, countdownSeconds, countdownState, remainingMsAt, type CountdownFacts } from '../../shared/countdown'
 
 // The Countdown's rules (#236, spec #218 § Countdown): the state it is in at a time, how much time is left, and why a Host's
 // change is refused. Instants are epoch ms here; the database and the Event read give Dates and ISO strings, which the same rules take.
@@ -52,6 +52,23 @@ describe('countdownState', () => {
   it('reads the same for a Date and an ISO string as for epoch ms', () => {
     const startedAt = new Date(STARTED).toISOString()
     expect(countdownState({ ...RESUMED, startedAt }, STARTED + 10_000)).toBe('running')
+  })
+})
+
+describe('countdownEndsAt (#257)', () => {
+  it('is the start instant plus the time it was started with, for a running Countdown', () => {
+    expect(countdownEndsAt(RUNNING)).toBe(STARTED + DURATION)
+    expect(countdownEndsAt(RESUMED)).toBe(STARTED + 25_000)
+  })
+
+  it('takes an ISO string as it takes epoch ms', () => {
+    expect(countdownEndsAt({ ...RESUMED, startedAt: new Date(STARTED).toISOString() })).toBe(STARTED + 25_000)
+  })
+
+  it('is null while it is ready, paused or at zero: nothing is pending', () => {
+    expect(countdownEndsAt(READY)).toBeNull()
+    expect(countdownEndsAt(PAUSED)).toBeNull()
+    expect(countdownEndsAt(AT_ZERO)).toBeNull()
   })
 })
 

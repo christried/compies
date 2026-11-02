@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { countdownState, remainingMsAt, type CountdownState } from '~~/shared/countdown'
+import { countdownEndsAt, countdownState, remainingMsAt, type CountdownCommand, type CountdownState } from '~~/shared/countdown'
 import type { CountdownView } from '~~/shared/stage'
 
 // The Countdown on the stage (#236, spec #218 § Countdown, 04-motion § Synchronised moments): the time left as mm:ss, computed from
@@ -16,43 +16,18 @@ const props = defineProps<{
   command: (action: CountdownCommand) => Promise<boolean>
 }>()
 
-type CountdownCommand = 'start' | 'pause' | 'reset'
-
 const { t } = useI18n()
 const headingId = useId()
-const state = ref<CountdownState>('ready')
-const seconds = ref(0)
-let frame: number | undefined
-
-/** Reads the state and the time left at the server's clock now. */
-function sample() {
-  const now = props.serverNow()
-  state.value = countdownState(props.countdown, now)
-  seconds.value = Math.ceil(remainingMsAt(props.countdown, now) / 1000)
-}
-
-function tick() {
-  frame = undefined
-  sample()
-  if (state.value === 'running') frame = requestAnimationFrame(tick)
-}
-
-/** Stops the frames, reads the state now and runs frames again only while it runs. */
-function restart() {
-  if (frame !== undefined) cancelAnimationFrame(frame)
-  frame = undefined
-  sample()
-  if (state.value === 'running') frame = requestAnimationFrame(tick)
-}
-
-// The first render already shows the time left (also on the server, where no frame runs).
-sample()
-onMounted(restart)
-watch(() => props.countdown, restart)
-onBeforeUnmount(() => {
-  if (frame !== undefined) cancelAnimationFrame(frame)
-  frame = undefined
+// The server ticker (#257) reads the clock every frame while the Countdown runs and holds still when it is paused, at zero or scrolled
+// out of view. Before the page has mounted it is null: the stored facts stand in (a running one at its start instant), so the server
+// render and the first client render agree, and the real time shows at mount.
+const now = useServerTicker(() => props.serverNow(), {
+  until: () => countdownEndsAt(props.countdown),
+  target: useTemplateRef('root'),
 })
+const at = computed(() => now.value ?? (props.countdown.startedAt === null ? 0 : Date.parse(props.countdown.startedAt)))
+const state = computed<CountdownState>(() => countdownState(props.countdown, at.value))
+const seconds = computed(() => Math.ceil(remainingMsAt(props.countdown, at.value) / 1000))
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const clock = computed(() => {
@@ -72,6 +47,7 @@ const actions = computed((): { command: CountdownCommand, label: string }[] => {
 
 <template>
   <section
+    ref="root"
     :aria-labelledby="headingId"
     class="flex flex-col gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 md:p-5"
   >
