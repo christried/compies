@@ -225,7 +225,7 @@
       "setup": "Teams gibt es, sobald das Event eingerichtet ist. Bis dahin: Bench oder Tribüne."
     },
     "meta": {
-      "setup": "{n} Leute da",
+      "setup": "{n} Person da | {n} Leute da",
       "poll": "{teams} · Teamwahl noch zu",
       "open": "{taken} von {places} Plätzen besetzt",
       "running": "{teams} · gesperrt"
@@ -328,7 +328,7 @@
       "vetoes": "Vetos pro Partei",
       "vetoesHelp": "Jede Partei hat gleich viele Vetos für das ganze Event.",
       "vetoesMin": "Mindestens 0 Vetos.",
-      "vetoesFloor": "Eine Partei hat schon {n} Vetos eingesetzt.",
+      "vetoesFloor": "Eine Partei hat schon {n} Veto eingesetzt. | Eine Partei hat schon {n} Vetos eingesetzt.",
       "vetoesMax": "Höchstens 9 Vetos pro Partei.",
       "howItWorks": "So läuft's",
       "goodFor": "Gut für",
@@ -359,7 +359,7 @@
       "more": "Platz {n}: ein Punkt mehr",
       "less": "Platz {n}: ein Punkt weniger",
       "tieRule": "Gleichstand im Spiel:",
-      "tieExample": "Zwei Parteien teilen sich Platz 1, beide bekommen {p1} Punkte. Platz 2 fällt weg, die nächste Partei ist Platz 3 und bekommt {p3}."
+      "tieExample": "Zwei Parteien teilen sich Platz 1, beide bekommen {n} Punkt. Platz 2 fällt weg, die nächste Partei ist Platz 3 und bekommt {p3}. | Zwei Parteien teilen sich Platz 1, beide bekommen {n} Punkte. Platz 2 fällt weg, die nächste Partei ist Platz 3 und bekommt {p3}."
     },
     "info": {
       "sections": {
@@ -535,7 +535,7 @@
     "fewer": "Weniger Spiele",
     "more": "Mehr Spiele",
     "places": "Plätze: {list}",
-    "points": "{n} Punkte",
+    "points": "{n} Punkt | {n} Punkte",
     "winStamp": "Sieg in Spiel {n}!",
     "wonStamp": "Spiel {n} gewonnen",
     "takesFirst": "{team} übernimmt Platz 1",
@@ -550,7 +550,7 @@
   },
   "tiebreaker": {
     "announce": "Gleichstand auf Platz 1!",
-    "announceText": "Beide haben {points} Punkte. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad.",
+    "announceText": "Beide haben {n} Punkt. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad. | Beide haben {n} Punkte. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad.",
     "onlyTied": "Nur die Punktgleichen spielen.",
     "onlyTiedText": "Eigenes Rad mit dem Tiebreaker-Pool. Übrige Vetos zählen noch, Bans gibt es nicht.",
     "again": "Nochmal! Das Rad dreht neu.",
@@ -625,7 +625,7 @@
   },
   "poll": {
     "title": "Wann zocken wir?",
-    "people": "{n} Leute",
+    "people": "{n} Person | {n} Leute",
     "yes": "Ja",
     "maybe": "Meh",
     "maybeShort": "Meh",
@@ -863,7 +863,7 @@
     "saveDone": "Gespeichert.",
     "edit": "Bearbeiten",
     "all": "Alle",
-    "searchPlaceholder": "{n} Spiele durchsuchen",
+    "searchPlaceholder": "{n} Spiel durchsuchen | {n} Spiele durchsuchen",
     "noMatch": "„{q}“ kennen wir noch nicht.",
     "players": "{n} Spieler",
     "playersFrom": "ab {min}",
@@ -1218,7 +1218,7 @@
       "sessionsHelp": "Ein Event kann sich über mehrere Termine ziehen. Jede Session hat ihren eigenen Termin.",
       "sessionsLess": "Eine Session weniger",
       "sessionsMore": "Eine Session mehr",
-      "minSlots": "Schlag mindestens {n} Termine vor.",
+      "minSlots": "Schlag mindestens einen Termin vor. | Schlag mindestens {n} Termine vor.",
       "directEmpty": "Bitte Datum und Uhrzeit ausfüllen.",
       "copyLink": "Link kopieren",
       "copied": "Link kopiert",
