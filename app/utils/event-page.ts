@@ -1,5 +1,7 @@
 import { hasStarted, nextSession, runningOf, sessionState } from '~~/shared/session-state'
 import { datePollOpen, type EventView, type Phase, type SessionView } from '~~/shared/event'
+import { teamName } from './board'
+import type { Translate } from './settings-summary'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the blocks of the stage
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too. Adding a block, a dock action or a
@@ -131,6 +133,37 @@ export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase:
     case 'done': return { phase: 'finished', ended: true }
     default: return null
   }
+}
+
+/**
+ * The Host's seat note (teams only, #160): where the Host sits does not change the dock, and the note says so. null for a Member,
+ * on the Bench, or in a Team the note has no word for.
+ */
+export function seatNote(view: Pick<EventView, 'members' | 'viewerId' | 'teams'> & { event: Pick<EventView['event'], 'isHost'> }, t: Translate): string | null {
+  const me = view.members.find(member => member.id === view.viewerId)
+  if (!view.event.isHost || !me) return null
+  if (me.zone === 'stands') return t('event.notice.seatStands')
+  if (me.zone !== 'team' || me.team === null) return null
+  return t('event.notice.seatTeam', { team: teamName(view.teams.find(team => team.position === me.team) ?? me.team, t) })
+}
+
+/** What the Teams-bleiben notice names: the next Session by its number, or „der nächsten“ when it has none yet or is the only one. */
+export function teamsStay(next: NextSession | null, isHost: boolean, t: Translate): string {
+  const number = next?.number ?? null
+  const key = number === null ? (isHost ? 'teamsStayNext' : 'teamsStayMemberNext') : (isHost ? 'teamsStay' : 'teamsStayMember')
+  return t(`event.notice.${key}`, { n: number })
+}
+
+/**
+ * The header pill for a page state (pagePill, #166): „Läuft · Session 1 von 2“ while a Session runs in an Event with several, „Vorbei“
+ * after the last one. Without a state or a pill, the Event's own Phase (or poll) and no label.
+ */
+export function headerPill(state: EventPageState | null, phase: Phase | undefined, t: Translate): { phase: Phase, label: string | undefined } {
+  const shown = state ? pagePill(state) : null
+  if (!state || !shown) return { phase: phase ?? 'poll', label: undefined }
+  if (shown.ended) return { phase: shown.phase, label: t('phase.ended') }
+  const several = state.kind === 'running' && state.total > 1
+  return { phase: shown.phase, label: several ? t('event.pill.running', { n: state.running?.number, total: state.total }) : undefined }
 }
 
 export function eventPageState({ settings, sessions, missingDates, event, setGame, wheel, countdown, coin }: PageInput): EventPageState {
