@@ -1,6 +1,7 @@
 import { inArray } from 'drizzle-orm'
 import { games } from '../db/schema'
 import { WHEEL_UNKNOWN } from '../domain/wheel'
+import { drawGameKnown } from '../domain/pool-preview'
 import { bonusVetoCounts, bonusVetoRejection, gamesLeft, isBeingDrawn, isOpen, poolWarning, roundsStarted, vetoRejection, waitsForRespin, type PoolWarning } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import { placeOf } from '../../shared/board'
@@ -136,13 +137,13 @@ async function wheelView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Vi
   const spin = latestFirst.find(draw => draw.kind === 'spin')
   // The Veto window's draw (#232): the latest draw of any kind, when it has a window.
   const windowDraw = latestFirst[0]?.vetoEndsAt ? latestFirst[0] : undefined
-  const stopped = spin !== undefined && spin.stopAt <= now
+  const spinKnown = spin !== undefined && drawGameKnown({ isHost: viewer.isHost, draw: spin, now })
   const sees = viewer.isHost || !hidden
   const ids = new Set<string>()
   if (sees) for (const id of [...left, ...(spin?.sliceGameIds ?? [])]) ids.add(id)
-  if (spin && (viewer.isHost || stopped)) ids.add(spin.gameId)
+  if (spin && spinKnown) ids.add(spin.gameId)
   // A game the Host set is known from its stop (the set instant) on, the one thing of the pool a Member under a Hidden wheel learns from it.
-  const windowGameKnown = windowDraw !== undefined && (viewer.isHost || windowDraw.stopAt <= now)
+  const windowGameKnown = windowDraw !== undefined && drawGameKnown({ isHost: viewer.isHost, draw: windowDraw, now })
   if (windowDraw && windowGameKnown) ids.add(windowDraw.gameId)
   const found = ids.size === 0 ? [] : await db.select().from(games).where(inArray(games.id, [...ids]))
   const byId = new Map(found.map(game => [game.id, game]))
@@ -164,9 +165,9 @@ async function wheelView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Vi
           // The stored placeholders keep their order; the result slice's turns real at the stop. A spin from a visible wheel that was hidden since has none.
           labels: sees
             ? spin.sliceGameIds!.map(nameOf)
-            : (spin.sliceLabels ?? spin.sliceGameIds!.map(() => WHEEL_UNKNOWN)).map((label, index) => (stopped && index === spin.resultIndex ? nameOf(spin.gameId) : label)),
+            : (spin.sliceLabels ?? spin.sliceGameIds!.map(() => WHEEL_UNKNOWN)).map((label, index) => (spinKnown && index === spin.resultIndex ? nameOf(spin.gameId) : label)),
           // The names of a visible wheel are public, the drawn card is not: a Member gets it from the stop on.
-          game: drawn && (viewer.isHost || stopped) ? roundGameView(drawn) : null,
+          game: drawn && spinKnown ? roundGameView(drawn) : null,
           // The result card follows the latest draw: a later set, a veto or a put back takes it away (F6).
           current: latestFirst[0]?.id === spin.id && spin.outcome !== 'vetoed' && rows.rounds.some(({ round }) => round.id === spin.roundId && round.putBackAt === null),
         }

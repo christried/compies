@@ -1,7 +1,8 @@
-import { and, asc, eq, exists, inArray, isNull, lte, or, sql } from 'drizzle-orm'
+import { and, asc, eq, exists, inArray, isNull, or, sql } from 'drizzle-orm'
 import { draws, eventMembers, eventPoolGames, events, games, rounds } from '../db/schema'
 import type { GameFacts } from '../domain/pool-preview'
 import type { Db } from './db'
+import { stoppedDraws } from './draws'
 import { apiError } from './errors'
 import { poolGameFace, poolGameView } from './library'
 import type { EventPools } from '../../shared/event'
@@ -42,7 +43,7 @@ export async function gameEventsOf(db: Db, userId: string, gameId: string, now: 
   const inPool = exists(db.select({ one: sql`1` }).from(eventPoolGames).where(and(eq(eventPoolGames.eventId, events.id), eq(eventPoolGames.gameId, gameId))))
   // A game is set once a Round has it, or a draw of the Event has it and stopped (#229): a draw whose stop has passed but nobody has
   // read since is not settled yet, and its image must not wait for that.
-  const stopped = exists(db.select({ one: sql`1` }).from(draws).innerJoin(rounds, eq(draws.roundId, rounds.id)).where(and(eq(rounds.eventId, events.id), eq(draws.gameId, gameId), lte(draws.stopAt, now))))
+  const stopped = exists(db.select({ one: sql`1` }).from(draws).innerJoin(rounds, eq(draws.roundId, rounds.id)).where(and(stoppedDraws(events.id, now), eq(draws.gameId, gameId))))
   const wasSet = or(exists(db.select({ one: sql`1` }).from(rounds).where(and(eq(rounds.eventId, events.id), eq(rounds.gameId, gameId)))), stopped)
   const found = await db
     .selectDistinct({ isHost: sql<boolean>`${events.hostId} = ${userId}`, hiddenWheel: events.hiddenWheel, poolPreview: events.poolPreview, set: sql<boolean>`${wasSet}` })

@@ -20,7 +20,7 @@ export interface GameFacts extends PoolFacts { set: boolean }
  * the moment it is set, with the Pool preview off and under a Hidden wheel alike: the Round card shows it. Nothing else
  * becomes visible with it. Every other game follows the pools (canSeePoolGames). The image route asks here, so a Member
  * never sees a name (the Round card) without its picture. A put-back Round's game stays visible: everyone saw it set.
- * A game the wheel drew counts as set from the draw's stop instant on (#229, gameEventsOf), settled or not.
+ * A game the wheel drew counts as set from the draw's stop instant on (#229, stoppedDraws), settled or not.
  */
 export function canSeeGame({ set, ...pool }: GameFacts): boolean {
   return set || canSeePoolGames(pool)
@@ -29,4 +29,14 @@ export function canSeeGame({ set, ...pool }: GameFacts): boolean {
 /** The facts from an Event's settings (null = not set up). An Event that is not set up has nothing to see: the safe default. */
 export function poolFactsOf({ isHost, settings }: { isHost: boolean, settings: EventSettings | null }): PoolFacts {
   return { isHost, poolPreview: settings?.poolPreview ?? false }
+}
+
+/**
+ * The one rule for who may know the game of a draw (#258, ADR 0013 amendment: reads are gated by time). The Host always;
+ * every other Member from the draw's stop instant on, inclusive: at `stopAt` itself the game is known. A Hidden wheel
+ * needs nothing more: this is the only thing of the pool it ever shows. The SQL side of the same rule is `stoppedDraws`
+ * (server/utils/draws.ts); both change together.
+ */
+export function drawGameKnown({ isHost, draw, now }: { isHost: boolean, draw: { stopAt: Date }, now: Date }): boolean {
+  return isHost || draw.stopAt.getTime() <= now.getTime()
 }
