@@ -55,13 +55,9 @@ const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
   return { id: slot.id, day: formatSlotDay(instant), time: formatSlotTime(instant), past: slot.past }
 }))
 
-// The Host's changes go through the one send (#74). The dialogs are EventHostDialogs'; the page opens them through `dialogs`.
-const { send } = useEventMutation(slug, refresh)
+// The stage's changes go through the one send (#74), held by useStageActions. The dialogs are EventHostDialogs'; the page opens them through `dialogs`.
+const actions = useStageActions(slug, refresh)
 const dialogs = useTemplateRef('dialogs')
-
-/** Withdraws one Session's Date and frees its Slot; removes a Session, whose Slot goes back to the poll (#55). */
-const reopenSession = (sessionId: string) => send('POST', `sessions/${sessionId}/reopen`)
-const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
 const inviteOpen = ref(false)
 const calendarOpen = ref(false)
@@ -76,22 +72,11 @@ const started = computed(() => hasStarted(data.value?.sessions ?? []))
 /** What the Activity feed's group headers need of the Sessions (#164). */
 const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
-/** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
-const endSession = () => send('POST', 'sessions/end')
-
-/** A Player casts their Party's Veto on a draw (#231); the hold on the button learns whether the server took it. */
-const castVeto = (drawId: string) => send('POST', `draws/${drawId}/veto`)
 // The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
 room.on('veto.cast', () => void refresh())
 
 /** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4). */
 const vetoBarShown = ref(false)
-
-/** The Host skips the clip for everyone (#230); the overlay learns whether the server took it. */
-const skipClip = () => send('POST', 'clip/skip')
-
-/** Puts an open Round back (#228); the hold on its card learns whether the server took it. */
-const putBackRound = (roundId: string) => send('DELETE', `rounds/${roundId}`)
 
 // The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
 const canEditSettings = computed(() => (data.value ? data.value.event.isHost && settingsEditable(data.value.event.phase) : false))
@@ -113,11 +98,11 @@ const hostActions = useHostActions(
     editSlots: () => dialogs.value?.openSlotEditor(),
     setDate: () => dialogs.value?.openConfirm(),
     start: () => dialogs.value?.openStart(),
-    end: endSession,
+    end: actions.endSession,
     setGame: () => dialogs.value?.openSetGame(),
-    spin: () => void send('POST', 'rounds/spin'),
+    spin: () => void actions.spin(),
     countdown: () => dialogs.value?.openCountdown(),
-    coin: () => void send('POST', 'coin'),
+    coin: () => void actions.toss(),
     bonusVeto: () => dialogs.value?.openBonusVeto(),
   },
 )
@@ -295,7 +280,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :number="pageState.pollNumber"
           :compact="pageState.pollCompact"
           @pick="dialogs?.openConfirm($event)"
-          @remove-session="removeSession"
+          @remove-session="actions.removeSession"
         />
 
         <div
@@ -321,7 +306,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           v-else-if="block === 'rounds'"
           :rounds="data.rounds"
           :is-host="data.event.isHost"
-          :put-back="putBackRound"
+          :put-back="actions.putBackRound"
         />
 
         <EventCountdown
@@ -329,7 +314,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :countdown="data.countdown!"
           :server-now="serverClock.now"
           :is-host="data.event.isHost"
-          :command="(action) => send('POST', 'countdown/' + action)"
+          :command="actions.countdown"
         />
 
         <CoinFlip
@@ -366,8 +351,8 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
         >
           <EventSessions
             :view="data"
-            :reopen="reopenSession"
-            :remove="removeSession"
+            :reopen="actions.reopenSession"
+            :remove="actions.removeSession"
             :poll-number="pageState.pollNumber"
             :poll-open="pollOpen"
             :can-change-sessions="canChangeSessions"
@@ -442,7 +427,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
       :clip="data.clip"
       :server-now="serverClock.now"
       :is-host="data.event.isHost"
-      :skip="skipClip"
+      :skip="actions.skipClip"
     />
 
     <!-- The Veto bar (F4): the window's hold button in a fixed layer above the clip, for a Player of a Party while the window is open. -->
@@ -453,7 +438,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
       :viewer-id="data.viewerId"
       :solo="data.settings?.teamSize === 1"
       :server-now="serverClock.now"
-      :cast="castVeto"
+      :cast="actions.castVeto"
       @shown="vetoBarShown = $event"
     />
 

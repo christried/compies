@@ -24,6 +24,9 @@ export type CountdownState = 'ready' | 'paused' | 'running' | 'ended'
 /** The changes the Host makes to a Countdown. */
 export type CountdownAction = 'start' | 'pause' | 'reset' | 'set'
 
+/** What the Host sends from the stage: every action but `set`, which the sheet makes (#236). */
+export type CountdownCommand = Exclude<CountdownAction, 'set'>
+
 /** Why a change is refused: no Countdown to change, one that runs, one that ended (start only), or one that does not run (pause only). */
 export type CountdownRejection = 'no_countdown' | 'countdown_running' | 'countdown_ended' | 'countdown_not_running'
 
