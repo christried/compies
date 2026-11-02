@@ -146,91 +146,91 @@ onBeforeUnmount(stopFlight)
     to="body"
     :disabled="!overlay"
   >
-  <section
-    data-testid="coin-card"
-    :aria-labelledby="headingId"
-    class="flex flex-col items-center gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 text-ink"
-    :class="overlay ? ['fixed inset-x-0 top-1/2 layer-veto mx-auto w-[min(420px,calc(100%-1.75rem))] -translate-y-1/2 shadow-card', leaving ? 'opacity-0 transition-opacity dur-base ease-in' : 'animate-clip-in'] : ''"
-  >
-    <h2
-      :id="headingId"
-      class="m-0 w-full font-display text-[22px] leading-tight font-normal"
+    <section
+      data-testid="coin-card"
+      :aria-labelledby="headingId"
+      class="flex flex-col items-center gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 text-ink"
+      :class="overlay ? ['fixed inset-x-0 top-1/2 layer-veto mx-auto w-[min(420px,calc(100%-1.75rem))] -translate-y-1/2 shadow-card', leaving ? 'opacity-0 transition-opacity dur-base ease-in' : 'animate-clip-in'] : ''"
     >
-      {{ t('coin.title') }}
-    </h2>
-    <div
-      class="relative aspect-square w-full max-w-[340px] overflow-hidden rounded-[18px] border-(length:--cp-bw) border-line"
-      :style="{ background: 'var(--cp-surface-2)', perspective: '760px', perspectiveOrigin: '50% 42%' }"
-    >
+      <h2
+        :id="headingId"
+        class="m-0 w-full font-display text-[22px] leading-tight font-normal"
+      >
+        {{ t('coin.title') }}
+      </h2>
       <div
-        ref="camera"
-        class="absolute inset-0"
-        :style="{ transformStyle: 'preserve-3d', transform: pose.camera }"
+        class="relative aspect-square w-full max-w-[340px] overflow-hidden rounded-[18px] border-(length:--cp-bw) border-line"
+        :style="{ background: 'var(--cp-surface-2)', perspective: '760px', perspectiveOrigin: '50% 42%' }"
       >
         <div
-          class="absolute top-1/2 left-1/2 size-[620px] -mt-[310px] -ml-[310px] rounded-full"
-          :style="{ transformStyle: 'preserve-3d', transform: 'translateY(90px) rotateX(90deg)', background: 'var(--cp-paper-2)', boxShadow: 'inset 0 0 0 4px var(--cp-line-soft)' }"
-        >
-          <span
-            ref="shadow"
-            class="absolute top-1/2 left-1/2 size-[150px] -mt-[75px] -ml-[75px] rounded-full blur-[6px]"
-            :style="{ background: 'var(--cp-shadow-ink)', transform: pose.shadow, opacity: pose.shadowOpacity }"
-          />
-        </div>
-        <div
-          ref="position"
-          class="absolute top-1/2 left-1/2 size-[140px] -mt-[70px] -ml-[70px]"
-          :style="{ transformStyle: 'preserve-3d', transform: pose.position }"
+          ref="camera"
+          class="absolute inset-0"
+          :style="{ transformStyle: 'preserve-3d', transform: pose.camera }"
         >
           <div
-            ref="spin"
-            data-testid="coin-spin"
-            class="absolute inset-0"
-            :style="{ transformStyle: 'preserve-3d', transform: pose.spin }"
+            class="absolute top-1/2 left-1/2 size-[620px] -mt-[310px] -ml-[310px] rounded-full"
+            :style="{ transformStyle: 'preserve-3d', transform: 'translateY(90px) rotateX(90deg)', background: 'var(--cp-paper-2)', boxShadow: 'inset 0 0 0 4px var(--cp-line-soft)' }"
           >
             <span
-              v-for="edge in EDGES"
-              :key="edge.z"
-              class="absolute inset-0 rounded-full"
-              :style="{ background: edge.color, transform: `translateZ(${edge.z}px)` }"
+              ref="shadow"
+              class="absolute top-1/2 left-1/2 size-[150px] -mt-[75px] -ml-[75px] rounded-full blur-[6px]"
+              :style="{ background: 'var(--cp-shadow-ink)', transform: pose.shadow, opacity: pose.shadowOpacity }"
             />
+          </div>
+          <div
+            ref="position"
+            class="absolute top-1/2 left-1/2 size-[140px] -mt-[70px] -ml-[70px]"
+            :style="{ transformStyle: 'preserve-3d', transform: pose.position }"
+          >
             <div
-              :style="HEAD_FACE"
-              aria-hidden="true"
-            >
-              <Compibert
-                variant="head"
-                :size="104"
-              />
-            </div>
-            <!-- eslint-disable vue/no-v-html -- the tail is our own static asset, not user content -->
-            <div
-              :style="TAIL_FACE"
-              aria-hidden="true"
+              ref="spin"
+              data-testid="coin-spin"
+              class="absolute inset-0"
+              :style="{ transformStyle: 'preserve-3d', transform: pose.spin }"
             >
               <span
-                class="block size-[118px] overflow-hidden rounded-full [&>svg]:block [&>svg]:size-full"
-                v-html="tailSvg"
+                v-for="edge in EDGES"
+                :key="edge.z"
+                class="absolute inset-0 rounded-full"
+                :style="{ background: edge.color, transform: `translateZ(${edge.z}px)` }"
               />
-            </div>
+              <div
+                :style="HEAD_FACE"
+                aria-hidden="true"
+              >
+                <Compibert
+                  variant="head"
+                  :size="104"
+                />
+              </div>
+              <!-- eslint-disable vue/no-v-html -- the tail is our own static asset, not user content -->
+              <div
+                :style="TAIL_FACE"
+                aria-hidden="true"
+              >
+                <span
+                  class="block size-[118px] overflow-hidden rounded-full [&>svg]:block [&>svg]:size-full"
+                  v-html="tailSvg"
+                />
+              </div>
             <!-- eslint-enable vue/no-v-html -->
+            </div>
           </div>
         </div>
-      </div>
-      <div
-        aria-live="polite"
-        class="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center"
-      >
-        <span
-          v-if="landed"
-          ref="banner"
-          class="rounded-[12px] border-[3px] border-[#151515] px-4 py-1 font-display text-[28px] leading-[1.1] whitespace-nowrap text-[#151515]"
-          :style="{ background: tails ? '#3a86ff' : 'var(--cp-primary)', boxShadow: '4px 4px 0 var(--cp-shadow-ink)', transform: 'rotate(-4deg)' }"
+        <div
+          aria-live="polite"
+          class="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center"
         >
-          {{ result }}
-        </span>
+          <span
+            v-if="landed"
+            ref="banner"
+            class="rounded-[12px] border-[3px] border-[#151515] px-4 py-1 font-display text-[28px] leading-[1.1] whitespace-nowrap text-[#151515]"
+            :style="{ background: tails ? '#3a86ff' : 'var(--cp-primary)', boxShadow: '4px 4px 0 var(--cp-shadow-ink)', transform: 'rotate(-4deg)' }"
+          >
+            {{ result }}
+          </span>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
   </Teleport>
 </template>
