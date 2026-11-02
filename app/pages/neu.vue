@@ -7,15 +7,15 @@ import type { CreatedEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
 
 // Create an Event (screen 05, `?s=create`): the guided wizard (#144, #170) — name, Format with team layout, Game
-// count, points table, the Selection mode with the Lucky Wheel's options (#145), the Game pool and the Tiebreaker
-// pool (#146), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Event erstellen“; then the Fertig screen shows the
+// count, points table, the Selection mode with the Lucky Wheel's options (#145), the Game pool (#146; no Tiebreaker pool
+// since 0.8, #279), then the Sessions and their Dates (the old create form, #49). Nothing is sent until „Event erstellen“; then the Fertig screen shows the
 // summary and the Invite link. Only Users with the Host permission get it (ADR 0002); everyone else sees the
 // Construction page. The server is the final judge. A step goes into STEP_KEYS here and into the wizard's step map.
 
 const { t } = useI18n()
 const user = useAuthUser()
 
-const STEP_KEYS: StepKey[] = ['name', 'format', 'games', 'points', 'mode', 'pool', 'tiebreaker', 'sessions']
+const STEP_KEYS: StepKey[] = ['name', 'format', 'games', 'points', 'mode', 'pool', 'sessions']
 
 const draft = ref(newDraft())
 const created = ref<CreatedEvent | null>(null)
@@ -94,7 +94,7 @@ const datesLine = computed(() => (poll.value
         </section>
         <EventSettingsSummary
           :settings="settings"
-          :pools="{ main: draft.pools.main.length, tiebreaker: draft.pools.tiebreaker.length }"
+          :pools="{ main: draft.pools.main.length }"
           :dates="datesLine"
         />
       </div>

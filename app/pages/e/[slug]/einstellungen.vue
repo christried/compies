@@ -6,7 +6,7 @@ import { canSeeLibrary } from '~~/shared/game'
 import { eventPath } from '~~/shared/links'
 import { playersPerTeam, settingsEditable, settingsLocked } from '~~/shared/settings'
 
-// The settings editor (`/e/<slug>/einstellungen`, #147): the setup wizard's steps 2 to 7 (#170) on an Event that exists,
+// The settings editor (`/e/<slug>/einstellungen`, #147): the setup wizard's steps 2 to 6 (#170, the Tiebreaker step is gone, #279) on an Event that exists,
 // prefilled from it. Only the Host gets it; everyone else (and a link that leads nowhere) sees the generic
 // Construction page, like any other address below an Event. Every step is a link from the start, because this
 // is an editor, and the last step saves. Once the Event is running, Format, team count, points table and
@@ -18,7 +18,7 @@ const route = useRoute()
 const slug = computed(() => String(route.params.slug))
 const { data } = await useEventView(slug)
 
-const STEP_KEYS: StepKey[] = ['format', 'games', 'points', 'mode', 'pool', 'tiebreaker']
+const STEP_KEYS: StepKey[] = ['format', 'games', 'points', 'mode', 'pool']
 
 const view = computed(() => (data.value?.event.isHost ? data.value : null))
 const editable = computed(() => (view.value ? settingsEditable(view.value.event.phase) : false))
@@ -36,7 +36,7 @@ const drawingReason = computed(() => (view.value?.roundBeingDrawn ? t('eventSett
 const poolWarning = computed(() => (view.value?.event.phase === 'running' ? (view.value.setGame?.poolWarning ?? null) : undefined))
 const locks = computed(() => ({ reason: lockedReason.value, drawing: drawingReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value, poolWarning: poolWarning.value }))
 
-const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { main: [], tiebreaker: [] } }))
+const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { main: [] } }))
 
 const heading = computed(() => t(notSetUp.value ? 'eventSettings.setupHeading' : 'eventSettings.heading'))
 useHead({ title: () => `${heading.value} · ${data.value?.event.name ?? ''}` })

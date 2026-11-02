@@ -29,7 +29,7 @@ const round = (id: string, game: PoolGame, notes?: string): RoundView => {
   return { id, startedAt: STARTED, setAt: STARTED, game: shown, ...(notes ? { notes } : {}) }
 }
 
-const pools: EventPools = { main: [halo, kart, pong], tiebreaker: [] }
+const pools: EventPools = { main: [halo, kart, pong] }
 const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
 type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string }

@@ -33,13 +33,6 @@ const headingId = useId()
 const rows = computed(() => (props.settings === null
   ? []
   : summaryRows(props.settings, t).map(row => ({ ...row, locked: props.locked && lockedWhenRunning(row.settings) }))))
-
-const lists = computed(() => (props.pools
-  ? [
-      { key: 'main', title: t('howWePlay.mainPool'), games: props.pools.main },
-      { key: 'tiebreaker', title: t('howWePlay.tiebreakerPool'), games: props.pools.tiebreaker },
-    ]
-  : []))
 </script>
 
 <template>
@@ -120,20 +113,16 @@ const lists = computed(() => (props.pools
         </NoticeBanner>
 
         <div class="flex flex-col gap-3">
-          <div
-            v-for="list in lists"
-            :key="list.key"
-            class="flex min-w-0 flex-col gap-2"
-          >
+          <div class="flex min-w-0 flex-col gap-2">
             <h3 class="m-0 text-[14px] font-extrabold text-ink-2">
-              {{ list.title }}
+              {{ t('howWePlay.mainPool') }}
             </h3>
             <ul
-              v-if="list.games.length > 0"
+              v-if="pools.main.length > 0"
               class="m-0 flex list-none flex-col gap-2 p-0"
             >
               <li
-                v-for="game in list.games"
+                v-for="game in pools.main"
                 :key="game.id"
               >
                 <GameCard

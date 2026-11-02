@@ -15,7 +15,7 @@ import { clickButton, clickHostAction, dialog, regionHeadings, serve, shownToast
 // (5 s to 99:59), which is disabled while one runs. The server clock here is the real one: the page is not synced to a room.
 
 const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null }
-const pools: EventPools = { main: [halo], tiebreaker: [] }
+const pools: EventPools = { main: [halo] }
 const round = (id: string, startedAt: string): RoundView => ({ id, startedAt, setAt: startedAt, game: halo })
 
 /** The Host's or a Member's read of a running Event, with this Countdown and these open Rounds. */

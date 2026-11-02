@@ -1,7 +1,7 @@
 import type { EventView } from '~~/shared/event'
 import type { PoolWarning } from '~~/shared/rounds'
 import { isFullPoolGame, type PoolGame } from '~~/shared/game'
-import { defaultSettings, defaultVetoAllowance, hasWheel, type EventSettings, type Pool, type SettingsFloors } from '~~/shared/settings'
+import { defaultSettings, defaultVetoAllowance, hasWheel, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 
 // What the Host has entered in the stepper so far (#144). Nothing is sent until „Event erstellen“; then
 // `draftBody` is the POST body of `/api/e`. The functions below return a new draft each; the stepper assigns it.
@@ -16,7 +16,7 @@ export interface SessionsDraft {
 }
 
 /** The steps the setup wizard can run (copy in `stepper.steps.<key>`); an entry page picks its own list. */
-export type StepKey = 'name' | 'format' | 'games' | 'points' | 'mode' | 'pool' | 'tiebreaker' | 'sessions'
+export type StepKey = 'name' | 'format' | 'games' | 'points' | 'mode' | 'pool' | 'sessions'
 
 /** What a step reads about locked settings (the editor of a running Event, #147); every step takes it and may ignore it. */
 export interface StepLocks {
@@ -44,8 +44,8 @@ export interface EventDraft {
   poolPreview: boolean
   /** The Host's Veto allowance, kept while Host-Wahl is chosen; null follows the Team size until the Host touches it (#145). */
   vetoAllowance: number | null
-  /** The games of the Game pool and the Tiebreaker pool, in the order they were added (#146). Games, not ids, so the step and Fertig can show them. */
-  pools: { main: PoolGame[], tiebreaker: PoolGame[] }
+  /** The games of the Game pool, in the order they were added (#146; the Tiebreaker pool is gone, #279). Games, not ids, so the step and Fertig can show them. */
+  pools: { main: PoolGame[] }
   dates: SessionsDraft
 }
 
@@ -57,7 +57,7 @@ export function newDraft(): EventDraft {
     hiddenWheel,
     poolPreview,
     vetoAllowance,
-    pools: { main: [], tiebreaker: [] },
+    pools: { main: [] },
     dates: { mode: 'poll', sessionCount: 1, slots: [''], direct: [''] },
   }
 }
@@ -77,17 +77,17 @@ export function settingsOf(draft: EventDraft): EventSettings {
 }
 
 /** A game into a pool, or out of it when it is in already (the picker's toggle button, #146). */
-export function togglePoolGame(draft: EventDraft, pool: Pool, game: PoolGame): EventDraft {
-  const games = draft.pools[pool]
+export function togglePoolGame(draft: EventDraft, game: PoolGame): EventDraft {
+  const games = draft.pools.main
   const next = games.some(entry => entry.id === game.id) ? games.filter(entry => entry.id !== game.id) : [...games, game]
-  return { ...draft, pools: { ...draft.pools, [pool]: next } }
+  return { ...draft, pools: { main: next } }
 }
 
 /** A game into a pool; nothing changes when it is in already (a game just created in the sheet, #146). */
-export function addPoolGame(draft: EventDraft, pool: Pool, game: PoolGame): EventDraft {
-  return draft.pools[pool].some(entry => entry.id === game.id)
+export function addPoolGame(draft: EventDraft, game: PoolGame): EventDraft {
+  return draft.pools.main.some(entry => entry.id === game.id)
     ? draft
-    : { ...draft, pools: { ...draft.pools, [pool]: [...draft.pools[pool], game] } }
+    : { ...draft, pools: { main: [...draft.pools.main, game] } }
 }
 
 /** The body of `POST /api/e`. */
@@ -114,16 +114,16 @@ export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): Eve
     vetoAllowance,
     // The Host always gets the games whole; null and the face only (a Member's) only narrow the type, a Member has no editor.
     pools: view.pools
-      ? { main: view.pools.main.filter(isFullPoolGame), tiebreaker: view.pools.tiebreaker.filter(isFullPoolGame) }
-      : { main: [], tiebreaker: [] },
+      ? { main: view.pools.main.filter(isFullPoolGame) }
+      : { main: [] },
   }
 }
 
-/** The body of `PATCH /api/e/:slug/settings`: all settings (a full payload also sets up an Event) and both pools. */
+/** The body of `PATCH /api/e/:slug/settings`: all settings (a full payload also sets up an Event) and the Game pool. */
 export function settingsBody(draft: EventDraft) {
   return { settings: settingsOf(draft), pools: poolIds(draft) }
 }
 
 function poolIds(draft: EventDraft) {
-  return { main: draft.pools.main.map(game => game.id), tiebreaker: draft.pools.tiebreaker.map(game => game.id) }
+  return { main: draft.pools.main.map(game => game.id) }
 }

@@ -6,7 +6,7 @@ import CreatePage from '~/pages/neu.vue'
 import type { GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 
-// Steps 6 and 7 of the stepper, the Game pool and the Tiebreaker pool (#146, #173): the game browser over the library,
+// Step 6 of the stepper, the Game pool (#146, #173; the Tiebreaker pool is gone, #279): the game browser over the library,
 // the hint under the Game pool, „Neues Spiel anlegen“ in a sheet, and what is sent. The other steps have their own
 // cases in event-stepper.test.ts, event-stepper-mode.test.ts and create-event.test.ts.
 
@@ -91,16 +91,10 @@ async function settle(page: Page) {
   await vi.waitFor(() => expect(page.find('ul[aria-label="Bibliothek"]').exists() || page.text().includes('Die Bibliothek ist leer.')).toBe(true))
 }
 
-/** Names the Session and stands on the Game pool step (step 6 of 8). */
+/** Names the Session and stands on the Game pool step (step 6 of 7). */
 async function toPoolStep(page: Page) {
   await page.get('input[type="text"]').setValue('Freitags-Zocken')
   await next(page, 5)
-  await settle(page)
-}
-
-async function toTiebreakerStep(page: Page) {
-  await toPoolStep(page)
-  await next(page)
   await settle(page)
 }
 
@@ -142,16 +136,15 @@ describe('the pool steps', () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
-    expect(page.get('h1').text()).toContain('Schritt 6 von 8')
+    expect(page.get('h1').text()).toContain('Schritt 6 von 7')
     expect(page.get('h1').text()).toContain('Welche Spiele kommen in den Pool?')
     expect(stepItems(page).map(item => item.text())).toEqual([
-      '✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '✓ Auswahlmodus', '6 Spielepool', '7 Tiebreaker-Pool', '8 Termin',
+      '✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '✓ Auswahlmodus', '6 Spielepool', '7 Termin',
     ])
-
     await next(page)
 
-    expect(page.get('h1').text()).toContain('Schritt 7 von 8')
-    expect(page.get('h1').text()).toContain('Und falls es knapp wird?')
+    expect(page.get('h1').text()).toContain('Schritt 7 von 7')
+    expect(page.get('h1').text()).toContain('Wann zocken wir?')
   })
 
   describe('the Game pool', () => {
@@ -241,7 +234,7 @@ describe('the pool steps', () => {
     })
 
     describe('the hint', () => {
-      const sixteen = Array.from({ length: 16 }, (_, index) => game(100 + index, `Spiel ${String(index + 1).padStart(2, '0')}`))
+      const seventeen = Array.from({ length: 17 }, (_, index) => game(100 + index, `Spiel ${String(index + 1).padStart(2, '0')}`))
 
       async function chooseLuckyWheel(page: Page) {
         await page.get('input[type="text"]').setValue('Freitags-Zocken')
@@ -252,37 +245,40 @@ describe('the pool steps', () => {
       }
 
       it('shows the numbers of the worst case with the Glücksrad, and goes away at the recommended size', async () => {
-        library = sixteen
+        library = seventeen
         const page = await mountCreate()
         await chooseLuckyWheel(page)
 
-        // 10 Games, plus 3 vetoes for each of the 2 Parties: 16 games to be safe.
-        expect(hint(page)!.text()).toBe('Wird knapp. 10 Spiele plus bis zu 6 Vetos: Im schlimmsten Fall brauchst du 16 Spiele, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+        // 10 Games, plus 3 vetoes for each of the 2 Parties, plus the possible last game of a Tie (10 is even): 17 games to be safe.
+        expect(hint(page)!.text()).toBe('Wird knapp. 10 Spiele plus bis zu 6 Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du 17 Spiele, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
 
         for (let n = 1; n <= 12; n++) await toggle(page, `Spiel ${String(n).padStart(2, '0')} in den Pool`).trigger('click')
-        expect(hint(page)!.text()).toBe('Wird knapp. 10 Spiele plus bis zu 6 Vetos: Im schlimmsten Fall brauchst du 16 Spiele, im Pool sind 12. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. 10 Spiele plus bis zu 6 Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du 17 Spiele, im Pool sind 12. Blockiert nichts, nur damit du’s weißt.')
 
-        for (let n = 13; n <= 15; n++) await toggle(page, `Spiel ${n} in den Pool`).trigger('click')
-        expect(hint(page)!.text()).toContain('im Pool sind 15.')
+        for (let n = 13; n <= 16; n++) await toggle(page, `Spiel ${n} in den Pool`).trigger('click')
+        expect(hint(page)!.text()).toContain('im Pool sind 16.')
 
-        await toggle(page, 'Spiel 16 in den Pool').trigger('click')
+        await toggle(page, 'Spiel 17 in den Pool').trigger('click')
         expect(hint(page)).toBeUndefined()
 
-        await toggle(page, 'Spiel 16 aus dem Pool nehmen').trigger('click')
-        expect(hint(page)!.text()).toContain('im Pool sind 15.')
+        await toggle(page, 'Spiel 17 aus dem Pool nehmen').trigger('click')
+        expect(hint(page)!.text()).toContain('im Pool sind 16.')
       })
 
       it('asks only for the Game count with Host-Wahl', async () => {
-        library = sixteen
+        library = seventeen
         const page = await mountCreate()
         await toPoolStep(page)
 
-        expect(hint(page)!.text()).toBe('Wird knapp. Für 10 Spiele brauchst du 10 Spiele im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 10 Spiele und ein mögliches letztes Spiel brauchst du 11 Spiele im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
 
         for (let n = 1; n <= 9; n++) await toggle(page, `Spiel ${String(n).padStart(2, '0')} in den Pool`).trigger('click')
         expect(hint(page)!.text()).toContain('im Pool sind 9.')
 
         await toggle(page, 'Spiel 10 in den Pool').trigger('click')
+        expect(hint(page)!.text()).toContain('im Pool sind 10.')
+
+        await toggle(page, 'Spiel 11 in den Pool').trigger('click')
         expect(hint(page)).toBeUndefined()
       })
 
@@ -295,7 +291,7 @@ describe('the pool steps', () => {
       }
 
       it('reads right for one Game and one game in the pool with Host-Wahl', async () => {
-        library = sixteen
+        library = seventeen
         const page = await mountCreate()
         await toModeStepWith(page, 1)
         await next(page, 1)
@@ -305,18 +301,18 @@ describe('the pool steps', () => {
       })
 
       it('says „ist 1“ for a single game in the pool', async () => {
-        library = sixteen
+        library = seventeen
         const page = await mountCreate()
         await toModeStepWith(page, 2)
         await next(page, 1)
         await settle(page)
         await toggle(page, 'Spiel 01 in den Pool').trigger('click')
 
-        expect(hint(page)!.text()).toBe('Wird knapp. Für 2 Spiele brauchst du 2 Spiele im Pool, im Pool ist 1. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 2 Spiele und ein mögliches letztes Spiel brauchst du 3 Spiele im Pool, im Pool ist 1. Blockiert nichts, nur damit du’s weißt.')
       })
 
       it('reads right for one Game with the Glücksrad', async () => {
-        library = sixteen
+        library = seventeen
         const page = await mountCreate()
         await toModeStepWith(page, 1)
         await radios(page)[1]!.trigger('click')
@@ -329,6 +325,30 @@ describe('the pool steps', () => {
         expect(hint(page)!.text()).toContain('im Pool ist 1.')
       })
 
+      it('keeps the old copy at an odd Game count with 2 teams, with no possible last game (#279)', async () => {
+        library = seventeen
+        const page = await mountCreate()
+        await toModeStepWith(page, 9)
+        await next(page, 1)
+        await settle(page)
+
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 9 Spiele brauchst du 9 Spiele im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+      })
+
+      it('adds the possible last game at 1 game with 3 teams, in the singular (#279)', async () => {
+        library = seventeen
+        const page = await mountCreate()
+        await page.get('input[type="text"]').setValue('Freitags-Zocken')
+        await next(page, 1)
+        await page.get('button[aria-label="Anzahl Teams: mehr"]').trigger('click')
+        await next(page, 1)
+        for (let n = 10; n > 1; n--) await page.get('button[aria-label="Anzahl Spiele: weniger"]').trigger('click')
+        await next(page, 3)
+        await settle(page)
+
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 1 Spiel und ein mögliches letztes Spiel brauchst du 2 Spiele im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+      })
+
       it('is a status, not an error, and never blocks Weiter', async () => {
         const page = await mountCreate()
         await toPoolStep(page)
@@ -339,61 +359,46 @@ describe('the pool steps', () => {
 
         await next(page)
 
-        expect(page.get('h1').text()).toContain('Schritt 7 von 8')
+        expect(page.get('h1').text()).toContain('Schritt 7 von 7')
       })
     })
   })
 
-  it('keeps the library on screen when going from the Game pool to the Tiebreaker pool, without the skeleton', async () => {
-    const page = await mountCreate()
-    await toPoolStep(page)
+  describe('the Bonus Veto note (#279)', () => {
+    const note = (page: Page) => page.findAll('[role="status"]').find(element => element.text().includes('Plane ein paar Spiele mehr ein'))
 
-    await next(page)
-
-    // No settle: the cards must be there at once, not after a second load.
-    expect(page.find('[aria-busy="true"]').exists()).toBe(false)
-    expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Mario Kart', 'Pong', 'Schach'])
-  })
-
-  describe('the Tiebreaker pool', () => {
-    it('has its own games, apart from the Game pool, and a game may be in both', async () => {
-      const page = await mountCreate()
-      await toPoolStep(page)
-      await toggle(page, 'Pong in den Pool').trigger('click')
-      await toggle(page, 'Schach in den Pool').trigger('click')
-
+    async function chooseLuckyWheel(page: Page) {
+      await page.get('input[type="text"]').setValue('Freitags-Zocken')
+      await next(page, 4)
+      await radios(page)[1]!.trigger('click')
       await next(page)
       await settle(page)
+    }
 
-      expect(page.text()).toContain('Tiebreaker-Pool: 0 Spiele')
-      expect(pressed(page)).toEqual([])
+    it('shows under the Glücksrad, between the pool and the search, also with an empty pool', async () => {
+      const page = await mountCreate()
+      await chooseLuckyWheel(page)
 
+      expect(note(page)!.text()).toBe('Plane ein paar Spiele mehr ein, falls du zwischendurch Bonus-Vetos vergibst.')
+      const html = page.html()
+      expect(html.indexOf('Noch leer.')).toBeLessThan(html.indexOf('Plane ein paar Spiele'))
+      expect(html.indexOf('Plane ein paar Spiele')).toBeLessThan(html.indexOf('type="search"'))
+    })
+
+    it('stays with games in the pool', async () => {
+      const page = await mountCreate()
+      await chooseLuckyWheel(page)
       await toggle(page, 'Pong in den Pool').trigger('click')
 
-      expect(page.text()).toContain('Tiebreaker-Pool: 1 Spiel')
-      expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Pong'])
+      expect(note(page)).toBeDefined()
     })
 
-    it('has no hint, even with an empty pool', async () => {
+    it('is not shown under Host-Wahl', async () => {
       const page = await mountCreate()
-      await toTiebreakerStep(page)
+      await toPoolStep(page)
 
-      expect(page.text()).toContain('Noch leer. Du kannst auch ohne Spiele weitermachen.')
-      expect(hint(page)).toBeUndefined()
-      expect(page.text()).not.toContain('Wird knapp.')
-    })
-
-    it('explains the Tiebreaker in a note between the pool and the search, with no info column', async () => {
-      const page = await mountCreate()
-      await toTiebreakerStep(page)
-
-      const note = page.findAll('[role="status"]').find(element => element.text().includes('Liegen am Ende mehrere Parteien punktgleich auf Platz 1'))!
-      expect(note.text()).toContain('Du kannst auch ohne Spiel weitermachen.')
-      expect(page.find('aside[aria-label="Erklärung"]').exists()).toBe(false)
-      // After the pool header, before the search.
-      const html = page.html()
-      expect(html.indexOf('Tiebreaker-Pool: 0 Spiele')).toBeLessThan(html.indexOf('Liegen am Ende'))
-      expect(html.indexOf('Liegen am Ende')).toBeLessThan(html.indexOf('type="search"'))
+      expect(note(page)).toBeUndefined()
+      expect(page.text()).not.toContain('Bonus-Vetos')
     })
   })
 
@@ -455,51 +460,33 @@ describe('the pool steps', () => {
       expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt', notes }))
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
     })
-
-    it('puts the new game in the Tiebreaker pool when it is made on that step', async () => {
-      const page = await mountCreate()
-      await toTiebreakerStep(page)
-
-      await createInSheet(page)
-
-      await vi.waitFor(() => expect(dialog()).toBeNull())
-      expect(page.text()).toContain('Tiebreaker-Pool: 1 Spiel')
-      expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
-
-      await stepItems(page)[5]!.get('button').trigger('click')
-      expect(page.text()).toContain('Im Pool: 0 Spiele')
-    })
   })
 
   describe('Event erstellen', () => {
-    it('sends the ids of both pools and shows their counts on the Fertig screen', async () => {
+    it('sends the ids of the Game pool and shows its count on the Fertig screen', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
       await toggle(page, 'Pong in den Pool').trigger('click')
       await toggle(page, 'Mario Kart in den Pool').trigger('click')
-      await next(page)
-      await settle(page)
-      await toggle(page, 'Pong in den Pool').trigger('click')
       await toLastStep(page)
 
       await cta(page).trigger('click')
 
       await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
-      expect(savedEvent).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [pong.id, kart.id], tiebreaker: [pong.id] } }))
+      expect(savedEvent).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [pong.id, kart.id] } }))
       const rows = new Map(page.get('dl').findAll('dt').map((term, index) => [term.text(), page.get('dl').findAll('dd')[index]!.text()]))
-      expect(rows.get('Pool')).toBe('2 Spiele, Tiebreaker 1')
+      expect(rows.get('Pool')).toBe('2 Spiele')
     })
 
     it('creates the Event with empty pools', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
-      await next(page)
       await toLastStep(page)
 
       await cta(page).trigger('click')
 
       await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
-      expect(savedEvent).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [], tiebreaker: [] } }))
+      expect(savedEvent).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [] } }))
     })
 
     it('says so when a game of the pool is gone from the library, and keeps the draft', async () => {
@@ -507,7 +494,6 @@ describe('the pool steps', () => {
       const page = await mountCreate()
       await toPoolStep(page)
       await toggle(page, 'Pong in den Pool').trigger('click')
-      await next(page)
       await toLastStep(page)
 
       await cta(page).trigger('click')
@@ -564,22 +550,5 @@ describe('the game browser in the pool steps (#173)', () => {
 
     expect(inPool(page).exists()).toBe(false)
     expect(maybeToggle(page, 'Pong in den Pool').exists()).toBe(true)
-  })
-
-  it('renders the Game pool and the Tiebreaker pool alike, apart from the heading and the note', async () => {
-    const page = await mountCreate()
-    await toPoolStep(page)
-    // Markup only: the heading's words, the list's name and the generated ids are what may differ.
-    const markup = () => {
-      const browser = picker(page).element.parentElement!.outerHTML
-      const pool = page.get('section').html().replace(/(<h2[^>]*>)[^<]*/, '$1')
-      return (pool + browser).replace(/<!--.*?-->/g, '').replace(/ id="[^"]*"/g, '')
-    }
-    const game = markup()
-
-    await next(page)
-    await settle(page)
-
-    expect(markup()).toBe(game)
   })
 })
