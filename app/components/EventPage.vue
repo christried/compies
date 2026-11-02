@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, Crown, Hourglass, Link as LinkIcon, Lock, Settings2 } from '@lucide/vue'
+import { Link as LinkIcon, Lock } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
@@ -9,15 +9,9 @@ import { datePollOpen, sessionsEditable } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { settingsEditable } from '~~/shared/settings'
 
-// The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3). This page loads the Event through
-// useEventView (live through the Event's room, polling every 15 s while that is down, #156), shows the
-// ConnectionBanner under the header, and holds the Host's dialogs and the error states. The stage is the Head and the
-// blocks the page's state lists, in its order (#166, 11-event-seite § EventPage: what has to happen now goes on top; the
-// list is `eventPageState(...).blocks`, A4): EventSessions with „So wird gespielt“, EventPoll while a Session waits for a
-// Date, the open Rounds of a running Session (#228), the Game board and the notices.
-// The Activity feed has the side panel from md up and a tab of its own on a phone. Votes show at once and roll back with
-// a toast when saving fails (useOptimisticVotes, ADR 0001). The Host's dialogs are EventHostDialogs (the Date is set in
-// the confirm dialog from a Slot card or the dock, #13); the dock's actions are built by useHostActions.
+// The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
+// Head and the blocks of `eventPageState(...).blocks` in its order (#166, A4), and the page holds the Host's dialogs and the error
+// states. The phone's views and the side panel are useEventTabs'; the Votes roll back with a toast (useOptimisticVotes, ADR 0001).
 const props = defineProps<{ slug: string }>()
 
 const { t } = useI18n()
@@ -30,10 +24,6 @@ const connection = useConnectionBanner(room.state, room.enabled)
 const presence = usePresence(room)
 const serverClock = useServerClock(room)
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
-
-const notFound = computed(() => error.value?.statusCode === 404)
-const deleted = computed(() => error.value?.statusCode === 410)
-const failed = computed(() => error.value !== null && !notFound.value && !deleted.value)
 
 useHead({ title: () => data.value?.event.name })
 
@@ -81,7 +71,6 @@ const vetoBarShown = ref(false)
 // The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
 const canEditSettings = computed(() => (data.value ? data.value.event.isHost && settingsEditable(data.value.event.phase) : false))
 const needsSetup = computed(() => canEditSettings.value && data.value?.settings === null)
-const setupNoticeClosed = ref(false)
 
 /** Why "Termin festlegen" cannot set a Date right now, or null (#52): the dock's action says so. */
 const setBlocked = computed(() => {
@@ -113,7 +102,6 @@ const pageState = computed(() => (data.value ? eventPageState(data.value) : null
 const hostName = computed(() => data.value?.members.find(member => member.isHost)?.name ?? '')
 
 // The Host's seat note (teams only): where the Host sits does not change the dock, and the note says so. Closed for this visit.
-const seatNoteClosed = ref(false)
 const seat = computed(() => (data.value ? seatNote(data.value, t) : null))
 const stay = computed(() => teamsStay(pageState.value?.next ?? null, data.value?.event.isHost ?? false, t))
 
@@ -231,46 +219,18 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :warning="data.setGame!.poolWarning!"
         />
 
-        <template v-else-if="block === 'setup'">
-          <NoticeBanner
-            v-if="needsSetup && !setupNoticeClosed"
-            tone="info"
-            :icon="Settings2"
-            host-only
-            closable
-            @close="setupNoticeClosed = true"
-          >
-            <b>{{ t('event.notice.setupTitle') }}</b>
-            {{ t('event.notice.setup') }}
-            <template #action>
-              <AppButton
-                :to="settingsPath(slug)"
-                variant="secondary"
-                size="md"
-              >
-                {{ t('event.notice.setupAction') }}
-              </AppButton>
-            </template>
-          </NoticeBanner>
-          <NoticeBanner
-            v-else-if="!data.event.isHost"
-            tone="info"
-            :icon="Hourglass"
-          >
-            {{ t('event.notice.setupMember', { host: hostName }) }}
-          </NoticeBanner>
-        </template>
+        <EventSetupNotice
+          v-else-if="block === 'setup'"
+          :slug="slug"
+          :is-host="data.event.isHost"
+          :needs-setup="needsSetup"
+          :host-name="hostName"
+        />
 
-        <NoticeBanner
-          v-else-if="block === 'seat' && seat && !seatNoteClosed"
-          tone="info"
-          :icon="Crown"
-          host-only
-          closable
-          @close="seatNoteClosed = true"
-        >
-          {{ seat }}
-        </NoticeBanner>
+        <EventSeatNotice
+          v-else-if="block === 'seat'"
+          :note="seat"
+        />
 
         <EventPoll
           v-else-if="block === 'poll'"
@@ -365,46 +325,18 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
       v-else-if="data && wide === false"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-3 px-3.5 pt-4 pb-7"
     >
-      <section
-        aria-labelledby="activity-title"
-        class="flex flex-col gap-3"
-      >
-        <h1
-          id="activity-title"
-          class="m-0 font-display text-[34px] leading-none font-normal"
-        >
-          {{ t('activity.title') }}
-        </h1>
-        <div class="flex h-[calc(100dvh-17rem)] min-h-72 flex-col rounded-[16px] border-(length:--cp-bw) border-line bg-surface">
-          <ActivityFeed
-            :slug="slug"
-            :room="room"
-            :sessions="feed.started"
-            :next-number="feed.nextNumber"
-            :refresh-tick="feedTick"
-          />
-        </div>
-      </section>
+      <EventActivityView
+        :slug="slug"
+        :room="room"
+        :sessions="feed.started"
+        :next-number="feed.nextNumber"
+        :refresh-tick="feedTick"
+      />
     </div>
 
-    <FullScreenState
-      v-else-if="notFound || deleted"
-      :kind="deleted ? 'deleted' : 'invalid'"
-    >
-      <template #actions>
-        <AppButton
-          to="/"
-          size="lg"
-        >
-          {{ t('errorPage.home') }}
-          <AppIcon :icon="ChevronRight" />
-        </AppButton>
-      </template>
-    </FullScreenState>
-
-    <FullScreenState
-      v-else-if="failed"
-      kind="generic"
+    <EventLoadState
+      v-else-if="error"
+      :error="error"
     />
 
     <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. -->
