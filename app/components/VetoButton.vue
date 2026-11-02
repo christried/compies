@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { Ban, Lock } from '@lucide/vue'
 import { sealStamp } from '~/utils/motion'
+import { vetoActionShown } from '~/utils/veto-bar'
 import type { OwnVetoView } from '~~/shared/event'
 
-// The hold-to-veto button of a Player (#231, 04-motion § Hold to confirm, reference App Spielrunde „Eigenes Veto versiegelt“). Only a
-// Player of a Party sees it, and only while the Veto window is open. It is ready (a hold of one second casts the Party's Veto),
-// holding, or done; once the Party cast it is a locked pill: for the Player who cast it with the seal stamp, for their teammates
-// with the name of who did. With no Veto left it stays, disabled, and says why. Nobody else learns that a Veto was cast: the
-// server sends the cast to the casting Party's Users only, so this button is the only place that shows it.
+// The hold-to-veto button of a Player (#231, 04-motion § Hold to confirm, reference App Spielrunde „Eigenes Veto versiegelt“). It sits in
+// the VetoBar (review 0.7, F4). Only a Player of a Party sees it, and only while the Veto window is open. It is ready (a hold of one
+// second casts the Party's Veto), holding, or done; once the Party cast it is a locked pill, for the Player who cast it with the seal
+// stamp. With no Veto left it stays, disabled. Nobody else learns that a Veto was cast: the server sends the cast to the casting
+// Party's Users only, so the bar is the only place that shows it. What it means is the bar's title and line.
 const props = defineProps<{
   /** The viewer's Party in the Veto window; null for the Bench, the Stands and a Host outside the teams. */
   own: OwnVetoView | null
   /** Whether the window is open now (after the stop, before its end). */
   open: boolean
   viewerId: string
-  members: readonly { id: string, name: string }[]
   /** Casts the Party's Veto; resolves to whether the server took it. */
   cast: () => Promise<boolean>
 }>()
@@ -22,7 +22,6 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const mine = computed(() => props.own?.castBy === props.viewerId)
-const mateName = computed(() => props.members.find(member => member.id === props.own?.castBy)?.name ?? '')
 /** The seal stamp lands when the Party's cast arrives, and on a reload that shows a cast Party. */
 const seal = useTemplateRef<HTMLElement>('seal')
 watch(seal, (element) => {
@@ -32,7 +31,7 @@ watch(seal, (element) => {
 
 <template>
   <div
-    v-if="own && open && (own.castBy !== null || own.rejection === null || own.rejection === 'no_vetoes_left')"
+    v-if="open && vetoActionShown(own)"
     class="flex flex-col gap-1.5"
   >
     <div
@@ -46,7 +45,7 @@ watch(seal, (element) => {
         :icon="Lock"
         :size="18"
       />
-      <span class="min-w-0 truncate">{{ mine ? t('veto.cast') : t('veto.byMate', { name: mateName }) }}</span>
+      <span class="min-w-0 truncate">{{ t('veto.locked') }}</span>
       <span
         v-if="mine"
         ref="seal"
@@ -66,11 +65,7 @@ watch(seal, (element) => {
       :holding-label="t('veto.holding')"
       :done-label="t('veto.cast')"
       :disabled="own.rejection !== null"
-      :disabled-reason="own.rejection === 'no_vetoes_left' ? t('error.noVetosLeft') : undefined"
       :action="cast"
     />
-    <p class="m-0 text-[13px] text-ink-2">
-      {{ own.castBy === null ? t('veto.hint') : mine ? t('veto.hintSealed') : t('veto.hintMate') }}
-    </p>
   </div>
 </template>

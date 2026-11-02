@@ -1,0 +1,228 @@
+import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import VetoBar from '~/components/VetoBar.vue'
+import { clockTick, revealTile, sealStamp, vetoStamp } from '~/utils/motion'
+import type { OwnVetoView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/event'
+import { VETO_WINDOW_MS } from '~~/shared/rounds'
+import { memberView } from './event-page'
+
+// The Veto bar (review 0.7, F4; reference App Spielrunde „Clip + Veto-Fenster“, „Eigenes Veto versiegelt“): the Veto window's hold
+// button in a fixed layer, for a Player of a Party while the window is open. And the window's motion (04-motion § Veto window), whose
+// easings and durations the standard asks every animation to pin (CODING_STANDARDS § Motion).
+
+const STOP = Date.parse('2090-10-30T20:00:10.000Z')
+const END = STOP + VETO_WINDOW_MS
+const iso = (ms: number) => new Date(ms).toISOString()
+const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+const members = [memberView({ id: 'me', name: 'Eins', zone: 'team', team: 1 }), memberView({ id: 'mate', name: 'Zwei', zone: 'team', team: 1 })]
+const spin: SpinView = { roundId: 'r1', drawId: 'd1', spinStartAt: iso(STOP - 6000), stopAt: iso(STOP), slices: 4, resultIndex: 0, resultOffset: 0.5, labels: null, game: halo }
+const windowOf = (fields: Partial<VetoDrawView> = {}): VetoDrawView => ({ drawId: 'd1', kind: 'spin', stopAt: iso(STOP), vetoEndsAt: iso(END), game: halo, ...fields })
+const own = (fields: Partial<OwnVetoView> = {}): OwnVetoView => ({ team: 1, castBy: null, rejection: null, ...fields })
+const wheelOf = (vetoes: Partial<VetoView> = {}): WheelView => ({ count: 3, slices: null, spin, vetoes: { left: [2, 2], own: own(), revealed: null, draw: windowOf(), ...vetoes } })
+
+let serverMs = STOP
+let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
+
+async function mount(wheel: WheelView, props: { cast?: (drawId: string) => Promise<boolean> } = {}) {
+  page = await mountSuspended(VetoBar, { props: { wheel, members, viewerId: 'me', serverNow: () => serverMs, cast: () => Promise.resolve(true), ...props } })
+  await vi.advanceTimersByTimeAsync(300)
+  await flushPromises()
+  return page
+}
+const text = () => page!.text().replace(/\s+/g, ' ')
+const bar = () => page!.find('[data-testid="veto-bar"]')
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  serverMs = STOP
+})
+
+afterEach(() => {
+  page?.unmount()
+  page = undefined
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
+
+describe('who gets the bar and when', () => {
+  it('shows a Player of a Party the bar while the window is open: the time as m:ss, the Party\'s Vetoes and the hold button', async () => {
+    serverMs = STOP + 15_000
+    await mount(wheelOf({ left: [2, 1] }))
+
+    expect(bar().exists()).toBe(true)
+    expect(page!.get('[role="timer"]').text()).toBe('0:45')
+    expect(text()).toContain('Veto-Zeit')
+    expect(text()).toContain('Euer Team: 2 Vetos übrig')
+    expect(text()).toContain('Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.')
+    expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(true)
+  })
+
+  it('rises in from the bottom over 0.36 s ease-out and leaves with the fade of the clip, in the layer above the clip', async () => {
+    await mount(wheelOf())
+
+    const transition = page!.findComponent({ name: 'Transition' })
+    // animate-veto-in is cp-veto-in (translateY 100% to 0) over --cp-dur-slow with --cp-ease-out, and a fade twin under reduced motion.
+    expect(transition.props('enterActiveClass')).toBe('animate-veto-in')
+    expect(transition.props('leaveActiveClass')).toBe('transition-opacity dur-base ease-in')
+    expect(transition.props('leaveToClass')).toBe('opacity-0')
+    expect(bar().classes()).toEqual(expect.arrayContaining(['fixed', 'layer-veto']))
+  })
+
+  it('sits above the Host dock when one is on the page, and near the bottom otherwise', async () => {
+    await mount(wheelOf())
+    expect(bar().classes()).toEqual(expect.arrayContaining(['bottom-[90px]', 'md:bottom-5']))
+    page!.unmount()
+
+    const leave = await useNuxtApp().runWithContext(() => useHostDock().attach())
+    await mount(wheelOf())
+    expect(bar().classes()).toEqual(expect.arrayContaining(['bottom-[162px]', 'md:bottom-[100px]']))
+    leave()
+  })
+
+  it('tells the page whether it covers the bottom', async () => {
+    await mount(wheelOf())
+    expect(page!.emitted('shown')?.at(-1)).toEqual([true])
+    page!.unmount()
+
+    await mount(wheelOf({ own: null }))
+    expect(page!.emitted('shown')?.at(-1)).toEqual([false])
+  })
+
+  it('gives the Bench, the Stands and a Host outside the teams no bar: they have no own Party', async () => {
+    await mount(wheelOf({ own: null }))
+
+    expect(bar().exists()).toBe(false)
+    expect(page!.find('button').exists()).toBe(false)
+  })
+
+  it('shows no bar before the stop, nor from the end of the window on', async () => {
+    serverMs = STOP - 1000
+    await mount(wheelOf({ own: own({ rejection: 'veto_window_closed' }) }))
+    expect(bar().exists()).toBe(false)
+    page!.unmount()
+
+    serverMs = END + 100
+    await mount(wheelOf({ own: own({ rejection: 'veto_window_closed' }), revealed: [] }))
+    expect(bar().exists()).toBe(false)
+  })
+
+  it('shows no bar when no Session runs any more (the read says so in the Party\'s rejection)', async () => {
+    serverMs = STOP + 1000
+    await mount(wheelOf({ own: own({ rejection: 'no_running_session' }) }))
+
+    expect(bar().exists()).toBe(false)
+  })
+
+  it('tells the sealed Veto: the pill is locked, with the seal stamp for the Player who cast', async () => {
+    serverMs = STOP + 1000
+    await mount(wheelOf({ own: own({ castBy: 'me', rejection: 'veto_already_cast' }) }))
+
+    expect(text()).toContain('Veto eingelegt')
+    expect(text()).toContain('Die anderen sehen es erst beim Aufdecken.')
+    expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Versiegelt')
+    expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(false)
+  })
+
+  it('names the teammate who cast for the Party, with no stamp', async () => {
+    serverMs = STOP + 1000
+    await mount(wheelOf({ own: own({ castBy: 'mate', rejection: 'veto_already_cast' }) }))
+
+    expect(text()).toContain('Zwei hat schon gevetot')
+    expect(text()).toContain('Ein Veto pro Team und Spiel. Euer Team hat für dieses Spiel schon gevetot.')
+    expect(page!.find('[data-testid="veto-seal"]').exists()).toBe(false)
+  })
+
+  it('says that no Veto is left, with the button disabled', async () => {
+    serverMs = STOP + 1000
+    await mount(wheelOf({ left: [0, 2], own: own({ rejection: 'no_vetoes_left' }) }))
+
+    expect(text()).toContain('Euer Team: kein Veto mehr')
+    expect(page!.get('[data-testid="veto-hold"] button, button').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('turns the last ten seconds red', async () => {
+    serverMs = END - 9000
+    await mount(wheelOf())
+
+    expect(page!.get('[role="timer"]').classes()).toContain('text-error-fg')
+    expect(page!.get('[role="timer"]').text()).toBe('0:09')
+  })
+
+  it('casts on the draw of the window, not on the latest spin (#232)', async () => {
+    serverMs = STOP + 1000
+    const cast = vi.fn((_drawId: string) => Promise.resolve(true))
+    await mount(wheelOf({ draw: windowOf({ drawId: 'set-draw', kind: 'set' }) }), { cast })
+
+    await page!.get('button').trigger('pointerdown')
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(cast).toHaveBeenCalledWith('set-draw')
+  })
+})
+
+describe('the window\'s motion (04-motion § Veto window)', () => {
+  let animate: ReturnType<typeof vi.fn>
+  const original = Element.prototype.animate
+  const POP = 'cubic-bezier(.34,1.56,.64,1)'
+  const OUT = 'cubic-bezier(.16,1,.3,1)'
+  const SNAP = 'cubic-bezier(.2,0,0,1)'
+
+  /** The page's motion setting, as the tokens put it in `--cp-motion`; the easings fall back to the helpers' own curves. */
+  function motion(value: 'full' | 'reduced') {
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? value : '') } as CSSStyleDeclaration)
+  }
+  const options = () => animate.mock.calls[0]![1] as KeyframeAnimationOptions
+
+  beforeEach(() => {
+    animate = vi.fn()
+    Element.prototype.animate = animate as unknown as typeof Element.prototype.animate
+    motion('full')
+  })
+
+  afterEach(() => {
+    Element.prototype.animate = original
+  })
+
+  it('stamps the seal with 0.3 s of the pop curve', () => {
+    sealStamp(document.createElement('div'))
+
+    expect(options()).toMatchObject({ duration: 300, easing: POP })
+  })
+
+  it('turns each tile in 0.42 s of the out curve, 0.08 s after the one before', () => {
+    revealTile(document.createElement('div'), 0)
+    revealTile(document.createElement('div'), 3)
+
+    expect(animate.mock.calls[0]![1]).toMatchObject({ duration: 420, delay: 0, easing: OUT })
+    expect(animate.mock.calls[1]![1]).toMatchObject({ duration: 420, delay: 240, easing: OUT })
+  })
+
+  it('stamps „VETO“ in 0.52 s, 0.3 s after the tiles start', () => {
+    vetoStamp(document.createElement('div'))
+
+    expect(options()).toMatchObject({ duration: 520, delay: 300, easing: OUT })
+  })
+
+  it('ticks the clock for 0.26 s of the snap curve', () => {
+    clockTick(document.createElement('div'))
+
+    expect(options()).toMatchObject({ duration: 260, easing: SNAP })
+  })
+
+  it('shows every one of them at the same moment as a 0.2 s fade under reduced motion, and does not tick', () => {
+    motion('reduced')
+
+    sealStamp(document.createElement('div'))
+    revealTile(document.createElement('div'), 3)
+    vetoStamp(document.createElement('div'))
+    clockTick(document.createElement('div'))
+
+    expect(animate).toHaveBeenCalledTimes(3)
+    for (const [keyframes, fade] of animate.mock.calls as [Keyframe[], KeyframeAnimationOptions][]) {
+      expect(keyframes).toEqual([{ opacity: 0 }, { opacity: 1 }])
+      expect(fade.duration).toBe(200)
+      expect(fade.delay ?? 0).toBe(0)
+    }
+  })
+})

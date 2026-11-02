@@ -93,6 +93,9 @@ const castVeto = (drawId: string) => send('POST', `draws/${drawId}/veto`)
 // The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
 room.on('veto.cast', () => void refresh())
 
+/** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4). */
+const vetoBarShown = ref(false)
+
 /** The Host skips the clip for everyone (#230); the overlay learns whether the server took it. */
 const skipClip = () => send('POST', 'clip/skip')
 
@@ -276,8 +279,8 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       v-if="data && pageState && (wide !== false || activeView === 'event')"
       tag="div"
       move-class="transition-transform dur-slow ease-out motion-reduce:transition-none reduced:transition-none"
-      class="mx-auto flex w-full max-w-[1100px] flex-col gap-[18px] px-3.5 pt-4 md:gap-[22px] md:px-6 md:pt-6 md:pb-10"
-      :class="data.event.isHost ? 'pb-[92px]' : 'pb-7'"
+      class="mx-auto flex w-full max-w-[1100px] flex-col gap-[18px] px-3.5 pt-4 md:gap-[22px] md:px-6 md:pt-6"
+      :class="vetoBarShown ? 'pb-[230px] md:pb-[190px]' : [data.event.isHost ? 'pb-[92px]' : 'pb-7', 'md:pb-10']"
     >
       <div
         v-for="block in pageState.blocks"
@@ -367,9 +370,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
             :wheel="data.wheel"
             :teams="data.teams"
             :members="data.members"
-            :viewer-id="data.viewerId"
             :server-now="serverClock.now"
-            :cast="castVeto"
           />
         </div>
 
@@ -499,6 +500,17 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
       :server-now="serverClock.now"
       :is-host="data.event.isHost"
       :skip="skipClip"
+    />
+
+    <!-- The Veto bar (F4): the window's hold button in a fixed layer above the clip, for a Player of a Party while the window is open. -->
+    <VetoBar
+      v-if="data?.wheel"
+      :wheel="data.wheel"
+      :members="data.members"
+      :viewer-id="data.viewerId"
+      :server-now="serverClock.now"
+      :cast="castVeto"
+      @shown="vetoBarShown = $event"
     />
 
     <HostDock
