@@ -603,6 +603,39 @@ describe('Vetoes', () => {
     })
   })
 
+  // The clip is the latest draw's from its stop on (server/utils/clip.ts), settled or not: a Veto window needs nothing of it. The longest
+  // clip (60 s) ends with the window, so a vetoed game's clip never outlives its reveal.
+  describe('the clip of a draw (#230)', () => {
+    it('plays from the stop through the whole Veto window, the same for every Member, and is gone at its end', async () => {
+      const party = await running()
+      const { drawId } = await spun(party)
+      const [row] = await drawRows()
+      await testDb.db.update(games).set({ clipLength: 60 }).where(eq(games.id, row!.gameId))
+
+      clock.advance(STOP)
+      for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three]) expect((await read(party, cookie)).clip).toMatchObject({ drawId, startAt: iso(STOP), endsAt: iso(END) })
+      await cast(party, drawId, party.cookies.one)
+      clock.advance(VETO_WINDOW_MS - 1)
+      expect((await read(party)).clip).not.toBeNull()
+
+      clock.advance(1)
+      expect((await read(party)).clip).toBeNull()
+    })
+
+    it('is replaced by the new draw of the respin', async () => {
+      const party = await running()
+      const first = await spun(party)
+      clock.advance(STOP)
+      await cast(party, first.drawId, party.cookies.one)
+      clock.advance(VETO_WINDOW_MS)
+      const second = await spun(party)
+
+      clock.advance(STOP)
+
+      expect((await read(party)).clip?.drawId).toBe(second.drawId)
+    })
+  })
+
   describe('Rad verdecken while a Round is being drawn (review 1.4 A3)', () => {
     const hide = (party: Party, hiddenWheel: boolean) => send('PATCH', `/api/e/${party.slug}/settings`, party.hostCookie, { settings: { hiddenWheel } })
 

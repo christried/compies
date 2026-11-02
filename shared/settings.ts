@@ -327,11 +327,6 @@ export function floorsAt({ playersPerTeam: players, roundsStarted, vetoesSpent }
  */
 export const LOCKED_WHILE_DRAWN = ['hiddenWheel', 'vetoAllowance'] as const
 
-/** Whether any of the settings stays fixed while a Round is being drawn: the lock the settings screen shows next to the phase lock. */
-export function lockedWhileDrawn(keys: readonly (keyof EventSettings)[]): boolean {
-  return keys.some(key => (LOCKED_WHILE_DRAWN as readonly string[]).includes(key))
-}
-
 export type SettingsChangeError = SettingsError | 'setting_locked' | 'locked_while_drawn' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'game_count_below_started' | 'wrong_phase'
 
 /**

@@ -17,7 +17,6 @@ import {
   mergeSettings,
   linearPoints,
   lockedWhenRunning,
-  lockedWhileDrawn,
   parseSettings,
   playersPerTeam,
   poolHint,
@@ -555,9 +554,6 @@ describe('checkSettingsChange', () => {
   describe('while a Round is being drawn (#231, review 1.4 A3)', () => {
     it('names the settings that stay fixed meanwhile: Rad verdecken and the Veto allowance', () => {
       expect([...LOCKED_WHILE_DRAWN]).toEqual(['hiddenWheel', 'vetoAllowance'])
-      expect(lockedWhileDrawn(['hiddenWheel', 'gameCount'])).toBe(true)
-      expect(lockedWhileDrawn(['gameCount', 'teamSize'])).toBe(false)
-      expect(lockedWhileDrawn(['vetoAllowance'])).toBe(true)
     })
 
     it('refuses a changed Hidden wheel with locked_while_drawn, in a running Event too', () => {
