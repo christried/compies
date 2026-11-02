@@ -553,20 +553,26 @@ describe('checkSettingsChange', () => {
   })
 
   describe('while a Round is being drawn (#231, review 1.4 A3)', () => {
-    it('names the settings that stay fixed meanwhile: Rad verdecken', () => {
-      expect([...LOCKED_WHILE_DRAWN]).toEqual(['hiddenWheel'])
+    it('names the settings that stay fixed meanwhile: Rad verdecken and the Veto allowance', () => {
+      expect([...LOCKED_WHILE_DRAWN]).toEqual(['hiddenWheel', 'vetoAllowance'])
       expect(lockedWhileDrawn(['hiddenWheel', 'gameCount'])).toBe(true)
-      expect(lockedWhileDrawn(['gameCount', 'vetoAllowance'])).toBe(false)
+      expect(lockedWhileDrawn(['gameCount', 'teamSize'])).toBe(false)
+      expect(lockedWhileDrawn(['vetoAllowance'])).toBe(true)
     })
 
-    it('refuses a changed Hidden wheel with hidden_wheel_locked, in a running Event too', () => {
-      expect(check({ hiddenWheel: true }, { drawing: true })).toEqual({ ok: false, error: 'hidden_wheel_locked' })
-      expect(check({ hiddenWheel: true }, { drawing: true, phase: 'running' })).toEqual({ ok: false, error: 'hidden_wheel_locked' })
-      expect(check({ hiddenWheel: false }, { drawing: true }, { ...current, hiddenWheel: true, poolPreview: false })).toEqual({ ok: false, error: 'hidden_wheel_locked' })
+    it('refuses a changed Hidden wheel with locked_while_drawn, in a running Event too', () => {
+      expect(check({ hiddenWheel: true }, { drawing: true })).toEqual({ ok: false, error: 'locked_while_drawn' })
+      expect(check({ hiddenWheel: true }, { drawing: true, phase: 'running' })).toEqual({ ok: false, error: 'locked_while_drawn' })
+      expect(check({ hiddenWheel: false }, { drawing: true }, { ...current, hiddenWheel: true, poolPreview: false })).toEqual({ ok: false, error: 'locked_while_drawn' })
     })
 
-    it('accepts the Hidden wheel as it is, and every other setting', () => {
-      expect(check({ hiddenWheel: false, gameCount: 4, vetoAllowance: 5 }, { drawing: true, phase: 'running' }).ok).toBe(true)
+    it('refuses a changed Veto allowance with locked_while_drawn', () => {
+      expect(check({ vetoAllowance: 5 }, { drawing: true })).toEqual({ ok: false, error: 'locked_while_drawn' })
+      expect(check({ vetoAllowance: current.vetoAllowance }, { drawing: true }).ok).toBe(true)
+    })
+
+    it('accepts the locked settings as they are, and every other setting', () => {
+      expect(check({ hiddenWheel: false, gameCount: 4, vetoAllowance: current.vetoAllowance }, { drawing: true, phase: 'running' }).ok).toBe(true)
     })
 
     it('lets the Hidden wheel change when no Round is being drawn', () => {

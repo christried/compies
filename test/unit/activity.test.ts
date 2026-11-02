@@ -182,12 +182,12 @@ describe('the sentence of an entry', () => {
   })
 
   it('says who vetoed once the Vetoes are revealed, the Players in bold, and names no game (#231)', () => {
-    const revealed = { ...base, type: 'vetoes_revealed', people: { u1: 'Eins', u2: 'Zwei', u3: 'Drei' }, params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 1, userId: 'u1' }] } } as const
+    const revealed = (vetoes: { team: number, userId: string }[]): ActivityEntry => ({ ...base, type: 'vetoes_revealed', people: { u1: 'Eins', u2: 'Zwei', u3: 'Drei' }, params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes } })
 
-    expect(text(revealed)).toBe('Veto von Eins')
-    expect(text({ ...revealed, params: { ...revealed.params, vetoes: [{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }] } })).toBe('Veto von Eins und Zwei')
-    expect(text({ ...revealed, params: { ...revealed.params, vetoes: [{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }, { team: 3, userId: 'u3' }] } })).toBe('Veto von Eins, Zwei und Drei')
-    expect(activityParts(revealed, t)).toEqual([{ text: 'Veto von ', strong: false }, { text: 'Eins', strong: true }])
+    expect(text(revealed([{ team: 1, userId: 'u1' }]))).toBe('Veto von Eins')
+    expect(text(revealed([{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }]))).toBe('Veto von Eins und Zwei')
+    expect(text(revealed([{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }, { team: 3, userId: 'u3' }]))).toBe('Veto von Eins, Zwei und Drei')
+    expect(activityParts(revealed([{ team: 1, userId: 'u1' }]), t)).toEqual([{ text: 'Veto von ', strong: false }, { text: 'Eins', strong: true }])
   })
 
   it('says a coin toss with its side, Kopf or Schwanz (#235)', () => {

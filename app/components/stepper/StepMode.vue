@@ -9,8 +9,9 @@ import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, hasW
 // Rad verdecken and the Veto allowance, both kept in the draft while Host-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
 // it (`vetoAllowanceOf`). „Pool vorher zeigen“ (#225) sits in the wheel's box with the Lucky Wheel and in a box of its own
 // with Host-Wahl. The step never blocks. In the settings editor (#147) `locks.reason` locks the mode (the Event
-// is running; Rad verdecken, Pool vorher zeigen and the Veto allowance stay open) and `locks.floors` keeps the Veto
-// allowance from going below what a Party has spent.
+// is running; Rad verdecken, Pool vorher zeigen and the Veto allowance stay open), `locks.drawing` locks Rad verdecken and the
+// Veto allowance while a game is being drawn (#231), and `locks.floors` keeps the Veto allowance from going below what a Party
+// has spent.
 const props = defineProps<{ locks?: StepLocks }>()
 const draft = defineModel<EventDraft>({ required: true })
 const blocker = defineModel<string | null>('blocker', { default: null })
@@ -98,13 +99,14 @@ function hideWheel(hidden: boolean) {
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex min-w-[150px] flex-1 flex-col leading-[1.3]">
           <b>{{ t('setup.mode.vetoes') }}</b>
-          <span class="text-[12px] text-ink-2">{{ t('setup.mode.vetoesHelp') }}</span>
+          <span class="text-[12px] text-ink-2">{{ locks?.drawing ?? t('setup.mode.vetoesHelp') }}</span>
         </div>
         <NumberStepper
           :model-value="veto"
           :min="vetoMin"
           :max="VETO_ALLOWANCE_MAX"
           :label="t('setup.mode.vetoes')"
+          :locked-reason="locks?.drawing"
           :min-reason="vetoMinReason"
           :max-reason="t('setup.mode.vetoesMax')"
           @update:model-value="draft = { ...draft, vetoAllowance: $event }"

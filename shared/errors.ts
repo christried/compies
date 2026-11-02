@@ -132,8 +132,8 @@ export const API_ERROR_STATUS = {
   veto_already_cast: 409,
   /** The Party has no Veto left: the allowance and its Bonus Vetoes are used up (#231). */
   no_vetoes_left: 409,
-  /** Rad verdecken cannot change while a Round is being drawn (#231, review 1.4 A3). */
-  hidden_wheel_locked: 409,
+  /** Rad verdecken and the Veto allowance cannot change while a Round is being drawn (#231, review 1.4 A3). */
+  locked_while_drawn: 409,
   /** The Selection mode has no wheel to spin (#229). */
   no_wheel: 409,
   /** No game is left on the wheel (#229). */

@@ -322,16 +322,17 @@ export function floorsAt({ playersPerTeam: players, roundsStarted, vetoesSpent }
 
 /**
  * Settings that stay fixed while a Round is being drawn (#231, review 1.4 A3): the wheel spins or a Veto window runs. „Rad
- * verdecken“ would change what the Players see of a draw that is under way.
+ * verdecken“ would change what the Players see of a draw that is under way; the Veto allowance decides who may veto in the open
+ * window, and may never fall below a sealed Veto (the floor counts the casts only once their window is over).
  */
-export const LOCKED_WHILE_DRAWN = ['hiddenWheel'] as const
+export const LOCKED_WHILE_DRAWN = ['hiddenWheel', 'vetoAllowance'] as const
 
 /** Whether any of the settings stays fixed while a Round is being drawn: the lock the settings screen shows next to the phase lock. */
 export function lockedWhileDrawn(keys: readonly (keyof EventSettings)[]): boolean {
   return keys.some(key => (LOCKED_WHILE_DRAWN as readonly string[]).includes(key))
 }
 
-export type SettingsChangeError = SettingsError | 'setting_locked' | 'hidden_wheel_locked' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'game_count_below_started' | 'wrong_phase'
+export type SettingsChangeError = SettingsError | 'setting_locked' | 'locked_while_drawn' | 'team_size_below_fullest' | 'veto_allowance_below_spent' | 'game_count_below_started' | 'wrong_phase'
 
 /**
  * The change put over the current settings, ready for parseSettings. Wheel values left over from the Lucky Wheel (from
@@ -353,7 +354,7 @@ export function mergeSettings(current: EventSettings, change: Record<string, unk
  * Checks a change of an Event's settings. `current` null = not set up: the change must then be a full payload (parseSettings).
  * Otherwise the change is merged over `current` (only keys present in `change`), then: wrong_phase when the Phase is not
  * settingsEditable; in a settingsLocked Phase any LOCKED_WHEN_RUNNING key whose value differs → setting_locked; while a Round
- * is being drawn any LOCKED_WHILE_DRAWN key whose value differs → hidden_wheel_locked (#231); then
+ * is being drawn any LOCKED_WHILE_DRAWN key whose value differs → locked_while_drawn (#231); then
  * parseSettings on the merged settings; then the floors. The floors come as a function of the team count, called with the
  * parsed one: a change that lowers the team count is measured against the teams that remain (#197).
  */
@@ -371,7 +372,7 @@ export function checkSettingsChange(
       return { ok: false, error: 'setting_locked' }
     }
     if (context.roundBeingDrawn && LOCKED_WHILE_DRAWN.some(key => key in change && !sameValue(change[key], current[key]))) {
-      return { ok: false, error: 'hidden_wheel_locked' }
+      return { ok: false, error: 'locked_while_drawn' }
     }
     merged = mergeSettings(current, change)
   }

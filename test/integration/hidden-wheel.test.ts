@@ -792,6 +792,20 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(JSON.stringify(notifier.messages(eventId))).not.toContain(secondId)
     })
 
+    it('keeps the Veto allowance floor of the Host where it was before the end of the window, and the allowance cannot be lowered under the sealed cast', async () => {
+      const { slug, row } = await castByPlayer()
+      const hostView = async () => JSON.parse(await rawRead(hostCookie, slug)) as EventView
+      const lower = async () => await request(`/api/e/${slug}/settings`, { method: 'PATCH', headers: { 'cookie': hostCookie, 'content-type': 'application/json' }, body: JSON.stringify({ settings: { vetoAllowance: 0 } }) })
+
+      expect((await hostView()).settingsFloors?.vetoAllowance).toBe(0)
+      const refused = await lower()
+      expect(refused.status).toBe(409)
+      expect((await refused.json() as { statusMessage: string }).statusMessage).toBe('locked_while_drawn')
+
+      clock.set(row.vetoEndsAt!)
+      expect((await hostView()).settingsFloors?.vetoAllowance).toBe(1)
+    })
+
     it('reaches everyone at the end of the window, with who cast it', async () => {
       const { slug, row, playerId } = await castByPlayer()
       clock.set(row.vetoEndsAt!)

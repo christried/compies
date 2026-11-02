@@ -80,7 +80,7 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   veto_window_closed: 'error.vetoWindowClosed',
   veto_already_cast: 'error.vetoUsed',
   no_vetoes_left: 'error.noVetosLeft',
-  hidden_wheel_locked: 'error.hiddenWheelLocked',
+  locked_while_drawn: 'error.lockedWhileDrawn',
   no_wheel: 'dock.setBlocked.no_wheel',
   pool_empty: 'dock.setBlocked.pool_empty',
   no_clip: 'error.noClip',

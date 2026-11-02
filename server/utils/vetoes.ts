@@ -8,12 +8,12 @@ import type { EventRow } from './event-access'
 // The Vetoes of an Event (GLOSSARY: Veto, Veto allowance, Bonus Veto; #231): the rows the rules count Vetoes left from, and each
 // Party's Vetoes left. Casting and settling are in rounds.ts, next to the draws they belong to.
 
-export type VetoRow = typeof vetoes.$inferSelect
+export type VetoRow = typeof vetoes.$inferSelect & { drawSettledAt: Date | null }
 
-/** Every Veto cast in the Event, on settled and open draws alike, put-back Rounds included: spent stays spent. */
+/** Every Veto cast in the Event, on settled and open draws alike, put-back Rounds included: spent stays spent. `drawSettledAt` is null while the draw's window still runs. */
 export function readVetoes(db: Db, eventId: string): Promise<VetoRow[]> {
   return db
-    .select({ drawId: vetoes.drawId, team: vetoes.team, userId: vetoes.userId, castAt: vetoes.castAt })
+    .select({ drawId: vetoes.drawId, team: vetoes.team, userId: vetoes.userId, castAt: vetoes.castAt, drawSettledAt: draws.settledAt })
     .from(vetoes)
     .innerJoin(draws, eq(vetoes.drawId, draws.id))
     .innerJoin(rounds, eq(draws.roundId, rounds.id))

@@ -606,13 +606,13 @@ describe('Vetoes', () => {
   describe('Rad verdecken while a Round is being drawn (review 1.4 A3)', () => {
     const hide = (party: Party, hiddenWheel: boolean) => send('PATCH', `/api/e/${party.slug}/settings`, party.hostCookie, { settings: { hiddenWheel } })
 
-    it('is locked from the spin to the end of the window, with 409 hidden_wheel_locked, and free again after it settles', async () => {
+    it('is locked from the spin to the end of the window, with 409 locked_while_drawn, and free again after it settles', async () => {
       const party = await running()
       await spun(party)
 
-      expect(await errorOf(await hide(party, true))).toEqual({ status: 409, code: 'hidden_wheel_locked' })
+      expect(await errorOf(await hide(party, true))).toEqual({ status: 409, code: 'locked_while_drawn' })
       clock.advance(STOP)
-      expect(await errorOf(await hide(party, true))).toEqual({ status: 409, code: 'hidden_wheel_locked' })
+      expect(await errorOf(await hide(party, true))).toEqual({ status: 409, code: 'locked_while_drawn' })
       expect((await read(party)).roundBeingDrawn).toBe(true)
 
       clock.advance(VETO_WINDOW_MS)
@@ -665,6 +665,27 @@ describe('Vetoes', () => {
       expect((await read(party)).settingsFloors?.vetoAllowance).toBe(2)
       expect(await errorOf(await setAllowance(party, 1))).toEqual({ status: 409, code: 'veto_allowance_below_spent' })
       expect((await setAllowance(party, 2)).status).toBe(200)
+    })
+
+    it('does not move for the Host while the window of the draw runs: a sealed Veto stays sealed, and the allowance cannot be lowered under it', async () => {
+      const party = await running({ allowance: 3 })
+      const { drawId } = await spun(party)
+      clock.advance(STOP)
+      expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
+
+      // The Host plays in no Party: nothing of the cast reaches the Host's floor before the end of the window.
+      expect((await read(party)).settingsFloors?.vetoAllowance).toBe(0)
+      expect(await errorOf(await setAllowance(party, 1))).toEqual({ status: 409, code: 'locked_while_drawn' })
+      expect(await errorOf(await setAllowance(party, 4))).toEqual({ status: 409, code: 'locked_while_drawn' })
+      expect((await read(party)).settings?.vetoAllowance).toBe(3)
+
+      clock.advance(VETO_WINDOW_MS - 1)
+      expect((await read(party)).settingsFloors?.vetoAllowance).toBe(0)
+
+      clock.advance(1)
+      expect((await read(party)).settingsFloors?.vetoAllowance).toBe(1)
+      expect(await errorOf(await setAllowance(party, 0))).toEqual({ status: 409, code: 'veto_allowance_below_spent' })
+      expect((await setAllowance(party, 1)).status).toBe(200)
     })
 
     it('stays 0 before any Veto is cast', async () => {

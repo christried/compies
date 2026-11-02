@@ -966,7 +966,7 @@
     "saved": "Gespeichert.",
     "back": "Zurück zum Event",
     "locked": "Gesperrt, seit die erste Session läuft: Schon gespielte Spiele behalten ihre Regeln.",
-    "lockedDrawing": "Gesperrt, solange ein Spiel gezogen wird: Rad verdecken lässt sich wieder ändern, sobald das Spiel feststeht.",
+    "lockedDrawing": "Gesperrt, solange ein Spiel gezogen wird: Rad verdecken und Vetos lassen sich wieder ändern, sobald das Spiel feststeht.",
     "wrongPhase": "Das Event ist beendet. Die Einstellungen lassen sich nicht mehr ändern."
   },
   "connectionG": {
@@ -1566,7 +1566,7 @@
     "notAPlayer": "Ein Veto können nur Spieler in einem Team einlegen.",
     "noVetoWindow": "Dafür läuft gerade kein Veto-Fenster.",
     "vetoWindowClosed": "Das Veto-Fenster ist zu.",
-    "hiddenWheelLocked": "Rad verdecken lässt sich nicht ändern, solange ein Spiel gezogen wird.",
+    "lockedWhileDrawn": "Das lässt sich nicht ändern, solange ein Spiel gezogen wird.",
     "vetoUsed": "Euer Team hat für dieses Spiel schon ein Veto eingelegt.",
     "noVetosLeft": "Keine Vetos mehr übrig.",
     "uploadType": "Nur JPG, PNG oder WebP.",
