@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, pagePill, pollingNumber, shownSessionNumbers, type PageInput } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, headerPill, pagePill, pollingNumber, seatNote, shownSessionNumbers, teamsStay, type PageInput } from '../../app/utils/event-page'
+import type { BoardTeam, MemberView } from '../../shared/event'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too.
@@ -235,5 +236,93 @@ describe('the blocks of the stage', () => {
     expect(standOut([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)])).toBe(true)
     expect(standOut([dated('a', 1, SAT, ENDED)])).toBe(true)
     expect(standOut([dated('a', 1, SAT), dated('b', 2, SUN)])).toBe(false)
+  })
+})
+
+// The page's text lines (#257, B1): pure, with a fake `t` that names the key and its parameters, so a case reads the key it picks.
+const fakeT = (key: string, named?: Record<string, unknown>) => (named ? `${key}(${Object.entries(named).map(([k, v]) => `${k}=${v}`).join(',')})` : key)
+const HOST_ID = 'host'
+const hostView = (fields: Partial<MemberView> & Pick<MemberView, 'zone'>, teams: BoardTeam[] = []) => ({
+  members: [{ id: HOST_ID, name: 'Sanne', image: null, isHost: true, team: null, teamWord: null, ...fields }],
+  viewerId: HOST_ID,
+  teams,
+  event: { isHost: true },
+})
+
+describe('seatNote', () => {
+  it('is null for a Member, whatever zone they sit in', () => {
+    expect(seatNote({ ...hostView({ zone: 'stands' }), event: { isHost: false } }, fakeT)).toBeNull()
+  })
+
+  it('names the Tribüne for a Host who sits there', () => {
+    expect(seatNote(hostView({ zone: 'stands' }), fakeT)).toBe('event.notice.seatStands')
+  })
+
+  it('names the Team by its name for a Host in a named Team', () => {
+    expect(seatNote(hostView({ zone: 'team', team: 1 }, [{ position: 1, name: 'Rot', frozen: false }]), fakeT)).toBe('event.notice.seatTeam(team=Rot)')
+  })
+
+  it('names a Team without a name by its default name and colour', () => {
+    expect(seatNote(hostView({ zone: 'team', team: 2 }, [{ position: 2, name: null, frozen: false }]), fakeT))
+      .toBe('event.notice.seatTeam(team=team.defaultName(color=team.colors.2))')
+  })
+
+  it('is null for a Host on the Bench', () => {
+    expect(seatNote(hostView({ zone: 'bench' }), fakeT)).toBeNull()
+  })
+
+  it('is null when the viewer is not among the Members', () => {
+    expect(seatNote({ ...hostView({ zone: 'stands' }), viewerId: 'nobody' }, fakeT)).toBeNull()
+  })
+})
+
+describe('teamsStay', () => {
+  const next = { number: 2, startsAt: SUN }
+
+  it('names the next Session by its number, to the Host and to a Member', () => {
+    expect(teamsStay(next, true, fakeT)).toBe('event.notice.teamsStay(n=2)')
+    expect(teamsStay(next, false, fakeT)).toBe('event.notice.teamsStayMember(n=2)')
+  })
+
+  it('says „der nächsten“ when the next Session has no number yet', () => {
+    expect(teamsStay({ number: null, startsAt: SUN }, true, fakeT)).toBe('event.notice.teamsStayNext(n=null)')
+    expect(teamsStay({ number: null, startsAt: SUN }, false, fakeT)).toBe('event.notice.teamsStayMemberNext(n=null)')
+  })
+
+  it('uses the next-Session keys without a next Session at all', () => {
+    expect(teamsStay(null, true, fakeT)).toBe('event.notice.teamsStayNext(n=null)')
+  })
+})
+
+describe('headerPill', () => {
+  const state = (list: PageInput['sessions'], fields: Partial<PageInput> = {}) => eventPageState(input(list, fields))
+
+  it('falls back to the Event\'s Phase, or poll, without a page state', () => {
+    expect(headerPill(null, 'date_set', fakeT)).toEqual({ phase: 'date_set', label: undefined })
+    expect(headerPill(null, undefined, fakeT)).toEqual({ phase: 'poll', label: undefined })
+  })
+
+  it('falls back to the Event\'s Phase in setup, where the page state has no pill', () => {
+    expect(headerPill(state([undated('a')], { settings: null }), 'date_set', fakeT)).toEqual({ phase: 'date_set', label: undefined })
+  })
+
+  it('shows Vorbei once the last Session ended', () => {
+    expect(headerPill(state([dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })]), 'running', fakeT)).toEqual({ phase: 'finished', label: 'phase.ended' })
+  })
+
+  it('counts the running Session in an Event with several', () => {
+    const running = state([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { event: { phase: 'running' } })
+
+    expect(headerPill(running, 'running', fakeT)).toEqual({ phase: 'running', label: 'event.pill.running(n=1,total=2)' })
+  })
+
+  it('shows no label for the running Session of an Event with one', () => {
+    const running = state([dated('a', 1, SAT, { startedAt: SAT })], { event: { phase: 'running' } })
+
+    expect(headerPill(running, 'running', fakeT)).toEqual({ phase: 'running', label: undefined })
+  })
+
+  it('shows the poll without a label', () => {
+    expect(headerPill(state([undated('a'), undated('b')]), 'poll', fakeT)).toEqual({ phase: 'poll', label: undefined })
   })
 })

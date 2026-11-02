@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { countdownState, remainingMsAt, type CountdownState } from '~~/shared/countdown'
+import { countdownState, remainingMsAt, type CountdownCommand, type CountdownState } from '~~/shared/countdown'
 import type { CountdownView } from '~~/shared/stage'
 
 // The Countdown on the stage (#236, spec #218 § Countdown, 04-motion § Synchronised moments): the time left as mm:ss, computed from
@@ -15,8 +15,6 @@ const props = defineProps<{
   /** Sends the Host's command; resolves to whether the server took it (the page's send). */
   command: (action: CountdownCommand) => Promise<boolean>
 }>()
-
-type CountdownCommand = 'start' | 'pause' | 'reset'
 
 const { t } = useI18n()
 const headingId = useId()
