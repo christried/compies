@@ -26,10 +26,12 @@ const windowOf = (fields: Partial<VetoDrawView> = {}): VetoDrawView => ({ drawId
 const wheelOf = (vetoes: Omit<VetoView, 'draw'>, draw: Partial<VetoDrawView> | null = {}): WheelView => ({ count: 3, slices: null, spin: spin(), vetoes: { ...vetoes, draw: draw && windowOf(draw) } })
 
 let serverMs = STOP
+/** How often the window looked at the server's clock. */
+let reads = 0
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(wheel: WheelView) {
-  page = await mountSuspended(VetoWindow, { props: { wheel, teams, members, serverNow: () => serverMs } })
+  page = await mountSuspended(VetoWindow, { props: { wheel, teams, members, serverNow: () => { reads += 1; return serverMs } } })
   await vi.advanceTimersByTimeAsync(300)
   await flushPromises()
   return page
@@ -39,6 +41,7 @@ const text = () => page!.text().replace(/\s+/g, ' ')
 beforeEach(() => {
   vi.useFakeTimers()
   serverMs = STOP
+  reads = 0
 })
 
 afterEach(() => {
@@ -131,6 +134,22 @@ describe('the Veto window', () => {
     expect(page!.get('[role="timer"]').text()).toBe('Noch 40 Sekunden')
     // The set game has no card on the wheel, so the window names it (F6).
     expect(page!.text()).toContain('Halo')
+  })
+
+  it('reads the clock every frame until the end, then no more (#257)', async () => {
+    serverMs = END - 1000
+    await mount(wheelOf({ left: [2, 2], own: null, revealed: null }))
+    reads = 0
+
+    await vi.advanceTimersByTimeAsync(64)
+    expect(reads).toBe(4)
+
+    serverMs = END + 100
+    await vi.advanceTimersByTimeAsync(16)
+    expect(page!.get('[role="timer"]').text()).toBe('Aufdecken …')
+    reads = 0
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(reads).toBe(0)
   })
 
   it('waits for the reveal after the end: the numbers stay hidden until the page has read again', async () => {
