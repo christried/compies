@@ -4,7 +4,6 @@ import { sessions } from '../../../db/schema'
 import { setDateRejection } from '../../../domain/phase'
 import { hasDateAt } from '../../../domain/session'
 import { recordActivity } from '../../../utils/activity'
-import { useClock } from '../../../utils/clock'
 import { apiError, slotNotFound } from '../../../utils/errors'
 import { findSlot } from '../../../utils/slots'
 import { changeSessions, shownNumber } from '../../../utils/sessions'
@@ -16,7 +15,7 @@ import type { DateConfirmed } from '../../../../shared/event'
 // Session waits and moves to `date_set` once every Session has one. The Slot is taken by that Session, so
 // it is no longer open. The Sessions whose number moves up (a Date earlier than the others) get a higher
 // calendar SEQUENCE (#53).
-export default defineEventHandler((event): Promise<DateConfirmed> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before, body }) => {
+export default defineEventHandler((event): Promise<DateConfirmed> => changeSessions(event, async ({ tx, now, eventRow, user, publish, sessions: before, body }) => {
   const slotId = typeof body.slotId === 'string' ? body.slotId : ''
   const slot = await findSlot(tx, eventRow.id, slotId)
   if (!slot) throw slotNotFound()
@@ -25,7 +24,7 @@ export default defineEventHandler((event): Promise<DateConfirmed> => changeSessi
   const rejection = setDateRejection({
     phase: eventRow.phase,
     startsAt: slot.startsAt,
-    now: useClock(event).now(),
+    now,
     taken: before.some(row => row.slotId === slot.id),
     undated: undated.length,
     duplicate: hasDateAt(before, slot.startsAt),
@@ -39,6 +38,6 @@ export default defineEventHandler((event): Promise<DateConfirmed> => changeSessi
     .where(eq(sessions.id, sessionId))
   // The number is the one the Session has with its new Date (#159).
   const number = await shownNumber(tx, eventRow.id, sessionId)
-  await recordActivity(tx, publish, eventRow.id, { type: 'date_set', actorId: user.id, params: { sessionId, number, startsAt: isoInstant(slot.startsAt) }, now: useClock(event).now() })
+  await recordActivity(tx, publish, eventRow.id, { type: 'date_set', actorId: user.id, params: { sessionId, number, startsAt: isoInstant(slot.startsAt) }, now })
   return { startsAt: slot.startsAt.toISOString() }
 }))

@@ -2,7 +2,6 @@ import { and, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { eventMembers, eventTeams } from '../../../../../db/schema'
 import { recordActivity } from '../../../../../utils/activity'
-import { useClock } from '../../../../../utils/clock'
 import { apiError } from '../../../../../utils/errors'
 import { changeEvent } from '../../../../../utils/event-access'
 import { eventHasStarted } from '../../../../../utils/sessions'
@@ -14,7 +13,7 @@ import { settingsFromRow } from '../../../../../../shared/settings'
 // clears every Team word of the team; from the first start (#164) the name is frozen, so the reset sets the frozen
 // name to null instead and the words stay. The entry says who did it. A team without words is reset all the same: the
 // Host sees the same answer, and the feed shows what they did.
-export default defineEventHandler((event): Promise<TeamNameReset> => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, user, publish }) => {
+export default defineEventHandler((event): Promise<TeamNameReset> => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, now, eventRow, user, publish }) => {
   const settings = settingsFromRow(eventRow)
   const position = parseTeamPosition(getRouterParam(event, 'position') ?? '')
   if (settings === null || position === null || position > settings.teamCount) throw apiError('no_such_team')
@@ -31,7 +30,7 @@ export default defineEventHandler((event): Promise<TeamNameReset> => changeEvent
       .set({ teamWord: null })
       .where(and(eq(eventMembers.eventId, eventRow.id), eq(eventMembers.team, position)))
   }
-  await recordActivity(tx, publish, eventRow.id, { type: 'team_name_reset', actorId: user.id, params: { team: position }, now: useClock(event).now() })
+  await recordActivity(tx, publish, eventRow.id, { type: 'team_name_reset', actorId: user.id, params: { team: position }, now })
   publish({ type: 'team.nameReset', team: position })
   return { team: position }
 }))

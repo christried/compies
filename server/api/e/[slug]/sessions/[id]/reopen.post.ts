@@ -3,7 +3,6 @@ import { defineEventHandler, getRouterParam } from 'h3'
 import { sessions } from '../../../../../db/schema'
 import { reopenRejection } from '../../../../../domain/phase'
 import { recordActivity } from '../../../../../utils/activity'
-import { useClock } from '../../../../../utils/clock'
 import { apiError } from '../../../../../utils/errors'
 import { changeSessions, findSession, shownNumber } from '../../../../../utils/sessions'
 import { isoInstant } from '../../../../../../shared/activity'
@@ -15,7 +14,7 @@ import { isStarted } from '../../../../../../shared/session-state'
 // Slot is freed, so the Slot is back in the poll with its Votes. The other Sessions keep their Dates and Slots.
 // The Event row is locked, so a Reopen that races a confirm or another change cannot write over it. Every
 // Session whose entry changed gets its calendar SEQUENCE raised, the withdrawn one included.
-export default defineEventHandler((event): Promise<SessionReopened> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before }) => {
+export default defineEventHandler((event): Promise<SessionReopened> => changeSessions(event, async ({ tx, now, eventRow, user, publish, sessions: before }) => {
   const session = findSession(before, getRouterParam(event, 'id'))
   const rejection = reopenRejection({ phase: eventRow.phase, hasDate: session.startsAt !== null, started: isStarted(session) })
   if (rejection) throw apiError(rejection)
@@ -27,6 +26,6 @@ export default defineEventHandler((event): Promise<SessionReopened> => changeSes
     .update(sessions)
     .set({ startsAt: null, slotId: null, previousStartsAt: sql`${sessions.startsAt}` })
     .where(eq(sessions.id, session.id))
-  await recordActivity(tx, publish, eventRow.id, { type: 'date_reopened', actorId: user.id, params: { sessionId: session.id, number, previousStartsAt: isoInstant(session.startsAt!) }, now: useClock(event).now() })
+  await recordActivity(tx, publish, eventRow.id, { type: 'date_reopened', actorId: user.id, params: { sessionId: session.id, number, previousStartsAt: isoInstant(session.startsAt!) }, now })
   return {}
 }))
