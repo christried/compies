@@ -52,6 +52,11 @@ export type RoomMessage
   /** The Host changed the Countdown (#236): set, started, paused, reset or cleared. No payload; the client refetches the Event read. */
     | { type: 'countdown.changed' }
   /**
+   * A Player of `team` cast a Veto on `drawId` (#231, spec #218 § Realtime room). Sent to the Users of that Party only (the named
+   * send, #227), the Host only when the Host plays in it; never broadcast, so no other Party learns that someone vetoed.
+   */
+    | { type: 'veto.cast', drawId: string, team: number }
+  /**
    * The Host tossed the Coin flip (#235, spec #218 § Coin flip). Instants are ISO strings: the flight starts at `startedAt` and the
    * coin lands at `landsAt`. The side rides along; the UI and the feed show it only at the landing.
    */

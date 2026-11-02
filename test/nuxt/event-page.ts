@@ -68,7 +68,7 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     start: overrides.start !== undefined ? overrides.start : event.isHost ? defaultStart(slug, startsAt, overrides.settings !== null && overrides.settings !== undefined) : null,
     // No Round is open (#228) unless a test says so; the Host may set a game, from a pool that has none left in the fixture.
     rounds: overrides.rounds ?? [] as RoundView[],
-    setGame: overrides.setGame !== undefined ? overrides.setGame : event.isHost ? { rejection: null, spinRejection: null, left: [] } as SetGameView : null,
+    setGame: overrides.setGame !== undefined ? overrides.setGame : event.isHost ? { rejection: null, spinRejection: null, respin: false, left: [] } as SetGameView : null,
     // No Lucky Wheel (#229) unless a test says so.
     wheel: overrides.wheel ?? null as WheelView | null,
     // No clip (#230) unless a test says so: the Event read has one only for a stopped draw.

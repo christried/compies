@@ -44,8 +44,10 @@ const votes = useOptimisticVotes(slug, data, refresh)
 // overlay closes at by itself and the read then drops; the next tickets add their own).
 const feedTick = ref(0)
 // The coin's landing (#235) is one of them: the feed shows its entry from then on, and the toss's result is the page's from then on.
+// The Veto window's end (#231) is one too: it reveals every Party's Veto.
 const knownInstants = computed(() => [
   ...(data.value?.wheel?.spin ? [Date.parse(data.value.wheel.spin.stopAt)] : []),
+  ...(data.value?.wheel?.spin?.vetoEndsAt ? [Date.parse(data.value.wheel.spin.vetoEndsAt)] : []),
   ...(data.value?.coin ? [Date.parse(data.value.coin.landsAt)] : []),
   ...(data.value?.clip ? [Date.parse(data.value.clip.endsAt)] : []),
 ])
@@ -83,6 +85,11 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
 /** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
 const endSession = () => send('POST', 'sessions/end')
+
+/** A Player casts their Party's Veto on a draw (#231); the hold on the button learns whether the server took it. */
+const castVeto = (drawId: string) => send('POST', `draws/${drawId}/veto`)
+// The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
+room.on('veto.cast', () => void refresh())
 
 /** The Host skips the clip for everyone (#230); the overlay learns whether the server took it. */
 const skipClip = () => send('POST', 'clip/skip')
@@ -337,13 +344,26 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           @remove-session="removeSession"
         />
 
-        <LuckyWheel
+        <div
           v-else-if="block === 'wheel' && data.wheel"
-          :wheel="data.wheel"
-          :hidden="data.settings?.hiddenWheel ?? false"
-          :is-host="data.event.isHost"
-          :server-now="serverClock.now"
-        />
+          class="flex flex-col gap-[18px] md:gap-[22px]"
+        >
+          <LuckyWheel
+            :wheel="data.wheel"
+            :hidden="data.settings?.hiddenWheel ?? false"
+            :is-host="data.event.isHost"
+            :server-now="serverClock.now"
+          />
+          <VetoWindow
+            v-if="data.wheel.spin?.vetoEndsAt"
+            :wheel="data.wheel"
+            :teams="data.teams"
+            :members="data.members"
+            :viewer-id="data.viewerId"
+            :server-now="serverClock.now"
+            :cast="castVeto"
+          />
+        </div>
 
         <EventRounds
           v-else-if="block === 'rounds'"

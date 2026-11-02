@@ -20,11 +20,11 @@ const FINAL = -2002.5
 function spinOf(fields: Partial<SpinView> = {}): SpinView {
   return {
     roundId: 'r1', drawId: 'd1', spinStartAt: iso(START), stopAt: iso(STOP), slices: 4, resultIndex: 2, resultOffset: 0.25,
-    labels: ['Halo', 'Kart', 'Pong', 'Schach'], game: null, ...fields,
+    labels: ['Halo', 'Kart', 'Pong', 'Schach'], game: null, vetoEndsAt: null, ...fields,
   }
 }
 const wheelOf = (spin: SpinView | null, fields: Partial<WheelView> = {}): WheelView => ({
-  count: 3, slices: [{ id: 'a', name: 'Halo' }, { id: 'b', name: 'Kart' }, { id: 'c', name: 'Schach' }], spin, ...fields,
+  count: 3, slices: [{ id: 'a', name: 'Halo' }, { id: 'b', name: 'Kart' }, { id: 'c', name: 'Schach' }], spin, vetoes: { left: [], own: null, revealed: null }, ...fields,
 })
 
 let serverMs = START - 1000

@@ -8,6 +8,7 @@ import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange, EventRow } from './event-access'
 import { assertGamesExist } from './pools'
+import { roundBeingDrawn, settleDue } from './rounds'
 import { floorFacts } from './settings-floors'
 import { asRecord } from '../../shared/record'
 
@@ -25,7 +26,7 @@ export async function applySettingsChange(
   tx: Db,
   eventRow: EventRow,
   body: unknown,
-  { publish, hostId }: { publish: EventChange['publish'], hostId: string },
+  { publish, hostId, now }: { publish: EventChange['publish'], hostId: string, now: Date },
 ): Promise<{ before: EventSettings | null, after: EventSettings }> {
   const { settings: change, pools: rawPools } = asRecord(body)
   const parsedPools = parsePoolChange(rawPools)
@@ -39,8 +40,10 @@ export async function applySettingsChange(
   const before = settingsFromRow(eventRow)
   let after: EventSettings
   if (change !== undefined) {
+    // A draw whose last instant has passed is settled first, so the lock on „Rad verdecken“ is free again at its end (#231).
+    await settleDue(tx, eventRow, now)
     const facts = await floorFacts(tx, eventRow.id)
-    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: teamCount => floorsAt(facts, teamCount) })
+    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: teamCount => floorsAt(facts, teamCount), roundBeingDrawn: await roundBeingDrawn(tx, eventRow.id) })
     if (!checked.ok) throw apiError(checked.error)
     after = checked.settings
   }

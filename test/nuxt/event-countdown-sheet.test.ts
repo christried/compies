@@ -26,7 +26,7 @@ function serveRunning({ host, countdown = null, rounds = [], startedAt }: { host
     pools: host ? pools : null,
     countdown,
     rounds,
-    setGame: host ? { rejection: null, spinRejection: 'no_wheel', left: [] } : null,
+    setGame: host ? { rejection: null, spinRejection: 'no_wheel', respin: false, left: [] } : null,
   }))
 }
 
