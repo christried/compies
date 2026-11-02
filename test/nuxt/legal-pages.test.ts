@@ -39,12 +39,14 @@ describe('legal pages', () => {
     expect(page.get('main').text()).toContain('Cloudflare')
   })
 
-  it('tell in the image and YouTube sections that Members see the pools\' games only while the Host shows them the pools (#225)', async () => {
+  it('tell in the image and YouTube sections that Members see a game drawn or set in their Event, and the pools\' games before only while the Host shows them the pools (#225, review 0.7)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
 
     const text = page.get('main').text()
-    const sentence = 'dessen Spielepool oder Tiebreaker-Pool das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie).'
-    expect(text.split(sentence)).toHaveLength(3)
+    const shown = 'solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie).'
+    expect(text.split(shown)).toHaveLength(3)
+    expect(text).toContain('außerdem Mitglieder eines Events, sobald das Spiel dort gezogen oder gesetzt ist')
+    expect(text).toContain('Vorschaubilder sehen Mitglieder eines Events von jedem Spiel, sobald es gezogen oder gesetzt ist')
     expect(text).not.toContain('solange das Rad nicht verdeckt ist')
   })
 
