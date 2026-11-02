@@ -195,8 +195,8 @@ describe('the sentence of an entry', () => {
     expect(text({ ...base, type: 'coin_tossed', params: { side: 'tails' } })).toBe('Münzwurf: Schwanz')
   })
 
-  it('still has no sentence for the kinds whose tickets come later', () => {
-    expect(text({ ...base, type: 'bonus_veto_granted', params: { team: 1 } })).toBeNull()
+  it('says which Party got a Bonus Veto, by its Team, from the Host who granted it (#233)', () => {
+    expect(text({ ...base, type: 'bonus_veto_granted', params: { team: 2 } })).toBe('Sanne hat Team Orange ein Bonus-Veto gegeben')
   })
 
   it('draws a game set, a game put back and a game drawn with an icon of their own', () => {

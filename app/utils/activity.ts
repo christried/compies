@@ -109,9 +109,9 @@ function sentence(entry: ActivityEntry, t: Translate): string | null {
     // A coin toss says its side from the landing on (#235): the entry is written with the landing as its instant, so the feed has it then.
     case 'coin_tossed':
       return t('activity.coin', { side: t(`coin.side.${entry.params.side}`) })
-    // The other 0.7 kinds have no sentence yet, so the feed leaves them out (ActivityFeed drops a null): #233 Bonus Veto.
+    // The Party that got the Bonus Veto is named by its Team (#233): a Team name that changes later does not rewrite the entry.
     case 'bonus_veto_granted':
-      return null
+      return t('activity.bonusVeto', { name, team: teamName(entry.params.team, t) })
   }
 }
 

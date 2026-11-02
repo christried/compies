@@ -58,7 +58,7 @@ export function hostDockState(input: DockInput): HostDockState {
 }
 
 /** The actions the dock can hold, by key. */
-export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown'
+export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto'
 
 /**
  * Which actions the dock holds per state, in named parts (review 1.4 A4, #228): the `primary` action(s), the `secondary` ones
@@ -67,19 +67,23 @@ export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'e
  */
 export interface DockLayout { primary: DockKey[], secondary: DockKey[], more: DockKey[] }
 
-/** The dock's layout for a state. `pollOpen`: the Date poll is open, so the Dates can be set and the Slots edited. */
-export function dockLayout(state: HostDockState, pollOpen: boolean): DockLayout {
+/**
+ * The dock's layout for a state. `pollOpen`: the Date poll is open, so the Dates can be set and the Slots edited. `bonusVetoOpen`: the Host
+ * may grant a Bonus Veto (#233: the Event has a Lucky Wheel and no reason refuses it), so the action sits in Mehr in every layout but setup.
+ */
+export function dockLayout(state: HostDockState, pollOpen: boolean, bonusVetoOpen: boolean): DockLayout {
   const dates: DockKey[] = pollOpen ? ['setDate'] : []
   const slots: DockKey[] = pollOpen ? ['slots'] : []
+  const bonus: DockKey[] = bonusVetoOpen ? ['bonusVeto'] : []
   if (state.kind === 'setup') return { primary: ['settings'], secondary: ['invite'], more: [...dates, ...slots] }
   switch (state.primary) {
-    case 'start': return { primary: ['start'], secondary: [...dates, 'invite'], more: [...slots, 'settings'] }
-    // The running layouts put the Coin flip (#235) and the Countdown (#236) in Mehr, beside the other game actions and before the settings.
-    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, 'coin', 'countdown', 'settings'] }
-    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, 'coin', 'countdown', 'settings'] }
-    case 'end': return { primary: ['end'], secondary: ['invite'], more: ['setGame', ...dates, ...slots, 'coin', 'countdown', 'settings'] }
-    case 'setDate': return { primary: dates, secondary: ['invite'], more: [...slots, 'settings'] }
-    default: return { primary: [], secondary: ['invite'], more: ['settings'] }
+    case 'start': return { primary: ['start'], secondary: [...dates, 'invite'], more: [...slots, ...bonus, 'settings'] }
+    // The running layouts put the Bonus Veto (#233), the Coin flip (#235) and the Countdown (#236) in Mehr, beside the other game actions and before the settings.
+    case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
+    case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
+    case 'end': return { primary: ['end'], secondary: ['invite'], more: ['setGame', ...dates, ...slots, ...bonus, 'coin', 'countdown', 'settings'] }
+    case 'setDate': return { primary: dates, secondary: ['invite'], more: [...slots, ...bonus, 'settings'] }
+    default: return { primary: [], secondary: ['invite'], more: [...bonus, 'settings'] }
   }
 }
 

@@ -93,6 +93,7 @@ describe('the Host dock per state', () => {
     const { slug } = serve(s => hostView(s, [{ number: 1, startsAt: FIRST, startedAt: STARTED }, { number: 2, startsAt: SECOND }], {
       event: { isHost: true, phase: 'running' },
       settings: { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3 },
+      bonusVetoes: { granted: [0, 0], rejection: null },
       running: 0,
     }))
 
@@ -100,7 +101,7 @@ describe('the Host dock per state', () => {
 
     expect(pill(page)).toEqual(['Rad drehen', 'Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
     const menu = await openHostMenu(page)
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Rad drehen', 'Nächstes Spiel setzen', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Rad drehen', 'Nächstes Spiel setzen', 'Bonus-Veto geben', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen'])
   })
 
   it('offers Session 2 starten between Sessions', async () => {

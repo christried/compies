@@ -10,6 +10,7 @@
 - Der Host wirft in der laufenden Session eine Münze, die bei allen im selben Moment auf Kopf oder Schwanz landet. ([#235](https://github.com/christried/compies/issues/235))
 - Der Clip des Spiels läuft bei allen im selben Moment, ab dem Stopp des Rads oder sobald der Host das Spiel setzt, und wer später kommt, landet an der richtigen Stelle. Der Host kann ihn für alle überspringen. ([#230](https://github.com/christried/compies/issues/230))
 - Nach dem Stopp hat jede Partei mit Veto 60 Sekunden, das Spiel abzulehnen. Das Veto bleibt versiegelt, bis alle es im selben Moment sehen; ein abgelehntes Spiel fliegt raus, und das Rad dreht neu. ([#231](https://github.com/christried/compies/issues/231))
+- Der Host kann einer Partei ein Bonus-Veto geben, bis zu 9 pro Partei. Sie kann es sofort einsetzen, auch in einem laufenden Veto-Fenster. ([#233](https://github.com/christried/compies/issues/233))
 
 ### Behoben
 

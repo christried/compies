@@ -121,6 +121,9 @@ function setNextGame(gameId: string) {
   return send('POST', 'rounds', { body: { gameId }, busy: setting, done: () => (pickerOpen.value = false) })
 }
 
+// The Bonus Veto sheet (#233) is opened from the dock; its grants go through grantBonusVeto below.
+const bonusVetoOpen = ref(false)
+
 // The Countdown (#236): the sheet sends the length in seconds; it closes once the server took it.
 const countdownOpen = ref(false)
 const countdownSetting = ref(false)
@@ -129,10 +132,16 @@ function setCountdown(seconds: number) {
   return send('PUT', 'countdown', { body: { seconds }, busy: countdownSetting, done: () => (countdownOpen.value = false) })
 }
 
+// The Bonus Veto (#233): the sheet grants one per hold and stays open; the refetch shows the new count. The hold learns whether it was taken.
+function grantBonusVeto(team: number) {
+  return send('POST', 'bonus-vetoes', { body: { team } })
+}
+
 defineExpose({
   openConfirm,
   openSetGame: () => (pickerOpen.value = true),
   openCountdown: () => (countdownOpen.value = true),
+  openBonusVeto: () => (bonusVetoOpen.value = true),
   openReschedule,
   openAdd: () => (addOpen.value = true),
   openSlotEditor: () => (editing.value = true),
@@ -200,6 +209,15 @@ defineExpose({
     :busy="setting"
     @close="pickerOpen = false"
     @pick="setNextGame"
+  />
+
+  <BonusVetoSheet
+    v-if="view.bonusVetoes"
+    :open="bonusVetoOpen"
+    :teams="view.teams"
+    :granted="view.bonusVetoes.granted"
+    :grant="grantBonusVeto"
+    @close="bonusVetoOpen = false"
   />
 
   <CountdownSheet

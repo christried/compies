@@ -1,4 +1,4 @@
-import { CalendarCheck, CalendarClock, Coins, Dices, Flag, Gamepad2, Link as LinkIcon, Play, Settings2, Timer } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, Coins, Dices, Flag, Gamepad2, Link as LinkIcon, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { coinBlockedKey, dockLayout, hostDockState, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
@@ -31,6 +31,8 @@ export interface HostActionHandlers {
   countdown: () => void
   /** Tosses the Coin flip (#235): no dialog; the page sends it and refetches the Event read. */
   coin: () => void
+  /** Opens the sheet that grants a Party a Bonus Veto (#233). */
+  bonusVeto: () => void
 }
 
 export function useHostActions(
@@ -46,7 +48,8 @@ export function useHostActions(
     const current = toValue(view)
     if (!current) return []
     const state = hostDockState(current)
-    const layout = dockLayout(state, toValue(pollOpen))
+    // The Bonus Veto is in the dock while the Event's read allows one (#233): a Lucky Wheel, and no Event-level reason refuses it.
+    const layout = dockLayout(state, toValue(pollOpen), current.bonusVetoes?.rejection === null)
     /** Runs `run`, or answers the click with the reason as a toast while the rule refuses. */
     const guarded = (reason: string | undefined, run: () => void) => () => (reason ? toast({ tone: 'info', text: reason }) : run())
 
@@ -125,6 +128,14 @@ export function useHostActions(
         icon: Timer,
         group: t('dock.group.game'),
         run: handlers.countdown,
+      },
+      // The sheet lists the Parties and holds each grant to confirm (#233); the action only opens it.
+      bonusVeto: {
+        key: 'bonusVeto',
+        label: t('dock.bonusVeto'),
+        icon: ShieldPlus,
+        group: t('dock.group.game'),
+        run: handlers.bonusVeto,
       },
     }
 
