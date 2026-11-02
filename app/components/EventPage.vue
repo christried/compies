@@ -122,6 +122,7 @@ const hostActions = useHostActions(
     spin: () => void send('POST', 'rounds/spin'),
     countdown: () => dialogs.value?.openCountdown(),
     coin: () => void send('POST', 'coin'),
+    bonusVeto: () => dialogs.value?.openBonusVeto(),
   },
 )
 

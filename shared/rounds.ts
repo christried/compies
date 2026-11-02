@@ -5,6 +5,7 @@
 
 import type { Seats } from './board'
 import { runningOf, teamsRejection, type Instant, type SessionTimes, type TeamsRejection } from './session-state'
+import type { Phase } from './event'
 import { hasWheel, type EventSettings } from './settings'
 
 /** Where a draw's game came from: the Game pool, or the library beyond it. A library game never joins a pool (spec #218 § Rounds). */
@@ -205,6 +206,43 @@ export function vetoRejection({ viewerTeam, draw, now, castTeams, left }: VetoIn
   if (draw.outcome !== null || at >= new Date(draw.vetoEndsAt).getTime() || at < new Date(draw.stopAt).getTime()) return 'veto_window_closed'
   if (castTeams.includes(viewerTeam)) return 'veto_already_cast'
   return left < 1 ? 'no_vetoes_left' : null
+}
+
+/** The most Bonus Vetoes a Party gets over the whole Event (GLOSSARY: Bonus Veto; spec #218 § Bonus Vetoes, #233). */
+export const BONUS_VETO_MAX = 9
+
+/** Why the Host cannot grant a Bonus Veto now (#233), in the order they are checked. */
+export type BonusVetoRejection = 'not_host' | 'not_set_up' | 'no_wheel' | 'wrong_phase' | 'invalid_value' | 'bonus_veto_limit'
+
+export interface BonusVetoInput {
+  isHost: boolean
+  /** The settings that matter here; null for an Event that is not set up. */
+  settings: Pick<EventSettings, 'teamCount' | 'selectionMode'> | null
+  phase: Phase
+  /** The Party the Bonus Veto is for; null asks the Event-level reasons only (the Event read's answer). */
+  team: number | null
+  /** The Bonus Vetoes each Party has, index 0 = team 1 (bonusVetoCounts). */
+  granted: readonly number[]
+}
+
+/**
+ * The reason the Host cannot grant a Bonus Veto now, or null (#233, spec #218 § Bonus Vetoes): the Host asks, the Event is set up
+ * and has a Lucky Wheel, it has not finished or been archived, and, for a Party, the team exists and has fewer than BONUS_VETO_MAX.
+ * It is no Running Session rule: a Bonus Veto counts at once, in any Phase before the Event finishes.
+ */
+export function bonusVetoRejection({ isHost, settings, phase, team, granted }: BonusVetoInput): BonusVetoRejection | null {
+  if (!isHost) return 'not_host'
+  if (settings === null) return 'not_set_up'
+  if (!hasWheel(settings.selectionMode)) return 'no_wheel'
+  if (phase === 'finished' || phase === 'archived') return 'wrong_phase'
+  if (team === null) return null
+  if (!Number.isInteger(team) || team < 1 || team > settings.teamCount) return 'invalid_value'
+  return (granted[team - 1] ?? 0) >= BONUS_VETO_MAX ? 'bonus_veto_limit' : null
+}
+
+/** How many Bonus Vetoes each Party has (index 0 = team 1), from the team of every Bonus Veto granted in the Event. */
+export function bonusVetoCounts(bonusTeams: readonly number[], teamCount: number): number[] {
+  return Array.from({ length: teamCount }, (_, index) => bonusTeams.filter(team => team === index + 1).length)
 }
 
 /** The live pool warning (#234, spec #218 § Pool warning): the games the Host may still need against the games left in the pool. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { VETO_WINDOW_MS, drawOutcome, gamesLeft, isBeingDrawn, isOpen, opensWindow, poolWarning, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
+import { BONUS_VETO_MAX, VETO_WINDOW_MS, bonusVetoCounts, bonusVetoRejection, drawOutcome, gamesLeft, isBeingDrawn, isOpen, opensWindow, poolWarning, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
 import type { SessionTimes } from '../../shared/session-state'
 import { floorsAt } from '../../shared/settings'
 
@@ -324,6 +324,61 @@ describe('a Round waiting for a respin', () => {
     expect(setRejection({ ...base, settings: { teamCount: 2, gameCount: 3 } })).toBeNull()
     expect(spinRejection({ ...base, settings: { teamCount: 2, gameCount: 3, selectionMode: 'lucky_wheel' }, left: ['kart'] })).toBeNull()
     expect(spinRejection({ ...base, settings: { teamCount: 2, gameCount: 3, selectionMode: 'lucky_wheel' }, left: [] })).toBe('pool_empty')
+  })
+})
+
+describe('Bonus Vetoes (#233)', () => {
+  const wheel = { teamCount: 2, selectionMode: 'lucky_wheel' as const }
+  const base = { isHost: true, settings: wheel, phase: 'running' as const, team: 1, granted: [0, 0] }
+
+  it('is granted to a Party of a Lucky Wheel Event while the Host asks', () => {
+    expect(bonusVetoRejection(base)).toBeNull()
+  })
+
+  it('is refused to anyone but the Host, before anything else', () => {
+    expect(bonusVetoRejection({ ...base, isHost: false, settings: null, team: 9 })).toBe('not_host')
+  })
+
+  it('is refused for an Event that is not set up, and for a Selection mode without a wheel', () => {
+    expect(bonusVetoRejection({ ...base, settings: null })).toBe('not_set_up')
+    expect(bonusVetoRejection({ ...base, settings: { teamCount: 2, selectionMode: 'admin_pick' } })).toBe('no_wheel')
+  })
+
+  it('is refused once the Event has finished or is archived, and not before', () => {
+    expect(bonusVetoRejection({ ...base, phase: 'finished' })).toBe('wrong_phase')
+    expect(bonusVetoRejection({ ...base, phase: 'archived' })).toBe('wrong_phase')
+    expect(bonusVetoRejection({ ...base, phase: 'date_set' })).toBeNull()
+  })
+
+  it('is refused for a team the Event does not have', () => {
+    expect(bonusVetoRejection({ ...base, team: 0 })).toBe('invalid_value')
+    expect(bonusVetoRejection({ ...base, team: 3 })).toBe('invalid_value')
+    expect(bonusVetoRejection({ ...base, team: 1.5 })).toBe('invalid_value')
+  })
+
+  it('is refused at 9 for one Party, while another Party may still get one', () => {
+    expect(BONUS_VETO_MAX).toBe(9)
+    expect(bonusVetoRejection({ ...base, granted: [9, 8], team: 1 })).toBe('bonus_veto_limit')
+    expect(bonusVetoRejection({ ...base, granted: [9, 8], team: 2 })).toBeNull()
+    expect(bonusVetoRejection({ ...base, granted: [8, 0], team: 1 })).toBeNull()
+  })
+
+  it('checks the reasons in their order: the Host, the settings, the wheel, the Phase, the team, the limit', () => {
+    expect(bonusVetoRejection({ ...base, isHost: false, settings: null })).toBe('not_host')
+    expect(bonusVetoRejection({ ...base, settings: null, team: 9 })).toBe('not_set_up')
+    expect(bonusVetoRejection({ ...base, settings: { teamCount: 2, selectionMode: 'admin_pick' }, phase: 'finished' })).toBe('no_wheel')
+    expect(bonusVetoRejection({ ...base, phase: 'finished', team: 9, granted: [9, 9] })).toBe('wrong_phase')
+    expect(bonusVetoRejection({ ...base, team: 9, granted: [9, 9] })).toBe('invalid_value')
+  })
+
+  it('asks the Event-level reasons only without a team: a Party at its limit does not refuse the Event', () => {
+    expect(bonusVetoRejection({ ...base, team: null, granted: [9, 9] })).toBeNull()
+    expect(bonusVetoRejection({ ...base, team: null, phase: 'finished' })).toBe('wrong_phase')
+  })
+
+  it('counts the Bonus Vetoes of each Party, index 0 = team 1, zero for a Party without any', () => {
+    expect(bonusVetoCounts([2, 1, 2], 3)).toEqual([1, 2, 0])
+    expect(bonusVetoCounts([], 2)).toEqual([0, 0])
   })
 })
 

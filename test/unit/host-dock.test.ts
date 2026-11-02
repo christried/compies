@@ -125,7 +125,7 @@ describe('the primary of a running Session (#228)', () => {
 })
 
 describe('dockLayout', () => {
-  const layout = (fields: Partial<DockInput>, pollOpen = false) => dockLayout(hostDockState(input(fields)), pollOpen)
+  const layout = (fields: Partial<DockInput>, pollOpen = false, bonusVeto = false) => dockLayout(hostDockState(input(fields)), pollOpen, bonusVeto)
 
   it('puts Event einrichten first while the Event is not set up, with the Dates in Mehr', () => {
     expect(layout({ settings: null }, true)).toEqual({ primary: ['settings'], secondary: ['invite'], more: ['setDate', 'slots'] })
@@ -163,6 +163,24 @@ describe('dockLayout', () => {
     expect(layout({ settings, sessions: RUNNING }).more).toContain('countdown')
     expect(layout({ sessions: [dated('a', 1), dated('b', 2)] }).more).not.toContain('countdown')
     expect(layout({ sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' })], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }).more).not.toContain('countdown')
+  })
+
+  it('puts Bonus-Veto geben in Mehr before Münzwurf in the running layouts, and before Einstellungen in the others (#233)', () => {
+    expect(layout({ settings, sessions: RUNNING }, false, true)).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'bonusVeto', 'coin', 'countdown', 'settings'] })
+    expect(layout({ settings: hostPick, sessions: RUNNING }, false, true)).toEqual({ primary: ['setGame'], secondary: ['end', 'invite'], more: ['bonusVeto', 'coin', 'countdown', 'settings'] })
+    expect(layout({ sessions: [dated('a', 1), dated('b', 2)] }, false, true)).toEqual({ primary: ['start'], secondary: ['invite'], more: ['bonusVeto', 'settings'] })
+    expect(layout({ sessions: [dated('a', 1), undated('b')] }, true, true)).toEqual({ primary: ['start'], secondary: ['setDate', 'invite'], more: ['slots', 'bonusVeto', 'settings'] })
+    expect(layout({ sessions: [undated('a')], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }, true, true))
+      .toEqual({ primary: ['setDate'], secondary: ['invite'], more: ['slots', 'bonusVeto', 'settings'] })
+  })
+
+  it('keeps Bonus-Veto geben in Mehr after the last Session, and out of the setup and out of the dock while the read refuses it (#233)', () => {
+    const ended = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
+
+    expect(layout({ sessions: [dated('a', 1, ended)], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }, false, true))
+      .toEqual({ primary: [], secondary: ['invite'], more: ['bonusVeto', 'settings'] })
+    expect(layout({ settings: null }, false, true).more).not.toContain('bonusVeto')
+    expect(layout({ settings, sessions: RUNNING }, false, false).more).not.toContain('bonusVeto')
   })
 
   it('has only Einladen and Einstellungen after the last Session', () => {

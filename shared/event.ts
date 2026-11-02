@@ -1,5 +1,5 @@
 import type { Place, Zone } from './board'
-import type { PoolWarning, SetRejection, SpinRejection, VetoRejection } from './rounds'
+import type { BonusVetoRejection, PoolWarning, SetRejection, SpinRejection, VetoRejection } from './rounds'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
@@ -243,6 +243,10 @@ export interface CountdownView { durationMs: number, remainingMs: number, starte
 export interface CoinView { id: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
 /** What `POST /api/e/:slug/coin` returns: the toss and its instants (ISO), #235. */
 export interface CoinTossed { tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
+/** The Bonus Vetoes of the Event (#233): one count per Party, index 0 = team 1, and the Event-level reason the Host cannot grant one now (null when it can). */
+export interface BonusVetoView { granted: number[], rejection: BonusVetoRejection | null }
+/** What `POST /api/e/:slug/bonus-vetoes` returns: the Party and its Bonus Vetoes after the grant (#233). */
+export interface BonusVetoGranted { team: number, granted: number }
 
 /** What `POST /api/e/:slug/rounds` returns: the Round that was opened (#228). */
 export interface RoundSet { roundId: string }
@@ -333,6 +337,8 @@ export interface EventView {
   countdown: CountdownView | null
   /** The Coin flip (#235): the latest toss of the running Session; every Member gets it, null otherwise. */
   coin: CoinView | null
+  /** The Bonus Vetoes (#233): the Host gets them while the Event has a Lucky Wheel; null for everyone else and without the wheel. */
+  bonusVetoes: BonusVetoView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */
   bestSlotId: string | null
   /** Members who have a Vote on every votable (not past) Slot, out of all Members. */

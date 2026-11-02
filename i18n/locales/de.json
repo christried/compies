@@ -72,6 +72,7 @@
     "spin": "Rad drehen",
     "respin": "Neu drehen",
     "setGame": "Nächstes Spiel setzen",
+    "bonusVeto": "Bonus-Veto geben",
     "skipClip": "Clip überspringen",
     "vetoRunning": "Veto-Fenster läuft",
     "enterResult": "Ergebnis eintragen",
@@ -482,6 +483,13 @@
     "outcomeSet": "Kein Veto. {game} wird gespielt. Viel Glück!",
     "parties": "Vetos der Parteien"
   },
+  "bonusVeto": {
+    "title": "Bonus-Veto geben",
+    "help": "Die Partei kann es sofort einsetzen, auch in einem laufenden Veto-Fenster. Ein Bonus-Veto lässt sich nicht zurücknehmen.",
+    "count": "Noch kein Bonus-Veto | 1 Bonus-Veto | {n} Bonus-Vetos",
+    "grant": "Bonus-Veto geben",
+    "done": "Gegeben"
+  },
   "coin": {
     "title": "Münzwurf",
     "throw": "Münze werfen",
@@ -605,7 +613,8 @@
     "win": "{team} gewinnt Spiel {n}",
     "fix": "{name} hat Spiel {n} korrigiert",
     "hostSet": "{name} hat {game} gesetzt",
-    "gamePutBack": "{name} hat {game} zurückgelegt"
+    "gamePutBack": "{name} hat {game} zurückgelegt",
+    "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben"
   },
   "emote": {
     "send": "Emote senden: {name}",
@@ -1576,6 +1585,7 @@
     "lockedWhileDrawn": "Das lässt sich nicht ändern, solange ein Spiel gezogen wird.",
     "vetoUsed": "Euer Team hat für dieses Spiel schon ein Veto eingelegt.",
     "noVetosLeft": "Keine Vetos mehr übrig.",
+    "bonusVetoLimit": "Diese Partei hat schon 9 Bonus-Vetos.",
     "uploadType": "Nur JPG, PNG oder WebP.",
     "uploadTooLarge": "Das Bild ist zu groß (max. {max} MB).",
     "youtubeInvalid": "Das sieht nicht nach einem YouTube-Link aus.",
