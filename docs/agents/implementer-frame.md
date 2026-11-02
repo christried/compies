@@ -25,7 +25,9 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 - UI copy is German, in `i18n/locales/de.json`. Use the exact strings your brief gives.
 - A schema change or a migration only when your brief asks for one.
 - Tests check what a User or the API can observe (responses, stored rows, published messages, rendered text and roles), never internals. Prior art is named in each brief.
-- Changelog: add a line only if your brief says so (a brief names one whenever `release.md` asks for it; if your change is visible to Users and the brief has no line, say so in your report), under `## [Unreleased]` in `CHANGELOG.md`, in the group it names (`docs/agents/release.md`). Plain German for Users, ending with the issue link `([#199](https://github.com/christried/compies/issues/199))`.
+- Changelog: your brief gives the line whenever `release.md` asks for one; if your change is visible to Users and the brief has none, say so in your report. Plain German for Users, ending with the issue link `([#199](https://github.com/christried/compies/issues/199))`.
+  - Working for an integration branch: the line goes in your report, not in `CHANGELOG.md`. The orchestrator adds it when it merges your branch (`docs/agents/release.md` § Changelog lines).
+  - A branch whose PR goes straight into `staging`: add it under `## [Unreleased]` in `CHANGELOG.md`, in the group the brief names.
 - Shell: this is Windows, and the Bash tool is Git Bash. Script with `node` from a file, never Python; inline `node -e` in bash mangles backticks.
 - Touch only what your brief allows. If the brief and the ticket disagree, or the code makes the brief wrong, do what the ticket needs and say so in the report.
 
@@ -36,19 +38,22 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 
 ## Checks
 
-- `pnpm typecheck && pnpm lint && pnpm knip`, and the test files you touched (`pnpm vitest run test/nuxt/x.test.ts`). They must pass before you report.
-- The full `pnpm test` and `pnpm test:build` are CI's: several agents share this machine, and running them in parallel stalled it in Release 1.4.
+- `pnpm typecheck && pnpm lint && pnpm knip`, and the test files you touched (`pnpm vitest run test/nuxt/x.test.ts`). They must pass before you push.
+- The full `pnpm test` and `pnpm test:build` run in CI on every push of your branch, not on this machine: several agents share it, and running them in parallel stalled it in Release 1.4. Your report waits for that run (§ Before you report). In 0.7 a test file nobody had touched broke the integration branch four times, each found only after the merge.
 - The orchestrator checks pages in the browser; you work without a dev server.
 
 ## Before you report
 
 1. `git fetch origin && git merge origin/<integration branch>` into your branch, because the integration branch moves while you work. Resolve conflicts by keeping both sides (changelog lines, i18n keys), and keep every removal the integration branch made. Rerun the checks.
 2. Push your branch: `git push -u origin <your branch>`.
+3. Wait for CI on your pushed head: `node scripts/ci-wait.mjs`, with the Bash tool's `timeout` at 600000 (a run takes about 6 minutes). It prints one line, then the failures if any. Red: fix, push, and wait again. Report a green head; a red one you can't fix goes into the report with its output.
 
 ## Report (once, short, this shape)
 
-- Branch and head SHA.
+- Branch and head SHA, and CI on it: green, or the failing output.
+- The red run: the first test you wrote, and its failing line before any production code existed. Twice in 0.7 an implementer wrote the code first, and once a bug the test would have caught got as far as the review.
 - Acceptance criteria of the ticket: each one ✅ / ❌, with one line on how it is covered (test file and case name).
 - Deviations from the brief or the ticket, and why.
 - Checks: pass, or the failing output.
+- The changelog line, when you work for an integration branch: its group and its text.
 - Anything the orchestrator must decide or look at (e.g. a page to check in the browser).

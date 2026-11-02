@@ -9,6 +9,7 @@ COMPIES keeps its version history in `CHANGELOG.md` at the repo root (Keep a Cha
 - Groups are `### Neu`, `### Geändert`, `### Behoben`, `### Entfernt`, `### Sicherheit`, only these five, in this order when present.
 - Bullets with at most one nested level. Bold, inline code and links are fine.
 - A PR with no change Users can notice (refactors, tests, docs) adds no line.
+- **On an integration branch** (one spec, many tickets), ticket branches add no line. The implementer gives its line in its report, and the orchestrator adds it under `## [Unreleased]` right after merging the ticket, so one writer touches the file. In 0.7 every ticket branch appended to the same hunk, which caused most of the sync merges (review 0.7, Q4). The integration PR carries the lines into `staging`.
 
 ## Review, walk-through, retro
 

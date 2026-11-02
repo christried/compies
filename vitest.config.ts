@@ -13,9 +13,9 @@ export default defineConfig({
       // HTTP handlers against PGlite with the committed migrations applied. The PGlite load in `beforeAll` can pass the
       // default 10 s when several test runs share a machine, hence the longer hook timeout.
       { test: { name: 'integration', include: ['test/integration/**/*.test.ts'], environment: 'node', hookTimeout: 30_000 } },
-      // Components and pages inside a Nuxt runtime.
+      // Components and pages inside a Nuxt runtime. The setup file unmounts what each test mounted.
       await defineVitestProject({
-        test: { name: 'nuxt', include: ['test/nuxt/**/*.test.ts'], environment: 'nuxt' },
+        test: { name: 'nuxt', include: ['test/nuxt/**/*.test.ts'], environment: 'nuxt', setupFiles: ['test/nuxt/setup.ts'] },
       }),
     ],
   },

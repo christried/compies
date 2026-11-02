@@ -302,6 +302,14 @@ describe('the settings editor', () => {
       expect(less.attributes('title')).toBe('Eine Partei hat schon 2 Vetos eingesetzt.')
     })
 
+    it('says one spent Veto in the singular (#268)', async () => {
+      const { slug } = setUp({ settings: { ...wheel, vetoAllowance: 1 }, floors: { teamSize: 1, vetoAllowance: 1, gameCount: 0 } })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Auswahlmodus')
+
+      expect(button(page, 'Vetos pro Partei: weniger').attributes('title')).toBe('Eine Partei hat schon 1 Veto eingesetzt.')
+    })
+
     it('keeps the Game count from going below the Rounds already started, and says why (#228)', async () => {
       const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 4 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 3 } })
       const page = await mountEditor(slug)

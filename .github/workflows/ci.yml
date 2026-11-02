@@ -3,8 +3,11 @@ name: CI
 on:
   pull_request:
     branches: [staging, main]
+  # Every pushed branch, not only staging and main: an implementer's branch has no PR, and its first full run used to
+  # come after the merge into the integration branch, which went red four times in 0.7 (retro 0.7). A branch with a
+  # PR runs twice per push (the push and the PR's merge commit); Actions minutes are free on a public repo.
   push:
-    branches: [staging, main]
+    branches: ['**']
 
 concurrency:
   group: ci-${{ github.ref }}

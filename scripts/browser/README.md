@@ -19,3 +19,5 @@ Limits:
 - It signs in through `/api/dev/sign-in` only. Staging and production need Claude in Chrome (`claude --chrome`) or the user.
 - `shots.mjs` without a selector captures the viewport: pass the selector of anything below the fold (e.g. `'section:has(> dl)'` for „So wird gespielt“).
 - A `pnpm dev` started in the background outlives its stopped shell: stop the `nuxt dev` process listening on port 3000.
+- `Network.setBlockedURLs` doesn't block WebSockets in headless Chrome. To check a failed connect, point the page at a port nothing listens on: `REALTIME_URL=http://localhost:8788 pnpm dev` (the Worker runs on 8787, and the shell's value wins over `.env`).
+- A check of a list or a wheel covers its edges (`CODING_STANDARDS.md` § Tests): `createGame` with a name of `GAME_NAME_MAX` characters, and a pool of one game. The dev library's names are all short („Alpha mvyc0op7“).
