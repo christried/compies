@@ -2,9 +2,8 @@
 import { ChevronRight, Crown, History, Hourglass, LayoutGrid, Link as LinkIcon, Lock, Settings2 } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
-import { teamName } from '~/utils/board'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
-import { dateBlockedKey, eventPageState, pagePill } from '~/utils/event-page'
+import { dateBlockedKey, eventPageState, headerPill, seatNote, teamsStay } from '~/utils/event-page'
 import { hasStarted } from '~~/shared/session-state'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
@@ -130,33 +129,11 @@ const hostName = computed(() => data.value?.members.find(member => member.isHost
 
 // The Host's seat note (teams only): where the Host sits does not change the dock, and the note says so. Closed for this visit.
 const seatNoteClosed = ref(false)
-const seatNote = computed(() => {
-  const view = data.value
-  const me = view?.members.find(member => member.id === view.viewerId)
-  if (!view || !view.event.isHost || !me) return null
-  if (me.zone === 'stands') return t('event.notice.seatStands')
-  if (me.zone !== 'team' || me.team === null) return null
-  return t('event.notice.seatTeam', { team: teamName(view.teams.find(team => team.position === me.team) ?? me.team, t) })
-})
+const seat = computed(() => (data.value ? seatNote(data.value, t) : null))
+const stay = computed(() => teamsStay(pageState.value?.next ?? null, data.value?.event.isHost ?? false, t))
 
-/** What the Teams-bleiben notice names: the next Session by its number, or „der nächsten“ when it has none yet or is the only one. */
-const teamsStay = computed(() => {
-  const number = pageState.value?.next?.number ?? null
-  const host = data.value?.event.isHost ?? false
-  const key = number === null ? (host ? 'teamsStayNext' : 'teamsStayMemberNext') : (host ? 'teamsStay' : 'teamsStayMember')
-  return t(`event.notice.${key}`, { n: number })
-})
-
-// The header pill follows the page state, not the Event's Phase, which is running from the first start on (pagePill, #166):
-// „Läuft · Session 1 von 2“ while a Session runs in an Event with several, „Vorbei“ after the last one.
-const pill = computed(() => {
-  const state = pageState.value
-  const shown = state ? pagePill(state) : null
-  if (!state || !shown) return { phase: data.value?.event.phase ?? 'poll', label: undefined }
-  if (shown.ended) return { phase: shown.phase, label: t('phase.ended') }
-  const several = state.kind === 'running' && state.total > 1
-  return { phase: shown.phase, label: several ? t('event.pill.running', { n: state.running?.number, total: state.total }) : undefined }
-})
+// The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
+const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
 
 // The phone's views (11-event-seite § TabBar): the Event page or the Activity feed. The feed is mounted once, in the side panel
 // from md up and in its own view below; the wide layout is known after mount only, so nothing of the feed renders before.
@@ -327,14 +304,14 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
         </template>
 
         <NoticeBanner
-          v-else-if="block === 'seat' && seatNote && !seatNoteClosed"
+          v-else-if="block === 'seat' && seat && !seatNoteClosed"
           tone="info"
           :icon="Crown"
           host-only
           closable
           @close="seatNoteClosed = true"
         >
-          {{ seatNote }}
+          {{ seat }}
         </NoticeBanner>
 
         <EventPoll
@@ -407,7 +384,7 @@ const panelTabs = computed(() => [{ key: 'activity', label: t('nav.tabs.activity
           tone="info"
           :icon="Lock"
         >
-          {{ teamsStay }}
+          {{ stay }}
         </NoticeBanner>
 
         <div
