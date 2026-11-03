@@ -6,11 +6,13 @@
 
 - Beim Einrichten und in den Einstellungen sagt dir die App jetzt, wenn ein Event unentschieden enden kann (bei gerader Spielzahl oder mehr als zwei Teams). Dann entscheidest du, ob es unentschieden endet oder ein letztes Spiel dazukommt. Die Empfehlung für den Spielepool zählt dieses mögliche letzte Spiel mit, und beim Glücksrad erinnert dich ein Hinweis daran, für Bonus-Vetos ein paar Spiele mehr einzuplanen. ([#279](https://github.com/christried/compies/issues/279))
 - Als Host trägst du jetzt das Ergebnis eines Spiels ein: Beim offenen Spiel drückst du „Ergebnis eintragen“, ordnest die Parteien per Ziehen oder mit den Pfeil-Buttons, markierst „gleichauf“, wenn ein Spiel unentschieden ausging, und kannst pro Partei einen Score dazuschreiben. Die Punkte nach eurer Punktetabelle siehst du vor dem Speichern. Das Spiel bekommt seine Nummer („Spiel 3“), verlässt die offenen Spiele, und die Aktivität nennt, wer gewonnen hat. Ergebnisse trägst du in beliebiger Reihenfolge ein, auch zwischen zwei Sessions. Alle anderen lesen unter jedem offenen Spiel, dass der Host das Ergebnis einträgt. ([#273](https://github.com/christried/compies/issues/273))
+- Alle im Event sehen jetzt die Tabelle: im neuen Tab „Tabelle“ (am Handy zwischen „Event“ und „Aktivität“, am Desktop im Seitenpanel) und, sobald das erste Ergebnis eingetragen ist, auch auf der Event-Seite unter den offenen Spielen. Sie zählt nur die Punkte; Parteien mit gleich vielen Punkten teilen sich den Rang („1.“ zweimal) und stehen in Team-Reihenfolge. Darunter zeigt der Spielverlauf jedes gespielte Spiel mit Nummer, Siegern und Scores und klappt auf, wie alle Parteien abgeschnitten haben; offene Spiele stehen gestrichelt darin. ([#274](https://github.com/christried/compies/issues/274))
 
 ### Geändert
 
 - Ist auf dem Rad kein Spiel mehr, sagt dir der Host-Button „Neu drehen“ jetzt, dass du mit „Nächstes Spiel setzen“ eines aus der Bibliothek setzen kannst. ([#261](https://github.com/christried/compies/issues/261))
 - Offene Spiele zeigt die Event-Seite jetzt auch zwischen zwei Sessions, nicht nur während eine läuft. ([#273](https://github.com/christried/compies/issues/273))
+- Das Fenster „Ergebnis eintragen“ sagt jetzt über dem Spiel, das wievielte Spiel es wird, zum Beispiel „Spiel 3 von 6“. ([#274](https://github.com/christried/compies/issues/274))
 
 ### Behoben
 
