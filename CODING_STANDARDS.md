@@ -19,6 +19,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | Searching and filtering games | `GameBrowser` |
 | Creating or editing an Event's settings | `EventSetupWizard` |
 | What a viewer may know of a drawn game | `drawGameKnown` (pure) in `server/domain/pool-preview.ts`, `stoppedDraws` (SQL) in `server/utils/draws.ts` (#258) |
+| A GET that must show a settled state (a draw whose instant has passed) | `settleBeforeRead` in `server/utils/rounds.ts` (#229): one cheap select when nothing is due, else a locked transaction that calls `settleDue`. A write goes through `changeEvent`, which settles by itself (#259); lint guards `server/api/e/**` only, so a new timed read calls `settleBeforeRead` instead of opening its own `for('update')` |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 
