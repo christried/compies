@@ -6,6 +6,7 @@ import { isStarted, nextSession } from '~~/shared/session-state'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
 import { teamName } from './board'
+import { joinNames } from './list'
 import type { Translate } from './settings-summary'
 
 // The Activity feed's pure parts (#159, GLOSSARY: Activity feed): what an entry says, which group it sits in, and
@@ -111,7 +112,7 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
       return entry.games[entry.params.gameId] === undefined ? null : t('activity.wheel', { game: entry.games[entry.params.gameId] })
     // The Vetoes of a draw, from the end of its Veto window on (#231): who cast them. It names no game, so a Hidden wheel stays hidden.
     case 'vetoes_revealed': {
-      const list = new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(entry.params.vetoes.map(veto => entry.people[veto.userId] ?? ''))
+      const list = joinNames(entry.params.vetoes.map(veto => entry.people[veto.userId] ?? ''))
       return t('activity.veto', { list })
     }
     // A coin toss says its side from the landing on (#235): the entry is written with the landing as its instant, so the feed has it then.
@@ -126,7 +127,7 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
       const game = entry.games[entry.params.gameId]
       if (game === undefined) return null
       const winners = entry.params.first.map(position => teamName(teams.find(team => team.position === position) ?? position, t))
-      const list = new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(winners)
+      const list = joinNames(winners)
       return t('activity.resultEntered', { n: entry.params.number, game, list, count: entry.params.first.length })
     }
     // A correction (#275) and the end of the Event (#277) get their sentences in those tickets; until then they name nothing.
