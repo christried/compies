@@ -299,6 +299,7 @@ export const draws = pgTable('draws', {
 // A Party's Veto on a draw (GLOSSARY: Veto): the Party is a team number, `userId` is the Player who cast it. A Party casts at
 // most one per draw, which the primary key enforces in the database. Vetoes cast on a draw are used up when it settles as
 // vetoed; the allowance spent is counted from these rows.
+// `userId` has no index, as `activity.actorId` has none (1.4): deleting a User scans this table, which is rare and small (Q17).
 export const vetoes = pgTable('vetoes', {
   drawId: uuid('draw_id').notNull().references(() => draws.id, { onDelete: 'cascade' }),
   team: integer('team').notNull(),
@@ -311,6 +312,7 @@ export const vetoes = pgTable('vetoes', {
 
 // A Veto the Host granted a Party on top of the Veto allowance (GLOSSARY: Bonus Veto), at most 9 per Party over the Event
 // (checked in code under the Event lock). Nobody takes one away, so there is no undo and no update.
+// `grantedBy` has no index, as `activity.actorId` has none (1.4): deleting a User scans this table, which is rare and small (Q17).
 export const bonusVetoes = pgTable('bonus_vetoes', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -326,6 +328,7 @@ export const bonusVetoes = pgTable('bonus_vetoes', {
 // `landsAt`. The side reaches clients with the toss, but the UI and the feed show it only at the landing. A toss belongs to the
 // Session it was made in (`sessionId`, 0020, #259); no time comparison decides it. Nullable: tosses from before and those the code
 // that serves during the switch-over writes (ADR 0007) have none, and are shown in no Session.
+// `tossedBy` has no index, as `activity.actorId` has none (1.4): deleting a User scans this table, which is rare and small (Q17).
 export const coinTosses = pgTable('coin_tosses', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
