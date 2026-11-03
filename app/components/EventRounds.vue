@@ -82,7 +82,6 @@ watch(resultRound, (round) => {
         >
           <AppButton
             v-if="pointsTable"
-            size="card"
             @click="resultFor = round.id"
           >
             {{ t('result.title') }}
