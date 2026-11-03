@@ -91,6 +91,16 @@ export function cardsStandOutIn(kind: Kind): boolean {
   return kind === 'between' || kind === 'done'
 }
 
+/** The first Session has started (#164): the page's kind is `running`, `between` or `done`. */
+export function startedIn(kind: Kind): boolean {
+  return kind === 'running' || kind === 'between' || kind === 'done'
+}
+
+/** The notice about uneven teams has a place on the page: not in a running Session and not after the last one (#166). */
+export function unevenNoticeIn(kind: Kind): boolean {
+  return kind !== 'running' && kind !== 'done'
+}
+
 /**
  * Why "Termin festlegen" cannot set a Date right now (#52), as an i18n key, or null: no open Slot at all, or none in the
  * future. The dock shows it as the action's reason and the confirm dialog as a toast.

@@ -3,7 +3,7 @@ import { Armchair, Eye, Hand, Hourglass, Lock, Users } from '@lucide/vue'
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { errorCopyKey } from '~/utils/api-error'
 import { placeFromKey, placeKey, teamName } from '~/utils/board'
-import type { EventPageState } from '~/utils/event-page'
+import { startedIn, unevenNoticeIn, type EventPageState } from '~/utils/event-page'
 import { fade, glide, pop } from '~/utils/motion'
 import { countSeats, moveRejection, type Place } from '~~/shared/board'
 import type { BoardTeam, MemberView } from '~~/shared/event'
@@ -42,7 +42,7 @@ const root = useTemplateRef<HTMLElement>('root')
 const slug = toRef(() => props.slug)
 
 /** The first Session has started (#164): from the page's state, every one but the two before the first start. */
-const started = computed(() => ['running', 'between', 'done'].includes(props.pageKind))
+const started = computed(() => startedIn(props.pageKind))
 const phase = computed<'setup' | 'poll' | 'open' | 'running'>(() => (props.settings === null ? 'setup' : started.value ? 'running' : props.teamChoiceOpen ? 'open' : 'poll'))
 
 // A team's name as it is shown: its Team name, else its colour's name (teamName).
@@ -220,7 +220,7 @@ const authorsIn = (team: number) => inPlace({ zone: 'team', team }).filter(perso
 // between two Sessions, where the next start is blocked again (#166); a Player's says the team looks for somebody, only
 // while Team choice is open (11-event-seite § NoticeBanner).
 const uneven = computed(() => {
-  if (['running', 'done'].includes(props.pageKind) || props.settings === null || props.teams.length < 2) return null
+  if (!unevenNoticeIn(props.pageKind) || props.settings === null || props.teams.length < 2) return null
   if (!props.isHost && phase.value !== 'open') return null
   const counts = props.teams.map(team => ({ team: team.position, count: seats.value[team.position] ?? 0 }))
   const small = counts.reduce((least, next) => (next.count < least.count ? next : least))
