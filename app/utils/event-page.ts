@@ -7,21 +7,21 @@ import type { Translate } from './settings-summary'
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too. Adding a block, a dock action or a
 // page state touches this one list (review 1.4 A4, #228): the state says which blocks the stage shows and in which order.
 
-export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin'> & { event: Pick<EventView['event'], 'phase'> }
+export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'end'> & { event: Pick<EventView['event'], 'phase'> }
 
 /**
  * Which data blocks the stage has, from the view (#256): a block that shows data is listed only while its data is there, so the
- * template checks nothing of its own. `pool` is the Host's pool warning (#234).
+ * template checks nothing of its own. `pool` is the Host's pool warning (#234); `standings` is true from the first Result on (#274).
  */
-export interface StagePresent { wheel: boolean, pool: boolean, countdown: boolean, coin: boolean }
+export interface StagePresent { wheel: boolean, pool: boolean, countdown: boolean, coin: boolean, standings: boolean }
 
 /**
  * The blocks of the stage (#166, #228). `head`: kicker and title. `reopen`: the notices of reopened Dates. `pool`: the Host's live pool warning (#234), shown to the Host only. `setup`: the Event
  * is not set up. `seat`: where the Host sits. `poll`: the Date poll. `wheel`: the Lucky Wheel, on top of the Rounds (#229).
- * `rounds`: the open Rounds, whenever there are some (the Host enters their Results between Sessions too, #273). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
+ * `rounds`: the open Rounds, whenever there are some (the Host enters their Results between Sessions too, #273). `standings`: the Standings, once the first Result exists, right after the open Rounds (#274). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
  * Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions.
  */
-export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
+export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
 
 /** The next Session to start (the earliest dated one that has not started): its shown number (null for an only Session) and Date. */
 export interface NextSession { number: number | null, startsAt: string }
@@ -59,8 +59,8 @@ type Kind = EventPageState['kind']
 
 /**
  * The blocks of the stage per state (11-event-seite § EventPage): what has to happen now goes on top. The poll while no
- * Session is dated, the Game board from the first Date on, the open Rounds above it while a Session runs (and between Sessions, where their Results are entered too, #273), with the wheel on top
- * of them when the view has wheel data (`present.wheel`, #229) and the Countdown (#236) and the coin toss (#235) under them,
+ * Session is dated, the Game board from the first Date on, the open Rounds above it while a Session runs (and between Sessions, where their Results are entered too, #273) and the Standings right
+ * after them once a Result exists (#274), with the wheel on top of the Rounds when the view has wheel data (`present.wheel`, #229) and the Countdown (#236) and the coin toss (#235) under them,
  * the Sessions card between two Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits
  * for a Date has its poll (compact) below the board once another Session is dated or started.
  */
@@ -70,13 +70,14 @@ export function pageBlocks(kind: Kind, pollOpen: boolean, present: StagePresent)
   const pool: Block[] = present.pool ? ['pool'] : []
   const countdown: Block[] = present.countdown ? ['countdown'] : []
   const coin: Block[] = present.coin ? ['coin'] : []
+  const standings: Block[] = present.standings ? ['standings'] : []
   switch (kind) {
     case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
     case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
     // The Host's pool warning (#234) comes after the drawn Round: wheel and open Rounds first (story 15, review 0.7 F12).
-    case 'running': return ['head', 'reopen', ...wheel, 'rounds', ...pool, ...countdown, ...coin, 'board', ...poll, 'cards']
-    case 'between': return ['head', 'reopen', 'rounds', 'cards', 'stay', 'board', ...poll]
-    case 'done': return ['head', 'reopen', 'rounds', 'cards', 'board']
+    case 'running': return ['head', 'reopen', ...wheel, 'rounds', ...standings, ...pool, ...countdown, ...coin, 'board', ...poll, 'cards']
+    case 'between': return ['head', 'reopen', 'rounds', ...standings, 'cards', 'stay', 'board', ...poll]
+    case 'done': return ['head', 'reopen', 'rounds', ...standings, 'cards', 'board']
     case 'setup': return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
   }
 }
@@ -176,14 +177,14 @@ export function headerPill(state: EventPageState | null, phase: Phase | undefine
   return { phase: shown.phase, label: several ? t('event.pill.running', { n: state.running?.number, total: state.total }) : undefined }
 }
 
-export function eventPageState({ settings, sessions, missingDates, event, setGame, wheel, countdown, coin }: PageInput): EventPageState {
+export function eventPageState({ settings, sessions, missingDates, event, setGame, wheel, countdown, coin, end }: PageInput): EventPageState {
   const waiting = nextSession(sessions)
   const runningSession = runningOf(sessions)
   const ended = sessions
     .filter(session => sessionState(session) === 'ended')
     .sort((a, b) => Date.parse(b.endedAt!) - Date.parse(a.endedAt!))[0]
   const pollOpen = datePollOpen(event.phase, missingDates)
-  const present: StagePresent = { wheel: Boolean(wheel), pool: Boolean(setGame?.poolWarning), countdown: Boolean(countdown), coin: Boolean(coin) }
+  const present: StagePresent = { wheel: Boolean(wheel), pool: Boolean(setGame?.poolWarning), countdown: Boolean(countdown), coin: Boolean(coin), standings: (end?.played ?? 0) > 0 }
 
   const next = waiting ? { number: waiting.number, startsAt: waiting.startsAt } : null
   /** The state of kind `kind`, with the lists that follow from the kind. */

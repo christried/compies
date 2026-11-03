@@ -13,7 +13,7 @@ const dated = (id: string, number: number | null, startsAt: string, times: { sta
 const undated = (id: string): PageInput['sessions'][number] => ({ id, number: null, startsAt: null, previousStartsAt: null, startedAt: null, endedAt: null })
 
 function input(sessions: PageInput['sessions'], fields: Partial<PageInput> = {}): PageInput {
-  return { settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, setGame: null, wheel: null, countdown: null, coin: null, ...fields }
+  return { settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, setGame: null, wheel: null, countdown: null, coin: null, end: null, ...fields }
 }
 
 const SAT = '2090-10-25T18:30:00.000Z'
@@ -216,6 +216,31 @@ describe('the blocks of the stage', () => {
 
   it('ends with the open Rounds, the cards and the board after the last Session (#273)', () => {
     expect(blocks([dated('a', 1, SAT, ENDED)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'board'])
+  })
+
+  // The Standings (#274): a stage block once the first Result exists, right after the open Rounds, in every state a Result can exist in.
+  const STANDINGS: Partial<PageInput> = { end: { played: 1, gameCount: 6 } }
+
+  it('lists the Standings right after the open Rounds once a Result exists, while a Session runs (#274)', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'board', 'poll', 'cards'])
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...WHEEL, ...POOL_WARNING, ...COUNTDOWN, ...TOSS, ...STANDINGS }))
+      .toEqual(['head', 'reopen', 'wheel', 'rounds', 'standings', 'pool', 'countdown', 'coin', 'board', 'poll', 'cards'])
+  })
+
+  it('lists the Standings between two Sessions and after the last one, after the open Rounds (#274)', () => {
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { ...RUNNING, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'cards', 'stay', 'board'])
+    expect(blocks([dated('a', 1, SAT, ENDED)], { ...RUNNING, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'cards', 'board'])
+  })
+
+  it('lists no Standings before the first Result, whether the view has an end with nothing played or none (#274)', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, end: { played: 0, gameCount: 6 } })).not.toContain('standings')
+    expect(blocks(ONE_RUNNING, { ...RUNNING, end: null })).not.toContain('standings')
+  })
+
+  it('lists no Standings in the poll, teams and setup states (#274)', () => {
+    expect(blocks([undated('a'), undated('b')], STANDINGS)).not.toContain('standings')
+    expect(blocks([dated('a', 1, SAT)], STANDINGS)).not.toContain('standings')
+    expect(blocks([undated('a')], { settings: null, ...STANDINGS })).not.toContain('standings')
   })
 
   it('asks the Event to be set up first, and shows the poll when one is open', () => {
