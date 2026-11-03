@@ -8,6 +8,11 @@
   // An export the file uses itself is a helper that a unit test imports to check it directly (LOST_AFTER_MS, kebabCase,
   // ...). That is fine. What counts as dead is an export nothing uses, the file included, or one kept alive by a test only.
   "ignoreExportsUsedInFile": true,
+  "ignoreIssues": {
+    // #273 Part A: partyPoints and placesFromOrder are used by the result sheet (Part B, feat/273-results-app) and tested here. Remove
+    // this entry when Part B imports them.
+    "shared/results.ts": ["exports"]
+  },
   "workspaces": {
     ".": {
       "entry": [

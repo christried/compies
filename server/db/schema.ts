@@ -241,8 +241,9 @@ export const coinSide = pgEnum('coin_side', COIN_SIDES)
 // One of the games an Event plays (GLOSSARY: Round). It begins with a spin or with the Host setting a game and keeps going
 // through vetoed draws until no Veto stops its game. `gameId` and `setAt` are null while it is being drawn and set
 // together; `setAt` is when the game was set (the end of the Veto window for a draw that had one). `putBackAt` is the Host's
-// put-back: a soft removal, because Vetoes spent in a put-back Round stay spent and the history stays. 0.8 adds the
-// result to this table. Only one Round per Event can be in its draw at a time (the partial unique index).
+// put-back: a soft removal, because Vetoes spent in a put-back Round stay spent and the history stays. 0.8 adds the Result
+// (0022, #273): the Round's number and `resultAt`, and `correctedAt` for #275; its Places are in `round_places`. Only one Round per
+// Event can be in its draw at a time (the partial unique index).
 export const rounds = pgTable('rounds', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -250,6 +251,11 @@ export const rounds = pgTable('rounds', {
   startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
   setAt: timestamp('set_at', { withTimezone: true }),
   putBackAt: timestamp('put_back_at', { withTimezone: true }),
+  // 0022 (#273): the Result. `number` is the Round's number („Spiel 3“), given when its Result is entered (the highest in the Event + 1,
+  // under the Event lock); `resultAt` is that moment (the request's clock, ADR 0013); `correctedAt` is for #275 and stays null here.
+  number: integer('number'),
+  resultAt: timestamp('result_at', { withTimezone: true }),
+  correctedAt: timestamp('corrected_at', { withTimezone: true }),
 }, table => [
   check('rounds_set_game_check', sql`(${table.setAt} IS NULL) = (${table.gameId} IS NULL)`),
   check('rounds_put_back_after_set_check', sql`${table.putBackAt} IS NULL OR ${table.setAt} IS NOT NULL`),
@@ -257,6 +263,26 @@ export const rounds = pgTable('rounds', {
   // The Event read lists an Event's Rounds in start order; the image route and the feed look a Round up by its game.
   index('rounds_event_id_started_at_idx').on(table.eventId, table.startedAt),
   index('rounds_game_id_idx').on(table.gameId),
+  check('rounds_number_result_check', sql`(${table.number} IS NULL) = (${table.resultAt} IS NULL)`),
+  check('rounds_number_positive_check', sql`${table.number} IS NULL OR ${table.number} >= 1`),
+  // A Round with a Result is set and was not put back (the code enforces it under the Event lock; this is the backstop).
+  check('rounds_result_stands_check', sql`${table.resultAt} IS NULL OR (${table.setAt} IS NOT NULL AND ${table.putBackAt} IS NULL)`),
+  check('rounds_corrected_after_result_check', sql`${table.correctedAt} IS NULL OR ${table.resultAt} IS NOT NULL`),
+  unique('rounds_event_id_number_unique').on(table.eventId, table.number),
+])
+
+// A Round's Result (GLOSSARY: Result, Place, Score; 0022, #273): one row per Party. `team` is the Party's team position (from 1),
+// `place` its Place (from 1; a Shared place repeats), `score` the optional Score as trimmed text (null = none). Entering a Result
+// writes the rows once; #275 replaces them whole. The table is new, so the code that serves during the switch-over (ADR 0007) neither reads nor writes it.
+export const roundPlaces = pgTable('round_places', {
+  roundId: uuid('round_id').notNull().references(() => rounds.id, { onDelete: 'cascade' }),
+  team: integer('team').notNull(),
+  place: integer('place').notNull(),
+  score: text('score'),
+}, table => [
+  primaryKey({ columns: [table.roundId, table.team] }),
+  check('round_places_team_check', sql`${table.team} >= 1`),
+  check('round_places_place_check', sql`${table.place} >= 1`),
 ])
 
 // A Round's draws: a spin or a set; vetoed ones stay in their Round. `source` says where the game came from (a library game

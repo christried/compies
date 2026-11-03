@@ -122,6 +122,10 @@ export const API_ERROR_STATUS = {
   game_count_reached: 409,
   /** A Round is being drawn: no game can be set, and that Round cannot be put back (#228). */
   round_being_drawn: 409,
+  /** No Result can be entered on the Round: it is being drawn, waits for a respin, was put back, or has its Result already (#273). */
+  round_not_open: 409,
+  /** The Places are no Result of the Event: a Party missing, doubled or out of range, a Place that skips, or a Score too long (#273). */
+  invalid_result: 400,
   /** The Veto is for a viewer who plays in no Party: on the Bench, in the Stands, or without a team (#231). */
   not_a_player: 403,
   /** The draw has no Veto window (no Party had a Veto left when it was drawn, or the Host set it), or the Event has no such draw (#231). */

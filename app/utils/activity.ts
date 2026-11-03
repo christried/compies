@@ -1,6 +1,7 @@
-import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Eye, Flag, Gamepad2, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Undo2, UserPlus, Users } from '@lucide/vue'
+import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Eye, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
+import type { BoardTeam } from '~~/shared/event'
 import { isStarted, nextSession } from '~~/shared/session-state'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
@@ -16,10 +17,13 @@ const OPEN = '\u0001'
 const CLOSE = '\u0002'
 const STRONG = new Set(['name', 'actor', 'team', 'date', 'game', 'list'])
 
-/** The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. */
-export function activityParts(entry: ActivityEntry, t: Translate): { text: string, strong: boolean }[] | null {
+/**
+ * The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. `teams` are the
+ * Event's teams, whose frozen names a Result's sentence uses (#273); without them a team is named by its colour, as bonus_veto_granted does.
+ */
+export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTeam[] = []): { text: string, strong: boolean }[] | null {
   const marked: Translate = (key, named, plural) => t(key, named && Object.fromEntries(Object.entries(named).map(([name, value]) => [name, STRONG.has(name) ? OPEN + String(value) + CLOSE : value])), plural)
-  const text = sentence(entry, marked)
+  const text = sentence(entry, marked, teams)
   if (text === null) return null
   return text.split(OPEN).flatMap((chunk, index) => {
     if (index === 0) return chunk ? [{ text: chunk, strong: false }] : []
@@ -51,10 +55,14 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
     case 'game_put_back': return { icon: Undo2, tone: 'surface' }
     case 'bonus_veto_granted': return { icon: ShieldPlus, tone: 'surface' }
     case 'coin_tossed': return { icon: Coins, tone: 'surface' }
+    // The 0.8 kinds (#273): a Result has the trophy, a correction the pencil; the end of the Event (#277) has its medal.
+    case 'result_entered': return { icon: Trophy, tone: 'primary' }
+    case 'result_corrected': return { icon: Pencil, tone: 'surface' }
+    case 'event_finished': return { icon: Medal, tone: 'primary' }
   }
 }
 
-function sentence(entry: ActivityEntry, t: Translate): string | null {
+function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): string | null {
   const name = entry.actor?.name ?? ''
   switch (entry.type) {
     case 'member_joined':
@@ -112,6 +120,19 @@ function sentence(entry: ActivityEntry, t: Translate): string | null {
     // The Party that got the Bonus Veto is named by its Team (#233): a Team name that changes later does not rewrite the entry.
     case 'bonus_veto_granted':
       return t('activity.bonusVeto', { name, team: teamName(entry.params.team, t) })
+    // A Result names its game (from `games`, as a set game does) and every Party on Place 1 (#273). The winners are named by their
+    // frozen Team name when the feed has the teams, else by their colour; `count` picks the singular or the plural form.
+    case 'result_entered': {
+      const game = entry.games[entry.params.gameId]
+      if (game === undefined) return null
+      const winners = entry.params.first.map(position => teamName(teams.find(team => team.position === position) ?? position, t))
+      const list = new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(winners)
+      return t('activity.resultEntered', { n: entry.params.number, game, list, count: entry.params.first.length })
+    }
+    // A correction (#275) and the end of the Event (#277) get their sentences in those tickets; until then they name nothing.
+    case 'result_corrected':
+    case 'event_finished':
+      return null
   }
 }
 

@@ -605,11 +605,11 @@
     "coin": "Münzwurf: {side}",
     "veto": "Veto von {list}",
     "ban": "{team} hat {game} gebannt",
-    "win": "{team} gewinnt Spiel {n}",
     "fix": "{name} hat Spiel {n} korrigiert",
     "hostSet": "{name} hat {game} gesetzt",
     "gamePutBack": "{name} hat {game} zurückgelegt",
-    "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben"
+    "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben",
+    "resultEntered": "Spiel {n}: {game}, {list} gewinnt | Spiel {n}: {game}, {list} gewinnen"
   },
   "emote": {
     "send": "Emote senden: {name}",

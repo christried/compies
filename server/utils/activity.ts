@@ -42,13 +42,13 @@ export async function recordActivity<T extends ActivityType>(
   publish({ type: 'activity.added', entry: entry! })
 }
 
-/** The User ids a row's params name, whose names the client needs (`people`): what its type declares in ACTIVITY_PEOPLE (#226). */
+/** The User ids a row's params name, whose names the client needs (`people`): what its type declares in ACTIVITY_NAMES (#226, #273). */
 function paramUserIds({ type, params }: ActivityRow): string[] {
   return activityPeople(type, params)
 }
 
 /**
- * The names of the games these rows name (ACTIVITY_GAMES) that may be named yet (#228, #229), keyed by Event and game: a game a
+ * The names of the games these rows name (ACTIVITY_NAMES) that may be named yet (#228, #229), keyed by Event and game: a game a
  * draw of the Event has, from the draw's stop instant on (a set draw stops at its commit, so a set game is named at once; a
  * put-back Round's game too: everyone saw it set), or a game a Round of the Event has set (that Round settled at or after the
  * stop). Nothing else is named, so a Hidden wheel stays hidden in the feed (spec stories 69, 71, 80).
