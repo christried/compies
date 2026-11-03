@@ -95,7 +95,7 @@
       "game_count_reached": "Alle Spiele dieses Events sind schon gestartet.",
       "round_being_drawn": "Gerade wird ein Spiel gezogen.",
       "no_wheel": "Geht nur mit dem Glücksrad.",
-      "pool_empty": "Auf dem Rad ist kein Spiel mehr."
+      "pool_empty": "Auf dem Rad ist kein Spiel mehr. Unter „Mehr“ kannst du mit „Nächstes Spiel setzen“ eines aus der Bibliothek setzen."
     },
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {

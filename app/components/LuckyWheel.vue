@@ -71,6 +71,7 @@ const names = computed(() => {
 const angle = computed(() => {
   const current = timing.value
   if (!current || clock.value === null) return 0
+  // + 0 turns a -0 into 0 (utils/wheel.ts wheelAngle does the same for the spin).
   return (running.value ? wheelAngle(current, clock.value, reduced.value) : finalAngle(current) % 360) + 0
 })
 

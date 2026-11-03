@@ -1,14 +1,15 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, Fragment, h } from 'vue'
 import EditorPage from '~/pages/e/[slug]/einstellungen.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, MemberView } from '~~/shared/event'
-import type { SetGameView } from '~~/shared/stage'
+import type { SetGameView, SpinView, WheelView } from '~~/shared/stage'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
+import { INSTANT_MARGIN_MS } from '~/composables/useInstantRefresh'
 import { kitty, signInAs } from './auth'
 import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page'
 
@@ -566,5 +567,69 @@ describe('the settings editor', () => {
       expect(page.text()).toContain('Wird knapp.')
       expect(page.text()).toContain('im Pool sind 0.')
     })
+  })
+})
+
+// A draw's lock on the settings page lifts at its stop, not at the next poll (#261, spec N5): the page reads again when the instant passes.
+describe('the settings editor during a draw', () => {
+  const DRAWING = 'Gesperrt, solange ein Spiel gezogen wird'
+  let drawSlugs = 0
+
+  /** A running Event whose spin stops at `stopAt` (epoch ms, the real clock: fake timers stall the page's mount); `reads` counts the Event read, `set` serves the next one. */
+  function serveDraw({ stopAt, host = true, drawing = true }: { stopAt: number, host?: boolean, drawing?: boolean }) {
+    const slug = `einstellungen-draw-${++drawSlugs}`
+    const spin: SpinView = { roundId: 'r1', drawId: 'd1', spinStartAt: new Date(stopAt - 6000).toISOString(), stopAt: new Date(stopAt).toISOString(), slices: 3, resultIndex: 0, resultOffset: 0.5, labels: null, game: null, current: true }
+    const wheelView: WheelView = { count: 3, slices: null, spin, vetoes: { left: [0, 0, 0], own: null, revealed: null, draw: null } }
+    let current = { ...view(slug, [], { event: { isHost: host, phase: 'running' }, settings: wheel, wheel: wheelView }), roundBeingDrawn: drawing }
+    const reads = vi.fn()
+    registerEndpoint(`/api/e/${slug}`, {
+      method: 'GET',
+      handler: () => {
+        reads()
+        return current
+      },
+    })
+    const set = (next: boolean) => {
+      current = { ...current, roundBeingDrawn: next }
+    }
+    return { slug, reads, set }
+  }
+
+  beforeEach(() => {
+    useState('toasts').value = []
+  })
+
+  it('lifts the lock on „Rad verdecken“ and the Veto allowance at the stop, without waiting for the poll', async () => {
+    const { slug, set } = serveDraw({ stopAt: Date.now() + 1000 })
+    const page = await mountEditor(slug)
+    await goTo(page, 'Auswahlmodus')
+    expect(page.text()).toContain(DRAWING)
+
+    set(false)
+    // The read before the stop still says so: only the page's read at the stop (+ INSTANT_MARGIN_MS) can lift it.
+    expect(page.text()).toContain(DRAWING)
+    await vi.waitFor(() => expect(page.text()).not.toContain(DRAWING), { timeout: 4000 })
+  })
+
+  it('reads nothing again for a Member, who gets the Construction page', async () => {
+    const { slug, reads } = serveDraw({ stopAt: Date.now() + 500, host: false, drawing: false })
+    await mountEditor(slug)
+    await flushPromises()
+    const before = reads.mock.calls.length
+
+    await new Promise(resolve => setTimeout(resolve, 500 + INSTANT_MARGIN_MS + 300))
+
+    expect(reads.mock.calls.length).toBe(before)
+  })
+
+  it('reads nothing again for a stop that had passed when the page loaded', async () => {
+    const { slug, reads } = serveDraw({ stopAt: Date.now() - 1000, drawing: false })
+    await mountEditor(slug)
+    await flushPromises()
+    const before = reads.mock.calls.length
+
+    await new Promise(resolve => setTimeout(resolve, INSTANT_MARGIN_MS + 300))
+
+    expect(reads.mock.calls.length).toBe(before)
   })
 })

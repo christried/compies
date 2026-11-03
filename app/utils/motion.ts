@@ -43,8 +43,8 @@ export function fade(element: Element): void {
 /** The fade every Veto-window animation becomes under reduced motion: 0.2 s, with no delay. */
 const REDUCED_FADE_MS = 200
 
-/** Runs `keyframes` on the element, or under reduced motion a fade at once (the tiles and stamps show at the same moment). */
-function veto(element: Element, keyframes: Keyframe[], options: { duration: number, delay?: number, easing: string }): void {
+/** Runs a Veto-window animation, or under reduced motion the 0.2 s fade at once (the tiles and stamps show at the same moment). */
+function animateVeto(element: Element, keyframes: Keyframe[], options: { duration: number, delay?: number, easing: string }): void {
   if (typeof element.animate !== 'function') return
   if (reducedMotion()) element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: REDUCED_FADE_MS, easing: motionToken('--cp-ease-out', 'ease-out'), fill: 'backwards' })
   else element.animate(keyframes, { ...options, fill: 'backwards' })
@@ -52,17 +52,17 @@ function veto(element: Element, keyframes: Keyframe[], options: { duration: numb
 
 /** The seal stamp when the own Party's Veto is cast: `scale 2→1, rotation −8°`, 0.3 s `EASE.pop` (the handoff's back.out). */
 export function sealStamp(element: Element): void {
-  veto(element, [{ transform: 'rotate(-8deg) scale(2)', opacity: 0 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1 }], { duration: 300, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') })
+  animateVeto(element, [{ transform: 'rotate(-8deg) scale(2)', opacity: 0 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1 }], { duration: 300, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') })
 }
 
 /** A Party's tile at the reveal: `rotateY 90°→0` (perspective 600), 0.42 s `EASE.out`, each tile 0.08 s after the one before it. */
 export function revealTile(element: Element, index: number): void {
-  veto(element, [{ transform: 'perspective(600px) rotateY(90deg)' }, { transform: 'perspective(600px) rotateY(0deg)' }], { duration: 420, delay: index * 80, easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') })
+  animateVeto(element, [{ transform: 'perspective(600px) rotateY(90deg)' }, { transform: 'perspective(600px) rotateY(0deg)' }], { duration: 420, delay: index * 80, easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') })
 }
 
 /** The „VETO“ stamp on a tile: `scale 2.2→.9→1, rotation −8°`, 0.52 s, 0.3 s after the tiles start to turn. */
 export function vetoStamp(element: Element): void {
-  veto(element, [{ transform: 'rotate(-8deg) scale(2.2)', opacity: 0, offset: 0 }, { transform: 'rotate(-8deg) scale(.9)', opacity: 1, offset: 0.6 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 520, delay: 300, easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') })
+  animateVeto(element, [{ transform: 'rotate(-8deg) scale(2.2)', opacity: 0, offset: 0 }, { transform: 'rotate(-8deg) scale(.9)', opacity: 1, offset: 0.6 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 520, delay: 300, easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') })
 }
 
 /** The timer's tick in the last ten seconds: `scale 1.12→1`, 0.26 s `EASE.snap`. A reduced-motion page does not pulse. */

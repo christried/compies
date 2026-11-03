@@ -27,7 +27,7 @@ const AUTOPLAY_WAIT_MS = 1000
 /** After this much playback the position is checked against the server's, once (04-motion § Synchronised moments). */
 const DRIFT_CHECK_MS = 3000
 const DRIFT_LIMIT_S = 1
-/** The progress bar and the end of the clip follow the server clock at this pace. */
+/** The progress bar and the end of the clip follow the server clock at this pace; also the bar's transition length: one tick eases into the next. */
 const TICK_MS = 250
 
 const { t } = useI18n()
@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
           class="w-full max-w-[420px]"
         />
         <span class="pointer-events-none absolute top-2.5 left-2.5 inline-flex h-[30px] items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-2.5 text-[12px] font-extrabold">
-          <span class="size-2 rounded-full bg-hot motion-safe:animate-pulse" />
+          <span class="size-2 rounded-full bg-hot animate-live" />
           {{ t('clip.live') }}
         </span>
       </div>
@@ -213,8 +213,8 @@ onBeforeUnmount(() => {
         class="h-2.5 border-y-2 border-line bg-surface"
       >
         <span
-          class="block h-full bg-hot transition-[width] duration-250 ease-linear"
-          :style="{ width: `${progress * 100}%` }"
+          class="block h-full bg-hot transition-[width] ease-linear"
+          :style="{ width: `${progress * 100}%`, transitionDuration: `${TICK_MS}ms` }"
         />
       </div>
       <div class="flex flex-wrap items-center gap-2 px-3 py-2.5">
