@@ -335,7 +335,7 @@
       "hideWheel": "Rad verdecken",
       "hideWheelHelp": "Erfundene Namen, bis das Rad stoppt.",
       "poolPreview": "Pool vorher zeigen",
-      "poolPreviewHelp": "Die anderen sehen Spielepool und Tiebreaker-Pool schon vorher.",
+      "poolPreviewHelp": "Die anderen sehen den Spielepool schon vorher.",
       "poolPreviewHidden": "Beim verdeckten Rad sieht niemand den Pool.",
       "spinDuration": "Drehdauer",
       "seconds": "{n} s"
@@ -394,6 +394,11 @@
         "good": "Maximale Spannung und Chaos.",
         "warn": "Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon."
       },
+      "end": {
+        "title": "So endet das Event",
+        "how": "Sind alle Spiele bis zur eingestellten Anzahl gespielt und haben ihr Ergebnis, schließt du das Event ab. Von selbst endet nichts. Willst du früher aufhören, senkst du vorher die Anzahl Spiele.",
+        "warn": "Teilen sich am Ende mehrere Parteien Platz 1, entscheidest du: Du beendest das Event unentschieden, dann gewinnen alle auf Platz 1. Oder du fügst ein letztes Spiel hinzu, das alle Parteien aus dem Spielepool spielen, mit demselben Auswahlmodus und denselben Vetos. Endet auch das gleichauf, hast du dieselbe Wahl noch einmal."
+      },
       "pickBan": {
         "title": "Pick & Ban",
         "how": "Wie das Map-Veto in Counter-Strike. Ein Münzwurf (Kopf oder Schwanz) entscheidet, wer anfängt. Jede Partei bekommt so viele Bans, wie sie Mitglieder hat. Gebannt wird abwechselnd: A bannt 1, B bannt 2, A bannt 2 und so weiter, bis alle Bans weg sind. Danach wird nach demselben Muster gepickt. Mit dem Picken beginnt die Partei, die nicht mit dem Bannen angefangen hat. Die Reihenfolge der Picks ist die Spielreihenfolge.",
@@ -430,7 +435,6 @@
     "drawn": "Vom Rad:",
     "aria": "Glücksrad mit {n} Spiel | Glücksrad mit {n} Spielen",
     "banner": "Spiel {n} von {total}: {host} dreht das Glücksrad.",
-    "tiebreaker": "Tiebreaker",
     "placeholders": [
       "Counter-Strudel",
       "League of Leberkäse",
@@ -547,14 +551,6 @@
     "correct": "Korrigieren",
     "corrected": "korrigiert",
     "empty": "Noch kein Spiel gespielt."
-  },
-  "tiebreaker": {
-    "announce": "Gleichstand auf Platz 1!",
-    "announceText": "Beide haben {n} Punkt. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad. | Beide haben {n} Punkte. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad.",
-    "onlyTied": "Nur die Punktgleichen spielen.",
-    "onlyTiedText": "Eigenes Rad mit dem Tiebreaker-Pool. Übrige Vetos zählen noch, Bans gibt es nicht.",
-    "again": "Nochmal! Das Rad dreht neu.",
-    "againText": "Endet auch der Tiebreaker gleichauf, wird einfach wieder gedreht, so lange, bis es eine Siegerin gibt."
   },
   "chat": {
     "logAria": "Chatverlauf",
@@ -1370,7 +1366,6 @@
       "points": { "label": "Punkte", "title": "Wer kriegt wie viele Punkte?" },
       "mode": { "label": "Auswahlmodus", "title": "Wie wird das nächste Spiel bestimmt?" },
       "pool": { "label": "Spielepool", "title": "Welche Spiele kommen in den Pool?" },
-      "tiebreaker": { "label": "Tiebreaker-Pool", "title": "Und falls es knapp wird?" },
       "sessions": { "label": "Termin", "title": "Wann zocken wir?" }
     },
     "create": "Event erstellen",
@@ -1409,7 +1404,9 @@
       "min": "Mindestens 1 Spiel.",
       "max": "Höchstens 30 Spiele.",
       "floor": "Schon {n} gestartet.",
-      "help": "Nach {n} Spiel ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1. | Nach {n} Spielen ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1."
+      "help": "Nach {n} Spiel mit Ergebnis kannst du das Event abschließen. | Nach {n} Spielen mit Ergebnis kannst du das Event abschließen.",
+      "tieTitle": "Gleichstand möglich.",
+      "tie": "Das Event kann unentschieden enden. Dann entscheidest du: Unentschieden beenden oder ein letztes Spiel hinzufügen."
     },
     "points": {
       "label": "Punktetabelle",
@@ -1422,20 +1419,22 @@
     },
     "pool": {
       "mainCount": "Im Pool: {n} Spiel | Im Pool: {n} Spiele",
-      "tiebreakerCount": "Tiebreaker-Pool: {n} Spiel | Tiebreaker-Pool: {n} Spiele",
       "listMain": "Spiele im Pool",
-      "listTiebreaker": "Spiele im Tiebreaker-Pool",
       "empty": "Noch leer. Du kannst auch ohne Spiele weitermachen.",
       "add": "{name} in den Pool",
       "remove": "{name} aus dem Pool nehmen",
       "create": "Neues Spiel anlegen",
-      "tiebreakerNote": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht. Du kannst auch ohne Spiel weitermachen.",
+      "bonusNote": "Plane ein paar Spiele mehr ein, falls du zwischendurch Bonus-Vetos vergibst.",
       "noLibrary": "Ohne Host-Berechtigung kannst du keine Spiele aus der Bibliothek hinzufügen. Die Spiele im Pool bleiben.",
       "hintTitle": "Wird knapp.",
       "hintWheel": "{games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | {games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
       "hintWheelOne": "1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | 1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
       "hintAdmin": "Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
-      "hintAdminOne": "Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt."
+      "hintAdminOne": "Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintWheelLast": "{games} Spiele plus bis zu {vetoes} Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | {games} Spiele plus bis zu {vetoes} Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintWheelOneLast": "1 Spiel plus bis zu {vetoes} Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | 1 Spiel plus bis zu {vetoes} Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintAdminLast": "Für {games} Spiele und ein mögliches letztes Spiel brauchst du {needed} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für {games} Spiele und ein mögliches letztes Spiel brauchst du {needed} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintAdminOneLast": "Für 1 Spiel und ein mögliches letztes Spiel brauchst du {needed} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für 1 Spiel und ein mögliches letztes Spiel brauchst du {needed} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt."
     },
     "heading": "Neues Event",
     "nav": "Schritte",
@@ -1458,7 +1457,7 @@
       "vetoes": "Vetos",
       "vetoValue": "{n} pro Partei",
       "pool": "Pool",
-      "poolValue": "{main} Spiel, Tiebreaker {tiebreaker} | {main} Spiele, Tiebreaker {tiebreaker}",
+      "poolValue": "{main} Spiel | {main} Spiele",
       "pointsValue": "{preset} {values}",
       "dates": "Termin"
     },
@@ -1475,7 +1474,6 @@
     "emptyHost": "Noch nicht festgelegt. Format, Spiele und Punkte legst du beim Einrichten fest.",
     "emptyMember": "Noch nicht festgelegt. {host} legt gleich fest, wie gespielt wird.",
     "mainPool": "Spielepool",
-    "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",
     "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.",
     "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",

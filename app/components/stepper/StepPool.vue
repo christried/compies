@@ -2,16 +2,14 @@
 import { Plus, X } from '@lucide/vue'
 import { addPoolGame, settingsOf, togglePoolGame, type EventDraft, type StepLocks } from '~/utils/event-draft'
 import { NO_FILTERS, type GameFilters, type GameView, type PoolGame } from '~~/shared/game'
-import { poolHint, type Pool } from '~~/shared/settings'
+import { hasWheel, poolHint } from '~~/shared/settings'
 
-// The Game pool and the Tiebreaker pool (#146), one component and one markup for both (`kind`); they
-// differ in the heading and list copy, the Tiebreaker's note and the Game pool's „Wird knapp“ hint. The Host picks
-// games in the game browser (#173, its filters are local, never the address) and can make a missing one in a sheet; it
-// lands in the pool being filled, and the wizard's other input stays where it is (the draft lives in the entry page).
-// Empty pools are fine, so the step never blocks. A Host who lost the Host permission (`locks.library` false) may not
-// browse the library: the step says so instead of the browser, and the pool's games stay and can be removed.
+// The Game pool (#146; the Tiebreaker pool is gone, #279). The Host picks games in the game browser (#173, its filters are
+// local, never the address) and can make a missing one in a sheet; it lands in the pool, and the wizard's other input stays
+// where it is (the draft lives in the entry page). Empty pools are fine, so the step never blocks. Under the Lucky Wheel a
+// note says that Bonus Vetoes need a few more games (#279). A Host who lost the Host permission (`locks.library` false) may
+// not browse the library: the step says so instead of the browser, and the pool's games stay and can be removed.
 const props = defineProps<{
-  kind: Pool
   locks?: StepLocks
 }>()
 const draft = defineModel<EventDraft>({ required: true })
@@ -22,19 +20,20 @@ const { toast } = useToast()
 
 useStepBlocker(blocker)
 
-const games = computed(() => draft.value.pools[props.kind])
-const COPY: Record<Pool, { count: string, list: string, note?: string }> = {
-  main: { count: 'stepper.pool.mainCount', list: 'stepper.pool.listMain' },
-  tiebreaker: { count: 'stepper.pool.tiebreakerCount', list: 'stepper.pool.listTiebreaker', note: 'stepper.pool.tiebreakerNote' },
-}
-const copy = computed(() => COPY[props.kind])
+const games = computed(() => draft.value.pools.main)
+const wheel = computed(() => hasWheel(draft.value.settings.selectionMode))
 const library = computed(() => props.locks?.library !== false)
 const filters = ref<GameFilters>({ ...NO_FILTERS })
 const pooled = computed(() => new Set(games.value.map(game => game.id)))
 
 // The setup hint of the Game pool (#146), and on a running Event the Host's live warning (#234) instead: its lock is present there.
-const hint = computed(() => (props.kind === 'main' && props.locks?.poolWarning === undefined ? poolHint(settingsOf(draft.value), games.value.length) : null))
-const liveWarning = computed(() => (props.kind === 'main' ? (props.locks?.poolWarning ?? null) : null))
+const hint = computed(() => (props.locks?.poolWarning === undefined ? poolHint(settingsOf(draft.value), games.value.length) : null))
+const liveWarning = computed(() => props.locks?.poolWarning ?? null)
+// The sentence's keys (#146, #279): the Lucky Wheel's or Host pick's, for one game or more; `Last` when a Tie adds the possible last game.
+const HINT_KEYS = {
+  wheel: { one: 'stepper.pool.hintWheelOne', many: 'stepper.pool.hintWheel', oneLast: 'stepper.pool.hintWheelOneLast', manyLast: 'stepper.pool.hintWheelLast' },
+  admin: { one: 'stepper.pool.hintAdminOne', many: 'stepper.pool.hintAdmin', oneLast: 'stepper.pool.hintAdminOneLast', manyLast: 'stepper.pool.hintAdminLast' },
+} as const
 const hintText = computed(() => {
   const numbers = hint.value
   if (!numbers) return ''
@@ -42,20 +41,19 @@ const hintText = computed(() => {
   // count of 1 has its own key. With the Lucky Wheel the vetoes (Veto allowance × at least 2 teams) and the needed
   // games are always plural.
   const one = numbers.games === 1
-  const key = numbers.vetoes > 0
-    ? (one ? 'stepper.pool.hintWheelOne' : 'stepper.pool.hintWheel')
-    : (one ? 'stepper.pool.hintAdminOne' : 'stepper.pool.hintAdmin')
+  const keys = HINT_KEYS[numbers.vetoes > 0 ? 'wheel' : 'admin']
+  const key = numbers.extra > 0 ? (one ? keys.oneLast : keys.manyLast) : (one ? keys.one : keys.many)
   return t(key, { games: numbers.games, vetoes: numbers.vetoes, needed: numbers.needed, have: numbers.have }, numbers.have)
 })
 
 const creating = ref(false)
 
 function toggle(game: PoolGame) {
-  draft.value = togglePoolGame(draft.value, props.kind, game)
+  draft.value = togglePoolGame(draft.value, game)
 }
 
 async function onSaved(game: GameView) {
-  draft.value = addPoolGame(draft.value, props.kind, game)
+  draft.value = addPoolGame(draft.value, game)
   creating.value = false
   toast({ tone: 'success', text: t('library.saved', { name: game.name }) })
   await refreshGameLibrary()
@@ -77,7 +75,7 @@ async function onSaved(game: GameView) {
 
     <section class="flex flex-col gap-2">
       <h2 class="m-0 font-display text-[22px] leading-tight font-normal">
-        {{ t(copy.count, { n: games.length }, games.length) }}
+        {{ t('stepper.pool.mainCount', { n: games.length }, games.length) }}
       </h2>
       <p
         v-if="games.length === 0"
@@ -87,7 +85,7 @@ async function onSaved(game: GameView) {
       </p>
       <ul
         v-else
-        :aria-label="t(copy.list)"
+        :aria-label="t('stepper.pool.listMain')"
         class="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
       >
         <li
@@ -114,10 +112,10 @@ async function onSaved(game: GameView) {
     </section>
 
     <NoticeBanner
-      v-if="copy.note"
+      v-if="wheel"
       tone="info"
     >
-      {{ t(copy.note) }}
+      {{ t('stepper.pool.bonusNote') }}
     </NoticeBanner>
 
     <GameBrowser

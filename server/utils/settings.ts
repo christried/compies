@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { eventPoolGames, events } from '../db/schema'
 import { parsePoolChange } from '../domain/pools'
-import { POOLS, checkSettingsChange, floorsAt, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
+import { checkSettingsChange, floorsAt, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Place } from '../../shared/board'
 import { moveMember, readSeats } from './board'
 import type { Db } from './db'
@@ -17,7 +17,7 @@ const BENCH: Place = { zone: 'bench' }
 /**
  * The Host's change of an Event's settings and pools (#147, #183), inside the caller's transaction on the locked Event.
  * `settings` is a partial change merged over the stored settings (or the full payload for an Event that is not set
- * up); each pool list that is given replaces that pool. The floors are read here, under the lock. A refusal throws and
+ * up); the Game pool's list, when it is given, replaces the pool (#279). The floors are read here, under the lock. A refusal throws and
  * leaves settings and pools as they were. Returns the settings before and after (`before` is null for an Event that
  * was not set up), so a caller can name what changed (changedKeys). A lowered team count moves the Players of the
  * removed teams to the Bench (#163), in the Host's name, so `publish` and the Host's id come with the change.
@@ -49,15 +49,13 @@ export async function applySettingsChange(
   else if (before === null) throw apiError('invalid_settings')
   else after = before
 
-  const given = POOLS.flatMap((pool) => {
-    const ids = pools[pool]
-    return ids ? [{ pool, ids }] : []
-  })
-  await assertGamesExist(tx, ...given.map(({ ids }) => ids))
+  // The Game pool only (#279): a Tiebreaker row, the 0.7 code's during the switch-over, is never read or replaced here.
+  const main = pools.main
+  if (main !== undefined) await assertGamesExist(tx, main)
   if (change !== undefined) await tx.update(events).set(after).where(eq(events.id, eventRow.id))
-  for (const { pool, ids } of given) {
-    await tx.delete(eventPoolGames).where(and(eq(eventPoolGames.eventId, eventRow.id), eq(eventPoolGames.pool, pool)))
-    if (ids.length > 0) await tx.insert(eventPoolGames).values(ids.map(gameId => ({ eventId: eventRow.id, gameId, pool })))
+  if (main !== undefined) {
+    await tx.delete(eventPoolGames).where(and(eq(eventPoolGames.eventId, eventRow.id), eq(eventPoolGames.pool, 'main')))
+    if (main.length > 0) await tx.insert(eventPoolGames).values(main.map(gameId => ({ eventId: eventRow.id, gameId, pool: 'main' as const })))
   }
   if (before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, now, eventRow.id, after.teamCount, hostId)
   return { before, after }

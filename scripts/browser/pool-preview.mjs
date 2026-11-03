@@ -36,7 +36,7 @@ try {
   const { slug } = await createEvent(host, {
     name: `Pool-Check ${stamp}`,
     settings: { selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null, poolPreview: true },
-    pools: { main: [game.id], tiebreaker: [] },
+    pools: { main: [game.id] },
   })
   await joinEvent(member, slug, host)
   console.log(`Event ${slug}, game ${game.id}`)

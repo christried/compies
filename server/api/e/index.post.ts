@@ -14,14 +14,14 @@ import { assertGamesExist } from '../../utils/pools'
 import { requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
 import { asRecord } from '../../../shared/record'
-import { POOLS, parseSettings } from '../../../shared/settings'
+import { parseSettings } from '../../../shared/settings'
 
 const SLUG_ATTEMPTS = 5
 
 // Create an Event (screen M2). Only Users with the Host permission may create one (ADR 0002).
 // The Event with its settings, its Sessions, its Slots and the Host's membership are written in one transaction.
-// Settings are required (#144): an Event without them is one from before 1.3. The Game pool and the Tiebreaker
-// pool (#146) are optional lists of library game ids, written in the same transaction.
+// Settings are required (#144): an Event without them is one from before 1.3. The Game pool (#146) is an optional list
+// of library game ids, written in the same transaction. A `tiebreaker` list is ignored (#279).
 export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const user = await requireUser(event)
   if (!user.canHost) throw apiError('no_host_permission')
@@ -51,13 +51,13 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   // load by slug, and no one is in its room to tell (#183).
   // eslint-disable-next-line no-restricted-syntax -- creating an Event has no Event to load and no one to publish to
   await db.transaction(async (tx) => {
-    await assertGamesExist(tx, pools.main, pools.tiebreaker)
+    await assertGamesExist(tx, pools.main)
     const [row] = await tx
       .insert(events)
       .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })
       .returning({ id: events.id })
     await tx.insert(sessions).values(startsAt.map(date => ({ eventId: row!.id, startsAt: date })))
-    const poolRows = POOLS.flatMap(pool => pools[pool].map(gameId => ({ eventId: row!.id, gameId, pool })))
+    const poolRows = pools.main.map(gameId => ({ eventId: row!.id, gameId, pool: 'main' as const }))
     if (poolRows.length > 0) await tx.insert(eventPoolGames).values(poolRows)
     await addMember(tx, row!.id, user.id)
     if (input.dateMode === 'poll') {

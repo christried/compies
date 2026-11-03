@@ -148,6 +148,13 @@
       "when": 1793641178129,
       "tag": "0020_coin_toss_session",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793645007590,
+      "tag": "0021_drop_tiebreaker_pools",
+      "breakpoints": true
     }
   ]
 }

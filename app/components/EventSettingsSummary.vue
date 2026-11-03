@@ -6,8 +6,8 @@ import type { EventSettings } from '~~/shared/settings'
 // Termin) that the Fertig screen shows. The words come from app/utils/settings-summary.ts.
 const props = withDefaults(defineProps<{
   settings: EventSettings
-  /** Game pool sizes (#146 passes them). */
-  pools?: { main: number, tiebreaker: number }
+  /** The Game pool's size (#146 passes it; the Tiebreaker pool is gone, #279). */
+  pools?: { main: number }
   /** The Date line, e.g. „Umfrage, 4 Vorschläge“. */
   dates?: string
 }>(), { pools: undefined, dates: undefined })

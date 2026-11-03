@@ -50,7 +50,7 @@ interface Setup {
   phase?: string
   isHost?: boolean
   floors?: SettingsFloors | null
-  pools?: { main: PoolGame[], tiebreaker: PoolGame[] }
+  pools?: { main: PoolGame[] }
   /** The Members with their seats, and the teams of the board (the Event read's `members` and `teams`, #160). */
   members?: MemberView[]
   teams?: BoardTeam[]
@@ -67,7 +67,7 @@ function setUp(setup: Setup = {}) {
     event: { isHost: setup.isHost ?? true, phase: setup.phase ?? 'poll' },
     settings: setup.settings === undefined ? defaultSettings() : setup.settings,
     settingsFloors: setup.floors,
-    pools: setup.pools ?? { main: [], tiebreaker: [] },
+    pools: setup.pools ?? { main: [] },
     members: setup.members,
     teams: setup.teams,
     setGame: setup.setGame,
@@ -132,12 +132,12 @@ describe('the settings editor', () => {
     expect(page.find('form').exists()).toBe(false)
   })
 
-  it('has the six steps of an Event, every one of them a link from the start, and calls itself Einstellungen', async () => {
+  it('has the five steps of an Event, every one of them a link from the start, and calls itself Einstellungen', async () => {
     const { slug } = setUp()
 
     const page = await mountEditor(slug)
 
-    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Tiebreaker-Pool'])
+    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
     expect(page.get('h1').text()).toContain('Wer gegen wen?')
@@ -153,7 +153,7 @@ describe('the settings editor', () => {
   })
 
   it('tells a Host without the Host permission that the library is closed, keeps the pool and asks for no games (#173)', async () => {
-    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart, pong], tiebreaker: [] } })
+    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart, pong] } })
     listed.mockClear()
 
     const page = await mountEditor(slug, false)
@@ -166,15 +166,14 @@ describe('the settings editor', () => {
     expect(page.find('ul[aria-label="Spiele im Pool"]').exists()).toBe(true)
 
     await button(page, 'Pong aus dem Pool nehmen').trigger('click')
-    await goTo(page, 'Tiebreaker-Pool')
     expect(page.find('input[type="search"]').exists()).toBe(false)
     await cta(page).trigger('click')
-    await vi.waitFor(() => expect(patched).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [kart.id], tiebreaker: [] } })))
+    await vi.waitFor(() => expect(patched).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [kart.id] } })))
     expect(listed).not.toHaveBeenCalled()
   })
 
   it('starts from the Event: Team size, Game count, Selection mode with its wheel options, and the pools', async () => {
-    const { slug } = setUp({ settings: wheel, pools: { main: [kart, pong], tiebreaker: [pong] } })
+    const { slug } = setUp({ settings: wheel, pools: { main: [kart, pong] } })
 
     const page = await mountEditor(slug)
     expect(spin(page, 'Spieler pro Team').text()).toBe('4')
@@ -190,18 +189,15 @@ describe('the settings editor', () => {
     await goTo(page, 'Spielepool')
     await settle(page)
     expect(page.text()).toContain('Im Pool: 2 Spiele')
-
-    await goTo(page, 'Tiebreaker-Pool')
-    await settle(page)
-    expect(page.text()).toContain('Tiebreaker-Pool: 1 Spiel')
+    expect(page.text()).not.toContain('Tiebreaker')
   })
 
   it('saves what the Host changed, from the last step, and goes back to the Event with a toast', async () => {
-    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart], tiebreaker: [] } })
+    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart] } })
     const page = await mountEditor(slug)
     await goTo(page, 'Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await settle(page)
     await page.get('ul[aria-label="Bibliothek"]').get('button[aria-label="Pong in den Pool"]').trigger('click')
 
@@ -211,7 +207,7 @@ describe('the settings editor', () => {
     await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
     expect(patched).toHaveBeenCalledWith({
       settings: { ...wheel, gameCount: 8 },
-      pools: { main: [kart.id], tiebreaker: [pong.id] },
+      pools: { main: [kart.id, pong.id] },
     })
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}`))
     expect(shownToasts().map(toast => toast.text)).toContain('Gespeichert.')
@@ -220,15 +216,15 @@ describe('the settings editor', () => {
   // The Event page shows the saved settings at once: the save refreshes the Event's read by its shared key, so the
   // page does not wait for its next 15 s poll (#174). The page's own summary is checked, not the editor's step.
   it('shows the saved settings on the Event page at once, without waiting for the poll', async () => {
-    const { slug, set } = setUp({ settings: wheel, pools: { main: [kart], tiebreaker: [] } })
+    const { slug, set } = setUp({ settings: wheel, pools: { main: [kart] } })
     const page = await mountEditorAndEventPage(slug)
     const eventSettings = () => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'So wird gespielt'))!
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
-    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { main: [kart], tiebreaker: [] } }))
+    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { main: [kart] } }))
     await goTo(page, 'Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await settle(page)
     await cta(page).trigger('click')
 
@@ -241,19 +237,19 @@ describe('the settings editor', () => {
     const page = await mountEditor(slug)
 
     expect(cta(page).text()).toContain('Weiter')
-    for (let step = 0; step < 5; step++) {
+    for (let step = 0; step < 4; step++) {
       await cta(page).trigger('click')
       await vi.waitFor(() => expect(page.find('[aria-busy="true"]').exists()).toBe(false))
     }
 
-    expect(page.get('h1').text()).toContain('Und falls es knapp wird?')
+    expect(page.get('h1').text()).toContain('Welche Spiele kommen in den Pool?')
     expect(cta(page).text()).toContain('Speichern')
   })
 
   it('shows the reason of a refusal in the page and stays', async () => {
     const { slug } = setUp({ refuse: { statusCode: 409, statusMessage: 'setting_locked' } })
     const page = await mountEditor(slug)
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await settle(page)
 
     await cta(page).trigger('click')
@@ -266,7 +262,7 @@ describe('the settings editor', () => {
   it('names a finished Event as the reason when the server refuses with wrong_phase', async () => {
     const { slug } = setUp({ refuse: { statusCode: 409, statusMessage: 'wrong_phase' } })
     const page = await mountEditor(slug)
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await settle(page)
 
     await cta(page).trigger('click')
@@ -476,7 +472,7 @@ describe('the settings editor', () => {
       expect(preview.attributes('aria-checked')).toBe('true')
       expect(preview.attributes('aria-disabled')).toBeUndefined()
       await preview.trigger('click')
-      await goTo(page, 'Tiebreaker-Pool')
+      await goTo(page, 'Spielepool')
       await settle(page)
       await cta(page).trigger('click')
 
@@ -491,7 +487,7 @@ describe('the settings editor', () => {
 
       expect(page.text()).not.toContain(LOCKED)
       await button(page, 'Anzahl Spiele: weniger').trigger('click')
-      await goTo(page, 'Tiebreaker-Pool')
+      await goTo(page, 'Spielepool')
       await settle(page)
       await cta(page).trigger('click')
 
@@ -505,6 +501,29 @@ describe('the settings editor', () => {
 
       expect(page.text()).not.toContain(LOCKED)
       expect(button(page, 'Anzahl Teams: mehr').attributes('aria-disabled')).toBeUndefined()
+    })
+  })
+
+  describe('the Tie hint (#279)', () => {
+    const tieHint = (page: Page) => page.findAll('[role="status"]').find(element => element.text().includes('Gleichstand möglich.'))
+
+    it('shows on the Spiele step at an even Game count, and follows a change of it', async () => {
+      const { slug } = setUp({ settings: defaultSettings() })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spiele')
+      expect(tieHint(page)!.text()).toContain('Das Event kann unentschieden enden.')
+
+      await button(page, 'Anzahl Spiele: weniger').trigger('click')
+      expect(page.get('output').text()).toBe('9')
+      expect(tieHint(page)).toBeUndefined()
+    })
+
+    it('shows on a running Event too', async () => {
+      const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 8 }, phase: 'running' })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spiele')
+
+      expect(tieHint(page)).toBeDefined()
     })
   })
 
@@ -528,6 +547,15 @@ describe('the settings editor', () => {
 
       expect(page.text()).not.toContain('Wird knapp.')
       expect(page.text()).not.toContain('im Pool sind 0.')
+    })
+
+    it('keeps the Bonus Veto note under the Glücksrad next to the live warning', async () => {
+      const { slug } = setUp({ settings: wheel, phase: 'running', setGame: live({ needed: 14, have: 4 }) })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+
+      expect(page.text()).toContain('Plane ein paar Spiele mehr ein, falls du zwischendurch Bonus-Vetos vergibst.')
+      expect(page.text()).toContain('Im schlimmsten Fall brauchst du noch 14 Spiele, übrig sind 4.')
     })
 
     it('keeps the setup hint before the first Session', async () => {
