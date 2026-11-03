@@ -6,9 +6,14 @@
 
 - Beim Einrichten und in den Einstellungen sagt dir die App jetzt, wenn ein Event unentschieden enden kann (bei gerader Spielzahl oder mehr als zwei Teams). Dann entscheidest du, ob es unentschieden endet oder ein letztes Spiel dazukommt. Die Empfehlung für den Spielepool zählt dieses mögliche letzte Spiel mit, und beim Glücksrad erinnert dich ein Hinweis daran, für Bonus-Vetos ein paar Spiele mehr einzuplanen. ([#279](https://github.com/christried/compies/issues/279))
 
+### Geändert
+
+- Ist auf dem Rad kein Spiel mehr, sagt dir der Host-Button „Neu drehen“ jetzt, dass du mit „Nächstes Spiel setzen“ eines aus der Bibliothek setzen kannst. ([#261](https://github.com/christried/compies/issues/261))
+
 ### Behoben
 
 - Steht eine Zahl auf eins, folgt ihr jetzt die Einzahl: „1 Person da“ auf dem Board, „1 Spiel durchsuchen“ in der Bibliothek und „schon 1 Veto eingesetzt“ in den Einstellungen. ([#268](https://github.com/christried/compies/issues/268))
+- Als Host siehst du in den Einstellungen die Sperre von „Rad verdecken“ und den Vetos nicht mehr, wenn das Spiel schon feststeht. ([#261](https://github.com/christried/compies/issues/261))
 
 ### Entfernt
 
