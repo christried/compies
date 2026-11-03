@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventRounds from '~/components/EventRounds.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, EventPools } from '~~/shared/event'
-import type { RoundView, SetGameView } from '~~/shared/stage'
+import type { EndView, RoundView, SetGameView } from '~~/shared/stage'
 import type { GameView, PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
@@ -32,10 +32,10 @@ const round = (id: string, game: PoolGame, notes?: string): RoundView => {
 const pools: EventPools = { main: [halo, kart, pong] }
 const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
-type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[] }
+type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null }
 
 /** A running Event, set up for Host pick: the Host's or a Member's read of it, with these open Rounds. */
-function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams }: Options) {
+function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams, end }: Options) {
   return serve(slug => viewWithSessions(slug, sessions ?? [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
     event: { isHost: host, phase },
     settings: defaultSettings(),
@@ -43,6 +43,7 @@ function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running',
     rounds,
     setGame,
     teams,
+    ...(end === undefined ? {} : { end }),
     pools: host ? pools : null,
   }))
 }
@@ -174,7 +175,7 @@ describe('the open Rounds on the stage', () => {
   })
 
   it('lets a row fade in as a UI element does (04-motion § UI enters: 0.22 s, ease-out) and out faster (0.14 s, ease-in)', async () => {
-    const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: false, putBack: () => Promise.resolve(true), teams: [], pointsTable: null, enterResult: () => Promise.resolve(true) } })
+    const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: false, putBack: () => Promise.resolve(true), teams: [], pointsTable: null, enterResult: () => Promise.resolve(true), end: null } })
 
     const list = rounds.findComponent({ name: 'TransitionGroup' })
     expect(list.exists()).toBe(true)
@@ -213,7 +214,7 @@ describe('entering a Result (#273)', () => {
   })
 
   it('offers the Host no button while there is no Points table to preview', async () => {
-    const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: true, putBack: () => Promise.resolve(true), teams: pair, pointsTable: null, enterResult: () => Promise.resolve(true) } })
+    const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: true, putBack: () => Promise.resolve(true), teams: pair, pointsTable: null, enterResult: () => Promise.resolve(true), end: null } })
 
     expect(rounds.text()).toContain('Zurücklegen')
     expect(rounds.text()).not.toContain('Ergebnis eintragen')
@@ -230,6 +231,45 @@ describe('entering a Result (#273)', () => {
     expect(dialog()!.querySelector('h2')?.textContent).toBe('Ergebnis eintragen')
     expect(dialog()!.textContent).toContain('Kart')
     expect([...dialog()!.querySelectorAll('[data-name]')].map(name => name.textContent)).toEqual(['Wilde Gurken', 'Team Orange'])
+  })
+
+  describe('the sheet\'s kicker (#274)', () => {
+    const kicker = () => [...dialog()!.querySelectorAll('p')].find(line => /^Spiel \d+ von \d+$/.test(line.textContent?.trim() ?? ''))?.textContent?.trim()
+
+    it('is „Spiel {played + 1} von {gameCount}“: the Round being scored gets the next number', async () => {
+      const { slug } = serveRunning({ host: true, teams: pair, rounds: [round('r1', halo)], end: { played: 2, gameCount: 6 } })
+      const stage = await mount(slug)
+
+      await enterButtons(stage)[0]!.trigger('click')
+
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      expect(kicker()).toBe('Spiel 3 von 6')
+    })
+
+    it('moves up when another Result arrives while the sheet is open, and keeps the draft', async () => {
+      const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: true, putBack: () => Promise.resolve(true), teams: pair, pointsTable: defaultSettings().pointsTable, enterResult: () => Promise.resolve(true), end: { played: 0, gameCount: 6 } } })
+      await [...rounds.findAll('button')].find((button: Wrapper) => button.text() === 'Ergebnis eintragen')!.trigger('click')
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      expect(kicker()).toBe('Spiel 1 von 6')
+      dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Nach unten: Wilde Gurken"]')!.click()
+      await flushPromises()
+
+      await rounds.setProps({ end: { played: 1, gameCount: 6 } })
+
+      expect(kicker()).toBe('Spiel 2 von 6')
+      expect([...dialog()!.querySelectorAll('[data-name]')].map(name => name.textContent)).toEqual(['Team Orange', 'Wilde Gurken'])
+      rounds.unmount()
+    })
+
+    it('is absent while the Event read has no end', async () => {
+      const { slug } = serveRunning({ host: true, teams: pair, rounds: [round('r1', halo)], end: null })
+      const stage = await mount(slug)
+
+      await enterButtons(stage)[0]!.trigger('click')
+
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      expect(kicker()).toBeUndefined()
+    })
   })
 
   describe('saving', () => {

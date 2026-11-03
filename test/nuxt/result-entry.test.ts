@@ -18,7 +18,7 @@ const teams = (names: (string | null)[]): BoardTeam[] => names.map((name, index)
 const three = teams(['Wilde Gurken', 'Die Füchse', null])
 const linear3: PointsTable = { preset: 'linear', values: [2, 1, 0] }
 
-type Props = { open?: boolean, teams?: BoardTeam[], pointsTable?: PointsTable, save?: (places: ResultPlace[]) => Promise<boolean> }
+type Props = { open?: boolean, teams?: BoardTeam[], pointsTable?: PointsTable, kicker?: { number: number, total: number } | null, save?: (places: ResultPlace[]) => Promise<boolean> }
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(props: Props = {}) {
@@ -69,6 +69,29 @@ describe('the result sheet', () => {
     expect(entry.findComponent(AppSheet).props('full')).toBe(true)
     expect(sheet().textContent).toContain('Mario Kart')
     expect(sheet().textContent).toContain('Ordne die Parteien per Ziehen am Griff oder mit den Pfeil-Buttons.')
+  })
+
+  describe('the kicker (#274)', () => {
+    const kickerLine = () => [...sheet().querySelectorAll('p')].find(line => line.textContent?.trim().startsWith('Spiel '))
+
+    it('says which game it will be above the game\'s name, when the page knows', async () => {
+      await mount({ kicker: { number: 3, total: 6 } })
+
+      const kicker = kickerLine()
+      expect(kicker?.textContent?.trim()).toBe('Spiel 3 von 6')
+      const name = [...sheet().querySelectorAll('p')].find(line => line.textContent?.trim() === 'Mario Kart')!
+      expect(kicker!.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('shows no such line without a kicker', async () => {
+      await mount()
+      expect(kickerLine()).toBeUndefined()
+      expect(sheet().textContent).not.toContain(' von ')
+
+      page!.unmount()
+      await mount({ kicker: null })
+      expect(kickerLine()).toBeUndefined()
+    })
   })
 
   it('opens with the Parties in team order, Places 1, 2, 3, empty Scores and each row\'s points', async () => {

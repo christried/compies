@@ -66,8 +66,8 @@ export default withNuxt(
     rules: { 'vuejs-accessibility/label-has-for': ['error', { required: { some: ['nesting', 'id'] } }] },
   },
   {
-    // The mascot keeps its one-word name from the design handoff.
-    files: ['app/components/Compibert.vue'],
+    // The mascot and the Standings keep their one-word names from the design handoff.
+    files: ['app/components/Compibert.vue', 'app/components/Leaderboard.vue'],
     rules: { 'vue/multi-word-component-names': 'off' },
   },
 )

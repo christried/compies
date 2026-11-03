@@ -114,7 +114,7 @@ describe('the live Event page', () => {
 
     await vi.waitFor(() => expect(page.find('[role="log"]').text()).toContain('Larsi ist dem Event beigetreten'))
     expect(page.find('[role="tabpanel"] [role="log"]').exists()).toBe(true)
-    expect(page.get('[role="tab"]').text()).toBe('Aktivität')
+    expect(page.get('[role="tab"][aria-selected="true"]').text()).toBe('Aktivität')
     expect(sockets).toHaveLength(1)
   })
 

@@ -514,6 +514,7 @@
   },
   "result": {
     "title": "Ergebnis eintragen",
+    "kicker": "Spiel {n} von {total}",
     "correction": "Korrektur, Spiel {n}",
     "cancelCorrection": "Korrektur abbrechen",
     "allPlayed": "Alle Spiele gespielt",
@@ -537,6 +538,10 @@
   },
   "table": {
     "title": "Tabelle",
+    "empty": "Noch kein Ergebnis. Sobald der Host eins einträgt, steht hier die Tabelle.",
+    "colRank": "Rang",
+    "colParty": "Partei",
+    "colPoints": "Punkte",
     "after": "Nach Spiel {n} von {total}",
     "games": "Spiele",
     "fewer": "Weniger Spiele",
@@ -551,6 +556,7 @@
   },
   "history": {
     "title": "Spielverlauf",
+    "wonBy": "Gewonnen von",
     "correct": "Korrigieren",
     "corrected": "korrigiert",
     "empty": "Noch kein Spiel gespielt."

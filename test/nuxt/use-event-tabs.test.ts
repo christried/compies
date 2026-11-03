@@ -41,12 +41,36 @@ afterEach(() => {
 })
 
 describe('useEventTabs', () => {
-  it('lists the Event tab and the Activity tab on a phone, and the Activity tab in the side panel', async () => {
+  it('lists Event, Tabelle and Aktivität on a phone, and Tabelle and Aktivität in the side panel (#274)', async () => {
     stubScreen(false)
     const { tabs } = await setUp()
 
-    expect(tabs().tabs.value.map(item => item.key)).toEqual(['event', 'activity'])
-    expect(tabs().panelTabs.value.map(item => item.key)).toEqual(['activity'])
+    expect(tabs().tabs.value.map(item => item.key)).toEqual(['event', 'standings', 'activity'])
+    expect(tabs().tabs.value.map(item => item.label)).toEqual(['Event', 'Tabelle', 'Aktivität'])
+    expect(tabs().panelTabs.value.map(item => item.key)).toEqual(['standings', 'activity'])
+  })
+
+  it('opens the side panel on the feed, as in 0.7 (#274)', async () => {
+    stubScreen(true)
+    const { tabs } = await setUp()
+
+    expect(tabs().panelTab.value).toBe('activity')
+  })
+
+  it('selects the Tabelle view without clearing the unread count of the feed, and gives it no badge (#274)', async () => {
+    stubScreen(false)
+    const { room, tabs } = await setUp()
+
+    room.fire('activity.added')
+    room.fire('activity.added')
+    tabs().selectView('standings')
+    room.fire('activity.added')
+
+    expect(tabs().activeView.value).toBe('standings')
+    expect(tabs().unread.value).toBe(3)
+    expect(tabs().tabs.value[1]).toMatchObject({ key: 'standings', current: true })
+    expect(tabs().tabs.value[1]).not.toHaveProperty('badge')
+    expect(tabs().tabs.value[2]).toMatchObject({ key: 'activity', badge: 3, current: false })
   })
 
   it('counts what the feed receives while the Event view is shown, and shows it as a badge', async () => {
@@ -57,8 +81,8 @@ describe('useEventTabs', () => {
     room.fire('activity.added')
 
     expect(tabs().unread.value).toBe(2)
-    expect(tabs().tabs.value[1]).toMatchObject({ key: 'activity', badge: 2, current: false })
-    expect(tabs().tabs.value[1]!.ariaLabel).toMatch(/2/)
+    expect(tabs().tabs.value[2]).toMatchObject({ key: 'activity', badge: 2, current: false })
+    expect(tabs().tabs.value[2]!.ariaLabel).toMatch(/2/)
   })
 
   it('stops counting while the Activity view is shown, and clears the count when it is selected', async () => {
@@ -70,7 +94,7 @@ describe('useEventTabs', () => {
     room.fire('activity.added')
 
     expect(tabs().activeView.value).toBe('activity')
-    expect(tabs().tabs.value[1]).toMatchObject({ badge: 0, current: true, ariaLabel: undefined })
+    expect(tabs().tabs.value[2]).toMatchObject({ badge: 0, current: true, ariaLabel: undefined })
 
     tabs().selectView('event')
     room.fire('activity.added')
