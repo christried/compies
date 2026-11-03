@@ -5,6 +5,7 @@ import getActivity from '../../server/api/e/[slug]/activity.get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import putBackRound from '../../server/api/e/[slug]/rounds/[id].delete'
+import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
 import setRound from '../../server/api/e/[slug]/rounds/index.post'
 import startSession from '../../server/api/e/[slug]/sessions/start.post'
 import changeSettings from '../../server/api/e/[slug]/settings.patch'
@@ -61,6 +62,7 @@ describe('Pool preview secrecy (#225)', () => {
       'POST /api/e/:slug/sessions/start': startSession,
       'POST /api/e/:slug/rounds': setRound,
       'DELETE /api/e/:slug/rounds/:id': putBackRound,
+      'PUT /api/e/:slug/rounds/:id/result': putResult,
       'POST /api/invite/:invite': joinInvite,
       'POST /api/games': createGame,
       'PUT /api/games/:id/image': putImage,
@@ -328,6 +330,23 @@ describe('Pool preview secrecy (#225)', () => {
       expectNone(got, [alpha, beta, gamma])
       expect((await fetchImage(library, playerCookie)).status).toBe(200)
       for (const game of [alpha, beta, gamma]) expect((await fetchImage(game, playerCookie)).status).toBe(404)
+    })
+
+    it('names the set game in the Result a Player reads, and no other game of the pools (#273)', async () => {
+      const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
+      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+
+      const entered = await request(`/api/e/${slug}/rounds/${roundId}/result`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
+        body: JSON.stringify({ places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] }),
+      })
+      expect(entered.status).toBe(200)
+
+      const got = await whatThePlayerGets(slug, eventId)
+      expect(got.feed).toContain('Alpha Arena')
+      expectNone(got, [alpha], game => [game.notes])
+      expectNone(got, [beta, gamma, library])
     })
 
     it('reveals nothing more when the Round is put back', async () => {

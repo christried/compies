@@ -144,6 +144,10 @@ describe('nextRoundNumber', () => {
     expect(nextRoundNumber([1, 2, null])).toBe(3)
     expect(nextRoundNumber([3, null, 1])).toBe(4)
   })
+
+  it('numbers the 30th Round of an Event, the most a Game count allows (GAME_COUNT_MAX)', () => {
+    expect(nextRoundNumber(Array.from({ length: 29 }, (_, index) => index + 1))).toBe(30)
+  })
 })
 
 describe('resultRejection', () => {
