@@ -2,14 +2,15 @@
 import type { BoardTeam } from '~~/shared/event'
 import type { ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
-import type { RoundView } from '~~/shared/stage'
+import type { EndView, RoundView } from '~~/shared/stage'
 
 // The open Rounds on the stage (#228, 11-event-seite § EventPage, screen 15): every Round whose game is set and not put back,
 // as a GameCard row with „wird gespielt“, in the order they started. An open Round has no Result and so no number (the number
 // comes with the Result, #273). Everyone sees the game's name, picture and player count; the Host also gets its Game notes, open,
 // „Ergebnis eintragen“, which opens the result sheet for that Round (#273), and „Zurücklegen“ as a hold, which removes the Round and returns
 // a pool game to the pool. Everyone else reads under the card that the Host enters the Result. The sheet closes when its Round leaves the
-// list (a Result from another tab, or a refetch after a refusal). Nothing renders without an open Round.
+// list (a Result from another tab, or a refetch after a refusal). The sheet's kicker is „Spiel {played + 1} von {gameCount}“ from `end` (#274):
+// a Round gets the highest number + 1 when its Result is entered and numbers have no gaps, so the Round being scored is Spiel `played + 1`. Nothing renders without an open Round.
 // Motion: a row enters as a UI element does (04-motion § UI enters, banner: opacity 0.22 s `ease-out`) and leaves faster
 // (0.14 s `ease-in`); reduced motion keeps the fade, which is all there is.
 const props = defineProps<{
@@ -23,6 +24,8 @@ const props = defineProps<{
   pointsTable: PointsTable | null
   /** Enters the Result of a Round; resolves to whether the server took it (the sheet closes then). */
   enterResult: (roundId: string, places: ResultPlace[]) => Promise<boolean>
+  /** How far the Event is (#274); null while it is not set up: the sheet then has no kicker. */
+  end: EndView | null
 }>()
 
 const { t } = useI18n()
@@ -106,6 +109,7 @@ watch(resultRound, (round) => {
       v-if="isHost && pointsTable"
       :open="resultRound !== null"
       :game="resultRound?.game ?? null"
+      :kicker="end ? { number: end.played + 1, total: end.gameCount } : null"
       :teams="teams"
       :points-table="pointsTable"
       :save="places => enterResult(resultFor!, places)"

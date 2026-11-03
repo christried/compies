@@ -259,6 +259,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :teams="data.teams"
           :points-table="data.settings?.pointsTable ?? null"
           :enter-result="actions.enterResult"
+          :end="data.end"
         />
 
         <EventCountdown

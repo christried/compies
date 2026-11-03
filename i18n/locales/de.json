@@ -514,6 +514,7 @@
   },
   "result": {
     "title": "Ergebnis eintragen",
+    "kicker": "Spiel {n} von {total}",
     "correction": "Korrektur, Spiel {n}",
     "cancelCorrection": "Korrektur abbrechen",
     "allPlayed": "Alle Spiele gespielt",

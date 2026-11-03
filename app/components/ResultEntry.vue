@@ -14,16 +14,18 @@ import { cutToCharacters } from '~~/shared/text'
 // Each row shows the points it earns by the Points table. Nothing is sent before „Ergebnis speichern“; closing discards the draft, and
 // opening starts again from team order. The save is the page's (EventRounds); it says whether the server took the Result, and only then the sheet
 // closes, so a refusal keeps the order and the Scores. FFA and the Correction are not built here (#275 does the latter).
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   open: boolean
   /** The game of the Round, shown above the rows; null while no Round is chosen. */
   game: RoundGame | null
+  /** Which game of the Event this will be, as „Spiel 3 von 6“ above the game's name (#274); null or missing shows no line. */
+  kicker?: { number: number, total: number } | null
   /** The Parties, in team order. */
   teams: BoardTeam[]
   pointsTable: PointsTable
   /** Sends the Places; resolves to whether the server took them. */
   save: (places: ResultPlace[]) => Promise<boolean>
-}>()
+}>(), { kicker: null })
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -116,6 +118,12 @@ async function onSave() {
     @close="emit('close')"
   >
     <div class="flex flex-col gap-1">
+      <p
+        v-if="kicker"
+        class="m-0 text-[13px] font-bold text-ink-2"
+      >
+        {{ t('result.kicker', { n: kicker.number, total: kicker.total }) }}
+      </p>
       <p
         v-if="game"
         class="m-0 font-display text-[22px] leading-tight"

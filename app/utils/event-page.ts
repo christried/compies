@@ -7,7 +7,8 @@ import type { Translate } from './settings-summary'
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too. Adding a block, a dock action or a
 // page state touches this one list (review 1.4 A4, #228): the state says which blocks the stage shows and in which order.
 
-export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'end'> & { event: Pick<EventView['event'], 'phase'> }
+// `end` is optional: the Host dock reads this state too and has no use for the Standings (#274).
+export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin'> & Partial<Pick<EventView, 'end'>> & { event: Pick<EventView['event'], 'phase'> }
 
 /**
  * Which data blocks the stage has, from the view (#256): a block that shows data is listed only while its data is there, so the
