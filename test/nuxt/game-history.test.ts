@@ -1,4 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import GameHistory from '~/components/GameHistory.vue'
 import type { BoardTeam } from '~~/shared/event'
@@ -22,7 +23,7 @@ const standard = (number: number, name: string, scores: (string | null)[] = [nul
   result(number, name, [line(1, 1, 2, scores[0]), line(2, 2, 1, scores[1]), line(3, 3, 0, scores[2])], corrected)
 
 type Props = { results?: ResultView[], open?: RoundView[], teams?: BoardTeam[] }
-let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
+let page: VueWrapper | undefined
 
 async function mount(props: Props = {}) {
   page = await mountSuspended(GameHistory, { props: { results: [standard(1, 'Halo')], open: [], teams: three, ...props } })

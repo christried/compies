@@ -1,4 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import EventStandingsView from '~/components/EventStandingsView.vue'
 import StandingsTab from '~/components/StandingsTab.vue'
@@ -21,7 +22,7 @@ const view = {
   teams,
 }
 
-let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
+let page: VueWrapper | undefined
 afterEach(() => {
   page?.unmount()
   page = undefined
@@ -58,7 +59,7 @@ describe('the phone\'s Tabelle view', () => {
     page = await mountSuspended(EventStandingsView, { props: { view } })
 
     expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Tabelle'])
-    expect(page.get('table').exists()).toBe(true)
+    expect(page.find('table').exists()).toBe(true)
     expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
   })
 })

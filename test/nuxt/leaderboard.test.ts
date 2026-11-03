@@ -1,4 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import Leaderboard from '~/components/Leaderboard.vue'
 import type { BoardTeam } from '~~/shared/event'
@@ -14,7 +15,7 @@ const end = (played: number, gameCount = 6): EndView => ({ played, gameCount })
 const standing = (team: number, rank: number, points: number): StandingView => ({ team, rank, points })
 
 type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean }
-let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
+let page: VueWrapper | undefined
 
 async function mount(props: Props = {}) {
   page = await mountSuspended(Leaderboard, { props: { standings: [standing(2, 1, 8), standing(1, 2, 3), standing(3, 3, 1)], end: end(3), teams: three, ...props } })
