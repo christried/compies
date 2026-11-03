@@ -535,6 +535,18 @@ describe('Hidden wheel secrecy (#148)', () => {
       expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
     })
 
+    it('names only the set game in the Results a Player reads (#274), and no pool game in the Standings or the end', async () => {
+      const { slug, games, set, player2Cookie } = await lobbyFlow()
+      const view = JSON.parse(await rawRead(player2Cookie, slug)) as EventView
+      const raw = JSON.stringify({ results: view.results, standings: view.standings, end: view.end })
+
+      expect(view.results).toMatchObject([{ number: 1, game: { id: set.id, name: 'Foxtrot Fest' } }])
+      expect(view.standings?.map(row => row.team)).toEqual([1, 2])
+      expect(view.end).toEqual({ played: 1, gameCount: 6 })
+      // The Hidden wheel's spin is still unstopped for Player 2: its game is in none of the three fields.
+      expectNoTrace('the results, the Standings and the end of Player 2', raw, games)
+    })
+
     it('shows the pools to a Player once the Hidden wheel is off and the Pool preview on, and the room still carries no game', async () => {
       const { slug, eventId, games } = await lobbyFlow()
       const [a, , , d] = games
