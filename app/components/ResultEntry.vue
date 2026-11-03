@@ -146,7 +146,7 @@ async function onSave() {
           <button
             type="button"
             role="switch"
-            :aria-checked="String(draft.level[index])"
+            :aria-checked="draft.level[index] ? 'true' : 'false'"
             :aria-label="t('result.tiedAria', { team: nameOf(team), other: nameOf(draft.order[index - 1]!) })"
             class="hit-44 inline-flex h-[26px] items-center gap-1 rounded-pill border-2 border-line px-2.5 text-[12px] font-bold"
             :class="draft.level[index] ? 'bg-primary text-on-primary' : 'border-dashed bg-surface text-ink-2'"

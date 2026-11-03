@@ -1,3 +1,4 @@
+import { rowIndexAt } from '~/utils/row-drag'
 import { DRAG_DISTANCE, LONG_PRESS_MS, SCROLL_DISTANCE } from './useBoardDrag'
 
 // Picking up a row of a vertical list with pointer events (#273, the result sheet). useBoardDrag drops a person on a named zone and knows
@@ -5,12 +6,6 @@ import { DRAG_DISTANCE, LONG_PRESS_MS, SCROLL_DISTANCE } from './useBoardDrag'
 // pixels, a finger after a long press so that scrolling never drags (a finger that moves before that is scrolling and lets go), and
 // Escape cancels. While held, the row follows the pointer (`dragging.dy`) and the list stays as it is; `dropIndex` is the row under the
 // pointer, and letting go calls `move(from, dropIndex)`. There is no auto-scroll at the list's edge: the arrow buttons are the way there.
-
-/** The row a point at `y` is over: how many row middles lie above it, clamped to the list (0 to the last row). */
-export function rowIndexAt(y: number, middles: readonly number[]): number {
-  const above = middles.filter(middle => middle < y).length
-  return Math.min(above, Math.max(middles.length - 1, 0))
-}
 
 export interface RowDragOptions {
   /** How many rows the list has; with fewer than two there is nothing to move. */

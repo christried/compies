@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { FeedSession } from '~/utils/activity'
+import type { BoardTeam } from '~~/shared/event'
 
 // A phone's second view of the Event page (11-event-seite § TabBar, #166): the Activity feed alone, under its title, with the place
 // of the page's Head taken by that title. The page's tab bar switches to it (useEventTabs); the feed is the one of the side panel.
 defineProps<{
+  /** The Event's teams, for a Result's sentence (#273). */
+  teams?: BoardTeam[]
   slug: string
   room: Pick<ReturnType<typeof useEventRoom>, 'state' | 'on'>
   sessions: FeedSession[]
@@ -33,6 +36,7 @@ const { t } = useI18n()
         :sessions="sessions"
         :next-number="nextNumber"
         :refresh-tick="refreshTick"
+        :teams="teams"
       />
     </div>
   </section>

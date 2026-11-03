@@ -198,7 +198,9 @@ describe('the result sheet', () => {
 
   it('sends once when „Ergebnis speichern“ is pressed again while the save is pending, then closes on true', async () => {
     let answer: (taken: boolean) => void = () => undefined
-    const save = vi.fn(() => new Promise<boolean>((resolve) => { answer = resolve }))
+    const save = vi.fn(() => new Promise<boolean>((resolve) => {
+      answer = resolve
+    }))
     const entry = await mount({ save })
 
     await click(saveButton())

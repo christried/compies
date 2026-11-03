@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { draftPlaces, draftPoints, moveRow, newResultDraft, setScore, toggleLevel, type ResultDraft } from '../../app/utils/result-draft'
-import { rowIndexAt } from '../../app/composables/useRowDrag'
+import { rowIndexAt } from '../../app/utils/row-drag'
 
 // The result sheet's state rules (#273): the order of the Parties, which neighbours are level, the typed Scores, and what they make
 // of them (the Places to send and the points to preview). Pure, so the sheet only draws them.
