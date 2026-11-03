@@ -37,4 +37,12 @@ describe('clipPosition', () => {
     expect(clipPosition(clip, STOP + 30_000)).toBeNull()
     expect(clipPosition(clip, STOP + 45_000)).toBeNull()
   })
+
+  it('decides the start and the end the same for a number, a Date and an ISO string', () => {
+    const at = (ms: number) => [ms, new Date(ms), new Date(ms).toISOString()]
+    for (const now of at(STOP - 1)) expect(clipPosition(clip, now)).toBeNull()
+    for (const now of at(STOP)) expect(clipPosition(clip, now)).toBe(90)
+    for (const now of at(STOP + 30_000 - 1)) expect(clipPosition(clip, now)).toBeCloseTo(119.999, 3)
+    for (const now of at(STOP + 30_000)) expect(clipPosition(clip, now)).toBeNull()
+  })
 })

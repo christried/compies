@@ -3,6 +3,7 @@ import { countdowns } from '../db/schema'
 import { countdownRejection, remainingMsAt, type CountdownAction } from '../../shared/countdown'
 import { runningOf } from '../../shared/session-state'
 import type { CountdownView } from '../../shared/stage'
+import { isoInstant } from '../../shared/activity'
 import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange } from './event-access'
@@ -22,7 +23,7 @@ export async function readCountdown(db: Db, eventId: string): Promise<CountdownR
 
 /** The Countdown as the Event read and the change answers send it: the stored facts; the time left is computed from them. */
 export function countdownView(row: Pick<CountdownRow, 'durationMs' | 'remainingMs' | 'startedAt'>): CountdownView {
-  return { durationMs: row.durationMs, remainingMs: row.remainingMs, startedAt: row.startedAt?.toISOString() ?? null }
+  return { durationMs: row.durationMs, remainingMs: row.remainingMs, startedAt: row.startedAt ? isoInstant(row.startedAt) : null }
 }
 
 type Change = Pick<EventChange, 'tx' | 'eventRow' | 'now'>
@@ -36,7 +37,7 @@ async function requireRunningSession({ tx, eventRow }: Change): Promise<void> {
 export async function setCountdown(change: Change, seconds: number): Promise<CountdownView> {
   await requireRunningSession(change)
   const current = await readCountdown(change.tx, change.eventRow.id)
-  const rejection = countdownRejection('set', current ?? null, change.now.getTime())
+  const rejection = countdownRejection('set', current ?? null, change.now)
   if (rejection) throw apiError(rejection)
 
   const durationMs = seconds * 1000
@@ -67,7 +68,7 @@ async function changeRunning(action: Exclude<CountdownAction, 'set'>, change: Ch
   const { now } = change
   await requireRunningSession(change)
   const row = await readCountdown(change.tx, change.eventRow.id)
-  const rejection = countdownRejection(action, row ?? null, now.getTime())
+  const rejection = countdownRejection(action, row ?? null, now)
   if (rejection) throw apiError(rejection)
 
   const next = action === 'start'

@@ -67,9 +67,9 @@ export function remainingMsAt(c: CountdownFacts, nowMs: number): number {
  * Why the Host's change is refused, or null when it may run (spec #218 § Countdown). `c` is null while the Event has no
  * Countdown. `set` makes one from nothing; `reset` is always allowed once one exists. Start also resumes a paused one.
  */
-export function countdownRejection(action: CountdownAction, c: CountdownFacts | null, nowMs: number): CountdownRejection | null {
+export function countdownRejection(action: CountdownAction, c: CountdownFacts | null, now: Instant): CountdownRejection | null {
   if (c === null) return action === 'set' ? null : 'no_countdown'
-  const state = countdownState(c, nowMs)
+  const state = countdownState(c, msOf(now))
   switch (action) {
     case 'start':
       if (state === 'running') return 'countdown_running'

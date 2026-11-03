@@ -11,11 +11,12 @@ export function clipWindow(draw: { stopAt: Instant }, game: { clipLength: number
 }
 
 /**
- * The second of the video to play at `nowMs` (epoch ms): the game's start second plus the time since the clip began, so a late
+ * The second of the video to play at `now`: the game's start second plus the time since the clip began, so a late
  * joiner lands where the others are. Null before the clip starts and from its end on.
  */
-export function clipPosition(clip: { startAt: Instant, endsAt: Instant, game: { clipStart: number } }, nowMs: number): number | null {
+export function clipPosition(clip: { startAt: Instant, endsAt: Instant, game: { clipStart: number } }, now: Instant): number | null {
+  const at = msOf(now)
   const startAt = msOf(clip.startAt)
-  if (nowMs < startAt || nowMs >= msOf(clip.endsAt)) return null
-  return clip.game.clipStart + (nowMs - startAt) / 1000
+  if (at < startAt || at >= msOf(clip.endsAt)) return null
+  return clip.game.clipStart + (at - startAt) / 1000
 }

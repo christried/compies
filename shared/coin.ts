@@ -30,13 +30,14 @@ export interface CoinInput {
   sessions: readonly SessionTimes[]
   /** The Event's latest toss, or null before the first one: one coin at a time. */
   latest: CoinToss | null
-  nowMs: number
+  /** The instant of the check (ADR 0013: from Nuxt); epoch ms, a Date or an ISO string. */
+  now: Instant
 }
 
 /** The reason the coin cannot be tossed now, or null when it can, checked in the order of CoinRejection. */
-export function coinRejection({ isHost, sessions, latest, nowMs }: CoinInput): CoinRejection | null {
+export function coinRejection({ isHost, sessions, latest, now }: CoinInput): CoinRejection | null {
   if (!isHost) return 'not_host'
   if (!runningOf(sessions)) return 'no_running_session'
-  if (latest && !coinLanded(latest, nowMs)) return 'coin_in_air'
+  if (latest && !coinLanded(latest, msOf(now))) return 'coin_in_air'
   return null
 }
