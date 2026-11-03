@@ -6,6 +6,7 @@ import { characterCount } from './text'
 import type { Phase } from './event'
 import type { PointsTable } from './settings'
 import { isOpen, type RoundFacts } from './rounds'
+import type { StandingView } from './stage'
 
 /** The longest Score: 7 characters as the User sees them (graphemes, the rule of #76). */
 export const SCORE_MAX = 7
@@ -68,6 +69,31 @@ export function placesFromOrder(order: readonly number[], level: readonly boolea
     places.push({ team, place })
   })
   return places
+}
+
+/**
+ * Each Party's points over all Results, index 0 = team 1: the sum of the points of its Place in every Result. A Place of a team beyond `teamCount` counts for nobody.
+ */
+export function totalPoints(results: readonly (readonly Pick<ResultPlace, 'team' | 'place'>[])[], table: Pick<PointsTable, 'values'>, teamCount: number): number[] {
+  const points = Array.from({ length: teamCount }, () => 0)
+  for (const places of results) {
+    for (const entry of places) {
+      if (entry.team >= 1 && entry.team <= teamCount) points[entry.team - 1]! += pointsForPlace(entry.place, table)
+    }
+  }
+  return points
+}
+
+/**
+ * The Standings (GLOSSARY: Standings) from every Party's points (index 0 = team 1): the rank is 1 + the number of Parties with MORE points
+ * (so equal points share a rank, and the next rank is skipped: 1, 1, 3), and the rows are sorted by points descending, then team ascending.
+ * Nothing else orders them. The input is not changed.
+ */
+export function standingsOf(points: readonly number[]): StandingView[] {
+  return points
+    .map((value, index) => ({ team: index + 1, points: value }))
+    .sort((a, b) => b.points - a.points || a.team - b.team)
+    .map(row => ({ team: row.team, rank: 1 + points.filter(value => value > row.points).length, points: row.points }))
 }
 
 /** The team positions on Place 1, ascending (the feed's `first`). */

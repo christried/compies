@@ -139,3 +139,18 @@ export interface ClipSkipped { drawId: string }
 export interface RoundPutBack { roundId: string }
 /** What `PUT /api/e/:slug/rounds/:id/result` returns: the Round and the number it got (#273). */
 export interface ResultEntered { roundId: string, number: number }
+
+/** One Party's line in a Round's Result, as every Member reads it (#274): its Place, the points that Place earned by the Event's Points table, its Score (null = none). */
+export interface ResultLineView { team: number, place: number, points: number, score: string | null }
+
+/**
+ * A Round with a Result (#274, GLOSSARY: Result): its number, the face of its game (the same card an open Round shows), every Party's line
+ * in Place order (Parties on a Shared place by team), whether it was corrected (`correctedAt` is set; false until #275), and when the Result was entered (ISO).
+ */
+export interface ResultView { roundId: string, number: number, game: RoundGame, places: ResultLineView[], corrected: boolean, resultAt: string }
+
+/** A Party's row in the Standings (#274): its team position, its rank (1 + the Parties with more points, so equal points share a rank) and its points. */
+export interface StandingView { team: number, rank: number, points: number }
+
+/** How far the Event is (#274): the Rounds with a Result out of the Game count. #277 adds `complete` and `tie`. */
+export interface EndView { played: number, gameCount: number }
