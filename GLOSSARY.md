@@ -185,7 +185,7 @@ One try at a Round's game: a spin of the Lucky Wheel or a game the Host sets. It
 _Avoid_: Spin (a spin is only one kind of Draw), pick, roll
 
 **Veto window**:
-The 60 seconds after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session (UI: Veto-Fenster).
+The 60 seconds after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster).
 _Avoid_: Veto round, voting time, grace period
 
 **Clip**:
@@ -223,7 +223,7 @@ One of the games an Event plays. It begins with a spin or with the Host setting 
 _Avoid_: Match, game (alone), Session
 
 **Coin flip**:
-A coin the Host tosses at any time during a running Session; the server decides the side, and every Member sees the same toss at the same moment (UI: Münzwurf).
+A coin the Host tosses at any time during a running Session, once the previous toss has landed; the server decides the side, and every Member sees the same toss at the same moment. The last toss stays on the stage until the next one or the end of its Session (UI: Münzwurf).
 _Avoid_: Coin toss, random pick
 
 **Countdown**:
