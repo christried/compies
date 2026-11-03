@@ -1,5 +1,6 @@
 import { desc, eq } from 'drizzle-orm'
 import { draws, games, rounds } from '../db/schema'
+import { isoInstant } from '../../shared/activity'
 import { clipWindow } from '../../shared/clip'
 import type { ClipSkipped, ClipView } from '../../shared/stage'
 import { runningOf } from '../../shared/session-state'
@@ -30,7 +31,7 @@ export async function readClip(db: Db, eventId: string, sessions: readonly Sessi
   if (!latest || latest.draw.clipSkippedAt !== null || latest.putBackAt !== null) return null
   const window = clipWindow(latest.draw, latest.game)
   if (now.getTime() >= window.endsAt) return null
-  return { drawId: latest.draw.id, startAt: new Date(window.startAt).toISOString(), endsAt: new Date(window.endsAt).toISOString(), game: roundGameView(latest.game) }
+  return { drawId: latest.draw.id, startAt: isoInstant(new Date(window.startAt)), endsAt: isoInstant(new Date(window.endsAt)), game: roundGameView(latest.game) }
 }
 
 type Change = Pick<EventChange, 'tx' | 'eventRow' | 'now'>

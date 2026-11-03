@@ -3,7 +3,7 @@
 // the rules and the client shows the same facts. The stored row is its duration plus either its start instant (running) or
 // its remaining time (paused); the end of a running one is `startedAt + remainingMs` (ADR 0013: the instants come from Nuxt).
 
-import type { Instant } from './session-state'
+import { msOf, type Instant } from './instant'
 
 /** The shortest Countdown the Host can set, in seconds (spec #218: 5 s). */
 export const COUNTDOWN_MIN_S = 5
@@ -29,8 +29,6 @@ export type CountdownCommand = Exclude<CountdownAction, 'set'>
 
 /** Why a change is refused: no Countdown to change, one that runs, one that ended (start only), or one that does not run (pause only). */
 export type CountdownRejection = 'no_countdown' | 'countdown_running' | 'countdown_ended' | 'countdown_not_running'
-
-const msOf = (at: Instant): number => (typeof at === 'number' ? at : new Date(at).getTime())
 
 /** The instant a started Countdown ends, in epoch ms: its start plus the time it was started with. */
 function endsAtMs(startedAt: Instant, remainingMs: number): number {
@@ -69,9 +67,9 @@ export function remainingMsAt(c: CountdownFacts, nowMs: number): number {
  * Why the Host's change is refused, or null when it may run (spec #218 § Countdown). `c` is null while the Event has no
  * Countdown. `set` makes one from nothing; `reset` is always allowed once one exists. Start also resumes a paused one.
  */
-export function countdownRejection(action: CountdownAction, c: CountdownFacts | null, nowMs: number): CountdownRejection | null {
+export function countdownRejection(action: CountdownAction, c: CountdownFacts | null, now: Instant): CountdownRejection | null {
   if (c === null) return action === 'set' ? null : 'no_countdown'
-  const state = countdownState(c, nowMs)
+  const state = countdownState(c, msOf(now))
   switch (action) {
     case 'start':
       if (state === 'running') return 'countdown_running'

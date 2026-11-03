@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, headerPill, pagePill, pollingNumber, seatNote, shownSessionNumbers, teamsStay, type PageInput } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, headerPill, pagePill, pollingNumber, seatNote, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn } from '../../app/utils/event-page'
 import type { BoardTeam, MemberView } from '../../shared/event'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
@@ -247,6 +247,22 @@ const hostView = (fields: Partial<MemberView> & Pick<MemberView, 'zone'>, teams:
   viewerId: HOST_ID,
   teams,
   event: { isHost: true },
+})
+
+// Which page kinds have started the first Session (#164) and which ones show the notice about uneven teams (#166).
+describe('startedIn and unevenNoticeIn', () => {
+  it.each([
+    // kind, started, uneven notice
+    ['setup', false, true],
+    ['poll', false, true],
+    ['teams', false, true],
+    ['running', true, false],
+    ['between', true, true],
+    ['done', true, false],
+  ] as const)('the %s page: started %s, uneven notice %s', (kind, started, uneven) => {
+    expect(startedIn(kind)).toBe(started)
+    expect(unevenNoticeIn(kind)).toBe(uneven)
+  })
 })
 
 describe('seatNote', () => {

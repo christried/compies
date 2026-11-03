@@ -25,7 +25,7 @@ async function readLatestToss(db: Db, sessionId: string): Promise<CoinRow | unde
 
 /** The toss as the Event read sends it (ISO instants). */
 export function coinView(row: CoinRow): CoinView {
-  return { id: row.id, side: row.side, startedAt: row.startedAt.toISOString(), landsAt: row.landsAt.toISOString() }
+  return { id: row.id, side: row.side, startedAt: isoInstant(row.startedAt), landsAt: isoInstant(row.landsAt) }
 }
 
 type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
@@ -45,7 +45,7 @@ export async function tossCoin({ tx, eventRow, user, publish, now }: Change, ran
     isHost: eventRow.hostId === user.id,
     sessions,
     latest: latest ?? null,
-    nowMs: now.getTime(),
+    now,
   })
   if (rejection) throw apiError(rejection)
 

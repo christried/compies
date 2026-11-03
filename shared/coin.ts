@@ -3,7 +3,8 @@
 // rules and the client shows the same facts. Instants are epoch ms here; rows and the Event read give Dates and ISO strings, which
 // the same rules take (ADR 0013: the instants come from Nuxt).
 
-import { runningOf, type Instant, type SessionTimes } from './session-state'
+import { msOf, type Instant } from './instant'
+import { runningOf, type SessionTimes } from './session-state'
 
 /** The flight starts this long after the commit, so every client has the message first (the same reason as SPIN_LEAD_MS). */
 export const COIN_LEAD_MS = 1500
@@ -15,8 +16,6 @@ export interface CoinToss {
   startedAt: Instant
   landsAt: Instant
 }
-
-const msOf = (at: Instant): number => (typeof at === 'number' ? at : new Date(at).getTime())
 
 /** Whether the toss has landed at `nowMs`: from its landing instant on. */
 export function coinLanded(toss: Pick<CoinToss, 'landsAt'>, nowMs: number): boolean {
@@ -31,13 +30,14 @@ export interface CoinInput {
   sessions: readonly SessionTimes[]
   /** The Event's latest toss, or null before the first one: one coin at a time. */
   latest: CoinToss | null
-  nowMs: number
+  /** The instant of the check (ADR 0013: from Nuxt); epoch ms, a Date or an ISO string. */
+  now: Instant
 }
 
 /** The reason the coin cannot be tossed now, or null when it can, checked in the order of CoinRejection. */
-export function coinRejection({ isHost, sessions, latest, nowMs }: CoinInput): CoinRejection | null {
+export function coinRejection({ isHost, sessions, latest, now }: CoinInput): CoinRejection | null {
   if (!isHost) return 'not_host'
   if (!runningOf(sessions)) return 'no_running_session'
-  if (latest && !coinLanded(latest, nowMs)) return 'coin_in_air'
+  if (latest && !coinLanded(latest, msOf(now))) return 'coin_in_air'
   return null
 }

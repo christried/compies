@@ -99,7 +99,7 @@ export function dockLayout(state: HostDockState, open: { pollOpen: boolean, bonu
  * Event read's toss and the server clock. The reason is the rule's (coinRejection, the Host asks here); its copy is the API's.
  */
 export function coinBlockedKey({ sessions, coin }: Pick<EventView, 'sessions' | 'coin'>, nowMs: number): string | null {
-  const rejection = coinRejection({ isHost: true, sessions, latest: coin, nowMs })
+  const rejection = coinRejection({ isHost: true, sessions, latest: coin, now: nowMs })
   return rejection === null ? null : errorCopyKey(rejection)
 }
 

@@ -125,6 +125,16 @@ describe('countdownRejection', () => {
     expect(countdownRejection('pause', ENDED, STARTED + DURATION)).toBe('countdown_not_running')
   })
 
+  it('decides the same at the end instant for a number, a Date and an ISO string', () => {
+    const endsAt = STARTED + DURATION
+    for (const at of [endsAt, new Date(endsAt), new Date(endsAt).toISOString()]) {
+      expect(countdownRejection('pause', RUNNING, at)).toBe('countdown_not_running')
+    }
+    for (const at of [endsAt - 1, new Date(endsAt - 1), new Date(endsAt - 1).toISOString()]) {
+      expect(countdownRejection('pause', RUNNING, at)).toBeNull()
+    }
+  })
+
   it('refuses set while it runs, and allows it otherwise', () => {
     expect(countdownRejection('set', RUNNING, STARTED + 1)).toBe('countdown_running')
     expect(countdownRejection('set', READY, STARTED)).toBeNull()
