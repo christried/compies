@@ -158,9 +158,9 @@ describe('the blocks of the stage', () => {
   const TOSS: Partial<PageInput> = { coin: { id: 'toss-1', side: 'heads', startedAt: SAT, landsAt: SUN } }
   const POOL_WARNING: Partial<PageInput> = { setGame: { rejection: null, spinRejection: null, respin: false, left: [], poolWarning: { needed: 10, have: 2 } } }
 
-  it('shows the open Rounds above the Game board while a Session runs, and only then', () => {
+  it('shows the open Rounds above the Game board while a Session runs and between Sessions (#273), not before the first start', () => {
     expect(blocks(ONE_RUNNING, RUNNING)).toEqual(['head', 'reopen', 'rounds', 'board', 'poll', 'cards'])
-    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], RUNNING)).not.toContain('rounds')
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], RUNNING)).toContain('rounds')
     expect(blocks([dated('a', 1, SAT)])).not.toContain('rounds')
   })
 
