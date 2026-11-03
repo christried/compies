@@ -3,12 +3,16 @@ import { activityIcon, activityParts, feedSessions, groupActivity, readEntry } f
 import { formatActivityTime } from '../../app/utils/berlin-time'
 import de from '../../i18n/locales/de.json'
 import { ACTIVITY_TYPES, type ActivityEntry } from '../../shared/activity'
+import type { BoardTeam } from '../../shared/event'
 
 // The Activity feed's pure parts (#159): which group an entry sits in, what an entry says, which messages count.
 // `t` is the real German copy with {name} filled in, so a changed sentence shows up here.
 function t(key: string, named: Record<string, unknown> = {}): string {
   const template = key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown>)[part], de) as string
-  return template.replace(/\{(\w+)\}/g, (_, name: string) => String(named[name]))
+  // A counted message has its forms as „singular | plural“; vue-i18n picks by the named `count` (1 is the singular).
+  const forms = template.split(' | ')
+  const picked = forms.length > 1 ? (named.count === 1 ? forms[0]! : forms[1]!) : template
+  return picked.replace(/\{(\w+)\}/g, (_, name: string) => String(named[name]))
 }
 
 const base = { id: 'e', at: '2090-10-30T18:00:00.000Z', actor: { id: 'u1', name: 'Sanne' }, people: {}, games: {} }
@@ -206,6 +210,55 @@ describe('the sentence of an entry', () => {
 
     expect(new Set([set.icon, back.icon, drawn.icon]).size).toBe(3)
     expect(set.tone).toBe('surface')
+  })
+})
+
+describe('the sentence of a Result (#273)', () => {
+  const resultOf = (first: number[], games: Record<string, string> = { g1: 'Mario Kart' }, number = 3): ActivityEntry => ({ ...base, games, type: 'result_entered', params: { roundId: 'r', number, gameId: 'g1', first } })
+  const text = (entry: ActivityEntry, teams?: BoardTeam[]) => activityParts(entry, t, teams)?.map(part => part.text).join('') ?? null
+
+  it('names the game and the winning Team by its colour, when the feed has no team names', () => {
+    expect(text(resultOf([1]))).toBe('Spiel 3: Mario Kart, Team Rot gewinnt')
+  })
+
+  it('names the winning Team by its frozen Team name when the feed has the teams', () => {
+    expect(text(resultOf([2]), [{ position: 2, name: 'Wilde Gurken', frozen: true }])).toBe('Spiel 3: Mario Kart, Wilde Gurken gewinnt')
+  })
+
+  it('says „gewinnen“ for two winners, and lists three with „und“', () => {
+    expect(text(resultOf([1, 6]))).toBe('Spiel 3: Mario Kart, Team Rot und Team Blau gewinnen')
+    expect(text(resultOf([1, 2, 6]))).toBe('Spiel 3: Mario Kart, Team Rot, Team Orange und Team Blau gewinnen')
+  })
+
+  it('reads the singular form for a Round number of 1 with one winner, and the plural with two', () => {
+    expect(text(resultOf([1], { g1: 'Mario Kart' }, 1))).toBe('Spiel 1: Mario Kart, Team Rot gewinnt')
+    expect(text(resultOf([1, 6], { g1: 'Mario Kart' }, 1))).toBe('Spiel 1: Mario Kart, Team Rot und Team Blau gewinnen')
+  })
+
+  it('sets the game and the winners in bold, and nothing else', () => {
+    expect(activityParts(resultOf([1, 6]), t)).toEqual([
+      { text: 'Spiel 3: ', strong: false },
+      { text: 'Mario Kart', strong: true },
+      { text: ', ', strong: false },
+      { text: 'Team Rot und Team Blau', strong: true },
+      { text: ' gewinnen', strong: false },
+    ])
+  })
+
+  it('leaves out the sentence while the viewer may not name the game', () => {
+    expect(text(resultOf([1], {}))).toBeNull()
+  })
+
+  it('has no sentence for a correction or the end of the Event yet (#275, #277 write them)', () => {
+    expect(text({ ...base, games: { g1: 'Mario Kart' }, type: 'result_corrected', params: { roundId: 'r', number: 3, gameId: 'g1' } })).toBeNull()
+    expect(text({ ...base, type: 'event_finished', params: { winners: [1] } })).toBeNull()
+  })
+
+  it('draws a Result with an icon of its own', () => {
+    const icon = activityIcon(resultOf([1]))
+
+    expect(icon.icon).toBeDefined()
+    expect(icon.icon).not.toBe(activityIcon({ ...base, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } }).icon)
   })
 })
 
