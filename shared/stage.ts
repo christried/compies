@@ -4,8 +4,8 @@ import type { RoundGame } from './game'
 import type { BonusVetoRejection, PoolWarning, SetRejection, SpinRejection, VetoRejection } from './rounds'
 
 /**
- * An open Round on the stage (#228, GLOSSARY: Round): its game is set and it was not put back. It has no number (0.8 numbers a
- * Round when its result is entered). `notes` are the game's Game notes, only for the Host and only when it has some.
+ * An open Round on the stage (#228, GLOSSARY: Round): its game is set, it was not put back and it has no Result yet. It has no number:
+ * an open Round has no Result, and the number comes with the Result (#273). `notes` are the game's Game notes, only for the Host and only when it has some.
  */
 export interface RoundView {
   id: string
@@ -137,3 +137,5 @@ export interface VetoCast { drawId: string, team: number }
 export interface ClipSkipped { drawId: string }
 /** What `DELETE /api/e/:slug/rounds/:id` returns: the Round that was put back (#228). */
 export interface RoundPutBack { roundId: string }
+/** What `PUT /api/e/:slug/rounds/:id/result` returns: the Round and the number it got (#273). */
+export interface ResultEntered { roundId: string, number: number }

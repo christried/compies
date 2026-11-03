@@ -214,13 +214,15 @@ export async function castVeto({ tx, eventRow, user, publishTo, now }: Pick<Even
 
 /**
  * The Host puts an open Round back (#228): the Round is gone, its game returns to the Game pool if it came from there (a
- * library game returns nowhere), and Vetoes spent in it stay spent (the rows stay). Only a set Round that stands can be put
- * back: an unknown or put-back one is `round_not_found`, one being drawn `round_being_drawn`.
+ * library game returns nowhere), and Vetoes spent in it stay spent (the rows stay). Only a set Round that stands and has no Result
+ * can be put back: an unknown or put-back one is `round_not_found`, one being drawn `round_being_drawn`, one with a Result `round_not_open` (#273).
  */
 export async function putBackRound({ tx, eventRow, user, publish, now }: Change, roundId: string | undefined): Promise<{ roundId: string }> {
   const round = (await readRounds(tx, eventRow.id)).find(row => row.id === roundId && row.putBackAt === null)
   if (!round) throw apiError('round_not_found')
   if (roundState(round) === 'drawn') throw apiError('round_being_drawn')
+  // A Round with a Result stands for good (#273): its Result is in the feed, and putting the Round back would take the Result away.
+  if (round.resultAt !== null) throw apiError('round_not_open')
 
   await tx.update(rounds).set({ putBackAt: now }).where(eq(rounds.id, round.id))
   await recordActivity(tx, publish, eventRow.id, { type: 'game_put_back', actorId: user.id, params: { roundId: round.id, gameId: round.gameId! }, now })
