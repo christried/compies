@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SCORE_MAX, nextRoundNumber, normalizeScore, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, scoreValid, winnersOf, type ResultPlace } from '../../shared/results'
+import { SCORE_MAX, nextRoundNumber, normalizeScore, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, scoreValid, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
 import { TEAM_COUNT_MAX, TEAM_COUNT_MIN } from '../../shared/settings'
 
 // The rules of a Result (#273, spec #272, GLOSSARY: Result, Place, Shared place, Points table, Score): the shape of the Places, the
@@ -187,5 +187,106 @@ describe('resultRejection', () => {
   it('refuses missing Places and a bad shape as invalid_result', () => {
     expect(resultRejection(input({ places: null }))).toBe('invalid_result')
     expect(resultRejection(input({ places: [place(1, 1), place(2, 1), place(3, 2)] }))).toBe('invalid_result')
+  })
+})
+
+// The Standings (#274, GLOSSARY: Standings): every Party's points over all Results, and the rank that goes with them. Pure, so the
+// page and the server show the same ranks; `standingsOf` is the one place the rank rule lives.
+describe('totalPoints', () => {
+  const linear3 = { values: [2, 1, 0] }
+
+  it('gives every Party zero when there is no Result, one entry per team', () => {
+    expect(totalPoints([], linear3, 3)).toEqual([0, 0, 0])
+    expect(totalPoints([], linear3, 2)).toEqual([0, 0])
+  })
+
+  it('adds the points of every Result to the Party that earned them', () => {
+    const first = [place(1, 1), place(2, 2), place(3, 3)]
+    const second = [place(3, 1), place(1, 2), place(2, 3)]
+    expect(totalPoints([first, second], linear3, 3)).toEqual([2 + 1, 1 + 0, 0 + 2])
+  })
+
+  it('gives every Party of a Shared place the points of the better Place', () => {
+    expect(totalPoints([[place(1, 1), place(2, 1), place(3, 3)]], linear3, 3)).toEqual([2, 2, 0])
+  })
+
+  it('counts a winner-takes-all table and a custom table', () => {
+    expect(totalPoints([[place(1, 1), place(2, 2), place(3, 3)]], winnerTakesAll, 3)).toEqual([3, 0, 0])
+    expect(totalPoints([[place(1, 1), place(2, 2), place(3, 3)]], custom, 3)).toEqual([10, 7, 3])
+  })
+
+  it('counts a Place beyond the table as nothing', () => {
+    expect(totalPoints([[place(1, 1), place(2, 5)]], custom, 2)).toEqual([10, 0])
+  })
+
+  it('ignores a team beyond teamCount', () => {
+    expect(totalPoints([[place(1, 1), place(2, 2), place(3, 3)]], linear3, 2)).toEqual([2, 1])
+  })
+
+  it('takes the team counts at their edges, 2 and 8', () => {
+    expect(totalPoints([[place(1, 1), place(2, 2)]], { values: [1, 0] }, 2)).toEqual([1, 0])
+    const eight = Array.from({ length: 8 }, (_, index) => place(index + 1, index + 1))
+    expect(totalPoints([eight], { values: [8, 7, 6, 5, 4, 3, 2, 1] }, 8)).toEqual([8, 7, 6, 5, 4, 3, 2, 1])
+  })
+
+  it('sums 30 Results without losing one', () => {
+    const results = Array.from({ length: 30 }, () => [place(1, 1), place(2, 2), place(3, 3)])
+    expect(totalPoints(results, linear3, 3)).toEqual([60, 30, 0])
+  })
+})
+
+describe('standingsOf', () => {
+  const row = (team: number, rank: number, points: number) => ({ team, rank, points })
+
+  it('ranks Parties with different points 1, 2, 3 in that order', () => {
+    expect(standingsOf([3, 2, 1])).toEqual([row(1, 1, 3), row(2, 2, 2), row(3, 3, 1)])
+  })
+
+  it('shares a rank for equal points, in team order, and skips the next rank', () => {
+    expect(standingsOf([2, 2, 1])).toEqual([row(1, 1, 2), row(2, 1, 2), row(3, 3, 1)])
+  })
+
+  it('gives everybody rank 1, in team order, when all points are zero', () => {
+    expect(standingsOf([0, 0, 0, 0])).toEqual([row(1, 1, 0), row(2, 1, 0), row(3, 1, 0), row(4, 1, 0)])
+  })
+
+  it('sorts the rows by points, then team, and ranks each by the Parties with more points', () => {
+    expect(standingsOf([1, 3, 3, 0])).toEqual([row(2, 1, 3), row(3, 1, 3), row(1, 3, 1), row(4, 4, 0)])
+  })
+
+  it('handles two Parties', () => {
+    expect(standingsOf([0, 1])).toEqual([row(2, 1, 1), row(1, 2, 0)])
+    expect(standingsOf([1, 1])).toEqual([row(1, 1, 1), row(2, 1, 1)])
+  })
+
+  it('gives eight Parties that are all equal rank 1 in team order', () => {
+    expect(standingsOf([4, 4, 4, 4, 4, 4, 4, 4])).toEqual(Array.from({ length: 8 }, (_, index) => row(index + 1, 1, 4)))
+  })
+
+  it('sorts points that arrive out of team order', () => {
+    expect(standingsOf([1, 5, 3])).toEqual([row(2, 1, 5), row(3, 2, 3), row(1, 3, 1)])
+  })
+
+  it('skips the rank after a shared rank (1, 1, 3, never 1, 1, 2)', () => {
+    const ranks = standingsOf([5, 5, 2, 0]).map(entry => entry.rank)
+    expect(ranks).toEqual([1, 1, 3, 4])
+  })
+
+  it('does not change the points it is given', () => {
+    const points = [1, 3, 2]
+    standingsOf(points)
+    expect(points).toEqual([1, 3, 2])
+  })
+
+  it('gives every Party the points of Place 1 in one level Result, and everybody rank 1', () => {
+    const points = totalPoints([[place(1, 1), place(2, 1), place(3, 1)]], { values: [2, 1, 0] }, 3)
+    expect(points).toEqual([2, 2, 2])
+    expect(standingsOf(points).map(entry => entry.rank)).toEqual([1, 1, 1])
+  })
+
+  it('gives all zero for a Points table whose values are all 0, and everybody rank 1', () => {
+    const points = totalPoints([[place(1, 1), place(2, 2)]], { values: [0, 0] }, 2)
+    expect(points).toEqual([0, 0])
+    expect(standingsOf(points)).toEqual([{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }])
   })
 })

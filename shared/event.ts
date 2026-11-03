@@ -4,7 +4,7 @@ import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
 import type { EventSettings, SettingsFloors } from './settings'
 import type { PoolGame, PoolGameFace } from './game'
-import type { BonusVetoView, ClipView, CoinView, CountdownView, RoundView, SetGameView, WheelView } from './stage'
+import type { BonusVetoView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -193,6 +193,12 @@ export interface EventView {
    * Pool preview off and under a Hidden wheel alike; nothing else about the pools is.
    */
   rounds: RoundView[]
+  /** The Rounds with a Result, by number (#274); empty before the first, and for an Event that is not set up. Every Member reads the same list. */
+  results: ResultView[]
+  /** The Standings (#274): every Party's rank and points, points descending then team ascending; null for an Event that is not set up. */
+  standings: StandingView[] | null
+  /** How far the Event is (#274); null for an Event that is not set up. */
+  end: EndView | null
   /** Setting the next game (#228). Only the Host gets it; null for every other Member. */
   setGame: SetGameView | null
   /** The Lucky Wheel (#229): in a running Session of a Lucky Wheel Event, else null. */

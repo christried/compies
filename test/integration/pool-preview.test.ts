@@ -349,6 +349,28 @@ describe('Pool preview secrecy (#225)', () => {
       expectNone(got, [beta, gamma, library])
     })
 
+    it('names the set game in the Results a Player reads (#274), and no other game of the pools; the room sends nothing new', async () => {
+      const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
+      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+
+      const entered = await request(`/api/e/${slug}/rounds/${roundId}/result`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
+        body: JSON.stringify({ places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] }),
+      })
+      expect(entered.status).toBe(200)
+
+      const got = await whatThePlayerGets(slug, eventId)
+      const view = JSON.parse(got.event) as EventView
+      expect(view.results).toMatchObject([{ number: 1, game: { id: alpha.id, name: 'Alpha Arena' } }])
+      expect(view.standings?.map(row => row.team)).toEqual([1, 2])
+      const results = JSON.stringify({ results: view.results, standings: view.standings, end: view.end })
+      expectNone({ results }, [alpha], game => [game.notes])
+      expectNone({ results }, [beta, gamma, library])
+      // Nothing new goes to the room: the Result travels as the event.changed and the feed entry it already sent.
+      expect(new Set(notifier.messages(eventId).map(message => message.type))).toEqual(new Set(['event.changed', 'activity.added']))
+    })
+
     it('reveals nothing more when the Round is put back', async () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
       const roundId = await hostSets(request, slug, hostCookie, alpha.id)

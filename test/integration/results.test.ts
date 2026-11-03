@@ -14,6 +14,7 @@ import endSession from '../../server/api/e/[slug]/sessions/end.post'
 import startSession from '../../server/api/e/[slug]/sessions/start.post'
 import { activity, draws, eventMembers, eventPoolGames, events, games, pollSlots, roundPlaces, rounds, users, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
+import { readEventRows } from '../../server/utils/event-read'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
@@ -421,6 +422,170 @@ describe('Results', () => {
       expect(await errorOf(await send('DELETE', `/api/e/${game.slug}/rounds/${round}`, game.hostCookie))).toEqual({ status: 409, code: 'round_not_open' })
       await expect(testDb.db.update(rounds).set({ putBackAt: new Date(T0) }).where(eq(rounds.id, round))).rejects.toThrow()
       expect(await roundRows(game)).toMatchObject([{ number: 1, putBackAt: null }])
+    })
+  })
+
+  // The Event read after a Result (#274, spec #272): the three new fields every Member reads (`results`, `standings`, `end`), the
+  // Standings rule and the gate of #258 on the results. The Hidden wheel and Pool preview cases are in their own files.
+  describe('the Event read after a Result (#274)', () => {
+    const readAll = async (game: Game, cookie?: string) => {
+      const view = await read(game, cookie)
+      return { results: view.results, standings: view.standings, end: view.end }
+    }
+
+    it('before any Result: no results, every Party at 0 points on rank 1 in team order, and the Game count', async () => {
+      const game = await running()
+
+      const host = await readAll(game)
+      const player = await readAll(game, game.cookies.three)
+
+      expect(host).toEqual({
+        results: [],
+        standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
+        end: { played: 0, gameCount: 10 },
+      })
+      expect(player).toEqual(host)
+    })
+
+    it('after one Result for three Parties: the Round with its game, every Place, points and Score, the Standings and the count', async () => {
+      const game = await running({ teams: 3 })
+      await testDb.db.insert(eventMembers).values({ eventId: game.eventId, userId: game.ids.four })
+      const roundId = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      expect((await enter(game, roundId, { places: [{ team: 1, place: 1, score: ' 16 ' }, { team: 2, place: 2 }, { team: 3, place: 3, score: '8' }] })).status).toBe(200)
+
+      const expected = {
+        results: [{
+          roundId,
+          number: 1,
+          game: expect.objectContaining({ id: game.halo.id, name: 'Halo' }),
+          places: [
+            { team: 1, place: 1, points: 2, score: '16' },
+            { team: 2, place: 2, points: 1, score: null },
+            { team: 3, place: 3, points: 0, score: '8' },
+          ],
+          corrected: false,
+          resultAt: new Date(T0).toISOString(),
+        }],
+        standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 2, points: 1 }, { team: 3, rank: 3, points: 0 }],
+        end: { played: 1, gameCount: 10 },
+      }
+      expect(await readAll(game)).toEqual(expected)
+      expect(await readAll(game, game.cookies.two)).toEqual(expected)
+      expect(await readAll(game, game.cookies.four)).toEqual(expected)
+    })
+
+    it('lists the Results by number, not by the order the Rounds started or were entered', async () => {
+      const game = await running({ gameCount: 3 })
+      const a = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      const b = (await (await set(game, game.kart.id)).json() as { roundId: string }).roundId
+      const c = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
+      await enter(game, c, { places: twoParties })
+      await enter(game, a, { places: twoParties })
+      await enter(game, b, { places: twoParties })
+
+      const view = await readAll(game)
+
+      expect(view.results.map(result => [result.roundId, result.number])).toEqual([[c, 1], [a, 2], [b, 3]])
+      expect(view.end).toEqual({ played: 3, gameCount: 3 })
+    })
+
+    it('ranks over several Results: a Shared place earns the better Place, equal totals share a rank, team order inside it', async () => {
+      const game = await running({ teams: 3, gameCount: 3 })
+      const a = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      const b = (await (await set(game, game.kart.id)).json() as { roundId: string }).roundId
+      const c = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
+
+      // Result 1: teams 1 and 2 share Place 1 (2 points each), team 3 is third (0).
+      await enter(game, a, { places: [{ team: 1, place: 1 }, { team: 2, place: 1 }, { team: 3, place: 3 }] })
+      expect((await readAll(game)).results[0]!.places).toEqual([
+        { team: 1, place: 1, points: 2, score: null },
+        { team: 2, place: 1, points: 2, score: null },
+        { team: 3, place: 3, points: 0, score: null },
+      ])
+      // Result 2: team 2 first (+2), team 1 second (+1): totals 3, 4, 0.
+      await enter(game, b, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }, { team: 3, place: 3 }] })
+      expect((await readAll(game)).standings).toEqual([{ team: 2, rank: 1, points: 4 }, { team: 1, rank: 2, points: 3 }, { team: 3, rank: 3, points: 0 }])
+      // Result 3: team 3 first (+2), team 1 second (+1), team 2 third: totals 4, 4, 2.
+      await enter(game, c, { places: [{ team: 3, place: 1 }, { team: 1, place: 2 }, { team: 2, place: 3 }] })
+
+      const view = await readAll(game)
+      expect(view.standings).toEqual([{ team: 1, rank: 1, points: 4 }, { team: 2, rank: 1, points: 4 }, { team: 3, rank: 3, points: 2 }])
+      expect(view.end).toEqual({ played: 3, gameCount: 3 })
+    })
+
+    it('reads the same fields between Sessions, and a Round put back or still open is in no field', async () => {
+      const game = await running()
+      const done = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      await enter(game, done, { places: twoParties })
+      await set(game, game.kart.id)
+      const put = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
+      expect((await send('DELETE', `/api/e/${game.slug}/rounds/${put}`, game.hostCookie)).status).toBe(200)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
+
+      const host = await readAll(game)
+      expect(host.results.map(result => result.roundId)).toEqual([done])
+      expect(host.standings).toEqual([{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }])
+      expect(host.end).toEqual({ played: 1, gameCount: 10 })
+      expect(await readAll(game, game.cookies.one)).toEqual(host)
+    })
+
+    it('marks a Round corrected only when its corrected instant is set (the Correction itself is #275)', async () => {
+      const game = await running({ gameCount: 3 })
+      const a = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      const b = (await (await set(game, game.kart.id)).json() as { roundId: string }).roundId
+      await enter(game, a, { places: twoParties })
+      await enter(game, b, { places: twoParties })
+      await testDb.db.update(rounds).set({ correctedAt: new Date(T0) }).where(eq(rounds.id, a))
+
+      const view = await readAll(game)
+
+      expect(view.results.map(result => [result.roundId, result.corrected])).toEqual([[a, true], [b, false]])
+    })
+
+    it('gives an Event that is not set up no results, no Standings and no end', async () => {
+      const game = await running()
+      const round = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      await enter(game, round, { places: twoParties })
+      await testDb.db.update(events).set({ teamCount: null }).where(eq(events.id, game.eventId))
+
+      expect(await readAll(game)).toEqual({ results: [], standings: null, end: null })
+      expect(await readAll(game, game.cookies.two)).toEqual({ results: [], standings: null, end: null })
+    })
+
+    it('lists a Round with a Result to the Host, and to a Player only when its game is known to them (#258), while the Standings count it', async () => {
+      const game = await running()
+      const round = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      await enter(game, round, { places: twoParties })
+      // The set draw's stop moves into the future: the game is not known to a Player yet, the Host always knows it.
+      await testDb.db.update(draws).set({ stopAt: new Date('2090-10-30T12:00:00.000Z') }).where(eq(draws.roundId, round))
+
+      const host = await readAll(game)
+      const player = await readAll(game, game.cookies.three)
+
+      expect(host.results.map(result => result.roundId)).toEqual([round])
+      expect(player.results).toEqual([])
+      expect(player.standings).toEqual([{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }])
+      expect(player.end).toEqual({ played: 1, gameCount: 10 })
+    })
+
+    it('reads every draw with its Round in one statement, and the Rounds in start order with the put-back one', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 1 })
+      const windowed = (await (await set(game, game.halo.id, true)).json() as { roundId: string }).roundId
+      const [draw] = await testDb.db.select().from(draws).where(eq(draws.roundId, windowed))
+      expect((await send('POST', `/api/e/${game.slug}/draws/${draw!.id}/veto`, game.cookies.one)).status).toBe(200)
+      clock.advance(VETO_WINDOW_MS)
+      await set(game, game.kart.id)
+      const put = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
+      expect((await send('DELETE', `/api/e/${game.slug}/rounds/${put}`, game.hostCookie)).status).toBe(200)
+      const [eventRow] = await testDb.db.select().from(events).where(eq(events.id, game.eventId))
+
+      const rows = await readEventRows(testDb.db, eventRow!)
+
+      expect(rows.rounds.map(entry => entry.round.id)).toEqual([windowed, put])
+      expect(rows.draws).toHaveLength(3)
+      expect(rows.draws.filter(row => row.roundId === windowed)).toHaveLength(2)
+      const roundIds = new Set(rows.rounds.map(entry => entry.round.id))
+      expect(rows.draws.every(row => roundIds.has(row.roundId))).toBe(true)
     })
   })
 })
