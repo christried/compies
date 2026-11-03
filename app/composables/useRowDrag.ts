@@ -15,7 +15,7 @@ export function rowIndexAt(y: number, middles: readonly number[]): number {
 export interface RowDragOptions {
   /** How many rows the list has; with fewer than two there is nothing to move. */
   rowCount: () => number
-  /** The vertical middle of each row on the screen, top to bottom, read when the pointer moves. */
+  /** The vertical middle of each row on the screen, top to bottom, read once when a row is picked up (the rows stand still while one is held). */
   rowMiddles: () => number[]
   /** Let go over another row: row `from` goes to place `to`. */
   move: (from: number, to: number) => void
@@ -27,6 +27,7 @@ export function useRowDrag(options: RowDragOptions) {
   /** The row the held one would take the place of; null while nothing is held. */
   const dropIndex = ref<number | null>(null)
 
+  let middles: number[] = []
   let press: { index: number, pointerId: number, x: number, y: number, touch: boolean, timer?: ReturnType<typeof setTimeout> } | null = null
 
   function listen() {
@@ -63,6 +64,7 @@ export function useRowDrag(options: RowDragOptions) {
 
   function pickUp() {
     if (!press) return
+    middles = options.rowMiddles()
     dragging.value = { index: press.index, dy: 0 }
     dropIndex.value = press.index
   }
@@ -78,7 +80,7 @@ export function useRowDrag(options: RowDragOptions) {
       if (!dragging.value) return
     }
     dragging.value = { index: press.index, dy }
-    dropIndex.value = rowIndexAt(event.clientY, options.rowMiddles())
+    dropIndex.value = rowIndexAt(event.clientY, middles)
   }
 
   function end(drop: boolean) {
