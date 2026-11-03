@@ -145,6 +145,7 @@
   --animate-emote-rise: cp-emote-rise 1400ms var(--cp-ease-out) both;
   --animate-tick: cp-tick var(--cp-dur-base) var(--cp-ease-pop);
   --animate-wiggle: cp-wiggle var(--cp-dur-slower) var(--cp-ease-io);
+  --animate-live: cp-live var(--cp-dur-scene) var(--cp-ease-io) infinite;      /* the LIVE dot of the clip (04-motion § Veto window: timer pulse off under reduced motion) */
 
   @keyframes cp-pop-in { 0% { opacity: 0; transform: scale(.6) rotate(-6deg); } 70% { opacity: 1; transform: scale(1.06) rotate(1deg); } 100% { transform: none; } }
   @keyframes cp-fade-in { from { opacity: 0; } }
@@ -155,17 +156,18 @@
   @keyframes cp-emote-rise { 0% { opacity: 0; transform: translateY(8px) scale(.6); } 15% { opacity: 1; transform: translateY(-6px) scale(1.08); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-64px) scale(1); } }
   @keyframes cp-tick { 50% { transform: scale(1.14); } }
   @keyframes cp-wiggle { 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+  @keyframes cp-live { 50% { opacity: .35; } }
 }
 
 /* every animate-* class has a calm twin under reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-pop-in, .animate-clip-in, .animate-veto-in, .animate-sheet-in, .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
   .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
-  .animate-tick, .animate-wiggle { animation: none; }
+  .animate-tick, .animate-wiggle, .animate-live { animation: none; }
 }
 [data-motion=reduced] .animate-pop-in, [data-motion=reduced] .animate-clip-in, [data-motion=reduced] .animate-veto-in, [data-motion=reduced] .animate-sheet-in, [data-motion=reduced] .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
 [data-motion=reduced] .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
-[data-motion=reduced] .animate-tick, [data-motion=reduced] .animate-wiggle { animation: none; }
+[data-motion=reduced] .animate-tick, [data-motion=reduced] .animate-wiggle, [data-motion=reduced] .animate-live { animation: none; }
 
 /* Aura on „Neue Terminumfrage“ (#33): a comet of light runs around the border. Own styling on the
    tokens, no daisyUI. The angle is registered so the gradient turns without the shape moving. */

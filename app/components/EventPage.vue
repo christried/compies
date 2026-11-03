@@ -239,6 +239,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :votes="votes"
           :number="pageState.pollNumber"
           :compact="pageState.pollCompact"
+          :can-change-sessions="canChangeSessions"
           @pick="dialogs?.openConfirm($event)"
           @remove-session="actions.removeSession"
         />

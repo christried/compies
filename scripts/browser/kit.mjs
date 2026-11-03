@@ -136,21 +136,21 @@ export async function patchSettings(tab, slug, change) {
   return settings
 }
 
-/** Clicks the first element matching `selector` whose text contains `text` (any, when empty), scrolled into view. Returns whether there was one. */
+/** @public Kept for the next scenario (scripts/browser/README.md). Clicks the first element matching `selector` whose text contains `text` (any, when empty), scrolled into view. Returns whether there was one. */
 export const clickText = (tab, selector, text = '') => tab.evaluate(`(() => { const t = ${JSON.stringify(text)}; const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find(e => t === '' || e.textContent.includes(t)); if (!el) return false; el.scrollIntoView({ block: 'center', behavior: 'instant' }); el.click(); return true })()`)
 
-/** Focuses the first element matching `selector` and types `text` as the keyboard would, so Vue sees the input event. */
+/** @public Kept for the next scenario (scripts/browser/README.md). Focuses the first element matching `selector` and types `text` as the keyboard would, so Vue sees the input event. */
 export async function typeInto(tab, selector, text) {
   await tab.evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); el.scrollIntoView({ block: 'center', behavior: 'instant' }); el.focus() })()`)
   await tab.send('Input.insertText', { text })
 }
 
-/** Each `[role=switch]` on the page: its label, whether it is on, and why it is disabled (null when it is not). */
+/** @public Kept for the next scenario (scripts/browser/README.md). Each `[role=switch]` on the page: its label, whether it is on, and why it is disabled (null when it is not). */
 export const switches = tab => tab.evaluate(`[...document.querySelectorAll('[role=switch]')].map(s => ({
   label: document.getElementById(s.getAttribute('aria-labelledby'))?.innerText ?? '?',
   checked: s.getAttribute('aria-checked') === 'true',
   disabled: s.getAttribute('aria-disabled') ? (document.getElementById(s.getAttribute('aria-describedby'))?.innerText ?? '') : null,
 }))`)
 
-/** „Weiter“ / „Fertig“ in the stepper's footer. */
+/** @public Kept for the next scenario (scripts/browser/README.md). „Weiter“ / „Fertig“ in the stepper's footer. */
 export const stepperNext = tab => tab.evaluate(`document.querySelector('[data-testid="stepper-footer"] button[type=submit]').click()`)

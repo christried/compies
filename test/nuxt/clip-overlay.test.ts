@@ -340,3 +340,15 @@ describe('how it opens and closes (04-motion § Clip overlay)', () => {
     expect(transition.props('leaveToClass')).toBe('opacity-0')
   })
 })
+
+describe('the motion of the running clip', () => {
+  it('eases the bar over one tick, and pulses the LIVE dot through a calm twin of its own', async () => {
+    await mount(clipOf())
+    await ready()
+
+    const bar: HTMLElement = page!.element.querySelector('[role="progressbar"] > span')!
+    expect(bar.style.transitionDuration).toBe('250ms')
+    expect(bar.classList).not.toContain('duration-250')
+    expect(page!.element.querySelector('.size-2.rounded-full')!.classList).toContain('animate-live')
+  })
+})

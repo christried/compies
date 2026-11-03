@@ -143,6 +143,7 @@ describe('„Countdown stellen“ from the dock', () => {
     fill('Sekunden', '4')
     await flushPromises()
     expect(dialog()!.textContent).toContain('Zwischen 5 Sekunden und 99:59.')
+    expect(dialog()!.querySelector('[role="alert"]')?.textContent).toContain('Zwischen 5 Sekunden und 99:59.')
     await clickButton(dialog(), 'Stellen')
     fill('Minuten', '100')
     fill('Sekunden', '0')
@@ -162,6 +163,7 @@ describe('„Countdown stellen“ from the dock', () => {
 
     await vi.waitFor(() => expect(dialog()).not.toBeNull())
     expect(dialog()!.textContent).toContain('Der Countdown läuft schon.')
+    expect(dialog()!.querySelector('[role="status"]')?.textContent).toContain('Der Countdown läuft schon.')
     expect(sheetButton().disabled).toBe(true)
     expect(shownToasts()).toEqual([])
   })
