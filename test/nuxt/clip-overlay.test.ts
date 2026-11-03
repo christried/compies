@@ -346,7 +346,7 @@ describe('the motion of the running clip', () => {
     await mount(clipOf())
     await ready()
 
-    const bar = page!.element.querySelector<HTMLElement>('[role="progressbar"] > span')!
+    const bar: HTMLElement = page!.element.querySelector('[role="progressbar"] > span')!
     expect(bar.style.transitionDuration).toBe('250ms')
     expect(bar.classList).not.toContain('duration-250')
     expect(page!.element.querySelector('.size-2.rounded-full')!.classList).toContain('animate-live')

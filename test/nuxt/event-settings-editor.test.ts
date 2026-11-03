@@ -582,8 +582,17 @@ describe('the settings editor during a draw', () => {
     const wheelView: WheelView = { count: 3, slices: null, spin, vetoes: { left: [0, 0, 0], own: null, revealed: null, draw: null } }
     let current = { ...view(slug, [], { event: { isHost: host, phase: 'running' }, settings: wheel, wheel: wheelView }), roundBeingDrawn: drawing }
     const reads = vi.fn()
-    registerEndpoint(`/api/e/${slug}`, { method: 'GET', handler: () => { reads(); return current } })
-    return { slug, reads, set: (next: boolean) => { current = { ...current, roundBeingDrawn: next } } }
+    registerEndpoint(`/api/e/${slug}`, {
+      method: 'GET',
+      handler: () => {
+        reads()
+        return current
+      },
+    })
+    const set = (next: boolean) => {
+      current = { ...current, roundBeingDrawn: next }
+    }
+    return { slug, reads, set }
   }
 
   beforeEach(() => {
