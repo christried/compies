@@ -189,10 +189,10 @@ export async function clickIconButton(root: ParentNode | null | undefined, label
   await new Promise(resolve => setTimeout(resolve))
 }
 
-/** The headings of the page's regions (the Sessions, the poll, the Game board, „So wird gespielt“) in the order they appear: the order of the blocks of the stage (#166). */
+/** The headings of the stage's regions (the Sessions, the poll, the Game board, „So wird gespielt“) in the order they appear: the order of the blocks of the stage (#166). The side panel's are not the stage's (#274). */
 export function regionHeadings(page: Mounted): string[] {
   return [...page.element.querySelectorAll<HTMLElement>('[aria-labelledby]')]
-    .filter(region => region.tagName === 'SECTION')
+    .filter(region => region.tagName === 'SECTION' && region.closest('aside') === null)
     .map(region => page.element.querySelector(`[id="${region.getAttribute('aria-labelledby')}"]`)?.textContent?.trim() ?? '')
 }
 

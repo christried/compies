@@ -108,7 +108,7 @@ const stay = computed(() => teamsStay(pageState.value?.next ?? null, data.value?
 // The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
 const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
 
-// The phone's views and the side panel's tabs are useEventTabs' (#257): the Event page or the Activity feed.
+// The phone's views and the side panel's tabs are useEventTabs' (#257): the Event page, the Standings (#274) or the Activity feed.
 const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs(room)
 </script>
 
@@ -177,6 +177,15 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
             :teams="data.teams"
           />
         </template>
+        <!-- The tab scrolls inside the panel (#274): the panel is as tall as the window, a long history is not. -->
+        <template #standings>
+          <div
+            v-if="wide"
+            class="min-h-0 flex-1 overflow-y-auto p-3.5"
+          >
+            <StandingsTab :view="data" />
+          </div>
+        </template>
       </SidePanel>
     </template>
 
@@ -214,7 +223,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :view="data"
         />
 
-        <!-- A block is listed only when its data is there (eventPageState, #256): the data props of the four below are not optional. -->
+        <!-- A block is listed only when its data is there (eventPageState, #256, #274): the data props of the five below are not optional. -->
         <PoolWarning
           v-else-if="block === 'pool'"
           :warning="data.setGame!.poolWarning!"
@@ -260,6 +269,14 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :points-table="data.settings?.pointsTable ?? null"
           :enter-result="actions.enterResult"
           :end="data.end"
+        />
+
+        <Leaderboard
+          v-else-if="block === 'standings'"
+          framed
+          :standings="data.standings!"
+          :end="data.end!"
+          :teams="data.teams"
         />
 
         <EventCountdown
@@ -326,12 +343,17 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
       </div>
     </TransitionGroup>
 
-    <!-- A phone's second view (11-event-seite § TabBar): the feed alone, with the Head's place taken by its title. -->
+    <!-- A phone's other views (11-event-seite § TabBar): the Standings or the feed alone, with the Head's place taken by their title. -->
     <div
       v-else-if="data && wide === false"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-3 px-3.5 pt-4 pb-7"
     >
+      <EventStandingsView
+        v-if="activeView === 'standings'"
+        :view="data"
+      />
       <EventActivityView
+        v-else
         :slug="slug"
         :room="room"
         :sessions="feed.started"

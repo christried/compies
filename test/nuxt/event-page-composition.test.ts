@@ -2,6 +2,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { RoundGame } from '~~/shared/game'
+import type { ResultView, RoundView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { clickButton, LARSI, memberView, regionHeadings, restoreScreen, SANNE, serve, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
@@ -360,6 +362,118 @@ describe('the stage of the Event page', () => {
       const done = await pill({ sessions: [ended], missing: 0, phase: 'running' })
       expect(done).toContain('Vorbei')
       expect(done).not.toContain('Läuft')
+    })
+  })
+})
+
+// The Standings (#274): a stage block after the open Rounds once the first Result exists, and the „Tabelle“ tab in the side panel and on the phone.
+describe('the Standings on the Event page', () => {
+  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+  const openRound: RoundView = { id: 'r2', startedAt: STARTED, setAt: STARTED, game: { ...halo, id: 'g-kart', name: 'Kart' } }
+  const played: ResultView = { roundId: 'r1', number: 1, game: halo, places: [{ team: 2, place: 1, points: 1, score: null }, { team: 1, place: 2, points: 0, score: null }], corrected: false, resultAt: STARTED }
+  /** The read after one Result (team 2 won) with one more Round open. */
+  const afterResult: EventOverrides = {
+    rounds: [openRound],
+    results: [played],
+    standings: [{ team: 2, rank: 1, points: 1 }, { team: 1, rank: 2, points: 0 }],
+    end: { played: 1, gameCount: 6 },
+  }
+  const beforeResult: EventOverrides = {
+    rounds: [openRound],
+    results: [],
+    standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
+    end: { played: 0, gameCount: 6 },
+  }
+  const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
+  const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
+
+  beforeEach(() => {
+    signInAs(kitty)
+    stubScreen(true)
+  })
+
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    restoreScreen()
+    document.body.innerHTML = ''
+  })
+
+  describe('as a block of the stage', () => {
+    it('has none before the first Result, and none when the read has no end', async () => {
+      const before = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: beforeResult })
+      expect(regionHeadings(await mount(before.slug))).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+
+      const none = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: { rounds: [openRound] } })
+      expect(regionHeadings(await mount(none.slug))).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    })
+
+    it('follows the open Rounds once the first Result exists, while a Session runs', async () => {
+      const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      const page = await mount(slug)
+
+      expect(regionHeadings(page)).toEqual(['Gerade dran', 'Tabelle', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+      const block = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
+      expect(block.text()).toContain('Nach Spiel 1 von 6')
+      expect(block.findAll('tbody tr').map(row => row.attributes('data-team'))).toEqual(['2', '1'])
+      expect(block.classes()).toContain('shadow-card')
+    })
+
+    it('follows the open Rounds between two Sessions and after the last one', async () => {
+      const between = serveState({ sessions: [ENDED_ONE, SESSION(2, SECOND)], missing: 0, phase: 'running', overrides: afterResult })
+      expect(regionHeadings(await mount(between.slug))).toEqual(['Gerade dran', 'Tabelle', 'Sessions', 'So wird gespielt', 'Spielbrett'])
+
+      const done = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'running', overrides: afterResult })
+      expect(regionHeadings(await mount(done.slug))).toEqual(['Gerade dran', 'Tabelle', 'Sessions', 'So wird gespielt', 'Spielbrett'])
+    })
+
+    it('is not on the stage in the poll and teams states', async () => {
+      const poll = serveState({ sessions: [SESSION(1, null)], missing: 1, overrides: afterResult })
+      expect(regionHeadings(await mount(poll.slug))).not.toContain('Tabelle')
+
+      const teams = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, phase: 'date_set', overrides: afterResult })
+      expect(regionHeadings(await mount(teams.slug))).not.toContain('Tabelle')
+    })
+  })
+
+  describe('as a tab', () => {
+    it('is the first of two tabs of the side panel, which still opens on „Aktivität“, and holds the Standings and the history', async () => {
+      const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      const page = await mount(slug)
+
+      const panel = page.get('aside[aria-label="Seitenleiste"]')
+      const tabs = panel.findAll('[role="tab"]')
+      expect(tabs.map(tab => tab.text())).toEqual(['Tabelle', 'Aktivität'])
+      expect(tabs.map(tab => tab.attributes('aria-selected'))).toEqual(['false', 'true'])
+      const tabpanel = panel.get(`[id="${tabs[0]!.attributes('aria-controls')}"]`)
+      expect(tabpanel.attributes('role')).toBe('tabpanel')
+      expect(tabpanel.findAll('h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
+      expect(tabpanel.find('div.overflow-y-auto').exists()).toBe(true)
+
+      await tabs[0]!.trigger('click')
+      expect(tabpanel.attributes('style') ?? '').not.toContain('display: none')
+      expect(tabpanel.findAll('tbody tr')).toHaveLength(2)
+    })
+
+    it('is the second of three items in the phone\'s bar, and replaces the stage with the Standings and the history', async () => {
+      stubScreen(false)
+      const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      const page = await mount(slug)
+
+      const items = page.findAll('nav[aria-label="Event"] button')
+      expect(items.map(item => item.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
+      expect(page.get('h1').text()).toBe('Die Session läuft')
+
+      await items[1]!.trigger('click')
+
+      expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Tabelle'])
+      expect(page.findAll('nav[aria-label="Event"] button').map(item => item.attributes('aria-current'))).toEqual([undefined, 'page', undefined])
+      expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
+      expect(page.text()).toContain('wird gespielt')
+      expect(page.find('[role="log"]').exists()).toBe(false)
     })
   })
 })
