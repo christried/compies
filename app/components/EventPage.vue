@@ -345,15 +345,22 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
       :error="error"
     />
 
-    <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. -->
-    <ClipOverlay
-      v-if="data?.clip"
-      :key="data.clip.drawId"
-      :clip="data.clip"
-      :server-now="serverClock.now"
-      :is-host="data.event.isHost"
-      :skip="actions.skipClip"
-    />
+    <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. The Transition
+         is the fade of a skip (#261): the Host's skip removes the whole overlay, and its own leave would not run then. The overlay's inner
+         Transition keeps the fade of a clip that ends or is closed on this device. -->
+    <Transition
+      leave-active-class="transition-opacity dur-base ease-in"
+      leave-to-class="opacity-0"
+    >
+      <ClipOverlay
+        v-if="data?.clip"
+        :key="data.clip.drawId"
+        :clip="data.clip"
+        :server-now="serverClock.now"
+        :is-host="data.event.isHost"
+        :skip="actions.skipClip"
+      />
+    </Transition>
 
     <!-- The Veto bar (F4): the window's hold button in a fixed layer above the clip, for a Player of a Party while the window is open. -->
     <VetoBar

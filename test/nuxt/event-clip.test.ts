@@ -1,6 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { flushPromises } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import ClipOverlay from '~/components/ClipOverlay.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { ClipView } from '~~/shared/stage'
 import type { RoundGame } from '~~/shared/game'
@@ -80,6 +81,27 @@ describe('the clip on the Event page', () => {
     await vi.waitFor(() => expect(skips).toEqual(['skip']))
     await flushPromises()
 
+    await vi.waitFor(() => expect(page!.find('section[aria-label^="Clip"]').exists()).toBe(false))
+  })
+
+  // #261 (#230): the skip removes the whole overlay, so its own leave never runs; the Transition around it on the page runs it, on
+  // every page. The Transition is stubbed in this environment, so the removal is instant here and the fade is the browser check's.
+  it('wraps the overlay in a Transition with the closing fade, so a skip fades it out on every page', async () => {
+    const served = serveRunning({ host: true, clip: runningClip() })
+    registerEndpoint(`/api/e/${served.slug}/clip/skip`, { method: 'POST', handler: () => {
+      served.set(viewWithSessions(served.slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+        event: { isHost: true, phase: 'running' }, settings: defaultSettings(), runningSessionId: `session-${served.slug}-0`, clip: null,
+      }))
+      return { drawId: 'd1' }
+    } })
+    page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
+
+    const transitions: VueWrapper[] = page.findAllComponents({ name: 'Transition' })
+    const fade = transitions.find(transition => transition.findComponent(ClipOverlay).exists())
+    expect(fade?.props()).toMatchObject({ leaveActiveClass: 'transition-opacity dur-base ease-in', leaveToClass: 'opacity-0' })
+
+    const skip = [...page.element.querySelectorAll('section[aria-label="Clip: Kart"] button')].find((button: Element) => button.textContent?.trim() === 'Clip überspringen')
+    skip!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await vi.waitFor(() => expect(page!.find('section[aria-label^="Clip"]').exists()).toBe(false))
   })
 })
