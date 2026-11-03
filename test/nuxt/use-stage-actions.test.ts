@@ -1,5 +1,5 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { createError } from 'h3'
+import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { useStageActions } from '~/composables/useStageActions'
@@ -10,12 +10,13 @@ import { useStageActions } from '~/composables/useStageActions'
 
 let testNumber = 0
 
-/** The endpoints of the nine changes for one slug, what they received, and whether they refuse. */
+/** The endpoints of the ten changes for one slug, what they received, and whether they refuse. */
 function serve() {
   testNumber += 1
   const slug = `stage-actions-${testNumber}`
-  const server = { calls: [] as string[], refuse: false }
-  const endpoints: [string, 'POST' | 'DELETE'][] = [
+  const server = { calls: [] as string[], bodies: [] as unknown[], refuse: false }
+  const endpoints: [string, 'POST' | 'DELETE' | 'PUT'][] = [
+    ['rounds/round-1/result', 'PUT'],
     ['draws/draw-1/veto', 'POST'],
     ['clip/skip', 'POST'],
     ['rounds/round-1', 'DELETE'],
@@ -29,7 +30,8 @@ function serve() {
   for (const [path, method] of endpoints) {
     registerEndpoint(`/api/e/${slug}/${path}`, {
       method,
-      handler: () => {
+      handler: async (event) => {
+        if (method === 'PUT') server.bodies.push(await readBody(event))
         server.calls.push(`${method} ${path}`)
         if (server.refuse) throw createError({ statusCode: 429, statusMessage: 'rate_limited' })
         return {}
@@ -71,6 +73,7 @@ describe('useStageActions', () => {
     ['countdown', (actions: ReturnType<typeof useStageActions>) => actions.countdown('pause'), 'POST countdown/pause'],
     ['endSession', (actions: ReturnType<typeof useStageActions>) => actions.endSession(), 'POST sessions/end'],
     ['reopenSession', (actions: ReturnType<typeof useStageActions>) => actions.reopenSession('session-1'), 'POST sessions/session-1/reopen'],
+    ['enterResult', (actions: ReturnType<typeof useStageActions>) => actions.enterResult('round-1', [{ team: 1, place: 1, score: null }]), 'PUT rounds/round-1/result'],
     ['removeSession', (actions: ReturnType<typeof useStageActions>) => actions.removeSession('session-1'), 'DELETE sessions/session-1'],
   ])('%s posts its request, resolves true and refetches the Event', async (_name, call, sent) => {
     const { server, refresh, actions } = await setUp()
@@ -80,6 +83,15 @@ describe('useStageActions', () => {
     expect(server.calls).toEqual([sent])
     expect(refresh).toHaveBeenCalledTimes(1)
     expect(shownToasts()).toEqual([])
+  })
+
+  it('sends the Places of a Result as the body (#273)', async () => {
+    const { server, actions } = await setUp()
+    const places = [{ team: 2, place: 1, score: '16' }, { team: 1, place: 2, score: null }]
+
+    await expect(actions().enterResult('round-1', places)).resolves.toBe(true)
+
+    expect(server.bodies).toEqual([{ places }])
   })
 
   it('resolves false, shows the error copy and still refetches the Event when the server refuses', async () => {

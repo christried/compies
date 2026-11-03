@@ -174,6 +174,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
             :sessions="feed.started"
             :next-number="feed.nextNumber"
             :refresh-tick="feedTick"
+            :teams="data.teams"
           />
         </template>
       </SidePanel>
@@ -255,6 +256,9 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :rounds="data.rounds"
           :is-host="data.event.isHost"
           :put-back="actions.putBackRound"
+          :teams="data.teams"
+          :points-table="data.settings?.pointsTable ?? null"
+          :enter-result="actions.enterResult"
         />
 
         <EventCountdown
@@ -332,6 +336,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
         :sessions="feed.started"
         :next-number="feed.nextNumber"
         :refresh-tick="feedTick"
+        :teams="data.teams"
       />
     </div>
 

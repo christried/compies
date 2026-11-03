@@ -158,9 +158,9 @@ describe('the blocks of the stage', () => {
   const TOSS: Partial<PageInput> = { coin: { id: 'toss-1', side: 'heads', startedAt: SAT, landsAt: SUN } }
   const POOL_WARNING: Partial<PageInput> = { setGame: { rejection: null, spinRejection: null, respin: false, left: [], poolWarning: { needed: 10, have: 2 } } }
 
-  it('shows the open Rounds above the Game board while a Session runs, and only then', () => {
+  it('shows the open Rounds above the Game board while a Session runs and between Sessions (#273), not before the first start', () => {
     expect(blocks(ONE_RUNNING, RUNNING)).toEqual(['head', 'reopen', 'rounds', 'board', 'poll', 'cards'])
-    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], RUNNING)).not.toContain('rounds')
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], RUNNING)).toContain('rounds')
     expect(blocks([dated('a', 1, SAT)])).not.toContain('rounds')
   })
 
@@ -206,16 +206,16 @@ describe('the blocks of the stage', () => {
     }
   })
 
-  it('puts the cards first between two Sessions, with the notice that the teams stay', () => {
-    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'cards', 'stay', 'board'])
+  it('puts the open Rounds and then the cards first between two Sessions, with the notice that the teams stay (#273)', () => {
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'stay', 'board'])
   })
 
   it('keeps the poll below the board between two Sessions while another one waits for its Date', () => {
-    expect(blocks([dated('a', 1, SAT, ENDED), undated('b')], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'cards', 'stay', 'board', 'poll'])
+    expect(blocks([dated('a', 1, SAT, ENDED), undated('b')], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'stay', 'board', 'poll'])
   })
 
-  it('ends with the cards and the board after the last Session', () => {
-    expect(blocks([dated('a', 1, SAT, ENDED)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'cards', 'board'])
+  it('ends with the open Rounds, the cards and the board after the last Session (#273)', () => {
+    expect(blocks([dated('a', 1, SAT, ENDED)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'board'])
   })
 
   it('asks the Event to be set up first, and shows the poll when one is open', () => {

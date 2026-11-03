@@ -201,4 +201,26 @@ describe('ActivityFeed', () => {
     await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
     expect(wrapper.text()).not.toContain('konnte nicht geladen')
   })
+
+  describe('a Result (#273)', () => {
+    const result = entry('r', 1, { type: 'result_entered', params: { roundId: 'r1', number: 3, gameId: 'g1', first: [2] }, games: { g1: 'Mario Kart' } })
+    const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]
+
+    it('names the winner by the frozen Team name when the feed has the teams', async () => {
+      const feed = serveFeed([result])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, teams } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(lines(wrapper)[0]).toContain('Spiel 3: Mario Kart, Wilde Gurken gewinnt')
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Mario Kart', 'Wilde Gurken'])
+    })
+
+    it('names the winner by its colour without the teams', async () => {
+      const feed = serveFeed([result])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(lines(wrapper)[0]).toContain('Spiel 3: Mario Kart, Team Orange gewinnt')
+    })
+  })
 })

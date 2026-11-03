@@ -1,5 +1,6 @@
 import { useEventMutation } from '~/composables/useEventMutation'
 import type { CountdownCommand } from '~~/shared/countdown'
+import type { ResultPlace } from '~~/shared/results'
 
 // The stage's changes (#257, Q6 of review 0.7): the Host's Session, round and Countdown actions and the Players' Veto and clip
 // actions, each one `send` to its path. The page holds no request string; a refused change shows the shared error copy, and the
@@ -17,6 +18,9 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
 
   /** Puts an open Round back (#228); the hold on its card learns whether the server took it. */
   const putBackRound = (roundId: string) => send('DELETE', `rounds/${roundId}`)
+
+  /** Enters an open Round's Result, the Host's only (#273); the sheet learns whether the server took it and closes. */
+  const enterResult = (roundId: string, places: ResultPlace[]) => send('PUT', `rounds/${roundId}/result`, { body: { places } })
 
   /** Spins the Lucky Wheel for the next game (#229). */
   const spin = () => send('POST', 'rounds/spin')
@@ -36,5 +40,5 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /** Removes a Session, whose Slot goes back to the poll (#55). */
   const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
-  return { castVeto, skipClip, putBackRound, spin, toss, countdown, endSession, reopenSession, removeSession }
+  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, countdown, endSession, reopenSession, removeSession }
 }

@@ -18,7 +18,7 @@ export interface StagePresent { wheel: boolean, pool: boolean, countdown: boolea
 /**
  * The blocks of the stage (#166, #228). `head`: kicker and title. `reopen`: the notices of reopened Dates. `pool`: the Host's live pool warning (#234), shown to the Host only. `setup`: the Event
  * is not set up. `seat`: where the Host sits. `poll`: the Date poll. `wheel`: the Lucky Wheel, on top of the Rounds (#229).
- * `rounds`: the open Rounds, in a running Session. `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
+ * `rounds`: the open Rounds, whenever there are some (the Host enters their Results between Sessions too, #273). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
  * Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions.
  */
 export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
@@ -59,7 +59,7 @@ type Kind = EventPageState['kind']
 
 /**
  * The blocks of the stage per state (11-event-seite § EventPage): what has to happen now goes on top. The poll while no
- * Session is dated, the Game board from the first Date on, the open Rounds above it while a Session runs, with the wheel on top
+ * Session is dated, the Game board from the first Date on, the open Rounds above it while a Session runs (and between Sessions, where their Results are entered too, #273), with the wheel on top
  * of them when the view has wheel data (`present.wheel`, #229) and the Countdown (#236) and the coin toss (#235) under them,
  * the Sessions card between two Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits
  * for a Date has its poll (compact) below the board once another Session is dated or started.
@@ -75,8 +75,8 @@ export function pageBlocks(kind: Kind, pollOpen: boolean, present: StagePresent)
     case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
     // The Host's pool warning (#234) comes after the drawn Round: wheel and open Rounds first (story 15, review 0.7 F12).
     case 'running': return ['head', 'reopen', ...wheel, 'rounds', ...pool, ...countdown, ...coin, 'board', ...poll, 'cards']
-    case 'between': return ['head', 'reopen', 'cards', 'stay', 'board', ...poll]
-    case 'done': return ['head', 'reopen', 'cards', 'board']
+    case 'between': return ['head', 'reopen', 'rounds', 'cards', 'stay', 'board', ...poll]
+    case 'done': return ['head', 'reopen', 'rounds', 'cards', 'board']
     case 'setup': return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
   }
 }

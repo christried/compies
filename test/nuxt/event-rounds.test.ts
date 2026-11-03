@@ -1,10 +1,10 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
-import { readBody } from 'h3'
+import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventRounds from '~/components/EventRounds.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { EventPools } from '~~/shared/event'
+import type { BoardTeam, EventPools } from '~~/shared/event'
 import type { RoundView, SetGameView } from '~~/shared/stage'
 import type { GameView, PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
@@ -32,16 +32,17 @@ const round = (id: string, game: PoolGame, notes?: string): RoundView => {
 const pools: EventPools = { main: [halo, kart, pong] }
 const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
-type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string }
+type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[] }
 
 /** A running Event, set up for Host pick: the Host's or a Member's read of it, with these open Rounds. */
-function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running' }: Options) {
+function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams }: Options) {
   return serve(slug => viewWithSessions(slug, sessions ?? [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
     event: { isHost: host, phase },
     settings: defaultSettings(),
     runningSessionId: sessions ? undefined : `session-${slug}-0`,
     rounds,
     setGame,
+    teams,
     pools: host ? pools : null,
   }))
 }
@@ -94,7 +95,7 @@ describe('the open Rounds on the stage', () => {
     expect(regionHeadings(stage)).toEqual(['Spielbrett', 'Sessions', 'So wird gespielt'])
   })
 
-  it('shows no Rounds between two Sessions: they wait for the next one', async () => {
+  it('shows the Rounds between two Sessions, where their Results are entered too (#273)', async () => {
     const { slug } = serveRunning({
       host: false,
       rounds: [round('r1', halo)],
@@ -103,7 +104,16 @@ describe('the open Rounds on the stage', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).not.toContain('Gerade dran')
+    expect(regionHeadings(stage)).toContain('Gerade dran')
+    expect(stage.get('[aria-label="Offene Spiele"]').text()).toContain('Halo')
+  })
+
+  it('shows the Rounds when every Session has ended', async () => {
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', halo)], sessions: [{ number: 1, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }] })
+
+    const stage = await mount(slug)
+
+    expect(regionHeadings(stage)).toContain('Gerade dran')
   })
 
   it('opens the Game notes of the Round for the Host', async () => {
@@ -164,7 +174,7 @@ describe('the open Rounds on the stage', () => {
   })
 
   it('lets a row fade in as a UI element does (04-motion § UI enters: 0.22 s, ease-out) and out faster (0.14 s, ease-in)', async () => {
-    const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: false, putBack: () => Promise.resolve(true) } })
+    const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: false, putBack: () => Promise.resolve(true), teams: [], pointsTable: null, enterResult: () => Promise.resolve(true) } })
 
     const list = rounds.findComponent({ name: 'TransitionGroup' })
     expect(list.exists()).toBe(true)
@@ -173,6 +183,126 @@ describe('the open Rounds on the stage', () => {
     expect(list.props('leaveActiveClass')).toBe('transition-opacity dur-fast ease-in')
     expect(list.props('leaveToClass')).toBe('opacity-0')
     rounds.unmount()
+  })
+})
+
+describe('entering a Result (#273)', () => {
+  const pair: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
+  const enterButtons = (stage: Awaited<ReturnType<typeof mount>>) => stage.get('[aria-label="Offene Spiele"]').findAll('button').filter((button: Wrapper) => button.text() === 'Ergebnis eintragen')
+  const HOST_ENTERS = 'Das Ergebnis trägt der Host ein'
+
+  it('gives the Host „Ergebnis eintragen“ on every open Round, next to „Zurücklegen“, and no line about the Host', async () => {
+    const { slug } = serveRunning({ host: true, teams: pair, rounds: [round('r1', halo), round('r2', kart)] })
+
+    const stage = await mount(slug)
+
+    expect(enterButtons(stage)).toHaveLength(2)
+    const list = stage.get('[aria-label="Offene Spiele"]')
+    expect(list.text()).not.toContain(HOST_ENTERS)
+    expect(list.text().match(/Zurücklegen/g)).toHaveLength(2)
+  })
+
+  it('tells everyone but the Host under each open Round that the Host enters the Result, with no button', async () => {
+    const { slug } = serveRunning({ host: false, teams: pair, rounds: [round('r1', halo), round('r2', kart)] })
+
+    const stage = await mount(slug)
+
+    const list = stage.get('[aria-label="Offene Spiele"]')
+    for (const card of list.findAll('li')) expect(card.text()).toContain(HOST_ENTERS)
+    expect(list.text()).not.toContain('Ergebnis eintragen')
+  })
+
+  it('offers the Host no button while there is no Points table to preview', async () => {
+    const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: true, putBack: () => Promise.resolve(true), teams: pair, pointsTable: null, enterResult: () => Promise.resolve(true) } })
+
+    expect(rounds.text()).toContain('Zurücklegen')
+    expect(rounds.text()).not.toContain('Ergebnis eintragen')
+    rounds.unmount()
+  })
+
+  it('opens the sheet for the Round whose button was pressed, with the game\'s name above the rows', async () => {
+    const { slug } = serveRunning({ host: true, teams: pair, rounds: [round('r1', halo), round('r2', kart)] })
+    const stage = await mount(slug)
+
+    await enterButtons(stage)[1]!.trigger('click')
+
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    expect(dialog()!.querySelector('h2')?.textContent).toBe('Ergebnis eintragen')
+    expect(dialog()!.textContent).toContain('Kart')
+    expect([...dialog()!.querySelectorAll('[data-name]')].map(name => name.textContent)).toEqual(['Wilde Gurken', 'Team Orange'])
+  })
+
+  describe('saving', () => {
+    let puts: unknown[]
+
+    beforeEach(() => {
+      puts = []
+    })
+
+    /** A Host's Event with these open Rounds; the PUT for r1 runs `onPut` (which may throw a refusal) and answers like the server. */
+    function serveSaving(rounds: RoundView[], onPut: (served: ReturnType<typeof serveRunning>) => void = () => undefined) {
+      const served = serveRunning({ host: true, teams: pair, rounds })
+      registerEndpoint(`/api/e/${served.slug}/rounds/r1/result`, { method: 'PUT', handler: async (event) => {
+        puts.push(await readBody(event))
+        onPut(served)
+        return { roundId: 'r1', number: 1 }
+      } })
+      return served
+    }
+
+    async function openFirst(stage: Awaited<ReturnType<typeof mount>>) {
+      await enterButtons(stage)[0]!.trigger('click')
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    }
+
+    it('sends PUT rounds/:id/result with the Places and closes the sheet when the server took it', async () => {
+      const served = serveSaving([round('r1', halo)])
+      const stage = await mount(served.slug)
+      await openFirst(stage)
+      dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Nach unten: Wilde Gurken"]')!.click()
+      await flushPromises()
+
+      await clickButton(dialog(), 'Ergebnis speichern')
+
+      await vi.waitFor(() => expect(puts).toEqual([{ places: [{ team: 2, place: 1, score: null }, { team: 1, place: 2, score: null }] }]))
+      await vi.waitFor(() => expect(dialog()).toBeNull())
+    })
+
+    it('keeps the sheet open with the refusal as a toast while the Round is still open', async () => {
+      const served = serveSaving([round('r1', halo)], () => {
+        throw createError({ statusCode: 409, statusMessage: 'round_not_open' })
+      })
+      const stage = await mount(served.slug)
+      await openFirst(stage)
+
+      await clickButton(dialog(), 'Ergebnis speichern')
+
+      await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toEqual(['Zu diesem Spiel kann gerade kein Ergebnis eingetragen werden. Vielleicht hat es schon eins.']))
+      expect(dialog()).not.toBeNull()
+      expect(puts).toHaveLength(1)
+    })
+
+    it('closes the sheet when its Round leaves the open Rounds, after a refusal that refetched the Event', async () => {
+      const served = serveSaving([round('r1', halo), round('r2', kart)], (current) => {
+        current.set(viewWithSessions(current.slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+          event: { isHost: true, phase: 'running' },
+          settings: defaultSettings(),
+          runningSessionId: `session-${current.slug}-0`,
+          rounds: [round('r2', kart)],
+          teams: pair,
+          pools,
+        }))
+        throw createError({ statusCode: 409, statusMessage: 'round_not_open' })
+      })
+      const stage = await mount(served.slug)
+      await openFirst(stage)
+
+      await clickButton(dialog(), 'Ergebnis speichern')
+
+      await vi.waitFor(() => expect(dialog()).toBeNull())
+      expect(enterButtons(stage)).toHaveLength(1)
+      expect(shownToasts()).toHaveLength(1)
+    })
   })
 })
 
