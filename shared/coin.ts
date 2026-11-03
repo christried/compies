@@ -3,7 +3,8 @@
 // rules and the client shows the same facts. Instants are epoch ms here; rows and the Event read give Dates and ISO strings, which
 // the same rules take (ADR 0013: the instants come from Nuxt).
 
-import { runningOf, type Instant, type SessionTimes } from './session-state'
+import { msOf, type Instant } from './instant'
+import { runningOf, type SessionTimes } from './session-state'
 
 /** The flight starts this long after the commit, so every client has the message first (the same reason as SPIN_LEAD_MS). */
 export const COIN_LEAD_MS = 1500
@@ -15,8 +16,6 @@ export interface CoinToss {
   startedAt: Instant
   landsAt: Instant
 }
-
-const msOf = (at: Instant): number => (typeof at === 'number' ? at : new Date(at).getTime())
 
 /** Whether the toss has landed at `nowMs`: from its landing instant on. */
 export function coinLanded(toss: Pick<CoinToss, 'landsAt'>, nowMs: number): boolean {

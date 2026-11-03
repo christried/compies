@@ -2,9 +2,7 @@
 // same second as every other Member. A clip starts at a draw's stop (a set draw's commit is its stop) and runs for the game's
 // clip length; the video is the game's, from its start second.
 
-import type { Instant } from './session-state'
-
-const msOf = (at: Instant): number => (typeof at === 'number' ? at : new Date(at).getTime())
+import { msOf, type Instant } from './instant'
 
 /** The clip's two instants, in epoch ms: it starts at the draw's stop and ends the game's clip length (seconds) later. */
 export function clipWindow(draw: { stopAt: Instant }, game: { clipLength: number }): { startAt: number, endsAt: number } {

@@ -4,7 +4,8 @@
 // The spin (#229) and the Veto window (#231) are more arms of a Round's draws.
 
 import type { Seats } from './board'
-import { runningOf, teamsRejection, type Instant, type SessionTimes, type TeamsRejection } from './session-state'
+import { msOf, type Instant } from './instant'
+import { runningOf, teamsRejection, type SessionTimes, type TeamsRejection } from './session-state'
 import type { Phase } from './event'
 import { hasWheel, type EventSettings } from './settings'
 
@@ -214,8 +215,8 @@ export function vetoRejection({ viewerTeam, draw, now, running, castTeams, left 
   if (viewerTeam === null) return 'not_a_player'
   if (!running) return 'no_running_session'
   if (draw === null || draw.vetoEndsAt === null) return 'no_veto_window'
-  const at = new Date(now).getTime()
-  if (draw.outcome !== null || at >= new Date(draw.vetoEndsAt).getTime() || at < new Date(draw.stopAt).getTime()) return 'veto_window_closed'
+  const at = msOf(now)
+  if (draw.outcome !== null || at >= msOf(draw.vetoEndsAt) || at < msOf(draw.stopAt)) return 'veto_window_closed'
   if (castTeams.includes(viewerTeam)) return 'veto_already_cast'
   return left < 1 ? 'no_vetoes_left' : null
 }

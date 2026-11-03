@@ -6,17 +6,13 @@
 // and for the equal-teams rule (`teamsRejection`) that starting a Session uses too.
 
 import type { BoardSettings, Seats } from './board'
-
-/** A point in time as the layers hold it: ms since the epoch, a `Date` (database rows) or an ISO string (the Event read). */
-export type Instant = number | Date | string
+import { msOf, type Instant } from './instant'
 
 /** The times that decide a Session's state; null while it has none. Rows and the Event read's views both satisfy it. */
 export interface SessionTimes { startsAt: Instant | null, startedAt: Instant | null, endedAt: Instant | null }
 
 /** `undated`: no Date yet. `set`: it has its Date. `running`: the Host started it. `ended`: the Host ended it. */
 export type SessionState = 'undated' | 'set' | 'running' | 'ended'
-
-const msOf = (at: Instant): number => (typeof at === 'number' ? at : new Date(at).getTime())
 
 /** Whether the Host has started the Session (#164), also one that has ended. The one home of that test. */
 export function isStarted<S extends { startedAt: Instant | null }>(session: S): session is S & { startedAt: Instant } {
