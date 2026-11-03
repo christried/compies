@@ -6,8 +6,9 @@ import { bonusVetoCounts, bonusVetoRejection, gamesLeft, isBeingDrawn, isOpen, p
 import { runningOf } from '../../shared/session-state'
 import { placeOf } from '../../shared/board'
 import type { EventView } from '../../shared/event'
-import type { BonusVetoView, RoundView, VetoView, WheelView } from '../../shared/stage'
+import type { BonusVetoView, ResultView, RoundView, VetoView, WheelView } from '../../shared/stage'
 import type { RoundGame } from '../../shared/game'
+import { pointsForPlace, standingsOf, totalPoints } from '../../shared/results'
 import { eventHasWheel, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
@@ -16,22 +17,22 @@ import { roundGameView } from './library'
 import { readClip } from './clip'
 import { countdownView, readCountdown } from './countdown'
 import { coinView, readShownToss } from './coin'
-import { readDraws, readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
+import { readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { knownVetoRows, partyVetoesLeft, readBonusTeams, readVetoes, type VetoRow } from './vetoes'
 
-// The stage sections of the Event read (#256, review 0.7 Q1): the round family, the Lucky Wheel, the clip, the Countdown,
-// the Coin flip and the Bonus Vetoes. Each section takes the same context and returns its own fields of EventView;
-// the handler (server/api/e/[slug].get.ts) runs them together. A new stage piece is one entry in `stageSections`.
-// Rows that more than one section needs are read once, in roundsSection's first Promise.all (the Vetoes and the Bonus rows
-// with the draws and the pool), and passed on; the other sections read what they need themselves.
+// The stage sections of the Event read (#256, review 0.7 Q1): the round family, the Results, the Standings and the end (#274),
+// the Lucky Wheel, the clip, the Countdown, the Coin flip and the Bonus Vetoes. Each section takes the same context and returns
+// its own fields of EventView; the handler (server/api/e/[slug].get.ts) runs them together. A new stage piece is one entry in `stageSections`.
+// Rows that more than one section needs are read once by readEventRows (the Rounds with their draws, the Results), and passed on;
+// roundsSection's first Promise.all reads the pool, the Vetoes and the Bonus rows, and the other sections read what they need themselves.
 
 /** What every stage section reads from: the request's Event, its shared rows, the viewer and the request's clock. */
 export interface StageContext { db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer, now: Date }
 /** One piece of the stage in the Event read: returns its own fields of the view. */
 export type StageSection = (ctx: StageContext) => Promise<Partial<EventView>>
 
-/** The stage's sections, run together by the Event read. A new piece (results, standings, end, ceremony) is one entry here. */
-export const stageSections: StageSection[] = [roundsSection, clipSection, countdownSection, coinSection]
+/** The stage's sections, run together by the Event read. A new piece (the ceremony) is one entry here. */
+export const stageSections: StageSection[] = [roundsSection, resultsSection, clipSection, countdownSection, coinSection]
 
 /**
  * The open Rounds (#228), in start order, and for the Host the answer to setting the next game. A set game is visible to
@@ -50,8 +51,8 @@ export async function roundsSection({ db, eventRow, rows, viewer, now }: StageCo
   const onWheel = lucky && runningOf(rows.sessions) !== undefined
   if (!viewer.isHost && !onWheel) return { rounds: open, setGame: null, wheel: null, roundBeingDrawn: false, bonusVetoes: null }
   // The Vetoes and the Bonus rows are read once here, for the pool warning, the wheel's Veto view and the Bonus Veto section (review 0.7, Q1).
-  const [draws, pool, vetoRows, bonusTeams] = await Promise.all([
-    readDraws(db, eventRow.id),
+  const draws = rows.draws
+  const [pool, vetoRows, bonusTeams] = await Promise.all([
     readGamePool(db, eventRow.id),
     lucky ? readVetoes(db, eventRow.id) : [],
     lucky ? readBonusTeams(db, eventRow.id) : [],
@@ -68,6 +69,35 @@ export async function roundsSection({ db, eventRow, rows, viewer, now }: StageCo
       : null,
     wheel: settings !== null && onWheel ? await wheelView(db, eventRow, rows, viewer, settings.hiddenWheel, left, draws, now, vetoRows, bonusTeams) : null,
     bonusVetoes: bonusVetoView(eventRow, settings, viewer, bonusTeams),
+  }
+}
+
+/**
+ * The Results, the Standings and the end of the Event (#274, spec #272). Every Member reads the same Standings and end, the Host and a
+ * Player alike. A Result names a game, so each one goes through #258's one rule: its game is listed only when `drawGameKnown` says the
+ * viewer may know it (the Host always, a Player from the draw's stop on; a Round's game is the one of its set draw). The Standings and
+ * the count take every Round with a Result, also one the gate leaves out: points are not secret.
+ */
+export async function resultsSection({ eventRow, rows, viewer, now }: StageContext): Promise<Pick<EventView, 'results' | 'standings' | 'end'>> {
+  const settings = settingsFromRow(eventRow)
+  if (settings === null) return { results: [], standings: null, end: null }
+  const results: ResultView[] = []
+  for (const { round, game, places } of rows.results) {
+    const draw = rows.draws.find(row => row.roundId === round.id && row.gameId === round.gameId)
+    if (!game || !draw || !drawGameKnown({ isHost: viewer.isHost, draw, now })) continue
+    results.push({
+      roundId: round.id,
+      number: round.number!,
+      game: roundGameView(game),
+      places: places.map(({ team, place, score }) => ({ team, place, points: pointsForPlace(place, settings.pointsTable), score })),
+      corrected: round.correctedAt !== null,
+      resultAt: round.resultAt!.toISOString(),
+    })
+  }
+  return {
+    results,
+    standings: standingsOf(totalPoints(rows.results.map(entry => entry.places), settings.pointsTable, settings.teamCount)),
+    end: { played: rows.results.length, gameCount: settings.gameCount },
   }
 }
 
