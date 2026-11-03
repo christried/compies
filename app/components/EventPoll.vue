@@ -3,7 +3,7 @@ import { Check, ChevronDown, Minus, Users } from '@lucide/vue'
 import type { PollSlotView } from '~/components/PollSlotCard.vue'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import { pollHeadingId } from '~/utils/jump'
-import { sessionsEditable, type EventView } from '~~/shared/event'
+import type { EventView } from '~~/shared/event'
 
 // The Date poll on the Event page (screen M3, #166, 11-event-seite § EventPoll), while it is open: its title with the vote
 // count, the Dates still missing, the legend, a card per Slot and "Wer kann wann?". The Votes are drawn as the page's
@@ -20,7 +20,9 @@ const props = withDefaults(defineProps<{
   number?: number | null
   /** Another Session already has a Date: a quieter poll. */
   compact?: boolean
-}>(), { number: null, compact: false })
+  /** Sessions can be added, moved and removed in this Phase (the page's sessionsEditable, #238). */
+  canChangeSessions?: boolean
+}>(), { number: null, compact: false, canChangeSessions: false })
 
 const emit = defineEmits<{
   pick: [slotId: string]
@@ -39,7 +41,7 @@ const showMatrix = computed(() => !props.compact || matrixOpen.value)
 const missing = computed(() => props.view.missingDates)
 
 /** The "−" removes one undated Session with one tap, as long as one Session stays (#55). */
-const canRemoveMissing = computed(() => props.view.event.isHost && sessionsEditable(props.view.event.phase) && props.view.sessions.length > 1)
+const canRemoveMissing = computed(() => props.view.event.isHost && props.canChangeSessions && props.view.sessions.length > 1)
 
 /** The last Session still waiting for a Date: the one the "−" removes. */
 const lastUndated = computed(() => [...props.view.sessions].reverse().find(session => session.startsAt === null) ?? null)
