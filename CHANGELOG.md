@@ -2,9 +2,17 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Beim Einrichten und in den Einstellungen sagt dir die App jetzt, wenn ein Event unentschieden enden kann (bei gerader Spielzahl oder mehr als zwei Teams). Dann entscheidest du, ob es unentschieden endet oder ein letztes Spiel dazukommt. Die Empfehlung für den Spielepool zählt dieses mögliche letzte Spiel mit, und beim Glücksrad erinnert dich ein Hinweis daran, für Bonus-Vetos ein paar Spiele mehr einzuplanen. ([#279](https://github.com/christried/compies/issues/279))
+
 ### Behoben
 
 - Steht eine Zahl auf eins, folgt ihr jetzt die Einzahl: „1 Person da“ auf dem Board, „1 Spiel durchsuchen“ in der Bibliothek und „schon 1 Veto eingesetzt“ in den Einstellungen. ([#268](https://github.com/christried/compies/issues/268))
+
+### Entfernt
+
+- Den Tiebreaker-Pool gibt es nicht mehr: Bei Gleichstand auf Platz 1 spielt niemand ein eigenes Tiebreaker-Spiel, du entscheidest als Host. Die Spiele, die in einem Tiebreaker-Pool lagen, sind dort entfernt und bleiben in der Bibliothek. Willst du sie noch spielen, nimm sie in den Spielepool auf (Einstellungen, Schritt „Spielepool“). ([#279](https://github.com/christried/compies/issues/279))
 
 ## [0.7.0] - 2026-11-02 – Glücksrad
 
