@@ -7,9 +7,9 @@
 /** How long a finger rests on a person before it picks them up. */
 export const LONG_PRESS_MS = 300
 /** How far a mouse moves before a press becomes a drag. */
-const DRAG_DISTANCE = 4
+export const DRAG_DISTANCE = 4
 /** How far a finger may move during the long press before it counts as scrolling. */
-const SCROLL_DISTANCE = 10
+export const SCROLL_DISTANCE = 10
 
 export interface DragOptions {
   /** Whether the viewer may pick this person up. */

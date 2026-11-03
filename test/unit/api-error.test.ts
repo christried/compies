@@ -20,6 +20,11 @@ describe('apiFailure', () => {
 })
 
 describe('apiErrorKey', () => {
+  it('explains the Result refusals (#273)', () => {
+    expect(apiErrorKey(refusal(409, 'round_not_open'))).toBe('error.roundNotOpen')
+    expect(apiErrorKey(refusal(400, 'invalid_result'))).toBe('error.resultInvalid')
+  })
+
   it('names the reason the server gives', () => {
     expect(apiErrorKey(refusal(400, 'in_past'))).toBe('error.slotPast')
     expect(apiErrorKey(refusal(400, 'duplicate_slot'))).toBe('error.slotDuplicate')
