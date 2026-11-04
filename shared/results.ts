@@ -4,7 +4,7 @@
 
 import { characterCount } from './text'
 import type { Phase } from './event'
-import type { PointsTable } from './settings'
+import { GAME_COUNT_MAX, type PointsTable } from './settings'
 import { isOpen, type RoundFacts } from './rounds'
 import type { EndView, StandingView } from './stage'
 
@@ -195,4 +195,29 @@ export function finishRejection({ isHost, phase, end, outcome }: FinishInput): F
   if (phase !== 'running') return 'wrong_phase'
   if (!end.complete) return 'results_missing'
   return outcomeOf(end) === outcome ? null : 'standings_changed'
+}
+
+/** Why the last game cannot be added now (#278), in the order they are checked. */
+export type LastGameRejection = 'not_host' | 'wrong_phase' | 'results_missing' | 'no_tie' | 'game_count_range'
+
+export interface LastGameInput {
+  isHost: boolean
+  phase: Phase
+  end: Pick<EndView, 'complete' | 'tie'>
+  /** The Event's Game count now. */
+  gameCount: number
+}
+
+/**
+ * The reason the Host cannot add the last game now, or null (#278, GLOSSARY: Tie), in the order they are checked: the Host asks, the Phase is
+ * `running`, every Round up to the Game count has its Result (a second press finds the count incomplete: `results_missing`, which the client
+ * treats as done), a Tie stands, and the Game count is below GAME_COUNT_MAX (at the maximum the Host can still end „Unentschieden“). The
+ * refusal `game_count_range` keeps its 400 (#278, as the settings stepper's code for the same maximum); the other four are 409.
+ */
+export function lastGameRejection({ isHost, phase, end, gameCount }: LastGameInput): LastGameRejection | null {
+  if (!isHost) return 'not_host'
+  if (phase !== 'running') return 'wrong_phase'
+  if (!end.complete) return 'results_missing'
+  if (end.tie === null) return 'no_tie'
+  return gameCount >= GAME_COUNT_MAX ? 'game_count_range' : null
 }

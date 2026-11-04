@@ -265,9 +265,26 @@ describe('the sentence of a Result (#273)', () => {
     ])
   })
 
-  // Several winners are a Tie, which #278 words ("Unentschieden"); until then the entry names nothing.
-  it('has no sentence for several winners or none (#278 writes the Tie)', () => {
-    expect(text(finishedOf([1, 2]))).toBeNull()
+  // Several winners are a Tie (#278): „Unentschieden“ and every Party on rank 1.
+  it('says Unentschieden and names the Parties of a Tie, by colour or by frozen Team name', () => {
+    expect(text(finishedOf([1, 2]))).toBe('Unentschieden: Team Rot und Team Orange')
+    expect(text(finishedOf([1, 2]), [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: 'Team Orange', frozen: false }])).toBe('Unentschieden: Wilde Gurken und Team Orange')
+    expect(text(finishedOf([1, 2, 3]))).toBe('Unentschieden: Team Rot, Team Orange und Team Gelb')
+  })
+
+  it('names all eight Parties of a Tie of everybody, and a long frozen name whole', () => {
+    expect(text(finishedOf([1, 2, 3, 4, 5, 6, 7, 8]))).toMatch(/^Unentschieden: Team Rot, .+ und Team .+$/)
+    expect(text(finishedOf([1, 2]), [{ position: 1, name: 'Die Wilden Gurkenbande', frozen: true }])).toBe('Unentschieden: Die Wilden Gurkenbande und Team Orange')
+  })
+
+  it('sets the Parties of a Tie in bold, and „Unentschieden: “ not', () => {
+    expect(activityParts(finishedOf([1, 2, 3]), t)).toEqual([
+      { text: 'Unentschieden: ', strong: false },
+      { text: 'Team Rot, Team Orange und Team Gelb', strong: true },
+    ])
+  })
+
+  it('has no sentence for an empty list of winners', () => {
     expect(text(finishedOf([]))).toBeNull()
   })
 

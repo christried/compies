@@ -107,7 +107,7 @@ describe('EventPageHead', () => {
     expect(head.get('h1').text()).toBe('Gut gespielt')
   })
 
-  // The finished Event (#277): the Head names the winner. Several winners are #278's (a Tie); until then they read like none.
+  // The finished Event (#277): the Head names the winner, or reads „Unentschieden“ for several (#278).
   describe('in a finished Event', () => {
     const ended = dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })
     const FINISHED: Partial<PageInput> = { event: { phase: 'finished' } }
@@ -134,8 +134,18 @@ describe('EventPageHead', () => {
       expect(head.get('h1').classes()).toEqual(expect.arrayContaining(['text-balance', 'break-words']))
     })
 
-    it('only says the Event is over for two winners, for none, and without the props', async () => {
-      expect((await mountHead([ended], FINISHED, false, { winners: [1, 2], teams })).get('h1').text()).toBe('Das Event ist beendet')
+    it('reads Unentschieden for two winners and for three: one h1, the kicker, and no Team name in the heading (#278)', async () => {
+      for (const winners of [[1, 2], [1, 2, 3]]) {
+        const head = await mountHead([ended], FINISHED, false, { winners, teams })
+
+        expect(head.findAll('h1')).toHaveLength(1)
+        expect(head.get('h1').text()).toBe('Unentschieden')
+        expect(head.text()).toContain('Event beendet')
+        expect(head.get('h1').classes()).toEqual(expect.arrayContaining(['text-balance', 'break-words']))
+      }
+    })
+
+    it('only says the Event is over for none, and without the props', async () => {
       expect((await mountHead([ended], FINISHED, false, { winners: [], teams })).get('h1').text()).toBe('Das Event ist beendet')
       expect((await mountHead([ended], FINISHED)).get('h1').text()).toBe('Das Event ist beendet')
     })

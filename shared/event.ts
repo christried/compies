@@ -120,8 +120,10 @@ export interface MovedMember { userId: string, to: Place }
 export interface SessionStarted { sessionId: string, phase: Phase }
 /** What `POST /api/e/:slug/sessions/end` returns: the Session that ended and the Phase, which stays running (#164). */
 export interface SessionEnded { sessionId: string, phase: Phase }
-/** What `POST /api/e/:slug/finish` returns: the Phase, `finished`, and the team positions that won (one, until #278's Tie ends). */
+/** What `POST /api/e/:slug/finish` returns: the Phase, `finished`, and the team positions that won (one winner, or every Party of a Tie, #278). */
 export interface EventFinished { phase: Phase, winners: number[] }
+/** What `POST /api/e/:slug/last-game` answers (#278): the Game count after the raise. The request has no body. */
+export interface LastGameAdded { gameCount: number }
 
 /**
  * What the Host sees of the start rule (#164): the next Session (the earliest dated one that has not started), its

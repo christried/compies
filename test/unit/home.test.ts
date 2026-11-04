@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { arrangeHome, homeAction, homeSession, needsVote, staysOnHome, type HomeSessionTimes } from '../../server/domain/home'
+import { arrangeHome, eventStaysOnHome, homeAction, homeSession, needsVote, staysOnHome, type HomeSessionTimes } from '../../server/domain/home'
 import type { Phase } from '../../shared/event'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). An Event leaves Home a day after its last Session has ended.
@@ -46,6 +46,50 @@ describe('staysOnHome', () => {
 
   it('leaves an Event without Sessions', () => {
     expect(staysOnHome([], now)).toBe(false)
+  })
+})
+
+describe('eventStaysOnHome (#282)', () => {
+  /** An Event of `phase` with the given Sessions, a Result (or none) and its finish (or none). */
+  const event = (fields: { phase?: Phase, hasResult?: boolean, finishedAt?: Date | null, sessions?: HomeSessionTimes[] }) => ({
+    phase: fields.phase ?? 'running',
+    hasResult: fields.hasResult ?? false,
+    finishedAt: fields.finishedAt ?? null,
+    sessions: fields.sessions ?? [],
+  })
+
+  it('keeps a running Event with a Result, however long ago its last Session ended', () => {
+    expect(eventStaysOnHome(event({ hasResult: true, sessions: [ended(hoursAgo(72))] }), now)).toBe(true)
+  })
+
+  it('drops a running Event without a Result once its last Session ended more than 24 h ago', () => {
+    expect(eventStaysOnHome(event({ sessions: [ended(hoursAgo(72))] }), now)).toBe(false)
+  })
+
+  it('keeps a running Event without a Result for 24 h after its last Session ended', () => {
+    expect(eventStaysOnHome(event({ sessions: [ended(hoursAgo(23))] }), now)).toBe(true)
+  })
+
+  it('keeps a finished Event for 24 h after finishedAt, whatever its Sessions say', () => {
+    const finishedAt = hoursAgo(23)
+    const running = [{ startsAt: hoursAgo(72), endedAt: null }]
+
+    expect(eventStaysOnHome(event({ phase: 'finished', finishedAt, sessions: running }), now)).toBe(true)
+    expect(eventStaysOnHome(event({ phase: 'finished', finishedAt: hoursAgo(25), sessions: running }), now)).toBe(false)
+  })
+
+  it('keeps a finished Event finished an hour ago, whose last Session ended days before the finish', () => {
+    expect(eventStaysOnHome(event({ phase: 'finished', finishedAt: hoursAgo(1), sessions: [ended(hoursAgo(72))] }), now)).toBe(true)
+  })
+
+  it('judges a finished Event without finishedAt by its Sessions', () => {
+    expect(eventStaysOnHome(event({ phase: 'finished', sessions: [ended(hoursAgo(72))] }), now)).toBe(false)
+    expect(eventStaysOnHome(event({ phase: 'finished', sessions: [ended(hoursAgo(23))] }), now)).toBe(true)
+  })
+
+  it('judges an Event in the poll or the Date phase by its Sessions, a Result or not', () => {
+    expect(eventStaysOnHome(event({ phase: 'date_set', hasResult: true, sessions: [ended(hoursAgo(72))] }), now)).toBe(false)
+    expect(eventStaysOnHome(event({ phase: 'poll', sessions: [dated(hoursAgo(72))] }), now)).toBe(true)
   })
 })
 
@@ -109,13 +153,15 @@ describe('homeAction', () => {
 
 describe('arrangeHome', () => {
   /** An Event card; `startsAt` stands for a single dated Session, `sessions` gives its Sessions, `homeDate` names the Session Home shows of several. */
-  const item = (name: string, fields: { phase?: Phase, needsVote?: boolean, startsAt?: Date | null, sessions?: HomeSessionTimes[], homeDate?: Date, createdAt?: Date } = {}) => ({
+  const item = (name: string, fields: { phase?: Phase, needsVote?: boolean, startsAt?: Date | null, sessions?: HomeSessionTimes[], homeDate?: Date, createdAt?: Date, finishedAt?: Date | null, hasResult?: boolean } = {}) => ({
     name,
     phase: fields.phase ?? 'poll',
     needsVote: fields.needsVote ?? false,
     sessions: fields.sessions ?? [fields.startsAt ? dated(fields.startsAt) : undated()],
     homeDate: fields.homeDate ?? fields.startsAt ?? null,
     createdAt: fields.createdAt ?? hoursAgo(48),
+    finishedAt: fields.finishedAt ?? null,
+    hasResult: fields.hasResult ?? false,
   })
 
   it('lists open polls the User has not voted on first, then other open polls, then Dates upcoming first', () => {
@@ -192,5 +238,14 @@ describe('arrangeHome', () => {
     ], now)
 
     expect(arranged.map(row => row.name)).toEqual(['waiting'])
+  })
+
+  it('lists a running Event with a Result among the passed Dates, though its last Session ended 3 days ago (#282)', () => {
+    const arranged = arrangeHome([
+      item('passed', { phase: 'date_set', startsAt: hoursAgo(1) }),
+      item('running-with-result', { phase: 'running', hasResult: true, sessions: [ended(hoursAgo(72))], homeDate: hoursAgo(72) }),
+    ], now)
+
+    expect(arranged.map(row => row.name)).toEqual(['passed', 'running-with-result'])
   })
 })

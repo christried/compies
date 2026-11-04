@@ -219,6 +219,18 @@ describe('ActivityFeed', () => {
       expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Wilde Gurken'])
       expect(wrapper.get('[role="log"] li svg').classes()).toContain('lucide-medal')
     })
+
+    it('says Unentschieden and names every Party of a Tie, in bold, under „Nach Session n“ with the medal (#278)', async () => {
+      const finished = entry('f', 10, { type: 'event_finished', params: { winners: [1, 2] } })
+      const feed = serveFeed([finished])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, sessions, nextNumber: null, teams } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(wrapper.findAll('[role="log"] h3').map(heading => heading.text())).toEqual(['Nach Session 2'])
+      expect(lines(wrapper)[0]).toContain('Unentschieden: Team Rot und Wilde Gurken')
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Team Rot und Wilde Gurken'])
+      expect(wrapper.get('[role="log"] li svg').classes()).toContain('lucide-medal')
+    })
   })
 
   describe('a Result (#273)', () => {
