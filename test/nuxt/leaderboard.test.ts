@@ -1,7 +1,9 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Leaderboard from '~/components/Leaderboard.vue'
+import type { StandingsNews } from '~/utils/standings-news'
 import type { BoardTeam } from '~~/shared/event'
 import type { EndView, StandingView } from '~~/shared/stage'
 import { standingsOf } from '~~/shared/results'
@@ -14,11 +16,12 @@ const three = named(['Wilde Gurken', 'Die Füchse', null])
 const end = (played: number, gameCount = 6): EndView => ({ played, gameCount, complete: played >= gameCount, tie: null, finish: null })
 const standing = (team: number, rank: number, points: number): StandingView => ({ team, rank, points })
 
-type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean }
+type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean, celebrate?: boolean, news?: StandingsNews | null }
 let page: VueWrapper | undefined
 
 async function mount(props: Props = {}) {
-  page = await mountSuspended(Leaderboard, { props: { standings: [standing(2, 1, 8), standing(1, 2, 3), standing(3, 3, 1)], end: end(3), teams: three, ...props } })
+  // Vue Test Utils stubs TransitionGroup with an element of its own, which would take the place of the `tbody`: the real one renders it.
+  page = await mountSuspended(Leaderboard, { props: { standings: [standing(2, 1, 8), standing(1, 2, 3), standing(3, 3, 1)], end: end(3), teams: three, ...props }, global: { stubs: { TransitionGroup: false } } })
   return page
 }
 
@@ -145,11 +148,445 @@ describe('the Standings', () => {
     expect(plain).not.toContain('shadow-card')
   })
 
-  it('has no live region and no motion class on the rows', async () => {
+  it('has no live region: the page has one for both Leaderboards (#276)', async () => {
     await mount()
 
     expect(page!.find('[aria-live]').exists()).toBe(false)
     expect(page!.find('[role="status"]').exists()).toBe(false)
-    expect(page!.html()).not.toMatch(/transition|animate-/)
+  })
+})
+
+// The Standings in motion (#276, 04-motion § Leaderboard). jsdom runs no transition, so these tests prove what the code asks for (the move
+// class, the delays, the keyframes, the counted numbers); that the rows glide is proven by scripts/browser/standings.mjs. rAF, timers and
+// Date are fakes, `Element.prototype.animate` is a spy, and the page's motion setting is faked like coin-flip.test.ts does.
+
+const POP = 'cubic-bezier(.34,1.56,.64,1)'
+const SNAP = 'cubic-bezier(.2,0,0,1)'
+const NOW = Date.parse('2026-11-02T20:00:00.000Z')
+/** The Standings the page saw: Team 2 leads. */
+const BEFORE = [standing(2, 1, 5), standing(1, 2, 3), standing(3, 3, 0)]
+/** After Spiel 2 (Team 1 won): Team 1 moves up (+3), Team 2 down (+0), Team 3 keeps rank 3 (+1). */
+const AFTER = [standing(1, 1, 6), standing(2, 2, 5), standing(3, 3, 1)]
+
+const newsOf = (overrides: Partial<StandingsNews> = {}): StandingsNews => ({
+  key: 1,
+  kind: 'entered',
+  roundId: 'r2',
+  number: 2,
+  before: BEFORE,
+  winners: [1],
+  at: Date.now(),
+  announcement: 'Spiel 2 ist eingetragen.',
+  ...overrides,
+})
+
+let animate: ReturnType<typeof vi.fn>
+const originalAnimate = Element.prototype.animate
+
+/** The page's motion setting, as the tokens put it in `--cp-motion`. */
+function motion(value: 'full' | 'reduced') {
+  vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? value : '') } as CSSStyleDeclaration)
+}
+
+/** The animations started on elements that match `selector`: [keyframes, options] each. */
+function animationsOn(selector: string) {
+  return animate.mock.calls.flatMap((call, index) => ((animate.mock.contexts[index] as Element).matches(selector) ? [call as [Keyframe[], KeywordOptions]] : []))
+}
+type KeywordOptions = { duration: number, delay?: number, easing: string, fill?: string }
+
+const digitsOf = (row: ReturnType<typeof rows>[number]) => cells(row)[2]!.get('.font-num [aria-hidden="true"]').text()
+const column = () => rows().map(digitsOf)
+const pills = () => page!.findAll('[data-delta]')
+const stamps = () => page!.findAll('[data-stamp]')
+const confettiPieces = () => page!.element.querySelectorAll('.layer-confetti span')
+
+/** Lets `ms` of fake time pass in frames of 16 ms and returns the lists of numbers the points column showed on the way. */
+async function run(ms: number): Promise<string[][]> {
+  const seen: string[][] = []
+  for (let spent = 0; spent < ms; spent += 16) {
+    vi.advanceTimersByTime(16)
+    await nextTick()
+    seen.push(column())
+  }
+  return seen
+}
+
+/** The page reads a Result: new Standings and the news of it in one update, as the Event page hands them down. */
+async function receives(news: StandingsNews | null, standings = AFTER) {
+  await page!.setProps({ standings, news })
+  await nextTick()
+}
+
+beforeEach(() => {
+  animate = vi.fn(() => ({ currentTime: 0, cancel: vi.fn(), finish: vi.fn(), onfinish: null }))
+  Element.prototype.animate = animate as unknown as typeof Element.prototype.animate
+  motion('full')
+  vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'setTimeout', 'clearTimeout', 'Date'] })
+  vi.setSystemTime(new Date(NOW))
+})
+
+afterEach(() => {
+  Element.prototype.animate = originalAnimate
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
+
+describe('the Standings in motion (#276)', () => {
+  const eightTeams = named(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
+
+  describe('without news', () => {
+    it('shows no pill, no stamp and starts no count, also when the Standings change', async () => {
+      await mount({ standings: BEFORE, celebrate: true, framed: true })
+
+      await receives(null)
+
+      expect(column()).toEqual(['6', '5', '1'])
+      expect(pills()).toHaveLength(0)
+      expect(stamps()).toHaveLength(0)
+      expect(animate).not.toHaveBeenCalled()
+      expect(vi.getTimerCount()).toBe(0)
+    })
+  })
+
+  describe('the rows', () => {
+    it('move by Vue\'s move transition: spring, the slower duration, staggered, and still on reduced motion', async () => {
+      await mount({ standings: AFTER })
+
+      // This proves what the group asks for, not that it glides: the browser check (scripts/browser/standings.mjs) does.
+      const group = page!.findComponent({ name: 'TransitionGroup' })
+      expect(group.props('tag')).toBe('tbody')
+      const moveClass = String(group.props('moveClass')).split(' ')
+      expect(moveClass).toEqual(expect.arrayContaining(['transition-transform', 'dur-slower', 'ease-spring', 'motion-reduce:transition-none', 'reduced:transition-none', '[transition-delay:var(--lb-delay,0ms)]']))
+    })
+
+    it('carries the stagger of 0.04 s a row, by position in the new order', async () => {
+      await mount({ standings: standingsOf([8, 7, 6, 5, 4, 3, 2, 1]), teams: eightTeams })
+
+      expect(rows().map(row => (row.element as HTMLElement).style.getPropertyValue('--lb-delay'))).toEqual(['0ms', '40ms', '80ms', '120ms', '160ms', '200ms', '240ms', '280ms'])
+    })
+
+    it('keeps the table\'s roles with the group in the place of the tbody', async () => {
+      await mount()
+
+      expect(page!.find('table > tbody').exists()).toBe(true)
+      expect(page!.findAll('table [role]')).toHaveLength(0)
+      expect(rows().map(row => row.attributes('data-team'))).toEqual(['2', '1', '3'])
+    })
+  })
+
+  describe('with news', () => {
+    it('shows each Party\'s points gained in a pill left of the number, hidden from screen readers: +3, +0, +1', async () => {
+      await mount({ standings: BEFORE })
+
+      await receives(newsOf())
+
+      expect(rows().map(row => row.attributes('data-team'))).toEqual(['1', '2', '3'])
+      expect(rows().map(row => cells(row)[2]!.get('[data-delta]').text())).toEqual(['+3', '+0', '+1'])
+      for (const pill of pills()) expect(pill.attributes('aria-hidden')).toBe('true')
+      // Left of the number: the pill comes before it in the cell.
+      const cell = cells(rows()[0]!)[2]!
+      expect(cell.get('[data-delta]').element.compareDocumentPosition(cell.get('.font-num').element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('shows a lowered score with a real minus after a Correction', async () => {
+      await mount({ standings: [standing(1, 1, 6), standing(2, 2, 5)], teams: named(['A', 'B']) })
+
+      await receives(newsOf({ kind: 'corrected', before: [standing(1, 1, 9), standing(2, 2, 5)] }), [standing(1, 1, 6), standing(2, 2, 5)])
+
+      expect(pills().map(pill => pill.text())).toEqual(['−3', '+0'])
+    })
+
+    it('draws the rank move as an arrow: up in green, down on the surface, a dash when the rank is kept', async () => {
+      await mount({ standings: BEFORE })
+
+      await receives(newsOf())
+
+      const [up, down, same] = pills()
+      expect(up!.get('svg').classes()).toContain('lucide-arrow-up')
+      expect(up!.classes()).toEqual(expect.arrayContaining(['bg-success', 'text-on-success']))
+      expect(down!.get('svg').classes()).toContain('lucide-arrow-down')
+      expect(down!.classes()).toEqual(expect.arrayContaining(['bg-surface', 'text-ink']))
+      expect(same!.get('svg').classes()).toContain('lucide-minus')
+      expect(same!.classes()).toEqual(expect.arrayContaining(['bg-paper-2', 'text-ink']))
+    })
+
+    it('pops each pill: scale .3, 1.15, 1 over 420 ms on the pop curve, after 300 ms', async () => {
+      await mount({ standings: BEFORE })
+
+      await receives(newsOf())
+
+      const runs = animationsOn('[data-delta]')
+      expect(runs).toHaveLength(3)
+      for (const [keyframes, options] of runs) {
+        expect(keyframes.map(frame => frame.transform)).toEqual(['scale(.3)', 'scale(1.15)', 'scale(1)'])
+        expect(keyframes.map(frame => frame.offset)).toEqual([0, 0.6, 1])
+        expect(options).toMatchObject({ duration: 420, delay: 300, easing: POP, fill: 'backwards' })
+      }
+    })
+
+    it('counts every number from where the page saw it to the new points, and lands on them', async () => {
+      await mount({ standings: BEFORE })
+
+      await receives(newsOf())
+
+      // Rows are Team 1, 2, 3: from 3, 5, 0 to 6, 5, 1.
+      expect(column()).toEqual(['3', '5', '0'])
+      const frames = await run(300)
+      expect(Number(frames.at(-1)![0])).toBeGreaterThanOrEqual(5)
+      expect(Number(frames.at(-1)![0])).toBeLessThan(6)
+      expect(frames.at(-1)![1]).toBe('5')
+      await run(500)
+      expect(column()).toEqual(['6', '5', '1'])
+    })
+
+    it('writes a counting number at most 15 times in a second, and keeps the final value for screen readers from the start', async () => {
+      const big = [standing(1, 1, 100), standing(2, 2, 5)]
+      await mount({ standings: [standing(2, 1, 5), standing(1, 2, 0)], teams: named(['A', 'B']) })
+
+      await receives(newsOf({ before: [standing(2, 1, 5), standing(1, 2, 0)] }), big)
+
+      expect(rows()[0]!.get('.sr-only').text()).toBe('100 Punkte')
+      const frames = await run(1000)
+      const seen = frames.map(frame => frame[0]!).filter((value, index, all) => value !== all[index - 1])
+      expect(seen.length).toBeLessThanOrEqual(15)
+      expect(seen.at(-1)).toBe('100')
+      expect(rows()[0]!.get('.sr-only').text()).toBe('100 Punkte')
+    })
+
+    it('restarts from the new `before` when a second news comes mid-count, and lands on the new value', async () => {
+      await mount({ standings: BEFORE })
+      await receives(newsOf())
+      await run(300)
+
+      const third = [standing(1, 1, 10), standing(2, 2, 5), standing(3, 3, 1)]
+      await receives(newsOf({ key: 2, number: 3, before: AFTER, at: Date.now() }), third)
+
+      expect(digitsOf(rows()[0]!)).toBe('6')
+      await run(800)
+      expect(column()).toEqual(['10', '5', '1'])
+      expect(pills().map(pill => pill.text())).toEqual(['+4', '+0', '+0'])
+    })
+
+    it('counts a Party that was not in `before` from 0', async () => {
+      await mount({ standings: BEFORE })
+
+      await receives(newsOf({ before: [standing(2, 1, 5), standing(1, 2, 3)] }))
+
+      expect(digitsOf(rows().find(row => row.attributes('data-team') === '3')!)).toBe('0')
+      expect(pills().map(pill => pill.text())).toEqual(['+3', '+0', '+1'])
+    })
+
+    it('takes the pills away when the news is gone, and keeps the numbers on their final value', async () => {
+      await mount({ standings: BEFORE })
+      await receives(newsOf())
+      await run(900)
+
+      await receives(null)
+
+      expect(pills()).toHaveLength(0)
+      expect(column()).toEqual(['6', '5', '1'])
+      await run(300)
+      expect(column()).toEqual(['6', '5', '1'])
+    })
+
+    it('lets the pills leave with a short fade (the Transition of the end of the celebration)', async () => {
+      await mount({ standings: BEFORE })
+      await receives(newsOf())
+
+      const leave = page!.findAllComponents({ name: 'Transition' }).filter(transition => transition.props('leaveActiveClass'))
+      expect(leave.length).toBeGreaterThan(0)
+      for (const transition of leave) {
+        expect(String(transition.props('leaveActiveClass')).split(' ')).toEqual(expect.arrayContaining(['transition-opacity', 'dur-fast']))
+        expect(transition.props('leaveToClass')).toBe('opacity-0')
+      }
+    })
+
+    it('stays calm for a news the page made long ago (a tab opened later), and plays one it just made (the first Result)', async () => {
+      await mount({ standings: AFTER, news: newsOf({ at: Date.now() - 1500 }) })
+
+      expect(pills()).toHaveLength(0)
+      expect(column()).toEqual(['6', '5', '1'])
+      expect(animate).not.toHaveBeenCalled()
+      page!.unmount()
+
+      await mount({ standings: AFTER, news: newsOf({ at: Date.now() - 200 }) })
+
+      expect(pills()).toHaveLength(3)
+      expect(column()).toEqual(['3', '5', '0'])
+    })
+
+    it('plays a news once, however often it is handed down again', async () => {
+      await mount({ standings: BEFORE })
+      await receives(newsOf())
+      const runs = animate.mock.calls.length
+
+      await page!.setProps({ news: newsOf() })
+      await nextTick()
+
+      expect(animate.mock.calls.length).toBe(runs)
+    })
+  })
+
+  describe('on the stage (celebrate)', () => {
+    it('stamps the winner in the points cell: „Sieg in Spiel 2!“, rotated, snapping in after 520 ms over 480', async () => {
+      await mount({ standings: BEFORE, celebrate: true, framed: true })
+
+      await receives(newsOf())
+
+      expect(stamps()).toHaveLength(1)
+      expect(rows()[0]!.element.contains(stamps()[0]!.element)).toBe(true)
+      expect(stamps()[0]!.text()).toBe('Sieg in Spiel 2!')
+      expect(stamps()[0]!.attributes('aria-hidden')).toBe('true')
+      expect((stamps()[0]!.element as HTMLElement).style.transform).toBe('rotate(8deg)')
+      const [keyframes, options] = animationsOn('[data-stamp]')[0]!
+      expect(keyframes.map(frame => frame.transform)).toEqual(['rotate(8deg) scale(2)', 'rotate(8deg) scale(.9)', 'rotate(8deg) scale(1)'])
+      expect(keyframes.map(frame => frame.opacity)).toEqual([0, 1, 1])
+      expect(keyframes[1]!.offset).toBe(0.7)
+      expect(options).toMatchObject({ duration: 480, delay: 520, easing: SNAP, fill: 'backwards' })
+    })
+
+    it('says „Spiel 2 gewonnen“ for a Correction', async () => {
+      await mount({ standings: BEFORE, celebrate: true, framed: true })
+
+      await receives(newsOf({ kind: 'corrected' }))
+
+      expect(stamps()[0]!.text()).toBe('Spiel 2 gewonnen')
+    })
+
+    it('bursts 18 pieces once, 560 ms after the news, from the right of the first winner\'s row', async () => {
+      // jsdom has no layout: the card sits at (100, 50), Team 1's row spans 100…400 × 120…160.
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+        if (this.matches('tr[data-team="1"]')) return { left: 100, right: 400, top: 120, bottom: 160, width: 300, height: 40, x: 100, y: 120 } as DOMRect
+        if (this.matches('section')) return { left: 100, right: 450, top: 50, bottom: 400, width: 350, height: 350, x: 100, y: 50 } as DOMRect
+        return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 } as DOMRect
+      })
+      await mount({ standings: BEFORE, celebrate: true, framed: true })
+      await receives(newsOf())
+
+      vi.advanceTimersByTime(559)
+      expect(confettiPieces()).toHaveLength(0)
+      vi.advanceTimersByTime(1)
+      await nextTick()
+
+      expect(confettiPieces()).toHaveLength(18)
+      // x = row right (400) − 60 − card left (100) = 240; y = row centre (140) − card top (50) = 90. The first piece is a 12 px circle.
+      const first = confettiPieces()[0] as HTMLElement
+      expect(first.style.left).toBe('234px')
+      expect(first.style.top).toBe('84px')
+      vi.advanceTimersByTime(5000)
+      expect(confettiPieces()).toHaveLength(18)
+    })
+
+    it('stamps both winners and still bursts once', async () => {
+      await mount({ standings: BEFORE, celebrate: true, framed: true })
+
+      await receives(newsOf({ winners: [1, 3] }))
+      vi.advanceTimersByTime(600)
+      await nextTick()
+
+      expect(stamps()).toHaveLength(2)
+      expect(rows().map(row => row.findAll('[data-stamp]').length)).toEqual([1, 0, 1])
+      expect(confettiPieces()).toHaveLength(18)
+    })
+
+    it('has eight stamps and one burst when eight Parties are level', async () => {
+      const level = Array.from({ length: 8 }, (_, index) => standing(index + 1, 1, 2))
+      await mount({ standings: level.map(item => ({ ...item, points: 0 })), teams: eightTeams, celebrate: true, framed: true })
+
+      await receives(newsOf({ before: level.map(item => ({ ...item, points: 0 })), winners: [1, 2, 3, 4, 5, 6, 7, 8] }), level)
+      vi.advanceTimersByTime(600)
+      await nextTick()
+
+      expect(stamps()).toHaveLength(8)
+      expect(confettiPieces()).toHaveLength(18)
+    })
+
+    it('has no stamp and no burst without `celebrate`: the panel and the phone view', async () => {
+      await mount({ standings: BEFORE })
+
+      await receives(newsOf())
+      vi.advanceTimersByTime(600)
+      await nextTick()
+
+      expect(stamps()).toHaveLength(0)
+      expect(page!.find('.layer-confetti').exists()).toBe(false)
+      expect(pills()).toHaveLength(3)
+    })
+
+    it('takes the stamp away with the news', async () => {
+      await mount({ standings: BEFORE, celebrate: true, framed: true })
+      await receives(newsOf())
+
+      await receives(null)
+
+      expect(stamps()).toHaveLength(0)
+    })
+
+    it('gives the framed card room for the confetti layer to cover it', async () => {
+      await mount({ framed: true, celebrate: true })
+
+      expect(page!.get('section').classes()).toContain('relative')
+    })
+
+    it('stamps on the first Result: it mounts with the news it just made', async () => {
+      await mount({ standings: AFTER, celebrate: true, framed: true, news: newsOf({ at: Date.now() }) })
+
+      expect(stamps()).toHaveLength(1)
+      vi.advanceTimersByTime(600)
+      await nextTick()
+      expect(confettiPieces()).toHaveLength(18)
+    })
+  })
+
+  describe('under reduced motion', () => {
+    beforeEach(() => {
+      motion('reduced')
+    })
+
+    it('shows the final numbers at once, with no scale and no confetti, and fades the stamp in over 200 ms', async () => {
+      await mount({ standings: BEFORE, celebrate: true, framed: true })
+
+      await receives(newsOf())
+      vi.advanceTimersByTime(600)
+      await nextTick()
+
+      expect(column()).toEqual(['6', '5', '1'])
+      expect(confettiPieces()).toHaveLength(0)
+      const everything = animate.mock.calls.flatMap(call => call[0] as Keyframe[])
+      expect(everything.some(frame => String(frame.transform ?? '').includes('scale'))).toBe(false)
+      const [stampFrames, stampOptions] = animationsOn('[data-stamp]')[0]!
+      expect(stampFrames.map(frame => frame.opacity)).toEqual([0, 1])
+      expect(stampOptions).toMatchObject({ duration: 200 })
+      expect(stampOptions.delay ?? 0).toBe(0)
+      expect((stamps()[0]!.element as HTMLElement).style.transform).toBe('rotate(8deg)')
+      const [pillFrames, pillOptions] = animationsOn('[data-delta]')[0]!
+      expect(pillFrames.map(frame => frame.opacity)).toEqual([0, 1])
+      expect(pillOptions).toMatchObject({ duration: 200 })
+    })
+
+    it('highlights the rows that changed rank for 0.2 s, and no other', async () => {
+      await mount({ standings: BEFORE })
+
+      await receives(newsOf())
+
+      const highlighted = (team: string) => animationsOn(`tr[data-team="${team}"] td`)
+      expect(highlighted('1')).toHaveLength(3)
+      expect(highlighted('2')).toHaveLength(3)
+      expect(highlighted('3')).toHaveLength(0)
+      for (const [keyframes, options] of highlighted('1')) {
+        expect(options).toMatchObject({ duration: 200, easing: 'linear' })
+        expect(keyframes.map(frame => frame.backgroundColor)).toEqual(['color-mix(in srgb, var(--cp-primary) 35%, var(--cp-surface))', 'var(--cp-surface)'])
+      }
+    })
+
+    // `data-motion="reduced"` and the OS setting both reach the code through `--cp-motion` (compies-tokens.css), which `motion()` fakes.
+  })
+
+  it('does not highlight rows with full motion', async () => {
+    await mount({ standings: BEFORE })
+
+    await receives(newsOf())
+
+    expect(animationsOn('td')).toHaveLength(0)
   })
 })

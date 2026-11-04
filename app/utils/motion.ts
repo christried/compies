@@ -39,11 +39,12 @@ export function fade(element: Element): void {
 }
 
 // The Veto window (04-motion § Veto window, #231). Under reduced motion each of these is a 0.2 s fade at the same moment: no stagger, no delay (F10).
+// The Standings' pills and stamp (#276) follow the same rule.
 
 /** The fade every Veto-window animation becomes under reduced motion: 0.2 s, with no delay. */
 const REDUCED_FADE_MS = 200
 
-/** Runs a Veto-window animation, or under reduced motion the 0.2 s fade at once (the tiles and stamps show at the same moment). */
+/** Runs an animation of a stamp or a pill, or under reduced motion the 0.2 s fade at once (the tiles and stamps show at the same moment). */
 function animateVeto(element: Element, keyframes: Keyframe[], options: { duration: number, delay?: number, easing: string }): void {
   if (typeof element.animate !== 'function') return
   if (reducedMotion()) element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: REDUCED_FADE_MS, easing: motionToken('--cp-ease-out', 'ease-out'), fill: 'backwards' })
@@ -69,4 +70,26 @@ export function vetoStamp(element: Element): void {
 export function clockTick(element: Element): void {
   if (reducedMotion() || typeof element.animate !== 'function') return
   element.animate([{ transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 260, easing: motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)') })
+}
+
+// The Standings in motion (04-motion § Leaderboard, #276). The rows' glide is Vue's move transition on the Leaderboard's `tbody` group (`lb-swap`),
+// the count is CpNum's (`lb-count`); these are the pieces drawn by the Web Animations API.
+
+/** A Party's delta pill (`scale .3→1.15→1`, 0.42 s `EASE.pop`, 0.3 s after the news; under reduced motion a 0.2 s fade). */
+export function deltaPop(element: Element): void {
+  animateVeto(element, [{ transform: 'scale(.3)', opacity: 0, offset: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1, offset: 1 }], { duration: 420, delay: 300, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') })
+}
+
+/** The winner's stamp (`scale 2→.9→1`, rotation 8°, 0.48 s, 0.52 s after the news, on the curve `DS Scoring` draws it with; under reduced motion a 0.2 s fade, still rotated). */
+export function winnerStamp(element: Element): void {
+  animateVeto(element, [{ transform: 'rotate(8deg) scale(2)', opacity: 0, offset: 0 }, { transform: 'rotate(8deg) scale(.9)', opacity: 1, offset: 0.7 }, { transform: 'rotate(8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 480, delay: 520, easing: motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)') })
+}
+
+/** What a row whose rank changed gets under reduced motion instead of the glide: its cells tint with the primary colour and fade back in 0.2 s (04-motion: „rows reorder instantly with a 0.2 highlight“). */
+export function highlightRow(row: Element): void {
+  if (!reducedMotion()) return
+  for (const cell of row.children) {
+    if (typeof cell.animate !== 'function') return
+    cell.animate([{ backgroundColor: 'color-mix(in srgb, var(--cp-primary) 35%, var(--cp-surface))' }, { backgroundColor: 'var(--cp-surface)' }], { duration: REDUCED_FADE_MS, easing: 'linear' })
+  }
 }

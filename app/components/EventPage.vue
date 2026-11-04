@@ -121,6 +121,10 @@ const pill = computed(() => headerPill(pageState.value, data.value?.event.phase,
 
 // The phone's views and the side panel's tabs are useEventTabs' (#257): the Event page, the Standings (#274) or the Activity feed.
 const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs(room)
+
+// What is new on the Standings (#276): a Result the page has not seen. One owner for the stage block and the panel's tab, which are mounted
+// together, and for the live region below.
+const { news } = useStandingsNews(data, slug)
 </script>
 
 <template>
@@ -197,6 +201,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
             <StandingsTab
               :view="data"
               :corrections="corrections"
+              :news="news"
             />
           </div>
         </template>
@@ -213,6 +218,17 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
         @select="selectView"
       />
     </template>
+
+    <!-- The Standings' one polite announcement (#276): outside the branches of the stage and the phone views, so it exists before its text changes and
+         survives a switch of tab; the Leaderboards have none, because the stage block and the panel's tab are mounted together and would read it twice. -->
+    <p
+      v-if="data"
+      role="status"
+      aria-live="polite"
+      class="sr-only"
+    >
+      {{ news?.announcement }}
+    </p>
 
     <TransitionGroup
       v-if="data && pageState && (wide !== false || activeView === 'event')"
@@ -290,9 +306,11 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
         <Leaderboard
           v-else-if="block === 'standings'"
           framed
+          celebrate
           :standings="data.standings!"
           :end="data.end!"
           :teams="data.teams"
+          :news="news"
         />
 
         <!-- The history of the finished stage is read-only for everyone: no `corrections` (#275), not even for the Host (#277). -->
@@ -380,6 +398,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
         v-if="activeView === 'standings'"
         :view="data"
         :corrections="corrections"
+        :news="news"
       />
       <EventActivityView
         v-else
