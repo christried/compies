@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronUp, Equal, GripVertical } from '@lucide/vue'
 import { teamName } from '~/utils/board'
-import { draftPlaces, draftPoints, moveRow, newResultDraft, setScore, toggleLevel } from '~/utils/result-draft'
+import { draftFromResult, draftPlaces, draftPoints, moveRow, newResultDraft, setScore, toggleLevel } from '~/utils/result-draft'
 import type { BoardTeam } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
 import { SCORE_MAX, type ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
+import type { ResultView } from '~~/shared/stage'
 import { cutToCharacters } from '~~/shared/text'
 
 // The result sheet (#273, GLOSSARY: Result, Place, Shared place, Score; 02-components § ResultEntry, screen 16): the Host orders the Parties into
@@ -13,32 +14,38 @@ import { cutToCharacters } from '~~/shared/text'
 // the same move (result-draft.ts). „gleichauf“ between two neighbours gives them one Place (1, 1, 3). A Score is optional and counts for nothing.
 // Each row shows the points it earns by the Points table. Nothing is sent before „Ergebnis speichern“; closing discards the draft, and
 // opening starts again from team order. The save is the page's (EventRounds); it says whether the server took the Result, and only then the sheet
-// closes, so a refusal keeps the order and the Scores. FFA and the Correction are not built here (#275 does the latter).
+// closes, so a refusal keeps the order and the Scores. FFA is not built here. With `correction` (#275) the sheet corrects a saved Result: it opens
+// on that Result's order, Places and Scores, says so in its title, kicker and note, and the save is the same PUT (the page sends it, no confirm dialog).
 const props = withDefaults(defineProps<{
   open: boolean
   /** The game of the Round, shown above the rows; null while no Round is chosen. */
   game: RoundGame | null
   /** Which game of the Event this will be, as „Spiel 3 von 6“ above the game's name (#274); null or missing shows no line. */
   kicker?: { number: number, total: number } | null
+  /** The saved Result being corrected (#275): the sheet opens on it, titled „Spiel 3 korrigieren“; null or missing is the entering sheet. */
+  correction?: Pick<ResultView, 'number' | 'places'> | null
   /** The Parties, in team order. */
   teams: BoardTeam[]
   pointsTable: PointsTable
   /** Sends the Places; resolves to whether the server took them. */
   save: (places: ResultPlace[]) => Promise<boolean>
-}>(), { kicker: null })
+}>(), { kicker: null, correction: null })
 
 const emit = defineEmits<{ close: [] }>()
 
 const { t } = useI18n()
 
-const draft = ref(newResultDraft(props.teams.length))
+/** What the sheet opens with: the saved Result in correction mode, else the Parties in team order. */
+const startDraft = () => (props.correction ? draftFromResult(props.correction.places) : newResultDraft(props.teams.length))
+
+const draft = ref(startDraft())
 /** What the live region says; empty until a row moves. */
 const announcement = ref('')
 const busy = ref(false)
 
 watch(() => props.open, (open) => {
   if (!open) return
-  draft.value = newResultDraft(props.teams.length)
+  draft.value = startDraft()
   announcement.value = ''
   busy.value = false
 })
@@ -113,7 +120,7 @@ async function onSave() {
 <template>
   <AppSheet
     :open="open"
-    :title="t('result.title')"
+    :title="correction ? t('result.correction', { n: correction.number }) : t('result.title')"
     full
     @close="emit('close')"
   >
@@ -122,7 +129,7 @@ async function onSave() {
         v-if="kicker"
         class="m-0 text-[13px] font-bold text-ink-2"
       >
-        {{ t('result.kicker', { n: kicker.number, total: kicker.total }) }}
+        {{ t(correction ? 'result.kickerCorrection' : 'result.kicker', { n: kicker.number, total: kicker.total }) }}
       </p>
       <p
         v-if="game"
@@ -134,6 +141,13 @@ async function onSave() {
         {{ t('result.help') }}
       </p>
     </div>
+
+    <NoticeBanner
+      v-if="correction"
+      tone="info"
+    >
+      {{ t('result.correctionNote', { n: correction.number }) }}
+    </NoticeBanner>
 
     <TransitionGroup
       tag="ol"
@@ -263,7 +277,7 @@ async function onSave() {
         :disabled="busy"
         @click="onSave"
       >
-        {{ t('result.save') }}
+        {{ t(correction ? 'result.saveCorrection' : 'result.save') }}
       </AppButton>
     </template>
   </AppSheet>

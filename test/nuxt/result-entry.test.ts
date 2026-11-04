@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppSheet from '~/components/AppSheet.vue'
 import ResultEntry from '~/components/ResultEntry.vue'
 import type { BoardTeam } from '~~/shared/event'
+import type { ResultView } from '~~/shared/stage'
 import type { RoundGame } from '~~/shared/game'
 import type { ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
@@ -18,7 +19,7 @@ const teams = (names: (string | null)[]): BoardTeam[] => names.map((name, index)
 const three = teams(['Wilde Gurken', 'Die Füchse', null])
 const linear3: PointsTable = { preset: 'linear', values: [2, 1, 0] }
 
-type Props = { open?: boolean, teams?: BoardTeam[], pointsTable?: PointsTable, kicker?: { number: number, total: number } | null, save?: (places: ResultPlace[]) => Promise<boolean> }
+type Props = { open?: boolean, teams?: BoardTeam[], pointsTable?: PointsTable, kicker?: { number: number, total: number } | null, correction?: Pick<ResultView, 'number' | 'places'> | null, save?: (places: ResultPlace[]) => Promise<boolean> }
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(props: Props = {}) {
@@ -37,7 +38,8 @@ const places = () => rows().map(placeOf)
 const switches = () => [...sheet().querySelectorAll<HTMLButtonElement>('[role="switch"]')]
 const button = (label: string) => sheet().querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!
 const scoreField = (team: string) => sheet().querySelector<HTMLInputElement>(`input[aria-label="Score ${team} (optional)"]`)!
-const saveButton = () => [...sheet().querySelectorAll<HTMLButtonElement>('footer button')].find(item => item.textContent?.trim() === 'Ergebnis speichern')!
+const footerButton = (label: string) => [...sheet().querySelectorAll<HTMLButtonElement>('footer button')].find(item => item.textContent?.trim() === label)!
+const saveButton = () => footerButton('Ergebnis speichern')
 const status = () => sheet().querySelector('[role="status"]')!.textContent!.trim()
 
 async function click(element: HTMLElement) {
@@ -91,6 +93,135 @@ describe('the result sheet', () => {
       page!.unmount()
       await mount({ kicker: null })
       expect(kickerLine()).toBeUndefined()
+    })
+  })
+
+  describe('in correction mode (#275)', () => {
+    const line = (team: number, place: number, score: string | null = null) => ({ team, place, points: 0, score })
+    /** Team 1 and 2 share Place 1, team 3 is third; Scores on 1 and 3. */
+    const shared = { number: 3, places: [line(1, 1, '16'), line(2, 1), line(3, 3, '8')] }
+    const correctionSave = () => footerButton('Korrektur speichern')
+    const noteLine = () => [...sheet().querySelectorAll('[role="status"]')].find(item => item.textContent?.includes('rechnet nach dem Speichern neu'))
+
+    it('is titled „Spiel 3 korrigieren“ with the kicker „Korrektur: Spiel 3 von 6“, the note and „Korrektur speichern“', async () => {
+      await mount({ correction: shared, kicker: { number: 3, total: 6 } })
+
+      expect(sheet().querySelector('h2')?.textContent).toBe('Spiel 3 korrigieren')
+      expect([...sheet().querySelectorAll('p')].some(line => line.textContent?.trim() === 'Korrektur: Spiel 3 von 6')).toBe(true)
+      expect(noteLine()?.textContent).toContain('Im Feed steht, dass du Spiel 3 korrigiert hast.')
+      expect(correctionSave()).toBeDefined()
+      expect(footerButton('Ergebnis speichern')).toBeUndefined()
+      expect(sheet().textContent).toContain('Mario Kart')
+    })
+
+    it('opens with the saved order, Places, Scores and points: a stored 1, 1, 3 shows 1, 1, 3 with „gleichauf“ on', async () => {
+      await mount({ correction: shared })
+
+      expect(names()).toEqual(['Wilde Gurken', 'Die Füchse', 'Team Gelb'])
+      expect(places()).toEqual(['1', '1', '3'])
+      expect(rows().map(earnsOf)).toEqual(['+2 Punkte', '+2 Punkte', '+0 Punkte'])
+      expect(switches().map(item => item.getAttribute('aria-checked'))).toEqual(['true', 'false'])
+      expect(scoreField('Wilde Gurken').value).toBe('16')
+      expect(scoreField('Die Füchse').value).toBe('')
+      expect(scoreField('Team Gelb').value).toBe('8')
+    })
+
+    it('starts from the saved order when it is not team order', async () => {
+      await mount({ correction: { number: 1, places: [line(3, 1), line(1, 2), line(2, 3)] } })
+
+      expect(names()).toEqual(['Team Gelb', 'Wilde Gurken', 'Die Füchse'])
+      expect(places()).toEqual(['1', '2', '3'])
+    })
+
+    it('sends exactly the stored Places when nothing was touched', async () => {
+      const save = vi.fn(async (_places: ResultPlace[]) => true)
+      await mount({ correction: shared, save })
+
+      await click(correctionSave())
+
+      expect(save).toHaveBeenCalledWith([
+        { team: 1, place: 1, score: '16' },
+        { team: 2, place: 1, score: null },
+        { team: 3, place: 3, score: '8' },
+      ])
+    })
+
+    it('sends a changed order and a changed Score as changed', async () => {
+      const save = vi.fn(async (_places: ResultPlace[]) => true)
+      await mount({ correction: shared, save })
+
+      await click(button('Nach unten: Die Füchse'))
+      await type(scoreField('Team Gelb'), '9')
+      await click(correctionSave())
+
+      expect(save).toHaveBeenCalledWith([
+        { team: 1, place: 1, score: '16' },
+        { team: 3, place: 2, score: '9' },
+        { team: 2, place: 3, score: null },
+      ])
+    })
+
+    it('stays open with the draft when the server refused, and closes when it took the Correction', async () => {
+      const save = vi.fn(async (_places: ResultPlace[]) => false)
+      const entry = await mount({ correction: shared, save })
+
+      await type(scoreField('Die Füchse'), '5')
+      await click(correctionSave())
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(entry.emitted('close')).toBeUndefined()
+      expect(scoreField('Die Füchse').value).toBe('5')
+
+      save.mockResolvedValue(true)
+      await click(correctionSave())
+      expect(entry.emitted('close')).toHaveLength(1)
+    })
+
+    it('starts from the saved Result again after closing, not from the edited draft', async () => {
+      const entry = await mount({ correction: shared })
+      await click(button('Nach unten: Wilde Gurken'))
+      await type(scoreField('Team Gelb'), '1')
+
+      await entry.setProps({ open: false })
+      await entry.setProps({ open: true })
+      await flushPromises()
+
+      expect(names()).toEqual(['Wilde Gurken', 'Die Füchse', 'Team Gelb'])
+      expect(places()).toEqual(['1', '1', '3'])
+      expect(scoreField('Team Gelb').value).toBe('8')
+    })
+
+    it('shows another Result when it opens for another Round', async () => {
+      const entry = await mount({ correction: shared })
+
+      await entry.setProps({ open: false })
+      await entry.setProps({ open: true, correction: { number: 5, places: [line(2, 1, '3'), line(1, 2), line(3, 3)] } })
+      await flushPromises()
+
+      expect(sheet().querySelector('h2')?.textContent).toBe('Spiel 5 korrigieren')
+      expect(names()).toEqual(['Die Füchse', 'Wilde Gurken', 'Team Gelb'])
+      expect(scoreField('Die Füchse').value).toBe('3')
+    })
+
+    it('shows nothing of it without a correction', async () => {
+      await mount()
+
+      expect(sheet().querySelector('h2')?.textContent).toBe('Ergebnis eintragen')
+      expect(noteLine()).toBeUndefined()
+      expect(sheet().textContent).not.toContain('Korrektur')
+      expect(footerButton('Korrektur speichern')).toBeUndefined()
+    })
+
+    it('holds 2 and 8 Parties', async () => {
+      await mount({ teams: teams(['Eins', 'Zwei']), correction: { number: 1, places: [line(2, 1, '3'), line(1, 2)] } })
+      expect(names()).toEqual(['Zwei', 'Eins'])
+      expect(places()).toEqual(['1', '2'])
+
+      page!.unmount()
+      const eight = teams(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
+      await mount({ teams: eight, pointsTable: { preset: 'linear', values: [7, 6, 5, 4, 3, 2, 1, 0] }, correction: { number: 2, places: eight.map(team => line(team.position, 1)) } })
+      expect(names()).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
+      expect(places()).toEqual(Array(8).fill('1'))
+      expect(switches().every(item => item.getAttribute('aria-checked') === 'true')).toBe(true)
     })
   })
 
