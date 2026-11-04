@@ -495,6 +495,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect((await send('POST', `/api/e/${slug}/sessions/end`, hostCookie)).status).toBe(200)
       // Between Sessions the Host enters the Result of the open Round (#273): the feed names its game, and no game of the pools.
       expect((await send('PUT', `/api/e/${slug}/rounds/${openRound}/result`, hostCookie, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] })).status).toBe(200)
+      // The Host corrects that Result between Sessions too (#275): the Places swap, and the feed says so.
+      expect((await send('PUT', `/api/e/${slug}/rounds/${openRound}/result`, hostCookie, { places: [{ team: 1, place: 2 }, { team: 2, place: 1 }] })).status).toBe(200)
 
       return { slug, eventId, games: [a, b, c, d] as const, set: f, player2Cookie }
     }
@@ -508,9 +510,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       for (const type of SERVER_SENT) expect(sent.has(type), `the flow sends no ${type}`).toBe(true)
       // The kinds of 0.7 and 0.8 (#226, #273) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228,
       // game_drawn, #229, which the feed shows from the stop on, vetoes_revealed, #231, from the end of the Veto window on, coin_tossed,
-      // #235, from the landing on, and result_entered, #273). The rest come with #233 (bonus_veto_granted), #275 (result_corrected)
-      // and #277 (event_finished).
-      const written = ACTIVITY_TYPES.filter(type => !['bonus_veto_granted', 'result_corrected', 'event_finished'].includes(type))
+      // #235, from the landing on, result_entered, #273, and result_corrected, #275). The rest come with #233 (bonus_veto_granted) and
+      // #277 (event_finished).
+      const written = ACTIVITY_TYPES.filter(type => !['bonus_veto_granted', 'event_finished'].includes(type))
       clock.advance(70_000)
       expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
     })
@@ -535,13 +537,26 @@ describe('Hidden wheel secrecy (#148)', () => {
       expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
     })
 
+    it('names only the set game in the Correction a Player reads, and the Event read still names no pool game (#275)', async () => {
+      const { slug, eventId, games, set, player2Cookie } = await lobbyFlow()
+
+      const entries = (await activityOf(playerCookie, slug)).entries.filter(entry => entry.type === 'result_corrected')
+      expect(entries).toMatchObject([{ type: 'result_corrected', params: { gameId: set.id, number: 1 }, games: { [set.id]: 'Foxtrot Fest' } }])
+      expect(Object.keys(entries[0]!.games)).toEqual([set.id])
+      expectNoTrace('the Activity feed entry of the Correction', JSON.stringify(entries), games)
+      expectNoTrace('the room\'s entry of the Correction', JSON.stringify(notifier.messages(eventId).filter(message => message.type === 'activity.added' && message.entry.type === 'result_corrected')), games)
+      expect((JSON.parse(await rawRead(player2Cookie, slug)) as EventView).results).toMatchObject([{ number: 1, corrected: true }])
+      expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
+    })
+
     it('names only the set game in the Results a Player reads (#274), and no pool game in the Standings or the end', async () => {
       const { slug, games, set, player2Cookie } = await lobbyFlow()
       const view = JSON.parse(await rawRead(player2Cookie, slug)) as EventView
       const raw = JSON.stringify({ results: view.results, standings: view.standings, end: view.end })
 
       expect(view.results).toMatchObject([{ number: 1, game: { id: set.id, name: 'Foxtrot Fest' } }])
-      expect(view.standings?.map(row => row.team)).toEqual([1, 2])
+      // The Correction swapped the Places: Party 2 leads the Standings now (#275).
+      expect(view.standings?.map(row => row.team)).toEqual([2, 1])
       expect(view.end).toEqual({ played: 1, gameCount: 6 })
       // The Hidden wheel's spin is still unstopped for Player 2: its game is in none of the three fields.
       expectNoTrace('the results, the Standings and the end of Player 2', raw, games)
