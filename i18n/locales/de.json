@@ -515,7 +515,9 @@
   "result": {
     "title": "Ergebnis eintragen",
     "kicker": "Spiel {n} von {total}",
-    "correction": "Korrektur, Spiel {n}",
+    "correction": "Spiel {n} korrigieren",
+    "kickerCorrection": "Korrektur: Spiel {n} von {total}",
+    "correctionNote": "Die Tabelle rechnet nach dem Speichern neu, für alle sichtbar. Im Feed steht, dass du Spiel {n} korrigiert hast.",
     "cancelCorrection": "Korrektur abbrechen",
     "allPlayed": "Alle Spiele gespielt",
     "done": "Fertig",
@@ -557,7 +559,7 @@
   "history": {
     "title": "Spielverlauf",
     "wonBy": "Gewonnen von",
-    "correct": "Korrigieren",
+    "correct": "Spiel {n} korrigieren",
     "corrected": "korrigiert",
     "empty": "Noch kein Spiel gespielt."
   },
@@ -618,7 +620,8 @@
     "hostSet": "{name} hat {game} gesetzt",
     "gamePutBack": "{name} hat {game} zurückgelegt",
     "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben",
-    "resultEntered": "Spiel {n}: {game}, {list} gewinnt | Spiel {n}: {game}, {list} gewinnen"
+    "resultEntered": "Spiel {n}: {game}, {list} gewinnt | Spiel {n}: {game}, {list} gewinnen",
+    "resultCorrected": "{name} hat Spiel {n} ({game}) korrigiert"
   },
   "emote": {
     "send": "Emote senden: {name}",
