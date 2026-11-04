@@ -2,6 +2,7 @@
 // the Coin flip and the Bonus Vetoes, and what the stage's actions answer. shared/event.ts reads them into EventView.
 import type { RoundGame } from './game'
 import type { BonusVetoRejection, PoolWarning, SetRejection, SpinRejection, VetoRejection } from './rounds'
+import type { FinishRejection } from './results'
 
 /**
  * An open Round on the stage (#228, GLOSSARY: Round): its game is set, it was not put back and it has no Result yet. It has no number:
@@ -153,5 +154,15 @@ export interface ResultView { roundId: string, number: number, game: RoundGame, 
 /** A Party's row in the Standings (#274): its team position, its rank (1 + the Parties with more points, so equal points share a rank) and its points. */
 export interface StandingView { team: number, rank: number, points: number }
 
-/** How far the Event is (#274): the Rounds with a Result out of the Game count. #277 adds `complete` and `tie`. */
-export interface EndView { played: number, gameCount: number }
+/**
+ * How far the Event is (#274, #277): the Rounds with a Result out of the Game count. `complete`: they reach the Game count, so the Host may
+ * finish (nothing finishes by itself). `tie`: the team positions on rank 1 when `complete` and more than one holds it (GLOSSARY: Tie), else null.
+ * Same for every Member. `finish`: the Host's part, why the Event cannot be finished now (null when it can); null for every other Member.
+ */
+export interface EndView {
+  played: number
+  gameCount: number
+  complete: boolean
+  tie: number[] | null
+  finish: { rejection: FinishRejection | null } | null
+}

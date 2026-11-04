@@ -120,6 +120,8 @@ export interface MovedMember { userId: string, to: Place }
 export interface SessionStarted { sessionId: string, phase: Phase }
 /** What `POST /api/e/:slug/sessions/end` returns: the Session that ended and the Phase, which stays running (#164). */
 export interface SessionEnded { sessionId: string, phase: Phase }
+/** What `POST /api/e/:slug/finish` returns: the Phase, `finished`, and the team positions that won (one, until #278's Tie ends). */
+export interface EventFinished { phase: Phase, winners: number[] }
 
 /**
  * What the Host sees of the start rule (#164): the next Session (the earliest dated one that has not started), its
@@ -197,7 +199,7 @@ export interface EventView {
   results: ResultView[]
   /** The Standings (#274): every Party's rank and points, points descending then team ascending; null for an Event that is not set up. */
   standings: StandingView[] | null
-  /** How far the Event is (#274); null for an Event that is not set up. */
+  /** How far the Event is (#274): the Rounds with a Result out of the Game count, whether the Host may finish it (#277, the Host's `finish` only); null for an Event that is not set up. */
   end: EndView | null
   /** Setting the next game (#228). Only the Host gets it; null for every other Member. */
   setGame: SetGameView | null

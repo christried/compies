@@ -11,7 +11,7 @@ import { standingsOf } from '~~/shared/results'
 
 const named = (names: (string | null)[]): BoardTeam[] => names.map((name, index) => ({ position: index + 1, name, frozen: name !== null }))
 const three = named(['Wilde Gurken', 'Die Füchse', null])
-const end = (played: number, gameCount = 6): EndView => ({ played, gameCount })
+const end = (played: number, gameCount = 6): EndView => ({ played, gameCount, complete: played >= gameCount, tie: null, finish: null })
 const standing = (team: number, rank: number, points: number): StandingView => ({ team, rank, points })
 
 type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean }

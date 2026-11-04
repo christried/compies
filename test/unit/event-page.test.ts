@@ -219,7 +219,7 @@ describe('the blocks of the stage', () => {
   })
 
   // The Standings (#274): a stage block once the first Result exists, right after the open Rounds, in every state a Result can exist in.
-  const STANDINGS: Partial<PageInput> = { end: { played: 1, gameCount: 6 } }
+  const STANDINGS: Partial<PageInput> = { end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null } }
 
   it('lists the Standings right after the open Rounds once a Result exists, while a Session runs (#274)', () => {
     expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'board', 'poll', 'cards'])
@@ -233,7 +233,7 @@ describe('the blocks of the stage', () => {
   })
 
   it('lists no Standings before the first Result, whether the view has an end with nothing played or none (#274)', () => {
-    expect(blocks(ONE_RUNNING, { ...RUNNING, end: { played: 0, gameCount: 6 } })).not.toContain('standings')
+    expect(blocks(ONE_RUNNING, { ...RUNNING, end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null } })).not.toContain('standings')
     expect(blocks(ONE_RUNNING, { ...RUNNING, end: null })).not.toContain('standings')
   })
 
