@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { leaveInPlace, REFLOW_CLASS, unwatched } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
 import type { ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
@@ -12,7 +13,8 @@ import type { EndView, RoundView } from '~~/shared/stage'
 // list (a Result from another tab, or a refetch after a refusal). The sheet's kicker is „Spiel {played + 1} von {gameCount}“ from `end` (#274):
 // a Round gets the highest number + 1 when its Result is entered and numbers have no gaps, so the Round being scored is Spiel `played + 1`. Nothing renders without an open Round.
 // Motion: a row enters as a UI element does (04-motion § UI enters, banner: opacity 0.22 s `ease-out`) and leaves faster
-// (0.14 s `ease-in`); reduced motion keeps the fade, which is all there is.
+// (0.14 s `ease-in`); reduced motion keeps the fade, which is all there is. A card that leaves goes out of the layout in the render that starts its
+// fade (`leaveInPlace`, #276), so the blocks below glide up with the page's group and the cards that stay glide to their new cell (`REFLOW_CLASS`).
 const props = defineProps<{
   rounds: RoundView[]
   isHost: boolean
@@ -37,11 +39,34 @@ const resultRound = computed(() => props.rounds.find(round => round.id === resul
 watch(resultRound, (round) => {
   if (round === null) resultFor.value = null
 })
+
+/** Where in the list the Round of the open sheet stood: after its save the one that takes that place is the next. */
+let openedAt = 0
+function openResult(roundId: string, index: number) {
+  resultFor.value = roundId
+  openedAt = index
+}
+
+const section = useTemplateRef<HTMLElement>('section')
+// The save removes the Round whose card holds the button that opened the sheet, so the sheet's own return of focus finds nothing (#274, Q3 of the
+// Release review): the button is gone or leaving (`leaveInPlace` makes the leaver inert), and with the last Round the whole section goes. Once the sheet has
+// closed and the page has settled, focus that has fallen to the body, or stayed on a leaver, goes to the next open Round's button, and with none left to
+// the stage's heading (`tabindex="-1"`, EventPageHead). Focus that returned to its button (Escape, the overlay) stays.
+watch(resultFor, async (id, was) => {
+  if (id !== null || was === null) return
+  await nextTick()
+  const active = document.activeElement
+  if (active && active !== document.body && active.isConnected && !active.closest('[inert]')) return
+  const buttons = [...(section.value?.querySelectorAll<HTMLElement>('[data-result]') ?? [])].filter(button => !button.closest('[inert]'))
+  const next = buttons[Math.min(openedAt, buttons.length - 1)]
+  ;(next ?? document.querySelector<HTMLElement>('#stage h1'))?.focus()
+})
 </script>
 
 <template>
   <section
     v-if="rounds.length > 0"
+    ref="section"
     :aria-labelledby="headingId"
     class="flex flex-col gap-3"
   >
@@ -57,10 +82,12 @@ watch(resultRound, (round) => {
       enter-active-class="animate-enter"
       leave-active-class="transition-opacity dur-fast ease-in"
       leave-to-class="opacity-0"
-      class="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2"
+      :move-class="unwatched() ? undefined : REFLOW_CLASS"
+      class="relative m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2"
+      @before-leave="leaveInPlace"
     >
       <li
-        v-for="round in rounds"
+        v-for="(round, index) in rounds"
         :key="round.id"
         class="flex min-w-0 flex-col gap-2"
       >
@@ -85,7 +112,8 @@ watch(resultRound, (round) => {
         >
           <AppButton
             v-if="pointsTable"
-            @click="resultFor = round.id"
+            data-result
+            @click="openResult(round.id, index)"
           >
             {{ t('result.title') }}
           </AppButton>
@@ -105,15 +133,16 @@ watch(resultRound, (round) => {
         </p>
       </li>
     </TransitionGroup>
-    <ResultEntry
-      v-if="isHost && pointsTable"
-      :open="resultRound !== null"
-      :game="resultRound?.game ?? null"
-      :kicker="end ? { number: end.played + 1, total: end.gameCount } : null"
-      :teams="teams"
-      :points-table="pointsTable"
-      :save="places => enterResult(resultFor!, places)"
-      @close="resultFor = null"
-    />
   </section>
+  <!-- Outside the section: the sheet's lifetime must not depend on the list its own save empties (#274). -->
+  <ResultEntry
+    v-if="isHost && pointsTable"
+    :open="resultRound !== null"
+    :game="resultRound?.game ?? null"
+    :kicker="end ? { number: end.played + 1, total: end.gameCount } : null"
+    :teams="teams"
+    :points-table="pointsTable"
+    :save="places => enterResult(resultFor!, places)"
+    @close="resultFor = null"
+  />
 </template>

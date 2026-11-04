@@ -964,6 +964,34 @@ describe('the Standings on the Event page', () => {
     })
   })
 
+  // The blocks glide when one above them leaves or arrives (#276, F4 of the s5 check): the page's group moves them with Vue's FLIP. This proves what the group
+  // asks for, not that it glides: the browser check (scripts/browser/standings.mjs) does.
+  describe('when a block above moves them', () => {
+    /** The page's group of blocks: the group with the width of the page. */
+    const blocks = () => mounted!.findAllComponents({ name: 'TransitionGroup' }).find((group: VueWrapper) => group.classes().includes('max-w-[1100px]'))!
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('glide like the Round cards do: a transform, ease-out, the slow duration, and nothing under reduced motion', async () => {
+      const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      await mount(served.slug)
+
+      expect(String(blocks().props('moveClass')).split(' ')).toEqual(['transition-transform', 'dur-slow', 'ease-out', 'motion-reduce:transition-none', 'reduced:transition-none'])
+    })
+
+    it('are asked for no glide while the tab is hidden: they move at once, and nothing starts when the Member returns', async () => {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      await mount(served.slug)
+
+      expect(String(blocks().props('moveClass') ?? '')).not.toContain('transition-transform')
+    })
+  })
+
   // The Host's „Korrigieren“ (#275): a pencil per numbered row of the history, until the Event finishes; it opens the result sheet and the save is the same PUT.
   describe('the Host\'s Corrections', () => {
     const pencil = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('button[aria-label="Spiel 1 korrigieren"]')

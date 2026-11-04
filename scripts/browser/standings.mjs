@@ -346,6 +346,26 @@ function checkResult(recorded, { box, motion, step, number, name }) {
   }
 }
 
+/**
+ * F4 of the s5 check (#276): when a Round's card leaves „Gerade dran“ the stage block's top moves by the card's height, and the page's group glides it
+ * (a move transition) instead of jumping in one frame. Every entered Result is checked, not only the first: at 1440 the two-column grid loses a row once, on
+ * the second. Full motion: at least 4 frames, and no frame carries more than 60 percent of the shift (the curve is steep, 25 to 35 percent in the first frame;
+ * 60 leaves room for slow headless frames). Reduced motion: it jumps once, by design, in at most 1 frame. A step that moves the block in no frame (a Result
+ * that leaves the Round count as it was) is not checked.
+ */
+function checkReflow(frames, { motion, step, name }) {
+  const tops = frames.filter(frame => frame.stageTop !== null)
+  const moves = tops.flatMap((frame, at) => (at > 0 && Math.abs(frame.stageTop - tops[at - 1].stageTop) > 1 ? [{ t: frame.t, delta: frame.stageTop - tops[at - 1].stageTop }] : []))
+  if (moves.length === 0) return
+  const total = moves.reduce((sum, move) => sum + move.delta, 0)
+  const worst = Math.max(...moves.map(move => Math.abs(move.delta) / Math.abs(total)))
+  const detail = `${moves.length} frame(s), the largest ${Math.round(worst * 100)} percent of ${Math.round(total)} px, over ${Math.round(moves.at(-1).t - moves[0].t)} ms: ${moves.slice(0, 8).map(move => `${Math.round(move.t)} ms ${Math.round(move.delta)} px`).join('; ')}`
+  const tag = `${name} / ${step.label}`
+  console.log(`INFO  ${tag}: the stage block's top moves in ${detail}`)
+  if (motion === 'full') check(`${tag}: the stage block glides when the open Round's card leaves (at least 4 frames, none over 60 percent)`, moves.length >= 4 && worst <= 0.6, detail)
+  else check(`${tag}: the stage block takes its place at once under reduced motion (at most 1 frame)`, moves.length <= 1, detail)
+}
+
 async function scenario({ name, width, view, motion }) {
   console.log(`\n== ${name} (${width} px, ${motion === 'full' ? 'full motion' : motion === 'reduced' ? 'data-motion=reduced' : 'prefers-reduced-motion'}) ==`)
   const host = await launch('host')
@@ -395,12 +415,7 @@ async function scenario({ name, width, view, motion }) {
       if (recorded.shots.length > 0) console.log(`screenshots: ${recorded.shots.join(', ')}`)
       const results = (await api(host, 'GET', `/api/e/${slug}`)).body.results
       const numberOf = results.find(result => result.roundId === roundIds[step.round])?.number ?? step.round + 1
-      if (index === 0 && boxes.includes('stage')) {
-        // Not a check: what the frames show of the layout shift when the open Round's card leaves and the Standings block takes its place.
-        const tops = recorded.frames.filter(frame => frame.stageTop !== null)
-        const jumps = tops.flatMap((frame, at) => (at > 0 && Math.abs(frame.stageTop - tops[at - 1].stageTop) > 1 ? [`${Math.round(frame.t)} ms: ${Math.round(tops[at - 1].stageTop)} → ${Math.round(frame.stageTop)} px`] : []))
-        console.log(`INFO  ${name}: the stage block's top moves in ${jumps.length} frame(s): ${jumps.slice(0, 8).join('; ')}`)
-      }
+      if (step.kind === 'entered' && boxes.includes('stage')) checkReflow(recorded.frames, { motion, step, name })
       for (const box of boxes) checkResult(recorded, { box, motion, step, number: numberOf, name })
       // 7. The Host's page group: the first Result adds the Standings block and the blocks below it move.
       if (watchHost) {
