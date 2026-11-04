@@ -16,6 +16,7 @@
 - Offene Spiele zeigt die Event-Seite jetzt auch zwischen zwei Sessions, nicht nur während eine läuft. ([#273](https://github.com/christried/compies/issues/273))
 - Das Fenster „Ergebnis eintragen“ sagt jetzt über dem Spiel, das wievielte Spiel es wird, zum Beispiel „Spiel 3 von 6“. ([#274](https://github.com/christried/compies/issues/274))
 - Ein Event, dessen Sessions alle vorbei sind, das der Host aber noch nicht abgeschlossen hat, zeigt oben jetzt „Kein Termin“ statt „Vorbei“. „Beendet“ steht erst nach dem Abschließen. ([#277](https://github.com/christried/compies/issues/277))
+- Ein laufendes Event mit Ergebnissen bleibt auf der Startseite, bis der Host es abschließt, auch wenn die letzte Session schon länger vorbei ist. Ein abgeschlossenes Event verschwindet einen Tag nach dem Abschluss von dort. ([#282](https://github.com/christried/compies/issues/282))
 
 ### Behoben
 
