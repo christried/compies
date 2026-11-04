@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GAME_ACTIONS, coinBlockedKey, dockLayout, hostDockState, setBlockedKey, type DockInput, type DockKey } from '../../app/utils/host-dock'
+import { GAME_ACTIONS, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockInput, type DockKey } from '../../app/utils/host-dock'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, derived from
 // the Event read, and which actions sit where (the layout, review 1.4 A4, #228).
@@ -139,10 +139,36 @@ describe('the primary when the Event can be finished (#277)', () => {
     expect(hostDockState(input({ sessions: RUNNING, end: end({ finish: null }) }))).toMatchObject({ primary: 'spin' })
   })
 
-  // A Tie is not finishable here: #278 gives it its own primary, so the dock is what it was before (#277).
-  it('keeps the old primary in a Tie', () => {
-    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2] }) }))).toMatchObject({ primary: 'spin' })
-    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: end({ tie: [1, 2] }) }))).toMatchObject({ kind: 'done', primary: null })
+  // A Tie has its own primary (#278): the Host holds „Unentschieden beenden“ or adds a last game. A Session that has not started cannot hold Results,
+  // so `teams` has no Tie state (a started Session is never removed): the dock and the page's banner agree on running, between and done.
+  it('is Unentschieden beenden in a Tie: in a running Session (with its number), between Sessions and after the last one', () => {
+    const tie = end({ tie: [1, 2] })
+
+    expect(hostDockState(input({ sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z' }), dated('b', 2)], end: tie }))).toMatchObject({ kind: 'running', primary: 'finishTie', number: 1 })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: tie }))).toMatchObject({ kind: 'between', primary: 'finishTie' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: tie }))).toMatchObject({ kind: 'done', primary: 'finishTie' })
+  })
+
+  it('keeps the old primary in a Tie the finish rule refuses, and for a Member', () => {
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2], finish: { rejection: 'wrong_phase' } }) }))).toMatchObject({ primary: 'spin' })
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2], finish: null }) }))).toMatchObject({ primary: 'spin' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: end({ tie: [1, 2], finish: null }) }))).toMatchObject({ kind: 'done', primary: null })
+  })
+
+  it('stays Event abschließen with a sole leader, whatever the last game says', () => {
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ lastGame: { rejection: 'no_tie' } }) }))).toMatchObject({ primary: 'finish' })
+  })
+
+  it('carries the reason the last game cannot be added through: the maximum, or none', () => {
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2], lastGame: { rejection: 'game_count_range' } }) }))).toMatchObject({ primary: 'finishTie', lastGameRejection: 'game_count_range' })
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2], lastGame: { rejection: null } }) }))).toMatchObject({ primary: 'finishTie', lastGameRejection: null })
+    expect(hostDockState(input({ sessions: RUNNING, end: end() }))).toMatchObject({ lastGameRejection: null })
+  })
+
+  it('has no primary in a finished Event, even though its Standings are a Tie', () => {
+    const state = hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: end({ tie: [1, 2], finish: { rejection: 'wrong_phase' }, lastGame: { rejection: 'wrong_phase' } }) }))
+
+    expect(state).toMatchObject({ kind: 'finished', primary: null })
   })
 
   it('has no primary in a finished Event, whatever the Sessions say', () => {
@@ -182,6 +208,7 @@ describe('dockLayout', () => {
   // The dock's states as the Event read gives them: the fields that make the state, its primary (with the Date poll open), whether a
   // Session runs, and whether the Date poll can still offer Dates and Slots.
   const COMPLETE: DockInput['end'] = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null }
+  const TIE: DockInput['end'] = { ...COMPLETE!, tie: [1, 2] }
   const STATES: { name: string, fields: Partial<DockInput>, primary: DockKey[], running: boolean, polls: boolean, finished?: boolean }[] = [
     { name: 'setup', fields: { settings: null }, primary: ['settings'], running: false, polls: true },
     { name: 'poll', fields: { sessions: [undated('a')], start: NO_DATED }, primary: ['setDate'], running: false, polls: true },
@@ -193,7 +220,9 @@ describe('dockLayout', () => {
     { name: 'complete, a Session runs', fields: { sessions: RUNNING, end: COMPLETE }, primary: ['finish'], running: true, polls: true },
     { name: 'complete, between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: COMPLETE }, primary: ['finish'], running: false, polls: true },
     { name: 'complete after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: COMPLETE }, primary: ['finish'], running: false, polls: false },
-    { name: 'complete with a Tie, a Session runs', fields: { settings, sessions: RUNNING, end: { ...COMPLETE, tie: [1, 2] } }, primary: ['spin'], running: true, polls: true },
+    { name: 'a Tie, a Session runs', fields: { settings, sessions: RUNNING, end: TIE }, primary: ['finishTie'], running: true, polls: true },
+    { name: 'a Tie between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, primary: ['finishTie'], running: false, polls: true },
+    { name: 'a Tie after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, primary: ['finishTie'], running: false, polls: false },
     // Nothing is left to do in a finished Event but Einladen (#277), so the checks that expect Mehr to end with the settings skip it.
     { name: 'finished', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: COMPLETE }, primary: [], running: false, polls: false, finished: true },
   ]
@@ -230,6 +259,43 @@ describe('dockLayout', () => {
     for (const open of OPENS) {
       expect(layout({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: COMPLETE }, open).primary).not.toContain('start')
       expect(layout({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: COMPLETE }, open).more).not.toContain('start')
+    }
+  })
+
+  it.each(STATES)('holds Letztes Spiel hinzufügen in the dock exactly where Unentschieden beenden is the primary: $name', ({ fields, primary }) => {
+    for (const open of OPENS) {
+      const { secondary, more } = layout(fields, open)
+      expect(secondary.includes('lastGame')).toBe(primary.includes('finishTie'))
+      expect(more).not.toContain('lastGame')
+    }
+  })
+
+  // HostDock lists every action of Mehr without its hold, so a hold there would run at once.
+  it.each(STATES)('keeps every hold out of Mehr: $name', ({ fields }) => {
+    for (const open of OPENS) {
+      const { more } = layout(fields, open)
+      for (const key of ['end', 'finish', 'finishTie'] as DockKey[]) expect(more).not.toContain(key)
+    }
+  })
+
+  it('lays the Tie out for each state: both holds and the last game in the pill, the rest behind Mehr (#278)', () => {
+    for (const open of OPENS) {
+      const dates: DockKey[] = open.pollOpen ? ['setDate'] : []
+      const slots: DockKey[] = open.pollOpen ? ['slots'] : []
+      const bonus: DockKey[] = open.bonusVetoOpen ? ['bonusVeto'] : []
+      const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || open.bonusVetoOpen)
+      expect(layout({ sessions: RUNNING, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates, ...slots, ...game, 'settings'] })
+      expect(layout({ sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates, ...slots, ...bonus, 'settings'] })
+      expect(layout({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus, 'settings'] })
+    }
+  })
+
+  it('offers no game to set or spin in a Tie: only the last game adds one', () => {
+    for (const open of OPENS) {
+      for (const fields of [{ sessions: RUNNING, end: TIE }, { settings: hostPick, sessions: RUNNING, end: TIE }]) {
+        const { primary, secondary, more } = layout(fields, open)
+        for (const key of ['setGame', 'spin', 'start'] as DockKey[]) expect([...primary, ...secondary, ...more]).not.toContain(key)
+      }
     }
   })
 
@@ -303,6 +369,14 @@ describe('coinBlockedKey (#235)', () => {
     expect(coinBlockedKey(flying, Date.parse(LANDS))).toBeNull()
     expect(coinBlockedKey({ sessions: RUNNING, coin: null }, Date.parse(LANDS) - 1)).toBeNull()
     expect(coinBlockedKey({ sessions: [dated('a', 1)], coin: flying.coin }, Date.parse(LANDS) - 1)).toBe('error.noRunningSession')
+  })
+})
+
+describe('lastGameBlockedKey (#278)', () => {
+  it('says the maximum in the dock\'s own words and every other reason in the shared copy', () => {
+    expect(lastGameBlockedKey('game_count_range')).toBe('dock.lastGameBlocked.game_count_range')
+    expect(lastGameBlockedKey('results_missing')).toBe('error.resultsMissing')
+    expect(lastGameBlockedKey('no_tie')).toBe('error.noTie')
   })
 })
 

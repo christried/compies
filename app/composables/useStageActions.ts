@@ -1,5 +1,6 @@
 import { useEventMutation } from '~/composables/useEventMutation'
 import type { CountdownCommand } from '~~/shared/countdown'
+import type { LastGameAdded } from '~~/shared/event'
 import type { FinishOutcome, ResultPlace } from '~~/shared/results'
 
 // The stage's changes (#257, Q6 of review 0.7): the Host's Session, round and Countdown actions and the Players' Veto and clip
@@ -34,8 +35,14 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
   const endSession = () => send('POST', 'sessions/end')
 
-  /** Finishes the Event with the outcome the Host saw (#277); the dock's hold calls this after the hold and learns whether the server took it. */
+  /** Finishes the Event with the outcome the Host held (#277, #278); the dock's hold calls this after the hold and learns whether the server took it. */
   const finish = (outcome: FinishOutcome) => send('POST', 'finish', { body: { outcome } })
+
+  /**
+   * Raises the Game count by one while the Standings are a Tie (#278); the dock button learns whether the server took it. A second press finds the count
+   * incomplete (`results_missing`), which means the first one worked, so it is quiet and counts as taken. At the maximum the dock's own copy answers.
+   */
+  const lastGame = () => send<LastGameAdded>('POST', 'last-game', { quiet: ['results_missing'], errorKeys: { game_count_range: 'dock.lastGameBlocked.game_count_range' } })
 
   /** Withdraws one Session's Date and frees its Slot (#55). */
   const reopenSession = (sessionId: string) => send('POST', `sessions/${sessionId}/reopen`)
@@ -43,5 +50,5 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /** Removes a Session, whose Slot goes back to the poll (#55). */
   const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
-  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, countdown, endSession, finish, reopenSession, removeSession }
+  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, countdown, endSession, finish, lastGame, reopenSession, removeSession }
 }

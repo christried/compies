@@ -1,4 +1,4 @@
-import { apiErrorKey } from '~/utils/api-error'
+import { apiErrorKey, apiFailure } from '~/utils/api-error'
 import type { ApiErrorCode } from '~~/shared/errors'
 import { SLOTS_MAX } from '~~/shared/event'
 
@@ -19,6 +19,8 @@ export interface SendOptions<Answer> {
   fallback?: string
   /** Runs when the change failed, before the toast and the refetch, e.g. to put an avatar back (#160) or roll a draft back (#161). */
   refused?: (failure: unknown) => void
+  /** Codes that mean „already done“ (#278: a second press on the last game finds the count incomplete): no toast, no `refused`, and `send` resolves to true. The Event is refetched all the same. */
+  quiet?: ApiErrorCode[]
   /** The toast text for a failure that has copy of its own (the lost race names the winner, #160); undefined keeps the shared copy. */
   refusalText?: (failure: unknown) => string | undefined
 }
@@ -30,7 +32,7 @@ export function useEventMutation(slug: MaybeRefOrGetter<string>, refresh: () => 
 
   /** Sends one change to `/api/e/<slug>/<path>` and resolves to whether the server took it. Never throws. */
   async function send<Answer = unknown>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, options: SendOptions<Answer> = {}) {
-    const { body, busy, errorKeys, done, fallback = 'error.saveFailed', refused, refusalText } = options
+    const { body, busy, errorKeys, done, fallback = 'error.saveFailed', quiet, refused, refusalText } = options
     if (busy) busy.value = true
     let taken = false
     try {
@@ -40,6 +42,7 @@ export function useEventMutation(slug: MaybeRefOrGetter<string>, refresh: () => 
       done?.(answer as Answer)
     }
     catch (failure) {
+      if (quiet?.includes(apiFailure(failure).code as ApiErrorCode)) return true
       refused?.(failure)
       // `{max}` is the one placeholder in the shared error copy (slots_max).
       toast({ tone: 'error', text: refusalText?.(failure) ?? t(apiErrorKey(failure, fallback, errorKeys), { max: SLOTS_MAX }) })

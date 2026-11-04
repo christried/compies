@@ -29,6 +29,7 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(409, 'wrong_phase'))).toBe('error.wrongPhase')
     expect(apiErrorKey(refusal(409, 'results_missing'))).toBe('error.resultsMissing')
     expect(apiErrorKey(refusal(409, 'standings_changed'))).toBe('error.standingsChanged')
+    expect(apiErrorKey(refusal(409, 'no_tie'))).toBe('error.noTie')
   })
 
   it('names the reason the server gives', () => {
