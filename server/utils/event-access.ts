@@ -3,6 +3,7 @@ import { getRouterParam, readBody, type H3Event } from 'h3'
 import { events } from '../db/schema'
 import { eventAccessRejection } from '../domain/access'
 import type { AuthUser } from '../../shared/auth'
+import { beforeFinish } from '../../shared/event'
 import { envelope, type RoomMessage } from '../../shared/realtime'
 import { useClock } from './clock'
 import { apiError, eventDeleted, eventNotFound } from './errors'
@@ -17,6 +18,11 @@ export type EventRow = typeof events.$inferSelect
 export interface ChangeEventOptions extends LoadEventOptions {
   /** Runs once the User is known and before the body is read, e.g. a rate limit. It throws to refuse. */
   beforeBody?: (user: AuthUser) => void
+  /**
+   * Whether the change may run in a finished Event (default false: a finished Event is read-only for good, #277). Only the Host rotating
+   * the Invite link does; every other change answers `wrong_phase` there, so no write route can forget the rule.
+   */
+  allowFinished?: boolean
   /**
    * Whether the commit broadcasts `event.changed` to the whole room (default true). A change that must not tell every Party
    * that it happened sets `false` (a sealed Veto, #231): then only the messages the change queued itself go out, the named
@@ -55,7 +61,7 @@ interface NamedMessages {
  */
 export async function changeEvent<T>(
   event: H3Event,
-  { beforeBody, broadcast, ...load }: ChangeEventOptions,
+  { allowFinished, beforeBody, broadcast, ...load }: ChangeEventOptions,
   change: (ctx: EventChange) => Promise<T>,
 ): Promise<T> {
   const user = await requireUser(event)
@@ -66,6 +72,8 @@ export async function changeEvent<T>(
   const named: NamedMessages[] = []
   const { result, eventRow } = await useDb(event).transaction(async (tx) => {
     const eventRow = await loadEvent(tx, slug, user.id, load)
+    // The one rule of a finished Event (#277): after the 404, 410 and 403 of loadEvent and before any rule of the change, every write refuses.
+    if (!allowFinished && !beforeFinish(eventRow.phase)) throw apiError('wrong_phase')
     // Read after the row lock is taken, so the instants of writes queued on one Event follow the lock order.
     const now = useClock(event).now()
     // A draw whose last instant has passed is settled first, whatever the change reads (#229, #259): a writer cannot forget it, and the
