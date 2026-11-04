@@ -517,7 +517,7 @@
     "kicker": "Spiel {n} von {total}",
     "correction": "Spiel {n} korrigieren",
     "kickerCorrection": "Korrektur: Spiel {n} von {total}",
-    "correctionNote": "Die Tabelle rechnet nach dem Speichern neu, für alle sichtbar. Im Feed steht, dass du Spiel {n} korrigiert hast.",
+    "correctionNote": "Die Tabelle rechnet nach dem Speichern neu, für alle sichtbar. In der Aktivität steht, dass du Spiel {n} korrigiert hast.",
     "cancelCorrection": "Korrektur abbrechen",
     "allPlayed": "Alle Spiele gespielt",
     "done": "Fertig",

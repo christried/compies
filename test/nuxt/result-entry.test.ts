@@ -108,7 +108,7 @@ describe('the result sheet', () => {
 
       expect(sheet().querySelector('h2')?.textContent).toBe('Spiel 3 korrigieren')
       expect([...sheet().querySelectorAll('p')].some(line => line.textContent?.trim() === 'Korrektur: Spiel 3 von 6')).toBe(true)
-      expect(noteLine()?.textContent).toContain('Im Feed steht, dass du Spiel 3 korrigiert hast.')
+      expect(noteLine()?.textContent).toContain('In der Aktivität steht, dass du Spiel 3 korrigiert hast.')
       expect(correctionSave()).toBeDefined()
       expect(footerButton('Ergebnis speichern')).toBeUndefined()
       expect(sheet().textContent).toContain('Mario Kart')
