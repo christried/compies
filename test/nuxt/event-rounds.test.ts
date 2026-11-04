@@ -575,11 +575,11 @@ describe('the Lucky Wheel on the stage (#229)', () => {
     const action = stage.findAll('[role="toolbar"] button')[0]!
     expect(action.text()).toBe('Rad drehen')
     expect(action.attributes('aria-disabled')).toBe('true')
-    expect(stage.get(`#${action.attributes('aria-describedby')}`).text()).toBe('Auf dem Rad ist kein Spiel mehr. Unter „Mehr“ kannst du mit „Nächstes Spiel setzen“ eines aus der Bibliothek setzen.')
+    expect(stage.get(`#${action.attributes('aria-describedby')}`).text()).toBe('Auf dem Rad ist kein Spiel mehr. Mit „Nächstes Spiel setzen“ kannst du eines aus der Bibliothek setzen.')
 
     await clickHostAction(stage, 'Rad drehen')
 
-    expect(shownToasts().map(toast => toast.text)).toEqual(['Auf dem Rad ist kein Spiel mehr. Unter „Mehr“ kannst du mit „Nächstes Spiel setzen“ eines aus der Bibliothek setzen.'])
+    expect(shownToasts().map(toast => toast.text)).toEqual(['Auf dem Rad ist kein Spiel mehr. Mit „Nächstes Spiel setzen“ kannst du eines aus der Bibliothek setzen.'])
     expect(posted).toBe(0)
   })
 
