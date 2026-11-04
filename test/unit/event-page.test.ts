@@ -270,6 +270,29 @@ describe('the blocks of the stage', () => {
     expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })).not.toContain('history')
   })
 
+  // A Tie (#278): the banner is the news of the stage and sits right under the Head and the reopen notices, wherever the Host's dock offers
+  // „Unentschieden beenden“ (running, between, done), and in no other kind: a finished Event keeps `end.tie`, but nobody decides any more.
+  const TIE: Partial<PageInput> = { end: { played: 3, gameCount: 3, complete: true, tie: [1, 2], finish: null, lastGame: null } }
+
+  it('lists the Tie banner right after the reopen notices while a Session runs, between Sessions and after the last one', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...TIE })).toEqual(['head', 'reopen', 'tie', 'rounds', 'standings', 'board', 'poll', 'cards'])
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...WHEEL, ...TIE })).toEqual(['head', 'reopen', 'tie', 'wheel', 'rounds', 'standings', 'board', 'poll', 'cards'])
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { ...RUNNING, ...TIE })).toEqual(['head', 'reopen', 'tie', 'rounds', 'standings', 'cards', 'stay', 'board'])
+    expect(blocks([dated('a', 1, SAT, ENDED)], { ...RUNNING, ...TIE })).toEqual(['head', 'reopen', 'tie', 'rounds', 'standings', 'cards', 'board'])
+  })
+
+  it('sets present.tie from the Event read\'s tie, and lists no banner without a Tie, or in a finished Event', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })).not.toContain('tie')
+    expect(blocks(ONE_RUNNING, { ...RUNNING, end: null })).not.toContain('tie')
+    expect(blocks([dated('a', 1, SAT, ENDED)], { ...FINISHED, ...TIE })).toEqual(['head', 'reopen', 'standings', 'history', 'cards'])
+  })
+
+  it('lists the banner in no state before a Session started', () => {
+    expect(blocks([undated('a'), undated('b')], TIE)).not.toContain('tie')
+    expect(blocks([dated('a', 1, SAT)], TIE)).not.toContain('tie')
+    expect(blocks([undated('a')], { settings: null, ...TIE })).not.toContain('tie')
+  })
+
   it('asks the Event to be set up first, and shows the poll when one is open', () => {
     expect(blocks([undated('a')], { settings: null })).toEqual(['head', 'reopen', 'setup', 'poll', 'board', 'cards'])
   })
