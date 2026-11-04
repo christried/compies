@@ -28,6 +28,7 @@
 - Überspringt der Host den Clip, blenden ihn alle anderen jetzt aus, statt dass er plötzlich verschwindet. ([#261](https://github.com/christried/compies/issues/261))
 - Ein sehr langer Spielname im Spielepool macht die Event-Seite am Handy nicht mehr breiter als den Bildschirm. ([#279](https://github.com/christried/compies/issues/279))
 - Wenn ein Spiel zurückgelegt wird, rutscht die Seite darunter jetzt sanft nach oben statt zu springen. ([#276](https://github.com/christried/compies/issues/276))
+- Ein sehr langer Spielname ohne Leerzeichen läuft im Aktivitäts-Feed nicht mehr über den Rand. ([#273](https://github.com/christried/compies/issues/273))
 
 ### Entfernt
 
