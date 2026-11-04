@@ -8,7 +8,7 @@ import { placeOf } from '../../shared/board'
 import type { EventView } from '../../shared/event'
 import type { BonusVetoView, ResultView, RoundView, VetoView, WheelView } from '../../shared/stage'
 import type { RoundGame } from '../../shared/game'
-import { pointsForPlace, standingsOf, totalPoints } from '../../shared/results'
+import { endOf, finishRejection, outcomeOf, pointsForPlace, standingsOf, totalPoints } from '../../shared/results'
 import { eventHasWheel, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
@@ -76,7 +76,8 @@ export async function roundsSection({ db, eventRow, rows, viewer, now }: StageCo
  * The Results, the Standings and the end of the Event (#274, spec #272). Every Member reads the same Standings and end, the Host and a
  * Player alike. A Result names a game, so each one goes through #258's one rule: its game is listed only when `drawGameKnown` says the
  * viewer may know it (the Host always, a Player from the draw's stop on; a Round's game is the one of its set draw). The Standings and
- * the count take every Round with a Result, also one the gate leaves out: points are not secret.
+ * the count take every Round with a Result, also one the gate leaves out: points are not secret. `end` says whether the Host may finish (#277):
+ * the Host's rejection only; a Member gets `finish: null`.
  */
 export async function resultsSection({ eventRow, rows, viewer, now }: StageContext): Promise<Pick<EventView, 'results' | 'standings' | 'end'>> {
   const settings = settingsFromRow(eventRow)
@@ -94,11 +95,11 @@ export async function resultsSection({ eventRow, rows, viewer, now }: StageConte
       resultAt: round.resultAt!.toISOString(),
     })
   }
-  return {
-    results,
-    standings: standingsOf(totalPoints(rows.results.map(entry => entry.places), settings.pointsTable, settings.teamCount)),
-    end: { played: rows.results.length, gameCount: settings.gameCount },
-  }
+  const standings = standingsOf(totalPoints(rows.results.map(entry => entry.places), settings.pointsTable, settings.teamCount))
+  const end = endOf(standings, rows.results.length, settings.gameCount)
+  // The Host's part (#277): why the finish is refused now, for the outcome the Standings call for. Nobody else gets one, so null never means „you may“.
+  const finish = viewer.isHost ? { rejection: finishRejection({ isHost: true, phase: eventRow.phase, end, outcome: outcomeOf(end) }) } : null
+  return { results, standings, end: { ...end, finish } }
 }
 
 /**

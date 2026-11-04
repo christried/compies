@@ -91,10 +91,15 @@ export const events = pgTable('events', {
   // Pool preview (#225): null only for Events not set up and rows the code before 0.6 wrote (storedPoolPreview reads it as on unless the wheel is hidden).
   poolPreview: boolean('pool_preview'),
   vetoAllowance: integer('veto_allowance'),
+  // 0023 (#277): the instant the Host finished the Event (the request's clock, ADR 0013). Written, not read, in 0.8: nothing shows it yet.
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
-})
+}, table => [
+  // A stored end belongs to a finished (or archived) Event, never to a running one (#277). The converse is not checked: the code under the Event lock is the one writer.
+  check('events_finished_at_phase_check', sql`${table.finishedAt} IS NULL OR ${table.phase} IN ('finished', 'archived')`),
+])
 
 // A sitting of an Event on one Date (ADR 0011, #48). The Date lives here, not on the Event.
 // `slotId` is the Slot the Date came from, if any: a Slot a Session refers to is no longer open.

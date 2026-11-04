@@ -439,12 +439,12 @@ describe('Results', () => {
       const host = await readAll(game)
       const player = await readAll(game, game.cookies.three)
 
-      expect(host).toEqual({
+      expect(host).toMatchObject({
         results: [],
         standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
-        end: { played: 0, gameCount: 10 },
+        end: { played: 0, gameCount: 10, complete: false, tie: null, finish: { rejection: 'results_missing' } },
       })
-      expect(player).toEqual(host)
+      expect(player).toMatchObject({ results: [], standings: host.standings, end: { played: 0, gameCount: 10, complete: false, tie: null, finish: null } })
     })
 
     it('after one Result for three Parties: the Round with its game, every Place, points and Score, the Standings and the count', async () => {
@@ -469,9 +469,9 @@ describe('Results', () => {
         standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 2, points: 1 }, { team: 3, rank: 3, points: 0 }],
         end: { played: 1, gameCount: 10 },
       }
-      expect(await readAll(game)).toEqual(expected)
-      expect(await readAll(game, game.cookies.two)).toEqual(expected)
-      expect(await readAll(game, game.cookies.four)).toEqual(expected)
+      expect(await readAll(game)).toMatchObject(expected)
+      expect(await readAll(game, game.cookies.two)).toMatchObject(expected)
+      expect(await readAll(game, game.cookies.four)).toMatchObject(expected)
     })
 
     it('lists the Results by number, not by the order the Rounds started or were entered', async () => {
@@ -486,7 +486,7 @@ describe('Results', () => {
       const view = await readAll(game)
 
       expect(view.results.map(result => [result.roundId, result.number])).toEqual([[c, 1], [a, 2], [b, 3]])
-      expect(view.end).toEqual({ played: 3, gameCount: 3 })
+      expect(view.end).toMatchObject({ played: 3, gameCount: 3 })
     })
 
     it('ranks over several Results: a Shared place earns the better Place, equal totals share a rank, team order inside it', async () => {
@@ -510,7 +510,7 @@ describe('Results', () => {
 
       const view = await readAll(game)
       expect(view.standings).toEqual([{ team: 1, rank: 1, points: 4 }, { team: 2, rank: 1, points: 4 }, { team: 3, rank: 3, points: 2 }])
-      expect(view.end).toEqual({ played: 3, gameCount: 3 })
+      expect(view.end).toMatchObject({ played: 3, gameCount: 3 })
     })
 
     it('reads the same fields between Sessions, and a Round put back or still open is in no field', async () => {
@@ -525,8 +525,8 @@ describe('Results', () => {
       const host = await readAll(game)
       expect(host.results.map(result => result.roundId)).toEqual([done])
       expect(host.standings).toEqual([{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }])
-      expect(host.end).toEqual({ played: 1, gameCount: 10 })
-      expect(await readAll(game, game.cookies.one)).toEqual(host)
+      expect(host.end).toMatchObject({ played: 1, gameCount: 10 })
+      expect(await readAll(game, game.cookies.one)).toEqual({ ...host, end: { ...host.end, finish: null } })
     })
 
     it('marks a Round corrected only when its corrected instant is set (the Correction itself is #275)', async () => {
@@ -565,7 +565,7 @@ describe('Results', () => {
       expect(host.results.map(result => result.roundId)).toEqual([round])
       expect(player.results).toEqual([])
       expect(player.standings).toEqual([{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }])
-      expect(player.end).toEqual({ played: 1, gameCount: 10 })
+      expect(player.end).toMatchObject({ played: 1, gameCount: 10 })
     })
 
     it('reads every draw with its Round in one statement, and the Rounds in start order with the put-back one', async () => {

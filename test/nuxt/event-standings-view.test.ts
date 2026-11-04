@@ -16,7 +16,7 @@ const open: RoundView = { id: 'r2', startedAt: '2026-11-02T21:00:00.000Z', setAt
 
 const view = {
   standings: [{ team: 2, rank: 1, points: 1 }, { team: 1, rank: 2, points: 0 }],
-  end: { played: 1, gameCount: 6 },
+  end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null },
   results: [played],
   rounds: [open],
   teams,
@@ -46,7 +46,7 @@ describe('the Tabelle tab', () => {
   })
 
   it('says that there is no Result yet before the first one, and lists the open Rounds as dashed rows', async () => {
-    page = await mountSuspended(StandingsTab, { props: { view: { ...view, standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }], end: { played: 0, gameCount: 6 }, results: [] } } })
+    page = await mountSuspended(StandingsTab, { props: { view: { ...view, standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }], end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null }, results: [] } } })
 
     expect(page.find('table').exists()).toBe(false)
     expect(page.text()).toContain('Noch kein Ergebnis.')

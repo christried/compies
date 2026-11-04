@@ -6,7 +6,7 @@ import { characterCount } from './text'
 import type { Phase } from './event'
 import type { PointsTable } from './settings'
 import { isOpen, type RoundFacts } from './rounds'
-import type { StandingView } from './stage'
+import type { EndView, StandingView } from './stage'
 
 /** The longest Score: 7 characters as the User sees them (graphemes, the rule of #76). */
 export const SCORE_MAX = 7
@@ -134,4 +134,50 @@ export function resultRejection({ isHost, settings, phase, round, places }: Resu
   if (!isOpen(round)) return 'round_not_open'
   if (places === null || !resultShapeValid(places, settings.teamCount)) return 'invalid_result'
   return null
+}
+
+/** The team positions on rank 1, ascending: the winner, or every Party of a Tie (#277, GLOSSARY: Tie). */
+export function leadersOf(standings: readonly StandingView[]): number[] {
+  return standings.filter(row => row.rank === 1).map(row => row.team).sort((a, b) => a - b)
+}
+
+/**
+ * How far the Event is (#277, GLOSSARY: Finish, Tie): `complete` when the Rounds with a Result reach the Game count (>=), `tie` the leaders
+ * when complete and more than one holds rank 1, else null. `standings` are `standingsOf`'s.
+ */
+export function endOf(standings: readonly StandingView[], played: number, gameCount: number): Pick<EndView, 'played' | 'gameCount' | 'complete' | 'tie'> {
+  const complete = played >= gameCount
+  const leaders = leadersOf(standings)
+  return { played, gameCount, complete, tie: complete && leaders.length > 1 ? leaders : null }
+}
+
+/** The outcome the Host asks the finish for (#277): a sole winner, or a Tie with all its Parties (#278 sends the second). */
+export type FinishOutcome = 'winner' | 'tie'
+
+/** The outcome the Standings call for now: 'tie' while `end.tie` is set, else 'winner'. */
+export function outcomeOf(end: Pick<EndView, 'tie'>): FinishOutcome {
+  return end.tie === null ? 'winner' : 'tie'
+}
+
+/** Why the Event cannot be finished now (#277), in the order they are checked. */
+export type FinishRejection = 'not_host' | 'wrong_phase' | 'results_missing' | 'standings_changed'
+
+export interface FinishInput {
+  isHost: boolean
+  phase: Phase
+  end: Pick<EndView, 'complete' | 'tie'>
+  /** The outcome the Host saw when he asked (FinishOutcome). */
+  outcome: FinishOutcome
+}
+
+/**
+ * The reason the Event cannot be finished now, or null (#277), in the order they are checked: the Host asks, the Phase is `running`, every
+ * Round up to the Game count has its Result, and the outcome the Host saw is the Standings' outcome now (outcomeOf): a Correction in another
+ * tab that made or ended a Tie refuses.
+ */
+export function finishRejection({ isHost, phase, end, outcome }: FinishInput): FinishRejection | null {
+  if (!isHost) return 'not_host'
+  if (phase !== 'running') return 'wrong_phase'
+  if (!end.complete) return 'results_missing'
+  return outcomeOf(end) === outcome ? null : 'standings_changed'
 }

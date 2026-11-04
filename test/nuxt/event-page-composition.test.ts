@@ -376,13 +376,13 @@ describe('the Standings on the Event page', () => {
     rounds: [openRound],
     results: [played],
     standings: [{ team: 2, rank: 1, points: 1 }, { team: 1, rank: 2, points: 0 }],
-    end: { played: 1, gameCount: 6 },
+    end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null },
   }
   const beforeResult: EventOverrides = {
     rounds: [openRound],
     results: [],
     standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
-    end: { played: 0, gameCount: 6 },
+    end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null },
   }
   const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
   const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
