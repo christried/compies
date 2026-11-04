@@ -1,6 +1,6 @@
-import { CalendarCheck, CalendarClock, Coins, Dices, Flag, Gamepad2, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
-import { coinBlockedKey, dockLayout, hostDockState, setBlockedKey, type DockKey } from '~/utils/host-dock'
+import { coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 
@@ -23,8 +23,12 @@ export interface HostActionHandlers {
   start: () => void
   /** Ends the Running Session; the dock's hold calls it after the hold and learns whether the server took it. */
   end: () => Promise<boolean>
-  /** Finishes the Event (#277); the dock's hold calls it after the hold and learns whether the server took it. */
+  /** Finishes the Event with a winner (#277); the dock's hold calls it after the hold and learns whether the server took it. The held label is the outcome sent (#278). */
   finish: () => Promise<boolean>
+  /** Finishes the Event as a Tie (#278), like `finish`. */
+  finishTie: () => Promise<boolean>
+  /** Adds the last game while the Standings are a Tie (#278); the button learns whether the server took it. */
+  lastGame: () => Promise<boolean>
   /** Opens the picker for the next game (#228). */
   setGame: () => void
   /** Spins the Lucky Wheel (#229). */
@@ -58,6 +62,7 @@ export function useHostActions(
     const startReason = state.startRejection === null ? undefined : t(`dock.startBlocked.${state.startRejection}`)
     const setReason = state.setRejection === null ? undefined : t(setBlockedKey(state.setRejection))
     const spinReason = state.spinRejection === null ? undefined : t(setBlockedKey(state.spinRejection))
+    const lastGameReason = state.lastGameRejection === null ? undefined : t(lastGameBlockedKey(state.lastGameRejection))
     // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
     const coinKey = coinBlockedKey(current, serverNow())
     const coinReason = coinKey === null ? undefined : t(coinKey)
@@ -105,6 +110,24 @@ export function useHostActions(
         group: t('dock.group.event'),
         hold: true,
         run: handlers.finish,
+      },
+      // With a Tie the Host decides (#278): the same hold, for „Unentschieden“. The server compares the outcome with the Standings, so a stale hold is refused.
+      finishTie: {
+        key: 'finishTie',
+        label: t('dock.finishTie'),
+        icon: Handshake,
+        group: t('dock.group.event'),
+        hold: true,
+        run: handlers.finishTie,
+      },
+      // A plain button: only the primary is held, and the server makes a double press harmless. At the maximum it stays, dashed, with its reason.
+      lastGame: {
+        key: 'lastGame',
+        label: t('dock.lastGame'),
+        icon: CirclePlus,
+        group: t('dock.group.event'),
+        disabledReason: lastGameReason,
+        run: guarded(lastGameReason, () => void handlers.lastGame()),
       },
       setGame: {
         key: 'setGame',
