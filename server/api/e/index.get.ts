@@ -1,6 +1,6 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
-import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../db/schema'
+import { pollSlots, pollVotes, eventMembers, events, rounds, sessions, users } from '../../db/schema'
 import { arrangeHome, homeAction, homeSession, needsVote } from '../../domain/home'
 import { pollStanding } from '../../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../../domain/session'
@@ -14,7 +14,8 @@ import type { HomeEvent, HomeView } from '../../../shared/event'
 // Home (#12, screen M1): every Event the User is a Member of, not deleted, in Home order. Each card
 // carries what the card shows: the Host, the phase, the Best slot or the next Session, the Sessions
 // still waiting for a Date, how many Members have voted, the User's own status and the call to action.
-// Events whose Sessions have all ended more than 24 h ago are left out (#199, after #54).
+// Events leave Home by the rule in server/domain/home.ts (eventStaysOnHome): a finished Event 24 h after its finish (#282, after #277),
+// a running Event with a Result until it is finished (#282), and otherwise once its Sessions have all ended more than 24 h ago (#199, after #54).
 // Pure rules live in server/domain/home.ts and poll.ts; this handler only loads the rows.
 export default defineEventHandler(async (event): Promise<HomeView> => {
   const user = await requireUser(event)
@@ -27,6 +28,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       slug: events.slug,
       name: events.name,
       phase: events.phase,
+      finishedAt: events.finishedAt,
       createdAt: events.createdAt,
       hostId: events.hostId,
       hostName: users.name,
@@ -39,6 +41,13 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
 
   if (rows.length === 0) return { events: [] }
   const eventIds = rows.map(row => row.id)
+
+  // The Events with a Result (#282): a running one with a Result stays on Home until the Host finishes it.
+  const resultRows = await db
+    .selectDistinct({ eventId: rounds.eventId })
+    .from(rounds)
+    .where(and(inArray(rounds.eventId, eventIds), isNotNull(rounds.resultAt)))
+  const withResult = new Set(resultRows.map(row => row.eventId))
 
   const sessionRows = await db
     .select({ id: sessions.id, eventId: sessions.eventId, startsAt: sessions.startsAt, startedAt: sessions.startedAt, endedAt: sessions.endedAt, slotId: sessions.slotId })
@@ -99,8 +108,17 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       action: homeAction({ isHost, needsVote: viewerNeedsVote }),
     }
     // Home order reads the row's own times, the Session the card shows and whether the viewer still has to vote.
-    // Home keeps the Event by its Sessions' start and end times (#199).
-    return { card, phase: row.phase, needsVote: viewerNeedsVote, sessions: eventSessionRows, homeDate: next?.startsAt ?? null, createdAt: row.createdAt }
+    // Home keeps the Event by its finish, its Result and its Sessions' start and end times (#282, #199).
+    return {
+      card,
+      phase: row.phase,
+      finishedAt: row.finishedAt,
+      hasResult: withResult.has(row.id),
+      needsVote: viewerNeedsVote,
+      sessions: eventSessionRows,
+      homeDate: next?.startsAt ?? null,
+      createdAt: row.createdAt,
+    }
   })
 
   return { events: arrangeHome(cards, now).map(entry => entry.card) }
