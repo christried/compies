@@ -18,6 +18,7 @@
 - Das Fenster „Ergebnis eintragen“ sagt jetzt über dem Spiel, das wievielte Spiel es wird, zum Beispiel „Spiel 3 von 6“. ([#274](https://github.com/christried/compies/issues/274))
 - Ein Event, dessen Sessions alle vorbei sind, das der Host aber noch nicht abgeschlossen hat, zeigt oben jetzt „Kein Termin“ statt „Vorbei“. „Beendet“ steht erst nach dem Abschließen. ([#277](https://github.com/christried/compies/issues/277))
 - Ein laufendes Event mit Ergebnissen bleibt auf der Startseite, bis der Host es abschließt, auch wenn die letzte Session schon länger vorbei ist. Ein abgeschlossenes Event verschwindet einen Tag nach dem Abschluss von dort. ([#282](https://github.com/christried/compies/issues/282))
+- Die Datenschutzerklärung beschreibt jetzt auch die Runden eines Events: die gezogenen und gesetzten Spiele, die Ergebnisse und die Tabelle, Vetos, Bonus-Vetos und Münzwürfe, außerdem, wann der Host ein Event abgeschlossen hat. Den Tiebreaker-Pool nennt sie nicht mehr. ([#280](https://github.com/christried/compies/issues/280))
 
 ### Behoben
 
