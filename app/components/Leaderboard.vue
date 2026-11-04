@@ -41,6 +41,13 @@ const CONFETTI_AT_MS = 560
 /** Where the burst starts, from the right edge of the winner's row. */
 const CONFETTI_INSET = 60
 const STAGGER_MS = 40
+/** `lb-swap`: spring, the slower duration, each row after the one before it; the reduced twins do nothing. */
+const MOVE_CLASS = 'transition-transform dur-slower ease-spring motion-reduce:transition-none reduced:transition-none [transition-delay:var(--lb-delay,0ms)]'
+/**
+ * A tab nobody is looking at stays calm (#276): a Result read while the page is hidden moves the rows at once, so the glide does not start
+ * when the Member returns (the browser holds a hidden page's transitions at their start). Evaluated with each render, which is when Vue plans the move.
+ */
+const unwatched = () => import.meta.client && document.visibilityState === 'hidden'
 
 /** The news this Leaderboard plays: its own copy, so a news it did not play (a stale one at mount) shows nothing. */
 const playing = shallowRef<StandingsNews | null>(null)
@@ -157,7 +164,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
       <!-- `lb-swap` (04-motion): the rows glide into their new order, each 0.04 s after the one before it. The class names are the motion tokens; under reduced motion the move does nothing and the changed rows get the highlight. -->
       <TransitionGroup
         tag="tbody"
-        move-class="transition-transform dur-slower ease-spring motion-reduce:transition-none reduced:transition-none [transition-delay:var(--lb-delay,0ms)]"
+        :move-class="unwatched() ? undefined : MOVE_CLASS"
       >
         <tr
           v-for="(standing, index) in standings"

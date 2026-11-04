@@ -259,6 +259,13 @@ describe('the Standings in motion (#276)', () => {
       expect(moveClass).toEqual(expect.arrayContaining(['transition-transform', 'dur-slower', 'ease-spring', 'motion-reduce:transition-none', 'reduced:transition-none', '[transition-delay:var(--lb-delay,0ms)]']))
     })
 
+    it('asks for no glide while the tab is hidden: the rows move at once and the glide does not start when the Member returns', async () => {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      await mount({ standings: AFTER })
+
+      expect(String(page!.findComponent({ name: 'TransitionGroup' }).props('moveClass') ?? '')).not.toContain('transition-transform')
+    })
+
     it('carries the stagger of 0.04 s a row, by position in the new order', async () => {
       await mount({ standings: standingsOf([8, 7, 6, 5, 4, 3, 2, 1]), teams: eightTeams })
 
