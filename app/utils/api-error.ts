@@ -76,6 +76,7 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   wrong_phase: 'error.wrongPhase',
   results_missing: 'error.resultsMissing',
   standings_changed: 'error.standingsChanged',
+  no_tie: 'error.noTie',
   game_count_reached: 'dock.setBlocked.game_count_reached',
   round_being_drawn: 'dock.setBlocked.round_being_drawn',
   not_a_player: 'error.notAPlayer',

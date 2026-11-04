@@ -83,6 +83,11 @@
     "startN": "Session {n} starten",
     "endN": "Session {n} beenden",
     "finish": "Event abschließen",
+    "finishTie": "Unentschieden beenden",
+    "lastGame": "Letztes Spiel hinzufügen",
+    "lastGameBlocked": {
+      "game_count_range": "Mehr Spiele gehen nicht. Du kannst das Event noch als Unentschieden beenden."
+    },
     "setDateN": "Termin für Session {n}",
     "startBlocked": {
       "not_set_up": "Geht erst, wenn das Event eingerichtet ist.",
@@ -145,7 +150,8 @@
       "finished": {
         "kicker": "Event beendet",
         "title": "{team} gewinnt das Event",
-        "titleDone": "Das Event ist beendet"
+        "titleDone": "Das Event ist beendet",
+        "titleTie": "Unentschieden"
       },
       "setup": {
         "kicker": "Noch nicht eingerichtet",
@@ -171,7 +177,8 @@
       "teamsStay": "Die Teams bleiben fürs ganze Event. Wer bei Session {n} fehlt, ersetzt du von der Bench.",
       "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Bench.",
       "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Bench.",
-      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Bench."
+      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Bench.",
+      "tie": "Gleichstand auf Platz 1. Der Host entscheidet."
     },
     "poll": {
       "title": "Termin für Session {n}",
@@ -627,7 +634,8 @@
     "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben",
     "resultEntered": "Spiel {n}: {game}, {list} gewinnt | Spiel {n}: {game}, {list} gewinnen",
     "resultCorrected": "{name} hat Spiel {n} ({game}) korrigiert",
-    "eventFinished": "Event beendet: {list} gewinnt | Event beendet: {list} gewinnen"
+    "eventFinished": "Event beendet: {list} gewinnt | Event beendet: {list} gewinnen",
+    "eventFinishedTie": "Unentschieden: {list}"
   },
   "emote": {
     "send": "Emote senden: {name}",
@@ -1580,6 +1588,7 @@
     "wrongPhase": "Das geht nicht mehr. Die Seite zeigt den neuen Stand.",
     "resultsMissing": "Es fehlen noch Ergebnisse.",
     "standingsChanged": "Die Tabelle hat sich geändert. Schau sie dir nochmal an.",
+    "noTie": "Gerade steht kein Gleichstand an. Die Seite zeigt den neuen Stand.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",
