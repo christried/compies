@@ -518,6 +518,67 @@ describe('the finished Event page', () => {
   })
 })
 
+// A Tie (#278): everybody but the Host reads that the Host decides, right under the Head and above the Standings; the Host has the dock instead.
+describe('the Tie banner on the Event page', () => {
+  const TEXT = 'Gleichstand auf Platz 1. Der Host entscheidet.'
+  const tied: EventOverrides = {
+    teams: [team(1), team(2)],
+    results: [],
+    standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }],
+    end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: null, lastGame: null },
+  }
+  const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
+  const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
+  const banner = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('[role="status"]').filter(element => element.text().includes(TEXT))
+
+  beforeEach(() => {
+    signInAs(kitty)
+    stubScreen(true)
+  })
+
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    restoreScreen()
+    document.body.innerHTML = ''
+  })
+
+  const STATES: { name: string, setup: Omit<Setup, 'host' | 'overrides'> }[] = [
+    { name: 'while a Session runs', setup: { sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0 } },
+    { name: 'between Sessions', setup: { sessions: [ENDED_ONE, SESSION(2, SECOND)], missing: 0, phase: 'running' } },
+    { name: 'after the last Session', setup: { sessions: [ENDED_ONE], missing: 0, phase: 'running' } },
+  ]
+
+  for (const { name, setup } of STATES) {
+    it(`tells a Player, a Bench Member and a Stands Member that the Host decides, ${name}, above the Standings`, async () => {
+      for (const seat of [{ zone: 'team', team: 1 }, { zone: 'bench' }, { zone: 'stands' }] as Seat[]) {
+        const { slug } = serveState({ ...setup, overrides: { ...tied, members: members({ kitty: seat }) } })
+
+        const page = await mount(slug)
+
+        expect(banner(page)).toHaveLength(1)
+        const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
+        // eslint-disable-next-line no-bitwise -- compareDocumentPosition is a bit mask
+        expect(banner(page)[0]!.element.compareDocumentPosition(standings.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      }
+    })
+
+    it(`shows the Host no banner, ${name}`, async () => {
+      const { slug } = serveState({ ...setup, host: true, overrides: { ...tied, end: { ...tied.end!, finish: { rejection: null }, lastGame: { rejection: null } } } })
+
+      expect(banner(await mount(slug))).toHaveLength(0)
+    })
+  }
+
+  it('shows no banner without a Tie, and none in a finished Event even though its end still has the Tie', async () => {
+    const sole = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: { ...tied, standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 2, points: 0 }], end: { ...tied.end!, tie: null } } })
+    expect(banner(await mount(sole.slug))).toHaveLength(0)
+
+    const finished = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: tied })
+    expect(banner(await mount(finished.slug))).toHaveLength(0)
+  })
+})
+
 // The Standings (#274): a stage block after the open Rounds once the first Result exists, and the „Tabelle“ tab in the side panel and on the phone.
 describe('the Standings on the Event page', () => {
   const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
