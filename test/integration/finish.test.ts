@@ -161,7 +161,7 @@ describe('Finishing the Event', () => {
   const set = (game: Game, gameId: string) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, { gameId })
   const setRound = async (game: Game, gameId: string) => (await (await set(game, gameId)).json() as { roundId: string }).roundId
   const enter = (game: Game, roundId: string, body: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/rounds/${roundId}/result`, cookie, body)
-  const finish = (game: Game, body: unknown = { outcome: 'winner' }, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/finish`, cookie, body)
+  const finish = (game: Game, body: unknown = { outcome: 'winner', winners: [1] }, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/finish`, cookie, body)
   const eventRowOf = async (eventId: string) => (await testDb.db.select().from(events).where(eq(events.id, eventId)))[0]!
   const sessionRows = (eventId: string) => testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId)).orderBy(sessions.startsAt)
   const activityTypes = async (eventId: string) => (await testDb.db.select({ type: activity.type }).from(activity).where(eq(activity.eventId, eventId))).map(row => row.type).sort()
@@ -257,7 +257,7 @@ describe('Finishing the Event', () => {
       expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)
       const activityBefore = await activityTypes(game.eventId)
 
-      const response = await finish(game, { outcome: 'tie' })
+      const response = await finish(game, { outcome: 'tie', winners: [1, 2] })
 
       expect(response.status).toBe(200)
       expect(await response.json()).toEqual({ phase: 'finished', winners: [1, 2] })
@@ -282,7 +282,7 @@ describe('Finishing the Event', () => {
       }
       expect((await read(game)).end).toMatchObject({ complete: true, tie: [1, 2, 3] })
 
-      expect(await (await finish(game, { outcome: 'tie' })).json()).toEqual({ phase: 'finished', winners: [1, 2, 3] })
+      expect(await (await finish(game, { outcome: 'tie', winners: [1, 2, 3] })).json()).toEqual({ phase: 'finished', winners: [1, 2, 3] })
       expect((await read(game)).standings).toEqual([
         { team: 1, rank: 1, points: 3 },
         { team: 2, rank: 1, points: 3 },
@@ -297,7 +297,7 @@ describe('Finishing the Event', () => {
       expect((await enter(game, first, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }, { team: 3, place: 3 }] })).status).toBe(200)
       expect((await enter(game, second, { places: [{ team: 2, place: 1 }, { team: 3, place: 2 }, { team: 1, place: 3 }] })).status).toBe(200)
 
-      expect(await (await finish(game)).json()).toEqual({ phase: 'finished', winners: [2] })
+      expect(await (await finish(game, { outcome: 'winner', winners: [2] })).json()).toEqual({ phase: 'finished', winners: [2] })
       expect((await read(game)).standings).toEqual([
         { team: 2, rank: 1, points: 4 },
         { team: 1, rank: 2, points: 1 },
@@ -331,13 +331,69 @@ describe('Finishing the Event', () => {
     })
   })
 
+  describe('the feed on the clock of the Sessions', () => {
+    // The Sessions' instants are the request's clock (#259) and the feed's groups compare an entry with them (groupActivity). The test
+    // clock runs 64 years ahead of the database's, the far end of the skew s5 measured (1.7 s): an entry stamped by the database
+    // would sit before the start of the Session it belongs to.
+    it('stamps every entry at or after its request, so the start, the set game and the finish fall into the groups they belong to', async () => {
+      const game = await running({ gameCount: 2, sessions: 2 })
+      const first = await setRound(game, game.halo.id)
+      clock.advance(60_000)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      clock.advance(3_600_000)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
+      clock.advance(3_600_000)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/start`, game.hostCookie)).status).toBe(200)
+      clock.advance(60_000)
+      const second = await setRound(game, game.kart.id)
+      clock.advance(60_000)
+      expect((await enter(game, second, { places: teamOneWins })).status).toBe(200)
+      clock.advance(60_000)
+      expect((await finish(game)).status).toBe(200)
+
+      const started = (await sessionRows(game.eventId)).filter(row => row.startedAt !== null).map(row => ({ from: row.startedAt!.getTime(), to: row.endedAt!.getTime() }))
+      expect(started).toHaveLength(2)
+      const entries = await feedOf(game)
+      const times = (type: string) => entries.filter(entry => entry.type === type).map(entry => Date.parse(entry.at))
+      expect(times('session_started')[0]).toBeGreaterThanOrEqual(started[1]!.from)
+      expect(times('game_set')[0]).toBeGreaterThanOrEqual(started[1]!.from)
+      expect(times('game_set')[0]).toBeLessThan(started[1]!.to)
+      expect(times('event_finished')[0]).toBeGreaterThanOrEqual(started[1]!.to)
+      expect(times('game_set')[1]).toBeLessThan(started[0]!.to)
+      expect(entries.map(entry => entry.type)).toEqual(['event_finished', 'result_entered', 'game_set', 'session_started', 'session_ended', 'result_entered', 'game_set'])
+    })
+
+    it('keeps the order of two entries that one change writes', async () => {
+      setAllowlist({ hosts: 'discord:1' })
+      const { cookie } = await signIn(testDb.db, host)
+      const created = await send('POST', '/api/e', cookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: SLOTS.slice(0, 1), settings: TEST_SETTINGS })
+      const { slug } = await created.json() as { slug: string }
+
+      expect((await send('PATCH', `/api/e/${slug}/settings`, cookie, { settings: { gameCount: TEST_SETTINGS.gameCount + 2, teamSize: TEST_SETTINGS.teamSize + 1 } })).status).toBe(200)
+
+      const { entries } = await (await send('GET', `/api/e/${slug}/activity`, cookie)).json() as ActivityPage
+      expect(entries.map(entry => entry.type)).toEqual(['team_size_changed', 'game_count_changed'])
+    })
+
+    it('keeps the order of two changes made on a clock that stands still', async () => {
+      const game = await running({ gameCount: 2 })
+      const first = await setRound(game, game.halo.id)
+      const second = await setRound(game, game.kart.id)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)
+
+      expect((await feedOf(game)).map(entry => entry.type)).toEqual(['result_entered', 'result_entered', 'game_set', 'game_set'])
+      expect((await feedOf(game)).map(entry => entry.params).slice(2)).toMatchObject([{ gameId: game.kart.id }, { gameId: game.halo.id }])
+    })
+  })
+
   describe('refusals, in order', () => {
     it('refuses a Player with not_host', async () => {
       const game = await running({ gameCount: 1 })
       const round = await setRound(game, game.halo.id)
       expect((await enter(game, round, { places: teamOneWins })).status).toBe(200)
 
-      expect(await errorOf(await finish(game, { outcome: 'winner' }, game.cookies.one))).toEqual({ status: 403, code: 'not_host' })
+      expect(await errorOf(await finish(game, { outcome: 'winner', winners: [1] }, game.cookies.one))).toEqual({ status: 403, code: 'not_host' })
     })
 
     it('refuses the Host in a Event that is not running (the Date poll) with wrong_phase', async () => {
@@ -346,7 +402,7 @@ describe('Finishing the Event', () => {
       const created = await send('POST', '/api/e', cookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: SLOTS.slice(0, 1), settings: { ...TEST_SETTINGS, gameCount: 1 } })
       const { slug } = await created.json() as { slug: string }
 
-      expect(await errorOf(await send('POST', `/api/e/${slug}/finish`, cookie, { outcome: 'winner' }))).toEqual({ status: 409, code: 'wrong_phase' })
+      expect(await errorOf(await send('POST', `/api/e/${slug}/finish`, cookie, { outcome: 'winner', winners: [1] }))).toEqual({ status: 409, code: 'wrong_phase' })
     })
 
     it('refuses an Event whose Rounds with a Result fall short of the Game count with results_missing, and writes nothing', async () => {
@@ -371,7 +427,7 @@ describe('Finishing the Event', () => {
       const before = await eventRowOf(game.eventId)
       const activityBefore = await activityTypes(game.eventId)
 
-      expect(await errorOf(await finish(game, { outcome: 'tie' }))).toEqual({ status: 409, code: 'results_missing' })
+      expect(await errorOf(await finish(game, { outcome: 'tie', winners: [1, 2] }))).toEqual({ status: 409, code: 'results_missing' })
 
       expect(await eventRowOf(game.eventId)).toEqual(before)
       expect(await activityTypes(game.eventId)).toEqual(activityBefore)
@@ -386,20 +442,24 @@ describe('Finishing the Event', () => {
       const before = await eventRowOf(game.eventId)
       const activityBefore = await activityTypes(game.eventId)
 
-      expect(await errorOf(await finish(game, { outcome: 'tie' }))).toEqual({ status: 409, code: 'standings_changed' })
+      expect(await errorOf(await finish(game, { outcome: 'tie', winners: [1] }))).toEqual({ status: 409, code: 'standings_changed' })
 
       expect(await eventRowOf(game.eventId)).toEqual(before)
       expect(await activityTypes(game.eventId)).toEqual(activityBefore)
     })
 
-    it('answers invalid_value for a body without outcome, with an unknown outcome, or with a number', async () => {
+    it('answers invalid_value for a body without outcome or without winners, with an unknown outcome, or with winners that are no team positions', async () => {
       const game = await running({ gameCount: 1 })
       const round = await setRound(game, game.halo.id)
       expect((await enter(game, round, { places: teamOneWins })).status).toBe(200)
 
       expect(await errorOf(await send('POST', `/api/e/${game.slug}/finish`, game.hostCookie, {}))).toEqual({ status: 400, code: 'invalid_value' })
-      expect(await errorOf(await finish(game, { outcome: 'draw' }))).toEqual({ status: 400, code: 'invalid_value' })
-      expect(await errorOf(await finish(game, { outcome: 7 }))).toEqual({ status: 400, code: 'invalid_value' })
+      expect(await errorOf(await finish(game, { outcome: 'draw', winners: [1] }))).toEqual({ status: 400, code: 'invalid_value' })
+      expect(await errorOf(await finish(game, { outcome: 7, winners: [1] }))).toEqual({ status: 400, code: 'invalid_value' })
+      expect(await errorOf(await finish(game, { outcome: 'winner' }))).toEqual({ status: 400, code: 'invalid_value' })
+      expect(await errorOf(await finish(game, { outcome: 'winner', winners: '1' }))).toEqual({ status: 400, code: 'invalid_value' })
+      expect(await errorOf(await finish(game, { outcome: 'winner', winners: ['1'] }))).toEqual({ status: 400, code: 'invalid_value' })
+      expect(await errorOf(await finish(game, { outcome: 'winner', winners: [1.5] }))).toEqual({ status: 400, code: 'invalid_value' })
       expect((await eventRowOf(game.eventId)).phase).toBe('running')
     })
 
@@ -423,10 +483,57 @@ describe('Finishing the Event', () => {
       const before = await eventRowOf(game.eventId)
       const activityBefore = await activityTypes(game.eventId)
 
-      expect(await errorOf(await finish(game, { outcome: 'winner' }))).toEqual({ status: 409, code: 'standings_changed' })
+      expect(await errorOf(await finish(game, { outcome: 'winner', winners: [1] }))).toEqual({ status: 409, code: 'standings_changed' })
 
       expect(await eventRowOf(game.eventId)).toEqual(before)
       expect(await activityTypes(game.eventId)).toEqual(activityBefore)
+    })
+
+    // Story 53: the Host never closes the Event on Standings he did not see. The outcome alone is not enough: a Correction can change who leads
+    // and leave the outcome as it was (#277, review 0.8 S2), so the finish carries the Parties on Place 1 that the Host saw.
+    it('refuses a sole winner the Host did not see: a Correction in another tab made Party 2 the leader, the outcome is still „winner“', async () => {
+      const game = await running({ gameCount: 2 })
+      const first = await setRound(game, game.halo.id)
+      const second = await setRound(game, game.kart.id)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      expect((await enter(game, second, { places: teamOneWins })).status).toBe(200)
+      expect((await enter(game, first, { places: teamTwoWins })).status).toBe(200)
+      expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)
+      expect((await read(game)).end).toMatchObject({ complete: true, tie: null })
+      const before = await eventRowOf(game.eventId)
+      const activityBefore = await activityTypes(game.eventId)
+
+      expect(await errorOf(await finish(game, { outcome: 'winner', winners: [1] }))).toEqual({ status: 409, code: 'standings_changed' })
+
+      expect(await eventRowOf(game.eventId)).toEqual(before)
+      expect(await activityTypes(game.eventId)).toEqual(activityBefore)
+      expect(await (await finish(game, { outcome: 'winner', winners: [2] })).json()).toEqual({ phase: 'finished', winners: [2] })
+    })
+
+    it('refuses a Tie whose Parties changed: Parties 1 and 2 on Place 1 became Parties 1 and 3', async () => {
+      const game = await running({ teams: 3, gameCount: 2 })
+      const first = await setRound(game, game.halo.id)
+      const second = await setRound(game, game.kart.id)
+      expect((await enter(game, first, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }, { team: 3, place: 3 }] })).status).toBe(200)
+      expect((await enter(game, second, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }, { team: 3, place: 3 }] })).status).toBe(200)
+      expect((await read(game)).end).toMatchObject({ complete: true, tie: [1, 2] })
+      expect((await enter(game, first, { places: [{ team: 1, place: 1 }, { team: 3, place: 2 }, { team: 2, place: 3 }] })).status).toBe(200)
+      expect((await enter(game, second, { places: [{ team: 3, place: 1 }, { team: 1, place: 2 }, { team: 2, place: 3 }] })).status).toBe(200)
+      expect((await read(game)).end).toMatchObject({ complete: true, tie: [1, 3] })
+      const before = await eventRowOf(game.eventId)
+
+      expect(await errorOf(await finish(game, { outcome: 'tie', winners: [1, 2] }))).toEqual({ status: 409, code: 'standings_changed' })
+      expect(await eventRowOf(game.eventId)).toEqual(before)
+    })
+
+    it('takes the winners of a Tie in any order and as a set', async () => {
+      const game = await running({ gameCount: 2 })
+      const first = await setRound(game, game.halo.id)
+      const second = await setRound(game, game.kart.id)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)
+
+      expect(await (await finish(game, { outcome: 'tie', winners: [2, 1, 2] })).json()).toEqual({ phase: 'finished', winners: [1, 2] })
     })
   })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SCORE_MAX, endOf, finishRejection, lastGameRejection, leadersOf, nextRoundNumber, normalizeScore, outcomeOf, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, sameResult, scoreValid, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
+import { SCORE_MAX, endOf, finishRejection, lastGameRejection, leadersOf, nextRoundNumber, normalizeScore, outcomeOf, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, sameResult, scoreValid, standingsAndEnd, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
 import { GAME_COUNT_MAX, TEAM_COUNT_MAX, TEAM_COUNT_MIN } from '../../shared/settings'
 
 // The rules of a Result (#273, spec #272, GLOSSARY: Result, Place, Shared place, Points table, Score): the shape of the Places, the
@@ -400,6 +400,23 @@ describe('endOf', () => {
   })
 })
 
+describe('standingsAndEnd', () => {
+  const settings = { pointsTable: { preset: 'linear' as const, values: [2, 1, 0] }, teamCount: 3, gameCount: 2 }
+
+  it('sums the Places of every Round into the Standings and counts the Rounds as played', () => {
+    const rounds = [[{ team: 1, place: 1 }, { team: 2, place: 2 }, { team: 3, place: 3 }], [{ team: 2, place: 1 }, { team: 1, place: 2 }, { team: 3, place: 3 }]]
+
+    expect(standingsAndEnd(rounds, settings)).toEqual({
+      standings: standingsOf([3, 3, 0]),
+      end: { played: 2, gameCount: 2, complete: true, tie: [1, 2] },
+    })
+  })
+
+  it('has every Party at 0 points and nothing played before the first Result', () => {
+    expect(standingsAndEnd([], settings)).toEqual({ standings: standingsOf([0, 0, 0]), end: { played: 0, gameCount: 2, complete: false, tie: null } })
+  })
+})
+
 describe('outcomeOf', () => {
   it('is the winner without a Tie', () => {
     expect(outcomeOf({ tie: null })).toBe('winner')
@@ -414,36 +431,54 @@ describe('finishRejection', () => {
   const complete = { complete: true, tie: null }
   const incomplete = { complete: false, tie: null }
   const tied = { complete: true, tie: [1, 2] }
+  const alone = standingsOf([3, 1, 0])
+  const level = standingsOf([3, 3, 0])
+  const ask = (input: Partial<Parameters<typeof finishRejection>[0]>) => finishRejection({ isHost: true, phase: 'running', end: complete, standings: alone, outcome: 'winner', winners: [1], ...input })
 
   it('refuses a Player first, before every other rule', () => {
-    expect(finishRejection({ isHost: false, phase: 'poll', end: incomplete, outcome: 'winner' })).toBe('not_host')
+    expect(ask({ isHost: false, phase: 'poll', end: incomplete })).toBe('not_host')
   })
 
   it('refuses the Host in every Phase but running with wrong_phase, even when incomplete', () => {
     for (const phase of ['draft', 'poll', 'date_set', 'finished', 'archived'] as const) {
-      expect(finishRejection({ isHost: true, phase, end: incomplete, outcome: 'winner' })).toBe('wrong_phase')
-      expect(finishRejection({ isHost: true, phase, end: complete, outcome: 'winner' })).toBe('wrong_phase')
+      expect(ask({ phase, end: incomplete })).toBe('wrong_phase')
+      expect(ask({ phase, end: complete })).toBe('wrong_phase')
     }
   })
 
   it('refuses a running Event whose Rounds with a Result do not reach the Game count with results_missing', () => {
-    expect(finishRejection({ isHost: true, phase: 'running', end: incomplete, outcome: 'winner' })).toBe('results_missing')
+    expect(ask({ end: incomplete })).toBe('results_missing')
   })
 
-  it('allows a complete Event without a Tie when the Host asks for the winner', () => {
-    expect(finishRejection({ isHost: true, phase: 'running', end: complete, outcome: 'winner' })).toBeNull()
+  it('allows a complete Event without a Tie when the Host asks for the winner he saw', () => {
+    expect(ask({})).toBeNull()
   })
 
   it('refuses the winner for a Tie with standings_changed', () => {
-    expect(finishRejection({ isHost: true, phase: 'running', end: tied, outcome: 'winner' })).toBe('standings_changed')
+    expect(ask({ end: tied, standings: level, winners: [1] })).toBe('standings_changed')
   })
 
   it('refuses the tie for a Event without a Tie with standings_changed', () => {
-    expect(finishRejection({ isHost: true, phase: 'running', end: complete, outcome: 'tie' })).toBe('standings_changed')
+    expect(ask({ outcome: 'tie', winners: [1] })).toBe('standings_changed')
   })
 
   it('allows the tie for a Tie the Host saw', () => {
-    expect(finishRejection({ isHost: true, phase: 'running', end: tied, outcome: 'tie' })).toBeNull()
+    expect(ask({ end: tied, standings: level, outcome: 'tie', winners: [1, 2] })).toBeNull()
+  })
+
+  it('refuses a winner other than the sole leader now, although the outcome is the same (review 0.8 S2)', () => {
+    expect(ask({ standings: standingsOf([1, 3, 0]), winners: [1] })).toBe('standings_changed')
+  })
+
+  it('refuses a Tie whose Parties are not the Parties on Place 1 now, however many there are', () => {
+    expect(ask({ end: tied, standings: standingsOf([3, 0, 3]), outcome: 'tie', winners: [1, 2] })).toBe('standings_changed')
+    expect(ask({ end: tied, standings: level, outcome: 'tie', winners: [1] })).toBe('standings_changed')
+    expect(ask({ end: tied, standings: level, outcome: 'tie', winners: [1, 2, 3] })).toBe('standings_changed')
+  })
+
+  it('compares the winners as a set: any order, a repeated Party counts once', () => {
+    expect(ask({ end: tied, standings: level, outcome: 'tie', winners: [2, 1] })).toBeNull()
+    expect(ask({ end: tied, standings: level, outcome: 'tie', winners: [2, 1, 2] })).toBeNull()
   })
 })
 

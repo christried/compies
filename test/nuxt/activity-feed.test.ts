@@ -6,6 +6,7 @@ import ActivityFeed from '~/components/ActivityFeed.vue'
 import type { FeedSession } from '~/utils/activity'
 import { formatSlotWhen } from '~/utils/berlin-time'
 import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
+import { GAME_NAME_MAX } from '~~/shared/game'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
 
 // The Activity feed (#159, spec #153 § Activity feed): it loads the first page from the feed endpoint, adds what the
@@ -252,6 +253,15 @@ describe('ActivityFeed', () => {
       await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
 
       expect(lines(wrapper)[0]).toContain('Spiel 3: Mario Kart, Team Orange gewinnt')
+    })
+
+    it('names the longest game name allowed in full, also without a space in it (#273)', async () => {
+      const longest = 'W'.repeat(GAME_NAME_MAX)
+      const feed = serveFeed([{ ...result, games: { g1: longest } } as ActivityEntry])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, teams } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(lines(wrapper)[0]).toContain(`Spiel 3: ${longest}, Wilde Gurken gewinnt`)
     })
   })
 

@@ -299,6 +299,8 @@ describe('ending a Session', () => {
 // dock's primary, a hold like „Session beenden“; a Tie has its own dock (#278, below).
 describe('finishing the Event', () => {
   const complete = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null }
+  const sole = [{ team: 1, rank: 1, points: 3 }, { team: 2, rank: 2, points: 1 }]
+  const level = [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 1, points: 2 }]
   const RUNNING_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED }]
   const ENDED_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }]
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
@@ -348,7 +350,7 @@ describe('finishing the Event', () => {
 
   it('sends the outcome the Host held, not what the Standings call for when the hold ends: a Tie that came in meanwhile is refused', async () => {
     const posted: unknown[] = []
-    const store = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: complete }))
+    const store = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, standings: sole, end: complete }))
     registerEndpoint(`/api/e/${store.slug}/finish`, { method: 'POST', handler: async (event) => {
       posted.push(await readBody(event))
       throw createError({ statusCode: 409, statusMessage: 'standings_changed' })
@@ -359,19 +361,19 @@ describe('finishing the Event', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     await button.trigger('pointerdown')
     // A Correction in the second of the hold makes the Standings a Tie; the page reads it.
-    store.set(hostView(store.slug, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: { ...complete, tie: [1, 2] } }))
+    store.set(hostView(store.slug, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, standings: level, end: { ...complete, tie: [1, 2] } }))
     await refreshNuxtData()
     vi.advanceTimersByTime(1000)
     vi.useRealTimers()
     await flushPromises()
 
-    await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'winner' }]))
+    await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'winner', winners: [1] }]))
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toEqual(['Die Tabelle hat sich geändert. Schau sie dir nochmal an.']))
   })
 
-  it('posts the outcome „winner“ after the hold and reads the Event again: the page then reads finished', async () => {
+  it('posts the outcome „winner“ with the Party on Place 1 after the hold and reads the Event again: the page then reads finished', async () => {
     const posted: unknown[] = []
-    const store = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: complete }))
+    const store = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, standings: sole, end: complete }))
     registerEndpoint(`/api/e/${store.slug}/finish`, { method: 'POST', handler: async (event) => {
       posted.push(await readBody(event))
       store.set(hostView(store.slug, ENDED_ONE, { event: { isHost: true, phase: 'finished' }, end: complete }))
@@ -385,7 +387,7 @@ describe('finishing the Event', () => {
 
     await hold(button)
 
-    await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'winner' }]))
+    await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'winner', winners: [1] }]))
     await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
     expect(pill(page)).toEqual(['Einladen', 'Mehr'])
   })
@@ -412,7 +414,7 @@ describe('a Tie at the end', () => {
   const RUNNING_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED }]
   const ENDED_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }]
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
-  const running = (slug: string, end: NonNullable<Overrides['end']> = tied) => hostView(slug, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end })
+  const running = (slug: string, end: NonNullable<Overrides['end']> = tied) => hostView(slug, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 1, points: 2 }], end })
   const teams = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
   const button = (page: Awaited<ReturnType<typeof mountSuspended>>, label: string) => page.findAll('[role="toolbar"] button').find((item: { text: () => string }) => item.text().startsWith(label))!
 
@@ -471,7 +473,7 @@ describe('a Tie at the end', () => {
     }
   })
 
-  it('posts the outcome „tie“ after the hold and reads the Event again: the page then reads finished, Unentschieden', async () => {
+  it('posts the outcome „tie“ with every Party of the Tie after the hold and reads the Event again: the page then reads finished, Unentschieden', async () => {
     const posted: unknown[] = []
     const store = serve(s => running(s))
     registerEndpoint(`/api/e/${store.slug}/finish`, { method: 'POST', handler: async (event) => {
@@ -490,7 +492,7 @@ describe('a Tie at the end', () => {
     expect(posted).toEqual([])
     await hold(button(page, 'Unentschieden beenden'))
 
-    await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'tie' }]))
+    await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'tie', winners: [1, 2] }]))
     await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
     expect(page.get('h1').text()).toBe('Unentschieden')
     expect(pill(page)).toEqual(['Einladen', 'Mehr'])

@@ -3,12 +3,15 @@ import type { DockAction } from '~/components/HostDock.vue'
 import { coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
+import { leadersOf } from '~~/shared/results'
 
 // The Host's dock actions (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers (Event
 // einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, or none after the last Session) and
 // dockLayout which actions sit where (named parts: primary, secondary, more; review 1.4 A4). Each action is one entry below.
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
-// a secondary hold. „Termin für Session m“ stays while another Session still polls, and „Termine bearbeiten“ while the Date poll is open.
+// a secondary hold. At a Tie (#278) „Unentschieden beenden“ takes the primary's place as a hold, and „Letztes Spiel hinzufügen“ is a plain
+// button beside it; the finish holds send the Parties on Place 1 they showed (review 0.8 S2). „Termin für Session m“ stays while another
+// Session still polls, and „Termine bearbeiten“ while the Date poll is open.
 // Every Phase before the Event finishes has Einstellungen and Einladen (#147). „Termin festlegen“ looks disabled with its reason
 // when no open future Slot can become a Date (#52). What each action does is the page's: it passes the handlers.
 
@@ -23,10 +26,13 @@ export interface HostActionHandlers {
   start: () => void
   /** Ends the Running Session; the dock's hold calls it after the hold and learns whether the server took it. */
   end: () => Promise<boolean>
-  /** Finishes the Event with a winner (#277); the dock's hold calls it after the hold and learns whether the server took it. The held label is the outcome sent (#278). */
-  finish: () => Promise<boolean>
+  /**
+   * Finishes the Event with a winner (#277); the dock's hold calls it after the hold and learns whether the server took it. The held label is the
+   * outcome sent (#278), `winners` the Parties on Place 1 of the Standings the dock showed (review 0.8 S2).
+   */
+  finish: (winners: number[]) => Promise<boolean>
   /** Finishes the Event as a Tie (#278), like `finish`. */
-  finishTie: () => Promise<boolean>
+  finishTie: (winners: number[]) => Promise<boolean>
   /** Adds the last game while the Standings are a Tie (#278); the button learns whether the server took it. */
   lastGame: () => Promise<boolean>
   /** Opens the picker for the next game (#228). */
@@ -66,6 +72,8 @@ export function useHostActions(
     // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
     const coinKey = coinBlockedKey(current, serverNow())
     const coinReason = coinKey === null ? undefined : t(coinKey)
+    // The Parties on Place 1 of the Standings this dock shows: what the finish tells the server the Host saw (review 0.8 S2).
+    const winners = leadersOf(current.standings ?? [])
 
     const entries: Record<DockKey, DockAction> = {
       invite: { key: 'invite', label: t('common.invite'), icon: LinkIcon, group: t('dock.group.people'), run: handlers.invite },
@@ -109,7 +117,7 @@ export function useHostActions(
         icon: Medal,
         group: t('dock.group.event'),
         hold: true,
-        run: handlers.finish,
+        run: () => handlers.finish(winners),
       },
       // With a Tie the Host decides (#278): the same hold, for „Unentschieden“. The server compares the outcome with the Standings, so a stale hold is refused.
       finishTie: {
@@ -118,7 +126,7 @@ export function useHostActions(
         icon: Handshake,
         group: t('dock.group.event'),
         hold: true,
-        run: handlers.finishTie,
+        run: () => handlers.finishTie(winners),
       },
       // A plain button: only the primary is held, and the server makes a double press harmless. At the maximum it stays, dashed, with its reason.
       // `dockOnly` (#278): in the pill it is not repeated in „Mehr“ (the Tie's pill holds it beside the two holds).

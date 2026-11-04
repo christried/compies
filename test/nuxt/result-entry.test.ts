@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppSheet from '~/components/AppSheet.vue'
 import ResultEntry from '~/components/ResultEntry.vue'
 import type { BoardTeam } from '~~/shared/event'
+import { GAME_NAME_MAX } from '~~/shared/game'
 import type { ResultView } from '~~/shared/stage'
 import type { RoundGame } from '~~/shared/game'
 import type { ResultPlace } from '~~/shared/results'
@@ -19,7 +20,7 @@ const teams = (names: (string | null)[]): BoardTeam[] => names.map((name, index)
 const three = teams(['Wilde Gurken', 'Die Füchse', null])
 const linear3: PointsTable = { preset: 'linear', values: [2, 1, 0] }
 
-type Props = { open?: boolean, teams?: BoardTeam[], pointsTable?: PointsTable, kicker?: { number: number, total: number } | null, correction?: Pick<ResultView, 'number' | 'places'> | null, save?: (places: ResultPlace[]) => Promise<boolean> }
+type Props = { open?: boolean, game?: RoundGame, teams?: BoardTeam[], pointsTable?: PointsTable, kicker?: { number: number, total: number } | null, correction?: Pick<ResultView, 'number' | 'places'> | null, save?: (places: ResultPlace[]) => Promise<boolean> }
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(props: Props = {}) {
@@ -71,6 +72,13 @@ describe('the result sheet', () => {
     expect(entry.findComponent(AppSheet).props('full')).toBe(true)
     expect(sheet().textContent).toContain('Mario Kart')
     expect(sheet().textContent).toContain('Ordne die Parteien per Ziehen am Griff oder mit den Pfeil-Buttons.')
+  })
+
+  it('shows the longest game name allowed in full, also without a space in it', async () => {
+    const longest = 'W'.repeat(GAME_NAME_MAX)
+    await mount({ game: { ...game, name: longest } })
+
+    expect(sheet().textContent).toContain(longest)
   })
 
   describe('the kicker (#274)', () => {

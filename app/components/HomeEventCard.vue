@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatSlotWhen } from '~/utils/berlin-time'
+import { pagePill } from '~/utils/event-page'
 import { datePollOpen, type HomeEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
 
@@ -15,6 +16,12 @@ const { t } = useI18n()
 
 // The Date poll is open while a Session waits for a Date, also in a running Event (#164, datePollOpen).
 const isPoll = computed(() => datePollOpen(props.event.phase, props.event.missingDates))
+// The pill says what the Event page's header says: a started Event with no Session left reads „Kein Termin“ with the grey dot, not „Läuft“, until
+// the Host finishes it (pagePill, #277; the rule is noSessionLeft, review 0.8 N5).
+const pill = computed(() => {
+  const shown = props.event.noDate ? pagePill({ kind: 'done', next: null }) : null
+  return shown ? { phase: shown.phase, label: t('phase.noDate') } : { phase: props.event.phase, label: undefined }
+})
 const hasSeveralSessions = computed(() => props.event.sessionCount > 1)
 const datesMissing = computed(() => props.event.missingDates > 0)
 
@@ -64,7 +71,10 @@ const ctaLabel = computed(() => t(CTA_LABEL[props.event.action]))
         </h3>
         <span class="text-[13px] text-ink-2">{{ hostLine }}</span>
       </div>
-      <PhasePill :phase="event.phase" />
+      <PhasePill
+        :phase="pill.phase"
+        :label="pill.label"
+      />
     </div>
 
     <div class="flex flex-col gap-0.5">

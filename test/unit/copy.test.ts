@@ -110,6 +110,13 @@ const RETIRED: Record<string, string> = {
   'Lucky Wheel': 'Glücksrad',
   'Admin-Wahl': 'Host-Wahl',
   'Passende Formate': 'Passt zu',
+  'Tiebreaker': 'Unentschieden',
+}
+
+// The changelog lines that announce a removal name the removed feature by its old word, so they are the one place a retired word may stay: the
+// lines of the issues that removed it, found by the link they end with (#279 took out the Tiebreaker pool, #280 its mention in the privacy text).
+const REMOVAL_ISSUES: Record<string, string[]> = {
+  Tiebreaker: ['279', '280'],
 }
 
 describe('glossary words in the copy', () => {
@@ -118,7 +125,9 @@ describe('glossary words in the copy', () => {
   it.each(Object.entries(RETIRED))('never shows „%s“ (now „%s“) in the copy or the Unreleased lines', (retired) => {
     const hits = entries.filter(e => e.value.includes(retired)).map(e => e.key)
     expect(hits).toEqual([])
-    expect(unreleased).not.toContain(retired)
+    const removals = REMOVAL_ISSUES[retired] ?? []
+    const lines = unreleased.split('\n').filter(line => line.includes(retired) && !removals.some(issue => line.endsWith(`/issues/${issue}))`)))
+    expect(lines).toEqual([])
   })
 
   it('calls the whole Event an Event in the stepper, the name step and the Fertig screen, never a Session', () => {

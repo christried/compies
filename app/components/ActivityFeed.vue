@@ -203,7 +203,7 @@ const groups = computed(() => {
                   :size="14"
                 />
               </span>
-              <span class="min-w-0 flex-1 pt-[3px] text-[14px] leading-[1.4] text-pretty">
+              <span class="min-w-0 flex-1 pt-[3px] text-[14px] leading-[1.4] text-pretty break-words">
                 <template
                   v-for="(part, index) in item.parts"
                   :key="index"

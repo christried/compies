@@ -133,7 +133,7 @@ async function onSave() {
       </p>
       <p
         v-if="game"
-        class="m-0 font-display text-[22px] leading-tight"
+        class="m-0 font-display text-[22px] leading-tight break-words"
       >
         {{ game.name }}
       </p>

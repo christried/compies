@@ -1,9 +1,8 @@
 import { and, eq, isNotNull } from 'drizzle-orm'
 import { events, roundPlaces, rounds } from '../db/schema'
 import type { EventFinished } from '../../shared/event'
-import { endOf, finishRejection, leadersOf, standingsOf, totalPoints, type FinishOutcome } from '../../shared/results'
+import { finishRejection, leadersOf, standingsAndEnd, type FinishRequest } from '../../shared/results'
 import { settingsFromRow, type EventSettings } from '../../shared/settings'
-import type { StandingView } from '../../shared/stage'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
@@ -37,24 +36,22 @@ export async function readResultPlaces(db: Db, eventId: string): Promise<{ team:
 
 /**
  * The Standings and the end of the Event under the lock (#278, shared by the finish and the last game): the Places of the Rounds with a
- * Result, summed under the Event's points table, and what the count says of them (endOf). The finish and the last game both refuse on it.
+ * Result, through standingsAndEnd, the composition the Event read uses too. The finish and the last game both refuse on it.
  */
-export async function readEnd(db: Db, eventId: string, settings: Pick<EventSettings, 'pointsTable' | 'teamCount' | 'gameCount'>): Promise<{ standings: StandingView[], end: ReturnType<typeof endOf> }> {
-  const groups = await readResultPlaces(db, eventId)
-  const standings = standingsOf(totalPoints(groups, settings.pointsTable, settings.teamCount))
-  return { standings, end: endOf(standings, groups.length, settings.gameCount) }
+export async function readEnd(db: Db, eventId: string, settings: Pick<EventSettings, 'pointsTable' | 'teamCount' | 'gameCount'>): Promise<ReturnType<typeof standingsAndEnd>> {
+  return standingsAndEnd(await readResultPlaces(db, eventId), settings)
 }
 
 /**
- * Finishes the Event with the outcome the Host saw (#277), or refuses with the reason of finishRejection. Nothing is written before the
- * rule passes. The Phase is set before the Sessions close, and closeSessions does not write it (changeSessions would overwrite it).
+ * Finishes the Event with the outcome and the winners the Host saw (#277), or refuses with the reason of finishRejection. Nothing is written
+ * before the rule passes. The Phase is set before the Sessions close, and closeSessions does not write it (changeSessions would overwrite it).
  */
-export async function finishEvent({ tx, eventRow, user, publish, now }: Change, outcome: FinishOutcome): Promise<EventFinished> {
+export async function finishEvent({ tx, eventRow, user, publish, now }: Change, { outcome, winners: seen }: FinishRequest): Promise<EventFinished> {
   const settings = settingsFromRow(eventRow)
   // An Event that is not set up cannot be running, so the rule's order gives it wrong_phase.
   if (settings === null) throw apiError('wrong_phase')
   const { standings, end } = await readEnd(tx, eventRow.id, settings)
-  const rejection = finishRejection({ isHost: eventRow.hostId === user.id, phase: eventRow.phase, end, outcome })
+  const rejection = finishRejection({ isHost: eventRow.hostId === user.id, phase: eventRow.phase, end, standings, outcome, winners: seen })
   if (rejection) throw apiError(rejection)
 
   await tx.update(events).set({ phase: 'finished', finishedAt: now }).where(eq(events.id, eventRow.id))

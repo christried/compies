@@ -95,13 +95,13 @@ describe('useStageActions', () => {
     expect(server.bodies).toEqual([{ places }])
   })
 
-  it('sends the outcome the Host saw as the body of the finish (#277)', async () => {
+  it('sends the outcome and the winners the Host saw as the body of the finish (#277)', async () => {
     const { server, refresh, actions } = await setUp()
 
-    await expect(actions().finish('winner')).resolves.toBe(true)
+    await expect(actions().finish({ outcome: 'winner', winners: [2] })).resolves.toBe(true)
 
     expect(server.calls).toEqual(['POST finish'])
-    expect(server.bodies).toEqual([{ outcome: 'winner' }])
+    expect(server.bodies).toEqual([{ outcome: 'winner', winners: [2] }])
     expect(refresh).toHaveBeenCalledTimes(1)
   })
 
