@@ -1,5 +1,6 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { getQuery } from 'h3'
+import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ActivityFeed from '~/components/ActivityFeed.vue'
 import type { FeedSession } from '~/utils/activity'
@@ -239,6 +240,28 @@ describe('ActivityFeed', () => {
       await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
 
       expect(lines(wrapper)[0]).toContain('Spiel 3: Mario Kart, Team Orange gewinnt')
+    })
+  })
+
+  describe('a Correction (#275)', () => {
+    const corrected = (games: Record<string, string>) => entry('c', 1, { actor: { id: 'u-host', name: 'Hostess' }, type: 'result_corrected', params: { roundId: 'r1', number: 3, gameId: 'g1' }, games })
+
+    it('says who corrected which game, with the name and the game in bold', async () => {
+      const feed = serveFeed([corrected({ g1: 'Mario Kart' })])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(lines(wrapper)[0]).toContain('Hostess hat Spiel 3 (Mario Kart) korrigiert')
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Hostess', 'Mario Kart'])
+    })
+
+    it('shows no line while the entry has no name for the game', async () => {
+      const feed = serveFeed([corrected({})])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room } })
+      await vi.waitFor(() => expect(feed.served.reads).toBeGreaterThan(0))
+      await flushPromises()
+
+      expect(lines(wrapper).filter(line => line.includes('korrigiert'))).toEqual([])
     })
   })
 })

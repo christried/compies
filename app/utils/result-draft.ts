@@ -1,6 +1,7 @@
 import { cutToCharacters } from '~~/shared/text'
 import { normalizeScore, partyPoints, placesFromOrder, SCORE_MAX, type ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
+import type { ResultLineView } from '~~/shared/stage'
 
 // The result sheet's state rules (#273, GLOSSARY: Result, Place, Shared place): the order of the Parties, which neighbours share a Place,
 // the Scores as typed, and what they make of them. Pure and immutable, so the sheet only draws a draft and the rules are tested without
@@ -18,6 +19,16 @@ export interface ResultDraft {
 /** The Parties in team order, none level, no Score. */
 export function newResultDraft(teamCount: number): ResultDraft {
   return { order: Array.from({ length: teamCount }, (_, index) => index + 1), level: Array.from({ length: teamCount }, () => false), scores: {} }
+}
+
+/** The sheet's draft for a saved Result (#275): the Parties in Place order (team order inside a Shared place), `level[i]` set where row i has the Place of row i-1, the Scores as stored ('' for none). */
+export function draftFromResult(places: readonly Pick<ResultLineView, 'team' | 'place' | 'score'>[]): ResultDraft {
+  const sorted = [...places].sort((a, b) => a.place - b.place || a.team - b.team)
+  return {
+    order: sorted.map(entry => entry.team),
+    level: sorted.map((entry, index) => index > 0 && entry.place === sorted[index - 1]!.place),
+    scores: Object.fromEntries(sorted.map(entry => [entry.team, entry.score ?? ''])),
+  }
 }
 
 /**
@@ -57,4 +68,13 @@ export function draftPlaces(draft: ResultDraft): ResultPlace[] {
 export function draftPoints(draft: ResultDraft, table: Pick<PointsTable, 'values'>): number[] {
   const points = partyPoints(placesFromOrder(draft.order, draft.level), table)
   return draft.order.map(team => points[team - 1]!)
+}
+
+/** What the history needs of the page to offer a Correction (#275); null/absent = no „Korrigieren“ (a Member, or the Event has finished). */
+export interface HistoryCorrections {
+  pointsTable: PointsTable
+  /** The Game count, for the sheet's kicker „Korrektur: Spiel 2 von 6“. */
+  total: number
+  /** Sends the corrected Places of a Round; resolves to whether the server took them (the sheet closes then). The page passes `actions.enterResult`: it is the same PUT. */
+  save: (roundId: string, places: ResultPlace[]) => Promise<boolean>
 }

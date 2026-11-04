@@ -1,4 +1,6 @@
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
+import { readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, MemberView } from '~~/shared/event'
@@ -6,7 +8,7 @@ import type { RoundGame } from '~~/shared/game'
 import type { ResultView, RoundView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { clickButton, LARSI, memberView, openHostMenu, regionHeadings, restoreScreen, SANNE, serve, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
+import { clickButton, dialog, LARSI, memberView, openHostMenu, regionHeadings, restoreScreen, SANNE, serve, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
 
 // The composition of the Event page (#166, 11-event-seite § EventPage): what has to happen now goes on top. The order of
 // the regions' headings per state of the page, for the Host and for a Member, the poll that is only there while a Session
@@ -624,6 +626,80 @@ describe('the Standings on the Event page', () => {
       expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
       expect(page.text()).toContain('wird gespielt')
       expect(page.find('[role="log"]').exists()).toBe(false)
+    })
+  })
+
+  // The Host's „Korrigieren“ (#275): a pencil per numbered row of the history, until the Event finishes; it opens the result sheet and the save is the same PUT.
+  describe('the Host\'s Corrections', () => {
+    const pencil = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('button[aria-label="Spiel 1 korrigieren"]')
+    const hostEvent = (extra: Partial<Setup> = {}) => serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult, ...extra })
+
+    it('puts a pencil on every numbered row of the panel\'s „Tabelle“ tab for the Host', async () => {
+      const { slug } = hostEvent({ host: true })
+
+      const page = await mount(slug)
+      const tabs = page.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]')
+      await tabs[0]!.trigger('click')
+
+      const panel = page.get(`[id="${tabs[0]!.attributes('aria-controls')}"]`)
+      expect(panel.findAll('button[aria-label="Spiel 1 korrigieren"]')).toHaveLength(1)
+      expect(panel.findAll('button').filter(button => /korrigieren/i.test(button.attributes('aria-label') ?? ''))).toHaveLength(1)
+    })
+
+    it('puts one on the phone\'s „Tabelle“ view too', async () => {
+      stubScreen(false)
+      const { slug } = hostEvent({ host: true })
+
+      const page = await mount(slug)
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+
+      expect(pencil(page)).toHaveLength(1)
+    })
+
+    it('gives a Member none, on either view', async () => {
+      const { slug } = hostEvent({ host: false })
+      const wide = await mount(slug)
+      expect(pencil(wide)).toHaveLength(0)
+      expect(document.body.querySelectorAll('button[aria-label$="korrigieren"]')).toHaveLength(0)
+
+      stubScreen(false)
+      const phone = await mount(hostEvent({ host: false }).slug)
+      await phone.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+      expect(pencil(phone)).toHaveLength(0)
+    })
+
+    it('gives the Host none once the Event has finished, though the history is there', async () => {
+      const { slug } = hostEvent({ host: true, phase: 'finished' })
+
+      const page = await mount(slug)
+
+      expect(page.text()).toContain('Spielverlauf')
+
+      expect(document.body.querySelectorAll('button[aria-label$="korrigieren"]')).toHaveLength(0)
+      expect(pencil(page)).toHaveLength(0)
+    })
+
+    it('opens the sheet prefilled, and saving PUTs rounds/:id/result with the Places', async () => {
+      stubScreen(false)
+      const puts: unknown[] = []
+      const { slug } = hostEvent({ host: true })
+      registerEndpoint(`/api/e/${slug}/rounds/r1/result`, { method: 'PUT', handler: async (event) => {
+        puts.push(await readBody(event))
+        return { roundId: 'r1', number: 1 }
+      } })
+
+      const page = await mount(slug)
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+      await pencil(page)[0]!.trigger('click')
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+
+      expect(dialog()!.querySelector('h2')?.textContent).toBe('Spiel 1 korrigieren')
+      expect(dialog()!.textContent).toContain('Korrektur: Spiel 1 von 6')
+      await clickButton(dialog(), 'Korrektur speichern')
+      await flushPromises()
+
+      await vi.waitFor(() => expect(puts).toEqual([{ places: [{ team: 2, place: 1, score: null }, { team: 1, place: 2, score: null }] }]))
+      await vi.waitFor(() => expect(dialog()).toBeNull())
     })
   })
 })

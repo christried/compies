@@ -249,10 +249,6 @@ describe('the sentence of a Result (#273)', () => {
     expect(text(resultOf([1], {}))).toBeNull()
   })
 
-  it('has no sentence for a correction yet (#275 writes it)', () => {
-    expect(text({ ...base, games: { g1: 'Mario Kart' }, type: 'result_corrected', params: { roundId: 'r', number: 3, gameId: 'g1' } })).toBeNull()
-  })
-
   // The end of the Event (#277): one winner has a sentence, named like a Result's winner.
   const finishedOf = (winners: number[]): ActivityEntry => ({ ...base, type: 'event_finished', params: { winners } })
 
@@ -273,6 +269,27 @@ describe('the sentence of a Result (#273)', () => {
   it('has no sentence for several winners or none (#278 writes the Tie)', () => {
     expect(text(finishedOf([1, 2]))).toBeNull()
     expect(text(finishedOf([]))).toBeNull()
+  })
+
+  describe('a Correction (#275)', () => {
+    const correctedOf = (games: Record<string, string> = { g1: 'Mario Kart' }): ActivityEntry => ({ ...base, games, type: 'result_corrected', params: { roundId: 'r', number: 3, gameId: 'g1' } })
+
+    it('names the actor, the number of the Round and the game', () => {
+      expect(text(correctedOf())).toBe('Sanne hat Spiel 3 (Mario Kart) korrigiert')
+    })
+
+    it('sets the actor and the game in bold, and nothing else', () => {
+      expect(activityParts(correctedOf(), t)).toEqual([
+        { text: 'Sanne', strong: true },
+        { text: ' hat Spiel 3 (', strong: false },
+        { text: 'Mario Kart', strong: true },
+        { text: ') korrigiert', strong: false },
+      ])
+    })
+
+    it('leaves out the sentence while the viewer may not name the game', () => {
+      expect(text(correctedOf({}))).toBeNull()
+    })
   })
 
   it('draws a Result with an icon of its own', () => {

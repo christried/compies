@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { draftPlaces, draftPoints, moveRow, newResultDraft, setScore, toggleLevel, type ResultDraft } from '../../app/utils/result-draft'
+import { draftFromResult, draftPlaces, draftPoints, moveRow, newResultDraft, setScore, toggleLevel, type ResultDraft } from '../../app/utils/result-draft'
 import { rowIndexAt } from '../../app/utils/row-drag'
 
 // The result sheet's state rules (#273): the order of the Parties, which neighbours are level, the typed Scores, and what they make
@@ -108,6 +108,55 @@ describe('draftPoints', () => {
 
   it('follows the order and a custom table', () => {
     expect(draftPoints(moveRow(newResultDraft(3), 2, 0), { values: [5, 3, 0] })).toEqual([5, 3, 0])
+  })
+})
+
+describe('draftFromResult (#275)', () => {
+  const stored = (rows: [number, number, string | null][]) => rows.map(([team, place, score]) => ({ team, place, score }))
+  /** An unchanged save sends exactly the stored Places, so the server finds the Result equal and writes nothing. */
+  const roundTrip = (rows: ReturnType<typeof stored>) => expect(draftPlaces(draftFromResult(rows))).toEqual(rows)
+
+  it('lists the Parties in Place order with no gap level, for 1, 2, 3', () => {
+    const draft = draftFromResult(stored([[2, 1, null], [3, 2, null], [1, 3, null]]))
+    expect(draft.order).toEqual([2, 3, 1])
+    expect(draft.level).toEqual([false, false, false])
+    roundTrip(stored([[2, 1, null], [3, 2, null], [1, 3, null]]))
+  })
+
+  it('sets the flag where a row has the Place of the row above (1, 1, 3 and 1, 2, 2)', () => {
+    expect(draftFromResult(stored([[1, 1, null], [2, 1, null], [3, 3, null]])).level).toEqual([false, true, false])
+    expect(draftFromResult(stored([[1, 1, null], [2, 2, null], [3, 2, null]])).level).toEqual([false, false, true])
+    roundTrip(stored([[1, 1, null], [2, 1, null], [3, 3, null]]))
+    roundTrip(stored([[1, 1, null], [2, 2, null], [3, 2, null]]))
+  })
+
+  it('sets every flag when all Parties are level', () => {
+    expect(draftFromResult(stored([[1, 1, null], [2, 1, null], [3, 1, null]])).level).toEqual([false, true, true])
+    roundTrip(stored([[1, 1, null], [2, 1, null], [3, 1, null]]))
+  })
+
+  it('sorts a Result given out of order by Place, then by team', () => {
+    const draft = draftFromResult(stored([[3, 3, null], [2, 1, null], [1, 1, null]]))
+    expect(draft.order).toEqual([1, 2, 3])
+    expect(draft.level).toEqual([false, true, false])
+  })
+
+  it('keeps the Scores as stored and gives a Party without one an empty field', () => {
+    const draft = draftFromResult(stored([[1, 1, '16'], [2, 2, null], [3, 3, '0']]))
+    expect(draft.scores).toEqual({ 1: '16', 2: '', 3: '0' })
+    roundTrip(stored([[1, 1, '16'], [2, 2, null], [3, 3, '0']]))
+  })
+
+  it('does not change the list it is given', () => {
+    const rows = stored([[3, 3, null], [1, 1, null], [2, 2, null]])
+    draftFromResult(rows)
+    expect(rows.map(row => row.team)).toEqual([3, 1, 2])
+  })
+
+  it('holds 2 and 8 Parties', () => {
+    roundTrip(stored([[2, 1, '3'], [1, 2, null]]))
+    roundTrip(stored([[1, 1, '7'], [4, 1, null], [2, 3, null], [3, 3, null], [8, 5, null], [5, 6, '1234567'], [6, 6, null], [7, 8, null]]))
+    expect(draftFromResult(stored([[4, 1, null], [1, 1, null], [2, 3, null], [3, 3, null], [8, 5, null], [5, 6, null], [6, 6, null], [7, 8, null]])).order).toEqual([1, 4, 2, 3, 8, 5, 6, 7])
   })
 })
 

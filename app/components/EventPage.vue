@@ -5,7 +5,8 @@ import { feedSessions } from '~/utils/activity'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
 import { dateBlockedKey, eventPageState, headerPill, seatNote, teamsStay } from '~/utils/event-page'
 import { hasStarted } from '~~/shared/session-state'
-import { datePollOpen, sessionsEditable } from '~~/shared/event'
+import type { HistoryCorrections } from '~/utils/result-draft'
+import { beforeFinish, datePollOpen, sessionsEditable } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { leadersOf, outcomeOf } from '~~/shared/results'
 import { settingsEditable } from '~~/shared/settings'
@@ -52,6 +53,13 @@ const dialogs = useTemplateRef('dialogs')
 
 const inviteOpen = ref(false)
 const calendarOpen = ref(false)
+
+/** The Host's „Korrigieren“ in the history (#275): only while the Event has not finished, and only for the Host (the server refuses everyone else and a finished Event too). */
+const corrections = computed<HistoryCorrections | null>(() => {
+  const view = data.value
+  if (!view || !view.event.isHost || !beforeFinish(view.event.phase) || !view.settings || !view.end) return null
+  return { pointsTable: view.settings.pointsTable, total: view.end.gameCount, save: actions.enterResult }
+})
 
 /** The Date poll is open while a Session waits for a Date, in the poll Phase and in a running Event (#164, datePollOpen). */
 const pollOpen = computed(() => (data.value ? datePollOpen(data.value.event.phase, data.value.missingDates) : false))
@@ -186,7 +194,10 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
             v-if="wide"
             class="min-h-0 flex-1 overflow-y-auto p-3.5"
           >
-            <StandingsTab :view="data" />
+            <StandingsTab
+              :view="data"
+              :corrections="corrections"
+            />
           </div>
         </template>
       </SidePanel>
@@ -284,7 +295,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :teams="data.teams"
         />
 
-        <!-- The history is the finished stage's, read-only for everyone: no corrections prop (#275), whether or not that has merged (#277). -->
+        <!-- The history of the finished stage is read-only for everyone: no `corrections` (#275), not even for the Host (#277). -->
         <div
           v-else-if="block === 'history'"
           class="rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 shadow-card"
@@ -368,6 +379,7 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
       <EventStandingsView
         v-if="activeView === 'standings'"
         :view="data"
+        :corrections="corrections"
       />
       <EventActivityView
         v-else

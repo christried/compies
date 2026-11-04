@@ -19,7 +19,7 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /** Puts an open Round back (#228); the hold on its card learns whether the server took it. */
   const putBackRound = (roundId: string) => send('DELETE', `rounds/${roundId}`)
 
-  /** Enters an open Round's Result, the Host's only (#273); the sheet learns whether the server took it and closes. */
+  /** Enters an open Round's Result or corrects one, the Host's only (#273, #275); the sheet learns whether the server took it and closes. */
   const enterResult = (roundId: string, places: ResultPlace[]) => send('PUT', `rounds/${roundId}/result`, { body: { places } })
 
   /** Spins the Lucky Wheel for the next game (#229). */

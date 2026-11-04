@@ -130,9 +130,11 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
       const list = joinNames(winners)
       return t('activity.resultEntered', { n: entry.params.number, game, list, count: entry.params.first.length })
     }
-    // A correction gets its sentence in #275; until then it names nothing.
-    case 'result_corrected':
-      return null
+    // A Correction (#275) names the actor, the Round's number and its game, from `games` like a Result does: without the game's name there is no sentence.
+    case 'result_corrected': {
+      const game = entry.games[entry.params.gameId]
+      return game === undefined ? null : t('activity.resultCorrected', { name, n: entry.params.number, game })
+    }
     // The end of the Event (#277): one winner is named like a Result's; several are a Tie, which #278 words, so they name nothing yet.
     case 'event_finished': {
       if (entry.params.winners.length !== 1) return null
