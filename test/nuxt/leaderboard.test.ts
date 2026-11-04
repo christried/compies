@@ -16,7 +16,7 @@ const three = named(['Wilde Gurken', 'Die Füchse', null])
 const end = (played: number, gameCount = 6): EndView => ({ played, gameCount, complete: played >= gameCount, tie: null, finish: null, lastGame: null })
 const standing = (team: number, rank: number, points: number): StandingView => ({ team, rank, points })
 
-type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean, celebrate?: boolean, news?: StandingsNews | null }
+type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean, celebrate?: boolean, news?: StandingsNews | null, labelledBy?: string }
 let page: VueWrapper | undefined
 
 async function mount(props: Props = {}) {
@@ -41,6 +41,15 @@ describe('the Standings', () => {
     const heading = page!.get('h2')
     expect(heading.text()).toBe('Tabelle')
     expect(page!.get('table').attributes('aria-labelledby')).toBe(heading.attributes('id'))
+  })
+
+  it('has no heading of its own when a heading outside it names it: `labelledBy` (#274)', async () => {
+    await mount({ labelledBy: 'standings-title', end: end(7, 10) })
+
+    expect(page!.findAll('h2')).toHaveLength(0)
+    expect(page!.get('table').attributes('aria-labelledby')).toBe('standings-title')
+    expect(page!.get('section').attributes('aria-labelledby')).toBe('standings-title')
+    expect(page!.text()).toContain('Nach Spiel 7 von 10')
   })
 
   it('is a table: a head for screen readers only, then one row per Party with its rank, Party and points', async () => {

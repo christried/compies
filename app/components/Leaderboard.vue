@@ -25,6 +25,8 @@ const props = withDefaults(defineProps<{
   /** The stage block only: the stamp and the confetti (the side panel's scroll container would clip the stamp). */
   celebrate?: boolean
   news?: StandingsNews | null
+  /** The id of a heading outside this table that names it (#274): the phone's „Tabelle“ view, whose page h1 is the title; then the Leaderboard shows no h2 of its own. */
+  labelledBy?: string
 }>(), { framed: false, celebrate: false, news: null })
 
 const { t } = useI18n()
@@ -120,7 +122,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
 <template>
   <section
     ref="root"
-    :aria-labelledby="headingId"
+    :aria-labelledby="labelledBy ?? headingId"
     class="flex min-w-0 flex-col gap-2"
     :class="framed && 'relative rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 shadow-card'"
   >
@@ -133,6 +135,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
         {{ t('table.after', { n: end.played, total: end.gameCount }) }}
       </p>
       <h2
+        v-if="!labelledBy"
         :id="headingId"
         class="m-0 font-display text-[28px] font-normal"
       >
@@ -149,7 +152,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
 
     <table
       v-else
-      :aria-labelledby="headingId"
+      :aria-labelledby="labelledBy ?? headingId"
       class="-my-2 w-full border-separate border-spacing-y-2"
     >
       <thead class="sr-only">
