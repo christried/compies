@@ -1,7 +1,9 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { flushPromises } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import Leaderboard from '~/components/Leaderboard.vue'
+import { refreshEvent } from '~/composables/useEventView'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
@@ -61,7 +63,8 @@ const SESSION = (number: number, startsAt: string | null, times: { startedAt?: s
 let mounted: Awaited<ReturnType<typeof mountSuspended>> | undefined
 async function mount(slug: string) {
   mounted?.unmount()
-  const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+  // Vue Test Utils stubs TransitionGroup with an element of its own, which would take the place of the Leaderboard's `tbody`: the real one renders it.
+  const page = await mountSuspended(EventPage, { route: `/e/${slug}`, global: { stubs: { TransitionGroup: false } } })
   mounted = page
   return page
 }
@@ -686,6 +689,135 @@ describe('the Standings on the Event page', () => {
       expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
       expect(page.text()).toContain('wird gespielt')
       expect(page.find('[role="log"]').exists()).toBe(false)
+    })
+  })
+
+  // The Standings in motion (#276): the page holds one `news` (useStandingsNews) and hands it to every Leaderboard; only the stage's celebrates.
+  // The one polite live region is the page's, outside the branches of the stage and the phone views. Nothing plays on a load or in a finished Event.
+  describe('in motion', () => {
+    // A `p`: the page has other polite regions (the toasts), and this one is the Standings' announcement.
+    const live = () => mounted!.find('p[role="status"][aria-live="polite"]')
+    const boards = (): VueWrapper<InstanceType<typeof Leaderboard>>[] => mounted!.findAllComponents(Leaderboard)
+    const stageBoard = () => boards().find(board => board.props('framed') === true)
+    const serveResult = (extra: Partial<Setup> = {}) => serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: beforeResult, ...extra })
+    /** The Host enters Spiel 1 while the page is open: the next read of the Event has the Result. */
+    async function readsResult(served: ReturnType<typeof serveResult>, slug: string, overrides: EventOverrides = afterResult, phase = 'running') {
+      served.set(viewWithSessions(slug, [RUNNING_ONE], 0, {
+        event: { phase, isHost: false },
+        settings: defaultSettings(),
+        teams: [team(1), team(2)],
+        members: members(),
+        runningSessionId: `session-${slug}-0`,
+        ...overrides,
+      }))
+      await refreshEvent(slug)
+      await flushPromises()
+    }
+
+    it('has no news on the first render, also with a Result already there, and keeps an empty live region ready', async () => {
+      const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      await mount(slug)
+
+      expect(boards().length).toBeGreaterThan(0)
+      for (const board of boards()) expect(board.props('news')).toBeNull()
+      expect(live().exists()).toBe(true)
+      expect(live().text()).toBe('')
+      expect(mounted!.findAll('[data-delta]')).toHaveLength(0)
+    })
+
+    it('hands the news of a new Result to the stage\'s Leaderboard with `celebrate`, and to the panel\'s without', async () => {
+      const served = serveResult()
+      await mount(served.slug)
+      expect(stageBoard()).toBeUndefined()
+
+      await readsResult(served, served.slug)
+
+      const stage = stageBoard()!
+      expect(stage.props('celebrate')).toBe(true)
+      expect(stage.props('news')).toMatchObject({ kind: 'entered', number: 1, winners: [2] })
+      const others = boards().filter(board => !board.props('framed'))
+      expect(others.length).toBeGreaterThan(0)
+      for (const board of others) {
+        expect(board.props('celebrate')).toBe(false)
+        expect(board.props('news')).toEqual(stage.props('news'))
+      }
+    })
+
+    it('stamps the winner on the stage block when the first Result arrives, and the panel has none', async () => {
+      const served = serveResult()
+      await mount(served.slug)
+
+      await readsResult(served, served.slug)
+
+      expect(stageBoard()!.findAll('[data-stamp]').map(stamp => stamp.text())).toEqual(['Sieg in Spiel 1!'])
+      expect(mounted!.findAll('[data-stamp]')).toHaveLength(1)
+    })
+
+    it('hands the news to the phone\'s „Tabelle“ view too, without `celebrate`', async () => {
+      stubScreen(false)
+      const served = serveResult()
+      const page = await mount(served.slug)
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+
+      await readsResult(served, served.slug)
+
+      expect(boards()).toHaveLength(1)
+      expect(boards()[0]!.props('celebrate')).toBe(false)
+      expect(boards()[0]!.props('news')).toMatchObject({ kind: 'entered', number: 1 })
+    })
+
+    it('reads the announcement once in the page\'s live region, which was there before the text', async () => {
+      const served = serveResult()
+      await mount(served.slug)
+      const region = live().element
+      expect(region.textContent).toBe('')
+
+      await readsResult(served, served.slug)
+
+      expect(mounted!.findAll('p[role="status"][aria-live="polite"]')).toHaveLength(1)
+      expect(live().element).toBe(region)
+      expect(live().text()).toBe('Spiel 1 ist eingetragen. Team Rot ist jetzt auf Rang 2.')
+      expect(live().classes()).toContain('sr-only')
+      // No Leaderboard has a live region of its own: the stage and the panel would read it twice.
+      for (const board of boards()) expect(board.find('[aria-live]').exists()).toBe(false)
+    })
+
+    it('keeps the live region across a switch of the phone\'s views', async () => {
+      stubScreen(false)
+      const served = serveResult()
+      const page = await mount(served.slug)
+      const region = live().element
+
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+      await page.findAll('nav[aria-label="Event"] button')[0]!.trigger('click')
+
+      expect(live().element).toBe(region)
+    })
+
+    it('makes no news in a finished Event, and the live region stays empty', async () => {
+      const served = serveResult({ phase: 'finished' })
+      await mount(served.slug)
+
+      await readsResult(served, served.slug, afterResult, 'finished')
+
+      for (const board of boards()) expect(board.props('news')).toBeNull()
+      expect(live().text()).toBe('')
+      expect(mounted!.findAll('[data-delta]')).toHaveLength(0)
+    })
+
+    it('makes news for a Correction of a Result the page already knows', async () => {
+      const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+      await mount(served.slug)
+
+      await readsResult(served, served.slug, {
+        ...afterResult,
+        results: [{ ...played, places: [{ team: 1, place: 1, points: 1, score: null }, { team: 2, place: 2, points: 0, score: null }], corrected: true, correctedAt: '2026-10-30T20:00:00.000Z' }],
+        standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }],
+      })
+
+      expect(stageBoard()!.props('news')).toMatchObject({ kind: 'corrected', number: 1, winners: [1] })
+      expect(live().text()).toContain('Spiel 1 wurde korrigiert.')
     })
   })
 
