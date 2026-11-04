@@ -370,7 +370,7 @@ describe('the stage of the Event page', () => {
 describe('the Standings on the Event page', () => {
   const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
   const openRound: RoundView = { id: 'r2', startedAt: STARTED, setAt: STARTED, game: { ...halo, id: 'g-kart', name: 'Kart' } }
-  const played: ResultView = { roundId: 'r1', number: 1, game: halo, places: [{ team: 2, place: 1, points: 1, score: null }, { team: 1, place: 2, points: 0, score: null }], corrected: false, resultAt: STARTED }
+  const played: ResultView = { roundId: 'r1', number: 1, game: halo, places: [{ team: 2, place: 1, points: 1, score: null }, { team: 1, place: 2, points: 0, score: null }], corrected: false, correctedAt: null, resultAt: STARTED }
   /** The read after one Result (team 2 won) with one more Round open. */
   const afterResult: EventOverrides = {
     rounds: [openRound],

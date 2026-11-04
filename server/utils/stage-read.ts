@@ -86,12 +86,15 @@ export async function resultsSection({ eventRow, rows, viewer, now }: StageConte
   for (const { round, game, places } of rows.results) {
     const draw = rows.draws.find(row => row.roundId === round.id && row.gameId === round.gameId)
     if (!game || !draw || !drawGameKnown({ isHost: viewer.isHost, draw, now })) continue
+    // The last Correction's instant goes on the wire (#276): a second Correction of a Round changes nothing else a Member can see.
+    const correctedAt = round.correctedAt?.toISOString() ?? null
     results.push({
       roundId: round.id,
       number: round.number!,
       game: roundGameView(game),
       places: places.map(({ team, place, score }) => ({ team, place, points: pointsForPlace(place, settings.pointsTable), score })),
-      corrected: round.correctedAt !== null,
+      corrected: correctedAt !== null,
+      correctedAt,
       resultAt: round.resultAt!.toISOString(),
     })
   }

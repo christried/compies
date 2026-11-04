@@ -101,12 +101,25 @@ export function winnersOf(places: readonly Pick<ResultPlace, 'team' | 'place'>[]
   return places.filter(entry => entry.place === 1).map(entry => entry.team).sort((a, b) => a - b)
 }
 
+/**
+ * Whether two lists of Places are the same Result (#275): the same Parties with the same Place and the same Score each (null = none),
+ * in any order. A save that equals the stored Result is a no-op (spec story 42). Both lists are as `parseResultBody` and the database
+ * hold them: Scores trimmed, empty as null.
+ */
+export function sameResult(stored: readonly ResultPlace[], sent: readonly ResultPlace[]): boolean {
+  if (stored.length !== sent.length) return false
+  return stored.every((entry) => {
+    const other = sent.find(candidate => candidate.team === entry.team)
+    return other !== undefined && other.place === entry.place && other.score === entry.score
+  })
+}
+
 /** The next Round number: the highest in the Event + 1; 1 when no Round has one. `null` entries are Rounds without a Result. */
 export function nextRoundNumber(numbers: readonly (number | null)[]): number {
   return numbers.reduce<number>((highest, number) => (number === null ? highest : Math.max(highest, number)), 0) + 1
 }
 
-/** Why a Result cannot be entered now (#273), in the order they are checked. */
+/** Why a Result cannot be entered now, or be corrected (#273, #275), in the order they are checked. */
 export type ResultRejection = 'not_host' | 'not_set_up' | 'wrong_phase' | 'round_not_found' | 'round_not_open' | 'invalid_result'
 
 export interface ResultInput {
@@ -114,24 +127,26 @@ export interface ResultInput {
   /** The settings that matter here; null for an Event that is not set up. */
   settings: { teamCount: number } | null
   phase: Phase
-  /** The Round the id names among the Event's Rounds (put-back ones too); null when there is none. */
+  /** The Round the id names among the Event's Rounds (put-back ones too); null when there is none. A Round with a Result is corrected (#275): its `resultAt` says so. */
   round: Pick<RoundFacts, 'setAt' | 'putBackAt' | 'resultAt'> | null
   /** The Places as the parser read them; null when the body was not a list of Places. */
   places: readonly ResultPlace[] | null
 }
 
 /**
- * The reason a Result cannot be entered now, or null (#273), in the order they are checked: the Host asks, the Event is set up, its
- * Phase is `running`, the Round exists, it is open (isOpen: set, not put back, no Result yet: a Round being drawn, waiting for a
- * respin, put back or with a Result is `round_not_open`), and the Places are a valid Result (resultShapeValid).
+ * The reason a Result cannot be entered or corrected now, or null (#273, #275), in the order they are checked: the Host asks, the Event
+ * is set up, its Phase is `running`, the Round exists, it is open or has a Result to correct (isOpen: set, not put back, no Result yet;
+ * a Round being drawn, waiting for a respin or put back is `round_not_open`), and the Places are a valid Result (resultShapeValid).
  */
 export function resultRejection({ isHost, settings, phase, round, places }: ResultInput): ResultRejection | null {
   if (!isHost) return 'not_host'
   if (settings === null) return 'not_set_up'
   if (phase !== 'running') return 'wrong_phase'
   if (round === null) return 'round_not_found'
-  // #275: a Round that already has a Result is refused here; the Correction replaces this refusal.
-  if (!isOpen(round)) return 'round_not_open'
+  // A Round with a Result is corrected (#275) while it is set and not put back (the database checks both). Any other Round that is not
+  // open (being drawn, waiting for a respin, put back) is still refused.
+  const correctable = round.resultAt !== null && round.setAt !== null && round.putBackAt === null
+  if (!correctable && !isOpen(round)) return 'round_not_open'
   if (places === null || !resultShapeValid(places, settings.teamCount)) return 'invalid_result'
   return null
 }

@@ -293,7 +293,7 @@ describe('Results', () => {
       expect(entries.map(entry => entry.type === 'result_entered' ? entry.params.number : null)).toEqual([2, 1])
     })
 
-    it('gives two Rounds sent at once the numbers 1 and 2, and sends the same Round twice to one 200 and one 409', async () => {
+    it('gives two Rounds sent at once the numbers 1 and 2, and sends the same Round twice: the second is an unchanged save, 200 too (#275)', async () => {
       const game = await running()
       const a = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
       const b = (await (await set(game, game.kart.id)).json() as { roundId: string }).roundId
@@ -306,8 +306,9 @@ describe('Results', () => {
 
       const c = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
       const [first, second] = await Promise.all([enter(game, c, { places: twoParties }), enter(game, c, { places: twoParties })])
-      expect([first.status, second.status].sort()).toEqual([200, 409])
-      expect((await roundRows(game)).find(round => round.id === c)).toMatchObject({ number: 3 })
+      expect([first.status, second.status]).toEqual([200, 200])
+      expect((await roundRows(game)).find(round => round.id === c)).toMatchObject({ number: 3, correctedAt: null })
+      expect((await feedOf(game)).filter(entry => entry.type === 'result_entered').map(entry => entry.type === 'result_entered' ? entry.params.number : null)).toEqual([3, 2, 1])
     })
   })
 
@@ -348,15 +349,8 @@ describe('Results', () => {
       expect(await errorOf(await enter(game, foreign, { places: twoParties }))).toEqual({ status: 404, code: 'round_not_found' })
     })
 
-    it('answers round_not_open 409 for a Round with a Result, a put-back Round and a Round waiting for a respin, and keeps the first Result', async () => {
+    it('answers round_not_open 409 for a put-back Round and for a Round waiting for a respin (a Round with a Result is corrected, see #275)', async () => {
       const game = await running({ wheel: true, vetoAllowance: 1 })
-      // The Round with a Result comes first: a Round waiting for a respin takes the next set.
-      const done = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
-      expect((await enter(game, done, { places: twoParties })).status).toBe(200)
-      expect(await errorOf(await enter(game, done, { places: [{ team: 1, place: 2 }, { team: 2, place: 1 }] }))).toEqual({ status: 409, code: 'round_not_open' })
-      expect(await placesOf(done)).toMatchObject([{ team: 1, place: 1, score: '16' }, { team: 2, place: 2, score: null }])
-      expect((await roundRows(game)).find(round => round.id === done)).toMatchObject({ number: 1 })
-
       const put = (await (await set(game, game.kart.id)).json() as { roundId: string }).roundId
       expect((await send('DELETE', `/api/e/${game.slug}/rounds/${put}`, game.hostCookie)).status).toBe(200)
       expect(await errorOf(await enter(game, put, { places: twoParties }))).toEqual({ status: 409, code: 'round_not_open' })
@@ -394,10 +388,10 @@ describe('Results', () => {
       expect(await errorOf(await enter(game, round, { places: [{ team: 1, place: 1 }, { team: 1, place: 1 }] }))).toEqual({ status: 400, code: 'invalid_result' })
     })
 
-    it('answers an invalid body on a Round that is not open with round_not_open, not invalid_result', async () => {
+    it('answers an invalid body on a put-back Round with round_not_open, not invalid_result', async () => {
       const game = await running()
       const round = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
-      await enter(game, round, { places: twoParties })
+      expect((await send('DELETE', `/api/e/${game.slug}/rounds/${round}`, game.hostCookie)).status).toBe(200)
 
       expect(await errorOf(await enter(game, round, { places: 'x' }))).toEqual({ status: 409, code: 'round_not_open' })
     })
@@ -425,6 +419,280 @@ describe('Results', () => {
       expect(await errorOf(await send('DELETE', `/api/e/${game.slug}/rounds/${round}`, game.hostCookie))).toEqual({ status: 409, code: 'round_not_open' })
       await expect(testDb.db.update(rounds).set({ putBackAt: new Date(T0) }).where(eq(rounds.id, round))).rejects.toThrow()
       expect(await roundRows(game)).toMatchObject([{ number: 1, putBackAt: null }])
+    })
+  })
+
+  // A Correction (#275, spec #272 stories 37 to 43): a Round with a Result takes its Places and Scores again through the same PUT. The
+  // Round keeps its number and its Result's instant; `correctedAt` is the latest changing Correction. An unchanged save writes nothing.
+  describe('correcting a Result (#275)', () => {
+    const HOUR = 60 * 60 * 1000
+    /** The instant `hours` after the Result was entered (T0 is the first Result's). */
+    const at = (hours: number) => new Date(Date.parse(T0) + hours * HOUR)
+    const roundOf = async (game: Game, roundId: string) => (await roundRows(game)).find(round => round.id === roundId)
+    const resultsOf = async (game: Game, cookie?: string) => (await read(game, cookie)).results
+    const scoreboardOf = async (game: Game, cookie?: string) => {
+      const view = await read(game, cookie)
+      return { standings: view.standings, end: view.end }
+    }
+    const correctionsIn = async (game: Game) => (await feedOf(game)).filter(entry => entry.type === 'result_corrected')
+    /** Enters a Result for a new Round of the game and answers the Round's id. */
+    const resultRound = async (game: Game, gameId: string, places: unknown) => {
+      const roundId = (await (await set(game, gameId)).json() as { roundId: string }).roundId
+      expect((await enter(game, roundId, { places })).status).toBe(200)
+      return roundId
+    }
+    /** What a refused Correction must leave as it was: the Places, the Rounds, the feed. */
+    const stateOf = async (game: Game, roundId: string) => ({ places: await placesOf(roundId), rounds: await roundRows(game), feed: await feedOf(game) })
+    const linearThree = [{ team: 1, place: 1, score: '16' }, { team: 2, place: 2 }, { team: 3, place: 3, score: '8' }]
+
+    it('replaces the Places and Scores whole, keeps the number and the Result time, and sets the corrected instant', async () => {
+      const game = await running({ teams: 3 })
+      const round = await resultRound(game, game.halo.id, linearThree)
+      clock.advance(HOUR)
+
+      const response = await enter(game, round, { places: [{ team: 3, place: 1 }, { team: 1, place: 2, score: '7' }, { team: 2, place: 3 }] })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ roundId: round, number: 1 })
+      expect(await placesOf(round)).toEqual([
+        { roundId: round, team: 1, place: 2, score: '7' },
+        { roundId: round, team: 2, place: 3, score: null },
+        { roundId: round, team: 3, place: 1, score: null },
+      ])
+      expect(await roundOf(game, round)).toMatchObject({ number: 1, resultAt: new Date(T0), correctedAt: at(1) })
+      expect((await resultsOf(game))[0]).toMatchObject({
+        roundId: round,
+        number: 1,
+        corrected: true,
+        places: [{ team: 3, place: 1, points: 2, score: null }, { team: 1, place: 2, points: 1, score: '7' }, { team: 2, place: 3, points: 0, score: null }],
+      })
+    })
+
+    it('changes the Standings the Host and a Player read, and the Event still counts two Results', async () => {
+      const game = await running({ teams: 3, gameCount: 3 })
+      const places = [{ team: 1, place: 1 }, { team: 2, place: 2 }, { team: 3, place: 3 }]
+      const a = await resultRound(game, game.halo.id, places)
+      await resultRound(game, game.kart.id, places)
+      expect(await scoreboardOf(game)).toMatchObject({ standings: [{ team: 1, rank: 1, points: 4 }, { team: 2, rank: 2, points: 2 }, { team: 3, rank: 3, points: 0 }], end: { played: 2, gameCount: 3 } })
+
+      clock.advance(HOUR)
+      await enter(game, a, { places: [{ team: 3, place: 1 }, { team: 2, place: 2 }, { team: 1, place: 3 }] })
+
+      const after = { standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 1, points: 2 }, { team: 3, rank: 1, points: 2 }], end: { played: 2, gameCount: 3 } }
+      // `end` grows (#277), so it is matched, not equalled (CODING_STANDARDS § Tests).
+      expect(await scoreboardOf(game)).toMatchObject(after)
+      expect(await scoreboardOf(game, game.cookies.three)).toMatchObject(after)
+    })
+
+    it('keeps every number: a Correction takes none, and a Round entered after it gets the next one', async () => {
+      const game = await running({ gameCount: 3 })
+      const a = await resultRound(game, game.halo.id, twoParties)
+      const b = await resultRound(game, game.kart.id, twoParties)
+      clock.advance(HOUR)
+      expect((await enter(game, a, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] })).status).toBe(200)
+      const c = await resultRound(game, game.schach.id, twoParties)
+
+      expect((await resultsOf(game)).map(result => [result.roundId, result.number])).toEqual([[a, 1], [b, 2], [c, 3]])
+      expect(await roundOf(game, a)).toMatchObject({ number: 1, resultAt: new Date(T0) })
+    })
+
+    it('writes one result_corrected entry for the Host and a Player, naming the Round, its number and its game, and tells the room', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      clock.advance(HOUR)
+      notifier.clear()
+
+      await enter(game, round, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] })
+
+      expect(await correctionsIn(game)).toMatchObject([{ type: 'result_corrected', actor: { name: 'Hostess' }, params: { roundId: round, number: 1, gameId: game.halo.id }, games: { [game.halo.id]: 'Halo' } }])
+      expect((await feedOf(game, game.cookies.three)).filter(entry => entry.type === 'result_corrected')).toHaveLength(1)
+      expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added'])
+    })
+
+    it('writes nothing for a save that equals the stored Result: no instant, no entry, no message, the same answer', async () => {
+      const game = await running({ teams: 3 })
+      const round = await resultRound(game, game.halo.id, [{ team: 1, place: 1, score: '16' }, { team: 2, place: 1 }, { team: 3, place: 3 }])
+      const before = await feedOf(game)
+      clock.advance(HOUR)
+      notifier.clear()
+
+      const same = await enter(game, round, { places: [{ team: 3, place: 3 }, { team: 2, place: 1 }, { team: 1, place: 1, score: ' 16 ' }] })
+
+      expect(same.status).toBe(200)
+      expect(await same.json()).toEqual({ roundId: round, number: 1 })
+      expect(await roundOf(game, round)).toMatchObject({ correctedAt: null })
+      expect(await placesOf(round)).toEqual([
+        { roundId: round, team: 1, place: 1, score: '16' },
+        { roundId: round, team: 2, place: 1, score: null },
+        { roundId: round, team: 3, place: 3, score: null },
+      ])
+      expect((await resultsOf(game))[0]).toMatchObject({ corrected: false })
+      expect(await feedOf(game)).toEqual(before)
+      expect(notifier.messages(game.eventId).map(message => message.type)).not.toContain('activity.added')
+    })
+
+    it('keeps the instant of the last changing Correction when the same Result is saved again later', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      clock.advance(HOUR)
+      await enter(game, round, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] })
+      clock.advance(HOUR)
+
+      const again = await enter(game, round, { places: [{ team: 1, place: 2 }, { team: 2, place: 1 }] })
+
+      expect(again.status).toBe(200)
+      expect(await roundOf(game, round)).toMatchObject({ correctedAt: at(1) })
+      expect(await correctionsIn(game)).toHaveLength(1)
+    })
+
+    it('marks the Round corrected when it is changed back to its first Places, and writes an entry for each change', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      clock.advance(HOUR)
+      await enter(game, round, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] })
+      clock.advance(HOUR)
+
+      expect((await enter(game, round, { places: [{ team: 1, place: 1, score: '16' }, { team: 2, place: 2 }] })).status).toBe(200)
+
+      expect((await resultsOf(game))[0]).toMatchObject({ corrected: true, places: [{ team: 1, place: 1, points: 1, score: '16' }, { team: 2, place: 2, points: 0, score: null }] })
+      expect(await roundOf(game, round)).toMatchObject({ correctedAt: at(2) })
+      expect(await correctionsIn(game)).toHaveLength(2)
+    })
+
+    it('corrects with no Session running, and again in a later Session', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
+      clock.advance(HOUR)
+      expect((await enter(game, round, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] })).status).toBe(200)
+      expect(await roundOf(game, round)).toMatchObject({ correctedAt: at(1) })
+
+      expect((await send('POST', `/api/e/${game.slug}/sessions/start`, game.hostCookie)).status).toBe(200)
+      clock.advance(HOUR)
+      expect((await enter(game, round, { places: twoParties })).status).toBe(200)
+
+      expect(await roundOf(game, round)).toMatchObject({ correctedAt: at(2) })
+      expect(await correctionsIn(game)).toHaveLength(2)
+    })
+
+    it('keeps a Score of exactly 7 characters, and removes a Score when it is left out', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      clock.advance(HOUR)
+
+      expect((await enter(game, round, { places: [{ team: 1, place: 1, score: '1234567' }, { team: 2, place: 2 }] })).status).toBe(200)
+      expect(await placesOf(round)).toMatchObject([{ team: 1, place: 1, score: '1234567' }, { team: 2, place: 2, score: null }])
+
+      expect((await enter(game, round, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] })).status).toBe(200)
+      expect(await placesOf(round)).toMatchObject([{ team: 1, place: 1, score: null }, { team: 2, place: 2, score: null }])
+      expect(await correctionsIn(game)).toHaveLength(2)
+    })
+
+    it('takes a Shared place to another Shared place and to all level, and every Score of a three-Party Result away', async () => {
+      const game = await running({ teams: 3 })
+      const round = await resultRound(game, game.halo.id, [{ team: 1, place: 1, score: '1' }, { team: 2, place: 1, score: '2' }, { team: 3, place: 3, score: '3' }])
+      clock.advance(HOUR)
+
+      expect((await enter(game, round, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }, { team: 3, place: 2 }] })).status).toBe(200)
+      expect((await placesOf(round)).map(row => [row.team, row.place, row.score])).toEqual([[1, 1, null], [2, 2, null], [3, 2, null]])
+
+      expect((await enter(game, round, { places: [{ team: 1, place: 1 }, { team: 2, place: 1 }, { team: 3, place: 1 }] })).status).toBe(200)
+      expect((await placesOf(round)).map(row => [row.team, row.place])).toEqual([[1, 1], [2, 1], [3, 1]])
+      expect((await resultsOf(game))[0]).toMatchObject({ corrected: true, places: [{ team: 1, place: 1, points: 2 }, { team: 2, place: 1, points: 2 }, { team: 3, place: 1, points: 2 }] })
+    })
+
+    it('refuses a save by a Player, writing nothing, with a valid body or not', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      const before = await stateOf(game, round)
+      clock.advance(HOUR)
+      notifier.clear()
+
+      expect(await errorOf(await enter(game, round, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] }, game.cookies.one))).toEqual({ status: 403, code: 'not_host' })
+      expect(await errorOf(await enter(game, round, 'nope', game.cookies.one))).toEqual({ status: 403, code: 'not_host' })
+
+      expect(await stateOf(game, round)).toEqual(before)
+      expect(notifier.messages(game.eventId)).toEqual([])
+    })
+
+    it('refuses a body that is no Result of the Event on a Round with a Result, writing nothing', async () => {
+      const game = await running({ teams: 3 })
+      const round = await resultRound(game, game.halo.id, linearThree)
+      const before = await stateOf(game, round)
+      const bad: unknown[] = [
+        { places: [{ team: 1, place: 1 }, { team: 1, place: 2 }, { team: 3, place: 3 }] },
+        { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] },
+        { places: [{ team: 1, place: 1 }, { team: 2, place: 1 }, { team: 3, place: 2 }] },
+        { places: [{ team: 1, place: 1, score: '12345678' }, { team: 2, place: 2 }, { team: 3, place: 3 }] },
+        {},
+      ]
+      for (const body of bad) expect(await errorOf(await enter(game, round, body)), JSON.stringify(body)).toEqual({ status: 400, code: 'invalid_result' })
+
+      expect(await stateOf(game, round)).toEqual(before)
+    })
+
+    it('refuses a Correction in a finished Event as wrong_phase, writing nothing', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      await testDb.db.update(events).set({ phase: 'finished' }).where(eq(events.id, game.eventId))
+      const before = await stateOf(game, round)
+      clock.advance(HOUR)
+
+      expect(await errorOf(await enter(game, round, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] }))).toEqual({ status: 409, code: 'wrong_phase' })
+      expect(await stateOf(game, round)).toEqual(before)
+    })
+
+    it('refuses a Correction of an Event whose settings are missing as not_set_up, writing nothing', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      await testDb.db.update(events).set({ teamCount: null }).where(eq(events.id, game.eventId))
+      const before = await stateOf(game, round)
+
+      expect(await errorOf(await enter(game, round, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] }))).toEqual({ status: 409, code: 'not_set_up' })
+      expect(await stateOf(game, round)).toEqual(before)
+    })
+
+    it('refuses an unknown, a malformed and a foreign Round id as round_not_found, writing nothing', async () => {
+      const game = await running()
+      const other = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      const foreign = await resultRound(other, other.halo.id, twoParties)
+      const before = await stateOf(game, round)
+
+      for (const id of ['00000000-0000-4000-8000-00000000ffff', 'nope', foreign]) {
+        expect(await errorOf(await enter(game, id, { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] })), id).toEqual({ status: 404, code: 'round_not_found' })
+      }
+      expect(await stateOf(game, round)).toEqual(before)
+    })
+
+    it('takes two different Corrections sent at once: both answer 200, and the Places are one of the two bodies whole', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      clock.advance(HOUR)
+      const x = [{ team: 1, place: 2, score: '3' }, { team: 2, place: 1 }]
+      const y = [{ team: 1, place: 1, score: '5' }, { team: 2, place: 2, score: '6' }]
+
+      const both = await Promise.all([enter(game, round, { places: x }), enter(game, round, { places: y })])
+
+      expect(both.map(response => response.status)).toEqual([200, 200])
+      expect(await correctionsIn(game)).toHaveLength(2)
+      const stored = (await placesOf(round)).map(({ team, place, score }) => ({ team, place, score }))
+      expect([
+        [{ team: 1, place: 2, score: '3' }, { team: 2, place: 1, score: null }],
+        [{ team: 1, place: 1, score: '5' }, { team: 2, place: 2, score: '6' }],
+      ]).toContainEqual(stored)
+    })
+
+    it('writes one entry when the same changing Correction is sent twice at once, and both answer 200', async () => {
+      const game = await running()
+      const round = await resultRound(game, game.halo.id, twoParties)
+      clock.advance(HOUR)
+      const body = { places: [{ team: 2, place: 1 }, { team: 1, place: 2 }] }
+
+      const both = await Promise.all([enter(game, round, body), enter(game, round, body)])
+
+      expect(both.map(response => response.status)).toEqual([200, 200])
+      expect(await correctionsIn(game)).toHaveLength(1)
     })
   })
 
@@ -467,6 +735,7 @@ describe('Results', () => {
             { team: 3, place: 3, points: 0, score: '8' },
           ],
           corrected: false,
+          correctedAt: null,
           resultAt: new Date(T0).toISOString(),
         }],
         standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 2, points: 1 }, { team: 3, rank: 3, points: 0 }],
@@ -532,7 +801,7 @@ describe('Results', () => {
       expect(await readAll(game, game.cookies.one)).toEqual({ ...host, end: { ...host.end, finish: null } })
     })
 
-    it('marks a Round corrected only when its corrected instant is set (the Correction itself is #275)', async () => {
+    it('marks a Round corrected only when its corrected instant is set, and reads that instant as correctedAt for every Member (#276)', async () => {
       const game = await running({ gameCount: 3 })
       const a = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
       const b = (await (await set(game, game.kart.id)).json() as { roundId: string }).roundId
@@ -540,9 +809,12 @@ describe('Results', () => {
       await enter(game, b, { places: twoParties })
       await testDb.db.update(rounds).set({ correctedAt: new Date(T0) }).where(eq(rounds.id, a))
 
-      const view = await readAll(game)
+      const fields = (results: EventView['results']) => results.map(result => [result.roundId, result.corrected, result.correctedAt])
+      const host = await readAll(game)
 
-      expect(view.results.map(result => [result.roundId, result.corrected])).toEqual([[a, true], [b, false]])
+      expect(fields(host.results)).toEqual([[a, true, new Date(T0).toISOString()], [b, false, null]])
+      expect(fields((await readAll(game, game.cookies.two)).results)).toEqual(fields(host.results))
+      expect(fields((await readAll(game, game.cookies.three)).results)).toEqual(fields(host.results))
     })
 
     it('gives an Event that is not set up no results, no Standings and no end', async () => {

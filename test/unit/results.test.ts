@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SCORE_MAX, endOf, finishRejection, leadersOf, nextRoundNumber, normalizeScore, outcomeOf, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, scoreValid, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
+import { SCORE_MAX, endOf, finishRejection, leadersOf, nextRoundNumber, normalizeScore, outcomeOf, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, sameResult, scoreValid, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
 import { TEAM_COUNT_MAX, TEAM_COUNT_MIN } from '../../shared/settings'
 
 // The rules of a Result (#273, spec #272, GLOSSARY: Result, Place, Shared place, Points table, Score): the shape of the Places, the
@@ -150,6 +150,39 @@ describe('nextRoundNumber', () => {
   })
 })
 
+// #275: a save that equals the stored Result is a no-op, so the rule is "the same Parties with the same Place and Score, in any order".
+describe('sameResult', () => {
+  it('is true for equal lists, also in another order', () => {
+    const stored = [place(1, 1, '16'), place(2, 2), place(3, 3, '8')]
+    expect(sameResult(stored, [place(1, 1, '16'), place(2, 2), place(3, 3, '8')])).toBe(true)
+    expect(sameResult(stored, [place(3, 3, '8'), place(1, 1, '16'), place(2, 2)])).toBe(true)
+  })
+
+  it('is false for a different Place, a different Score, a Score removed or added, a missing Party and a different length', () => {
+    const stored = [place(1, 1, '16'), place(2, 2), place(3, 3)]
+    expect(sameResult(stored, [place(2, 1, '16'), place(1, 2), place(3, 3)])).toBe(false)
+    expect(sameResult(stored, [place(1, 1, '17'), place(2, 2), place(3, 3)])).toBe(false)
+    expect(sameResult(stored, [place(1, 1), place(2, 2), place(3, 3)])).toBe(false)
+    expect(sameResult([place(1, 1), place(2, 2)], [place(1, 1), place(2, 2, '1')])).toBe(false)
+    expect(sameResult(stored, [place(1, 1, '16'), place(2, 2)])).toBe(false)
+    expect(sameResult(stored, [place(1, 1, '16'), place(2, 2), place(3, 3), place(4, 4)])).toBe(false)
+  })
+
+  it('tells a Score from none, and two nones alike', () => {
+    expect(sameResult([place(1, 1, '16')], [place(1, 1, null)])).toBe(false)
+    expect(sameResult([place(1, 1, null)], [place(1, 1, null)])).toBe(true)
+  })
+
+  it('is true for two empty lists', () => {
+    expect(sameResult([], [])).toBe(true)
+  })
+
+  it('keeps a Shared place: 1,1,3 is not 1,2,3', () => {
+    expect(sameResult([place(1, 1), place(2, 1), place(3, 3)], [place(1, 1), place(2, 2), place(3, 3)])).toBe(false)
+    expect(sameResult([place(1, 1), place(2, 1), place(3, 3)], [place(2, 1), place(1, 1), place(3, 3)])).toBe(true)
+  })
+})
+
 describe('resultRejection', () => {
   const settings = { teamCount: 3 }
   const open = { setAt: new Date('2090-11-07T19:00:00Z'), putBackAt: null, resultAt: null }
@@ -181,7 +214,33 @@ describe('resultRejection', () => {
   it('refuses a Round that is not open before an invalid body, for each reason', () => {
     expect(resultRejection(input({ round: { ...open, setAt: null }, places: null }))).toBe('round_not_open')
     expect(resultRejection(input({ round: { ...open, putBackAt: new Date('2090-11-07T20:00:00Z') }, places: null }))).toBe('round_not_open')
-    expect(resultRejection(input({ round: { ...open, resultAt: new Date('2090-11-07T20:00:00Z') }, places: null }))).toBe('round_not_open')
+  })
+
+  // #275: a Round with a Result is corrected, so it is not refused as not open; its body is checked like any Result.
+  it('accepts a valid body for a Round with a Result as a Correction', () => {
+    const corrected = { ...open, resultAt: new Date('2090-11-07T20:00:00Z') }
+    expect(resultRejection(input({ round: corrected }))).toBeNull()
+    expect(resultRejection(input({ round: corrected, places: [place(1, 1), place(2, 1), place(3, 3)] }))).toBeNull()
+  })
+
+  it('refuses a Correction with missing Places or a bad shape as invalid_result', () => {
+    const corrected = { ...open, resultAt: new Date('2090-11-07T20:00:00Z') }
+    expect(resultRejection(input({ round: corrected, places: null }))).toBe('invalid_result')
+    expect(resultRejection(input({ round: corrected, places: [place(1, 1), place(2, 1), place(3, 2)] }))).toBe('invalid_result')
+  })
+
+  it('refuses a Correction by a non-Host, in a finished Event, and on a Round with a Result that is not set up as its own reason', () => {
+    const corrected = { ...open, resultAt: new Date('2090-11-07T20:00:00Z') }
+    expect(resultRejection(input({ round: corrected, isHost: false }))).toBe('not_host')
+    expect(resultRejection(input({ round: corrected, phase: 'finished' }))).toBe('wrong_phase')
+    expect(resultRejection(input({ round: corrected, settings: null }))).toBe('not_set_up')
+  })
+
+  it('still refuses a Round being drawn or put back, with or without a Result', () => {
+    expect(resultRejection(input({ round: { ...open, setAt: null }, places: good }))).toBe('round_not_open')
+    expect(resultRejection(input({ round: { ...open, putBackAt: new Date('2090-11-07T20:00:00Z') }, places: good }))).toBe('round_not_open')
+    const corrected = { ...open, resultAt: new Date('2090-11-07T20:00:00Z') }
+    expect(resultRejection(input({ round: { ...corrected, putBackAt: new Date('2090-11-07T21:00:00Z') }, places: good }))).toBe('round_not_open')
   })
 
   it('refuses missing Places and a bad shape as invalid_result', () => {

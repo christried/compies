@@ -14,7 +14,7 @@ const named = (names: (string | null)[]): BoardTeam[] => names.map((name, index)
 const three = named(['Wilde Gurken', 'Die Füchse', null])
 const line = (team: number, place: number, points: number, score: string | null = null): ResultLineView => ({ team, place, points, score })
 const result = (number: number, name: string, places: ResultLineView[], corrected = false): ResultView => ({
-  roundId: `r${number}`, number, game: game(name), places, corrected, resultAt: '2026-11-02T20:00:00.000Z',
+  roundId: `r${number}`, number, game: game(name), places, corrected, correctedAt: corrected ? '2026-11-02T21:00:00.000Z' : null, resultAt: '2026-11-02T20:00:00.000Z',
 })
 const openRound = (id: string, name: string): RoundView => ({ id, startedAt: '2026-11-02T20:00:00.000Z', setAt: '2026-11-02T20:00:00.000Z', game: game(name) })
 
