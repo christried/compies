@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineEventHandler } from 'h3'
 import createEvent from '../../server/api/e/index.post'
@@ -35,6 +36,15 @@ describe('changeEvent', () => {
       // A change that queues messages and then either finishes or is refused by a rule.
       // A change that answers the request's clock, and one that stays out of the Host's reach.
       'POST /api/e/:slug/probe-now': defineEventHandler(event => changeEvent(event, { lock: 'update' }, async ({ now }) => ({ now: now.toISOString() }))),
+      // A change in a finished Event (#277): the default refuses it, `allowFinished` lets it run.
+      'POST /api/e/:slug/probe-finished': defineEventHandler(event => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ publish }) => {
+        publish({ type: 'event.changed' })
+        return { done: true }
+      })),
+      'POST /api/e/:slug/probe-finished-allowed': defineEventHandler(event => changeEvent(event, { hostOnly: true, lock: 'update', allowFinished: true }, async ({ publish }) => {
+        publish({ type: 'event.changed' })
+        return { done: true }
+      })),
       'POST /api/e/:slug/probe': defineEventHandler(event => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ body, publish }) => {
         publish({ type: 'event.changed' })
         if (body !== null && typeof body === 'object' && 'refuse' in body) throw apiError('wrong_phase')
@@ -195,5 +205,58 @@ describe('changeEvent', () => {
 
     await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })
     expect(types(eventId)).toEqual(['event.changed', 'activity.added', 'member.joined'])
+  })
+
+  describe('a finished Event (#277)', () => {
+    /** An Event that the Host finished: the Phase and its end, as the finish writes them. */
+    async function finishedEvent() {
+      const hosted = await hostedEvent()
+      await testDb.db.update(events).set({ phase: 'finished', finishedAt: clock.now() }).where(eq(events.id, hosted.eventId))
+      notifier.clear()
+      return hosted
+    }
+    const probeAt = (path: string, cookie: string | undefined) => request(`/api/e/${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+      body: '{}',
+    })
+
+    it('refuses a change of the Host with wrong_phase, and publishes nothing', async () => {
+      const { cookie, slug, eventId } = await finishedEvent()
+
+      const response = await probeAt(`${slug}/probe-finished`, cookie)
+
+      expect(response.status).toBe(409)
+      expect((await response.json() as { statusMessage: string }).statusMessage).toBe('wrong_phase')
+      expect(types(eventId)).toEqual([])
+    })
+
+    it('answers the 404 of a stranger and the 403 of a Member on a Host-only change before wrong_phase', async () => {
+      const { invite, slug } = await finishedEvent()
+      const { cookie: stranger } = await signIn(testDb.db, newcomer)
+      expect((await probeAt(`${slug}/probe-finished`, stranger)).status).toBe(404)
+      await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie: stranger } })
+
+      expect((await probeAt(`${slug}/probe-finished`, stranger)).status).toBe(403)
+    })
+
+    it('runs a change that allows a finished Event', async () => {
+      const { cookie, slug, eventId } = await finishedEvent()
+
+      expect((await probeAt(`${slug}/probe-finished-allowed`, cookie)).status).toBe(200)
+      expect(types(eventId)).toEqual(['event.changed'])
+    })
+
+    it('lets the Host rotate the Invite link of a finished Event, and the old link answers 404', async () => {
+      const { cookie, slug, invite } = await finishedEvent()
+
+      const rotated = await request(`/api/e/${slug}/rotate`, { method: 'POST', headers: { cookie } })
+      expect(rotated.status).toBe(200)
+      const { inviteUrl } = await rotated.json() as { inviteUrl: string }
+      const { cookie: newcomerCookie } = await signIn(testDb.db, newcomer)
+
+      expect((await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie: newcomerCookie } })).status).toBe(404)
+      expect((await request(`/api/invite/${new URL(inviteUrl).pathname.slice('/e/'.length)}`, { method: 'POST', headers: { cookie: newcomerCookie } })).status).toBe(200)
+    })
   })
 })

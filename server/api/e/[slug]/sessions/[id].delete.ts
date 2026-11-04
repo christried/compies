@@ -1,10 +1,8 @@
-import { eq, sql } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
-import { sessions } from '../../../../db/schema'
 import { removeSessionRejection } from '../../../../domain/phase'
 import { recordActivity } from '../../../../utils/activity'
 import { apiError } from '../../../../utils/errors'
-import { changeSessions, findSession, shownNumber } from '../../../../utils/sessions'
+import { changeSessions, findSession, shownNumber, withdrawSession } from '../../../../utils/sessions'
 import { isoInstant } from '../../../../../shared/activity'
 import type { SessionRemoved } from '../../../../../shared/event'
 import { isStarted } from '../../../../../shared/session-state'
@@ -24,16 +22,7 @@ export default defineEventHandler((event): Promise<SessionRemoved> => changeSess
 
   // The number the Session was shown with, before it is gone (#159).
   const number = await shownNumber(tx, eventRow.id, session.id)
-  const withdrawn = session.startsAt ?? session.previousStartsAt
-  if (withdrawn === null) {
-    await tx.delete(sessions).where(eq(sessions.id, session.id))
-  }
-  else {
-    await tx
-      .update(sessions)
-      .set({ removedAt: sql`now()`, previousStartsAt: withdrawn, startsAt: null, slotId: null })
-      .where(eq(sessions.id, session.id))
-  }
+  await withdrawSession(tx, session, now)
   await recordActivity(tx, publish, eventRow.id, { type: 'session_removed', actorId: user.id, params: { sessionId: session.id, number, startsAt: session.startsAt ? isoInstant(session.startsAt) : null }, now })
   return { id: session.id }
 }))

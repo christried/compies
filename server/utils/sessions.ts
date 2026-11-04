@@ -4,7 +4,7 @@ import { countdowns, events, pollSlots, sessions } from '../db/schema'
 import { phaseAfterChange } from '../domain/phase'
 import { numberedSessions, sequenceRaises } from '../domain/session'
 import type { Phase } from '../../shared/event'
-import { hasStarted } from '../../shared/session-state'
+import { hasStarted, isStarted, runningOf } from '../../shared/session-state'
 import type { AuthUser } from '../../shared/auth'
 import { asRecord } from '../../shared/record'
 import type { RoomMessage } from '../../shared/realtime'
@@ -39,9 +39,43 @@ export function changeSessions<T extends object>(
   })
 }
 
-/** What ends with a Session: the Countdown (#236). 0.8 adds the open results here. The caller holds the Event lock. */
+/**
+ * What ends with a Session: the Countdown (#236). Nothing else does: an open Round stays open across Sessions, and its Result is entered
+ * between them too (#273). The caller holds the Event lock.
+ */
 export async function onSessionEnded(tx: Db, eventRow: Pick<EventRow, 'id'>): Promise<void> {
   await tx.delete(countdowns).where(eq(countdowns.eventId, eventRow.id))
+}
+
+/**
+ * Withdraws one Session the Host removes or the finish closes (#55, #65, #277): a Session that has, or had, a Date stays as a removed row with
+ * that Date (its notice); one that never had a Date is deleted. `now` is the request's clock (ADR 0013). The caller holds the Event lock.
+ */
+export async function withdrawSession(db: Db, session: SessionRow, now: Date): Promise<void> {
+  const withdrawn = session.startsAt ?? session.previousStartsAt
+  if (withdrawn === null) {
+    await db.delete(sessions).where(eq(sessions.id, session.id))
+    return
+  }
+  await db.update(sessions).set({ removedAt: now, previousStartsAt: withdrawn, startsAt: null, slotId: null }).where(eq(sessions.id, session.id))
+}
+
+/**
+ * Closes the Sessions of a finishing Event (#277, spec #272): the Running Session ends the way „Session beenden“ ends it (its Countdown goes
+ * with it), every Session that has not started is withdrawn, and the calendar SEQUENCE of the Sessions whose number or time changed goes up.
+ * It does not write the Phase: a change through changeSessions would write the Phase of the row it loaded, the one before the finish.
+ */
+export async function closeSessions(db: Db, eventRow: Pick<EventRow, 'id'>, now: Date): Promise<void> {
+  const before = await eventSessions(db, eventRow.id)
+  const running = runningOf(before)
+  if (running) {
+    await db.update(sessions).set({ endedAt: now }).where(eq(sessions.id, running.id))
+    await onSessionEnded(db, eventRow)
+  }
+  for (const session of before) {
+    if (!isStarted(session)) await withdrawSession(db, session, now)
+  }
+  await raiseSequences(db, sequenceRaises(before, await eventSessions(db, eventRow.id)))
 }
 
 /**

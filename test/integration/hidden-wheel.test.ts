@@ -14,6 +14,7 @@ import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
 import setRound from '../../server/api/e/[slug]/rounds/index.post'
 import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
 import rotateInvite from '../../server/api/e/[slug]/rotate.post'
+import finishEvent from '../../server/api/e/[slug]/finish.post'
 import changeSettings from '../../server/api/e/[slug]/settings.patch'
 import addSession from '../../server/api/e/[slug]/sessions/index.post'
 import removeSession from '../../server/api/e/[slug]/sessions/[id].delete'
@@ -108,6 +109,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       'POST /api/e/:slug/sessions/end': endSession,
       'PATCH /api/e/:slug/settings': changeSettings,
       'POST /api/e/:slug/rotate': rotateInvite,
+      'POST /api/e/:slug/finish': finishEvent,
       'POST /api/e/:slug/rounds': setRound,
       'POST /api/e/:slug/rounds/spin': spinWheel,
       'POST /api/e/:slug/draws/:drawId/veto': castVeto,
@@ -511,7 +513,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       // The kinds of 0.7 and 0.8 (#226, #273) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228,
       // game_drawn, #229, which the feed shows from the stop on, vetoes_revealed, #231, from the end of the Veto window on, coin_tossed,
       // #235, from the landing on, result_entered, #273, and result_corrected, #275). The rest come with #233 (bonus_veto_granted) and
-      // #277 (event_finished).
+      // #277 (event_finished): the finish is written only by the case that finishes the flow's Event, below.
       const written = ACTIVITY_TYPES.filter(type => !['bonus_veto_granted', 'event_finished'].includes(type))
       clock.advance(70_000)
       expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
@@ -557,9 +559,24 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(view.results).toMatchObject([{ number: 1, game: { id: set.id, name: 'Foxtrot Fest' } }])
       // The Correction swapped the Places: Party 2 leads the Standings now (#275).
       expect(view.standings?.map(row => row.team)).toEqual([2, 1])
-      expect(view.end).toEqual({ played: 1, gameCount: 6 })
+      expect(view.end).toMatchObject({ played: 1, gameCount: 6, complete: false, tie: null, finish: null })
       // The Hidden wheel's spin is still unstopped for Player 2: its game is in none of the three fields.
       expectNoTrace('the results, the Standings and the end of Player 2', raw, games)
+    })
+
+    it('keeps the pools hidden through the finish (#277): the room, the feed and the reads name no pool game after it', async () => {
+      const { slug, eventId, games, player2Cookie } = await lobbyFlow()
+      // One Result stands (Foxtrot Fest, between Sessions): the Game count drops to it, so the Event is complete and the Host may finish.
+      await testDb.db.update(events).set({ gameCount: 1 }).where(eq(events.id, eventId))
+
+      expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner' })).status).toBe(200)
+
+      const feed = await activityOf(playerCookie, slug)
+      // The lobby flow's Correction (#275) swapped the Places, so Party 2 wins.
+      expect(feed.entries[0]).toMatchObject({ type: 'event_finished', params: { winners: [2] } })
+      expectNoTrace('the room after the finish', JSON.stringify(notifier.messages(eventId)), games)
+      expectNoTrace('the Activity feed of Player 1 after the finish', feed.raw, games)
+      expectNoTrace('the Event read of Player 2 after the finish', await rawRead(player2Cookie, slug), games)
     })
 
     it('shows the pools to a Player once the Hidden wheel is off and the Pool preview on, and the room still carries no game', async () => {
