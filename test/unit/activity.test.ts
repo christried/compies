@@ -249,9 +249,30 @@ describe('the sentence of a Result (#273)', () => {
     expect(text(resultOf([1], {}))).toBeNull()
   })
 
-  it('has no sentence for a correction or the end of the Event yet (#275, #277 write them)', () => {
+  it('has no sentence for a correction yet (#275 writes it)', () => {
     expect(text({ ...base, games: { g1: 'Mario Kart' }, type: 'result_corrected', params: { roundId: 'r', number: 3, gameId: 'g1' } })).toBeNull()
-    expect(text({ ...base, type: 'event_finished', params: { winners: [1] } })).toBeNull()
+  })
+
+  // The end of the Event (#277): one winner has a sentence, named like a Result's winner.
+  const finishedOf = (winners: number[]): ActivityEntry => ({ ...base, type: 'event_finished', params: { winners } })
+
+  it('says who won the Event, by the Team\'s colour or by its frozen Team name', () => {
+    expect(text(finishedOf([2]))).toBe('Event beendet: Team Orange gewinnt')
+    expect(text(finishedOf([2]), [{ position: 2, name: 'Wilde Gurken', frozen: true }])).toBe('Event beendet: Wilde Gurken gewinnt')
+  })
+
+  it('sets the winner of the Event in bold, and nothing else', () => {
+    expect(activityParts(finishedOf([2]), t)).toEqual([
+      { text: 'Event beendet: ', strong: false },
+      { text: 'Team Orange', strong: true },
+      { text: ' gewinnt', strong: false },
+    ])
+  })
+
+  // Several winners are a Tie, which #278 words ("Unentschieden"); until then the entry names nothing.
+  it('has no sentence for several winners or none (#278 writes the Tie)', () => {
+    expect(text(finishedOf([1, 2]))).toBeNull()
+    expect(text(finishedOf([]))).toBeNull()
   })
 
   it('draws a Result with an icon of its own', () => {

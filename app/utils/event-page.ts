@@ -19,10 +19,10 @@ export interface StagePresent { wheel: boolean, pool: boolean, countdown: boolea
 /**
  * The blocks of the stage (#166, #228). `head`: kicker and title. `reopen`: the notices of reopened Dates. `pool`: the Host's live pool warning (#234), shown to the Host only. `setup`: the Event
  * is not set up. `seat`: where the Host sits. `poll`: the Date poll. `wheel`: the Lucky Wheel, on top of the Rounds (#229).
- * `rounds`: the open Rounds, whenever there are some (the Host enters their Results between Sessions too, #273). `standings`: the Standings, once the first Result exists, right after the open Rounds (#274). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
+ * `rounds`: the open Rounds, whenever there are some (the Host enters their Results between Sessions too, #273). `standings`: the Standings, once the first Result exists, right after the open Rounds (#274). `history`: the Spielverlauf, the Rounds with their Results, on the finished stage only (#277). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
  * Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions.
  */
-export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
+export type Block = 'head' | 'reopen' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'history' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
 
 /** The next Session to start (the earliest dated one that has not started): its shown number (null for an only Session) and Date. */
 export interface NextSession { number: number | null, startsAt: string }
@@ -49,10 +49,11 @@ interface PageCommon {
 /**
  * `setup`: no settings. `poll`: no Session is dated. `teams`: a Session is dated, none started (so `next` is there). `running`:
  * a Session runs (so `running` is there). `between`: a Session ended, more are to come. `done`: every Session ended. A union by
- * `kind`, so a reader of a kind has what the kind guarantees without asserting it (review 1.4 N10).
+ * `kind`, so a reader of a kind has what the kind guarantees without asserting it (review 1.4 N10). `finished`: the Host finished the Event
+ * (Phase `finished`, #277): read-only for everybody, with no Running Session.
  */
 export type EventPageState
-  = | (PageCommon & { kind: 'setup' | 'poll' | 'between' | 'done', running: null })
+  = | (PageCommon & { kind: 'setup' | 'poll' | 'between' | 'done' | 'finished', running: null })
     | (PageCommon & { kind: 'teams', next: NextSession, running: null })
     | (PageCommon & { kind: 'running', running: RunningSession })
 
@@ -62,7 +63,7 @@ type Kind = EventPageState['kind']
  * The blocks of the stage per state (11-event-seite § EventPage): what has to happen now goes on top. The poll while no
  * Session is dated, the Game board from the first Date on, the open Rounds above it while a Session runs (and between Sessions, where their Results are entered too, #273) and the Standings right
  * after them once a Result exists (#274), with the wheel on top of the Rounds when the view has wheel data (`present.wheel`, #229) and the Countdown (#236) and the coin toss (#235) under them,
- * the Sessions card between two Sessions. The Reopen notices sit right under the Head in every state. A Session that still waits
+ * the Sessions card between two Sessions. The finished Event (#277) has the Standings and the history as its stage, no board and no open Rounds. The Reopen notices sit right under the Head in every state. A Session that still waits
  * for a Date has its poll (compact) below the board once another Session is dated or started.
  */
 export function pageBlocks(kind: Kind, pollOpen: boolean, present: StagePresent): Block[] {
@@ -72,6 +73,8 @@ export function pageBlocks(kind: Kind, pollOpen: boolean, present: StagePresent)
   const countdown: Block[] = present.countdown ? ['countdown'] : []
   const coin: Block[] = present.coin ? ['coin'] : []
   const standings: Block[] = present.standings ? ['standings'] : []
+  // Both need the first Result; a finished Event has at least one (#277).
+  const history: Block[] = present.standings ? ['history'] : []
   switch (kind) {
     case 'poll': return ['head', 'reopen', ...poll, 'board', 'cards']
     case 'teams': return ['head', 'reopen', 'seat', 'board', ...poll, 'cards']
@@ -80,6 +83,8 @@ export function pageBlocks(kind: Kind, pollOpen: boolean, present: StagePresent)
     case 'between': return ['head', 'reopen', 'rounds', ...standings, 'cards', 'stay', 'board', ...poll]
     case 'done': return ['head', 'reopen', 'rounds', ...standings, 'cards', 'board']
     case 'setup': return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
+    // The notices of removed Sessions stay (story 56) and so do the Sessions and „So wird gespielt“, read-only already (#277).
+    case 'finished': return ['head', 'reopen', ...standings, ...history, 'cards']
   }
 }
 
@@ -88,19 +93,19 @@ export function pollCompactIn(kind: Kind): boolean {
   return kind !== 'poll' && kind !== 'setup'
 }
 
-/** Between two Sessions and after the last the Sessions card is the news of the page and gets a shadow. */
+/** Between two Sessions and after the last the Sessions card is the news of the page and gets a shadow; in a finished Event the news is the winner. */
 export function cardsStandOutIn(kind: Kind): boolean {
   return kind === 'between' || kind === 'done'
 }
 
-/** The first Session has started (#164): the page's kind is `running`, `between` or `done`. */
+/** The first Session has started (#164): the page's kind is `running`, `between`, `done` or `finished`. */
 export function startedIn(kind: Kind): boolean {
-  return kind === 'running' || kind === 'between' || kind === 'done'
+  return kind === 'running' || kind === 'between' || kind === 'done' || kind === 'finished'
 }
 
 /** The notice about uneven teams has a place on the page: not in a running Session and not after the last one (#166). */
 export function unevenNoticeIn(kind: Kind): boolean {
-  return kind !== 'running' && kind !== 'done'
+  return kind !== 'running' && kind !== 'done' && kind !== 'finished'
 }
 
 /**
@@ -133,16 +138,18 @@ export function shownSessionNumbers(sessions: Pick<SessionView, 'startsAt' | 'nu
 /**
  * What the Phase pill in the header says, from the page state (design `frame()`): the Event's Phase is running from the
  * first start on, which would say „Läuft“ between two Sessions and after the last. The pill follows the Sessions instead:
- * the poll, the Date that stands, the Session that runs, over. `phase` is the pill's look and word; `ended` swaps the word
- * for „Vorbei“ (the finished look). null in `setup`, where the Event's own Phase stays.
+ * the poll, the Date that stands, the Session that runs, no Date left. `phase` is the pill's look and word; `noDate` swaps the word
+ * for „Kein Termin“ (#277), with the grey dot of `draft`: every Session ended, but the Host has not finished the Event, so „Beendet“ would
+ * say more than is true. `finished` is the Phase's own word. null in `setup`, where the Event's own Phase stays.
  */
-export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase: Phase, ended: boolean } | null {
+export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase: Phase, noDate: boolean } | null {
   switch (state.kind) {
-    case 'poll': return { phase: 'poll', ended: false }
-    case 'teams': return { phase: 'date_set', ended: false }
-    case 'running': return { phase: 'running', ended: false }
-    case 'between': return { phase: state.next ? 'date_set' : 'poll', ended: false }
-    case 'done': return { phase: 'finished', ended: true }
+    case 'poll': return { phase: 'poll', noDate: false }
+    case 'teams': return { phase: 'date_set', noDate: false }
+    case 'running': return { phase: 'running', noDate: false }
+    case 'between': return { phase: state.next ? 'date_set' : 'poll', noDate: false }
+    case 'done': return { phase: 'draft', noDate: true }
+    case 'finished': return { phase: 'finished', noDate: false }
     default: return null
   }
 }
@@ -167,13 +174,13 @@ export function teamsStay(next: NextSession | null, isHost: boolean, t: Translat
 }
 
 /**
- * The header pill for a page state (pagePill, #166): „Läuft · Session 1 von 2“ while a Session runs in an Event with several, „Vorbei“
- * after the last one. Without a state or a pill, the Event's own Phase (or poll) and no label.
+ * The header pill for a page state (pagePill, #166): „Läuft · Session 1 von 2“ while a Session runs in an Event with several, „Kein Termin“
+ * after the last one, until the Host finishes the Event. Without a state or a pill, the Event's own Phase (or poll) and no label.
  */
 export function headerPill(state: EventPageState | null, phase: Phase | undefined, t: Translate): { phase: Phase, label: string | undefined } {
   const shown = state ? pagePill(state) : null
   if (!state || !shown) return { phase: phase ?? 'poll', label: undefined }
-  if (shown.ended) return { phase: shown.phase, label: t('phase.ended') }
+  if (shown.noDate) return { phase: shown.phase, label: t('phase.noDate') }
   const several = state.kind === 'running' && state.total > 1
   return { phase: shown.phase, label: several ? t('event.pill.running', { n: state.running?.number, total: state.total }) : undefined }
 }
@@ -200,6 +207,8 @@ export function eventPageState({ settings, sessions, missingDates, event, setGam
   })
 
   if (settings === null) return { ...common('setup'), kind: 'setup', running: null }
+  // Before the Running-Session branch: a finished Event has none, but a fixture may (#277).
+  if (event.phase === 'finished') return { ...common('finished'), kind: 'finished', running: null }
   if (runningSession) return { ...common('running'), kind: 'running', running: { number: runningSession.number, startedAt: runningSession.startedAt } }
   if (!hasStarted(sessions)) return next ? { ...common('teams'), kind: 'teams', next, running: null } : { ...common('poll'), kind: 'poll', running: null }
   const kind = waiting || missingDates > 0 ? 'between' : 'done'

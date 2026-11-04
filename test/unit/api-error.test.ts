@@ -25,6 +25,12 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(400, 'invalid_result'))).toBe('error.resultInvalid')
   })
 
+  it('explains the refusals of the finish, and of a write to a finished Event (#277)', () => {
+    expect(apiErrorKey(refusal(409, 'wrong_phase'))).toBe('error.wrongPhase')
+    expect(apiErrorKey(refusal(409, 'results_missing'))).toBe('error.resultsMissing')
+    expect(apiErrorKey(refusal(409, 'standings_changed'))).toBe('error.standingsChanged')
+  })
+
   it('names the reason the server gives', () => {
     expect(apiErrorKey(refusal(400, 'in_past'))).toBe('error.slotPast')
     expect(apiErrorKey(refusal(400, 'duplicate_slot'))).toBe('error.slotDuplicate')

@@ -130,10 +130,16 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
       const list = joinNames(winners)
       return t('activity.resultEntered', { n: entry.params.number, game, list, count: entry.params.first.length })
     }
-    // A correction (#275) and the end of the Event (#277) get their sentences in those tickets; until then they name nothing.
+    // A correction gets its sentence in #275; until then it names nothing.
     case 'result_corrected':
-    case 'event_finished':
       return null
+    // The end of the Event (#277): one winner is named like a Result's; several are a Tie, which #278 words, so they name nothing yet.
+    case 'event_finished': {
+      if (entry.params.winners.length !== 1) return null
+      const position = entry.params.winners[0]!
+      const list = teamName(teams.find(team => team.position === position) ?? position, t)
+      return t('activity.eventFinished', { list, count: 1 }, 1)
+    }
   }
 }
 
