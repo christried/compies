@@ -558,7 +558,6 @@ describe('the Tie banner on the Event page', () => {
 
         expect(banner(page)).toHaveLength(1)
         const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
-        // eslint-disable-next-line no-bitwise -- compareDocumentPosition is a bit mask
         expect(banner(page)[0]!.element.compareDocumentPosition(standings.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       }
     })

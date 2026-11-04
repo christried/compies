@@ -414,7 +414,7 @@ describe('a Tie at the end', () => {
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
   const running = (slug: string, end: NonNullable<Overrides['end']> = tied) => hostView(slug, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end })
   const teams = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
-  const button = (page: Mounted, label: string) => page.findAll('[role="toolbar"] button').find(item => item.text().startsWith(label))!
+  const button = (page: Awaited<ReturnType<typeof mountSuspended>>, label: string) => page.findAll('[role="toolbar"] button').find((item: { text: () => string }) => item.text().startsWith(label))!
 
   beforeEach(() => {
     signInAs(kitty)
