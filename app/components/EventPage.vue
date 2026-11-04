@@ -3,7 +3,7 @@ import { Link as LinkIcon, Lock } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
-import { dateBlockedKey, eventPageState, headerPill, seatNote, teamsStay } from '~/utils/event-page'
+import { dateBlockedKey, eventPageState, gamesToStart, headerPill, seatNote, teamsStay } from '~/utils/event-page'
 import { hasStarted } from '~~/shared/session-state'
 import type { HistoryCorrections } from '~/utils/result-draft'
 import { beforeFinish, datePollOpen, sessionsEditable } from '~~/shared/event'
@@ -362,6 +362,13 @@ const { news } = useStandingsNews(data, slug)
         >
           {{ t('event.notice.tie') }}
         </NoticeBanner>
+
+        <!-- The last game needs a Session (#278): the Host only, for a Member the wrapper hides itself. The sheet is the Sessions card's (`openAdd`). `end` is there whenever the block is. -->
+        <EventSessionNotice
+          v-else-if="block === 'sessionNeeded' && data.event.isHost"
+          :left="gamesToStart(data.end!, data.rounds.length)"
+          @add="dialogs?.openAdd()"
+        />
 
         <NoticeBanner
           v-else-if="block === 'stay'"

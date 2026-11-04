@@ -581,6 +581,147 @@ describe('the Tie banner on the Event page', () => {
   })
 })
 
+// The dead end (#278): after the last Session the Game count is not reached and no Session is left, so the Host gets a notice with the way on.
+describe('the session-needed notice on the Event page', () => {
+  const TITLE = (n: number) => `Noch ${n} Spiel${n === 1 ? '' : 'e'} offen`
+  const TEXT = 'Dafür braucht es eine neue Session. Leg sie an und starte sie, wenn ihr so weit seid.'
+  const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
+  const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
+  // The Event read of a Game count that is not reached: the Standings are there once a Result is (played > 0).
+  const short = (played: number, gameCount: number): EventOverrides => ({
+    end: { played, gameCount, complete: false, tie: null, finish: null, lastGame: null },
+    results: [],
+    standings: played > 0 ? [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }] : null,
+  })
+  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+  const openRound = (id: string): RoundView => ({ id, startedAt: STARTED, setAt: STARTED, game: { ...halo, id: `g-${id}`, name: `Spiel ${id}` } })
+  const notice = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('[role="status"]').filter(element => element.text().includes(TEXT))
+
+  beforeEach(() => {
+    signInAs(kitty)
+    stubScreen(true)
+  })
+
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    restoreScreen()
+    document.body.innerHTML = ''
+  })
+
+  it('tells the Host after the last Session what is open, why, and offers Session hinzufügen, marked for the Host only', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+
+    const page = await mount(slug)
+
+    expect(notice(page)).toHaveLength(1)
+    expect(notice(page)[0]!.text()).toContain(TITLE(1))
+    expect(notice(page)[0]!.text()).toContain('Nur du siehst das')
+    expect(notice(page)[0]!.findAll('button').map(button => button.text()).filter(Boolean)).toEqual(['Session hinzufügen'])
+  })
+
+  it('counts the open games in the title: three of five', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 5) })
+
+    expect(notice(await mount(slug))[0]!.text()).toContain(TITLE(3))
+  })
+
+  it('counts the Rounds that are open, and shows nothing when they fill the Game count', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: { ...short(0, 6), rounds: [openRound('a'), openRound('b'), openRound('c'), openRound('d')] } })
+    expect(notice(await mount(slug))[0]!.text()).toContain(TITLE(2))
+
+    const filled = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: { ...short(2, 3), rounds: [openRound('a')] } })
+    expect(notice(await mount(filled.slug))).toHaveLength(0)
+  })
+
+  it('shows no notice to a Member, on the Bench or in a Team', async () => {
+    for (const seat of [{ zone: 'bench' }, { zone: 'team', team: 1 }] as Seat[]) {
+      const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'running', overrides: { ...short(2, 3), members: members({ kitty: seat }) } })
+
+      expect(notice(await mount(slug))).toHaveLength(0)
+    }
+  })
+
+  it('shows no notice while a Session runs, between Sessions, before a Session started, or in the finished Event', async () => {
+    const running = serveState({ sessions: [RUNNING_ONE], missing: 0, host: true, phase: 'running', running: 0, overrides: short(2, 3) })
+    expect(notice(await mount(running.slug))).toHaveLength(0)
+
+    const between = serveState({ sessions: [ENDED_ONE, SESSION(2, SECOND)], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+    expect(notice(await mount(between.slug))).toHaveLength(0)
+
+    const polling = serveState({ sessions: [ENDED_ONE, SESSION(2, null)], missing: 1, host: true, phase: 'running', overrides: short(2, 3) })
+    expect(notice(await mount(polling.slug))).toHaveLength(0)
+
+    const fresh = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', overrides: short(0, 3) })
+    expect(notice(await mount(fresh.slug))).toHaveLength(0)
+
+    const finished = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'finished', overrides: short(2, 3) })
+    expect(notice(await mount(finished.slug))).toHaveLength(0)
+  })
+
+  it('shows the setup notice alone while the Event has no settings, and no notice of this kind', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', settings: false })
+
+    const page = await mount(slug)
+
+    expect(page.text()).toContain('Event einrichten')
+    expect(notice(page)).toHaveLength(0)
+  })
+
+  it('shows no notice with a Tie: the Host decides that banner', async () => {
+    const tie: EventOverrides = { ...short(2, 2), end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: null, lastGame: null }, standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }] }
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: tie })
+
+    expect(notice(await mount(slug))).toHaveLength(0)
+  })
+
+  it('shows no notice at the maximum of eight Sessions, though the games are open', async () => {
+    const eight = Array.from({ length: 8 }, (_, index) => SESSION(index + 1, `2026-10-${String(10 + index).padStart(2, '0')}T19:00:00.000Z`, { startedAt: STARTED, endedAt: ENDED }))
+    const { slug } = serveState({ sessions: eight, missing: 0, host: true, phase: 'running', overrides: short(8, 9) })
+
+    expect(notice(await mount(slug))).toHaveLength(0)
+  })
+
+  it('sits above the Standings, under the Head', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+
+    const page = await mount(slug)
+    const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')
+    expect(standings).toBeDefined()
+    expect(notice(page)[0]!.element.compareDocumentPosition(standings!.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('closes with its ×, and stays closed when the Event is read again', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+    const page = await mount(slug)
+
+    await notice(page)[0]!.get('button[aria-label="Schließen"]').trigger('click')
+    expect(notice(page)).toHaveLength(0)
+
+    await refreshEvent(slug)
+    await flushPromises()
+    expect(notice(page)).toHaveLength(0)
+  })
+
+  it('opens the add sheet from the notice, as the Sessions card does', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+    const page = await mount(slug)
+
+    await notice(page)[0]!.findAll('button').find(button => button.text() === 'Session hinzufügen')!.trigger('click')
+    await flushPromises()
+
+    expect(dialog()?.textContent).toContain('Session hinzufügen')
+    dialog()!.querySelector<HTMLElement>('button[aria-label="Schließen"]')!.click()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+
+    // The Sessions card's own button is still there, below the notice, and opens the same sheet.
+    const cardButton: HTMLButtonElement = [...page.element.querySelectorAll('button')].filter(button => button.textContent?.trim() === 'Session hinzufügen').at(-1)!
+    cardButton.click()
+    await flushPromises()
+    expect(dialog()?.textContent).toContain('Session hinzufügen')
+  })
+})
+
 // The Standings (#274): a stage block after the open Rounds once the first Result exists, and the „Tabelle“ tab in the side panel and on the phone.
 describe('the Standings on the Event page', () => {
   const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
