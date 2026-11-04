@@ -112,7 +112,8 @@ const rows = computed(() => (props.settings === null
           {{ t(hasWheel(settings.selectionMode) ? 'howWePlay.previewOffWheel' : 'howWePlay.previewOffPick') }}
         </NoticeBanner>
 
-        <div class="flex flex-col gap-3">
+        <!-- `min-w-0` (#279): a long game name in a pool bounds its `truncate`, instead of widening the page on a phone. -->
+        <div class="flex min-w-0 flex-col gap-3">
           <div class="flex min-w-0 flex-col gap-2">
             <h3 class="m-0 text-[14px] font-extrabold text-ink-2">
               {{ t('howWePlay.mainPool') }}
