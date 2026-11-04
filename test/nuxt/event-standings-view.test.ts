@@ -1,13 +1,15 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import EventStandingsView from '~/components/EventStandingsView.vue'
 import StandingsTab from '~/components/StandingsTab.vue'
+import type { HistoryCorrections } from '~/utils/result-draft'
 import type { BoardTeam } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
 import type { ResultView, RoundView } from '~~/shared/stage'
 
 // The content of the „Tabelle“ tab and the phone's view of it (#274): the Standings, then the history; for an Event that is not set up only the history.
+// Both hand the Host's `corrections` (#275) to the history, which gives its rows their pencils.
 
 const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
 const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
@@ -21,6 +23,9 @@ const view = {
   rounds: [open],
   teams,
 }
+
+const corrections: HistoryCorrections = { pointsTable: { preset: 'linear', values: [1, 0] }, total: 6, save: vi.fn(async () => true) }
+const pencils = (wrapper: VueWrapper) => wrapper.findAll('button[aria-label="Spiel 1 korrigieren"]')
 
 let page: VueWrapper | undefined
 afterEach(() => {
@@ -52,6 +57,15 @@ describe('the Tabelle tab', () => {
     expect(page.text()).toContain('Noch kein Ergebnis.')
     expect(page.findAll('section > ol > li')).toHaveLength(1)
   })
+
+  it('forwards `corrections` to the history: a pencil per Result with it, none without', async () => {
+    page = await mountSuspended(StandingsTab, { props: { view, corrections } })
+    expect(pencils(page)).toHaveLength(1)
+
+    page.unmount()
+    page = await mountSuspended(StandingsTab, { props: { view } })
+    expect(pencils(page)).toHaveLength(0)
+  })
 })
 
 describe('the phone\'s Tabelle view', () => {
@@ -61,5 +75,14 @@ describe('the phone\'s Tabelle view', () => {
     expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Tabelle'])
     expect(page.find('table').exists()).toBe(true)
     expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
+  })
+
+  it('forwards `corrections` through the Standings tab: a pencil with it, none without', async () => {
+    page = await mountSuspended(EventStandingsView, { props: { view, corrections } })
+    expect(pencils(page)).toHaveLength(1)
+
+    page.unmount()
+    page = await mountSuspended(EventStandingsView, { props: { view } })
+    expect(pencils(page)).toHaveLength(0)
   })
 })
