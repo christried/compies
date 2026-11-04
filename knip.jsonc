@@ -22,7 +22,9 @@
         // Run with node by /implement-spec before each new implementer (.claude/skills/implement-spec/SKILL.md).
         "scripts/context-usage.mjs!",
         // Run with node by implementers and the orchestrator to wait for CI on a pushed commit (docs/agents/implementer-frame.md).
-        "scripts/ci-wait.mjs!"
+        "scripts/ci-wait.mjs!",
+        // #276 Part A: the Standings' news rules, tested alone until useStandingsNews (Part B, #276) imports them; Part B removes this line.
+        "app/utils/standings-news.ts!"
       ],
       "ignore": [
         // The design hand-off and its prototype scripts are reference material, not shipped (also ignored by eslint).
