@@ -49,8 +49,8 @@ function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running',
 }
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
-async function mount(slug: string) {
-  page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+async function mount(slug: string, attachTo?: HTMLElement) {
+  page = await mountSuspended(EventPage, { route: `/e/${slug}`, attachTo })
   return page
 }
 
@@ -411,6 +411,85 @@ describe('entering a Result (#273)', () => {
       await vi.waitFor(() => expect(dialog()).toBeNull())
       expect(enterButtons(stage)).toHaveLength(1)
       expect(shownToasts()).toHaveLength(1)
+    })
+
+    // The save removes the Round whose card opened the sheet, so focus has nowhere to return to (#274, Q3 of the Release review): it goes on to the
+    // next open Round's „Ergebnis eintragen“, and without one to the stage's heading. Never to the body, where a keyboard or screen-reader Host starts over.
+    describe('focus', () => {
+      /** The Event as the next read has it: the saved Round gone from the open Rounds. */
+      const without = (rest: RoundView[]) => (current: ReturnType<typeof serveRunning>) => current.set(viewWithSessions(current.slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+        event: { isHost: true, phase: 'running' },
+        settings: defaultSettings(),
+        runningSessionId: `session-${current.slug}-0`,
+        rounds: rest,
+        teams: pair,
+        pools,
+      }))
+
+      /** Presses the button of the Round the way a Host does: it has the focus, and the sheet opens from it. */
+      async function pressEnter(stage: Awaited<ReturnType<typeof mount>>, game: string) {
+        const card = stage.findAll('[aria-label="Offene Spiele"] > li').find((item: Wrapper) => item.text().includes(game))!
+        const button = card.findAll('button').find((item: Wrapper) => item.text() === 'Ergebnis eintragen')!
+        ;(button.element as HTMLElement).focus()
+        await button.trigger('click')
+        await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      }
+
+      it('goes to the heading of the stage after the last open Round\'s Result is saved', async () => {
+        const served = serveSaving([round('r1', halo)], without([]))
+        const stage = await mount(served.slug, document.body)
+        await pressEnter(stage, 'Halo')
+
+        await clickButton(dialog(), 'Ergebnis speichern')
+
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        await vi.waitFor(() => expect(document.activeElement).toBe(stage.get('h1').element))
+        expect(stage.find('[aria-label="Offene Spiele"]').exists()).toBe(false)
+      })
+
+      it('goes to the other Round\'s „Ergebnis eintragen“ after one of two is saved', async () => {
+        const served = serveSaving([round('r1', halo), round('r2', kart)], without([round('r2', kart)]))
+        const stage = await mount(served.slug, document.body)
+        await pressEnter(stage, 'Halo')
+
+        await clickButton(dialog(), 'Ergebnis speichern')
+
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        const other = stage.findAll('[aria-label="Offene Spiele"] > li').find((item: Wrapper) => item.text().includes('Kart'))!
+        await vi.waitFor(() => expect(document.activeElement).toBe(other.findAll('button').find((item: Wrapper) => item.text() === 'Ergebnis eintragen')!.element))
+        expect(document.activeElement).not.toBe(document.body)
+      })
+
+      it('goes to the next Round in the list, not the first, when a middle one is saved', async () => {
+        const third = round('r3', pong)
+        const served = serveSaving([round('r1', halo), round('r2', kart), third], without([round('r1', halo), third]))
+        // The PUT in `serveSaving` is for r1: the middle Round's own endpoint.
+        registerEndpoint(`/api/e/${served.slug}/rounds/r2/result`, { method: 'PUT', handler: () => {
+          without([round('r1', halo), third])(served)
+          return { roundId: 'r2', number: 1 }
+        } })
+        const stage = await mount(served.slug, document.body)
+        await pressEnter(stage, 'Kart')
+
+        await clickButton(dialog(), 'Ergebnis speichern')
+
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        const next = stage.findAll('[aria-label="Offene Spiele"] > li').find((item: Wrapper) => item.text().includes('Pong'))!
+        await vi.waitFor(() => expect(document.activeElement).toBe(next.findAll('button').find((item: Wrapper) => item.text() === 'Ergebnis eintragen')!.element))
+      })
+
+      it('stays where Escape put it: back on the Round\'s own button, which is still there', async () => {
+        const served = serveSaving([round('r1', halo), round('r2', kart)])
+        const stage = await mount(served.slug, document.body)
+        await pressEnter(stage, 'Kart')
+        const button = stage.findAll('[aria-label="Offene Spiele"] > li').find((item: Wrapper) => item.text().includes('Kart'))!.findAll('button').find((item: Wrapper) => item.text() === 'Ergebnis eintragen')!
+
+        dialog()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        await flushPromises()
+        expect(document.activeElement).toBe(button.element)
+      })
     })
   })
 })

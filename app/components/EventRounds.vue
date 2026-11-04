@@ -39,11 +39,34 @@ const resultRound = computed(() => props.rounds.find(round => round.id === resul
 watch(resultRound, (round) => {
   if (round === null) resultFor.value = null
 })
+
+/** Where in the list the Round of the open sheet stood: after its save the one that takes that place is the next. */
+let openedAt = 0
+function openResult(roundId: string, index: number) {
+  resultFor.value = roundId
+  openedAt = index
+}
+
+const section = useTemplateRef<HTMLElement>('section')
+// The save removes the Round whose card holds the button that opened the sheet, so the sheet's own return of focus finds nothing (#274, Q3 of the
+// Release review): the button is gone or leaving (`leaveInPlace` makes the leaver inert), and with the last Round the whole section goes. Once the sheet has
+// closed and the page has settled, focus that has fallen to the body, or stayed on a leaver, goes to the next open Round's button, and with none left to
+// the stage's heading (`tabindex="-1"`, EventPageHead). Focus that returned to its button (Escape, the overlay) stays.
+watch(resultFor, async (id, was) => {
+  if (id !== null || was === null) return
+  await nextTick()
+  const active = document.activeElement
+  if (active && active !== document.body && active.isConnected && !active.closest('[inert]')) return
+  const buttons = [...(section.value?.querySelectorAll<HTMLElement>('[data-result]') ?? [])].filter(button => !button.closest('[inert]'))
+  const next = buttons[Math.min(openedAt, buttons.length - 1)]
+  ;(next ?? document.querySelector<HTMLElement>('#stage h1'))?.focus()
+})
 </script>
 
 <template>
   <section
     v-if="rounds.length > 0"
+    ref="section"
     :aria-labelledby="headingId"
     class="flex flex-col gap-3"
   >
@@ -64,7 +87,7 @@ watch(resultRound, (round) => {
       @before-leave="leaveInPlace"
     >
       <li
-        v-for="round in rounds"
+        v-for="(round, index) in rounds"
         :key="round.id"
         class="flex min-w-0 flex-col gap-2"
       >
@@ -89,7 +112,8 @@ watch(resultRound, (round) => {
         >
           <AppButton
             v-if="pointsTable"
-            @click="resultFor = round.id"
+            data-result
+            @click="openResult(round.id, index)"
           >
             {{ t('result.title') }}
           </AppButton>
@@ -109,15 +133,16 @@ watch(resultRound, (round) => {
         </p>
       </li>
     </TransitionGroup>
-    <ResultEntry
-      v-if="isHost && pointsTable"
-      :open="resultRound !== null"
-      :game="resultRound?.game ?? null"
-      :kicker="end ? { number: end.played + 1, total: end.gameCount } : null"
-      :teams="teams"
-      :points-table="pointsTable"
-      :save="places => enterResult(resultFor!, places)"
-      @close="resultFor = null"
-    />
   </section>
+  <!-- Outside the section: the sheet's lifetime must not depend on the list its own save empties (#274). -->
+  <ResultEntry
+    v-if="isHost && pointsTable"
+    :open="resultRound !== null"
+    :game="resultRound?.game ?? null"
+    :kicker="end ? { number: end.played + 1, total: end.gameCount } : null"
+    :teams="teams"
+    :points-table="pointsTable"
+    :save="places => enterResult(resultFor!, places)"
+    @close="resultFor = null"
+  />
 </template>
