@@ -569,7 +569,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       // One Result stands (Foxtrot Fest, between Sessions): the Game count drops to it, so the Event is complete and the Host may finish.
       await testDb.db.update(events).set({ gameCount: 1 }).where(eq(events.id, eventId))
 
-      expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner' })).status).toBe(200)
+      expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner', winners: [2] })).status).toBe(200)
 
       const feed = await activityOf(playerCookie, slug)
       // The lobby flow's Correction (#275) swapped the Places, so Party 2 wins.

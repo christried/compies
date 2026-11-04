@@ -97,9 +97,10 @@ const hostActions = useHostActions(
     setDate: () => dialogs.value?.openConfirm(),
     start: () => dialogs.value?.openStart(),
     end: actions.endSession,
-    // The label the Host held is the outcome the server compares with the Standings (#277, #278): a Correction during the hold is refused, not finished as something else.
-    finish: () => actions.finish('winner'),
-    finishTie: () => actions.finish('tie'),
+    // The label the Host held is the outcome, and the Parties on Place 1 he saw are the winners, that the server compares with the Standings (#277, #278): a
+    // Correction during the hold is refused, not finished as something else.
+    finish: winners => actions.finish({ outcome: 'winner', winners }),
+    finishTie: winners => actions.finish({ outcome: 'tie', winners }),
     lastGame: actions.lastGame,
     setGame: () => dialogs.value?.openSetGame(),
     spin: () => void actions.spin(),

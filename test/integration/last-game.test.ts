@@ -152,7 +152,7 @@ describe('The last game', () => {
   const set = (game: Game, gameId: string) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, { gameId })
   const setRound = async (game: Game, gameId: string) => (await (await set(game, gameId)).json() as { roundId: string }).roundId
   const enter = (game: Game, roundId: string, body: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/rounds/${roundId}/result`, cookie, body)
-  const finish = (game: Game, body: unknown = { outcome: 'winner' }, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/finish`, cookie, body)
+  const finish = (game: Game, body: unknown = { outcome: 'winner', winners: [1] }, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/finish`, cookie, body)
   const addLastGame = (game: Game, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/last-game`, cookie)
   const eventRowOf = async (eventId: string) => (await testDb.db.select().from(events).where(eq(events.id, eventId)))[0]!
   const activityTypes = async (eventId: string) => (await testDb.db.select({ type: activity.type }).from(activity).where(eq(activity.eventId, eventId))).map(row => row.type).sort()
@@ -237,8 +237,8 @@ describe('The last game', () => {
 
       expect((await read(game)).end).toMatchObject({ played: 3, gameCount: 3, complete: true, tie: null })
       expect((await read(game)).standings).toEqual([{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 2, points: 1 }])
-      expect(await errorOf(await finish(game, { outcome: 'tie' }))).toEqual({ status: 409, code: 'standings_changed' })
-      expect(await (await finish(game, { outcome: 'winner' })).json()).toEqual({ phase: 'finished', winners: [1] })
+      expect(await errorOf(await finish(game, { outcome: 'tie', winners: [1, 2] }))).toEqual({ status: 409, code: 'standings_changed' })
+      expect(await (await finish(game, { outcome: 'winner', winners: [1] })).json()).toEqual({ phase: 'finished', winners: [1] })
     })
 
     it('a last game that stays level: the same choice comes up again, a second last game is added, and the Tie is finished', async () => {
@@ -253,7 +253,7 @@ describe('The last game', () => {
       const fourth = await setRound(game, tetris!.id)
       expect((await enter(game, fourth, { places: level })).status).toBe(200)
       expect((await read(game)).end).toMatchObject({ played: 4, gameCount: 4, complete: true, tie: [1, 2] })
-      expect(await (await finish(game, { outcome: 'tie' })).json()).toEqual({ phase: 'finished', winners: [1, 2] })
+      expect(await (await finish(game, { outcome: 'tie', winners: [1, 2] })).json()).toEqual({ phase: 'finished', winners: [1, 2] })
     })
   })
 
@@ -337,7 +337,7 @@ describe('The last game', () => {
 
       expect(await eventRowOf(game.eventId)).toEqual(before)
       expect(await activityTypes(game.eventId)).toEqual(activityBefore)
-      expect(await (await finish(game, { outcome: 'tie' })).json()).toEqual({ phase: 'finished', winners: [1, 2] })
+      expect(await (await finish(game, { outcome: 'tie', winners: [1, 2] })).json()).toEqual({ phase: 'finished', winners: [1, 2] })
     })
   })
 })
