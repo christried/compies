@@ -187,7 +187,7 @@ describe('a finished Event is read-only', () => {
     const round = (await (await send('POST', `/api/e/${slug}/rounds`, hostCookie, { gameId: halo.id })).json() as { roundId: string }).roundId
     const places = [{ team: 1, place: 1 }, { team: 2, place: 2 }]
     expect((await send('PUT', `/api/e/${slug}/rounds/${round}/result`, hostCookie, { places })).status).toBe(200)
-    expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner' })).status).toBe(200)
+    expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner', winners: [1] })).status).toBe(200)
     notifier.clear()
     return { slug, eventId, hostCookie, cookies, ids, round, session, slots: slotIds, kart: kart.id }
   }
@@ -228,7 +228,7 @@ describe('a finished Event is read-only', () => {
       { file: 'countdown/start.post.ts', name: 'start the Countdown', as: 'host', method: 'POST', path: `/api/e/${slug}/countdown/start` },
       { file: 'countdown/pause.post.ts', name: 'pause the Countdown', as: 'host', method: 'POST', path: `/api/e/${slug}/countdown/pause` },
       { file: 'countdown/reset.post.ts', name: 'reset the Countdown', as: 'host', method: 'POST', path: `/api/e/${slug}/countdown/reset` },
-      { file: 'finish.post.ts', name: 'finish the Event again', as: 'host', method: 'POST', path: `/api/e/${slug}/finish`, body: { outcome: 'winner' } },
+      { file: 'finish.post.ts', name: 'finish the Event again', as: 'host', method: 'POST', path: `/api/e/${slug}/finish`, body: { outcome: 'winner', winners: [1] } },
       { file: 'last-game.post.ts', name: 'add a last game', as: 'host', method: 'POST', path: `/api/e/${slug}/last-game` },
     ]
   }
