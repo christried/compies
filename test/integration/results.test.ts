@@ -798,7 +798,7 @@ describe('Results', () => {
       expect(host.results.map(result => result.roundId)).toEqual([done])
       expect(host.standings).toEqual([{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }])
       expect(host.end).toMatchObject({ played: 1, gameCount: 10 })
-      expect(await readAll(game, game.cookies.one)).toEqual({ ...host, end: { ...host.end, finish: null } })
+      expect(await readAll(game, game.cookies.one)).toEqual({ ...host, end: { ...host.end, finish: null, lastGame: null } })
     })
 
     it('marks a Round corrected only when its corrected instant is set, and reads that instant as correctedAt for every Member (#276)', async () => {

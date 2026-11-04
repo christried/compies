@@ -389,7 +389,7 @@ describe('the finished Event page', () => {
     teams: [team(1, 'Wilde Gurken'), team(2)],
     results: [resultOf(1, 1), resultOf(2, 1), resultOf(3, 1)],
     standings: [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 0 }],
-    end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null },
+    end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null },
     ...overrides,
   })
   const toolbar = (page: { findAll: (selector: string) => { text: () => string }[] }) => page.findAll('[role="toolbar"] button').map(button => button.text())
@@ -440,7 +440,7 @@ describe('the finished Event page', () => {
     const member = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })
     expect(toolbar(await mount(member.slug))).toEqual([])
 
-    const host = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host: true, overrides: finishedRead({ end: { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: 'wrong_phase' } } }) })
+    const host = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host: true, overrides: finishedRead({ end: { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: 'wrong_phase' }, lastGame: null } }) })
     const page = await mount(host.slug)
     expect(toolbar(page)).toEqual(['Einladen', 'Mehr'])
     const menu = await openHostMenu(page)
@@ -452,7 +452,7 @@ describe('the finished Event page', () => {
       teams: [team(1), team(2)],
       results: [resultOf(1, 2)],
       standings: [{ team: 2, rank: 1, points: 3 }, { team: 1, rank: 2, points: 0 }],
-      end: { played: 1, gameCount: 1, complete: true, tie: null, finish: null },
+      end: { played: 1, gameCount: 1, complete: true, tie: null, finish: null, lastGame: null },
     }) })
 
     const page = await mount(slug)
@@ -490,7 +490,7 @@ describe('the finished Event page', () => {
       teams: eight,
       results,
       standings: eight.map(item => ({ team: item.position, rank: item.position === 1 ? 1 : 2, points: 0 })),
-      end: { played: 30, gameCount: 30, complete: true, tie: null, finish: null },
+      end: { played: 30, gameCount: 30, complete: true, tie: null, finish: null, lastGame: null },
     }) })
 
     const page = await mount(slug)
@@ -528,13 +528,13 @@ describe('the Standings on the Event page', () => {
     rounds: [openRound],
     results: [played],
     standings: [{ team: 2, rank: 1, points: 1 }, { team: 1, rank: 2, points: 0 }],
-    end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null },
+    end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
   }
   const beforeResult: EventOverrides = {
     rounds: [openRound],
     results: [],
     standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
-    end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null },
+    end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
   }
   const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
   const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
