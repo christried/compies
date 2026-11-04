@@ -298,8 +298,11 @@ describe('Results', () => {
       const a = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
       const b = (await (await set(game, game.kart.id)).json() as { roundId: string }).roundId
 
+      // Which of two requests sent at once is entered first depends on their arrival order, so the test compares the set of numbers.
       const both = await Promise.all([enter(game, a, { places: twoParties }), enter(game, b, { places: twoParties })])
-      expect(await Promise.all(both.map(response => response.json()))).toEqual([{ roundId: a, number: 1 }, { roundId: b, number: 2 }])
+      const answers = await Promise.all(both.map(response => response.json() as Promise<{ roundId: string, number: number }>))
+      expect(answers.map(answer => answer.roundId).sort()).toEqual([a, b].sort())
+      expect(answers.map(answer => answer.number).sort()).toEqual([1, 2])
 
       const c = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
       const [first, second] = await Promise.all([enter(game, c, { places: twoParties }), enter(game, c, { places: twoParties })])
