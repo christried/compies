@@ -10,6 +10,7 @@ import { sessionNotRemoved } from '../../utils/sessions'
 import { requireUser } from '../../utils/user'
 import { shownName } from '../../../shared/auth'
 import type { HomeEvent, HomeView } from '../../../shared/event'
+import { noSessionLeft } from '../../../shared/session-state'
 
 // Home (#12, screen M1): every Event the User is a Member of, not deleted, in Home order. Each card
 // carries what the card shows: the Host, the phase, the Best slot or the next Session, the Sessions
@@ -106,6 +107,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       viewerVoted: standing.viewerVoted,
       isHost,
       action: homeAction({ isHost, needsVote: viewerNeedsVote }),
+      noDate: row.phase !== 'finished' && noSessionLeft(eventSessionRows, missingDates(sessionStarts)),
     }
     // Home order reads the row's own times, the Session the card shows and whether the viewer still has to vote.
     // Home keeps the Event by its finish, its Result and its Sessions' start and end times (#282, #199).

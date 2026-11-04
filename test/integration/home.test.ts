@@ -190,6 +190,7 @@ describe('GET /api/e (Home)', () => {
       viewerVoted: true,
       isHost: false,
       action: 'view',
+      noDate: false,
     })
   })
 
@@ -379,6 +380,38 @@ describe('GET /api/e (Home)', () => {
 
     expect(listed.map((row: { name: string }) => row.name)).toEqual(['Mit Ergebnis'])
     expect(listed[0]).not.toHaveProperty('finishedAt')
+  })
+
+  // The page says „Kein Termin“ for a running Event with no Session left (eventPageState's `done`), and Home's pill must say the same (review 0.8, N5).
+  it('marks a running Event whose Sessions are all over as having no Date left, and no other Event', async () => {
+    const hostUser = await signInAs(host, { hostPermission: true })
+    const memberUser = await signInAs(member)
+    const over = await createDate(hostUser.cookie, 'Alles vorbei', '2090-11-01T20:00')
+    const running = await createDate(hostUser.cookie, 'Läuft gerade', '2090-11-01T20:00')
+    const between = await createSessionDates(hostUser.cookie, 'Zwischen zwei Abenden', ['2090-11-01T20:00', '2090-11-08T20:00'])
+    const polling = await createSessionDates(hostUser.cookie, 'Ein Abend fehlt', ['2090-11-01T20:00', '2090-11-08T20:00'])
+    const waiting = await createDate(hostUser.cookie, 'Noch nicht gestartet', '2090-11-01T20:00')
+    for (const event of [over, running, between, polling, waiting]) await addMember(event.eventId, memberUser.id)
+    for (const event of [over, running, between, polling]) await testDb.db.update(events).set({ phase: 'running' }).where(eq(events.id, event.eventId))
+    await startSessions(over.eventId, 3, 2)
+    await startSessions(running.eventId, 3)
+    const [first, second] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, between.eventId)).orderBy(sessions.startsAt)
+    await testDb.db.update(sessions).set({ startedAt: new Date(Date.now() - 3 * 3_600_000), endedAt: new Date(Date.now() - 2 * 3_600_000) }).where(eq(sessions.id, first!.id))
+    expect(second!.startedAt).toBeNull()
+    const [firstPolling, secondPolling] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, polling.eventId)).orderBy(sessions.startsAt)
+    await testDb.db.update(sessions).set({ startedAt: new Date(Date.now() - 3 * 3_600_000), endedAt: new Date(Date.now() - 2 * 3_600_000) }).where(eq(sessions.id, firstPolling!.id))
+    await testDb.db.update(sessions).set({ startsAt: null, slotId: null }).where(eq(sessions.id, secondPolling!.id))
+    await addResult(over.eventId, hostUser.id, new Date(Date.now() - 2 * 3_600_000))
+
+    const { events: listed } = await (await list(memberUser.cookie)).json() as { events: { name: string, noDate: boolean }[] }
+
+    expect(Object.fromEntries(listed.map(card => [card.name, card.noDate]))).toEqual({
+      'Alles vorbei': true,
+      'Läuft gerade': false,
+      'Zwischen zwei Abenden': false,
+      'Ein Abend fehlt': false,
+      'Noch nicht gestartet': false,
+    })
   })
 
   it('lists a finished Event 23 h after its finish, and not 25 h after, whatever its Sessions say (#282)', async () => {

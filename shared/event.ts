@@ -253,6 +253,11 @@ export interface HomeEvent {
   viewerVoted: boolean
   isHost: boolean
   action: HomeAction
+  /**
+   * A started Event that is not finished and has no Session left to start or running (noSessionLeft): the Event page says „Kein Termin“ for it,
+   * and the card's pill says the same instead of „Läuft“ (review 0.8, N5).
+   */
+  noDate: boolean
 }
 
 /** What `GET /api/e` returns, already in Home order (open polls to vote on, other open polls, Dates upcoming first). */

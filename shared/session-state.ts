@@ -58,6 +58,15 @@ export function nextSession<S extends { startsAt: Instant | null, startedAt: Ins
   return next
 }
 
+/**
+ * Whether an Event that has started has no Session left (#277, review 0.8 N5): one Session has started, none runs, none waits to start
+ * and none still polls for its Date (`missingDates`). The Event is not finished then, the Host has still to finish it, so the Event page says
+ * „Kein Termin“ (eventPageState's `done`) and Home's card says the same. Rows and the Event read's Sessions both take it.
+ */
+export function noSessionLeft(sessions: readonly SessionTimes[], missingDates: number): boolean {
+  return hasStarted(sessions) && !runningOf(sessions) && nextSession(sessions) === null && missingDates === 0
+}
+
 /** Why the teams cannot play now: one has no Player, or they differ in size. */
 export type TeamsRejection = 'teams_empty' | 'teams_uneven'
 
