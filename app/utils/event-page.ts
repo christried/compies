@@ -1,4 +1,4 @@
-import { hasStarted, nextSession, runningOf, sessionState } from '~~/shared/session-state'
+import { hasStarted, nextSession, noSessionLeft, runningOf, sessionState } from '~~/shared/session-state'
 import { datePollOpen, type EventView, type Phase, SESSIONS_MAX, type SessionView } from '~~/shared/event'
 import type { EndView } from '~~/shared/stage'
 import { teamName } from './board'
@@ -229,6 +229,7 @@ export function eventPageState({ settings, sessions, missingDates, event, setGam
   if (event.phase === 'finished') return { ...common('finished'), kind: 'finished', running: null }
   if (runningSession) return { ...common('running'), kind: 'running', running: { number: runningSession.number, startedAt: runningSession.startedAt } }
   if (!hasStarted(sessions)) return next ? { ...common('teams'), kind: 'teams', next, running: null } : { ...common('poll'), kind: 'poll', running: null }
-  const kind = waiting || missingDates > 0 ? 'between' : 'done'
+  // `done` is the „Kein Termin“ of Home's card too: one rule, noSessionLeft (#277).
+  const kind = noSessionLeft(sessions, missingDates) ? 'done' : 'between'
   return { ...common(kind), kind, running: null }
 }
