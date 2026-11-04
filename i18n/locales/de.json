@@ -54,7 +54,7 @@
     "dateSet": "Termin steht",
     "game": "Spiel {n} von {total}",
     "pickBan": "Pick & Ban",
-    "ended": "Vorbei",
+    "noDate": "Kein Termin",
     "draft": "Entwurf",
     "running": "Läuft",
     "finished": "Beendet",
@@ -82,6 +82,7 @@
     "endSession": "Session beenden",
     "startN": "Session {n} starten",
     "endN": "Session {n} beenden",
+    "finish": "Event abschließen",
     "setDateN": "Termin für Session {n}",
     "startBlocked": {
       "not_set_up": "Geht erst, wenn das Event eingerichtet ist.",
@@ -140,6 +141,11 @@
         "kicker": "Session {n} von {total} beendet",
         "kickerSingle": "Session beendet",
         "title": "Gut gespielt"
+      },
+      "finished": {
+        "kicker": "Event beendet",
+        "title": "{team} gewinnt das Event",
+        "titleDone": "Das Event ist beendet"
       },
       "setup": {
         "kicker": "Noch nicht eingerichtet",
@@ -552,9 +558,7 @@
     "points": "{n} Punkt | {n} Punkte",
     "winStamp": "Sieg in Spiel {n}!",
     "wonStamp": "Spiel {n} gewonnen",
-    "takesFirst": "{team} übernimmt Platz 1",
-    "endWinner": "{team} gewinnt das Event. Auf zur Siegerehrung!",
-    "endTie": "Gleichstand auf Platz 1: {teams}. Jetzt kommt der Tiebreaker."
+    "takesFirst": "{team} übernimmt Platz 1"
   },
   "history": {
     "title": "Spielverlauf",
@@ -622,7 +626,8 @@
     "gamePutBack": "{name} hat {game} zurückgelegt",
     "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben",
     "resultEntered": "Spiel {n}: {game}, {list} gewinnt | Spiel {n}: {game}, {list} gewinnen",
-    "resultCorrected": "{name} hat Spiel {n} ({game}) korrigiert"
+    "resultCorrected": "{name} hat Spiel {n} ({game}) korrigiert",
+    "eventFinished": "Event beendet: {list} gewinnt | Event beendet: {list} gewinnen"
   },
   "emote": {
     "send": "Emote senden: {name}",
@@ -1572,6 +1577,9 @@
     "coinInAir": "Die Münze fliegt noch.",
     "resultInvalid": "Das Ergebnis passt nicht. Lade die Seite neu und versuch es nochmal.",
     "roundNotOpen": "Zu diesem Spiel kann gerade kein Ergebnis eingetragen werden. Vielleicht hat es schon eins.",
+    "wrongPhase": "Das geht nicht mehr. Die Seite zeigt den neuen Stand.",
+    "resultsMissing": "Es fehlen noch Ergebnisse.",
+    "standingsChanged": "Die Tabelle hat sich geändert. Schau sie dir nochmal an.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

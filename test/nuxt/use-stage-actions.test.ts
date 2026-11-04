@@ -10,7 +10,7 @@ import { useStageActions } from '~/composables/useStageActions'
 
 let testNumber = 0
 
-/** The endpoints of the ten changes for one slug, what they received, and whether they refuse. */
+/** The endpoints of the eleven changes for one slug, what they received, and whether they refuse. */
 function serve() {
   testNumber += 1
   const slug = `stage-actions-${testNumber}`
@@ -26,12 +26,13 @@ function serve() {
     ['sessions/end', 'POST'],
     ['sessions/session-1/reopen', 'POST'],
     ['sessions/session-1', 'DELETE'],
+    ['finish', 'POST'],
   ]
   for (const [path, method] of endpoints) {
     registerEndpoint(`/api/e/${slug}/${path}`, {
       method,
       handler: async (event) => {
-        if (method === 'PUT') server.bodies.push(await readBody(event))
+        if (method === 'PUT' || path === 'finish') server.bodies.push(await readBody(event))
         server.calls.push(`${method} ${path}`)
         if (server.refuse) throw createError({ statusCode: 429, statusMessage: 'rate_limited' })
         return {}
@@ -92,6 +93,16 @@ describe('useStageActions', () => {
     await expect(actions().enterResult('round-1', places)).resolves.toBe(true)
 
     expect(server.bodies).toEqual([{ places }])
+  })
+
+  it('sends the outcome the Host saw as the body of the finish (#277)', async () => {
+    const { server, refresh, actions } = await setUp()
+
+    await expect(actions().finish('winner')).resolves.toBe(true)
+
+    expect(server.calls).toEqual(['POST finish'])
+    expect(server.bodies).toEqual([{ outcome: 'winner' }])
+    expect(refresh).toHaveBeenCalledTimes(1)
   })
 
   it('resolves false, shows the error copy and still refetches the Event when the server refuses', async () => {

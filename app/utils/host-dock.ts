@@ -8,17 +8,18 @@ import { eventPageState, type EventPageState } from './event-page'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, from the
 // Event read. It is the Event page's own state (eventPageState: one place decides what the Event is doing) plus the
-// Host's start rule, so the dock, its tests and the page agree. „Event beenden“ is not here: finishing an Event is 1.6,
-// so after the last Session ended the dock has no primary. In a running Session „Nächstes Spiel setzen“ is the primary of
-// Host pick; in the Lucky Wheel „Rad drehen“ is (#229), disabled with its reason, and „Nächstes Spiel setzen“ waits in „Mehr“.
+// Host's start rule, so the dock, its tests and the page agree. Once the Rounds with a Result reach the Game count and first
+// place is not shared, „Event abschließen“ is the primary in every state that plays (#277); a Tie is not finishable here (#278),
+// so the dock keeps what it had, and a finished Event has only „Einladen“. In a running Session „Nächstes Spiel setzen“ is the
+// primary of Host pick; in the Lucky Wheel „Rad drehen“ is (#229), disabled with its reason, and „Nächstes Spiel setzen“ waits in „Mehr“.
 
-export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'wheel' | 'countdown' | 'coin'> & { event: Pick<EventView['event'], 'phase'> }
+export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'end'> & { event: Pick<EventView['event'], 'phase'> }
 
 export interface HostDockState {
-  /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between` or `done`. */
+  /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between`, `done` or `finished`. */
   kind: EventPageState['kind']
-  /** The one primary action, or null when there is none (`done`). */
-  primary: 'setup' | 'setDate' | 'start' | 'setGame' | 'spin' | null
+  /** The one primary action, or null when there is none (`done` while the Event cannot be finished, `finished`). */
+  primary: 'setup' | 'setDate' | 'start' | 'setGame' | 'spin' | 'finish' | null
   /** The shown number of the Session to start or end; null for the only Session of an Event, or without one. */
   number: number | null
   /** The shown number a Session that still polls will have (after the dated ones); null when none polls or the Event has one Session. */
@@ -35,11 +36,15 @@ export interface HostDockState {
 export function hostDockState(input: DockInput): HostDockState {
   const page = eventPageState(input)
   const base = { kind: page.kind, number: null, pollNumber: page.pollNumber, startRejection: null, setRejection: null, spinRejection: null }
+  // The Event can be finished: the Host's rule says so (null rejection) and the first place is not shared (#277). A Tie is #278's.
+  const finishable = input.end?.finish?.rejection === null && input.end.tie === null
   switch (page.kind) {
     case 'setup': return { ...base, primary: 'setup' }
     case 'poll': return { ...base, primary: 'setDate' }
+    case 'finished': return { ...base, primary: null }
     case 'running': {
       const wheel = eventHasWheel(input.settings)
+      if (finishable) return { ...base, primary: 'finish', number: page.running.number }
       return {
         ...base,
         primary: wheel ? 'spin' : 'setGame',
@@ -48,17 +53,19 @@ export function hostDockState(input: DockInput): HostDockState {
         spinRejection: wheel ? input.setGame?.spinRejection ?? null : null,
       }
     }
-    case 'done': return { ...base, primary: null }
+    case 'done': return { ...base, primary: finishable ? 'finish' : null }
     // `teams` and `between`: a dated Session is left to start, with the Host's start rule on it; a `between` with none left
     // has a Session that still polls, which gets its Date next.
-    default: return page.next === null
-      ? { ...base, primary: 'setDate' }
-      : { ...base, primary: 'start', number: input.start?.number ?? null, startRejection: input.start?.rejection ?? null }
+    default:
+      if (finishable) return { ...base, primary: 'finish' }
+      return page.next === null
+        ? { ...base, primary: 'setDate' }
+        : { ...base, primary: 'start', number: input.start?.number ?? null, startRejection: input.start?.rejection ?? null }
   }
 }
 
 /** The actions the dock can hold, by key. */
-export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto'
+export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto' | 'finish'
 
 /**
  * Which actions the dock holds per state, in named parts (review 1.4 A4, #228): the `primary` action(s), the `secondary` ones
@@ -83,9 +90,17 @@ export function dockLayout(state: HostDockState, open: { pollOpen: boolean, bonu
   const slots: DockKey[] = pollOpen ? ['slots'] : []
   const bonus: DockKey[] = bonusVetoOpen ? ['bonusVeto'] : []
   if (state.kind === 'setup') return { primary: ['settings'], secondary: ['invite'], more: [...dates, ...slots] }
+  // A finished Event is read-only for good: only „Einladen“ remains, and the Host can still rotate the link (#277). HostDock lists it in „Mehr“ too.
+  if (state.kind === 'finished') return { primary: [], secondary: ['invite'], more: [] }
   // The running layouts compose the game actions once (GAME_ACTIONS), in Mehr before the settings.
   const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || bonusVetoOpen)
   switch (state.primary) {
+    // The Game count is reached: no game to set or spin, no Session to start (a Host who plays on raises the Game count first, and the start returns).
+    case 'finish':
+      if (state.kind === 'running') return { primary: ['finish'], secondary: ['end', 'invite'], more: [...dates, ...slots, ...game, 'settings'] }
+      // After the last Session no Session polls any more: no Dates or Slots to offer.
+      if (state.kind === 'done') return { primary: ['finish'], secondary: ['invite'], more: [...bonus, 'settings'] }
+      return { primary: ['finish'], secondary: [...dates, 'invite'], more: [...slots, ...bonus, 'settings'] }
     case 'start': return { primary: ['start'], secondary: [...dates, 'invite'], more: [...slots, ...bonus, 'settings'] }
     case 'setGame': return { primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates, ...slots, ...game, 'settings'] }
     case 'spin': return { primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates, ...slots, ...game, 'settings'] }

@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { ArrowDown, Calendar } from '@lucide/vue'
 import { formatSessionWhen, formatSlotTime } from '~/utils/berlin-time'
+import { teamName } from '~/utils/board'
 import type { EventPageState } from '~/utils/event-page'
 import { jumpTo, pollHeadingId } from '~/utils/jump'
+import type { BoardTeam } from '~~/shared/event'
 
 // The Head of the Event page (#166, 11-event-seite § EventPageHead): the kicker says where the Event stands, the one
 // `<h1>` says what is on now, and while another Session still polls a link jumps to that poll. The copy follows the
 // page state (eventPageState), a union by `kind`: each kind reads what it guarantees, with no assertion (review 1.4 N10). The
-// Event's name is in the header, not here.
-const props = defineProps<{
+// Event's name is in the header, not here. A finished Event (#277) names its winner: `winners` are the team positions on rank 1 and `teams` the
+// Event's Teams for their frozen names; the other states need neither.
+const props = withDefaults(defineProps<{
   state: EventPageState
   isHost: boolean
-}>()
+  winners?: number[]
+  teams?: BoardTeam[]
+}>(), { winners: () => [], teams: () => [] })
 
 const { t } = useI18n()
 
@@ -54,6 +59,16 @@ const copy = computed(() => {
         kicker: single ? t('event.head.done.kickerSingle') : t('event.head.done.kicker', { n: lastEnded?.number ?? total, total }),
         title: t('event.head.done.title'),
       }
+    case 'finished': {
+      // #278 replaces the several-winners branch (a Tie) with „Unentschieden“; until then it reads like no winner.
+      const [winner, ...others] = props.winners
+      return {
+        kicker: t('event.head.finished.kicker'),
+        title: winner !== undefined && others.length === 0
+          ? t('event.head.finished.title', { team: teamName(props.teams.find(team => team.position === winner) ?? winner, t) })
+          : t('event.head.finished.titleDone'),
+      }
+    }
     default:
       return {
         kicker: t('event.head.setup.kicker'),
@@ -65,7 +80,7 @@ const copy = computed(() => {
 /** The link to the poll of a Session that still waits for a Date, while the page is about something else (the poll state has the poll on top itself). */
 const jump = computed(() => {
   const { kind, pollNumber } = props.state
-  if (pollNumber === null || kind === 'poll' || kind === 'setup') return null
+  if (pollNumber === null || kind === 'poll' || kind === 'setup' || kind === 'finished') return null
   return { label: t('event.head.jumpPoll', { n: pollNumber }), id: pollHeadingId(pollNumber) }
 })
 </script>
@@ -73,7 +88,10 @@ const jump = computed(() => {
 <template>
   <div class="flex flex-col gap-0.5">
     <span class="text-[13px] font-bold text-pretty text-ink-2">{{ copy.kicker }}</span>
-    <h1 class="m-0 font-display text-[34px] leading-none font-normal md:text-[44px]">
+    <h1
+      class="m-0 font-display text-[34px] leading-none font-normal md:text-[44px]"
+      :class="state.kind === 'finished' && 'break-words text-balance'"
+    >
       {{ copy.title }}
     </h1>
     <a

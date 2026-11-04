@@ -97,7 +97,7 @@ describe('Einstellungen in the Host controls', () => {
     expect(await menuLabels(page)).toEqual(['Session starten', 'Einstellungen', 'Einladen'])
   })
 
-  it('is listed in Mehr while the Event is running, and gone when it is finished', async () => {
+  it('is listed in Mehr while the Event is running, and gone when it is finished (only Einladen stays, #277)', async () => {
     const running = serve(s => viewWithSessions(s, [{ number: null, startsAt: '2090-10-24T18:00:00.000Z', startedAt: '2090-10-24T18:30:00.000Z' }], 0, {
       event: { isHost: true, phase: 'running' },
       settings: defaultSettings(),
@@ -110,7 +110,8 @@ describe('Einstellungen in the Host controls', () => {
 
     const finished = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'finished' }, settings: defaultSettings() }))
     const finishedPage = await mountSuspended(EventPage, { route: `/e/${finished.slug}` })
-    expect(finishedPage.find('[role="toolbar"]').exists()).toBe(false)
+    expect(toolbarLabels(finishedPage)).toEqual(['Einladen', 'Mehr'])
+    expect(await menuLabels(finishedPage)).toEqual(['Einladen'])
   })
 
   it('is called „Event einrichten“ while the Event has no settings', async () => {

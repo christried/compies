@@ -90,7 +90,7 @@ describe('several Sessions on the Event page', () => {
     await new Promise(resolve => setTimeout(resolve, 1100))
 
     await vi.waitFor(() => expect(removed).toBe(1))
-    await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Konnte nicht speichern. Nochmal versuchen?'))
+    await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Das geht nicht mehr. Die Seite zeigt den neuen Stand.'))
     // The refused hold goes back to idle by itself: no hold button on the page is remounted (#74).
     const after = holds()
     expect(after).toHaveLength(4)
