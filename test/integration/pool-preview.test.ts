@@ -371,6 +371,26 @@ describe('Pool preview secrecy (#225)', () => {
       expect(new Set(notifier.messages(eventId).map(message => message.type))).toEqual(new Set(['event.changed', 'activity.added']))
     })
 
+    it('names only the set game in a Correction a Player reads, and the room carries no other pool game (#275)', async () => {
+      const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
+      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+      const put = (places: unknown) => request(`/api/e/${slug}/rounds/${roundId}/result`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
+        body: JSON.stringify({ places }),
+      })
+      expect((await put([{ team: 1, place: 1 }, { team: 2, place: 2 }])).status).toBe(200)
+      expect((await put([{ team: 1, place: 2 }, { team: 2, place: 1 }])).status).toBe(200)
+
+      const got = await whatThePlayerGets(slug, eventId)
+      const view = JSON.parse(got.event) as EventView
+      expect(view.results).toMatchObject([{ number: 1, corrected: true, game: { id: alpha.id, name: 'Alpha Arena' } }])
+      expect((JSON.parse(got.feed) as { entries: { type: string }[] }).entries.map(entry => entry.type)).toContain('result_corrected')
+      expect(got.feed).toContain('Alpha Arena')
+      expectNone(got, [alpha], game => [game.notes])
+      expectNone(got, [beta, gamma, library])
+    })
+
     it('reveals nothing more when the Round is put back', async () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
       const roundId = await hostSets(request, slug, hostCookie, alpha.id)
