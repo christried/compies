@@ -1,11 +1,11 @@
-import { CalendarCheck, CalendarClock, Coins, Dices, Flag, Gamepad2, Link as LinkIcon, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, Coins, Dices, Flag, Gamepad2, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { coinBlockedKey, dockLayout, hostDockState, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 
 // The Host's dock actions (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers (Event
-// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, or none after the last Session) and
+// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, or none after the last Session) and
 // dockLayout which actions sit where (named parts: primary, secondary, more; review 1.4 A4). Each action is one entry below.
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
 // a secondary hold. „Termin für Session m“ stays while another Session still polls, and „Termine bearbeiten“ while the Date poll is open.
@@ -23,6 +23,8 @@ export interface HostActionHandlers {
   start: () => void
   /** Ends the Running Session; the dock's hold calls it after the hold and learns whether the server took it. */
   end: () => Promise<boolean>
+  /** Finishes the Event (#277); the dock's hold calls it after the hold and learns whether the server took it. */
+  finish: () => Promise<boolean>
   /** Opens the picker for the next game (#228). */
   setGame: () => void
   /** Spins the Lucky Wheel (#229). */
@@ -94,6 +96,15 @@ export function useHostActions(
         group: t('dock.group.event'),
         hold: true,
         run: handlers.end,
+      },
+      // The medal of the feed's `event_finished` (#277); a hold like „Session beenden“, since it cannot be undone.
+      finish: {
+        key: 'finish',
+        label: t('dock.finish'),
+        icon: Medal,
+        group: t('dock.group.event'),
+        hold: true,
+        run: handlers.finish,
       },
       setGame: {
         key: 'setGame',

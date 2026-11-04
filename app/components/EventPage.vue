@@ -7,6 +7,7 @@ import { dateBlockedKey, eventPageState, headerPill, seatNote, teamsStay } from 
 import { hasStarted } from '~~/shared/session-state'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
+import { leadersOf, outcomeOf } from '~~/shared/results'
 import { settingsEditable } from '~~/shared/settings'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
@@ -88,6 +89,8 @@ const hostActions = useHostActions(
     setDate: () => dialogs.value?.openConfirm(),
     start: () => dialogs.value?.openStart(),
     end: actions.endSession,
+    // The outcome the Host sees now is the one the server compares with the Standings (#277); #278 changes nothing here.
+    finish: () => actions.finish(outcomeOf(data.value!.end!)),
     setGame: () => dialogs.value?.openSetGame(),
     spin: () => void actions.spin(),
     countdown: () => dialogs.value?.openCountdown(),
@@ -216,6 +219,8 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           v-if="block === 'head'"
           :state="pageState"
           :is-host="data.event.isHost"
+          :winners="leadersOf(data.standings ?? [])"
+          :teams="data.teams"
         />
 
         <ReopenNotices
@@ -278,6 +283,18 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
           :end="data.end!"
           :teams="data.teams"
         />
+
+        <!-- The history is the finished stage's, read-only for everyone: no corrections prop (#275), whether or not that has merged (#277). -->
+        <div
+          v-else-if="block === 'history'"
+          class="rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 shadow-card"
+        >
+          <GameHistory
+            :results="data.results"
+            :open="[]"
+            :teams="data.teams"
+          />
+        </div>
 
         <EventCountdown
           v-else-if="block === 'countdown'"
@@ -397,8 +414,9 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
       @shown="vetoBarShown = $event"
     />
 
+    <!-- The Host has the dock in every Phase; in a finished Event it holds Einladen only (#277). -->
     <HostDock
-      v-if="canEditSettings"
+      v-if="data?.event.isHost"
       :actions="hostActions"
       panel
     />

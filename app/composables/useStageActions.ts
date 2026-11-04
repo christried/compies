@@ -1,6 +1,6 @@
 import { useEventMutation } from '~/composables/useEventMutation'
 import type { CountdownCommand } from '~~/shared/countdown'
-import type { ResultPlace } from '~~/shared/results'
+import type { FinishOutcome, ResultPlace } from '~~/shared/results'
 
 // The stage's changes (#257, Q6 of review 0.7): the Host's Session, round and Countdown actions and the Players' Veto and clip
 // actions, each one `send` to its path. The page holds no request string; a refused change shows the shared error copy, and the
@@ -34,11 +34,14 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /** Ends the Running Session; the dock's hold calls this after the hold and learns whether the server took it. */
   const endSession = () => send('POST', 'sessions/end')
 
+  /** Finishes the Event with the outcome the Host saw (#277); the dock's hold calls this after the hold and learns whether the server took it. */
+  const finish = (outcome: FinishOutcome) => send('POST', 'finish', { body: { outcome } })
+
   /** Withdraws one Session's Date and frees its Slot (#55). */
   const reopenSession = (sessionId: string) => send('POST', `sessions/${sessionId}/reopen`)
 
   /** Removes a Session, whose Slot goes back to the poll (#55). */
   const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
-  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, countdown, endSession, reopenSession, removeSession }
+  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, countdown, endSession, finish, reopenSession, removeSession }
 }

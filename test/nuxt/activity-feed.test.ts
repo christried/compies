@@ -202,6 +202,24 @@ describe('ActivityFeed', () => {
     expect(wrapper.text()).not.toContain('konnte nicht geladen')
   })
 
+  describe('the end of the Event (#277)', () => {
+    const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
+    const sessions: FeedSession[] = [{ id: 's1', number: 2, startedAt: at(50), endedAt: at(20) }]
+    const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]
+
+    it('says who won, in bold, under „Nach Session n“ with the medal', async () => {
+      const finished = entry('f', 10, { type: 'event_finished', params: { winners: [2] } })
+      const feed = serveFeed([finished])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, sessions, nextNumber: null, teams } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(wrapper.findAll('[role="log"] h3').map(heading => heading.text())).toEqual(['Nach Session 2'])
+      expect(lines(wrapper)[0]).toContain('Event beendet: Wilde Gurken gewinnt')
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Wilde Gurken'])
+      expect(wrapper.get('[role="log"] li svg').classes()).toContain('lucide-medal')
+    })
+  })
+
   describe('a Result (#273)', () => {
     const result = entry('r', 1, { type: 'result_entered', params: { roundId: 'r1', number: 3, gameId: 'g1', first: [2] }, games: { g1: 'Mario Kart' } })
     const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]

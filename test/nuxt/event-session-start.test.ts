@@ -1,5 +1,6 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
+import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { defaultSettings } from '~~/shared/settings'
@@ -291,5 +292,93 @@ describe('ending a Session', () => {
     vi.advanceTimersByTime(100)
     vi.useRealTimers()
     await vi.waitFor(() => expect(ended).toBe(1))
+  })
+})
+
+// Finishing the Event (#277): once the Rounds with a Result reach the Game count and first place is not shared, „Event abschließen“ is the
+// dock's primary, a hold like „Session beenden“; a Tie keeps what the dock had before (#278 gives it its own).
+describe('finishing the Event', () => {
+  const complete = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null } }
+  const RUNNING_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED }]
+  const ENDED_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }]
+  const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
+
+  beforeEach(() => {
+    signInAs(kitty)
+    useState('toasts').value = []
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** Holds the button for the full second and lets the request go out. */
+  async function hold(button: { trigger: (event: string) => Promise<unknown> }) {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    await button.trigger('pointerdown')
+    vi.advanceTimersByTime(1000)
+    vi.useRealTimers()
+    await flushPromises()
+  }
+
+  it('makes Event abschließen the primary with Session beenden next to it while a Session runs, and Einladen', async () => {
+    const { slug } = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: complete }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(pill(page)).toEqual(['Event abschließen 1 s halten', 'Session beenden 1 s halten', 'Einladen', 'Mehr'])
+  })
+
+  it('makes it the primary after the last Session ended, where the dock had none', async () => {
+    const { slug } = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: complete }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    expect(pill(page)[0]).toBe('Event abschließen 1 s halten')
+  })
+
+  it('keeps the old primary while Results are missing, and in a Tie', async () => {
+    const missing = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: { ...complete, played: 2, complete: false, finish: { rejection: 'results_missing' } } }))
+    expect(pill(await mountSuspended(EventPage, { route: `/e/${missing.slug}` }))).not.toContain('Event abschließen')
+
+    const tie = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: { ...complete, tie: [1, 2] } }))
+    expect(pill(await mountSuspended(EventPage, { route: `/e/${tie.slug}` }))).not.toContain('Event abschließen')
+  })
+
+  it('posts the outcome „winner“ after the hold and reads the Event again: the page then reads finished', async () => {
+    const posted: unknown[] = []
+    const store = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: complete }))
+    registerEndpoint(`/api/e/${store.slug}/finish`, { method: 'POST', handler: async (event) => {
+      posted.push(await readBody(event))
+      store.set(hostView(store.slug, ENDED_ONE, { event: { isHost: true, phase: 'finished' }, end: complete }))
+      return { phase: 'finished' }
+    } })
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+    const button = page.findAll('[role="toolbar"] button').find(item => item.text().startsWith('Event abschließen'))!
+
+    await button.trigger('click')
+    expect(posted).toEqual([])
+
+    await hold(button)
+
+    await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'winner' }]))
+    await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
+    expect(pill(page)).toEqual(['Einladen', 'Mehr'])
+  })
+
+  it('shows the toast of a refusal and reads the Event again: the Tie that came in meanwhile takes the primary away', async () => {
+    const store = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: complete }))
+    registerEndpoint(`/api/e/${store.slug}/finish`, { method: 'POST', handler: () => {
+      store.set(hostView(store.slug, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: { ...complete, tie: [1, 2] } }))
+      throw createError({ statusCode: 409, statusMessage: 'standings_changed' })
+    } })
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+    const button = page.findAll('[role="toolbar"] button').find(item => item.text().startsWith('Event abschließen'))!
+
+    await hold(button)
+
+    await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toEqual(['Die Tabelle hat sich geändert. Schau sie dir nochmal an.']))
+    await vi.waitFor(() => expect(pill(page)).not.toContain('Event abschließen 1 s halten'))
   })
 })

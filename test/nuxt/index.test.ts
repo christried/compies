@@ -185,6 +185,15 @@ describe('home page', () => {
     expect(page.text()).toContain('Du hast noch nicht abgestimmt')
   })
 
+  it('reads „Beendet“ on the card of a finished Event (#277)', async () => {
+    homeEvents = [card({ slug: 'a-aaaa', name: 'Fertig gezockt', phase: 'finished', sessionCount: 1, missingDates: 0, action: 'view', progress: { voted: 0, total: 0 } })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.text()).toContain('Fertig gezockt')
+    expect(page.text()).toContain('Beendet')
+  })
+
   it('shows the next Session with its number once every Date is set', async () => {
     homeEvents = [
       card({
