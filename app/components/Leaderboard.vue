@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowDown, ArrowUp, Minus } from '@lucide/vue'
 import { teamName } from '~/utils/board'
-import { deltaPop, highlightRow, winnerStamp } from '~/utils/motion'
+import { deltaPop, highlightRow, unwatched, winnerStamp } from '~/utils/motion'
 import { pointsDelta, rankMoves, type StandingsNews } from '~/utils/standings-news'
 import type { BoardTeam } from '~~/shared/event'
 import type { EndView, StandingView } from '~~/shared/stage'
@@ -45,11 +45,6 @@ const CONFETTI_INSET = 60
 const STAGGER_MS = 40
 /** `lb-swap`: spring, the slower duration, each row after the one before it; the reduced twins do nothing. */
 const MOVE_CLASS = 'transition-transform dur-slower ease-spring motion-reduce:transition-none reduced:transition-none [transition-delay:var(--lb-delay,0ms)]'
-/**
- * A tab nobody is looking at stays calm (#276): a Result read while the page is hidden moves the rows at once, so the glide does not start
- * when the Member returns (the browser holds a hidden page's transitions at their start). Evaluated with each render, which is when Vue plans the move.
- */
-const unwatched = () => import.meta.client && document.visibilityState === 'hidden'
 
 /** The news this Leaderboard plays: its own copy, so a news it did not play (a stale one at mount) shows nothing. */
 const playing = shallowRef<StandingsNews | null>(null)

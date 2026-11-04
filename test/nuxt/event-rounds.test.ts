@@ -187,6 +187,75 @@ describe('the open Rounds on the stage', () => {
   })
 })
 
+// The cards that stay glide to their new cell, and the blocks below glide up, when a card leaves (#276, F4 of the s5 check). jsdom has no layout and no
+// transitions: this proves what the groups ask for, not that they glide: the browser check (scripts/browser/standings.mjs) does.
+describe('when a Round leaves the open Rounds (#276)', () => {
+  const noop = () => Promise.resolve(true)
+  const props = (rounds: RoundView[]) => ({ rounds, isHost: false, putBack: noop, teams: [], pointsTable: null, enterResult: noop, end: null })
+  const cards = (list: Awaited<ReturnType<typeof mountSuspended>>) => list.findAll('[aria-label="Offene Spiele"] > li')
+  /** The real TransitionGroup: Vue Test Utils stubs it, and the stub has no hooks. */
+  const realGroup = { global: { stubs: { TransitionGroup: false } } }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('asks the cards to glide like the page\'s blocks do: a transform, ease-out, the slow duration, and nothing under reduced motion', async () => {
+    const rounds = await mountSuspended(EventRounds, { props: props([round('r1', halo), round('r2', kart)]) })
+
+    const moveClass = String(rounds.findComponent({ name: 'TransitionGroup' }).props('moveClass')).split(' ')
+    expect(moveClass).toEqual(expect.arrayContaining(['transition-transform', 'dur-slow', 'ease-out', 'motion-reduce:transition-none', 'reduced:transition-none']))
+    expect(moveClass).not.toContain('ease-spring')
+  })
+
+  it('asks for no glide while the tab is hidden, and for one while it shows', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get')
+    visibility.mockReturnValue('hidden')
+    const hidden = await mountSuspended(EventRounds, { props: props([round('r1', halo)]) })
+    expect(String(hidden.findComponent({ name: 'TransitionGroup' }).props('moveClass') ?? '')).not.toContain('transition-transform')
+    hidden.unmount()
+
+    visibility.mockReturnValue('visible')
+    const shown = await mountSuspended(EventRounds, { props: props([round('r1', halo)]) })
+    expect(String(shown.findComponent({ name: 'TransitionGroup' }).props('moveClass'))).toContain('transition-transform')
+  })
+
+  it('pins the leaving card where it is, out of the flow, in the render that starts its fade; the card that stays is untouched', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(320)
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(96)
+    vi.spyOn(HTMLElement.prototype, 'offsetTop', 'get').mockReturnValue(108)
+    const list = await mountSuspended(EventRounds, { props: props([round('r1', halo), round('r2', kart)]), ...realGroup })
+    expect(list.get('ul').classes()).toContain('relative')
+
+    await list.setProps(props([round('r2', kart)]))
+
+    const leaver = cards(list).find((card: Wrapper) => card.text().includes('Halo'))!
+    expect(leaver.attributes('style')).toContain('position: absolute')
+    expect(leaver.attributes('style')).toContain('width: 320px')
+    expect(leaver.attributes('style')).toContain('height: 96px')
+    expect(leaver.attributes('style')).toContain('top: 108px')
+    expect(leaver.attributes('inert')).toBeDefined()
+    expect(cards(list).find((card: Wrapper) => card.text().includes('Kart'))!.attributes('style')).toBeUndefined()
+    list.unmount()
+  })
+
+  // The edges (CODING_STANDARDS § Tests): no Round, one (the last card: the section goes with it), two and four.
+  it.each([0, 1, 2, 4])('with %i open Rounds: the section is there for some, and when one goes the others stay in the flow', async (count) => {
+    const games = [halo, kart, pong, { ...halo, id: 'g-x', name: 'Xonix' }]
+    const open = games.slice(0, count).map((game, index) => round(`r${index}`, game))
+    const list = await mountSuspended(EventRounds, { props: props(open), ...realGroup })
+
+    expect(cards(list)).toHaveLength(count)
+    expect(list.find('section').exists()).toBe(count > 0)
+
+    await list.setProps(props(open.slice(1)))
+
+    expect(list.find('section').exists()).toBe(count > 1)
+    if (count > 1) expect(cards(list).filter((card: Wrapper) => card.attributes('inert') === undefined)).toHaveLength(count - 1)
+    list.unmount()
+  })
+})
+
 describe('entering a Result (#273)', () => {
   const pair: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
   const enterButtons = (stage: Awaited<ReturnType<typeof mount>>) => stage.get('[aria-label="Offene Spiele"]').findAll('button').filter((button: Wrapper) => button.text() === 'Ergebnis eintragen')
