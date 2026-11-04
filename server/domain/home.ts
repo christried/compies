@@ -24,6 +24,29 @@ export function staysOnHome(sessions: readonly HomeSessionTimes[], now: Date): b
   return sessions.some(session => session.endedAt === null || session.endedAt.getTime() >= now.getTime() - HOME_END_GRACE_MS)
 }
 
+/** What Home needs of an Event to decide whether it stays: its Phase, its finish, whether a Round has a Result, and its Sessions. */
+interface HomeStay {
+  phase: Phase
+  /** `events.finished_at` (#277): null until the Host finishes the Event. */
+  finishedAt: Date | null
+  /** A Round of the Event has a Result (`rounds.result_at`, #273). */
+  hasResult: boolean
+  sessions: readonly HomeSessionTimes[]
+}
+
+/**
+ * Whether Home lists an Event (#282, after #199 and #277). A finished Event stays 24 h from `finishedAt`, whatever its Sessions
+ * say (rule 1). A running Event with a Result stays until the Host finishes it, however long ago its last Session ended (rule 2):
+ * an Event played before 0.8 is running and can never be finished, and it has no Result, so it keeps the Session rule and does
+ * not come back for good. Everything else follows `staysOnHome` (rule 3). A finished Event without `finishedAt` can only come
+ * from a hand edit; it takes rule 3 too.
+ */
+export function eventStaysOnHome(event: HomeStay, now: Date): boolean {
+  if (event.finishedAt) return event.finishedAt.getTime() >= now.getTime() - HOME_END_GRACE_MS
+  if (event.phase === 'running' && event.hasResult) return true
+  return staysOnHome(event.sessions, now)
+}
+
 /**
  * The Session Home shows (#54): the next upcoming one by Date, else the latest passed one. Null while no
  * Session has a Date.
@@ -56,6 +79,10 @@ export function homeAction(input: { isHost: boolean, needsVote: boolean }): Home
 export interface HomeOrderable {
   phase: Phase
   needsVote: boolean
+  /** When the Host finished the Event (eventStaysOnHome, #282); null until then. */
+  finishedAt: Date | null
+  /** Whether a Round of the Event has a Result (eventStaysOnHome, #282). */
+  hasResult: boolean
   /** Each Session's Date and end time (staysOnHome). */
   sessions: HomeSessionTimes[]
   /** The Date of the Session Home shows (homeSession), null while no Session has a Date. */
@@ -74,14 +101,14 @@ function orderGroup(item: HomeOrderable, now: Date): number {
 }
 
 /**
- * The order and the set of Events on Home (#12, #54): drops Events that `staysOnHome` rejects, then
+ * The order and the set of Events on Home (#12, #54): drops Events that `eventStaysOnHome` rejects (#282), then
  * sorts by group. Open polls go newest first. Upcoming Dates go soonest first, by the next upcoming
  * Session; a Date that passed within the last 24 h comes after them, the most recent one first.
  */
 export function arrangeHome<T extends HomeOrderable>(items: T[], now: Date): T[] {
   const time = (item: T) => item.homeDate?.getTime() ?? 0
   return items
-    .filter(item => staysOnHome(item.sessions, now))
+    .filter(item => eventStaysOnHome(item, now))
     .sort((a, b) => {
       const groupA = orderGroup(a, now)
       const byGroup = groupA - orderGroup(b, now)
