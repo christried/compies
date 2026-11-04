@@ -81,14 +81,36 @@ describe('the history', () => {
     expect(winners().get('[title]').text()).toBe('Wilde Gurken und Die Füchse')
   })
 
-  it('names every Party when all of them are level, and keeps the full text in the title', async () => {
+  it('names the first winner and „+7“ when 8 Parties are level, with at most 3 marks, the whole list in the title and for a screen reader', async () => {
     const eight = named(['Alpha Eins', 'Beta Zwei', 'Gamma Drei', 'Delta Vier', 'Epsilon Fünf', 'Zeta Sechs', 'Eta Sieben', 'Theta Acht'])
     await mount({ teams: eight, results: [result(1, 'Halo', eight.map(team => line(team.position, 1, 2)))] })
 
     const names = winners().get('[title]')
+    expect(names.text()).toBe('Alpha Eins +7')
     expect(names.attributes('title')).toBe('Alpha Eins, Beta Zwei, Gamma Drei, Delta Vier, Epsilon Fünf, Zeta Sechs, Eta Sieben und Theta Acht')
-    expect(names.text()).toBe(names.attributes('title'))
     expect(names.classes()).toContain('line-clamp-2')
+    expect(winners().find('.flex-none.-space-x-1\\.5').element.children).toHaveLength(3)
+    expect(winners().text()).toContain('Theta Acht')
+  })
+
+  it('names three winners by the first and „+2“, and two by both', async () => {
+    await mount({ results: [result(1, 'Halo', [line(1, 1, 2), line(2, 1, 2), line(3, 1, 2)]), result(2, 'Kart', [line(1, 1, 2), line(2, 1, 2), line(3, 3, 0)])] })
+
+    expect(winners(0).get('[title]').text()).toBe('Wilde Gurken +2')
+    expect(winners(0).find('.flex-none.-space-x-1\\.5').element.children).toHaveLength(3)
+    expect(winners(1).get('[title]').text()).toBe('Wilde Gurken und Die Füchse')
+    expect(winners(1).find('.flex-none.-space-x-1\\.5').element.children).toHaveLength(2)
+  })
+
+  it('lets the Scores give way before the names, in the row with and without the button', async () => {
+    const eight = named(['Alpha Eins', 'Beta Zwei', 'Gamma Drei', 'Delta Vier', 'Epsilon Fünf', 'Zeta Sechs', 'Eta Sieben', 'Theta Acht'])
+    await mount({ teams: eight, results: [result(1, 'Halo', eight.map(team => line(team.position, 1, 2, '1234567')))] })
+
+    const scores = numbered()[0]!.get('[data-scores]')
+    expect(scores.classes()).toContain('truncate')
+    expect(scores.classes().some(name => name.startsWith('shrink-'))).toBe(true)
+    expect(scores.attributes('title')).toBe(scores.text())
+    expect(numbered()[0]!.get('summary > span:nth-child(2)').classes()).toContain('min-w-24')
   })
 
   it('joins the Scores in Place order, with „–“ for a Party without one', async () => {
@@ -171,7 +193,6 @@ describe('the history', () => {
     expect(numbered()).toHaveLength(30)
     expect(numbered()[29]!.get('[data-number]').text()).toBe('30')
   })
-
 })
 
 describe('the Host\'s Corrections (#275)', () => {
@@ -308,7 +329,7 @@ describe('the Host\'s Corrections (#275)', () => {
     await mount({ teams: eight, results: [result(1, 'Ein sehr langer Spielname, der nicht in die Zeile passt', eight.map(team => line(team.position, 1, 2, team.position === 1 ? `123456${family}` : null)))], corrections: corrections() })
 
     expect(pencils()).toHaveLength(1)
-    expect(numbered()[0]!.get('[data-winners] .line-clamp-2').exists()).toBe(true)
+    expect(numbered()[0]!.find('[data-winners] .line-clamp-2').exists()).toBe(true)
     expect(numbered()[0]!.get('[data-scores]').classes()).toContain('truncate')
   })
 

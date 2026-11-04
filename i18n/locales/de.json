@@ -561,6 +561,7 @@
     "wonBy": "Gewonnen von",
     "correct": "Spiel {n} korrigieren",
     "corrected": "korrigiert",
+    "moreWinners": "{name} +{n}",
     "empty": "Noch kein Spiel gespielt."
   },
   "chat": {
