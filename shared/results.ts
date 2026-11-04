@@ -4,7 +4,7 @@
 
 import { characterCount } from './text'
 import type { Phase } from './event'
-import { GAME_COUNT_MAX, type PointsTable } from './settings'
+import { GAME_COUNT_MAX, type EventSettings, type PointsTable } from './settings'
 import { isOpen, type RoundFacts } from './rounds'
 import type { EndView, StandingView } from './stage'
 
@@ -156,14 +156,27 @@ export function leadersOf(standings: readonly StandingView[]): number[] {
   return standings.filter(row => row.rank === 1).map(row => row.team).sort((a, b) => a - b)
 }
 
+/** The facts of EndView that every Member reads the same (`finish` and `lastGame` are the Host's part). */
+type EndFacts = Pick<EndView, 'played' | 'gameCount' | 'complete' | 'tie'>
+
 /**
  * How far the Event is (#277, GLOSSARY: Finish, Tie): `complete` when the Rounds with a Result reach the Game count (>=), `tie` the leaders
  * when complete and more than one holds rank 1, else null. `standings` are `standingsOf`'s.
  */
-export function endOf(standings: readonly StandingView[], played: number, gameCount: number): Pick<EndView, 'played' | 'gameCount' | 'complete' | 'tie'> {
+export function endOf(standings: readonly StandingView[], played: number, gameCount: number): EndFacts {
   const complete = played >= gameCount
   const leaders = leadersOf(standings)
   return { played, gameCount, complete, tie: complete && leaders.length > 1 ? leaders : null }
+}
+
+/**
+ * The Standings and the end of the Event from the Places of the Rounds with a Result, one list per Round (review 0.8, Q2): the one place that
+ * composes them, so the read that the dock offers „Event abschließen“ from and the routes that refuse on the same Standings (the finish, the
+ * last game) cannot drift apart.
+ */
+export function standingsAndEnd(groups: readonly (readonly Pick<ResultPlace, 'team' | 'place'>[])[], settings: Pick<EventSettings, 'pointsTable' | 'teamCount' | 'gameCount'>): { standings: StandingView[], end: EndFacts } {
+  const standings = standingsOf(totalPoints(groups, settings.pointsTable, settings.teamCount))
+  return { standings, end: endOf(standings, groups.length, settings.gameCount) }
 }
 
 /** The outcome the Host asks the finish for (#277): a sole winner, or a Tie with all its Parties (#278 sends the second). */

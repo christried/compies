@@ -1,9 +1,8 @@
 import { and, eq, isNotNull } from 'drizzle-orm'
 import { events, roundPlaces, rounds } from '../db/schema'
 import type { EventFinished } from '../../shared/event'
-import { endOf, finishRejection, leadersOf, standingsOf, totalPoints, type FinishOutcome } from '../../shared/results'
+import { finishRejection, leadersOf, standingsAndEnd, type FinishOutcome } from '../../shared/results'
 import { settingsFromRow, type EventSettings } from '../../shared/settings'
-import type { StandingView } from '../../shared/stage'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
@@ -37,12 +36,10 @@ export async function readResultPlaces(db: Db, eventId: string): Promise<{ team:
 
 /**
  * The Standings and the end of the Event under the lock (#278, shared by the finish and the last game): the Places of the Rounds with a
- * Result, summed under the Event's points table, and what the count says of them (endOf). The finish and the last game both refuse on it.
+ * Result, through standingsAndEnd, the composition the Event read uses too. The finish and the last game both refuse on it.
  */
-export async function readEnd(db: Db, eventId: string, settings: Pick<EventSettings, 'pointsTable' | 'teamCount' | 'gameCount'>): Promise<{ standings: StandingView[], end: ReturnType<typeof endOf> }> {
-  const groups = await readResultPlaces(db, eventId)
-  const standings = standingsOf(totalPoints(groups, settings.pointsTable, settings.teamCount))
-  return { standings, end: endOf(standings, groups.length, settings.gameCount) }
+export async function readEnd(db: Db, eventId: string, settings: Pick<EventSettings, 'pointsTable' | 'teamCount' | 'gameCount'>): Promise<ReturnType<typeof standingsAndEnd>> {
+  return standingsAndEnd(await readResultPlaces(db, eventId), settings)
 }
 
 /**

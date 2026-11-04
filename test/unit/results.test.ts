@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SCORE_MAX, endOf, finishRejection, lastGameRejection, leadersOf, nextRoundNumber, normalizeScore, outcomeOf, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, sameResult, scoreValid, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
+import { SCORE_MAX, endOf, finishRejection, lastGameRejection, leadersOf, nextRoundNumber, normalizeScore, outcomeOf, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, sameResult, scoreValid, standingsAndEnd, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
 import { GAME_COUNT_MAX, TEAM_COUNT_MAX, TEAM_COUNT_MIN } from '../../shared/settings'
 
 // The rules of a Result (#273, spec #272, GLOSSARY: Result, Place, Shared place, Points table, Score): the shape of the Places, the
@@ -397,6 +397,23 @@ describe('endOf', () => {
     expect(endOf(standingsOf([1, 0]), 1, 1)).toMatchObject({ complete: true, tie: null })
     expect(endOf(standingsOf([0, 0]), 29, 30)).toMatchObject({ complete: false, tie: null })
     expect(endOf(standingsOf([0, 0]), 30, 30)).toMatchObject({ complete: true, tie: [1, 2] })
+  })
+})
+
+describe('standingsAndEnd', () => {
+  const settings = { pointsTable: { preset: 'linear' as const, values: [2, 1, 0] }, teamCount: 3, gameCount: 2 }
+
+  it('sums the Places of every Round into the Standings and counts the Rounds as played', () => {
+    const rounds = [[{ team: 1, place: 1 }, { team: 2, place: 2 }, { team: 3, place: 3 }], [{ team: 2, place: 1 }, { team: 1, place: 2 }, { team: 3, place: 3 }]]
+
+    expect(standingsAndEnd(rounds, settings)).toEqual({
+      standings: standingsOf([3, 3, 0]),
+      end: { played: 2, gameCount: 2, complete: true, tie: [1, 2] },
+    })
+  })
+
+  it('has every Party at 0 points and nothing played before the first Result', () => {
+    expect(standingsAndEnd([], settings)).toEqual({ standings: standingsOf([0, 0, 0]), end: { played: 0, gameCount: 2, complete: false, tie: null } })
   })
 })
 

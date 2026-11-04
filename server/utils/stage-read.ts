@@ -8,7 +8,7 @@ import { placeOf } from '../../shared/board'
 import type { EventView } from '../../shared/event'
 import type { BonusVetoView, ResultView, RoundView, VetoView, WheelView } from '../../shared/stage'
 import type { RoundGame } from '../../shared/game'
-import { endOf, finishRejection, lastGameRejection, outcomeOf, pointsForPlace, standingsOf, totalPoints } from '../../shared/results'
+import { finishRejection, lastGameRejection, outcomeOf, pointsForPlace, standingsAndEnd } from '../../shared/results'
 import { eventHasWheel, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
@@ -98,8 +98,7 @@ export async function resultsSection({ eventRow, rows, viewer, now }: StageConte
       resultAt: round.resultAt!.toISOString(),
     })
   }
-  const standings = standingsOf(totalPoints(rows.results.map(entry => entry.places), settings.pointsTable, settings.teamCount))
-  const end = endOf(standings, rows.results.length, settings.gameCount)
+  const { standings, end } = standingsAndEnd(rows.results.map(entry => entry.places), settings)
   // The Host's part (#277): why the finish is refused now, for the outcome the Standings call for. Nobody else gets one, so null never means „you may“.
   const finish = viewer.isHost ? { rejection: finishRejection({ isHost: true, phase: eventRow.phase, end, outcome: outcomeOf(end) }) } : null
   // The Host's part (#278): why the last game cannot be added now. The rule the route checks too, so the dock and the route agree.
