@@ -26,6 +26,7 @@
 - Steht eine Zahl auf eins, folgt ihr jetzt die Einzahl: „1 Person da“ auf dem Board, „1 Spiel durchsuchen“ in der Bibliothek und „schon 1 Veto eingesetzt“ in den Einstellungen. ([#268](https://github.com/christried/compies/issues/268))
 - Als Host siehst du in den Einstellungen die Sperre von „Rad verdecken“ und den Vetos nicht mehr, wenn das Spiel schon feststeht. ([#261](https://github.com/christried/compies/issues/261))
 - Überspringt der Host den Clip, blenden ihn alle anderen jetzt aus, statt dass er plötzlich verschwindet. ([#261](https://github.com/christried/compies/issues/261))
+- Ein sehr langer Spielname im Spielepool macht die Event-Seite am Handy nicht mehr breiter als den Bildschirm. ([#279](https://github.com/christried/compies/issues/279))
 
 ### Entfernt
 
