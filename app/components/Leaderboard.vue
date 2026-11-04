@@ -234,7 +234,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
                 v-if="celebrate && playing?.winners.includes(standing.team)"
                 data-stamp
                 aria-hidden="true"
-                class="absolute -top-3.5 -right-2.5 rounded-[10px] border-[3px] border-[#151515] bg-primary px-2.5 py-0.5 font-display text-[16px] leading-[1.2] whitespace-nowrap text-[#151515] shadow-sm"
+                class="absolute -top-6 -right-2.5 rounded-[10px] border-[3px] border-[#151515] bg-primary px-2.5 py-0.5 font-display text-[16px] leading-[1.2] whitespace-nowrap text-[#151515] shadow-sm"
                 style="transform: rotate(8deg)"
               >{{ t(playing.kind === 'entered' ? 'table.winStamp' : 'table.wonStamp', { n: playing.number }) }}</span>
             </Transition>

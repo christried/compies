@@ -442,8 +442,10 @@ describe('a Tie at the end', () => {
     expect(pill(page)).toEqual(['Unentschieden beenden 1 s halten', 'Letztes Spiel hinzufügen', 'Session beenden 1 s halten', 'Mehr'])
     const items = [...(await openHostMenu(page)).querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())
     expect(items).toContain('Einladen')
+    expect(items).toContain('Einstellungen')
     expect(items).not.toContain('Unentschieden beenden')
     expect(items).not.toContain('Session beenden')
+    expect(items).not.toContain('Letztes Spiel hinzufügen')
   })
 
   it('has the pill Unentschieden beenden, Letztes Spiel hinzufügen and Einladen between Sessions and after the last one', async () => {
@@ -453,6 +455,20 @@ describe('a Tie at the end', () => {
 
     expect(pill(await mountSuspended(EventPage, { route: `/e/${between.slug}` }))).toEqual(expected)
     expect(pill(await mountSuspended(EventPage, { route: `/e/${done.slug}` }))).toEqual(expected)
+  })
+
+  it('does not repeat Letztes Spiel hinzufügen in Mehr, between Sessions and after the last one, and lists Einladen and Einstellungen there (#278)', async () => {
+    const between = serve(s => hostView(s, [{ number: 1, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }, { number: 2, startsAt: SECOND }], { event: { isHost: true, phase: 'running' }, start: { sessionId: 'x', number: 2, rejection: null }, end: tied }))
+    const done = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: tied }))
+
+    for (const slug of [between.slug, done.slug]) {
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+      const items = [...(await openHostMenu(page)).querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())
+      expect(items).toContain('Einladen')
+      expect(items).toContain('Einstellungen')
+      expect(items).not.toContain('Letztes Spiel hinzufügen')
+      page.unmount()
+    }
   })
 
   it('posts the outcome „tie“ after the hold and reads the Event again: the page then reads finished, Unentschieden', async () => {

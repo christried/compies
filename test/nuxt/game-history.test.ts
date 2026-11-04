@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameHistory from '~/components/GameHistory.vue'
 import type { HistoryCorrections } from '~/utils/result-draft'
 import type { BoardTeam } from '~~/shared/event'
-import type { RoundGame } from '~~/shared/game'
+import { GAME_NAME_MAX, type RoundGame } from '~~/shared/game'
 import type { ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
 import type { ResultLineView, ResultView, RoundView } from '~~/shared/stage'
@@ -134,6 +134,66 @@ describe('the history', () => {
     await mount({ results: [standard(1, 'Halo'), standard(2, 'Kart', [null, null, null], true)] })
 
     expect(numbered().map(row => row.text().includes('korrigiert'))).toEqual([false, true])
+  })
+
+  it('keeps a corrected row with two winners and three Scores whole, the chip on the winners\' line (#275)', async () => {
+    await mount({ results: [result(1, 'Halo', [line(1, 1, 2, '20'), line(2, 1, 2, '15'), line(3, 3, 0, '10')], true)] })
+
+    expect(numbered()[0]!.get('[data-scores]').text()).toBe('20 : 15 : 10')
+    expect(numbered()[0]!.text().match(/korrigiert/g)).toHaveLength(1)
+    expect(winners().text()).toContain('korrigiert')
+    expect(winners().get('.line-clamp-2').text()).toBe('Wilde Gurken und Die Füchse')
+  })
+
+  it('carries the narrow-row classes on a corrected row, so the names keep the line below 340 px (#275)', async () => {
+    await mount({ results: [result(1, 'Halo', [line(1, 1, 2, '20'), line(2, 1, 2, '15'), line(3, 3, 0, '10')], true)], corrections: { pointsTable: { preset: 'linear', values: [2, 1, 0] }, total: 6, save: async () => true } })
+
+    const row = numbered()[0]!
+    expect(row.element.closest('li')!.classList).toContain('@container')
+    expect(row.get('summary').classes()).toEqual(expect.arrayContaining(['@max-[340px]:flex-wrap', '@max-[340px]:gap-y-0.5']))
+    expect(row.get('summary > span:nth-child(2)').classes()).toContain('@max-[340px]:relative')
+    expect(row.get('[data-game]').classes()).toContain('@max-[340px]:pr-16')
+    const chip = winners().findAll('span').find(span => span.text() === 'korrigiert')!
+    expect(chip.classes()).toEqual(expect.arrayContaining(['@max-[340px]:absolute', '@max-[340px]:top-0', '@max-[340px]:right-0']))
+    expect(row.get('[data-scores]').classes()).toEqual(expect.arrayContaining(['@max-[340px]:order-1', '@max-[340px]:basis-full', '@max-[340px]:max-w-full', '@max-[340px]:pl-9']))
+  })
+
+  it('does not reserve the chip\'s room in the name of an uncorrected row (#275)', async () => {
+    await mount({ results: [standard(1, 'Halo', ['20', '15', '10'])] })
+
+    expect(numbered()[0]!.get('[data-game]').classes().some(name => name.includes('pr-16'))).toBe(false)
+    expect(numbered()[0]!.get('[data-scores]').classes()).toContain('max-w-[38%]')
+  })
+
+  it('keeps the Scores\' width cap in the wide row, 30% with the button and 38% without (#275)', async () => {
+    await mount({ results: [standard(1, 'Halo', ['20', '15', '10'], true)], corrections: { pointsTable: { preset: 'linear', values: [2, 1, 0] }, total: 6, save: async () => true } })
+
+    expect(numbered()[0]!.get('[data-scores]').classes()).toContain('max-w-[30%]')
+  })
+
+  it('shows the chip once and no Scores for a corrected row with one winner and no Score (#275)', async () => {
+    await mount({ results: [standard(1, 'Halo', [null, null, null], true)] })
+
+    expect(numbered()[0]!.find('[data-scores]').exists()).toBe(false)
+    expect(numbered()[0]!.text().match(/korrigiert/g)).toHaveLength(1)
+    expect(winners().get('[title]').text()).toBe('Wilde Gurken')
+  })
+
+  it('shows the chip once for a corrected row with three winners named „+2“ (#275)', async () => {
+    await mount({ results: [result(1, 'Halo', [line(1, 1, 2, '20'), line(2, 1, 2, '15'), line(3, 1, 2, '10')], true)] })
+
+    expect(winners().get('[title]').text()).toBe('Wilde Gurken +2')
+    expect(numbered()[0]!.text().match(/korrigiert/g)).toHaveLength(1)
+    expect(winners().text()).toContain('korrigiert')
+  })
+
+  it('keeps the longest game name in a corrected row, cut with its title (#275)', async () => {
+    const longest = 'X'.repeat(GAME_NAME_MAX)
+    await mount({ results: [result(1, longest, [line(1, 1, 2, '20'), line(2, 1, 2, '15'), line(3, 3, 0, '10')], true)] })
+
+    expect(numbered()[0]!.get('[data-game]').classes()).toContain('truncate')
+    expect(numbered()[0]!.get('[data-game]').attributes('title')).toBe(longest)
+    expect(numbered()[0]!.get('[data-game]').text()).toBe(longest)
   })
 
   it('keeps a row closed until it is opened, then lists every Party with its Place, points and Score', async () => {
