@@ -252,7 +252,7 @@ export const rounds = pgTable('rounds', {
   setAt: timestamp('set_at', { withTimezone: true }),
   putBackAt: timestamp('put_back_at', { withTimezone: true }),
   // 0022 (#273): the Result. `number` is the Round's number („Spiel 3“), given when its Result is entered (the highest in the Event + 1,
-  // under the Event lock); `resultAt` is that moment (the request's clock, ADR 0013); `correctedAt` is for #275 and stays null here.
+  // under the Event lock); `resultAt` is that moment (the request's clock, ADR 0013); `correctedAt` is the instant of the latest Correction (#275), null until one.
   number: integer('number'),
   resultAt: timestamp('result_at', { withTimezone: true }),
   correctedAt: timestamp('corrected_at', { withTimezone: true }),
@@ -273,7 +273,7 @@ export const rounds = pgTable('rounds', {
 
 // A Round's Result (GLOSSARY: Result, Place, Score; 0022, #273): one row per Party. `team` is the Party's team position (from 1),
 // `place` its Place (from 1; a Shared place repeats), `score` the optional Score as trimmed text (null = none). Entering a Result
-// writes the rows once; #275 replaces them whole. The table is new, so the code that serves during the switch-over (ADR 0007) neither reads nor writes it.
+// writes the rows once; a Correction (#275) replaces them whole. The table is new, so the code that serves during the switch-over (ADR 0007) neither reads nor writes it.
 export const roundPlaces = pgTable('round_places', {
   roundId: uuid('round_id').notNull().references(() => rounds.id, { onDelete: 'cascade' }),
   team: integer('team').notNull(),
