@@ -14,6 +14,7 @@ import pauseCountdown from '../../server/api/e/[slug]/countdown/pause.post'
 import resetCountdown from '../../server/api/e/[slug]/countdown/reset.post'
 import startCountdown from '../../server/api/e/[slug]/countdown/start.post'
 import finishEvent from '../../server/api/e/[slug]/finish.post'
+import lastGame from '../../server/api/e/[slug]/last-game.post'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import rotateInvite from '../../server/api/e/[slug]/rotate.post'
 import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
@@ -99,6 +100,7 @@ describe('a finished Event is read-only', () => {
       'POST /api/e/:slug/countdown/pause': pauseCountdown,
       'POST /api/e/:slug/countdown/reset': resetCountdown,
       'POST /api/e/:slug/finish': finishEvent,
+      'POST /api/e/:slug/last-game': lastGame,
       'POST /api/e/:slug/rotate': rotateInvite,
     }, { roomNotifier: notifier, clock })
   })
@@ -227,6 +229,7 @@ describe('a finished Event is read-only', () => {
       { file: 'countdown/pause.post.ts', name: 'pause the Countdown', as: 'host', method: 'POST', path: `/api/e/${slug}/countdown/pause` },
       { file: 'countdown/reset.post.ts', name: 'reset the Countdown', as: 'host', method: 'POST', path: `/api/e/${slug}/countdown/reset` },
       { file: 'finish.post.ts', name: 'finish the Event again', as: 'host', method: 'POST', path: `/api/e/${slug}/finish`, body: { outcome: 'winner' } },
+      { file: 'last-game.post.ts', name: 'add a last game', as: 'host', method: 'POST', path: `/api/e/${slug}/last-game` },
     ]
   }
 

@@ -114,7 +114,7 @@ describe('hostDockState', () => {
 // The end (#277): once the Rounds with a Result reach the Game count and first place is not shared, the Host finishes the Event.
 describe('the primary when the Event can be finished (#277)', () => {
   const ENDED = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
-  const end = (fields: Partial<NonNullable<DockInput['end']>> = {}): DockInput['end'] => ({ played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, ...fields })
+  const end = (fields: Partial<NonNullable<DockInput['end']>> = {}): DockInput['end'] => ({ played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null, ...fields })
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
 
   it('is Event abschließen in a running Session, with that Session\'s number for „Session n beenden“', () => {
@@ -181,7 +181,7 @@ describe('dockLayout', () => {
   ]
   // The dock's states as the Event read gives them: the fields that make the state, its primary (with the Date poll open), whether a
   // Session runs, and whether the Date poll can still offer Dates and Slots.
-  const COMPLETE: DockInput['end'] = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null } }
+  const COMPLETE: DockInput['end'] = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null }
   const STATES: { name: string, fields: Partial<DockInput>, primary: DockKey[], running: boolean, polls: boolean, finished?: boolean }[] = [
     { name: 'setup', fields: { settings: null }, primary: ['settings'], running: false, polls: true },
     { name: 'poll', fields: { sessions: [undated('a')], start: NO_DATED }, primary: ['setDate'], running: false, polls: true },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { SCORE_MAX, endOf, finishRejection, leadersOf, nextRoundNumber, normalizeScore, outcomeOf, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, sameResult, scoreValid, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
-import { TEAM_COUNT_MAX, TEAM_COUNT_MIN } from '../../shared/settings'
+import { SCORE_MAX, endOf, finishRejection, lastGameRejection, leadersOf, nextRoundNumber, normalizeScore, outcomeOf, partyPoints, placesFromOrder, pointsForPlace, resultRejection, resultShapeValid, sameResult, scoreValid, standingsOf, totalPoints, winnersOf, type ResultPlace } from '../../shared/results'
+import { GAME_COUNT_MAX, TEAM_COUNT_MAX, TEAM_COUNT_MIN } from '../../shared/settings'
 
 // The rules of a Result (#273, spec #272, GLOSSARY: Result, Place, Shared place, Points table, Score): the shape of the Places, the
 // Score's cap, the points a Place earns, the order the result sheet makes, the next Round number and the reason a Result cannot be
@@ -444,5 +444,44 @@ describe('finishRejection', () => {
 
   it('allows the tie for a Tie the Host saw', () => {
     expect(finishRejection({ isHost: true, phase: 'running', end: tied, outcome: 'tie' })).toBeNull()
+  })
+})
+
+describe('lastGameRejection', () => {
+  const level = { complete: true, tie: [1, 2] }
+  const sole = { complete: true, tie: null }
+  const incomplete = { complete: false, tie: null }
+  const everyone = Array.from({ length: 8 }, (_, index) => index + 1)
+
+  it('refuses a Player first, before every other rule', () => {
+    expect(lastGameRejection({ isHost: false, phase: 'running', end: incomplete, gameCount: GAME_COUNT_MAX })).toBe('not_host')
+  })
+
+  it('refuses the Host in every Phase but running with wrong_phase, even when incomplete or with a Tie', () => {
+    for (const phase of ['draft', 'poll', 'date_set', 'finished', 'archived'] as const) {
+      expect(lastGameRejection({ isHost: true, phase, end: incomplete, gameCount: 2 })).toBe('wrong_phase')
+      expect(lastGameRejection({ isHost: true, phase, end: level, gameCount: 2 })).toBe('wrong_phase')
+    }
+  })
+
+  it('refuses a running Event whose Rounds with a Result do not reach the Game count with results_missing, even with a Tie', () => {
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: incomplete, gameCount: 2 })).toBe('results_missing')
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: { complete: false, tie: [1, 2] }, gameCount: 2 })).toBe('results_missing')
+  })
+
+  it('refuses a complete Event without a Tie with no_tie, also at the maximum', () => {
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: sole, gameCount: 2 })).toBe('no_tie')
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: sole, gameCount: GAME_COUNT_MAX })).toBe('no_tie')
+  })
+
+  it('refuses a Tie at the Game count maximum with game_count_range, and allows one below it', () => {
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: level, gameCount: GAME_COUNT_MAX })).toBe('game_count_range')
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: level, gameCount: GAME_COUNT_MAX - 1 })).toBeNull()
+  })
+
+  it('allows the last game for a Tie at Game counts 1 and 2, and for a Tie of all eight Parties at count 4', () => {
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: level, gameCount: 1 })).toBeNull()
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: level, gameCount: 2 })).toBeNull()
+    expect(lastGameRejection({ isHost: true, phase: 'running', end: { complete: true, tie: everyone }, gameCount: 4 })).toBeNull()
   })
 })

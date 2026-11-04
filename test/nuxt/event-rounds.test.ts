@@ -237,7 +237,7 @@ describe('entering a Result (#273)', () => {
     const kicker = () => [...dialog()!.querySelectorAll('p')].find(line => /^Spiel \d+ von \d+$/.test(line.textContent?.trim() ?? ''))?.textContent?.trim()
 
     it('is „Spiel {played + 1} von {gameCount}“: the Round being scored gets the next number', async () => {
-      const { slug } = serveRunning({ host: true, teams: pair, rounds: [round('r1', halo)], end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null } })
+      const { slug } = serveRunning({ host: true, teams: pair, rounds: [round('r1', halo)], end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
       const stage = await mount(slug)
 
       await enterButtons(stage)[0]!.trigger('click')
@@ -247,14 +247,14 @@ describe('entering a Result (#273)', () => {
     })
 
     it('moves up when another Result arrives while the sheet is open, and keeps the draft', async () => {
-      const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: true, putBack: () => Promise.resolve(true), teams: pair, pointsTable: defaultSettings().pointsTable, enterResult: () => Promise.resolve(true), end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null } } })
+      const rounds = await mountSuspended(EventRounds, { props: { rounds: [round('r1', halo)], isHost: true, putBack: () => Promise.resolve(true), teams: pair, pointsTable: defaultSettings().pointsTable, enterResult: () => Promise.resolve(true), end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } } })
       await [...rounds.findAll('button')].find((button: Wrapper) => button.text() === 'Ergebnis eintragen')!.trigger('click')
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
       expect(kicker()).toBe('Spiel 1 von 6')
       dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Nach unten: Wilde Gurken"]')!.click()
       await flushPromises()
 
-      await rounds.setProps({ end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null } })
+      await rounds.setProps({ end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
 
       expect(kicker()).toBe('Spiel 2 von 6')
       expect([...dialog()!.querySelectorAll('[data-name]')].map(name => name.textContent)).toEqual(['Team Orange', 'Wilde Gurken'])

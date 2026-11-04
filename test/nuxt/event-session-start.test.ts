@@ -298,7 +298,7 @@ describe('ending a Session', () => {
 // Finishing the Event (#277): once the Rounds with a Result reach the Game count and first place is not shared, „Event abschließen“ is the
 // dock's primary, a hold like „Session beenden“; a Tie keeps what the dock had before (#278 gives it its own).
 describe('finishing the Event', () => {
-  const complete = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null } }
+  const complete = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null }
   const RUNNING_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED }]
   const ENDED_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }]
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }

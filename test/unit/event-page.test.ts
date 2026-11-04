@@ -221,7 +221,7 @@ describe('the blocks of the stage', () => {
   })
 
   // The Standings (#274): a stage block once the first Result exists, right after the open Rounds, in every state a Result can exist in.
-  const STANDINGS: Partial<PageInput> = { end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null } }
+  const STANDINGS: Partial<PageInput> = { end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } }
 
   it('lists the Standings right after the open Rounds once a Result exists, while a Session runs (#274)', () => {
     expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'board', 'poll', 'cards'])
@@ -235,7 +235,7 @@ describe('the blocks of the stage', () => {
   })
 
   it('lists no Standings before the first Result, whether the view has an end with nothing played or none (#274)', () => {
-    expect(blocks(ONE_RUNNING, { ...RUNNING, end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null } })).not.toContain('standings')
+    expect(blocks(ONE_RUNNING, { ...RUNNING, end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })).not.toContain('standings')
     expect(blocks(ONE_RUNNING, { ...RUNNING, end: null })).not.toContain('standings')
   })
 
@@ -247,7 +247,7 @@ describe('the blocks of the stage', () => {
 
   // The finished Event (#277): the Standings and the history are the stage; no board, no open Rounds, no poll.
   const FINISHED: Partial<PageInput> = { event: { phase: 'finished' } }
-  const FINISHED_END: Partial<PageInput> = { ...FINISHED, end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null } }
+  const FINISHED_END: Partial<PageInput> = { ...FINISHED, end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null } }
 
   it('is finished for the finished Phase, with a Session still in the list or no end at all (#277)', () => {
     expect(eventPageState(input([dated('a', 1, SAT, ENDED)], FINISHED))).toMatchObject({ kind: 'finished', running: null })

@@ -2,7 +2,8 @@ import { and, eq, isNotNull } from 'drizzle-orm'
 import { events, roundPlaces, rounds } from '../db/schema'
 import type { EventFinished } from '../../shared/event'
 import { endOf, finishRejection, leadersOf, standingsOf, totalPoints, type FinishOutcome } from '../../shared/results'
-import { settingsFromRow } from '../../shared/settings'
+import { settingsFromRow, type EventSettings } from '../../shared/settings'
+import type { StandingView } from '../../shared/stage'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
@@ -35,6 +36,16 @@ export async function readResultPlaces(db: Db, eventId: string): Promise<{ team:
 }
 
 /**
+ * The Standings and the end of the Event under the lock (#278, shared by the finish and the last game): the Places of the Rounds with a
+ * Result, summed under the Event's points table, and what the count says of them (endOf). The finish and the last game both refuse on it.
+ */
+export async function readEnd(db: Db, eventId: string, settings: Pick<EventSettings, 'pointsTable' | 'teamCount' | 'gameCount'>): Promise<{ standings: StandingView[], end: ReturnType<typeof endOf> }> {
+  const groups = await readResultPlaces(db, eventId)
+  const standings = standingsOf(totalPoints(groups, settings.pointsTable, settings.teamCount))
+  return { standings, end: endOf(standings, groups.length, settings.gameCount) }
+}
+
+/**
  * Finishes the Event with the outcome the Host saw (#277), or refuses with the reason of finishRejection. Nothing is written before the
  * rule passes. The Phase is set before the Sessions close, and closeSessions does not write it (changeSessions would overwrite it).
  */
@@ -42,9 +53,7 @@ export async function finishEvent({ tx, eventRow, user, publish, now }: Change, 
   const settings = settingsFromRow(eventRow)
   // An Event that is not set up cannot be running, so the rule's order gives it wrong_phase.
   if (settings === null) throw apiError('wrong_phase')
-  const groups = await readResultPlaces(tx, eventRow.id)
-  const standings = standingsOf(totalPoints(groups, settings.pointsTable, settings.teamCount))
-  const end = endOf(standings, groups.length, settings.gameCount)
+  const { standings, end } = await readEnd(tx, eventRow.id, settings)
   const rejection = finishRejection({ isHost: eventRow.hostId === user.id, phase: eventRow.phase, end, outcome })
   if (rejection) throw apiError(rejection)
 
