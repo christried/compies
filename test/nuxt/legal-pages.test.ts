@@ -47,15 +47,33 @@ describe('legal pages', () => {
     expect(text.split(shown)).toHaveLength(3)
     expect(text).toContain('außerdem Mitglieder eines Events, sobald das Spiel dort gezogen oder gesetzt ist')
     expect(text).toContain('Vorschaubilder sehen Mitglieder eines Events von jedem Spiel, sobald es gezogen oder gesetzt ist')
+    expect(text).toContain('und vorher, wenn der Spielepool des Events das Spiel enthält, solange der Host ihnen die Pools vorher zeigt')
+    expect(text).toContain('von den Spielen im Spielepool, solange der Host ihnen die Pools vorher zeigt')
     expect(text).not.toContain('solange das Rad nicht verdeckt ist')
   })
 
-  it('say in the events section that only Hosts, the Host of the Event whose pool holds the game, and admins read a game\'s notes (#224)', async () => {
+  it('say in the events section that only Hosts, the Host of the Event whose pool holds the game, and admins read a game\'s notes (#224, #280)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
 
     const text = page.get('main').text()
-    expect(text).toContain('Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält.')
+    expect(text).toContain('Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält.')
     expect(text).not.toContain('das Spiel enthält, solange sie die Spiele dieses Pools sehen')
+  })
+
+  it('name the Rounds, Vetoes, coin tosses and Results, who sees them and how long they stay (#280, spec #272)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const sections = page.findAll('section')
+    const events = sections.find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
+    const retention = sections.find(s => s.get('h2').text() === '16. Speicherdauer')
+
+    expect(events).toBeDefined()
+    expect(retention).toBeDefined()
+    expect(events!.text()).toContain('Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat.')
+    expect(events!.text()).toContain('Zum Event selbst speichern wir, wann der Host es abgeschlossen hat.')
+    expect(events!.text()).toContain('und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, wer ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.')
+    expect(events!.text()).toContain('das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer ein Veto eingelegt hat, sieht bis zum Aufdecken nur das eigene Team.')
+    expect(retention!.text()).toContain('Plätze, Teamwörter, eingefrorene Teamnamen, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht.')
+    expect(page.get('main').text()).not.toContain('Tiebreaker')
   })
 
   it('name the live connection to Cloudflare Workers, since the browser connects there itself (#156)', async () => {
