@@ -16,7 +16,7 @@ const three = named(['Wilde Gurken', 'Die Füchse', null])
 const end = (played: number, gameCount = 6): EndView => ({ played, gameCount, complete: played >= gameCount, tie: null, finish: null, lastGame: null })
 const standing = (team: number, rank: number, points: number): StandingView => ({ team, rank, points })
 
-type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean, celebrate?: boolean, news?: StandingsNews | null }
+type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean, celebrate?: boolean, news?: StandingsNews | null, labelledBy?: string }
 let page: VueWrapper | undefined
 
 async function mount(props: Props = {}) {
@@ -41,6 +41,15 @@ describe('the Standings', () => {
     const heading = page!.get('h2')
     expect(heading.text()).toBe('Tabelle')
     expect(page!.get('table').attributes('aria-labelledby')).toBe(heading.attributes('id'))
+  })
+
+  it('has no heading of its own when a heading outside it names it: `labelledBy` (#274)', async () => {
+    await mount({ labelledBy: 'standings-title', end: end(7, 10) })
+
+    expect(page!.findAll('h2')).toHaveLength(0)
+    expect(page!.get('table').attributes('aria-labelledby')).toBe('standings-title')
+    expect(page!.get('section').attributes('aria-labelledby')).toBe('standings-title')
+    expect(page!.text()).toContain('Nach Spiel 7 von 10')
   })
 
   it('is a table: a head for screen readers only, then one row per Party with its rank, Party and points', async () => {
@@ -110,7 +119,19 @@ describe('the Standings', () => {
 
     expect(page!.find('table').exists()).toBe(false)
     expect(page!.findAll('p').map(line => line.text())).toContain('Noch kein Ergebnis. Sobald der Host eins einträgt, steht hier die Tabelle.')
-    expect(page!.text()).toContain('Nach Spiel 0 von 6')
+  })
+
+  it('has no kicker before the first Result: no „Nach Spiel 0 von 6“ (#274)', async () => {
+    await mount({ end: end(0), standings: [standing(1, 1, 0), standing(2, 1, 0), standing(3, 1, 0)] })
+
+    expect(page!.text()).not.toContain('Nach Spiel')
+    expect(page!.text()).toContain('Tabelle')
+  })
+
+  it('names the game it stands after from the first Result on: „Nach Spiel 1 von 6“ (#274)', async () => {
+    await mount({ end: end(1, 6) })
+
+    expect(page!.text()).toContain('Nach Spiel 1 von 6')
   })
 
   it('has two rows for two Parties and eight for eight', async () => {

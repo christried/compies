@@ -686,7 +686,9 @@ describe('the Standings on the Event page', () => {
 
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Tabelle'])
       expect(page.findAll('nav[aria-label="Event"] button').map(item => item.attributes('aria-current'))).toEqual([undefined, 'page', undefined])
-      expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
+      // One heading „Tabelle“: the h1 that the phone view shows; the Standings below it have no h2 of their own (#274).
+      expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Spielverlauf'])
+      expect(page.findAll('main h1, main h2').filter(heading => heading.text() === 'Tabelle').map(heading => heading.element.tagName)).toEqual(['H1'])
       expect(page.text()).toContain('wird gespielt')
       expect(page.find('[role="log"]').exists()).toBe(false)
     })

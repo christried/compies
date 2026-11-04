@@ -99,7 +99,21 @@ describe('the phone\'s Tabelle view', () => {
 
     expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Tabelle'])
     expect(page.find('table').exists()).toBe(true)
-    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
+    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Spielverlauf'])
+  })
+
+  it('has exactly one heading named „Tabelle“, the h1, and the Standings table is named by it (#274)', async () => {
+    page = await mountPhone({ view })
+
+    const named = page.findAll('h1, h2').filter(heading => heading.text() === 'Tabelle')
+    expect(named.map(heading => heading.element.tagName)).toEqual(['H1'])
+    expect(page.get('table').attributes('aria-labelledby')).toBe(named[0]!.attributes('id'))
+  })
+
+  it('shows the Standings kicker after a Result, under the h1', async () => {
+    page = await mountPhone({ view })
+
+    expect(page.text()).toContain('Nach Spiel 1 von 6')
   })
 
   it('forwards `corrections` through the Standings tab: a pencil with it, none without', async () => {

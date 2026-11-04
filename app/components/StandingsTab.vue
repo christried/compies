@@ -12,6 +12,8 @@ defineProps<{
   view: Pick<EventView, 'standings' | 'end' | 'results' | 'rounds' | 'teams'>
   corrections?: HistoryCorrections | null
   news?: StandingsNews | null
+  /** The id of a heading outside the Standings that names them (#274): the phone's „Tabelle“ view; the side panel keeps the Leaderboard's own h2. */
+  labelledBy?: string
 }>()
 </script>
 
@@ -23,6 +25,7 @@ defineProps<{
       :end="view.end"
       :teams="view.teams"
       :news="news"
+      :labelled-by="labelledBy"
     />
     <GameHistory
       :results="view.results"

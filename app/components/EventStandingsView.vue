@@ -30,6 +30,7 @@ const { t } = useI18n()
       :view="view"
       :corrections="corrections"
       :news="news"
+      labelled-by="standings-title"
     />
   </section>
 </template>

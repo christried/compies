@@ -568,7 +568,7 @@
     "points": "{n} Punkt | {n} Punkte",
     "winStamp": "Sieg in Spiel {n}!",
     "wonStamp": "Spiel {n} gewonnen",
-    "takesFirst": "{team} übernimmt Platz 1"
+    "takesFirst": "{team} übernimmt Platz 1."
   },
   "history": {
     "title": "Spielverlauf",
