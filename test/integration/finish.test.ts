@@ -249,6 +249,47 @@ describe('Finishing the Event', () => {
       expect(after.find(row => row.id === dated.id)).toMatchObject({ icsSequence: dated.icsSequence, removedAt: new Date(T0) })
     })
 
+    it('finishes as Unentschieden: both Parties of the Tie win, the Session ends, one feed entry, and the read shows the Tie', async () => {
+      const game = await running({ gameCount: 2 })
+      const first = await setRound(game, game.halo.id)
+      const second = await setRound(game, game.kart.id)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)
+      const activityBefore = await activityTypes(game.eventId)
+
+      const response = await finish(game, { outcome: 'tie' })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ phase: 'finished', winners: [1, 2] })
+      expect(await eventRowOf(game.eventId)).toMatchObject({ phase: 'finished', finishedAt: new Date(T0) })
+      expect((await sessionRows(game.eventId)).find(row => row.startedAt !== null)).toMatchObject({ endedAt: new Date(T0) })
+      expect(await activityTypes(game.eventId)).toEqual([...activityBefore, 'event_finished'].sort())
+      expect((await feedOf(game))[0]).toMatchObject({ type: 'event_finished', params: { winners: [1, 2] } })
+      expect((await read(game)).end).toMatchObject({ played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: { rejection: 'wrong_phase' } })
+    })
+
+    it('finishes as Unentschieden with three Parties level: all three win and rank 1 in the Standings', async () => {
+      const game = await running({ teams: 3, gameCount: 3 })
+      const games = [game.halo.id, game.kart.id, game.schach.id]
+      const levelled = [
+        [{ team: 1, place: 1 }, { team: 2, place: 2 }, { team: 3, place: 3 }],
+        [{ team: 2, place: 1 }, { team: 3, place: 2 }, { team: 1, place: 3 }],
+        [{ team: 3, place: 1 }, { team: 1, place: 2 }, { team: 2, place: 3 }],
+      ]
+      for (const [index, places] of levelled.entries()) {
+        const roundId = await setRound(game, games[index]!)
+        expect((await enter(game, roundId, { places })).status).toBe(200)
+      }
+      expect((await read(game)).end).toMatchObject({ complete: true, tie: [1, 2, 3] })
+
+      expect(await (await finish(game, { outcome: 'tie' })).json()).toEqual({ phase: 'finished', winners: [1, 2, 3] })
+      expect((await read(game)).standings).toEqual([
+        { team: 1, rank: 1, points: 3 },
+        { team: 2, rank: 1, points: 3 },
+        { team: 3, rank: 1, points: 3 },
+      ])
+    })
+
     it('ends the Event with the one winner of three Parties and reads its Standings', async () => {
       const game = await running({ teams: 3, gameCount: 2 })
       const first = await setRound(game, game.halo.id)
@@ -323,13 +364,41 @@ describe('Finishing the Event', () => {
       expect(await activityTypes(game.eventId)).toEqual(activityBefore)
     })
 
-    it('answers invalid_value for a body without outcome, with tie, or with a number', async () => {
+    it('refuses a Tie while the count is incomplete with results_missing, and writes nothing', async () => {
+      const game = await running({ gameCount: 2 })
+      const round = await setRound(game, game.halo.id)
+      expect((await enter(game, round, { places: teamOneWins })).status).toBe(200)
+      const before = await eventRowOf(game.eventId)
+      const activityBefore = await activityTypes(game.eventId)
+
+      expect(await errorOf(await finish(game, { outcome: 'tie' }))).toEqual({ status: 409, code: 'results_missing' })
+
+      expect(await eventRowOf(game.eventId)).toEqual(before)
+      expect(await activityTypes(game.eventId)).toEqual(activityBefore)
+    })
+
+    it('refuses a Tie that the Standings do not have (one sole leader) with standings_changed, and writes nothing', async () => {
+      const game = await running({ gameCount: 2 })
+      const first = await setRound(game, game.halo.id)
+      const second = await setRound(game, game.kart.id)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      expect((await enter(game, second, { places: teamOneWins })).status).toBe(200)
+      const before = await eventRowOf(game.eventId)
+      const activityBefore = await activityTypes(game.eventId)
+
+      expect(await errorOf(await finish(game, { outcome: 'tie' }))).toEqual({ status: 409, code: 'standings_changed' })
+
+      expect(await eventRowOf(game.eventId)).toEqual(before)
+      expect(await activityTypes(game.eventId)).toEqual(activityBefore)
+    })
+
+    it('answers invalid_value for a body without outcome, with an unknown outcome, or with a number', async () => {
       const game = await running({ gameCount: 1 })
       const round = await setRound(game, game.halo.id)
       expect((await enter(game, round, { places: teamOneWins })).status).toBe(200)
 
       expect(await errorOf(await send('POST', `/api/e/${game.slug}/finish`, game.hostCookie, {}))).toEqual({ status: 400, code: 'invalid_value' })
-      expect(await errorOf(await finish(game, { outcome: 'tie' }))).toEqual({ status: 400, code: 'invalid_value' })
+      expect(await errorOf(await finish(game, { outcome: 'draw' }))).toEqual({ status: 400, code: 'invalid_value' })
       expect(await errorOf(await finish(game, { outcome: 7 }))).toEqual({ status: 400, code: 'invalid_value' })
       expect((await eventRowOf(game.eventId)).phase).toBe('running')
     })

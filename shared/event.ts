@@ -120,7 +120,7 @@ export interface MovedMember { userId: string, to: Place }
 export interface SessionStarted { sessionId: string, phase: Phase }
 /** What `POST /api/e/:slug/sessions/end` returns: the Session that ended and the Phase, which stays running (#164). */
 export interface SessionEnded { sessionId: string, phase: Phase }
-/** What `POST /api/e/:slug/finish` returns: the Phase, `finished`, and the team positions that won (one, until #278's Tie ends). */
+/** What `POST /api/e/:slug/finish` returns: the Phase, `finished`, and the team positions that won (one winner, or every Party of a Tie, #278). */
 export interface EventFinished { phase: Phase, winners: number[] }
 
 /**
