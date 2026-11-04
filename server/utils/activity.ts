@@ -20,9 +20,28 @@ type ActivityRow = typeof activity.$inferSelect
 type ActivityMoment<T extends ActivityType> = T extends InstantActivityType ? { at: Date, now?: never } : { at?: never, now: Date }
 
 /**
+ * The moment of an entry that has no instant of its own (review 0.8, S1). A Session's start and end are the request's `now` (#259) and
+ * the feed's groups compare an entry with them, so an entry stamped by the database's clock alone would land before the start it
+ * records when that clock lags the app's. `clock_timestamp()` is the moment of the insert and `now()` the start of the transaction, so
+ * their difference is the time the change has taken so far: `now` plus it grows with every insert of one change, and the database's own
+ * clock wins when it is ahead.
+ * The third term keeps the order of two changes whose `now` stands still or comes from two instances with different clocks (a test clock
+ * does; a time elapsed inside a heavy request would otherwise outrun the next, light one): an entry is later than the Event's last one,
+ * the entries that wait for their instant (INSTANT_ACTIVITY_TYPES) aside, whose `at` lies in the future.
+ */
+function stampOf(eventId: string, now: Date) {
+  const instants = sql.join(INSTANT_ACTIVITY_TYPES.map(type => sql`${type}`), sql`, `)
+  return sql`greatest(
+    clock_timestamp(),
+    ${now.toISOString()}::timestamptz + (clock_timestamp() - now()),
+    (select max(earlier.at) + interval '1 microsecond' from activity earlier where earlier.event_id = ${eventId} and earlier.type not in (${instants}))
+  )`
+}
+
+/**
  * Writes one entry in the caller's transaction and queues `activity.added` for after the commit (changeEvent's
- * `publish`), so a change that throws leaves neither the entry nor the message. `at` is the moment of the insert,
- * not of the transaction, so two entries of one change keep the order they were written in.
+ * `publish`), so a change that throws leaves neither the entry nor the message. The entry is never earlier than its request's `now`
+ * (stampOf), and two entries of one change keep the order they were written in.
  * An entry with an `at` of its own (#229: a draw's, for its stop instant) is written with it and not published: it would
  * reach everyone before the instant, so the clients refetch the feed when the instant passes (INSTANT_ACTIVITY_TYPES).
  */
@@ -34,7 +53,7 @@ export async function recordActivity<T extends ActivityType>(
 ): Promise<void> {
   const [row] = await tx
     .insert(activity)
-    .values({ eventId, type, actorId, params, at: at ?? sql`clock_timestamp()` })
+    .values({ eventId, type, actorId, params, at: at ?? stampOf(eventId, now!) })
     .returning()
   if (at) return
   // The change that wrote the entry has just set or put back its game: a settled Round names it, whatever the clock says.

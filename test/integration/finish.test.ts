@@ -331,6 +331,62 @@ describe('Finishing the Event', () => {
     })
   })
 
+  describe('the feed on the clock of the Sessions', () => {
+    // The Sessions' instants are the request's clock (#259) and the feed's groups compare an entry with them (groupActivity). The test
+    // clock runs 64 years ahead of the database's, the far end of the skew s5 measured (1.7 s): an entry stamped by the database
+    // would sit before the start of the Session it belongs to.
+    it('stamps every entry at or after its request, so the start, the set game and the finish fall into the groups they belong to', async () => {
+      const game = await running({ gameCount: 2, sessions: 2 })
+      const first = await setRound(game, game.halo.id)
+      clock.advance(60_000)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      clock.advance(3_600_000)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
+      clock.advance(3_600_000)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/start`, game.hostCookie)).status).toBe(200)
+      clock.advance(60_000)
+      const second = await setRound(game, game.kart.id)
+      clock.advance(60_000)
+      expect((await enter(game, second, { places: teamOneWins })).status).toBe(200)
+      clock.advance(60_000)
+      expect((await finish(game)).status).toBe(200)
+
+      const started = (await sessionRows(game.eventId)).filter(row => row.startedAt !== null).map(row => ({ from: row.startedAt!.getTime(), to: row.endedAt!.getTime() }))
+      expect(started).toHaveLength(2)
+      const entries = await feedOf(game)
+      const times = (type: string) => entries.filter(entry => entry.type === type).map(entry => Date.parse(entry.at))
+      expect(times('session_started')[0]).toBeGreaterThanOrEqual(started[1]!.from)
+      expect(times('game_set')[0]).toBeGreaterThanOrEqual(started[1]!.from)
+      expect(times('game_set')[0]).toBeLessThan(started[1]!.to)
+      expect(times('event_finished')[0]).toBeGreaterThanOrEqual(started[1]!.to)
+      expect(times('game_set')[1]).toBeLessThan(started[0]!.to)
+      expect(entries.map(entry => entry.type)).toEqual(['event_finished', 'result_entered', 'game_set', 'session_started', 'session_ended', 'result_entered', 'game_set'])
+    })
+
+    it('keeps the order of two entries that one change writes', async () => {
+      setAllowlist({ hosts: 'discord:1' })
+      const { cookie } = await signIn(testDb.db, host)
+      const created = await send('POST', '/api/e', cookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: SLOTS.slice(0, 1), settings: TEST_SETTINGS })
+      const { slug } = await created.json() as { slug: string }
+
+      expect((await send('PATCH', `/api/e/${slug}/settings`, cookie, { settings: { gameCount: TEST_SETTINGS.gameCount + 2, teamSize: TEST_SETTINGS.teamSize + 1 } })).status).toBe(200)
+
+      const { entries } = await (await send('GET', `/api/e/${slug}/activity`, cookie)).json() as ActivityPage
+      expect(entries.map(entry => entry.type)).toEqual(['team_size_changed', 'game_count_changed'])
+    })
+
+    it('keeps the order of two changes made on a clock that stands still', async () => {
+      const game = await running({ gameCount: 2 })
+      const first = await setRound(game, game.halo.id)
+      const second = await setRound(game, game.kart.id)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)
+
+      expect((await feedOf(game)).map(entry => entry.type)).toEqual(['result_entered', 'result_entered', 'game_set', 'game_set'])
+      expect((await feedOf(game)).map(entry => entry.params).slice(2)).toMatchObject([{ gameId: game.kart.id }, { gameId: game.halo.id }])
+    })
+  })
+
   describe('refusals, in order', () => {
     it('refuses a Player with not_host', async () => {
       const game = await running({ gameCount: 1 })
