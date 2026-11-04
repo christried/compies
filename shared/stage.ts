@@ -137,7 +137,7 @@ export interface VetoCast { drawId: string, team: number }
 export interface ClipSkipped { drawId: string }
 /** What `DELETE /api/e/:slug/rounds/:id` returns: the Round that was put back (#228). */
 export interface RoundPutBack { roundId: string }
-/** What `PUT /api/e/:slug/rounds/:id/result` returns: the Round and the number it got (#273). */
+/** What `PUT /api/e/:slug/rounds/:id/result` returns: the Round and its number (#273); a Correction answers the same (#275). */
 export interface ResultEntered { roundId: string, number: number }
 
 /** One Party's line in a Round's Result, as every Member reads it (#274): its Place, the points that Place earned by the Event's Points table, its Score (null = none). */
@@ -145,7 +145,7 @@ export interface ResultLineView { team: number, place: number, points: number, s
 
 /**
  * A Round with a Result (#274, GLOSSARY: Result): its number, the face of its game (the same card an open Round shows), every Party's line
- * in Place order (Parties on a Shared place by team), whether it was corrected (`correctedAt` is set; false until #275), and when the Result was entered (ISO).
+ * in Place order (Parties on a Shared place by team), whether it was corrected (`correctedAt` is set, #275), and when the Result was entered (ISO).
  */
 export interface ResultView { roundId: string, number: number, game: RoundGame, places: ResultLineView[], corrected: boolean, resultAt: string }
 
