@@ -80,21 +80,22 @@ function scoresOf(result: ResultView): string | null {
       <li
         v-for="result in results"
         :key="result.roundId"
-        class="relative min-w-0"
+        class="@container relative min-w-0"
       >
         <details class="group rounded-[12px] border-2 border-line bg-surface">
           <summary
-            class="flex min-h-12 cursor-pointer list-none items-center gap-2.5 py-1.5 pl-3 marker:content-none [&::-webkit-details-marker]:hidden"
+            class="flex min-h-12 cursor-pointer list-none items-center gap-2.5 py-1.5 pl-3 marker:content-none [&::-webkit-details-marker]:hidden @max-[340px]:flex-wrap @max-[340px]:gap-y-0.5"
             :class="corrections ? 'pr-14' : 'pr-3'"
           >
             <span
               data-number
               class="grid size-[26px] flex-none place-items-center rounded-full border-2 border-line text-[12px] font-extrabold"
             >{{ result.number }}</span>
-            <span class="flex min-w-24 flex-1 flex-col leading-tight">
+            <span class="flex min-w-24 flex-1 flex-col leading-tight @max-[340px]:relative">
               <b
                 data-game
                 class="truncate text-[13px]"
+                :class="result.corrected && '@max-[340px]:pr-16'"
                 :title="result.game.name"
               >{{ result.game.name }}</b>
               <span
@@ -121,14 +122,14 @@ function scoresOf(result: ResultView): string | null {
                 >{{ joinNames(winnersOf(result.places).map(nameOf)) }}</span>
                 <span
                   v-if="result.corrected"
-                  class="flex-none rounded-[6px] border-[1.5px] border-line px-1.5 text-[10px] font-extrabold"
+                  class="flex-none rounded-[6px] border-[1.5px] border-line px-1.5 text-[10px] font-extrabold @max-[340px]:absolute @max-[340px]:top-0 @max-[340px]:right-0"
                 >{{ t('history.corrected') }}</span>
               </span>
             </span>
             <span
               v-if="scoresOf(result)"
               data-scores
-              class="shrink-[4] truncate font-num text-[13px] text-ink-2"
+              class="shrink-[4] truncate font-num text-[13px] text-ink-2 @max-[340px]:order-1 @max-[340px]:basis-full @max-[340px]:max-w-full @max-[340px]:pl-9"
               :class="corrections ? 'max-w-[30%]' : 'max-w-[38%]'"
               :title="scoresOf(result)!"
             >{{ scoresOf(result) }}</span>

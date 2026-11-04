@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, headerPill, pagePill, pollingNumber, seatNote, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, gamesToStart, headerPill, pagePill, pollingNumber, seatNote, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn } from '../../app/utils/event-page'
 import type { BoardTeam, MemberView } from '../../shared/event'
+import type { RoundView } from '../../shared/stage'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too.
@@ -231,7 +232,7 @@ describe('the blocks of the stage', () => {
 
   it('lists the Standings between two Sessions and after the last one, after the open Rounds (#274)', () => {
     expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { ...RUNNING, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'cards', 'stay', 'board'])
-    expect(blocks([dated('a', 1, SAT, ENDED)], { ...RUNNING, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'cards', 'board'])
+    expect(blocks([dated('a', 1, SAT, ENDED)], { ...RUNNING, ...STANDINGS })).toEqual(['head', 'reopen', 'sessionNeeded', 'rounds', 'standings', 'cards', 'board'])
   })
 
   it('lists no Standings before the first Result, whether the view has an end with nothing played or none (#274)', () => {
@@ -291,6 +292,57 @@ describe('the blocks of the stage', () => {
     expect(blocks([undated('a'), undated('b')], TIE)).not.toContain('tie')
     expect(blocks([dated('a', 1, SAT)], TIE)).not.toContain('tie')
     expect(blocks([undated('a')], { settings: null, ...TIE })).not.toContain('tie')
+  })
+
+  // The dead end (#278): every Session ended, the Game count is not reached and no open Round fills it, so the last game needs a new Session.
+  // Only in `done`; a Member's page lists it too and renders nothing (the Host check is the page's).
+  const LEFT_ONE: Partial<PageInput> = { end: { played: 2, gameCount: 3, complete: false, tie: null, finish: null, lastGame: null } }
+  const DONE_ONE = [dated('a', 1, SAT, ENDED)]
+  const round = (id: string): RoundView => ({ id, startedAt: SAT, setAt: SAT, game: { id: `g-${id}`, name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] } })
+
+  it('lists the session-needed notice right under the reopen notices after the last Session, before the open Rounds (#278)', () => {
+    expect(blocks(DONE_ONE, { ...RUNNING, ...LEFT_ONE })).toEqual(['head', 'reopen', 'sessionNeeded', 'rounds', 'standings', 'cards', 'board'])
+  })
+
+  it('counts the open Rounds against the Game count: they fill it and no notice shows, or they leave games to start (#278)', () => {
+    expect(blocks(DONE_ONE, { ...RUNNING, ...LEFT_ONE, rounds: [round('o1')] })).not.toContain('sessionNeeded')
+    expect(blocks(DONE_ONE, { ...RUNNING, end: { played: 3, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null }, rounds: [round('o1'), round('o2'), round('o3')] })).not.toContain('sessionNeeded')
+    expect(blocks(DONE_ONE, { ...RUNNING, end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null }, rounds: [round('o1'), round('o2'), round('o3'), round('o4')] })).toContain('sessionNeeded')
+  })
+
+  it('never shows a negative count: open Rounds past the Game count need no notice either (#278)', () => {
+    expect(blocks(DONE_ONE, { ...RUNNING, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null }, rounds: [1, 2, 3, 4, 5].map(n => round(`o${n}`)) })).not.toContain('sessionNeeded')
+  })
+
+  it('lists the notice only in the done state: not while a Session runs, between Sessions, before the first start, in the setup or the finished Event (#278)', () => {
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...LEFT_ONE })).not.toContain('sessionNeeded')
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { ...RUNNING, ...LEFT_ONE })).not.toContain('sessionNeeded')
+    expect(blocks([dated('a', 1, SAT, ENDED), undated('b')], { ...RUNNING, ...LEFT_ONE })).not.toContain('sessionNeeded')
+    expect(blocks([dated('a', 1, SAT)], LEFT_ONE)).not.toContain('sessionNeeded')
+    expect(blocks([undated('a'), undated('b')], LEFT_ONE)).not.toContain('sessionNeeded')
+    expect(blocks([undated('a')], { settings: null, ...LEFT_ONE })).not.toContain('sessionNeeded')
+    expect(blocks(DONE_ONE, { ...FINISHED, ...LEFT_ONE })).not.toContain('sessionNeeded')
+  })
+
+  it('lists no notice without an end, and none at the maximum of 8 Sessions (#278)', () => {
+    expect(blocks(DONE_ONE, RUNNING)).not.toContain('sessionNeeded')
+    const seven = Array.from({ length: 7 }, (_, index) => dated(`s${index}`, index + 1, SAT, ENDED))
+    const eight = Array.from({ length: 8 }, (_, index) => dated(`s${index}`, index + 1, SAT, ENDED))
+    expect(blocks(seven, { ...RUNNING, ...LEFT_ONE })).toContain('sessionNeeded')
+    expect(blocks(eight, { ...RUNNING, ...LEFT_ONE })).not.toContain('sessionNeeded')
+  })
+
+  it('never lists the notice together with the Tie banner (#278)', () => {
+    const list = blocks(DONE_ONE, { ...RUNNING, ...TIE })
+    expect(list).toContain('tie')
+    expect(list).not.toContain('sessionNeeded')
+  })
+
+  it('counts the games to start, never below 0 (#278)', () => {
+    expect(gamesToStart({ played: 3, gameCount: 6 }, 0)).toBe(3)
+    expect(gamesToStart({ played: 3, gameCount: 6 }, 3)).toBe(0)
+    expect(gamesToStart({ played: 2, gameCount: 6 }, 5)).toBe(0)
+    expect(gamesToStart({ played: 2, gameCount: 3 }, 0)).toBe(1)
   })
 
   it('asks the Event to be set up first, and shows the poll when one is open', () => {

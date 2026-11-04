@@ -178,7 +178,9 @@
       "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Bench.",
       "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Bench.",
       "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Bench.",
-      "tie": "Gleichstand auf Platz 1. Der Host entscheidet."
+      "tie": "Gleichstand auf Platz 1. Der Host entscheidet.",
+      "sessionNeededTitle": "Noch {n} Spiel offen | Noch {n} Spiele offen",
+      "sessionNeeded": "Dafür braucht es eine neue Session. Leg sie an und starte sie, wenn ihr so weit seid."
     },
     "poll": {
       "title": "Termin für Session {n}",

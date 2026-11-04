@@ -129,12 +129,14 @@ export function useHostActions(
         run: () => handlers.finishTie(winners),
       },
       // A plain button: only the primary is held, and the server makes a double press harmless. At the maximum it stays, dashed, with its reason.
+      // `dockOnly` (#278): in the pill it is not repeated in „Mehr“ (the Tie's pill holds it beside the two holds).
       lastGame: {
         key: 'lastGame',
         label: t('dock.lastGame'),
         icon: CirclePlus,
         group: t('dock.group.event'),
         disabledReason: lastGameReason,
+        dockOnly: true,
         run: guarded(lastGameReason, () => void handlers.lastGame()),
       },
       setGame: {

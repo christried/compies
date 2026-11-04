@@ -10,7 +10,8 @@ import { Crown, Ellipsis } from '@lucide/vue'
 // answers the click with the reason, as a neutral toast (#52). On the pill the reason also shows in a bubble above it,
 // linked with aria-describedby (#164); on the phone sheet it sits under the button.
 // A `hold` action (#164, „Session beenden“) is a HoldToConfirmButton in the pill and in the sheet: its `run` happens
-// after the hold and resolves to whether it worked. It is not repeated in „Mehr“. „Mehr“ is there whenever there are actions.
+// after the hold and resolves to whether it worked. It is not repeated in „Mehr“. A `dockOnly` action (#278) is not repeated either
+// while it sits in the pill. „Mehr“ is there whenever there are actions.
 export interface DockAction {
   /** Stable key for v-for and tests. */
   key: string
@@ -26,6 +27,8 @@ export interface DockAction {
   place?: 'dock' | 'more'
   /** Needs a one second hold; then `run` returns whether the server took it. */
   hold?: boolean
+  /** Shown in the pill only: „Mehr“ does not repeat it while it sits there (#278). The phone sheet lists it as every action. */
+  dockOnly?: boolean
   /** What the action does. A hold action returns a Promise of whether the server took it; the others' result is ignored. */
   run: () => unknown
 }
@@ -51,9 +54,9 @@ function grouped(actions: DockAction[]) {
   return [...byName].map(([name, list]) => ({ name, actions: list }))
 }
 
-// „Mehr“ lists every action but a hold action that sits in the pill, grouped under each heading in the order the
-// heading first appears (#155, #164). The phone sheet has no „Mehr“ step, so it lists them all.
-const menuActions = computed(() => props.actions.filter(action => !(action.hold && pillActions.value.includes(action))))
+// „Mehr“ lists every action but a hold or `dockOnly` action that sits in the pill, grouped under each heading in the order the
+// heading first appears (#155, #164, #278). The phone sheet has no „Mehr“ step, so it lists them all.
+const menuActions = computed(() => props.actions.filter(action => !((action.hold || action.dockOnly) && pillActions.value.includes(action))))
 const hasMore = computed(() => menuActions.value.length > 0)
 const groups = computed(() => grouped(menuActions.value))
 const sheetGroups = computed(() => grouped(props.actions))
