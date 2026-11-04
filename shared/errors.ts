@@ -165,6 +165,8 @@ export const API_ERROR_STATUS = {
   results_missing: 409,
   /** The outcome the Host saw is no longer the Standings' outcome: a Tie arose or ended since (#277). */
   standings_changed: 409,
+  /** The Host asks for the last game while no Tie stands (#278): the Standings have one sole leader. */
+  no_tie: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */
   no_live_connection: 503,
