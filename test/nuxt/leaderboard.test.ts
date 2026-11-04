@@ -110,7 +110,19 @@ describe('the Standings', () => {
 
     expect(page!.find('table').exists()).toBe(false)
     expect(page!.findAll('p').map(line => line.text())).toContain('Noch kein Ergebnis. Sobald der Host eins einträgt, steht hier die Tabelle.')
-    expect(page!.text()).toContain('Nach Spiel 0 von 6')
+  })
+
+  it('has no kicker before the first Result: no „Nach Spiel 0 von 6“ (#274)', async () => {
+    await mount({ end: end(0), standings: [standing(1, 1, 0), standing(2, 1, 0), standing(3, 1, 0)] })
+
+    expect(page!.text()).not.toContain('Nach Spiel')
+    expect(page!.text()).toContain('Tabelle')
+  })
+
+  it('names the game it stands after from the first Result on: „Nach Spiel 1 von 6“ (#274)', async () => {
+    await mount({ end: end(1, 6) })
+
+    expect(page!.text()).toContain('Nach Spiel 1 von 6')
   })
 
   it('has two rows for two Parties and eight for eight', async () => {

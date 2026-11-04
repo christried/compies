@@ -125,7 +125,11 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
     :class="framed && 'relative rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 shadow-card'"
   >
     <div class="mb-1 flex flex-col leading-[1.15]">
-      <p class="m-0 text-[13px] font-bold text-ink-2">
+      <!-- No kicker before the first Result (#274): „Nach Spiel 0 von 6“ says nothing; the empty line below does. -->
+      <p
+        v-if="end.played > 0"
+        class="m-0 text-[13px] font-bold text-ink-2"
+      >
         {{ t('table.after', { n: end.played, total: end.gameCount }) }}
       </p>
       <h2
