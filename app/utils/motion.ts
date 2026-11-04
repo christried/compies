@@ -93,3 +93,36 @@ export function highlightRow(row: Element): void {
     cell.animate([{ backgroundColor: 'color-mix(in srgb, var(--cp-primary) 35%, var(--cp-surface))' }, { backgroundColor: 'var(--cp-surface)' }], { duration: REDUCED_FADE_MS, easing: 'linear' })
   }
 }
+
+// The page's reflow (#276, F4 of the s5 check): what moves because something above it left or arrived. 04-motion has no entry for a list or block reflow;
+// it follows the entry the page's blocks already glide by, „UI enters“ (the banner: `EASE.out`), over the slow duration. A UI move never overshoots
+// (04-motion: „UI … never overshoot“): `lb-swap`'s spring is for the Leaderboard's rows. The element ends on its laid-out place, so nothing snaps at the end.
+
+/** The page's blocks and the Round cards glide to their new place: a transform over `dur-slow` on `ease-out`, and at once under reduced motion (04-motion § UI enters: „Reduced: opacity only“). */
+export const REFLOW_CLASS = 'transition-transform dur-slow ease-out motion-reduce:transition-none reduced:transition-none'
+
+/**
+ * A tab nobody is looking at stays calm (#276): a change read while the page is hidden moves the rows and blocks at once, so the glide does not start
+ * when the Member returns (the browser holds a hidden page's transitions at their start). Evaluated with each render, which is when Vue plans the move:
+ * `:move-class="unwatched() ? undefined : …"`.
+ */
+export const unwatched = () => import.meta.client && document.visibilityState === 'hidden'
+
+/**
+ * `@before-leave` of a `TransitionGroup` whose leaver must not push its siblings around while it fades (Vue's documented pattern): it is pinned where it
+ * is and leaves the layout in the very flush that starts its fade. Vue keeps a leaver in the layout until its fade ends and removes it outside any flush,
+ * so the blocks below would jump once, unmeasured, and no move transition could play. The leaver's parent must be `relative` (its offsets are against it).
+ * It is `inert` while it fades: no pointer, no focus. Under reduced motion it is gone at once (there is no fade to cover the jump), and so in a hidden tab,
+ * where the browser runs no frame: Vue starts the fade on one, and the leaver would sit over its neighbours until the Member returns.
+ */
+export function leaveInPlace(element: Element): void {
+  if (!(element instanceof HTMLElement)) return
+  const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = element
+  element.style.position = 'absolute'
+  element.style.top = `${offsetTop}px`
+  element.style.left = `${offsetLeft}px`
+  element.style.width = `${offsetWidth}px`
+  element.style.height = `${offsetHeight}px`
+  element.inert = true
+  if (reducedMotion() || unwatched()) element.style.display = 'none'
+}

@@ -49,8 +49,8 @@ function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running',
 }
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
-async function mount(slug: string) {
-  page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+async function mount(slug: string, attachTo?: HTMLElement) {
+  page = await mountSuspended(EventPage, { route: `/e/${slug}`, attachTo })
   return page
 }
 
@@ -184,6 +184,75 @@ describe('the open Rounds on the stage', () => {
     expect(list.props('leaveActiveClass')).toBe('transition-opacity dur-fast ease-in')
     expect(list.props('leaveToClass')).toBe('opacity-0')
     rounds.unmount()
+  })
+})
+
+// The cards that stay glide to their new cell, and the blocks below glide up, when a card leaves (#276, F4 of the s5 check). jsdom has no layout and no
+// transitions: this proves what the groups ask for, not that they glide: the browser check (scripts/browser/standings.mjs) does.
+describe('when a Round leaves the open Rounds (#276)', () => {
+  const noop = () => Promise.resolve(true)
+  const props = (rounds: RoundView[]) => ({ rounds, isHost: false, putBack: noop, teams: [], pointsTable: null, enterResult: noop, end: null })
+  const cards = (list: Awaited<ReturnType<typeof mountSuspended>>) => list.findAll('[aria-label="Offene Spiele"] > li')
+  /** The real TransitionGroup: Vue Test Utils stubs it, and the stub has no hooks. */
+  const realGroup = { global: { stubs: { TransitionGroup: false } } }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('asks the cards to glide like the page\'s blocks do: a transform, ease-out, the slow duration, and nothing under reduced motion', async () => {
+    const rounds = await mountSuspended(EventRounds, { props: props([round('r1', halo), round('r2', kart)]) })
+
+    const moveClass = String(rounds.findComponent({ name: 'TransitionGroup' }).props('moveClass')).split(' ')
+    expect(moveClass).toEqual(expect.arrayContaining(['transition-transform', 'dur-slow', 'ease-out', 'motion-reduce:transition-none', 'reduced:transition-none']))
+    expect(moveClass).not.toContain('ease-spring')
+  })
+
+  it('asks for no glide while the tab is hidden, and for one while it shows', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get')
+    visibility.mockReturnValue('hidden')
+    const hidden = await mountSuspended(EventRounds, { props: props([round('r1', halo)]) })
+    expect(String(hidden.findComponent({ name: 'TransitionGroup' }).props('moveClass') ?? '')).not.toContain('transition-transform')
+    hidden.unmount()
+
+    visibility.mockReturnValue('visible')
+    const shown = await mountSuspended(EventRounds, { props: props([round('r1', halo)]) })
+    expect(String(shown.findComponent({ name: 'TransitionGroup' }).props('moveClass'))).toContain('transition-transform')
+  })
+
+  it('pins the leaving card where it is, out of the flow, in the render that starts its fade; the card that stays is untouched', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(320)
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(96)
+    vi.spyOn(HTMLElement.prototype, 'offsetTop', 'get').mockReturnValue(108)
+    const list = await mountSuspended(EventRounds, { props: props([round('r1', halo), round('r2', kart)]), ...realGroup })
+    expect(list.get('ul').classes()).toContain('relative')
+
+    await list.setProps(props([round('r2', kart)]))
+
+    const leaver = cards(list).find((card: Wrapper) => card.text().includes('Halo'))!
+    expect(leaver.attributes('style')).toContain('position: absolute')
+    expect(leaver.attributes('style')).toContain('width: 320px')
+    expect(leaver.attributes('style')).toContain('height: 96px')
+    expect(leaver.attributes('style')).toContain('top: 108px')
+    expect(leaver.attributes('inert')).toBeDefined()
+    expect(cards(list).find((card: Wrapper) => card.text().includes('Kart'))!.attributes('style')).toBeUndefined()
+    list.unmount()
+  })
+
+  // The edges (CODING_STANDARDS § Tests): no Round, one (the last card: the section goes with it), two and four.
+  it.each([0, 1, 2, 4])('with %i open Rounds: the section is there for some, and when one goes the others stay in the flow', async (count) => {
+    const games = [halo, kart, pong, { ...halo, id: 'g-x', name: 'Xonix' }]
+    const open = games.slice(0, count).map((game, index) => round(`r${index}`, game))
+    const list = await mountSuspended(EventRounds, { props: props(open), ...realGroup })
+
+    expect(cards(list)).toHaveLength(count)
+    expect(list.find('section').exists()).toBe(count > 0)
+
+    await list.setProps(props(open.slice(1)))
+
+    expect(list.find('section').exists()).toBe(count > 1)
+    if (count > 1) expect(cards(list).filter((card: Wrapper) => card.attributes('inert') === undefined)).toHaveLength(count - 1)
+    list.unmount()
   })
 })
 
@@ -342,6 +411,85 @@ describe('entering a Result (#273)', () => {
       await vi.waitFor(() => expect(dialog()).toBeNull())
       expect(enterButtons(stage)).toHaveLength(1)
       expect(shownToasts()).toHaveLength(1)
+    })
+
+    // The save removes the Round whose card opened the sheet, so focus has nowhere to return to (#274, Q3 of the Release review): it goes on to the
+    // next open Round's „Ergebnis eintragen“, and without one to the stage's heading. Never to the body, where a keyboard or screen-reader Host starts over.
+    describe('focus', () => {
+      /** The Event as the next read has it: the saved Round gone from the open Rounds. */
+      const without = (rest: RoundView[]) => (current: ReturnType<typeof serveRunning>) => current.set(viewWithSessions(current.slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+        event: { isHost: true, phase: 'running' },
+        settings: defaultSettings(),
+        runningSessionId: `session-${current.slug}-0`,
+        rounds: rest,
+        teams: pair,
+        pools,
+      }))
+
+      /** Presses the button of the Round the way a Host does: it has the focus, and the sheet opens from it. */
+      async function pressEnter(stage: Awaited<ReturnType<typeof mount>>, game: string) {
+        const card = stage.findAll('[aria-label="Offene Spiele"] > li').find((item: Wrapper) => item.text().includes(game))!
+        const button = card.findAll('button').find((item: Wrapper) => item.text() === 'Ergebnis eintragen')!
+        ;(button.element as HTMLElement).focus()
+        await button.trigger('click')
+        await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      }
+
+      it('goes to the heading of the stage after the last open Round\'s Result is saved', async () => {
+        const served = serveSaving([round('r1', halo)], without([]))
+        const stage = await mount(served.slug, document.body)
+        await pressEnter(stage, 'Halo')
+
+        await clickButton(dialog(), 'Ergebnis speichern')
+
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        await vi.waitFor(() => expect(document.activeElement).toBe(stage.get('h1').element))
+        expect(stage.find('[aria-label="Offene Spiele"]').exists()).toBe(false)
+      })
+
+      it('goes to the other Round\'s „Ergebnis eintragen“ after one of two is saved', async () => {
+        const served = serveSaving([round('r1', halo), round('r2', kart)], without([round('r2', kart)]))
+        const stage = await mount(served.slug, document.body)
+        await pressEnter(stage, 'Halo')
+
+        await clickButton(dialog(), 'Ergebnis speichern')
+
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        const other = stage.findAll('[aria-label="Offene Spiele"] > li').find((item: Wrapper) => item.text().includes('Kart'))!
+        await vi.waitFor(() => expect(document.activeElement).toBe(other.findAll('button').find((item: Wrapper) => item.text() === 'Ergebnis eintragen')!.element))
+        expect(document.activeElement).not.toBe(document.body)
+      })
+
+      it('goes to the next Round in the list, not the first, when a middle one is saved', async () => {
+        const third = round('r3', pong)
+        const served = serveSaving([round('r1', halo), round('r2', kart), third], without([round('r1', halo), third]))
+        // The PUT in `serveSaving` is for r1: the middle Round's own endpoint.
+        registerEndpoint(`/api/e/${served.slug}/rounds/r2/result`, { method: 'PUT', handler: () => {
+          without([round('r1', halo), third])(served)
+          return { roundId: 'r2', number: 1 }
+        } })
+        const stage = await mount(served.slug, document.body)
+        await pressEnter(stage, 'Kart')
+
+        await clickButton(dialog(), 'Ergebnis speichern')
+
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        const next = stage.findAll('[aria-label="Offene Spiele"] > li').find((item: Wrapper) => item.text().includes('Pong'))!
+        await vi.waitFor(() => expect(document.activeElement).toBe(next.findAll('button').find((item: Wrapper) => item.text() === 'Ergebnis eintragen')!.element))
+      })
+
+      it('stays where Escape put it: back on the Round\'s own button, which is still there', async () => {
+        const served = serveSaving([round('r1', halo), round('r2', kart)])
+        const stage = await mount(served.slug, document.body)
+        await pressEnter(stage, 'Kart')
+        const button = stage.findAll('[aria-label="Offene Spiele"] > li').find((item: Wrapper) => item.text().includes('Kart'))!.findAll('button').find((item: Wrapper) => item.text() === 'Ergebnis eintragen')!
+
+        dialog()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        await flushPromises()
+        expect(document.activeElement).toBe(button.element)
+      })
     })
   })
 })

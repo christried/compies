@@ -4,6 +4,7 @@ import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
 import { dateBlockedKey, eventPageState, gamesToStart, headerPill, seatNote, teamsStay } from '~/utils/event-page'
+import { REFLOW_CLASS, unwatched } from '~/utils/motion'
 import { hasStarted } from '~~/shared/session-state'
 import type { HistoryCorrections } from '~/utils/result-draft'
 import { beforeFinish, datePollOpen, sessionsEditable } from '~~/shared/event'
@@ -235,7 +236,7 @@ const { news } = useStandingsNews(data, slug)
     <TransitionGroup
       v-if="data && pageState && (wide !== false || activeView === 'event')"
       tag="div"
-      move-class="transition-transform dur-slow ease-out motion-reduce:transition-none reduced:transition-none"
+      :move-class="unwatched() ? undefined : REFLOW_CLASS"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-[18px] px-3.5 pt-4 md:gap-[22px] md:px-6 md:pt-6"
       :class="vetoBarShown ? 'pb-[230px] md:pb-[190px]' : [data.event.isHost ? 'pb-[92px]' : 'pb-7', 'md:pb-10']"
     >

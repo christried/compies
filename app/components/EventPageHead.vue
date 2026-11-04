@@ -88,7 +88,9 @@ const jump = computed(() => {
 <template>
   <div class="flex flex-col gap-0.5">
     <span class="text-[13px] font-bold text-pretty text-ink-2">{{ copy.kicker }}</span>
+    <!-- `tabindex="-1"`: where focus goes when the sheet that a save emptied has nothing else to return to (EventRounds, #274). -->
     <h1
+      tabindex="-1"
       class="m-0 font-display text-[34px] leading-none font-normal md:text-[44px]"
       :class="state.kind === 'finished' && 'break-words text-balance'"
     >
