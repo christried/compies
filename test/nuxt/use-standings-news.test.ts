@@ -311,7 +311,7 @@ describe('useStandingsNews', () => {
       await reads(read([first, second]))
 
       // After: Wilde Gurken 4 (1st), Die Füchse 3 (2nd), Team Gelb 1 (3rd). Team Gelb stays 3rd and is not named.
-      expect(news.value!.announcement).toBe('Spiel 2 ist eingetragen. Wilde Gurken übernimmt Platz 1 Die Füchse ist jetzt auf Rang 2.')
+      expect(news.value!.announcement).toBe('Spiel 2 ist eingetragen. Wilde Gurken übernimmt Platz 1. Die Füchse ist jetzt auf Rang 2.')
       expect(news.value!.announcement).not.toContain('Team Gelb')
     })
 
@@ -322,7 +322,7 @@ describe('useStandingsNews', () => {
 
       await reads(read([first, second]))
 
-      expect(news.value!.announcement).toContain('Team Gelb übernimmt Platz 1')
+      expect(news.value!.announcement).toContain('Team Gelb übernimmt Platz 1.')
       expect(news.value!.announcement).toContain('Wilde Gurken ist jetzt auf Rang 2')
     })
 
