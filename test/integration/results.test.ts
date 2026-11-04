@@ -731,6 +731,7 @@ describe('Results', () => {
             { team: 3, place: 3, points: 0, score: '8' },
           ],
           corrected: false,
+          correctedAt: null,
           resultAt: new Date(T0).toISOString(),
         }],
         standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 2, points: 1 }, { team: 3, rank: 3, points: 0 }],
@@ -796,7 +797,7 @@ describe('Results', () => {
       expect(await readAll(game, game.cookies.one)).toEqual(host)
     })
 
-    it('marks a Round corrected only when its corrected instant is set', async () => {
+    it('marks a Round corrected only when its corrected instant is set, and reads that instant as correctedAt for every Member (#276)', async () => {
       const game = await running({ gameCount: 3 })
       const a = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
       const b = (await (await set(game, game.kart.id)).json() as { roundId: string }).roundId
@@ -804,9 +805,12 @@ describe('Results', () => {
       await enter(game, b, { places: twoParties })
       await testDb.db.update(rounds).set({ correctedAt: new Date(T0) }).where(eq(rounds.id, a))
 
-      const view = await readAll(game)
+      const fields = (results: EventView['results']) => results.map(result => [result.roundId, result.corrected, result.correctedAt])
+      const host = await readAll(game)
 
-      expect(view.results.map(result => [result.roundId, result.corrected])).toEqual([[a, true], [b, false]])
+      expect(fields(host.results)).toEqual([[a, true, new Date(T0).toISOString()], [b, false, null]])
+      expect(fields((await readAll(game, game.cookies.two)).results)).toEqual(fields(host.results))
+      expect(fields((await readAll(game, game.cookies.three)).results)).toEqual(fields(host.results))
     })
 
     it('gives an Event that is not set up no results, no Standings and no end', async () => {

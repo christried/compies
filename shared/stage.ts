@@ -145,9 +145,10 @@ export interface ResultLineView { team: number, place: number, points: number, s
 
 /**
  * A Round with a Result (#274, GLOSSARY: Result): its number, the face of its game (the same card an open Round shows), every Party's line
- * in Place order (Parties on a Shared place by team), whether it was corrected (`correctedAt` is set, #275), and when the Result was entered (ISO).
+ * in Place order (Parties on a Shared place by team), whether it was corrected (#275), when the Result was entered (ISO), and when it was last
+ * corrected (ISO, UTC, null if never; #276, the Standings' „what is new“ rule compares it with the page's last read). `corrected` is `correctedAt !== null`.
  */
-export interface ResultView { roundId: string, number: number, game: RoundGame, places: ResultLineView[], corrected: boolean, resultAt: string }
+export interface ResultView { roundId: string, number: number, game: RoundGame, places: ResultLineView[], corrected: boolean, correctedAt: string | null, resultAt: string }
 
 /** A Party's row in the Standings (#274): its team position, its rank (1 + the Parties with more points, so equal points share a rank) and its points. */
 export interface StandingView { team: number, rank: number, points: number }
