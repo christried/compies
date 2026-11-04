@@ -60,14 +60,14 @@ const copy = computed(() => {
         title: t('event.head.done.title'),
       }
     case 'finished': {
-      // #278 replaces the several-winners branch (a Tie) with „Unentschieden“; until then it reads like no winner.
+      // One winner is named, several are a Tie (#278) and the heading does not list them (the feed does); none (a fixture) only says the Event is over.
       const [winner, ...others] = props.winners
-      return {
-        kicker: t('event.head.finished.kicker'),
-        title: winner !== undefined && others.length === 0
-          ? t('event.head.finished.title', { team: teamName(props.teams.find(team => team.position === winner) ?? winner, t) })
-          : t('event.head.finished.titleDone'),
-      }
+      const title = winner === undefined
+        ? t('event.head.finished.titleDone')
+        : others.length > 0
+          ? t('event.head.finished.titleTie')
+          : t('event.head.finished.title', { team: teamName(props.teams.find(team => team.position === winner) ?? winner, t) })
+      return { kicker: t('event.head.finished.kicker'), title }
     }
     default:
       return {
