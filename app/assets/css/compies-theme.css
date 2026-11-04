@@ -181,7 +181,8 @@
 
 /* ---------- utilities ---------- */
 @utility layer-* { z-index: --value(--layer-*); }
-@utility dur-* { transition-duration: --value(--dur-*); animation-duration: --value(--dur-*); }
+/* Transition only: a dur-* that also set animation-duration made Vue's TransitionGroup skip every move (#273). */
+@utility dur-* { transition-duration: --value(--dur-*); }
 @utility pattern-* { background-image: --value(--pattern-*); background-size: 16px 16px; }
 /* Bungee has proportional digits and no tnum → tabular comes from slots.
    Markup (Vue <CpNum value="0:42">): <span class="num"><span class="num-slot">0</span><span class="num-sep">:</span>…</span>
