@@ -1,6 +1,6 @@
 import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
-import { readBody } from 'h3'
+import { getQuery, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Leaderboard from '~/components/Leaderboard.vue'
 import { refreshEvent } from '~/composables/useEventView'
@@ -73,6 +73,55 @@ describe('the finished Event page', () => {
       expect(page.get('header').text()).not.toContain('Kein Termin')
     })
   }
+
+  // „Bild teilen“ (#313): the row at the top of the finished stage, for everybody, right under the Head and before the Standings.
+  describe('„Bild teilen“', () => {
+    const shareButton = (page: VueWrapper) => page.findAll('main button').find(button => button.text() === 'Bild teilen')
+
+    for (const host of [true, false]) {
+      it(`is the first thing of the stage after the Head, before the Standings, for ${host ? 'the Host' : 'a Member'}`, async () => {
+        const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host, overrides: finishedRead() })
+
+        const page = await mount(slug)
+
+        const button = shareButton(page)!.element
+        expect(button).toBeDefined()
+        const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!.element
+        expect(button.compareDocumentPosition(standings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(page.get('main h1').element.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      })
+    }
+
+    it('is on no other page state, and not in a finished Event without a Result', async () => {
+      const running = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED })], missing: 0, phase: 'running', overrides: finishedRead({ end: null }) })
+      expect(shareButton(await mount(running.slug))).toBeUndefined()
+
+      const empty = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead({ results: [], standings: null, end: null }) })
+      expect(shareButton(await mount(empty.slug))).toBeUndefined()
+    })
+
+    it('opens the share sheet, with the picture of the Event asked for', async () => {
+      const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })
+      const asked: string[] = []
+      registerEndpoint(`/api/e/${slug}/share-image`, {
+        method: 'GET',
+        handler: (event) => {
+          asked.push(String(getQuery(event).format))
+          return new Blob(['png'], { type: 'image/png' })
+        },
+      })
+      URL.createObjectURL = vi.fn(() => 'blob:page')
+      URL.revokeObjectURL = vi.fn()
+      const page = await mount(slug)
+      expect(dialog()).toBeNull()
+
+      await clickButton(page.element, 'Bild teilen')
+      await flushPromises()
+
+      expect(dialog()!.textContent).toContain('Ergebnis teilen')
+      expect(asked).toEqual(['wide'])
+    })
+  })
 
   it('gives a Member no dock, and the Host one that holds Siegerehrung starten, Einladen and Mehr and nothing else', async () => {
     const member = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })

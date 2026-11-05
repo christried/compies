@@ -226,6 +226,10 @@ defineExpose({ root, burst })
         />
       </svg>
     </div>
+    <!-- The layer's own buttons of the end frame (#313: Bild teilen). Out of flow in the corner the stage leaves free, so the run's measures stay what they are. -->
+    <div class="absolute right-[18px] bottom-[34px] z-6 flex">
+      <slot name="share" />
+    </div>
     <StickerConfetti
       ref="confetti"
       class="z-5"
