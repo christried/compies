@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Siegerehrung starten:** Der Host kann ein beendetes Event mit „Siegerehrung starten“ in der Host-Steuerung eröffnen. Alle, die das Event offen haben, sehen im selben Moment eine Ebene mit dem Endstand, dem Sieger und seinen Leuten, auch wer erst mittendrin dazukommt. ([#309](https://github.com/christried/compies/issues/309))
+
 ### Behoben
 
 - Lädst du die Event-Seite neu, während das Glücksrad dreht, die Münze fliegt oder ein Countdown läuft, zeigt dein Gerät das Ende nicht mehr zu früh an, wenn seine Uhr vorgeht. ([#287](https://github.com/christried/compies/issues/287))
