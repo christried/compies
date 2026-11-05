@@ -145,17 +145,17 @@ describe('the history', () => {
     expect(winners().get('.line-clamp-2').text()).toBe('Wilde Gurken und Die Füchse')
   })
 
-  it('carries the narrow-row classes on a corrected row, so the names keep the line below 340 px (#275)', async () => {
+  it('carries the narrow-row classes on a corrected row, so the names keep the line below 440 px (#275)', async () => {
     await mount({ results: [result(1, 'Halo', [line(1, 1, 2, '20'), line(2, 1, 2, '15'), line(3, 3, 0, '10')], true)], corrections: { pointsTable: { preset: 'linear', values: [2, 1, 0] }, total: 6, save: async () => true } })
 
     const row = numbered()[0]!
     expect(row.element.closest('li')!.classList).toContain('@container')
-    expect(row.get('summary').classes()).toEqual(expect.arrayContaining(['@max-[340px]:flex-wrap', '@max-[340px]:gap-y-0.5']))
-    expect(row.get('summary > span:nth-child(2)').classes()).toContain('@max-[340px]:relative')
-    expect(row.get('[data-game]').classes()).toContain('@max-[340px]:pr-16')
+    expect(row.get('summary').classes()).toEqual(expect.arrayContaining(['@max-[440px]:flex-wrap', '@max-[440px]:gap-y-0.5']))
+    expect(row.get('summary > span:nth-child(2)').classes()).toContain('@max-[440px]:relative')
+    expect(row.get('[data-game]').classes()).toContain('@max-[440px]:pr-16')
     const chip = winners().findAll('span').find(span => span.text() === 'korrigiert')!
-    expect(chip.classes()).toEqual(expect.arrayContaining(['@max-[340px]:absolute', '@max-[340px]:top-0', '@max-[340px]:right-0']))
-    expect(row.get('[data-scores]').classes()).toEqual(expect.arrayContaining(['@max-[340px]:order-1', '@max-[340px]:basis-full', '@max-[340px]:max-w-full', '@max-[340px]:pl-9']))
+    expect(chip.classes()).toEqual(expect.arrayContaining(['@max-[440px]:absolute', '@max-[440px]:top-0', '@max-[440px]:right-0']))
+    expect(row.get('[data-scores]').classes()).toEqual(expect.arrayContaining(['@max-[440px]:order-1', '@max-[440px]:basis-full', '@max-[440px]:max-w-full', '@max-[440px]:pl-9']))
   })
 
   it('does not reserve the chip\'s room in the name of an uncorrected row (#275)', async () => {
