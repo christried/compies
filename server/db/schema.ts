@@ -91,7 +91,7 @@ export const events = pgTable('events', {
   // Pool preview (#225): null only for Events not set up and rows the code before 0.6 wrote (storedPoolPreview reads it as on unless the wheel is hidden).
   poolPreview: boolean('pool_preview'),
   vetoAllowance: integer('veto_allowance'),
-  // 0023 (#277): the instant the Host finished the Event (the request's clock, ADR 0013). Written, not read, in 0.8: nothing shows it yet.
+  // 0023 (#277): the instant the Host finished the Event (the request's clock, ADR 0013). Home keeps a finished Event listed for 24 h from it (`eventStaysOnHome`, #282).
   finishedAt: timestamp('finished_at', { withTimezone: true }),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
