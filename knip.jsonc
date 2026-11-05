@@ -26,7 +26,13 @@
         // Run with node by implementers and the orchestrator to wait for CI on a pushed commit (docs/agents/implementer-frame.md).
         "scripts/ci-wait.mjs!",
         // Run with node by the orchestrator to remove finished agents' worktrees (docs/agents/delivery.md § Branch hygiene).
-        "scripts/worktree-clean.mjs!"
+        "scripts/worktree-clean.mjs!",
+        // Run by hand with node after a change to the rig; its output (server/assets/compibert/*.svg) is committed, `--check` guards it (#311).
+        "scripts/bake-compibert.mjs!",
+        // Used by the ceremony's end frame (#311 Part B); remove these three entries when that lands.
+        "app/components/CompibertRig.vue!",
+        "app/utils/rig-stage.ts!",
+        "app/utils/compibert-rig.ts!"
       ],
       "ignore": [
         // The design hand-off and its prototype scripts are reference material, not shipped (also ignored by eslint).
