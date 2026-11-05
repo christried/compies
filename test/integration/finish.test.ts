@@ -363,6 +363,32 @@ describe('Finishing the Event', () => {
       expect(entries.map(entry => entry.type)).toEqual(['event_finished', 'result_entered', 'game_set', 'session_started', 'session_ended', 'result_entered', 'game_set'])
     })
 
+    // The other direction (#259, review 0.8 F7): dev's database clock leads the app's by about 1.7 s. An entry written less than that
+    // before the end of a Session must not take a database instant after `endedAt`, or it lands under "Nach der Session". The test clock
+    // here runs an hour behind the database's, so every entry of the test is inside the lead.
+    it('stamps no entry after the end of its Session when the database clock leads the request clock', async () => {
+      clock.set(new Date(Date.now() - 3_600_000))
+      const game = await running({ gameCount: 2, sessions: 2 })
+      clock.advance(60_000)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
+      clock.advance(60_000)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/start`, game.hostCookie)).status).toBe(200)
+      clock.advance(60_000)
+      const round = await setRound(game, game.kart.id)
+      clock.advance(60_000)
+      expect((await enter(game, round, { places: teamOneWins })).status).toBe(200)
+      clock.advance(60_000)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
+
+      const second = (await sessionRows(game.eventId)).filter(row => row.startedAt !== null).map(row => ({ from: row.startedAt!.getTime(), to: row.endedAt!.getTime() }))[1]!
+      const times = (await feedOf(game)).reduce<Record<string, number[]>>((byType, entry) => ({ ...byType, [entry.type]: [...(byType[entry.type] ?? []), Date.parse(entry.at)] }), {})
+      expect(times.session_started![0]).toBeGreaterThanOrEqual(second.from)
+      expect(times.game_set![0]).toBeGreaterThanOrEqual(second.from)
+      expect(times.game_set![0]).toBeLessThan(second.to)
+      expect(times.result_entered![0]).toBeLessThan(second.to)
+      expect(times.session_ended![0]).toBeGreaterThanOrEqual(second.to)
+    })
+
     it('keeps the order of two entries that one change writes', async () => {
       setAllowlist({ hosts: 'discord:1' })
       const { cookie } = await signIn(testDb.db, host)
