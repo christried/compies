@@ -1,16 +1,36 @@
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type PropType } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import CeremonyLayer from '~/components/CeremonyLayer.vue'
-import { CEREMONY_LEAD_MS, ceremonyTimeline } from '~~/shared/ceremony'
+import { loadGsap } from '~/utils/gsap'
+import { CEREMONY_GAGS, CEREMONY_LEAD_MS, ceremonyTimeline, type CeremonyGag } from '~~/shared/ceremony'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { CeremonyView } from '~~/shared/stage'
-import { dialog, memberView } from './event-page'
+import { dialog, memberView, restoreScreen, stubScreen } from './event-page'
 import { motion } from './motion'
 
-// The Award ceremony's layer (#309, spec #308): it opens at the start instant for whoever has the Event open, shows the end frame, and
-// closes for the viewer and that start. The server clock is a fake here: the test moves it, as coin-flip.test.ts does.
+// The Award ceremony's layer (#309, #312, spec #308): it opens at the start instant for whoever has the Event open, plays the Pokal-Lauf
+// from the server's clock to the end frame, and closes for the viewer and that start. The server clock is a fake here: the test moves it, as
+// coin-flip.test.ts does. Real GSAP moves the real parts (happy-dom has no layout, so no positions are asserted, and no easing or duration
+// either: ADR 0015 deviates from CODING_STANDARDS § Motion); the rig is a stub that shows the pose the layer asks for (#311 tests the rig).
+
+// A test can make the GSAP chunk fail to load.
+const chunk = vi.hoisted(() => ({ fail: false, loads: 0 }))
+mockNuxtImport('loadGsap', async () => {
+  const { loadGsap: real } = await vi.importActual<typeof import('~/utils/gsap')>('~/utils/gsap')
+  return async () => {
+    chunk.loads++
+    if (chunk.fail) throw new Error('chunk failed')
+    return real()
+  }
+})
+
+/** The rig as the layer sees it: the pose it was asked for. */
+const RigStub = defineComponent({
+  props: { state: { type: String, default: 'idle' } },
+  setup: props => () => h('span', { 'data-testid': 'rig', 'data-state': props.state }),
+})
 
 const T0 = Date.parse('2090-10-30T20:00:00.000Z')
 const STARTS = T0 + CEREMONY_LEAD_MS
@@ -19,17 +39,21 @@ const ENDS = STARTS + RUN
 
 type Layer = InstanceType<typeof CeremonyLayer>['$props']['view']
 
-const ceremonyAt = (startsAt: number, parties = 2): CeremonyView => ({
+const ceremonyAt = (startsAt: number, parties = 2, gag: CeremonyGag = 'trip'): CeremonyView => ({
   startsAt: new Date(startsAt).toISOString(),
-  endsAt: new Date(startsAt + ceremonyTimeline(parties, 'trip').endMs).toISOString(),
-  gag: 'trip',
+  endsAt: new Date(startsAt + ceremonyTimeline(parties, gag).endMs).toISOString(),
+  gag,
 })
+/** The Standings of `parties` Parties, the first `winners` of them on rank 1. */
+const standingsOf = (parties: number, winners = 1) => Array.from({ length: parties }, (_, index) => ({ team: index + 1, rank: index < winners ? 1 : index + 1, points: Math.max(9 - index, 1) }))
 const team = (position: number, name: string | null = null): BoardTeam => ({ position, name, frozen: true })
 const player = (id: string, name: string, teamPosition: number): MemberView => memberView({ id, name, zone: 'team', team: teamPosition })
 const people = (count: number, teamPosition: number): MemberView[] => Array.from({ length: count }, (_, index) => player(`p${teamPosition}-${index}`, `Leute ${teamPosition}-${index + 1}`, teamPosition))
 
 /** A finished Event's read of two Parties: Wilde Gurken won with 9, Nacht Eulen have 3. */
 const finished = (overrides: Partial<Layer> = {}): Layer => ({
+  event: { name: 'Freitags-Zocken' },
+  results: [{}, {}, {}] as Layer['results'],
   ceremony: ceremonyAt(STARTS),
   standings: [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 3 }],
   members: [player('a', 'Anna', 1), player('b', 'Bert', 1), player('c', 'Cleo', 2)],
@@ -50,9 +74,12 @@ const Page = defineComponent({
   ]),
 })
 
+/** The real rig (the #311 cases) or the stub. */
+let realRig = false
+
 async function mount(view: Layer, at = T0) {
   serverTime = at
-  mounted = await mountSuspended(Page, { props: { view }, attachTo: document.body })
+  mounted = await mountSuspended(Page, { props: { view }, attachTo: document.body, global: { stubs: realRig ? {} : { CompibertRig: RigStub } } })
   await settle()
   return mounted
 }
@@ -63,6 +90,7 @@ async function settle() {
   await nextTick()
   await flushPromises()
   await nextTick()
+  await flushPromises()
 }
 
 /** Moves the server's clock to `at` (epoch ms). */
@@ -76,6 +104,7 @@ async function refetch(view: Layer) {
   await settle()
 }
 
+const skipButton = () => [...(dialog()?.querySelectorAll('button') ?? [])].find(button => button.textContent?.trim() === 'Überspringen') ?? null
 const closeButton = () => dialog()?.querySelector<HTMLButtonElement>('button[aria-label="Schließen"]')
 const pageButton = () => document.querySelector<HTMLButtonElement>('#page-button')!
 const text = () => dialog()?.textContent ?? ''
@@ -87,7 +116,16 @@ async function pressEscape(target: EventTarget) {
   await settle()
 }
 
+// The layer's `await loadGsap()` is a microtask under fake timers once the chunk has been imported.
+beforeAll(() => loadGsap())
+
+const originalAnimate = Element.prototype.animate
+
 beforeEach(() => {
+  chunk.fail = false
+  chunk.loads = 0
+  realRig = false
+  Element.prototype.animate = vi.fn(() => ({ onfinish: null })) as unknown as typeof Element.prototype.animate
   serverTime = T0
   serverNow.mockClear()
   vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'setTimeout', 'clearTimeout', 'Date'] })
@@ -95,6 +133,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  Element.prototype.animate = originalAnimate
+  restoreScreen()
   mounted?.unmount()
   mounted = undefined
   vi.useRealTimers()
@@ -237,28 +277,29 @@ describe('closing it', () => {
 
 describe('the live region', () => {
   const status = () => dialog()?.querySelector('[role="status"]')?.textContent?.trim()
+  const AFTER_STAMP = ceremonyTimeline(2, 'trip').stampAtMs + 1000
 
   it('names the Winner in a polite live region inside the dialog', async () => {
-    await mount(finished(), STARTS)
+    await mount(finished(), STARTS + AFTER_STAMP)
 
     expect(dialog()!.querySelector('[role="status"]')?.getAttribute('aria-live')).toBe('polite')
     expect(status()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
   })
 
   it('names every Winner of a Tie', async () => {
-    await mount(finished({ standings: [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 1, points: 9 }] }), STARTS)
+    await mount(finished({ standings: [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 1, points: 9 }] }), STARTS + AFTER_STAMP)
 
     expect(status()).toBe('Unentschieden: Wilde Gurken und Nacht Eulen, je 9 Punkte.')
   })
 })
 
 describe('focus', () => {
-  it('moves from a page button to the close button on opening, and back on closing', async () => {
+  it('moves from a page button to „Überspringen“ on opening, and back on closing', async () => {
     await mount(finished(), STARTS - 1000)
     pageButton().focus()
 
     await passTo(STARTS)
-    expect(document.activeElement).toBe(closeButton())
+    expect(document.activeElement).toBe(skipButton())
 
     closeButton()!.click()
     await settle()
@@ -368,9 +409,13 @@ describe('what the end frame shows', () => {
 
 describe('Compibert in the end frame (#311)', () => {
   const rig = () => dialog()?.querySelector('.compibert-rig') ?? null
+  beforeEach(() => {
+    realRig = true
+  })
 
-  it('is the animated rig, dancing, and hidden from assistive technology', async () => {
+  it('is the animated rig, dancing once the run is over, and hidden from assistive technology', async () => {
     await mount(finished(), STARTS)
+    await passTo(ENDS)
 
     expect(rig()).not.toBeNull()
     expect(rig()!.getAttribute('aria-hidden')).toBe('true')
@@ -403,5 +448,357 @@ describe('Compibert in the end frame (#311)', () => {
     await mount(finished(), STARTS)
 
     expect(dialog()!.querySelector('.compibert')).toBeNull()
+  })
+})
+
+// The Pokal-Lauf (#312): the layer moves a paused GSAP timeline with the server's clock. A part is shown when its inline opacity is empty
+// or 1 and hidden when it is 0 (asserted away from a tween), and the stub rig shows the pose the layer asked for.
+const part = (name: string) => [...(dialog()?.querySelectorAll<HTMLElement>(`[data-part="${name}"]`) ?? [])]
+const opacityOf = (element: HTMLElement) => element.style.opacity
+const shown = (name: string) => part(name).length > 0 && part(name).every(element => opacityOf(element) === '' || Number(opacityOf(element)) === 1)
+const hidden = (name: string) => part(name).length > 0 && part(name).every(element => Number(opacityOf(element)) === 0 && opacityOf(element) !== '')
+const frame = () => dialog()?.getAttribute('data-frame')
+const rigState = () => dialog()?.querySelector('[data-testid="rig"]')?.getAttribute('data-state')
+const pieces = () => dialog()?.querySelectorAll('[class~="layer-confetti"] span').length ?? 0
+const spoken = () => dialog()?.querySelector('[role="status"]')?.textContent?.trim()
+const everyPartShown = () => ['banner', 'row', 'card', 'back', 'stamp', 'person'].every(shown) && hidden('front')
+
+/** A finished Event of `parties` Parties with the gag, for the layer to play. */
+function run(parties: number, gag: CeremonyGag, overrides: Partial<Layer> = {}): Layer {
+  const ceremony = ceremonyAt(STARTS, parties, gag)
+  // A fixture cannot lie: the stored end is the timeline's end.
+  expect(Date.parse(ceremony.endsAt) - STARTS).toBe(ceremonyTimeline(parties, gag).endMs)
+  return finished({ ceremony, standings: standingsOf(parties), teams: [], members: [], ...overrides })
+}
+
+describe('a late joiner enters where the run is (#312)', () => {
+  const { rowsAtMs, runAtMs, runEndAtMs, stampAtMs, endMs } = ceremonyTimeline(5, 'bonk')
+  const trip = ceremonyTimeline(5, 'trip')
+
+  it('at the first frame sees the banner above, no rows, no card, no stamp, no people, Compibert idle, no confetti', async () => {
+    await mount(run(5, 'trip'), STARTS)
+
+    expect(frame()).toBe('run')
+    expect(part('banner')[0]!.style.transform).toContain('-140px')
+    expect(hidden('row')).toBe(true)
+    expect(hidden('card')).toBe(true)
+    expect(hidden('stamp')).toBe(true)
+    expect(hidden('person')).toBe(true)
+    expect(rigState()).toBe('idle')
+    expect(pieces()).toBe(0)
+    expect(spoken()).toBe('')
+  })
+
+  it('mid-rows sees the first row in, and the last not yet', async () => {
+    await mount(run(5, 'trip'), STARTS + rowsAtMs + 1350 + 10)
+
+    // Four rows, the last place first: three have landed, the second place has just started.
+    expect(part('row').filter(row => Number(opacityOf(row)) === 1)).toHaveLength(3)
+    expect(hidden('card')).toBe(true)
+  })
+
+  it('mid-run sees Compibert running', async () => {
+    await mount(run(5, 'trip'), STARTS + runAtMs + 300)
+
+    expect(rigState()).toBe('run')
+    expect(shown('card')).toBe(true)
+    expect(hidden('stamp')).toBe(true)
+  })
+
+  it('in the trip sees him in suspense', async () => {
+    await mount(run(5, 'trip'), STARTS + trip.runEndAtMs + 100)
+
+    expect(rigState()).toBe('suspense')
+  })
+
+  it('in the bonk sees him cheer, then confused', async () => {
+    await mount(run(5, 'bonk'), STARTS + runEndAtMs + 100)
+    expect(rigState()).toBe('cheer')
+    await passTo(STARTS + runEndAtMs + 1000)
+    expect(rigState()).toBe('confused')
+  })
+
+  it('after the stamp sees the stamp, the back of the card and the people, Compibert laughing, and gets no confetti', async () => {
+    await mount(run(5, 'bonk', { members: people(3, 1) }), STARTS + stampAtMs + 1000)
+
+    expect(shown('stamp')).toBe(true)
+    expect(shown('back')).toBe(true)
+    expect(hidden('front')).toBe(true)
+    expect(shown('person')).toBe(true)
+    expect(rigState()).toBe('laugh')
+    expect(pieces()).toBe(0)
+    expect(spoken()).toBe('Gewonnen hat Team Rot, 9 Punkte.')
+  })
+
+  it('at one millisecond before the end is still in the run, dancing is not yet', async () => {
+    await mount(run(5, 'bonk'), STARTS + endMs - 1)
+
+    expect(frame()).toBe('run')
+    expect(rigState()).toBe('laugh')
+    expect(pieces()).toBe(0)
+  })
+})
+
+describe('the stamp (#312)', () => {
+  const { stampAtMs } = ceremonyTimeline(2, 'trip')
+
+  it('bursts 40 pieces of confetti on a wide screen when the clock crosses it, and the live region speaks then', async () => {
+    stubScreen(true)
+    await mount(finished(), STARTS)
+    await passTo(STARTS + stampAtMs - 100)
+    expect(pieces()).toBe(0)
+    expect(spoken()).toBe('')
+
+    await passTo(STARTS + stampAtMs + 50)
+
+    expect(pieces()).toBe(40)
+    expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+  })
+
+  it('bursts 20 on a phone', async () => {
+    stubScreen(false)
+    await mount(finished(), STARTS)
+    await passTo(STARTS + stampAtMs - 100)
+
+    await passTo(STARTS + stampAtMs + 50)
+
+    expect(pieces()).toBe(20)
+  })
+
+  it('gives a tab that comes back 3 s after the stamp no confetti, but the announcement', async () => {
+    await mount(finished(), STARTS)
+    await passTo(STARTS + 500)
+
+    await passTo(STARTS + stampAtMs + 1500)
+
+    expect(pieces()).toBe(0)
+    expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+  })
+})
+
+async function mountAtEnd(view: Layer) {
+  await mount(view, ENDS - 1)
+  await passTo(ENDS)
+}
+
+describe('the end (#312)', () => {
+  const CASES = [2, 5, 8].flatMap(parties => CEREMONY_GAGS.map(gag => [parties, gag] as const))
+
+  it.each(CASES)('is the end frame at endsAt with %i Parties and the %s gag', async (parties, gag) => {
+    const { endMs } = ceremonyTimeline(parties, gag)
+    await mount(run(parties, gag), STARTS)
+
+    await passTo(STARTS + endMs - 1)
+    expect(frame()).toBe('run')
+    expect(skipButton()).not.toBeNull()
+
+    await passTo(STARTS + endMs)
+    expect(frame()).toBe('end')
+    expect(skipButton()).toBeNull()
+    expect(rigState()).toBe('dance')
+    expect(everyPartShown()).toBe(true)
+    expect(spoken()).toBe('Gewonnen hat Team Rot, 9 Punkte.')
+  })
+
+  it('has one row for 2 Parties and seven for 8', async () => {
+    await mount(run(8, 'trip'), STARTS)
+
+    expect(part('row')).toHaveLength(7)
+  })
+
+  it('plays a Tie of two over the same timeline: fewer rows, the end at endsAt', async () => {
+    const { endMs } = ceremonyTimeline(4, 'trip')
+    await mount(run(4, 'trip', { standings: standingsOf(4, 2) }), STARTS)
+    expect(part('row')).toHaveLength(2)
+
+    await passTo(STARTS + endMs - 1)
+    expect(frame()).toBe('run')
+    await passTo(STARTS + endMs)
+    expect(frame()).toBe('end')
+    expect(everyPartShown()).toBe(true)
+  })
+
+  it('shows 0, 1, 7 and 12 people at the end: the TeamMark, one, and „+N“', async () => {
+    for (const [count, cellCount] of [[0, 1], [1, 1], [7, 6], [12, 6]] as const) {
+      await mountAtEnd(run(2, 'trip', { members: people(count, 1) }))
+
+      expect(cells(), String(count)).toHaveLength(cellCount)
+      expect(everyPartShown(), String(count)).toBe(true)
+      mounted!.unmount()
+    }
+  })
+
+  it('shows the longest Team name in the card and the rows at the end', async () => {
+    const longest = Array.from({ length: 6 }, () => 'W'.repeat(12)).join(' ')
+    await mountAtEnd(run(2, 'trip', { teams: [team(1, longest), team(2, longest)] }))
+
+    expect(part('card')[0]!.textContent).toContain(longest)
+    expect(rows()[0]).toContain(longest)
+  })
+})
+
+describe('Überspringen (#312)', () => {
+  it('shows during the run with focus on it', async () => {
+    await mount(finished(), STARTS)
+
+    expect(skipButton()).not.toBeNull()
+    expect(document.activeElement).toBe(skipButton())
+  })
+
+  it('shows the end frame for this viewer, moves focus to the close button, speaks and fires no confetti', async () => {
+    await mount(finished(), STARTS + 500)
+
+    skipButton()!.click()
+    await settle()
+
+    expect(frame()).toBe('end')
+    expect(everyPartShown()).toBe(true)
+    expect(rigState()).toBe('dance')
+    expect(skipButton()).toBeNull()
+    expect(document.activeElement).toBe(closeButton())
+    expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+    expect(pieces()).toBe(0)
+  })
+
+  it('stays the end frame when the clock then passes the stamp and the end', async () => {
+    await mount(finished(), STARTS + 500)
+    skipButton()!.click()
+    await settle()
+
+    await passTo(STARTS + ceremonyTimeline(2, 'trip').stampAtMs + 50)
+    expect(pieces()).toBe(0)
+    await passTo(ENDS + 100)
+
+    expect(frame()).toBe('end')
+    expect(everyPartShown()).toBe(true)
+    expect(pieces()).toBe(0)
+  })
+
+  it('works at the first frame and at one millisecond before the end', async () => {
+    await mount(finished(), STARTS)
+    skipButton()!.click()
+    await settle()
+    expect(frame()).toBe('end')
+    mounted!.unmount()
+
+    await mount(finished(), ENDS - 1)
+    skipButton()!.click()
+    await settle()
+    expect(frame()).toBe('end')
+    expect(everyPartShown()).toBe(true)
+  })
+
+  it('leaves focus where it was when it was not on the button', async () => {
+    await mount(finished(), STARTS + 500)
+    pageButton().focus()
+
+    skipButton()!.click()
+    await settle()
+
+    expect(document.activeElement).toBe(pageButton())
+  })
+
+  it('plays a new start from its own beginning again', async () => {
+    await mount(finished(), STARTS + 500)
+    skipButton()!.click()
+    await settle()
+    const later = ENDS + 10_000
+
+    await passTo(later - CEREMONY_LEAD_MS)
+    await refetch(finished({ ceremony: ceremonyAt(later) }))
+    await passTo(later + 100)
+
+    expect(frame()).toBe('run')
+    expect(skipButton()).not.toBeNull()
+    expect(hidden('stamp')).toBe(true)
+  })
+})
+
+describe('reduced motion (#312)', () => {
+  it('opens at the start with the end frame, no „Überspringen“, the cheer pose, no confetti and the announcement', async () => {
+    motion('reduced')
+    await mount(finished(), STARTS)
+
+    expect(frame()).toBe('end')
+    expect(skipButton()).toBeNull()
+    expect(rigState()).toBe('cheer')
+    expect(everyPartShown()).toBe(true)
+    expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+    expect(document.activeElement).toBe(closeButton())
+
+    await passTo(STARTS + ceremonyTimeline(2, 'trip').stampAtMs + 50)
+    expect(pieces()).toBe(0)
+  })
+})
+
+describe('closing during the run (#312)', () => {
+  it('removes the layer and its confetti, and a refetch of the same start keeps it closed', async () => {
+    stubScreen(true)
+    const { stampAtMs } = ceremonyTimeline(2, 'trip')
+    await mount(finished(), STARTS)
+    await passTo(STARTS + stampAtMs - 100)
+    await passTo(STARTS + stampAtMs + 50)
+    expect(pieces()).toBe(40)
+
+    closeButton()!.click()
+    await settle()
+    expect(dialog()).toBeNull()
+    expect(document.querySelector('[class~="layer-confetti"]')).toBeNull()
+
+    await refetch(finished())
+    await passTo(STARTS + stampAtMs + 500)
+    expect(dialog()).toBeNull()
+  })
+
+  it('drops the old run for a new start while the old one plays, and plays the new one from its start', async () => {
+    await mount(finished(), STARTS + 1000)
+    const later = STARTS + 1500
+
+    await refetch(finished({ ceremony: ceremonyAt(later) }))
+    expect(dialog()).toBeNull()
+    await passTo(later + 100)
+
+    expect(frame()).toBe('run')
+    expect(hidden('stamp')).toBe(true)
+    expect(rigState()).toBe('idle')
+  })
+})
+
+describe('when GSAP does not load (#312)', () => {
+  it('shows the end frame as it is, without motion, and speaks', async () => {
+    chunk.fail = true
+    await mount(finished(), STARTS)
+
+    expect(frame()).toBe('end')
+    expect(skipButton()).toBeNull()
+    expect(text()).toContain('SIEGER')
+    expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+  })
+})
+
+describe('preloading GSAP (#312)', () => {
+  it('asks for the chunk during the lead and for a late joiner, so it is there when the layer opens', async () => {
+    await mount(finished(), STARTS - CEREMONY_LEAD_MS)
+    expect(chunk.loads).toBeGreaterThan(0)
+    mounted!.unmount()
+    chunk.loads = 0
+
+    await mount(finished(), STARTS + 1000)
+    expect(chunk.loads).toBeGreaterThan(0)
+  })
+
+  it('does not ask for it on a finished Event opened after the run', async () => {
+    await mount(finished(), ENDS + 60_000)
+
+    expect(dialog()).toBeNull()
+    expect(chunk.loads).toBe(0)
+  })
+})
+
+describe('the line under the banner (#312)', () => {
+  it('names the Event and its games', async () => {
+    await mount(finished(), STARTS)
+
+    expect(text()).toContain('Freitags-Zocken · 3 Spiele')
   })
 })

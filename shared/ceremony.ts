@@ -18,16 +18,36 @@ export const CEREMONY_LEAD_MS = 1500
  */
 export const CEREMONY_RUN_MS = 700
 
+/** One row slides in every this long (the reference's stagger); the first one at `rowsAtMs`. */
+export const CEREMONY_ROW_MS = 450
+const ROWS_AT_MS = 600
+/** After the landing (ms): the stamp, Compibert gets up and laughs, the Winner's people pop in. */
+const STAMP_AFTER_LAND_MS = 150
+const GET_UP_AFTER_LAND_MS = 300
+const MEMBERS_AFTER_LAND_MS = 450
+
 /**
  * The run's moments in ms from its start instant, from `AwardCeremony.dc.html` play() (04-motion § 6b): the banner and one row per place
- * from last to second (450 ms each) come first, then the run, then the gag lands (trip 800 ms, bonk 2200 ms after the run), and the
- * tail up to the dance (2200 ms) is the end. A Tie does not shorten it: the rows are the Parties less one (#309, decided).
+ * from last to second (450 ms each) come first, then the winner card, the run, then the gag lands (trip 800 ms, bonk 2200 ms after the run),
+ * and the tail up to the dance (2200 ms) is the end. A Tie does not shorten it: the rows are the Parties less one (#309, decided; #315
+ * revisits it). The server's `endsAt` and the client's tracks both read this one function (#312), so they cannot drift.
  */
-export function ceremonyTimeline(partyCount: number, gag: CeremonyGag): { runAtMs: number, landAtMs: number, endMs: number } {
+export function ceremonyTimeline(partyCount: number, gag: CeremonyGag) {
   const rows = Math.max(partyCount - 1, 0)
-  const runAtMs = 900 + 450 * rows
-  const landAtMs = runAtMs + CEREMONY_RUN_MS + (gag === 'trip' ? 800 : 2200)
-  return { runAtMs, landAtMs, endMs: landAtMs + 2200 }
+  const runAtMs = 900 + CEREMONY_ROW_MS * rows
+  const runEndAtMs = runAtMs + CEREMONY_RUN_MS
+  const landAtMs = runEndAtMs + (gag === 'trip' ? 800 : 2200)
+  return {
+    rowsAtMs: ROWS_AT_MS,
+    cardAtMs: ROWS_AT_MS + CEREMONY_ROW_MS * rows,
+    runAtMs,
+    runEndAtMs,
+    landAtMs,
+    stampAtMs: landAtMs + STAMP_AFTER_LAND_MS,
+    getUpAtMs: landAtMs + GET_UP_AFTER_LAND_MS,
+    membersAtMs: landAtMs + MEMBERS_AFTER_LAND_MS,
+    endMs: landAtMs + 2200,
+  }
 }
 
 /** The instant the run ends (epoch ms): the start plus the timeline's end. */
