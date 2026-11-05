@@ -177,6 +177,27 @@ describe('the primary when the Event can be finished (#277)', () => {
     expect(state).toMatchObject({ kind: 'finished', primary: null, number: null })
   })
 
+  // The closing decision (#285): made once, the primary of the kinds that play; the others carry none.
+  it('names the closing decision: finish or finishTie where it plays, none otherwise (#285)', () => {
+    expect(hostDockState(input({ sessions: RUNNING, end: end() }))).toMatchObject({ kind: 'running', closing: 'finish', primary: 'finish' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: end() }))).toMatchObject({ kind: 'between', closing: 'finish', primary: 'finish' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: end() }))).toMatchObject({ kind: 'done', closing: 'finish', primary: 'finish' })
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2] }) }))).toMatchObject({ kind: 'running', closing: 'finishTie', primary: 'finishTie' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: end({ tie: [1, 2] }) }))).toMatchObject({ kind: 'between', closing: 'finishTie', primary: 'finishTie' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: end({ tie: [1, 2] }) }))).toMatchObject({ kind: 'done', closing: 'finishTie', primary: 'finishTie' })
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ finish: { rejection: 'standings_changed' } }) }))).toMatchObject({ kind: 'running', closing: null, primary: 'spin' })
+    expect(hostDockState(input({ sessions: [undated('a')], start: NO_DATED, end: end() }))).toMatchObject({ kind: 'poll', closing: null })
+    expect(hostDockState(input({ settings: null, end: end() }))).toMatchObject({ kind: 'setup', closing: null })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: end() }))).toMatchObject({ kind: 'finished', closing: null })
+  })
+})
+
+describe('dockLayout reads the closing decision (#285)', () => {
+  it('lays a running Session out as closed when it is closed, whatever its primary is', () => {
+    const spin = hostDockState(input({ settings, sessions: RUNNING }))
+
+    expect(dockLayout({ ...spin, closing: 'finish' }, { pollOpen: false, bonusVetoOpen: false })).toEqual({ primary: ['finish'], secondary: ['end', 'invite'], more: ['coin', 'countdown', 'settings'] })
+  })
 })
 
 describe('the primary of a running Session (#228)', () => {
