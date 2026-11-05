@@ -98,7 +98,7 @@ export function highlightRow(row: Element): void {
 // it follows the entry the page's blocks already glide by, „UI enters“ (the banner: `EASE.out`), over the slow duration. A UI move never overshoots
 // (04-motion: „UI … never overshoot“): `lb-swap`'s spring is for the Leaderboard's rows. The element ends on its laid-out place, so nothing snaps at the end.
 
-/** The page's blocks and the Round cards glide to their new place: a transform over `dur-slow` on `ease-out`, and at once under reduced motion (04-motion § UI enters: „Reduced: opacity only“). */
+/** The page's blocks glide to their new place (the Round cards: `CARD_REFLOW_CLASS`): a transform over `dur-slow` on `ease-out`, and at once under reduced motion (04-motion § UI enters: „Reduced: opacity only“). */
 export const REFLOW_CLASS = 'transition-transform dur-slow ease-out motion-reduce:transition-none reduced:transition-none'
 
 /**
