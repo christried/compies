@@ -9,7 +9,7 @@ import { hasStarted } from '~~/shared/session-state'
 import type { HistoryCorrections } from '~/utils/result-draft'
 import { beforeFinish, datePollOpen, sessionsEditable } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
-import { leadersOf } from '~~/shared/results'
+import { leadersOf } from '~~/shared/finish'
 import { settingsEditable } from '~~/shared/settings'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
