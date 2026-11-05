@@ -20,19 +20,19 @@ type ActivityRow = typeof activity.$inferSelect
 type ActivityMoment<T extends ActivityType> = T extends InstantActivityType ? { at: Date, now?: never } : { at?: never, now: Date }
 
 /**
- * The moment of an entry that has no instant of its own (review 0.8, S1). A Session's start and end are the request's `now` (#259) and
- * the feed's groups compare an entry with them, so an entry stamped by the database's clock alone would land before the start it
- * records when that clock lags the app's. `clock_timestamp()` is the moment of the insert and `now()` the start of the transaction, so
- * their difference is the time the change has taken so far: `now` plus it grows with every insert of one change, and the database's own
- * clock wins when it is ahead.
- * The third term keeps the order of two changes whose `now` stands still or comes from two instances with different clocks (a test clock
+ * The moment of an entry that has no instant of its own (review 0.8, S1, F7). A Session's start and end are the request's `now` (#259)
+ * and the feed's groups compare an entry with them, so an entry is on that clock and on no other: the database's clock takes no part, or
+ * an entry written less than its lead before the end of a Session would be stamped after it and land under „Nach der Session“, and one
+ * written while it lags would land before the start it records. `clock_timestamp()` is the moment of the insert and `now()` the start
+ * of the transaction, so their difference is the time the change has taken so far: `now` plus it grows with every insert of one change
+ * and keeps their order.
+ * The second term keeps the order of two changes whose `now` stands still or comes from two instances with different clocks (a test clock
  * does; a time elapsed inside a heavy request would otherwise outrun the next, light one): an entry is later than the Event's last one,
  * the entries that wait for their instant (INSTANT_ACTIVITY_TYPES) aside, whose `at` lies in the future.
  */
 function stampOf(eventId: string, now: Date) {
   const instants = sql.join(INSTANT_ACTIVITY_TYPES.map(type => sql`${type}`), sql`, `)
   return sql`greatest(
-    clock_timestamp(),
     ${now.toISOString()}::timestamptz + (clock_timestamp() - now()),
     (select max(earlier.at) + interval '1 microsecond' from activity earlier where earlier.event_id = ${eventId} and earlier.type not in (${instants}))
   )`
