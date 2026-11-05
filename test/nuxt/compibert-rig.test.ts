@@ -6,6 +6,7 @@ import CompibertRig from '~/components/CompibertRig.vue'
 import { RIG_STATES, type RigState } from '~/utils/compibert-rig'
 import { loadGsap } from '~/utils/gsap'
 import { stubInView } from './in-view'
+import { motion } from './motion'
 
 // Compibert's rig (#311, spec #308 § Compibert's rig, ADR 0015): the animated twin of the still `Compibert`. Real GSAP runs here, with real timers;
 // the tests look at what a User or the page can observe (the rendered SVG, its transforms, the root's data attributes), never at GSAP's numbers.
@@ -21,21 +22,6 @@ mockNuxtImport('loadGsap', async () => {
 })
 
 type Page = Awaited<ReturnType<typeof mountSuspended<typeof CompibertRig>>>
-
-/** The page's motion setting, as the tokens put it in `--cp-motion`. Calls through: GSAP reads other properties with `getComputedStyle` too. */
-const realComputedStyle = window.getComputedStyle.bind(window)
-function motion(value: 'full' | 'reduced') {
-  vi.spyOn(window, 'getComputedStyle').mockImplementation((element: Element, pseudo?: string | null) => {
-    const style = realComputedStyle(element, pseudo)
-    return new Proxy(style, {
-      get(target, property) {
-        if (property === 'getPropertyValue') return (name: string) => (name === '--cp-motion' ? value : target.getPropertyValue(name))
-        const member = Reflect.get(target, property)
-        return typeof member === 'function' ? member.bind(target) : member
-      },
-    })
-  })
-}
 
 const pages: Page[] = []
 

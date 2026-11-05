@@ -11,9 +11,12 @@ const chunks = existsSync(CHUNKS)
   : []
 const gsapChunk = chunks.find(chunk => chunk.code.includes('_gsap'))
 
-// Without a consumer GSAP is tree-shaken out of the build and there is nothing to check; the ceremony's end frame (#311 Part B) is the first
-// consumer, and removes this guard. Until then the build has no GSAP chunk and the test would be vacuous.
-describe.skipIf(!gsapChunk)('GSAP in the build', () => {
+describe('GSAP in the build', () => {
+  // Guards against a vacuous pass: GSAP is tree-shaken out when nothing uses the loader, and then there is nothing to check.
+  it('is in the build, since the end frame of the ceremony uses the rig', () => {
+    expect(gsapChunk).toBeDefined()
+  })
+
   it('sits in a chunk of its own that is reached through a dynamic import', () => {
     const file = gsapChunk!.file
 
