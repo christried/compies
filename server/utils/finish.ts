@@ -1,7 +1,7 @@
 import { and, eq, isNotNull } from 'drizzle-orm'
 import { events, roundPlaces, rounds } from '../db/schema'
 import type { EventFinished } from '../../shared/event'
-import { finishRejection, leadersOf, standingsAndEnd, type FinishRequest } from '../../shared/results'
+import { finishRejection, leadersOf, standingsAndEnd, type FinishRequest } from '../../shared/finish'
 import { settingsFromRow, type EventSettings } from '../../shared/settings'
 import { recordActivity } from './activity'
 import type { Db } from './db'

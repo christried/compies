@@ -3,7 +3,7 @@ import { useClock } from '../../utils/clock'
 import { useDb } from '../../utils/db'
 import { loadEvent } from '../../utils/event-access'
 import { boardSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, sessionSection, startSection } from '../../utils/event-read'
-import { stageSections } from '../../utils/stage-read'
+import { stageSections, type StageFields } from '../../utils/stage-read'
 import { settleBeforeRead } from '../../utils/rounds'
 import { requireUser } from '../../utils/user'
 import type { EventView } from '../../../shared/event'
@@ -41,8 +41,8 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     ...boardSection(eventRow, rows),
     ...startSection(eventRow, rows, viewer),
   }
-  // The stage sections run together (#256). Their fields are what the view has beyond `fixed`; the completeness of
-  // that part is guarded by the integration test "the stage sections of the Event read" (rounds.test.ts).
-  const stage = Object.assign({}, ...await Promise.all(stageSections.map(section => section({ db, eventRow, rows, viewer, now })))) as Omit<EventView, keyof typeof fixed>
+  // The stage sections run together (#256). `StageFields` is derived from what they return, so `{ ...fixed, ...stage }` fails to compile when
+  // a field of the view is in neither part (review 0.8 Q7); the integration test "the stage sections of the Event read" (rounds.test.ts) is the runtime backstop.
+  const stage: StageFields = Object.assign({}, ...await Promise.all(stageSections.map(section => section({ db, eventRow, rows, viewer, now }))))
   return { ...fixed, ...stage }
 })

@@ -1,5 +1,5 @@
 import { asRecord } from '../../shared/record'
-import type { FinishRequest } from '../../shared/results'
+import type { FinishRequest } from '../../shared/finish'
 import { TEAM_COUNT_MAX } from '../../shared/settings'
 
 // What the Host sends to finish the Event (#277, spec #272): `{ outcome: 'winner' | 'tie', winners: [team positions] }`. The outcome is

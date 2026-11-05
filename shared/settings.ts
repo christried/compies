@@ -1,7 +1,7 @@
 // Event settings (#138, release 1.3): the values the stepper, the settings rules and the schema share.
 
 import type { Seats } from './board'
-import { beforeFinish, type Phase } from './event'
+import { beforeFinish, type Phase } from './phase'
 import { isRecord } from './record'
 
 /** Formats (GLOSSARY: Format). Only `teams` can be chosen in 1.3; `ffa` is shown „Bald verfügbar“. */

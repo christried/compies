@@ -1,7 +1,8 @@
 import { useEventMutation } from '~/composables/useEventMutation'
 import type { CountdownCommand } from '~~/shared/countdown'
 import type { LastGameAdded } from '~~/shared/event'
-import type { FinishRequest, ResultPlace } from '~~/shared/results'
+import type { FinishRequest } from '~~/shared/finish'
+import type { ResultPlace } from '~~/shared/results'
 
 // The stage's changes (#257, Q6 of review 0.7): the Host's Session, round and Countdown actions and the Players' Veto and clip
 // actions, each one `send` to its path. The page holds no request string; a refused change shows the shared error copy, and the
