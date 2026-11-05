@@ -111,7 +111,7 @@ describe('the Host\'s pool warning (#234)', () => {
     }
     for (const key of Object.keys(people) as (keyof typeof people)[]) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
     const pool = await testDb.db.insert(games).values(Array.from({ length: poolSize }, (_, index) => ({ name: `Spiel ${index + 1}`, createdBy: ids.host }))).returning()
-    await testDb.db.insert(eventPoolGames).values(pool.map(game => ({ eventId, gameId: game.id, pool: 'main' as const })))
+    await testDb.db.insert(eventPoolGames).values(pool.map(game => ({ eventId, gameId: game.id })))
 
     const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
     for (const slotId of slotIds) expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId })).status).toBe(200)

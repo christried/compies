@@ -247,7 +247,7 @@ describe('the Activity feed', () => {
       const [game] = await testDb.db.insert(games).values({ name: 'Geheimspiel', createdBy: hostId }).returning()
 
       expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { teamCount: 3, pointsTable: { preset: 'linear', values: [2, 1, 0] } } })).status).toBe(200)
-      expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { pools: { main: [game!.id] } })).status).toBe(200)
+      expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { pool: [game!.id] })).status).toBe(200)
 
       expect((await feed(hostCookie, slug)).entries).toEqual([])
       expect(added(eventId)).toEqual([])
@@ -277,7 +277,7 @@ describe('the Activity feed', () => {
       const { slug, hostCookie, hostId } = await pollEvent()
       const [game] = await testDb.db.insert(games).values({ name: 'Geheimspiel', createdBy: hostId }).returning()
 
-      await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 12, teamSize: 4 }, pools: { main: [game!.id] } })
+      await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 12, teamSize: 4 }, pool: [game!.id] })
 
       const raw = await (await send('GET', `/api/e/${slug}/activity`, hostCookie)).text()
       expect(raw).toContain('game_count_changed')
@@ -300,7 +300,7 @@ describe('the Activity feed', () => {
         ['a Reopen of a Session without a Date', 409, () => send('POST', `/api/e/${slug}/sessions/${undated.id}/reopen`, hostCookie)],
         ['a Reschedule of a Session without a Date', 409, () => send('POST', `/api/e/${slug}/sessions/${undated.id}/reschedule`, hostCookie, { startsAt: '2090-12-01T19:00' })],
         ['a Reschedule with a bad time', 400, () => send('POST', `/api/e/${slug}/sessions/${undated.id}/reschedule`, hostCookie, { startsAt: 'bald' })],
-        ['an unknown game in a pool', 400, () => send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 12 }, pools: { main: ['00000000-0000-4000-8000-000000000000'] } })],
+        ['an unknown game in a pool', 400, () => send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 12 }, pool: ['00000000-0000-4000-8000-000000000000'] })],
         ['a Slot that does not exist', 404, () => send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId: '00000000-0000-4000-8000-000000000000' })],
       ]
 

@@ -1488,7 +1488,7 @@
       "vetoes": "Vetos",
       "vetoValue": "{n} pro Partei",
       "pool": "Pool",
-      "poolValue": "{main} Spiel | {main} Spiele",
+      "poolValue": "{n} Spiel | {n} Spiele",
       "pointsValue": "{preset} {values}",
       "dates": "Termin"
     },

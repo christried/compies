@@ -94,7 +94,7 @@ const datesLine = computed(() => (poll.value
         </section>
         <EventSettingsSummary
           :settings="settings"
-          :pools="{ main: draft.pools.main.length }"
+          :pool="draft.pool.length"
           :dates="datesLine"
         />
       </div>

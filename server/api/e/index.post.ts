@@ -10,7 +10,7 @@ import { useDb, type Db } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { addMember } from '../../utils/invite'
 import { inviteUrl } from '../../utils/links'
-import { assertGamesExist } from '../../utils/pools'
+import { assertGamesExist, assertNoOldPools } from '../../utils/pools'
 import { requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
 import { asRecord } from '../../../shared/record'
@@ -21,7 +21,7 @@ const SLUG_ATTEMPTS = 5
 // Create an Event (screen M2). Only Users with the Host permission may create one (ADR 0002).
 // The Event with its settings, its Sessions, its Slots and the Host's membership are written in one transaction.
 // Settings are required (#144): an Event without them is one from before 1.3. The Game pool (#146) is an optional list
-// of library game ids, written in the same transaction. A `tiebreaker` list is ignored (#279).
+// of library game ids under `pool`, written in the same transaction.
 export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const user = await requireUser(event)
   if (!user.canHost) throw apiError('no_host_permission')
@@ -30,12 +30,14 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   const parsed = parseNewEvent(body, useClock(event).now())
   if (!parsed.ok) throw apiError(parsed.error)
   const input = parsed.event
-  const parsedSettings = parseSettings(asRecord(body).settings)
+  const record = asRecord(body)
+  assertNoOldPools(record)
+  const parsedSettings = parseSettings(record.settings)
   if (!parsedSettings.ok) throw apiError(parsedSettings.error)
   const { settings } = parsedSettings
-  const parsedPools = parsePools(asRecord(body).pools)
-  if (!parsedPools.ok) throw apiError(parsedPools.error)
-  const { pools } = parsedPools
+  const parsedPool = parsePools(record.pool)
+  if (!parsedPool.ok) throw apiError(parsedPool.error)
+  const { pool } = parsedPool
 
   const db = useDb(event)
   const slug = await freeSlug(db, input.name)
@@ -51,13 +53,13 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   // load by slug, and no one is in its room to tell (#183).
   // eslint-disable-next-line no-restricted-syntax -- creating an Event has no Event to load and no one to publish to
   await db.transaction(async (tx) => {
-    await assertGamesExist(tx, pools.main)
+    await assertGamesExist(tx, pool)
     const [row] = await tx
       .insert(events)
       .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })
       .returning({ id: events.id })
     await tx.insert(sessions).values(startsAt.map(date => ({ eventId: row!.id, startsAt: date })))
-    const poolRows = pools.main.map(gameId => ({ eventId: row!.id, gameId, pool: 'main' as const }))
+    const poolRows = pool.map(gameId => ({ eventId: row!.id, gameId }))
     if (poolRows.length > 0) await tx.insert(eventPoolGames).values(poolRows)
     await addMember(tx, row!.id, user.id)
     if (input.dateMode === 'poll') {

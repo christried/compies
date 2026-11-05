@@ -97,13 +97,13 @@ describe('summaryRows', () => {
   })
 
   it('says „1 Spiel“ for a pool of one game, and „0 Spiele“ for an empty one', () => {
-    expect(summaryRows(settings(), t, { pools: { main: 1 } }).at(-1)).toEqual({ key: 'pool', label: 'Pool', value: '1 Spiel', settings: [] })
-    expect(summaryRows(settings(), t, { pools: { main: 0 } }).at(-1)).toMatchObject({ value: '0 Spiele' })
-    expect(summaryRows(settings(), t, { pools: { main: 2 } }).at(-1)).toMatchObject({ value: '2 Spiele' })
+    expect(summaryRows(settings(), t, { pool: 1 }).at(-1)).toEqual({ key: 'pool', label: 'Pool', value: '1 Spiel', settings: [] })
+    expect(summaryRows(settings(), t, { pool: 0 }).at(-1)).toMatchObject({ value: '0 Spiele' })
+    expect(summaryRows(settings(), t, { pool: 2 }).at(-1)).toMatchObject({ value: '2 Spiele' })
   })
 
   it('adds the Game pool and the Date, which show no setting, when it is given them (#279: no Tiebreaker count)', () => {
-    const rows = summaryRows(settings(), t, { pools: { main: 9 }, dates: 'Umfrage, 4 Vorschläge' })
+    const rows = summaryRows(settings(), t, { pool: 9, dates: 'Umfrage, 4 Vorschläge' })
 
     expect(rows.slice(-2)).toEqual([
       { key: 'pool', label: 'Pool', value: '9 Spiele', settings: [] },

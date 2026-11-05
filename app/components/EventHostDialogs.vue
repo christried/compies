@@ -114,7 +114,7 @@ const pickerOpen = ref(false)
 const setting = ref(false)
 const poolLeft = computed(() => {
   const left = new Set(props.view.setGame?.left ?? [])
-  return (props.view.pools?.main ?? []).filter(isFullPoolGame).filter(game => left.has(game.id))
+  return (props.view.pool ?? []).filter(isFullPoolGame).filter(game => left.has(game.id))
 })
 
 // Only a Selection mode with a wheel has Vetoes (#232): there the Host can allow one on the game they set.

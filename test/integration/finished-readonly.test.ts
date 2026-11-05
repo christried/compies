@@ -173,8 +173,8 @@ describe('a finished Event is read-only', () => {
     ]).returning()
     const [halo, kart] = inserted as [typeof inserted[number], typeof inserted[number]]
     await testDb.db.insert(eventPoolGames).values([
-      { eventId, gameId: halo.id, pool: 'main' },
-      { eventId, gameId: kart.id, pool: 'main' },
+      { eventId, gameId: halo.id },
+      { eventId, gameId: kart.id },
     ])
     const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
     for (const slotId of slotIds) expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId })).status).toBe(200)

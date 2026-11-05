@@ -4,7 +4,7 @@ import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventRounds from '~/components/EventRounds.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { BoardTeam, EventPools } from '~~/shared/event'
+import type { BoardTeam, EventView } from '~~/shared/event'
 import type { EndView, RoundView, SetGameView } from '~~/shared/stage'
 import type { GameView, PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
@@ -29,7 +29,7 @@ const round = (id: string, game: PoolGame, notes?: string): RoundView => {
   return { id, startedAt: STARTED, setAt: STARTED, game: shown, ...(notes ? { notes } : {}) }
 }
 
-const pools: EventPools = { main: [halo, kart, pong] }
+const pool: EventView['pool'] = [halo, kart, pong]
 const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
 type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null }
@@ -44,7 +44,7 @@ function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running',
     setGame,
     teams,
     ...(end === undefined ? {} : { end }),
-    pools: host ? pools : null,
+    pool: host ? pool : null,
   }))
 }
 
@@ -402,7 +402,7 @@ describe('entering a Result (#273)', () => {
           runningSessionId: `session-${current.slug}-0`,
           rounds: [round('r2', kart)],
           teams: pair,
-          pools,
+          pool,
         }))
         throw createError({ statusCode: 409, statusMessage: 'round_not_open' })
       })
@@ -426,7 +426,7 @@ describe('entering a Result (#273)', () => {
         runningSessionId: `session-${current.slug}-0`,
         rounds: rest,
         teams: pair,
-        pools,
+        pool,
       }))
 
       /** Presses the button of the Round the way a Host does: it has the focus, and the sheet opens from it. */
@@ -597,7 +597,7 @@ describe('„Nächstes Spiel setzen“', () => {
       event: { isHost: true, phase: 'running' },
       settings: { ...defaultSettings(), selectionMode: 'lucky_wheel' },
       runningSessionId: `session-${slug}-0`,
-      pools,
+      pool,
       setGame: { rejection: null, spinRejection: null, respin: false, left: [halo.id, pong.id], poolWarning: null },
     }))
     registerEndpoint(`/api/e/${served.slug}/rounds`, { method: 'POST', handler: async (event) => {
@@ -683,7 +683,7 @@ describe('the Lucky Wheel on the stage (#229)', () => {
       rounds,
       setGame,
       wheel,
-      pools: host ? pools : null,
+      pool: host ? pool : null,
     }))
     registerEndpoint(`/api/e/${served.slug}/rounds/spin`, { method: 'POST', handler: () => {
       posted += 1

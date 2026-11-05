@@ -14,14 +14,14 @@ describe('newDraft', () => {
       hiddenWheel: false,
       poolPreview: true,
       vetoAllowance: null,
-      pools: { main: [] },
+      pool: [],
       dates: { mode: 'poll', sessionCount: 1, slots: [''], direct: [''] },
     })
   })
 
   it('gives every draft its own lists', () => {
     expect(newDraft().dates.slots).not.toBe(newDraft().dates.slots)
-    expect(newDraft().pools.main).not.toBe(newDraft().pools.main)
+    expect(newDraft().pool).not.toBe(newDraft().pool)
   })
 })
 
@@ -38,7 +38,7 @@ describe('draftBody', () => {
       sessions: 2,
       slots: ['2090-10-30T20:30', '2090-10-31T19:00'],
       settings: defaultSettings(),
-      pools: { main: [] },
+      pool: [],
     })
   })
 
@@ -53,7 +53,7 @@ describe('draftBody', () => {
       sessions: 2,
       startsAt: ['2090-11-07T20:00', '2090-11-08T19:00'],
       settings: defaultSettings(),
-      pools: { main: [] },
+      pool: [],
     })
   })
 
@@ -61,7 +61,7 @@ describe('draftBody', () => {
     let draft = togglePoolGame(newDraft(), game('a', 'Mario Kart'))
     draft = togglePoolGame(draft, game('b', 'Pong'))
 
-    expect(draftBody(draft).pools).toEqual({ main: ['a', 'b'] })
+    expect(draftBody(draft).pool).toEqual(['a', 'b'])
   })
 
   it('sends settings the server accepts', () => {
@@ -79,16 +79,16 @@ describe('the pools', () => {
     const kart = game('a', 'Mario Kart')
 
     const added = togglePoolGame(newDraft(), kart)
-    expect(added.pools.main).toEqual([kart])
+    expect(added.pool).toEqual([kart])
 
-    expect(togglePoolGame(added, kart).pools.main).toEqual([])
+    expect(togglePoolGame(added, kart).pool).toEqual([])
   })
 
   it('keeps the order in which games were added', () => {
     let draft = newDraft()
     for (const [id, name] of [['c', 'Zelda'], ['a', 'Alpha'], ['b', 'Beta']] as const) draft = togglePoolGame(draft, game(id, name))
 
-    expect(draft.pools.main.map(entry => entry.name)).toEqual(['Zelda', 'Alpha', 'Beta'])
+    expect(draft.pool.map(entry => entry.name)).toEqual(['Zelda', 'Alpha', 'Beta'])
   })
 
   it('takes one game out when it is toggled again, and keeps the others', () => {
@@ -96,7 +96,7 @@ describe('the pools', () => {
     const pong = game('b', 'Pong')
     const draft = togglePoolGame(togglePoolGame(newDraft(), kart), pong)
 
-    expect(togglePoolGame(draft, kart).pools).toEqual({ main: [pong] })
+    expect(togglePoolGame(draft, kart).pool).toEqual([pong])
   })
 
   it('adds a game once, however often it is added', () => {
@@ -104,7 +104,7 @@ describe('the pools', () => {
 
     const draft = addPoolGame(addPoolGame(newDraft(), kart), kart)
 
-    expect(draft.pools.main).toEqual([kart])
+    expect(draft.pool).toEqual([kart])
   })
 
   it('does not change the draft it was given', () => {
@@ -113,7 +113,7 @@ describe('the pools', () => {
     togglePoolGame(draft, game('a', 'Mario Kart'))
     addPoolGame(draft, game('a', 'Mario Kart'))
 
-    expect(draft.pools).toEqual({ main: [] })
+    expect(draft.pool).toEqual([])
   })
 })
 
@@ -181,24 +181,17 @@ describe('the editor draft', () => {
   const kart = game('a', 'Mario Kart')
   const pong = game('b', 'Pong')
 
-  function view(settings: EventView['settings'], pools: EventView['pools'] = { main: [] }): EventView {
-    return { settings, pools } as EventView
+  function view(settings: EventView['settings'], pool: EventView['pool'] = []): EventView {
+    return { settings, pool } as EventView
   }
 
-  it('starts from the Event’s settings and pools', () => {
+  it('starts from the Event’s settings and pool', () => {
     const settings = { ...defaultSettings(), teamSize: 4, gameCount: 7 }
 
-    const draft = draftFromEvent(view(settings, { main: [kart, pong] }))
+    const draft = draftFromEvent(view(settings, [kart, pong]))
 
     expect(settingsOf(draft)).toEqual(settings)
-    expect(draft.pools).toEqual({ main: [kart, pong] })
-  })
-
-  it('ignores a tiebreaker key in an Event read from before 0.8, and does not throw (#279)', () => {
-    const legacy = { main: [kart], tiebreaker: [pong] } as unknown as EventView['pools']
-
-    expect(draftFromEvent(view(defaultSettings(), legacy)).pools).toEqual({ main: [kart] })
-    expect(draftFromEvent(view(defaultSettings(), { main: [kart] })).pools).toEqual({ main: [kart] })
+    expect(draft.pool).toEqual([kart, pong])
   })
 
   it('starts from the defaults for an Event that is not set up, without a chosen Veto allowance', () => {
@@ -265,7 +258,7 @@ describe('the editor draft', () => {
   it('has no games when the viewer learns nothing about the pools', () => {
     const draft = draftFromEvent(view(defaultSettings(), null))
 
-    expect(draft.pools).toEqual({ main: [] })
+    expect(draft.pool).toEqual([])
   })
 
   it('sends the settings and the ids of the Game pool, which the server accepts', () => {
@@ -273,7 +266,7 @@ describe('the editor draft', () => {
 
     const body = settingsBody(draft)
 
-    expect(body).toEqual({ settings: defaultSettings(), pools: { main: ['a', 'b'] } })
+    expect(body).toEqual({ settings: defaultSettings(), pool: ['a', 'b'] })
     expect(parseSettings(body.settings).ok).toBe(true)
   })
 })

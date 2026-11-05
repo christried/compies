@@ -458,7 +458,7 @@ describe('the stepper', () => {
         dateMode: 'poll',
         sessions: 1,
         slots: ['2090-10-30T20:30'],
-        pools: { main: [] },
+        pool: [],
         settings: {
           format: 'teams',
           teamCount: 4,

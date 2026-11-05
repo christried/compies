@@ -30,7 +30,7 @@ async function mountCreate(): Promise<Page> {
 /** An Event with its GET and PATCH endpoints; `patched` collects the PATCH bodies. */
 async function mountEditor(settings: EventSettings, phase = 'poll') {
   const patched = vi.fn()
-  const { slug } = serve(s => view(s, [], { event: { isHost: true, phase }, settings, pools: { main: [] } }))
+  const { slug } = serve(s => view(s, [], { event: { isHost: true, phase }, settings, pool: [] }))
   registerEndpoint(`/api/e/${slug}/settings`, {
     method: 'PATCH',
     handler: async (event) => {

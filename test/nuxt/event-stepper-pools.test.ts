@@ -473,7 +473,7 @@ describe('the pool steps', () => {
       await cta(page).trigger('click')
 
       await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
-      expect(savedEvent).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [pong.id, kart.id] } }))
+      expect(savedEvent).toHaveBeenCalledWith(expect.objectContaining({ pool: [pong.id, kart.id] }))
       const rows = new Map(page.get('dl').findAll('dt').map((term, index) => [term.text(), page.get('dl').findAll('dd')[index]!.text()]))
       expect(rows.get('Pool')).toBe('2 Spiele')
     })
@@ -486,7 +486,7 @@ describe('the pool steps', () => {
       await cta(page).trigger('click')
 
       await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
-      expect(savedEvent).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [] } }))
+      expect(savedEvent).toHaveBeenCalledWith(expect.objectContaining({ pool: [] }))
     })
 
     it('says so when a game of the pool is gone from the library, and keeps the draft', async () => {

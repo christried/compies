@@ -20,7 +20,7 @@ const { toast } = useToast()
 
 useStepBlocker(blocker)
 
-const games = computed(() => draft.value.pools.main)
+const games = computed(() => draft.value.pool)
 const wheel = computed(() => hasWheel(draft.value.settings.selectionMode))
 const library = computed(() => props.locks?.library !== false)
 const filters = ref<GameFilters>({ ...NO_FILTERS })

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { EyeOff, Lock, Pencil } from '@lucide/vue'
 import { summaryRows } from '~/utils/settings-summary'
-import type { EventPools } from '~~/shared/event'
+import type { PoolGame, PoolGameFace } from '~~/shared/game'
 import { isFullPoolGame } from '~~/shared/game'
 import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/settings'
 
 // „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl (with the Vetos
-// of a Lucky Wheel) and Punkte of the Event's settings for every Member, and the pools below them. `pools` is what the server
-// decided this viewer may see (canSeePoolGames): the games, or null: nothing about the pools, not even how many (#222, #225).
+// of a Lucky Wheel) and Punkte of the Event's settings for every Member, and the Game pool below them. `pool` is what the server
+// decided this viewer may see (canSeePoolGames): the games, or null: nothing about the pool, not even how many (#222, #225).
 // This component shows what it is given and never asks for more. The Host gets the games with the Pool preview off or under
 // a Hidden wheel too, with a note that nobody else sees them. A Member's games come as picture and name only; the
 // Host's come whole, with the player count on the card and, under a game with notes (#224), a collapsed „Notizen“
@@ -16,7 +16,7 @@ import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/setti
 // of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry a lock, for Members too.
 const props = withDefaults(defineProps<{
   settings: EventSettings | null
-  pools: EventPools | null
+  pool: (PoolGame | PoolGameFace)[] | null
   isHost: boolean
   /** The settings page, while the Host can still change the settings; null otherwise. */
   editTo?: string | null
@@ -94,7 +94,7 @@ const rows = computed(() => (props.settings === null
         </div>
       </dl>
 
-      <template v-if="pools">
+      <template v-if="pool">
         <NoticeBanner
           v-if="isHost && settings.hiddenWheel"
           tone="info"
@@ -119,11 +119,11 @@ const rows = computed(() => (props.settings === null
               {{ t('howWePlay.mainPool') }}
             </h3>
             <ul
-              v-if="pools.main.length > 0"
+              v-if="pool.length > 0"
               class="m-0 flex list-none flex-col gap-2 p-0"
             >
               <li
-                v-for="game in pools.main"
+                v-for="game in pool"
                 :key="game.id"
               >
                 <GameCard

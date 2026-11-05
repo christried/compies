@@ -183,7 +183,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
       body: JSON.stringify({
         name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings,
-        pools: { main: [a.id, b.id] },
+        pool: [a.id, b.id],
       }),
     })
     expect(response.status).toBe(200)
@@ -211,7 +211,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     const raw = await rawRead(playerCookie, slug)
 
-    expect((JSON.parse(raw) as EventView).pools).toBeNull()
+    expect((JSON.parse(raw) as EventView).pool).toBeNull()
     for (const trace of secrets.flatMap(traces)) expect(raw).not.toContain(trace)
     expect(raw).not.toMatch(/api\/images/)
   })
@@ -222,7 +222,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     const delta = await newGame('Delta Dart', 'ddddddddddd')
     const [eventRow] = await testDb.db.select({ id: events.id }).from(events).where(eq(events.slug, slug))
-    await testDb.db.insert(eventPoolGames).values({ eventId: eventRow!.id, gameId: delta.id, pool: 'main' })
+    await testDb.db.insert(eventPoolGames).values({ eventId: eventRow!.id, gameId: delta.id })
     const after = await rawRead(playerCookie, slug)
 
     // The control: the Host sees the new game, so the insert really changed the pools.
@@ -236,9 +236,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const raw = await rawRead(hostCookie, slug)
 
     for (const trace of secrets.slice(0, 2).flatMap(traces)) expect(raw).toContain(trace)
-    expect((JSON.parse(raw) as EventView).pools).toMatchObject({
-      main: [{ name: 'Alpha Arena', notes: 'Hausregel fuer Alpha Arena' }, { name: 'Beta Bowling', notes: 'Hausregel fuer Beta Bowling' }],
-    })
+    expect((JSON.parse(raw) as EventView).pool).toMatchObject([{ name: 'Alpha Arena', notes: 'Hausregel fuer Alpha Arena' }, { name: 'Beta Bowling', notes: 'Hausregel fuer Beta Bowling' }])
   })
 
   it('gives the Player the games once the wheel is not hidden, and nothing about the pools when it is hidden again', async () => {
@@ -246,7 +244,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     await setWheelHidden(false)
     const open = await rawRead(playerCookie, slug)
-    expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }] })
+    expect((JSON.parse(open) as EventView).pool).toMatchObject([{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }])
     // A Player gets picture and name only (#224): everything but the notes.
     for (const trace of secrets.slice(0, 2).flatMap(traces).filter(trace => !secrets.some(secret => secret.notes === trace))) expect(open).toContain(trace)
     for (const secret of secrets) expect(open).not.toContain(secret.notes)
@@ -254,13 +252,13 @@ describe('Hidden wheel secrecy (#148)', () => {
     await setWheelHidden(true)
     const closed = await rawRead(playerCookie, slug)
     for (const trace of secrets.flatMap(traces)) expect(closed).not.toContain(trace)
-    expect((JSON.parse(closed) as EventView).pools).toBeNull()
+    expect((JSON.parse(closed) as EventView).pool).toBeNull()
   })
 
   it('gives the Player the games of an Event with a visible Lucky wheel from the start', async () => {
     const { slug } = await setUp({ ...HIDDEN_WHEEL, hiddenWheel: false })
 
-    expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView).pools).not.toBeNull()
+    expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView).pool).not.toBeNull()
   })
 
   describe('the image route', () => {
@@ -329,7 +327,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         headers: { 'content-type': 'application/json', 'cookie': hostCookie },
         body: JSON.stringify({
           name: 'Samstags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-11-30T20:30'], settings: { ...HIDDEN_WHEEL, hiddenWheel: false },
-          pools: { main: [a.id] },
+          pool: [a.id],
         }),
       })
       const { inviteUrl } = await second.json() as CreatedEvent
@@ -417,7 +415,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         headers: { 'content-type': 'application/json', 'cookie': hostCookie },
         body: JSON.stringify({
           name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: LOBBY_SLOTS, settings: LOBBY_SETTINGS,
-          pools: { main: [a.id, b.id] },
+          pool: [a.id, b.id],
         }),
       })
       expect(created.status).toBe(200)
@@ -467,7 +465,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       // 8. The Host changes the Game count and the Team size, and swaps Beta Bowling for Delta Dart in the Game pool.
       const d = await newGame('Delta Dart', 'ddddddddddd')
-      expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 6, teamSize: 2 }, pools: { main: [a.id, d.id] } })).status).toBe(200)
+      expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 6, teamSize: 2 }, pool: [a.id, d.id] })).status).toBe(200)
 
       // 9. The Host rotates the Invite link.
       expect((await send('POST', `/api/e/${slug}/rotate`, hostCookie)).status).toBe(200)
@@ -588,7 +586,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { hiddenWheel: false, poolPreview: true } })).status).toBe(200)
 
       const open = await rawRead(playerCookie, slug)
-      expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Delta Dart' }] })
+      expect((JSON.parse(open) as EventView).pool).toMatchObject([{ name: 'Alpha Arena' }, { name: 'Delta Dart' }])
       // Picture and name only (#224): the notes stay the Host's.
       for (const game of [a, d]) {
         for (const trace of traces(game).filter(trace => trace !== game.notes)) expect(open, `the open Event read lacks ${trace}`).toContain(trace)
@@ -614,7 +612,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const created = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings, pools: { main: [a.id, b.id, ...more.map(game => game.id)] } }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings, pool: [a.id, b.id, ...more.map(game => game.id)] }),
     })
     const { slug, inviteUrl } = await created.json() as CreatedEvent
     const token = new URL(inviteUrl).pathname.slice('/e/'.length)
@@ -646,7 +644,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const { slug, eventId, a, b, c, e } = await runningEvent()
 
       expectNone(await whatThePlayerGets(slug, eventId), [a, b, c, e])
-      expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView)).toMatchObject({ pools: null, rounds: [], setGame: null })
+      expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView)).toMatchObject({ pool: null, rounds: [], setGame: null })
       // The pool warning (#234) is the Host's: the Host's read carries it here (2 games in the pool, 16 needed), the Player's and the room's do not.
       expect((JSON.parse(await rawRead(hostCookie, slug)) as EventView).setGame?.poolWarning).toEqual({ needed: 16, have: 2 })
       expect(await rawRead(playerCookie, slug)).not.toContain('poolWarning')
@@ -662,7 +660,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const got = await whatThePlayerGets(slug, eventId)
       expect(got.event).toContain('Alpha Arena')
       expect(got.event).toContain(a.imageKey)
-      expect((JSON.parse(got.event) as EventView)).toMatchObject({ pools: null, rounds: [{ game: { id: a.id, name: 'Alpha Arena', youtubeId: 'aaaaaaaaaaa' } }] })
+      expect((JSON.parse(got.event) as EventView)).toMatchObject({ pool: null, rounds: [{ game: { id: a.id, name: 'Alpha Arena', youtubeId: 'aaaaaaaaaaa' } }] })
       expect(got.feed).toContain('Alpha Arena')
       expectNone(got, [a], secret => [secret.notes])
       expectNone(got, [b, c, e])
@@ -690,7 +688,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
 
       expect(view.rounds).toMatchObject([{ game: { name: 'Alpha Arena' }, notes: a.notes }])
-      expect(view.pools?.main.map(game => game.name)).toEqual(['Alpha Arena', 'Beta Bowling'])
+      expect(view.pool?.map(game => game.name)).toEqual(['Alpha Arena', 'Beta Bowling'])
     })
 
     it('reveals nothing more when the Host puts the Round back: the pools stay hidden, the games not set stay unknown', async () => {
@@ -700,7 +698,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       await hostPutsBack(request, slug, hostCookie, roundId)
 
       const got = await whatThePlayerGets(slug, eventId)
-      expect(JSON.parse(got.event)).toMatchObject({ pools: null, rounds: [] })
+      expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [] })
       expectNone(got, [b, c, e])
       expectNone(got, [a], secret => [secret.notes])
       for (const secret of [b, c, e]) expect(await imageStatus(secret)).toBe(404)
@@ -712,7 +710,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const before = JSON.parse(await rawRead(playerCookie, slug)) as EventView
 
       const delta = await newGame('Delta Dart', 'ddddddddddd')
-      await testDb.db.insert(eventPoolGames).values({ eventId, gameId: delta.id, pool: 'main' })
+      await testDb.db.insert(eventPoolGames).values({ eventId, gameId: delta.id })
 
       expect(await rawRead(hostCookie, slug)).toContain('Delta Dart')
       const after = JSON.parse(await rawRead(playerCookie, slug)) as EventView

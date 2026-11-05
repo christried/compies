@@ -225,7 +225,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         />
         <HowWePlayCard
           :settings="view.settings"
-          :pools="view.pools"
+          :pool="view.pool"
           :is-host="view.event.isHost"
           :edit-to="canEditSettings && view.settings !== null ? settingsPath(slug) : null"
           :locked="started"

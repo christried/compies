@@ -36,7 +36,7 @@ const drawingReason = computed(() => (view.value?.roundBeingDrawn ? t('eventSett
 const poolWarning = computed(() => (view.value?.event.phase === 'running' ? (view.value.setGame?.poolWarning ?? null) : undefined))
 const locks = computed(() => ({ reason: lockedReason.value, drawing: drawingReason.value, floors: view.value?.settingsFloors ?? undefined, library: canSeeLibrary(user.value), teamPlayers: teamPlayers.value, poolWarning: poolWarning.value }))
 
-const draft = ref(draftFromEvent(data.value ?? { settings: null, pools: { main: [] } }))
+const draft = ref(draftFromEvent(data.value ?? { settings: null, pool: [] }))
 
 // The settings page has no room, so no server clock: the User's own clock stands in. The refresh only lifts the lock text sooner;
 // the server decides the lock itself (settleBeforeRead, locked_while_drawn), so a clock that is off only delays the text (#261).

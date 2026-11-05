@@ -3,7 +3,6 @@ import { flushPromises } from '@vue/test-utils'
 import { readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { EventPools } from '~~/shared/event'
 import type { CountdownView, RoundView } from '~~/shared/stage'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
@@ -15,7 +14,7 @@ import { clickButton, clickHostAction, dialog, regionHeadings, serve, shownToast
 // (5 s to 99:59), which is disabled while one runs. The server clock here is the real one: the page is not synced to a room.
 
 const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null }
-const pools: EventPools = { main: [halo] }
+const pool = [halo]
 const round = (id: string, startedAt: string): RoundView => ({ id, startedAt, setAt: startedAt, game: halo })
 
 /** The Host's or a Member's read of a running Event, with this Countdown and these open Rounds. */
@@ -24,7 +23,7 @@ function serveRunning({ host, countdown = null, rounds = [], startedAt }: { host
     event: { isHost: host, phase: 'running' },
     settings: defaultSettings(),
     runningSessionId: `session-${slug}-0`,
-    pools: host ? pools : null,
+    pool: host ? pool : null,
     countdown,
     rounds,
     setGame: host ? { rejection: null, spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null } : null,
