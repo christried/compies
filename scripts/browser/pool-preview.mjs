@@ -1,9 +1,10 @@
 // The two-account check of the Pool preview and the pool games' visibility (#224, #225): the Dev Host at 1440 px, the Dev
 // Member at 390 px on one Event of its own. A Member sees picture and name of a pool game only (notes and player count are
 // the Host's); the Host switches the Pool preview off and on and the Member's open page follows without a reload.
-// Usage: node scripts/browser/pool-preview.mjs   (needs pnpm dev and pnpm dev:realtime; one PASS or FAIL line per check, exit code 1 on any FAIL)
+// Usage: node scripts/browser/pool-preview.mjs   (needs pnpm dev and pnpm dev:realtime; one PASS or FAIL line per check, exit code 1 on any FAIL;
+// the lines also go to <tmp>/compies-browser/pool-preview/results.log)
 import { launch, sleep } from './chrome.mjs'
-import { api, createEvent, createGame, joinEvent, open, patchSettings } from './kit.mjs'
+import { api, createEvent, createGame, joinEvent, open, patchSettings, results } from './kit.mjs'
 
 const stamp = Date.now().toString(36)
 const gameName = `Pool-Check ${stamp}`
@@ -12,11 +13,8 @@ const card = 'section:has(> dl)'
 /** The row of the pool game on the Event page: the card's list entry that carries its name. */
 const rowOf = `[...document.querySelectorAll(${JSON.stringify(`${card} li`)})].find(li => li.innerText.includes(${JSON.stringify(gameName)}))`
 
-let failed = false
-function check(name, passed, detail = '') {
-  if (!passed) failed = true
-  console.log(`${passed ? 'PASS' : 'FAIL'}  ${name}${passed || !detail ? '' : `  (${detail})`}`)
-}
+const log = results('pool-preview')
+const { check } = log
 
 /** Polls `read` until it returns true, for at most `seconds`. */
 async function within(seconds, read) {
@@ -82,4 +80,4 @@ finally {
   host.close()
   member.close()
 }
-process.exit(failed ? 1 : 0)
+process.exit(log.failed ? 1 : 0)

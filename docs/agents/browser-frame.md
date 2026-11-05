@@ -1,0 +1,35 @@
+# Browser-check frame
+
+The frame around every browser-check brief (`docs/agents/subagents.md` § Supervision). The brief lists the items to check; this file holds the setup, the measuring rules and the report, which were retyped in each session's brief until the 0.8 retro. The spawn prompt names the brief, the SHA to test and the run's name (`s8`, `g4`, …). Read this file first, then the brief.
+
+You change no app code and commit nothing. Your **run folder** is `<tmp>/compies-browser/<run>/`, which `results('<run>')` makes.
+
+## Setup
+
+1. Reset your worktree onto the SHA (`git reset --hard <sha>`), then `pnpm install --frozen-lockfile` and `pnpm --dir realtime install --frozen-lockfile`.
+2. `.env` and `realtime/.dev.vars` are already there (`.worktreeinclude`). If one is missing, copy it from the main checkout without printing it: without `.dev.vars` the Worker refuses every Room publish with a 401.
+3. `pnpm db:migrate` brings the dev database to the SHA's migrations. Test data goes on the dev database only, named „R<release> <run> …“ (e.g. „R08 S7 …“).
+4. Check that ports 3000 and 8787 are free, then start `pnpm dev` and `pnpm dev:realtime`, their output in the run folder's `dev.log` and `rt.log`. You alone use those ports.
+5. Write `browser-report.md` in the run folder before the first check: the tested SHA and a verdict table with one empty row per item of the brief.
+
+## Checks
+
+- Your scripts go in `scripts/browser/scratch/` (gitignored) and import `../chrome.mjs` and `../kit.mjs` (`scripts/browser/README.md` lists what they offer). To reuse an earlier run's scripts, copy them from its run folder's `scripts/`.
+- Start each script with `const log = results('<run>')`. `log.check(label, passed, measured)` prints each line and appends it to the run folder's `results.log` the moment it is decided, so a check that stops early keeps its evidence (the s6 agent of 0.8 hit the usage limit after 40 minutes). `log.shot` saves into the run folder.
+- Open every page with `open()`: it signs in through the dev route and hides the Nuxt devtools pill, which otherwise sits in what you measure.
+- Accounts `host`, `member`, `admin` (`launchAll`); 1440 × 900, and 390 × 844 with touch; light and dark with `theme()`.
+- Every verdict is a number measured in the page (`getBoundingClientRect`, `getComputedStyle`, `getAnimations`, `document.activeElement`), logged with the number on a PASS too. A screenshot shows what the numbers decided.
+- Run ordering and timing checks back to back, at request speed. In 0.8 the feed check passed with 2.5 s pauses between the requests and failed without them: the two-clock bug (G5) was real.
+- A motion limit scales with the distance: a share of the distance per frame, or a minimum number of frames. A fixed „≤ 40 px per frame“ can't hold for a card crossing 542 px on the UI's durations (it glides at 43 px). When a brief gives a fixed limit for a long move, report the share too.
+
+## Report
+
+- Fill an item's row in `browser-report.md` as soon as it is decided: PASS or FAIL, the measured numbers, the screenshot that shows it. A FAIL adds what was expected and a `file:line` guess at the cause.
+- Last row: the page errors of each tab (`tab.errors`), and the refused or failed lines in `dev.log` and `rt.log`, with the step they appeared on.
+- Never put a User's personal data in it.
+
+You are done when every item of the brief has its row, every server and Chrome you started is stopped, and your scripts are copied to the run folder's `scripts/`. Return at most 200 words: the report's path, the tested SHA, and one line per FAIL.
+
+## The brief
+
+The orchestrator writes it; the frame covers everything above. Each item names the page, the account, the width and theme, what to measure, and its pass condition as a number (a motion limit scaled to the distance). Items that need data name it: a 60-character game name without spaces, a pool of one game, a Tie.
