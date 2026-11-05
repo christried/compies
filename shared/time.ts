@@ -14,6 +14,16 @@ const wallClockFormat = new Intl.DateTimeFormat('en-CA', {
   hourCycle: 'h23',
 })
 
+const dayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
+
+/** A day as `Sa 25.10.` or, with the year, `Sa 25.10.2026` (Berlin). The one home of the day format (Slots, Share image). */
+export function berlinDay(instant: Date, withYear: boolean): string {
+  const parts = Object.fromEntries(dayFormat.formatToParts(instant).map(part => [part.type, part.value]))
+  // de-DE abbreviates the weekday with a period ("Sa."); the design shows it without.
+  const weekday = (parts.weekday ?? '').replace(/\.$/, '')
+  return `${weekday} ${parts.day}.${parts.month}.${withYear ? parts.year : ''}`
+}
+
 /** The zero-padded Berlin wall-clock fields at `instant`. */
 function wallClockParts(instant: number) {
   const fields = Object.fromEntries(wallClockFormat.formatToParts(instant).map(part => [part.type, part.value]))
