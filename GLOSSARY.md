@@ -213,8 +213,8 @@ The Event's automatic log of what happened, with times, readable by every Member
 _Avoid_: History, log, timeline
 
 **Award ceremony**:
-The show that closes a finished Event, started by the Host and seen by every Member at the same moment; the Host can start it again (UI: Siegerehrung).
-_Avoid_: Ceremony screen, finale, results screen
+The show of a finished Event's Winners. The Host starts it after the Finish, and every Member with the Event open sees it at the same moment, a late joiner from where it has got to; each viewer can skip or close it for themselves, any Member can watch it again alone, and the Host can start it again for everyone (UI: Siegerehrung).
+_Avoid_: Ceremony screen, finale, results screen, podium
 
 ## During a Session
 
@@ -267,6 +267,14 @@ _Avoid_: Draw (a Draw is a try at a Round's game), Shared place (that is inside 
 **Finish**:
 The Host closing an Event once every Round up to its Game count has its Result: it ends the Running Session, removes the Sessions that have not started, and leaves the Event read-only for good, with its final Standings (UI: „Event abschließen“).
 _Avoid_: Close, end (a Session ends), archive
+
+**Winner**:
+A Party on the first rank of a finished Event's final Standings: one, or several when the Host finished a Tie as „Unentschieden“. Its Players are the ones in the Party at the Finish (UI: Sieger).
+_Avoid_: Champion, victor, leader (a leader is first while the Event still runs)
+
+**Share image**:
+The picture of a finished Event's Winners, Standings and played games, landscape or square, that a Member downloads or shares from their own device; only Members of the Event can get it (UI: Ergebnis-Bild).
+_Avoid_: Poster, OG image, screenshot, share link
 
 ## App
 
