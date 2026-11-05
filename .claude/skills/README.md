@@ -12,6 +12,7 @@ Each patch is a paragraph starting with `**COMPIES:**` that points at the rules 
 - `implement-spec`: subagent rules, integration branch from and into `staging` (where `Closes #n` closes nothing), delivery, the 300k context limit with its handoff, the Release review in place of `code-review`, the worktree cleanup
 - `implement`: delivery
 - `grill-with-docs`, `to-spec`, `to-tickets`: design hand-off flags and tickets
+- `handoff`: names the subagents still running
 
 ## Updating to a new release
 
