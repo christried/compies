@@ -9,12 +9,12 @@ import type { Translate } from './settings-summary'
 // page state touches this one list (review 1.4 A4, #228): the state says which blocks the stage shows and in which order.
 
 // `end` is optional: the Host dock reads this state too and has no use for the Standings (#274). `rounds` likewise: a missing list counts as none open (#278).
-export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin'> & Partial<Pick<EventView, 'end' | 'rounds'>> & { event: Pick<EventView['event'], 'phase'> }
+export type PageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin'> & Partial<Pick<EventView, 'end' | 'rounds'>> & { event: Pick<EventView['event'], 'phase' | 'isHost'> }
 
 /**
  * Which data blocks the stage has, from the view (#256): a block that shows data is listed only while its data is there, so the
  * template checks nothing of its own. `pool` is the Host's pool warning (#234); `standings` is true from the first Result on (#274);
- * `tie` while the Rounds reach the Game count with more than one Party on rank 1 (#278); `sessionNeeded` while games are still to start
+ * `tie` while the Rounds reach the Game count with more than one Party on rank 1 (#278), for who reads it: the Host decides and has the dock (#283); `sessionNeeded` while games are still to start
  * and the Event can take another Session (#278: fewer than SESSIONS_MAX).
  */
 export interface StagePresent { wheel: boolean, pool: boolean, countdown: boolean, coin: boolean, standings: boolean, tie: boolean, sessionNeeded: boolean }
@@ -210,7 +210,7 @@ export function eventPageState({ settings, sessions, missingDates, event, setGam
   const pollOpen = datePollOpen(event.phase, missingDates)
   // The dead end (#278): games still to start, and a Session left to play them in (the Event takes up to SESSIONS_MAX).
   const sessionNeeded = end ? gamesToStart(end, rounds?.length ?? 0) > 0 && sessions.length < SESSIONS_MAX : false
-  const present: StagePresent = { wheel: Boolean(wheel), pool: Boolean(setGame?.poolWarning), countdown: Boolean(countdown), coin: Boolean(coin), standings: (end?.played ?? 0) > 0, tie: end?.tie != null, sessionNeeded }
+  const present: StagePresent = { wheel: Boolean(wheel), pool: Boolean(setGame?.poolWarning), countdown: Boolean(countdown), coin: Boolean(coin), standings: (end?.played ?? 0) > 0, tie: end?.tie != null && !event.isHost, sessionNeeded }
 
   const next = waiting ? { number: waiting.number, startsAt: waiting.startsAt } : null
   /** The state of kind `kind`, with the lists that follow from the kind. */

@@ -37,7 +37,8 @@ export interface HostDockState {
 
 /** The dock's state for the Host. */
 export function hostDockState(input: DockInput): HostDockState {
-  const page = eventPageState(input)
+  // The dock is the Host's: the page state only needs `isHost` for the Members' Tie banner (#283), which the dock does not read.
+  const page = eventPageState({ ...input, event: { ...input.event, isHost: true } })
   const base = { kind: page.kind, number: null, pollNumber: page.pollNumber, startRejection: null, setRejection: null, spinRejection: null, lastGameRejection: input.end?.lastGame?.rejection ?? null }
   // The Event can be finished: the Host's rule says so (null rejection) and the first place is not shared (#277).
   const finishable = input.end?.finish?.rejection === null && input.end.tie === null
