@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { Link as LinkIcon, Lock } from '@lucide/vue'
+import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
-import { dateBlockedKey, eventPageState, gamesToStart, headerPill, seatNote, teamsStay } from '~/utils/event-page'
-import { REFLOW_CLASS, unwatched } from '~/utils/motion'
-import { hasStarted } from '~~/shared/session-state'
-import type { HistoryCorrections } from '~/utils/result-draft'
-import { beforeFinish, datePollOpen, sessionsEditable } from '~~/shared/event'
-import { settingsPath } from '~~/shared/links'
-import { leadersOf } from '~~/shared/results'
-import { settingsEditable } from '~~/shared/settings'
+import { dateBlockedKey, eventPageState, headerPill } from '~/utils/event-page'
+import { historyCorrections } from '~/utils/result-draft'
+import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
 // Head and the blocks of `eventPageState(...).blocks` in its order (#166, A4), and the page holds the Host's dialogs and the error
@@ -55,20 +50,14 @@ const dialogs = useTemplateRef('dialogs')
 const inviteOpen = ref(false)
 const calendarOpen = ref(false)
 
-/** The Host's „Korrigieren“ in the history (#275): only while the Event has not finished, and only for the Host (the server refuses everyone else and a finished Event too). */
-const corrections = computed<HistoryCorrections | null>(() => {
-  const view = data.value
-  if (!view || !view.event.isHost || !beforeFinish(view.event.phase) || !view.settings || !view.end) return null
-  return { pointsTable: view.settings.pointsTable, total: view.end.gameCount, save: actions.enterResult }
-})
+/** The Host's „Korrigieren“ in the history (#275, historyCorrections): the Standings tab and the phone's view have it, the stage's history does not (#277). */
+const corrections = computed(() => (data.value ? historyCorrections(data.value, actions.enterResult) : null))
 
 /** The Date poll is open while a Session waits for a Date, in the poll Phase and in a running Event (#164, datePollOpen). */
 const pollOpen = computed(() => (data.value ? datePollOpen(data.value.event.phase, data.value.missingDates) : false))
 /** Sessions can be added, moved and removed in this Phase (sessionsEditable): computed once here for the cards and the dialogs (#238). */
 const canChangeSessions = computed(() => (data.value ? sessionsEditable(data.value.event.phase) : false))
 
-/** The first Session has started: the teams and their names are locked for Players. */
-const started = computed(() => hasStarted(data.value?.sessions ?? []))
 /** What the Activity feed's group headers need of the Sessions (#164). */
 const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
@@ -77,10 +66,6 @@ room.on('veto.cast', () => void refresh())
 
 /** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4). */
 const vetoBarShown = ref(false)
-
-// The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
-const canEditSettings = computed(() => (data.value ? data.value.event.isHost && settingsEditable(data.value.event.phase) : false))
-const needsSetup = computed(() => canEditSettings.value && data.value?.settings === null)
 
 /** Why "Termin festlegen" cannot set a Date right now, or null (#52): the dock's action says so. */
 const setBlocked = computed(() => {
@@ -92,33 +77,11 @@ const hostActions = useHostActions(
   () => data.value,
   slug,
   { pollOpen, setBlocked, serverNow: serverClock.now },
-  {
-    invite: () => (inviteOpen.value = true),
-    editSlots: () => dialogs.value?.openSlotEditor(),
-    setDate: () => dialogs.value?.openConfirm(),
-    start: () => dialogs.value?.openStart(),
-    end: actions.endSession,
-    // The label the Host held is the outcome, and the Parties on Place 1 he saw are the winners, that the server compares with the Standings (#277, #278): a
-    // Correction during the hold is refused, not finished as something else.
-    finish: winners => actions.finish({ outcome: 'winner', winners }),
-    finishTie: winners => actions.finish({ outcome: 'tie', winners }),
-    lastGame: actions.lastGame,
-    setGame: () => dialogs.value?.openSetGame(),
-    spin: () => void actions.spin(),
-    countdown: () => dialogs.value?.openCountdown(),
-    coin: () => void actions.toss(),
-    bonusVeto: () => dialogs.value?.openBonusVeto(),
-  },
+  { actions, dialogs, invite: () => (inviteOpen.value = true) },
 )
 
 // The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4).
 const pageState = computed(() => (data.value ? eventPageState(data.value) : null))
-
-const hostName = computed(() => data.value?.members.find(member => member.isHost)?.name ?? '')
-
-// The Host's seat note (teams only): where the Host sits does not change the dock, and the note says so. Closed for this visit.
-const seat = computed(() => (data.value ? seatNote(data.value, t) : null))
-const stay = computed(() => teamsStay(pageState.value?.next ?? null, data.value?.event.isHost ?? false, t))
 
 // The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
 const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
@@ -234,179 +197,26 @@ const { news } = useStandingsNews(data, slug)
       {{ news?.announcement }}
     </p>
 
-    <TransitionGroup
+    <EventStage
       v-if="data && pageState && (wide !== false || activeView === 'event')"
-      tag="div"
-      :move-class="unwatched() ? undefined : REFLOW_CLASS"
-      class="mx-auto flex w-full max-w-[1100px] flex-col gap-[18px] px-3.5 pt-4 md:gap-[22px] md:px-6 md:pt-6"
-      :class="vetoBarShown ? 'pb-[230px] md:pb-[190px]' : [data.event.isHost ? 'pb-[92px]' : 'pb-7', 'md:pb-10']"
-    >
-      <div
-        v-for="block in pageState.blocks"
-        :key="block"
-        class="min-w-0 empty:hidden"
-      >
-        <EventPageHead
-          v-if="block === 'head'"
-          :state="pageState"
-          :is-host="data.event.isHost"
-          :winners="leadersOf(data.standings ?? [])"
-          :teams="data.teams"
-        />
-
-        <ReopenNotices
-          v-else-if="block === 'reopen'"
-          :view="data"
-        />
-
-        <!-- A block is listed only when its data is there (eventPageState, #256, #274): the data props of the five below are not optional. -->
-        <PoolWarning
-          v-else-if="block === 'pool'"
-          :warning="data.setGame!.poolWarning!"
-        />
-
-        <EventSetupNotice
-          v-else-if="block === 'setup'"
-          :slug="slug"
-          :is-host="data.event.isHost"
-          :needs-setup="needsSetup"
-          :host-name="hostName"
-        />
-
-        <EventSeatNotice
-          v-else-if="block === 'seat'"
-          :note="seat"
-        />
-
-        <EventPoll
-          v-else-if="block === 'poll'"
-          :view="data"
-          :slots="slots"
-          :votes="votes"
-          :number="pageState.pollNumber"
-          :compact="pageState.pollCompact"
-          :can-change-sessions="canChangeSessions"
-          @pick="dialogs?.openConfirm($event)"
-          @remove-session="actions.removeSession"
-        />
-
-        <StageWheel
-          v-else-if="block === 'wheel'"
-          :view="data"
-          :server-now="serverClock.now"
-        />
-
-        <EventRounds
-          v-else-if="block === 'rounds'"
-          :rounds="data.rounds"
-          :is-host="data.event.isHost"
-          :put-back="actions.putBackRound"
-          :teams="data.teams"
-          :points-table="data.settings?.pointsTable ?? null"
-          :enter-result="actions.enterResult"
-          :end="data.end"
-        />
-
-        <Leaderboard
-          v-else-if="block === 'standings'"
-          framed
-          celebrate
-          :standings="data.standings!"
-          :end="data.end!"
-          :teams="data.teams"
-          :news="news"
-        />
-
-        <!-- The history of the finished stage is read-only for everyone: no `corrections` (#275), not even for the Host (#277). -->
-        <div
-          v-else-if="block === 'history'"
-          class="rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 shadow-card"
-        >
-          <GameHistory
-            :results="data.results"
-            :open="[]"
-            :teams="data.teams"
-          />
-        </div>
-
-        <EventCountdown
-          v-else-if="block === 'countdown'"
-          :countdown="data.countdown!"
-          :server-now="serverClock.now"
-          :is-host="data.event.isHost"
-          :command="actions.countdown"
-        />
-
-        <CoinFlip
-          v-else-if="block === 'coin'"
-          :toss="data.coin!"
-          :server-now="serverClock.now"
-        />
-
-        <GameBoard
-          v-else-if="block === 'board'"
-          :slug="slug"
-          :members="data.members"
-          :teams="data.teams"
-          :settings="data.settings"
-          :team-choice-open="data.teamChoiceOpen"
-          :page-kind="pageState.kind"
-          :viewer-id="data.viewerId"
-          :is-host="data.event.isHost"
-          :room="room"
-          :online="onlineState"
-        />
-
-        <!-- A Tie (#278): everybody but the Host reads that the Host decides; for the Host the branch is false and the wrapper hides itself. -->
-        <NoticeBanner
-          v-else-if="block === 'tie' && !data.event.isHost"
-          tone="info"
-        >
-          {{ t('event.notice.tie') }}
-        </NoticeBanner>
-
-        <!-- The last game needs a Session (#278): the Host only, for a Member the wrapper hides itself. The sheet is the Sessions card's (`openAdd`). `end` is there whenever the block is. -->
-        <EventSessionNotice
-          v-else-if="block === 'sessionNeeded' && data.event.isHost"
-          :left="gamesToStart(data.end!, data.rounds.length)"
-          @add="dialogs?.openAdd()"
-        />
-
-        <NoticeBanner
-          v-else-if="block === 'stay'"
-          tone="info"
-          :icon="Lock"
-        >
-          {{ stay }}
-        </NoticeBanner>
-
-        <div
-          v-else-if="block === 'cards'"
-          class="grid grid-cols-1 items-start gap-4 md:grid-cols-2"
-        >
-          <EventSessions
-            :view="data"
-            :reopen="actions.reopenSession"
-            :remove="actions.removeSession"
-            :poll-number="pageState.pollNumber"
-            :poll-open="pollOpen"
-            :can-change-sessions="canChangeSessions"
-            :shadow="pageState.cardsStandOut"
-            @reschedule="dialogs?.openReschedule($event)"
-            @add="dialogs?.openAdd()"
-            @calendar="calendarOpen = true"
-          />
-          <HowWePlayCard
-            :settings="data.settings"
-            :pools="data.pools"
-            :is-host="data.event.isHost"
-            :edit-to="canEditSettings && data.settings !== null ? settingsPath(slug) : null"
-            :locked="started"
-            :host-name="hostName"
-          />
-        </div>
-      </div>
-    </TransitionGroup>
+      :slug="slug"
+      :view="data"
+      :page-state="pageState"
+      :news="news"
+      :actions="actions"
+      :votes="votes"
+      :slots="slots"
+      :room="room"
+      :server-now="serverClock.now"
+      :online="onlineState"
+      :poll-open="pollOpen"
+      :can-change-sessions="canChangeSessions"
+      :veto-bar-shown="vetoBarShown"
+      @pick="dialogs?.openConfirm($event)"
+      @reschedule="dialogs?.openReschedule($event)"
+      @add="dialogs?.openAdd()"
+      @calendar="calendarOpen = true"
+    />
 
     <!-- A phone's other views (11-event-seite § TabBar): the Standings or the feed alone, with the Head's place taken by their title. -->
     <div
