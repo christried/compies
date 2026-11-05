@@ -83,7 +83,7 @@ function pillOf(team: number) {
 }
 
 // Each row with its pill, computed once per change instead of three times per row (#288). The pill is set exactly while the news plays.
-const rows = computed(() => props.standings.map(standing => ({ standing, pill: playing.value ? pillOf(standing.team) : null })))
+const rows = computed(() => (props.standings ?? []).map(standing => ({ standing, pill: playing.value ? pillOf(standing.team) : null })))
 
 function burst(news: StandingsNews) {
   const card = root.value
