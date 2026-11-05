@@ -45,7 +45,7 @@ export function fade(element: Element): void {
 const REDUCED_FADE_MS = 200
 
 /** Runs an animation of a stamp or a pill, or under reduced motion the 0.2 s fade at once (the tiles and stamps show at the same moment). */
-function animateVeto(element: Element, keyframes: Keyframe[], options: { duration: number, delay?: number, easing: string }): void {
+function animateOrFade(element: Element, keyframes: Keyframe[], options: { duration: number, delay?: number, easing: string }): void {
   if (typeof element.animate !== 'function') return
   if (reducedMotion()) element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: REDUCED_FADE_MS, easing: motionToken('--cp-ease-out', 'ease-out'), fill: 'backwards' })
   else element.animate(keyframes, { ...options, fill: 'backwards' })
@@ -53,17 +53,17 @@ function animateVeto(element: Element, keyframes: Keyframe[], options: { duratio
 
 /** The seal stamp when the own Party's Veto is cast: `scale 2→1, rotation −8°`, 0.3 s `EASE.pop` (the handoff's back.out). */
 export function sealStamp(element: Element): void {
-  animateVeto(element, [{ transform: 'rotate(-8deg) scale(2)', opacity: 0 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1 }], { duration: 300, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') })
+  animateOrFade(element, [{ transform: 'rotate(-8deg) scale(2)', opacity: 0 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1 }], { duration: 300, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') })
 }
 
 /** A Party's tile at the reveal: `rotateY 90°→0` (perspective 600), 0.42 s `EASE.out`, each tile 0.08 s after the one before it. */
 export function revealTile(element: Element, index: number): void {
-  animateVeto(element, [{ transform: 'perspective(600px) rotateY(90deg)' }, { transform: 'perspective(600px) rotateY(0deg)' }], { duration: 420, delay: index * 80, easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') })
+  animateOrFade(element, [{ transform: 'perspective(600px) rotateY(90deg)' }, { transform: 'perspective(600px) rotateY(0deg)' }], { duration: 420, delay: index * 80, easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') })
 }
 
 /** The „VETO“ stamp on a tile: `scale 2.2→.9→1, rotation −8°`, 0.52 s, 0.3 s after the tiles start to turn. */
 export function vetoStamp(element: Element): void {
-  animateVeto(element, [{ transform: 'rotate(-8deg) scale(2.2)', opacity: 0, offset: 0 }, { transform: 'rotate(-8deg) scale(.9)', opacity: 1, offset: 0.6 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 520, delay: 300, easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') })
+  animateOrFade(element, [{ transform: 'rotate(-8deg) scale(2.2)', opacity: 0, offset: 0 }, { transform: 'rotate(-8deg) scale(.9)', opacity: 1, offset: 0.6 }, { transform: 'rotate(-8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 520, delay: 300, easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') })
 }
 
 /** The timer's tick in the last ten seconds: `scale 1.12→1`, 0.26 s `EASE.snap`. A reduced-motion page does not pulse. */
@@ -77,12 +77,12 @@ export function clockTick(element: Element): void {
 
 /** A Party's delta pill (`scale .3→1.15→1`, 0.42 s `EASE.pop`, 0.3 s after the news; under reduced motion a 0.2 s fade). */
 export function deltaPop(element: Element): void {
-  animateVeto(element, [{ transform: 'scale(.3)', opacity: 0, offset: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1, offset: 1 }], { duration: 420, delay: 300, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') })
+  animateOrFade(element, [{ transform: 'scale(.3)', opacity: 0, offset: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1, offset: 1 }], { duration: 420, delay: 300, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') })
 }
 
 /** The winner's stamp (`scale 2→.9→1`, rotation 8°, 0.48 s, 0.52 s after the news, on the curve `DS Scoring` draws it with; under reduced motion a 0.2 s fade, still rotated). */
 export function winnerStamp(element: Element): void {
-  animateVeto(element, [{ transform: 'rotate(8deg) scale(2)', opacity: 0, offset: 0 }, { transform: 'rotate(8deg) scale(.9)', opacity: 1, offset: 0.7 }, { transform: 'rotate(8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 480, delay: 520, easing: motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)') })
+  animateOrFade(element, [{ transform: 'rotate(8deg) scale(2)', opacity: 0, offset: 0 }, { transform: 'rotate(8deg) scale(.9)', opacity: 1, offset: 0.7 }, { transform: 'rotate(8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 480, delay: 520, easing: motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)') })
 }
 
 /** What a row whose rank changed gets under reduced motion instead of the glide: its cells tint with the primary colour and fade back in 0.2 s (04-motion: „rows reorder instantly with a 0.2 highlight“). */
