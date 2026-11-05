@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-05 – Punkte
+
+Jetzt zählen die Punkte: Der Host trägt nach jedem Spiel das Ergebnis ein, alle sehen die Tabelle live mitlaufen, und am Ende schließt der Host das Event ab, mit einem Sieger oder unentschieden.
+
 ### Neu
 
 - Beim Einrichten und in den Einstellungen sagt dir die App jetzt, wenn ein Event unentschieden enden kann (bei gerader Spielzahl oder mehr als zwei Teams). Dann entscheidest du, ob es unentschieden endet oder ein letztes Spiel dazukommt. Die Empfehlung für den Spielepool zählt dieses mögliche letzte Spiel mit, und beim Glücksrad erinnert dich ein Hinweis daran, für Bonus-Vetos ein paar Spiele mehr einzuplanen. ([#279](https://github.com/christried/compies/issues/279))
