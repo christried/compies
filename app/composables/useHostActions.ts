@@ -3,7 +3,7 @@ import type { DockAction } from '~/components/HostDock.vue'
 import { coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
-import { leadersOf } from '~~/shared/results'
+import { leadersOf } from '~~/shared/finish'
 
 // The Host's dock actions (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers (Event
 // einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, or none after the last Session) and
@@ -41,7 +41,7 @@ export function useHostActions(
     start: () => toValue(dialogs)?.openStart(),
     /** Ends the Running Session; the dock's hold calls it after the hold and learns whether the server took it. */
     end: actions.endSession,
-    // The label the Host held is the outcome, and the Parties on Place 1 he saw are the winners, that the server compares with the Standings (#277, #278,
+    // The label the Host held is the outcome, and the Parties on Place 1 the Host saw are the winners, that the server compares with the Standings (#277, #278,
     // review 0.8 S2): a Correction during the hold is refused, not finished as something else. The hold learns whether the server took it.
     finish: (winners: number[]) => actions.finish({ outcome: 'winner', winners }),
     finishTie: (winners: number[]) => actions.finish({ outcome: 'tie', winners }),

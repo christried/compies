@@ -6,7 +6,7 @@
 import type { Seats } from './board'
 import { msOf, type Instant } from './instant'
 import { runningOf, teamsRejection, type SessionTimes, type TeamsRejection } from './session-state'
-import type { Phase } from './event'
+import type { Phase } from './phase'
 import { hasWheel, type EventSettings } from './settings'
 
 /** Where a draw's game came from: the Game pool, or the library beyond it. A library game never joins a pool (spec #218 § Rounds). */

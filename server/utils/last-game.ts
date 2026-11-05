@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { events } from '../db/schema'
 import type { LastGameAdded } from '../../shared/event'
-import { lastGameRejection } from '../../shared/results'
+import { lastGameRejection } from '../../shared/finish'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
 import { apiError } from './errors'

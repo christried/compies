@@ -7,7 +7,7 @@ import { REFLOW_CLASS, unwatched } from '~/utils/motion'
 import { hasStarted } from '~~/shared/session-state'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
-import { leadersOf } from '~~/shared/results'
+import { leadersOf } from '~~/shared/finish'
 import { settingsEditable } from '~~/shared/settings'
 
 // The stage of the Event page (#166, A4, #283): the group of blocks `eventPageState(...).blocks` lists, in its order, and the switch that
