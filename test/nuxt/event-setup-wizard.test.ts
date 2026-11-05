@@ -30,7 +30,7 @@ async function mountCreate(): Promise<Page> {
 /** An Event with its GET and PATCH endpoints; `patched` collects the PATCH bodies. */
 async function mountEditor(settings: EventSettings, phase = 'poll') {
   const patched = vi.fn()
-  const { slug } = serve(s => view(s, [], { event: { isHost: true, phase }, settings, pools: { main: [], tiebreaker: [] } }))
+  const { slug } = serve(s => view(s, [], { event: { isHost: true, phase }, settings, pools: { main: [] } }))
   registerEndpoint(`/api/e/${slug}/settings`, {
     method: 'PATCH',
     handler: async (event) => {
@@ -57,19 +57,19 @@ async function goTo(page: Page, label: string) {
 }
 
 describe('the entry pages', () => {
-  it('/neu runs the wizard with the eight steps of a new Event', async () => {
+  it('/neu runs the wizard with the seven steps of a new Event', async () => {
     const page = await mountCreate()
 
     expect(page.findComponent(EventSetupWizard).exists()).toBe(true)
-    expect(stepLabels(page)).toEqual(['Name', 'Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Tiebreaker-Pool', 'Termin'])
+    expect(stepLabels(page)).toEqual(['Name', 'Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Termin'])
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Neues Event')
   })
 
-  it('the settings editor runs the same wizard with the six steps of an Event, all of them reachable', async () => {
+  it('the settings editor runs the same wizard with the five steps of an Event, all of them reachable', async () => {
     const { page } = await mountEditor(defaultSettings())
 
     expect(page.findComponent(EventSetupWizard).exists()).toBe(true)
-    expect(stepLabels(page)).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Tiebreaker-Pool'])
+    expect(stepLabels(page)).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
   })
@@ -86,7 +86,7 @@ describe('the Veto allowance in the editor', () => {
     await radios(page)[1]!.trigger('click')
     expect(veto(page).attributes('aria-valuenow')).toBe('5')
 
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await cta(page).trigger('click')
     await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
     expect(patched.mock.calls[0]![0].settings).toMatchObject({ selectionMode: 'lucky_wheel', teamSize: 5, vetoAllowance: 5 })
@@ -104,7 +104,7 @@ describe('the Veto allowance in the editor', () => {
     await goTo(page, 'Auswahlmodus')
     expect(veto(page).attributes('aria-valuenow')).toBe('2')
 
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await cta(page).trigger('click')
     await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
     expect(patched.mock.calls[0]![0].settings).toMatchObject({ teamSize: 5, vetoAllowance: 2 })

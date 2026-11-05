@@ -27,6 +27,14 @@ describe('InfoSheet', () => {
     expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s', 'Gut für', 'Achtung'])
   })
 
+  it('explains how an Event ends and what a Tie asks of the Host, under „So läuft’s“ and „Achtung“ (#279)', async () => {
+    const page = await mountSuspended(InfoSheet, { props: { topic: 'end' } })
+
+    expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s', 'Achtung'])
+    expect(page.text()).toContain('Sind alle Spiele bis zur eingestellten Anzahl gespielt und haben ihr Ergebnis, schließt du das Event ab.')
+    expect(page.text()).toContain('Teilen sich am Ende mehrere Parteien Platz 1, entscheidest du')
+  })
+
   it('adds the hidden wheel option for the Glücksrad', async () => {
     const page = await mountSuspended(InfoSheet, { props: { topic: 'wheel' } })
 

@@ -212,6 +212,39 @@ describe('HostDock', () => {
     page.unmount()
   })
 
+  it('keeps a dockOnly action out of Mehr while it sits in the pill, and lists it in Mehr when it does not (#278)', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [
+      action('Unentschieden beenden', { primary: true, hold: true }),
+      action('Letztes Spiel hinzufügen', { dockOnly: true }),
+      action('Session beenden', { hold: true }),
+      action('Einladen'),
+      action('Einstellungen'),
+    ] } })
+
+    expect(pillLabels(page)).toEqual(['Unentschieden beenden 1 s halten', 'Letztes Spiel hinzufügen', 'Session beenden 1 s halten', 'Mehr'])
+    await page.get('[aria-haspopup="menu"]').trigger('click')
+    expect(page.findAll('[role="menuitem"]').map(item => item.text())).toEqual(['Einladen', 'Einstellungen'])
+    page.unmount()
+  })
+
+  it('lists a dockOnly action in Mehr when the pill does not hold it (#278)', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('A'), action('B'), action('C'), action('Letztes Spiel hinzufügen', { dockOnly: true })] } })
+
+    expect(pillLabels(page)).toEqual(['A', 'B', 'C', 'Mehr'])
+    await page.get('[aria-haspopup="menu"]').trigger('click')
+    expect(page.findAll('[role="menuitem"]').map(item => item.text())).toEqual(['A', 'B', 'C', 'Letztes Spiel hinzufügen'])
+    page.unmount()
+  })
+
+  it('on a phone, the sheet lists a dockOnly action that the pill holds (#278)', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Unentschieden beenden', { primary: true }), action('Letztes Spiel hinzufügen', { dockOnly: true }), action('Einladen')] }, attachTo: document.body })
+
+    await page.get('button[aria-haspopup="dialog"]').trigger('click')
+    const sheet = document.querySelector('[role="dialog"]')!
+    expect([...sheet.querySelectorAll('button')].map(button => button.textContent?.trim())).toEqual(expect.arrayContaining(['Unentschieden beenden', 'Letztes Spiel hinzufügen', 'Einladen']))
+    page.unmount()
+  })
+
   it('shows the hold hint as a badge inside the pill button, as tall as its siblings, with no line below (#164)', async () => {
     const page = await mountSuspended(HostDock, { props: { actions: [action('Session 1 beenden', { primary: true, hold: true }), action('Einladen')] } })
 

@@ -10,9 +10,11 @@ import setCountdown from '../../server/api/e/[slug]/countdown/index.put'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import castVeto from '../../server/api/e/[slug]/draws/[drawId]/veto.post'
 import putBackRound from '../../server/api/e/[slug]/rounds/[id].delete'
+import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
 import setRound from '../../server/api/e/[slug]/rounds/index.post'
 import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
 import rotateInvite from '../../server/api/e/[slug]/rotate.post'
+import finishEvent from '../../server/api/e/[slug]/finish.post'
 import changeSettings from '../../server/api/e/[slug]/settings.patch'
 import addSession from '../../server/api/e/[slug]/sessions/index.post'
 import removeSession from '../../server/api/e/[slug]/sessions/[id].delete'
@@ -107,10 +109,12 @@ describe('Hidden wheel secrecy (#148)', () => {
       'POST /api/e/:slug/sessions/end': endSession,
       'PATCH /api/e/:slug/settings': changeSettings,
       'POST /api/e/:slug/rotate': rotateInvite,
+      'POST /api/e/:slug/finish': finishEvent,
       'POST /api/e/:slug/rounds': setRound,
       'POST /api/e/:slug/rounds/spin': spinWheel,
       'POST /api/e/:slug/draws/:drawId/veto': castVeto,
       'DELETE /api/e/:slug/rounds/:id': putBackRound,
+      'PUT /api/e/:slug/rounds/:id/result': putResult,
       'PUT /api/e/:slug/countdown': setCountdown,
       'POST /api/e/:slug/countdown/start': startCountdown,
       'POST /api/e/:slug/coin': tossCoin,
@@ -169,7 +173,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     return { id, name, videoId, notes, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length) }
   }
 
-  /** A, B in the Game pool, C in the Tiebreaker pool; the Player has joined. */
+  /** A, B in the Game pool, C in the library only (#279: there is no Tiebreaker pool); the Player has joined. */
   async function setUp(settings: Record<string, unknown> = HIDDEN_WHEEL) {
     const a = await newGame('Alpha Arena', 'aaaaaaaaaaa')
     const b = await newGame('Beta Bowling', 'bbbbbbbbbbb')
@@ -179,7 +183,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
       body: JSON.stringify({
         name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings,
-        pools: { main: [a.id, b.id], tiebreaker: [c.id] },
+        pools: { main: [a.id, b.id] },
       }),
     })
     expect(response.status).toBe(200)
@@ -218,10 +222,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     const delta = await newGame('Delta Dart', 'ddddddddddd')
     const [eventRow] = await testDb.db.select({ id: events.id }).from(events).where(eq(events.slug, slug))
-    await testDb.db.insert(eventPoolGames).values([
-      { eventId: eventRow!.id, gameId: delta.id, pool: 'main' },
-      { eventId: eventRow!.id, gameId: delta.id, pool: 'tiebreaker' },
-    ])
+    await testDb.db.insert(eventPoolGames).values({ eventId: eventRow!.id, gameId: delta.id, pool: 'main' })
     const after = await rawRead(playerCookie, slug)
 
     // The control: the Host sees the new game, so the insert really changed the pools.
@@ -234,10 +235,9 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     const raw = await rawRead(hostCookie, slug)
 
-    for (const trace of secrets.flatMap(traces)) expect(raw).toContain(trace)
+    for (const trace of secrets.slice(0, 2).flatMap(traces)) expect(raw).toContain(trace)
     expect((JSON.parse(raw) as EventView).pools).toMatchObject({
       main: [{ name: 'Alpha Arena', notes: 'Hausregel fuer Alpha Arena' }, { name: 'Beta Bowling', notes: 'Hausregel fuer Beta Bowling' }],
-      tiebreaker: [{ name: 'Gamma Garten', notes: 'Hausregel fuer Gamma Garten' }],
     })
   })
 
@@ -246,9 +246,9 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     await setWheelHidden(false)
     const open = await rawRead(playerCookie, slug)
-    expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }], tiebreaker: [{ name: 'Gamma Garten' }] })
+    expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }] })
     // A Player gets picture and name only (#224): everything but the notes.
-    for (const trace of secrets.flatMap(traces).filter(trace => !secrets.some(secret => secret.notes === trace))) expect(open).toContain(trace)
+    for (const trace of secrets.slice(0, 2).flatMap(traces).filter(trace => !secrets.some(secret => secret.notes === trace))) expect(open).toContain(trace)
     for (const secret of secrets) expect(open).not.toContain(secret.notes)
 
     await setWheelHidden(true)
@@ -282,7 +282,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       const { secrets, a } = await setUp()
 
       await setWheelHidden(false)
-      for (const secret of secrets) {
+      // Gamma (C) is in the library only (#279), so the Player gets no image of it.
+      for (const secret of secrets.slice(0, 2)) {
         const response = await fetchImage(secret, playerCookie)
         expect(response.status).toBe(200)
         expect(new Uint8Array(await response.arrayBuffer())).toEqual(webp(secret.name))
@@ -328,7 +329,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         headers: { 'content-type': 'application/json', 'cookie': hostCookie },
         body: JSON.stringify({
           name: 'Samstags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-11-30T20:30'], settings: { ...HIDDEN_WHEEL, hiddenWheel: false },
-          pools: { main: [a.id], tiebreaker: [] },
+          pools: { main: [a.id] },
         }),
       })
       const { inviteUrl } = await second.json() as CreatedEvent
@@ -355,7 +356,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
   // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'round.set', 'round.putBack', 'round.spun', 'countdown.changed', 'veto.cast', 'coin.tossed'] as const satisfies readonly RoomMessageType[]
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'veto.cast'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
@@ -416,7 +417,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         headers: { 'content-type': 'application/json', 'cookie': hostCookie },
         body: JSON.stringify({
           name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: LOBBY_SLOTS, settings: LOBBY_SETTINGS,
-          pools: { main: [a.id, b.id], tiebreaker: [c.id] },
+          pools: { main: [a.id, b.id] },
         }),
       })
       expect(created.status).toBe(200)
@@ -471,13 +472,16 @@ describe('Hidden wheel secrecy (#148)', () => {
       // 9. The Host rotates the Invite link.
       expect((await send('POST', `/api/e/${slug}/rotate`, hostCookie)).status).toBe(200)
 
-      // 10. The Host starts the Session, sets a game that is in no pool and puts it back (round.set, round.putBack), then ends
+      // 10. The Host starts the Session, sets a game that is in no pool and puts it back (event.changed, activity.added), then ends
       // the Session (session.started, team.nameFrozen, session.ended). That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
       const e = await newGame('Epsilon Eck', 'eeeeeeeeeee')
       const roundId = await hostSets(request, slug, hostCookie, e.id)
       await hostPutsBack(request, slug, hostCookie, roundId)
-      // The Host spins the wheel (round.spun, game_drawn); the Session ends with that Round still being drawn.
+      // A library game that stays open: its Round gets its Result once the Session has ended (#273, between Sessions).
+      const f = await newGame('Foxtrot Fest', 'fffffffffff')
+      const openRound = await hostSets(request, slug, hostCookie, f.id)
+      // The Host spins the wheel (event.changed; the feed entry game_drawn waits for the stop); the Session ends with that Round still being drawn.
       expect((await send('POST', `/api/e/${slug}/rounds/spin`, hostCookie)).status).toBe(200)
       if (castVeto) {
         // The wheel stops (the clock moves past it) and Player 1 casts a Veto: veto.cast goes to Player 1's Party only (#231).
@@ -485,14 +489,18 @@ describe('Hidden wheel secrecy (#148)', () => {
         clock.advance(8000)
         expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
       }
-      // The Host sets a Countdown and starts it (countdown.changed, #236); ending the Session clears it.
+      // The Host sets a Countdown and starts it (event.changed, #236); ending the Session clears it.
       expect((await send('PUT', `/api/e/${slug}/countdown`, hostCookie, { seconds: 60 })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/countdown/start`, hostCookie)).status).toBe(200)
-      // The Host tosses the coin (coin.tossed, #235); its feed entry waits for the landing, which the clock passes below.
+      // The Host tosses the coin (event.changed, #235); its feed entry waits for the landing, which the clock passes below.
       expect((await send('POST', `/api/e/${slug}/coin`, hostCookie)).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/sessions/end`, hostCookie)).status).toBe(200)
+      // Between Sessions the Host enters the Result of the open Round (#273): the feed names its game, and no game of the pools.
+      expect((await send('PUT', `/api/e/${slug}/rounds/${openRound}/result`, hostCookie, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] })).status).toBe(200)
+      // The Host corrects that Result between Sessions too (#275): the Places swap, and the feed says so.
+      expect((await send('PUT', `/api/e/${slug}/rounds/${openRound}/result`, hostCookie, { places: [{ team: 1, place: 2 }, { team: 2, place: 1 }] })).status).toBe(200)
 
-      return { slug, eventId, games: [a, b, c, d] as const, set: e, player2Cookie }
+      return { slug, eventId, games: [a, b, c, d] as const, set: f, player2Cookie }
     }
 
     it('produces every message type Nuxt sends to the room, and writes every Activity type', async () => {
@@ -502,10 +510,11 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(everyTypeListed).toBe(true)
       const sent = new Set(notifier.messages(eventId).map(message => message.type))
       for (const type of SERVER_SENT) expect(sent.has(type), `the flow sends no ${type}`).toBe(true)
-      // The 0.7 kinds (#226) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228,
-      // game_drawn, #229, which the feed shows from the stop on, vetoes_revealed, #231, from the end of the Veto window on, and
-      // coin_tossed, #235, from the landing on). The rest come with #233 (bonus_veto_granted).
-      const written = ACTIVITY_TYPES.filter(type => type !== 'bonus_veto_granted')
+      // The kinds of 0.7 and 0.8 (#226, #273) are in the enum; the flow writes the ones that exist so far (game_set and game_put_back, #228,
+      // game_drawn, #229, which the feed shows from the stop on, vetoes_revealed, #231, from the end of the Veto window on, coin_tossed,
+      // #235, from the landing on, result_entered, #273, and result_corrected, #275). The rest come with #233 (bonus_veto_granted) and
+      // #277 (event_finished): the finish is written only by the case that finishes the flow's Event, below.
+      const written = ACTIVITY_TYPES.filter(type => !['bonus_veto_granted', 'event_finished'].includes(type))
       clock.advance(70_000)
       expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
     })
@@ -519,25 +528,76 @@ describe('Hidden wheel secrecy (#148)', () => {
       expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
     })
 
+    it('names only the set game in the Result entry a Player reads, while the wheel\'s draw is still unstopped (#273)', async () => {
+      const { slug, eventId, games, set, player2Cookie } = await lobbyFlow()
+
+      const entries = (await activityOf(playerCookie, slug)).entries.filter(entry => entry.type === 'result_entered')
+      expect(entries).toMatchObject([{ type: 'result_entered', params: { gameId: set.id, number: 1, first: [1] }, games: { [set.id]: 'Foxtrot Fest' } }])
+      expect(Object.keys(entries[0]!.games)).toEqual([set.id])
+      expectNoTrace('the Activity feed entry of the Result', JSON.stringify(entries), games)
+      expectNoTrace('the room\'s entry of the Result', JSON.stringify(notifier.messages(eventId).filter(message => message.type === 'activity.added' && message.entry.type === 'result_entered')), games)
+      expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
+    })
+
+    it('names only the set game in the Correction a Player reads, and the Event read still names no pool game (#275)', async () => {
+      const { slug, eventId, games, set, player2Cookie } = await lobbyFlow()
+
+      const entries = (await activityOf(playerCookie, slug)).entries.filter(entry => entry.type === 'result_corrected')
+      expect(entries).toMatchObject([{ type: 'result_corrected', params: { gameId: set.id, number: 1 }, games: { [set.id]: 'Foxtrot Fest' } }])
+      expect(Object.keys(entries[0]!.games)).toEqual([set.id])
+      expectNoTrace('the Activity feed entry of the Correction', JSON.stringify(entries), games)
+      expectNoTrace('the room\'s entry of the Correction', JSON.stringify(notifier.messages(eventId).filter(message => message.type === 'activity.added' && message.entry.type === 'result_corrected')), games)
+      expect((JSON.parse(await rawRead(player2Cookie, slug)) as EventView).results).toMatchObject([{ number: 1, corrected: true }])
+      expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
+    })
+
+    it('names only the set game in the Results a Player reads (#274), and no pool game in the Standings or the end', async () => {
+      const { slug, games, set, player2Cookie } = await lobbyFlow()
+      const view = JSON.parse(await rawRead(player2Cookie, slug)) as EventView
+      const raw = JSON.stringify({ results: view.results, standings: view.standings, end: view.end })
+
+      expect(view.results).toMatchObject([{ number: 1, game: { id: set.id, name: 'Foxtrot Fest' } }])
+      // The Correction swapped the Places: Party 2 leads the Standings now (#275).
+      expect(view.standings?.map(row => row.team)).toEqual([2, 1])
+      expect(view.end).toMatchObject({ played: 1, gameCount: 6, complete: false, tie: null, finish: null })
+      // The Hidden wheel's spin is still unstopped for Player 2: its game is in none of the three fields.
+      expectNoTrace('the results, the Standings and the end of Player 2', raw, games)
+    })
+
+    it('keeps the pools hidden through the finish (#277): the room, the feed and the reads name no pool game after it', async () => {
+      const { slug, eventId, games, player2Cookie } = await lobbyFlow()
+      // One Result stands (Foxtrot Fest, between Sessions): the Game count drops to it, so the Event is complete and the Host may finish.
+      await testDb.db.update(events).set({ gameCount: 1 }).where(eq(events.id, eventId))
+
+      expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner', winners: [2] })).status).toBe(200)
+
+      const feed = await activityOf(playerCookie, slug)
+      // The lobby flow's Correction (#275) swapped the Places, so Party 2 wins.
+      expect(feed.entries[0]).toMatchObject({ type: 'event_finished', params: { winners: [2] } })
+      expectNoTrace('the room after the finish', JSON.stringify(notifier.messages(eventId)), games)
+      expectNoTrace('the Activity feed of Player 1 after the finish', feed.raw, games)
+      expectNoTrace('the Event read of Player 2 after the finish', await rawRead(player2Cookie, slug), games)
+    })
+
     it('shows the pools to a Player once the Hidden wheel is off and the Pool preview on, and the room still carries no game', async () => {
       const { slug, eventId, games } = await lobbyFlow()
-      const [a, , c, d] = games
+      const [a, , , d] = games
       // The Session ended with a Round still being drawn; Rad verdecken is locked until its Veto window has run out (#231).
       clock.advance(70_000)
 
       expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { hiddenWheel: false, poolPreview: true } })).status).toBe(200)
 
       const open = await rawRead(playerCookie, slug)
-      expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Delta Dart' }], tiebreaker: [{ name: 'Gamma Garten' }] })
+      expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Delta Dart' }] })
       // Picture and name only (#224): the notes stay the Host's.
-      for (const game of [a, c, d]) {
+      for (const game of [a, d]) {
         for (const trace of traces(game).filter(trace => trace !== game.notes)) expect(open, `the open Event read lacks ${trace}`).toContain(trace)
         expect(open).not.toContain(game.notes)
       }
       expectNoTrace('the room', JSON.stringify(notifier.messages(eventId)), games)
 
       const hostRaw = await rawRead(hostCookie, slug)
-      for (const game of [a, c, d]) expect(hostRaw).toContain(game.name)
+      for (const game of [a, d]) expect(hostRaw).toContain(game.name)
     })
   })
 
@@ -546,7 +606,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   /** The same Event with no Veto allowance: no window opens, so a draw settles at its stop (the spin tests below are about the stop). */
   const NO_WINDOW = { ...LOBBY, vetoAllowance: 0 } as const
 
-  /** A Running Session under a Hidden wheel: Alpha and Beta in the Game pool, Gamma in the Tiebreaker pool, Epsilon only in the library. */
+  /** A Running Session under a Hidden wheel: Alpha and Beta in the Game pool, Gamma and Epsilon only in the library. */
   async function runningEvent(settings: Record<string, unknown> = LOBBY, extraGames = 0) {
     const [a, b, c, e] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
     // More games for the Game pool, for a test that needs a wheel with many slices.
@@ -554,7 +614,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const created = await request('/api/e', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings, pools: { main: [a.id, b.id, ...more.map(game => game.id)], tiebreaker: [c.id] } }),
+      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings, pools: { main: [a.id, b.id, ...more.map(game => game.id)] } }),
     })
     const { slug, inviteUrl } = await created.json() as CreatedEvent
     const token = new URL(inviteUrl).pathname.slice('/e/'.length)
@@ -714,13 +774,31 @@ describe('Hidden wheel secrecy (#148)', () => {
       for (const label of row.sliceLabels!) expect(PLACEHOLDERS).toContain(label)
     })
 
-    it('sends the room the placeholders and the instants, and no game', async () => {
-      const { eventId, row } = await spun()
+    it('tells the room only that the Event changed on a spin, and nothing of the wheel', async () => {
+      const { eventId } = await spun()
 
-      const message = notifier.messages(eventId).find(candidate => candidate.type === 'round.spun')
+      expect(notifier.messages(eventId).map(message => message.type)).toEqual(['event.changed'])
+    })
 
-      expect(message).toMatchObject({ type: 'round.spun', slices: 2, labels: row.sliceLabels, resultIndex: row.resultIndex, stopAt: row.stopAt.toISOString() })
-      expect(Object.keys(message!).sort()).toEqual(['drawId', 'labels', 'resultIndex', 'resultOffset', 'roundId', 'serverTime', 'slices', 'spinStartAt', 'stopAt', 'type', 'v'])
+    it('knows the drawn game on every surface from the same instant and not a millisecond earlier', async () => {
+      const { slug, eventId, drawn, undrawn, c, e, row, stopAt } = await spun()
+
+      clock.set(new Date(stopAt - 1))
+      const before = await whatThePlayerGets(slug, eventId)
+      expectNone(before, [drawn, undrawn, c, e])
+      expect((JSON.parse(before.event) as EventView).clip).toBeNull()
+      expect((JSON.parse(before.event) as EventView).wheel?.spin?.game).toBeNull()
+      expect(await imageStatus(drawn)).toBe(404)
+
+      clock.set(new Date(stopAt))
+      const at = await whatThePlayerGets(slug, eventId)
+      const view = JSON.parse(at.event) as EventView
+      expect(view.wheel?.spin?.game).toMatchObject({ id: drawn.id })
+      expect(view.clip).toMatchObject({ drawId: row.id, game: { id: drawn.id } })
+      expect(view.rounds).toMatchObject([{ game: { id: drawn.id } }])
+      expect((JSON.parse(at.feed) as ActivityPage).entries.filter(entry => entry.type === 'game_drawn')).toMatchObject([{ games: { [drawn.id]: drawn.name } }])
+      expectNone(at, [undrawn, c, e])
+      expect(await imageStatus(drawn)).toBe(200)
     })
 
     it('shows a Player the drawn game from the stop on, and the feed entry with its name, but no undrawn game', async () => {

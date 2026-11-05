@@ -141,6 +141,34 @@
       "when": 1793606240235,
       "tag": "0019_draws_game_id_index",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793641178129,
+      "tag": "0020_coin_toss_session",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793645007590,
+      "tag": "0021_drop_tiebreaker_pools",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793690068454,
+      "tag": "0022_results",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793773307340,
+      "tag": "0023_finished_at",
+      "breakpoints": true
     }
   ]
 }

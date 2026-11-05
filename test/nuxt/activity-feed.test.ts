@@ -1,10 +1,12 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { getQuery } from 'h3'
+import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ActivityFeed from '~/components/ActivityFeed.vue'
 import type { FeedSession } from '~/utils/activity'
 import { formatSlotWhen } from '~/utils/berlin-time'
 import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
+import { GAME_NAME_MAX } from '~~/shared/game'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
 
 // The Activity feed (#159, spec #153 § Activity feed): it loads the first page from the feed endpoint, adds what the
@@ -200,5 +202,88 @@ describe('ActivityFeed', () => {
 
     await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
     expect(wrapper.text()).not.toContain('konnte nicht geladen')
+  })
+
+  describe('the end of the Event (#277)', () => {
+    const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
+    const sessions: FeedSession[] = [{ id: 's1', number: 2, startedAt: at(50), endedAt: at(20) }]
+    const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]
+
+    it('says who won, in bold, under „Nach Session n“ with the medal', async () => {
+      const finished = entry('f', 10, { type: 'event_finished', params: { winners: [2] } })
+      const feed = serveFeed([finished])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, sessions, nextNumber: null, teams } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(wrapper.findAll('[role="log"] h3').map(heading => heading.text())).toEqual(['Nach Session 2'])
+      expect(lines(wrapper)[0]).toContain('Event beendet: Wilde Gurken gewinnt')
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Wilde Gurken'])
+      expect(wrapper.get('[role="log"] li svg').classes()).toContain('lucide-medal')
+    })
+
+    it('says Unentschieden and names every Party of a Tie, in bold, under „Nach Session n“ with the medal (#278)', async () => {
+      const finished = entry('f', 10, { type: 'event_finished', params: { winners: [1, 2] } })
+      const feed = serveFeed([finished])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, sessions, nextNumber: null, teams } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(wrapper.findAll('[role="log"] h3').map(heading => heading.text())).toEqual(['Nach Session 2'])
+      expect(lines(wrapper)[0]).toContain('Unentschieden: Team Rot und Wilde Gurken')
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Team Rot und Wilde Gurken'])
+      expect(wrapper.get('[role="log"] li svg').classes()).toContain('lucide-medal')
+    })
+  })
+
+  describe('a Result (#273)', () => {
+    const result = entry('r', 1, { type: 'result_entered', params: { roundId: 'r1', number: 3, gameId: 'g1', first: [2] }, games: { g1: 'Mario Kart' } })
+    const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]
+
+    it('names the winner by the frozen Team name when the feed has the teams', async () => {
+      const feed = serveFeed([result])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, teams } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(lines(wrapper)[0]).toContain('Spiel 3: Mario Kart, Wilde Gurken gewinnt')
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Mario Kart', 'Wilde Gurken'])
+    })
+
+    it('names the winner by its colour without the teams', async () => {
+      const feed = serveFeed([result])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(lines(wrapper)[0]).toContain('Spiel 3: Mario Kart, Team Orange gewinnt')
+    })
+
+    it('names the longest game name allowed in full, also without a space in it (#273)', async () => {
+      const longest = 'W'.repeat(GAME_NAME_MAX)
+      const feed = serveFeed([{ ...result, games: { g1: longest } } as ActivityEntry])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, teams } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(lines(wrapper)[0]).toContain(`Spiel 3: ${longest}, Wilde Gurken gewinnt`)
+    })
+  })
+
+  describe('a Correction (#275)', () => {
+    const corrected = (games: Record<string, string>) => entry('c', 1, { actor: { id: 'u-host', name: 'Hostess' }, type: 'result_corrected', params: { roundId: 'r1', number: 3, gameId: 'g1' }, games })
+
+    it('says who corrected which game, with the name and the game in bold', async () => {
+      const feed = serveFeed([corrected({ g1: 'Mario Kart' })])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
+
+      expect(lines(wrapper)[0]).toContain('Hostess hat Spiel 3 (Mario Kart) korrigiert')
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Hostess', 'Mario Kart'])
+    })
+
+    it('shows no line while the entry has no name for the game', async () => {
+      const feed = serveFeed([corrected({})])
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room } })
+      await vi.waitFor(() => expect(feed.served.reads).toBeGreaterThan(0))
+      await flushPromises()
+
+      expect(lines(wrapper).filter(line => line.includes('korrigiert'))).toEqual([])
+    })
   })
 })

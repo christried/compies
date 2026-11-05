@@ -2,7 +2,7 @@
 import { SkipForward, Volume2, VolumeX, X } from '@lucide/vue'
 import { YOUTUBE_HOST, YOUTUBE_PLAYING, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
 import { clipPosition } from '~~/shared/clip'
-import type { ClipView } from '~~/shared/event'
+import type { ClipView } from '~~/shared/stage'
 
 // The synced clip (#230, 04-motion § Clip overlay and § Synchronised moments, 02-components § ClipPlayer): the game's YouTube excerpt
 // over the stage, playing the same second on every device. It opens when the Event read carries the clip (the server clock is at
@@ -27,7 +27,7 @@ const AUTOPLAY_WAIT_MS = 1000
 /** After this much playback the position is checked against the server's, once (04-motion § Synchronised moments). */
 const DRIFT_CHECK_MS = 3000
 const DRIFT_LIMIT_S = 1
-/** The progress bar and the end of the clip follow the server clock at this pace. */
+/** The progress bar and the end of the clip follow the server clock at this pace; also the bar's transition length: one tick eases into the next. */
 const TICK_MS = 250
 
 const { t } = useI18n()
@@ -43,9 +43,11 @@ const endSecond = props.clip.game.clipStart + props.clip.game.clipLength
 
 // The server's time of this tick; null before the page has mounted, so the progress bar renders the same on the server and on a
 // hard load's first client render (review 0.7, F11). The read carries a clip only while it runs, so it has not ended before mount.
-const now = ref<number | null>(null)
+// The ticker (#257) runs every TICK_MS and not every frame: the bar eases over 250 ms in CSS, so a write per frame would fight the
+// transition. The clip is not a countdown, and it ends at `endsAt` from the ticker without waiting for a refetch.
+const now = useServerTicker(() => props.serverNow(), { until: () => endsAt, every: TICK_MS })
 const closedByMe = ref(false)
-const ended = ref(false)
+const ended = computed(() => now.value !== null && now.value >= endsAt)
 const open = computed(() => !closedByMe.value && !ended.value)
 /** The player could not be made or cannot play the video: the game's card stands in for it. */
 const playerFailed = ref(false)
@@ -63,7 +65,6 @@ let player: YouTubePlayer | null = null
 let started = false
 let driftTimer: ReturnType<typeof setTimeout> | undefined
 let autoplayTimer: ReturnType<typeof setTimeout> | undefined
-let tickTimer: ReturnType<typeof setInterval> | undefined
 
 /** The second of the video that every device is at now; the start second when this device's estimate is a hair early. */
 const secondNow = () => clipPosition(props.clip, props.serverNow()) ?? props.clip.game.clipStart
@@ -163,17 +164,10 @@ onMounted(() => {
   // would block the unmuted start anyway).
   muted.value = !(wide.value === true && sound.enabled.value)
   soundBlocked.value = muted.value && sound.enabled.value
-  const tick = () => {
-    now.value = props.serverNow()
-    if (now.value >= endsAt) ended.value = true
-  }
-  tick()
-  tickTimer = setInterval(tick, TICK_MS)
   if (open.value && videoId.value) void createPlayer()
 })
 
 onBeforeUnmount(() => {
-  clearInterval(tickTimer)
   destroyPlayer()
 })
 </script>
@@ -206,7 +200,7 @@ onBeforeUnmount(() => {
           class="w-full max-w-[420px]"
         />
         <span class="pointer-events-none absolute top-2.5 left-2.5 inline-flex h-[30px] items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-2.5 text-[12px] font-extrabold">
-          <span class="size-2 rounded-full bg-hot motion-safe:animate-pulse" />
+          <span class="size-2 rounded-full bg-hot animate-live" />
           {{ t('clip.live') }}
         </span>
       </div>
@@ -219,8 +213,8 @@ onBeforeUnmount(() => {
         class="h-2.5 border-y-2 border-line bg-surface"
       >
         <span
-          class="block h-full bg-hot transition-[width] duration-250 ease-linear"
-          :style="{ width: `${progress * 100}%` }"
+          class="block h-full bg-hot transition-[width] ease-linear"
+          :style="{ width: `${progress * 100}%`, transitionDuration: `${TICK_MS}ms` }"
         />
       </div>
       <div class="flex flex-wrap items-center gap-2 px-3 py-2.5">

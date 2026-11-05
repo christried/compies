@@ -1,8 +1,22 @@
 import type { EventView } from '~~/shared/event'
 
-// The instants of the Event read and what a read after them must carry (review 0.7, F13; #256 adds the list of instants beside this).
+// The instants of the Event read and what a read after them must carry (review 0.7, F13; viewInstants lists them, #256).
 // No timer runs on the server: the first read after an instant settles it, but a read that reached the server a hair before the
 // instant, or a slow replica, answers the unsettled page. The page then reads again (useInstantRefresh).
+
+/**
+ * The instants (server time, epoch ms) at which the page must read the Event again: one expression per piece that has a deadline.
+ * The wheel's stop and the end of its Veto window, the coin's landing (#235: the feed's entry and the toss's result from then on),
+ * the clip's end (#230: the overlay closes at it, and the read then drops the clip). A piece with a deadline adds one line here (#256).
+ */
+export function viewInstants(view: Partial<EventView>): number[] {
+  return [
+    ...(view.wheel?.spin ? [Date.parse(view.wheel.spin.stopAt)] : []),
+    ...(view.wheel?.vetoes.draw ? [Date.parse(view.wheel.vetoes.draw.vetoEndsAt)] : []),
+    ...(view.coin ? [Date.parse(view.coin.landsAt)] : []),
+    ...(view.clip ? [Date.parse(view.clip.endsAt)] : []),
+  ]
+}
 
 /**
  * Whether a read taken at `nowMs` (server time, epoch ms) still misses what an instant that has passed decides: a spin whose stop

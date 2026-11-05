@@ -1,13 +1,15 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, Fragment, h } from 'vue'
 import EditorPage from '~/pages/e/[slug]/einstellungen.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { BoardTeam, MemberView, SetGameView } from '~~/shared/event'
+import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { SetGameView, SpinView, WheelView } from '~~/shared/stage'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
+import { INSTANT_MARGIN_MS } from '~/composables/useInstantRefresh'
 import { kitty, signInAs } from './auth'
 import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page'
 
@@ -49,7 +51,7 @@ interface Setup {
   phase?: string
   isHost?: boolean
   floors?: SettingsFloors | null
-  pools?: { main: PoolGame[], tiebreaker: PoolGame[] }
+  pools?: { main: PoolGame[] }
   /** The Members with their seats, and the teams of the board (the Event read's `members` and `teams`, #160). */
   members?: MemberView[]
   teams?: BoardTeam[]
@@ -66,7 +68,7 @@ function setUp(setup: Setup = {}) {
     event: { isHost: setup.isHost ?? true, phase: setup.phase ?? 'poll' },
     settings: setup.settings === undefined ? defaultSettings() : setup.settings,
     settingsFloors: setup.floors,
-    pools: setup.pools ?? { main: [], tiebreaker: [] },
+    pools: setup.pools ?? { main: [] },
     members: setup.members,
     teams: setup.teams,
     setGame: setup.setGame,
@@ -131,12 +133,12 @@ describe('the settings editor', () => {
     expect(page.find('form').exists()).toBe(false)
   })
 
-  it('has the six steps of an Event, every one of them a link from the start, and calls itself Einstellungen', async () => {
+  it('has the five steps of an Event, every one of them a link from the start, and calls itself Einstellungen', async () => {
     const { slug } = setUp()
 
     const page = await mountEditor(slug)
 
-    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Tiebreaker-Pool'])
+    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
     expect(page.get('h1').text()).toContain('Wer gegen wen?')
@@ -152,7 +154,7 @@ describe('the settings editor', () => {
   })
 
   it('tells a Host without the Host permission that the library is closed, keeps the pool and asks for no games (#173)', async () => {
-    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart, pong], tiebreaker: [] } })
+    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart, pong] } })
     listed.mockClear()
 
     const page = await mountEditor(slug, false)
@@ -165,15 +167,14 @@ describe('the settings editor', () => {
     expect(page.find('ul[aria-label="Spiele im Pool"]').exists()).toBe(true)
 
     await button(page, 'Pong aus dem Pool nehmen').trigger('click')
-    await goTo(page, 'Tiebreaker-Pool')
     expect(page.find('input[type="search"]').exists()).toBe(false)
     await cta(page).trigger('click')
-    await vi.waitFor(() => expect(patched).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [kart.id], tiebreaker: [] } })))
+    await vi.waitFor(() => expect(patched).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [kart.id] } })))
     expect(listed).not.toHaveBeenCalled()
   })
 
   it('starts from the Event: Team size, Game count, Selection mode with its wheel options, and the pools', async () => {
-    const { slug } = setUp({ settings: wheel, pools: { main: [kart, pong], tiebreaker: [pong] } })
+    const { slug } = setUp({ settings: wheel, pools: { main: [kart, pong] } })
 
     const page = await mountEditor(slug)
     expect(spin(page, 'Spieler pro Team').text()).toBe('4')
@@ -189,18 +190,15 @@ describe('the settings editor', () => {
     await goTo(page, 'Spielepool')
     await settle(page)
     expect(page.text()).toContain('Im Pool: 2 Spiele')
-
-    await goTo(page, 'Tiebreaker-Pool')
-    await settle(page)
-    expect(page.text()).toContain('Tiebreaker-Pool: 1 Spiel')
+    expect(page.text()).not.toContain('Tiebreaker')
   })
 
   it('saves what the Host changed, from the last step, and goes back to the Event with a toast', async () => {
-    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart], tiebreaker: [] } })
+    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart] } })
     const page = await mountEditor(slug)
     await goTo(page, 'Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await settle(page)
     await page.get('ul[aria-label="Bibliothek"]').get('button[aria-label="Pong in den Pool"]').trigger('click')
 
@@ -210,7 +208,7 @@ describe('the settings editor', () => {
     await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
     expect(patched).toHaveBeenCalledWith({
       settings: { ...wheel, gameCount: 8 },
-      pools: { main: [kart.id], tiebreaker: [pong.id] },
+      pools: { main: [kart.id, pong.id] },
     })
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}`))
     expect(shownToasts().map(toast => toast.text)).toContain('Gespeichert.')
@@ -219,15 +217,15 @@ describe('the settings editor', () => {
   // The Event page shows the saved settings at once: the save refreshes the Event's read by its shared key, so the
   // page does not wait for its next 15 s poll (#174). The page's own summary is checked, not the editor's step.
   it('shows the saved settings on the Event page at once, without waiting for the poll', async () => {
-    const { slug, set } = setUp({ settings: wheel, pools: { main: [kart], tiebreaker: [] } })
+    const { slug, set } = setUp({ settings: wheel, pools: { main: [kart] } })
     const page = await mountEditorAndEventPage(slug)
     const eventSettings = () => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'So wird gespielt'))!
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
-    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { main: [kart], tiebreaker: [] } }))
+    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { main: [kart] } }))
     await goTo(page, 'Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await settle(page)
     await cta(page).trigger('click')
 
@@ -240,19 +238,19 @@ describe('the settings editor', () => {
     const page = await mountEditor(slug)
 
     expect(cta(page).text()).toContain('Weiter')
-    for (let step = 0; step < 5; step++) {
+    for (let step = 0; step < 4; step++) {
       await cta(page).trigger('click')
       await vi.waitFor(() => expect(page.find('[aria-busy="true"]').exists()).toBe(false))
     }
 
-    expect(page.get('h1').text()).toContain('Und falls es knapp wird?')
+    expect(page.get('h1').text()).toContain('Welche Spiele kommen in den Pool?')
     expect(cta(page).text()).toContain('Speichern')
   })
 
   it('shows the reason of a refusal in the page and stays', async () => {
     const { slug } = setUp({ refuse: { statusCode: 409, statusMessage: 'setting_locked' } })
     const page = await mountEditor(slug)
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await settle(page)
 
     await cta(page).trigger('click')
@@ -265,7 +263,7 @@ describe('the settings editor', () => {
   it('names a finished Event as the reason when the server refuses with wrong_phase', async () => {
     const { slug } = setUp({ refuse: { statusCode: 409, statusMessage: 'wrong_phase' } })
     const page = await mountEditor(slug)
-    await goTo(page, 'Tiebreaker-Pool')
+    await goTo(page, 'Spielepool')
     await settle(page)
 
     await cta(page).trigger('click')
@@ -300,6 +298,14 @@ describe('the settings editor', () => {
 
       expect(less.attributes('aria-disabled')).toBe('true')
       expect(less.attributes('title')).toBe('Eine Partei hat schon 2 Vetos eingesetzt.')
+    })
+
+    it('says one spent Veto in the singular (#268)', async () => {
+      const { slug } = setUp({ settings: { ...wheel, vetoAllowance: 1 }, floors: { teamSize: 1, vetoAllowance: 1, gameCount: 0 } })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Auswahlmodus')
+
+      expect(button(page, 'Vetos pro Partei: weniger').attributes('title')).toBe('Eine Partei hat schon 1 Veto eingesetzt.')
     })
 
     it('keeps the Game count from going below the Rounds already started, and says why (#228)', async () => {
@@ -467,7 +473,7 @@ describe('the settings editor', () => {
       expect(preview.attributes('aria-checked')).toBe('true')
       expect(preview.attributes('aria-disabled')).toBeUndefined()
       await preview.trigger('click')
-      await goTo(page, 'Tiebreaker-Pool')
+      await goTo(page, 'Spielepool')
       await settle(page)
       await cta(page).trigger('click')
 
@@ -482,7 +488,7 @@ describe('the settings editor', () => {
 
       expect(page.text()).not.toContain(LOCKED)
       await button(page, 'Anzahl Spiele: weniger').trigger('click')
-      await goTo(page, 'Tiebreaker-Pool')
+      await goTo(page, 'Spielepool')
       await settle(page)
       await cta(page).trigger('click')
 
@@ -496,6 +502,29 @@ describe('the settings editor', () => {
 
       expect(page.text()).not.toContain(LOCKED)
       expect(button(page, 'Anzahl Teams: mehr').attributes('aria-disabled')).toBeUndefined()
+    })
+  })
+
+  describe('the Tie hint (#279)', () => {
+    const tieHint = (page: Page) => page.findAll('[role="status"]').find(element => element.text().includes('Gleichstand möglich.'))
+
+    it('shows on the Spiele step at an even Game count, and follows a change of it', async () => {
+      const { slug } = setUp({ settings: defaultSettings() })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spiele')
+      expect(tieHint(page)!.text()).toContain('Das Event kann unentschieden enden.')
+
+      await button(page, 'Anzahl Spiele: weniger').trigger('click')
+      expect(page.get('output').text()).toBe('9')
+      expect(tieHint(page)).toBeUndefined()
+    })
+
+    it('shows on a running Event too', async () => {
+      const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 8 }, phase: 'running' })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spiele')
+
+      expect(tieHint(page)).toBeDefined()
     })
   })
 
@@ -521,6 +550,15 @@ describe('the settings editor', () => {
       expect(page.text()).not.toContain('im Pool sind 0.')
     })
 
+    it('keeps the Bonus Veto note under the Glücksrad next to the live warning', async () => {
+      const { slug } = setUp({ settings: wheel, phase: 'running', setGame: live({ needed: 14, have: 4 }) })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+
+      expect(page.text()).toContain('Plane ein paar Spiele mehr ein, falls du zwischendurch Bonus-Vetos vergibst.')
+      expect(page.text()).toContain('Im schlimmsten Fall brauchst du noch 14 Spiele, übrig sind 4.')
+    })
+
     it('keeps the setup hint before the first Session', async () => {
       const { slug } = setUp({ settings: wheel, phase: 'poll', setGame: live(null) })
       const page = await mountEditor(slug)
@@ -529,5 +567,69 @@ describe('the settings editor', () => {
       expect(page.text()).toContain('Wird knapp.')
       expect(page.text()).toContain('im Pool sind 0.')
     })
+  })
+})
+
+// A draw's lock on the settings page lifts at its stop, not at the next poll (#261, spec N5): the page reads again when the instant passes.
+describe('the settings editor during a draw', () => {
+  const DRAWING = 'Gesperrt, solange ein Spiel gezogen wird'
+  let drawSlugs = 0
+
+  /** A running Event whose spin stops at `stopAt` (epoch ms, the real clock: fake timers stall the page's mount); `reads` counts the Event read, `set` serves the next one. */
+  function serveDraw({ stopAt, host = true, drawing = true }: { stopAt: number, host?: boolean, drawing?: boolean }) {
+    const slug = `einstellungen-draw-${++drawSlugs}`
+    const spin: SpinView = { roundId: 'r1', drawId: 'd1', spinStartAt: new Date(stopAt - 6000).toISOString(), stopAt: new Date(stopAt).toISOString(), slices: 3, resultIndex: 0, resultOffset: 0.5, labels: null, game: null, current: true }
+    const wheelView: WheelView = { count: 3, slices: null, spin, vetoes: { left: [0, 0, 0], own: null, revealed: null, draw: null } }
+    let current = { ...view(slug, [], { event: { isHost: host, phase: 'running' }, settings: wheel, wheel: wheelView }), roundBeingDrawn: drawing }
+    const reads = vi.fn()
+    registerEndpoint(`/api/e/${slug}`, {
+      method: 'GET',
+      handler: () => {
+        reads()
+        return current
+      },
+    })
+    const set = (next: boolean) => {
+      current = { ...current, roundBeingDrawn: next }
+    }
+    return { slug, reads, set }
+  }
+
+  beforeEach(() => {
+    useState('toasts').value = []
+  })
+
+  it('lifts the lock on „Rad verdecken“ and the Veto allowance at the stop, without waiting for the poll', async () => {
+    const { slug, set } = serveDraw({ stopAt: Date.now() + 1000 })
+    const page = await mountEditor(slug)
+    await goTo(page, 'Auswahlmodus')
+    expect(page.text()).toContain(DRAWING)
+
+    set(false)
+    // The read before the stop still says so: only the page's read at the stop (+ INSTANT_MARGIN_MS) can lift it.
+    expect(page.text()).toContain(DRAWING)
+    await vi.waitFor(() => expect(page.text()).not.toContain(DRAWING), { timeout: 4000 })
+  })
+
+  it('reads nothing again for a Member, who gets the Construction page', async () => {
+    const { slug, reads } = serveDraw({ stopAt: Date.now() + 500, host: false, drawing: false })
+    await mountEditor(slug)
+    await flushPromises()
+    const before = reads.mock.calls.length
+
+    await new Promise(resolve => setTimeout(resolve, 500 + INSTANT_MARGIN_MS + 300))
+
+    expect(reads.mock.calls.length).toBe(before)
+  })
+
+  it('reads nothing again for a stop that had passed when the page loaded', async () => {
+    const { slug, reads } = serveDraw({ stopAt: Date.now() - 1000, drawing: false })
+    await mountEditor(slug)
+    await flushPromises()
+    const before = reads.mock.calls.length
+
+    await new Promise(resolve => setTimeout(resolve, INSTANT_MARGIN_MS + 300))
+
+    expect(reads.mock.calls.length).toBe(before)
   })
 })

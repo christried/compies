@@ -145,7 +145,7 @@ describe('create an Event: the Sessions and Dates step', () => {
     await cta(page).trigger('click')
 
     await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
-    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: DEFAULT_SETTINGS, pools: { main: [], tiebreaker: [] } })
+    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: DEFAULT_SETTINGS, pools: { main: [] } })
     expect(page.text()).toContain('Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.')
     expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
     expect(page.get('a[href="/e/freitags-zocken-k7q2"]').text()).toContain('Zur Umfrage')
@@ -162,7 +162,7 @@ describe('create an Event: the Sessions and Dates step', () => {
     await cta(page).trigger('click')
 
     await vi.waitFor(() => expect(saved).toHaveBeenCalled())
-    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', sessions: 1, startsAt: ['2090-11-07T20:00'], settings: DEFAULT_SETTINGS, pools: { main: [], tiebreaker: [] } })
+    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', sessions: 1, startsAt: ['2090-11-07T20:00'], settings: DEFAULT_SETTINGS, pools: { main: [] } })
   })
 
   it('starts with one Session and counts up to 8', async () => {
@@ -203,7 +203,7 @@ describe('create an Event: the Sessions and Dates step', () => {
     await cta(page).trigger('click')
 
     await vi.waitFor(() => expect(saved).toHaveBeenCalled())
-    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', sessions: 2, startsAt: ['2090-11-07T20:00', '2090-11-08T19:00'], settings: DEFAULT_SETTINGS, pools: { main: [], tiebreaker: [] } })
+    expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'direct', sessions: 2, startsAt: ['2090-11-07T20:00', '2090-11-08T19:00'], settings: DEFAULT_SETTINGS, pools: { main: [] } })
   })
 
   it('numbers the direct rows on screen once there is more than one Session', async () => {

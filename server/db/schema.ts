@@ -5,7 +5,7 @@ import { PHASES } from '../../shared/event'
 import { ZONES } from '../../shared/board'
 import { SUITABILITIES } from '../../shared/game'
 import { COIN_SIDES, DRAW_KINDS, DRAW_OUTCOMES, DRAW_SOURCES } from '../../shared/rounds'
-import { FORMATS, POOLS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
+import { FORMATS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
 
 // MVP schema (#1). Every instant is timestamptz in UTC (ADR 0003); every id is a database-generated uuid.
 
@@ -91,10 +91,15 @@ export const events = pgTable('events', {
   // Pool preview (#225): null only for Events not set up and rows the code before 0.6 wrote (storedPoolPreview reads it as on unless the wheel is hidden).
   poolPreview: boolean('pool_preview'),
   vetoAllowance: integer('veto_allowance'),
+  // 0023 (#277): the instant the Host finished the Event (the request's clock, ADR 0013). Written, not read, in 0.8: nothing shows it yet.
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
-})
+}, table => [
+  // A stored end belongs to a finished (or archived) Event, never to a running one (#277). The converse is not checked: the code under the Event lock is the one writer.
+  check('events_finished_at_phase_check', sql`${table.finishedAt} IS NULL OR ${table.phase} IN ('finished', 'archived')`),
+])
 
 // A sitting of an Event on one Date (ADR 0011, #48). The Date lives here, not on the Event.
 // `slotId` is the Slot the Date came from, if any: a Slot a Session refers to is no longer open.
@@ -197,9 +202,11 @@ export const games = pgTable('games', {
   index('games_image_key_idx').on(table.imageKey),
 ])
 
-export const poolKind = pgEnum('pool_kind', POOLS)
+// Postgres cannot drop an enum value safely, so `tiebreaker` stays in the type although nothing reads or writes it (ADR 0014, #279).
+// Migration 0021 deleted its rows; the 0.7 code serving during the switch-over can still insert one.
+export const poolKind = pgEnum('pool_kind', ['main', 'tiebreaker'])
 
-// The games of an Event's Game pool and Tiebreaker pool (#146). A game may sit in both pools.
+// The games of an Event's Game pool (#146). Game pool; Tiebreaker pool removed in 0.8 (ADR 0014, #279).
 export const eventPoolGames = pgTable('event_pool_games', {
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   gameId: uuid('game_id').notNull().references(() => games.id),
@@ -239,8 +246,9 @@ export const coinSide = pgEnum('coin_side', COIN_SIDES)
 // One of the games an Event plays (GLOSSARY: Round). It begins with a spin or with the Host setting a game and keeps going
 // through vetoed draws until no Veto stops its game. `gameId` and `setAt` are null while it is being drawn and set
 // together; `setAt` is when the game was set (the end of the Veto window for a draw that had one). `putBackAt` is the Host's
-// put-back: a soft removal, because Vetoes spent in a put-back Round stay spent and the history stays. 0.8 adds the
-// result to this table. Only one Round per Event can be in its draw at a time (the partial unique index).
+// put-back: a soft removal, because Vetoes spent in a put-back Round stay spent and the history stays. 0.8 adds the Result
+// (0022, #273): the Round's number and `resultAt`, and `correctedAt` for #275; its Places are in `round_places`. Only one Round per
+// Event can be in its draw at a time (the partial unique index).
 export const rounds = pgTable('rounds', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -248,6 +256,11 @@ export const rounds = pgTable('rounds', {
   startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
   setAt: timestamp('set_at', { withTimezone: true }),
   putBackAt: timestamp('put_back_at', { withTimezone: true }),
+  // 0022 (#273): the Result. `number` is the Round's number („Spiel 3“), given when its Result is entered (the highest in the Event + 1,
+  // under the Event lock); `resultAt` is that moment (the request's clock, ADR 0013); `correctedAt` is the instant of the latest Correction (#275), null until one.
+  number: integer('number'),
+  resultAt: timestamp('result_at', { withTimezone: true }),
+  correctedAt: timestamp('corrected_at', { withTimezone: true }),
 }, table => [
   check('rounds_set_game_check', sql`(${table.setAt} IS NULL) = (${table.gameId} IS NULL)`),
   check('rounds_put_back_after_set_check', sql`${table.putBackAt} IS NULL OR ${table.setAt} IS NOT NULL`),
@@ -255,6 +268,26 @@ export const rounds = pgTable('rounds', {
   // The Event read lists an Event's Rounds in start order; the image route and the feed look a Round up by its game.
   index('rounds_event_id_started_at_idx').on(table.eventId, table.startedAt),
   index('rounds_game_id_idx').on(table.gameId),
+  check('rounds_number_result_check', sql`(${table.number} IS NULL) = (${table.resultAt} IS NULL)`),
+  check('rounds_number_positive_check', sql`${table.number} IS NULL OR ${table.number} >= 1`),
+  // A Round with a Result is set and was not put back (the code enforces it under the Event lock; this is the backstop).
+  check('rounds_result_stands_check', sql`${table.resultAt} IS NULL OR (${table.setAt} IS NOT NULL AND ${table.putBackAt} IS NULL)`),
+  check('rounds_corrected_after_result_check', sql`${table.correctedAt} IS NULL OR ${table.resultAt} IS NOT NULL`),
+  unique('rounds_event_id_number_unique').on(table.eventId, table.number),
+])
+
+// A Round's Result (GLOSSARY: Result, Place, Score; 0022, #273): one row per Party. `team` is the Party's team position (from 1),
+// `place` its Place (from 1; a Shared place repeats), `score` the optional Score as trimmed text (null = none). Entering a Result
+// writes the rows once; a Correction (#275) replaces them whole. The table is new, so the code that serves during the switch-over (ADR 0007) neither reads nor writes it.
+export const roundPlaces = pgTable('round_places', {
+  roundId: uuid('round_id').notNull().references(() => rounds.id, { onDelete: 'cascade' }),
+  team: integer('team').notNull(),
+  place: integer('place').notNull(),
+  score: text('score'),
+}, table => [
+  primaryKey({ columns: [table.roundId, table.team] }),
+  check('round_places_team_check', sql`${table.team} >= 1`),
+  check('round_places_place_check', sql`${table.place} >= 1`),
 ])
 
 // A Round's draws: a spin or a set; vetoed ones stay in their Round. `source` says where the game came from (a library game
@@ -297,6 +330,7 @@ export const draws = pgTable('draws', {
 // A Party's Veto on a draw (GLOSSARY: Veto): the Party is a team number, `userId` is the Player who cast it. A Party casts at
 // most one per draw, which the primary key enforces in the database. Vetoes cast on a draw are used up when it settles as
 // vetoed; the allowance spent is counted from these rows.
+// `userId` has no index, as `activity.actorId` has none (1.4): deleting a User scans this table, which is rare and small (Q17).
 export const vetoes = pgTable('vetoes', {
   drawId: uuid('draw_id').notNull().references(() => draws.id, { onDelete: 'cascade' }),
   team: integer('team').notNull(),
@@ -309,6 +343,7 @@ export const vetoes = pgTable('vetoes', {
 
 // A Veto the Host granted a Party on top of the Veto allowance (GLOSSARY: Bonus Veto), at most 9 per Party over the Event
 // (checked in code under the Event lock). Nobody takes one away, so there is no undo and no update.
+// `grantedBy` has no index, as `activity.actorId` has none (1.4): deleting a User scans this table, which is rare and small (Q17).
 export const bonusVetoes = pgTable('bonus_vetoes', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -321,10 +356,14 @@ export const bonusVetoes = pgTable('bonus_vetoes', {
 ])
 
 // A toss of the Coin flip (GLOSSARY: Coin flip): the server picks `side`; the toss runs from `startedAt` and lands at
-// `landsAt`. The side reaches clients with the toss, but the UI and the feed show it only at the landing.
+// `landsAt`. The side reaches clients with the toss, but the UI and the feed show it only at the landing. A toss belongs to the
+// Session it was made in (`sessionId`, 0020, #259); no time comparison decides it. Nullable: tosses from before and those the code
+// that serves during the switch-over writes (ADR 0007) have none, and are shown in no Session.
+// `tossedBy` has no index, as `activity.actorId` has none (1.4): deleting a User scans this table, which is rare and small (Q17).
 export const coinTosses = pgTable('coin_tosses', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'cascade' }),
   side: coinSide('side').notNull(),
   tossedBy: uuid('tossed_by').notNull().references(() => users.id),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
@@ -332,6 +371,7 @@ export const coinTosses = pgTable('coin_tosses', {
 }, table => [
   check('coin_tosses_lands_after_start_check', sql`${table.landsAt} >= ${table.startedAt}`),
   index('coin_tosses_event_id_started_at_idx').on(table.eventId, table.startedAt),
+  index('coin_tosses_session_id_started_at_idx').on(table.sessionId, table.startedAt),
 ])
 
 // The Countdown (GLOSSARY: Countdown): one per Event, during a running Session; ending the Session deletes it. `durationMs`

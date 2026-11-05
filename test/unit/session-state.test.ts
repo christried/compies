@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasStarted, isRunning, nextSession, runningOf, sessionState, startRejection, teamsRejection, type SessionTimes, type StartInput } from '../../shared/session-state'
+import { hasStarted, isRunning, nextSession, noSessionLeft, runningOf, sessionState, startRejection, teamsRejection, type SessionTimes, type StartInput } from '../../shared/session-state'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -55,6 +55,26 @@ describe('hasStarted and runningOf', () => {
     expect(runningOf([view('a', null), running, view('c', '2026-11-06T18:00:00.000Z', '2026-11-06T20:00:00.000Z')])).toBe(running)
     expect(runningOf([view('a', null), view('c', '2026-11-06T18:00:00.000Z', '2026-11-06T20:00:00.000Z')])).toBeUndefined()
     expect(runningOf([])).toBeUndefined()
+  })
+})
+
+describe('noSessionLeft', () => {
+  const ended = session('a', { startedAt: at(18), endedAt: at(20) })
+
+  it('is true once a Session has started, none runs, none waits to start and none polls for a Date', () => {
+    expect(noSessionLeft([ended], 0)).toBe(true)
+    expect(noSessionLeft([ended, session('b', { startedAt: at(21), endedAt: at(22) })], 0)).toBe(true)
+  })
+
+  it('is false while a Session runs, while a dated one waits to start, or while one polls for its Date', () => {
+    expect(noSessionLeft([session('a', { startedAt: at(18) })], 0)).toBe(false)
+    expect(noSessionLeft([ended, session('b')], 0)).toBe(false)
+    expect(noSessionLeft([ended, session('b', { startsAt: null })], 1)).toBe(false)
+  })
+
+  it('is false before the first start, so a poll or a set Date never reads „Kein Termin“', () => {
+    expect(noSessionLeft([], 0)).toBe(false)
+    expect(noSessionLeft([session('a')], 0)).toBe(false)
   })
 })
 

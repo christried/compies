@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coinBlockedKey, dockLayout, hostDockState, setBlockedKey, type DockInput } from '../../app/utils/host-dock'
+import { GAME_ACTIONS, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockInput, type DockKey } from '../../app/utils/host-dock'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, derived from
 // the Event read, and which actions sit where (the layout, review 1.4 A4, #228).
@@ -21,7 +21,11 @@ function input(fields: Partial<DockInput>): DockInput {
     missingDates: sessions.filter(session => session.startsAt === null).length,
     event: { phase: 'poll' },
     setGame: null,
+    wheel: null,
+    countdown: null,
+    coin: null,
     start: { sessionId: 'a', number: null, rejection: null },
+    end: null,
     ...fields,
   }
 }
@@ -97,13 +101,80 @@ describe('hostDockState', () => {
     expect(state).toMatchObject({ kind: 'between', primary: 'setDate', pollNumber: 2 })
   })
 
-  it('has no primary after the last Session ended (the Event ends in 1.6)', () => {
+  it('has no primary after the last Session ended while the Event cannot be finished (#277)', () => {
     const state = hostDockState(input({
       sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }), dated('b', 2, { startedAt: '2090-11-06T19:30:00.000Z', endedAt: '2090-11-06T22:00:00.000Z' })],
       start: { sessionId: null, number: null, rejection: 'no_dated_session' },
     }))
 
     expect(state).toMatchObject({ kind: 'done', primary: null })
+  })
+})
+
+// The end (#277): once the Rounds with a Result reach the Game count and first place is not shared, the Host finishes the Event.
+describe('the primary when the Event can be finished (#277)', () => {
+  const ENDED = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
+  const end = (fields: Partial<NonNullable<DockInput['end']>> = {}): DockInput['end'] => ({ played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null, ...fields })
+  const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
+
+  it('is Event abschließen in a running Session, with that Session\'s number for „Session n beenden“', () => {
+    const state = hostDockState(input({ sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z' }), dated('b', 2)], end: end() }))
+
+    expect(state).toMatchObject({ kind: 'running', primary: 'finish', number: 1 })
+  })
+
+  it('is Event abschließen between Sessions and after the last one', () => {
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: end() }))).toMatchObject({ kind: 'between', primary: 'finish' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: end() }))).toMatchObject({ kind: 'done', primary: 'finish' })
+  })
+
+  it('is not offered while Results are missing, or the Standings call for something else', () => {
+    const sessions = [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z' })]
+
+    expect(hostDockState(input({ sessions, end: end({ complete: false, finish: { rejection: 'results_missing' } }) }))).toMatchObject({ primary: 'spin' })
+    expect(hostDockState(input({ sessions, end: end({ finish: { rejection: 'standings_changed' } }) }))).toMatchObject({ primary: 'spin' })
+  })
+
+  it('is not offered to a Member, who has no finish object', () => {
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ finish: null }) }))).toMatchObject({ primary: 'spin' })
+  })
+
+  // A Tie has its own primary (#278): the Host holds „Unentschieden beenden“ or adds a last game. A Session that has not started cannot hold Results,
+  // so `teams` has no Tie state (a started Session is never removed): the dock and the page's banner agree on running, between and done.
+  it('is Unentschieden beenden in a Tie: in a running Session (with its number), between Sessions and after the last one', () => {
+    const tie = end({ tie: [1, 2] })
+
+    expect(hostDockState(input({ sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z' }), dated('b', 2)], end: tie }))).toMatchObject({ kind: 'running', primary: 'finishTie', number: 1 })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: tie }))).toMatchObject({ kind: 'between', primary: 'finishTie' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: tie }))).toMatchObject({ kind: 'done', primary: 'finishTie' })
+  })
+
+  it('keeps the old primary in a Tie the finish rule refuses, and for a Member', () => {
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2], finish: { rejection: 'wrong_phase' } }) }))).toMatchObject({ primary: 'spin' })
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2], finish: null }) }))).toMatchObject({ primary: 'spin' })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: end({ tie: [1, 2], finish: null }) }))).toMatchObject({ kind: 'done', primary: null })
+  })
+
+  it('stays Event abschließen with a sole leader, whatever the last game says', () => {
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ lastGame: { rejection: 'no_tie' } }) }))).toMatchObject({ primary: 'finish' })
+  })
+
+  it('carries the reason the last game cannot be added through: the maximum, or none', () => {
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2], lastGame: { rejection: 'game_count_range' } }) }))).toMatchObject({ primary: 'finishTie', lastGameRejection: 'game_count_range' })
+    expect(hostDockState(input({ sessions: RUNNING, end: end({ tie: [1, 2], lastGame: { rejection: null } }) }))).toMatchObject({ primary: 'finishTie', lastGameRejection: null })
+    expect(hostDockState(input({ sessions: RUNNING, end: end() }))).toMatchObject({ lastGameRejection: null })
+  })
+
+  it('has no primary in a finished Event, even though its Standings are a Tie', () => {
+    const state = hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: end({ tie: [1, 2], finish: { rejection: 'wrong_phase' }, lastGame: { rejection: 'wrong_phase' } }) }))
+
+    expect(state).toMatchObject({ kind: 'finished', primary: null })
+  })
+
+  it('has no primary in a finished Event, whatever the Sessions say', () => {
+    const state = hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: end({ finish: { rejection: 'wrong_phase' } }) }))
+
+    expect(state).toMatchObject({ kind: 'finished', primary: null, number: null })
   })
 })
 
@@ -125,68 +196,164 @@ describe('the primary of a running Session (#228)', () => {
 })
 
 describe('dockLayout', () => {
-  const layout = (fields: Partial<DockInput>, pollOpen = false, bonusVeto = false) => dockLayout(hostDockState(input(fields)), pollOpen, bonusVeto)
+  const ENDED = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
+  const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
+  const layout = (fields: Partial<DockInput>, open: { pollOpen: boolean, bonusVetoOpen: boolean }) => dockLayout(hostDockState(input(fields)), open)
+  const OPENS = [
+    { pollOpen: false, bonusVetoOpen: false },
+    { pollOpen: true, bonusVetoOpen: false },
+    { pollOpen: false, bonusVetoOpen: true },
+    { pollOpen: true, bonusVetoOpen: true },
+  ]
+  // The dock's states as the Event read gives them: the fields that make the state, its primary (with the Date poll open), whether a
+  // Session runs, and whether the Date poll can still offer Dates and Slots.
+  const COMPLETE: DockInput['end'] = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null }
+  const TIE: DockInput['end'] = { ...COMPLETE!, tie: [1, 2] }
+  const STATES: { name: string, fields: Partial<DockInput>, primary: DockKey[], running: boolean, polls: boolean, finished?: boolean }[] = [
+    { name: 'setup', fields: { settings: null }, primary: ['settings'], running: false, polls: true },
+    { name: 'poll', fields: { sessions: [undated('a')], start: NO_DATED }, primary: ['setDate'], running: false, polls: true },
+    { name: 'teams', fields: { sessions: [dated('a', 1)] }, primary: ['start'], running: false, polls: true },
+    { name: 'between, another Session polls', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2), undated('c')], start: { sessionId: 'b', number: 2, rejection: null } }, primary: ['start'], running: false, polls: true },
+    { name: 'running under Host pick', fields: { settings: hostPick, sessions: RUNNING }, primary: ['setGame'], running: true, polls: true },
+    { name: 'running in the Lucky Wheel', fields: { settings, sessions: RUNNING }, primary: ['spin'], running: true, polls: true },
+    { name: 'after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED }, primary: [], running: false, polls: false },
+    { name: 'complete, a Session runs', fields: { sessions: RUNNING, end: COMPLETE }, primary: ['finish'], running: true, polls: true },
+    { name: 'complete, between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: COMPLETE }, primary: ['finish'], running: false, polls: true },
+    { name: 'complete after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: COMPLETE }, primary: ['finish'], running: false, polls: false },
+    { name: 'a Tie, a Session runs', fields: { settings, sessions: RUNNING, end: TIE }, primary: ['finishTie'], running: true, polls: true },
+    { name: 'a Tie between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, primary: ['finishTie'], running: false, polls: true },
+    { name: 'a Tie after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, primary: ['finishTie'], running: false, polls: false },
+    // Nothing is left to do in a finished Event but Einladen (#277), so the checks that expect Mehr to end with the settings skip it.
+    { name: 'finished', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: COMPLETE }, primary: [], running: false, polls: false, finished: true },
+  ]
 
-  it('puts Event einrichten first while the Event is not set up, with the Dates in Mehr', () => {
-    expect(layout({ settings: null }, true)).toEqual({ primary: ['settings'], secondary: ['invite'], more: ['setDate', 'slots'] })
-    expect(layout({ settings: null })).toEqual({ primary: ['settings'], secondary: ['invite'], more: [] })
+  it.each(STATES)('has $primary as the primary in $name, with the Date poll open', ({ fields, primary }) => {
+    for (const bonusVetoOpen of [false, true]) expect(layout(fields, { pollOpen: true, bonusVetoOpen }).primary).toEqual(primary)
   })
 
-  it('puts Termin festlegen first while no Session is dated', () => {
-    expect(layout({ sessions: [undated('a')], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }, true))
-      .toEqual({ primary: ['setDate'], secondary: ['invite'], more: ['slots', 'settings'] })
+  it.each(STATES.filter(state => !state.finished))('ends Mehr with the settings in $name, and keeps them out of Mehr in setup, where they are the primary', ({ fields, primary }) => {
+    for (const open of OPENS) {
+      const { more } = layout(fields, open)
+      if (primary.includes('settings')) expect(more).not.toContain('settings')
+      else expect(more.at(-1)).toBe('settings')
+    }
   })
 
-  it('puts Session starten first with Termin festlegen beside it while another Session polls', () => {
-    expect(layout({ sessions: [dated('a', 1), undated('b')] }, true)).toEqual({ primary: ['start'], secondary: ['setDate', 'invite'], more: ['slots', 'settings'] })
-    expect(layout({ sessions: [dated('a', 1), dated('b', 2)] })).toEqual({ primary: ['start'], secondary: ['invite'], more: ['settings'] })
+  it('leaves only Einladen in a finished Event: no primary, no Mehr, whatever else is open (#277)', () => {
+    const finished = STATES.find(state => state.finished)!
+
+    for (const open of OPENS) expect(layout(finished.fields, open)).toEqual({ primary: [], secondary: ['invite'], more: [] })
   })
 
-  it('under Host pick puts Nächstes Spiel setzen first in a running Session, with Session beenden beside it', () => {
-    expect(layout({ settings: hostPick, sessions: RUNNING })).toEqual({ primary: ['setGame'], secondary: ['end', 'invite'], more: ['coin', 'countdown', 'settings'] })
+  it('puts Event abschließen first and keeps Session beenden next to it in a running Session, without the actions that could only be disabled (#277)', () => {
+    for (const open of OPENS) {
+      const { primary, secondary, more } = layout({ sessions: RUNNING, end: COMPLETE }, open)
+      expect(primary).toEqual(['finish'])
+      expect(secondary).toEqual(['end', 'invite'])
+      expect(more).not.toContain('setGame')
+      expect(more).not.toContain('spin')
+    }
   })
 
-  it('in the Lucky Wheel puts Rad drehen first, Session beenden beside it and Nächstes Spiel setzen in Mehr (#229)', () => {
-    expect(layout({ settings, sessions: RUNNING })).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'coin', 'countdown', 'settings'] })
-    expect(layout({ settings, sessions: [...RUNNING, undated('b')] }, true)).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'setDate', 'slots', 'coin', 'countdown', 'settings'] })
+  it('offers no Session starten once the Event can be finished, between Sessions or after the last (#277)', () => {
+    for (const open of OPENS) {
+      expect(layout({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: COMPLETE }, open).primary).not.toContain('start')
+      expect(layout({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: COMPLETE }, open).more).not.toContain('start')
+    }
   })
 
-  it('puts Münzwurf in Mehr in both running layouts, before the Countdown (#235), and in no other state', () => {
-    expect(layout({ settings: hostPick, sessions: RUNNING }).more).toContain('coin')
-    expect(layout({ settings, sessions: RUNNING }).more).toContain('coin')
-    expect(layout({ sessions: [dated('a', 1), dated('b', 2)] }).more).not.toContain('coin')
-    expect(layout({ sessions: [dated('a', 1), undated('b')], start: { sessionId: 'a', number: 1, rejection: null } }).more).not.toContain('coin')
+  it.each(STATES)('holds Letztes Spiel hinzufügen in the dock exactly where Unentschieden beenden is the primary: $name', ({ fields, primary }) => {
+    for (const open of OPENS) {
+      const { secondary, more } = layout(fields, open)
+      expect(secondary.includes('lastGame')).toBe(primary.includes('finishTie'))
+      expect(more).not.toContain('lastGame')
+    }
   })
 
-  it('puts Countdown in Mehr in both running layouts (#236), and in no other state', () => {
-    expect(layout({ settings: hostPick, sessions: RUNNING }).more).toContain('countdown')
-    expect(layout({ settings, sessions: RUNNING }).more).toContain('countdown')
-    expect(layout({ sessions: [dated('a', 1), dated('b', 2)] }).more).not.toContain('countdown')
-    expect(layout({ sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' })], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }).more).not.toContain('countdown')
+  // HostDock lists every action of Mehr without its hold, so a hold there would run at once.
+  it.each(STATES)('keeps every hold out of Mehr: $name', ({ fields }) => {
+    for (const open of OPENS) {
+      const { more } = layout(fields, open)
+      for (const key of ['end', 'finish', 'finishTie'] as DockKey[]) expect(more).not.toContain(key)
+    }
   })
 
-  it('puts Bonus-Veto geben in Mehr before Münzwurf in the running layouts, and before Einstellungen in the others (#233)', () => {
-    expect(layout({ settings, sessions: RUNNING }, false, true)).toEqual({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', 'bonusVeto', 'coin', 'countdown', 'settings'] })
-    expect(layout({ settings: hostPick, sessions: RUNNING }, false, true)).toEqual({ primary: ['setGame'], secondary: ['end', 'invite'], more: ['bonusVeto', 'coin', 'countdown', 'settings'] })
-    expect(layout({ sessions: [dated('a', 1), dated('b', 2)] }, false, true)).toEqual({ primary: ['start'], secondary: ['invite'], more: ['bonusVeto', 'settings'] })
-    expect(layout({ sessions: [dated('a', 1), undated('b')] }, true, true)).toEqual({ primary: ['start'], secondary: ['setDate', 'invite'], more: ['slots', 'bonusVeto', 'settings'] })
-    expect(layout({ sessions: [undated('a')], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }, true, true))
-      .toEqual({ primary: ['setDate'], secondary: ['invite'], more: ['slots', 'bonusVeto', 'settings'] })
+  it('lays the Tie out for each state: both holds and the last game in the pill, the rest behind Mehr (#278)', () => {
+    for (const open of OPENS) {
+      const dates: DockKey[] = open.pollOpen ? ['setDate'] : []
+      const slots: DockKey[] = open.pollOpen ? ['slots'] : []
+      const bonus: DockKey[] = open.bonusVetoOpen ? ['bonusVeto'] : []
+      const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || open.bonusVetoOpen)
+      expect(layout({ sessions: RUNNING, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates, ...slots, ...game, 'settings'] })
+      expect(layout({ sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates, ...slots, ...bonus, 'settings'] })
+      expect(layout({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus, 'settings'] })
+    }
   })
 
-  it('keeps Bonus-Veto geben in Mehr after the last Session, and out of the setup and out of the dock while the read refuses it (#233)', () => {
-    const ended = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
-
-    expect(layout({ sessions: [dated('a', 1, ended)], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }, false, true))
-      .toEqual({ primary: [], secondary: ['invite'], more: ['bonusVeto', 'settings'] })
-    expect(layout({ settings: null }, false, true).more).not.toContain('bonusVeto')
-    expect(layout({ settings, sessions: RUNNING }, false, false).more).not.toContain('bonusVeto')
+  it('offers no game to set or spin in a Tie: only the last game adds one', () => {
+    for (const open of OPENS) {
+      for (const fields of [{ sessions: RUNNING, end: TIE }, { settings: hostPick, sessions: RUNNING, end: TIE }]) {
+        const { primary, secondary, more } = layout(fields, open)
+        for (const key of ['setGame', 'spin', 'start'] as DockKey[]) expect([...primary, ...secondary, ...more]).not.toContain(key)
+      }
+    }
   })
 
-  it('has only Einladen and Einstellungen after the last Session', () => {
-    const ended = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
+  it.each(STATES)('holds Einladen in the dock in $name, and Session beenden there only while a Session runs', ({ fields, running }) => {
+    for (const open of OPENS) {
+      const { secondary } = layout(fields, open)
+      expect(secondary).toContain('invite')
+      expect(secondary.includes('end')).toBe(running)
+    }
+  })
 
-    expect(layout({ sessions: [dated('a', 1, ended)], start: { sessionId: null, number: null, rejection: 'no_dated_session' } })).toEqual({ primary: [], secondary: ['invite'], more: ['settings'] })
+  it.each(STATES)('has the coin toss and the Countdown in Mehr while a Session runs, and in no other state: $name', ({ fields, running }) => {
+    for (const open of OPENS) {
+      const { more } = layout(fields, open)
+      expect(more.includes('coin')).toBe(running)
+      expect(more.includes('countdown')).toBe(running)
+    }
+  })
+
+  it.each(STATES)('has the Bonus Veto in Mehr whenever the Host may grant one, except in setup and in a finished Event: $name', ({ fields, primary, finished }) => {
+    for (const open of OPENS) {
+      const { more } = layout(fields, open)
+      expect(more.includes('bonusVeto')).toBe(!primary.includes('settings') && !finished && open.bonusVetoOpen)
+    }
+  })
+
+  it.each(STATES.filter(state => state.running))('lists the game actions in GAME_ACTIONS order right before the settings: $name', ({ fields }) => {
+    for (const open of OPENS) {
+      const { more } = layout(fields, open)
+      const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || open.bonusVetoOpen)
+      expect(more.filter(key => GAME_ACTIONS.includes(key))).toEqual(game)
+      expect(more.slice(more.length - game.length - 1)).toEqual([...game, 'settings'])
+    }
+  })
+
+  it.each(STATES)('lists no action twice, in any part: $name', ({ fields }) => {
+    for (const open of OPENS) {
+      const { primary, secondary, more } = layout(fields, open)
+      const all = [...primary, ...secondary, ...more]
+      expect(new Set(all).size).toBe(all.length)
+    }
+  })
+
+  it('offers Nächstes Spiel setzen in Mehr under the Lucky Wheel only, and as the primary under Host pick (#229)', () => {
+    for (const open of OPENS) {
+      expect(layout({ settings: hostPick, sessions: RUNNING }, open).more).not.toContain('setGame')
+      expect(layout({ settings, sessions: RUNNING }, open).more).toContain('setGame')
+      expect(layout({ sessions: [dated('a', 1)] }, open).more).not.toContain('setGame')
+    }
+  })
+
+  it.each(STATES)('offers the Dates and the Slots only while the Date poll is open, and in a state that polls: $name', ({ fields, polls }) => {
+    for (const pollOpen of [false, true]) {
+      const { primary, secondary, more } = layout(fields, { pollOpen, bonusVetoOpen: false })
+      const shown = [...primary, ...secondary, ...more]
+      expect(shown.includes('setDate')).toBe(pollOpen && polls)
+      expect(shown.includes('slots')).toBe(pollOpen && polls)
+    }
   })
 })
 
@@ -202,6 +369,14 @@ describe('coinBlockedKey (#235)', () => {
     expect(coinBlockedKey(flying, Date.parse(LANDS))).toBeNull()
     expect(coinBlockedKey({ sessions: RUNNING, coin: null }, Date.parse(LANDS) - 1)).toBeNull()
     expect(coinBlockedKey({ sessions: [dated('a', 1)], coin: flying.coin }, Date.parse(LANDS) - 1)).toBe('error.noRunningSession')
+  })
+})
+
+describe('lastGameBlockedKey (#278)', () => {
+  it('says the maximum in the dock\'s own words and every other reason in the shared copy', () => {
+    expect(lastGameBlockedKey('game_count_range')).toBe('dock.lastGameBlocked.game_count_range')
+    expect(lastGameBlockedKey('results_missing')).toBe('error.resultsMissing')
+    expect(lastGameBlockedKey('no_tie')).toBe('error.noTie')
   })
 })
 

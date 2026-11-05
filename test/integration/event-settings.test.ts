@@ -96,9 +96,16 @@ describe('changing the settings of an Event (#147)', () => {
     await testDb.db.update(events).set({ phase }).where(eq(events.slug, slug))
   }
 
-  async function poolOf(slug: string, pool: 'main' | 'tiebreaker') {
+  /** The Game pool's game ids (#279: the Tiebreaker pool is gone, so `poolOf` takes only the Game pool). */
+  async function poolOf(slug: string) {
     const { id } = await row(slug)
-    return (await testDb.db.select().from(eventPoolGames).where(eq(eventPoolGames.eventId, id))).filter(entry => entry.pool === pool).map(entry => entry.gameId)
+    return (await testDb.db.select().from(eventPoolGames).where(eq(eventPoolGames.eventId, id))).filter(entry => entry.pool === 'main').map(entry => entry.gameId)
+  }
+
+  /** The `tiebreaker` rows of an Event: only the 0.7 code during the switch-over writes them, and no read sees them (#279). */
+  async function strayOf(slug: string) {
+    const { id } = await row(slug)
+    return (await testDb.db.select().from(eventPoolGames).where(eq(eventPoolGames.eventId, id))).filter(entry => entry.pool === 'tiebreaker').map(entry => entry.gameId)
   }
 
   const luckyWheel: Omit<EventSettings, 'poolPreview'> = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 3 }
@@ -182,27 +189,66 @@ describe('changing the settings of an Event (#147)', () => {
   })
 
   describe('pools', () => {
-    it('replaces only the pool that is given', async () => {
+    it('replaces the Game pool that is given', async () => {
       const kart = await newGame('Mario Kart')
       const pong = await newGame('Pong')
       const chess = await newGame('Schach')
-      const slug = await createdEvent({ pools: { main: [kart.id], tiebreaker: [pong.id] } })
+      const slug = await createdEvent({ pools: { main: [kart.id] } })
 
       const response = await patch(slug, { settings: TEST_SETTINGS, pools: { main: [pong.id, chess.id] } })
 
       expect(response.status).toBe(200)
-      expect((await poolOf(slug, 'main')).sort()).toEqual([pong.id, chess.id].sort())
-      expect(await poolOf(slug, 'tiebreaker')).toEqual([pong.id])
+      expect((await poolOf(slug)).sort()).toEqual([pong.id, chess.id].sort())
     })
 
-    it('empties a pool given as an empty list', async () => {
+    it('accepts a tiebreaker list from the 0.7 client and ignores it, the Game pool is replaced alone (#279)', async () => {
       const kart = await newGame('Mario Kart')
-      const slug = await createdEvent({ pools: { main: [kart.id], tiebreaker: [kart.id] } })
+      const pong = await newGame('Pong')
+      const chess = await newGame('Schach')
+      const slug = await createdEvent({ pools: { main: [kart.id] } })
 
-      expect((await patch(slug, { pools: { tiebreaker: [] } })).status).toBe(200)
+      const response = await patch(slug, { pools: { main: [pong.id], tiebreaker: [chess.id] } })
 
-      expect(await poolOf(slug, 'main')).toEqual([kart.id])
-      expect(await poolOf(slug, 'tiebreaker')).toEqual([])
+      expect(response.status).toBe(200)
+      expect(await poolOf(slug)).toEqual([pong.id])
+      expect(await strayOf(slug)).toEqual([])
+    })
+
+    it('leaves the Game pool as it was when only a tiebreaker list and a settings change come (#279)', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+      const slug = await createdEvent({ pools: { main: [kart.id] } })
+
+      const response = await patch(slug, { settings: { gameCount: 3 }, pools: { tiebreaker: [pong.id] } })
+
+      expect(response.status).toBe(200)
+      expect((await row(slug)).gameCount).toBe(3)
+      expect(await poolOf(slug)).toEqual([kart.id])
+      expect(await strayOf(slug)).toEqual([])
+    })
+
+    it('keeps a stray tiebreaker row the 0.7 code wrote, through a pools replace, and shows it in no read (#279)', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+      const slug = await createdEvent({ pools: { main: [kart.id] } })
+      const { id } = await row(slug)
+      await testDb.db.insert(eventPoolGames).values({ eventId: id, gameId: pong.id, pool: 'tiebreaker' })
+
+      const response = await patch(slug, { pools: { main: [kart.id] } })
+
+      expect(response.status).toBe(200)
+      expect(await strayOf(slug)).toEqual([pong.id])
+      expect(Object.keys((await read(slug, hostCookie)).pools!)).toEqual(['main'])
+      expect(JSON.stringify((await read(slug, hostCookie)).pools)).not.toContain(pong.id)
+    })
+
+    it('empties the Game pool given as an empty list', async () => {
+      const kart = await newGame('Mario Kart')
+      const slug = await createdEvent({ pools: { main: [kart.id] } })
+
+      expect((await patch(slug, { pools: { main: [] } })).status).toBe(200)
+
+      expect(await poolOf(slug)).toEqual([])
     })
 
     it('changes settings and pools together', async () => {
@@ -213,7 +259,7 @@ describe('changing the settings of an Event (#147)', () => {
 
       expect(response.status).toBe(200)
       expect((await row(slug)).gameCount).toBe(3)
-      expect(await poolOf(slug, 'main')).toEqual([kart.id])
+      expect(await poolOf(slug)).toEqual([kart.id])
     })
 
     it('refuses an unknown game with unknown_game and changes nothing, settings included', async () => {
@@ -224,13 +270,13 @@ describe('changing the settings of an Event (#147)', () => {
 
       expect(response.status).toBe(400)
       expect(response.statusText).toBe('unknown_game')
-      expect(await poolOf(slug, 'main')).toEqual([kart.id])
+      expect(await poolOf(slug)).toEqual([kart.id])
       expect((await row(slug)).gameCount).toBe(10)
     })
 
     it('shows the games to a Member once the Hidden wheel is switched off and the Pool preview on, and hides them again when the wheel is hidden again', async () => {
       const kart = await newGame('Mario Kart')
-      const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true }, pools: { main: [kart.id], tiebreaker: [] } })
+      const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true }, pools: { main: [kart.id] } })
       expect((await read(slug, memberCookie)).pools).toBeNull()
 
       // The wheel being visible again reveals nothing: the Pool preview stays off until the Host turns it on (#225).
@@ -291,11 +337,11 @@ describe('changing the settings of an Event (#147)', () => {
       const slug = await createdEvent({ settings: luckyWheel })
       await setPhase(slug, 'running')
 
-      const response = await patch(slug, { settings: { teamSize: 2, vetoAllowance: 1, hiddenWheel: true }, pools: { tiebreaker: [kart.id] } })
+      const response = await patch(slug, { settings: { teamSize: 2, vetoAllowance: 1, hiddenWheel: true }, pools: { main: [kart.id] } })
 
       expect(response.status).toBe(200)
       expect(settingsFromRow(await row(slug))).toEqual({ ...luckyWheel, teamSize: 2, vetoAllowance: 1, hiddenWheel: true, poolPreview: false })
-      expect(await poolOf(slug, 'tiebreaker')).toEqual([kart.id])
+      expect(await poolOf(slug)).toEqual([kart.id])
     })
   })
 
@@ -402,7 +448,7 @@ describe('changing the settings of an Event (#147)', () => {
         expect(response.status).toBe(409)
         expect(response.statusText).toBe('wrong_phase')
       }
-      expect(await poolOf(slug, 'main')).toEqual([])
+      expect(await poolOf(slug)).toEqual([])
       expect((await row(slug)).gameCount).toBe(10)
     })
   })

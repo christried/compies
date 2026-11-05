@@ -181,6 +181,7 @@ describe('GameBoard', () => {
 
     it('says who is there in an Event that was never set up, how full the teams are while Team choice is open, and that the teams are closed or locked otherwise', async () => {
       expect(meta((await mountBoard({ settings: null, teamChoiceOpen: false })).page)).toBe('3 Leute da')
+      expect(meta((await mountBoard({ settings: null, teamChoiceOpen: false, members: [kittyAt()] })).page)).toBe('1 Person da')
       expect(meta((await mountBoard({ teamChoiceOpen: false })).page)).toBe('2 Teams à 2 · Teamwahl noch zu')
       expect(meta((await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })).page)).toBe('1 von 4 Plätzen besetzt')
       expect(meta((await mountBoard({ started: true })).page)).toBe('2 Teams à 2 · gesperrt')

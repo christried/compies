@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COUNTDOWN_MAX_S, COUNTDOWN_MIN_S, countdownRejection, countdownSeconds, countdownState, remainingMsAt, type CountdownFacts } from '../../shared/countdown'
+import { COUNTDOWN_MAX_S, COUNTDOWN_MIN_S, countdownEndsAt, countdownRejection, countdownSeconds, countdownState, remainingMsAt, type CountdownFacts } from '../../shared/countdown'
 
 // The Countdown's rules (#236, spec #218 § Countdown): the state it is in at a time, how much time is left, and why a Host's
 // change is refused. Instants are epoch ms here; the database and the Event read give Dates and ISO strings, which the same rules take.
@@ -55,6 +55,23 @@ describe('countdownState', () => {
   })
 })
 
+describe('countdownEndsAt (#257)', () => {
+  it('is the start instant plus the time it was started with, for a running Countdown', () => {
+    expect(countdownEndsAt(RUNNING)).toBe(STARTED + DURATION)
+    expect(countdownEndsAt(RESUMED)).toBe(STARTED + 25_000)
+  })
+
+  it('takes an ISO string as it takes epoch ms', () => {
+    expect(countdownEndsAt({ ...RESUMED, startedAt: new Date(STARTED).toISOString() })).toBe(STARTED + 25_000)
+  })
+
+  it('is null while it is ready, paused or at zero: nothing is pending', () => {
+    expect(countdownEndsAt(READY)).toBeNull()
+    expect(countdownEndsAt(PAUSED)).toBeNull()
+    expect(countdownEndsAt(AT_ZERO)).toBeNull()
+  })
+})
+
 describe('remainingMsAt', () => {
   it('is the time left while running: the end instant minus now', () => {
     expect(remainingMsAt(RUNNING, STARTED + 10_000)).toBe(50_000)
@@ -106,6 +123,16 @@ describe('countdownRejection', () => {
     expect(countdownRejection('pause', READY, STARTED)).toBe('countdown_not_running')
     expect(countdownRejection('pause', PAUSED, STARTED)).toBe('countdown_not_running')
     expect(countdownRejection('pause', ENDED, STARTED + DURATION)).toBe('countdown_not_running')
+  })
+
+  it('decides the same at the end instant for a number, a Date and an ISO string', () => {
+    const endsAt = STARTED + DURATION
+    for (const at of [endsAt, new Date(endsAt), new Date(endsAt).toISOString()]) {
+      expect(countdownRejection('pause', RUNNING, at)).toBe('countdown_not_running')
+    }
+    for (const at of [endsAt - 1, new Date(endsAt - 1), new Date(endsAt - 1).toISOString()]) {
+      expect(countdownRejection('pause', RUNNING, at)).toBeNull()
+    }
   })
 
   it('refuses set while it runs, and allows it otherwise', () => {

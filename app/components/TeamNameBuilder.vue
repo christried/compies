@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RotateCcw } from '@lucide/vue'
 import { teamName } from '~/utils/board'
+import { joinNames } from '~/utils/list'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 import { hasSpace, stripSpaces, TEAM_WORD_MAX } from '~~/shared/team-word'
 
@@ -87,7 +88,7 @@ watch(() => props.name, (name, before) => {
 const canReset = computed(() => props.isHost && props.named)
 const asking = ref(false)
 const resetting = ref(false)
-const authorList = computed(() => new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(props.authors))
+const authorList = computed(() => joinNames(props.authors))
 
 async function reset() {
   await send('POST', `teams/${props.team}/reset-name`, {

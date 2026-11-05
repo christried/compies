@@ -1,0 +1,4 @@
+-- Release 0.8 (#279, ADR 0014): there is no Tiebreaker pool any more. Delete the games an Event had in it; the Game pool rows stay. The enum value `tiebreaker` stays in `pool_kind` (Postgres cannot drop a value safely).
+-- Switch-over (ADR 0007): the 0.7 code serves until the switch-over. When a Host creates an Event with a Tiebreaker pool or saves settings, it inserts `event_pool_games` rows with `pool = 'tiebreaker'` after this migration has run.
+-- The new code never reads or writes those rows: `eventPools`, `gameEventsOf` and the Round code select `pool = 'main'` only, and a settings save replaces the Game pool only. A Tiebreaker pool a Host sets up during the deploy is therefore lost without a word, and its rows stay unread. The release goes out on a day without a Session (docs/agents/release.md), so this stays theoretical.
+DELETE FROM "event_pool_games" WHERE "pool" = 'tiebreaker';

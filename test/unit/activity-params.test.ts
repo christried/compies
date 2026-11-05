@@ -1,16 +1,11 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { ACTIVITY_GAMES, ACTIVITY_PEOPLE, ACTIVITY_TYPES, INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, isoInstant, type ActivityParams, type ActivityPeople, type ActivityType, type CheckedParams, type IsoInstant, type ParamsSafe } from '../../shared/activity'
+import { ACTIVITY_NAMES, ACTIVITY_TYPES, INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, isoInstant, type ActivityParams, type ActivityType, type CheckedParams, type IsoInstant, type ParamsSafe } from '../../shared/activity'
 import type { Place } from '../../shared/board'
 import { recordActivity } from '../../server/utils/activity'
 import type { Db } from '../../server/utils/db'
 
-// Whom an Activity entry names, and what its params may hold (#226, review 1.4 A6). Most of this is checked by the
-// compiler (`pnpm typecheck` reads this file): a line with `@ts-expect-error` fails the check when the error goes away.
-
-/** Takes the table the way the server's ACTIVITY_PEOPLE is declared: every type has its entry. */
-function declaredPeople(people: ActivityPeople): ActivityPeople {
-  return people
-}
+// Whom an Activity entry names, which games it names, and what its params may hold (#226, #228, review 1.4 A6). Most of this is
+// checked by the compiler (`pnpm typecheck` reads this file): a line with `@ts-expect-error` fails the check when the error goes away.
 
 // A table of params types as `ActivityParams` is declared; a type that breaks the rule is a compile error here.
 export type NamesAGame = CheckedParams<
@@ -18,19 +13,50 @@ export type NamesAGame = CheckedParams<
   { game_drawn: { gameName: string } }
 >
 
-describe('ACTIVITY_PEOPLE', () => {
-  it('has an entry for every Activity type', () => {
-    expect(Object.keys(ACTIVITY_PEOPLE).sort()).toEqual([...ACTIVITY_TYPES].sort())
+// What each Activity type names before 0.8 (#273 makes one table of ACTIVITY_PEOPLE and ACTIVITY_GAMES): the people by their
+// User id, the games by their game id. The sample params are the ones an entry of the type holds.
+const NAMED: Record<ActivityType, { params: unknown, people: string[], games: string[] }> = {
+  member_joined: { params: {}, people: [], games: [] },
+  member_moved: { params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } }, people: ['u1'], games: [] },
+  date_set: { params: { sessionId: 's', number: 1, startsAt: '2090-11-01T19:30:00.000Z' }, people: [], games: [] },
+  date_rescheduled: { params: { sessionId: 's', number: 1, from: '2090-11-01T19:30:00.000Z', to: '2090-11-02T19:30:00.000Z' }, people: [], games: [] },
+  date_reopened: { params: { sessionId: 's', number: 1, previousStartsAt: '2090-11-01T19:30:00.000Z' }, people: [], games: [] },
+  session_added: { params: { sessionId: 's', startsAt: null }, people: [], games: [] },
+  session_removed: { params: { sessionId: 's', number: 1, startsAt: null }, people: [], games: [] },
+  session_started: { params: { sessionId: 's', number: 1 }, people: [], games: [] },
+  session_ended: { params: { sessionId: 's', number: 1 }, people: [], games: [] },
+  team_name_reset: { params: { team: 1 }, people: [], games: [] },
+  game_count_changed: { params: { from: 3, to: 4 }, people: [], games: [] },
+  team_size_changed: { params: { from: 2, to: 3 }, people: [], games: [] },
+  game_drawn: { params: { roundId: 'r', drawId: 'd', gameId: 'g1' }, people: [], games: ['g1'] },
+  vetoes_revealed: { params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }] }, people: ['u1', 'u2'], games: ['g1'] },
+  game_set: { params: { roundId: 'r', gameId: 'g1' }, people: [], games: ['g1'] },
+  game_put_back: { params: { roundId: 'r', gameId: 'g1' }, people: [], games: ['g1'] },
+  bonus_veto_granted: { params: { team: 2 }, people: [], games: [] },
+  coin_tossed: { params: { side: 'heads' }, people: [], games: [] },
+  // 0.8 (#273): a Result names its game and no User; its winners are team positions.
+  result_entered: { params: { roundId: 'r', number: 3, gameId: 'g1', first: [1, 2] }, people: [], games: ['g1'] },
+  result_corrected: { params: { roundId: 'r', number: 3, gameId: 'g1' }, people: [], games: ['g1'] },
+  event_finished: { params: { winners: [2] }, people: [], games: [] },
+}
+
+describe('ACTIVITY_NAMES', () => {
+  it('has an entry only for the types that name someone or a game', () => {
+    const named = ACTIVITY_TYPES.filter(type => NAMED[type].people.length > 0 || NAMED[type].games.length > 0)
+
+    expect(Object.keys(ACTIVITY_NAMES).sort()).toEqual([...named].sort())
   })
 
-  it('fails to compile for a type without its people declaration', () => {
-    const { member_moved: _left, ...incomplete } = ACTIVITY_PEOPLE
-
-    // @ts-expect-error `member_moved` is missing
-    declaredPeople(incomplete)
-    expect(declaredPeople(ACTIVITY_PEOPLE)).toBe(ACTIVITY_PEOPLE)
+  it('gives every Activity type the people and the games it named before (0.8 adds result_entered, result_corrected and event_finished)', () => {
+    for (const type of ACTIVITY_TYPES) {
+      const expected = NAMED[type]
+      expect(activityPeople(type, expected.params as ActivityParams[typeof type]), `${type} people`).toEqual(expected.people)
+      expect(activityGames(type, expected.params as ActivityParams[typeof type]), `${type} games`).toEqual(expected.games)
+    }
   })
+})
 
+describe('the people and games of an entry', () => {
   it('names the moved Member of a move, and nobody in the entries without a User in their params', () => {
     const bench: Place = { zone: 'bench' }
 
@@ -44,20 +70,23 @@ describe('ACTIVITY_PEOPLE', () => {
 
     expect(activityPeople('vetoes_revealed', { roundId: 'r', drawId: 'd', gameId: 'g', vetoes })).toEqual(['u1', 'u2'])
   })
-})
 
-describe('ACTIVITY_GAMES (#228)', () => {
-  it('has an entry for every Activity type, as ACTIVITY_PEOPLE has', () => {
-    expect(Object.keys(ACTIVITY_GAMES).sort()).toEqual([...ACTIVITY_TYPES].sort())
-  })
-
-  it('names the game of a draw, a Veto reveal, a set and a put back, and no game in the other entries', () => {
+  it('names the game of a draw, a Veto reveal, a set and a put back, and no game in the other entries (#228)', () => {
     expect(activityGames('game_set', { roundId: 'r', gameId: 'g1' })).toEqual(['g1'])
     expect(activityGames('game_put_back', { roundId: 'r', gameId: 'g1' })).toEqual(['g1'])
     expect(activityGames('game_drawn', { roundId: 'r', drawId: 'd', gameId: 'g1' })).toEqual(['g1'])
     expect(activityGames('vetoes_revealed', { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [] })).toEqual(['g1'])
     expect(activityGames('session_started', { sessionId: 's', number: 1 })).toEqual([])
     expect(activityGames('coin_tossed', { side: 'tails' })).toEqual([])
+  })
+
+  it('names the game of a Result and of its correction, and no one; the event_finished entry names neither (#273)', () => {
+    expect(activityGames('result_entered', { roundId: 'r', number: 1, gameId: 'g1', first: [1] })).toEqual(['g1'])
+    expect(activityGames('result_corrected', { roundId: 'r', number: 1, gameId: 'g1' })).toEqual(['g1'])
+    expect(activityPeople('result_entered', { roundId: 'r', number: 1, gameId: 'g1', first: [1] })).toEqual([])
+    expect(activityPeople('result_corrected', { roundId: 'r', number: 1, gameId: 'g1' })).toEqual([])
+    expect(activityGames('event_finished', { winners: [1] })).toEqual([])
+    expect(activityPeople('event_finished', { winners: [1] })).toEqual([])
   })
 })
 

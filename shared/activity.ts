@@ -6,7 +6,8 @@ import type { Place } from './board'
 
 /**
  * Every entry type. The database enum is built from this list, so a new type needs an enum migration: one per Release,
- * which adds every type the Release writes (0.7: the six after `team_size_changed`, migration 0016, #226).
+ * which adds every type the Release writes (0.7: the six after `team_size_changed`, migration 0016, #226; 0.8: the three at the end,
+ * migration 0022, #273).
  */
 export const ACTIVITY_TYPES = [
   'member_joined',
@@ -27,6 +28,9 @@ export const ACTIVITY_TYPES = [
   'game_put_back',
   'bonus_veto_granted',
   'coin_tossed',
+  'result_entered',
+  'result_corrected',
+  'event_finished',
 ] as const
 export type ActivityType = (typeof ACTIVITY_TYPES)[number]
 
@@ -91,69 +95,36 @@ export type ActivityParams = CheckedParams<{
   game_put_back: { roundId: string, gameId: string }
   bonus_veto_granted: { team: number }
   coin_tossed: { side: 'heads' | 'tails' }
+  // 0.8 (#273): a Result names its Round's number and game; `first` is the team positions on Place 1, ascending (the sentence's winners).
+  result_entered: { roundId: string, number: number, gameId: string, first: number[] }
+  result_corrected: { roundId: string, number: number, gameId: string }
+  event_finished: { winners: number[] }
 }>
 
-/** Whom an entry names: the ids of the Users in its params, whose names the client needs (`people`). */
-export type ActivityPeople = { [T in ActivityType]: (params: ActivityParams[T]) => string[] }
-
-/** Every entry type says whom it names; a type without an entry here does not compile. */
-export const ACTIVITY_PEOPLE: ActivityPeople = {
-  member_joined: () => [],
-  member_moved: params => [params.userId],
-  date_set: () => [],
-  date_rescheduled: () => [],
-  date_reopened: () => [],
-  session_added: () => [],
-  session_removed: () => [],
-  session_started: () => [],
-  session_ended: () => [],
-  team_name_reset: () => [],
-  game_count_changed: () => [],
-  team_size_changed: () => [],
-  game_drawn: () => [],
-  vetoes_revealed: params => params.vetoes.map(veto => veto.userId),
-  game_set: () => [],
-  game_put_back: () => [],
-  bonus_veto_granted: () => [],
-  coin_tossed: () => [],
-}
-
-/** The User ids an entry's params name (ACTIVITY_PEOPLE), for one entry of this type. */
-export function activityPeople<T extends ActivityType>(type: T, params: ActivityParams[T]): string[] {
-  return ACTIVITY_PEOPLE[type](params)
-}
-
-/** Which games an entry names: the ids of the games in its params, whose names the sentence needs (`games`, #228). */
-export type ActivityGames = { [T in ActivityType]: (params: ActivityParams[T]) => string[] }
-
 /**
- * Every entry type says which games it names, as it says whom (ACTIVITY_PEOPLE): a type without an entry here does not
- * compile. The server resolves a name only for a game this viewer may know (server/utils/activity.ts).
+ * Whom an entry names and which games it names (GLOSSARY: Activity feed; #226, #228, #273): the ids of the Users in its params, whose
+ * names the client needs (`people`), and the ids of the games, whose names the sentence needs (`games`). Only the types that name
+ * someone or a game have an entry; an absent type or key names nobody, or no game. The server resolves a game's name only for a
+ * game this viewer may know (server/utils/activity.ts).
  */
-export const ACTIVITY_GAMES: ActivityGames = {
-  member_joined: () => [],
-  member_moved: () => [],
-  date_set: () => [],
-  date_rescheduled: () => [],
-  date_reopened: () => [],
-  session_added: () => [],
-  session_removed: () => [],
-  session_started: () => [],
-  session_ended: () => [],
-  team_name_reset: () => [],
-  game_count_changed: () => [],
-  team_size_changed: () => [],
-  game_drawn: params => [params.gameId],
-  vetoes_revealed: params => [params.gameId],
-  game_set: params => [params.gameId],
-  game_put_back: params => [params.gameId],
-  bonus_veto_granted: () => [],
-  coin_tossed: () => [],
+export const ACTIVITY_NAMES: { [T in ActivityType]?: { people?: (params: ActivityParams[T]) => string[], games?: (params: ActivityParams[T]) => string[] } } = {
+  member_moved: { people: params => [params.userId] },
+  vetoes_revealed: { people: params => params.vetoes.map(veto => veto.userId), games: params => [params.gameId] },
+  game_drawn: { games: params => [params.gameId] },
+  game_set: { games: params => [params.gameId] },
+  game_put_back: { games: params => [params.gameId] },
+  result_entered: { games: params => [params.gameId] },
+  result_corrected: { games: params => [params.gameId] },
 }
 
-/** The game ids an entry's params name (ACTIVITY_GAMES), for one entry of this type. */
+/** The User ids an entry's params name (ACTIVITY_NAMES), for one entry of this type. */
+export function activityPeople<T extends ActivityType>(type: T, params: ActivityParams[T]): string[] {
+  return ACTIVITY_NAMES[type]?.people?.(params) ?? []
+}
+
+/** The game ids an entry's params name (ACTIVITY_NAMES), for one entry of this type. */
 export function activityGames<T extends ActivityType>(type: T, params: ActivityParams[T]): string[] {
-  return ACTIVITY_GAMES[type](params)
+  return ACTIVITY_NAMES[type]?.games?.(params) ?? []
 }
 
 interface EntryBase {

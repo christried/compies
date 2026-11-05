@@ -74,13 +74,13 @@ describe('the Selection mode step', () => {
     useState('toasts').value = []
   })
 
-  it('is step 5 of 8, between the points and the pools', async () => {
+  it('is step 5 of 7, between the points and the pool', async () => {
     const page = await mountCreate()
     await toModeStep(page)
 
-    expect(page.get('h1').text()).toContain('Schritt 5 von 8')
+    expect(page.get('h1').text()).toContain('Schritt 5 von 7')
     expect(page.get('h1').text()).toContain('Wie wird das nächste Spiel bestimmt?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Tiebreaker-Pool', '8 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
   })
 
   it('offers all five modes in the design’s order, with Host-Wahl chosen', async () => {
@@ -156,12 +156,12 @@ describe('the Selection mode step', () => {
 
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
       expect(previewSwitch(page)!.attributes('aria-disabled')).toBeUndefined()
-      expect(previewSwitch(page)!.text()).toContain('Die anderen sehen Spielepool und Tiebreaker-Pool schon vorher.')
+      expect(previewSwitch(page)!.text()).toContain('Die anderen sehen den Spielepool schon vorher.')
 
       await radios(page)[1]!.trigger('click')
 
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
-      expect(previewSwitch(page)!.text()).toContain('Die anderen sehen Spielepool und Tiebreaker-Pool schon vorher.')
+      expect(previewSwitch(page)!.text()).toContain('Die anderen sehen den Spielepool schon vorher.')
     })
 
     it('sits right after „Rad verdecken“ in the wheel’s box', async () => {
@@ -354,7 +354,7 @@ describe('the Selection mode step', () => {
         'Glücksrad (verdeckt)',
         '2 pro Partei',
         'Linear 1 / 0',
-        '0 Spiele, Tiebreaker 0',
+        '0 Spiele',
         'Umfrage, 1 Vorschlag',
       ])
     })

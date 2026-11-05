@@ -26,7 +26,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR after the first merge in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
 
-   **COMPIES:** branch it from `staging` and always open its PR into `staging` (ADR 0007).
+   **COMPIES:** branch it from `staging` and always open its PR into `staging` (ADR 0007). Its `Closes #n` lines close nothing there; step 8 closes each ticket by hand (`docs/agents/delivery.md` § Issues).
 
 4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Each implementer subagent:
    - confirms its worktree is based on the integration branch before starting, and resets onto it if not;

@@ -73,12 +73,50 @@ describe('copy rules', () => {
   })
 })
 
+// A number in the copy that can be 1 needs a singular form (#268): „1 Spiele auf dem Rad“ reached staging in 0.7 (#263).
+// A placeholder followed by one of the plural nouns below makes a message counted, and a counted message carries its forms
+// as „singular | plural“. vue-i18n picks the form by the named `count` or `n` (either wins over a plural argument), so the
+// count before the noun is called `n`. A `{max}` is a limit constant, never 1. NEVER_ONE holds the counted messages whose
+// count can't be 1, each with its reason.
+const PLURAL_NOUNS = ['Bonus-Vetos', 'Leute', 'Minuten', 'Plätze', 'Plätzen', 'Punkte', 'Sekunden', 'Sessions', 'Spiele', 'Spielen', 'Stimmen', 'Stunden', 'Tage', 'Tagen', 'Teams', 'Termine', 'Terminen', 'Vetos', 'Vorschläge']
+const NEVER_ONE: Record<string, string> = {
+  'dock.startDialog.lock': 'teams is at least TEAM_COUNT_MIN (2)',
+  'stepper.format.total': 'teams is at least TEAM_COUNT_MIN (2), so players is too',
+  'stepper.points.head': 'n is the team count, at least TEAM_COUNT_MIN (2)',
+  'stepper.summary.teams': 'n is the team count, at least TEAM_COUNT_MIN (2)',
+  'board.meta.open': 'places is the team count times the team size, at least 2',
+  'mvp.home.datesStanding': 'the Home card shows it only for an Event with several Sessions',
+  'archive.meta': 'no caller yet: its two counts need two messages once the archive shows it',
+}
+
+describe('counted copy', () => {
+  const counted = entries.filter(e => [...e.value.matchAll(/\{(\w+)\}\s+([\wÄÖÜäöüß-]+)/g)]
+    .some(([, name, noun]) => name !== 'max' && PLURAL_NOUNS.includes(noun ?? '')))
+
+  it('gives every counted message a singular form, unless its count is never 1', () => {
+    const hits = counted.filter(e => !e.value.includes('|') && !(e.key in NEVER_ONE)).map(e => e.key)
+    expect(hits).toEqual([])
+  })
+
+  it('keeps NEVER_ONE to counted messages without a singular form', () => {
+    const stale = Object.keys(NEVER_ONE).filter(key => !counted.some(e => e.key === key && !e.value.includes('|')))
+    expect(stale).toEqual([])
+  })
+})
+
 // The words of GLOSSARY.md (#175). A UI word the glossary replaces goes into RETIRED with its successor
 // (docs/agents/domain.md), so neither the copy nor the changelog falls back to it.
 const RETIRED: Record<string, string> = {
   'Lucky Wheel': 'Glücksrad',
   'Admin-Wahl': 'Host-Wahl',
   'Passende Formate': 'Passt zu',
+  'Tiebreaker': 'Unentschieden',
+}
+
+// The changelog lines that announce a removal name the removed feature by its old word, so they are the one place a retired word may stay: the
+// lines of the issues that removed it, found by the link they end with (#279 took out the Tiebreaker pool, #280 its mention in the privacy text).
+const REMOVAL_ISSUES: Record<string, string[]> = {
+  Tiebreaker: ['279', '280'],
 }
 
 describe('glossary words in the copy', () => {
@@ -87,7 +125,9 @@ describe('glossary words in the copy', () => {
   it.each(Object.entries(RETIRED))('never shows „%s“ (now „%s“) in the copy or the Unreleased lines', (retired) => {
     const hits = entries.filter(e => e.value.includes(retired)).map(e => e.key)
     expect(hits).toEqual([])
-    expect(unreleased).not.toContain(retired)
+    const removals = REMOVAL_ISSUES[retired] ?? []
+    const lines = unreleased.split('\n').filter(line => line.includes(retired) && !removals.some(issue => line.endsWith(`/issues/${issue}))`)))
+    expect(lines).toEqual([])
   })
 
   it('calls the whole Event an Event in the stepper, the name step and the Fertig screen, never a Session', () => {

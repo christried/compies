@@ -3,7 +3,7 @@ import tailSvg from '~/assets/compibert/coin-tail.svg?raw'
 import { coinFinalPose, coinStandPose, FLIGHT_OPTIONS, flightKeyframes, HEAD_FACE_TRANSFORM, TAIL_FACE_TRANSFORM, type CoinPose } from '~/utils/coin-flight'
 import { motionToken, reducedMotion } from '~/utils/motion'
 import { COIN_DURATION_MS, coinLanded } from '~~/shared/coin'
-import type { CoinView } from '~~/shared/event'
+import type { CoinView } from '~~/shared/stage'
 
 // The Coin flip on the stage (#235, spec #218 § Coin flip, 04-motion § Coin, reference Coin3D): the coin of the Event's latest toss.
 // Every Member's coin flies from the same start instant and lands at the same instant: before the start it stands, after it the flight
@@ -56,14 +56,11 @@ const leaving = ref(false)
 const pose = computed<CoinPose>(() => (faceFinal.value ? coinFinalPose(tails.value) : coinStandPose))
 
 let flight: Animation[] = []
-let frame = 0
 let reduced = false
 let faceTimer: ReturnType<typeof setTimeout> | undefined
 
-/** Stops the flight and the frames: the coin keeps its pose until the next toss. */
+/** Stops the flight: the coin keeps its pose until the next toss. */
 function stopFlight() {
-  cancelAnimationFrame(frame)
-  frame = 0
   clearTimeout(faceTimer)
   for (const animation of flight) animation.cancel()
   flight = []
@@ -100,11 +97,14 @@ function onLanded() {
   })
 }
 
-/** One frame: reads the server's clock, seeks the flight to it, and waits for the landing and for the overlay to go. */
-function tick() {
-  frame = 0
+// The server ticker (#257) feeds the frames from the mount until the overlay has gone. It does not pause out of view: the overlay
+// exists for a card below the fold, and a paused ticker would never show it.
+const now = useServerTicker(() => props.serverNow(), { until: () => landsMs.value + OVERLAY_HOLD_MS + LEAVE_MS })
+
+/** One frame: seeks the flight to the server's clock, and notes the landing and when the overlay goes. */
+watch(now, (at) => {
+  if (at === null) return
   const was = landed.value
-  const at = props.serverNow()
   landed.value = coinLanded({ landsAt: landsMs.value }, at)
   if (!reduced) {
     seek(at)
@@ -114,10 +114,9 @@ function tick() {
   overlay.value = at >= startMs.value && at < holdEnds + LEAVE_MS
   leaving.value = at >= holdEnds
   if (landed.value && !was) onLanded()
-  if (at < holdEnds + LEAVE_MS) frame = requestAnimationFrame(tick)
-}
+})
 
-/** Starts the toss the page shows: its flight (unless reduced motion) and the frames until it lands and the overlay has gone. */
+/** Starts the toss the page shows: its flight (unless reduced motion) and its state at the server's clock now. The frames follow from the ticker. */
 function start() {
   stopFlight()
   reduced = reducedMotion()
@@ -127,7 +126,6 @@ function start() {
   leaving.value = false
   overlay.value = at >= startMs.value && at < landsMs.value + OVERLAY_HOLD_MS + LEAVE_MS
   if (!reduced) startFlight()
-  if (at < landsMs.value + OVERLAY_HOLD_MS + LEAVE_MS) frame = requestAnimationFrame(tick)
 }
 
 onMounted(start)

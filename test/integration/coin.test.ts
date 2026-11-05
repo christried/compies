@@ -8,11 +8,12 @@ import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
 import moveMember from '../../server/api/e/[slug]/move.post'
-import { activity, coinTosses, countdowns, draws, eventMembers, eventPoolGames, events, games, pollSlots, rounds, users } from '../../server/db/schema'
+import { activity, coinTosses, countdowns, draws, eventMembers, eventPoolGames, events, games, pollSlots, rounds, sessions, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
-import type { CoinTossed, EventView } from '../../shared/event'
+import type { EventView } from '../../shared/event'
+import type { CoinTossed } from '../../shared/stage'
 import { COIN_DURATION_MS, COIN_LEAD_MS } from '../../shared/coin'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
@@ -166,12 +167,11 @@ describe('the Coin flip (#235)', () => {
   })
 
   describe('what the Members get', () => {
-    it('sends the toss with its side and instants in the room, and no feed message, since the feed waits for the landing', async () => {
+    it('tells the room only that the Event changed, and sends no feed message, since the feed waits for the landing', async () => {
       const game = await event()
 
-      const body = await (await toss(game)).json() as CoinTossed
-      expect(messagesOf(game).map(message => message.type)).toEqual(['event.changed', 'coin.tossed'])
-      expect(messagesOf(game)[1]).toMatchObject({ type: 'coin.tossed', tossId: body.tossId, side: body.side, startedAt: body.startedAt, landsAt: body.landsAt })
+      await toss(game)
+      expect(messagesOf(game).map(message => message.type)).toEqual(['event.changed'])
     })
 
     it('shows the entry in the feed only from the landing on, to a Member', async () => {
@@ -195,6 +195,62 @@ describe('the Coin flip (#235)', () => {
 
       expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
       expect(await readCoin(game, game.cookies.one)).toBeNull()
+    })
+  })
+
+  describe('a toss belongs to its Session (#259)', () => {
+    /** Ends the running Session, confirms the second Slot and starts Session 2 at the clock's current instant. */
+    async function startSecondSession(game: Event) {
+      expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
+      const slots = await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, game.eventId)).orderBy(pollSlots.startsAt)
+      expect((await send('POST', `/api/e/${game.slug}/confirm`, game.hostCookie, { slotId: slots[1]!.id })).status).toBe(200)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/start`, game.hostCookie)).status).toBe(200)
+    }
+
+    it('starts a new Session without the previous Session\'s toss, and the Host can toss again at once', async () => {
+      const game = await event()
+      const first = await (await toss(game)).json() as CoinTossed
+      expect(await readCoin(game)).toMatchObject({ id: first.tossId })
+
+      // The new Session starts after the old toss landed: no time comparison may bring the toss back.
+      clock.set(new Date(LANDS))
+      await startSecondSession(game)
+      expect(await readCoin(game)).toBeNull()
+
+      const second = await toss(game)
+      expect(second.status).toBe(200)
+      expect(await readCoin(game)).toMatchObject({ id: (await second.json() as CoinTossed).tossId })
+    })
+
+    it('stamps the toss with the Running Session', async () => {
+      const game = await event()
+      await toss(game)
+
+      const [running] = await testDb.db.select().from(sessions).where(eq(sessions.eventId, game.eventId)).orderBy(sessions.startsAt)
+      expect((await coinRows(game)).map(row => row.sessionId)).toEqual([running!.id])
+    })
+
+    it('stamps the start and the end of a Session with the request clock, not the database clock', async () => {
+      const game = await event()
+      clock.advance(10 * 60_000)
+      expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
+
+      const view = await (await send('GET', `/api/e/${game.slug}`, game.hostCookie)).json() as EventView
+      const ended = view.sessions.find(session => session.endedAt !== null)
+      expect(ended).toMatchObject({ startedAt: T0, endedAt: new Date(T0_MS + 10 * 60_000).toISOString() })
+    })
+
+    it('shows a toss without a Session in none, as the 0.7 code writes it during the switch-over', async () => {
+      const game = await event()
+      const [hostRow] = await testDb.db.select().from(users).where(eq(users.email, host.email))
+      await testDb.db.insert(coinTosses).values({ eventId: game.eventId, side: 'heads', tossedBy: hostRow!.id, startedAt: new Date(STARTS), landsAt: new Date(LANDS) })
+
+      expect(await readCoin(game)).toBeNull()
+
+      clock.set(new Date(LANDS))
+      const real = await toss(game)
+      expect(real.status).toBe(200)
+      expect(await readCoin(game)).toMatchObject({ id: (await real.json() as CoinTossed).tossId })
     })
   })
 

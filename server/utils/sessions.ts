@@ -1,10 +1,10 @@
 import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { events, pollSlots, sessions } from '../db/schema'
+import { countdowns, events, pollSlots, sessions } from '../db/schema'
 import { phaseAfterChange } from '../domain/phase'
 import { numberedSessions, sequenceRaises } from '../domain/session'
 import type { Phase } from '../../shared/event'
-import { hasStarted } from '../../shared/session-state'
+import { hasStarted, isStarted, runningOf } from '../../shared/session-state'
 import type { AuthUser } from '../../shared/auth'
 import { asRecord } from '../../shared/record'
 import type { RoomMessage } from '../../shared/realtime'
@@ -26,17 +26,56 @@ export type SessionRow = typeof sessions.$inferSelect
  */
 export function changeSessions<T extends object>(
   event: H3Event,
-  change: (ctx: { tx: Db, eventRow: EventRow, user: AuthUser, publish: (...messages: RoomMessage[]) => void, sessions: SessionRow[], body: Record<string, unknown> }) => Promise<T>,
+  change: (ctx: { tx: Db, eventRow: EventRow, user: AuthUser, now: Date, publish: (...messages: RoomMessage[]) => void, sessions: SessionRow[], body: Record<string, unknown> }) => Promise<T>,
 ): Promise<T & { phase: Phase }> {
-  return changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, user, publish, body }) => {
+  return changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, eventRow, user, now, publish, body }) => {
     const before = await eventSessions(tx, eventRow.id)
-    const result = await change({ tx, eventRow, user, publish, sessions: before, body: asRecord(body) })
+    const result = await change({ tx, eventRow, user, now, publish, sessions: before, body: asRecord(body) })
     const after = await eventSessions(tx, eventRow.id)
     await raiseSequences(tx, sequenceRaises(before, after))
     const phase = phaseAfterChange(eventRow.phase, after.map(row => row.startsAt))
     await tx.update(events).set({ phase }).where(eq(events.id, eventRow.id))
     return { ...result, phase }
   })
+}
+
+/**
+ * What ends with a Session: the Countdown (#236). Nothing else does: an open Round stays open across Sessions, and its Result is entered
+ * between them too (#273). The caller holds the Event lock.
+ */
+export async function onSessionEnded(tx: Db, eventRow: Pick<EventRow, 'id'>): Promise<void> {
+  await tx.delete(countdowns).where(eq(countdowns.eventId, eventRow.id))
+}
+
+/**
+ * Withdraws one Session the Host removes or the finish closes (#55, #65, #277): a Session that has, or had, a Date stays as a removed row with
+ * that Date (its notice); one that never had a Date is deleted. `now` is the request's clock (ADR 0013). The caller holds the Event lock.
+ */
+export async function withdrawSession(db: Db, session: SessionRow, now: Date): Promise<void> {
+  const withdrawn = session.startsAt ?? session.previousStartsAt
+  if (withdrawn === null) {
+    await db.delete(sessions).where(eq(sessions.id, session.id))
+    return
+  }
+  await db.update(sessions).set({ removedAt: now, previousStartsAt: withdrawn, startsAt: null, slotId: null }).where(eq(sessions.id, session.id))
+}
+
+/**
+ * Closes the Sessions of a finishing Event (#277, spec #272): the Running Session ends the way „Session beenden“ ends it (its Countdown goes
+ * with it), every Session that has not started is withdrawn, and the calendar SEQUENCE of the Sessions whose number or time changed goes up.
+ * It does not write the Phase: a change through changeSessions would write the Phase of the row it loaded, the one before the finish.
+ */
+export async function closeSessions(db: Db, eventRow: Pick<EventRow, 'id'>, now: Date): Promise<void> {
+  const before = await eventSessions(db, eventRow.id)
+  const running = runningOf(before)
+  if (running) {
+    await db.update(sessions).set({ endedAt: now }).where(eq(sessions.id, running.id))
+    await onSessionEnded(db, eventRow)
+  }
+  for (const session of before) {
+    if (!isStarted(session)) await withdrawSession(db, session, now)
+  }
+  await raiseSequences(db, sequenceRaises(before, await eventSessions(db, eventRow.id)))
 }
 
 /**

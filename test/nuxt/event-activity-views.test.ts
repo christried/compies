@@ -77,12 +77,12 @@ describe('the Activity feed on the Event page', () => {
   describe('from 980 px', () => {
     beforeEach(() => stubScreen(true))
 
-    it('is the one tab „Aktivität“ of a side panel built as tabs: tablist, tab, tabpanel with the log', async () => {
+    it('is the tab „Aktivität“, after „Tabelle“, of a side panel built as tabs: tablist, tab, tabpanel with the log', async () => {
       const { page, served } = await mountEvent()
 
       const panel = page.get('aside[aria-label="Seitenleiste"]')
-      const tab = panel.get('[role="tablist"] [role="tab"]')
-      expect(panel.findAll('[role="tab"]')).toHaveLength(1)
+      const tab = panel.findAll('[role="tablist"] [role="tab"]')[1]!
+      expect(panel.findAll('[role="tab"]')).toHaveLength(2)
       expect(tab.text()).toBe('Aktivität')
       expect(tab.attributes('aria-selected')).toBe('true')
       const tabpanel = panel.get(`[id="${tab.attributes('aria-controls')}"]`)
@@ -108,26 +108,26 @@ describe('the Activity feed on the Event page', () => {
       resize(false)
       await settle()
 
-      expect(tabs(page)[1]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
       await joined('b')
-      expect(tabs(page)[1]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
     })
 
     it('says what the feed promises while nothing happened', async () => {
       const { page } = await mountEvent()
 
-      await vi.waitFor(() => expect(page.get('[role="tabpanel"]').text()).toContain('Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und wechselt.'))
+      await vi.waitFor(() => expect(page.findAll('[role="tabpanel"]')[1]!.text()).toContain('Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und wechselt.'))
     })
   })
 
   describe('on a phone', () => {
     beforeEach(() => stubScreen(false))
 
-    it('has two tabs, Event and Aktivität, and starts on the Event with no feed mounted', async () => {
+    it('has three tabs, Event, Tabelle and Aktivität, and starts on the Event with no feed mounted', async () => {
       const { page, served } = await mountEvent()
 
-      expect(tabs(page).map(tab => tab.text())).toEqual(['Event', 'Aktivität'])
-      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual(['page', undefined])
+      expect(tabs(page).map(tab => tab.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
+      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual(['page', undefined, undefined])
       expect(page.find('[role="log"]').exists()).toBe(false)
       expect(page.find('[role="tab"]').exists()).toBe(true)
       expect(served.feedReads).toBe(0)
@@ -136,9 +136,9 @@ describe('the Activity feed on the Event page', () => {
     it('switches to the feed with its own h1, and back to the stage', async () => {
       const { page, served } = await mountEvent()
 
-      await tabs(page)[1]!.trigger('click')
+      await tabs(page)[2]!.trigger('click')
 
-      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual([undefined, 'page'])
+      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual([undefined, undefined, 'page'])
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Aktivität'])
       await vi.waitFor(() => expect(page.find('main [role="log"]').exists()).toBe(true))
       expect(page.findAll('[role="log"]')).toHaveLength(1)
@@ -154,14 +154,14 @@ describe('the Activity feed on the Event page', () => {
       const resize = stubScreen(false)
       const { page } = await mountEvent()
       await joined('a')
-      expect(tabs(page)[1]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
 
       resize(true)
       await settle()
       resize(false)
       await settle()
 
-      expect(tabs(page)[1]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
     })
 
     it('counts the entries that arrive while the Event tab is shown, says so in the name, and resets when the feed opens', async () => {
@@ -170,23 +170,23 @@ describe('the Activity feed on the Event page', () => {
       await joined('a')
       await joined('b')
 
-      const activity = tabs(page)[1]!
+      const activity = tabs(page)[2]!
       expect(activity.attributes('aria-label')).toBe('Aktivität, 2 neu')
       expect(activity.text()).toContain('2')
 
       await activity.trigger('click')
 
-      expect(tabs(page)[1]!.attributes('aria-label')).toBeUndefined()
-      expect(tabs(page)[1]!.text()).toBe('Aktivität')
+      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[2]!.text()).toBe('Aktivität')
 
       // Entries that arrive while the feed is open are read at once and are not counted.
       await vi.waitFor(() => expect(page.find('main [role="log"]').exists()).toBe(true))
       await joined('c')
       await tabs(page)[0]!.trigger('click')
-      expect(tabs(page)[1]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
 
       await joined('d')
-      expect(tabs(page)[1]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
     })
   })
 })

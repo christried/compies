@@ -73,6 +73,10 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   teams_empty: 'dock.startBlocked.teams_empty',
   teams_uneven: 'dock.startBlocked.teams_uneven',
   no_running_session: 'error.noRunningSession',
+  wrong_phase: 'error.wrongPhase',
+  results_missing: 'error.resultsMissing',
+  standings_changed: 'error.standingsChanged',
+  no_tie: 'error.noTie',
   game_count_reached: 'dock.setBlocked.game_count_reached',
   round_being_drawn: 'dock.setBlocked.round_being_drawn',
   not_a_player: 'error.notAPlayer',
@@ -93,6 +97,8 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   countdown_not_running: 'error.countdownNotRunning',
   countdown_ended: 'error.countdownEnded',
   coin_in_air: 'error.coinInAir',
+  round_not_open: 'error.roundNotOpen',
+  invalid_result: 'error.resultInvalid',
 }
 
 /** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */

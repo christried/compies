@@ -4,7 +4,8 @@ import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import type { RoundGame } from '~~/shared/game'
-import type { SpinView, WheelView } from '~~/shared/event'
+import type { SpinView, WheelView } from '~~/shared/stage'
+import { stubInView } from './in-view'
 
 // The Lucky Wheel (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel): its rotation toward a fixed stop instant at a given
 // server time, the result card that comes at the stop and not before, and the Hidden wheel's label that turns into the real game.
@@ -29,10 +30,12 @@ const wheelOf = (spin: SpinView | null, fields: Partial<WheelView> = {}): WheelV
 })
 
 let serverMs = START - 1000
+/** How often the wheel looked at the server's clock. */
+const serverNow = vi.fn(() => serverMs)
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean } = {}) {
-  page = await mountSuspended(LuckyWheel, { props: { wheel, hidden: false, isHost: false, serverNow: () => serverMs, ...props } })
+  page = await mountSuspended(LuckyWheel, { props: { wheel, hidden: false, isHost: false, serverNow, ...props } })
   await flushPromises()
   return page
 }
@@ -50,12 +53,14 @@ const text = () => page!.text().replace(/\s+/g, ' ')
 beforeEach(() => {
   vi.useFakeTimers()
   serverMs = START - 1000
+  serverNow.mockClear()
 })
 
 afterEach(() => {
   page?.unmount()
   page = undefined
   vi.useRealTimers()
+  vi.unstubAllGlobals()
 })
 
 describe('the wheel at rest', () => {
@@ -171,6 +176,48 @@ describe('the spin toward its stop', () => {
   })
 })
 
+describe('the clock it runs on (#257)', () => {
+  it('reads the clock only at mount while at rest', async () => {
+    await mount(wheelOf(null))
+    serverNow.mockClear()
+
+    await at(START + 5000)
+
+    expect(serverNow).not.toHaveBeenCalled()
+  })
+
+  it('stands at the final angle for a Member who opens the page after the spin has ended, without running a loop', async () => {
+    serverMs = STOP + 10_000
+    await mount(wheelOf(spinOf()))
+    serverNow.mockClear()
+
+    await at(STOP + 20_000)
+
+    expect(rotation()).toBeCloseTo(FINAL % 360, 3)
+    expect(serverNow).not.toHaveBeenCalled()
+  })
+
+  it('stops reading the clock while scrolled out of view mid-spin, and is at the right angle at once on return', async () => {
+    const view = stubInView()
+    await mount(wheelOf(spinOf()))
+    expect(view.observers[0]!.options.rootMargin).toBe('120px')
+    await at(START + 1000)
+
+    view.see(false)
+    serverNow.mockClear()
+    await at(START + 4000)
+    expect(serverNow).not.toHaveBeenCalled()
+
+    view.see(true)
+    await flushPromises()
+    const back = rotation()
+    page!.unmount()
+    vi.unstubAllGlobals()
+    await mount(wheelOf(spinOf()))
+    expect(rotation()).toBeCloseTo(back, 3)
+  })
+})
+
 describe('the result', () => {
   it('shows no result card before the stop, and the card with the game at the stop', async () => {
     await mount(wheelOf(spinOf({ game: null })))
@@ -227,6 +274,22 @@ describe('a Hidden wheel', () => {
     await at(STOP + 100)
     expect(text()).toContain('Das Glücksrad sagt')
     expect(text()).not.toContain('Mario Kartoffel')
+    expect(page!.get('[data-testid="wheel-label-2"]').text()).not.toBe('Halo')
+
+    await at(STOP + 500 + 400)
+    expect(page!.get('[data-testid="wheel-label-2"]').text()).toBe('Halo')
+  })
+
+  it('keeps the placeholder of the drawn slice when the real name arrives while the wheel is out of view and it comes back at once (#257)', async () => {
+    const view = stubInView()
+    await mount(wheelOf(spinOf({ labels: placeholders, game: null }), { slices: null }), { hidden: true })
+    await at(START + 3000)
+    view.see(false)
+
+    await at(STOP + 100)
+    await page!.setProps({ wheel: wheelOf(spinOf({ labels: ['Counter-Strudel', 'League of Leberkäse', 'Halo', 'Rocket Lieg'], game: halo }), { slices: null }) })
+    view.see(true)
+    await flushPromises()
     expect(page!.get('[data-testid="wheel-label-2"]').text()).not.toBe('Halo')
 
     await at(STOP + 500 + 400)

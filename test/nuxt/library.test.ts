@@ -343,6 +343,15 @@ describe('the library cards and filters (#142, #173)', () => {
     expect(cs!.text()).not.toContain('Teams')
   })
 
+  it('counts a library of one game in the singular in the search (#268)', async () => {
+    list = { games: [withClip] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    expect(page.get('input[type="search"]').attributes('placeholder')).toBe('1 Spiel durchsuchen')
+  })
+
   it('shows the search with the number of games in the library, and the filter chips', async () => {
     list = { games: [withClip, withoutClip, withPlayers] }
 

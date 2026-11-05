@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { bonusVetoes, draws, rounds, vetoes } from '../db/schema'
-import type { BonusVetoGranted } from '../../shared/event'
+import type { BonusVetoGranted } from '../../shared/stage'
 import { bonusVetoCounts, bonusVetoRejection, vetoesLeftByParty } from '../../shared/rounds'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
@@ -46,14 +46,14 @@ export function partyVetoesLeft(eventRow: EventRow, vetoRows: readonly Pick<Veto
   return vetoesLeftByParty({ allowance: settings?.vetoAllowance ?? null, teamCount: settings?.teamCount ?? 0, bonusTeams, castTeams: vetoRows.map(row => row.team) })
 }
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish'>
+type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
 
 /**
  * The Host grants a Party a Bonus Veto (#233, spec #218 § Bonus Vetoes): refused with the reason of bonusVetoRejection, else a row
  * (granted by the Host, now) and its feed entry, published like any other. Nothing takes a Bonus Veto back. The caller holds the Event
  * row's lock, so two grants cannot both pass the limit. It counts at once: partyVetoesLeft reads it in every open window too.
  */
-export async function grantBonusVeto({ tx, eventRow, user, publish }: Change, now: Date, team: number): Promise<BonusVetoGranted> {
+export async function grantBonusVeto({ tx, eventRow, user, publish, now }: Change, team: number): Promise<BonusVetoGranted> {
   const settings = settingsFromRow(eventRow)
   const granted = bonusVetoCounts(await readBonusTeams(tx, eventRow.id), settings?.teamCount ?? 0)
   const rejection = bonusVetoRejection({ isHost: eventRow.hostId === user.id, settings, phase: eventRow.phase, team, granted })

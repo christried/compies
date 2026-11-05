@@ -2,6 +2,7 @@
 import { activityIcon, activityParts, groupActivity, readEntry, type ActivityGroup, type FeedSession } from '~/utils/activity'
 import { formatActivityTime } from '~/utils/berlin-time'
 import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
+import type { BoardTeam } from '~~/shared/event'
 
 // The Activity feed (#159, GLOSSARY: Activity feed, 11-event-seite § SidePanel): what happened in the Event, oldest
 // at the top and the newest at the bottom, scrolled to the end on load. It reads the first page from the feed
@@ -18,7 +19,9 @@ const props = withDefaults(defineProps<{
   nextNumber?: number | null
   /** Counts the instants that passed (the page's useInstantRefresh): an entry that waited for its instant (a draw's) is readable now, so the feed reads again (#229). */
   refreshTick?: number
-}>(), { sessions: () => [], nextNumber: null, refreshTick: 0 })
+  /** The Event's teams: a Result's sentence names the winners by their frozen Team name (#273); without them, by colour. */
+  teams?: BoardTeam[]
+}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [] })
 
 const { t } = useI18n()
 
@@ -109,7 +112,7 @@ const TONE = { primary: 'bg-primary text-on-primary', surface: 'bg-surface text-
 
 /** The entries with their sentence in pieces (names in bold) and their icon; an entry no ticket has a sentence for yet is left out. */
 const shown = computed(() => entries.value.flatMap((entry) => {
-  const parts = activityParts(entry, t)
+  const parts = activityParts(entry, t, props.teams)
   return parts === null ? [] : [{ entry, parts, ...activityIcon(entry), time: formatActivityTime(new Date(entry.at), now) }]
 }))
 
@@ -200,7 +203,7 @@ const groups = computed(() => {
                   :size="14"
                 />
               </span>
-              <span class="min-w-0 flex-1 pt-[3px] text-[14px] leading-[1.4] text-pretty">
+              <span class="min-w-0 flex-1 pt-[3px] text-[14px] leading-[1.4] text-pretty break-words">
                 <template
                   v-for="(part, index) in item.parts"
                   :key="index"

@@ -32,7 +32,7 @@ describe('the Event poll', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(page.text()).not.toContain('Aktualisiert sich von selbst')
-    expect(page.findAll('h2').map(heading => heading.text())).toEqual(['Terminumfrage', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Terminumfrage', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     expect(page.findAll('h3').map(heading => heading.text())).toContain('Wer kann wann?')
   })
 

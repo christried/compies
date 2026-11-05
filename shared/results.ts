@@ -1,0 +1,248 @@
+// The Result of a Round (GLOSSARY: Result, Place, Shared place, Points table, Score; spec #272, #273). Pure, so the result sheet and
+// the server's parser and rules agree: the shape of the Places, the Score's cap, the points a Place earns, the order the sheet makes,
+// the next Round number, and the reason a Result cannot be entered now. The Worker does not import this file.
+
+import { characterCount } from './text'
+import type { Phase } from './event'
+import { GAME_COUNT_MAX, type EventSettings, type PointsTable } from './settings'
+import { isOpen, type RoundFacts } from './rounds'
+import type { EndView, StandingView } from './stage'
+
+/** The longest Score: 7 characters as the User sees them (graphemes, the rule of #76). */
+export const SCORE_MAX = 7
+
+/** One Party's line in a Result: its team position, its Place, its Score (null = none; else trimmed, 1 to SCORE_MAX graphemes). */
+export interface ResultPlace { team: number, place: number, score: string | null }
+
+/** A typed Score as stored: trimmed, and empty means none. */
+export function normalizeScore(raw: string): string | null {
+  const trimmed = raw.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+/** Whether a stored Score is valid: null, or trimmed, not empty and at most SCORE_MAX graphemes. */
+export function scoreValid(score: string | null): boolean {
+  if (score === null) return true
+  return score === score.trim() && score !== '' && characterCount(score) <= SCORE_MAX
+}
+
+/**
+ * Whether the Places are a Result for `teamCount` Parties: every team 1..teamCount exactly once (whole numbers), and, sorted by Place,
+ * the first Place is 1 and each next Place equals the one before (a Shared place) or its position in the sorted list:
+ * 1,1,3 and 1,2,2 are valid; 1,1,2, 2,2,3 and 1,3,3 are not. Every Score passes scoreValid. The order of the array does not matter.
+ */
+export function resultShapeValid(places: readonly ResultPlace[], teamCount: number): boolean {
+  if (places.length !== teamCount) return false
+  const teams = new Set(places.map(entry => entry.team))
+  if (teams.size !== teamCount) return false
+  for (let team = 1; team <= teamCount; team++) if (!teams.has(team)) return false
+  if (places.some(entry => !Number.isInteger(entry.team) || !Number.isInteger(entry.place) || !scoreValid(entry.score))) return false
+
+  const sorted = [...places].sort((a, b) => a.place - b.place)
+  return sorted.every((entry, index) => {
+    if (index === 0) return entry.place === 1
+    const above = sorted[index - 1]!.place
+    return entry.place === above || entry.place === index + 1
+  })
+}
+
+/** The points a Place earns: the Points table's value for that Place (a Shared place earns the better Place's by construction). 0 beyond the table. */
+export function pointsForPlace(place: number, table: Pick<PointsTable, 'values'>): number {
+  return table.values[place - 1] ?? 0
+}
+
+/** Each Party's points for a Result, index 0 = team 1. */
+export function partyPoints(places: readonly Pick<ResultPlace, 'team' | 'place'>[], table: Pick<PointsTable, 'values'>): number[] {
+  const points = Array.from({ length: places.length }, () => 0)
+  for (const entry of places) points[entry.team - 1] = pointsForPlace(entry.place, table)
+  return points
+}
+
+/**
+ * The Places for the rows of the sheet, top to bottom: `order` are the team positions, `level[i]` (i >= 1) says row i shares the
+ * Place of row i-1 (`level[0]` is ignored). Place of row i = the Place of row i-1 when level, else i + 1. [3,1,2] with level [_, true, false] -> 3:1, 1:1, 2:3.
+ */
+export function placesFromOrder(order: readonly number[], level: readonly boolean[]): { team: number, place: number }[] {
+  const places: { team: number, place: number }[] = []
+  order.forEach((team, index) => {
+    const place = index > 0 && level[index] ? places[index - 1]!.place : index + 1
+    places.push({ team, place })
+  })
+  return places
+}
+
+/**
+ * Each Party's points over all Results, index 0 = team 1: the sum of the points of its Place in every Result. A Place of a team beyond `teamCount` counts for nobody.
+ */
+export function totalPoints(results: readonly (readonly Pick<ResultPlace, 'team' | 'place'>[])[], table: Pick<PointsTable, 'values'>, teamCount: number): number[] {
+  const points = Array.from({ length: teamCount }, () => 0)
+  for (const places of results) {
+    for (const entry of places) {
+      if (entry.team >= 1 && entry.team <= teamCount) points[entry.team - 1]! += pointsForPlace(entry.place, table)
+    }
+  }
+  return points
+}
+
+/**
+ * The Standings (GLOSSARY: Standings) from every Party's points (index 0 = team 1): the rank is 1 + the number of Parties with MORE points
+ * (so equal points share a rank, and the next rank is skipped: 1, 1, 3), and the rows are sorted by points descending, then team ascending.
+ * Nothing else orders them. The input is not changed.
+ */
+export function standingsOf(points: readonly number[]): StandingView[] {
+  return points
+    .map((value, index) => ({ team: index + 1, points: value }))
+    .sort((a, b) => b.points - a.points || a.team - b.team)
+    .map(row => ({ team: row.team, rank: 1 + points.filter(value => value > row.points).length, points: row.points }))
+}
+
+/** The team positions on Place 1, ascending (the feed's `first`). */
+export function winnersOf(places: readonly Pick<ResultPlace, 'team' | 'place'>[]): number[] {
+  return places.filter(entry => entry.place === 1).map(entry => entry.team).sort((a, b) => a - b)
+}
+
+/**
+ * Whether two lists of Places are the same Result (#275): the same Parties with the same Place and the same Score each (null = none),
+ * in any order. A save that equals the stored Result is a no-op (spec story 42). Both lists are as `parseResultBody` and the database
+ * hold them: Scores trimmed, empty as null.
+ */
+export function sameResult(stored: readonly ResultPlace[], sent: readonly ResultPlace[]): boolean {
+  if (stored.length !== sent.length) return false
+  return stored.every((entry) => {
+    const other = sent.find(candidate => candidate.team === entry.team)
+    return other !== undefined && other.place === entry.place && other.score === entry.score
+  })
+}
+
+/** The next Round number: the highest in the Event + 1; 1 when no Round has one. `null` entries are Rounds without a Result. */
+export function nextRoundNumber(numbers: readonly (number | null)[]): number {
+  return numbers.reduce<number>((highest, number) => (number === null ? highest : Math.max(highest, number)), 0) + 1
+}
+
+/** Why a Result cannot be entered now, or be corrected (#273, #275), in the order they are checked. */
+export type ResultRejection = 'not_host' | 'not_set_up' | 'wrong_phase' | 'round_not_found' | 'round_not_open' | 'invalid_result'
+
+export interface ResultInput {
+  isHost: boolean
+  /** The settings that matter here; null for an Event that is not set up. */
+  settings: { teamCount: number } | null
+  phase: Phase
+  /** The Round the id names among the Event's Rounds (put-back ones too); null when there is none. A Round with a Result is corrected (#275): its `resultAt` says so. */
+  round: Pick<RoundFacts, 'setAt' | 'putBackAt' | 'resultAt'> | null
+  /** The Places as the parser read them; null when the body was not a list of Places. */
+  places: readonly ResultPlace[] | null
+}
+
+/**
+ * The reason a Result cannot be entered or corrected now, or null (#273, #275), in the order they are checked: the Host asks, the Event
+ * is set up, its Phase is `running`, the Round exists, it is open or has a Result to correct (isOpen: set, not put back, no Result yet;
+ * a Round being drawn, waiting for a respin or put back is `round_not_open`), and the Places are a valid Result (resultShapeValid).
+ */
+export function resultRejection({ isHost, settings, phase, round, places }: ResultInput): ResultRejection | null {
+  if (!isHost) return 'not_host'
+  if (settings === null) return 'not_set_up'
+  if (phase !== 'running') return 'wrong_phase'
+  if (round === null) return 'round_not_found'
+  // A Round with a Result is corrected (#275) while it is set and not put back (the database checks both). Any other Round that is not
+  // open (being drawn, waiting for a respin, put back) is still refused.
+  const correctable = round.resultAt !== null && round.setAt !== null && round.putBackAt === null
+  if (!correctable && !isOpen(round)) return 'round_not_open'
+  if (places === null || !resultShapeValid(places, settings.teamCount)) return 'invalid_result'
+  return null
+}
+
+/** The team positions on rank 1, ascending: the winner, or every Party of a Tie (#277, GLOSSARY: Tie). */
+export function leadersOf(standings: readonly StandingView[]): number[] {
+  return standings.filter(row => row.rank === 1).map(row => row.team).sort((a, b) => a - b)
+}
+
+/** The facts of EndView that every Member reads the same (`finish` and `lastGame` are the Host's part). */
+type EndFacts = Pick<EndView, 'played' | 'gameCount' | 'complete' | 'tie'>
+
+/**
+ * How far the Event is (#277, GLOSSARY: Finish, Tie): `complete` when the Rounds with a Result reach the Game count (>=), `tie` the leaders
+ * when complete and more than one holds rank 1, else null. `standings` are `standingsOf`'s.
+ */
+export function endOf(standings: readonly StandingView[], played: number, gameCount: number): EndFacts {
+  const complete = played >= gameCount
+  const leaders = leadersOf(standings)
+  return { played, gameCount, complete, tie: complete && leaders.length > 1 ? leaders : null }
+}
+
+/**
+ * The Standings and the end of the Event from the Places of the Rounds with a Result, one list per Round (review 0.8, Q2): the one place that
+ * composes them, so the read that the dock offers „Event abschließen“ from and the routes that refuse on the same Standings (the finish, the
+ * last game) cannot drift apart.
+ */
+export function standingsAndEnd(groups: readonly (readonly Pick<ResultPlace, 'team' | 'place'>[])[], settings: Pick<EventSettings, 'pointsTable' | 'teamCount' | 'gameCount'>): { standings: StandingView[], end: EndFacts } {
+  const standings = standingsOf(totalPoints(groups, settings.pointsTable, settings.teamCount))
+  return { standings, end: endOf(standings, groups.length, settings.gameCount) }
+}
+
+/** The outcome the Host asks the finish for (#277): a sole winner, or a Tie with all its Parties (#278 sends the second). */
+export type FinishOutcome = 'winner' | 'tie'
+
+/** The outcome the Standings call for now: 'tie' while `end.tie` is set, else 'winner'. */
+export function outcomeOf(end: Pick<EndView, 'tie'>): FinishOutcome {
+  return end.tie === null ? 'winner' : 'tie'
+}
+
+/** Why the Event cannot be finished now (#277), in the order they are checked. */
+export type FinishRejection = 'not_host' | 'wrong_phase' | 'results_missing' | 'standings_changed'
+
+/**
+ * What the finish request carries (#277, review 0.8 S2): the outcome the Host held, and the Parties (team positions) he saw on Place 1,
+ * `leadersOf` the Standings the dock showed. The outcome alone does not say who leads: a Correction can make another Party the sole leader.
+ */
+export interface FinishRequest {
+  outcome: FinishOutcome
+  winners: number[]
+}
+
+export interface FinishInput extends FinishRequest {
+  isHost: boolean
+  phase: Phase
+  end: Pick<EndView, 'complete' | 'tie'>
+  /** The Standings now (standingsAndEnd's), whose leaders `winners` are compared with. */
+  standings: readonly StandingView[]
+}
+
+/**
+ * The reason the Event cannot be finished now, or null (#277), in the order they are checked: the Host asks, the Phase is `running`, every
+ * Round up to the Game count has its Result, and what the Host saw is what the Standings say now: the same outcome (outcomeOf) and the
+ * same Parties on Place 1, compared as sets. A Correction in another tab that made or ended a Tie, or changed who leads, refuses.
+ */
+export function finishRejection({ isHost, phase, end, standings, outcome, winners }: FinishInput): FinishRejection | null {
+  if (!isHost) return 'not_host'
+  if (phase !== 'running') return 'wrong_phase'
+  if (!end.complete) return 'results_missing'
+  if (outcomeOf(end) !== outcome) return 'standings_changed'
+  const leaders = leadersOf(standings)
+  const seen = new Set(winners)
+  return seen.size === leaders.length && leaders.every(team => seen.has(team)) ? null : 'standings_changed'
+}
+
+/** Why the last game cannot be added now (#278), in the order they are checked. */
+export type LastGameRejection = 'not_host' | 'wrong_phase' | 'results_missing' | 'no_tie' | 'game_count_range'
+
+export interface LastGameInput {
+  isHost: boolean
+  phase: Phase
+  end: Pick<EndView, 'complete' | 'tie'>
+  /** The Event's Game count now. */
+  gameCount: number
+}
+
+/**
+ * The reason the Host cannot add the last game now, or null (#278, GLOSSARY: Tie), in the order they are checked: the Host asks, the Phase is
+ * `running`, every Round up to the Game count has its Result (a second press finds the count incomplete: `results_missing`, which the client
+ * treats as done), a Tie stands, and the Game count is below GAME_COUNT_MAX (at the maximum the Host can still end „Unentschieden“). The
+ * refusal `game_count_range` keeps its 400 (#278, as the settings stepper's code for the same maximum); the other four are 409.
+ */
+export function lastGameRejection({ isHost, phase, end, gameCount }: LastGameInput): LastGameRejection | null {
+  if (!isHost) return 'not_host'
+  if (phase !== 'running') return 'wrong_phase'
+  if (!end.complete) return 'results_missing'
+  if (end.tie === null) return 'no_tie'
+  return gameCount >= GAME_COUNT_MAX ? 'game_count_range' : null
+}

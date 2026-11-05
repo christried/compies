@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ClipOverlay from '~/components/ClipOverlay.vue'
-import type { ClipView } from '~~/shared/event'
+import type { ClipView } from '~~/shared/stage'
 import type { RoundGame } from '~~/shared/game'
 import { restoreScreen, stubScreen } from './event-page'
 
@@ -338,5 +338,17 @@ describe('how it opens and closes (04-motion § Clip overlay)', () => {
     expect(transition.props('enterActiveClass')).toBe('animate-clip-in')
     expect(transition.props('leaveActiveClass')).toBe('transition-opacity dur-base ease-in')
     expect(transition.props('leaveToClass')).toBe('opacity-0')
+  })
+})
+
+describe('the motion of the running clip', () => {
+  it('eases the bar over one tick, and pulses the LIVE dot through a calm twin of its own', async () => {
+    await mount(clipOf())
+    await ready()
+
+    const bar: HTMLElement = page!.element.querySelector('[role="progressbar"] > span')!
+    expect(bar.style.transitionDuration).toBe('250ms')
+    expect(bar.classList).not.toContain('duration-250')
+    expect(page!.element.querySelector('.size-2.rounded-full')!.classList).toContain('animate-live')
   })
 })

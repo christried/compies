@@ -61,13 +61,13 @@ describe('the stepper', () => {
     useState('toasts').value = []
   })
 
-  it('starts on step 1 of 8 and sends nothing', async () => {
+  it('starts on step 1 of 7 and sends nothing', async () => {
     const saved = recordPost()
     const page = await mountCreate()
 
-    expect(page.get('h1').text()).toContain('Schritt 1 von 8')
+    expect(page.get('h1').text()).toContain('Schritt 1 von 7')
     expect(page.get('h1').text()).toContain('Wie soll das Event heißen?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spiele', '4 Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Tiebreaker-Pool', '8 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spiele', '4 Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
     expect(saved).not.toHaveBeenCalled()
   })
 
@@ -77,7 +77,7 @@ describe('the stepper', () => {
     await stepTo(page, 0)
 
     const titles: string[] = []
-    for (let step = 1; step <= 7; step++) {
+    for (let step = 1; step <= 6; step++) {
       await next(page)
       titles.push(page.get('h1').text())
     }
@@ -88,7 +88,6 @@ describe('the stepper', () => {
       expect.stringContaining('Wer kriegt wie viele Punkte?'),
       expect.stringContaining('Wie wird das nächste Spiel bestimmt?'),
       expect.stringContaining('Welche Spiele kommen in den Pool?'),
-      expect.stringContaining('Und falls es knapp wird?'),
       expect.stringContaining('Wann zocken wir?'),
     ])
     expect(cta(page).text()).toContain('Event erstellen')
@@ -101,7 +100,7 @@ describe('the stepper', () => {
     expect(cta(page).attributes('aria-disabled')).toBe('true')
     expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib dem Event einen Namen.')
     await next(page)
-    expect(page.get('h1').text()).toContain('Schritt 1 von 8')
+    expect(page.get('h1').text()).toContain('Schritt 1 von 7')
 
     await page.get('input[type="text"]').setValue('  ')
     expect(cta(page).attributes('aria-disabled')).toBe('true')
@@ -109,7 +108,7 @@ describe('the stepper', () => {
     await page.get('input[type="text"]').setValue('Freitags-Zocken')
     expect(cta(page).attributes('aria-disabled')).toBeUndefined()
     await next(page)
-    expect(page.get('h1').text()).toContain('Schritt 2 von 8')
+    expect(page.get('h1').text()).toContain('Schritt 2 von 7')
   })
 
   it('goes back with Zurück and keeps what was entered', async () => {
@@ -128,12 +127,12 @@ describe('the stepper', () => {
     const page = await mountCreate()
     await stepTo(page, 3)
 
-    expect(stepItems(page).map(item => item.find('button').exists())).toEqual([true, true, true, false, false, false, false, false])
-    expect(stepItems(page).map(item => item.attributes('aria-current'))).toEqual([undefined, undefined, undefined, 'step', undefined, undefined, undefined, undefined])
+    expect(stepItems(page).map(item => item.find('button').exists())).toEqual([true, true, true, false, false, false, false])
+    expect(stepItems(page).map(item => item.attributes('aria-current'))).toEqual([undefined, undefined, undefined, 'step', undefined, undefined, undefined])
 
     await stepItems(page)[1]!.get('button').trigger('click')
 
-    expect(page.get('h1').text()).toContain('Schritt 2 von 8')
+    expect(page.get('h1').text()).toContain('Schritt 2 von 7')
     expect(stepItems(page)[1]!.attributes('aria-current')).toBe('step')
     expect(stepItems(page)[3]!.find('button').exists()).toBe(true)
   })
@@ -264,6 +263,8 @@ describe('the stepper', () => {
       await stepTo(page, 1)
       expect(page.find('button[aria-label="Info"]').exists()).toBe(true)
       await next(page)
+      expect(page.get('aside[aria-label="Erklärung"]').text()).toContain('So endet das Event')
+      await next(page)
       expect(page.find('aside').exists()).toBe(false)
     })
 
@@ -279,14 +280,14 @@ describe('the stepper', () => {
   })
 
   describe('on phones', () => {
-    it('shows a progress bar of 8 segments and a sticky footer with the kicker in the heading', async () => {
+    it('shows a progress bar of 7 segments and a sticky footer with the kicker in the heading', async () => {
       const page = await mountCreate()
       await stepTo(page, 2)
 
-      expect(page.get('[data-testid="progress"]').findAll('span')).toHaveLength(8)
+      expect(page.get('[data-testid="progress"]').findAll('span')).toHaveLength(7)
       expect(page.get('[data-testid="progress"]').attributes('aria-hidden')).toBe('true')
       expect(page.get('[data-testid="stepper-footer"]').element.parentElement!.className).toContain('sticky')
-      expect(page.get('h1').text()).toContain('Schritt 3 von 8')
+      expect(page.get('h1').text()).toContain('Schritt 3 von 7')
     })
   })
 
@@ -296,7 +297,7 @@ describe('the stepper', () => {
       await stepTo(page, 2)
 
       expect(page.get('output').text()).toBe('10')
-      expect(page.text()).toContain('Nach 10 Spielen ist Schluss')
+      expect(page.text()).toContain('Nach 10 Spielen mit Ergebnis kannst du das Event abschließen')
 
       await click(page, 'Anzahl Spiele: mehr', 20)
       expect(page.get('output').text()).toBe('30')
@@ -305,7 +306,67 @@ describe('the stepper', () => {
       await click(page, 'Anzahl Spiele: weniger', 29)
       expect(page.get('output').text()).toBe('1')
       expect(button(page, 'Anzahl Spiele: weniger').attributes('title')).toBe('Mindestens 1 Spiel.')
-      expect(page.text()).toContain('Nach 1 Spiel ist Schluss')
+      expect(page.text()).toContain('Nach 1 Spiel mit Ergebnis kannst du das Event abschließen')
+    })
+  })
+
+  describe('the Tie hint (#279)', () => {
+    const tieHint = (page: Page) => page.findAll('[role="status"]').find(element => element.text().includes('Gleichstand möglich.'))
+
+    it('shows at the default 10 games with 2 teams, and says what the Host then chooses', async () => {
+      const page = await mountCreate()
+      await stepTo(page, 2)
+
+      expect(tieHint(page)!.text()).toBe('Gleichstand möglich. Das Event kann unentschieden enden. Dann entscheidest du: Unentschieden beenden oder ein letztes Spiel hinzufügen.')
+    })
+
+    it('is hidden at an odd Game count with 2 teams', async () => {
+      const page = await mountCreate()
+      await stepTo(page, 2)
+      await click(page, 'Anzahl Spiele: weniger', 1)
+
+      expect(page.get('output').text()).toBe('9')
+      expect(tieHint(page)).toBeUndefined()
+    })
+
+    it('shows at an odd Game count with 3 teams', async () => {
+      const page = await mountCreate()
+      await stepTo(page, 1)
+      await click(page, 'Anzahl Teams: mehr', 1)
+      await next(page)
+      await click(page, 'Anzahl Spiele: weniger', 1)
+
+      expect(page.get('output').text()).toBe('9')
+      expect(tieHint(page)).toBeDefined()
+    })
+
+    it('shows at 30 games, and at 1 game with 3 teams, but not at 1 game with 2 teams', async () => {
+      const page = await mountCreate()
+      await stepTo(page, 2)
+      await click(page, 'Anzahl Spiele: mehr', 20)
+      expect(tieHint(page)).toBeDefined()
+      await click(page, 'Anzahl Spiele: weniger', 29)
+      expect(tieHint(page)).toBeUndefined()
+
+      const threeTeams = await mountCreate()
+      await stepTo(threeTeams, 1)
+      await click(threeTeams, 'Anzahl Teams: mehr', 1)
+      await next(threeTeams)
+      await click(threeTeams, 'Anzahl Spiele: weniger', 9)
+      expect(threeTeams.get('output').text()).toBe('1')
+      expect(tieHint(threeTeams)).toBeDefined()
+    })
+
+    it('follows the Game count live: gone at 9, back at 8', async () => {
+      const page = await mountCreate()
+      await stepTo(page, 2)
+      expect(tieHint(page)).toBeDefined()
+
+      await click(page, 'Anzahl Spiele: weniger', 1)
+      expect(tieHint(page)).toBeUndefined()
+
+      await click(page, 'Anzahl Spiele: weniger', 1)
+      expect(tieHint(page)).toBeDefined()
     })
   })
 
@@ -334,7 +395,7 @@ describe('the stepper', () => {
       expect(cta(page).attributes('aria-disabled')).toBe('true')
       expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
       await next(page)
-      expect(page.get('h1').text()).toContain('Schritt 4 von 8')
+      expect(page.get('h1').text()).toContain('Schritt 4 von 7')
 
       await click(page, 'Punkte für Platz 3: weniger', 3)
       expect(page.find('[role="alert"]').exists()).toBe(false)
@@ -352,7 +413,7 @@ describe('the stepper', () => {
       expect(cta(page).attributes('aria-disabled')).toBe('true')
       expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
       await next(page)
-      expect(page.get('h1').text()).toContain('Schritt 4 von 8')
+      expect(page.get('h1').text()).toContain('Schritt 4 von 7')
 
       await click(page, 'Punkte für Platz 2: weniger', 1)
       expect(page.find('[role="alert"]').exists()).toBe(false)
@@ -397,7 +458,7 @@ describe('the stepper', () => {
         dateMode: 'poll',
         sessions: 1,
         slots: ['2090-10-30T20:30'],
-        pools: { main: [], tiebreaker: [] },
+        pools: { main: [] },
         settings: {
           format: 'teams',
           teamCount: 4,
@@ -414,7 +475,7 @@ describe('the stepper', () => {
       expect(page.text()).toContain('4 Teams à 2, Host-Wahl, 6 Spiele.')
       const list = page.get('dl')
       expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Auswahl', 'Punkte', 'Pool', 'Termin'])
-      expect(list.findAll('dd').map(value => value.text())).toEqual(['4 Teams à 2', '6 Spiele', 'Host-Wahl', 'Winner takes all 3 / 0 / 0 / 0', '0 Spiele, Tiebreaker 0', 'Umfrage, 1 Vorschlag'])
+      expect(list.findAll('dd').map(value => value.text())).toEqual(['4 Teams à 2', '6 Spiele', 'Host-Wahl', 'Winner takes all 3 / 0 / 0 / 0', '0 Spiele', 'Umfrage, 1 Vorschlag'])
       expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
       expect(page.find('nav[aria-label="Schritte"]').exists()).toBe(false)
     })

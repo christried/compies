@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
-import type { WheelView } from '~~/shared/event'
+import type { WheelView } from '~~/shared/stage'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 
 // The Lucky Wheel on the stage (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel, reference App Spielrunde ?s=wheel).
 // It shows the games left on the wheel and, from the server's spin, turns toward a fixed stop: the angle is a function of the
-// server's clock alone (utils/wheel.ts), so every device, a late joiner included, stands at the same angle at the same moment. A
-// requestAnimationFrame loop feeds it the server time while a spin runs and 3.5 s past its stop; at rest nothing runs.
+// server's clock alone (utils/wheel.ts), so every device, a late joiner included, stands at the same angle at the same moment. The
+// server ticker (useServerTicker) feeds it the server time every frame while a spin runs and shortly past its removal; at rest, and
+// while the wheel is scrolled out of view, nothing runs.
 // At the stop the drawn slice gets its outline and the result card comes. Under a Hidden wheel a Member sees placeholders; the
 // drawn label turns into the real game half a second after the stop (a scramble, under reduced motion a crossfade), and the
 // drawn slice leaves at stop + 2.8 s instead of 2.2 s. The drawn slice shrinks and the others close the gap (0.6 s), or fade and
@@ -35,10 +36,7 @@ const LABEL_MAX = 22
 const LABEL_RUN = RADIUS - 12 - HUB_RADIUS - 4
 const GLYPH_EM = 0.66
 
-const mounted = ref(false)
 const reduced = ref(false)
-const now = ref(0)
-let frame = 0
 
 const spin = computed(() => props.wheel.spin)
 const timing = computed((): WheelTiming | null => {
@@ -46,32 +44,17 @@ const timing = computed((): WheelTiming | null => {
   return current && { spinStartAt: Date.parse(current.spinStartAt), stopAt: Date.parse(current.stopAt), slices: current.slices, resultIndex: current.resultIndex, resultOffset: current.resultOffset }
 })
 /** The server time of this frame; null before the page has mounted, so the server's render and the first client render agree. */
-const clock = computed(() => (mounted.value ? now.value : null))
+const clock = useServerTicker(() => props.serverNow(), {
+  until: () => (timing.value ? removalEnd(timing.value, props.hidden) + TAIL_MS : null),
+  target: useTemplateRef('root'),
+})
 /** Whether the spin's own layout is on screen: from the commit until the drawn slice has left. */
 const running = computed(() => timing.value !== null && clock.value !== null && clock.value < removalEnd(timing.value, props.hidden))
 const stopped = computed(() => timing.value !== null && clock.value !== null && clock.value >= timing.value.stopAt)
 
-function drive() {
-  cancelAnimationFrame(frame)
-  frame = 0
-  reduced.value = reducedMotion()
-  now.value = props.serverNow()
-  const current = timing.value
-  if (current && now.value < removalEnd(current, props.hidden) + TAIL_MS) frame = requestAnimationFrame(tick)
-}
-function tick() {
-  now.value = props.serverNow()
-  const current = timing.value
-  frame = current && now.value < removalEnd(current, props.hidden) + TAIL_MS ? requestAnimationFrame(tick) : 0
-}
-onMounted(() => {
-  mounted.value = true
-  drive()
-})
-onBeforeUnmount(() => cancelAnimationFrame(frame))
-watch(() => spin.value?.drawId, () => {
-  if (mounted.value) drive()
-})
+// Whether the User prefers reduced motion is read at mount and for each new spin.
+onMounted(() => void (reduced.value = reducedMotion()))
+watch(() => spin.value?.drawId, () => void (reduced.value = reducedMotion()))
 
 // The wheel as drawn: the spin's slices while it runs, else the games left on the wheel (a Member under a Hidden wheel sees ???).
 const count = computed(() => (running.value ? spin.value!.slices : props.wheel.count))
@@ -88,6 +71,7 @@ const names = computed(() => {
 const angle = computed(() => {
   const current = timing.value
   if (!current || clock.value === null) return 0
+  // + 0 turns a -0 into 0 (utils/wheel.ts wheelAngle does the same for the spin).
   return (running.value ? wheelAngle(current, clock.value, reduced.value) : finalAngle(current) % 360) + 0
 })
 
@@ -95,9 +79,11 @@ const angle = computed(() => {
 // The read that follows the stop already carries the real name there, so the placeholder is kept from the read before it.
 const concealed = computed(() => props.hidden && !props.isHost)
 const held = ref<{ drawId: string, labels: string[] } | null>(null)
+// The server's time is read here, not the ticker's: out of view the ticker stands still (#257), and a read that brings the real name
+// while the wheel is scrolled away would still count as „before the stop“.
 watchEffect(() => {
   const current = spin.value
-  if (current?.labels && concealed.value && timing.value && clock.value !== null && clock.value < timing.value.stopAt) held.value = { drawId: current.drawId, labels: current.labels }
+  if (current?.labels && concealed.value && timing.value && clock.value !== null && props.serverNow() < timing.value.stopAt) held.value = { drawId: current.drawId, labels: current.labels }
 })
 
 function labelOf(index: number): { text: string, opacity: number } {
@@ -146,6 +132,7 @@ const headingId = useId()
 
 <template>
   <section
+    ref="root"
     :aria-labelledby="headingId"
     class="flex flex-col items-center gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 text-ink"
   >

@@ -3,7 +3,7 @@ import { Lock, Play } from '@lucide/vue'
 import { dateBlockedKey } from '~/utils/event-page'
 import { isFullPoolGame } from '~~/shared/game'
 import { hasStarted } from '~~/shared/session-state'
-import { hasWheel } from '~~/shared/settings'
+import { eventHasWheel } from '~~/shared/settings'
 import type { DatedSessionView, EventView } from '~~/shared/event'
 
 // The Host's dialogs and sheets of the Event page (#52, #55, #164): the Date confirm dialog, the reschedule dialog, the
@@ -118,7 +118,7 @@ const poolLeft = computed(() => {
 })
 
 // Only a Selection mode with a wheel has Vetoes (#232): there the Host can allow one on the game they set.
-const vetoSwitch = computed(() => props.view.settings !== null && hasWheel(props.view.settings.selectionMode))
+const vetoSwitch = computed(() => eventHasWheel(props.view.settings))
 
 /** Sets the game as the next Round, with a Veto window when the Host allowed one; the picker closes once the server took it. */
 function setNextGame(gameId: string, vetoAllowed: boolean) {

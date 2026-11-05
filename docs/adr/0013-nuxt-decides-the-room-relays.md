@@ -9,7 +9,7 @@ Release 1.4 makes the Event page live through the PartyServer room of ADR 0012, 
 ## Consequences
 
 - A race for the last free team slot is settled by a row lock in Postgres, not by the room.
-- The room's messages carry no game data in 1.4; the Hidden wheel secrecy test covers what the room sends.
+- The room's messages carry no game data in 1.4; the Hidden wheel secrecy test covers what the room sends. Replaced by the 2026-11-05 amendment below.
 
 ## Amendment, 2026-10-31: Nuxt owns the deadlines too
 
@@ -21,3 +21,12 @@ Settled in the 0.7 „Glücksrad“ grilling (finding A2 of review 1.4, the Rele
 - Clients keep estimating their offset from the room's clock. Nuxt (Vercel) and the room (Cloudflare) both run NTP-synced clocks; the gap between them is accepted inside the 50 ms budget for server-timed moments.
 
 Considered: the room owns the deadlines with Durable Object alarms. Rejected, because a stored schedule is Event state in the room (a deploy could drop a pending reveal, and the deploy guard would have to know about it), the room's one alarm already runs the presence sweep, and the outcome would still have to be written through Nuxt.
+
+## Amendment, 2026-11-05: what the room's messages carry
+
+From the 0.7 Release review (standards S5, #260), written after 0.8 deleted the unread messages (#258). It replaces the Consequences line „The room's messages carry no game data in 1.4“ and, in the amendment above, the words „messages carry it as an explicit instant“.
+
+- A message carries only what every User it reaches may know at that instant. `event.changed` has no payload; clients refetch the Event read, which filters per viewer and is gated by time.
+- `activity.added` is the one message with game data: an Activity entry that names a game everyone may already know. An entry that waits for its instant (a draw's stop, the Vetoes' reveal, the coin's landing) is not published; the Event read shows it from that instant on.
+- No message carries the wheel's placeholder labels, a timed instant or the coin's side: 0.8 deleted `round.set`, `round.putBack`, `round.spun`, `countdown.changed` and `coin.tossed`, which no client read. The Event read still carries the coin's side (`coin.side`) before the landing, by decision; the UI hides it until `landsAt`.
+- The named send (`{ to, direct }` in `RoomPublishBody`, used by `veto.cast`) has its own shape so that it fails closed: a Worker older than the shape answers 400 (no `messages` array) and sends nothing, where `messages` plus `to` would have reached every Party.

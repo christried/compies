@@ -2,7 +2,8 @@ import { defineEventHandler, getRouterParam } from 'h3'
 import { useClock } from '../../utils/clock'
 import { useDb } from '../../utils/db'
 import { loadEvent } from '../../utils/event-access'
-import { bonusVetoSection, boardSection, clipSection, coinSection, countdownSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, roundsSection, sessionSection, startSection } from '../../utils/event-read'
+import { boardSection, inviteSection, membersSection, poolsSection, pollSection, readEventRows, sessionSection, startSection } from '../../utils/event-read'
+import { stageSections } from '../../utils/stage-read'
 import { settleBeforeRead } from '../../utils/rounds'
 import { requireUser } from '../../utils/user'
 import type { EventView } from '../../../shared/event'
@@ -11,7 +12,8 @@ import type { EventView } from '../../../shared/event'
 // same 404, so nobody can probe which Events exist. A former Member of a deleted Event gets
 // 410 "Event deleted" instead (#10).
 // The poll UI refetches this every 15 s (ADR 0001). The answer is composed from the section builders of
-// server/utils/event-read.ts, whose reads run at the same time (#183).
+// server/utils/event-read.ts, whose reads run at the same time (#183), and from the stage sections of
+// server/utils/stage-read.ts, which run together too (#256): a new stage piece is one entry in `stageSections`.
 // A draw whose stop has passed is settled first (#229, ADR 0013: no timer runs, the first read or write after an instant settles
 // it): a cheap select finds it, and only then a locked transaction sets its game. A read with nothing due takes no lock.
 export default defineEventHandler(async (event): Promise<EventView> => {
@@ -23,9 +25,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
   await settleBeforeRead(db, eventRow, now)
 
   const [rows, pools] = await Promise.all([readEventRows(db, eventRow), poolsSection(db, eventRow, viewer)])
-  const roundSections = await roundsSection(db, eventRow, rows, viewer, now)
-  const [clip, countdown, coin, bonusVetoes] = await Promise.all([clipSection(db, eventRow, rows, now), countdownSection(db, eventRow, rows), coinSection(db, eventRow, rows), bonusVetoSection(db, eventRow, viewer)])
-  return {
+  const fixed = {
     event: {
       slug: eventRow.slug,
       name: eventRow.name,
@@ -40,10 +40,9 @@ export default defineEventHandler(async (event): Promise<EventView> => {
     ...membersSection(eventRow, rows),
     ...boardSection(eventRow, rows),
     ...startSection(eventRow, rows, viewer),
-    ...roundSections,
-    ...clip,
-    ...countdown,
-    ...coin,
-    ...bonusVetoes,
   }
+  // The stage sections run together (#256). Their fields are what the view has beyond `fixed`; the completeness of
+  // that part is guarded by the integration test "the stage sections of the Event read" (rounds.test.ts).
+  const stage = Object.assign({}, ...await Promise.all(stageSections.map(section => section({ db, eventRow, rows, viewer, now })))) as Omit<EventView, keyof typeof fixed>
+  return { ...fixed, ...stage }
 })
