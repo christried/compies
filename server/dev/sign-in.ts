@@ -3,12 +3,12 @@ import { defineEventHandler, getQuery, sendRedirect, setCookie } from 'h3'
 import { users } from '../db/schema'
 import { createAuth } from '../utils/auth'
 import { useDb } from '../utils/db'
-import { apiNotFound } from '../utils/errors'
 import { CURRENT_RELEASE } from '../utils/release'
 
-// Signs in without Discord or Twitch on `pnpm dev`, so the user and agents can open Host and Member
-// pages locally and take screenshots (retro 1.3). Only the dev server registers this route
-// (nuxt.config.ts); test/build/dev-sign-in.test.ts checks the production build has none.
+// Signs in without Discord or Twitch, so the user and agents can open Host and Member pages and take screenshots:
+// on `pnpm dev` (retro 1.3) and on staging, behind Vercel Authentication (#247). Only the dev server and the staging
+// build register this route (carriesDevSignIn in stage.ts, read by nuxt.config.ts); test/build/dev-sign-in.test.ts
+// checks the production build has none. The handler has no check of its own: staging runs with NODE_ENV=production.
 // `?as=host|member|admin` picks the User, `?to=/path` where to land, `?news=unseen` leaves „Was ist neu“ unseen.
 const PEOPLE = {
   host: { name: 'Dev Host', canHost: true, isAdmin: false },
@@ -26,7 +26,6 @@ const PICTURE = '/icons/icon-192.png'
 const landing = (to: unknown) => typeof to === 'string' && /^\/(?!\/)/.test(to) ? to : '/'
 
 export default defineEventHandler(async (event) => {
-  if (process.env.NODE_ENV === 'production') throw apiNotFound()
   const query = getQuery(event)
   const as: Person = typeof query.as === 'string' && query.as in PEOPLE ? query.as as Person : 'host'
   const person = PEOPLE[as]

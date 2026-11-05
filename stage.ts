@@ -14,6 +14,12 @@ export function isStagingBuild(env: Record<string, string | undefined> = process
   return env.VERCEL_GIT_COMMIT_REF === 'staging' || env.COMPIES_STAGE === 'staging'
 }
 
+// The dev sign-in (server/dev/sign-in.ts) is registered on the dev server and in the staging build, so agents can
+// check a Player's view on staging (#247). Staging sits behind Vercel Authentication; production never carries it.
+export function carriesDevSignIn(dev: boolean, env: Record<string, string | undefined> = process.env): boolean {
+  return dev || isStagingBuild(env)
+}
+
 export function stageBranding(staging: boolean): StageBranding {
   return staging
     ? { name: 'Compies Staging', shortName: 'Staging', appleTitle: 'Compies Staging', iconDir: '/icons/staging' }

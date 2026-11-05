@@ -25,7 +25,7 @@ The game edit route is `/bibliothek/<id>/bearbeiten`; `?s=edit` is an artboard s
 
 Limits:
 - Headless Chrome never starts the browser's own image drag, so a native drag problem shows only on a real device. `nativeDrags` catches the ones it does start.
-- It signs in through `/api/dev/sign-in` only. Staging and production need Claude in Chrome (`claude --chrome`) or the user.
+- It signs in through `/api/dev/sign-in` on `pnpm dev` only. Staging and production need Claude in Chrome (`claude --chrome`) or the user. A Player check on staging signs in with `https://staging.compies.christried.me/api/dev/sign-in?as=member&to=/e/<slug>` in Claude in Chrome (#247); production has no dev sign-in.
 - `shots.mjs` without a selector captures the viewport: pass the selector of anything below the fold (e.g. `'section:has(> dl)'` for „So wird gespielt“).
 - A `pnpm dev` started in the background outlives its stopped shell: stop the `nuxt dev` process listening on port 3000.
 - `Network.setBlockedURLs` doesn't block WebSockets in headless Chrome. To check a failed connect, point the page at a port nothing listens on: `REALTIME_URL=http://localhost:8788 pnpm dev` (the Worker runs on 8787, and the shell's value wins over `.env`).
