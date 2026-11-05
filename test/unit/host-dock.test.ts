@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GAME_ACTIONS, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockInput, type DockKey } from '../../app/utils/host-dock'
+import { GAME_ACTIONS, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockInput, type DockKey, type DockLayout } from '../../app/utils/host-dock'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, derived from
 // the Event read, and which actions sit where (the layout, review 1.4 A4, #228).
@@ -176,6 +176,7 @@ describe('the primary when the Event can be finished (#277)', () => {
 
     expect(state).toMatchObject({ kind: 'finished', primary: null, number: null })
   })
+
 })
 
 describe('the primary of a running Session (#228)', () => {
@@ -220,6 +221,8 @@ describe('dockLayout', () => {
     { name: 'complete, a Session runs', fields: { sessions: RUNNING, end: COMPLETE }, primary: ['finish'], running: true, polls: true },
     { name: 'complete, between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: COMPLETE }, primary: ['finish'], running: false, polls: true },
     { name: 'complete after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: COMPLETE }, primary: ['finish'], running: false, polls: false },
+    { name: 'complete in the Lucky Wheel, a Session runs', fields: { settings, sessions: RUNNING, end: COMPLETE }, primary: ['finish'], running: true, polls: true },
+    { name: 'complete, between Sessions with none left to start and one polling', fields: { sessions: [dated('a', 1, ENDED), undated('b')], start: NO_DATED, end: COMPLETE }, primary: ['finish'], running: false, polls: true },
     { name: 'a Tie, a Session runs', fields: { settings, sessions: RUNNING, end: TIE }, primary: ['finishTie'], running: true, polls: true },
     { name: 'a Tie between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, primary: ['finishTie'], running: false, polls: true },
     { name: 'a Tie after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, primary: ['finishTie'], running: false, polls: false },
@@ -354,6 +357,35 @@ describe('dockLayout', () => {
       expect(shown.includes('setDate')).toBe(pollOpen && polls)
       expect(shown.includes('slots')).toBe(pollOpen && polls)
     }
+  })
+
+  // Today's layout of every state for each open part (#285), spelled out per state: the closing refactor must keep each one.
+  type Open = { pollOpen: boolean, bonusVetoOpen: boolean }
+  const dates = (open: Open): DockKey[] => (open.pollOpen ? ['setDate'] : [])
+  const slots = (open: Open): DockKey[] => (open.pollOpen ? ['slots'] : [])
+  const bonus = (open: Open): DockKey[] => (open.bonusVetoOpen ? ['bonusVeto'] : [])
+  const game = (open: Open): DockKey[] => GAME_ACTIONS.filter(key => key !== 'bonusVeto' || open.bonusVetoOpen)
+  const PINNED: Record<string, (open: Open) => DockLayout> = {
+    'setup': open => ({ primary: ['settings'], secondary: ['invite'], more: [...dates(open), ...slots(open)] }),
+    'poll': open => ({ primary: dates(open), secondary: ['invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
+    'teams': open => ({ primary: ['start'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
+    'between, another Session polls': open => ({ primary: ['start'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
+    'running under Host pick': open => ({ primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
+    'running in the Lucky Wheel': open => ({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates(open), ...slots(open), ...game(open), 'settings'] }),
+    'after the last Session': open => ({ primary: [], secondary: ['invite'], more: [...bonus(open), 'settings'] }),
+    'complete, a Session runs': open => ({ primary: ['finish'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
+    'complete in the Lucky Wheel, a Session runs': open => ({ primary: ['finish'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
+    'complete, between Sessions': open => ({ primary: ['finish'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
+    'complete, between Sessions with none left to start and one polling': open => ({ primary: ['finish'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
+    'complete after the last Session': open => ({ primary: ['finish'], secondary: ['invite'], more: [...bonus(open), 'settings'] }),
+    'a Tie, a Session runs': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
+    'a Tie between Sessions': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates(open), ...slots(open), ...bonus(open), 'settings'] }),
+    'a Tie after the last Session': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus(open), 'settings'] }),
+    'finished': () => ({ primary: [], secondary: ['invite'], more: [] }),
+  }
+
+  it.each(STATES)('pins the layout of $name for every open part, as today (#285)', ({ name, fields }) => {
+    for (const open of OPENS) expect(layout(fields, open)).toEqual(PINNED[name](open))
   })
 })
 
