@@ -21,7 +21,7 @@ import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
 import { VETO_WINDOW_MS } from '../../shared/rounds'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Entering a Result on an open Round (#273, spec #272): `PUT /api/e/:slug/rounds/:id/result` through the HTTP API with the in-memory
@@ -861,6 +861,35 @@ describe('Results', () => {
       expect(rows.draws.filter(row => row.roundId === windowed)).toHaveLength(2)
       const roundIds = new Set(rows.rounds.map(entry => entry.round.id))
       expect(rows.draws.every(row => roundIds.has(row.roundId))).toBe(true)
+    })
+
+    it('reads a Round and its Places from one statement: a Result that commits while the read runs never shows the Round as open and with its Result (Spec N2)', async () => {
+      const game = await running()
+      const round = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      const [eventRow] = await testDb.db.select().from(events).where(eq(events.id, game.eventId))
+      // The Result commits just as the read reaches the statement that reads the Rounds and their draws.
+      const racingDb = createInterleavingDb(testDb.client, /"draws"/, () => enter(game, round, { places: twoParties }), 5000)
+
+      const rows = await readEventRows(racingDb, eventRow!)
+
+      expect(rows.results.map(entry => entry.round.id)).toEqual(rows.rounds.filter(entry => entry.round.resultAt !== null).map(entry => entry.round.id))
+      expect(rows.results).toHaveLength(1)
+      expect(rows.results[0]!.places).toEqual([{ team: 1, place: 1, score: '16' }, { team: 2, place: 2, score: null }])
+    })
+
+    it('reads each draw and each Place once when a Round has several draws and a Result', async () => {
+      const game = await running()
+      const round = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      await enter(game, round, { places: twoParties })
+      const [first] = await testDb.db.select().from(draws).where(eq(draws.roundId, round))
+      await testDb.db.insert(draws).values({ ...first!, id: crypto.randomUUID() })
+      const [eventRow] = await testDb.db.select().from(events).where(eq(events.id, game.eventId))
+
+      const rows = await readEventRows(testDb.db, eventRow!)
+
+      expect(rows.draws.filter(row => row.roundId === round)).toHaveLength(2)
+      expect(rows.results).toHaveLength(1)
+      expect(rows.results[0]!.places.map(place => place.team)).toEqual([1, 2])
     })
   })
 })
