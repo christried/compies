@@ -38,6 +38,7 @@ A ticket that changes a page isn't done on tests alone: look at the page on `pnp
 
 **Context limit.** Before every new implementer (`implement-spec` steps 4, 6 and 7), run `node scripts/context-usage.mjs`. It reads this main session's context from its transcript; subagents don't count. At 300k tokens or more, start no new implementer: let the running ones report, review and merge them as usual, then write a handoff for the next session and stop. `handoff` is user-invoked, so read `.claude/skills/handoff/SKILL.md` and follow it. The handoff carries what a fresh `/implement-spec` needs to go on without loss:
 - the spec, the integration branch, its PR, and each ticket's state: merged, in flight (branch, worktree), on the frontier, or blocked (by what);
+- every subagent still running, by its ticket and the description it was spawned with: only the session that spawned an agent can resume it (SendMessage), so one a usage limit stops is resumed from this session, not the next (retro 0.8, finding 6);
 - the brief of every ticket not yet merged, copied next to the handoff (briefs live in this session's scratchpad);
 - every decision the user made in chat, first posted as a comment on its issue, then pointed to;
 - the friction worth a `/retro`: what cost time, what a check, a doc or a brief should have caught.
