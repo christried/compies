@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button{font:inherit;color:inherit}</style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#ffd23f"></rect><rect x="30" y="34" width="16" height="32" rx="3" fill="#e4572e" stroke="#151515" stroke-width="3"></rect><rect x="54" y="34" width="16" height="32" rx="3" fill="#3d2d8f" stroke="#151515" stroke-width="3"></rect></svg></template>
+<div data-theme="light" lang="de" style="width:max-content;min-width:100%;box-sizing:border-box;padding:80px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:16px;line-height:1.45;display:flex;flex-direction:column;gap:120px">
+
+  <section style="display:flex;flex-direction:column;gap:28px;max-width:1880px">
+    <span style="font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-ink-2)">Reference · AwardCeremony 6b + ShareImage 8a · Tie variant</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:96px;line-height:.92">Siegerehrung: Unentschieden</h1>
+    <p style="margin:0;max-width:78ch;font-size:19px;text-wrap:pretty">The Host finished the Event as „Unentschieden“: every Party on rank 1 is a Winner, no tiebreaker. One Winner stays exactly as it is. This page shows the end frames, the trophy’s landing with several Winners, the share image and the striped game chip. Handoff: <b>12-siegerehrung-unentschieden.md</b>. No new tokens.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:16px">
+      <sc-for list="{{ dec }}" as="d" hint-placeholder-count="6">
+        <div style="flex:0 0 290px;display:flex;flex-direction:column;gap:8px;padding:18px 20px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:24px;line-height:1">{{ d.t }}</b>
+          <span style="font-size:15px;text-wrap:pretty">{{ d.b }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="endframes" style="display:flex;flex-direction:column;gap:48px">
+    <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:16px;max-width:1880px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">A · End frames</h2>
+      <span style="font-size:17px;color:var(--cp-ink-2);max-width:96ch;text-wrap:pretty">Desktop 1440: the layer over the stage column, side panel (310 px, „Tabelle“) stays. Mobile 390: full screen. The end frame is also what reduced motion and „Überspringen“ show. Compibert is drawn as a still pose here; in the app he dances.</span>
+    </div>
+    <sc-for list="{{ matrix }}" as="row" hint-placeholder-count="4">
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <div style="flex:none;width:320px;display:flex;flex-direction:column;gap:12px;padding-top:34px">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:40px;line-height:1">{{ row.n }}</b>
+          <span style="font-size:16px;text-wrap:pretty">{{ row.d }}</span>
+          <div style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:2px dashed var(--cp-line);border-radius:12px;background:var(--cp-surface)">
+            <span style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-ink-2)">Screenreader (live region)</span>
+            <span style="font-size:15px;text-wrap:pretty">„{{ row.live }}“</span>
+          </div>
+          <span style="font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Banner subline: „{{ row.sub }}“</span>
+        </div>
+        <sc-for list="{{ row.frames }}" as="f" hint-placeholder-count="4">
+          <div style="flex:none;display:flex;flex-direction:column;gap:10px">
+            <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700">{{ f.cap }}</span>
+            <div data-theme="{{ f.theme }}" style="position:relative;width:{{ f.fw }};height:{{ f.fh }};box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ f.fr }};overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);box-shadow:var(--cp-shadow-card);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;display:flex;flex-direction:column">
+              <sc-if value="{{ f.desk }}">
+                <header style="flex:none;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+                  <div style="display:flex;align-items:center;gap:8px"><dc-import name="CompibertRig" variant="head" size="{{ 34 }}" still="{{ true }}" hint-size="34px,34px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+                  <span style="width:2px;height:28px;background:var(--cp-line-soft)"></span>
+                  <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px"><b style="font-size:15px">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:11px;font-weight:800"><span style="width:7px;height:7px;border-radius:50%;background:var(--cp-ink);border:1.5px solid var(--cp-line)"></span>Beendet</span></div>
+                  <span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</span>
+                  <span aria-label="Ton" style="display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+                  <dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" dot="{{ false }}" hint-size="32px,32px"></dc-import>
+                </header>
+              </sc-if>
+              <div style="flex:1;min-height:0;display:flex">
+                <div style="flex:1;min-width:0;display:flex;padding:{{ f.stagePad }};box-sizing:border-box">
+                  <div role="dialog" aria-label="Siegerehrung" style="position:relative;flex:1;min-width:0;box-sizing:border-box;overflow:hidden;border:{{ f.boxB }};border-radius:{{ f.boxR }};background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);display:flex;flex-direction:column;align-items:center;gap:{{ f.gap }};padding:{{ f.boxPad }}">
+                    <div style="display:flex;justify-content:center"><span style="padding:8px 24px;background:var(--cp-primary);color:var(--cp-on-primary);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);font-family:var(--cp-font-display);font-size:{{ f.bFs }};line-height:1;transform:rotate(-4deg)">Siegerehrung!</span></div>
+                    <span style="font-size:{{ f.subFs }};font-weight:700;color:var(--cp-ink-2);text-align:center;text-wrap:balance;max-width:100%">{{ f.sub }}</span>
+                    <div style="display:flex;flex-direction:{{ f.lay }};align-items:{{ f.layAlign }};justify-content:center;gap:{{ f.layGap }};max-width:100%;width:{{ f.layW }}">
+                      <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:{{ f.pgap }}">
+                        <div style="position:relative;flex:none;width:{{ f.plW }};height:{{ f.plH }};box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:12px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);display:flex;align-items:center;justify-content:center">
+                          <span style="position:absolute;left:12px;top:0;bottom:0;display:flex;align-items:center;font-family:'Bungee',var(--cp-font-display);font-size:{{ f.plLfs }};line-height:1">Platz 1</span>
+                          <span style="padding:2px 10px;border:3px solid var(--cp-hot);border-radius:6px;color:var(--cp-hot);background:var(--cp-surface);font-family:'Bungee',var(--cp-font-display);font-size:{{ f.plSfs }};line-height:1.15;transform:rotate(-3deg)">Unentschieden</span>
+                        </div>
+                        <sc-if value="{{ f.tierCards }}" hint-placeholder-val="{{ true }}">
+                          <ol aria-label="Platz 1, unentschieden" style="margin:0;padding:0;list-style:none;display:flex;align-items:flex-start;justify-content:center">
+                            <sc-for list="{{ f.cards }}" as="c" hint-placeholder-count="2">
+                              <li style="display:flex;align-items:flex-start">
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:{{ c.mgap }}">
+                                  <div style="position:relative;flex:none;width:{{ c.cw }};height:{{ c.ch }};box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;box-shadow:var(--cp-shadow-card);background:var(--cp-surface);overflow:hidden">
+                                    <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+                                      <div style="height:{{ c.sh }};flex:none;display:flex;align-items:center;padding:0 12px;background-color:var(--cp-team-{{ c.t }});background-image:var(--cp-team-{{ c.t }}-pattern);color:var(--cp-team-{{ c.t }}-ink);border-bottom:var(--cp-bw) solid var(--cp-line);font-weight:800;font-size:{{ c.nfs }};min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</span></div>
+                                      <div style="flex:1;display:flex;align-items:flex-start;padding:{{ c.ppad }};font-family:'Bungee',var(--cp-font-display);font-size:{{ c.pfs }};line-height:1">{{ c.pts }}</div>
+                                    </div>
+                                    <div style="position:absolute;right:{{ c.so }};bottom:{{ c.so }};padding:2px 10px;border:3px solid var(--cp-hot);border-radius:6px;color:var(--cp-hot);background:var(--cp-surface);font-family:'Bungee',var(--cp-font-display);font-size:{{ c.sfs }};transform:rotate(-8deg)">SIEGER</div>
+                                  </div>
+                                  <ul aria-label="{{ c.memLabel }}" style="margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:{{ c.memGap }};width:{{ c.cw }}">
+                                    <sc-for list="{{ c.mem }}" as="m" hint-placeholder-count="3">
+                                      <li style="display:flex;flex-direction:column;align-items:center;gap:5px;width:{{ m.cw }}">
+                                        <sc-if value="{{ m.av }}"><dc-import name="Avatar" who="{{ m.who }}" size="{{ m.s }}" team="{{ m.t }}" dot="{{ false }}" hint-size="56px,56px"></dc-import></sc-if>
+                                        <sc-if value="{{ m.more }}"><span style="width:{{ m.px }};height:{{ m.px }};box-sizing:border-box;border-radius:50%;border:2.5px solid var(--cp-line);background:var(--cp-paper-2);display:grid;place-items:center;font-family:'Bungee',var(--cp-font-display);font-size:{{ m.fs }};color:var(--cp-ink)">{{ m.who }}</span></sc-if>
+                                        <span style="max-width:100%;font-size:{{ m.ns }};font-weight:800;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.label }}</span>
+                                      </li>
+                                    </sc-for>
+                                  </ul>
+                                </div>
+                                <sc-if value="{{ c.eq }}"><div aria-hidden="true" style="flex:none;width:{{ c.eqW }};height:{{ c.ch }};display:flex;align-items:center;justify-content:center"><span style="display:grid;place-items:center;width:{{ c.eqS }};height:{{ c.eqS }};box-sizing:border-box;border-radius:50%;border:2.5px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="equal" size="{{ c.ei }}" sw="{{ 3 }}" hint-size="18px,18px"></dc-import></span></div></sc-if>
+                              </li>
+                            </sc-for>
+                          </ol>
+                        </sc-if>
+                        <sc-if value="{{ f.tierGrid }}" hint-placeholder-val="{{ false }}">
+                          <ol aria-label="Platz 1, unentschieden" style="margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:{{ f.ggap }};width:{{ f.plW }}">
+                            <sc-for list="{{ f.gcards }}" as="g" hint-placeholder-count="4">
+                              <li style="position:relative;flex:none;width:{{ g.w }};height:{{ g.h }};box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card);background:var(--cp-surface);overflow:hidden;display:flex;flex-direction:column">
+                                <div style="height:{{ g.sh }};flex:none;display:flex;align-items:center;padding:0 10px;background-color:var(--cp-team-{{ g.t }});background-image:var(--cp-team-{{ g.t }}-pattern);color:var(--cp-team-{{ g.t }}-ink);border-bottom:var(--cp-bw) solid var(--cp-line);font-weight:800;font-size:{{ g.nfs }};min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.name }}</span></div>
+                                <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:{{ g.bgap }};padding:0 10px">
+                                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-family:'Bungee',var(--cp-font-display);font-size:{{ g.pfs }};line-height:1">{{ g.pts }}</span><span style="padding:1px 7px;border:2.5px solid var(--cp-hot);border-radius:5px;color:var(--cp-hot);background:var(--cp-surface);font-family:'Bungee',var(--cp-font-display);font-size:{{ g.sfs }};line-height:1.2;transform:rotate(-8deg)">SIEGER</span></div>
+                                  <ul aria-label="{{ g.memLabel }}" style="margin:0;padding:0;list-style:none;display:flex;align-items:center">
+                                    <sc-for list="{{ g.stack }}" as="m" hint-placeholder-count="3">
+                                      <li style="display:flex;margin-left:{{ m.ml }}">
+                                        <sc-if value="{{ m.av }}"><dc-import name="Avatar" who="{{ m.who }}" size="{{ m.s }}" dot="{{ false }}" hint-size="28px,28px"></dc-import></sc-if>
+                                        <sc-if value="{{ m.more }}"><span style="width:{{ m.px }};height:{{ m.px }};box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-paper-2);display:grid;place-items:center;font-family:'Bungee',var(--cp-font-display);font-size:{{ m.fs }};color:var(--cp-ink)">{{ m.who }}</span></sc-if>
+                                      </li>
+                                    </sc-for>
+                                  </ul>
+                                </div>
+                              </li>
+                            </sc-for>
+                          </ol>
+                        </sc-if>
+                      </div>
+                      <sc-if value="{{ f.rowsStack }}" hint-placeholder-val="{{ true }}">
+                        <ol aria-label="Endstand" style="flex:none;width:{{ f.olW }};margin:0;margin-top:{{ f.olMt }};padding:0;list-style:none;display:flex;flex-direction:column;gap:{{ f.rowGap }}">
+                          <sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="2">
+                            <li style="display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:{{ f.rowH }};padding:0 14px;box-sizing:border-box;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:12px;box-shadow:var(--cp-shadow-sm)">
+                              <span style="font-family:'Bungee',var(--cp-font-display);font-size:22px">{{ r.rank }}</span>
+                              <span style="display:flex;align-items:center;gap:8px;font-weight:800;min-width:0"><i style="flex:none;width:18px;height:18px;border-radius:5px;border:2px solid var(--cp-line);background-color:var(--cp-team-{{ r.t }});background-image:var(--cp-team-{{ r.t }}-pattern)"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span></span>
+                              <span style="font-family:'Bungee',var(--cp-font-display);font-size:18px">{{ r.pts }}</span>
+                            </li>
+                          </sc-for>
+                        </ol>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ f.rowsChips }}" hint-placeholder-val="{{ false }}">
+                      <ol aria-label="Endstand, dahinter" style="margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:100%">
+                        <sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="2">
+                          <li style="display:flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 5px;box-sizing:border-box;border:2.5px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);max-width:100%">
+                            <span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--cp-paper-2);font-family:'Bungee',var(--cp-font-display);font-size:14px;line-height:1">{{ r.rank }}</span>
+                            <i style="flex:none;width:16px;height:16px;border-radius:5px;border:2px solid var(--cp-line);background-color:var(--cp-team-{{ r.t }});background-image:var(--cp-team-{{ r.t }}-pattern)"></i>
+                            <span style="min-width:0;font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+                            <span style="flex:none;font-family:'Bungee',var(--cp-font-display);font-size:14px">{{ r.pts }}</span>
+                          </li>
+                        </sc-for>
+                      </ol>
+                    </sc-if>
+                    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px">
+                      <button type="button" style="height:44px;padding:0 18px;border:2.5px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font:700 15px var(--cp-font-sans);cursor:pointer">Bild teilen</button>
+                      <button type="button" style="height:44px;padding:0 18px;border:2.5px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);box-shadow:var(--cp-shadow-sm);font:700 15px var(--cp-font-sans);cursor:pointer">Nochmal ansehen</button>
+                    </div>
+                    <button type="button" aria-label="Schließen" style="position:absolute;right:12px;top:12px;display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);cursor:pointer;z-index:6"><dc-import name="Icon" icon="x" size="{{ 18 }}" hint-size="18px,18px"></dc-import></button>
+                    <div style="position:absolute;left:0;right:0;bottom:0;height:{{ f.groundH }};background:var(--cp-paper-2);border-top:var(--cp-bw) solid var(--cp-line)"></div>
+                    <div aria-hidden="true" style="position:absolute;left:{{ f.cbL }};bottom:14px;z-index:3"><dc-import name="CompibertRig" variant="full" size="{{ f.cbS }}" state="{{ f.cbState }}" still="{{ true }}" hint-size="150px,128px"></dc-import></div>
+                    <span role="status" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ f.live }}</span>
+                  </div>
+                </div>
+                <sc-if value="{{ f.desk }}">
+                  <aside aria-label="Seitenleiste" style="flex:none;width:310px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);display:flex;flex-direction:column">
+                    <div role="tablist" aria-label="Seitenleiste" style="flex:none;display:flex;border-bottom:2px solid var(--cp-line-soft)">
+                      <span role="tab" aria-selected="false" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-bottom:3px solid transparent;color:var(--cp-ink-2);font-weight:600;font-size:12px"><dc-import name="Icon" icon="message-square" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Chat</span>
+                      <span role="tab" aria-selected="false" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-bottom:3px solid transparent;color:var(--cp-ink-2);font-weight:600;font-size:12px"><dc-import name="Icon" icon="history" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Aktivität</span>
+                      <span role="tab" aria-selected="true" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-bottom:3px solid var(--cp-hot);color:var(--cp-ink);font-weight:800;font-size:12px"><dc-import name="Icon" icon="trophy" size="{{ 18 }}" offset="var(--cp-hot)" hint-size="18px,18px"></dc-import>Tabelle</span>
+                      <span role="tab" aria-selected="false" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-bottom:3px solid transparent;color:var(--cp-ink-2);font-weight:600;font-size:12px"><dc-import name="Icon" icon="users" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Leute</span>
+                    </div>
+                    <div style="flex:1;min-height:0;padding:14px;display:flex;flex-direction:column;gap:8px">
+                      <span style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-ink-2)">Endstand · Unentschieden</span>
+                      <sc-for list="{{ f.table }}" as="r" hint-placeholder-count="4">
+                        <div style="display:flex;align-items:center;gap:10px;min-height:46px;padding:4px 12px 4px 4px;box-sizing:border-box;border-radius:12px;border:2px solid var(--cp-line-soft)">
+                          <span style="flex:none;display:grid;place-items:center;width:34px;height:34px;box-sizing:border-box;border-radius:10px;border:2px solid var(--cp-line);background:{{ r.rbg }};color:{{ r.rfg }};font-family:var(--cp-font-display);font-size:17px">{{ r.rank }}</span>
+                          <dc-import name="TeamMark" team="{{ r.t }}" size="{{ 22 }}" hint-size="22px,22px"></dc-import>
+                          <b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</b>
+                          <span style="font-family:var(--cp-font-num);font-size:20px">{{ r.pts }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </aside>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:1880px">
+      <b style="font-family:var(--cp-font-display);font-weight:400;font-size:32px;line-height:1">How 2 to 8 degrade</b>
+      <div style="display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;overflow:hidden;background:var(--cp-surface)">
+        <div style="display:grid;grid-template-columns:90px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:0;background:var(--cp-ink);color:var(--cp-paper);font-weight:800;font-size:14px">
+          <span style="padding:12px 16px">Winners</span><span style="padding:12px 16px">Desktop 1440</span><span style="padding:12px 16px">Mobile 390</span><span style="padding:12px 16px">Trophy</span><span style="padding:12px 16px">Rows below / avatars</span>
+        </div>
+        <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:90px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);border-top:2px solid var(--cp-line-soft);font-size:15px">
+            <span style="padding:14px 16px;font-family:'Bungee',var(--cp-font-display);font-size:22px">{{ t.k }}</span><span style="padding:14px 16px;text-wrap:pretty">{{ t.d }}</span><span style="padding:14px 16px;text-wrap:pretty">{{ t.m }}</span><span style="padding:14px 16px;text-wrap:pretty">{{ t.tr }}</span><span style="padding:14px 16px;text-wrap:pretty">{{ t.r }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="landung" style="display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:16px;max-width:1880px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">A · The trophy’s landing</h2>
+      <span style="font-size:17px;color:var(--cp-ink-2);max-width:96ch;text-wrap:pretty">Both gags stay as they are until the trophy first comes down. Then it hops from Winner to Winner, left to right, and its last hop lands on the shared plate. Every Winner gets touched by the trophy; nobody gets it alone. Times are from t1 (the end of the run), as in 04-motion.</span>
+    </div>
+    <sc-for list="{{ boards }}" as="bd" hint-placeholder-count="3">
+      <div style="display:flex;gap:32px;align-items:flex-start">
+        <div style="flex:none;width:320px;display:flex;flex-direction:column;gap:10px">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:36px;line-height:1">{{ bd.n }}</b>
+          <span style="font-size:16px;text-wrap:pretty">{{ bd.d }}</span>
+        </div>
+        <sc-for list="{{ bd.frames }}" as="s" hint-placeholder-count="4">
+          <div style="flex:none;width:460px;display:flex;flex-direction:column;gap:10px">
+            <div style="position:relative;width:460px;height:280px;box-sizing:border-box;overflow:hidden;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size)">
+              <div style="position:absolute;left:0;right:0;bottom:0;height:14px;background:var(--cp-paper-2);border-top:2.5px solid var(--cp-line)"></div>
+              <div style="position:absolute;left:196px;top:34px;width:248px;height:28px;box-sizing:border-box;border:2.5px solid var(--cp-line);border-radius:9px;background:var(--cp-primary);color:var(--cp-on-primary);display:flex;align-items:center;justify-content:center">
+                <span style="position:absolute;left:8px;top:0;bottom:0;display:flex;align-items:center;font-family:'Bungee',var(--cp-font-display);font-size:10px">Platz 1</span>
+                <sc-if value="{{ s.plateF }}"><span style="font-family:'Bungee',var(--cp-font-display);font-size:14px;line-height:1">???</span></sc-if>
+                <sc-if value="{{ s.plateB }}"><span style="padding:0 6px;border:2px solid var(--cp-hot);border-radius:4px;color:var(--cp-hot);background:var(--cp-surface);font-family:'Bungee',var(--cp-font-display);font-size:12px;line-height:1.2;transform:rotate(-3deg)">Unentschieden</span></sc-if>
+              </div>
+              <sc-for list="{{ s.cards }}" as="c" hint-placeholder-count="2">
+                <div style="position:absolute;left:{{ c.x }};top:80px;width:{{ c.w }};height:{{ c.h }};box-sizing:border-box;border:2.5px solid var(--cp-line);border-radius:10px;overflow:hidden;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)">
+                  <sc-if value="{{ c.front }}"><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--cp-paper-2)"><span style="font-family:'Bungee',var(--cp-font-display);font-size:{{ c.qfs }};line-height:1">???</span><sc-if value="{{ c.full }}"><span style="font-size:10px;font-weight:700;color:var(--cp-ink-2)">Platz 1</span></sc-if></div></sc-if>
+                  <sc-if value="{{ c.back }}"><div style="position:absolute;inset:0;display:flex;flex-direction:column">
+                    <div style="height:{{ c.sh }};flex:none;display:flex;align-items:center;padding:0 7px;background-color:var(--cp-team-{{ c.t }});background-image:var(--cp-team-{{ c.t }}-pattern);color:var(--cp-team-{{ c.t }}-ink);border-bottom:2px solid var(--cp-line);font-weight:800;font-size:11px;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.label }}</span></div>
+                    <sc-if value="{{ c.full }}"><span style="padding:6px 8px;font-family:'Bungee',var(--cp-font-display);font-size:15px;line-height:1">{{ c.pts }}</span></sc-if>
+                    <span style="position:absolute;right:4px;bottom:5px;padding:0 4px;border:2px solid var(--cp-hot);border-radius:4px;color:var(--cp-hot);background:var(--cp-surface);font-family:'Bungee',var(--cp-font-display);font-size:{{ c.sfs }};line-height:1.25;transform:rotate(-8deg)">SIEGER</span>
+                  </div></sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ s.eq }}"><span aria-hidden="true" style="position:absolute;left:312px;top:108px;display:grid;place-items:center;width:20px;height:20px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="equal" size="{{ 11 }}" sw="{{ 3 }}" hint-size="11px,11px"></dc-import></span></sc-if>
+              <sc-if value="{{ s.mem }}">
+                <sc-for list="{{ s.cards }}" as="c" hint-placeholder-count="2">
+                  <div style="position:absolute;left:{{ c.x }};top:166px;width:{{ c.w }};display:flex;justify-content:center;gap:5px">
+                    <sc-for list="{{ c.av }}" as="a" hint-placeholder-count="2"><dc-import name="Avatar" who="{{ a.who }}" size="{{ 24 }}" team="{{ a.t }}" dot="{{ false }}" hint-size="24px,24px"></dc-import></sc-for>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{ s.hasPath }}"><svg viewBox="0 0 460 280" width="460" height="280" aria-hidden="true" style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none"><path d="{{ s.path }}" style="fill:none;stroke:var(--cp-ink-2);stroke-width:2.5;stroke-dasharray:5 6;stroke-linecap:round"></path></svg></sc-if>
+              <div aria-hidden="true" style="position:absolute;left:{{ s.cbx }};bottom:12px;width:120px;height:102px;transform:{{ s.cbr }};transform-origin:62% 96%;z-index:3"><dc-import name="CompibertRig" variant="full" size="{{ 120 }}" state="{{ s.cbs }}" still="{{ true }}" hint-size="120px,102px"></dc-import></div>
+              <sc-if value="{{ s.hasTro }}"><div aria-hidden="true" style="position:absolute;left:{{ s.tx }};top:{{ s.ty }};width:30px;height:32px;transform:{{ s.tr }};opacity:{{ s.top }};z-index:4"><svg viewBox="0 0 52 56" width="30" height="32" style="display:block;overflow:visible"><path d="M8 12C0 12 0 26 11 27M44 12C52 12 52 26 41 27" style="fill:none;stroke:#151515;stroke-width:3.5;stroke-linecap:round"></path><path d="M8 5H44V17C44 31 36 37 26 37C16 37 8 31 8 17Z" style="fill:#ffd23f;stroke:#151515;stroke-width:3.5;stroke-linejoin:round"></path><rect x="22" y="37" width="8" height="8" style="fill:#ffd23f;stroke:#151515;stroke-width:3"></rect><rect x="13" y="45" width="26" height="9" rx="2" style="fill:#ff70c3;stroke:#151515;stroke-width:3"></rect></svg></div></sc-if>
+              <sc-for list="{{ s.conf }}" as="p" hint-placeholder-count="0"><i aria-hidden="true" style="position:absolute;left:{{ p.x }};top:{{ p.y }};width:{{ p.w }};height:{{ p.h }};background:{{ p.c }};border:1.5px solid #151515;border-radius:{{ p.br }};transform:rotate({{ p.r }});z-index:5"></i></sc-for>
+              <sc-if value="{{ s.share }}"><span style="position:absolute;left:280px;top:224px;display:flex;align-items:center;height:28px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);font-weight:700;font-size:12px">Bild teilen</span></sc-if>
+              <span style="position:absolute;left:10px;top:10px;padding:2px 8px;border-radius:6px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ s.lbl }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-family:'Bungee',var(--cp-font-display);font-size:18px;line-height:1.1">{{ s.t }}</span>
+              <span style="font-size:15px;text-wrap:pretty">{{ s.cap }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:1300px;padding:22px 26px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+      <b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">Award ceremony „Pokal-Lauf“, Unentschieden (6b-T) [1.0]</b>
+      <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px">
+        <sc-for list="{{ motion }}" as="mo" hint-placeholder-count="8"><li style="text-wrap:pretty">{{ mo }}</li></sc-for>
+      </ul>
+    </div>
+  </section>
+
+  <section id="bild" style="display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:16px;max-width:1880px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">B · Ergebnis-Bild</h2>
+      <span style="font-size:17px;color:var(--cp-ink-2);max-width:96ch;text-wrap:pretty">Same poster, always light, real size. Flexbox only, team colours as hex, no grid, no conic gradients, no filters, no transforms on SVG children. „Wilde Gurken Bande“ is the long name; switch on the stress tweak for a 36-character one.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:48px">
+      <sc-for list="{{ shareRows }}" as="sr" hint-placeholder-count="2">
+        <div style="display:flex;gap:40px;align-items:flex-start">
+          <sc-for list="{{ sr.items }}" as="s" hint-placeholder-count="3">
+            <div style="flex:none;display:flex;flex-direction:column;gap:12px;width:{{ s.W }}">
+              <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700">{{ s.cap }}</span>
+              <div role="img" aria-label="{{ s.alt }}" style="border:var(--cp-bw) solid var(--cp-line);border-radius:12px;overflow:hidden;box-shadow:var(--cp-shadow-card);width:{{ s.W }};height:{{ s.H }}">
+                <sc-if value="{{ s.wide }}" hint-placeholder-val="{{ true }}">
+                  <div style="width:1200px;height:630px;box-sizing:border-box;padding:40px 56px;display:flex;flex-direction:column;gap:22px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 2px,transparent 2.4px);background-size:28px 28px;font-family:'Bricolage Grotesque',sans-serif;color:#151515">
+                    <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:24px">
+                      <span style="padding:6px 14px;background:#151515;color:#fff3df;border-radius:999px;font-weight:800;font-size:20px;letter-spacing:.04em;line-height:1.1;text-transform:uppercase;white-space:nowrap">{{ s.pill }}</span>
+                      <span style="display:flex;align-items:center;gap:11px;font-family:'Lilita One',sans-serif;font-size:32px;line-height:1"><dc-import name="CompibertRig" variant="head" size="{{ 44 }}" still="{{ true }}" hint-size="44px,44px"></dc-import>COMPIES</span>
+                    </div>
+                    <div style="flex:1;min-height:0;display:flex;align-items:center;gap:44px">
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                        <span style="font-weight:800;font-size:18px;letter-spacing:.08em;text-transform:uppercase;line-height:1.1">{{ s.label }}</span>
+                        <sc-if value="{{ s.big }}"><div style="margin-top:12px;display:flex;flex-direction:column;gap:{{ s.ngap }}"><sc-for list="{{ s.names }}" as="n" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:16px"><span style="flex:none;width:14px;height:{{ n.sh }};border:3px solid #151515;border-radius:4px;background:{{ n.c }}"></span><span style="font-family:'Lilita One',sans-serif;font-size:{{ n.fs }};line-height:.95;text-shadow:{{ n.ts }};text-wrap:balance">{{ n.name }}</span></div></sc-for></div></sc-if>
+                        <sc-if value="{{ s.chipsOn }}"><div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px 20px"><sc-for list="{{ s.chips }}" as="n" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;width:{{ s.chipW }};height:44px"><span style="flex:none;width:12px;height:28px;border:3px solid #151515;border-radius:4px;background:{{ n.c }}"></span><span style="flex:1;min-width:0;font-family:'Lilita One',sans-serif;font-size:{{ n.fs }};line-height:1;text-shadow:{{ n.ts }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.name }}</span></div></sc-for></div></sc-if>
+                        <span style="margin-top:14px;font-size:28px;font-weight:800;line-height:1.1">gewinnen mit je <span style="font-family:'Bungee',sans-serif">{{ s.pts }}</span> Punkten</span>
+                        <sc-if value="{{ s.hasRows }}"><div style="margin-top:20px;display:flex;flex-direction:column;gap:10px"><sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:13px;height:48px;padding:0 19px;box-sizing:border-box;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515"><span style="flex:none;width:38px;font-family:'Bungee',sans-serif;font-size:24px;line-height:1">{{ r.rank }}</span><i style="flex:none;width:20px;height:20px;border-radius:6px;border:2.5px solid #151515;background:{{ r.c }}"></i><span style="flex:1;min-width:0;font-weight:800;font-size:24px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span><span style="flex:none;font-family:'Bungee',sans-serif;font-size:24px;line-height:1">{{ r.pts }}</span></div></sc-for></div></sc-if>
+                        <sc-if value="{{ s.more }}"><span style="margin-top:10px;font-weight:800;font-size:18px;color:#5d5650">{{ s.moreTxt }}</span></sc-if>
+                      </div>
+                      <div style="position:relative;flex:none;width:330px;height:330px">
+                        <img src="assets/share/sunburst.svg" alt="" width="330" height="330" style="position:absolute;left:0;top:0;width:330px;height:330px;display:block">
+                        <div style="position:absolute;left:40px;bottom:22px"><dc-import name="CompibertRig" variant="full" size="{{ 250 }}" state="dance" still="{{ true }}" hint-size="250px,213px"></dc-import></div>
+                      </div>
+                    </div>
+                    <div style="flex:none;display:flex;align-items:center;gap:10px;overflow:hidden">
+                      <span style="flex:none;font-weight:800;font-size:18px;margin-right:4px;white-space:nowrap">{{ s.gamesTxt }}</span>
+                      <sc-for list="{{ s.games }}" as="g" hint-placeholder-count="6"><span style="flex:none;display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;box-sizing:border-box;background:#fffdf8;border:2.5px solid #151515;border-radius:999px;font-weight:700;font-size:16px;white-space:nowrap"><i style="flex:none;width:{{ g.w }};height:{{ g.d }};border-radius:999px;border:2px solid #151515;background:{{ g.bg }}"></i>{{ g.name }}</span></sc-for>
+                      <sc-if value="{{ s.gMore }}"><span style="flex:none;font-weight:800;font-size:16px;color:#5d5650;white-space:nowrap">{{ s.gMoreTxt }}</span></sc-if>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ s.square }}" hint-placeholder-val="{{ false }}">
+                  <div style="width:1080px;height:1080px;box-sizing:border-box;padding:60px 64px;display:flex;flex-direction:column;gap:30px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 2px,transparent 2.4px);background-size:28px 28px;font-family:'Bricolage Grotesque',sans-serif;color:#151515">
+                    <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:24px">
+                      <span style="padding:7px 17px;background:#151515;color:#fff3df;border-radius:999px;font-weight:800;font-size:24px;letter-spacing:.04em;line-height:1.1;text-transform:uppercase;white-space:nowrap">{{ s.pill }}</span>
+                      <span style="display:flex;align-items:center;gap:14px;font-family:'Lilita One',sans-serif;font-size:40px;line-height:1"><dc-import name="CompibertRig" variant="head" size="{{ 56 }}" still="{{ true }}" hint-size="56px,56px"></dc-import>COMPIES</span>
+                    </div>
+                    <div style="flex:none;display:flex;flex-direction:column">
+                      <span style="font-weight:800;font-size:24px;letter-spacing:.08em;text-transform:uppercase;line-height:1.1">{{ s.label }}</span>
+                      <sc-if value="{{ s.big }}"><div style="margin-top:16px;display:flex;flex-direction:column;gap:{{ s.ngap }}"><sc-for list="{{ s.names }}" as="n" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:20px"><span style="flex:none;width:18px;height:{{ n.sh }};border:3.5px solid #151515;border-radius:5px;background:{{ n.c }}"></span><span style="font-family:'Lilita One',sans-serif;font-size:{{ n.fs }};line-height:.95;text-shadow:{{ n.ts }};text-wrap:balance">{{ n.name }}</span></div></sc-for></div></sc-if>
+                      <sc-if value="{{ s.chipsOn }}"><div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:12px 20px"><sc-for list="{{ s.chips }}" as="n" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;width:{{ s.chipW }};height:56px"><span style="flex:none;width:15px;height:36px;border:3.5px solid #151515;border-radius:5px;background:{{ n.c }}"></span><span style="flex:1;min-width:0;font-family:'Lilita One',sans-serif;font-size:{{ n.fs }};line-height:1;text-shadow:{{ n.ts }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.name }}</span></div></sc-for></div></sc-if>
+                    </div>
+                    <div style="flex:1;min-height:0;display:flex;align-items:center;gap:40px">
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+                        <span style="font-size:38px;font-weight:800;line-height:1.1">gewinnen mit je <span style="font-family:'Bungee',sans-serif">{{ s.pts }}</span> Punkten</span>
+                        <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:16px;height:62px;padding:0 24px;box-sizing:border-box;background:#fffdf8;border:3.5px solid #151515;border-radius:14px;box-shadow:4.5px 4.5px 0 #151515"><span style="flex:none;width:46px;font-family:'Bungee',sans-serif;font-size:30px;line-height:1">{{ r.rank }}</span><i style="flex:none;width:26px;height:26px;border-radius:7px;border:3px solid #151515;background:{{ r.c }}"></i><span style="flex:1;min-width:0;font-weight:800;font-size:30px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span><span style="flex:none;font-family:'Bungee',sans-serif;font-size:30px;line-height:1">{{ r.pts }}</span></div></sc-for>
+                        <sc-if value="{{ s.more }}"><span style="font-weight:800;font-size:24px;color:#5d5650">{{ s.moreTxt }}</span></sc-if>
+                      </div>
+                      <div style="position:relative;flex:none;width:{{ s.bw }};height:{{ s.bw }}">
+                        <img src="assets/share/sunburst.svg" alt="" width="340" height="340" style="position:absolute;left:0;top:0;width:{{ s.bw }};height:{{ s.bw }};display:block">
+                        <div style="position:absolute;left:{{ s.rl }};bottom:{{ s.rb }}"><dc-import name="CompibertRig" variant="full" size="{{ s.rig }}" state="dance" still="{{ true }}" hint-size="260px,221px"></dc-import></div>
+                      </div>
+                    </div>
+                    <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+                      <span style="font-weight:800;font-size:24px">{{ s.gamesTxt }}</span>
+                      <div style="display:flex;flex-wrap:wrap;gap:12px">
+                        <sc-for list="{{ s.games }}" as="g" hint-placeholder-count="6"><span style="display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;box-sizing:border-box;background:#fffdf8;border:3px solid #151515;border-radius:999px;font-weight:700;font-size:22px;white-space:nowrap"><i style="flex:none;width:{{ g.w }};height:{{ g.d }};border-radius:999px;border:2.5px solid #151515;background:{{ g.bg }}"></i>{{ g.name }}</span></sc-for>
+                        <sc-if value="{{ s.gMore }}"><span style="display:flex;align-items:center;height:46px;font-weight:800;font-size:22px;color:#5d5650">{{ s.gMoreTxt }}</span></sc-if>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:2px dashed var(--cp-line);border-radius:12px;background:var(--cp-surface)">
+                <span style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-ink-2)">Alt-Text</span>
+                <span style="font-size:15px;text-wrap:pretty">„{{ s.alt }}“</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:1300px;padding:22px 26px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+      <b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">Rules</b>
+      <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px">
+        <sc-for list="{{ shareRules }}" as="x" hint-placeholder-count="6"><li style="text-wrap:pretty">{{ x }}</li></sc-for>
+      </ul>
+    </div>
+  </section>
+
+  <section id="chips" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:16px;max-width:1880px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">C · Game chip „gleichauf“</h2>
+      <span style="font-size:17px;color:var(--cp-ink-2);max-width:96ch;text-wrap:pretty">When several Parties share Place 1 in one game, the dot becomes a capsule with one hard stripe per team: 8 px wide (square 11 px), same height and border as the dot. Order: team number. Up to 4 stripes; with 5 or more the chip keeps 4 and adds „· N gleichauf“ to the name.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ chipDemo }}" as="cd" hint-placeholder-count="3">
+        <div style="flex:none;width:520px;display:flex;flex-direction:column;gap:16px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">{{ cd.n }}</b>
+          <div style="display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:12px;background:#fff3df;font-family:'Bricolage Grotesque',sans-serif;color:#151515">
+            <span style="align-self:flex-start;display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;box-sizing:border-box;background:#fffdf8;border:2.5px solid #151515;border-radius:999px;font-weight:700;font-size:16px;white-space:nowrap"><i style="flex:none;width:{{ cd.w.w }};height:{{ cd.w.d }};border-radius:999px;border:2px solid #151515;background:{{ cd.w.bg }}"></i>{{ cd.w.name }}</span>
+            <span style="align-self:flex-start;display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;box-sizing:border-box;background:#fffdf8;border:3px solid #151515;border-radius:999px;font-weight:700;font-size:22px;white-space:nowrap"><i style="flex:none;width:{{ cd.s.w }};height:{{ cd.s.d }};border-radius:999px;border:2.5px solid #151515;background:{{ cd.s.bg }}"></i>{{ cd.s.name }}</span>
+            <div style="display:flex;align-items:center;gap:14px"><i style="flex:none;width:{{ cd.zw }};height:44px;border-radius:999px;border:6px solid #151515;background:{{ cd.w.bg }}"></i><span style="font-size:13px;font-weight:700;color:#5d5650">4 ×</span></div>
+          </div>
+          <span style="font-size:14px;text-wrap:pretty">{{ cd.say }}</span>
+          <code style="display:block;padding:10px 12px;border-radius:10px;background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:12px;line-height:1.5;word-break:break-all">{{ cd.code }}</code>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="handoff" style="display:flex;flex-direction:column;gap:24px;max-width:1300px">
+    <div style="display:flex;flex-direction:column;gap:8px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:16px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Handoff</h2>
+      <span style="font-size:17px;color:var(--cp-ink-2);text-wrap:pretty">Full note in 12-siegerehrung-unentschieden.md (02-components format). Summary:</span>
+    </div>
+    <sc-for list="{{ handoff }}" as="h" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:20px 24px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+        <b style="font-family:var(--cp-font-mono);font-size:18px">{{ h.n }}</b>
+        <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px"><sc-for list="{{ h.items }}" as="x" hint-placeholder-count="4"><li style="text-wrap:pretty">{{ x }}</li></sc-for></ul>
+      </div>
+    </sc-for>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;viewport&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;alle&quot;,&quot;desktop&quot;,&quot;mobil&quot;],&quot;default&quot;:&quot;alle&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;stress&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const TN={1:'Wilde Gurken Bande',2:'Team Orange',3:'Gelbe Gefahr',4:'Käse Turbo',5:'Grüne Welle',6:'Blaue Bohnen',7:'Pinke Panik',8:'Nacht Eulen'};
+const LONG='Die unaufhaltsame Wilde Gurken Bande';
+const HEX={1:'#e4572e',2:'#f0a202',3:'#f3e04a',4:'#56b4e9',5:'#009e73',6:'#0072b2',7:'#cc79a7',8:'#3d2d8f'};
+const MEM={1:['Kitty','Larsi','Jo'],8:['Olli','Bea'],2:['Tom','Mia','Chris','Ben','Ida','Lou','Emil','Finn'],4:['Nele','Paul'],5:['Lea','Max'],3:['Pia','Noah'],6:['Tim','Zoe'],7:['Ava','Leo','Mo','Ela','Kai','Rio','Uma']};
+const CASES={
+ c2:{ev:'Freitags-Zocken',games:6,rows:[[1,14],[8,14],[2,9],[4,5]],g:[['Rocket League',[1]],['Mario Kart 8',[8]],['Counter-Strike 2',[1,8]],['Overcooked 2',[2]],['Codenames',[8]],['Gang Beasts',[1]]]},
+ c3:{ev:'Freitags-Zocken',games:6,rows:[[1,12],[8,12],[2,12],[4,8],[5,4]],g:[['Rocket League',[2]],['Mario Kart 8',[1,2,8]],['Counter-Strike 2',[8]],['Overcooked 2',[1]],['Codenames',[2,4]],['Gang Beasts',[8]]]},
+ c8:{ev:'Freitags-Zocken',games:8,rows:[[1,9],[2,9],[3,9],[4,9],[5,9],[6,9],[7,9],[8,9]],g:[['Rocket League',[3]],['Mario Kart 8',[5,6]],['Counter-Strike 2',[7]],['Overcooked 2',[1,2,4]],['Codenames',[8]],['Gang Beasts',[6]],['Trackmania',[2]],['GeoGuessr',[4]]]},
+ c22:{ev:'Freitags-Zocken',games:5,rows:[[1,12],[8,12]],g:[['Rocket League',[1]],['Mario Kart 8',[8]],['Overcooked 2',[1,8]],['Codenames',[8]],['Gang Beasts',[1]]]}
+};
+const joinDe=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' und '+a[a.length-1];
+const conf=(x,y,n,sp)=>{const P=['#ffd23f','#ff70c3','#2ec4b6','#3a86ff','#ff4f4f','#fffdf8'];return Array.from({length:n},(_,i)=>{const a=Math.sin((i+1)*12.9898+x)*43758.5453,r=a-Math.floor(a),b=Math.sin((i+1)*78.233+y)*12543.21,q=b-Math.floor(b);return {x:Math.round(x+(r-.5)*sp*2)+'px',y:Math.round(y+(q-.65)*sp)+'px',w:(6+Math.round(r*4))+'px',h:(8+Math.round(q*5))+'px',r:Math.round(r*360)+'deg',c:P[i%6],br:i%3?'2px':'50%'};});};
+class Component extends DCLogic {
+  nm(){ return this.props.stress?Object.assign({},TN,{1:LONG}):TN; }
+  st(c){ const nm=this.nm(); const all=c.rows.map(([t,pts])=>({t,pts,name:nm[t]})).sort((a,b)=>b.pts-a.pts);
+    all.forEach(x=>{x.rank=1+all.filter(y=>y.pts>x.pts).length;}); return {all,top:all.filter(x=>x.rank===1),rest:all.filter(x=>x.rank>1)}; }
+  words(c){ const S=this.st(c),k=S.top.length,p=S.top[0].pts,names=joinDe(S.top.map(x=>x.name)),none=!S.rest.length;
+    const who=k===2?'Beide':'Alle '+k;
+    return {k,p,none,
+      sub:`${c.ev} · ${c.games} Spiele · ${none?who+' gleichauf':k+' Sieger'}, je ${p} Punkte`,
+      live:none?`Unentschieden! ${who} Parteien gewinnen mit je ${p} Punkten: ${names}.`:`Unentschieden! Gewonnen haben ${names} mit je ${p} Punkten.`}; }
+  cells(t,s,cell,ns,stack,ov){ const ms=MEM[t]||[],ex=ms.length>6?ms.length-5:0;
+    const L=(ex?ms.slice(0,5):ms).map(w=>({av:true,more:false,who:w,label:w}));
+    if(ex) L.push({av:false,more:true,who:'+'+ex,label:ex===1?'1 weitere':ex+' weitere'});
+    return L.map((x,i)=>Object.assign(x,{s,t:stack?0:t,px:s+'px',cw:(cell||s)+'px',fs:Math.round(s*(stack?.4:.3))+'px',ns:ns+'px',ml:stack&&i?(-ov)+'px':'0px'})); }
+  frame(c,vp,theme,o){
+    o=o||{}; const desk=vp==='desk',S=this.st(c),W=this.words(c),top=S.top,rest=S.rest,k=top.length;
+    const tier=desk?(k<=2?'A':k===3?'B':'C'):(k<=2?'A':'C'), cardsT=tier!=='C';
+    const A=desk?(tier==='A'?{w:240,h:160,strip:40,nfs:16,pfs:32,sfs:20,so:12,av:56,cell:68,gx:10,ns:13,eq:40,eg:56,ei:18,pp:'12px 14px'}:{w:220,h:140,strip:36,nfs:15,pfs:28,sfs:18,so:10,av:48,cell:60,gx:8,ns:12,eq:36,eg:48,ei:16,pp:'11px 13px'}):{w:160,h:120,strip:32,nfs:13,pfs:24,sfs:15,so:8,av:44,cell:50,gx:5,ns:12,eq:28,eg:34,ei:14,pp:'9px 11px'};
+    const G=desk?{w:236,h:120,strip:36,nfs:15,pfs:22,sfs:13,av:28,ov:8,gap:14,cols:4,bg:'10px'}:{w:171,h:96,strip:30,nfs:13,pfs:18,sfs:11,av:24,ov:7,gap:12,cols:2,bg:'7px'};
+    const nc=Math.min(k,G.cols), gw=cardsT?k*A.w+(k-1)*A.eg:nc*G.w+(nc-1)*G.gap;
+    const cards=cardsT?top.map((x,i)=>({t:x.t,name:x.name,pts:x.pts+' P.',eq:i<k-1,mem:this.cells(x.t,A.av,A.cell,A.ns,false),memLabel:'Team '+x.name,
+      cw:A.w+'px',ch:A.h+'px',sh:A.strip+'px',nfs:A.nfs+'px',pfs:A.pfs+'px',sfs:A.sfs+'px',so:A.so+'px',ppad:A.pp,eqW:A.eg+'px',eqS:A.eq+'px',ei:A.ei,memGap:'10px '+A.gx+'px',mgap:desk?'14px':'10px'})):[];
+    const gcards=cardsT?[]:top.map(x=>({t:x.t,name:x.name,pts:x.pts+' P.',stack:this.cells(x.t,G.av,0,0,true,G.ov),memLabel:'Team '+x.name+': '+(MEM[x.t]||[]).join(', '),
+      w:G.w+'px',h:G.h+'px',sh:G.strip+'px',nfs:G.nfs+'px',pfs:G.pfs+'px',sfs:G.sfs+'px',bgap:G.bg}));
+    const side=desk&&tier==='A'&&rest.length>0;
+    const cap=(desk?'Desktop 1440':'Mobil 390')+' · '+(theme==='dark'?'Dunkel':'Hell')+(o.reduced?' · Reduzierte Bewegung':'');
+    return {theme,desk,cap,live:W.live,sub:W.sub,
+      fw:desk?'1440px':'390px',fh:desk?'900px':'844px',fr:desk?'18px':'30px',stagePad:desk?'20px 24px':'0',
+      boxB:desk?'var(--cp-bw) solid var(--cp-line)':'0',boxR:desk?'16px':'0',boxPad:desk?'22px 18px 170px':'30px 18px 150px',gap:desk?'18px':'14px',
+      bFs:desk?'52px':'36px',subFs:desk?'15px':'14px',
+      lay:side?'row':'column',layAlign:side?'flex-start':'center',layGap:desk?'40px':'14px',layW:desk?'auto':'100%',pgap:desk?'12px':'10px',
+      plW:gw+'px',plH:desk?'40px':'34px',plLfs:desk?'15px':'12px',plSfs:desk?'20px':'15px',
+      tierCards:cardsT,tierGrid:!cardsT,cards,gcards,ggap:G.gap+'px',
+      rowsStack:rest.length>0&&tier==='A',rowsChips:rest.length>0&&tier!=='A',
+      rows:rest.map(x=>({rank:String(x.rank),t:x.t,name:x.name,pts:x.pts+' P.'})),olW:desk?'380px':'100%',olMt:desk?'52px':'4px',rowH:desk?'52px':'48px',rowGap:desk?'10px':'8px',
+      cbS:desk?150:120,cbL:desk?'24px':'8px',cbState:o.reduced?'cheer':'dance',groundH:desk?'22px':'18px',
+      table:S.all.map(x=>({rank:x.rank+'.',t:x.t,name:x.name,pts:String(x.pts),rbg:x.rank===1?'var(--cp-primary)':'var(--cp-surface)',rfg:x.rank===1?'var(--cp-on-primary)':'var(--cp-ink)'}))};
+  }
+  chip(name,ts,wide){ const n=Math.min(ts.length,4),d=wide?11:15,st=wide?8:11;
+    const bg=n===1?HEX[ts[0]]:'linear-gradient(90deg, '+ts.slice(0,4).map((t,i)=>`${HEX[t]} ${+(i*100/n).toFixed(2)}%, ${HEX[t]} ${+((i+1)*100/n).toFixed(2)}%`).join(', ')+')';
+    return {name:name+(ts.length>4?' · '+ts.length+' gleichauf':''),w:(n===1?d:n*st)+'px',d:d+'px',bg,n}; }
+  share(c,fmt){
+    const wide=fmt==='wide',S=this.st(c),top=S.top,rest=S.rest,k=top.length,p=top[0].pts,L=Math.max(...top.map(x=>x.name.length)),W=this.words(c);
+    const pick=a=>L<=14?a[0]:L<=22?a[1]:a[2], big=k<=3;
+    const fs=big?pick(wide?(k===2?[80,68,52]:[64,54,44]):(k===2?[108,92,72]:[88,74,60])):0;
+    const wraps=big&&L*fs*.47>(wide?680:930);
+    let nRows=big?(wide?2:(k===2?3:2)):0; if(wraps) nRows=Math.max(0,nRows-(k===3?2:1));
+    const o=wide?4:6, names=big?top.map(x=>({name:x.name,c:HEX[x.t],fs:fs+'px',sh:Math.round(fs*.66)+'px',ts:`${o}px ${o}px 0 ${HEX[x.t]}`})):[];
+    const cfs=wide?(L<=14?34:30):(L<=14?44:38);
+    const chips=big?[]:top.map(x=>({name:x.name,c:HEX[x.t],fs:cfs+'px',ts:`3px 3px 0 ${HEX[x.t]}`}));
+    const rows=rest.slice(0,nRows).map(x=>({rank:String(x.rank),name:x.name,pts:String(x.pts),c:HEX[x.t]}));
+    const more=rest.length-rows.length, gl=c.g.map(([n,ts])=>this.chip(n,ts,wide));
+    let gcap=9;
+    if(wide){ const lbl=(c.g.length+' Spiele').length*10+14, avail=1088-lbl, cw=g=>Math.round(g.name.length*8+parseInt(g.w)+36);
+      let used=0; gcap=0; const n=Math.min(gl.length,6);
+      for(let i=0;i<n;i++){ const w=cw(gl[i])+10, left=gl.length-(i+1), tail=left>0?100:0; if(used+w+tail>avail) break; used+=w; gcap++; } }
+    const people=S.all.reduce((a,x)=>a+(MEM[x.t]||[]).length,0);
+    const label='Unentschieden · '+(rest.length?k+' Sieger':(k===2?'beide':'alle '+k)+' gleichauf');
+    const alt=`Unentschieden bei ${c.ev}: `+(rest.length?`${joinDe(top.map(x=>x.name))} gewinnen mit je ${p} Punkten.`:`${k===2?'Beide':'Alle '+k} Parteien gewinnen mit je ${p} Punkten: ${joinDe(top.map(x=>x.name))}.`)+rest.slice(0,3).map(x=>` Platz ${x.rank}: ${x.name}, ${x.pts} Punkte.`).join('');
+    const bw=k===2?340:k===3?300:280;
+    return {wide,square:!wide,cap:(wide?'1200 × 630':'1080 × 1080')+' · '+(k)+' Sieger'+(rest.length?' von '+S.all.length:', alle gleichauf'),W:wide?'1206px':'1086px',H:wide?'636px':'1086px',
+      pill:`${c.ev} · Sa 25.10.2026 · ${people} Leute`,label,big,names,chipsOn:!big,chips,chipW:wide?'347px':'466px',ngap:wide?'8px':'12px',pts:String(p),
+      rows,hasRows:rows.length>0,more:more>0,moreTxt:'+'+more+(more===1?' weitere Partei':' weitere Parteien'),
+      games:gl.slice(0,gcap),gMore:gl.length>gcap,gMoreTxt:'+'+(gl.length-gcap)+' weitere',gamesTxt:c.g.length+' Spiele',
+      alt,bw:bw+'px',rig:Math.round(bw*.765),rl:Math.round(bw*.118)+'px',rb:Math.round(bw*.065)+'px'};
+  }
+  sb(o){ const grid=!!o.grid,teams=grid?[1,8,2,4]:[1,8],nm=this.nm();
+    const cards=teams.map((t,i)=>{const st=o.cards[i];return {x:(grid?196+i*63:(i?332:196))+'px',w:(grid?58:112)+'px',h:(grid?66:76)+'px',t,label:grid?'':nm[t],pts:'14 P.',front:st==='f',back:st==='b',full:!grid,qfs:grid?'15px':'22px',sh:grid?'16px':'22px',sfs:grid?'8px':'11px',av:(MEM[t]||[]).slice(0,3).map(w=>({who:w,t}))};});
+    const tr=o.tro;
+    return {cards,eq:!grid,plateF:o.plate==='f',plateB:o.plate==='b',cbx:o.cb.x+'px',cbr:'rotate('+(o.cb.r||0)+'deg)',cbs:o.cb.s,
+      hasTro:!!tr,tx:tr?tr.x+'px':'0',ty:tr?tr.y+'px':'0',tr:tr?'rotate('+(tr.r||0)+'deg)':'none',top:tr?(tr.op??1):0,
+      hasPath:!!o.path,path:o.path||'',conf:(o.conf||[]).flatMap(a=>conf(...a)),mem:!!o.mem,share:!!o.share,t:o.t,lbl:o.lbl,cap:o.cap}; }
+  renderVals(){
+    const vp=this.props.viewport||'alle', F=(c,v,t,o)=>this.frame(CASES[c],v,t,o);
+    const pickF=list=>list.filter(f=>vp==='alle'||(vp==='desktop'?f.desk:!f.desk));
+    const four=c=>pickF([F(c,'desk','light'),F(c,'desk','dark'),F(c,'mob','light'),F(c,'mob','dark')]);
+    const R=(id,n,d)=>{const w=this.words(CASES[id]);return {n,d,live:w.live,sub:w.sub,frames:four(id)};};
+    const matrix=[
+      R('c2','2 Sieger von 4','Two cards side by side, joined by „=“, under the shared plate. Places 3 and 4 keep their rows: beside on desktop, below on mobile. Ranks are shared, so the next Party is Platz 3.'),
+      R('c3','3 Sieger von 5','Desktop: three cards 220 × 140, avatars 48 px. Rows shrink to one line of chips so everything fits above Compibert’s lane. Mobile switches to the grid (2 + 1). Team Orange has 8 Players: 5 + „+3“.'),
+      R('c8','8 Sieger, alle gleichauf','Grid: 4 columns desktop, 2 mobile. Avatar stack inside each card (at most 6, then „+N“; Pinke Panik shows „+2“). No rows, nothing below.'),
+      R('c22','2 von 2, keine Reihen','Both Parties tied: no list at all. The pair centres; avatars, plate and stamps as with 2 of 4.')];
+    const w3=this.words(CASES.c3);
+    matrix.push({n:'Reduzierte Bewegung',d:'Only the end frame, set at once: no run, no hops, no confetti. Compibert holds „cheer“ instead of dancing. The live region speaks the sentence immediately. Same for „Überspringen“.',live:w3.live,sub:w3.sub,frames:pickF([F('c3','desk','light',{reduced:true}),F('c2','mob','dark',{reduced:true})])});
+    const T=(t,lbl,cap,o)=>this.sb(Object.assign({t,lbl,cap},o));
+    const trip=[
+      T('t0','run','Compibert runs in with the trophy. Both cards „???“, the plate „Platz 1 · ???“.',{cards:['f','f'],plate:'f',cb:{x:20,s:'run'},tro:{x:80,y:176},path:'M6 214 H130'}),
+      T('t1','trip','He trips as before (0.38 power2.in). The trophy arcs onto card 1, the leftmost.',{cards:['f','f'],plate:'f',cb:{x:66,r:78,s:'suspense'},tro:{x:212,y:6,r:220},path:'M140 192 Q 200 -30 252 76'}),
+      T('t1 + 0,80','hop1','Card 1 bumps, flips, „SIEGER“ stamps, 14 confetti. After 0.12 the trophy hops on.',{cards:['b','f'],plate:'f',cb:{x:66,r:78,s:'suspense'},tro:{x:305,y:12,r:120},path:'M252 76 Q 320 -4 388 76',conf:[[252,84,14,36]]}),
+      T('t1 + 1,34','hop2','Card 2 the same. The last hop goes higher, to the middle of the plate.',{cards:['b','b'],plate:'f',cb:{x:66,r:78,s:'suspense'},tro:{x:352,y:-4,r:240},path:'M388 76 Q 372 -40 320 32',conf:[[388,84,14,36]]}),
+      T('t1 + 1,96','plate','Plate bumps, „UNENTSCHIEDEN“ stamps (−3°), 40 confetti, trophy fades out. Compibert gets up and laughs.',{cards:['b','b'],plate:'b',cb:{x:66,r:0,s:'laugh'},tro:{x:305,y:2,op:.35},conf:[[320,40,30,80]]}),
+      T('t1 + 4,16','dance','Avatars pop per Party, left to right. „Bild teilen“ from plate + 1.4. Compibert dances.',{cards:['b','b'],plate:'b',cb:{x:66,r:0,s:'dance'},mem:true,share:true})];
+    const bonk=[
+      T('t1','bonk','As before: he cheers and throws the trophy 170 px up.',{cards:['f','f'],plate:'f',cb:{x:66,s:'cheer'},tro:{x:125,y:8,r:180},path:'M140 190 V40'}),
+      T('t1 + 0,92','bonk','It lands on his head: „confused“.',{cards:['f','f'],plate:'f',cb:{x:66,s:'confused'},tro:{x:100,y:132,r:360},path:'M140 40 Q 128 90 114 136'}),
+      T('t1 + 2,20','hop1','From his head onto card 1. From here on as with the trip, 1.40 s later: hop2 t1 + 2,74.',{cards:['b','f'],plate:'f',cb:{x:66,s:'confused'},tro:{x:305,y:12,r:120},path:'M114 136 Q 180 -20 252 76',conf:[[252,84,14,36]]}),
+      T('t1 + 3,36','plate','Plate stamp, confetti, laugh, then dance at plate + 2.2.',{cards:['b','b'],plate:'b',cb:{x:66,s:'laugh'},tro:{x:305,y:2,op:.35},conf:[[320,40,30,80]]})];
+    const gridB=[
+      T('t1 + 0,80','plate','No chain: the trophy (trip or bonk) goes straight to the plate. „UNENTSCHIEDEN“ stamps, 40 confetti.',{grid:true,cards:['f','f','f','f'],plate:'b',cb:{x:66,r:78,s:'suspense'},tro:{x:305,y:2},path:'M140 192 Q 240 -60 320 32',conf:[[320,40,30,80]]}),
+      T('plate + 0,18','ripple','Cards flip from the centre outward, stagger 0.06, stamps 0.24. No confetti per card.',{grid:true,cards:['f','b','b','f'],plate:'b',cb:{x:66,s:'laugh'}}),
+      T('plate + 0,60','ripple end','All flipped. Avatar stacks pop in the same order, then dance and share as with the chain.',{grid:true,cards:['b','b','b','b'],plate:'b',cb:{x:66,s:'dance'},share:true})];
+    const boards=[{n:'Stolpern (trip)',d:'2 Winners on a chain layout. With 3 cards one more hop (+0.54) before the plate.',frames:trip},{n:'Volltreffer (bonk)',d:'Same chain, it just starts from his head.',frames:bonk},{n:'Raster',d:'Desktop from 4 Winners, mobile from 3. A chain over 4 to 8 cards would drag; the ripple keeps it under 0.7 s.',frames:gridB}];
+    const shareRows=[{items:[this.share(CASES.c2,'wide'),this.share(CASES.c3,'wide'),this.share(CASES.c8,'wide')]},{items:[this.share(CASES.c2,'square'),this.share(CASES.c3,'square'),this.share(CASES.c8,'square')]}];
+    const cd=(n,name,ts,say)=>{const w=this.chip(name,ts,true),s=this.chip(name,ts,false);return {n,w,s,zw:(parseInt(w.w)*4)+'px',say,code:'background: '+w.bg};};
+    const nm=this.nm();
+    const chipDemo=[cd('1 colour (as is)','Rocket League',[1],'One winner in that game: the dot stays a circle.'),
+      cd('2 colours','Counter-Strike 2',[1,8],`Gleichauf ${nm[1]} und ${nm[8]}. Wide 16 × 11, square 22 × 15.`),
+      cd('3 colours','Mario Kart 8',[1,2,8],`Gleichauf ${nm[1]}, ${nm[2]} und ${nm[8]}. Wide 24 × 11, square 33 × 15.`)];
+    return {matrix,boards,shareRows,chipDemo,
+      dec:[
+        {t:'Where they stand',b:'One card per Winner, side by side, linked by „=“, under one shared plate „Platz 1“. From 4 Winners (mobile from 3) the cards become a compact grid. Shared ranks below: 1, 1, 3.'},
+        {t:'Trophy',b:'Both gags unchanged up to the first landing. Then it hops card to card, each landing flips a card, and the last hop lands on the plate. Grid: straight onto the plate, cards flip from the centre outward.'},
+        {t:'Stamps',b:'Both: „SIEGER“ on every Winner card, because each one is a Winner, and „UNENTSCHIEDEN“ once, on the shared plate.'},
+        {t:'Avatars',b:'Under each card, ringed in the Party’s colour, with names: 56 px desktop (48 with 3), 44 mobile. At most 6 per Party, then „+N“. Grid: a 28/24 px stack inside the card, same rule.'},
+        {t:'Rows below',b:'2 Winners: rows as before (beside on desktop, below on mobile). 3 or more: one line of chips. Nobody left: no list.'},
+        {t:'Share image',b:'Label „Unentschieden · 2 Sieger“. One name per line, each with its own team strip and shadow, sized by count and the longest name. From 4: name chips. Striped game dots.'}],
+      tiers:[
+        {k:'2',d:'2 cards 240 × 160 with „=“; avatars 56 px with names, 3 per line',m:'2 cards 160 × 120; avatars 44 px with names',tr:'Chain: card 1 → card 2 → plate',r:'Rows as today: beside (desktop), below (mobile). 2 of 2: none'},
+        {k:'3',d:'3 cards 220 × 140; avatars 48 px with names',m:'Grid 2 columns (2 + 1), cards 171 × 96; stack 24 px',tr:'Desktop: chain over 3 cards. Mobile: straight to the plate, ripple',r:'Chips, one line, wraps if needed'},
+        {k:'4',d:'Grid 4 columns, cards 236 × 120; stack 28 px',m:'Grid 2 × 2',tr:'Straight to the plate, ripple',r:'Chips'},
+        {k:'5–8',d:'Grid 4 columns, 2 lines',m:'Grid 2 columns, 3–4 lines (8 fits 844 px)',tr:'Straight, ripple ≤ 0.6 s',r:'Chips; with 8 tied nothing'}],
+      motion:[
+        'Started by ceremony.started {startAt, gag, outcome: "unentschieden"} and played with playAt. Labels banner, rows, plate, run, hop1 … hopN, stamp, members, dance, share. k = number of Winners. Chain layout = desktop k ≤ 3, mobile k = 2; grid = the rest.',
+        '0: banner y −140→0, 0.55 back.out(2.2). Subline = the tie line (see copy).',
+        '0.6: non-winner rows from last up to rank k + 1: x 60→0, opacity, 0.45 power3.out, stagger 0.45. As chips: y 12→0, opacity, 0.3 power3.out, stagger 0.2. No rows: the plate starts at 0.6.',
+        'after rows: plate scaleX .6→1, opacity, 0.3 back.out(2); Winner cards scale .9→1, opacity, 0.4 back.out(2), stagger 0.1 in reading order; „=“ badges scale 0→1, 0.2 back.out(2), with the card to their right.',
+        'run: unchanged.',
+        'gag „trip“ / „bonk“: unchanged up to the first landing. Target of that landing: card 1 (chain) or the plate centre (grid).',
+        'hopN (chain): card bump y 6 yoyo 0.08; front→back 0.15; „SIEGER“ opacity, scale 2.4→1, 0.3 back.out(2.4) at +0.1; confetti 14 (mobile 8) from the card’s top centre. +0.12: hop to the next card: x 0.42 power1.inOut, y −70 0.22 power2.out then down 0.2 power2.in, rotation +360.',
+        'plate: last landing +0.12, hop to the plate centre 0.5 (y −110 0.28 power2.out, down 0.22 power2.in). Plate bump y 4 yoyo 0.08; „???“ → stamp „UNENTSCHIEDEN“ opacity, scale 2.4→1, rotation −3, 0.32 back.out(2.4); confetti 40 (mobile 20); trophy opacity→0 0.2 at +0.1.',
+        'grid: plate +0.12, cards flip from the centre outward (distance to the plate centre), stagger 0.06; front→back 0.15 + „SIEGER“ 0.24 back.out(2.4); no per-card confetti.',
+        'members (plate +0.45): per Party left to right, 0.2 between Parties; avatars scale 0→1, y 18→0, 0.4 back.out(2), stagger 0.06. Grid: each stack scale .6→1, opacity, 0.3 back.out(2), stagger 0.05 in ripple order.',
+        'dance: plate +0.3 Compibert gets up (trip: rotation→0, 0.45 back.out(2)) → laugh; plate +2.2 → dance.',
+        'share (plate +1.4): y 16→0, opacity, 0.35 back.out(2). The close button comes with it and replaces „Überspringen“.',
+        'Key times, trip / bonk: hop1 t1 + 0.80 / t1 + 2.20; each further hop +0.54; plate = last landing + 0.62 → k = 2: t1 + 1.96 / t1 + 3.36; k = 3: t1 + 2.50 / t1 + 3.90. Grid: plate t1 + 0.80 / t1 + 2.20, ripple done by plate + 0.6.',
+        'Skip / reduced: end frame, everything set, Compibert holds „cheer“, no run, no confetti; the live region speaks the tie sentence.'],
+      shareRules:[
+        'Label: „Unentschieden · {k} Sieger“; nobody else left: „Unentschieden · beide gleichauf“ / „· alle {k} gleichauf“. Bricolage 800 18 (square 24), caps, +0.08em.',
+        'Names, 2 or 3 Winners: one per line, Lilita, each with its own team strip (14 × ⅔ of the font size, 3 px border; square 18) and a hard text-shadow in its team colour. Size by Winner count and the longest name (≤ 14 / ≤ 22 / longer): 2 → 80 / 68 / 52 (square 108 / 92 / 72); 3 → 64 / 54 / 44 (square 88 / 74 / 60). Same size for all names. Longer names may wrap to 2 lines (text-wrap: balance).',
+        'Line: „gewinnen mit je {p} Punkten“ (Bungee number).',
+        'Places 2–4 become the next shared ranks (3, 4 …): wide at most 2 rows, square 3 (2 with 3 Winners). If a name wraps, one row fewer. The rest: „+N weitere Partei(en)“.',
+        'From 4 Winners: names as chips, 2 per line (347 px wide / 466 square), Lilita 34 / 30 (square 44 / 38), ellipsis. No rows; the rest only as „+N weitere Parteien“.',
+        'Game chips, wide: at most 6, fewer if tied capsules make the row too wide. Add chips while the estimated width (name length × 8 + capsule + 36, gap 10) plus „+N weitere“ (≈ 100, only if games remain) fits 1088 minus the „N Spiele“ label; then „+N weitere“. A last remaining game that fits is shown, never replaced by „+1 weitere“. Square: at most 9 (wraps).',
+        'Square: sunburst 340 / 300 / 280 for 2 / 3 / 4+ Winners, Compibert scales with it.',
+        'Alt: „Unentschieden bei {Event}: {A} und {B} gewinnen mit je {p} Punkten. Platz {r}: {Name}, {pts} Punkte.“ (max. 3 places). All tied: „… {Alle k | Beide} Parteien gewinnen mit je {p} Punkten: {Namen}.“'],
+      handoff:[
+        {n:'AwardCeremony',items:['New prop outcome: "sieg" | "unentschieden" (default "sieg"). „unentschieden“ only when ≥ 2 Parties have rank 1 and the Host finished that way.','standings[] gains rank (shared). Winners = rank 1. members[] gains t (team) so it can be split per Party; one Winner unchanged.','New layout states: chain-2, chain-3, grid; rows: side, below, chips, none. New element: plate (Platz 1 + stamp).','End frame: close button (aria-label „Schließen“) instead of „Überspringen“. Live region with the tie sentence.']},
+        {n:'ShareImage',items:['rows[] gains rank. New computed outcome (tie when ≥ 2 rank 1 and outcome = unentschieden).','games[].w: number | number[] (several = gleichauf in that game) → striped capsule.','Label, name sizes, rows and alt per the rules above. Satori-safe: flexbox, hex colours, linear-gradient with doubled stops.']},
+        {n:'Tokens',items:['None new. Plate = --cp-primary, stamps = --cp-hot on --cp-surface, cards = team tokens; share image keeps its hex table. Sizes are component constants.']}]};
+  }
+}
+</script>
+</body>
+</html>
