@@ -2,12 +2,13 @@ import { and, eq, isNotNull } from 'drizzle-orm'
 import { events, roundPlaces, rounds } from '../db/schema'
 import type { EventFinished } from '../../shared/event'
 import { finishRejection, leadersOf, standingsAndEnd, type FinishRequest } from '../../shared/finish'
-import { settingsFromRow, type EventSettings } from '../../shared/settings'
+import type { EventSettings } from '../../shared/settings'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange } from './event-access'
 import { closeSessions } from './sessions'
+import { requireSettings } from './settings'
 
 // The Host finishes the Event (#277, spec #272): once every Round up to the Game count has its Result, the Event is finished for good. The
 // finish ends the Running Session, withdraws the Sessions that have not started, sets the Phase and the end instant, and writes one feed
@@ -47,9 +48,7 @@ export async function readEnd(db: Db, eventId: string, settings: Pick<EventSetti
  * before the rule passes. The Phase is set before the Sessions close, and closeSessions does not write it (changeSessions would overwrite it).
  */
 export async function finishEvent({ tx, eventRow, user, publish, now }: Change, { outcome, winners: seen }: FinishRequest): Promise<EventFinished> {
-  const settings = settingsFromRow(eventRow)
-  // An Event that is not set up cannot be running, so the rule's order gives it wrong_phase.
-  if (settings === null) throw apiError('wrong_phase')
+  const settings = requireSettings(eventRow)
   const { standings, end } = await readEnd(tx, eventRow.id, settings)
   const rejection = finishRejection({ isHost: eventRow.hostId === user.id, phase: eventRow.phase, end, standings, outcome, winners: seen })
   if (rejection) throw apiError(rejection)
