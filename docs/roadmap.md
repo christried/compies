@@ -13,7 +13,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.5.1 | Neue Nummern | released on 2026-11-01: [#215](https://github.com/christried/compies/issues/215), [#242](https://github.com/christried/compies/issues/242) |
 | 0.6 | Notizen | released on 2026-11-01: [#217](https://github.com/christried/compies/issues/217) |
 | 0.7 | Glücksrad | released on 2026-11-02: [#218](https://github.com/christried/compies/issues/218), [#263](https://github.com/christried/compies/issues/263) |
-| 0.8 | Punkte | specced: [#272](https://github.com/christried/compies/issues/272) |
+| 0.8 | Punkte | released on 2026-11-05: [#272](https://github.com/christried/compies/issues/272) |
 | 0.9 | Siegerehrung | outline; the minimum for the first Event |
 | 1.0 | | when the user declares COMPIES ready |
 
