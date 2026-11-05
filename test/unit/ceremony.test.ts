@@ -113,13 +113,19 @@ describe('ceremonyRejection', () => {
 describe('nextGag', () => {
   it('asks the random source once with 2 for the first start', () => {
     const asked: number[] = []
-    expect(nextGag(null, (n) => { asked.push(n); return 0 })).toBe('trip')
+    const source = (n: number): number => {
+      asked.push(n)
+      return 0
+    }
+    expect(nextGag(null, source)).toBe('trip')
     expect(asked).toEqual([2])
     expect(nextGag(null, () => 1)).toBe('bonk')
   })
 
   it('takes the other gag on every later start without asking the source', () => {
-    const never = (): number => { throw new Error('asked') }
+    const never = (): number => {
+      throw new Error('asked')
+    }
     expect(nextGag('trip', never)).toBe<CeremonyGag>('bonk')
     expect(nextGag('bonk', never)).toBe<CeremonyGag>('trip')
   })
