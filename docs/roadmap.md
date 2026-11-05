@@ -14,7 +14,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.6 | Notizen | released on 2026-11-01: [#217](https://github.com/christried/compies/issues/217) |
 | 0.7 | Glücksrad | released on 2026-11-02: [#218](https://github.com/christried/compies/issues/218), [#263](https://github.com/christried/compies/issues/263) |
 | 0.8 | Punkte | released on 2026-11-05: [#272](https://github.com/christried/compies/issues/272) |
-| 0.9 | Siegerehrung | grilled on 2026-11-05; the minimum for the first Event |
+| 0.9 | Siegerehrung | specced: [#308](https://github.com/christried/compies/issues/308), tickets [#309](https://github.com/christried/compies/issues/309)–[#315](https://github.com/christried/compies/issues/315); the minimum for the first Event |
 | 1.0 | | when the user declares COMPIES ready |
 
 ## 0.4 Spielvorbereitung (was 1.3)
@@ -185,7 +185,7 @@ Results in the app, Standings and a winner. (T13; screens 16, 17.) Spec: [#272](
 
 ## 0.9 Siegerehrung
 
-The Award ceremony and the Share image; the minimum for the first Event. (T15; screen 19.) Grilled on 2026-11-05 (`GLOSSARY.md`: Award ceremony, Winner, Share image; ADR 0015). Out: Battle replay, Archive, 3D podium, sound, idea [#38](https://github.com/christried/compies/issues/38).
+The Award ceremony and the Share image; the minimum for the first Event. (T15; screen 19.) Spec: [#308](https://github.com/christried/compies/issues/308). Grilled on 2026-11-05 (`GLOSSARY.md`: Award ceremony, Winner, Share image; ADR 0015). Out: Battle replay, Archive, 3D podium, sound, idea [#38](https://github.com/christried/compies/issues/38).
 
 - **The ceremony** is the 2D „Pokal-Lauf“ of `AwardCeremony` (what „2D podium“ meant):
   - places from last to second, the winner card, Compibert running in with the trophy and a gag („trip“ or „bonk“);
