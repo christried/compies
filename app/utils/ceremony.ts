@@ -25,12 +25,14 @@ export interface CeremonyModel {
   rows: { team: number, name: string, rank: number, points: number }[]
   /** The Winners' people, at most CELLS cells. */
   people: CeremonyPerson[]
-  /** What the polite live region says once the dialog is there. */
+  /** The line under the banner (#312): the Event and the games played. */
+  sub: string
+  /** What the polite live region says once the stamp has landed. */
   live: string
 }
 
 /** The model of the end frame, or null without a ceremony, without Standings or without anybody on rank 1. */
-export function ceremonyModel({ standings, members, teams, ceremony }: Pick<EventView, 'standings' | 'members' | 'teams' | 'ceremony'>, t: Translate): CeremonyModel | null {
+export function ceremonyModel({ standings, members, teams, ceremony, event, results }: Pick<EventView, 'standings' | 'members' | 'teams' | 'ceremony' | 'results'> & { event: Pick<EventView['event'], 'name'> }, t: Translate): CeremonyModel | null {
   if (!ceremony || !standings) return null
   const first = leadersOf(standings)
   if (first.length === 0) return null
@@ -45,5 +47,6 @@ export function ceremonyModel({ standings, members, teams, ceremony }: Pick<Even
   })
   const people: CeremonyPerson[] = everyone.length > CELLS ? [...everyone.slice(0, CELLS - 1), { kind: 'more', n: everyone.length - (CELLS - 1) }] : everyone
   const live = t('ceremony.live', { list: joinNames(winners.map(winner => winner.name)), points: t('table.points', { n: points }, points) }, winners.length > 1 ? 2 : 1)
-  return { winners, points, rows, people, live }
+  const sub = t('ceremony.sub', { event: event.name, n: results.length }, results.length)
+  return { winners, points, rows, people, sub, live }
 }
