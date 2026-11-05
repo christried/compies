@@ -30,6 +30,7 @@ export function useBoardDrag(options: DragOptions) {
   /** The key of the place the person is held over, if it takes them. */
   const overZone = ref<string | null>(null)
 
+  // A second copy of the press-and-hold machine in useRowDrag/useBoardDrag (review 0.8 Q5, #285): merge both into one usePointerPress when a third list is dragged or either one needs its next bug fix.
   let press: { userId: string, pointerId: number, x: number, y: number, touch: boolean, timer?: ReturnType<typeof setTimeout> } | null = null
   let justDragged = false
 
