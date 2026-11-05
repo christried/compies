@@ -185,44 +185,35 @@ Results in the app, Standings and a winner. (T13; screens 16, 17.) Spec: [#272](
 
 ## 0.9 Siegerehrung
 
-The Award ceremony and the Share image; the minimum for the first Event. (T15; screen 19.) Grilled on 2026-11-05 (`GLOSSARY.md`: Award ceremony, Winner, Share image; ADR 0015).
+The Award ceremony and the Share image; the minimum for the first Event. (T15; screen 19.) Grilled on 2026-11-05 (`GLOSSARY.md`: Award ceremony, Winner, Share image; ADR 0015). Out: Battle replay, Archive, 3D podium, sound, idea [#38](https://github.com/christried/compies/issues/38).
 
-- **Scope:** the 2D „Pokal-Lauf“ of `AwardCeremony` (that is what „2D podium“ meant), the Share image in landscape and square, and the parts of Compibert's animated rig the ceremony needs. Out: Battle replay, Archive, 3D podium, sound (no fanfare), idea [#38](https://github.com/christried/compies/issues/38).
-- **Compibert rig** (ADR 0015):
-  - GSAP, loaded lazily with the rig and the ceremony; all other motion stays in `motion.ts`.
-  - Seven states: idle, run, suspense, cheer, confused, laugh, dance. The other states, the CompibertBus and eye-follow wait. The header head stays still.
-  - The still poses for the Share image (full „dance“, head „idle“) are rendered from the rig once.
+- **The ceremony** is the 2D „Pokal-Lauf“ of `AwardCeremony` (what „2D podium“ meant):
+  - places from last to second, the winner card, Compibert running in with the trophy and a gag („trip“ or „bonk“);
+  - then the „SIEGER“ stamp, the Winners' Players and Compibert dancing, with no fanfare.
+  - Compibert's animated rig arrives only as far as the ceremony needs (ADR 0015); the header head stays still.
 - **Starting:**
-  - Finishing does not start it, so the Host can finish alone between Sessions and start the ceremony when the group is together. The finished Event's dock gets the primary „Siegerehrung starten“: a tap, kept after the first start, disabled while a run plays.
-  - The server stamps the start a lead after `now`, like the coin, and picks the gag („trip“ or „bonk“) at random, never the same as the previous start.
+  - Finishing does not start it, so the Host can finish alone between Sessions and start the ceremony when the group is together.
+  - The finished Event's Host dock gets the primary „Siegerehrung starten“: a tap, still there after the first start, disabled while a run plays.
+  - The server picks the gag at random, never the same as the previous start.
   - No Activity feed entry.
 - **Watching:**
-  - A layer over the Event page: on desktop over the stage column with the side panel visible, on the phone full screen above the tabs.
+  - A layer over the Event page: on desktop over the stage column, with the side panel visible; on the phone full screen above the tabs.
   - It opens for every Member with the Event open, on any tab and at any scroll position; a late joiner comes in where it has got to.
   - Each viewer can skip to the end frame („Überspringen“) or close it, for themselves only; the Host has no skip for everyone (WCAG 2.2.2).
   - The end frame stays until closed, with „Bild teilen“ and „Nochmal ansehen“.
-  - Reduced motion: the end frame; a live region announces the Winners.
-- **Watching again:** after the Host's first start, every Member has „Siegerehrung ansehen“ on the finished page. It plays for them alone, with the last start's gag. Nothing plays on its own for anyone who wasn't there.
-- **The Winners' people:** the Players in the winning Party at the Finish (the board is read-only from then on); a Winner with no Players shows its TeamMark only.
+  - Reduced motion shows the end frame; a live region announces the Winners.
+- **Watching again:** once the Host has started it, every Member has „Siegerehrung ansehen“ on the finished page. It plays for them alone, with the last start's gag. Nothing plays on its own for anyone who wasn't there.
+- **The Winners' people:** the Players in the winning Party at the Finish; a Winner with no Players shows its TeamMark only.
 - **Share image** („Ergebnis-Bild“, 05-assets § 8a):
-  - „Bild teilen“ sits at the top of the finished stage from the Finish on (with „Siegerehrung ansehen“ once that exists) and in the end frame. It opens a sheet that previews the real PNG, with „Querformat“ / „Quadrat“, „Bild herunterladen“, and „Teilen“ on devices that can share files.
-  - No public link: the image is only for Members of the Event (see Out of scope).
-  - Rendered on the server with Satori and resvg on each request, for Members of a finished Event only, never stored, `Cache-Control: private`.
+  - „Bild teilen“ sits at the top of the finished stage from the Finish on, and in the end frame. It opens a sheet with the image itself, „Querformat“ / „Quadrat“, „Bild herunterladen“, and „Teilen“ on devices that can share files.
+  - Only Members of the finished Event get it. It is made on the server on each request and never stored. There is no public link (see Out of scope).
   - The date is the started Sessions' Dates: one day, or first to last. „· N Leute“ counts the Players at the Finish.
 - **Tie** (ADR 0014):
-  - The ceremony with 2–8 Winners, the Share image with 2–8 Winners, and a game chip whose Round had a Shared first place go to a _Claude Design hand-off_ in one prompt.
-  - It blocks only the Tie ticket; 0.9 ships only with it built.
+  - A _Claude Design hand-off_ covers, in one prompt, the ceremony with 2–8 Winners, the Share image with 2–8 Winners, and a game chip whose Round had a Shared first place.
+  - 0.9 ships only with the Tie variant built.
 - Events finished on 0.8 get the ceremony and the Share image like any other.
-- No ticket zero: the ceremony is a layer, not a new page kind. The Datenschutzerklärung stays as it is: the start instant and the gag are no personal data, and the image is made from what every Member already sees.
-- **Tickets:**
-  1. The rig.
-  2. Starting and watching, for one Winner.
-  3. Watching again.
-  4. The Share image for one Winner.
-  5. `Claude Design: Siegerehrung und Ergebnis-Bild bei Unentschieden` (`ready-for-human`, blocks 6).
-  6. The Tie variant.
-
-  2–4 build on 1. All UI _own build_ except 5.
+- The Datenschutzerklärung stays as it is: the ceremony stores no personal data, and the image shows only what every Member already sees.
+- All other UI _own build_ from `AwardCeremony`, `ShareImage` and `App Ende & Archiv ?s=ceremony` (its share sheet without the link).
 
 ## Nach dem ersten Event
 
