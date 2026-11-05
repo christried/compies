@@ -169,10 +169,9 @@ export function poolHint(
   settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>,
   poolSize: number,
 ): null | { games: number, vetoes: number, extra: 0 | 1, needed: number, have: number } {
-  const need = poolNeed(settings)
-  const needed = need.games + need.vetoes + need.extra
+  const needed = recommendedPoolSize(settings)
   if (poolSize >= needed) return null
-  return { ...need, needed, have: poolSize }
+  return { ...poolNeed(settings), needed, have: poolSize }
 }
 
 type Parsed = { ok: true, settings: EventSettings } | { ok: false, error: SettingsError }
