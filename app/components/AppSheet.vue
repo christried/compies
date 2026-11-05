@@ -63,7 +63,7 @@ const { onKeydown } = useDialog(toRef(props, 'open'), panel, () => emit('close')
              sheet's edges, where its own padding puts the content back, so it is flush whether it sticks or follows the content. -->
         <footer
           v-if="$slots.footer"
-          class="sticky bottom-0 layer-sticky mt-auto -mx-5 -mb-5 border-t-(length:--cp-bw) border-line bg-surface px-5 pt-3 pb-5"
+          class="sticky -bottom-5 layer-sticky mt-auto -mx-5 -mb-5 border-t-(length:--cp-bw) border-line bg-surface px-5 pt-3 pb-5"
         >
           <slot name="footer" />
         </footer>
