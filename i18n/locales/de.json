@@ -956,12 +956,32 @@
     "save": "Speichern"
   },
   "share": {
-    "title": "Teilen",
+    "open": "Bild teilen",
+    "title": "Ergebnis teilen",
+    "format": "Format",
     "landscape": "Querformat",
     "square": "Quadrat",
     "download": "Bild herunterladen",
-    "copyLink": "Link kopieren",
-    "copied": "Link kopiert"
+    "native": "Teilen",
+    "loading": "Bild wird erstellt …",
+    "error": "Das Bild konnte nicht erstellt werden.",
+    "shareFailed": "Teilen hat nicht geklappt.",
+    "image": {
+      "winsOne": "gewinnt mit",
+      "winsMany": "gewinnen mit je",
+      "points": "Punkt | Punkten",
+      "pts": "{n} Punkt | {n} Punkte",
+      "people": "{n} Leute",
+      "person": "1 Person",
+      "games": "{n} Spiel | {n} Spiele",
+      "moreGames": "+{n} weitere",
+      "moreParty": "+1 weitere Partei",
+      "moreParties": "+{n} weitere Parteien",
+      "brand": "Compies",
+      "alt": "{winner} gewinnt {event} mit {points}.",
+      "altMany": "{winner} gewinnen {event} mit je {points}.",
+      "altPlace": "Platz {rank}: {name}, {points}."
+    }
   },
   "replay": {
     "title": "Battle-Replay",
