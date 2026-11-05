@@ -29,6 +29,8 @@ Committed drizzle-kit migrations run in the Vercel build, so merging into `stagi
 
 GitHub holds only `main`, `staging` and branches in active development. The repo setting "Automatically delete head branches" is on, and merges still pass `--delete-branch`. Before ending a work session, run `git fetch --prune` and `git branch -r --merged origin/staging`, and delete what's left with `git push origin --delete <branch>`. You may delete merged branches on `origin` and change the repo's branch settings via `gh`.
 
+Agent worktrees go with `node scripts/worktree-clean.mjs <agent ids>`, run in the background (a worktree with `node_modules` takes minutes). Name the agents of this session that have reported; without names it removes only the worktrees of ended sessions. It unlocks what the harness locked, keeps a worktree with uncommitted changes, an unpushed commit or a process running in it (and says why), and deletes the folders a broken-off removal left.
+
 ## GitHub from a cloud session
 
 Cloud sessions (`CLAUDE_CODE_REMOTE=true`) reach GitHub through a proxy that refuses GraphQL, so `gh pr …` and `gh issue …` fail with a 403. It also refuses branch deletions and tag pushes over `git push`. Use the session's built-in GitHub tools where they cover the operation, or the REST API through `gh api`. Issue operations are in `docs/agents/issue-tracker.md`; the rest:

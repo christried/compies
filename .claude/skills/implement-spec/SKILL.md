@@ -48,3 +48,5 @@ Communication to and from subagents should be sparse. Communicate primarily thro
    **COMPIES:** merge the PR into `staging` once CI is green, then verify each ticket on staging and close it (`docs/agents/delivery.md`).
 
 9. Clean up all **implementer subagent** worktrees.
+
+   **COMPIES:** with `scripts/worktree-clean.mjs` (`docs/agents/delivery.md` § Branch hygiene).
