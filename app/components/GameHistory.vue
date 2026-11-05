@@ -40,8 +40,7 @@ const MARKS_MAX = 3
 const NAMES_MAX = 2
 
 /** The winners' line: both names for one or two winners, the first and „+N“ for more, so the names keep their share of the row. */
-function winnerText(result: ResultView): string {
-  const winners = winnersOf(result.places)
+function winnerText(winners: number[]): string {
   if (winners.length <= NAMES_MAX) return joinNames(winners.map(nameOf))
   return t('history.moreWinners', { name: nameOf(winners[0]!), n: winners.length - 1 })
 }
@@ -51,6 +50,12 @@ function scoresOf(result: ResultView): string | null {
   if (result.places.every(line => line.score === null)) return null
   return result.places.map(line => line.score ?? '–').join(' : ')
 }
+
+// Each numbered row with what the template shows of it, computed once per change instead of per use (#288).
+const rows = computed(() => props.results.map((result) => {
+  const winners = winnersOf(result.places)
+  return { result, winners, names: joinNames(winners.map(nameOf)), text: winnerText(winners), scores: scoresOf(result) }
+}))
 </script>
 
 <template>
@@ -78,7 +83,7 @@ function scoresOf(result: ResultView): string | null {
       class="m-0 flex list-none flex-col gap-2 p-0"
     >
       <li
-        v-for="result in results"
+        v-for="{ result, winners, names, text, scores } in rows"
         :key="result.roundId"
         class="@container relative min-w-0"
       >
@@ -105,7 +110,7 @@ function scoresOf(result: ResultView): string | null {
                 <span class="sr-only">{{ t('history.wonBy') }}</span>
                 <span class="flex flex-none -space-x-1.5 pt-px">
                   <TeamMark
-                    v-for="team in winnersOf(result.places).slice(0, MARKS_MAX)"
+                    v-for="team in winners.slice(0, MARKS_MAX)"
                     :key="team"
                     :team="team"
                     :size="16"
@@ -113,13 +118,13 @@ function scoresOf(result: ResultView): string | null {
                 </span>
                 <span
                   class="line-clamp-2 min-w-0"
-                  :title="joinNames(winnersOf(result.places).map(nameOf))"
-                  :aria-hidden="winnersOf(result.places).length > NAMES_MAX ? 'true' : undefined"
-                >{{ winnerText(result) }}</span>
+                  :title="names"
+                  :aria-hidden="winners.length > NAMES_MAX ? 'true' : undefined"
+                >{{ text }}</span>
                 <span
-                  v-if="winnersOf(result.places).length > NAMES_MAX"
+                  v-if="winners.length > NAMES_MAX"
                   class="sr-only"
-                >{{ joinNames(winnersOf(result.places).map(nameOf)) }}</span>
+                >{{ names }}</span>
                 <span
                   v-if="result.corrected"
                   class="flex-none rounded-[6px] border-[1.5px] border-line px-1.5 text-[10px] font-extrabold @max-[440px]:absolute @max-[440px]:top-0 @max-[440px]:right-0"
@@ -127,12 +132,12 @@ function scoresOf(result: ResultView): string | null {
               </span>
             </span>
             <span
-              v-if="scoresOf(result)"
+              v-if="scores"
               data-scores
               class="shrink-[4] truncate font-num text-[13px] text-ink-2 @max-[440px]:order-1 @max-[440px]:basis-full @max-[440px]:max-w-full @max-[440px]:pl-9"
               :class="corrections ? 'max-w-[30%]' : 'max-w-[38%]'"
-              :title="scoresOf(result)!"
-            >{{ scoresOf(result) }}</span>
+              :title="scores!"
+            >{{ scores }}</span>
             <AppIcon
               :icon="ChevronDown"
               :size="16"

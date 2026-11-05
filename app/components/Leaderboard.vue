@@ -82,6 +82,9 @@ function pillOf(team: number) {
   return { ...PILLS[kind], text: delta < 0 ? `−${-delta}` : `+${delta}` }
 }
 
+// Each row with its pill, computed once per change instead of three times per row (#288). The pill is set exactly while the news plays.
+const rows = computed(() => props.standings.map(standing => ({ standing, pill: playing.value ? pillOf(standing.team) : null })))
+
 function burst(news: StandingsNews) {
   const card = root.value
   const row = card?.querySelector(`tr[data-team="${news.winners[0]}"]`)
@@ -169,7 +172,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
         :move-class="unwatched() ? undefined : MOVE_CLASS"
       >
         <tr
-          v-for="(standing, index) in standings"
+          v-for="({ standing, pill }, index) in rows"
           :key="standing.team"
           :data-team="standing.team"
           :style="{ '--lb-delay': `${index * STAGGER_MS}ms` }"
@@ -200,17 +203,17 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
                 leave-to-class="opacity-0"
               >
                 <span
-                  v-if="playing"
+                  v-if="pill"
                   data-delta
                   aria-hidden="true"
                   class="inline-flex h-6 flex-none items-center gap-1 rounded-pill border-2 border-line px-2 text-[13px] leading-none font-extrabold"
-                  :class="pillOf(standing.team).classes"
+                  :class="pill.classes"
                 >
                   <component
-                    :is="pillOf(standing.team).icon"
+                    :is="pill.icon"
                     :size="12"
                     :stroke-width="3"
-                  />{{ pillOf(standing.team).text }}
+                  />{{ pill.text }}
                 </span>
               </Transition>
               <CpNum
