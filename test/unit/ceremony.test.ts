@@ -44,10 +44,21 @@ describe('the timing (spec #308 § Shared ceremony rules)', () => {
   }
 
   it('starts the run after the banner and the rows, and lands the gag after the run', () => {
-    expect(ceremonyTimeline(2, 'trip')).toEqual({ runAtMs: 1350, landAtMs: 2850, endMs: 5050 })
-    expect(ceremonyTimeline(2, 'bonk')).toEqual({ runAtMs: 1350, landAtMs: 4250, endMs: 6450 })
-    expect(ceremonyTimeline(8, 'trip')).toEqual({ runAtMs: 4050, landAtMs: 5550, endMs: 7750 })
-    expect(ceremonyTimeline(8, 'bonk')).toEqual({ runAtMs: 4050, landAtMs: 6950, endMs: 9150 })
+    expect(ceremonyTimeline(2, 'trip')).toMatchObject({ runAtMs: 1350, landAtMs: 2850, endMs: 5050 })
+    expect(ceremonyTimeline(2, 'bonk')).toMatchObject({ runAtMs: 1350, landAtMs: 4250, endMs: 6450 })
+    expect(ceremonyTimeline(8, 'trip')).toMatchObject({ runAtMs: 4050, landAtMs: 5550, endMs: 7750 })
+    expect(ceremonyTimeline(8, 'bonk')).toMatchObject({ runAtMs: 4050, landAtMs: 6950, endMs: 9150 })
+  })
+
+  // The moments the Pokal-Lauf's tracks and the layer's flags hang on (#312), from AwardCeremony.dc.html play().
+  it('puts the rows at 600 ms, the card after them, and the run ends 700 ms after its start', () => {
+    expect(ceremonyTimeline(2, 'trip')).toMatchObject({ rowsAtMs: 600, cardAtMs: 1050, runEndAtMs: 2050 })
+    expect(ceremonyTimeline(8, 'bonk')).toMatchObject({ rowsAtMs: 600, cardAtMs: 3750, runEndAtMs: 4750 })
+  })
+
+  it('stamps 150 ms after the landing, pops the people in at 450 ms and gets Compibert up at 300 ms', () => {
+    expect(ceremonyTimeline(2, 'trip')).toMatchObject({ stampAtMs: 3000, membersAtMs: 3300, getUpAtMs: 3150 })
+    expect(ceremonyTimeline(8, 'bonk')).toMatchObject({ stampAtMs: 7100, membersAtMs: 7400, getUpAtMs: 7250 })
   })
 
   it('has no row below two Parties', () => {

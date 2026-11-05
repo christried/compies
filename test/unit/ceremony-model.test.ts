@@ -27,7 +27,7 @@ const player = (id: string, teamPosition: number, overrides: Partial<MemberView>
 const people = (count: number, teamPosition: number, prefix = 'p'): MemberView[] => Array.from({ length: count }, (_, index) => player(`${prefix}${teamPosition}-${index + 1}`, teamPosition))
 
 type Read = Parameters<typeof ceremonyModel>[0]
-const read = (standings: { team: number, rank: number, points: number }[], members: MemberView[] = [], teams: BoardTeam[] = []): Read => ({ standings, members, teams, ceremony: CEREMONY })
+const read = (standings: { team: number, rank: number, points: number }[], members: MemberView[] = [], teams: BoardTeam[] = [], results = 3): Read => ({ standings, members, teams, ceremony: CEREMONY, event: { name: 'Freitags-Zocken' }, results: Array.from({ length: results }, () => ({}) as Read['results'][number]) })
 
 describe('ceremonyModel', () => {
   it('has nothing without a ceremony, without Standings and without a first place', () => {
@@ -147,6 +147,18 @@ describe('ceremonyModel', () => {
 
       expect(model.people).toHaveLength(6)
       expect(model.people[5]).toEqual({ kind: 'more', n: 7 })
+    })
+  })
+
+  describe('the line under the banner (#312)', () => {
+    const standings = [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 3 }]
+
+    it('names the Event and counts the games with a Result', () => {
+      expect(ceremonyModel(read(standings, [], [], 6), t)!.sub).toBe('Freitags-Zocken · 6 Spiele')
+    })
+
+    it('says a single game as „1 Spiel“', () => {
+      expect(ceremonyModel(read(standings, [], [], 1), t)!.sub).toBe('Freitags-Zocken · 1 Spiel')
     })
   })
 

@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
 import { ceremonyModel } from '~/utils/ceremony'
-import { ceremonyPlays } from '~~/shared/ceremony'
+import { buildRun, ceremonyRigState, measureRun, runGeometry, runPartsOf, type RunParts } from '~/utils/ceremony-run'
+import type { RigState } from '~/utils/compibert-rig'
+import type { Gsap } from '~/utils/gsap'
+import { ceremonyPlays, ceremonyTimeline } from '~~/shared/ceremony'
 import type { EventView } from '~~/shared/event'
 
-// The Award ceremony's layer (#309, spec #308): a modal dialog over the stage column (the side panel stays visible) on a desktop and full
+// The Award ceremony's layer (#309, #312, spec #308): a modal dialog over the stage column (the side panel stays visible) on a desktop and full
 // screen above the tabs on a phone. It opens by itself at the start instant of the Event read's ceremony, for every Member whatever tab or
-// scroll position they are on, and shows the end frame (the motion comes with #311 and #312). Close and Escape close it for this viewer and
-// this start, kept in memory: a refetch of the same start keeps it closed, a new start opens it again, a reload forgets the close.
+// scroll position they are on, plays the Pokal-Lauf and stays on its end frame. Close and Escape close it for this viewer and this start, kept
+// in memory: a refetch of the same start keeps it closed, a new start opens it again, a reload forgets the close.
 // The page mounts it always, never behind a `v-if` on `open`, because `useDialog` watches `open`.
+// Vue owns the facts, GSAP the pixels (#312): `elapsed` is the server's time less the start, sampled every frame; what the layer decides
+// (stamped? ended? announce? confetti?) is a function of it. The run is a paused GSAP timeline (`ceremony-run.ts`) that this layer moves with
+// `time(elapsed)` and never plays on GSAP's ticker, so a late joiner and a tab that comes back are the same code path.
 const props = defineProps<{
-  view: Pick<EventView, 'ceremony' | 'standings' | 'members' | 'teams'>
+  view: Pick<EventView, 'ceremony' | 'standings' | 'members' | 'teams' | 'results'> & { event: Pick<EventView['event'], 'name'> }
   /** The server's time in epoch ms (useServerClock): the opening is measured against it. */
   serverNow: () => number
 }>()
@@ -18,17 +24,28 @@ const props = defineProps<{
 const { t } = useI18n()
 const headingId = useId()
 const panel = useTemplateRef<HTMLElement>('panel')
+const award = useTemplateRef('award')
+const skipButton = useTemplateRef<HTMLButtonElement>('skipButton')
 
 const ceremony = computed(() => props.view.ceremony)
 const model = computed(() => ceremonyModel(props.view, t))
+const startsMs = computed(() => (ceremony.value ? Date.parse(ceremony.value.startsAt) : null))
+/** Every Party has a Standing, so this is the Party count the server stored the end for. */
+const partyCount = computed(() => props.view.standings?.length ?? 0)
+const schedule = computed(() => (ceremony.value ? ceremonyTimeline(partyCount.value, ceremony.value.gag) : null))
 
-// Null until the page has mounted, so the server never renders the layer open. The ticker runs up to the start instant; the sample at or
-// past it stays, so the opening is decided once, from the clock the page is at.
-const now = useServerTicker(() => props.serverNow(), { until: () => (ceremony.value ? Date.parse(ceremony.value.startsAt) : null) })
-
-/** The start (its ISO instant) this viewer's layer opened for, and the one they closed: in memory only. */
+/** The start (its ISO instant) this viewer's layer opened for, the one they closed and the one they skipped: in memory only. */
 const openedFor = ref<string | null>(null)
 const closedFor = ref<string | null>(null)
+const skippedFor = ref<string | null>(null)
+
+const open = computed(() => ceremony.value !== null && model.value !== null && openedFor.value === ceremony.value.startsAt && closedFor.value !== ceremony.value.startsAt)
+
+// Null until the page has mounted, so the server never renders the layer open. The ticker runs up to the start instant; the sample at or
+// past it stays, so the opening is decided once, from the clock the page is at. Once the layer is open it runs to the end instant.
+const now = useServerTicker(() => props.serverNow(), {
+  until: () => (ceremony.value ? Date.parse(open.value ? ceremony.value.endsAt : ceremony.value.startsAt) : null),
+})
 
 // Opening is a latch: from the start instant on, once, while the run plays. A page first loaded at or after the end never opens it; an opened
 // layer stays up past the end (the end frame waits to be closed); a new start is a new key and latches again at its own instant.
@@ -37,8 +54,6 @@ watch([now, ceremony], ([at, current]) => {
   if (openedFor.value === current.startsAt || closedFor.value === current.startsAt) return
   if (ceremonyPlays(current, at)) openedFor.value = current.startsAt
 }, { immediate: true })
-
-const open = computed(() => ceremony.value !== null && model.value !== null && openedFor.value === ceremony.value.startsAt && closedFor.value !== ceremony.value.startsAt)
 
 function close() {
   if (ceremony.value) closedFor.value = ceremony.value.startsAt
@@ -53,13 +68,157 @@ function onWindowKeydown(event: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onWindowKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onWindowKeydown))
 
-// The live region is empty on the render that mounts the dialog and gets its text on the next tick, so it is a change that is announced.
-const announcement = ref('')
-watch(open, async (isOpen) => {
-  announcement.value = ''
-  if (!isOpen) return
+// ---- the run
+
+/** Server time since the start, in ms; 0 before the page has a clock. */
+const elapsed = computed(() => (now.value === null || startsMs.value === null ? 0 : Math.max(0, now.value - startsMs.value)))
+const stamped = computed(() => schedule.value !== null && elapsed.value >= schedule.value.stampAtMs)
+const ended = computed(() => schedule.value !== null && elapsed.value >= schedule.value.endMs)
+
+/** Read when the layer opens: reduced motion shows the end frame at once. */
+const reduced = ref(false)
+/** The GSAP chunk did not load: the static end frame, no motion. */
+const failed = ref(false)
+/** The timeline is built and at the clock's place; until then the content is invisible (not `hidden`: the dialog still takes focus). */
+const ready = ref(false)
+const skipped = computed(() => ceremony.value !== null && skippedFor.value === ceremony.value.startsAt)
+const frame = computed(() => (ended.value || skipped.value || reduced.value || failed.value ? 'end' : 'run'))
+/** Compibert's pose: the timeline's calls change it as the clock crosses them; the end frame and a late joiner set it from the clock. */
+const rig = ref<RigState>('idle')
+const endPose = (): RigState => (reduced.value ? 'cheer' : 'dance')
+
+type Timeline = ReturnType<typeof buildRun>
+let timeline: Timeline | undefined
+let gsapHandle: Gsap | undefined
+let parts: RunParts | undefined
+let session = 0
+let resizeObserver: ResizeObserver | undefined
+/** The stretch of the clock the last seek covered: the stamp's confetti is for the viewer who saw it live. */
+let seek = { from: 0, to: 0 }
+const LIVE_STAMP_MS = 500
+
+function onStamp() {
+  const stampAt = schedule.value?.stampAtMs ?? 0
+  if (seek.from < stampAt && seek.to - stampAt <= LIVE_STAMP_MS) award.value?.burst()
+}
+
+function teardown() {
+  session++
+  resizeObserver?.disconnect()
+  resizeObserver = undefined
+  timeline?.kill()
+  timeline = undefined
+  parts = undefined
+  ready.value = false
+}
+
+function finish() {
+  timeline?.progress(1, true)
+  rig.value = endPose()
+}
+
+/** Builds the run after the dialog is in the DOM and GSAP is there, and puts it where the clock is. */
+async function begin() {
+  const mine = ++session
+  const stale = () => mine !== session
   await nextTick()
-  announcement.value = model.value?.live ?? ''
+  if (stale()) return
+  let gsap: Gsap
+  try {
+    gsap = await loadGsap()
+  }
+  catch {
+    if (stale()) return
+    failed.value = true
+    ready.value = true
+    rig.value = endPose()
+    return
+  }
+  await nextTick()
+  const root = award.value?.root
+  const found = root ? runPartsOf(root) : null
+  if (stale() || !root || !found || !ceremony.value) return
+  gsapHandle = gsap
+  parts = found
+  timeline = buildRun(gsap, found, runGeometry(measureRun(root, found)), {
+    partyCount: partyCount.value,
+    gag: ceremony.value.gag,
+    rigState: state => (rig.value = state),
+    onStamp,
+  })
+  // The first seek is silent: a late joiner fires no call, and gets the pose from the clock instead.
+  timeline.time(elapsed.value / 1000, true)
+  rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, partyCount.value, ceremony.value.gag)
+  if (frame.value === 'end') finish()
+  seek = { from: elapsed.value, to: elapsed.value }
+  ready.value = true
+}
+
+// Opens sync, so `reduced` is there before the dialog renders its first frame (no „Überspringen“ under reduced motion).
+watch(open, (isOpen) => {
+  teardown()
+  failed.value = false
+  rig.value = 'idle'
+  if (!isOpen) return
+  reduced.value = reducedMotion()
+  rig.value = reduced.value ? 'cheer' : ceremonyRigState(elapsed.value, partyCount.value, ceremony.value!.gag)
+  void begin()
+}, { immediate: true, flush: 'sync' })
+
+// Every frame while the run plays: events fire as the clock crosses them.
+watch(elapsed, (at) => {
+  if (!timeline || frame.value !== 'run') return
+  seek = { from: seek.to, to: at }
+  timeline.time(at / 1000, false)
+})
+
+// The end (the clock, a skip): the correction at `endsAt` (04-motion § 2), never the local ticks. Focus on the skip button moves to the end frame.
+watch(frame, async (now, was) => {
+  if (now !== 'end' || was === undefined) return
+  const hadFocus = skipButton.value !== null && skipButton.value.contains(document.activeElement)
+  finish()
+  if (!hadFocus) return
+  await nextTick()
+  panel.value?.querySelector<HTMLElement>('[data-end-focus]')?.focus()
+}, { flush: 'pre' })
+
+function skip() {
+  if (ceremony.value) skippedFor.value = ceremony.value.startsAt
+}
+
+// The end frame follows a resize (the run does not): Compibert stands at the new stopX.
+watch([frame, ready], ([which, isReady]) => {
+  resizeObserver?.disconnect()
+  resizeObserver = undefined
+  const root = award.value?.root
+  if (which !== 'end' || !isReady || !root || !parts || !gsapHandle || typeof ResizeObserver === 'undefined') return
+  resizeObserver = new ResizeObserver(() => {
+    if (parts) gsapHandle?.set(parts.compibert, { x: runGeometry(measureRun(root, parts)).stopX })
+  })
+  resizeObserver.observe(root)
+}, { flush: 'post' })
+
+// GSAP is preloaded while the ceremony is ahead or running (the lead, a late joiner), so the chunk is there when the layer opens. Never for a
+// ceremony whose end has passed: a finished Event page opened later loads none (ADR 0015).
+watch(() => ceremony.value?.startsAt, () => {
+  if (import.meta.client && ceremony.value && props.serverNow() < Date.parse(ceremony.value.endsAt)) loadGsap().catch(() => {})
+}, { immediate: true })
+
+onBeforeUnmount(teardown)
+
+// ---- the live region
+
+// Empty at open; it gets the sentence the first time the stamp has landed or the end frame shows (a skip, reduced motion and a failed chunk
+// speak at once), once per start. It is set a tick after its dialog mounted, so it is a change that is announced.
+const announcement = ref('')
+const speaks = computed(() => open.value && (stamped.value || frame.value === 'end'))
+watch(speaks, async (does) => {
+  if (!does) {
+    announcement.value = ''
+    return
+  }
+  await nextTick()
+  if (speaks.value) announcement.value = model.value?.live ?? ''
 }, { immediate: true })
 
 // useDialog gives focus back to where it was; when that was nothing (the page had no focus), the page's heading takes it (as EventRounds does).
@@ -79,20 +238,39 @@ watch(open, async (isOpen, was) => {
       role="dialog"
       aria-modal="true"
       :aria-labelledby="headingId"
+      :data-frame="frame"
       class="fixed layer-modal tex-paper animate-enter max-md:inset-0 md:top-[calc(var(--cp-header-h)+var(--cp-bw))] md:right-(--cp-panel-w) md:bottom-0 md:left-0"
       @keydown="onKeydown"
     >
-      <IconButton
-        :icon="X"
-        :label="t('common.close')"
-        data-autofocus
-        class="absolute top-3 right-3 z-10"
-        @click="close"
-      />
-      <div class="size-full overflow-y-auto">
+      <!-- „Überspringen“ and the close button: both stay while the run plays (the Host may leave at any time, story 27). -->
+      <div class="absolute top-3 right-3 z-10 flex items-center gap-2">
+        <button
+          v-if="frame === 'run'"
+          ref="skipButton"
+          type="button"
+          data-autofocus
+          class="h-9 cursor-pointer rounded-pill border-2 border-line bg-surface px-3.5 text-[13px] font-bold text-ink shadow-sm"
+          @click="skip"
+        >
+          {{ t('ceremony.skip') }}
+        </button>
+        <IconButton
+          :icon="X"
+          :label="t('common.close')"
+          :data-autofocus="frame === 'run' ? undefined : ''"
+          data-end-focus
+          @click="close"
+        />
+      </div>
+      <div
+        class="size-full overflow-y-auto"
+        :class="{ 'opacity-0': !ready }"
+      >
         <AwardCeremony
+          ref="award"
           :model="model"
           :heading-id="headingId"
+          :state="rig"
         />
       </div>
       <p
