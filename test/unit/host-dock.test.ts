@@ -406,7 +406,9 @@ describe('dockLayout', () => {
   }
 
   it.each(STATES)('pins the layout of $name for every open part, as today (#285)', ({ name, fields }) => {
-    for (const open of OPENS) expect(layout(fields, open)).toEqual(PINNED[name](open))
+    const pinned = PINNED[name]
+    expect(pinned).toBeDefined()
+    for (const open of OPENS) expect(layout(fields, open)).toEqual(pinned?.(open))
   })
 })
 
