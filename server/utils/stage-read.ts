@@ -262,8 +262,8 @@ export async function countdownSection({ db, eventRow, rows }: StageContext): Pr
  * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member; null otherwise. Its
  * side is in the read for everybody, since the page shows it only from the landing on (the room carries it too).
  */
-export async function coinSection({ db, eventRow, rows }: StageContext): Promise<Pick<EventView, 'coin'>> {
-  const toss = await readShownToss(db, eventRow, rows.sessions)
+export async function coinSection({ db, rows }: StageContext): Promise<Pick<EventView, 'coin'>> {
+  const toss = await readShownToss(db, rows.sessions)
   return { coin: toss ? coinView(toss) : null }
 }
 

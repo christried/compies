@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { coinTosses } from '../db/schema'
 import { COIN_DURATION_MS, COIN_LEAD_MS, coinRejection } from '../../shared/coin'
 import { isoInstant } from '../../shared/activity'
@@ -8,7 +8,7 @@ import { runningOf, type SessionTimes } from '../../shared/session-state'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
-import type { ChangeCore, EventRow } from './event-access'
+import type { ChangeCore } from './event-access'
 import { eventSessions } from './sessions'
 
 // The Coin flip of an Event (GLOSSARY: Coin flip; spec #218 § Coin flip, #235). Every toss is a row in `coin_tosses`; the server
@@ -63,14 +63,7 @@ export async function tossCoin({ tx, eventRow, user, publish, now }: ChangeCore,
  * none. Nothing is shown without a Running Session, so the Session end clears it, and a toss without a Session (one the 0.7 code
  * wrote during the switch-over) is shown in none.
  */
-export async function readShownToss(db: Db, eventRow: Pick<EventRow, 'id'>, sessions: readonly (SessionTimes & { id: string })[]): Promise<CoinRow | undefined> {
+export async function readShownToss(db: Db, sessions: readonly (SessionTimes & { id: string })[]): Promise<CoinRow | undefined> {
   const running = runningOf(sessions)
-  if (!running) return undefined
-  const [row] = await db
-    .select()
-    .from(coinTosses)
-    .where(and(eq(coinTosses.eventId, eventRow.id), eq(coinTosses.sessionId, running.id)))
-    .orderBy(desc(coinTosses.startedAt))
-    .limit(1)
-  return row
+  return running ? readLatestToss(db, running.id) : undefined
 }
