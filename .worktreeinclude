@@ -1,0 +1,5 @@
+# Gitignored files Claude Code copies into every new worktree, an agent's `isolation: "worktree"` included (retro 0.8):
+# the app's dev env and the realtime Worker's, so `pnpm dev` and `pnpm dev:realtime` run there as in the main checkout.
+# Without `realtime/.dev.vars` the Worker refused every Room publish with a 401.
+.env
+realtime/.dev.vars

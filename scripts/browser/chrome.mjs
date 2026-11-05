@@ -19,6 +19,18 @@ const CHROME = process.env.CHROME_PATH ?? {
 
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
+/** @public For the agents' own checks (docs/agents/browser-frame.md). One Chrome per account, as `{ host, member, … }`. */
+export async function launchAll(accounts) {
+  const tabs = {}
+  for (const account of accounts) tabs[account] = await launch(account)
+  return tabs
+}
+
+/** @public For the agents' own checks (docs/agents/browser-frame.md). Stops every Chrome `launchAll` started. */
+export function closeAll(tabs) {
+  for (const tab of Object.values(tabs)) tab.close()
+}
+
 /** Starts Chrome for one account (`host`, `member`, `admin`) on its port in `PORTS` and connects to its page. */
 export async function launch(account) {
   if (!existsSync(CHROME)) throw new Error(`No Chrome at ${CHROME}; set CHROME_PATH.`)
@@ -92,15 +104,15 @@ export async function resize(tab, width, height) {
   await tab.send('Emulation.setTouchEmulationEnabled', { enabled: width < 600 })
 }
 
-/** A PNG of the element matching `selector` (or of the viewport) in OUT; returns its path. */
-export async function shot(tab, name, selector) {
+/** A PNG of the element matching `selector` (or of the viewport) in `dir`; returns its path. */
+export async function shot(tab, name, selector, dir = OUT) {
   let clip
   if (selector) {
     const rect = await tab.evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); el.scrollIntoView({ block: 'start', behavior: 'instant' }); const r = el.getBoundingClientRect(); return { x: r.left + scrollX, y: r.top + scrollY, width: r.width, height: r.height } })()`)
     clip = { ...rect, scale: 1 }
   }
   const answer = await tab.send('Page.captureScreenshot', { format: 'png', ...(clip ? { clip, captureBeyondViewport: true } : {}) })
-  const file = join(OUT, `${name}.png`)
+  const file = join(dir, `${name}.png`)
   writeFileSync(file, Buffer.from(answer.result.data, 'base64'))
   return file
 }
