@@ -39,8 +39,10 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /**
    * Finishes the Event with the outcome the Host held and the Parties he saw on Place 1 (#277, #278, review 0.8 S2); the dock's hold calls this
    * after the hold and learns whether the server took it. The server refuses with `standings_changed` when either differs from the Standings now.
+   * A retry after a lost answer finds the Phase `finished` and answers `wrong_phase`: the first press worked, so it is quiet and counts as taken
+   * (#288, as the last-game path does). The Event is refetched and the page reads finished.
    */
-  const finish = (request: FinishRequest) => send('POST', 'finish', { body: { outcome: request.outcome, winners: request.winners } })
+  const finish = (request: FinishRequest) => send('POST', 'finish', { body: { outcome: request.outcome, winners: request.winners }, quiet: ['wrong_phase'] })
 
   /**
    * Raises the Game count by one while the Standings are a Tie (#278); the dock button learns whether the server took it. A second press finds the count
