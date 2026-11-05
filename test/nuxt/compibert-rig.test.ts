@@ -52,7 +52,7 @@ async function mountMany(configs: Props[]) {
   const shown = ref(configs.map(() => true))
   const Host = defineComponent({ setup: () => () => h('div', configs.flatMap((props, index) => (shown.value[index] ? [h(CompibertRig, { ...props, key: index })] : []))) })
   const page = await mountSuspended(Host)
-  return { page, rigs: () => page.findAll('.compibert-rig'), remove: (index: number) => { shown.value[index] = false } }
+  return { page, rigs: () => page.findAll('.compibert-rig'), remove: (index: number) => (shown.value[index] = false) }
 }
 
 const rootOf = (page: Page) => page.get('.compibert-rig')
@@ -337,7 +337,7 @@ describe('unmount races', () => {
     stubInView()
     const errors = vi.spyOn(console, 'error')
     let release = () => {}
-    chunk.held = new Promise<void>((resolve) => { release = resolve })
+    chunk.held = new Promise<void>(resolve => (release = resolve))
     const page = await mountRig({ state: 'dance' })
     const svg = page.get('svg').element
 

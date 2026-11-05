@@ -2,9 +2,10 @@
 // `docs/design_handoff_compies/reference/compibert-options.js` with its numbers (its timings agree with `Compibert Rig.dc.html`).
 // Pure TS on purpose: no Nuxt auto-imports, no `~/` aliases, only erasable syntax. Node runs this file directly in `scripts/bake-compibert.mjs`,
 // and it is imported on the server too, so nothing here touches `window` or `navigator` at the top level.
-import type { Gsap } from './gsap'
-// The unit test imports this file under the node tsconfig, which has no DOM types; the DOM is what the rig works on.
+// The unit test imports this file under the node tsconfig, which has no DOM types; the DOM is what the rig works on. A triple-slash
+// directive only counts before the first statement.
 /// <reference lib="dom" />
+import type { Gsap } from './gsap'
 
 export const RIG_STATES = ['idle', 'run', 'suspense', 'cheer', 'confused', 'laugh', 'dance'] as const
 export type RigState = typeof RIG_STATES[number]

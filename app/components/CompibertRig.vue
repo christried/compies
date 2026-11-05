@@ -55,8 +55,8 @@ onMounted(async () => {
   const element = root.value
   if (!element) return
   // Head crops are cheap and exempt from the one-rig rule.
-  if (props.variant === 'full') leaveStage = joinStage((allowed) => { onStage.value = allowed })
-  stopWatching = watchView(element, (visible) => { inView.value = visible })
+  if (props.variant === 'full') leaveStage = joinStage(allowed => (onStage.value = allowed))
+  stopWatching = watchView(element, visible => (inView.value = visible))
   // Client only, after mount, so the server's markup and the first client render agree.
   if (navigator.hardwareConcurrency <= WEAK_CORES) {
     const width = props.size ?? element.clientWidth
