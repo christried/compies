@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { draws, eventMembers, eventTeams, games, pollSlots, pollVotes, roundPlaces, rounds, users } from '../db/schema'
 import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
@@ -22,8 +22,8 @@ import type { DrawRow, RoundRow } from './rounds'
 // The Event read (`GET /api/e/:slug`) as section builders (#183). Each builder returns its slice of EventView and the
 // handler composes them. Rows that more than one section needs are read once, together, by readEventRows; the pools
 // need nothing from them, so the handler reads both at the same time. The board (#160) is one such builder.
-// The Rounds and their draws come from one statement, and the Results from another (#274, Spec N6): a draw is never
-// read without its Round. The stage (the rounds, the Results, the Lucky Wheel, the clip, the Countdown, the Coin flip,
+// The Rounds, their draws and their Places come from one statement (#274, Spec N6, #288): a draw is never read without
+// its Round, and a Round is never read as open while its Result is already in. The stage (the rounds, the Results, the Lucky Wheel, the clip, the Countdown, the Coin flip,
 // the Bonus Vetoes) is not here: its sections live in stage-read.ts (#256, #274), and the handler runs them after these.
 
 /** Who reads the Event. */
@@ -48,12 +48,12 @@ export interface EventRows {
   rounds: { round: RoundRow, game: typeof games.$inferSelect | null }[]
   /** Every draw of the Event's Rounds (#274, Spec N6): read in the same statement as the Rounds, so a draw is never seen without its Round. */
   draws: DrawRow[]
-  /** The Rounds with a Result and their Places (#274), by number, from one statement. */
+  /** The Rounds with a Result and their Places (#274, #288), by number; the Places come from the same statement as the Rounds. */
   results: { round: RoundRow, game: typeof games.$inferSelect | null, places: { team: number, place: number, score: string | null }[] }[]
 }
 
 export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRows> {
-  const [sessions, removedSessions, slots, votes, members, frozenTeams, roundDraws, resultRows] = await Promise.all([
+  const [sessions, removedSessions, slots, votes, members, frozenTeams, roundRows] = await Promise.all([
     eventSessions(db, eventRow.id),
     removedSessionNotices(db, eventRow.id),
     db
@@ -76,38 +76,42 @@ export async function readEventRows(db: Db, eventRow: EventRow): Promise<EventRo
       .select({ position: eventTeams.position, frozenName: eventTeams.frozenName })
       .from(eventTeams)
       .where(eq(eventTeams.eventId, eventRow.id)),
-    // One statement for the Rounds and their draws (Spec N6, #274): a spin that commits between two statements would give a draw
-    // whose Round the response lacks. Folded below: each Round once, in start order, and every draw once.
+    // One statement for the Rounds, their draws and their Places (Spec N6, #274, Spec N2 #288): a spin or a Result that commits
+    // between two statements would give a draw whose Round the response lacks, or a Round open with its Result. Folded below: each
+    // Round once, in start order, every draw once, and every Place once.
     db
-      .select({ round: rounds, game: games, draw: draws })
+      .select({ round: rounds, game: games, draw: draws, place: roundPlaces })
       .from(rounds)
       .leftJoin(games, eq(rounds.gameId, games.id))
       .leftJoin(draws, eq(draws.roundId, rounds.id))
+      .leftJoin(roundPlaces, eq(roundPlaces.roundId, rounds.id))
       .where(eq(rounds.eventId, eventRow.id))
       .orderBy(asc(rounds.startedAt), asc(rounds.id)),
-    // The Results (#274): their Places come from the same statement as their Rounds, by number (Place, then team, within a Round).
-    db
-      .select({ round: rounds, game: games, place: roundPlaces })
-      .from(roundPlaces)
-      .innerJoin(rounds, eq(roundPlaces.roundId, rounds.id))
-      .leftJoin(games, eq(rounds.gameId, games.id))
-      .where(and(eq(rounds.eventId, eventRow.id), isNotNull(rounds.resultAt)))
-      .orderBy(asc(rounds.number), asc(roundPlaces.place), asc(roundPlaces.team)),
   ])
 
   const roundList = new Map<string, EventRows['rounds'][number]>()
-  const drawList: DrawRow[] = []
-  for (const row of roundDraws) {
+  const drawList = new Map<string, DrawRow>()
+  // The Places of each Round by team: the primary key is (round, team), so a team's Place is one row however often the join repeats it.
+  const placeList = new Map<string, Map<number, EventRows['results'][number]['places'][number]>>()
+  for (const row of roundRows) {
     if (!roundList.has(row.round.id)) roundList.set(row.round.id, { round: row.round, game: row.game })
-    if (row.draw) drawList.push(row.draw)
+    if (row.draw) drawList.set(row.draw.id, row.draw)
+    if (row.place) {
+      const places = placeList.get(row.round.id) ?? new Map()
+      placeList.set(row.round.id, places)
+      places.set(row.place.team, { team: row.place.team, place: row.place.place, score: row.place.score })
+    }
   }
-  const resultList = new Map<string, EventRows['results'][number]>()
-  for (const row of resultRows) {
-    const entry = resultList.get(row.round.id) ?? { round: row.round, game: row.game, places: [] }
-    resultList.set(row.round.id, entry)
-    entry.places.push({ team: row.place.team, place: row.place.place, score: row.place.score })
-  }
-  return { sessions, removedSessions, slots, votes, members, frozenTeams, rounds: [...roundList.values()], draws: drawList, results: [...resultList.values()] }
+  // A Round with a Result has its Places in the same transaction (the Result is written under the lock), so resultAt is the one test.
+  const results = [...roundList.values()]
+    .filter(entry => entry.round.resultAt !== null)
+    .sort((a, b) => (a.round.number ?? 0) - (b.round.number ?? 0))
+    .map(entry => ({
+      round: entry.round,
+      game: entry.game,
+      places: [...(placeList.get(entry.round.id)?.values() ?? [])].sort((a, b) => a.place - b.place || a.team - b.team),
+    }))
+  return { sessions, removedSessions, slots, votes, members, frozenTeams, rounds: [...roundList.values()], draws: [...drawList.values()], results }
 }
 
 /**
