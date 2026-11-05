@@ -1,6 +1,10 @@
+import { serverClockReadyKey } from '~/composables/useServerClock'
+
 export interface ServerTickerOptions {
   /** The server time (epoch ms) at which nothing is pending any more, or null when nothing is. Reactive: it is read inside a watch. */
   until: () => number | null
+  /** False holds the value at null until the server clock is usable (#287). Reactive: it is watched, and the ticker reads again when it turns true. Default: the page's readiness (`serverClockReadyKey`), or always ready outside an Event page. */
+  ready?: () => boolean
   /** 'frame' (default): every animation frame. A number: every that many ms. */
   every?: 'frame' | number
   /** Pauses the ticker while this element is more than 120 px outside the viewport (IntersectionObserver, rootMargin '120px'). Optional. */
@@ -16,9 +20,14 @@ export interface ServerTickerOptions {
  * (a new spin, a new toss, a started Countdown) it reads again at once. With a `target` that is off-screen it holds its value and
  * reads again at once on return; so it does when the tab becomes visible again, because a hidden tab throttles frames. Call it in
  * `setup` before the component's own `onMounted`, so the first sample is there when that hook runs.
+ *
+ * It also holds null until the server clock is usable (#287, review 0.8 Q11): a device clock running ahead would end a moment
+ * early on its first sample. `ready` (by default the page's `serverClockReadyKey`) says when that is; it is watched, so the ticker
+ * samples the synced clock once it turns true. Outside an Event page nothing provides it, and the ticker is ready at mount.
  */
 export function useServerTicker(serverNow: () => number, options: ServerTickerOptions): Readonly<Ref<number | null>> {
   const now = ref<number | null>(null)
+  const ready = options.ready ?? inject(serverClockReadyKey, null) ?? (() => true)
   let mounted = false
   let onScreen = true
   let frame: number | undefined
@@ -54,7 +63,7 @@ export function useServerTicker(serverNow: () => number, options: ServerTickerOp
   /** Reads now and runs the loop again, if a moment is pending and the part is in view. */
   function restart() {
     stop()
-    if (!mounted) return
+    if (!mounted || !ready()) return
     sample()
     if (!onScreen || !pending()) return
     if (options.every === undefined || options.every === 'frame') loop()
@@ -99,6 +108,9 @@ export function useServerTicker(serverNow: () => number, options: ServerTickerOp
     if (options.target !== undefined) watch(() => toValue(options.target), watchTarget, { immediate: true, flush: 'post' })
   })
   watch(options.until, () => restart())
+  watch(ready, (isReady) => {
+    if (isReady) restart()
+  })
   onBeforeUnmount(() => {
     mounted = false
     stop()
