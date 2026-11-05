@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowDown, ArrowUp, Minus } from '@lucide/vue'
-import { teamName } from '~/utils/board'
+import { teamNameAt } from '~/utils/board'
 import { deltaPop, highlightRow, unwatched, winnerStamp } from '~/utils/motion'
 import { pointsDelta, rankMoves, type StandingsNews } from '~/utils/standings-news'
 import type { BoardTeam } from '~~/shared/event'
@@ -34,7 +34,7 @@ const headingId = useId()
 const root = useTemplateRef('root')
 const confetti = useTemplateRef('confetti')
 
-const nameOf = (team: number) => teamName(props.teams.find(item => item.position === team) ?? team, t)
+const nameOf = (team: number) => teamNameAt(props.teams, team, t)
 
 /** A Leaderboard that mounts with a news younger than this plays it (the first Result creates the stage block in the render that brings the news); an older one is a tab opened later. */
 const FRESH_MS = 1000

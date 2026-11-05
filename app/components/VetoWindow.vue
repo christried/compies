@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { teamName } from '~/utils/board'
+import { teamNameAt } from '~/utils/board'
 import { joinNames } from '~/utils/list'
 import { clockTick, revealTile, vetoStamp } from '~/utils/motion'
 import { VETO_WINDOW_MS } from '~~/shared/rounds'
@@ -51,7 +51,7 @@ const tiles = computed((): Tile[] => vetoes.value.left.map((left, index) => {
   const veto = revealed.value?.find(entry => entry.team === team)
   return {
     team,
-    name: teamName(props.teams.find(entry => entry.position === team) ?? team, t),
+    name: teamNameAt(props.teams, team, t),
     left,
     cast: veto ? { name: props.members.find(member => member.id === veto.userId)?.name ?? '' } : null,
   }

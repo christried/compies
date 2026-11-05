@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown, Pencil } from '@lucide/vue'
-import { teamName } from '~/utils/board'
+import { teamNameAt } from '~/utils/board'
 import { joinNames } from '~/utils/list'
 import type { HistoryCorrections } from '~/utils/result-draft'
 import type { BoardTeam } from '~~/shared/event'
@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<{
 const { t } = useI18n()
 const headingId = useId()
 
-const nameOf = (team: number) => teamName(props.teams.find(item => item.position === team) ?? team, t)
+const nameOf = (team: number) => teamNameAt(props.teams, team, t)
 
 /** The Result whose sheet is open (#275): the button sets it, closing clears it. */
 const correctionFor = ref<string | null>(null)

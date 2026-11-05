@@ -1,7 +1,7 @@
 import { hasStarted, nextSession, noSessionLeft, runningOf, sessionState } from '~~/shared/session-state'
 import { datePollOpen, type EventView, type Phase, SESSIONS_MAX, type SessionView } from '~~/shared/event'
 import type { EndView } from '~~/shared/stage'
-import { teamName } from './board'
+import { teamNameAt } from './board'
 import type { Translate } from './settings-summary'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the blocks of the stage
@@ -171,7 +171,7 @@ export function seatNote(view: Pick<EventView, 'members' | 'viewerId' | 'teams'>
   if (!view.event.isHost || !me) return null
   if (me.zone === 'stands') return t('event.notice.seatStands')
   if (me.zone !== 'team' || me.team === null) return null
-  return t('event.notice.seatTeam', { team: teamName(view.teams.find(team => team.position === me.team) ?? me.team, t) })
+  return t('event.notice.seatTeam', { team: teamNameAt(view.teams, me.team, t) })
 }
 
 /** What the Teams-bleiben notice names: the next Session by its number, or „der nächsten“ when it has none yet or is the only one. */
