@@ -5,6 +5,7 @@
 ### Behoben
 
 - Lädst du die Event-Seite neu, während das Glücksrad dreht, die Münze fliegt oder ein Countdown läuft, zeigt dein Gerät das Ende nicht mehr zu früh an, wenn seine Uhr vorgeht. ([#287](https://github.com/christried/compies/issues/287))
+- Wenn beim Beenden eines Events die Antwort verloren geht und du es noch einmal versuchst, zeigt die Seite keine Fehlermeldung mehr, sondern das beendete Event. ([#288](https://github.com/christried/compies/issues/288))
 
 ## [0.8.0] - 2026-11-05 – Punkte
 
