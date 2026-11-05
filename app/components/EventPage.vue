@@ -382,7 +382,7 @@ const { news } = useStandingsNews(data, slug)
 
         <div
           v-else-if="block === 'cards'"
-          class="grid items-start gap-4 md:grid-cols-2"
+          class="grid grid-cols-1 items-start gap-4 md:grid-cols-2"
         >
           <EventSessions
             :view="data"
