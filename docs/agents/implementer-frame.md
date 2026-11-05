@@ -46,7 +46,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 
 1. `git fetch origin && git merge origin/<integration branch>` into your branch, because the integration branch moves while you work. Resolve conflicts by keeping both sides (changelog lines, i18n keys), and keep every removal the integration branch made. Rerun the checks.
 2. Push your branch: `git push -u origin <your branch>`.
-3. Wait for CI on your pushed head: `node scripts/ci-wait.mjs`, with the Bash tool's `timeout` at 600000 (a run takes about 6 minutes). It prints one line, then the failures if any. Red: fix, push, and wait again. Report a green head; a red one you can't fix goes into the report with its output.
+3. Wait for CI on your pushed head: `node scripts/ci-wait.mjs`, in the foreground. One call waits at most 2.5 minutes; exit 2 means CI is still running (a run takes about 6 minutes), so call it again until it exits 0 or 1. It prints one line, then the failures if any. Red: fix, push, and wait again. Report a green head; a red one you can't fix goes into the report with its output.
 
 ## Report (once, short, this shape)
 
