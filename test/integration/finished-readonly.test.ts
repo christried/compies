@@ -16,6 +16,7 @@ import startCountdown from '../../server/api/e/[slug]/countdown/start.post'
 import finishEvent from '../../server/api/e/[slug]/finish.post'
 import lastGame from '../../server/api/e/[slug]/last-game.post'
 import moveMember from '../../server/api/e/[slug]/move.post'
+import startCeremony from '../../server/api/e/[slug]/ceremony.post'
 import rotateInvite from '../../server/api/e/[slug]/rotate.post'
 import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
 import putBack from '../../server/api/e/[slug]/rounds/[id].delete'
@@ -47,7 +48,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 // A finished Event is read-only for good (#277, spec #272): every write answers `wrong_phase`, and nothing it was asked to change changes.
 // The table is list-driven: each write route of the Event API is one entry, sent by the User it needs (the Host, or a Player for the routes
 // a Player uses). The guard test reads the folder of the routes and fails when a write is not in the table or in the explicit list of
-// writes that a finished Event still takes (rotate) or that write nothing (room).
+// writes that a finished Event still takes (rotate and the ceremony) or that write nothing (room).
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const players = {
@@ -102,6 +103,7 @@ describe('a finished Event is read-only', () => {
       'POST /api/e/:slug/finish': finishEvent,
       'POST /api/e/:slug/last-game': lastGame,
       'POST /api/e/:slug/rotate': rotateInvite,
+      'POST /api/e/:slug/ceremony': startCeremony,
     }, { roomNotifier: notifier, clock })
   })
 
@@ -234,7 +236,8 @@ describe('a finished Event is read-only', () => {
   }
 
   /** The writes a finished Event still takes or that write nothing: a new write must be in the table above, or here with its reason. */
-  const STILL_TAKEN = new Set(['rotate.post.ts'])
+  // The ceremony is the second write a finished Event takes (#309): the Host starts it there, and a Player is refused with not_host (own case below).
+  const STILL_TAKEN = new Set(['rotate.post.ts', 'ceremony.post.ts'])
   const WRITES_NOTHING = new Set(['room.post.ts'])
 
   /** What a refused write must leave as it was: the Event row, its Sessions, its open and drawn Rounds, its Countdown and the feed. */
@@ -263,6 +266,15 @@ describe('a finished Event is read-only', () => {
     expect(answers).toEqual(writes(game).map(write => ({ name: write.name, status: 409, code: 'wrong_phase' })))
     expect(await stateOf(game.eventId)).toEqual(before)
     expect(notifier.messages(game.eventId)).toEqual([])
+  })
+
+  it('still takes the start of the ceremony from the Host, and refuses it from a Player (#309)', async () => {
+    const game = await finishedWheel()
+
+    const player = await send('POST', `/api/e/${game.slug}/ceremony`, game.cookies.three)
+    expect(player.status).toBe(403)
+    expect((await player.json() as { statusMessage: string }).statusMessage).toBe('not_host')
+    expect((await send('POST', `/api/e/${game.slug}/ceremony`, game.hostCookie)).status).toBe(200)
   })
 
   it('lists every write route of the Event API in the table, or in the explicit lists of writes that stay open', async () => {
