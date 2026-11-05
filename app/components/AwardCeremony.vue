@@ -52,8 +52,7 @@ defineExpose({ root, burst })
     >
       <span
         data-part="banner"
-        class="rounded-[14px] border-(length:--cp-bw) border-line bg-primary px-6 py-2 font-display text-[clamp(32px,5vw,52px)] leading-none text-on-primary shadow-card"
-        style="transform: rotate(-4deg)"
+        class="-rotate-4 rounded-[14px] border-(length:--cp-bw) border-line bg-primary px-6 py-2 font-display text-[clamp(32px,5vw,52px)] leading-none text-on-primary shadow-card"
       >{{ t('ceremony.banner') }}</span>
     </h2>
     <p class="m-0 text-center text-[14px] font-bold text-ink-2">
@@ -113,8 +112,7 @@ defineExpose({ root, burst })
           <!-- The stamp is a physical sticker: fixed in both modes. -->
           <span
             data-part="stamp"
-            class="absolute right-3 bottom-3 rounded-[6px] border-[3px] border-hot bg-surface px-2.5 py-0.5 font-num text-[20px] text-hot"
-            style="transform: rotate(-8deg)"
+            class="absolute right-3 bottom-3 -rotate-8 rounded-[6px] border-[3px] border-hot bg-surface px-2.5 py-0.5 font-num text-[20px] text-hot"
           >{{ t('ceremony.stamp') }}</span>
         </div>
 

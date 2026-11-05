@@ -16,10 +16,11 @@ import { motion } from './motion'
 // either: ADR 0015 deviates from CODING_STANDARDS § Motion); the rig is a stub that shows the pose the layer asks for (#311 tests the rig).
 
 // A test can make the GSAP chunk fail to load.
-const chunk = vi.hoisted(() => ({ fail: false }))
+const chunk = vi.hoisted(() => ({ fail: false, loads: 0 }))
 mockNuxtImport('loadGsap', async () => {
   const { loadGsap: real } = await vi.importActual<typeof import('~/utils/gsap')>('~/utils/gsap')
   return async () => {
+    chunk.loads++
     if (chunk.fail) throw new Error('chunk failed')
     return real()
   }
@@ -122,6 +123,7 @@ const originalAnimate = Element.prototype.animate
 
 beforeEach(() => {
   chunk.fail = false
+  chunk.loads = 0
   realRig = false
   Element.prototype.animate = vi.fn(() => ({ onfinish: null })) as unknown as typeof Element.prototype.animate
   serverTime = T0
@@ -473,8 +475,8 @@ describe('a late joiner enters where the run is (#312)', () => {
   const { rowsAtMs, runAtMs, runEndAtMs, stampAtMs, endMs } = ceremonyTimeline(5, 'bonk')
   const trip = ceremonyTimeline(5, 'trip')
 
-  it('before the rows sees the banner above, no rows, no card, no stamp, no people, Compibert idle, no confetti', async () => {
-    await mount(run(5, 'trip'), STARTS + 100)
+  it('at the first frame sees the banner above, no rows, no card, no stamp, no people, Compibert idle, no confetti', async () => {
+    await mount(run(5, 'trip'), STARTS)
 
     expect(frame()).toBe('run')
     expect(part('banner')[0]!.style.transform).toContain('-140px')
@@ -488,9 +490,9 @@ describe('a late joiner enters where the run is (#312)', () => {
   })
 
   it('mid-rows sees the first row in, and the last not yet', async () => {
-    await mount(run(5, 'trip'), STARTS + rowsAtMs + 1800 + 300)
+    await mount(run(5, 'trip'), STARTS + rowsAtMs + 1350 + 10)
 
-    // Four rows, the last place first: three are in, the second place is still on its way or hidden.
+    // Four rows, the last place first: three have landed, the second place has just started.
     expect(part('row').filter(row => Number(opacityOf(row)) === 1)).toHaveLength(3)
     expect(hidden('card')).toBe(true)
   })
@@ -574,6 +576,11 @@ describe('the stamp (#312)', () => {
   })
 })
 
+async function mountAtEnd(view: Layer) {
+  await mount(view, ENDS - 1)
+  await passTo(ENDS)
+}
+
 describe('the end (#312)', () => {
   const CASES = [2, 5, 8].flatMap(parties => CEREMONY_GAGS.map(gag => [parties, gag] as const))
 
@@ -613,7 +620,7 @@ describe('the end (#312)', () => {
 
   it('shows 0, 1, 7 and 12 people at the end: the TeamMark, one, and „+N“', async () => {
     for (const [count, cellCount] of [[0, 1], [1, 1], [7, 6], [12, 6]] as const) {
-      await mount(run(2, 'trip', { members: people(count, 1) }), STARTS + ceremonyTimeline(2, 'trip').endMs)
+      await mountAtEnd(run(2, 'trip', { members: people(count, 1) }))
 
       expect(cells(), String(count)).toHaveLength(cellCount)
       expect(everyPartShown(), String(count)).toBe(true)
@@ -623,7 +630,7 @@ describe('the end (#312)', () => {
 
   it('shows the longest Team name in the card and the rows at the end', async () => {
     const longest = Array.from({ length: 6 }, () => 'W'.repeat(12)).join(' ')
-    await mount(run(2, 'trip', { teams: [team(1, longest), team(2, longest)] }), STARTS + ceremonyTimeline(2, 'trip').endMs)
+    await mountAtEnd(run(2, 'trip', { teams: [team(1, longest), team(2, longest)] }))
 
     expect(part('card')[0]!.textContent).toContain(longest)
     expect(rows()[0]).toContain(longest)
@@ -766,6 +773,25 @@ describe('when GSAP does not load (#312)', () => {
     expect(skipButton()).toBeNull()
     expect(text()).toContain('SIEGER')
     expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+  })
+})
+
+describe('preloading GSAP (#312)', () => {
+  it('asks for the chunk during the lead and for a late joiner, so it is there when the layer opens', async () => {
+    await mount(finished(), STARTS - CEREMONY_LEAD_MS)
+    expect(chunk.loads).toBeGreaterThan(0)
+    mounted!.unmount()
+    chunk.loads = 0
+
+    await mount(finished(), STARTS + 1000)
+    expect(chunk.loads).toBeGreaterThan(0)
+  })
+
+  it('does not ask for it on a finished Event opened after the run', async () => {
+    await mount(finished(), ENDS + 60_000)
+
+    expect(dialog()).toBeNull()
+    expect(chunk.loads).toBe(0)
   })
 })
 
