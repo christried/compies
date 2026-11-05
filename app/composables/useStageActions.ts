@@ -29,6 +29,8 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
 
   /** Tosses the coin for the Session (#235). */
   const toss = () => send('POST', 'coin')
+  /** Starts the Award ceremony of the finished Event (#309). Not quiet: a refused double start shows „Die Siegerehrung läuft noch.“ */
+  const startCeremony = () => send('POST', 'ceremony')
 
   /** Starts, pauses or resets the Countdown (#236). */
   const countdown = (action: CountdownCommand) => send('POST', `countdown/${action}`)
@@ -56,5 +58,5 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /** Removes a Session, whose Slot goes back to the poll (#55). */
   const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
-  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, countdown, endSession, finish, lastGame, reopenSession, removeSession }
+  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, startCeremony, countdown, endSession, finish, lastGame, reopenSession, removeSession }
 }

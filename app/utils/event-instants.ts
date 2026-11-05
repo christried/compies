@@ -7,7 +7,7 @@ import type { EventView } from '~~/shared/event'
 /**
  * The instants (server time, epoch ms) at which the page must read the Event again: one expression per piece that has a deadline.
  * The wheel's stop and the end of its Veto window, the coin's landing (#235: the feed's entry and the toss's result from then on),
- * the clip's end (#230: the overlay closes at it, and the read then drops the clip). A piece with a deadline adds one line here (#256).
+ * the clip's end (#230: the overlay closes at it, and the read then drops the clip), the ceremony's end (#309: the dock's „Siegerehrung starten“ is free again). A piece with a deadline adds one line here (#256).
  */
 export function viewInstants(view: Partial<EventView>): number[] {
   return [
@@ -15,6 +15,7 @@ export function viewInstants(view: Partial<EventView>): number[] {
     ...(view.wheel?.vetoes.draw ? [Date.parse(view.wheel.vetoes.draw.vetoEndsAt)] : []),
     ...(view.coin ? [Date.parse(view.coin.landsAt)] : []),
     ...(view.clip ? [Date.parse(view.clip.endsAt)] : []),
+    ...(view.ceremony ? [Date.parse(view.ceremony.endsAt)] : []),
   ]
 }
 

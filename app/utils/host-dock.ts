@@ -1,5 +1,6 @@
 import { eventHasWheel } from '~~/shared/settings'
 import { coinRejection } from '~~/shared/coin'
+import { ceremonyRejection } from '~~/shared/ceremony'
 import { errorCopyKey } from './api-error'
 import type { SetRejection, SpinRejection } from '~~/shared/rounds'
 import type { LastGameRejection } from '~~/shared/finish'
@@ -11,18 +12,18 @@ import { eventPageState, type EventPageState } from './event-page'
 // Event read. It is the Event page's own state (eventPageState: one place decides what the Event is doing) plus the
 // Host's start rule, so the dock, its tests and the page agree. Once the Rounds with a Result reach the Game count and first
 // place is not shared, „Event abschließen“ is the primary in every state that plays (#277); with a Tie the primary is „Unentschieden
-// beenden“ and „Letztes Spiel hinzufügen“ sits next to it (#278), and a finished Event has only „Einladen“. In a running Session „Nächstes Spiel setzen“ is the
+// beenden“ and „Letztes Spiel hinzufügen“ sits next to it (#278), and a finished Event has „Siegerehrung starten“ (#309) and „Einladen“. In a running Session „Nächstes Spiel setzen“ is the
 // primary of Host pick; in the Lucky Wheel „Rad drehen“ is (#229), disabled with its reason, and „Nächstes Spiel setzen“ waits in „Mehr“.
 // The end is decided once, as `closing` (#285): the kinds that play take its primary over their own, and dockLayout lays it out on top of their layout.
 
-export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'end'> & { event: Pick<EventView['event'], 'phase'> }
+export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'ceremony' | 'end'> & { event: Pick<EventView['event'], 'phase'> }
 
 export interface HostDockState {
   /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between`, `done` or `finished`. */
   kind: EventPageState['kind']
-  /** The one primary action, or null when there is none (`done` while the Event cannot be finished, `finished`). A closing state's primary is its `closing`. */
-  primary: 'setup' | 'setDate' | 'start' | 'setGame' | 'spin' | 'finish' | 'finishTie' | null
-  /** What closes the Event from here (#285): `finish` once the Game count is reached and first place is not shared, `finishTie` in a Tie, null otherwise. The 0.9 ceremony primary („Siegerehrung starten“) will be one more value. */
+  /** The one primary action, or null when there is none (`done` while the Event cannot be finished). A closing state's primary is its `closing`. */
+  primary: 'setup' | 'setDate' | 'start' | 'setGame' | 'spin' | 'finish' | 'finishTie' | 'ceremony' | null
+  /** What closes the Event from here (#285): `finish` once the Game count is reached and first place is not shared, `finishTie` in a Tie, null otherwise. A finished Event's primary („Siegerehrung starten“, #309) is not one: it closes nothing. */
   closing: 'finish' | 'finishTie' | null
   /** The shown number of the Session to start or end; null for the only Session of an Event, or without one. */
   number: number | null
@@ -61,7 +62,7 @@ function unclosed(input: DockInput, page: EventPageState): HostDockState {
   switch (page.kind) {
     case 'setup': return { ...base, primary: 'setup' }
     case 'poll': return { ...base, primary: 'setDate' }
-    case 'finished': return { ...base, primary: null }
+    case 'finished': return { ...base, primary: 'ceremony' }
     case 'running': {
       const wheel = eventHasWheel(input.settings)
       return {
@@ -83,7 +84,7 @@ function unclosed(input: DockInput, page: EventPageState): HostDockState {
 }
 
 /** The actions the dock can hold, by key. */
-export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto' | 'finish' | 'finishTie' | 'lastGame'
+export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto' | 'finish' | 'finishTie' | 'lastGame' | 'ceremony'
 
 /**
  * Which actions the dock holds per state, in named parts (review 1.4 A4, #228): the `primary` action(s), the `secondary` ones
@@ -108,8 +109,8 @@ export function dockLayout(state: HostDockState, open: { pollOpen: boolean, bonu
   const slots: DockKey[] = pollOpen ? ['slots'] : []
   const bonus: DockKey[] = bonusVetoOpen ? ['bonusVeto'] : []
   if (state.kind === 'setup') return { primary: ['settings'], secondary: ['invite'], more: [...dates, ...slots] }
-  // A finished Event is read-only for good: only „Einladen“ remains, and the Host can still rotate the link (#277). HostDock lists it in „Mehr“ too.
-  if (state.kind === 'finished') return { primary: [], secondary: ['invite'], more: [] }
+  // A finished Event is read-only for good: the Host can still rotate the link (#277) and start the ceremony (#309), and nothing else remains. HostDock lists „Einladen“ in „Mehr“ too.
+  if (state.kind === 'finished') return { primary: ['ceremony'], secondary: ['invite'], more: [] }
   // The running layouts compose the game actions once (GAME_ACTIONS), in Mehr before the settings.
   const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || bonusVetoOpen)
   // Each Session layout is spelled once, here (#285).
@@ -144,6 +145,15 @@ export function dockLayout(state: HostDockState, open: { pollOpen: boolean, bonu
  */
 export function coinBlockedKey({ sessions, coin }: Pick<EventView, 'sessions' | 'coin'>, nowMs: number): string | null {
   const rejection = coinRejection({ isHost: true, sessions, latest: coin, now: nowMs })
+  return rejection === null ? null : errorCopyKey(rejection)
+}
+
+/**
+ * The copy key of the reason the ceremony cannot start now, or null (#309): the dock's disabled reason while a run plays, from the Event read's
+ * ceremony and the server clock. The reason is the rule's (ceremonyRejection, the Host asks here); its copy is the API's.
+ */
+export function ceremonyBlockedKey({ event, ceremony }: Pick<EventView, 'ceremony'> & { event: Pick<EventView['event'], 'phase'> }, nowMs: number): string | null {
+  const rejection = ceremonyRejection({ isHost: true, phase: event.phase, latest: ceremony, now: nowMs })
   return rejection === null ? null : errorCopyKey(rejection)
 }
 

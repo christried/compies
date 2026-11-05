@@ -97,6 +97,7 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   countdown_not_running: 'error.countdownNotRunning',
   countdown_ended: 'error.countdownEnded',
   coin_in_air: 'error.coinInAir',
+  ceremony_running: 'error.ceremonyRunning',
   round_not_open: 'error.roundNotOpen',
   invalid_result: 'error.resultInvalid',
 }

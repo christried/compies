@@ -274,11 +274,18 @@ const { news } = useStandingsNews(data, slug)
       @shown="vetoBarShown = $event"
     />
 
-    <!-- The Host has the dock in every Phase; in a finished Event it holds Einladen only (#277). -->
+    <!-- The Host has the dock in every Phase; in a finished Event it holds Siegerehrung starten and Einladen (#277, #309). -->
     <HostDock
       v-if="data?.event.isHost"
       :actions="hostActions"
       panel
+    />
+
+    <!-- The Award ceremony (#309): mounted always, it opens itself at the start instant of the read's ceremony, for every Member. -->
+    <CeremonyLayer
+      v-if="data"
+      :view="data"
+      :server-now="serverClock.now"
     />
 
     <EventHostDialogs
