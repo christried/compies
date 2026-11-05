@@ -33,8 +33,20 @@ export type ShareImageSource = Pick<EventView, 'event' | 'sessions' | 'standings
 export interface ShareImageCopy {
   share: {
     image: {
-      winsOne: string, winsMany: string, points: string, pts: string, people: string, person: string, games: string, moreGames: string
-      moreParty: string, moreParties: string, alt: string, altMany: string, altPlace: string
+      winsOne: string
+      winsMany: string
+      points: string
+      pts: string
+      people: string
+      person: string
+      games: string
+      moreGames: string
+      moreParty: string
+      moreParties: string
+      brand: string
+      alt: string
+      altMany: string
+      altPlace: string
     }
   }
   team: { defaultName: string, colors: Record<string, string> }
@@ -73,6 +85,8 @@ export interface ShareImageModel {
   /** `teams` = every Party on Place 1 of that Round; `color` = the lowest team's fill (the dot). */
   chips: { name: string, teams: number[], color: string }[]
   moreChips: string | null
+  /** The brand word the picture signs with, „Compies“ (drawn in capitals). */
+  brand: string
   alt: string
 }
 
@@ -93,6 +107,8 @@ export function pluralCopy(template: string, n: number): string {
 
 // The three fonts have no emoji and Satori would draw empty boxes (decision 8): pictographs, variation selectors, ZWJ, regional
 // indicators (flags), skin tones and the keycap mark go before a name is measured or drawn.
+// Variation selectors, skin tones and the keycap mark are "combined characters" to the rule, which is the point: they all go.
+// eslint-disable-next-line no-misleading-character-class
 const PICTOGRAPHS = /[\p{Extended_Pictographic}\u{FE0E}\u{FE0F}\u{200D}\u{20E3}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}]/gu
 
 /** `text` as the picture can draw it: no pictographs, spaces collapsed and trimmed. '' when nothing is left. */
@@ -170,6 +186,36 @@ function wideChipCount(names: readonly string[], label: string): number {
   return count
 }
 
+// The square wraps its chips, and three lines is what its layout has room for under a two-line name (a Winner's name over three lines or a
+// long list of long names would push the sunburst over the chips). Estimated as the wide row is: a chip is about name length x 11 + 58
+// wide at 22 px, the gap is 12, a line has 952 px, and „+N weitere“ (about 130 px) must fit the last line.
+const SQUARE_LINE_PX = 952
+const SQUARE_LINES_MAX = 3
+const SQUARE_CHIP_CHAR_PX = 11
+const SQUARE_CHIP_FRAME_PX = 58
+const SQUARE_GAP_PX = 12
+const SQUARE_MORE_PX = 130
+
+/** How many of the square's chips fit its three lines; the first always stays. */
+function squareChipCount(names: readonly string[]): number {
+  let line = 1
+  let x = 0
+  let count = 0
+  for (const [index, name] of names.slice(0, SQUARE_CHIPS_MAX).entries()) {
+    const width = characterCount(name) * SQUARE_CHIP_CHAR_PX + SQUARE_CHIP_FRAME_PX
+    const wraps = x > 0 && x + SQUARE_GAP_PX + width > SQUARE_LINE_PX
+    const nextLine = wraps ? line + 1 : line
+    const nextX = x === 0 || wraps ? width : x + SQUARE_GAP_PX + width
+    const more = names.length - (index + 1) > 0
+    const tooMuch = nextLine > SQUARE_LINES_MAX || (more && nextLine === SQUARE_LINES_MAX && nextX + SQUARE_GAP_PX + SQUARE_MORE_PX > SQUARE_LINE_PX)
+    if (count > 0 && tooMuch) break
+    line = nextLine
+    x = nextX
+    count += 1
+  }
+  return count
+}
+
 // --- the model ---
 
 const ROWS_MAX = 3
@@ -212,7 +258,7 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
     const teams = result.places.filter(place => place.place === 1).map(place => place.team).sort((a, b) => a - b)
     return { name: drawable(result.game.name), teams, color: teams[0] === undefined ? '#fffdf8' : teamColor(teams[0]).fill }
   })
-  const shown = format === 'wide' ? wideChipCount(all.map(chip => chip.name), gamesLabel) : Math.min(all.length, SQUARE_CHIPS_MAX)
+  const shown = format === 'wide' ? wideChipCount(all.map(chip => chip.name), gamesLabel) : squareChipCount(all.map(chip => chip.name))
 
   const eventName = drawable(source.event.name)
   const date = dateText(source.sessions)
@@ -249,6 +295,7 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
     gamesLabel,
     chips: all.slice(0, shown),
     moreChips: shown < all.length ? fillCopy(text.moreGames, { n: all.length - shown }) : null,
+    brand: text.brand,
     alt,
   }
 }

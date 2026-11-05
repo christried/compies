@@ -115,6 +115,17 @@ describe('shareImageModel', () => {
     expect({ format: model.format, width: model.width, height: model.height }).toEqual({ format, width, height })
   })
 
+  it('signs with the brand copy, „Compies“, not Compibert', () => {
+    expect(wide().brand).toBe('Compies')
+  })
+
+  it('says nothing about any Player but their number', () => {
+    const members = [player('anna', 1), player('bert', 2)].map(member => ({ ...member, name: member.id === 'anna' ? 'Anna Beispiel' : 'Bert Muster', image: 'https://example.com/a.png', teamWord: 'Geheim' }))
+    const text = JSON.stringify(wide({ members }))
+    for (const forbidden of ['Anna', 'Bert', 'anna', 'bert', 'example.com', 'Geheim']) expect(text).not.toContain(forbidden)
+    expect(wide({ members }).people).toBe('2 Leute')
+  })
+
   describe('the date', () => {
     it('reads one Session as its day', () => {
       expect(wide().date).toBe('Sa 24.10.2026')
@@ -410,8 +421,19 @@ describe('shareImageModel', () => {
       expect(model.moreChips).toBeNull()
     })
 
-    it('does not shorten the square list for long names', () => {
-      expect(square({ games: played(9, () => 'x'.repeat(GAME_NAME_MAX)) }).chips).toHaveLength(9)
+    it('shows nine chips square when they fit three lines', () => {
+      expect(square({ games: played(9, () => 'x'.repeat(20)) }).chips).toHaveLength(9)
+    })
+
+    it('shortens the square list to what three lines hold, with „+N weitere“ on the last of them', () => {
+      // 60 characters = about 718 px: one per line of 952 px.
+      const model = square({ games: played(9, () => 'x'.repeat(GAME_NAME_MAX)) })
+      expect(model.chips).toHaveLength(3)
+      expect(model.moreChips).toBe('+6 weitere')
+    })
+
+    it('gives a chip wider than a line a line of its own, and leaves the last line to „+N weitere“', () => {
+      expect(square({ games: played(4, () => 'x'.repeat(200)) }).chips).toHaveLength(2)
     })
   })
 

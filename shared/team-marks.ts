@@ -9,3 +9,8 @@ export const TEAM_SYMBOLS: readonly string[] = [
   'M3 17a9 9 0 0 1 18 0Z',
   'M12 2 14.6 9.4 22 12 14.6 14.6 12 22 9.4 14.6 2 12 9.4 9.4Z',
 ]
+
+/** The symbol path of a Team position, clamped to 1..8 as TeamMark does. */
+export function teamSymbol(position: number): string {
+  return TEAM_SYMBOLS[Math.max(1, Math.min(8, Math.round(position))) - 1]!
+}
