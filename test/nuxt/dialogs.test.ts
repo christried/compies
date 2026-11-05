@@ -46,7 +46,7 @@ describe('AppSheet', () => {
     // The footer is a child of the sheet that scrolls, and it sticks to that scroll's bottom edge.
     expect(footer.parentElement).toBe(dialog)
     expect(dialog.className).toContain('overflow-y-auto')
-    expect([...footer.classList]).toEqual(expect.arrayContaining(['sticky', 'bottom-0', 'layer-sticky', 'bg-surface', 'border-t-(length:--cp-bw)']))
+    expect([...footer.classList]).toEqual(expect.arrayContaining(['sticky', '-bottom-5', 'layer-sticky', 'bg-surface', 'border-t-(length:--cp-bw)']))
   })
 
   it('fills the screen on a phone with `full` (#273), without the drag-handle bar, and stays a bottom sheet by default', async () => {
