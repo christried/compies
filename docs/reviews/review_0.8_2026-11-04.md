@@ -32,6 +32,19 @@ Before the review, a three-account browser check of #275–#278 ran on `ee01966`
 | F13 | leftover | `useHostActions.ts`'s header comment lists the Tie actions. | same |
 | F14 | spec N5 | Home's pill says „Kein Termin“ where the Event page does. | same |
 
+### Fixed after the browser check of the fix round (session 7)
+
+The browser check on `6e02764` passed F2–F14 but for these; each was then fixed on its own branch and checked again in the browser.
+
+| | Finding | Fix | Branch |
+|---|---|---|---|
+| G1 | #279, F10 | At 390 px a pool game's 60-character name without a space still widened the page by 219 px: the cards grid had no column template below `md`, so its `auto` column grew to the word. It is `grid-cols-1` now. | `fix/272-s6-layout` (`haiku`) |
+| G2 | F1 | At 390 px the corrected row with two winners and three Scores clamped the names to 46 px: the phone's row is 358 px, above F1's 340 px breakpoint. The breakpoint is 440 px, so the phone's row takes the panel's layout. | same |
+| G3 | s3 F1 | A sheet's sticky footer stopped 20 px above the bottom edge (a sticky box sticks inside its scroll container's padding), and the content showed through. The footer sticks at `-bottom-5`. | same |
+| G4 | F5 | At 1440 px a Round card that stays crossed the two-column grid in about one frame (134 px): the blocks' steep `ease-out` over `dur-slow`. The cards glide on `CARD_REFLOW_CLASS` (`ease-io`, `dur-slower`, 43 px per frame at most), and `leaveInPlace` pins a leaver on its exact place, measured once per render, so it fades instead of vanishing. | `fix/272-card-glide` (`sonnet`) |
+| G5 | F7 | F7 kept the database's clock when it leads the request's, so an entry written within that lead (1.7 s on dev) before a Session's end landed under „Nach der Session“. Entries are stamped on the request's clock only. | `fix/272-feed-clock` (`sonnet`) |
+| — | F4 | Accepted: at 1440 px the notice's copy wraps to two lines beside the chip and the button. | — |
+
 ## Decisions (orchestrator and user, 2026-11-04)
 
 - **Winner stamp** (F2): the user chose to lift it onto the row's edge, as in `DS Scoring`, over keeping it or replacing it with the event-page artboard's banner ([#276](https://github.com/christried/compies/issues/276#issuecomment-6638212172)).
