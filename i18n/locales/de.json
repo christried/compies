@@ -329,17 +329,7 @@
         "name": "Glücksrad",
         "desc": "Das Glücksrad entscheidet, danach 60 s für Vetos."
       },
-      "ceremony": {
-    "banner": "Siegerehrung!",
-    "place1": "Platz 1",
-    "stamp": "SIEGER",
-    "standings": "Endstand",
-    "players": "Die Leute der Sieger",
-    "pts": "{n} P.",
-    "more": "{n} weitere",
-    "live": "Gewonnen hat {list}, {points}. | Unentschieden: {list}, je {points}."
-  },
-  "pickBan": {
+      "pickBan": {
         "name": "Pick & Ban",
         "desc": "Erst bannen, dann picken."
       },
@@ -531,6 +521,16 @@
       "heads": "Kopf",
       "tails": "Schwanz"
     }
+  },
+  "ceremony": {
+    "banner": "Siegerehrung!",
+    "place1": "Platz 1",
+    "stamp": "SIEGER",
+    "standings": "Endstand",
+    "players": "Die Leute der Sieger",
+    "pts": "{n} P.",
+    "more": "{n} weitere",
+    "live": "Gewonnen hat {list}, {points}. | Unentschieden: {list}, je {points}."
   },
   "pickBan": {
     "bans": "{team} bannt, {n} von {total}",
