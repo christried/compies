@@ -29,6 +29,7 @@
 - Ein sehr langer Spielname im Spielepool macht die Event-Seite am Handy nicht mehr breiter als den Bildschirm. ([#279](https://github.com/christried/compies/issues/279))
 - Wenn ein Spiel zurückgelegt wird, rutscht die Seite darunter jetzt sanft nach oben statt zu springen. ([#276](https://github.com/christried/compies/issues/276))
 - Ein sehr langer Spielname ohne Leerzeichen läuft im Aktivitäts-Feed nicht mehr über den Rand. ([#273](https://github.com/christried/compies/issues/273))
+- Am Handy schließt die Leiste mit dem Knopf unten in einem Fenster jetzt bündig mit dem Bildschirmrand ab, statt den Inhalt darunter durchscheinen zu lassen. ([#218](https://github.com/christried/compies/issues/218))
 
 ### Entfernt
 
