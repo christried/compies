@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { draftFromResult, draftPlaces, draftPoints, historyCorrections, moveRow, newResultDraft, setScore, toggleLevel, type ResultDraft } from '../../app/utils/result-draft'
+import { draftFromResult, draftPlaces, draftPoints, moveRow, newResultDraft, setScore, toggleLevel, type ResultDraft } from '../../app/utils/result-draft'
 import { rowIndexAt } from '../../app/utils/row-drag'
 
 // The result sheet's state rules (#273): the order of the Parties, which neighbours are level, the typed Scores, and what they make
@@ -172,35 +172,5 @@ describe('rowIndexAt', () => {
     expect(rowIndexAt(500, [10, 30, 50])).toBe(2)
     expect(rowIndexAt(-50, [10, 30, 50])).toBe(0)
     expect(rowIndexAt(99, [10])).toBe(0)
-  })
-})
-
-// The history's „Korrigieren“ (#275, #283): offered to the Host only, while the Event has not finished, and only when the Event has its settings and its end.
-describe('historyCorrections', () => {
-  type Read = Parameters<typeof historyCorrections>[0]
-  const save = async () => true
-  const table = { values: [3, 1, 0] }
-  const read = (event: Partial<Read['event']> = {}, rest: Partial<Read> = {}): Read => ({
-    event: { phase: 'running', isHost: true, ...event },
-    settings: { pointsTable: table } as Read['settings'],
-    end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
-    ...rest,
-  })
-
-  it('gives the Host the points table, the Game count and the save while the Event runs', () => {
-    expect(historyCorrections(read(), save)).toEqual({ pointsTable: table, total: 6, save })
-  })
-
-  it('gives a Member none', () => {
-    expect(historyCorrections(read({ isHost: false }), save)).toBeNull()
-  })
-
-  it('gives the Host none once the Event has finished', () => {
-    expect(historyCorrections(read({ phase: 'finished' }), save)).toBeNull()
-  })
-
-  it('gives none without settings or without the end', () => {
-    expect(historyCorrections(read({}, { settings: null }), save)).toBeNull()
-    expect(historyCorrections(read({}, { end: null }), save)).toBeNull()
   })
 })

@@ -2,7 +2,7 @@
 import { Armchair, Eye, Hand, Hourglass, Lock, Users } from '@lucide/vue'
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { errorCopyKey } from '~/utils/api-error'
-import { placeFromKey, placeKey, teamName } from '~/utils/board'
+import { placeFromKey, placeKey, teamName, teamNameAt } from '~/utils/board'
 import { startedIn, unevenNoticeIn, type EventPageState } from '~/utils/event-page'
 import { fade, glide, pop } from '~/utils/motion'
 import { countSeats, moveRejection, type Place } from '~~/shared/board'
@@ -46,7 +46,7 @@ const started = computed(() => startedIn(props.pageKind))
 const phase = computed<'setup' | 'poll' | 'open' | 'running'>(() => (props.settings === null ? 'setup' : started.value ? 'running' : props.teamChoiceOpen ? 'open' : 'poll'))
 
 // A team's name as it is shown: its Team name, else its colour's name (teamName).
-const nameOfTeam = (position: number) => teamName(props.teams.find(team => team.position === position) ?? position, t)
+const nameOfTeam = (position: number) => teamNameAt(props.teams, position, t)
 const nameOf = (userId: string) => props.members.find(member => member.id === userId)?.name ?? ''
 // Where everybody is drawn (useBoardPlaces): the server's place, under the moves other people made and the moves this viewer is making.
 const places = useBoardPlaces({ slug, members: () => props.members, room: props.room, refresh: () => refreshEvent(props.slug), people: { nameOf, teamName: nameOfTeam } })

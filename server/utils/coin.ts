@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { coinTosses } from '../db/schema'
 import { COIN_DURATION_MS, COIN_LEAD_MS, coinRejection } from '../../shared/coin'
 import { isoInstant } from '../../shared/activity'
@@ -8,7 +8,7 @@ import { runningOf, type SessionTimes } from '../../shared/session-state'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
-import type { EventChange, EventRow } from './event-access'
+import type { ChangeCore } from './event-access'
 import { eventSessions } from './sessions'
 
 // The Coin flip of an Event (GLOSSARY: Coin flip; spec #218 § Coin flip, #235). Every toss is a row in `coin_tosses`; the server
@@ -28,8 +28,6 @@ export function coinView(row: CoinRow): CoinView {
   return { id: row.id, side: row.side, startedAt: isoInstant(row.startedAt), landsAt: isoInstant(row.landsAt) }
 }
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
-
 /**
  * The Host tosses the coin (#235): refused with the reason of coinRejection, else a toss that starts a lead after `now` and lands a
  * duration later. The side comes from the platform's random source (`randomInt`). The feed entry is written with the landing as
@@ -37,7 +35,7 @@ type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
  * which carries the toss and shows its side from the landing on (#258). The toss is
  * stored with the Running Session, and only that Session's tosses count for `coin_in_air`: the flight of an earlier Session cannot block it (#259).
  */
-export async function tossCoin({ tx, eventRow, user, publish, now }: Change, randomInt: (n: number) => number): Promise<CoinTossed> {
+export async function tossCoin({ tx, eventRow, user, publish, now }: ChangeCore, randomInt: (n: number) => number): Promise<CoinTossed> {
   const sessions = await eventSessions(tx, eventRow.id)
   const running = runningOf(sessions)
   const latest = running ? await readLatestToss(tx, running.id) : undefined
@@ -65,14 +63,7 @@ export async function tossCoin({ tx, eventRow, user, publish, now }: Change, ran
  * none. Nothing is shown without a Running Session, so the Session end clears it, and a toss without a Session (one the 0.7 code
  * wrote during the switch-over) is shown in none.
  */
-export async function readShownToss(db: Db, eventRow: Pick<EventRow, 'id'>, sessions: readonly (SessionTimes & { id: string })[]): Promise<CoinRow | undefined> {
+export async function readShownToss(db: Db, sessions: readonly (SessionTimes & { id: string })[]): Promise<CoinRow | undefined> {
   const running = runningOf(sessions)
-  if (!running) return undefined
-  const [row] = await db
-    .select()
-    .from(coinTosses)
-    .where(and(eq(coinTosses.eventId, eventRow.id), eq(coinTosses.sessionId, running.id)))
-    .orderBy(desc(coinTosses.startedAt))
-    .limit(1)
-  return row
+  return running ? readLatestToss(db, running.id) : undefined
 }

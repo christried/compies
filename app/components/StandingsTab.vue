@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { HistoryCorrections } from '~/utils/result-draft'
+import type { HistoryCorrections } from '~/utils/history-corrections'
 import type { StandingsNews } from '~/utils/standings-news'
 import type { EventView } from '~~/shared/event'
 

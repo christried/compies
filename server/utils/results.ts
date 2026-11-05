@@ -5,7 +5,7 @@ import type { ResultEntered } from '../../shared/stage'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
 import { apiError } from './errors'
-import type { EventChange } from './event-access'
+import type { ChangeCore } from './event-access'
 import { readRounds, type RoundRow } from './rounds'
 
 // The Host enters a Result on an open Round (#273, spec #272, GLOSSARY: Result): the Round gets the next number and its Result's time,
@@ -14,10 +14,8 @@ import { readRounds, type RoundRow } from './rounds'
 // Result writes nothing. The rules are `shared/results.ts`; the instants come from the request's clock (ADR 0013), never from the
 // database's `now()`.
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
-
 /** Enters the Result of a Round of the Event, or corrects it (`places` as parseResultBody read them); refused with the reason of resultRejection. */
-export async function enterResult({ tx, eventRow, user, publish, now }: Change, roundId: string | undefined, places: ResultPlace[] | null): Promise<ResultEntered> {
+export async function enterResult({ tx, eventRow, user, publish, now }: ChangeCore, roundId: string | undefined, places: ResultPlace[] | null): Promise<ResultEntered> {
   const rows = await readRounds(tx, eventRow.id)
   const round = rows.find(row => row.id === roundId) ?? null
   const rejection = resultRejection({ isHost: eventRow.hostId === user.id, settings: settingsFromRow(eventRow), phase: eventRow.phase, round, places })
@@ -35,7 +33,7 @@ export async function enterResult({ tx, eventRow, user, publish, now }: Change, 
  * Replaces the Places of a Round that has a Result (#275). The Round keeps its number and `resultAt`; `correctedAt` is the request's
  * instant, and stays set after later Corrections. A save equal to the stored Result changes nothing and writes no entry.
  */
-async function correctResult({ tx, eventRow, user, publish, now }: Change, round: RoundRow, places: ResultPlace[]): Promise<ResultEntered> {
+async function correctResult({ tx, eventRow, user, publish, now }: ChangeCore, round: RoundRow, places: ResultPlace[]): Promise<ResultEntered> {
   const stored = await tx.select({ team: roundPlaces.team, place: roundPlaces.place, score: roundPlaces.score }).from(roundPlaces).where(eq(roundPlaces.roundId, round.id))
   const answer = { roundId: round.id, number: round.number! }
   if (sameResult(stored, places)) return answer

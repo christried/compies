@@ -25,3 +25,8 @@ export function teamName(team: BoardTeam | number, t: Translate): string {
   if (typeof team !== 'number' && team.name !== null) return team.name
   return t('team.defaultName', { color: t(`team.colors.${typeof team === 'number' ? team : team.position}`) })
 }
+
+/** The name of the team at `position`: its Team name when `teams` has it with one, else the Team colour's name (#288). */
+export function teamNameAt(teams: readonly BoardTeam[], position: number, t: Translate): string {
+  return teamName(teams.find(team => team.position === position) ?? position, t)
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { placeFromKey, placeKey, teamName } from '../../app/utils/board'
+import { placeFromKey, placeKey, teamName, teamNameAt } from '../../app/utils/board'
 import { parseTeamPosition } from '../../shared/board'
 import de from '../../i18n/locales/de.json'
 
@@ -30,6 +30,29 @@ describe('teamName', () => {
   it('names a team after its colour', () => {
     expect(teamName(1, t)).toBe('Team Rot')
     expect(teamName(8, t)).toBe('Team Nacht')
+  })
+
+  it('names a team with its Team name, and with its colour when the name is null', () => {
+    expect(teamName({ position: 1, name: 'Wilde Gurken', frozen: true }, t)).toBe('Wilde Gurken')
+    expect(teamName({ position: 1, name: null, frozen: false }, t)).toBe('Team Rot')
+  })
+})
+
+describe('teamNameAt', () => {
+  // The name of a team by its position (#288): the Event's teams where the position has one, else the colour's name.
+  const teams = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
+
+  it('names the team at a position with its Team name', () => {
+    expect(teamNameAt(teams, 1, t)).toBe('Wilde Gurken')
+  })
+
+  it('names a team with a null name after its colour', () => {
+    expect(teamNameAt(teams, 2, t)).toBe('Team Orange')
+  })
+
+  it('names a position that the teams lack after its colour', () => {
+    expect(teamNameAt([], 3, t)).toBe('Team Gelb')
+    expect(teamNameAt(teams.slice(0, 1), 3, t)).toBe('Team Gelb')
   })
 })
 

@@ -5,7 +5,7 @@ import type { BoardTeam } from '~~/shared/event'
 import { isStarted, nextSession } from '~~/shared/session-state'
 import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
-import { teamName } from './board'
+import { teamName, teamNameAt } from './board'
 import { joinNames } from './list'
 import type { Translate } from './settings-summary'
 
@@ -126,7 +126,7 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     case 'result_entered': {
       const game = entry.games[entry.params.gameId]
       if (game === undefined) return null
-      const winners = entry.params.first.map(position => teamName(teams.find(team => team.position === position) ?? position, t))
+      const winners = entry.params.first.map(position => teamNameAt(teams, position, t))
       const list = joinNames(winners)
       return t('activity.resultEntered', { n: entry.params.number, game, list, count: entry.params.first.length })
     }
@@ -139,7 +139,7 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     case 'event_finished': {
       const { winners } = entry.params
       if (winners.length === 0) return null
-      const list = joinNames(winners.map(position => teamName(teams.find(team => team.position === position) ?? position, t)))
+      const list = joinNames(winners.map(position => teamNameAt(teams, position, t)))
       return winners.length === 1 ? t('activity.eventFinished', { list, count: 1 }, 1) : t('activity.eventFinishedTie', { list })
     }
   }

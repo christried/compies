@@ -406,6 +406,23 @@ describe('finishing the Event', () => {
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toEqual(['Die Tabelle hat sich geändert. Schau sie dir nochmal an.']))
     await vi.waitFor(() => expect(pill(page)).not.toContain('Event abschließen 1 s halten'))
   })
+
+  it('takes a finish whose first answer was lost as done: the retry answers wrong_phase, shows no toast, and the page reads finished', async () => {
+    // The first press finished the Event; its answer never reached the page, so the hold is sent again.
+    const store = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: complete }))
+    registerEndpoint(`/api/e/${store.slug}/finish`, { method: 'POST', handler: () => {
+      store.set(hostView(store.slug, ENDED_ONE, { event: { isHost: true, phase: 'finished' }, end: complete }))
+      throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
+    } })
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+    const button = page.findAll('[role="toolbar"] button').find(item => item.text().startsWith('Event abschließen'))!
+
+    await hold(button)
+
+    await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
+    expect(pill(page)).toEqual(['Einladen', 'Mehr'])
+    expect(shownToasts()).toEqual([])
+  })
 })
 
 // A Tie (#278): with the Rounds that have a Result at the Game count and more than one Party on rank 1, the Host holds „Unentschieden beenden“ or adds a last game.

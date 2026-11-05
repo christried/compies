@@ -15,6 +15,16 @@ import { asRecord } from '../../shared/record'
 const BENCH: Place = { zone: 'bench' }
 
 /**
+ * The Event's settings for a rule that needs them (#288): an Event that is not set up cannot be running, so the rule's order
+ * gives it wrong_phase.
+ */
+export function requireSettings(eventRow: EventRow): EventSettings {
+  const settings = settingsFromRow(eventRow)
+  if (settings === null) throw apiError('wrong_phase')
+  return settings
+}
+
+/**
  * The Host's change of an Event's settings and pools (#147, #183), inside the caller's transaction on the locked Event.
  * `settings` is a partial change merged over the stored settings (or the full payload for an Event that is not set
  * up); the Game pool's list, when it is given, replaces the pool (#279). The floors are read here, under the lock. A refusal throws and

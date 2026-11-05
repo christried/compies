@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowDown, Calendar } from '@lucide/vue'
 import { formatSessionWhen, formatSlotTime } from '~/utils/berlin-time'
-import { teamName } from '~/utils/board'
+import { teamNameAt } from '~/utils/board'
 import type { EventPageState } from '~/utils/event-page'
 import { jumpTo, pollHeadingId } from '~/utils/jump'
 import type { BoardTeam } from '~~/shared/event'
@@ -66,7 +66,7 @@ const copy = computed(() => {
         ? t('event.head.finished.titleDone')
         : others.length > 0
           ? t('event.head.finished.titleTie')
-          : t('event.head.finished.title', { team: teamName(props.teams.find(team => team.position === winner) ?? winner, t) })
+          : t('event.head.finished.title', { team: teamNameAt(props.teams, winner, t) })
       return { kicker: t('event.head.finished.kicker'), title }
     }
     default:
