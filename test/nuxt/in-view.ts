@@ -18,13 +18,21 @@ export function stubInView() {
     constructor(callback: IntersectionObserverCallback, options: IntersectionObserverInit) {
       this.stub = {
         options, observed: [], disconnected: false,
-        see: isIntersecting => callback([{ isIntersecting } as IntersectionObserverEntry], this as unknown as IntersectionObserver),
+        // One entry per watched element, each naming its target (a shared observer tells its elements apart by it, #311).
+        see: isIntersecting => callback(
+          this.stub.observed.length > 0 ? this.stub.observed.map(target => ({ isIntersecting, target }) as IntersectionObserverEntry) : [{ isIntersecting } as IntersectionObserverEntry],
+          this as unknown as IntersectionObserver,
+        ),
       }
       observers.push(this.stub)
     }
 
     observe(element: Element) {
       this.stub.observed.push(element)
+    }
+
+    unobserve(element: Element) {
+      this.stub.observed = this.stub.observed.filter(watched => watched !== element)
     }
 
     disconnect() {
