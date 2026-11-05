@@ -5,6 +5,7 @@
 ### Neu
 
 - **Siegerehrung starten:** Der Host kann ein beendetes Event mit „Siegerehrung starten“ in der Host-Steuerung eröffnen. Alle, die das Event offen haben, sehen im selben Moment eine Ebene mit dem Endstand, dem Sieger und seinen Leuten, auch wer erst mittendrin dazukommt. ([#309](https://github.com/christried/compies/issues/309))
+- In der Siegerehrung tanzt die App-Figur jetzt am Ende; bei reduzierter Bewegung hält sie stattdessen die Jubel-Pose. ([#311](https://github.com/christried/compies/issues/311))
 
 ### Behoben
 
