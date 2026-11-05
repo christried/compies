@@ -2,7 +2,7 @@
 import { ChevronDown, Pencil } from '@lucide/vue'
 import { teamNameAt } from '~/utils/board'
 import { joinNames } from '~/utils/list'
-import type { HistoryCorrections } from '~/utils/result-draft'
+import type { HistoryCorrections } from '~/utils/history-corrections'
 import type { BoardTeam } from '~~/shared/event'
 import { winnersOf } from '~~/shared/results'
 import type { ResultView, RoundView } from '~~/shared/stage'

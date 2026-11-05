@@ -4,7 +4,7 @@ import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
 import { dateBlockedKey, eventPageState, headerPill } from '~/utils/event-page'
-import { historyCorrections } from '~/utils/result-draft'
+import { historyCorrections } from '~/utils/history-corrections'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
