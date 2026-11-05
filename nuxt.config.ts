@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     // Its client plugin imports a virtual module the Nuxt test environment cannot load;
     // test/build/pwa.test.ts checks the PWA against the production build instead.
     ...(process.env.VITEST ? [] : ['@vite-pwa/nuxt']),
-    // The sign-in without Discord or Twitch (server/dev/sign-in.ts) exists in the dev server and the staging build (#247);
+    // The sign-in without Discord or Twitch (server/dev/sign-in.ts), in the builds carriesDevSignIn names (stage.ts, #247);
     // test/build/dev-sign-in.test.ts checks that no production build carries it.
     defineNuxtModule({
       meta: { name: 'dev-sign-in' },

@@ -5,10 +5,9 @@ import { createAuth } from '../utils/auth'
 import { useDb } from '../utils/db'
 import { CURRENT_RELEASE } from '../utils/release'
 
-// Signs in without Discord or Twitch, so the user and agents can open Host and Member pages and take screenshots:
-// on `pnpm dev` (retro 1.3) and on staging, behind Vercel Authentication (#247). Only the dev server and the staging
-// build register this route (carriesDevSignIn in stage.ts, read by nuxt.config.ts); test/build/dev-sign-in.test.ts
-// checks the production build has none. The handler has no check of its own: staging runs with NODE_ENV=production.
+// Signs in without Discord or Twitch, so the user and agents can open Host and Member pages and take screenshots
+// (retro 1.3). Only the builds carriesDevSignIn names register this route (stage.ts, read by nuxt.config.ts; #247).
+// The handler has no check of its own: the staging build carries it and runs with NODE_ENV=production.
 // `?as=host|member|admin` picks the User, `?to=/path` where to land, `?news=unseen` leaves „Was ist neu“ unseen.
 const PEOPLE = {
   host: { name: 'Dev Host', canHost: true, isAdmin: false },

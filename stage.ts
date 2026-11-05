@@ -1,5 +1,6 @@
 // Decides at build time whether this build is the staging deployment, and how it is named (#178).
-// Plain TypeScript without Nuxt imports: nuxt.config.ts reads it, test/unit/stage.test.ts covers it.
+// Plain TypeScript without Nuxt imports: nuxt.config.ts reads it, test/unit/stage.test.ts covers it. The same decision
+// says which builds carry the dev sign-in (#247).
 
 export interface StageBranding {
   name: string
@@ -9,12 +10,13 @@ export interface StageBranding {
 }
 
 // Vercel sets VERCEL_GIT_COMMIT_REF to the branch it builds (vercel.json builds `main` and `staging`).
-// COMPIES_STAGE=staging, set in .env, lets a local build simulate staging.
+// COMPIES_STAGE=staging, set in .env, lets a local build simulate staging. Vercel sets VERCEL=1, and there only the
+// branch counts: the staging build carries the dev sign-in (#247), so no dashboard variable may turn production into it.
 export function isStagingBuild(env: Record<string, string | undefined> = process.env): boolean {
-  return env.VERCEL_GIT_COMMIT_REF === 'staging' || env.COMPIES_STAGE === 'staging'
+  return env.VERCEL_GIT_COMMIT_REF === 'staging' || (!env.VERCEL && env.COMPIES_STAGE === 'staging')
 }
 
-// The dev sign-in (server/dev/sign-in.ts) is registered on the dev server and in the staging build, so agents can
+// Which builds register the dev sign-in (server/dev/sign-in.ts): the dev server and the staging build, so agents can
 // check a Player's view on staging (#247). Staging sits behind Vercel Authentication; production never carries it.
 export function carriesDevSignIn(dev: boolean, env: Record<string, string | undefined> = process.env): boolean {
   return dev || isStagingBuild(env)
