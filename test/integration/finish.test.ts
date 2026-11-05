@@ -431,6 +431,13 @@ describe('Finishing the Event', () => {
       expect(await errorOf(await send('POST', `/api/e/${slug}/finish`, cookie, { outcome: 'winner', winners: [1] }))).toEqual({ status: 409, code: 'wrong_phase' })
     })
 
+    it('refuses the Host in an Event that is not set up with wrong_phase (#288: the rule\'s order, after the settings are read)', async () => {
+      const game = await running()
+      await testDb.db.update(events).set({ teamCount: null }).where(eq(events.id, game.eventId))
+
+      expect(await errorOf(await finish(game))).toEqual({ status: 409, code: 'wrong_phase' })
+    })
+
     it('refuses an Event whose Rounds with a Result fall short of the Game count with results_missing, and writes nothing', async () => {
       const game = await running({ gameCount: 2 })
       const round = await setRound(game, game.halo.id)

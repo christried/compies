@@ -280,6 +280,13 @@ describe('The last game', () => {
       expect(await eventRowOf(pollEvent!.id)).toEqual(before)
     })
 
+    it('refuses the Host in an Event that is not set up with wrong_phase (#288: the rule\'s order, after the settings are read)', async () => {
+      const game = await running()
+      await testDb.db.update(events).set({ teamCount: null }).where(eq(events.id, game.eventId))
+
+      expect(await errorOf(await addLastGame(game))).toEqual({ status: 409, code: 'wrong_phase' })
+    })
+
     it('refuses fewer Results than the Game count with results_missing, and writes nothing', async () => {
       const game = await running({ gameCount: 2 })
       const first = await setRound(game, game.halo.id)
