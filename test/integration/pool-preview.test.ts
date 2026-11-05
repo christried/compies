@@ -120,7 +120,7 @@ describe('Pool preview secrecy (#225)', () => {
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
       body: JSON.stringify({
         name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings,
-        pools: { main: [pool[0]!.id, pool[1]!.id] },
+        pool: [pool[0]!.id, pool[1]!.id],
       }),
     })
     expect(response.status).toBe(200)
@@ -158,7 +158,7 @@ describe('Pool preview secrecy (#225)', () => {
 
       const raw = await rawRead(playerCookie, slug)
 
-      expect((JSON.parse(raw) as EventView).pools).toBeNull()
+      expect((JSON.parse(raw) as EventView).pool).toBeNull()
       for (const trace of pool.flatMap(traces)) expect(raw).not.toContain(trace)
       expect(raw).not.toMatch(/api\/images/)
     })
@@ -169,7 +169,7 @@ describe('Pool preview secrecy (#225)', () => {
 
       const delta = await newGame('Delta Dart', 'ddddddddddd')
       const [eventRow] = await testDb.db.select({ id: events.id }).from(events)
-      await testDb.db.insert(eventPoolGames).values({ eventId: eventRow!.id, gameId: delta.id, pool: 'main' })
+      await testDb.db.insert(eventPoolGames).values({ eventId: eventRow!.id, gameId: delta.id })
 
       // The control: the Host sees the new game, so the insert really changed the pools.
       expect(await rawRead(hostCookie, slug)).toContain('Delta Dart')
@@ -192,7 +192,7 @@ describe('Pool preview secrecy (#225)', () => {
       const raw = await rawRead(hostCookie, slug)
 
       for (const trace of pool.slice(0, 2).flatMap(traces)) expect(raw).toContain(trace)
-      expect((JSON.parse(raw) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }] })
+      expect((JSON.parse(raw) as EventView).pool).toMatchObject([{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }])
       for (const game of pool) {
         const response = await fetchImage(game, hostCookie)
         expect(response.status).toBe(200)
@@ -205,32 +205,16 @@ describe('Pool preview secrecy (#225)', () => {
 
       expect((await patch(slug, { poolPreview: true })).status).toBe(200)
       const open = await rawRead(playerCookie, slug)
-      expect((JSON.parse(open) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }] })
+      expect((JSON.parse(open) as EventView).pool).toMatchObject([{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }])
       for (const trace of pool.slice(0, 2).flatMap(memberTraces)) expect(open).toContain(trace)
       for (const game of pool.slice(0, 2)) expect((await fetchImage(game, playerCookie)).status).toBe(200)
 
       expect((await patch(slug, { poolPreview: false })).status).toBe(200)
       const closed = await rawRead(playerCookie, slug)
       for (const trace of pool.flatMap(traces)) expect(closed).not.toContain(trace)
-      expect((JSON.parse(closed) as EventView).pools).toBeNull()
+      expect((JSON.parse(closed) as EventView).pool).toBeNull()
       for (const game of pool) expect((await fetchImage(game, playerCookie)).status).toBe(404)
     })
-  })
-
-  it('ignores a stray tiebreaker row: its game is in no pool of the Host\'s or the Player\'s read, and the Player gets no image of it (#279)', async () => {
-    const { slug } = await setUp(TEST_SETTINGS)
-    const stray = await newGame('Stray Stern', 'sssssssssss')
-    const [eventRow] = await testDb.db.select({ id: events.id }).from(events)
-    await testDb.db.insert(eventPoolGames).values({ eventId: eventRow!.id, gameId: stray.id, pool: 'tiebreaker' })
-
-    const hostRaw = await rawRead(hostCookie, slug)
-    const playerRaw = await rawRead(playerCookie, slug)
-
-    expect(hostRaw).not.toContain(stray.id)
-    expect(playerRaw).not.toContain(stray.id)
-    expect((JSON.parse(hostRaw) as EventView).pools!.main.map(game => game.id)).not.toContain(stray.id)
-    expect((JSON.parse(playerRaw) as EventView).pools!.main.map(game => game.id)).not.toContain(stray.id)
-    expect((await fetchImage(stray, playerCookie)).status).toBe(404)
   })
 
   it('gives a Player the games of a Host pick Event created with the Pool preview on (the default)', async () => {
@@ -238,7 +222,7 @@ describe('Pool preview secrecy (#225)', () => {
 
     const raw = await rawRead(playerCookie, slug)
 
-    expect((JSON.parse(raw) as EventView).pools).toMatchObject({ main: [{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }] })
+    expect((JSON.parse(raw) as EventView).pool).toMatchObject([{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }])
     for (const trace of pool.slice(0, 2).flatMap(memberTraces)) expect(raw).toContain(trace)
     for (const game of pool.slice(0, 2)) expect((await fetchImage(game, playerCookie)).status).toBe(200)
   })
@@ -247,16 +231,16 @@ describe('Pool preview secrecy (#225)', () => {
     const { slug, pool } = await setUp(TEST_SETTINGS)
 
     const raw = await rawRead(playerCookie, slug)
-    const { pools } = JSON.parse(raw) as EventView
+    const { pool: shown } = JSON.parse(raw) as EventView
 
-    for (const game of pools!.main) {
+    for (const game of shown!) {
       expect(Object.keys(game).sort()).toEqual(['id', 'imageUrl', 'name', 'youtubeId'])
     }
     for (const game of pool) expect(raw).not.toContain(game.notes)
     // The control: the Host's game carries every field, the notes too.
-    const hostPools = (JSON.parse(await rawRead(hostCookie, slug)) as EventView).pools!
-    expect(Object.keys(hostPools.main[0]!).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'suitabilities', 'youtubeId'])
-    expect(hostPools.main[0]).toMatchObject({ notes: pool[0]!.notes })
+    const hostPool = (JSON.parse(await rawRead(hostCookie, slug)) as EventView).pool!
+    expect(Object.keys(hostPool[0]!).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'suitabilities', 'youtubeId'])
+    expect(hostPool[0]).toMatchObject({ notes: pool[0]!.notes })
   })
 
   // A game the Host sets is every Member's from the moment it is set, with the Pool preview off too, and nothing else is (#228).
@@ -312,7 +296,7 @@ describe('Pool preview secrecy (#225)', () => {
       await hostSets(request, slug, hostCookie, alpha.id)
 
       const got = await whatThePlayerGets(slug, eventId)
-      expect(JSON.parse(got.event)).toMatchObject({ pools: null, rounds: [{ game: { id: alpha.id, name: 'Alpha Arena' } }] })
+      expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [{ game: { id: alpha.id, name: 'Alpha Arena' } }] })
       expect(got.feed).toContain('Alpha Arena')
       expectNone(got, [alpha], game => [game.notes])
       expectNone(got, [beta, gamma, library])
@@ -398,7 +382,7 @@ describe('Pool preview secrecy (#225)', () => {
       await hostPutsBack(request, slug, hostCookie, roundId)
 
       const got = await whatThePlayerGets(slug, eventId)
-      expect(JSON.parse(got.event)).toMatchObject({ pools: null, rounds: [] })
+      expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [] })
       expectNone(got, [beta, gamma, library])
     })
   })

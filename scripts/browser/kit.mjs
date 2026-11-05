@@ -129,12 +129,12 @@ function inTwoWeeks() {
 }
 
 /**
- * An Event of the tab's account (`POST /api/e`) with one direct Session: `settings` over the defaults, `pools` as
- * `{ main: [ids] }`, `startsAt` as Berlin wall-clock `YYYY-MM-DDTHH:mm` (default: in two weeks).
+ * An Event of the tab's account (`POST /api/e`) with one direct Session: `settings` over the defaults, `pool` as
+ * `[ids]`, `startsAt` as Berlin wall-clock `YYYY-MM-DDTHH:mm` (default: in two weeks).
  * Returns `{ slug, inviteUrl }`.
  */
-export async function createEvent(tab, { name, settings = {}, pools, startsAt = inTwoWeeks() }) {
-  const body = { name, sessions: 1, dateMode: 'direct', startsAt: [startsAt], settings: { ...DEFAULT_SETTINGS, ...settings }, ...(pools ? { pools } : {}) }
+export async function createEvent(tab, { name, settings = {}, pool, startsAt = inTwoWeeks() }) {
+  const body = { name, sessions: 1, dateMode: 'direct', startsAt: [startsAt], settings: { ...DEFAULT_SETTINGS, ...settings }, ...(pool ? { pool } : {}) }
   return ok(await api(tab, 'POST', '/api/e', body), 'POST /api/e')
 }
 
@@ -239,7 +239,7 @@ export async function runningEvent(tabs, { name, games = 5, gameNames = [], sett
   const { slug } = await createEvent(host, {
     name,
     settings: { teamCount: tabs.length, teamSize: 1, gameCount: 6, pointsTable: { preset: 'custom', values }, selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null, ...settings },
-    pools: { main: pool.map(game => game.id) },
+    pool: pool.map(game => game.id),
   })
   for (const tab of others) await joinEvent(tab, slug, host)
   for (const [index, tab] of tabs.entries()) {

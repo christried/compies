@@ -14,7 +14,7 @@ import type { Db } from './db'
 import type { EventRow } from './event-access'
 import { inviteUrl } from './links'
 import { startOf, teamChoiceOf } from './board'
-import { eventPools } from './pools'
+import { eventPool } from './pools'
 import { eventSessions, removedSessionNotices, type SessionRow } from './sessions'
 import { floorFacts } from './settings-floors'
 import type { DrawRow, RoundRow } from './rounds'
@@ -183,23 +183,23 @@ export function startSection(eventRow: EventRow, rows: EventRows, viewer: Viewer
   return { start: { sessionId: next?.id ?? null, number: next?.number ?? null, rejection } }
 }
 
-export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'settings' | 'settingsFloors' | 'pools'>> {
+export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'settings' | 'settingsFloors' | 'pool'>> {
   const settings = settingsFromRow(eventRow)
-  const [floors, pools] = await Promise.all([
+  const [floors, pool] = await Promise.all([
     // The floors at the saved team count; an Event that is not set up counts all teams (#197).
     viewer.isHost ? floorFacts(db, eventRow.id).then(facts => floorsAt(facts, settings?.teamCount)) : null,
     // Nothing about the pools is selected for a viewer who may not see them (#222).
-    canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings })) ? eventPools(db, eventRow.id, viewer.isHost) : null,
+    canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings })) ? eventPool(db, eventRow.id, viewer.isHost) : null,
   ])
   return {
     settings,
     settingsFloors: floors,
-    // The Host sees the games of both pools; every other Member only while the Pool preview is on, else null: nothing
+    // The Host sees the games of the Game pool; every other Member only while the Pool preview is on, else null: nothing
     // about the pools, not even how many (#146, #148, #222, #225). Then NO other field of this response may carry a pool
     // game (name, id, image key, video id, notes): the Members, Sessions and Votes in the other sections must stay free
     // of them. The one exception is a game a Round has set (roundsSection in stage-read.ts): it is every Member's from the moment it is set,
     // its notes the Host's alone. The tests hidden-wheel.test.ts and pool-preview.test.ts read the raw response to keep it so.
-    pools,
+    pool,
   }
 }
 

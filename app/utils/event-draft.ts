@@ -44,8 +44,8 @@ export interface EventDraft {
   poolPreview: boolean
   /** The Host's Veto allowance, kept while Host-Wahl is chosen; null follows the Team size until the Host touches it (#145). */
   vetoAllowance: number | null
-  /** The games of the Game pool, in the order they were added (#146; the Tiebreaker pool is gone, #279). Games, not ids, so the step and Fertig can show them. */
-  pools: { main: PoolGame[] }
+  /** The games of the Game pool, in the order they were added (#146, #286). Games, not ids, so the step and Fertig can show them. */
+  pool: PoolGame[]
   dates: SessionsDraft
 }
 
@@ -57,7 +57,7 @@ export function newDraft(): EventDraft {
     hiddenWheel,
     poolPreview,
     vetoAllowance,
-    pools: { main: [] },
+    pool: [],
     dates: { mode: 'poll', sessionCount: 1, slots: [''], direct: [''] },
   }
 }
@@ -78,22 +78,22 @@ export function settingsOf(draft: EventDraft): EventSettings {
 
 /** A game into a pool, or out of it when it is in already (the picker's toggle button, #146). */
 export function togglePoolGame(draft: EventDraft, game: PoolGame): EventDraft {
-  const games = draft.pools.main
+  const games = draft.pool
   const next = games.some(entry => entry.id === game.id) ? games.filter(entry => entry.id !== game.id) : [...games, game]
-  return { ...draft, pools: { main: next } }
+  return { ...draft, pool: next }
 }
 
 /** A game into a pool; nothing changes when it is in already (a game just created in the sheet, #146). */
 export function addPoolGame(draft: EventDraft, game: PoolGame): EventDraft {
-  return draft.pools.main.some(entry => entry.id === game.id)
+  return draft.pool.some(entry => entry.id === game.id)
     ? draft
-    : { ...draft, pools: { main: [...draft.pools.main, game] } }
+    : { ...draft, pool: [...draft.pool, game] }
 }
 
 /** The body of `POST /api/e`. */
 export function draftBody(draft: EventDraft) {
   const { dates } = draft
-  const base = { name: draft.name.trim(), sessions: dates.sessionCount, settings: settingsOf(draft), pools: poolIds(draft) }
+  const base = { name: draft.name.trim(), sessions: dates.sessionCount, settings: settingsOf(draft), pool: poolIds(draft) }
   return dates.mode === 'poll'
     ? { ...base, dateMode: 'poll' as const, slots: dates.slots }
     : { ...base, dateMode: 'direct' as const, startsAt: dates.direct }
@@ -104,7 +104,7 @@ export function draftBody(draft: EventDraft) {
  * Host's choice, so a Team size change must not overwrite it; a Host pick Event has none stored (null), so the Lucky Wheel
  * would follow the Team size. Name and dates are not edited here.
  */
-export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): EventDraft {
+export function draftFromEvent(view: Pick<EventView, 'settings' | 'pool'>): EventDraft {
   const { hiddenWheel, vetoAllowance, poolPreview, ...settings } = view.settings ?? defaultSettings()
   return {
     ...newDraft(),
@@ -113,17 +113,15 @@ export function draftFromEvent(view: Pick<EventView, 'settings' | 'pools'>): Eve
     poolPreview,
     vetoAllowance,
     // The Host always gets the games whole; null and the face only (a Member's) only narrow the type, a Member has no editor.
-    pools: view.pools
-      ? { main: view.pools.main.filter(isFullPoolGame) }
-      : { main: [] },
+    pool: view.pool?.filter(isFullPoolGame) ?? [],
   }
 }
 
 /** The body of `PATCH /api/e/:slug/settings`: all settings (a full payload also sets up an Event) and the Game pool. */
 export function settingsBody(draft: EventDraft) {
-  return { settings: settingsOf(draft), pools: poolIds(draft) }
+  return { settings: settingsOf(draft), pool: poolIds(draft) }
 }
 
-function poolIds(draft: EventDraft) {
-  return { main: draft.pools.main.map(game => game.id) }
+function poolIds(draft: EventDraft): string[] {
+  return draft.pool.map(game => game.id)
 }

@@ -34,7 +34,7 @@ try {
   const { slug } = await createEvent(host, {
     name: `Pool-Check ${stamp}`,
     settings: { selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null, poolPreview: true },
-    pools: { main: [game.id] },
+    pool: [game.id],
   })
   await joinEvent(member, slug, host)
   console.log(`Event ${slug}, game ${game.id}`)
@@ -44,7 +44,7 @@ try {
 
   const view = async tab => (await api(tab, 'GET', `/api/e/${slug}`)).body
   const memberView = await view(member)
-  const faces = memberView.pools?.main ?? []
+  const faces = memberView.pool ?? []
   check('Member: the pool games carry exactly id, name, imageUrl, youtubeId', faces.length === 1 && Object.keys(faces[0]).sort().join() === 'id,imageUrl,name,youtubeId', JSON.stringify(faces))
   check('Member: no notes anywhere in the read', !JSON.stringify(memberView).includes(notes))
 
@@ -57,14 +57,14 @@ try {
   check('Host: the „Notizen“ button', await hasNotesButton(host))
   check('Host: the player count', await hasPlayers(host))
 
-  // The Pool preview off: the Member's open page loses the list without a reload, and the read withholds the pools.
+  // The Pool preview off: the Member's open page loses the list without a reload, and the read withholds the pool.
   await member.evaluate('window.__sameDocument = true')
   await patchSettings(host, slug, { poolPreview: false })
   const gone = await within(5, () => member.evaluate(`!(${rowOf}) && document.querySelectorAll(${JSON.stringify(`${card} li`)}).length === 0`))
   check('Preview off: the Member\'s open page has no pool list within 5 s', gone)
   check('Preview off: the page was not reloaded', await member.evaluate('window.__sameDocument === true'))
   const hidden = await view(member)
-  check('Preview off: the read sends pools: null', hidden.pools === null, JSON.stringify(hidden.pools))
+  check('Preview off: the read sends pool: null', hidden.pool === null, JSON.stringify(hidden.pool))
   check('Preview off: no notes in the read', !JSON.stringify(hidden).includes(notes))
 
   // On again: the list is back.

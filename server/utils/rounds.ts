@@ -45,7 +45,7 @@ export async function readGamePool(db: Db, eventId: string): Promise<string[]> {
     .select({ id: games.id })
     .from(eventPoolGames)
     .innerJoin(games, eq(eventPoolGames.gameId, games.id))
-    .where(and(eq(eventPoolGames.eventId, eventId), eq(eventPoolGames.pool, 'main')))
+    .where(eq(eventPoolGames.eventId, eventId))
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
   return found.map(row => row.id)
 }

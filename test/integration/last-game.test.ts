@@ -130,8 +130,8 @@ describe('The last game', () => {
     ]).returning()
     const [halo, kart, schach] = inserted as [typeof inserted[number], typeof inserted[number], typeof inserted[number]]
     await testDb.db.insert(eventPoolGames).values([
-      { eventId, gameId: halo.id, pool: 'main' },
-      { eventId, gameId: kart.id, pool: 'main' },
+      { eventId, gameId: halo.id },
+      { eventId, gameId: kart.id },
     ])
 
     const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)

@@ -104,9 +104,6 @@ export interface RemovedSessionView {
   previousStartsAt: string
 }
 
-/** The Event's Game pool, with its games (#146, #279 dropped the Tiebreaker pool): whole for the Host, the face only for every other Member (#224). */
-export interface EventPools { main: (PoolGame | PoolGameFace)[] }
-
 /** What `POST /api/e/:slug/move` returns: the Member and the place they stand in now (#160). */
 export interface MovedMember { userId: string, to: Place }
 
@@ -163,10 +160,11 @@ export interface EventView {
   /** The lowest Team size and Veto allowance the settings editor offers (#147). Only the Host gets them; null for every other Member. */
   settingsFloors: SettingsFloors | null
   /**
-   * The Event's pools (#146): the Host always sees the games, every other Member only while the Pool preview is on (canSeePoolGames,
-   * #148, #222, #225). Null = this viewer learns nothing about the pools, not even how many games they hold.
+   * The Event's Game pool (#146, #286): the games whole for the Host, the face only for every other Member (#224). The Host always
+   * sees them, every other Member only while the Pool preview is on (canSeePoolGames, #148, #222, #225). Null = this viewer learns
+   * nothing about the pool, not even how many games it holds.
    */
-  pools: EventPools | null
+  pool: (PoolGame | PoolGameFace)[] | null
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
   /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */

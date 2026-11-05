@@ -96,16 +96,10 @@ describe('changing the settings of an Event (#147)', () => {
     await testDb.db.update(events).set({ phase }).where(eq(events.slug, slug))
   }
 
-  /** The Game pool's game ids (#279: the Tiebreaker pool is gone, so `poolOf` takes only the Game pool). */
+  /** The Game pool's game ids. */
   async function poolOf(slug: string) {
     const { id } = await row(slug)
-    return (await testDb.db.select().from(eventPoolGames).where(eq(eventPoolGames.eventId, id))).filter(entry => entry.pool === 'main').map(entry => entry.gameId)
-  }
-
-  /** The `tiebreaker` rows of an Event: only the 0.7 code during the switch-over writes them, and no read sees them (#279). */
-  async function strayOf(slug: string) {
-    const { id } = await row(slug)
-    return (await testDb.db.select().from(eventPoolGames).where(eq(eventPoolGames.eventId, id))).filter(entry => entry.pool === 'tiebreaker').map(entry => entry.gameId)
+    return (await testDb.db.select().from(eventPoolGames).where(eq(eventPoolGames.eventId, id))).map(entry => entry.gameId)
   }
 
   const luckyWheel: Omit<EventSettings, 'poolPreview'> = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 3 }
@@ -189,64 +183,77 @@ describe('changing the settings of an Event (#147)', () => {
   })
 
   describe('pools', () => {
+    it('replaces the Game pool with the list under `pool` and reads it back as a list (#286)', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+      const chess = await newGame('Schach')
+      const slug = await createdEvent({ pool: [kart.id] })
+
+      const response = await patch(slug, { pool: [chess.id, pong.id] })
+
+      expect(response.status).toBe(200)
+      expect((await read(slug)).pool?.map(game => game.id)).toEqual([pong.id, chess.id])
+    })
+
     it('replaces the Game pool that is given', async () => {
       const kart = await newGame('Mario Kart')
       const pong = await newGame('Pong')
       const chess = await newGame('Schach')
-      const slug = await createdEvent({ pools: { main: [kart.id] } })
+      const slug = await createdEvent({ pool: [kart.id] })
 
-      const response = await patch(slug, { settings: TEST_SETTINGS, pools: { main: [pong.id, chess.id] } })
+      const response = await patch(slug, { settings: TEST_SETTINGS, pool: [pong.id, chess.id] })
 
       expect(response.status).toBe(200)
       expect((await poolOf(slug)).sort()).toEqual([pong.id, chess.id].sort())
     })
 
-    it('accepts a tiebreaker list from the 0.7 client and ignores it, the Game pool is replaced alone (#279)', async () => {
+    it('refuses the old shape, a `pools` key of any value, with invalid_pools and writes nothing (#286)', async () => {
       const kart = await newGame('Mario Kart')
       const pong = await newGame('Pong')
-      const chess = await newGame('Schach')
-      const slug = await createdEvent({ pools: { main: [kart.id] } })
+      const slug = await createdEvent({ pool: [kart.id] })
 
-      const response = await patch(slug, { pools: { main: [pong.id], tiebreaker: [chess.id] } })
+      for (const pools of [{ main: [pong.id] }, { main: [] }, [pong.id], 'main', null]) {
+        for (const body of [{ pools }, { settings: { gameCount: 3 }, pools }, { settings: { gameCount: 3 }, pool: [pong.id], pools }]) {
+          const response = await patch(slug, body)
 
-      expect(response.status).toBe(200)
-      expect(await poolOf(slug)).toEqual([pong.id])
-      expect(await strayOf(slug)).toEqual([])
+          expect(response.status).toBe(400)
+          expect(response.statusText).toBe('invalid_pools')
+        }
+      }
+      expect(await poolOf(slug)).toEqual([kart.id])
+      expect((await row(slug)).gameCount).toBe(10)
     })
 
-    it('leaves the Game pool as it was when only a tiebreaker list and a settings change come (#279)', async () => {
+    it('leaves the Game pool as it was when only settings come', async () => {
       const kart = await newGame('Mario Kart')
-      const pong = await newGame('Pong')
-      const slug = await createdEvent({ pools: { main: [kart.id] } })
+      const slug = await createdEvent({ pool: [kart.id] })
 
-      const response = await patch(slug, { settings: { gameCount: 3 }, pools: { tiebreaker: [pong.id] } })
+      const response = await patch(slug, { settings: { gameCount: 3 } })
 
       expect(response.status).toBe(200)
       expect((await row(slug)).gameCount).toBe(3)
       expect(await poolOf(slug)).toEqual([kart.id])
-      expect(await strayOf(slug)).toEqual([])
     })
 
-    it('keeps a stray tiebreaker row the 0.7 code wrote, through a pools replace, and shows it in no read (#279)', async () => {
+    it('refuses duplicates and more than 200 games with invalid_pools', async () => {
       const kart = await newGame('Mario Kart')
-      const pong = await newGame('Pong')
-      const slug = await createdEvent({ pools: { main: [kart.id] } })
-      const { id } = await row(slug)
-      await testDb.db.insert(eventPoolGames).values({ eventId: id, gameId: pong.id, pool: 'tiebreaker' })
+      const slug = await createdEvent({ pool: [kart.id] })
+      const many = Array.from({ length: 201 }, (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`)
 
-      const response = await patch(slug, { pools: { main: [kart.id] } })
+      for (const pool of [[kart.id, kart.id], many, 'main', { main: [kart.id] }]) {
+        const response = await patch(slug, { pool })
 
-      expect(response.status).toBe(200)
-      expect(await strayOf(slug)).toEqual([pong.id])
-      expect(Object.keys((await read(slug, hostCookie)).pools!)).toEqual(['main'])
-      expect(JSON.stringify((await read(slug, hostCookie)).pools)).not.toContain(pong.id)
+        expect(response.status).toBe(400)
+        expect(response.statusText).toBe('invalid_pools')
+      }
+      expect(await poolOf(slug)).toEqual([kart.id])
     })
 
     it('empties the Game pool given as an empty list', async () => {
       const kart = await newGame('Mario Kart')
-      const slug = await createdEvent({ pools: { main: [kart.id] } })
+      const slug = await createdEvent({ pool: [kart.id] })
 
-      expect((await patch(slug, { pools: { main: [] } })).status).toBe(200)
+      expect((await patch(slug, { pool: [] })).status).toBe(200)
 
       expect(await poolOf(slug)).toEqual([])
     })
@@ -255,7 +262,7 @@ describe('changing the settings of an Event (#147)', () => {
       const kart = await newGame('Mario Kart')
       const slug = await createdEvent()
 
-      const response = await patch(slug, { settings: { gameCount: 3 }, pools: { main: [kart.id] } })
+      const response = await patch(slug, { settings: { gameCount: 3 }, pool: [kart.id] })
 
       expect(response.status).toBe(200)
       expect((await row(slug)).gameCount).toBe(3)
@@ -264,9 +271,9 @@ describe('changing the settings of an Event (#147)', () => {
 
     it('refuses an unknown game with unknown_game and changes nothing, settings included', async () => {
       const kart = await newGame('Mario Kart')
-      const slug = await createdEvent({ pools: { main: [kart.id] } })
+      const slug = await createdEvent({ pool: [kart.id] })
 
-      const response = await patch(slug, { settings: { gameCount: 3 }, pools: { main: ['00000000-0000-4000-8000-000000000000'] } })
+      const response = await patch(slug, { settings: { gameCount: 3 }, pool: ['00000000-0000-4000-8000-000000000000'] })
 
       expect(response.status).toBe(400)
       expect(response.statusText).toBe('unknown_game')
@@ -276,21 +283,21 @@ describe('changing the settings of an Event (#147)', () => {
 
     it('shows the games to a Member once the Hidden wheel is switched off and the Pool preview on, and hides them again when the wheel is hidden again', async () => {
       const kart = await newGame('Mario Kart')
-      const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true }, pools: { main: [kart.id] } })
-      expect((await read(slug, memberCookie)).pools).toBeNull()
+      const slug = await createdEvent({ settings: { ...luckyWheel, hiddenWheel: true }, pool: [kart.id] })
+      expect((await read(slug, memberCookie)).pool).toBeNull()
 
       // The wheel being visible again reveals nothing: the Pool preview stays off until the Host turns it on (#225).
       expect((await patch(slug, { settings: { hiddenWheel: false } })).status).toBe(200)
-      expect((await read(slug, memberCookie)).pools).toBeNull()
+      expect((await read(slug, memberCookie)).pool).toBeNull()
 
       expect((await patch(slug, { settings: { poolPreview: true } })).status).toBe(200)
-      const revealed = (await read(slug, memberCookie)).pools
+      const revealed = (await read(slug, memberCookie)).pool
       expect(JSON.stringify(revealed)).toContain('Mario Kart')
 
       expect((await patch(slug, { settings: { hiddenWheel: true } })).status).toBe(200)
       const hiddenAgain = await request(`/api/e/${slug}`, { headers: { cookie: memberCookie } })
       const raw = await hiddenAgain.text()
-      expect(JSON.parse(raw).pools).toBeNull()
+      expect(JSON.parse(raw).pool).toBeNull()
       expect(raw).not.toContain('Mario Kart')
       expect(raw).not.toContain(kart.id)
     })
@@ -298,7 +305,7 @@ describe('changing the settings of an Event (#147)', () => {
     it('refuses a malformed pool with invalid_pools', async () => {
       const slug = await createdEvent()
 
-      const response = await patch(slug, { pools: { main: ['nope'] } })
+      const response = await patch(slug, { pool: ['nope'] })
 
       expect(response.status).toBe(400)
       expect(response.statusText).toBe('invalid_pools')
@@ -337,7 +344,7 @@ describe('changing the settings of an Event (#147)', () => {
       const slug = await createdEvent({ settings: luckyWheel })
       await setPhase(slug, 'running')
 
-      const response = await patch(slug, { settings: { teamSize: 2, vetoAllowance: 1, hiddenWheel: true }, pools: { main: [kart.id] } })
+      const response = await patch(slug, { settings: { teamSize: 2, vetoAllowance: 1, hiddenWheel: true }, pool: [kart.id] })
 
       expect(response.status).toBe(200)
       expect(settingsFromRow(await row(slug))).toEqual({ ...luckyWheel, teamSize: 2, vetoAllowance: 1, hiddenWheel: true, poolPreview: false })
@@ -438,12 +445,12 @@ describe('changing the settings of an Event (#147)', () => {
   })
 
   describe('after the Event is finished', () => {
-    it('refuses everything with wrong_phase, pools included', async () => {
+    it('refuses everything with wrong_phase, the pool included', async () => {
       const kart = await newGame('Mario Kart')
       const slug = await createdEvent()
       await setPhase(slug, 'finished')
 
-      for (const body of [{ settings: { gameCount: 5 } }, { pools: { main: [kart.id] } }]) {
+      for (const body of [{ settings: { gameCount: 5 } }, { pool: [kart.id] }]) {
         const response = await patch(slug, body)
         expect(response.status).toBe(409)
         expect(response.statusText).toBe('wrong_phase')
@@ -493,10 +500,10 @@ describe('changing the settings of an Event (#147)', () => {
       expect(settingsFromRow(await row(slug))).toBeNull()
     })
 
-    it('refuses pools without settings: it has to be set up first', async () => {
+    it('refuses a pool without settings: it has to be set up first', async () => {
       const slug = await oldEvent()
 
-      const response = await patch(slug, { pools: { main: [] } })
+      const response = await patch(slug, { pool: [] })
 
       expect(response.status).toBe(400)
       expect(response.statusText).toBe('invalid_settings')

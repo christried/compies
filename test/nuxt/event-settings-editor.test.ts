@@ -51,7 +51,7 @@ interface Setup {
   phase?: string
   isHost?: boolean
   floors?: SettingsFloors | null
-  pools?: { main: PoolGame[] }
+  pool?: PoolGame[]
   /** The Members with their seats, and the teams of the board (the Event read's `members` and `teams`, #160). */
   members?: MemberView[]
   teams?: BoardTeam[]
@@ -68,7 +68,7 @@ function setUp(setup: Setup = {}) {
     event: { isHost: setup.isHost ?? true, phase: setup.phase ?? 'poll' },
     settings: setup.settings === undefined ? defaultSettings() : setup.settings,
     settingsFloors: setup.floors,
-    pools: setup.pools ?? { main: [] },
+    pool: setup.pool ?? [],
     members: setup.members,
     teams: setup.teams,
     setGame: setup.setGame,
@@ -154,7 +154,7 @@ describe('the settings editor', () => {
   })
 
   it('tells a Host without the Host permission that the library is closed, keeps the pool and asks for no games (#173)', async () => {
-    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart, pong] } })
+    const { slug, patched } = setUp({ settings: wheel, pool: [kart, pong] })
     listed.mockClear()
 
     const page = await mountEditor(slug, false)
@@ -169,12 +169,12 @@ describe('the settings editor', () => {
     await button(page, 'Pong aus dem Pool nehmen').trigger('click')
     expect(page.find('input[type="search"]').exists()).toBe(false)
     await cta(page).trigger('click')
-    await vi.waitFor(() => expect(patched).toHaveBeenCalledWith(expect.objectContaining({ pools: { main: [kart.id] } })))
+    await vi.waitFor(() => expect(patched).toHaveBeenCalledWith(expect.objectContaining({ pool: [kart.id] })))
     expect(listed).not.toHaveBeenCalled()
   })
 
   it('starts from the Event: Team size, Game count, Selection mode with its wheel options, and the pools', async () => {
-    const { slug } = setUp({ settings: wheel, pools: { main: [kart, pong] } })
+    const { slug } = setUp({ settings: wheel, pool: [kart, pong] })
 
     const page = await mountEditor(slug)
     expect(spin(page, 'Spieler pro Team').text()).toBe('4')
@@ -194,7 +194,7 @@ describe('the settings editor', () => {
   })
 
   it('saves what the Host changed, from the last step, and goes back to the Event with a toast', async () => {
-    const { slug, patched } = setUp({ settings: wheel, pools: { main: [kart] } })
+    const { slug, patched } = setUp({ settings: wheel, pool: [kart] })
     const page = await mountEditor(slug)
     await goTo(page, 'Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
@@ -208,7 +208,7 @@ describe('the settings editor', () => {
     await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
     expect(patched).toHaveBeenCalledWith({
       settings: { ...wheel, gameCount: 8 },
-      pools: { main: [kart.id, pong.id] },
+      pool: [kart.id, pong.id],
     })
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}`))
     expect(shownToasts().map(toast => toast.text)).toContain('Gespeichert.')
@@ -217,12 +217,12 @@ describe('the settings editor', () => {
   // The Event page shows the saved settings at once: the save refreshes the Event's read by its shared key, so the
   // page does not wait for its next 15 s poll (#174). The page's own summary is checked, not the editor's step.
   it('shows the saved settings on the Event page at once, without waiting for the poll', async () => {
-    const { slug, set } = setUp({ settings: wheel, pools: { main: [kart] } })
+    const { slug, set } = setUp({ settings: wheel, pool: [kart] })
     const page = await mountEditorAndEventPage(slug)
     const eventSettings = () => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'So wird gespielt'))!
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
-    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pools: { main: [kart] } }))
+    set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pool: [kart] }))
     await goTo(page, 'Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Spielepool')
