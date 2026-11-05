@@ -2,7 +2,7 @@ import type { Place, Zone } from './board'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
-import { PHASES, type Phase } from './phase'
+import { beforeFinish, PHASES, type Phase } from './phase'
 import type { EventSettings, SettingsFloors } from './settings'
 import type { PoolGame, PoolGameFace } from './game'
 import type { BonusVetoView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
@@ -41,12 +41,7 @@ export function slotProblems(proposed: Date[], existing: Date[], now: Date): (Sl
   })
 }
 
-export { PHASES, type Phase }
-
-/** Every Phase before the Event is finished. What may still change (Sessions, settings) is decided by this one set. */
-export function beforeFinish(phase: Phase): boolean {
-  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
-}
+export { beforeFinish, PHASES, type Phase }
 
 /** Sessions are added, removed and reopened in every Phase before the Event finishes (#55). */
 export function sessionsEditable(phase: Phase): boolean {
