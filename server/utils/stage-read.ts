@@ -18,11 +18,12 @@ import { roundGameView } from './library'
 import { readClip } from './clip'
 import { countdownView, readCountdown } from './countdown'
 import { coinView, readShownToss } from './coin'
+import { ceremonyViewOf } from './ceremony'
 import { readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { knownVetoRows, partyVetoesLeft, readBonusTeams, readVetoes, type VetoRow } from './vetoes'
 
 // The stage sections of the Event read (#256, review 0.7 Q1): the round family, the Results, the Standings and the end (#274),
-// the Lucky Wheel, the clip, the Countdown, the Coin flip and the Bonus Vetoes. Each section takes the same context and returns
+// the Lucky Wheel, the clip, the Countdown, the Coin flip, the Award ceremony and the Bonus Vetoes. Each section takes the same context and returns
 // its own fields of EventView; the handler (server/api/e/[slug].get.ts) runs them together. A new stage piece is one entry in `stageSections`.
 // Rows that more than one section needs are read once by readEventRows (the Rounds with their draws, the Results), and passed on;
 // roundsSection's first Promise.all reads the pool, the Vetoes and the Bonus rows, and the other sections read what they need themselves.
@@ -33,10 +34,10 @@ export interface StageContext { db: Db, eventRow: EventRow, rows: EventRows, vie
 export type StageSection = (ctx: StageContext) => Promise<Partial<EventView>>
 
 /**
- * The stage's sections, run together by the Event read. A new piece (the ceremony) is one entry here. A tuple, not a `StageSection[]`,
+ * The stage's sections, run together by the Event read. A new piece is one entry here. A tuple, not a `StageSection[]`,
  * so `StageFields` below can be derived from what each section returns (review 0.8 Q7).
  */
-export const stageSections = [roundsSection, resultsSection, clipSection, countdownSection, coinSection] as const satisfies readonly StageSection[]
+export const stageSections = [roundsSection, resultsSection, clipSection, countdownSection, coinSection, ceremonySection] as const satisfies readonly StageSection[]
 
 type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) extends (value: infer I) => void ? I : never
 
@@ -265,6 +266,11 @@ export async function countdownSection({ db, eventRow, rows }: StageContext): Pr
 export async function coinSection({ db, rows }: StageContext): Promise<Pick<EventView, 'coin'>> {
   const toss = await readShownToss(db, rows.sessions)
   return { coin: toss ? coinView(toss) : null }
+}
+
+/** The Award ceremony (#309, spec #308): the latest start of a finished Event, identical for every viewer (nothing in it is secret); null before the first start. */
+export async function ceremonySection({ eventRow }: StageContext): Promise<Pick<EventView, 'ceremony'>> {
+  return { ceremony: ceremonyViewOf(eventRow) }
 }
 
 /**

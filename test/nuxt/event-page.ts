@@ -1,7 +1,7 @@
 import { registerEndpoint, type mountSuspended } from '@nuxt/test-utils/runtime'
 import { expect } from 'vitest'
 import type { BoardTeam, EventView, MemberView, SessionNote, StartView } from '~~/shared/event'
-import type { BonusVetoView, ClipView, CountdownView, CoinView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from '~~/shared/stage'
+import type { BonusVetoView, ClipView, CountdownView, CoinView, CeremonyView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from '~~/shared/stage'
 import type { EventSettings, SettingsFloors } from '~~/shared/settings'
 import { kitty } from './auth'
 
@@ -14,7 +14,7 @@ export const LARSI = '00000000-0000-4000-8000-000000000002'
 export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pool?: EventView['pool'], removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null, results?: ResultView[], standings?: StandingView[] | null, end?: EndView | null }
+export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pool?: EventView['pool'], removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, ceremony?: CeremonyView | null, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null, results?: ResultView[], standings?: StandingView[] | null, end?: EndView | null }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
@@ -78,6 +78,8 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     countdown: overrides.countdown ?? null as CountdownView | null,
     // No coin toss (#235) unless a test tosses one: the Event read has one only while a Session runs.
     coin: overrides.coin ?? null as CoinView | null,
+    // No Award ceremony (#309) unless a test starts one: the Event read has it only for a finished Event.
+    ceremony: overrides.ceremony ?? null as CeremonyView | null,
     // No Bonus Veto (#233) unless a test gives the Host one: the read has it for the Host of a Lucky Wheel Event only.
     bonusVetoes: overrides.bonusVetoes ?? null as BonusVetoView | null,
     // No Result (#274) unless a test says so: the Event read has the Standings and the end only for an Event that is set up, and the fixture is not.

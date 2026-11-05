@@ -4,6 +4,7 @@ import type { RoundGame } from './game'
 import type { BonusVetoRejection, PoolWarning, SetRejection, SpinRejection, VetoRejection } from './rounds'
 import type { EndFacts, FinishRejection, LastGameRejection } from './finish'
 import type { Standing } from './results'
+import type { CeremonyGag } from './ceremony'
 
 /**
  * An open Round on the stage (#228, GLOSSARY: Round): its game is set, it was not put back and it has no Result yet. It has no number:
@@ -124,6 +125,13 @@ export interface CountdownView { durationMs: number, remainingMs: number, starte
 export interface CoinView { id: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
 /** What `POST /api/e/:slug/coin` returns: the toss and its instants (ISO), #235. */
 export interface CoinTossed { tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
+/**
+ * The Award ceremony of a finished Event (#309, spec #308): the latest start, the end of its run and its gag (ISO instants), the same for every
+ * viewer. Null before the first start, for an Event that is not finished and for one without settings. The end is derived (shared/ceremony.ts), never stored.
+ */
+export interface CeremonyView { startsAt: string, endsAt: string, gag: CeremonyGag }
+/** What `POST /api/e/:slug/ceremony` returns: the start that was made (#309). */
+export type CeremonyStarted = CeremonyView
 /** The Bonus Vetoes of the Event (#233): one count per Party, index 0 = team 1, and the Event-level reason the Host cannot grant one now (null when it can). */
 export interface BonusVetoView { granted: number[], rejection: BonusVetoRejection | null }
 /** What `POST /api/e/:slug/bonus-vetoes` returns: the Party and its Bonus Vetoes after the grant (#233). */
