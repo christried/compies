@@ -4,7 +4,7 @@ import type { LastGameAdded } from '../../shared/event'
 import { lastGameRejection } from '../../shared/finish'
 import { recordActivity } from './activity'
 import { apiError } from './errors'
-import type { EventChange } from './event-access'
+import type { ChangeCore } from './event-access'
 import { readEnd } from './finish'
 import { requireSettings } from './settings'
 
@@ -12,10 +12,8 @@ import { requireSettings } from './settings'
 // more Round. It runs under the Event lock (changeEvent, `lock: 'update'`): a second press that waits finds the count incomplete and is
 // refused with results_missing, so a double press adds one game.
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
-
 /** Raises the Game count by one when lastGameRejection passes; refuses with its reason otherwise. Nothing is written before the rule passes. */
-export async function addLastGame({ tx, eventRow, user, publish, now }: Change): Promise<LastGameAdded> {
+export async function addLastGame({ tx, eventRow, user, publish, now }: ChangeCore): Promise<LastGameAdded> {
   const settings = requireSettings(eventRow)
   const { end } = await readEnd(tx, eventRow.id, settings)
   const rejection = lastGameRejection({ isHost: eventRow.hostId === user.id, phase: eventRow.phase, end, gameCount: settings.gameCount })

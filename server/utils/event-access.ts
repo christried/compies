@@ -45,6 +45,9 @@ export interface EventChange {
   publishTo: (userIds: readonly string[], ...messages: RoomMessage[]) => void
 }
 
+/** What a rule function of a change reads: the transaction, the locked Event, the User, the queue and the request's clock (#288). */
+export type ChangeCore = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
+
 /** Messages of a change that go to the sockets of named Users only (#227). */
 interface NamedMessages {
   to: readonly string[]

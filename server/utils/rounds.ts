@@ -9,7 +9,7 @@ import { hasWheel, settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
-import type { EventChange, EventRow } from './event-access'
+import type { ChangeCore, EventChange, EventRow } from './event-access'
 import { readSeats } from './board'
 import { eventSessions, type SessionRow } from './sessions'
 import { dueDraws, settleDue } from './settle'
@@ -72,8 +72,6 @@ export async function settleBeforeRead(db: Db, eventRow: Pick<EventRow, 'id'>, n
   })
 }
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
-
 /** What the rules of a round change read in its transaction, all at the same time. */
 async function readRoundFacts(tx: Db, eventRow: EventRow) {
   const [sessions, seats, roundRows, drawRows, pool] = await Promise.all([
@@ -114,7 +112,7 @@ async function insertDraw(tx: Db, roundId: string, now: Date, fields: Omit<typeo
  * mode without a wheel is `no_wheel`. A Round that waits for a respin takes the game itself (#231). Refused with the reason of
  * setRejection, `no_wheel`, or `unknown_game`.
  */
-export async function setNextGame({ tx, eventRow, user, publish, now }: Change, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
+export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCore, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
   const { sessions, places, roundRows, drawRows, pool } = await readRoundFacts(tx, eventRow)
   const rejection = setRejectionOf(eventRow, sessions, places, roundRows, drawRows, eventRow.hostId === user.id)
   if (rejection) throw apiError(rejection)
@@ -146,7 +144,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: Change, 
  * starts. The feed's entry waits for the stop (`at`, not published). The room hears `event.changed` only; the clients refetch the
  * Event read, which shows the wheel per viewer (#258). Refused with the reason of spinRejection.
  */
-export async function spinWheel({ tx, eventRow, user, publish, now }: Change, randomInt: (n: number) => number): Promise<RoundSpun> {
+export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore, randomInt: (n: number) => number): Promise<RoundSpun> {
   const { sessions, places, roundRows, drawRows, pool } = await readRoundFacts(tx, eventRow)
   const left = gamesLeft(pool, drawRows, roundRows)
   const rejection = spinRejectionOf(eventRow, sessions, places, roundRows, drawRows, left, eventRow.hostId === user.id)
@@ -217,7 +215,7 @@ export async function castVeto({ tx, eventRow, user, publishTo, now }: Pick<Even
  * library game returns nowhere), and Vetoes spent in it stay spent (the rows stay). Only a set Round that stands and has no Result
  * can be put back: an unknown or put-back one is `round_not_found`, one being drawn `round_being_drawn`, one with a Result `round_not_open` (#273).
  */
-export async function putBackRound({ tx, eventRow, user, publish, now }: Change, roundId: string | undefined): Promise<{ roundId: string }> {
+export async function putBackRound({ tx, eventRow, user, publish, now }: ChangeCore, roundId: string | undefined): Promise<{ roundId: string }> {
   const round = (await readRounds(tx, eventRow.id)).find(row => row.id === roundId && row.putBackAt === null)
   if (!round) throw apiError('round_not_found')
   if (roundState(round) === 'drawn') throw apiError('round_being_drawn')
