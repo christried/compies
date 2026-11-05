@@ -2,8 +2,8 @@
 import type { CeremonyModel } from '~/utils/ceremony'
 
 // The end frame of the Award ceremony (#309, spec #308, reference AwardCeremony.dc.html): the banner, the places from second to last,
-// the winner card with its stamp, the Winners' people as avatars and a still Compibert on the ground. Presentational: the layer owns when
-// it shows and how it closes. No motion here (the Pokal-Lauf comes with #311 and #312); under reduced motion this frame is the whole show.
+// the winner card with its stamp, the Winners' people as avatars and Compibert on the ground (the rig, #311). Presentational: the layer owns when
+// it shows and how it closes. The frame itself has no motion (the Pokal-Lauf comes with #312); under reduced motion this frame is the whole show.
 // A Tie lists every Winner's Team name on a neutral card until the approved design replaces it (#315).
 const props = defineProps<{
   model: CeremonyModel

@@ -7,6 +7,7 @@ import { CEREMONY_LEAD_MS, ceremonyTimeline } from '~~/shared/ceremony'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { CeremonyView } from '~~/shared/stage'
 import { dialog, memberView } from './event-page'
+import { motion } from './motion'
 
 // The Award ceremony's layer (#309, spec #308): it opens at the start instant for whoever has the Event open, shows the end frame, and
 // closes for the viewer and that start. The server clock is a fake here: the test moves it, as coin-flip.test.ts does.
@@ -363,12 +364,44 @@ describe('what the end frame shows', () => {
 
     expect(text()).toContain(longest)
   })
+})
 
-  it('shows Compibert in his still pose, hidden from assistive technology', async () => {
+describe('Compibert in the end frame (#311)', () => {
+  const rig = () => dialog()?.querySelector('.compibert-rig') ?? null
+
+  it('is the animated rig, dancing, and hidden from assistive technology', async () => {
     await mount(finished(), STARTS)
 
-    const compibert = dialog()!.querySelector('.compibert')
-    expect(compibert).not.toBeNull()
-    expect(compibert!.getAttribute('aria-hidden')).toBe('true')
+    expect(rig()).not.toBeNull()
+    expect(rig()!.getAttribute('aria-hidden')).toBe('true')
+    expect(rig()!.getAttribute('data-state')).toBe('dance')
+    expect(rig()!.hasAttribute('tabindex')).toBe(false)
+  })
+
+  it('holds the cheer pose under reduced motion', async () => {
+    motion('reduced')
+    await mount(finished(), STARTS)
+
+    expect(rig()!.getAttribute('data-state')).toBe('cheer')
+    // The rig's own reduced path runs once GSAP has arrived: the pose is held, nothing loops.
+    await vi.waitFor(() => expect(rig()!.getAttribute('data-held')).toBe('true'))
+  })
+
+  it('is mounted only while the layer is open: closing it takes the rig away', async () => {
+    await mount(finished(), STARTS - 1000)
+    expect(rig()).toBeNull()
+
+    await passTo(STARTS)
+    expect(rig()).not.toBeNull()
+
+    closeButton()!.click()
+    await settle()
+    expect(rig()).toBeNull()
+  })
+
+  it('is the only Compibert in the layer: the still one is gone', async () => {
+    await mount(finished(), STARTS)
+
+    expect(dialog()!.querySelector('.compibert')).toBeNull()
   })
 })
