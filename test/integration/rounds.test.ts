@@ -4,6 +4,7 @@ import getActivity from '../../server/api/e/[slug]/activity.get'
 import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
 import confirmDate from '../../server/api/e/[slug]/confirm.post'
+import tossCoin from '../../server/api/e/[slug]/coin.post'
 import moveMember from '../../server/api/e/[slug]/move.post'
 import putBack from '../../server/api/e/[slug]/rounds/[id].delete'
 import setGame from '../../server/api/e/[slug]/rounds/index.post'
@@ -53,6 +54,7 @@ describe('Rounds', () => {
       'PATCH /api/e/:slug/settings': changeSettings,
       'POST /api/e/:slug/sessions/start': startSession,
       'POST /api/e/:slug/sessions/end': endSession,
+      'POST /api/e/:slug/coin': tossCoin,
       'POST /api/e/:slug/rounds': setGame,
       'POST /api/e/:slug/rounds/spin': spinWheel,
       'DELETE /api/e/:slug/rounds/:id': putBack,
@@ -232,7 +234,7 @@ describe('Rounds', () => {
       expect((await read(game, game.cookies.one)).setGame).toBeNull()
     })
 
-    it('writes the feed entry „game set“ with the game\'s name for everyone, and tells the room without any game data', async () => {
+    it('writes the feed entry „game set“ with the game\'s name for everyone, and tells the room only that the Event changed', async () => {
       const game = await running()
 
       await set(game, game.halo.id)
@@ -241,8 +243,7 @@ describe('Rounds', () => {
       const page = await (await send('GET', `/api/e/${game.slug}/activity`, game.cookies.three)).json() as ActivityPage
       expect(page.entries).toMatchObject([{ type: 'game_set', actor: { name: 'Hostess' }, params: { roundId: round!.id, gameId: game.halo.id }, games: { [game.halo.id]: 'Halo' } }])
       const messages = notifier.messages(game.eventId)
-      expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added', 'round.set'])
-      expect(messages.find(message => message.type === 'round.set')).toEqual({ type: 'round.set', roundId: round!.id, v: 1, serverTime: new Date(T0).getTime() })
+      expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added'])
     })
 
     it('answers only the Host: a Member gets 403 not_host and nothing is written', async () => {
@@ -361,7 +362,7 @@ describe('Rounds', () => {
       expect(view.rounds).toEqual([])
       expect(view.setGame?.left.sort()).toEqual([game.halo.id, game.kart.id].sort())
       expect((await roundRows(game))[0]).toMatchObject({ gameId: game.halo.id, putBackAt: new Date('2090-10-30T10:05:00.000Z') })
-      expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added', 'round.putBack'])
+      expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added'])
     })
 
     it('returns a library game nowhere: the pool is as it was', async () => {
@@ -524,17 +525,12 @@ describe('Rounds', () => {
       expect(row!.resultOffset).toBeLessThan(0.8)
     })
 
-    it('tells the room the spin without any game: the slices counted, the result slice, and the instants', async () => {
+    it('tells the room only that the Event changed on a spin, and no message of the wheel', async () => {
       const game = await running({ wheel: true })
 
-      const { roundId, drawId } = await spun(game)
+      await spun(game)
 
-      const [row] = await drawRows()
-      const messages = notifier.messages(game.eventId)
-      expect(messages.map(message => message.type)).toEqual(['event.changed', 'round.spun'])
-      expect(messages[1]).toEqual({
-        type: 'round.spun', roundId, drawId, spinStartAt: iso(LEAD), stopAt: iso(STOP), slices: 2, resultIndex: row!.resultIndex, resultOffset: row!.resultOffset, labels: null, v: 1, serverTime: new Date(T0).getTime(),
-      })
+      expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed'])
     })
 
     it('writes the feed entry „game drawn“ for the stop instant and does not publish it', async () => {
@@ -624,6 +620,18 @@ describe('Rounds', () => {
       expect((await roundRows(game)).find(round => round.id === roundId)).toMatchObject({ gameId: row!.gameId, setAt: new Date(iso(STOP)) })
       expect((await putBackRound(game, roundId)).status).toBe(200)
       expect((await read(game)).setGame?.left).toContain(row!.gameId)
+    })
+
+    it('settles a due draw before any write that holds the Event lock, even one that reads no Round state (#259)', async () => {
+      const game = await running({ wheel: true })
+      const { roundId } = await spun(game)
+      clock.advance(STOP)
+
+      expect((await send('POST', `/api/e/${game.slug}/coin`, game.hostCookie)).status).toBe(200)
+
+      const [row] = await drawRows()
+      expect(row).toMatchObject({ outcome: 'set' })
+      expect((await roundRows(game)).find(round => round.id === roundId)).toMatchObject({ gameId: row!.gameId, setAt: new Date(iso(STOP)) })
     })
 
     it('lets the Host spin again at the stop, and a game drawn once is not drawn again', async () => {
@@ -800,6 +808,46 @@ describe('Rounds', () => {
 
         expect((await feedOf(game, game.cookies.three)).map(entry => entry.type)).toEqual(['game_set'])
       })
+    })
+  })
+
+  // The stage sections (#256): each section returns all its fields in every case, so a section left out of the array
+  // would show here as a missing key. The shape is asserted per field, not with toEqual, since the stage grows.
+  describe('the stage sections of the Event read (#256)', () => {
+    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'bonusVetoes', 'results', 'standings', 'end'] as const
+
+    it('gives every stage field to the Host of a Host pick Event, the null ones as null', async () => {
+      const game = await running()
+      const view = await read(game)
+
+      for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
+      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, bonusVetoes: null })
+    })
+
+    it('gives the Host of a Lucky Wheel Event its wheel and the Bonus Vetoes', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 3 })
+      const view = await read(game)
+
+      for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
+      expect(view.wheel).toMatchObject({ count: 2 })
+      expect(view.bonusVetoes).toMatchObject({ granted: [0, 0], rejection: null })
+    })
+
+    it('gives a Player of a Lucky Wheel Event the wheel, and no setting of the next game or Bonus Vetoes', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 3 })
+      const view = await read(game, game.cookies.three)
+
+      for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
+      expect(view.wheel).toMatchObject({ count: 2 })
+      expect(view).toMatchObject({ setGame: null, bonusVetoes: null })
+    })
+
+    it('gives a Player of a Host pick Event the early return: no rounds, no wheel, no draw', async () => {
+      const game = await running()
+      const view = await read(game, game.cookies.three)
+
+      for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
+      expect(view).toMatchObject({ rounds: [], setGame: null, wheel: null, roundBeingDrawn: false, bonusVetoes: null, results: [], end: { played: 0, gameCount: 10 } })
     })
   })
 })

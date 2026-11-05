@@ -60,7 +60,7 @@ export interface SummaryRow { key: string, label: string, value: string, setting
 export function summaryRows(
   settings: EventSettings,
   t: Translate,
-  extra: { pools?: { main: number, tiebreaker: number }, dates?: string } = {},
+  extra: { pools?: { main: number }, dates?: string } = {},
 ): SummaryRow[] {
   const rows: SummaryRow[] = [
     { key: 'format', label: t('stepper.summary.format'), value: teamsText(settings, t), settings: ['format', 'teamCount', 'teamSize'] },

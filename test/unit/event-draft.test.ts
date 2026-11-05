@@ -14,7 +14,7 @@ describe('newDraft', () => {
       hiddenWheel: false,
       poolPreview: true,
       vetoAllowance: null,
-      pools: { main: [], tiebreaker: [] },
+      pools: { main: [] },
       dates: { mode: 'poll', sessionCount: 1, slots: [''], direct: [''] },
     })
   })
@@ -38,7 +38,7 @@ describe('draftBody', () => {
       sessions: 2,
       slots: ['2090-10-30T20:30', '2090-10-31T19:00'],
       settings: defaultSettings(),
-      pools: { main: [], tiebreaker: [] },
+      pools: { main: [] },
     })
   })
 
@@ -53,16 +53,15 @@ describe('draftBody', () => {
       sessions: 2,
       startsAt: ['2090-11-07T20:00', '2090-11-08T19:00'],
       settings: defaultSettings(),
-      pools: { main: [], tiebreaker: [] },
+      pools: { main: [] },
     })
   })
 
-  it('sends the ids of the games in both pools', () => {
-    let draft = togglePoolGame(newDraft(), 'main', game('a', 'Mario Kart'))
-    draft = togglePoolGame(draft, 'main', game('b', 'Pong'))
-    draft = togglePoolGame(draft, 'tiebreaker', game('b', 'Pong'))
+  it('sends the ids of the games in the Game pool', () => {
+    let draft = togglePoolGame(newDraft(), game('a', 'Mario Kart'))
+    draft = togglePoolGame(draft, game('b', 'Pong'))
 
-    expect(draftBody(draft).pools).toEqual({ main: ['a', 'b'], tiebreaker: ['b'] })
+    expect(draftBody(draft).pools).toEqual({ main: ['a', 'b'] })
   })
 
   it('sends settings the server accepts', () => {
@@ -79,43 +78,42 @@ describe('the pools', () => {
   it('adds a game that is not in the pool, and takes it out when it is', () => {
     const kart = game('a', 'Mario Kart')
 
-    const added = togglePoolGame(newDraft(), 'main', kart)
+    const added = togglePoolGame(newDraft(), kart)
     expect(added.pools.main).toEqual([kart])
 
-    expect(togglePoolGame(added, 'main', kart).pools.main).toEqual([])
+    expect(togglePoolGame(added, kart).pools.main).toEqual([])
   })
 
   it('keeps the order in which games were added', () => {
     let draft = newDraft()
-    for (const [id, name] of [['c', 'Zelda'], ['a', 'Alpha'], ['b', 'Beta']] as const) draft = togglePoolGame(draft, 'main', game(id, name))
+    for (const [id, name] of [['c', 'Zelda'], ['a', 'Alpha'], ['b', 'Beta']] as const) draft = togglePoolGame(draft, game(id, name))
 
     expect(draft.pools.main.map(entry => entry.name)).toEqual(['Zelda', 'Alpha', 'Beta'])
   })
 
-  it('keeps the two pools apart: a game may be in both', () => {
+  it('takes one game out when it is toggled again, and keeps the others', () => {
     const kart = game('a', 'Mario Kart')
+    const pong = game('b', 'Pong')
+    const draft = togglePoolGame(togglePoolGame(newDraft(), kart), pong)
 
-    const draft = togglePoolGame(togglePoolGame(newDraft(), 'main', kart), 'tiebreaker', kart)
-    expect(draft.pools).toEqual({ main: [kart], tiebreaker: [kart] })
-
-    expect(togglePoolGame(draft, 'main', kart).pools).toEqual({ main: [], tiebreaker: [kart] })
+    expect(togglePoolGame(draft, kart).pools).toEqual({ main: [pong] })
   })
 
   it('adds a game once, however often it is added', () => {
     const kart = game('a', 'Mario Kart')
 
-    const draft = addPoolGame(addPoolGame(newDraft(), 'tiebreaker', kart), 'tiebreaker', kart)
+    const draft = addPoolGame(addPoolGame(newDraft(), kart), kart)
 
-    expect(draft.pools.tiebreaker).toEqual([kart])
+    expect(draft.pools.main).toEqual([kart])
   })
 
   it('does not change the draft it was given', () => {
     const draft = newDraft()
 
-    togglePoolGame(draft, 'main', game('a', 'Mario Kart'))
-    addPoolGame(draft, 'main', game('a', 'Mario Kart'))
+    togglePoolGame(draft, game('a', 'Mario Kart'))
+    addPoolGame(draft, game('a', 'Mario Kart'))
 
-    expect(draft.pools).toEqual({ main: [], tiebreaker: [] })
+    expect(draft.pools).toEqual({ main: [] })
   })
 })
 
@@ -183,17 +181,24 @@ describe('the editor draft', () => {
   const kart = game('a', 'Mario Kart')
   const pong = game('b', 'Pong')
 
-  function view(settings: EventView['settings'], pools: EventView['pools'] = { main: [], tiebreaker: [] }): EventView {
+  function view(settings: EventView['settings'], pools: EventView['pools'] = { main: [] }): EventView {
     return { settings, pools } as EventView
   }
 
   it('starts from the Event’s settings and pools', () => {
     const settings = { ...defaultSettings(), teamSize: 4, gameCount: 7 }
 
-    const draft = draftFromEvent(view(settings, { main: [kart, pong], tiebreaker: [pong] }))
+    const draft = draftFromEvent(view(settings, { main: [kart, pong] }))
 
     expect(settingsOf(draft)).toEqual(settings)
-    expect(draft.pools).toEqual({ main: [kart, pong], tiebreaker: [pong] })
+    expect(draft.pools).toEqual({ main: [kart, pong] })
+  })
+
+  it('ignores a tiebreaker key in an Event read from before 0.8, and does not throw (#279)', () => {
+    const legacy = { main: [kart], tiebreaker: [pong] } as unknown as EventView['pools']
+
+    expect(draftFromEvent(view(defaultSettings(), legacy)).pools).toEqual({ main: [kart] })
+    expect(draftFromEvent(view(defaultSettings(), { main: [kart] })).pools).toEqual({ main: [kart] })
   })
 
   it('starts from the defaults for an Event that is not set up, without a chosen Veto allowance', () => {
@@ -260,15 +265,15 @@ describe('the editor draft', () => {
   it('has no games when the viewer learns nothing about the pools', () => {
     const draft = draftFromEvent(view(defaultSettings(), null))
 
-    expect(draft.pools).toEqual({ main: [], tiebreaker: [] })
+    expect(draft.pools).toEqual({ main: [] })
   })
 
-  it('sends the settings and the ids of both pools, which the server accepts', () => {
-    const draft = togglePoolGame(togglePoolGame(draftFromEvent(view(defaultSettings())), 'main', kart), 'tiebreaker', pong)
+  it('sends the settings and the ids of the Game pool, which the server accepts', () => {
+    const draft = togglePoolGame(togglePoolGame(draftFromEvent(view(defaultSettings())), kart), pong)
 
     const body = settingsBody(draft)
 
-    expect(body).toEqual({ settings: defaultSettings(), pools: { main: ['a'], tiebreaker: ['b'] } })
+    expect(body).toEqual({ settings: defaultSettings(), pools: { main: ['a', 'b'] } })
     expect(parseSettings(body.settings).ok).toBe(true)
   })
 })

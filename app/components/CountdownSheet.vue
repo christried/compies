@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { countdownRejection, countdownSeconds } from '~~/shared/countdown'
-import type { CountdownView } from '~~/shared/event'
+import type { CountdownView } from '~~/shared/stage'
 
 // The Host sets the Countdown (#236, spec #218 § Countdown): the minutes (0 to 99) and seconds (0 to 59) it runs for, 5 s to 99:59.
 // The dock's „Countdown“ opens it. While one runs the sheet says so and does not let the Host set another (the server refuses it
-// too). Out of range it says so under the fields and sends nothing. The page's dialogs send the length and close the sheet once the
+// too). Out of range it says so under the fields, as a NoticeBanner, and sends nothing. The page's dialogs send the length and close the sheet once the
 // server took it (EventHostDialogs).
 const props = defineProps<{
   open: boolean
@@ -64,18 +64,18 @@ function submit() {
           autocomplete="off"
         />
       </div>
-      <p
+      <NoticeBanner
         v-if="length === null"
-        class="m-0 text-[14px] font-bold text-error-fg"
+        tone="critical"
       >
         {{ t('countdown.range') }}
-      </p>
-      <p
+      </NoticeBanner>
+      <NoticeBanner
         v-if="running()"
-        class="m-0 text-[14px] text-ink-2"
+        tone="info"
       >
         {{ t('countdown.running') }}
-      </p>
+      </NoticeBanner>
     </div>
 
     <template #footer>

@@ -3,7 +3,8 @@ import { flushPromises } from '@vue/test-utils'
 import { readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { CountdownView, EventPools, RoundView } from '~~/shared/event'
+import type { EventPools } from '~~/shared/event'
+import type { CountdownView, RoundView } from '~~/shared/stage'
 import type { PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
@@ -14,7 +15,7 @@ import { clickButton, clickHostAction, dialog, regionHeadings, serve, shownToast
 // (5 s to 99:59), which is disabled while one runs. The server clock here is the real one: the page is not synced to a room.
 
 const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null }
-const pools: EventPools = { main: [halo], tiebreaker: [] }
+const pools: EventPools = { main: [halo] }
 const round = (id: string, startedAt: string): RoundView => ({ id, startedAt, setAt: startedAt, game: halo })
 
 /** The Host's or a Member's read of a running Event, with this Countdown and these open Rounds. */
@@ -142,6 +143,7 @@ describe('„Countdown stellen“ from the dock', () => {
     fill('Sekunden', '4')
     await flushPromises()
     expect(dialog()!.textContent).toContain('Zwischen 5 Sekunden und 99:59.')
+    expect(dialog()!.querySelector('[role="alert"]')?.textContent).toContain('Zwischen 5 Sekunden und 99:59.')
     await clickButton(dialog(), 'Stellen')
     fill('Minuten', '100')
     fill('Sekunden', '0')
@@ -161,6 +163,7 @@ describe('„Countdown stellen“ from the dock', () => {
 
     await vi.waitFor(() => expect(dialog()).not.toBeNull())
     expect(dialog()!.textContent).toContain('Der Countdown läuft schon.')
+    expect(dialog()!.querySelector('[role="status"]')?.textContent).toContain('Der Countdown läuft schon.')
     expect(sheetButton().disabled).toBe(true)
     expect(shownToasts()).toEqual([])
   })

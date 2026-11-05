@@ -104,6 +104,6 @@ describe('the sheet\'s footer', () => {
     const footer = dialog()!.querySelector('footer')!
     expect(footer.textContent).toContain('Setzen')
     expect(footer.className).toContain('sticky')
-    expect(footer.className).toContain('bottom-0')
+    expect(footer.className).toContain('-bottom-5')
   })
 })

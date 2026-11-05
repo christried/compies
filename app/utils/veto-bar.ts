@@ -1,4 +1,4 @@
-import type { OwnVetoView } from '~~/shared/event'
+import type { OwnVetoView } from '~~/shared/stage'
 
 // What the Veto bar and its button show for a Player's Party (#231, review 0.7 F4, reference App Spielrunde „Clip + Veto-Fenster“,
 // „Eigenes Veto versiegelt“).

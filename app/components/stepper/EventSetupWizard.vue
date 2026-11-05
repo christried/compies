@@ -48,8 +48,7 @@ const STEPS: Record<StepKey, { component: Component, props?: Record<string, unkn
   games: { component: StepGameCount },
   points: { component: StepPoints },
   mode: { component: StepMode },
-  pool: { component: StepPool, props: { kind: 'main' } },
-  tiebreaker: { component: StepPool, props: { kind: 'tiebreaker' } },
+  pool: { component: StepPool },
   sessions: { component: StepSessions },
 }
 
@@ -65,10 +64,12 @@ const saving = ref(false)
 const stepList = computed(() => props.steps.map(key => ({ key, label: t(`stepper.steps.${key}.label`) })))
 const stepKey = computed(() => props.steps[current.value]!)
 const isLast = computed(() => current.value === props.steps.length - 1)
-// The info column explains the Format or, on the Selection mode step, the chosen mode (#145). The pool steps have none (#173).
+// The info column explains the Format or, on the Selection mode step, the chosen mode (#145), and on the Game count step how an
+// Event ends (#279). The pool steps have none (#173).
 const infoTopic = computed(() => {
   if (stepKey.value === 'format') return draft.value.settings.format
   if (stepKey.value === 'mode') return hasWheel(draft.value.settings.selectionMode) ? 'wheel' : 'admin'
+  if (stepKey.value === 'games') return 'end'
   return null
 })
 const infoTitle = computed(() => (infoTopic.value ? t(`setup.info.${infoTopic.value}.title`) : undefined))

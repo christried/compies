@@ -54,7 +54,7 @@
     "dateSet": "Termin steht",
     "game": "Spiel {n} von {total}",
     "pickBan": "Pick & Ban",
-    "ended": "Vorbei",
+    "noDate": "Kein Termin",
     "draft": "Entwurf",
     "running": "Läuft",
     "finished": "Beendet",
@@ -82,6 +82,12 @@
     "endSession": "Session beenden",
     "startN": "Session {n} starten",
     "endN": "Session {n} beenden",
+    "finish": "Event abschließen",
+    "finishTie": "Unentschieden beenden",
+    "lastGame": "Letztes Spiel hinzufügen",
+    "lastGameBlocked": {
+      "game_count_range": "Mehr Spiele gehen nicht. Du kannst das Event noch als Unentschieden beenden."
+    },
     "setDateN": "Termin für Session {n}",
     "startBlocked": {
       "not_set_up": "Geht erst, wenn das Event eingerichtet ist.",
@@ -95,7 +101,7 @@
       "game_count_reached": "Alle Spiele dieses Events sind schon gestartet.",
       "round_being_drawn": "Gerade wird ein Spiel gezogen.",
       "no_wheel": "Geht nur mit dem Glücksrad.",
-      "pool_empty": "Auf dem Rad ist kein Spiel mehr."
+      "pool_empty": "Auf dem Rad ist kein Spiel mehr. Mit „Nächstes Spiel setzen“ kannst du eines aus der Bibliothek setzen."
     },
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
@@ -141,6 +147,12 @@
         "kickerSingle": "Session beendet",
         "title": "Gut gespielt"
       },
+      "finished": {
+        "kicker": "Event beendet",
+        "title": "{team} gewinnt das Event",
+        "titleDone": "Das Event ist beendet",
+        "titleTie": "Unentschieden"
+      },
       "setup": {
         "kicker": "Noch nicht eingerichtet",
         "titleHost": "Erst einrichten, dann zocken",
@@ -165,7 +177,10 @@
       "teamsStay": "Die Teams bleiben fürs ganze Event. Wer bei Session {n} fehlt, ersetzt du von der Bench.",
       "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Bench.",
       "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Bench.",
-      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Bench."
+      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Bench.",
+      "tie": "Gleichstand auf Platz 1. Der Host entscheidet.",
+      "sessionNeededTitle": "Noch {n} Spiel offen | Noch {n} Spiele offen",
+      "sessionNeeded": "Dafür braucht es eine neue Session. Leg sie an und starte sie, wenn ihr so weit seid."
     },
     "poll": {
       "title": "Termin für Session {n}",
@@ -335,7 +350,7 @@
       "hideWheel": "Rad verdecken",
       "hideWheelHelp": "Erfundene Namen, bis das Rad stoppt.",
       "poolPreview": "Pool vorher zeigen",
-      "poolPreviewHelp": "Die anderen sehen Spielepool und Tiebreaker-Pool schon vorher.",
+      "poolPreviewHelp": "Die anderen sehen den Spielepool schon vorher.",
       "poolPreviewHidden": "Beim verdeckten Rad sieht niemand den Pool.",
       "spinDuration": "Drehdauer",
       "seconds": "{n} s"
@@ -394,6 +409,11 @@
         "good": "Maximale Spannung und Chaos.",
         "warn": "Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die anderen merken nichts davon."
       },
+      "end": {
+        "title": "So endet das Event",
+        "how": "Sind alle Spiele bis zur eingestellten Anzahl gespielt und haben ihr Ergebnis, schließt du das Event ab. Von selbst endet nichts. Willst du früher aufhören, senkst du vorher die Anzahl Spiele.",
+        "warn": "Teilen sich am Ende mehrere Parteien Platz 1, entscheidest du: Du beendest das Event unentschieden, dann gewinnen alle auf Platz 1. Oder du fügst ein letztes Spiel hinzu, das alle Parteien aus dem Spielepool spielen, mit demselben Auswahlmodus und denselben Vetos. Endet auch das gleichauf, hast du dieselbe Wahl noch einmal."
+      },
       "pickBan": {
         "title": "Pick & Ban",
         "how": "Wie das Map-Veto in Counter-Strike. Ein Münzwurf (Kopf oder Schwanz) entscheidet, wer anfängt. Jede Partei bekommt so viele Bans, wie sie Mitglieder hat. Gebannt wird abwechselnd: A bannt 1, B bannt 2, A bannt 2 und so weiter, bis alle Bans weg sind. Danach wird nach demselben Muster gepickt. Mit dem Picken beginnt die Partei, die nicht mit dem Bannen angefangen hat. Die Reihenfolge der Picks ist die Spielreihenfolge.",
@@ -430,7 +450,6 @@
     "drawn": "Vom Rad:",
     "aria": "Glücksrad mit {n} Spiel | Glücksrad mit {n} Spielen",
     "banner": "Spiel {n} von {total}: {host} dreht das Glücksrad.",
-    "tiebreaker": "Tiebreaker",
     "placeholders": [
       "Counter-Strudel",
       "League of Leberkäse",
@@ -510,19 +529,25 @@
   },
   "result": {
     "title": "Ergebnis eintragen",
-    "correction": "Korrektur, Spiel {n}",
+    "kicker": "Spiel {n} von {total}",
+    "correction": "Spiel {n} korrigieren",
+    "kickerCorrection": "Korrektur: Spiel {n} von {total}",
+    "correctionNote": "Die Tabelle rechnet nach dem Speichern neu, für alle sichtbar. In der Aktivität steht, dass du Spiel {n} korrigiert hast.",
     "cancelCorrection": "Korrektur abbrechen",
     "allPlayed": "Alle Spiele gespielt",
     "done": "Fertig",
     "placement": "Platzierung",
     "tied": "gleichauf",
-    "tiedAria": "Platz {n} gleichauf mit dem Platz darüber",
+    "tiedAria": "{team} gleichauf mit {other}",
     "score": "Score",
     "scoreLabel": "Score {team} (optional)",
-    "up": "{team} einen Platz hoch",
-    "down": "{team} einen Platz runter",
+    "up": "Nach oben: {team}",
+    "down": "Nach unten: {team}",
     "nowPlace": "{team} jetzt Platz {n}.",
-    "help": "Ziehen am Griff, oder Griff fokussieren und Pfeiltasten nutzen. Gleichauf verbindet zwei Plätze; beide bekommen die Punkte des besseren Platzes. Scores sind Deko und zählen nicht.",
+    "help": "Ordne die Parteien per Ziehen am Griff oder mit den Pfeil-Buttons. „gleichauf“ gibt zwei Parteien denselben Platz und die Punkte des besseren Platzes. Der Score ist freiwillig und zählt nicht.",
+    "handle": "{team} verschieben",
+    "place": "Platz {n}",
+    "earns": "+{n} Punkt | +{n} Punkte",
     "save": "Ergebnis speichern",
     "saveCorrection": "Korrektur speichern",
     "saved": "Gespeichert. {teams} gewinnt Spiel {n}. | Gespeichert. {teams} gewinnen Spiel {n}.",
@@ -530,31 +555,30 @@
   },
   "table": {
     "title": "Tabelle",
+    "empty": "Noch kein Ergebnis. Sobald der Host eins einträgt, steht hier die Tabelle.",
+    "colRank": "Rang",
+    "colParty": "Partei",
+    "colPoints": "Punkte",
     "after": "Nach Spiel {n} von {total}",
     "games": "Spiele",
     "fewer": "Weniger Spiele",
     "more": "Mehr Spiele",
     "places": "Plätze: {list}",
+    "announceSaved": "Spiel {n} ist eingetragen.",
+    "announceCorrected": "Spiel {n} wurde korrigiert. Die Tabelle ist neu berechnet.",
+    "rankNow": "{team} ist jetzt auf Rang {rank}.",
     "points": "{n} Punkt | {n} Punkte",
     "winStamp": "Sieg in Spiel {n}!",
     "wonStamp": "Spiel {n} gewonnen",
-    "takesFirst": "{team} übernimmt Platz 1",
-    "endWinner": "{team} gewinnt das Event. Auf zur Siegerehrung!",
-    "endTie": "Gleichstand auf Platz 1: {teams}. Jetzt kommt der Tiebreaker."
+    "takesFirst": "{team} übernimmt Platz 1."
   },
   "history": {
     "title": "Spielverlauf",
-    "correct": "Korrigieren",
+    "wonBy": "Gewonnen von",
+    "correct": "Spiel {n} korrigieren",
     "corrected": "korrigiert",
+    "moreWinners": "{name} +{n}",
     "empty": "Noch kein Spiel gespielt."
-  },
-  "tiebreaker": {
-    "announce": "Gleichstand auf Platz 1!",
-    "announceText": "Beide haben {n} Punkt. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad. | Beide haben {n} Punkte. Ein Spiel mehr entscheidet, vom Tiebreaker-Rad.",
-    "onlyTied": "Nur die Punktgleichen spielen.",
-    "onlyTiedText": "Eigenes Rad mit dem Tiebreaker-Pool. Übrige Vetos zählen noch, Bans gibt es nicht.",
-    "again": "Nochmal! Das Rad dreht neu.",
-    "againText": "Endet auch der Tiebreaker gleichauf, wird einfach wieder gedreht, so lange, bis es eine Siegerin gibt."
   },
   "chat": {
     "logAria": "Chatverlauf",
@@ -609,11 +633,14 @@
     "coin": "Münzwurf: {side}",
     "veto": "Veto von {list}",
     "ban": "{team} hat {game} gebannt",
-    "win": "{team} gewinnt Spiel {n}",
     "fix": "{name} hat Spiel {n} korrigiert",
     "hostSet": "{name} hat {game} gesetzt",
     "gamePutBack": "{name} hat {game} zurückgelegt",
-    "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben"
+    "bonusVeto": "{name} hat {team} ein Bonus-Veto gegeben",
+    "resultEntered": "Spiel {n}: {game}, {list} gewinnt | Spiel {n}: {game}, {list} gewinnen",
+    "resultCorrected": "{name} hat Spiel {n} ({game}) korrigiert",
+    "eventFinished": "Event beendet: {list} gewinnt | Event beendet: {list} gewinnen",
+    "eventFinishedTie": "Unentschieden: {list}"
   },
   "emote": {
     "send": "Emote senden: {name}",
@@ -1104,7 +1131,7 @@
       },
       "storage": {
         "heading": "5. Spielbilder (Cloudflare R2)",
-        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, sobald das Spiel dort gezogen oder gesetzt ist, und vorher, wenn der Spielepool oder Tiebreaker-Pool des Events das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
+        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, sobald das Spiel dort gezogen oder gesetzt ist, und vorher, wenn der Spielepool des Events das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
       },
       "signIn": {
         "heading": "6. Anmeldung über Discord oder Twitch und Anzeigename",
@@ -1116,7 +1143,7 @@
       },
       "youtube": {
         "heading": "8. Videos (YouTube)",
-        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen; dort startet er nicht von selbst. Hast du die Seite eines Events geöffnet, lädt dein Browser den Player außerdem, sobald in einer laufenden Session ein Spiel mit Videoausschnitt gezogen oder gesetzt ist. Dann startet er von selbst, auf allen Geräten an derselben Stelle: auf einem großen Bildschirm wie am Computer mit Ton, wenn du die Sounds eingeschaltet hast und dein Browser es zulässt, sonst stumm; auf einem Handy stumm. Du kannst ihn stumm schalten oder für dich schließen. Der Player zeigt immer nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und als Karte erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek, außerdem alle Mitglieder eines Events, die dessen Seite geöffnet haben, wenn in einer laufenden Session ein Spiel mit Videoausschnitt gezogen oder gesetzt wird. Vorschaubilder sehen Mitglieder eines Events von jedem Spiel, sobald es gezogen oder gesetzt ist, und vorher von den Spielen im Spielepool oder Tiebreaker-Pool, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen und den Ausschnitt eines gezogenen oder gesetzten Spiels allen Mitgliedern zur selben Zeit vorzuspielen)."
+        "text": "Ein Spiel in der Bibliothek kann einen Ausschnitt aus einem YouTube-Video haben. Dafür bindet Compies den YouTube-Player im erweiterten Datenschutzmodus ein, also über youtube-nocookie.com. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.\n\nDer Player wird schon geladen, wenn du die Bearbeitung eines Spiels oder seine Detailseite öffnest, nicht erst beim Abspielen; dort startet er nicht von selbst. Hast du die Seite eines Events geöffnet, lädt dein Browser den Player außerdem, sobald in einer laufenden Session ein Spiel mit Videoausschnitt gezogen oder gesetzt ist. Dann startet er von selbst, auf allen Geräten an derselben Stelle: auf einem großen Bildschirm wie am Computer mit Ton, wenn du die Sounds eingeschaltet hast und dein Browser es zulässt, sonst stumm; auf einem Handy stumm. Du kannst ihn stumm schalten oder für dich schließen. Der Player zeigt immer nur den gewählten Ausschnitt. Dafür lädt dein Browser das Abspielskript von www.youtube.com und den Player von www.youtube-nocookie.com. Vorschaubilder lädt er von i.ytimg.com, wenn ein Spiel kein eigenes Bild hat und als Karte erscheint.\n\nDabei übermittelt dein Browser an Google deine IP-Adresse, Datum und Uhrzeit des Aufrufs, die Kennung des Videos sowie übliche Geräte- und Browserangaben. Für die Verarbeitung durch YouTube ist Google selbst verantwortlich; es gelten die Datenschutzbestimmungen von Google unter https://policies.google.com/privacy. Google verarbeitet die Daten auch in den USA (Abschnitt 15).\n\nDen Player sehen Hosts beim Bearbeiten eines Spiels und auf dessen Detailseite in der Bibliothek, außerdem alle Mitglieder eines Events, die dessen Seite geöffnet haben, wenn in einer laufenden Session ein Spiel mit Videoausschnitt gezogen oder gesetzt wird. Vorschaubilder sehen Mitglieder eines Events von jedem Spiel, sobald es gezogen oder gesetzt ist, und vorher von den Spielen im Spielepool, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse, Spiele mit ihrem Videoausschnitt und ihrer Vorschau anzuzeigen und den Ausschnitt eines gezogenen oder gesetzten Spiels allen Mitgliedern zur selben Zeit vorzuspielen)."
       },
       "cookies": {
         "heading": "9. Cookies und Speicher im Browser",
@@ -1128,7 +1155,7 @@
       },
       "events": {
         "heading": "11. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool oder Tiebreaker-Pool das Spiel enthält. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, wer ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer ein Veto eingelegt hat, sieht bis zum Aufdecken nur das eigene Team. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "12. Kalenderdatei",
@@ -1148,7 +1175,7 @@
       },
       "retention": {
         "heading": "16. Speicherdauer",
-        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Plätze, Teamwörter, eingefrorene Teamnamen und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht. Ein Teamwort wird gelöscht, sobald du dein Team verlässt. Spielbilder bleiben gespeichert, solange das Spiel besteht und das Bild nicht ersetzt wird (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
+        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Plätze, Teamwörter, eingefrorene Teamnamen, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht. Ein Teamwort wird gelöscht, sobald du dein Team verlässt. Spielbilder bleiben gespeichert, solange das Spiel besteht und das Bild nicht ersetzt wird (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
       },
       "obligation": {
         "heading": "17. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
@@ -1172,7 +1199,7 @@
       },
       "changes": {
         "heading": "22. Änderungen und Stand",
-        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 2. November 2026."
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 4. November 2026."
       }
     }
   },
@@ -1370,7 +1397,6 @@
       "points": { "label": "Punkte", "title": "Wer kriegt wie viele Punkte?" },
       "mode": { "label": "Auswahlmodus", "title": "Wie wird das nächste Spiel bestimmt?" },
       "pool": { "label": "Spielepool", "title": "Welche Spiele kommen in den Pool?" },
-      "tiebreaker": { "label": "Tiebreaker-Pool", "title": "Und falls es knapp wird?" },
       "sessions": { "label": "Termin", "title": "Wann zocken wir?" }
     },
     "create": "Event erstellen",
@@ -1409,7 +1435,9 @@
       "min": "Mindestens 1 Spiel.",
       "max": "Höchstens 30 Spiele.",
       "floor": "Schon {n} gestartet.",
-      "help": "Nach {n} Spiel ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1. | Nach {n} Spielen ist Schluss, plus Tiebreaker bei Gleichstand auf Platz 1."
+      "help": "Nach {n} Spiel mit Ergebnis kannst du das Event abschließen. | Nach {n} Spielen mit Ergebnis kannst du das Event abschließen.",
+      "tieTitle": "Gleichstand möglich.",
+      "tie": "Das Event kann unentschieden enden. Dann entscheidest du: Unentschieden beenden oder ein letztes Spiel hinzufügen."
     },
     "points": {
       "label": "Punktetabelle",
@@ -1422,20 +1450,22 @@
     },
     "pool": {
       "mainCount": "Im Pool: {n} Spiel | Im Pool: {n} Spiele",
-      "tiebreakerCount": "Tiebreaker-Pool: {n} Spiel | Tiebreaker-Pool: {n} Spiele",
       "listMain": "Spiele im Pool",
-      "listTiebreaker": "Spiele im Tiebreaker-Pool",
       "empty": "Noch leer. Du kannst auch ohne Spiele weitermachen.",
       "add": "{name} in den Pool",
       "remove": "{name} aus dem Pool nehmen",
       "create": "Neues Spiel anlegen",
-      "tiebreakerNote": "Liegen am Ende mehrere Parteien punktgleich auf Platz 1, dreht ein eigenes Glücksrad mit deinem Tiebreaker-Pool. Nur die Punktgleichen spielen. Übrige Vetos dürfen noch eingesetzt werden. Bei erneutem Gleichstand wird wieder gedreht. Du kannst auch ohne Spiel weitermachen.",
+      "bonusNote": "Plane ein paar Spiele mehr ein, falls du zwischendurch Bonus-Vetos vergibst.",
       "noLibrary": "Ohne Host-Berechtigung kannst du keine Spiele aus der Bibliothek hinzufügen. Die Spiele im Pool bleiben.",
       "hintTitle": "Wird knapp.",
       "hintWheel": "{games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | {games} Spiele plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
       "hintWheelOne": "1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | 1 Spiel plus bis zu {vetoes} Vetos: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
       "hintAdmin": "Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für {games} Spiele brauchst du {games} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
-      "hintAdminOne": "Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt."
+      "hintAdminOne": "Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintWheelLast": "{games} Spiele plus bis zu {vetoes} Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | {games} Spiele plus bis zu {vetoes} Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintWheelOneLast": "1 Spiel plus bis zu {vetoes} Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | 1 Spiel plus bis zu {vetoes} Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du {needed} Spiele, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintAdminLast": "Für {games} Spiele und ein mögliches letztes Spiel brauchst du {needed} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für {games} Spiele und ein mögliches letztes Spiel brauchst du {needed} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt.",
+      "hintAdminOneLast": "Für 1 Spiel und ein mögliches letztes Spiel brauchst du {needed} Spiele im Pool, im Pool ist {have}. Blockiert nichts, nur damit du’s weißt. | Für 1 Spiel und ein mögliches letztes Spiel brauchst du {needed} Spiele im Pool, im Pool sind {have}. Blockiert nichts, nur damit du’s weißt."
     },
     "heading": "Neues Event",
     "nav": "Schritte",
@@ -1458,7 +1488,7 @@
       "vetoes": "Vetos",
       "vetoValue": "{n} pro Partei",
       "pool": "Pool",
-      "poolValue": "{main} Spiel, Tiebreaker {tiebreaker} | {main} Spiele, Tiebreaker {tiebreaker}",
+      "poolValue": "{main} Spiel | {main} Spiele",
       "pointsValue": "{preset} {values}",
       "dates": "Termin"
     },
@@ -1475,7 +1505,6 @@
     "emptyHost": "Noch nicht festgelegt. Format, Spiele und Punkte legst du beim Einrichten fest.",
     "emptyMember": "Noch nicht festgelegt. {host} legt gleich fest, wie gespielt wird.",
     "mainPool": "Spielepool",
-    "tiebreakerPool": "Tiebreaker-Pool",
     "emptyPool": "Noch keine Spiele.",
     "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.",
     "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
@@ -1510,7 +1539,8 @@
     "title": "Gerade dran",
     "list": "Offene Spiele",
     "playing": "wird gespielt",
-    "putBack": "Zurücklegen"
+    "putBack": "Zurücklegen",
+    "hostEnters": "Das Ergebnis trägt der Host ein"
   },
   "nextGame": {
     "title": "Nächstes Spiel setzen",
@@ -1558,6 +1588,12 @@
     "countdownNotRunning": "Der Countdown läuft gerade nicht.",
     "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
     "coinInAir": "Die Münze fliegt noch.",
+    "resultInvalid": "Das Ergebnis passt nicht. Lade die Seite neu und versuch es nochmal.",
+    "roundNotOpen": "Zu diesem Spiel kann gerade kein Ergebnis eingetragen werden. Vielleicht hat es schon eins.",
+    "wrongPhase": "Das geht nicht mehr. Die Seite zeigt den neuen Stand.",
+    "resultsMissing": "Es fehlen noch Ergebnisse.",
+    "standingsChanged": "Die Tabelle hat sich geändert. Schau sie dir nochmal an.",
+    "noTie": "Gerade steht kein Gleichstand an. Die Seite zeigt den neuen Stand.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

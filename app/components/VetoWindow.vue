@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { teamName } from '~/utils/board'
+import { joinNames } from '~/utils/list'
 import { clockTick, revealTile, vetoStamp } from '~/utils/motion'
 import { VETO_WINDOW_MS } from '~~/shared/rounds'
-import type { BoardTeam, MemberView, WheelView } from '~~/shared/event'
+import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { WheelView } from '~~/shared/stage'
 
 // The Veto window on the stage (#231, 02-components § VetoWindow, 04-motion § Veto window, reference App Spielrunde „Clip + Veto-Fenster“,
 // „Eigenes Veto versiegelt“, „Aufdecken“). It opens at the wheel's stop and runs until `vetoEndsAt`: the game it is about (for a game
@@ -60,7 +62,7 @@ const outcome = computed(() => {
   if (revealed.value === null) return null
   const game = draw.value?.game?.name ?? ''
   if (!vetoed.value) return t('veto.outcomeSet', { game })
-  const list = new Intl.ListFormat('de', { style: 'long', type: 'conjunction' }).format(revealed.value.map(entry => props.members.find(member => member.id === entry.userId)?.name ?? ''))
+  const list = joinNames(revealed.value.map(entry => props.members.find(member => member.id === entry.userId)?.name ?? ''))
   // A vetoed spin flies off the wheel and the wheel spins again; a vetoed set game is chosen anew (#232).
   return t(draw.value?.kind === 'set' ? 'veto.outcomeVetoSet' : 'veto.outcomeVeto', { list, game })
 })

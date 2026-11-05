@@ -1,14 +1,17 @@
-import { CalendarCheck, CalendarClock, Coins, Dices, Flag, Gamepad2, Link as LinkIcon, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
-import { coinBlockedKey, dockLayout, hostDockState, setBlockedKey, type DockKey } from '~/utils/host-dock'
+import { coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
+import { leadersOf } from '~~/shared/results'
 
 // The Host's dock actions (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers (Event
-// einrichten, Termin festlegen, Session starten or beenden, Nächstes Spiel setzen, Rad drehen, or none after the last Session) and
+// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, or none after the last Session) and
 // dockLayout which actions sit where (named parts: primary, secondary, more; review 1.4 A4). Each action is one entry below.
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
-// a hold. „Termin für Session m“ stays while another Session still polls, and „Termine bearbeiten“ while the Date poll is open.
+// a secondary hold. At a Tie (#278) „Unentschieden beenden“ takes the primary's place as a hold, and „Letztes Spiel hinzufügen“ is a plain
+// button beside it; the finish holds send the Parties on Place 1 they showed (review 0.8 S2). „Termin für Session m“ stays while another
+// Session still polls, and „Termine bearbeiten“ while the Date poll is open.
 // Every Phase before the Event finishes has Einstellungen and Einladen (#147). „Termin festlegen“ looks disabled with its reason
 // when no open future Slot can become a Date (#52). What each action does is the page's: it passes the handlers.
 
@@ -23,6 +26,15 @@ export interface HostActionHandlers {
   start: () => void
   /** Ends the Running Session; the dock's hold calls it after the hold and learns whether the server took it. */
   end: () => Promise<boolean>
+  /**
+   * Finishes the Event with a winner (#277); the dock's hold calls it after the hold and learns whether the server took it. The held label is the
+   * outcome sent (#278), `winners` the Parties on Place 1 of the Standings the dock showed (review 0.8 S2).
+   */
+  finish: (winners: number[]) => Promise<boolean>
+  /** Finishes the Event as a Tie (#278), like `finish`. */
+  finishTie: (winners: number[]) => Promise<boolean>
+  /** Adds the last game while the Standings are a Tie (#278); the button learns whether the server took it. */
+  lastGame: () => Promise<boolean>
   /** Opens the picker for the next game (#228). */
   setGame: () => void
   /** Spins the Lucky Wheel (#229). */
@@ -49,16 +61,19 @@ export function useHostActions(
     if (!current) return []
     const state = hostDockState(current)
     // The Bonus Veto is in the dock while the Event's read allows one (#233): a Lucky Wheel, and no Event-level reason refuses it.
-    const layout = dockLayout(state, toValue(pollOpen), current.bonusVetoes?.rejection === null)
+    const layout = dockLayout(state, { pollOpen: toValue(pollOpen), bonusVetoOpen: current.bonusVetoes?.rejection === null })
     /** Runs `run`, or answers the click with the reason as a toast while the rule refuses. */
     const guarded = (reason: string | undefined, run: () => void) => () => (reason ? toast({ tone: 'info', text: reason }) : run())
 
     const startReason = state.startRejection === null ? undefined : t(`dock.startBlocked.${state.startRejection}`)
     const setReason = state.setRejection === null ? undefined : t(setBlockedKey(state.setRejection))
     const spinReason = state.spinRejection === null ? undefined : t(setBlockedKey(state.spinRejection))
+    const lastGameReason = state.lastGameRejection === null ? undefined : t(lastGameBlockedKey(state.lastGameRejection))
     // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
     const coinKey = coinBlockedKey(current, serverNow())
     const coinReason = coinKey === null ? undefined : t(coinKey)
+    // The Parties on Place 1 of the Standings this dock shows: what the finish tells the server the Host saw (review 0.8 S2).
+    const winners = leadersOf(current.standings ?? [])
 
     const entries: Record<DockKey, DockAction> = {
       invite: { key: 'invite', label: t('common.invite'), icon: LinkIcon, group: t('dock.group.people'), run: handlers.invite },
@@ -94,6 +109,35 @@ export function useHostActions(
         group: t('dock.group.event'),
         hold: true,
         run: handlers.end,
+      },
+      // The medal of the feed's `event_finished` (#277); a hold like „Session beenden“, since it cannot be undone.
+      finish: {
+        key: 'finish',
+        label: t('dock.finish'),
+        icon: Medal,
+        group: t('dock.group.event'),
+        hold: true,
+        run: () => handlers.finish(winners),
+      },
+      // With a Tie the Host decides (#278): the same hold, for „Unentschieden“. The server compares the outcome with the Standings, so a stale hold is refused.
+      finishTie: {
+        key: 'finishTie',
+        label: t('dock.finishTie'),
+        icon: Handshake,
+        group: t('dock.group.event'),
+        hold: true,
+        run: () => handlers.finishTie(winners),
+      },
+      // A plain button: only the primary is held, and the server makes a double press harmless. At the maximum it stays, dashed, with its reason.
+      // `dockOnly` (#278): in the pill it is not repeated in „Mehr“ (the Tie's pill holds it beside the two holds).
+      lastGame: {
+        key: 'lastGame',
+        label: t('dock.lastGame'),
+        icon: CirclePlus,
+        group: t('dock.group.event'),
+        disabledReason: lastGameReason,
+        dockOnly: true,
+        run: guarded(lastGameReason, () => void handlers.lastGame()),
       },
       setGame: {
         key: 'setGame',

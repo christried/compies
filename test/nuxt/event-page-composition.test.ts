@@ -1,10 +1,16 @@
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
+import { readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import Leaderboard from '~/components/Leaderboard.vue'
+import { refreshEvent } from '~/composables/useEventView'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { RoundGame } from '~~/shared/game'
+import type { ResultView, RoundView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { clickButton, LARSI, memberView, regionHeadings, restoreScreen, SANNE, serve, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
+import { clickButton, dialog, LARSI, memberView, openHostMenu, regionHeadings, restoreScreen, SANNE, serve, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
 
 // The composition of the Event page (#166, 11-event-seite § EventPage): what has to happen now goes on top. The order of
 // the regions' headings per state of the page, for the Host and for a Member, the poll that is only there while a Session
@@ -57,7 +63,8 @@ const SESSION = (number: number, startsAt: string | null, times: { startedAt?: s
 let mounted: Awaited<ReturnType<typeof mountSuspended>> | undefined
 async function mount(slug: string) {
   mounted?.unmount()
-  const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+  // Vue Test Utils stubs TransitionGroup with an element of its own, which would take the place of the Leaderboard's `tbody`: the real one renders it.
+  const page = await mountSuspended(EventPage, { route: `/e/${slug}`, global: { stubs: { TransitionGroup: false } } })
   mounted = page
   return page
 }
@@ -357,9 +364,705 @@ describe('the stage of the Event page', () => {
       expect(await pill({ sessions: [SESSION(1, FIRST), SESSION(2, null)], missing: 1 })).toContain('Termin steht')
       expect(await pill({ sessions: [ended, SESSION(2, SECOND)], missing: 0, phase: 'running' })).toContain('Termin steht')
       expect(await pill({ sessions: [ended, SESSION(2, null)], missing: 1, phase: 'running' })).toContain('Terminumfrage')
+      // No Session left, the Host has not finished the Event: „Kein Termin“, not „Beendet“ (#277).
       const done = await pill({ sessions: [ended], missing: 0, phase: 'running' })
-      expect(done).toContain('Vorbei')
+      expect(done).toContain('Kein Termin')
+      expect(done).not.toContain('Vorbei')
+      expect(done).not.toContain('Beendet')
       expect(done).not.toContain('Läuft')
+    })
+  })
+})
+
+// The finished Event (#277): read-only for everybody, and its stage is the winner, the Standings and the history.
+describe('the finished Event page', () => {
+  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+  const resultOf = (number: number, winner: number, teams = 2): ResultView => ({
+    roundId: `r${number}`,
+    number,
+    game: { ...halo, id: `g-${number}`, name: `Spiel ${number}` },
+    places: Array.from({ length: teams }, (_, index) => index + 1).sort((a, b) => (a === winner ? -1 : b === winner ? 1 : a - b)).map((position, index) => ({ team: position, place: index + 1, points: index === 0 ? 3 : 0, score: null })),
+    corrected: false,
+    correctedAt: null,
+    resultAt: STARTED,
+  })
+  const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
+  /** The read of a finished Event: Team 1 (Wilde Gurken) won all three games, the count is complete, the Host has nothing to finish any more. */
+  const finishedRead = (overrides: EventOverrides = {}): EventOverrides => ({
+    teams: [team(1, 'Wilde Gurken'), team(2)],
+    results: [resultOf(1, 1), resultOf(2, 1), resultOf(3, 1)],
+    standings: [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 0 }],
+    end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null },
+    ...overrides,
+  })
+  const toolbar = (page: { findAll: (selector: string) => { text: () => string }[] }) => page.findAll('[role="toolbar"] button').map(button => button.text())
+
+  beforeEach(() => {
+    signInAs(kitty)
+    stubScreen(true)
+  })
+
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    restoreScreen()
+    document.body.innerHTML = ''
+  })
+
+  for (const host of [true, false]) {
+    const who = host ? 'the Host' : 'a Member'
+
+    it(`shows the winner, the Standings, the history and the cards, and nothing that plays on, for ${who}`, async () => {
+      const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host, overrides: finishedRead() })
+
+      const page = await mount(slug)
+
+      expect(regionHeadings(page)).toEqual(['Tabelle', 'Spielverlauf', 'Sessions', 'So wird gespielt'])
+      expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Wilde Gurken gewinnt das Event'])
+      expect(page.get('main').text()).toContain('Event beendet')
+      const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
+      expect(standings.text()).toContain('Nach Spiel 3 von 3')
+      expect(standings.findAll('tbody tr').map(row => row.attributes('data-team'))).toEqual(['1', '2'])
+      expect(page.findAll('main ol [data-number]').map(number => number.text())).toEqual(['1', '2', '3'])
+      // No Game board, no open Rounds, no poll: a read-only board was never asked for.
+      expect(page.text()).not.toContain('Gerade dran')
+      expect(page.text()).not.toContain('Wann zocken wir?')
+    })
+
+    it(`says Beendet in the header pill, for ${who}`, async () => {
+      const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host, overrides: finishedRead() })
+
+      const page = await mount(slug)
+
+      expect(page.get('header').text()).toContain('Beendet')
+      expect(page.get('header').text()).not.toContain('Kein Termin')
+    })
+  }
+
+  it('gives a Member no dock, and the Host one that holds Einladen and Mehr and nothing else', async () => {
+    const member = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })
+    expect(toolbar(await mount(member.slug))).toEqual([])
+
+    const host = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host: true, overrides: finishedRead({ end: { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: 'wrong_phase' }, lastGame: null } }) })
+    const page = await mount(host.slug)
+    expect(toolbar(page)).toEqual(['Einladen', 'Mehr'])
+    const menu = await openHostMenu(page)
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Einladen'])
+  })
+
+  it('names the winner by the colour when the Team has no frozen name', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead({
+      teams: [team(1), team(2)],
+      results: [resultOf(1, 2)],
+      standings: [{ team: 2, rank: 1, points: 3 }, { team: 1, rank: 2, points: 0 }],
+      end: { played: 1, gameCount: 1, complete: true, tie: null, finish: null, lastGame: null },
+    }) })
+
+    const page = await mount(slug)
+
+    expect(page.get('h1').text()).toBe('Team Orange gewinnt das Event')
+  })
+
+  it('keeps the notice of a Session that was removed with the finish, and closes it with the ×', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead({ removedSessions: [{ id: 'removed', previousStartsAt: SECOND }] }) })
+
+    const page = await mount(slug)
+
+    const notice = page.findAll('[role="status"]').find(element => element.text().includes('wurde aufgehoben'))
+    expect(notice, 'the notice').toBeDefined()
+    await notice!.get('button[aria-label="Schließen"]').trigger('click')
+    expect(page.findAll('[role="status"]').some(element => element.text().includes('wurde aufgehoben'))).toBe(false)
+  })
+
+  it('lists the Sessions read-only: no add, remove or reschedule, and the Sessions that ended', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host: true, overrides: finishedRead() })
+
+    const page = await mount(slug)
+
+    const sessions = page.findAll('main section').find(section => section.find('h2').text() === 'Sessions')!
+    expect(sessions.text()).not.toContain('Session hinzufügen')
+    expect(sessions.text()).not.toContain('Neue Terminsuche')
+    expect(sessions.text()).not.toContain('Entfernen')
+    expect(sessions.text()).not.toContain('Verschieben')
+  })
+
+  it('shows every Round of a long Event, 30 of them with 8 Parties', async () => {
+    const eight = Array.from({ length: 8 }, (_, index) => team(index + 1))
+    const results = Array.from({ length: 30 }, (_, index) => resultOf(index + 1, (index % 8) + 1, 8))
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead({
+      teams: eight,
+      results,
+      standings: eight.map(item => ({ team: item.position, rank: item.position === 1 ? 1 : 2, points: 0 })),
+      end: { played: 30, gameCount: 30, complete: true, tie: null, finish: null, lastGame: null },
+    }) })
+
+    const page = await mount(slug)
+
+    expect(page.findAll('main ol [data-number]')).toHaveLength(30)
+    expect(page.findAll('main tbody tr')).toHaveLength(8)
+  })
+
+  it('keeps „Tabelle“ and „Aktivität“ in the side panel on a wide screen', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host: true, overrides: finishedRead() })
+
+    const page = await mount(slug)
+
+    expect(page.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]').map(tab => tab.text())).toEqual(['Tabelle', 'Aktivität'])
+  })
+
+  it('keeps three items in the phone\'s bar', async () => {
+    stubScreen(false)
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })
+
+    const page = await mount(slug)
+
+    expect(page.findAll('nav[aria-label="Event"] button').map(item => item.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
+    expect(page.get('h1').text()).toBe('Wilde Gurken gewinnt das Event')
+  })
+})
+
+// A Tie (#278): everybody but the Host reads that the Host decides, right under the Head and above the Standings; the Host has the dock instead.
+describe('the Tie banner on the Event page', () => {
+  const TEXT = 'Gleichstand auf Platz 1. Der Host entscheidet.'
+  const tied: EventOverrides = {
+    teams: [team(1), team(2)],
+    results: [],
+    standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }],
+    end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: null, lastGame: null },
+  }
+  const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
+  const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
+  const banner = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('[role="status"]').filter(element => element.text().includes(TEXT))
+
+  beforeEach(() => {
+    signInAs(kitty)
+    stubScreen(true)
+  })
+
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    restoreScreen()
+    document.body.innerHTML = ''
+  })
+
+  const STATES: { name: string, setup: Omit<Setup, 'host' | 'overrides'> }[] = [
+    { name: 'while a Session runs', setup: { sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0 } },
+    { name: 'between Sessions', setup: { sessions: [ENDED_ONE, SESSION(2, SECOND)], missing: 0, phase: 'running' } },
+    { name: 'after the last Session', setup: { sessions: [ENDED_ONE], missing: 0, phase: 'running' } },
+  ]
+
+  for (const { name, setup } of STATES) {
+    it(`tells a Player, a Bench Member and a Stands Member that the Host decides, ${name}, above the Standings`, async () => {
+      for (const seat of [{ zone: 'team', team: 1 }, { zone: 'bench' }, { zone: 'stands' }] as Seat[]) {
+        const { slug } = serveState({ ...setup, overrides: { ...tied, members: members({ kitty: seat }) } })
+
+        const page = await mount(slug)
+
+        expect(banner(page)).toHaveLength(1)
+        const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
+        expect(banner(page)[0]!.element.compareDocumentPosition(standings.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      }
+    })
+
+    it(`shows the Host no banner, ${name}`, async () => {
+      const { slug } = serveState({ ...setup, host: true, overrides: { ...tied, end: { ...tied.end!, finish: { rejection: null }, lastGame: { rejection: null } } } })
+
+      expect(banner(await mount(slug))).toHaveLength(0)
+    })
+  }
+
+  it('shows no banner without a Tie, and none in a finished Event even though its end still has the Tie', async () => {
+    const sole = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: { ...tied, standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 2, points: 0 }], end: { ...tied.end!, tie: null } } })
+    expect(banner(await mount(sole.slug))).toHaveLength(0)
+
+    const finished = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: tied })
+    expect(banner(await mount(finished.slug))).toHaveLength(0)
+  })
+})
+
+// The dead end (#278): after the last Session the Game count is not reached and no Session is left, so the Host gets a notice with the way on.
+describe('the session-needed notice on the Event page', () => {
+  const TITLE = (n: number) => `Noch ${n} Spiel${n === 1 ? '' : 'e'} offen`
+  const TEXT = 'Dafür braucht es eine neue Session. Leg sie an und starte sie, wenn ihr so weit seid.'
+  const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
+  const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
+  // The Event read of a Game count that is not reached: the Standings are there once a Result is (played > 0).
+  const short = (played: number, gameCount: number): EventOverrides => ({
+    end: { played, gameCount, complete: false, tie: null, finish: null, lastGame: null },
+    results: [],
+    standings: played > 0 ? [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }] : null,
+  })
+  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+  const openRound = (id: string): RoundView => ({ id, startedAt: STARTED, setAt: STARTED, game: { ...halo, id: `g-${id}`, name: `Spiel ${id}` } })
+  const notice = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('[role="status"]').filter(element => element.text().includes(TEXT))
+
+  beforeEach(() => {
+    signInAs(kitty)
+    stubScreen(true)
+  })
+
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    restoreScreen()
+    document.body.innerHTML = ''
+  })
+
+  it('tells the Host after the last Session what is open, why, and offers Session hinzufügen, marked for the Host only', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+
+    const page = await mount(slug)
+
+    expect(notice(page)).toHaveLength(1)
+    expect(notice(page)[0]!.text()).toContain(TITLE(1))
+    expect(notice(page)[0]!.text()).toContain('Nur du siehst das')
+    expect(notice(page)[0]!.findAll('button').map(button => button.text()).filter(Boolean)).toEqual(['Session hinzufügen'])
+  })
+
+  it('counts the open games in the title: three of five', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 5) })
+
+    expect(notice(await mount(slug))[0]!.text()).toContain(TITLE(3))
+  })
+
+  it('counts the Rounds that are open, and shows nothing when they fill the Game count', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: { ...short(0, 6), rounds: [openRound('a'), openRound('b'), openRound('c'), openRound('d')] } })
+    expect(notice(await mount(slug))[0]!.text()).toContain(TITLE(2))
+
+    const filled = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: { ...short(2, 3), rounds: [openRound('a')] } })
+    expect(notice(await mount(filled.slug))).toHaveLength(0)
+  })
+
+  it('shows no notice to a Member, on the Bench or in a Team', async () => {
+    for (const seat of [{ zone: 'bench' }, { zone: 'team', team: 1 }] as Seat[]) {
+      const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'running', overrides: { ...short(2, 3), members: members({ kitty: seat }) } })
+
+      expect(notice(await mount(slug))).toHaveLength(0)
+    }
+  })
+
+  it('shows no notice while a Session runs, between Sessions, before a Session started, or in the finished Event', async () => {
+    const running = serveState({ sessions: [RUNNING_ONE], missing: 0, host: true, phase: 'running', running: 0, overrides: short(2, 3) })
+    expect(notice(await mount(running.slug))).toHaveLength(0)
+
+    const between = serveState({ sessions: [ENDED_ONE, SESSION(2, SECOND)], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+    expect(notice(await mount(between.slug))).toHaveLength(0)
+
+    const polling = serveState({ sessions: [ENDED_ONE, SESSION(2, null)], missing: 1, host: true, phase: 'running', overrides: short(2, 3) })
+    expect(notice(await mount(polling.slug))).toHaveLength(0)
+
+    const fresh = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', overrides: short(0, 3) })
+    expect(notice(await mount(fresh.slug))).toHaveLength(0)
+
+    const finished = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'finished', overrides: short(2, 3) })
+    expect(notice(await mount(finished.slug))).toHaveLength(0)
+  })
+
+  it('shows the setup notice alone while the Event has no settings, and no notice of this kind', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', settings: false })
+
+    const page = await mount(slug)
+
+    expect(page.text()).toContain('Event einrichten')
+    expect(notice(page)).toHaveLength(0)
+  })
+
+  it('shows no notice with a Tie: the Host decides that banner', async () => {
+    const tie: EventOverrides = { ...short(2, 2), end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: null, lastGame: null }, standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }] }
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: tie })
+
+    expect(notice(await mount(slug))).toHaveLength(0)
+  })
+
+  it('shows no notice at the maximum of eight Sessions, though the games are open', async () => {
+    const eight = Array.from({ length: 8 }, (_, index) => SESSION(index + 1, `2026-10-${String(10 + index).padStart(2, '0')}T19:00:00.000Z`, { startedAt: STARTED, endedAt: ENDED }))
+    const { slug } = serveState({ sessions: eight, missing: 0, host: true, phase: 'running', overrides: short(8, 9) })
+
+    expect(notice(await mount(slug))).toHaveLength(0)
+  })
+
+  it('sits above the Standings, under the Head', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+
+    const page = await mount(slug)
+    const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')
+    expect(standings).toBeDefined()
+    expect(notice(page)[0]!.element.compareDocumentPosition(standings!.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('closes with its ×, and stays closed when the Event is read again', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+    const page = await mount(slug)
+
+    await notice(page)[0]!.get('button[aria-label="Schließen"]').trigger('click')
+    expect(notice(page)).toHaveLength(0)
+
+    await refreshEvent(slug)
+    await flushPromises()
+    expect(notice(page)).toHaveLength(0)
+  })
+
+  it('opens the add sheet from the notice, as the Sessions card does', async () => {
+    const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: short(2, 3) })
+    const page = await mount(slug)
+
+    await notice(page)[0]!.findAll('button').find(button => button.text() === 'Session hinzufügen')!.trigger('click')
+    await flushPromises()
+
+    expect(dialog()?.textContent).toContain('Session hinzufügen')
+    dialog()!.querySelector<HTMLElement>('button[aria-label="Schließen"]')!.click()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+
+    // The Sessions card's own button is still there, below the notice, and opens the same sheet.
+    const cardButton: HTMLButtonElement = [...page.element.querySelectorAll('button')].filter(button => button.textContent?.trim() === 'Session hinzufügen').at(-1)!
+    cardButton.click()
+    await flushPromises()
+    expect(dialog()?.textContent).toContain('Session hinzufügen')
+  })
+})
+
+// The Standings (#274): a stage block after the open Rounds once the first Result exists, and the „Tabelle“ tab in the side panel and on the phone.
+describe('the Standings on the Event page', () => {
+  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+  const openRound: RoundView = { id: 'r2', startedAt: STARTED, setAt: STARTED, game: { ...halo, id: 'g-kart', name: 'Kart' } }
+  const played: ResultView = { roundId: 'r1', number: 1, game: halo, places: [{ team: 2, place: 1, points: 1, score: null }, { team: 1, place: 2, points: 0, score: null }], corrected: false, correctedAt: null, resultAt: STARTED }
+  /** The read after one Result (team 2 won) with one more Round open. */
+  const afterResult: EventOverrides = {
+    rounds: [openRound],
+    results: [played],
+    standings: [{ team: 2, rank: 1, points: 1 }, { team: 1, rank: 2, points: 0 }],
+    end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+  }
+  const beforeResult: EventOverrides = {
+    rounds: [openRound],
+    results: [],
+    standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
+    end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+  }
+  const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
+  const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
+
+  beforeEach(() => {
+    signInAs(kitty)
+    stubScreen(true)
+  })
+
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    restoreScreen()
+    document.body.innerHTML = ''
+  })
+
+  describe('as a block of the stage', () => {
+    it('has none before the first Result, and none when the read has no end', async () => {
+      const before = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: beforeResult })
+      expect(regionHeadings(await mount(before.slug))).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+
+      const none = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: { rounds: [openRound] } })
+      expect(regionHeadings(await mount(none.slug))).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    })
+
+    it('follows the open Rounds once the first Result exists, while a Session runs', async () => {
+      const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      const page = await mount(slug)
+
+      expect(regionHeadings(page)).toEqual(['Gerade dran', 'Tabelle', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+      const block = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
+      expect(block.text()).toContain('Nach Spiel 1 von 6')
+      expect(block.findAll('tbody tr').map(row => row.attributes('data-team'))).toEqual(['2', '1'])
+      expect(block.classes()).toContain('shadow-card')
+    })
+
+    it('follows the open Rounds between two Sessions and after the last one', async () => {
+      const between = serveState({ sessions: [ENDED_ONE, SESSION(2, SECOND)], missing: 0, phase: 'running', overrides: afterResult })
+      expect(regionHeadings(await mount(between.slug))).toEqual(['Gerade dran', 'Tabelle', 'Sessions', 'So wird gespielt', 'Spielbrett'])
+
+      const done = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'running', overrides: afterResult })
+      expect(regionHeadings(await mount(done.slug))).toEqual(['Gerade dran', 'Tabelle', 'Sessions', 'So wird gespielt', 'Spielbrett'])
+    })
+
+    it('is not on the stage in the poll and teams states', async () => {
+      const poll = serveState({ sessions: [SESSION(1, null)], missing: 1, overrides: afterResult })
+      expect(regionHeadings(await mount(poll.slug))).not.toContain('Tabelle')
+
+      const teams = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, phase: 'date_set', overrides: afterResult })
+      expect(regionHeadings(await mount(teams.slug))).not.toContain('Tabelle')
+    })
+  })
+
+  describe('as a tab', () => {
+    it('is the first of two tabs of the side panel, which still opens on „Aktivität“, and holds the Standings and the history', async () => {
+      const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      const page = await mount(slug)
+
+      const panel = page.get('aside[aria-label="Seitenleiste"]')
+      const tabs = panel.findAll('[role="tab"]')
+      expect(tabs.map(tab => tab.text())).toEqual(['Tabelle', 'Aktivität'])
+      expect(tabs.map(tab => tab.attributes('aria-selected'))).toEqual(['false', 'true'])
+      const tabpanel = panel.get(`[id="${tabs[0]!.attributes('aria-controls')}"]`)
+      expect(tabpanel.attributes('role')).toBe('tabpanel')
+      expect(tabpanel.findAll('h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
+      expect(tabpanel.find('div.overflow-y-auto').exists()).toBe(true)
+
+      await tabs[0]!.trigger('click')
+      expect(tabpanel.attributes('style') ?? '').not.toContain('display: none')
+      expect(tabpanel.findAll('tbody tr')).toHaveLength(2)
+    })
+
+    it('is the second of three items in the phone\'s bar, and replaces the stage with the Standings and the history', async () => {
+      stubScreen(false)
+      const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      const page = await mount(slug)
+
+      const items = page.findAll('nav[aria-label="Event"] button')
+      expect(items.map(item => item.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
+      expect(page.get('h1').text()).toBe('Die Session läuft')
+
+      await items[1]!.trigger('click')
+
+      expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Tabelle'])
+      expect(page.findAll('nav[aria-label="Event"] button').map(item => item.attributes('aria-current'))).toEqual([undefined, 'page', undefined])
+      // One heading „Tabelle“: the h1 that the phone view shows; the Standings below it have no h2 of their own (#274).
+      expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Spielverlauf'])
+      expect(page.findAll('main h1, main h2').filter(heading => heading.text() === 'Tabelle').map(heading => heading.element.tagName)).toEqual(['H1'])
+      expect(page.text()).toContain('wird gespielt')
+      expect(page.find('[role="log"]').exists()).toBe(false)
+    })
+  })
+
+  // The Standings in motion (#276): the page holds one `news` (useStandingsNews) and hands it to every Leaderboard; only the stage's celebrates.
+  // The one polite live region is the page's, outside the branches of the stage and the phone views. Nothing plays on a load or in a finished Event.
+  describe('in motion', () => {
+    // A `p`: the page has other polite regions (the toasts), and this one is the Standings' announcement.
+    const live = () => mounted!.find('p[role="status"][aria-live="polite"]')
+    const boards = (): VueWrapper<InstanceType<typeof Leaderboard>>[] => mounted!.findAllComponents(Leaderboard)
+    const stageBoard = () => boards().find(board => board.props('framed') === true)
+    const serveResult = (extra: Partial<Setup> = {}) => serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: beforeResult, ...extra })
+    /** The Host enters Spiel 1 while the page is open: the next read of the Event has the Result. */
+    async function readsResult(served: ReturnType<typeof serveResult>, slug: string, overrides: EventOverrides = afterResult, phase = 'running') {
+      served.set(viewWithSessions(slug, [RUNNING_ONE], 0, {
+        event: { phase, isHost: false },
+        settings: defaultSettings(),
+        teams: [team(1), team(2)],
+        members: members(),
+        runningSessionId: `session-${slug}-0`,
+        ...overrides,
+      }))
+      await refreshEvent(slug)
+      await flushPromises()
+    }
+
+    it('has no news on the first render, also with a Result already there, and keeps an empty live region ready', async () => {
+      const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      await mount(slug)
+
+      expect(boards().length).toBeGreaterThan(0)
+      for (const board of boards()) expect(board.props('news')).toBeNull()
+      expect(live().exists()).toBe(true)
+      expect(live().text()).toBe('')
+      expect(mounted!.findAll('[data-delta]')).toHaveLength(0)
+    })
+
+    it('hands the news of a new Result to the stage\'s Leaderboard with `celebrate`, and to the panel\'s without', async () => {
+      const served = serveResult()
+      await mount(served.slug)
+      expect(stageBoard()).toBeUndefined()
+
+      await readsResult(served, served.slug)
+
+      const stage = stageBoard()!
+      expect(stage.props('celebrate')).toBe(true)
+      expect(stage.props('news')).toMatchObject({ kind: 'entered', number: 1, winners: [2] })
+      const others = boards().filter(board => !board.props('framed'))
+      expect(others.length).toBeGreaterThan(0)
+      for (const board of others) {
+        expect(board.props('celebrate')).toBe(false)
+        expect(board.props('news')).toEqual(stage.props('news'))
+      }
+    })
+
+    it('stamps the winner on the stage block when the first Result arrives, and the panel has none', async () => {
+      const served = serveResult()
+      await mount(served.slug)
+
+      await readsResult(served, served.slug)
+
+      expect(stageBoard()!.findAll('[data-stamp]').map(stamp => stamp.text())).toEqual(['Sieg in Spiel 1!'])
+      expect(mounted!.findAll('[data-stamp]')).toHaveLength(1)
+    })
+
+    it('hands the news to the phone\'s „Tabelle“ view too, without `celebrate`', async () => {
+      stubScreen(false)
+      const served = serveResult()
+      const page = await mount(served.slug)
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+
+      await readsResult(served, served.slug)
+
+      expect(boards()).toHaveLength(1)
+      expect(boards()[0]!.props('celebrate')).toBe(false)
+      expect(boards()[0]!.props('news')).toMatchObject({ kind: 'entered', number: 1 })
+    })
+
+    it('reads the announcement once in the page\'s live region, which was there before the text', async () => {
+      const served = serveResult()
+      await mount(served.slug)
+      const region = live().element
+      expect(region.textContent).toBe('')
+
+      await readsResult(served, served.slug)
+
+      expect(mounted!.findAll('p[role="status"][aria-live="polite"]')).toHaveLength(1)
+      expect(live().element).toBe(region)
+      expect(live().text()).toBe('Spiel 1 ist eingetragen. Team Rot ist jetzt auf Rang 2.')
+      expect(live().classes()).toContain('sr-only')
+      // No Leaderboard has a live region of its own: the stage and the panel would read it twice.
+      for (const board of boards()) expect(board.find('[aria-live]').exists()).toBe(false)
+    })
+
+    it('keeps the live region across a switch of the phone\'s views', async () => {
+      stubScreen(false)
+      const served = serveResult()
+      const page = await mount(served.slug)
+      const region = live().element
+
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+      await page.findAll('nav[aria-label="Event"] button')[0]!.trigger('click')
+
+      expect(live().element).toBe(region)
+    })
+
+    it('makes no news in a finished Event, and the live region stays empty', async () => {
+      const served = serveResult({ phase: 'finished' })
+      await mount(served.slug)
+
+      await readsResult(served, served.slug, afterResult, 'finished')
+
+      for (const board of boards()) expect(board.props('news')).toBeNull()
+      expect(live().text()).toBe('')
+      expect(mounted!.findAll('[data-delta]')).toHaveLength(0)
+    })
+
+    it('makes news for a Correction of a Result the page already knows', async () => {
+      const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+      await mount(served.slug)
+
+      await readsResult(served, served.slug, {
+        ...afterResult,
+        results: [{ ...played, places: [{ team: 1, place: 1, points: 1, score: null }, { team: 2, place: 2, points: 0, score: null }], corrected: true, correctedAt: '2026-10-30T20:00:00.000Z' }],
+        standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }],
+      })
+
+      expect(stageBoard()!.props('news')).toMatchObject({ kind: 'corrected', number: 1, winners: [1] })
+      expect(live().text()).toContain('Spiel 1 wurde korrigiert.')
+    })
+  })
+
+  // The blocks glide when one above them leaves or arrives (#276, F4 of the s5 check): the page's group moves them with Vue's FLIP. This proves what the group
+  // asks for, not that it glides: the browser check (scripts/browser/standings.mjs) does.
+  describe('when a block above moves them', () => {
+    /** The page's group of blocks: the group with the width of the page. */
+    const blocks = () => mounted!.findAllComponents({ name: 'TransitionGroup' }).find((group: VueWrapper) => group.classes().includes('max-w-[1100px]'))!
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('glide like the Round cards do: a transform, ease-out, the slow duration, and nothing under reduced motion', async () => {
+      const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      await mount(served.slug)
+
+      expect(String(blocks().props('moveClass')).split(' ')).toEqual(['transition-transform', 'dur-slow', 'ease-out', 'motion-reduce:transition-none', 'reduced:transition-none'])
+    })
+
+    it('are asked for no glide while the tab is hidden: they move at once, and nothing starts when the Member returns', async () => {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
+
+      await mount(served.slug)
+
+      expect(String(blocks().props('moveClass') ?? '')).not.toContain('transition-transform')
+    })
+  })
+
+  // The Host's „Korrigieren“ (#275): a pencil per numbered row of the history, until the Event finishes; it opens the result sheet and the save is the same PUT.
+  describe('the Host\'s Corrections', () => {
+    const pencil = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('button[aria-label="Spiel 1 korrigieren"]')
+    const hostEvent = (extra: Partial<Setup> = {}) => serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult, ...extra })
+
+    it('puts a pencil on every numbered row of the panel\'s „Tabelle“ tab for the Host', async () => {
+      const { slug } = hostEvent({ host: true })
+
+      const page = await mount(slug)
+      const tabs = page.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]')
+      await tabs[0]!.trigger('click')
+
+      const panel = page.get(`[id="${tabs[0]!.attributes('aria-controls')}"]`)
+      expect(panel.findAll('button[aria-label="Spiel 1 korrigieren"]')).toHaveLength(1)
+      expect(panel.findAll('button').filter(button => /korrigieren/i.test(button.attributes('aria-label') ?? ''))).toHaveLength(1)
+    })
+
+    it('puts one on the phone\'s „Tabelle“ view too', async () => {
+      stubScreen(false)
+      const { slug } = hostEvent({ host: true })
+
+      const page = await mount(slug)
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+
+      expect(pencil(page)).toHaveLength(1)
+    })
+
+    it('gives a Member none, on either view', async () => {
+      const { slug } = hostEvent({ host: false })
+      const wide = await mount(slug)
+      expect(pencil(wide)).toHaveLength(0)
+      expect(document.body.querySelectorAll('button[aria-label$="korrigieren"]')).toHaveLength(0)
+
+      stubScreen(false)
+      const phone = await mount(hostEvent({ host: false }).slug)
+      await phone.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+      expect(pencil(phone)).toHaveLength(0)
+    })
+
+    it('gives the Host none once the Event has finished, though the history is there', async () => {
+      const { slug } = hostEvent({ host: true, phase: 'finished' })
+
+      const page = await mount(slug)
+
+      expect(page.text()).toContain('Spielverlauf')
+
+      expect(document.body.querySelectorAll('button[aria-label$="korrigieren"]')).toHaveLength(0)
+      expect(pencil(page)).toHaveLength(0)
+    })
+
+    it('opens the sheet prefilled, and saving PUTs rounds/:id/result with the Places', async () => {
+      stubScreen(false)
+      const puts: unknown[] = []
+      const { slug } = hostEvent({ host: true })
+      registerEndpoint(`/api/e/${slug}/rounds/r1/result`, { method: 'PUT', handler: async (event) => {
+        puts.push(await readBody(event))
+        return { roundId: 'r1', number: 1 }
+      } })
+
+      const page = await mount(slug)
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+      await pencil(page)[0]!.trigger('click')
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+
+      expect(dialog()!.querySelector('h2')?.textContent).toBe('Spiel 1 korrigieren')
+      expect(dialog()!.textContent).toContain('Korrektur: Spiel 1 von 6')
+      await clickButton(dialog(), 'Korrektur speichern')
+      await flushPromises()
+
+      await vi.waitFor(() => expect(puts).toEqual([{ places: [{ team: 2, place: 1, score: null }, { team: 1, place: 2, score: null }] }]))
+      await vi.waitFor(() => expect(dialog()).toBeNull())
     })
   })
 })

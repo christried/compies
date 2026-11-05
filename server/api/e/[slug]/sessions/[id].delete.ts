@@ -1,11 +1,8 @@
-import { eq, sql } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
-import { sessions } from '../../../../db/schema'
 import { removeSessionRejection } from '../../../../domain/phase'
 import { recordActivity } from '../../../../utils/activity'
-import { useClock } from '../../../../utils/clock'
 import { apiError } from '../../../../utils/errors'
-import { changeSessions, findSession, shownNumber } from '../../../../utils/sessions'
+import { changeSessions, findSession, shownNumber, withdrawSession } from '../../../../utils/sessions'
 import { isoInstant } from '../../../../../shared/activity'
 import type { SessionRemoved } from '../../../../../shared/event'
 import { isStarted } from '../../../../../shared/session-state'
@@ -18,23 +15,14 @@ import { isStarted } from '../../../../../shared/session-state'
 // the notice to delete the evening from their calendar; it counts nowhere else (eventSessions leaves it out).
 // A Session that never had a Date leaves nothing to tell, so it is really deleted. A Session that has started is not
 // removed at all (#164).
-export default defineEventHandler((event): Promise<SessionRemoved> => changeSessions(event, async ({ tx, eventRow, user, publish, sessions: before }) => {
+export default defineEventHandler((event): Promise<SessionRemoved> => changeSessions(event, async ({ tx, now, eventRow, user, publish, sessions: before }) => {
   const session = findSession(before, getRouterParam(event, 'id'))
   const rejection = removeSessionRejection({ phase: eventRow.phase, count: before.length, started: isStarted(session) })
   if (rejection) throw apiError(rejection)
 
   // The number the Session was shown with, before it is gone (#159).
   const number = await shownNumber(tx, eventRow.id, session.id)
-  const withdrawn = session.startsAt ?? session.previousStartsAt
-  if (withdrawn === null) {
-    await tx.delete(sessions).where(eq(sessions.id, session.id))
-  }
-  else {
-    await tx
-      .update(sessions)
-      .set({ removedAt: sql`now()`, previousStartsAt: withdrawn, startsAt: null, slotId: null })
-      .where(eq(sessions.id, session.id))
-  }
-  await recordActivity(tx, publish, eventRow.id, { type: 'session_removed', actorId: user.id, params: { sessionId: session.id, number, startsAt: session.startsAt ? isoInstant(session.startsAt) : null }, now: useClock(event).now() })
+  await withdrawSession(tx, session, now)
+  await recordActivity(tx, publish, eventRow.id, { type: 'session_removed', actorId: user.id, params: { sessionId: session.id, number, startsAt: session.startsAt ? isoInstant(session.startsAt) : null }, now })
   return { id: session.id }
 }))

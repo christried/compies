@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VetoButton from '~/components/VetoButton.vue'
-import type { OwnVetoView } from '~~/shared/event'
+import type { OwnVetoView } from '~~/shared/stage'
 
 // The hold-to-veto button of a Player (#231, 04-motion § Hold to confirm, reference App Spielrunde „Eigenes Veto versiegelt“): ready,
 // holding, cast, sealed for the Player who cast, locked for their teammates, disabled when no Veto is left, and absent for everybody

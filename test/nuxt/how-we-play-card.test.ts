@@ -28,7 +28,6 @@ const hiddenWheel: EventSettings = { ...wheel, hiddenWheel: true }
 
 const visiblePools: EventPools = {
   main: [poolGame('Mario Kart'), poolGame('Pong')],
-  tiebreaker: [poolGame('Schach')],
 }
 
 type Props = { settings: EventSettings | null, pools: EventPools | null, isHost?: boolean, editTo?: string | null, locked?: boolean, hostName?: string }
@@ -58,15 +57,14 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.text()).not.toContain('Veto')
   })
 
-  it('lists the games of both pools it is given', async () => {
+  it('lists the games of the Game pool it is given, and no Tiebreaker pool (#279)', async () => {
     const card = await mountCard({ settings: wheel, pools: visiblePools })
 
     const lists = card.findAll('ul')
-    expect(lists).toHaveLength(2)
+    expect(lists).toHaveLength(1)
     expect(card.text()).toContain('Spielepool')
-    expect(card.text()).toContain('Tiebreaker-Pool')
+    expect(card.text()).not.toContain('Tiebreaker-Pool')
     expect(lists[0]!.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong'])
-    expect(lists[1]!.findAll('li').map(li => li.text())).toEqual(['Schach'])
     expect(card.text()).not.toContain('Das Rad ist verdeckt')
     expect(card.text()).not.toContain('verrät das Rad')
   })
@@ -75,7 +73,7 @@ describe('HowWePlayCard (#148)', () => {
     const card = await mountCard({
       settings: wheel,
       isHost: true,
-      pools: { main: [poolGame('Mario Kart', { notes: 'Settings: 3 Runden' }), poolGame('Pong')], tiebreaker: [] },
+      pools: { main: [poolGame('Mario Kart', { notes: 'Settings: 3 Runden' }), poolGame('Pong')] },
     })
 
     const [withNotes, withoutNotes] = card.findAll('ul')[0]!.findAll('li')
@@ -84,21 +82,21 @@ describe('HowWePlayCard (#148)', () => {
     expect(withoutNotes!.text()).not.toContain('Notizen')
   })
 
-  it('gives the Host a game in both pools one Notizen disclosure per list, each with its own panel (#224)', async () => {
+  it('gives the Host one Notizen disclosure for the game with notes, in the one list there is (#224, #279)', async () => {
     const kart = poolGame('Mario Kart', { notes: 'Settings: 3 Runden' })
-    const card = await mountCard({ settings: wheel, isHost: true, pools: { main: [kart], tiebreaker: [kart] } })
+    const card = await mountCard({ settings: wheel, isHost: true, pools: { main: [kart] } })
 
     const buttons = card.findAll('button').filter(button => button.text() === 'Notizen')
-    expect(buttons).toHaveLength(2)
-    // A closed disclosure controls no panel (aria-controls only while open).
-    for (const button of buttons) await button.trigger('click')
-    expect(buttons[0]!.attributes('aria-controls')).not.toBe(buttons[1]!.attributes('aria-controls'))
+    expect(buttons).toHaveLength(1)
+    await buttons[0]!.trigger('click')
+    expect(buttons[0]!.attributes('aria-controls')).toBeTruthy()
+    expect(card.text()).not.toContain('Tiebreaker')
   })
 
   it('shows a Member of a visible pool picture and name of each game, and no player count, Suitabilities or Notizen (#224)', async () => {
     const kart = poolGame('Mario Kart', { imageUrl: '/api/images/kart.webp', playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
     const pong = poolGame('Pong', { youtubeId: 'dQw4w9WgXcQ' })
-    const card = await mountCard({ settings: wheel, pools: { main: [faceOf(kart), faceOf(pong)], tiebreaker: [faceOf(kart)] } })
+    const card = await mountCard({ settings: wheel, pools: { main: [faceOf(kart), faceOf(pong)] } })
 
     const [first, second] = card.findAll('ul')[0]!.findAll('li')
     expect(first!.text()).toBe('Mario Kart')
@@ -111,7 +109,7 @@ describe('HowWePlayCard (#148)', () => {
 
   it('shows the Host the player count and Suitabilities of a pool game next to its Notizen (#224)', async () => {
     const kart = poolGame('Mario Kart', { playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
-    const card = await mountCard({ settings: wheel, isHost: true, pools: { main: [kart], tiebreaker: [] } })
+    const card = await mountCard({ settings: wheel, isHost: true, pools: { main: [kart] } })
 
     expect(card.get('li').text()).toContain('2–4')
     expect(card.get('li').text()).toContain('Teams')
@@ -119,9 +117,9 @@ describe('HowWePlayCard (#148)', () => {
   })
 
   it('says „Noch keine Spiele.“ for an empty pool', async () => {
-    const card = await mountCard({ settings: wheel, pools: { main: [poolGame('Pong')], tiebreaker: [] } })
+    const card = await mountCard({ settings: wheel, pools: { main: [] } })
 
-    expect(card.findAll('ul')).toHaveLength(1)
+    expect(card.findAll('ul')).toHaveLength(0)
     expect(card.text()).toContain('Noch keine Spiele.')
   })
 
@@ -166,7 +164,7 @@ describe('HowWePlayCard (#148)', () => {
 
       expect(card.text()).toContain('Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.')
       expect(card.text()).toContain('Nur du siehst das')
-      expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong', 'Schach'])
+      expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong'])
     })
 
     it('says the others see the games only once the Host sets them, with Host pick', async () => {
@@ -191,7 +189,7 @@ describe('HowWePlayCard (#148)', () => {
   it('shows the Host the games under a Hidden wheel, with the note that only they see them', async () => {
     const card = await mountCard({ settings: hiddenWheel, pools: visiblePools, isHost: true })
 
-    expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong', 'Schach'])
+    expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong'])
     expect(card.text()).toContain('Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.')
   })
 

@@ -122,6 +122,10 @@ export const API_ERROR_STATUS = {
   game_count_reached: 409,
   /** A Round is being drawn: no game can be set, and that Round cannot be put back (#228). */
   round_being_drawn: 409,
+  /** No Result can be entered on the Round: it is being drawn, waits for a respin, was put back, or has its Result already (#273). */
+  round_not_open: 409,
+  /** The Places are no Result of the Event: a Party missing, doubled or out of range, a Place that skips, or a Score too long (#273). */
+  invalid_result: 400,
   /** The Veto is for a viewer who plays in no Party: on the Bench, in the Stands, or without a team (#231). */
   not_a_player: 403,
   /** The draw has no Veto window (no Party had a Veto left when it was drawn, or the Host set it), or the Event has no such draw (#231). */
@@ -157,6 +161,12 @@ export const API_ERROR_STATUS = {
   /** The Party has its 9 Bonus Vetoes already: the Host cannot grant it another (#233). */
   bonus_veto_limit: 409,
   wrong_phase: 409,
+  /** The Host finishes before every Round up to the Game count has its Result (#277); the last game (#278) uses it too. */
+  results_missing: 409,
+  /** The outcome the Host saw is no longer the Standings' outcome: a Tie arose or ended since (#277). */
+  standings_changed: 409,
+  /** The Host asks for the last game while no Tie stands (#278): the Standings have one sole leader. */
+  no_tie: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */
   no_live_connection: 503,

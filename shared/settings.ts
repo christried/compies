@@ -22,10 +22,6 @@ export interface PointsTable {
   values: number[]
 }
 
-/** The two pools of an Event (GLOSSARY: Game pool, Tiebreaker pool). A game may sit in both. */
-export const POOLS = ['main', 'tiebreaker'] as const
-export type Pool = (typeof POOLS)[number]
-
 // The settings rules (#144). The stepper and the server both use them; the server stores what parseSettings returns.
 
 export const TEAM_COUNT_MIN = 2
@@ -78,6 +74,11 @@ export type SettingsError
 /** Whether the Selection mode spins a Lucky Wheel: only then the Hidden wheel and the Veto allowance apply. Later modes add their own branches here. */
 export function hasWheel(mode: SelectionMode): boolean {
   return mode === 'lucky_wheel'
+}
+
+/** Whether the Event plays with a Lucky Wheel: set up, and a Selection mode that spins one. Not a type predicate: its false branch would narrow `settings` to null (#256). */
+export function eventHasWheel(settings: Pick<EventSettings, 'selectionMode'> | null): boolean {
+  return settings !== null && hasWheel(settings.selectionMode)
 }
 
 /** The Veto allowance a Lucky Wheel starts with: at least 3, or one per Player of a team. */
@@ -136,24 +137,34 @@ export function withTeams<S extends Pick<EventSettings, 'teamCount' | 'teamSize'
   return { ...settings, teamCount, teamSize, pointsTable: { preset, values: pointsFor(preset, teamCount, values) } }
 }
 
-/** Recommended Game pool size: Game count + Veto allowance × team count for the Lucky Wheel; the Game count otherwise (#146 shows it). */
-export function recommendedPoolSize(settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>): number {
-  if (!hasWheel(settings.selectionMode)) return settings.gameCount
-  return settings.gameCount + (settings.vetoAllowance ?? 0) * settings.teamCount
+/** An Event can end in a Tie (GLOSSARY: Tie): at an even Game count, or whenever more than two Parties play (ADR 0014, #279). */
+export function tiePossible(gameCount: number, teamCount: number): boolean {
+  return gameCount % 2 === 0 || teamCount > 2
 }
 
 /**
- * The hint under the Game pool (#146): null while the pool has the recommended size, else the numbers behind
- * „Wird knapp“. `vetoes` are the vetoes of all Parties on the Lucky Wheel (Veto allowance × team count), 0 otherwise.
- * It never blocks anything.
+ * Recommended Game pool size: the Game count, plus the vetoes of all Parties (Veto allowance × team count) on the
+ * Lucky Wheel, plus one game when a Tie is possible (the last game of ADR 0014). The Host pick adds only that one game.
+ */
+export function recommendedPoolSize(settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>): number {
+  const vetoes = hasWheel(settings.selectionMode) ? (settings.vetoAllowance ?? 0) * settings.teamCount : 0
+  return settings.gameCount + vetoes + (tiePossible(settings.gameCount, settings.teamCount) ? 1 : 0)
+}
+
+/**
+ * The hint under the Game pool (#146, #279): null while the pool has the recommended size, else the numbers behind
+ * „Wird knapp“. `vetoes` are the vetoes of all Parties on the Lucky Wheel (Veto allowance × team count), 0 otherwise;
+ * `extra` is the possible last game of a Tie (1) or none (0). It never blocks anything.
  */
 export function poolHint(
   settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>,
   poolSize: number,
-): null | { games: number, vetoes: number, needed: number, have: number } {
+): null | { games: number, vetoes: number, extra: 0 | 1, needed: number, have: number } {
   const needed = recommendedPoolSize(settings)
   if (poolSize >= needed) return null
-  return { games: settings.gameCount, vetoes: needed - settings.gameCount, needed, have: poolSize }
+  const vetoes = hasWheel(settings.selectionMode) ? (settings.vetoAllowance ?? 0) * settings.teamCount : 0
+  const extra = tiePossible(settings.gameCount, settings.teamCount) ? 1 : 0
+  return { games: settings.gameCount, vetoes, extra, needed, have: poolSize }
 }
 
 type Parsed = { ok: true, settings: EventSettings } | { ok: false, error: SettingsError }

@@ -46,7 +46,22 @@ describe('AppSheet', () => {
     // The footer is a child of the sheet that scrolls, and it sticks to that scroll's bottom edge.
     expect(footer.parentElement).toBe(dialog)
     expect(dialog.className).toContain('overflow-y-auto')
-    expect([...footer.classList]).toEqual(expect.arrayContaining(['sticky', 'bottom-0', 'layer-sticky', 'bg-surface', 'border-t-(length:--cp-bw)']))
+    expect([...footer.classList]).toEqual(expect.arrayContaining(['sticky', '-bottom-5', 'layer-sticky', 'bg-surface', 'border-t-(length:--cp-bw)']))
+  })
+
+  it('fills the screen on a phone with `full` (#273), without the drag-handle bar, and stays a bottom sheet by default', async () => {
+    await mountSuspended(AppSheet, { props: { open: true, title: 'Ergebnis eintragen', full: true } })
+    const full = document.querySelector('[role="dialog"]')!
+    expect([...full.classList]).toEqual(expect.arrayContaining(['max-md:h-full', 'max-md:max-h-none', 'max-md:rounded-none']))
+    expect([...full.classList]).not.toContain('max-md:max-h-[76%]')
+    expect(full.querySelector('.md\\:hidden')).toBeNull()
+    document.body.innerHTML = ''
+
+    await mountSuspended(AppSheet, { props: { open: true, title: 'Host-Steuerung' } })
+    const sheet = document.querySelector('[role="dialog"]')!
+    expect([...sheet.classList]).toContain('max-md:max-h-[76%]')
+    expect([...sheet.classList]).not.toContain('max-md:h-full')
+    expect(sheet.querySelector('.md\\:hidden')).not.toBeNull()
   })
 
   it('takes no sticky band when it has no footer', async () => {

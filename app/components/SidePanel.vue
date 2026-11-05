@@ -2,7 +2,7 @@
 import type { Component } from 'vue'
 
 // The tabs of the side panel on a desktop (02-components § SidePanel, 11-event-seite § SidePanel): the tabs pattern
-// (tablist, tab, tabpanel) with the tabs 1.4 has, which is „Aktivität“; Chat, Tabelle and Leute are appended later as more
+// (tablist, tab, tabpanel) with the tabs the page has, which are „Tabelle“ and „Aktivität“ (#274); Chat and Leute are appended later as more
 // tabs and nothing else changes. The panel of the current tab is the slot named after its key. The AppShell's `panel`
 // slot holds this; the arrow keys, Home and End move between the tabs.
 export interface PanelTab { key: string, label: string, icon: Component }

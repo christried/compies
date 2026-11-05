@@ -37,7 +37,7 @@ describe('coinLanded', () => {
 })
 
 describe('coinRejection', () => {
-  const host = { isHost: true, sessions: RUNNING, latest: null, nowMs: STARTED }
+  const host = { isHost: true, sessions: RUNNING, latest: null, now: STARTED }
 
   it('lets the Host toss in a running Session when no toss flies', () => {
     expect(coinRejection(host)).toBeNull()
@@ -53,12 +53,22 @@ describe('coinRejection', () => {
   })
 
   it('refuses while the latest toss has not landed with coin_in_air, and allows a new one once it has', () => {
-    expect(coinRejection({ ...host, latest: TOSS, nowMs: LANDS - 1 })).toBe('coin_in_air')
-    expect(coinRejection({ ...host, latest: TOSS, nowMs: LANDS })).toBeNull()
+    expect(coinRejection({ ...host, latest: TOSS, now: LANDS - 1 })).toBe('coin_in_air')
+    expect(coinRejection({ ...host, latest: TOSS, now: LANDS })).toBeNull()
+  })
+
+  it('takes the instant as epoch ms, a Date or an ISO string alike, at the landing instant', () => {
+    const at = (now: number | Date | string) => coinRejection({ ...host, latest: TOSS, now })
+    expect(at(LANDS - 1)).toBe('coin_in_air')
+    expect(at(new Date(LANDS - 1))).toBe('coin_in_air')
+    expect(at(new Date(LANDS - 1).toISOString())).toBe('coin_in_air')
+    expect(at(LANDS)).toBeNull()
+    expect(at(new Date(LANDS))).toBeNull()
+    expect(at(new Date(LANDS).toISOString())).toBeNull()
   })
 
   it('checks the reasons in their order: not_host, then no_running_session, then coin_in_air', () => {
-    const flying = { latest: TOSS, nowMs: LANDS - 1 }
+    const flying = { latest: TOSS, now: LANDS - 1 }
     expect(coinRejection({ isHost: false, sessions: NOT_STARTED, ...flying })).toBe('not_host')
     expect(coinRejection({ isHost: true, sessions: NOT_STARTED, ...flying })).toBe('no_running_session')
   })

@@ -8,7 +8,7 @@ import { floorsAt } from '../../shared/settings'
 
 const at = (hour: number) => Date.UTC(2090, 10, 7, hour)
 
-const round = (id: string, fields: Partial<RoundFacts> = {}): RoundFacts => ({ id, setAt: at(19), putBackAt: null, ...fields })
+const round = (id: string, fields: Partial<RoundFacts> = {}): RoundFacts => ({ id, setAt: at(19), putBackAt: null, resultAt: null, ...fields })
 const draw = (roundId: string, gameId: string, fields: Partial<DrawFacts> = {}): DrawFacts => ({ roundId, gameId, source: 'pool', outcome: 'set', ...fields })
 const open = (roundId: string): DrawFacts => draw(roundId, 'halo', { outcome: null })
 const vetoed = (roundId: string, gameId = 'halo'): DrawFacts => draw(roundId, gameId, { outcome: 'vetoed' })
@@ -31,6 +31,19 @@ describe('open Rounds and Rounds started', () => {
     const rounds = [round('a'), round('b', { setAt: null }), round('c', { putBackAt: at(20) })]
 
     expect(rounds.filter(isOpen).map(row => row.id)).toEqual(['a'])
+  })
+
+  it('no longer lists a set Round once its Result is entered (#273)', () => {
+    const rounds = [round('a'), round('b', { resultAt: at(20) }), round('c', { setAt: null })]
+
+    expect(rounds.filter(isOpen).map(row => row.id)).toEqual(['a'])
+  })
+
+  it('still counts a Round with a Result as started, so its game stays taken (#273)', () => {
+    const rounds = [round('a', { resultAt: at(20) }), round('b', { putBackAt: at(21) })]
+
+    expect(roundsStarted(rounds)).toBe(1)
+    expect(gameTaken('kart', [draw('a', 'kart')], rounds)).toBe(true)
   })
 })
 

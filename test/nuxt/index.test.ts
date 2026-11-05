@@ -37,6 +37,7 @@ function card(overrides: Partial<HomeEvent>): HomeEvent {
     viewerVoted: false,
     isHost: false,
     action: 'vote',
+    noDate: false,
     ...overrides,
   }
 }
@@ -183,6 +184,33 @@ describe('home page', () => {
 
     expect(page.text()).toContain('2 von 3 haben vollständig abgestimmt')
     expect(page.text()).toContain('Du hast noch nicht abgestimmt')
+  })
+
+  it('reads „Kein Termin“, as the Event page does, on the card of a running Event with no Session left (review 0.8)', async () => {
+    homeEvents = [card({ slug: 'a-aaaa', name: 'Alles gespielt', phase: 'running', sessionCount: 1, missingDates: 0, noDate: true, action: 'view', progress: { voted: 0, total: 0 } })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.get('article').text()).toContain('Kein Termin')
+    expect(page.get('article').text()).not.toContain('Läuft')
+  })
+
+  it('reads „Läuft“ on the card of a running Event that still has a Session to play', async () => {
+    homeEvents = [card({ slug: 'a-aaaa', name: 'Läuft schon', phase: 'running', sessionCount: 1, missingDates: 0, action: 'view', progress: { voted: 0, total: 0 } })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.get('article').text()).toContain('Läuft')
+    expect(page.get('article').text()).not.toContain('Kein Termin')
+  })
+
+  it('reads „Beendet“ on the card of a finished Event (#277)', async () => {
+    homeEvents = [card({ slug: 'a-aaaa', name: 'Fertig gezockt', phase: 'finished', sessionCount: 1, missingDates: 0, action: 'view', progress: { voted: 0, total: 0 } })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.text()).toContain('Fertig gezockt')
+    expect(page.text()).toContain('Beendet')
   })
 
   it('shows the next Session with its number once every Date is set', async () => {

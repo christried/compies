@@ -277,7 +277,7 @@ describe('the Activity feed', () => {
       const { slug, hostCookie, hostId } = await pollEvent()
       const [game] = await testDb.db.insert(games).values({ name: 'Geheimspiel', createdBy: hostId }).returning()
 
-      await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 12, teamSize: 4 }, pools: { main: [game!.id], tiebreaker: [game!.id] } })
+      await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 12, teamSize: 4 }, pools: { main: [game!.id] } })
 
       const raw = await (await send('GET', `/api/e/${slug}/activity`, hostCookie)).text()
       expect(raw).toContain('game_count_changed')

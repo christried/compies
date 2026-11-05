@@ -4,7 +4,8 @@
 // The spin (#229) and the Veto window (#231) are more arms of a Round's draws.
 
 import type { Seats } from './board'
-import { runningOf, teamsRejection, type Instant, type SessionTimes, type TeamsRejection } from './session-state'
+import { msOf, type Instant } from './instant'
+import { runningOf, teamsRejection, type SessionTimes, type TeamsRejection } from './session-state'
 import type { Phase } from './event'
 import { hasWheel, type EventSettings } from './settings'
 
@@ -29,6 +30,8 @@ export interface RoundFacts {
   setAt: Instant | null
   /** When the Host put it back; null while it stands. A put-back Round is gone. */
   putBackAt: Instant | null
+  /** When its Result was entered (#273); null until then. A Round with a Result is still set, and still counts as started. */
+  resultAt: Instant | null
 }
 
 /** What the rules need of a draw: its Round, its game, where the game came from and how it ended (null while open). */
@@ -39,7 +42,7 @@ export interface DrawFacts {
   outcome: DrawOutcome | null
 }
 
-/** `drawn`: a game is being drawn. `set`: its game is set, „wird gespielt“ (0.8 adds a result). A put-back Round has no state: it is gone. */
+/** `drawn`: a game is being drawn. `set`: its game is set, „wird gespielt“, with or without a Result (a Round with a Result is still `set`). A put-back Round has no state: it is gone. */
 export type RoundState = 'drawn' | 'set'
 
 export function roundState(round: Pick<RoundFacts, 'setAt'>): RoundState {
@@ -69,9 +72,9 @@ export function waitsForRespin(round: Pick<RoundFacts, 'id' | 'setAt' | 'putBack
   return own.length > 0 && own.every(draw => draw.outcome === 'vetoed')
 }
 
-/** Whether the Round is open (waits for its result): its game is set and it was not put back. */
-export function isOpen(round: RoundFacts): boolean {
-  return stands(round) && roundState(round) === 'set'
+/** Whether the Round is open (waits for its result): its game is set, it was not put back and no Result has been entered yet (#273). */
+export function isOpen(round: Pick<RoundFacts, 'setAt' | 'putBackAt' | 'resultAt'>): boolean {
+  return stands(round) && roundState(round) === 'set' && round.resultAt === null
 }
 
 /** How many Rounds have started: every Round the Host has not put back, being drawn or set. The Game count never drops below it. */
@@ -212,8 +215,8 @@ export function vetoRejection({ viewerTeam, draw, now, running, castTeams, left 
   if (viewerTeam === null) return 'not_a_player'
   if (!running) return 'no_running_session'
   if (draw === null || draw.vetoEndsAt === null) return 'no_veto_window'
-  const at = new Date(now).getTime()
-  if (draw.outcome !== null || at >= new Date(draw.vetoEndsAt).getTime() || at < new Date(draw.stopAt).getTime()) return 'veto_window_closed'
+  const at = msOf(now)
+  if (draw.outcome !== null || at >= msOf(draw.vetoEndsAt) || at < msOf(draw.stopAt)) return 'veto_window_closed'
   if (castTeams.includes(viewerTeam)) return 'veto_already_cast'
   return left < 1 ? 'no_vetoes_left' : null
 }

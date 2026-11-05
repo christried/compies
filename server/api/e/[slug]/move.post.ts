@@ -1,7 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { isUuid } from '../../../domain/uuid'
 import { lastToJoin, moveMember, readSeats, teamChoiceOf } from '../../../utils/board'
-import { useClock } from '../../../utils/clock'
 import { apiError } from '../../../utils/errors'
 import { changeEvent } from '../../../utils/event-access'
 import { eventSessions } from '../../../utils/sessions'
@@ -13,7 +12,7 @@ import { asRecord } from '../../../../shared/record'
 // moves themselves, the Host anyone. The Event row is locked for update, so all moves of one Event queue up and each
 // counts the seats after the one before it has committed: of two Players racing for the last place the second
 // one finds the team full and is told who was faster.
-export default defineEventHandler((event): Promise<MovedMember> => changeEvent(event, { lock: 'update' }, async ({ tx, eventRow, user, body, publish }) => {
+export default defineEventHandler((event): Promise<MovedMember> => changeEvent(event, { lock: 'update' }, async ({ tx, now, eventRow, user, body, publish }) => {
   const { userId, to: rawTo } = asRecord(body)
   const to = parsePlace(rawTo)
   if (!isUuid(userId) || !to) throw apiError('invalid_value')
@@ -40,6 +39,6 @@ export default defineEventHandler((event): Promise<MovedMember> => changeEvent(e
   }
   if (rejection) throw apiError(rejection)
 
-  await moveMember(tx, publish, useClock(event).now(), eventRow.id, user.id, userId, from, to)
+  await moveMember(tx, publish, now, eventRow.id, user.id, userId, from, to)
   return { userId, to }
 }))

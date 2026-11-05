@@ -2,9 +2,38 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Beim Einrichten und in den Einstellungen sagt dir die App jetzt, wenn ein Event unentschieden enden kann (bei gerader Spielzahl oder mehr als zwei Teams). Dann entscheidest du, ob es unentschieden endet oder ein letztes Spiel dazukommt. Die Empfehlung für den Spielepool zählt dieses mögliche letzte Spiel mit, und beim Glücksrad erinnert dich ein Hinweis daran, für Bonus-Vetos ein paar Spiele mehr einzuplanen. ([#279](https://github.com/christried/compies/issues/279))
+- Als Host trägst du jetzt das Ergebnis eines Spiels ein: Beim offenen Spiel drückst du „Ergebnis eintragen“, ordnest die Parteien per Ziehen oder mit den Pfeil-Buttons, markierst „gleichauf“, wenn ein Spiel unentschieden ausging, und kannst pro Partei einen Score dazuschreiben. Die Punkte nach eurer Punktetabelle siehst du vor dem Speichern. Das Spiel bekommt seine Nummer („Spiel 3“), verlässt die offenen Spiele, und die Aktivität nennt, wer gewonnen hat. Ergebnisse trägst du in beliebiger Reihenfolge ein, auch zwischen zwei Sessions. Alle anderen lesen unter jedem offenen Spiel, dass der Host das Ergebnis einträgt. ([#273](https://github.com/christried/compies/issues/273))
+- Alle im Event sehen jetzt die Tabelle: im neuen Tab „Tabelle“ (am Handy zwischen „Event“ und „Aktivität“, am Desktop im Seitenpanel) und, sobald das erste Ergebnis eingetragen ist, auch auf der Event-Seite unter den offenen Spielen. Sie zählt nur die Punkte; Parteien mit gleich vielen Punkten teilen sich den Rang („1.“ zweimal) und stehen in Team-Reihenfolge. Darunter zeigt der Spielverlauf jedes gespielte Spiel mit Nummer, Siegern und Scores und klappt auf, wie alle Parteien abgeschnitten haben; offene Spiele stehen gestrichelt darin. ([#274](https://github.com/christried/compies/issues/274))
+- Der Host kann jetzt jedes eingetragene Ergebnis korrigieren, solange das Event nicht beendet ist: In der Tabelle öffnet der Stift an einem Spiel das Ergebnis-Fenster mit den gespeicherten Plätzen und Scores, ohne Rückfrage. Das Spiel behält seine Nummer und trägt danach „korrigiert“, die Tabelle rechnet neu, und die Aktivität sagt, welches Spiel korrigiert wurde. Wer ohne Änderung speichert, ändert nichts. Zurückziehen lässt sich ein Ergebnis nicht. ([#275](https://github.com/christried/compies/issues/275))
+- Der Host schließt das Event jetzt ab: Sind alle Spiele gespielt und steht ein Sieger fest, hält er im Dock „Event abschließen“. Das beendet die laufende Session, entfernt die Sessions, die noch nicht angefangen haben, und schließt die Terminumfrage. Danach ist das Event für alle nur noch zum Ansehen da, auch für den Host, mit der Tabelle, dem Spielverlauf und der Aktivität; der Einladungslink funktioniert weiter. Wer früher aufhören will, senkt zuerst die Anzahl der Spiele auf die gespielten. ([#277](https://github.com/christried/compies/issues/277))
+- Steht nach dem letzten Spiel mehr als eine Partei auf Platz 1, entscheidet der Host im Dock: „Unentschieden beenden“ (halten) beendet das Event mit allen Parteien auf Platz 1 als Siegern, „Letztes Spiel hinzufügen“ erhöht die Anzahl der Spiele um eins, und alle Parteien spielen dieses Spiel wie jedes andere. Steht danach wieder mehr als eine Partei vorn, kommt dieselbe Wahl noch einmal; mehr als die erlaubte Anzahl an Spielen geht nicht, „Unentschieden beenden“ geht immer. Alle anderen lesen bis dahin „Gleichstand auf Platz 1. Der Host entscheidet.“ Endet das Event unentschieden, steht „Unentschieden“ als Überschrift der Event-Seite, und die Aktivität nennt alle Parteien auf Platz 1. ([#278](https://github.com/christried/compies/issues/278))
+- Die Tabelle bewegt sich jetzt, wenn ein Ergebnis eintrifft oder korrigiert wird: Die Zeilen gleiten in die neue Reihenfolge, die Punkte zählen hoch, und jede Partei bekommt eine Pille mit ihren neuen Punkten. Auf der Event-Seite bekommen außerdem die Sieger des Spiels einen Stempel und Konfetti. Es passiert nur für ein Ergebnis, das du live siehst, nie beim Öffnen der Seite; bei reduzierter Bewegung springen die Zeilen mit einer kurzen Hervorhebung, es gibt kein Konfetti, und Screenreader hören die neue Reihenfolge. ([#276](https://github.com/christried/compies/issues/276))
+
+### Geändert
+
+- Ist auf dem Rad kein Spiel mehr, sagt dir der Host-Button „Neu drehen“ jetzt, dass du mit „Nächstes Spiel setzen“ eines aus der Bibliothek setzen kannst. ([#261](https://github.com/christried/compies/issues/261))
+- Offene Spiele zeigt die Event-Seite jetzt auch zwischen zwei Sessions, nicht nur während eine läuft. ([#273](https://github.com/christried/compies/issues/273))
+- Das Fenster „Ergebnis eintragen“ sagt jetzt über dem Spiel, das wievielte Spiel es wird, zum Beispiel „Spiel 3 von 6“. ([#274](https://github.com/christried/compies/issues/274))
+- Ein Event, dessen Sessions alle vorbei sind, das der Host aber noch nicht abgeschlossen hat, zeigt oben jetzt „Kein Termin“ statt „Vorbei“. „Beendet“ steht erst nach dem Abschließen. ([#277](https://github.com/christried/compies/issues/277))
+- Ein laufendes Event mit Ergebnissen bleibt auf der Startseite, bis der Host es abschließt, auch wenn die letzte Session schon länger vorbei ist. Ein abgeschlossenes Event verschwindet einen Tag nach dem Abschluss von dort. ([#282](https://github.com/christried/compies/issues/282))
+- Die Datenschutzerklärung beschreibt jetzt auch die Runden eines Events: die gezogenen und gesetzten Spiele, die Ergebnisse und die Tabelle, Vetos, Bonus-Vetos und Münzwürfe, außerdem, wann der Host ein Event abgeschlossen hat. Den Tiebreaker-Pool nennt sie nicht mehr. ([#280](https://github.com/christried/compies/issues/280))
+
 ### Behoben
 
 - Steht eine Zahl auf eins, folgt ihr jetzt die Einzahl: „1 Person da“ auf dem Board, „1 Spiel durchsuchen“ in der Bibliothek und „schon 1 Veto eingesetzt“ in den Einstellungen. ([#268](https://github.com/christried/compies/issues/268))
+- Als Host siehst du in den Einstellungen die Sperre von „Rad verdecken“ und den Vetos nicht mehr, wenn das Spiel schon feststeht. ([#261](https://github.com/christried/compies/issues/261))
+- Überspringt der Host den Clip, blenden ihn alle anderen jetzt aus, statt dass er plötzlich verschwindet. ([#261](https://github.com/christried/compies/issues/261))
+- Ein sehr langer Spielname im Spielepool macht die Event-Seite am Handy nicht mehr breiter als den Bildschirm. ([#279](https://github.com/christried/compies/issues/279))
+- Wenn ein Spiel zurückgelegt wird, rutscht die Seite darunter jetzt sanft nach oben statt zu springen. ([#276](https://github.com/christried/compies/issues/276))
+- Ein sehr langer Spielname ohne Leerzeichen läuft im Aktivitäts-Feed nicht mehr über den Rand. ([#273](https://github.com/christried/compies/issues/273))
+- Am Handy schließt die Leiste mit dem Knopf unten in einem Fenster jetzt bündig mit dem Bildschirmrand ab, statt den Inhalt darunter durchscheinen zu lassen. ([#218](https://github.com/christried/compies/issues/218))
+
+### Entfernt
+
+- Den Tiebreaker-Pool gibt es nicht mehr: Bei Gleichstand auf Platz 1 spielt niemand ein eigenes Tiebreaker-Spiel, du entscheidest als Host. Die Spiele, die in einem Tiebreaker-Pool lagen, sind dort entfernt und bleiben in der Bibliothek. Willst du sie noch spielen, nimm sie in den Spielepool auf (Einstellungen, Schritt „Spielepool“). ([#279](https://github.com/christried/compies/issues/279))
 
 ## [0.7.0] - 2026-11-02 – Glücksrad
 

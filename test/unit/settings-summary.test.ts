@@ -96,17 +96,17 @@ describe('summaryRows', () => {
     expect(summaryRows(settings({ gameCount: 1 }), t)[1]).toMatchObject({ key: 'games', value: '1 Spiel' })
   })
 
-  it('says „1 Spiel“ for a pool of one game', () => {
-    const rows = summaryRows(settings(), t, { pools: { main: 1, tiebreaker: 0 } })
-
-    expect(rows.at(-1)).toEqual({ key: 'pool', label: 'Pool', value: '1 Spiel, Tiebreaker 0', settings: [] })
+  it('says „1 Spiel“ for a pool of one game, and „0 Spiele“ for an empty one', () => {
+    expect(summaryRows(settings(), t, { pools: { main: 1 } }).at(-1)).toEqual({ key: 'pool', label: 'Pool', value: '1 Spiel', settings: [] })
+    expect(summaryRows(settings(), t, { pools: { main: 0 } }).at(-1)).toMatchObject({ value: '0 Spiele' })
+    expect(summaryRows(settings(), t, { pools: { main: 2 } }).at(-1)).toMatchObject({ value: '2 Spiele' })
   })
 
-  it('adds the Game pool and the Date, which show no setting, when it is given them', () => {
-    const rows = summaryRows(settings(), t, { pools: { main: 9, tiebreaker: 3 }, dates: 'Umfrage, 4 Vorschläge' })
+  it('adds the Game pool and the Date, which show no setting, when it is given them (#279: no Tiebreaker count)', () => {
+    const rows = summaryRows(settings(), t, { pools: { main: 9 }, dates: 'Umfrage, 4 Vorschläge' })
 
     expect(rows.slice(-2)).toEqual([
-      { key: 'pool', label: 'Pool', value: '9 Spiele, Tiebreaker 3', settings: [] },
+      { key: 'pool', label: 'Pool', value: '9 Spiele', settings: [] },
       { key: 'dates', label: 'Termin', value: 'Umfrage, 4 Vorschläge', settings: [] },
     ])
   })

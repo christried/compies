@@ -272,7 +272,7 @@ describe('Countdown', () => {
       expect(await readCountdown(game)).toBeNull()
     })
 
-    it('publishes countdown.changed for every change to the Event room', async () => {
+    it('publishes event.changed for every change to the Countdown, and no message of its own', async () => {
       const game = await event()
 
       await setSeconds(game, 60)
@@ -281,8 +281,9 @@ describe('Countdown', () => {
       await act(game, 'reset')
 
       const types = notifier.messages(game.eventId).map(message => message.type)
-      expect(types.filter(type => type === 'countdown.changed')).toHaveLength(4)
+      expect(types.filter(type => type === 'event.changed')).toHaveLength(4)
       expect(types).not.toContain('activity.added')
+      expect(types).not.toContain('countdown.changed')
     })
   })
 })

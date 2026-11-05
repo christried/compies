@@ -4,7 +4,6 @@ import { parseNote, parseVoteValue, voteRejection } from '../../../../../domain/
 import type { AuthUser } from '../../../../../../shared/auth'
 import type { SavedVote } from '../../../../../../shared/event'
 import { asRecord } from '../../../../../../shared/record'
-import { useClock } from '../../../../../utils/clock'
 import { apiError, slotNotFound } from '../../../../../utils/errors'
 import { createRateLimiter } from '../../../../../utils/rate-limit'
 import { changeEvent } from '../../../../../utils/event-access'
@@ -27,7 +26,7 @@ function limitVotes(user: AuthUser) {
   if (!voteLimiter.take(user.id, new Date())) throw apiError('rate_limited')
 }
 
-export default defineEventHandler((event): Promise<SavedVote> => changeEvent(event, { lock: 'share', beforeBody: limitVotes }, async ({ tx, eventRow, user, body }) => {
+export default defineEventHandler((event): Promise<SavedVote> => changeEvent(event, { lock: 'share', beforeBody: limitVotes }, async ({ tx, now, eventRow, user, body }) => {
   const { value: rawValue, note: rawNote } = asRecord(body)
   const value = parseVoteValue(rawValue)
   if (!value) throw apiError('invalid_value')
@@ -40,7 +39,7 @@ export default defineEventHandler((event): Promise<SavedVote> => changeEvent(eve
 
   const taken = await isSlotTaken(tx, eventRow.id, slot.id)
   const waiting = missingDates((await eventSessions(tx, eventRow.id)).map(row => row.startsAt))
-  const rejection = voteRejection({ phase: eventRow.phase, missingDates: waiting, startsAt: slot.startsAt, now: useClock(event).now(), taken })
+  const rejection = voteRejection({ phase: eventRow.phase, missingDates: waiting, startsAt: slot.startsAt, now, taken })
   if (rejection) throw apiError(rejection)
 
   const [saved] = await tx
@@ -48,7 +47,7 @@ export default defineEventHandler((event): Promise<SavedVote> => changeEvent(eve
     .values({ slotId: slot.id, userId: user.id, value, note: note ?? null })
     .onConflictDoUpdate({
       target: [pollVotes.slotId, pollVotes.userId],
-      set: { value, updatedAt: useClock(event).now(), ...(note !== undefined && { note }) },
+      set: { value, updatedAt: now, ...(note !== undefined && { note }) },
     })
     .returning({ note: pollVotes.note })
 

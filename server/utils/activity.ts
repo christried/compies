@@ -4,6 +4,7 @@ import { shownName } from '../../shared/auth'
 import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType, type InstantActivityType } from '../../shared/activity'
 import type { RoomMessage } from '../../shared/realtime'
 import type { Db } from './db'
+import { stoppedDraws } from './draws'
 import { apiError } from './errors'
 
 // The Activity feed (#159, GLOSSARY: Activity feed). One home: every entry is written by recordActivity and every
@@ -19,9 +20,28 @@ type ActivityRow = typeof activity.$inferSelect
 type ActivityMoment<T extends ActivityType> = T extends InstantActivityType ? { at: Date, now?: never } : { at?: never, now: Date }
 
 /**
+ * The moment of an entry that has no instant of its own (review 0.8, S1, F7). A Session's start and end are the request's `now` (#259)
+ * and the feed's groups compare an entry with them, so an entry is on that clock and on no other: the database's clock takes no part, or
+ * an entry written less than its lead before the end of a Session would be stamped after it and land under „Nach der Session“, and one
+ * written while it lags would land before the start it records. `clock_timestamp()` is the moment of the insert and `now()` the start
+ * of the transaction, so their difference is the time the change has taken so far: `now` plus it grows with every insert of one change
+ * and keeps their order.
+ * The second term keeps the order of two changes whose `now` stands still or comes from two instances with different clocks (a test clock
+ * does; a time elapsed inside a heavy request would otherwise outrun the next, light one): an entry is later than the Event's last one,
+ * the entries that wait for their instant (INSTANT_ACTIVITY_TYPES) aside, whose `at` lies in the future.
+ */
+function stampOf(eventId: string, now: Date) {
+  const instants = sql.join(INSTANT_ACTIVITY_TYPES.map(type => sql`${type}`), sql`, `)
+  return sql`greatest(
+    ${now.toISOString()}::timestamptz + (clock_timestamp() - now()),
+    (select max(earlier.at) + interval '1 microsecond' from activity earlier where earlier.event_id = ${eventId} and earlier.type not in (${instants}))
+  )`
+}
+
+/**
  * Writes one entry in the caller's transaction and queues `activity.added` for after the commit (changeEvent's
- * `publish`), so a change that throws leaves neither the entry nor the message. `at` is the moment of the insert,
- * not of the transaction, so two entries of one change keep the order they were written in.
+ * `publish`), so a change that throws leaves neither the entry nor the message. The entry is never earlier than its request's `now`
+ * (stampOf), and two entries of one change keep the order they were written in.
  * An entry with an `at` of its own (#229: a draw's, for its stop instant) is written with it and not published: it would
  * reach everyone before the instant, so the clients refetch the feed when the instant passes (INSTANT_ACTIVITY_TYPES).
  */
@@ -33,7 +53,7 @@ export async function recordActivity<T extends ActivityType>(
 ): Promise<void> {
   const [row] = await tx
     .insert(activity)
-    .values({ eventId, type, actorId, params, at: at ?? sql`clock_timestamp()` })
+    .values({ eventId, type, actorId, params, at: at ?? stampOf(eventId, now!) })
     .returning()
   if (at) return
   // The change that wrote the entry has just set or put back its game: a settled Round names it, whatever the clock says.
@@ -41,13 +61,13 @@ export async function recordActivity<T extends ActivityType>(
   publish({ type: 'activity.added', entry: entry! })
 }
 
-/** The User ids a row's params name, whose names the client needs (`people`): what its type declares in ACTIVITY_PEOPLE (#226). */
+/** The User ids a row's params name, whose names the client needs (`people`): what its type declares in ACTIVITY_NAMES (#226, #273). */
 function paramUserIds({ type, params }: ActivityRow): string[] {
   return activityPeople(type, params)
 }
 
 /**
- * The names of the games these rows name (ACTIVITY_GAMES) that may be named yet (#228, #229), keyed by Event and game: a game a
+ * The names of the games these rows name (ACTIVITY_NAMES) that may be named yet (#228, #229), keyed by Event and game: a game a
  * draw of the Event has, from the draw's stop instant on (a set draw stops at its commit, so a set game is named at once; a
  * put-back Round's game too: everyone saw it set), or a game a Round of the Event has set (that Round settled at or after the
  * stop). Nothing else is named, so a Hidden wheel stays hidden in the feed (spec stories 69, 71, 80).
@@ -62,7 +82,7 @@ async function namedGames(db: Db, rows: ActivityRow[], now: Date): Promise<Map<s
     .from(draws)
     .innerJoin(rounds, eq(draws.roundId, rounds.id))
     .innerJoin(games, eq(draws.gameId, games.id))
-    .where(and(inArray(draws.gameId, gameIds), inArray(rounds.eventId, eventIds), lte(draws.stopAt, now)))
+    .where(and(inArray(draws.gameId, gameIds), stoppedDraws(eventIds, now)))
   const set = await db
     .select({ eventId: rounds.eventId, gameId: games.id, name: games.name })
     .from(rounds)
