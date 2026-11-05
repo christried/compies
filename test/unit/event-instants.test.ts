@@ -20,6 +20,7 @@ const view = (wheel: { spin?: SpinView | null, vetoes?: VetoView } | null): Pick
 })
 
 const coinOf = (landOffset: number): NonNullable<EventView['coin']> => ({ id: 'toss-1', side: 'heads', startedAt: iso(landOffset - 2000), landsAt: iso(landOffset) })
+const ceremonyOf = (endOffset: number): NonNullable<EventView['ceremony']> => ({ startsAt: iso(endOffset - 5050), endsAt: iso(endOffset), gag: 'trip' })
 const clipOf = (endOffset: number): NonNullable<EventView['clip']> => ({ drawId: 'd1', startAt: iso(endOffset - 60_000), endsAt: iso(endOffset), game })
 
 describe('viewInstants', () => {
@@ -37,6 +38,11 @@ describe('viewInstants', () => {
 
   it('has the clip\'s end as an instant (#256)', () => {
     expect(viewInstants({ clip: clipOf(4000) })).toEqual([NOW + 4000])
+  })
+
+  it('has the end of the ceremony as an instant, so the dock reads again when it is free (#309)', () => {
+    expect(viewInstants({ ceremony: ceremonyOf(5000) })).toEqual([NOW + 5000])
+    expect(viewInstants({ ceremony: null })).toEqual([])
   })
 
   it('has one instant per piece that has one, in the order the page had them', () => {
