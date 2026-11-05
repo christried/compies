@@ -14,7 +14,7 @@ const dated = (id: string, number: number | null, startsAt: string, times: { sta
 const undated = (id: string): PageInput['sessions'][number] => ({ id, number: null, startsAt: null, previousStartsAt: null, startedAt: null, endedAt: null })
 
 function input(sessions: PageInput['sessions'], fields: Partial<PageInput> = {}): PageInput {
-  return { settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, setGame: null, wheel: null, countdown: null, coin: null, end: null, ...fields }
+  return { settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll', isHost: false }, setGame: null, wheel: null, countdown: null, coin: null, end: null, ...fields }
 }
 
 const SAT = '2090-10-25T18:30:00.000Z'
@@ -50,7 +50,7 @@ describe('eventPageState', () => {
   })
 
   it('is running while a Session runs, with its number and when it started', () => {
-    const state = eventPageState(input([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { event: { phase: 'running' } }))
+    const state = eventPageState(input([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { event: { phase: 'running', isHost: false } }))
 
     expect(state).toMatchObject({ kind: 'running', total: 2, running: { number: 1, startedAt: SAT }, next: { number: 2 } })
   })
@@ -82,7 +82,7 @@ describe('eventPageState', () => {
     expect(pill([ended, undated('b')])).toEqual({ phase: 'poll', noDate: false })
     // No Session left, Event not finished (#277): the grey draft dot with „Kein Termin“; „Beendet“ is the finished Phase's own word.
     expect(pill([ended])).toEqual({ phase: 'draft', noDate: true })
-    expect(pill([ended], { event: { phase: 'finished' } })).toEqual({ phase: 'finished', noDate: false })
+    expect(pill([ended], { event: { phase: 'finished', isHost: false } })).toEqual({ phase: 'finished', noDate: false })
   })
 
   it('leaves the pill to the Event\'s own Phase in setup', () => {
@@ -150,12 +150,12 @@ describe('the blocks of the stage', () => {
   })
 
   it('has no poll once every Session is dated', () => {
-    expect(blocks([dated('a', 1, SAT), dated('b', 2, SUN)], { event: { phase: 'date_set' } })).toEqual(['head', 'reopen', 'seat', 'board', 'cards'])
+    expect(blocks([dated('a', 1, SAT), dated('b', 2, SUN)], { event: { phase: 'date_set', isHost: false } })).toEqual(['head', 'reopen', 'seat', 'board', 'cards'])
   })
 
   // A running Session, and the data each block shows (#256): a block is listed only while its data is in the view.
   const ONE_RUNNING = [dated('a', 1, SAT, { startedAt: SAT }), undated('b')]
-  const RUNNING: Partial<PageInput> = { event: { phase: 'running' } }
+  const RUNNING: Partial<PageInput> = { event: { phase: 'running', isHost: false } }
   const WHEEL: Partial<PageInput> = { wheel: { count: 2, slices: null, spin: null, vetoes: { left: [2, 2], own: null, revealed: null, draw: null } } }
   const COUNTDOWN: Partial<PageInput> = { countdown: { durationMs: 60_000, remainingMs: 60_000, startedAt: null } }
   const TOSS: Partial<PageInput> = { coin: { id: 'toss-1', side: 'heads', startedAt: SAT, landsAt: SUN } }
@@ -210,15 +210,15 @@ describe('the blocks of the stage', () => {
   })
 
   it('puts the open Rounds and then the cards first between two Sessions, with the notice that the teams stay (#273)', () => {
-    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'stay', 'board'])
+    expect(blocks([dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { event: { phase: 'running', isHost: false } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'stay', 'board'])
   })
 
   it('keeps the poll below the board between two Sessions while another one waits for its Date', () => {
-    expect(blocks([dated('a', 1, SAT, ENDED), undated('b')], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'stay', 'board', 'poll'])
+    expect(blocks([dated('a', 1, SAT, ENDED), undated('b')], { event: { phase: 'running', isHost: false } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'stay', 'board', 'poll'])
   })
 
   it('ends with the open Rounds, the cards and the board after the last Session (#273)', () => {
-    expect(blocks([dated('a', 1, SAT, ENDED)], { event: { phase: 'running' } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'board'])
+    expect(blocks([dated('a', 1, SAT, ENDED)], { event: { phase: 'running', isHost: false } })).toEqual(['head', 'reopen', 'rounds', 'cards', 'board'])
   })
 
   // The Standings (#274): a stage block once the first Result exists, right after the open Rounds, in every state a Result can exist in.
@@ -247,7 +247,7 @@ describe('the blocks of the stage', () => {
   })
 
   // The finished Event (#277): the Standings and the history are the stage; no board, no open Rounds, no poll.
-  const FINISHED: Partial<PageInput> = { event: { phase: 'finished' } }
+  const FINISHED: Partial<PageInput> = { event: { phase: 'finished', isHost: false } }
   const FINISHED_END: Partial<PageInput> = { ...FINISHED, end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null } }
 
   it('is finished for the finished Phase, with a Session still in the list or no end at all (#277)', () => {
@@ -286,6 +286,19 @@ describe('the blocks of the stage', () => {
     expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })).not.toContain('tie')
     expect(blocks(ONE_RUNNING, { ...RUNNING, end: null })).not.toContain('tie')
     expect(blocks([dated('a', 1, SAT, ENDED)], { ...FINISHED, ...TIE })).toEqual(['head', 'reopen', 'standings', 'history', 'cards'])
+  })
+
+  // #283: the banner is for who reads it. The Host decides and has the dock, so the page state does not list it for the Host (the template checks nothing of its own).
+  it('lists the Tie banner for a Member and not for the Host', () => {
+    const states: [PageInput['sessions'], Partial<PageInput>][] = [
+      [ONE_RUNNING, { ...RUNNING, ...TIE }],
+      [[dated('a', 1, SAT, ENDED), dated('b', 2, SUN)], { ...RUNNING, ...TIE }],
+      [[dated('a', 1, SAT, ENDED)], { ...RUNNING, ...TIE }],
+    ]
+    for (const [sessions, fields] of states) {
+      expect(blocks(sessions, { ...fields, event: { phase: 'running', isHost: false } })).toContain('tie')
+      expect(blocks(sessions, { ...fields, event: { phase: 'running', isHost: true } })).not.toContain('tie')
+    }
   })
 
   it('lists the banner in no state before a Session started', () => {
@@ -364,7 +377,7 @@ describe('the blocks of the stage', () => {
     expect(standOut([dated('a', 1, SAT, ENDED)])).toBe(true)
     expect(standOut([dated('a', 1, SAT), dated('b', 2, SUN)])).toBe(false)
     // The news of a finished Event is its winner, not the Sessions card (#277).
-    expect(standOut([dated('a', 1, SAT, ENDED)], { event: { phase: 'finished' } })).toBe(false)
+    expect(standOut([dated('a', 1, SAT, ENDED)], { event: { phase: 'finished', isHost: false } })).toBe(false)
   })
 })
 
@@ -457,17 +470,17 @@ describe('headerPill', () => {
   })
 
   it('shows the finished Phase\'s own word, Beendet, once the Event is finished (#277)', () => {
-    expect(headerPill(state([dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })], { event: { phase: 'finished' } }), 'finished', fakeT)).toEqual({ phase: 'finished', label: undefined })
+    expect(headerPill(state([dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })], { event: { phase: 'finished', isHost: false } }), 'finished', fakeT)).toEqual({ phase: 'finished', label: undefined })
   })
 
   it('counts the running Session in an Event with several', () => {
-    const running = state([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { event: { phase: 'running' } })
+    const running = state([dated('a', 1, SAT, { startedAt: SAT }), dated('b', 2, SUN)], { event: { phase: 'running', isHost: false } })
 
     expect(headerPill(running, 'running', fakeT)).toEqual({ phase: 'running', label: 'event.pill.running(n=1,total=2)' })
   })
 
   it('shows no label for the running Session of an Event with one', () => {
-    const running = state([dated('a', 1, SAT, { startedAt: SAT })], { event: { phase: 'running' } })
+    const running = state([dated('a', 1, SAT, { startedAt: SAT })], { event: { phase: 'running', isHost: false } })
 
     expect(headerPill(running, 'running', fakeT)).toEqual({ phase: 'running', label: undefined })
   })
