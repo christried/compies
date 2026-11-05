@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { isStagingBuild, stageBranding } from '../../stage'
+import { carriesDevSignIn, isStagingBuild, stageBranding } from '../../stage'
 
 // Staging is decided at build time (#178): Vercel builds the `staging` branch with its ref in the env.
 describe('isStagingBuild (#178)', () => {
@@ -17,6 +17,26 @@ describe('isStagingBuild (#178)', () => {
     expect(isStagingBuild({ VERCEL_GIT_COMMIT_REF: 'main' })).toBe(false)
     expect(isStagingBuild({ VERCEL_GIT_COMMIT_REF: 'claude/eloquent-keller-5rp2oo' })).toBe(false)
     expect(isStagingBuild({})).toBe(false)
+  })
+
+  // The decision also lets the staging build carry the dev sign-in (#247), so a production build must not become staging
+  // by a variable someone sets in the Vercel dashboard: on Vercel only the branch counts.
+  it('ignores COMPIES_STAGE in a Vercel build', () => {
+    expect(isStagingBuild({ VERCEL: '1', VERCEL_GIT_COMMIT_REF: 'main', COMPIES_STAGE: 'staging' })).toBe(false)
+    expect(isStagingBuild({ VERCEL: '1', VERCEL_GIT_COMMIT_REF: 'staging' })).toBe(true)
+  })
+})
+
+// The decision the inline dev-sign-in module in nuxt.config.ts makes (#247); test/build/dev-sign-in.test.ts checks the
+// production build output itself.
+describe('carriesDevSignIn (#247)', () => {
+  it('is true on the dev server and in the staging build', () => {
+    expect(carriesDevSignIn(true, {})).toBe(true)
+    expect(carriesDevSignIn(false, { VERCEL: '1', VERCEL_GIT_COMMIT_REF: 'staging' })).toBe(true)
+  })
+
+  it('is false in the production build', () => {
+    expect(carriesDevSignIn(false, { VERCEL: '1', VERCEL_GIT_COMMIT_REF: 'main' })).toBe(false)
   })
 })
 

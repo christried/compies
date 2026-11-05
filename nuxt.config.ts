@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import { addServerHandler, createResolver, defineNuxtModule } from 'nuxt/kit'
-import { isStagingBuild, stageBranding } from './stage'
+import { carriesDevSignIn, isStagingBuild, stageBranding } from './stage'
 
 // Staging names itself and wears tinted icons (#178). Production and local builds keep the defaults.
 const staging = isStagingBuild()
@@ -12,12 +12,12 @@ export default defineNuxtConfig({
     // Its client plugin imports a virtual module the Nuxt test environment cannot load;
     // test/build/pwa.test.ts checks the PWA against the production build instead.
     ...(process.env.VITEST ? [] : ['@vite-pwa/nuxt']),
-    // The sign-in without Discord or Twitch exists in the dev server only (server/dev/sign-in.ts);
+    // The sign-in without Discord or Twitch (server/dev/sign-in.ts), in the builds carriesDevSignIn names (stage.ts, #247);
     // test/build/dev-sign-in.test.ts checks that no production build carries it.
     defineNuxtModule({
       meta: { name: 'dev-sign-in' },
       setup(_options, nuxt) {
-        if (!nuxt.options.dev) return
+        if (!carriesDevSignIn(nuxt.options.dev)) return
         addServerHandler({ route: '/api/dev/sign-in', method: 'get', handler: createResolver(import.meta.url).resolve('./server/dev/sign-in') })
       },
     }),
