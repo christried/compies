@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { leaveInPlace, REFLOW_CLASS, unwatched } from '~/utils/motion'
+import { CARD_REFLOW_CLASS, leaveInPlace, unwatched } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
 import type { ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
@@ -14,7 +14,7 @@ import type { EndView, RoundView } from '~~/shared/stage'
 // a Round gets the highest number + 1 when its Result is entered and numbers have no gaps, so the Round being scored is Spiel `played + 1`. Nothing renders without an open Round.
 // Motion: a row enters as a UI element does (04-motion § UI enters, banner: opacity 0.22 s `ease-out`) and leaves faster
 // (0.14 s `ease-in`); reduced motion keeps the fade, which is all there is. A card that leaves goes out of the layout in the render that starts its
-// fade (`leaveInPlace`, #276), so the blocks below glide up with the page's group and the cards that stay glide to their new cell (`REFLOW_CLASS`).
+// fade (`leaveInPlace`, #276), so the blocks below glide up with the page's group and the cards that stay glide to their new cell (`CARD_REFLOW_CLASS`: a card may cross the grid, so a gentler curve than the blocks').
 const props = defineProps<{
   rounds: RoundView[]
   isHost: boolean
@@ -82,7 +82,7 @@ watch(resultFor, async (id, was) => {
       enter-active-class="animate-enter"
       leave-active-class="transition-opacity dur-fast ease-in"
       leave-to-class="opacity-0"
-      :move-class="unwatched() ? undefined : REFLOW_CLASS"
+      :move-class="unwatched() ? undefined : CARD_REFLOW_CLASS"
       class="relative m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2"
       @before-leave="leaveInPlace"
     >

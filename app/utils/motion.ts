@@ -102,27 +102,66 @@ export function highlightRow(row: Element): void {
 export const REFLOW_CLASS = 'transition-transform dur-slow ease-out motion-reduce:transition-none reduced:transition-none'
 
 /**
+ * The cards of a list that can cross it (the Round cards in a two-column grid: the second Result sends Round 3 540 px to the other side) glide on the in-out curve
+ * over the slower duration, the UI's own tokens with no overshoot. On `REFLOW_CLASS`'s steep ease-out that move is 150 px in its first 60 fps frame, which reads
+ * as a jump; on this one it is 43 px at most (0.8 review, F5). Reduced motion: at once.
+ */
+export const CARD_REFLOW_CLASS = 'transition-transform dur-slower ease-io motion-reduce:transition-none reduced:transition-none'
+
+/**
  * A tab nobody is looking at stays calm (#276): a change read while the page is hidden moves the rows and blocks at once, so the glide does not start
  * when the Member returns (the browser holds a hidden page's transitions at their start). Evaluated with each render, which is when Vue plans the move:
  * `:move-class="unwatched() ? undefined : …"`.
  */
 export const unwatched = () => import.meta.client && document.visibilityState === 'hidden'
 
+/** Where an element sits in its list, against the list's padding box. */
+interface Place { top: number, left: number, width: number, height: number }
+
+/** Exact, not rounded: `offsetTop` rounds, and a leaver 0.2 px off its place gets a 0 s transition from Vue's move step, which cuts its fade (0.8 review, F5). */
+function measure(element: HTMLElement, list: Element | null): Place {
+  const rect = element.getBoundingClientRect()
+  const origin = list?.getBoundingClientRect()
+  return { top: rect.top - (origin?.top ?? 0) - (list?.clientTop ?? 0), left: rect.left - (origin?.left ?? 0) - (list?.clientLeft ?? 0), width: rect.width, height: rect.height }
+}
+
+/** Where the children of a list stood when the render's first leaver was pinned; dropped as soon as the render is done (the patch is synchronous). */
+let places: WeakMap<Element, Place> | null = null
+
+/**
+ * Where `element` stands in the layout the render began with. Vue calls `before-leave` for each leaver in turn, and every pin takes a card out of the flow, so the
+ * cards after it move up: measured then, a second leaver would be pinned one cell off, and Vue's move transition (which takes it for a card that moved) would
+ * drag it across the grid while it fades. So the first call measures the whole list, before it changes anything.
+ */
+function placeOf(element: HTMLElement): Place {
+  if (places === null) {
+    const measured = new WeakMap<Element, Place>()
+    for (const sibling of element.parentElement?.children ?? []) {
+      if (sibling instanceof HTMLElement) measured.set(sibling, measure(sibling, element.parentElement))
+    }
+    places = measured
+    queueMicrotask(() => {
+      places = null
+    })
+  }
+  return places.get(element) ?? measure(element, element.parentElement)
+}
+
 /**
  * `@before-leave` of a `TransitionGroup` whose leaver must not push its siblings around while it fades (Vue's documented pattern): it is pinned where it
  * is and leaves the layout in the very flush that starts its fade. Vue keeps a leaver in the layout until its fade ends and removes it outside any flush,
- * so the blocks below would jump once, unmeasured, and no move transition could play. The leaver's parent must be `relative` (its offsets are against it).
+ * so the blocks below would jump once, unmeasured, and no move transition could play. The leaver's parent must be `relative` (its place is against it).
  * It is `inert` while it fades: no pointer, no focus. Under reduced motion it is gone at once (there is no fade to cover the jump), and so in a hidden tab,
  * where the browser runs no frame: Vue starts the fade on one, and the leaver would sit over its neighbours until the Member returns.
  */
 export function leaveInPlace(element: Element): void {
   if (!(element instanceof HTMLElement)) return
-  const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = element
+  const { top, left, width, height } = placeOf(element)
   element.style.position = 'absolute'
-  element.style.top = `${offsetTop}px`
-  element.style.left = `${offsetLeft}px`
-  element.style.width = `${offsetWidth}px`
-  element.style.height = `${offsetHeight}px`
+  element.style.top = `${top}px`
+  element.style.left = `${left}px`
+  element.style.width = `${width}px`
+  element.style.height = `${height}px`
   element.inert = true
   if (reducedMotion() || unwatched()) element.style.display = 'none'
 }

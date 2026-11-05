@@ -200,12 +200,14 @@ describe('when a Round leaves the open Rounds (#276)', () => {
     vi.restoreAllMocks()
   })
 
-  it('asks the cards to glide like the page\'s blocks do: a transform, ease-out, the slow duration, and nothing under reduced motion', async () => {
+  // A card can cross the whole grid (the second Result: Round 3 goes from the left cell of row 2 to the right cell of row 1, 540 px). On the blocks' ease-out over
+  // 0.36 s that is 150 px in the first 60 fps frame, which reads as a jump (0.8 review, F5). The cards take the UI's in-out over the slower duration instead:
+  // no overshoot, and 43 px at most per frame.
+  it('asks the cards to glide on the in-out curve over the slower duration: a transform, and nothing under reduced motion', async () => {
     const rounds = await mountSuspended(EventRounds, { props: props([round('r1', halo), round('r2', kart)]) })
 
     const moveClass = String(rounds.findComponent({ name: 'TransitionGroup' }).props('moveClass')).split(' ')
-    expect(moveClass).toEqual(expect.arrayContaining(['transition-transform', 'dur-slow', 'ease-out', 'motion-reduce:transition-none', 'reduced:transition-none']))
-    expect(moveClass).not.toContain('ease-spring')
+    expect(moveClass).toEqual(['transition-transform', 'dur-slower', 'ease-io', 'motion-reduce:transition-none', 'reduced:transition-none'])
   })
 
   it('asks for no glide while the tab is hidden, and for one while it shows', async () => {
@@ -221,9 +223,10 @@ describe('when a Round leaves the open Rounds (#276)', () => {
   })
 
   it('pins the leaving card where it is, out of the flow, in the render that starts its fade; the card that stays is untouched', async () => {
-    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(320)
-    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(96)
-    vi.spyOn(HTMLElement.prototype, 'offsetTop', 'get').mockReturnValue(108)
+    // jsdom has no layout: every card measures 320 x 96 at 108 px under the top of its list (which starts at 0).
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      return (this.tagName === 'LI' ? { top: 108, left: 0, width: 320, height: 96 } : { top: 0, left: 0, width: 0, height: 0 }) as DOMRect
+    })
     const list = await mountSuspended(EventRounds, { props: props([round('r1', halo), round('r2', kart)]), ...realGroup })
     expect(list.get('ul').classes()).toContain('relative')
 
