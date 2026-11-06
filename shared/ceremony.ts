@@ -1,6 +1,6 @@
 // The Award ceremony (GLOSSARY: Award ceremony; spec #308, #309). The Host starts it on a finished Event; every Member's page opens
 // the same layer at the same instant. The server stamps the start (a lead after the commit, ADR 0013) and picks the gag; the run's
-// end is a pure function of the Party count and the gag, so nothing but the start is stored. Pure, so the server enforces the rules and
+// end is a pure function of the Party count, the Winner count (a Tie, #315) and the gag, so nothing but the start is stored. Pure, so the server enforces the rules and
 // the client shows the same facts. Instants are epoch ms here; rows and the Event read give Dates and ISO strings, which the same rules take.
 
 import { msOf, type Instant } from './instant'
@@ -21,38 +21,56 @@ export const CEREMONY_RUN_MS = 700
 /** One row slides in every this long (the reference's stagger); the first one at `rowsAtMs`. */
 export const CEREMONY_ROW_MS = 450
 const ROWS_AT_MS = 600
-/** After the landing (ms): the stamp, Compibert gets up and laughs, the Winner's people pop in. */
+/** After the landing, in a Tie after the plate (ms): the stamp, Compibert gets up and laughs, the Winner's people pop in. */
 const STAMP_AFTER_LAND_MS = 150
 const GET_UP_AFTER_LAND_MS = 300
 const MEMBERS_AFTER_LAND_MS = 450
 
+/** A Tie's chain: the trophy hops from card to card (+0.54 s each), then onto the plate 0.62 s after the last landing (04-motion § 6b-T). */
+const HOP_MS = 540
+const PLATE_AFTER_LAST_LAND_MS = 620
+/** Below 3 Winners the places stay rows (the reference's stagger); from 3 on they are one wrapping line of chips, 0.2 s apart and 0.3 s long each. */
+const CHIP_STEP_MS = 200
+const CHIP_MS = 300
+/** The run starts this long after the plate and the cards have come in (the single card's offset: 900 - 600). */
+const RUN_AFTER_CARD_MS = 300
+
 /**
- * The run's moments in ms from its start instant, from `AwardCeremony.dc.html` play() (04-motion § 6b): the banner and one row per place
- * from last to second (450 ms each) come first, then the winner card, the run, then the gag lands (trip 800 ms, bonk 2200 ms after the run),
- * and the tail up to the dance (2200 ms) is the end. A Tie does not shorten it: the rows are the Parties less one (#309, decided; #315
- * revisits it). The server's `endsAt` and the client's tracks both read this one function (#312), so they cannot drift.
+ * The run's moments in ms from its start instant, from `AwardCeremony.dc.html` play() (04-motion § 6b, § 6b-T): the banner and the places
+ * below the Winners (rows, chips from 3 Winners on) come first, then the plate and the cards, the run, then the gag lands (trip 800 ms, bonk
+ * 2200 ms after the run), and the tail up to the dance (2200 ms) is the end. `winners` is the Winner count k (GLOSSARY: Tie; the Parties on
+ * rank 1). A Tie has fewer rows and, in a chain, a hop of 540 ms per further card and 620 ms on to the plate, and everything after the
+ * landing hangs on the plate (`plateAtMs`); for k = 1 every number is the single Winner's (#309). `grid` says the Winners stand in a grid, where
+ * the trophy lands on the plate at once: the client knows it from its screen, the server never passes it (the default, from 4 Winners), so
+ * a phone that shows 3 Winners as a grid ends up to 1.7 s before the stored end and never after it (#315). The server's `endsAt` and the
+ * client's tracks both read this one function (#312), so they cannot drift.
  */
-export function ceremonyTimeline(partyCount: number, gag: CeremonyGag) {
-  const rows = Math.max(partyCount - 1, 0)
-  const runAtMs = 900 + CEREMONY_ROW_MS * rows
+export function ceremonyTimeline(partyCount: number, gag: CeremonyGag, winners: number, grid = winners >= 4) {
+  const below = Math.max(partyCount - winners, 0)
+  const rowsEnd = below === 0
+    ? ROWS_AT_MS
+    : winners <= 2 ? ROWS_AT_MS + CEREMONY_ROW_MS * below : ROWS_AT_MS + CHIP_STEP_MS * (below - 1) + CHIP_MS
+  const runAtMs = rowsEnd + RUN_AFTER_CARD_MS
   const runEndAtMs = runAtMs + CEREMONY_RUN_MS
   const landAtMs = runEndAtMs + (gag === 'trip' ? 800 : 2200)
+  const plateAtMs = winners >= 2 && !grid ? landAtMs + HOP_MS * (winners - 1) + PLATE_AFTER_LAST_LAND_MS : landAtMs
   return {
     rowsAtMs: ROWS_AT_MS,
-    cardAtMs: ROWS_AT_MS + CEREMONY_ROW_MS * rows,
+    cardAtMs: rowsEnd,
     runAtMs,
     runEndAtMs,
     landAtMs,
-    stampAtMs: landAtMs + STAMP_AFTER_LAND_MS,
-    getUpAtMs: landAtMs + GET_UP_AFTER_LAND_MS,
-    membersAtMs: landAtMs + MEMBERS_AFTER_LAND_MS,
-    endMs: landAtMs + 2200,
+    plateAtMs,
+    stampAtMs: plateAtMs + STAMP_AFTER_LAND_MS,
+    getUpAtMs: plateAtMs + GET_UP_AFTER_LAND_MS,
+    membersAtMs: plateAtMs + MEMBERS_AFTER_LAND_MS,
+    endMs: plateAtMs + 2200,
   }
 }
 
 /** The instant the run ends (epoch ms): the start plus the timeline's end. */
-export function ceremonyEndsAt(startsAt: Instant, partyCount: number, gag: CeremonyGag): number {
-  return msOf(startsAt) + ceremonyTimeline(partyCount, gag).endMs
+export function ceremonyEndsAt(startsAt: Instant, partyCount: number, gag: CeremonyGag, winners: number): number {
+  return msOf(startsAt) + ceremonyTimeline(partyCount, gag, winners).endMs
 }
 
 /** Whether the latest run has not reached its end at `nowMs`; the lead counts as running. */
