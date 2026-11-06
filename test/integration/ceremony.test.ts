@@ -4,7 +4,7 @@ import getActivity from '../../server/api/e/[slug]/activity.get'
 import startCeremony from '../../server/api/e/[slug]/ceremony.post'
 import createEvent from '../../server/api/e/index.post'
 import readEvent from '../../server/api/e/[slug].get'
-import { activity, eventMembers, events, users } from '../../server/db/schema'
+import { activity, eventMembers, events, games, roundPlaces, rounds, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
@@ -44,8 +44,10 @@ const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
 const T0 = '2090-10-30T10:00:00.000Z'
 const T0_MS = Date.parse(T0)
 const STARTS = T0_MS + CEREMONY_LEAD_MS
-// endMs of the table in the brief: 2 Parties 5050 (trip) / 6450 (bonk), 3 Parties 5500 / 6900.
+// endMs of the table in the brief: 2 Parties 5050 (trip) / 6450 (bonk), 3 Parties 5500 / 6900, with one Winner. A Tie of 2 of 4 Parties
+// (#315: 2 rows, a hop, the plate) ends at 6660 / 8060, both of 2 Parties at 5760 / 7160 (no rows).
 const END_MS = { 2: { trip: 5050, bonk: 6450 }, 3: { trip: 5500, bonk: 6900 } } as const
+const TIE_END_MS = { twoOfFour: { trip: 6660, bonk: 8060 }, twoOfTwo: { trip: 5760, bonk: 7160 } } as const
 
 describe('starting the Award ceremony (#309)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
@@ -74,8 +76,11 @@ describe('starting the Award ceremony (#309)', () => {
     source.override = null
     source.asked = []
     await testDb.db.delete(activity)
+    await testDb.db.delete(roundPlaces)
+    await testDb.db.delete(rounds)
     await testDb.db.delete(eventMembers)
     await testDb.db.delete(events)
+    await testDb.db.delete(games)
     await testDb.db.delete(users)
   })
 
@@ -96,10 +101,27 @@ describe('starting the Award ceremony (#309)', () => {
   }
 
   /**
+   * The Results a finished Event stands on (the Standings, and so the Winner count, are computed from them, #315): `sole`, team 1 wins
+   * every Round; `tie`, teams 1 and 2 swap first and second place, so they end level on rank 1; `none` has no Result, which makes every
+   * Party a Winner (nobody has a point, so every Party shares rank 1). The other teams follow in order.
+   */
+  async function seedResults(eventId: string, outcome: 'sole' | 'tie' | 'none', teamCount: number) {
+    if (outcome === 'none') return
+    const [hostRow] = await testDb.db.select({ id: users.id }).from(users).where(eq(users.email, host.email))
+    const [game] = await testDb.db.insert(games).values({ name: 'Halo', createdBy: hostRow!.id }).returning({ id: games.id })
+    const rest = Array.from({ length: teamCount - 2 }, (_, index) => index + 3)
+    const orders = outcome === 'sole' ? [[1, 2, ...rest]] : [[1, 2, ...rest], [2, 1, ...rest]]
+    const inserted = await testDb.db.insert(rounds).values(orders.map((_, index) => ({
+      eventId, gameId: game!.id, startedAt: new Date(T0), setAt: new Date(T0), number: index + 1, resultAt: new Date(T0),
+    }))).returning({ id: rounds.id, number: rounds.number })
+    await testDb.db.insert(roundPlaces).values(inserted.flatMap(({ id, number }) => orders[number! - 1]!.map((team, index) => ({ roundId: id, team, place: index + 1 }))))
+  }
+
+  /**
    * An Event with a Host and two Members, set to Phase `finished` straight in the database (the finish flow is finish.test.ts's), with
    * `teamCount` Parties; both ceremony columns stay null, as an Event finished on 0.8 has them. `finished: false` leaves it in its poll Phase.
    */
-  async function event({ finished = true, teamCount = 2 }: { finished?: boolean, teamCount?: number } = {}) {
+  async function event({ finished = true, teamCount = 2, outcome = 'sole' }: { finished?: boolean, teamCount?: number, outcome?: 'sole' | 'tie' | 'none' } = {}) {
     setAllowlist({ hosts: 'discord:1' })
     const hostCookie = (await signIn(testDb.db, host)).cookie
     const cookies = {
@@ -113,7 +135,10 @@ describe('starting the Award ceremony (#309)', () => {
       const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
       await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: row!.id })
     }
-    if (finished) await testDb.db.update(events).set({ phase: 'finished', finishedAt: clock.now() }).where(eq(events.id, eventRow!.id))
+    if (finished) {
+      await seedResults(eventRow!.id, outcome, teamCount)
+      await testDb.db.update(events).set({ phase: 'finished', finishedAt: clock.now() }).where(eq(events.id, eventRow!.id))
+    }
     notifier.clear()
     return { slug, eventId: eventRow!.id, hostCookie, cookies }
   }
@@ -122,6 +147,10 @@ describe('starting the Award ceremony (#309)', () => {
 
   const start = (game: Event, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/ceremony`, cookie)
   const readCeremony = async (game: Event, cookie = game.hostCookie) => (await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView).ceremony
+  const lengthOf = async (game: Event) => {
+    const ceremony = (await readCeremony(game))!
+    return Date.parse(ceremony.endsAt) - Date.parse(ceremony.startsAt)
+  }
   const rowOf = async (game: Event) => (await testDb.db.select({ startsAt: events.ceremonyStartsAt, gag: events.ceremonyGag }).from(events).where(eq(events.id, game.eventId)))[0]
   const feedOf = async (game: Event) => (await (await send('GET', `/api/e/${game.slug}/activity?limit=100`, game.hostCookie)).json() as ActivityPage).entries
   const activityRows = async () => (await testDb.db.select().from(activity)).length
@@ -212,6 +241,47 @@ describe('starting the Award ceremony (#309)', () => {
 
       clock.set(new Date(STARTS + END_MS[2].trip + 10_000 + CEREMONY_LEAD_MS + END_MS[2].bonk))
       expect(((await (await start(game)).json()) as CeremonyStarted).gag).toBe('trip')
+    })
+
+    it('ends the run of a Tie of 2 of 4 Parties later than a sole Winner\'s, in the answer and in the read (#315)', async () => {
+      const game = await event({ teamCount: 4, outcome: 'tie' })
+      source.override = () => 0
+
+      const body = await (await start(game)).json() as CeremonyStarted
+
+      expect(body.endsAt).toBe(new Date(STARTS + TIE_END_MS.twoOfFour.trip).toISOString())
+      expect(await lengthOf(game)).toBe(TIE_END_MS.twoOfFour.trip)
+    })
+
+    it('has no rows when both of 2 Parties won: a Tie of 2 of 2, with the bonk gag (#315)', async () => {
+      const game = await event({ teamCount: 2, outcome: 'none' })
+      source.override = () => 1
+
+      await start(game)
+
+      expect(await lengthOf(game)).toBe(TIE_END_MS.twoOfTwo.bonk)
+    })
+
+    it('keeps a single Winner\'s end of the same Party count unchanged (#315)', async () => {
+      const game = await event({ teamCount: 4 })
+      source.override = () => 0
+
+      await start(game)
+
+      expect(await lengthOf(game)).toBe(5950)
+    })
+
+    it('refuses a second start of a Tie one millisecond before its end and takes one exactly at it (#315)', async () => {
+      const game = await event({ teamCount: 4, outcome: 'tie' })
+      source.override = () => 0
+      await start(game)
+      const endsAt = STARTS + TIE_END_MS.twoOfFour.trip
+
+      clock.set(new Date(endsAt - 1))
+      expect(await errorOf(await start(game))).toEqual({ status: 409, code: 'ceremony_running' })
+
+      clock.set(new Date(endsAt))
+      expect((await start(game)).status).toBe(200)
     })
 
     it('starts an Event that finished before the migration, with both columns null', async () => {
