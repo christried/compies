@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Share2, X } from '@lucide/vue'
+import { RotateCcw, Share2, X } from '@lucide/vue'
 import { ceremonyModel } from '~/utils/ceremony'
 import { buildRun, ceremonyRigState, measureRun, runGeometry, runPartsOf, type RunParts } from '~/utils/ceremony-run'
 import type { RigState } from '~/utils/compibert-rig'
 import type { Gsap } from '~/utils/gsap'
-import { ceremonyPlays, ceremonyTimeline } from '~~/shared/ceremony'
+import { ceremonyEndsAt, ceremonyPlays, ceremonyTimeline } from '~~/shared/ceremony'
 import type { EventView } from '~~/shared/event'
+import type { CeremonyView } from '~~/shared/stage'
 
 // The Award ceremony's layer (#309, #312, spec #308): a modal dialog over the stage column (the side panel stays visible) on a desktop and full
 // screen above the tabs on a phone. It opens by itself at the start instant of the Event read's ceremony, for every Member whatever tab or
@@ -32,7 +33,12 @@ const panel = useTemplateRef<HTMLElement>('panel')
 const award = useTemplateRef('award')
 const skipButton = useTemplateRef<HTMLButtonElement>('skipButton')
 
-const ceremony = computed(() => props.view.ceremony)
+/** The Host's last start, which every Member's page plays together. */
+const synced = computed(() => props.view.ceremony)
+/** The viewer's own run of the last start (#314): `of` is the synced start it replays, `run` the pseudo-ceremony the layer then plays. In memory only. */
+const replayed = ref<{ of: string, run: CeremonyView } | null>(null)
+/** What the layer plays: the viewer's replay while it belongs to the current start, else the synced start. A new start drops the replay by itself. */
+const ceremony = computed(() => (replayed.value && replayed.value.of === synced.value?.startsAt ? replayed.value.run : synced.value))
 const model = computed(() => ceremonyModel(props.view, t))
 const startsMs = computed(() => (ceremony.value ? Date.parse(ceremony.value.startsAt) : null))
 /** Every Party has a Standing, so this is the Party count the server stored the end for. */
@@ -64,6 +70,29 @@ function close() {
   if (ceremony.value) closedFor.value = ceremony.value.startsAt
 }
 
+/**
+ * Plays the show again for this viewer only, from zero, with the last start's gag (#314). The click is the instant, on the server's clock and
+ * with no lead; nothing is sent. The replay is a ceremony of the same shape as the synced one, so the ticker, the latch, close, skip and the live
+ * region treat it as any run: it is keyed by its own `startsAt`, which `closedFor` and `skippedFor` of the synced start do not match.
+ * Exposed for the finished page's button; the end frame's button calls it too.
+ */
+async function replay() {
+  const start = synced.value
+  if (!start) return
+  const startsMs = props.serverNow()
+  const endsAt = new Date(ceremonyEndsAt(startsMs, partyCount.value, start.gag)).toISOString()
+  const run: CeremonyView = { startsAt: new Date(startsMs).toISOString(), endsAt, gag: start.gag }
+  const restart = open.value
+  replayed.value = { of: start.startsAt, run }
+  openedFor.value = run.startsAt
+  // The open layer restarts in place: „Nochmal ansehen“ is gone with the end frame, so the focus it held falls to „Überspringen“. From the page,
+  // `useDialog` focuses it as it opens.
+  if (!restart) return
+  await nextTick()
+  panel.value?.querySelector<HTMLElement>('[data-autofocus]')?.focus()
+}
+defineExpose({ replay })
+
 const { onKeydown } = useDialog(open, panel, close)
 
 // Escape closes from anywhere while the layer is open: on a desktop the side panel stays clickable, so focus can sit outside the dialog.
@@ -79,6 +108,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onWindowKeydown))
 const elapsed = computed(() => (now.value === null || startsMs.value === null ? 0 : Math.max(0, now.value - startsMs.value)))
 const stamped = computed(() => schedule.value !== null && elapsed.value >= schedule.value.stampAtMs)
 const ended = computed(() => schedule.value !== null && elapsed.value >= schedule.value.endMs)
+/** The end frame's buttons are in the DOM only once their row shows (04-motion § 6b `share`): `useDialog` traps Tab by selector, so a hidden last button would let Tab leave the dialog. */
+const shareShown = computed(() => frame.value === 'end' || elapsed.value >= (schedule.value?.shareAtMs ?? 0))
 
 /** Read when the layer opens: reduced motion shows the end frame at once. */
 const reduced = ref(false)
@@ -159,12 +190,14 @@ async function begin() {
   ready.value = true
 }
 
-// Opens sync, so `reduced` is there before the dialog renders its first frame (no „Überspringen“ under reduced motion).
-watch(open, (isOpen) => {
+// Opens sync, so `reduced` is there before the dialog renders its first frame (no „Überspringen“ under reduced motion). Keyed by the run the
+// layer is open on, not by `open` alone (#314): a replay from the end frame changes the run while the layer stays open, and so tears the
+// timeline down and builds it again on the same dialog element. Open, closed, open and a new start go through `null` as before.
+watch(() => (open.value ? ceremony.value?.startsAt : null), (key) => {
   teardown()
   failed.value = false
   rig.value = 'idle'
-  if (!isOpen) return
+  if (!key) return
   reduced.value = reducedMotion()
   rig.value = reduced.value ? 'cheer' : ceremonyRigState(elapsed.value, partyCount.value, ceremony.value!.gag)
   void begin()
@@ -276,10 +309,10 @@ watch(open, async (isOpen, was) => {
           :heading-id="headingId"
           :state="rig"
         >
-          <!-- The end frame's own button (#313); it takes the focus when the run ends or is skipped (the watch on `frame`). -->
+          <!-- The end frame's buttons (#313, #314), rendered once the row shows. „Bild teilen“ takes the focus when the run ends or is skipped (the watch on `frame`). -->
           <template #share>
             <AppButton
-              v-if="frame === 'end'"
+              v-if="shareShown"
               variant="secondary"
               data-end-focus
               @click="emit('share')"
@@ -289,6 +322,20 @@ watch(open, async (isOpen, was) => {
                 :size="18"
               />
               {{ t('share.open') }}
+            </AppButton>
+          </template>
+          <!-- Under reduced motion and after a failed chunk the end frame is the whole show, so there is nothing to watch again. -->
+          <template #again>
+            <AppButton
+              v-if="shareShown && !reduced && !failed"
+              variant="secondary"
+              @click="replay"
+            >
+              <AppIcon
+                :icon="RotateCcw"
+                :size="18"
+              />
+              {{ t('ceremony.again') }}
             </AppButton>
           </template>
         </AwardCeremony>

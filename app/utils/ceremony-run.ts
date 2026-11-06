@@ -18,6 +18,8 @@ export interface RunParts {
   people: HTMLElement[]
   compibert: HTMLElement
   trophy: HTMLElement
+  /** The end frame's button row (#314): it rises in after the landing. */
+  share: HTMLElement
 }
 
 /** What `runGeometry` needs, in px relative to the ceremony's root (the stage): measured with offset sizes, which ignore transforms. */
@@ -67,8 +69,9 @@ export function runPartsOf(root: HTMLElement): RunParts | null {
   const stamp = one('stamp')
   const compibert = one('compibert')
   const trophy = one('trophy')
-  if (!banner || !card || !front || !back || !stamp || !compibert || !trophy) return null
-  return { banner, rows: all('row'), card, front, back, stamp, people: all('person'), compibert, trophy }
+  const share = one('share')
+  if (!banner || !card || !front || !back || !stamp || !compibert || !trophy || !share) return null
+  return { banner, rows: all('row'), card, front, back, stamp, people: all('person'), compibert, trophy, share }
 }
 
 /** Measures the stage, the card and Compibert's box relative to `root`, which is the offset parent of every part. */
@@ -112,7 +115,7 @@ export interface RunOptions {
  * differently from playing through. The caller moves it with `time()`; it never plays on GSAP's ticker.
  */
 export function buildRun(gsap: Gsap, parts: RunParts, geometry: Geometry, { partyCount, gag, rigState, onStamp }: RunOptions) {
-  const { banner, rows, card, front, back, stamp, people, compibert, trophy } = parts
+  const { banner, rows, card, front, back, stamp, people, compibert, trophy, share } = parts
   const { stopX, cardX, cardY, groundY, handX, handY } = geometry
   const moments = ceremonyTimeline(partyCount, gag)
   const sec = (ms: number) => ms / 1000
@@ -131,6 +134,8 @@ export function buildRun(gsap: Gsap, parts: RunParts, geometry: Geometry, { part
   gsap.set(people, { opacity: 0, scale: 0, y: 18 })
   gsap.set(compibert, { x: START_X, rotation: 0, transformOrigin: '62% 96%' })
   gsap.set(trophy, { opacity: 0, rotation: 0 })
+  // `autoAlpha` also sets `visibility`, so a row that has not risen yet is neither focusable nor read.
+  gsap.set(share, { autoAlpha: 0, y: 16 })
 
   const tl = gsap.timeline({ paused: true, defaults: { overwrite: false } })
   const state = (s: RigState, at: number) => tl.call(() => rigState(s), undefined, at)
@@ -175,6 +180,7 @@ export function buildRun(gsap: Gsap, parts: RunParts, geometry: Geometry, { part
   tl.call(onStamp, undefined, sec(moments.stampAtMs))
   state('laugh', sec(moments.getUpAtMs))
   tl.to(people, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: 'back.out(2)', stagger: 0.08 }, sec(moments.membersAtMs))
+  tl.to(share, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'back.out(2)' }, sec(moments.shareAtMs))
   state('dance', end)
   tl.set({}, {}, end)
   return tl

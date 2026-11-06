@@ -25,6 +25,8 @@ const ROWS_AT_MS = 600
 const STAMP_AFTER_LAND_MS = 150
 const GET_UP_AFTER_LAND_MS = 300
 const MEMBERS_AFTER_LAND_MS = 450
+/** The end frame's buttons rise in this long after the landing (04-motion § 6b `share (+1.4)`, #314); before the end, so `endMs` stays. */
+const SHARE_AFTER_LAND_MS = 1400
 
 /**
  * The run's moments in ms from its start instant, from `AwardCeremony.dc.html` play() (04-motion § 6b): the banner and one row per place
@@ -46,6 +48,7 @@ export function ceremonyTimeline(partyCount: number, gag: CeremonyGag) {
     stampAtMs: landAtMs + STAMP_AFTER_LAND_MS,
     getUpAtMs: landAtMs + GET_UP_AFTER_LAND_MS,
     membersAtMs: landAtMs + MEMBERS_AFTER_LAND_MS,
+    shareAtMs: landAtMs + SHARE_AFTER_LAND_MS,
     endMs: landAtMs + 2200,
   }
 }

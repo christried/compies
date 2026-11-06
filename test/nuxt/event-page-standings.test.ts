@@ -1,4 +1,4 @@
-import { registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { getQuery, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +9,17 @@ import type { CeremonyView, ResultView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { clickButton, clickHostAction, dialog, hostActionElement, openHostMenu, regionHeadings, shownToasts, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
-import { afterResult, ENDED, FIRST, members, mount, mountedPage, openRound, played, SECOND, SESSION, serveState, STARTED, team, unmountPage, type Setup } from './event-page-states'
+import { afterResult, ENDED, FIRST, members, mount, mountedPage, openRound, played, SECOND, SESSION, serveState, STARTED, team, unmountPage, type Seat, type Setup } from './event-page-states'
+
+// Counts the GSAP chunk's loads (ADR 0015): opening a finished Event after the run's end must not ask for it, a click on a replay may. Calls through.
+const chunk = vi.hoisted(() => ({ loads: 0 }))
+mockNuxtImport('loadGsap', async () => {
+  const { loadGsap: real } = await vi.importActual<typeof import('~/utils/gsap')>('~/utils/gsap')
+  return () => {
+    chunk.loads++
+    return real()
+  }
+})
 
 // The Standings and the finished Event on the Event page (#274, #275, #276, #277, #283): the Standings as a block of the stage and as a tab, the news they
 // play, the Host's Corrections and the history, and a finished Event read-only for everybody.
@@ -252,6 +262,81 @@ describe('the finished Event page', () => {
       expect((await hostActionElement(page, 'Siegerehrung starten')).getAttribute('aria-disabled')).toBeNull()
       await clickHostAction(page, 'Siegerehrung starten')
       await vi.waitFor(() => expect(posts).toBe(1))
+    })
+
+    // „Siegerehrung ansehen“ (#314): once the Host has started the ceremony, everybody can play it again for themselves; nothing plays on its own.
+    describe('„Siegerehrung ansehen“', () => {
+      const watchButton = (page: VueWrapper) => page.findAll('main button').find(button => button.text() === 'Siegerehrung ansehen')
+      /** The page of a finished Event whose ceremony ran a minute ago; counts the posts to the ceremony route. */
+      function afterTheRun({ host = false, kitty: seat }: { host?: boolean, kitty?: Seat } = {}) {
+        const served = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host, overrides: finishedRead({ ceremony: over(), ...(seat ? { members: members({ kitty: seat }) } : {}) }) })
+        const posts = { count: 0 }
+        registerEndpoint(`/api/e/${served.slug}/ceremony`, { method: 'POST', handler: () => {
+          posts.count += 1
+          return over()
+        } })
+        return { ...served, posts }
+      }
+
+      it('is not there before the Host has started the ceremony', async () => {
+        const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })
+
+        const page = await mount(slug)
+
+        expect(watchButton(page)).toBeUndefined()
+        expect(page.findAll('main button').some(button => button.text() === 'Bild teilen')).toBe(true)
+      })
+
+      it('is there once the ceremony has started, after „Bild teilen“ and before the Standings, with nothing playing and no GSAP asked for', async () => {
+        const { slug } = afterTheRun()
+        const loadsBefore = chunk.loads
+
+        const page = await mount(slug)
+        await flushPromises()
+
+        const button = watchButton(page)!.element
+        const share = page.findAll('main button').find(item => item.text() === 'Bild teilen')!.element
+        const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!.element
+        expect(share.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(button.compareDocumentPosition(standings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(dialog()).toBeNull()
+        expect(chunk.loads).toBe(loadsBefore)
+      })
+
+      const SEATS: [string, boolean, Seat | undefined][] = [
+        ['the Host', true, undefined],
+        ['a Player', false, { zone: 'team', team: 1 }],
+        ['a Spectator', false, { zone: 'stands' }],
+        ['a Member on the Bench', false, { zone: 'bench' }],
+      ]
+      for (const [who, host, seat] of SEATS) {
+        it(`opens the layer at its first frame for ${who}, and sends nothing`, async () => {
+          const { slug, posts } = afterTheRun({ host, kitty: seat })
+          const page = await mount(slug)
+
+          await watchButton(page)!.trigger('click')
+
+          await vi.waitFor(() => expect(dialog()?.textContent).toContain('Siegerehrung!'))
+          expect(dialog()!.getAttribute('data-frame')).toBe('run')
+          expect(dialog()!.textContent).toContain('Überspringen')
+          expect(posts.count).toBe(0)
+        })
+      }
+
+      it('leaves the Host\'s „Siegerehrung starten“ free, with the replay open and closed', async () => {
+        const { slug, posts } = afterTheRun({ host: true })
+        const page = await mount(slug)
+        expect((await hostActionElement(page, 'Siegerehrung starten')).getAttribute('aria-disabled')).toBeNull()
+
+        await watchButton(page)!.trigger('click')
+        await vi.waitFor(() => expect(dialog()).not.toBeNull())
+        expect((await hostActionElement(page, 'Siegerehrung starten')).getAttribute('aria-disabled')).toBeNull()
+
+        dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Schließen"]')!.click()
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        expect((await hostActionElement(page, 'Siegerehrung starten')).getAttribute('aria-disabled')).toBeNull()
+        expect(posts.count).toBe(0)
+      })
     })
   })
 })
