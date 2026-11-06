@@ -981,8 +981,17 @@
       "moreParties": "+{n} weitere Parteien",
       "brand": "Compies",
       "alt": "{winner} gewinnt {event} mit {points}.",
-      "altMany": "{winner} gewinnen {event} mit je {points}.",
-      "altPlace": "Platz {rank}: {name}, {points}."
+      "altPlace": "Platz {rank}: {name}, {points}.",
+      "gameTied": "· {n} gleichauf",
+      "tie": {
+        "label": "Unentschieden · {k} Sieger",
+        "labelBoth": "Unentschieden · beide gleichauf",
+        "labelAll": "Unentschieden · alle {k} gleichauf",
+        "alt": "Unentschieden bei {event}: {names} gewinnen mit je {points}.",
+        "altAll": "Unentschieden bei {event}: {who} Parteien gewinnen mit je {points}: {names}.",
+        "whoBoth": "Beide",
+        "whoAll": "Alle {k}"
+      }
     }
   },
   "replay": {

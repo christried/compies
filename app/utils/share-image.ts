@@ -33,8 +33,17 @@ export function shareImageCopy(t: Translate): ShareImageCopy {
         moreParties: keep('share.image.moreParties', 'n'),
         brand: t('share.image.brand'),
         alt: keep('share.image.alt', 'winner', 'event', 'points'),
-        altMany: keep('share.image.altMany', 'winner', 'event', 'points'),
         altPlace: keep('share.image.altPlace', 'rank', 'name', 'points'),
+        gameTied: keep('share.image.gameTied', 'n'),
+        tie: {
+          label: keep('share.image.tie.label', 'k'),
+          labelBoth: t('share.image.tie.labelBoth'),
+          labelAll: keep('share.image.tie.labelAll', 'k'),
+          alt: keep('share.image.tie.alt', 'event', 'names', 'points'),
+          altAll: keep('share.image.tie.altAll', 'event', 'who', 'points', 'names'),
+          whoBoth: t('share.image.tie.whoBoth'),
+          whoAll: keep('share.image.tie.whoAll', 'k'),
+        },
       },
     },
     team: {
