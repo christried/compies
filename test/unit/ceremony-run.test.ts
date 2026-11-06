@@ -117,4 +117,32 @@ describe('runGeometry', () => {
     expect(runGeometry({ ...desktop, card: { left: 20, top: 220, width: 240 } }).stopX).toBe(10)
     expect(runGeometry({ stage: { width: 140, height: 400 }, card: { left: 0, top: 100, width: 240 }, compibert: { width: 120, height: 102 } }).stopX).toBe(10)
   })
+
+  // A Tie (#315): two cards 240 x 160 side by side under a plate 536 wide, the first at 400 px from the left.
+  describe('of a Tie', () => {
+    const cards = [{ left: 400, top: 260, width: 240, height: 160 }, { left: 696, top: 260, width: 240, height: 160 }]
+    const plate = { left: 400, top: 200, width: 536, height: 40 }
+
+    it('lands the first hop on card 1 of a chain, 40 px above it, and has a stop on every card and on the plate', () => {
+      const geometry = runGeometry({ ...desktop, card: cards[0]!, tie: { grid: false, cards, plate } })
+
+      expect(geometry).toMatchObject({ cardX: 496, cardY: 220 })
+      expect(geometry.tie!.cards).toEqual([{ x: 496, y: 220 }, { x: 792, y: 220 }])
+      expect(geometry.tie!.plate).toEqual({ x: 668 - 24, y: 220 - 26 })
+    })
+
+    it('lands the first hop on the plate\'s centre in a grid, and ripples the cards from the one nearest its centre', () => {
+      const grid = [
+        { left: 400, top: 260, width: 236, height: 120 },
+        { left: 650, top: 260, width: 236, height: 120 },
+        { left: 400, top: 394, width: 236, height: 120 },
+        { left: 650, top: 394, width: 236, height: 120 },
+      ]
+      const geometry = runGeometry({ ...desktop, card: grid[0]!, tie: { grid: true, cards: grid, plate: { left: 400, top: 200, width: 486, height: 40 } } })
+
+      expect(geometry).toMatchObject({ cardX: 643 - 24, cardY: 220 - 26 })
+      expect(geometry.tie!.ripple.slice(0, 2).sort()).toEqual([0, 1])
+      expect(geometry.tie!.ripple.slice(2).sort()).toEqual([2, 3])
+    })
+  })
 })
