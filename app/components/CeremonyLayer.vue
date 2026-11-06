@@ -40,7 +40,7 @@ const partyCount = computed(() => props.view.standings?.length ?? 0)
 // A Tie (#315): the run's timeline also depends on the Winners and on whether this screen shows them as a grid. The server stored the end for
 // the default layout; a phone's grid of 3 Winners ends up to 1.7 s earlier than that, never later (shared/ceremony.ts).
 const roomy = useMediaQuery('(min-width: 48rem)')
-const layout = computed(() => ceremonyLayout(model.value?.winners.length ?? 1, model.value?.rows.length ?? 0, roomy.value))
+const layout = computed(() => ceremonyLayout(model.value?.winners.length ?? 1, model.value?.rows.length ?? 0, roomy.value === true))
 const shape = computed(() => ({ partyCount: partyCount.value, winners: model.value?.winners.length ?? 1, grid: layout.value.stage === 'grid' }))
 const schedule = computed(() => (ceremony.value ? ceremonyTimeline(shape.value.partyCount, ceremony.value.gag, shape.value.winners, shape.value.grid) : null))
 

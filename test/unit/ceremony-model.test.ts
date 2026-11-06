@@ -261,6 +261,5 @@ describe('ceremonyModel', () => {
 
       expect(model.live).toBe('Gewonnen hat Wilde Gurken, 1 Punkt.')
     })
-
   })
 })
