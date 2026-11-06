@@ -226,9 +226,15 @@ defineExpose({ root, burst })
         />
       </svg>
     </div>
-    <!-- The layer's own buttons of the end frame (#313: Bild teilen). Out of flow in the corner the stage leaves free, so the run's measures stay what they are. -->
-    <div class="absolute right-[18px] bottom-[34px] z-6 flex">
+    <!-- The share row, the layer's buttons of the end frame (#313 „Bild teilen“, #314 „Nochmal ansehen“). It is part of the run (it rises in at
+         `shareAtMs`) and out of flow in the corner the stage leaves free: the buttons appear mid-run, and a row in the content's flow would
+         grow the stage then and move the ground and Compibert, which the run measured. -->
+    <div
+      data-part="share"
+      class="absolute right-[18px] bottom-[34px] z-6 flex flex-wrap justify-end gap-2.5"
+    >
       <slot name="share" />
+      <slot name="again" />
     </div>
     <StickerConfetti
       ref="confetti"

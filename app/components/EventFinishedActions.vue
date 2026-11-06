@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import { Share2 } from '@lucide/vue'
+import { Play, Share2 } from '@lucide/vue'
 
-// The row of buttons at the top of the finished stage (#313; #314 adds „Siegerehrung ansehen“ to it). The Host's dock keeps the page's one
-// primary („Siegerehrung starten“), so these are secondaries. The page owns the dialogs; a button only asks.
-const emit = defineEmits<{ share: [] }>()
+// The row of buttons at the top of the finished stage (#313 „Bild teilen“, #314 „Siegerehrung ansehen“). The Host's dock keeps the page's one
+// primary („Siegerehrung starten“), so these are secondaries. The page owns the dialogs and the layer; a button only asks.
+defineProps<{
+  /** The Host has started the Award ceremony at least once: there is a show to watch again. */
+  ceremonyStarted: boolean
+}>()
+
+const emit = defineEmits<{
+  share: []
+  /** Plays the Award ceremony again, for this viewer only (#314). */
+  replay: []
+}>()
 
 const { t } = useI18n()
 </script>
@@ -19,6 +28,17 @@ const { t } = useI18n()
         :size="18"
       />
       {{ t('share.open') }}
+    </AppButton>
+    <AppButton
+      v-if="ceremonyStarted"
+      variant="secondary"
+      @click="emit('replay')"
+    >
+      <AppIcon
+        :icon="Play"
+        :size="18"
+      />
+      {{ t('ceremony.watch') }}
     </AppButton>
   </div>
 </template>

@@ -46,6 +46,8 @@ const emit = defineEmits<{
   calendar: []
   /** „Bild teilen“ of the finished stage's row (#313). */
   share: []
+  /** „Siegerehrung ansehen“ of the same row (#314): the page's layer plays the ceremony again. */
+  replay: []
 }>()
 
 const { t } = useI18n()
@@ -90,7 +92,9 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
 
       <EventFinishedActions
         v-else-if="block === 'actions'"
+        :ceremony-started="view.ceremony !== null"
         @share="emit('share')"
+        @replay="emit('replay')"
       />
 
       <!-- A block is listed only when its data is there (eventPageState, #256, #274): the data props of the five below are not optional. -->
