@@ -532,7 +532,18 @@
     "players": "Die Leute der Sieger",
     "pts": "{n} P.",
     "more": "{n} weitere",
-    "live": "Gewonnen hat {list}, {points}. | Unentschieden: {list}, je {points}."
+    "live": "Gewonnen hat {list}, {points}.",
+    "tie": {
+      "sub": "{base} · {k} Sieger, je {n} Punkt | {base} · {k} Sieger, je {n} Punkte",
+      "subBoth": "{base} · Beide gleichauf, je {n} Punkt | {base} · Beide gleichauf, je {n} Punkte",
+      "subAll": "{base} · Alle {k} gleichauf, je {n} Punkt | {base} · Alle {k} gleichauf, je {n} Punkte",
+      "plateStamp": "Unentschieden",
+      "list": "Platz 1, unentschieden",
+      "stack": "{team}: {players}",
+      "live": "Unentschieden! Gewonnen haben {names} mit je {n} Punkt. | Unentschieden! Gewonnen haben {names} mit je {n} Punkten.",
+      "liveBoth": "Unentschieden! Beide Parteien gewinnen mit je {n} Punkt: {names}. | Unentschieden! Beide Parteien gewinnen mit je {n} Punkten: {names}.",
+      "liveAll": "Unentschieden! Alle {k} Parteien gewinnen mit je {n} Punkt: {names}. | Unentschieden! Alle {k} Parteien gewinnen mit je {n} Punkten: {names}."
+    }
   },
   "pickBan": {
     "bans": "{team} bannt, {n} von {total}",
