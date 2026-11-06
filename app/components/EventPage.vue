@@ -49,6 +49,7 @@ const dialogs = useTemplateRef('dialogs')
 
 const inviteOpen = ref(false)
 const calendarOpen = ref(false)
+const shareOpen = ref(false)
 
 /** The Host's „Korrigieren“ in the history (#275, historyCorrections): the Standings tab and the phone's view have it, the stage's history does not (#277). */
 const corrections = computed(() => (data.value ? historyCorrections(data.value, actions.enterResult) : null))
@@ -216,6 +217,7 @@ const { news } = useStandingsNews(data, slug)
       @reschedule="dialogs?.openReschedule($event)"
       @add="dialogs?.openAdd()"
       @calendar="calendarOpen = true"
+      @share="shareOpen = true"
     />
 
     <!-- A phone's other views (11-event-seite § TabBar): the Standings or the feed alone, with the Head's place taken by their title. -->
@@ -286,6 +288,7 @@ const { news } = useStandingsNews(data, slug)
       v-if="data"
       :view="data"
       :server-now="serverClock.now"
+      @share="shareOpen = true"
     />
 
     <EventHostDialogs
@@ -315,6 +318,14 @@ const { news } = useStandingsNews(data, slug)
       :open="calendarOpen"
       :view="data"
       @close="calendarOpen = false"
+    />
+
+    <!-- „Bild teilen“ (#313): from the finished stage's row and from the ceremony's end frame; mounted once, the sheet asks nothing while closed. -->
+    <ShareDialog
+      v-if="data"
+      :open="shareOpen"
+      :view="data"
+      @close="shareOpen = false"
     />
   </AppShell>
 </template>

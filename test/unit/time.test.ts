@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { berlinToUtc, utcToBerlin } from '../../shared/time'
+import { berlinDay, berlinToUtc, utcToBerlin } from '../../shared/time'
 
 // 2026: summer time starts Sun 29 March (02:00 → 03:00), ends Sun 25 October (03:00 → 02:00).
 describe('berlinToUtc', () => {
@@ -35,5 +35,24 @@ describe('utcToBerlin', () => {
   it('shows both instants of the doubled fall-back hour as the same wall-clock time', () => {
     expect(utcToBerlin(new Date('2026-10-25T00:30:00Z'))).toBe('2026-10-25T02:30')
     expect(utcToBerlin(new Date('2026-10-25T01:30:00Z'))).toBe('2026-10-25T02:30')
+  })
+})
+
+// The day as the Share image and the Slot cards print it (#313): the one home of the format.
+describe('berlinDay', () => {
+  it('reads the day without a year', () => {
+    expect(berlinDay(new Date('2026-10-24T18:00:00Z'), false)).toBe('Sa 24.10.')
+  })
+
+  it('adds the year when asked', () => {
+    expect(berlinDay(new Date('2026-10-24T18:00:00Z'), true)).toBe('Sa 24.10.2026')
+  })
+
+  it('counts the Berlin day, not the UTC day', () => {
+    expect(berlinDay(new Date('2026-07-24T23:30:00Z'), true)).toBe('Sa 25.07.2026')
+  })
+
+  it('zero-pads day and month', () => {
+    expect(berlinDay(new Date('2027-01-01T12:00:00Z'), true)).toBe('Fr 01.01.2027')
   })
 })

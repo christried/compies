@@ -1,11 +1,12 @@
-import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
-import { defineComponent, h, nextTick, type PropType } from 'vue'
+import { defineComponent, h, nextTick, ref, type PropType } from 'vue'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import CeremonyLayer from '~/components/CeremonyLayer.vue'
+import ShareDialog from '~/components/ShareDialog.vue'
 import { loadGsap } from '~/utils/gsap'
 import { CEREMONY_GAGS, CEREMONY_LEAD_MS, ceremonyTimeline, type CeremonyGag } from '~~/shared/ceremony'
-import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { BoardTeam, EventView, MemberView } from '~~/shared/event'
 import type { CeremonyView } from '~~/shared/stage'
 import { dialog, memberView, restoreScreen, stubScreen } from './event-page'
 import { motion } from './motion'
@@ -105,6 +106,7 @@ async function refetch(view: Layer) {
 }
 
 const skipButton = () => [...(dialog()?.querySelectorAll('button') ?? [])].find(button => button.textContent?.trim() === 'Überspringen') ?? null
+const shareButton = () => [...(dialog()?.querySelectorAll('button') ?? [])].find(button => button.textContent?.trim() === 'Bild teilen') ?? null
 const closeButton = () => dialog()?.querySelector<HTMLButtonElement>('button[aria-label="Schließen"]')
 const pageButton = () => document.querySelector<HTMLButtonElement>('#page-button')!
 const text = () => dialog()?.textContent ?? ''
@@ -645,7 +647,7 @@ describe('Überspringen (#312)', () => {
     expect(document.activeElement).toBe(skipButton())
   })
 
-  it('shows the end frame for this viewer, moves focus to the close button, speaks and fires no confetti', async () => {
+  it('shows the end frame for this viewer, moves focus to „Bild teilen“, speaks and fires no confetti', async () => {
     await mount(finished(), STARTS + 500)
 
     skipButton()!.click()
@@ -655,7 +657,7 @@ describe('Überspringen (#312)', () => {
     expect(everyPartShown()).toBe(true)
     expect(rigState()).toBe('dance')
     expect(skipButton()).toBeNull()
-    expect(document.activeElement).toBe(closeButton())
+    expect(document.activeElement).toBe(shareButton())
     expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
     expect(pieces()).toBe(0)
   })
@@ -800,5 +802,94 @@ describe('the line under the banner (#312)', () => {
     await mount(finished(), STARTS)
 
     expect(text()).toContain('Freitags-Zocken · 3 Spiele')
+  })
+})
+
+describe('Bild teilen (#313)', () => {
+  // The page around the layer with the share sheet it owns: the layer only asks, the sheet opens above it.
+  const SLUG = 'ceremony-share'
+  registerEndpoint(`/api/e/${SLUG}/share-image`, { method: 'GET', handler: () => new Blob(['png'], { type: 'image/png' }) })
+  const sheetView = (view: Layer) => ({ ...view, event: { slug: SLUG, name: 'Freitags-Zocken' }, sessions: [], results: [] }) as unknown as EventView
+
+  const WithShare = defineComponent({
+    props: { view: { type: Object as PropType<Layer>, required: true } },
+    setup(props) {
+      const shareOpen = ref(false)
+      return () => h('div', [
+        h('main', { id: 'stage' }, [h('h1', { tabindex: -1 }, 'Freitags-Zocken'), h('button', { id: 'page-button', type: 'button' }, 'Seite')]),
+        h(CeremonyLayer, { view: props.view, serverNow, onShare: () => { shareOpen.value = true } }),
+        h(ShareDialog, { open: shareOpen.value, view: sheetView(props.view), onClose: () => { shareOpen.value = false } }),
+      ])
+    },
+  })
+
+  async function mountWithShare(at: number) {
+    serverTime = at
+    mounted = await mountSuspended(WithShare, { props: { view: finished() }, attachTo: document.body, global: { stubs: { CompibertRig: RigStub } } })
+    await settle()
+  }
+
+  const sheet = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(node => node.textContent?.includes('Ergebnis teilen')) ?? null
+
+  async function openSheetFromEndFrame() {
+    await mountWithShare(STARTS + 500)
+    skipButton()!.click()
+    await settle()
+    shareButton()!.click()
+    await settle()
+  }
+
+  beforeEach(() => {
+    URL.createObjectURL = vi.fn(() => 'blob:ceremony')
+    URL.revokeObjectURL = vi.fn()
+  })
+
+  it('is not in the run, and is in the end frame', async () => {
+    await mountWithShare(STARTS + 500)
+    expect(shareButton()).toBeNull()
+
+    skipButton()!.click()
+    await settle()
+
+    expect(shareButton()).not.toBeNull()
+  })
+
+  it('is in the end frame the clock brings, too', async () => {
+    await mountWithShare(ENDS - 1)
+    expect(shareButton()).toBeNull()
+
+    await passTo(ENDS + 100)
+
+    expect(frame()).toBe('end')
+    expect(shareButton()).not.toBeNull()
+  })
+
+  it('opens the sheet above the layer, which stays', async () => {
+    await openSheetFromEndFrame()
+
+    expect(sheet()).not.toBeNull()
+    expect(dialog()!.textContent).toContain('Siegerehrung!')
+    // The layer is the first dialog in the document, the sheet is mounted after it and so stands above it.
+    expect(dialog()!.compareDocumentPosition(sheet()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('closes only the sheet on Escape, and gives the focus back to „Bild teilen“', async () => {
+    await openSheetFromEndFrame()
+    expect(sheet()!.contains(document.activeElement)).toBe(true)
+
+    await pressEscape(document.activeElement!)
+
+    expect(sheet()).toBeNull()
+    expect(dialog()).not.toBeNull()
+    expect(document.activeElement).toBe(shareButton())
+  })
+
+  it('closes the layer on the next Escape', async () => {
+    await openSheetFromEndFrame()
+    await pressEscape(document.activeElement!)
+
+    await pressEscape(document.activeElement!)
+
+    expect(dialog()).toBeNull()
   })
 })

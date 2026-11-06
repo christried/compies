@@ -44,6 +44,8 @@ const emit = defineEmits<{
   reschedule: [sessionId: string]
   add: []
   calendar: []
+  /** „Bild teilen“ of the finished stage's row (#313). */
+  share: []
 }>()
 
 const { t } = useI18n()
@@ -84,6 +86,11 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
       <ReopenNotices
         v-else-if="block === 'reopen'"
         :view="view"
+      />
+
+      <EventFinishedActions
+        v-else-if="block === 'actions'"
+        @share="emit('share')"
       />
 
       <!-- A block is listed only when its data is there (eventPageState, #256, #274): the data props of the five below are not optional. -->

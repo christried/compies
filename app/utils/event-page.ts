@@ -22,11 +22,11 @@ export interface StagePresent { wheel: boolean, pool: boolean, countdown: boolea
 /**
  * The blocks of the stage (#166, #228). `head`: kicker and title. `reopen`: the notices of reopened Dates. `pool`: the Host's live pool warning (#234), shown to the Host only. `setup`: the Event
  * is not set up. `seat`: where the Host sits. `poll`: the Date poll. `wheel`: the Lucky Wheel, on top of the Rounds (#229).
- * `rounds`: the open Rounds, whenever there are some (the Host enters their Results between Sessions too, #273). `standings`: the Standings, once the first Result exists, right after the open Rounds (#274). `history`: the Spielverlauf, the Rounds with their Results, on the finished stage only (#277). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
+ * `rounds`: the open Rounds, whenever there are some (the Host enters their Results between Sessions too, #273). `actions`: the finished stage's row of buttons (#313), with the Standings. `standings`: the Standings, once the first Result exists, right after the open Rounds (#274). `history`: the Spielverlauf, the Rounds with their Results, on the finished stage only (#277). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235). `board`: the Game board. `cards`: the
  * Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions. `tie`: the banner „Gleichstand auf Platz 1“ for everybody but the Host, who decides (#278).
  * `sessionNeeded`: the Host's notice that the last game needs a new Session, after the last one ended (#278).
  */
-export type Block = 'head' | 'reopen' | 'tie' | 'sessionNeeded' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'history' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
+export type Block = 'head' | 'reopen' | 'actions' | 'tie' | 'sessionNeeded' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'history' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
 
 /** The next Session to start (the earliest dated one that has not started): its shown number (null for an only Session) and Date. */
 export interface NextSession { number: number | null, startsAt: string }
@@ -81,6 +81,8 @@ export function pageBlocks(kind: Kind, pollOpen: boolean, present: StagePresent)
   const standings: Block[] = present.standings ? ['standings'] : []
   // Both need the first Result; a finished Event has at least one (#277).
   const history: Block[] = present.standings ? ['history'] : []
+  // Only a finished Event has the row, and Bild teilen needs the Standings (#313).
+  const actions: Block[] = present.standings ? ['actions'] : []
   const tie: Block[] = present.tie ? ['tie'] : []
   const sessionNeeded: Block[] = present.sessionNeeded ? ['sessionNeeded'] : []
   switch (kind) {
@@ -92,7 +94,8 @@ export function pageBlocks(kind: Kind, pollOpen: boolean, present: StagePresent)
     case 'done': return ['head', 'reopen', ...tie, ...sessionNeeded, 'rounds', ...standings, 'cards', 'board']
     case 'setup': return ['head', 'reopen', 'setup', ...poll, 'board', 'cards']
     // The notices of removed Sessions stay (story 56) and so do the Sessions and „So wird gespielt“, read-only already (#277).
-    case 'finished': return ['head', 'reopen', ...standings, ...history, 'cards']
+    // The row of the finished stage (#313: Bild teilen; #314 adds Siegerehrung ansehen) is the news of the page: right under the Head, with the Result it shows.
+    case 'finished': return ['head', 'reopen', ...actions, ...standings, ...history, 'cards']
   }
 }
 

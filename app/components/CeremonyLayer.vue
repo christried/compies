@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X } from '@lucide/vue'
+import { Share2, X } from '@lucide/vue'
 import { ceremonyModel } from '~/utils/ceremony'
 import { buildRun, ceremonyRigState, measureRun, runGeometry, runPartsOf, type RunParts } from '~/utils/ceremony-run'
 import type { RigState } from '~/utils/compibert-rig'
@@ -19,6 +19,11 @@ const props = defineProps<{
   view: Pick<EventView, 'ceremony' | 'standings' | 'members' | 'teams' | 'results'> & { event: Pick<EventView['event'], 'name'> }
   /** The server's time in epoch ms (useServerClock): the opening is measured against it. */
   serverNow: () => number
+}>()
+
+const emit = defineEmits<{
+  /** „Bild teilen“ of the end frame (#313): the page owns the sheet, which opens over this layer. */
+  share: []
 }>()
 
 const { t } = useI18n()
@@ -258,7 +263,6 @@ watch(open, async (isOpen, was) => {
           :icon="X"
           :label="t('common.close')"
           :data-autofocus="frame === 'run' ? undefined : ''"
-          data-end-focus
           @click="close"
         />
       </div>
@@ -271,7 +275,23 @@ watch(open, async (isOpen, was) => {
           :model="model"
           :heading-id="headingId"
           :state="rig"
-        />
+        >
+          <!-- The end frame's own button (#313); it takes the focus when the run ends or is skipped (the watch on `frame`). -->
+          <template #share>
+            <AppButton
+              v-if="frame === 'end'"
+              variant="secondary"
+              data-end-focus
+              @click="emit('share')"
+            >
+              <AppIcon
+                :icon="Share2"
+                :size="18"
+              />
+              {{ t('share.open') }}
+            </AppButton>
+          </template>
+        </AwardCeremony>
       </div>
       <p
         role="status"
