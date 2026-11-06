@@ -5,7 +5,7 @@ import { characterCount } from './text'
 import { beforeFinish, PHASES, type Phase } from './phase'
 import type { EventSettings, SettingsFloors } from './settings'
 import type { PoolGame, PoolGameFace } from './game'
-import type { BonusVetoView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
+import type { BonusVetoView, CeremonyView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -207,6 +207,8 @@ export interface EventView {
   countdown: CountdownView | null
   /** The Coin flip (#235): the latest toss of the running Session; every Member gets it, null otherwise. */
   coin: CoinView | null
+  /** The Award ceremony (#309): the latest start of a finished Event, the same for every Member; null before the first start and for an Event that is not finished. */
+  ceremony: CeremonyView | null
   /** The Bonus Vetoes (#233): the Host gets them while the Event has a Lucky Wheel; null for everyone else and without the wheel. */
   bonusVetoes: BonusVetoView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */

@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Siegerehrung starten:** Der Host kann ein beendetes Event mit „Siegerehrung starten“ in der Host-Steuerung eröffnen. Alle, die das Event offen haben, sehen im selben Moment eine Ebene mit dem Endstand, dem Sieger und seinen Leuten, auch wer erst mittendrin dazukommt. ([#309](https://github.com/christried/compies/issues/309))
+- In der Siegerehrung tanzt die App-Figur jetzt am Ende; bei reduzierter Bewegung hält sie stattdessen die Jubel-Pose. ([#311](https://github.com/christried/compies/issues/311))
+- **Pokal-Lauf:** Die Siegerehrung läuft jetzt als Show: Das Banner fällt herein, die Plätze rutschen von hinten nach vorn ein, und die App-Figur rennt mit dem Pokal herein, stolpert oder bekommt ihn auf den Kopf. Dann landet der Pokal beim Sieger, „SIEGER“ wird gestempelt, Konfetti fliegt, die Leute des Siegers springen ins Bild und die Figur tanzt. Wer später dazukommt, steigt dort ein, wo die Show gerade ist. Mit „Überspringen“ springst du für dich allein zum Endbild; bei reduzierter Bewegung siehst du gleich das Endbild. ([#312](https://github.com/christried/compies/issues/312))
+- **Ergebnis-Bild:** Im beendeten Event kannst du mit „Bild teilen“ das Ergebnis als Bild holen, im Querformat oder als Quadrat: mit dem Sieger, der Tabelle und den gespielten Spielen. Du lädst es herunter oder schickst es auf dem Handy direkt an eine andere App. Das Bild gibt es nur für alle, die im Event sind; einen öffentlichen Link dazu gibt es nicht. ([#313](https://github.com/christried/compies/issues/313))
+- **Siegerehrung nochmal ansehen:** Hat der Host die Siegerehrung einmal gestartet, kannst du sie im beendeten Event jederzeit noch einmal anschauen: mit „Siegerehrung ansehen“ oben auf der Seite oder mit „Nochmal ansehen“ am Ende der Show. Sie läuft nur bei dir, mit demselben Gag wie beim letzten Start, und von allein startet sie nie. Startet der Host sie neu, springt deine Ansicht zur gemeinsamen Show. ([#314](https://github.com/christried/compies/issues/314))
+
 ### Behoben
 
 - Lädst du die Event-Seite neu, während das Glücksrad dreht, die Münze fliegt oder ein Countdown läuft, zeigt dein Gerät das Ende nicht mehr zu früh an, wenn seine Uhr vorgeht. ([#287](https://github.com/christried/compies/issues/287))

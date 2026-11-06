@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GAME_ACTIONS, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockInput, type DockKey, type DockLayout } from '../../app/utils/host-dock'
+import { GAME_ACTIONS, ceremonyBlockedKey, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockInput, type DockKey, type DockLayout } from '../../app/utils/host-dock'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, derived from
 // the Event read, and which actions sit where (the layout, review 1.4 A4, #228).
@@ -24,6 +24,7 @@ function input(fields: Partial<DockInput>): DockInput {
     wheel: null,
     countdown: null,
     coin: null,
+    ceremony: null,
     start: { sessionId: 'a', number: null, rejection: null },
     end: null,
     ...fields,
@@ -165,16 +166,16 @@ describe('the primary when the Event can be finished (#277)', () => {
     expect(hostDockState(input({ sessions: RUNNING, end: end() }))).toMatchObject({ lastGameRejection: null })
   })
 
-  it('has no primary in a finished Event, even though its Standings are a Tie', () => {
+  it('has Siegerehrung starten as the primary in a finished Event, even though its Standings are a Tie (#309)', () => {
     const state = hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: end({ tie: [1, 2], finish: { rejection: 'wrong_phase' }, lastGame: { rejection: 'wrong_phase' } }) }))
 
-    expect(state).toMatchObject({ kind: 'finished', primary: null })
+    expect(state).toMatchObject({ kind: 'finished', primary: 'ceremony', closing: null })
   })
 
-  it('has no primary in a finished Event, whatever the Sessions say', () => {
+  it('has the ceremony as the primary in a finished Event, whatever the Sessions say, and no number (#309)', () => {
     const state = hostDockState(input({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: end({ finish: { rejection: 'wrong_phase' } }) }))
 
-    expect(state).toMatchObject({ kind: 'finished', primary: null, number: null })
+    expect(state).toMatchObject({ kind: 'finished', primary: 'ceremony', number: null })
   })
 
   // The closing decision (#285): made once, the primary of the kinds that play; the others carry none.
@@ -247,8 +248,8 @@ describe('dockLayout', () => {
     { name: 'a Tie, a Session runs', fields: { settings, sessions: RUNNING, end: TIE }, primary: ['finishTie'], running: true, polls: true },
     { name: 'a Tie between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, primary: ['finishTie'], running: false, polls: true },
     { name: 'a Tie after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, primary: ['finishTie'], running: false, polls: false },
-    // Nothing is left to do in a finished Event but Einladen (#277), so the checks that expect Mehr to end with the settings skip it.
-    { name: 'finished', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: COMPLETE }, primary: [], running: false, polls: false, finished: true },
+    // A finished Event offers the ceremony and Einladen only (#277, #309), so the checks that expect Mehr to end with the settings skip it.
+    { name: 'finished', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: COMPLETE }, primary: ['ceremony'], running: false, polls: false, finished: true },
   ]
 
   it.each(STATES)('has $primary as the primary in $name, with the Date poll open', ({ fields, primary }) => {
@@ -263,10 +264,10 @@ describe('dockLayout', () => {
     }
   })
 
-  it('leaves only Einladen in a finished Event: no primary, no Mehr, whatever else is open (#277)', () => {
+  it('leaves Siegerehrung starten and Einladen in a finished Event: no Mehr, whatever else is open (#277, #309)', () => {
     const finished = STATES.find(state => state.finished)!
 
-    for (const open of OPENS) expect(layout(finished.fields, open)).toEqual({ primary: [], secondary: ['invite'], more: [] })
+    for (const open of OPENS) expect(layout(finished.fields, open)).toEqual({ primary: ['ceremony'], secondary: ['invite'], more: [] })
   })
 
   it('puts Event abschließen first and keeps Session beenden next to it in a running Session, without the actions that could only be disabled (#277)', () => {
@@ -402,7 +403,7 @@ describe('dockLayout', () => {
     'a Tie, a Session runs': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
     'a Tie between Sessions': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates(open), ...slots(open), ...bonus(open), 'settings'] }),
     'a Tie after the last Session': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus(open), 'settings'] }),
-    'finished': () => ({ primary: [], secondary: ['invite'], more: [] }),
+    'finished': () => ({ primary: ['ceremony'], secondary: ['invite'], more: [] }),
   }
 
   it.each(STATES)('pins the layout of $name for every open part, as today (#285)', ({ name, fields }) => {
@@ -424,6 +425,21 @@ describe('coinBlockedKey (#235)', () => {
     expect(coinBlockedKey(flying, Date.parse(LANDS))).toBeNull()
     expect(coinBlockedKey({ sessions: RUNNING, coin: null }, Date.parse(LANDS) - 1)).toBeNull()
     expect(coinBlockedKey({ sessions: [dated('a', 1)], coin: flying.coin }, Date.parse(LANDS) - 1)).toBe('error.noRunningSession')
+  })
+})
+
+describe('ceremonyBlockedKey (#309)', () => {
+  const ENDS = '2090-10-30T20:00:05.050Z'
+  const run = { event: { phase: 'finished' as const }, ceremony: { startsAt: '2090-10-30T20:00:00.000Z', endsAt: ENDS, gag: 'trip' as const } }
+
+  it('says why the Host cannot start while a run plays, the lead included: „Die Siegerehrung läuft noch.“', () => {
+    expect(ceremonyBlockedKey(run, Date.parse(ENDS) - 1)).toBe('error.ceremonyRunning')
+    expect(ceremonyBlockedKey(run, Date.parse(run.ceremony.startsAt) - 1500)).toBe('error.ceremonyRunning')
+  })
+
+  it('has no reason before the first start, nor at the end of the run', () => {
+    expect(ceremonyBlockedKey({ event: run.event, ceremony: null }, Date.parse(ENDS))).toBeNull()
+    expect(ceremonyBlockedKey(run, Date.parse(ENDS))).toBeNull()
   })
 })
 

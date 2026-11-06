@@ -256,8 +256,8 @@ describe('the blocks of the stage', () => {
     expect(eventPageState(input([dated('a', 1, SAT, ENDED)], { ...FINISHED, end: null })).kind).toBe('finished')
   })
 
-  it('lists the Standings and the history on the finished stage, with the Sessions card at the end (#277)', () => {
-    expect(blocks([dated('a', 1, SAT, ENDED)], FINISHED_END)).toEqual(['head', 'reopen', 'standings', 'history', 'cards'])
+  it('lists the actions, the Standings and the history on the finished stage, with the Sessions card at the end (#277)', () => {
+    expect(blocks([dated('a', 1, SAT, ENDED)], FINISHED_END)).toEqual(['head', 'reopen', 'actions', 'standings', 'history', 'cards'])
   })
 
   it('lists neither Standings nor history on the finished stage without a Result, and none of the live blocks in any case (#277)', () => {
@@ -265,6 +265,13 @@ describe('the blocks of the stage', () => {
     const everything = { ...WHEEL, ...COUNTDOWN, ...TOSS, ...POOL_WARNING, ...FINISHED_END }
     const list = blocks([dated('a', 1, SAT, ENDED)], everything)
     for (const block of ['board', 'rounds', 'poll', 'wheel', 'pool', 'countdown', 'coin', 'stay', 'seat', 'setup']) expect(list).not.toContain(block)
+  })
+
+  it('lists the actions of the finished stage (Bild teilen, #313) right after the reopen notices, in no other kind, and not without a Result', () => {
+    expect(blocks([dated('a', 1, SAT, ENDED)], FINISHED_END).slice(0, 3)).toEqual(['head', 'reopen', 'actions'])
+    expect(blocks([dated('a', 1, SAT, ENDED)], FINISHED)).not.toContain('actions')
+    expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })).not.toContain('actions')
+    expect(blocks([dated('a', 1, SAT, ENDED)], { ...RUNNING, ...STANDINGS })).not.toContain('actions')
   })
 
   it('has no history block before the Event is finished (#277)', () => {
@@ -285,7 +292,7 @@ describe('the blocks of the stage', () => {
   it('sets present.tie from the Event read\'s tie, and lists no banner without a Tie, or in a finished Event', () => {
     expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })).not.toContain('tie')
     expect(blocks(ONE_RUNNING, { ...RUNNING, end: null })).not.toContain('tie')
-    expect(blocks([dated('a', 1, SAT, ENDED)], { ...FINISHED, ...TIE })).toEqual(['head', 'reopen', 'standings', 'history', 'cards'])
+    expect(blocks([dated('a', 1, SAT, ENDED)], { ...FINISHED, ...TIE })).toEqual(['head', 'reopen', 'actions', 'standings', 'history', 'cards'])
   })
 
   // #283: the banner is for who reads it. The Host decides and has the dock, so the page state does not list it for the Host (the template checks nothing of its own).

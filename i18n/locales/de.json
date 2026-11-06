@@ -84,6 +84,7 @@
     "endN": "Session {n} beenden",
     "finish": "Event abschließen",
     "finishTie": "Unentschieden beenden",
+    "ceremony": "Siegerehrung starten",
     "lastGame": "Letztes Spiel hinzufügen",
     "lastGameBlocked": {
       "game_count_range": "Mehr Spiele gehen nicht. Du kannst das Event noch als Unentschieden beenden."
@@ -521,6 +522,20 @@
       "tails": "Schwanz"
     }
   },
+  "ceremony": {
+    "banner": "Siegerehrung!",
+    "sub": "{event} · {n} Spiel | {event} · {n} Spiele",
+    "skip": "Überspringen",
+    "watch": "Siegerehrung ansehen",
+    "again": "Nochmal ansehen",
+    "place1": "Platz 1",
+    "stamp": "SIEGER",
+    "standings": "Endstand",
+    "players": "Die Leute der Sieger",
+    "pts": "{n} P.",
+    "more": "{n} weitere",
+    "live": "Gewonnen hat {list}, {points}. | Unentschieden: {list}, je {points}."
+  },
   "pickBan": {
     "bans": "{team} bannt, {n} von {total}",
     "picks": "{team} pickt, {n} von {total}",
@@ -945,12 +960,32 @@
     "save": "Speichern"
   },
   "share": {
-    "title": "Teilen",
+    "open": "Bild teilen",
+    "title": "Ergebnis teilen",
+    "format": "Format",
     "landscape": "Querformat",
     "square": "Quadrat",
     "download": "Bild herunterladen",
-    "copyLink": "Link kopieren",
-    "copied": "Link kopiert"
+    "native": "Teilen",
+    "loading": "Bild wird erstellt …",
+    "error": "Das Bild konnte nicht erstellt werden.",
+    "shareFailed": "Teilen hat nicht geklappt.",
+    "image": {
+      "winsOne": "gewinnt mit",
+      "winsMany": "gewinnen mit je",
+      "points": "Punkt | Punkten",
+      "pts": "{n} Punkt | {n} Punkte",
+      "people": "{n} Leute",
+      "person": "1 Person",
+      "games": "{n} Spiel | {n} Spiele",
+      "moreGames": "+{n} weitere",
+      "moreParty": "+1 weitere Partei",
+      "moreParties": "+{n} weitere Parteien",
+      "brand": "Compies",
+      "alt": "{winner} gewinnt {event} mit {points}.",
+      "altMany": "{winner} gewinnen {event} mit je {points}.",
+      "altPlace": "Platz {rank}: {name}, {points}."
+    }
   },
   "replay": {
     "title": "Battle-Replay",
@@ -1588,6 +1623,7 @@
     "countdownNotRunning": "Der Countdown läuft gerade nicht.",
     "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
     "coinInAir": "Die Münze fliegt noch.",
+    "ceremonyRunning": "Die Siegerehrung läuft noch.",
     "resultInvalid": "Das Ergebnis passt nicht. Lade die Seite neu und versuch es nochmal.",
     "roundNotOpen": "Zu diesem Spiel kann gerade kein Ergebnis eingetragen werden. Vielleicht hat es schon eins.",
     "wrongPhase": "Das geht nicht mehr. Die Seite zeigt den neuen Stand.",
