@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -26,25 +26,47 @@ export async function createTestDb() {
  * committed migrations, `tag` included, then apply with `migrateTo` on the same database.
  */
 export async function createTestDbBefore(tag: string) {
-  const journal = JSON.parse(readFileSync(join(migrationsFolder, 'meta', '_journal.json'), 'utf8')) as { entries: { tag: string }[] }
-  const index = journal.entries.findIndex(entry => entry.tag === tag)
-  if (index < 0) throw new Error(`No migration ${tag}`)
-  const earlier = journal.entries.slice(0, index)
-
-  const folder = mkdtempSync(join(tmpdir(), 'compies-migrations-'))
-  mkdirSync(join(folder, 'meta'))
-  writeFileSync(join(folder, 'meta', '_journal.json'), JSON.stringify({ ...journal, entries: earlier }))
-  for (const entry of earlier) copyFileSync(join(migrationsFolder, `${entry.tag}.sql`), join(folder, `${entry.tag}.sql`))
-
+  const folder = migrationsFolderUpTo(tag, 'before')
   const client = new PGlite()
   const db = drizzle({ client, schema })
   await migrate(db, { migrationsFolder: folder })
   return { db, client, folder }
 }
 
+/**
+ * A temporary copy of the committed migrations cut at `tag`: the ones before it, or those through it (`tag` included).
+ * The caller removes the folder.
+ */
+function migrationsFolderUpTo(tag: string, cut: 'before' | 'through') {
+  const journal = JSON.parse(readFileSync(join(migrationsFolder, 'meta', '_journal.json'), 'utf8')) as { entries: { tag: string }[] }
+  const index = journal.entries.findIndex(entry => entry.tag === tag)
+  if (index < 0) throw new Error(`No migration ${tag}`)
+  const entries = journal.entries.slice(0, cut === 'before' ? index : index + 1)
+
+  const folder = mkdtempSync(join(tmpdir(), 'compies-migrations-'))
+  mkdirSync(join(folder, 'meta'))
+  writeFileSync(join(folder, 'meta', '_journal.json'), JSON.stringify({ ...journal, entries }))
+  for (const entry of entries) copyFileSync(join(migrationsFolder, `${entry.tag}.sql`), join(folder, `${entry.tag}.sql`))
+  return folder
+}
+
 /** Applies the committed migrations that the database has not seen yet, as a deploy does. */
 export async function migrateTo(db: Awaited<ReturnType<typeof createTestDb>>['db']) {
   await migrate(db, { migrationsFolder })
+}
+
+/**
+ * Applies the committed migrations through `tag` and no further: the database as that migration left it, for a test of
+ * a migration that a later one builds on (#301 dropped the column that the #286 test still reads).
+ */
+export async function migrateThrough(db: Awaited<ReturnType<typeof createTestDb>>['db'], tag: string) {
+  const folder = migrationsFolderUpTo(tag, 'through')
+  try {
+    await migrate(db, { migrationsFolder: folder })
+  }
+  finally {
+    rmSync(folder, { recursive: true, force: true })
+  }
 }
 
 /**

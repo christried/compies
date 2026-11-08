@@ -1,11 +1,12 @@
 import { rmSync } from 'node:fs'
 import type { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createTestDb, createTestDbBefore, migrateTo } from './harness'
+import { createTestDbBefore, migrateThrough } from './harness'
 
 // The migration that makes the Game pool one list (#286, ADR 0014), step 1 of 2: leftover `tiebreaker` rows go, the primary key
 // becomes (event_id, game_id), `pool` gets the default 'main'. The column and the type stay: the 0.8 code serves until the
-// switch-over (ADR 0007), and it still selects and inserts `pool = 'main'`. #301 drops them.
+// switch-over (ADR 0007), and it still selects and inserts `pool = 'main'`. #301 (0026) drops them, so the database here stops
+// at this migration.
 
 const MIGRATION = '0024_one_game_pool'
 
@@ -33,7 +34,7 @@ describe('migration: one Game pool', () => {
       `INSERT INTO event_pool_games (event_id, game_id, pool) VALUES ($1, $3, 'main'), ($1, $3, 'tiebreaker'), ($1, $4, 'main'), ($1, $5, 'tiebreaker'), ($2, $4, 'main'), ($2, $6, 'tiebreaker')`,
       [E1, E2, A, B, C, D],
     )
-    await migrateTo(before.db)
+    await migrateThrough(before.db, MIGRATION)
   })
 
   afterAll(async () => {
@@ -89,20 +90,5 @@ describe('migration: one Game pool', () => {
       const { rows } = await client.query<{ game_id: string }>(`SELECT game_id FROM event_pool_games WHERE event_id = $1 AND pool = 'main' ORDER BY game_id`, [E2])
       expect(rows).toEqual([{ game_id: C }, { game_id: D }])
     })
-  })
-})
-
-describe('migration: one Game pool on a fresh database', () => {
-  it('migrates from nothing and takes a Game pool row without pool', async () => {
-    const { client } = await createTestDb()
-
-    await client.query(`INSERT INTO users (id, name, email) VALUES ($1, 'Host', 'host@example.com')`, [HOST])
-    await client.query(`INSERT INTO events (id, slug, invite_token, host_id, name, phase) VALUES ($1, 'eins', 'token-eins', $2, 'eins', 'poll')`, [E1, HOST])
-    await client.query(`INSERT INTO games (id, name, created_by) VALUES ($1, 'Alpha', $2)`, [A, HOST])
-    await client.query(`INSERT INTO event_pool_games (event_id, game_id) VALUES ($1, $2)`, [E1, A])
-
-    const { rows } = await client.query(`SELECT pool FROM event_pool_games`)
-    expect(rows).toEqual([{ pool: 'main' }])
-    await client.close()
   })
 })

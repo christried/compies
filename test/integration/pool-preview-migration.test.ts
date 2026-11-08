@@ -30,13 +30,15 @@ describe('migration: Pool preview', () => {
   let db: Awaited<ReturnType<typeof createTestDbBefore>>['db']
   let memberCookie: string
 
-  async function insertEvent(id: string, slug: string, settings: string) {
+  /** An Event with one pool game. Before the migration the pool row still names its `pool` (NOT NULL without a default until 0024; dropped in 0026). */
+  async function insertEvent(id: string, slug: string, settings: string, { migrated = false } = {}) {
     await client.query(
       `INSERT INTO events (id, slug, invite_token, host_id, name, phase, format, team_count, team_size, game_count, points_table, selection_mode, hidden_wheel, veto_allowance)
        VALUES ($1, $2, $3, $4, $2, 'poll', ${settings})`,
       [id, slug, `token-${slug}`, HOST],
     )
-    await client.query(`INSERT INTO event_pool_games (event_id, game_id, pool) VALUES ($1, $2, 'main')`, [id, GAME])
+    if (migrated) await client.query(`INSERT INTO event_pool_games (event_id, game_id) VALUES ($1, $2)`, [id, GAME])
+    else await client.query(`INSERT INTO event_pool_games (event_id, game_id, pool) VALUES ($1, $2, 'main')`, [id, GAME])
   }
 
   beforeAll(async () => {
@@ -55,7 +57,7 @@ describe('migration: Pool preview', () => {
     await migrateTo(before.db)
 
     // The code before 0.6 still serves until the switch-over: it creates an Event without the new column.
-    await insertEvent(EVENTS.oldCode, 'alter-code', `${SET_UP}, 'admin_pick', false, NULL`)
+    await insertEvent(EVENTS.oldCode, 'alter-code', `${SET_UP}, 'admin_pick', false, NULL`, { migrated: true })
 
     stubAuthEnv()
     memberCookie = (await signIn(db, { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined })).cookie
