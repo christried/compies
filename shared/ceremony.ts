@@ -29,11 +29,11 @@ const MEMBERS_AFTER_LAND_MS = 450
 const SHARE_AFTER_LAND_MS = 1400
 
 /** A Tie's chain: the trophy hops from card to card (+0.54 s each), then onto the plate 0.62 s after the last landing (04-motion § 6b-T). */
-const HOP_MS = 540
+export const HOP_MS = 540
 const PLATE_AFTER_LAST_LAND_MS = 620
 /** Below 3 Winners the places stay rows (the reference's stagger); from 3 on they are one wrapping line of chips, 0.2 s apart and 0.3 s long each. */
-const CHIP_STEP_MS = 200
-const CHIP_MS = 300
+export const CHIP_STEP_MS = 200
+export const CHIP_MS = 300
 /** The run starts this long after the plate and the cards have come in (the single card's offset: 900 - 600). */
 const RUN_AFTER_CARD_MS = 300
 

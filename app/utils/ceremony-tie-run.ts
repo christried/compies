@@ -1,4 +1,4 @@
-import { ceremonyTimeline } from '~~/shared/ceremony'
+import { CEREMONY_ROW_MS, CHIP_MS, CHIP_STEP_MS, HOP_MS, ceremonyTimeline } from '~~/shared/ceremony'
 import type { Gsap } from './gsap'
 
 type Timeline = ReturnType<Gsap['timeline']>
@@ -6,7 +6,8 @@ type Timeline = ReturnType<Gsap['timeline']>
 // The Tie's tracks of the Pokal-Lauf (#315, spec #308, 04-motion § Award ceremony 6b-T, 12-siegerehrung-unentschieden.md): the plate, the Winners'
 // cards, the trophy's hops from card to card (a chain) or its landing on the plate (a grid), and each Winner's people. A sole Winner has none of
 // these; `ceremony-run.ts` calls in here when the stage has a plate, and keeps the run and both gags (up to the first landing) for itself. Every
-// moment comes from `ceremonyTimeline`, never from a constant of this file, and the eases are GSAP's by name as 04-motion writes them (ADR 0015).
+// moment comes from `ceremonyTimeline` and every step between moments (the hop, a row's or a chip's stagger) from the constants beside it in
+// `shared/ceremony.ts`, never from a number of this file (#308), and the eases are GSAP's by name as 04-motion writes them (ADR 0015).
 // Client only: it works on elements.
 
 /** The Tie's DOM parts: `AwardCeremony.vue`'s `data-part` hooks beyond the single card's. One entry per Winner, in reading order, unless said. */
@@ -141,8 +142,8 @@ export function setTie(gsap: Gsap, { tie, rows, people }: { tie: TieParts, rows:
 export function addTieEntrance({ tl, tie, rows, options }: TieRun) {
   const { rowsAtMs, cardAtMs } = ceremonyTimeline(options.partyCount, options.gag, options.winners, options.grid)
   const last = [...rows].reverse()
-  if (tie.chips) tl.to(last, { y: 0, opacity: 1, duration: 0.3, ease: 'power3.out', stagger: 0.2 }, sec(rowsAtMs))
-  else tl.to(last, { x: 0, opacity: 1, duration: 0.45, ease: 'power3.out', stagger: 0.45 }, sec(rowsAtMs))
+  if (tie.chips) tl.to(last, { y: 0, opacity: 1, duration: sec(CHIP_MS), ease: 'power3.out', stagger: sec(CHIP_STEP_MS) }, sec(rowsAtMs))
+  else tl.to(last, { x: 0, opacity: 1, duration: 0.45, ease: 'power3.out', stagger: sec(CEREMONY_ROW_MS) }, sec(rowsAtMs))
   const cardAt = sec(cardAtMs)
   tl.to(tie.plate, { scaleX: 1, opacity: 1, duration: 0.3, ease: 'back.out(2)' }, cardAt)
   tl.to(tie.cards, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)', stagger: 0.1 }, cardAt)
@@ -169,7 +170,7 @@ export function addTieLanding({ tl, tie, trophy, stops, options, burst }: TieRun
 
   if (!grid) {
     for (let index = 0; index < winners; index++) {
-      const land = sec(moments.landAtMs) + 0.54 * index
+      const land = sec(moments.landAtMs) + sec(HOP_MS) * index
       flip(tl, tie, index, land, 0.1, true)
       tl.call(() => burst({ atMs: Math.round(land * 1000), at: 'hop', index }), undefined, land)
       const here = stops.cards[index]!

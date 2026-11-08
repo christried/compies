@@ -71,7 +71,12 @@ watch([now, ceremony], ([at, current]) => {
   if (ceremonyPlays(current, at)) openedFor.value = current.startsAt
 }, { immediate: true })
 
+/** A replay is waiting for the chunk (a second click does nothing), and how many times the viewer closed since: a close cancels the wait. */
+let waiting = false
+let cancelled = 0
+
 function close() {
+  cancelled++
   if (ceremony.value) closedFor.value = ceremony.value.startsAt
 }
 
@@ -83,7 +88,17 @@ function close() {
  */
 async function replay() {
   const start = synced.value
-  if (!start) return
+  if (!start || waiting) return
+  // The chunk comes before the zero is stamped (#308): a Member who opens a finished page later has none yet (it is preloaded for a run that is
+  // ahead or on), and the download would eat the first part of the show. Under reduced motion the end frame needs none; a chunk that fails
+  // opens the end frame as ever, because `begin()` fails the same way. A close (or a new start) while it loads cancels the replay.
+  if (!reducedMotion()) {
+    waiting = true
+    const asked = cancelled
+    await loadGsap().catch(() => {})
+    waiting = false
+    if (asked !== cancelled || synced.value?.startsAt !== start.startsAt) return
+  }
   const startsMs = props.serverNow()
   // The server-style end (the default layout, never this screen's): harmless on a phone's grid of 3 Winners, which only waits a little for the clock (#315).
   const endsAt = new Date(ceremonyEndsAt(startsMs, shape.value.partyCount, start.gag, shape.value.winners)).toISOString()
@@ -106,7 +121,10 @@ function onWindowKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && !event.defaultPrevented && open.value) close()
 }
 onMounted(() => window.addEventListener('keydown', onWindowKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onWindowKeydown))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onWindowKeydown)
+  cancelled++
+})
 
 // ---- the run
 
@@ -121,7 +139,7 @@ const shareShown = computed(() => frame.value === 'end' || elapsed.value >= (sch
 const reduced = ref(false)
 /** The GSAP chunk did not load: the static end frame, no motion. */
 const failed = ref(false)
-/** The timeline is built and at the clock's place; until then the content is invisible (not `hidden`: the dialog still takes focus). */
+/** The timeline is built and at the clock's place; until then the run's content is invisible (not `hidden`: the dialog still takes focus). The end frame never waits for it (#308). */
 const ready = ref(false)
 const skipped = computed(() => ceremony.value !== null && skippedFor.value === ceremony.value.startsAt)
 const frame = computed(() => (ended.value || skipped.value || reduced.value || failed.value ? 'end' : 'run'))
@@ -158,46 +176,92 @@ function finish() {
   rig.value = endPose()
 }
 
-/** Builds the run after the dialog is in the DOM and GSAP is there, and puts it where the clock is. */
+/**
+ * Compibert at his stop, where the run's end frame puts him, without GSAP (#308): measured as the run does, set as the inline transform GSAP's `x`
+ * writes. Without it the static markup leaves him at the stage's left edge. A stage that cannot be measured (a part is missing) leaves him there.
+ */
+function standCompibert() {
+  const root = award.value?.root
+  if (!root) return
+  try {
+    const found = runPartsOf(root)
+    if (found) found.compibert.style.transform = `translate(${runGeometry(measureRun(root, found)).stopX}px, 0px)`
+  }
+  catch {
+    // Left-0, like a stage without a run.
+  }
+}
+
+/** The static end frame, without motion: for a chunk that did not load and for a run that could not be built. The frame is then the whole show. */
+function giveUp(gsap?: Gsap, root?: HTMLElement) {
+  timeline?.kill()
+  timeline = undefined
+  parts = undefined
+  // A build that threw half way may have set parts to their first frame: the static end frame is what their markup says.
+  if (gsap && root) gsap.set(root.querySelectorAll('[data-part]'), { clearProps: 'opacity,visibility,transform' })
+  standCompibert()
+  failed.value = true
+  ready.value = true
+  rig.value = endPose()
+}
+
+/**
+ * Builds the run after the dialog is in the DOM and GSAP is there, and puts it where the clock is. The end frame needs none of that (#308): under
+ * reduced motion no chunk is asked for, and a chunk that fails, a part that is missing or a build that throws leave the static end frame.
+ */
 async function begin() {
   const mine = ++session
   const stale = () => mine !== session
   await nextTick()
   if (stale()) return
+  if (reduced.value) {
+    standCompibert()
+    rig.value = endPose()
+    ready.value = true
+    return
+  }
   let gsap: Gsap
   try {
     gsap = await loadGsap()
   }
   catch {
     if (stale()) return
-    failed.value = true
-    ready.value = true
-    rig.value = endPose()
+    giveUp()
     return
   }
   await nextTick()
+  if (stale()) return
   const root = award.value?.root
-  const found = root ? runPartsOf(root) : null
-  if (stale() || !root || !found || !ceremony.value) return
-  gsapHandle = gsap
-  parts = found
-  timeline = buildRun(gsap, found, runGeometry(measureRun(root, found)), {
-    ...shape.value,
-    gag: ceremony.value.gag,
-    rigState: state => (rig.value = state),
-    onBurst,
-  })
-  // The first seek is silent: a late joiner fires no call, and gets the pose from the clock instead.
-  timeline.time(elapsed.value / 1000, true)
-  rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, shape.value.partyCount, ceremony.value.gag, shape.value.winners, shape.value.grid)
-  if (frame.value === 'end') finish()
-  seek = { from: elapsed.value, to: elapsed.value }
-  ready.value = true
+  try {
+    const found = root ? runPartsOf(root) : null
+    if (!root || !found || !ceremony.value) throw new Error('The ceremony has no parts to move')
+    gsapHandle = gsap
+    parts = found
+    timeline = buildRun(gsap, found, runGeometry(measureRun(root, found)), {
+      ...shape.value,
+      gag: ceremony.value.gag,
+      rigState: state => (rig.value = state),
+      onBurst,
+    })
+    // The first seek is silent: a late joiner fires no call, and gets the pose from the clock instead.
+    timeline.time(elapsed.value / 1000, true)
+    rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, shape.value.partyCount, ceremony.value.gag, shape.value.winners, shape.value.grid)
+    if (frame.value === 'end') finish()
+    seek = { from: elapsed.value, to: elapsed.value }
+    ready.value = true
+  }
+  catch {
+    giveUp(gsap, root ?? undefined)
+  }
 }
 
-// Opens sync, so `reduced` is there before the dialog renders its first frame (no „Überspringen“ under reduced motion). Keyed by the run the
-// layer is open on, not by `open` alone (#314): a replay from the end frame changes the run while the layer stays open, and so tears the
-// timeline down and builds it again on the same dialog element. Open, closed, open and a new start go through `null` as before.
+// The run is torn down and built again whenever the layer opens on a run (#314, #308). `watch(elapsed)` alone would only move the old timeline
+// back to 0 on a replay from the end frame, and that is not enough: the build measures the stage again (a screen that changed size since the
+// run has other stops), starts the rig at its pose for this clock instead of the end frame's `dance`, reads reduced motion and the chunk's
+// failure again, and gives the confetti rule fresh bounds (`seek`). Keyed by the run (`startsAt`), not by `open`, so it holds however `replay()`
+// orders its two writes. `flush: 'sync'` has `reduced` there before the dialog renders its first frame (no „Überspringen“ under reduced motion),
+// and sees the layer close and open again in between, so the replay passes through `null` like a new start: no test can tell the key from a
+// plain `open` here. The geometry case of „Nochmal ansehen“ fails without the rebuild.
 watch(() => (open.value ? ceremony.value?.startsAt : null), (key) => {
   teardown()
   failed.value = false
@@ -251,9 +315,9 @@ watch([frame, ready], ([which, isReady]) => {
 }, { flush: 'post' })
 
 // GSAP is preloaded while the ceremony is ahead or running (the lead, a late joiner), so the chunk is there when the layer opens. Never for a
-// ceremony whose end has passed: a finished Event page opened later loads none (ADR 0015).
+// ceremony whose end has passed: a finished Event page opened later loads none (ADR 0015). Nor under reduced motion, whose end frame needs none (#308).
 watch(() => ceremony.value?.startsAt, () => {
-  if (import.meta.client && ceremony.value && props.serverNow() < Date.parse(ceremony.value.endsAt)) loadGsap().catch(() => {})
+  if (import.meta.client && ceremony.value && props.serverNow() < Date.parse(ceremony.value.endsAt) && !reducedMotion()) loadGsap().catch(() => {})
 }, { immediate: true })
 
 onBeforeUnmount(teardown)
@@ -315,7 +379,7 @@ watch(open, async (isOpen, was) => {
       </div>
       <div
         class="size-full overflow-y-auto"
-        :class="{ 'opacity-0': !ready }"
+        :class="{ 'opacity-0': !ready && frame !== 'end' }"
       >
         <AwardCeremony
           ref="award"

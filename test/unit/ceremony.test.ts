@@ -10,6 +10,7 @@ import {
   nextGag,
   type CeremonyGag,
 } from '../../shared/ceremony'
+import { ceremonyLayout } from '../../app/utils/ceremony'
 import type { Phase } from '../../shared/phase'
 
 // The Award ceremony's rules (#309, spec #308, 04-motion § 6b): the lead, the run's length per Party count and gag, when a run is
@@ -152,6 +153,21 @@ describe('the timing of a Tie (#315)', () => {
       for (let winners = 2; winners <= 8; winners++) {
         for (let parties = winners; parties <= 8; parties++) {
           expect(ceremonyTimeline(parties, gag, winners, true).endMs, `${winners} of ${parties}`).toBeLessThanOrEqual(ceremonyTimeline(parties, gag, winners).endMs)
+        }
+      }
+    })
+  }
+
+  // The two homes of „grid or chain“ (#308 review): the server stores the end for `ceremonyTimeline`'s default, the client lays the stage out with
+  // `ceremonyLayout`, which also grids 3 Winners on a phone. If they ever disagree the wrong way, a viewer's run ends after the stored end.
+  for (const gag of ['trip', 'bonk'] as const) {
+    it(`never ends the client's run after the stored end, for every Party and Winner count and both widths, with the ${gag} gag`, () => {
+      for (let parties = 2; parties <= 8; parties++) {
+        for (let winners = 1; winners <= parties; winners++) {
+          for (const roomy of [true, false]) {
+            const grid = ceremonyLayout(winners, parties - winners, roomy).stage === 'grid'
+            expect(ceremonyTimeline(parties, gag, winners, grid).endMs, `${winners} of ${parties}, ${roomy ? 'wide' : 'phone'}`).toBeLessThanOrEqual(ceremonyEndsAt(0, parties, gag, winners))
+          }
         }
       }
     })
