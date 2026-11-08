@@ -642,6 +642,22 @@ describe('Überspringen (#312)', () => {
     expect(pieces()).toBe(0)
   })
 
+  // The stage scrolls on a phone, and the browser scrolls a focused element into view: „Bild teilen“ sits at the bottom, so without the option the
+  // end frame landed 129 px down with the banner and the subtitle out of view (browser check, #313).
+  it('hands the focus to „Bild teilen“ without scrolling the stage', async () => {
+    await mount(finished(), STARTS + 500)
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus')
+
+    skipButton()!.click()
+    await settle()
+
+    const share = shareButton()
+    const taken = focus.mock.contexts.map((context, index) => ({ context, options: focus.mock.calls[index]![0] })).filter(call => call.context === share)
+    focus.mockRestore()
+    expect(taken.length).toBeGreaterThan(0)
+    expect(taken.every(call => call.options?.preventScroll === true)).toBe(true)
+  })
+
   it('stays the end frame when the clock then passes the stamp and the end', async () => {
     await mount(finished(), STARTS + 500)
     skipButton()!.click()
