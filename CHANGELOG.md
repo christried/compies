@@ -12,6 +12,10 @@
 - **Siegerehrung bei Unentschieden:** Endet ein Event unentschieden, stehen alle Sieger zusammen auf Platz 1: Der Pokal hüpft von Sieger zu Sieger, jeder bekommt sein „SIEGER“, und die Leute jeder siegreichen Partei erscheinen. ([#315](https://github.com/christried/compies/issues/315))
 - **Ergebnis-Bild bei Unentschieden:** Endet ein Event unentschieden, zeigt das Bild alle Sieger mit eigener Teamfarbe, und ein Spiel mit mehreren Erstplatzierten bekommt ein gestreiftes Kapselchen statt des Punkts. ([#315](https://github.com/christried/compies/issues/315))
 
+### Geändert
+
+- Die Datenschutzerklärung beschreibt jetzt das Ergebnis-Bild: was es zeigt, dass Compies es nicht speichert und was beim Teilen an eine andere App passiert; außerdem, dass wir speichern, wann der Host zuletzt die Siegerehrung gestartet hat. ([#313](https://github.com/christried/compies/issues/313))
+
 ### Behoben
 
 - Lädst du die Event-Seite neu, während das Glücksrad dreht, die Münze fliegt oder ein Countdown läuft, zeigt dein Gerät das Ende nicht mehr zu früh an, wenn seine Uhr vorgeht. ([#287](https://github.com/christried/compies/issues/287))
