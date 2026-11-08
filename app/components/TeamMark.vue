@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { teamName } from '~/utils/board'
+import { teamPosition } from '~~/shared/settings'
 import { TEAM_SYMBOLS } from '~~/shared/team-marks'
 
 // A team's colour and symbol, never colour alone (DS People, TeamMark.dc.html, 02-components § TeamMark). Next to the
@@ -14,7 +15,7 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 
-const index = computed(() => Math.max(1, Math.min(8, Math.round(props.team))))
+const index = computed(() => teamPosition(props.team))
 const label = computed(() => (props.standalone ? teamName(index.value, t) : undefined))
 </script>
 
