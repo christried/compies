@@ -6,8 +6,9 @@ import type { Gsap } from './gsap'
 // The Pokal-Lauf of the Award ceremony (#312, spec #308, 04-motion § Award ceremony 6b, reference AwardCeremony.dc.html play()): one paused
 // GSAP timeline on the ceremony's DOM parts, which the layer moves with the server's clock (ADR 0013, ADR 0015). The moments come from
 // `ceremonyTimeline` (shared with the server's `endsAt`); the eases are GSAP's by name as 04-motion writes them, not `--cp-ease-*` tokens
-// (ADR 0015 deviates from CODING_STANDARDS § Motion on purpose). Client only: it works on elements. A Tie's own tracks (the plate, the hops
-// from card to card, each Winner's people) are in `ceremony-tie-run.ts` (#315); this file runs the banner, the run and both gags for every stage.
+// (CODING_STANDARDS § Motion: inside the GSAP timelines the eases are GSAP's names; `ceremony-run-tweens.test.ts` reads them off the timeline).
+// Client only: it works on elements. A Tie's own tracks (the plate, the hops from card to card, each Winner's people) are in
+// `ceremony-tie-run.ts` (#315); this file runs the banner, the run and both gags for every stage.
 
 /** The DOM parts the run moves: `AwardCeremony.vue`'s `data-part` hooks. */
 export interface RunParts {

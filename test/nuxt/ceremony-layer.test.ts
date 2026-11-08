@@ -13,8 +13,8 @@ import { motion } from './motion'
 
 // The Award ceremony's layer (#309, #312, spec #308): it opens at the start instant for whoever has the Event open, plays the Pokal-Lauf
 // from the server's clock to the end frame, and closes for the viewer and that start. The server clock is a fake here: the test moves it, as
-// coin-flip.test.ts does. Real GSAP moves the real parts (happy-dom has no layout, so no positions are asserted, and no easing or duration
-// either: ADR 0015 deviates from CODING_STANDARDS § Motion); the rig is a stub that shows the pose the layer asks for (#311 tests the rig).
+// coin-flip.test.ts does. Real GSAP moves the real parts (happy-dom has no layout, so no positions are asserted; easing and duration are
+// read off the timeline in `ceremony-run-tweens.test.ts`, CODING_STANDARDS § Motion); the rig is a stub that shows the pose the layer asks for (#311 tests the rig).
 
 // A test can make the GSAP chunk fail to load, hold it back (`hold`: a promise the chunk waits for) or make the run's build throw.
 const chunk = vi.hoisted(() => ({ fail: false, loads: 0, hold: null as Promise<unknown> | null, buildFails: false }))
