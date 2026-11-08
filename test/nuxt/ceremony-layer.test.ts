@@ -66,13 +66,20 @@ let serverTime = T0
 const serverNow = vi.fn(() => serverTime)
 let mounted: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-/** The page around the layer: its heading (the focus's fallback), a button to have focus on, and the layer. */
+/** The page around the layer: its heading (the focus's fallback), a button to have focus on, a button that replays (the finished page's, #314), and the layer. */
 const Page = defineComponent({
   props: { view: { type: Object as PropType<Layer>, required: true } },
-  setup: props => () => h('div', [
-    h('main', { id: 'stage' }, [h('h1', { 'tabindex': -1, 'data-testid': 'heading' }, 'Freitags-Zocken'), h('button', { id: 'page-button', type: 'button' }, 'Seite')]),
-    h(CeremonyLayer, { view: props.view, serverNow }),
-  ]),
+  setup(props) {
+    const layer = ref<{ replay: () => void } | null>(null)
+    return () => h('div', [
+      h('main', { id: 'stage' }, [
+        h('h1', { 'tabindex': -1, 'data-testid': 'heading' }, 'Freitags-Zocken'),
+        h('button', { id: 'page-button', type: 'button' }, 'Seite'),
+        h('button', { id: 'replay-button', type: 'button', onClick: () => layer.value?.replay() }, 'Siegerehrung ansehen'),
+      ]),
+      h(CeremonyLayer, { ref: layer, view: props.view, serverNow }),
+    ])
+  },
 })
 
 /** The real rig (the #311 cases) or the stub. */
@@ -109,6 +116,8 @@ const skipButton = () => [...(dialog()?.querySelectorAll('button') ?? [])].find(
 const shareButton = () => [...(dialog()?.querySelectorAll('button') ?? [])].find(button => button.textContent?.trim() === 'Bild teilen') ?? null
 const closeButton = () => dialog()?.querySelector<HTMLButtonElement>('button[aria-label="Schließen"]')
 const pageButton = () => document.querySelector<HTMLButtonElement>('#page-button')!
+const replayButton = () => document.querySelector<HTMLButtonElement>('#replay-button')!
+const againButton = () => [...(dialog()?.querySelectorAll('button') ?? [])].find(button => button.textContent?.trim() === 'Nochmal ansehen') ?? null
 const text = () => dialog()?.textContent ?? ''
 const cells = () => [...(dialog()?.querySelectorAll('ul[aria-label="Die Leute der Sieger"] > li') ?? [])]
 const rows = () => [...(dialog()?.querySelectorAll('ol[aria-label="Endstand"] > li') ?? [])].map(row => [...row.children].map(part => part.textContent?.trim()).join(' '))
@@ -446,7 +455,7 @@ const frame = () => dialog()?.getAttribute('data-frame')
 const rigState = () => dialog()?.querySelector('[data-testid="rig"]')?.getAttribute('data-state')
 const pieces = () => dialog()?.querySelectorAll('[class~="layer-confetti"] span').length ?? 0
 const spoken = () => dialog()?.querySelector('[role="status"]')?.textContent?.trim()
-const everyPartShown = () => ['banner', 'row', 'card', 'back', 'stamp', 'person'].every(shown) && hidden('front')
+const everyPartShown = () => ['banner', 'row', 'card', 'back', 'stamp', 'person', 'share'].every(shown) && hidden('front')
 
 /** A finished Event of `parties` Parties with the gag, for the layer to play. */
 function run(parties: number, gag: CeremonyGag, overrides: Partial<Layer> = {}): Layer {
@@ -826,7 +835,8 @@ describe('Bild teilen (#313)', () => {
   })
 
   it('is in the end frame the clock brings, too', async () => {
-    await mountWithShare(ENDS - 1)
+    // Before the share row shows (#314: the button follows the row, not only the end frame).
+    await mountWithShare(STARTS + ceremonyTimeline(2, 'trip', 1).shareAtMs - 1)
     expect(shareButton()).toBeNull()
 
     await passTo(ENDS + 100)
@@ -862,6 +872,411 @@ describe('Bild teilen (#313)', () => {
     await pressEscape(document.activeElement!)
 
     expect(dialog()).toBeNull()
+  })
+})
+
+// Watching again (#314): a replay is a ceremony of the viewer's own, the same run from zero on their clock with the read's gag, and it sends
+// nothing. `replayButton` is the finished page's „Siegerehrung ansehen“ standing in: it calls the layer's `replay()`.
+describe('watching again (#314)', () => {
+  const REPLAY_AT = ENDS + 60_000
+
+  /** A viewer who has seen the run to its end and closed the layer, a minute later. */
+  async function closedAfterTheEnd(view: Layer = finished()) {
+    await mount(view, STARTS + 500)
+    await passTo(ENDS + 100)
+    closeButton()!.click()
+    await settle()
+    await passTo(REPLAY_AT)
+    expect(dialog()).toBeNull()
+  }
+
+  async function replay() {
+    replayButton().click()
+    await settle()
+  }
+
+  it('opens at the first frame after the run was closed, with „Überspringen“ focused, and sends no request', async () => {
+    const requests = vi.spyOn(globalThis, 'fetch')
+    await closedAfterTheEnd()
+
+    await replay()
+
+    expect(dialog()).not.toBeNull()
+    expect(frame()).toBe('run')
+    expect(part('banner')[0]!.style.transform).toContain('-140px')
+    expect(hidden('row')).toBe(true)
+    expect(hidden('stamp')).toBe(true)
+    expect(rigState()).toBe('idle')
+    expect(skipButton()).not.toBeNull()
+    expect(document.activeElement).toBe(skipButton())
+    expect(requests).not.toHaveBeenCalled()
+  })
+
+  it('works on a page first mounted after the run, where nothing opened before', async () => {
+    await mount(finished(), REPLAY_AT)
+    expect(dialog()).toBeNull()
+
+    await replay()
+
+    expect(frame()).toBe('run')
+    expect(hidden('stamp')).toBe(true)
+  })
+
+  it('does nothing without a ceremony', async () => {
+    await mount(finished({ ceremony: null }), REPLAY_AT)
+
+    await replay()
+
+    expect(dialog()).toBeNull()
+  })
+
+  it('plays on the viewer\'s clock: the end frame comes a run\'s length after the click, not at the synced end', async () => {
+    await mount(finished(), REPLAY_AT)
+    await replay()
+
+    await passTo(REPLAY_AT + RUN - 1)
+    expect(frame()).toBe('run')
+    await passTo(REPLAY_AT + RUN)
+    expect(frame()).toBe('end')
+    expect(everyPartShown()).toBe(true)
+  })
+
+  it('takes longer for more Parties: the end follows the Party count', async () => {
+    const { endMs } = ceremonyTimeline(8, 'trip', 1)
+    await mount(run(8, 'trip'), REPLAY_AT)
+    await replay()
+
+    await passTo(REPLAY_AT + endMs - 1)
+    expect(frame()).toBe('run')
+    await passTo(REPLAY_AT + endMs)
+    expect(frame()).toBe('end')
+  })
+
+  it.each(CEREMONY_GAGS)('plays the read\'s gag, the %s', async (gag) => {
+    const view = finished({ ceremony: ceremonyAt(STARTS, 2, gag) })
+    await mount(view, STARTS + ceremonyTimeline(2, gag, 1).endMs + 60_000)
+    const at = serverTime
+    const { runEndAtMs } = ceremonyTimeline(2, gag, 1)
+    await replay()
+
+    await passTo(at + runEndAtMs + 100)
+    if (gag === 'trip') {
+      expect(rigState()).toBe('suspense')
+      return
+    }
+    expect(rigState()).toBe('cheer')
+    await passTo(at + runEndAtMs + 1000)
+    expect(rigState()).toBe('confused')
+  })
+
+  it('follows the other gag once a new start brought it', async () => {
+    await closedAfterTheEnd()
+    const later = REPLAY_AT + 10_000
+    const view = finished({ ceremony: ceremonyAt(later, 2, 'bonk') })
+    await passTo(later - CEREMONY_LEAD_MS)
+    await refetch(view)
+    await passTo(later + 100)
+    await passTo(later + ceremonyTimeline(2, 'bonk', 1).endMs + 100)
+    closeButton()!.click()
+    await settle()
+    const at = serverTime
+
+    await replay()
+    await passTo(at + ceremonyTimeline(2, 'bonk', 1).runEndAtMs + 100)
+
+    expect(rigState()).toBe('cheer')
+  })
+
+  it('bursts the confetti at the stamp and speaks then, as a synced run does', async () => {
+    stubScreen(true)
+    const { stampAtMs } = ceremonyTimeline(2, 'trip', 1)
+    await mount(finished(), REPLAY_AT)
+    await replay()
+    await passTo(REPLAY_AT + stampAtMs - 100)
+    expect(pieces()).toBe(0)
+    expect(spoken()).toBe('')
+
+    await passTo(REPLAY_AT + stampAtMs + 50)
+
+    expect(pieces()).toBe(40)
+    expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+  })
+
+  describe('„Nochmal ansehen“', () => {
+    const { shareAtMs } = ceremonyTimeline(2, 'trip', 1)
+
+    async function atTheEndFrame(view: Layer = finished()) {
+      await mount(view, STARTS)
+      await passTo(ENDS + 100)
+      expect(frame()).toBe('end')
+    }
+
+    it('is not in the run before the share row shows, and is in the DOM at it, after „Bild teilen“', async () => {
+      await mount(finished(), STARTS)
+      await passTo(STARTS + shareAtMs - 1)
+      expect(frame()).toBe('run')
+      expect(shareButton()).toBeNull()
+      expect(againButton()).toBeNull()
+
+      await passTo(STARTS + shareAtMs)
+
+      expect(frame()).toBe('run')
+      expect(shareButton()).not.toBeNull()
+      expect(againButton()).not.toBeNull()
+      const row = [...dialog()!.querySelectorAll('[data-part="share"] button')].map(button => button.textContent?.trim())
+      expect(row).toEqual(['Bild teilen', 'Nochmal ansehen'])
+    })
+
+    it('is in the end frame, also after a skip', async () => {
+      await mount(finished(), STARTS + 500)
+      skipButton()!.click()
+      await settle()
+
+      expect(againButton()).not.toBeNull()
+    })
+
+    it('is not there under reduced motion', async () => {
+      motion('reduced')
+      await mount(finished(), STARTS)
+
+      expect(frame()).toBe('end')
+      expect(shareButton()).not.toBeNull()
+      expect(againButton()).toBeNull()
+    })
+
+    it('is not there when the GSAP chunk did not load', async () => {
+      chunk.fail = true
+      await mount(finished(), STARTS)
+
+      expect(frame()).toBe('end')
+      expect(shareButton()).not.toBeNull()
+      expect(againButton()).toBeNull()
+    })
+
+    it('restarts the show in place: the first frame, the same dialog, nothing announced yet, focus on „Überspringen“', async () => {
+      stubScreen(true)
+      await atTheEndFrame()
+      const before = dialog()
+      expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+      againButton()!.focus()
+
+      againButton()!.click()
+      await settle()
+
+      expect(dialog()).toBe(before)
+      expect(frame()).toBe('run')
+      expect(part('banner')[0]!.style.transform).toContain('-140px')
+      expect(hidden('row')).toBe(true)
+      expect(hidden('stamp')).toBe(true)
+      expect(hidden('person')).toBe(true)
+      expect(rigState()).toBe('idle')
+      expect(spoken()).toBe('')
+      expect(skipButton()).not.toBeNull()
+      expect(document.activeElement).toBe(skipButton())
+      expect(againButton()).toBeNull()
+    })
+
+    it('plays the restarted show to its own end, bursting the confetti and speaking at the stamp again', async () => {
+      stubScreen(true)
+      const { stampAtMs } = ceremonyTimeline(2, 'trip', 1)
+      await atTheEndFrame()
+      const at = serverTime
+      againButton()!.click()
+      await settle()
+
+      await passTo(at + stampAtMs + 50)
+      expect(pieces()).toBe(40)
+      expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
+
+      await passTo(at + RUN - 1)
+      expect(frame()).toBe('run')
+      await passTo(at + RUN)
+      expect(frame()).toBe('end')
+      expect(againButton()).not.toBeNull()
+    })
+
+    it('restarts after a skip, too: the skip belongs to the run it was made in', async () => {
+      await mount(finished(), STARTS + 500)
+      skipButton()!.click()
+      await settle()
+
+      againButton()!.click()
+      await settle()
+
+      expect(frame()).toBe('run')
+      expect(skipButton()).not.toBeNull()
+    })
+  })
+
+  describe('closing and skipping a replay', () => {
+    it('skips to the end frame', async () => {
+      await mount(finished(), REPLAY_AT)
+      await replay()
+
+      skipButton()!.click()
+      await settle()
+
+      expect(frame()).toBe('end')
+      expect(everyPartShown()).toBe(true)
+      expect(document.activeElement).toBe(shareButton())
+    })
+
+    it('closes with Escape and with the close button, and focus goes back to the button that replayed', async () => {
+      await mount(finished(), REPLAY_AT)
+      replayButton().focus()
+      await replay()
+      expect(document.activeElement).toBe(skipButton())
+
+      await pressEscape(document.activeElement!)
+      expect(dialog()).toBeNull()
+      expect(document.activeElement).toBe(replayButton())
+
+      await passTo(REPLAY_AT + 1000)
+      await replay()
+      closeButton()!.click()
+      await settle()
+      expect(dialog()).toBeNull()
+    })
+
+    it('stays closed across a refetch of the same start, and opens again with the next replay', async () => {
+      await mount(finished(), REPLAY_AT)
+      await replay()
+      closeButton()!.click()
+      await settle()
+
+      await refetch(finished())
+      await passTo(REPLAY_AT + 500)
+      expect(dialog()).toBeNull()
+
+      await passTo(REPLAY_AT + 1000)
+      await replay()
+      expect(frame()).toBe('run')
+    })
+
+    it('does not bring the synced run back when the viewer closed the replay of a run that still plays', async () => {
+      await mount(finished(), STARTS + 500)
+      closeButton()!.click()
+      await settle()
+
+      await replay()
+      expect(frame()).toBe('run')
+      closeButton()!.click()
+      await settle()
+      await passTo(STARTS + 1500)
+
+      expect(dialog()).toBeNull()
+    })
+  })
+
+  describe('a Host\'s new start during a replay', () => {
+    const LATER = REPLAY_AT + 20_000
+
+    it('takes over: the layer goes with the read and plays the synced run from its start at the new instant', async () => {
+      await mount(finished(), REPLAY_AT)
+      await replay()
+      await passTo(REPLAY_AT + 2500)
+      expect(frame()).toBe('run')
+
+      await passTo(LATER - CEREMONY_LEAD_MS)
+      await refetch(finished({ ceremony: ceremonyAt(LATER) }))
+      expect(dialog()).toBeNull()
+
+      await passTo(LATER + 100)
+      expect(frame()).toBe('run')
+      expect(hidden('stamp')).toBe(true)
+      expect(rigState()).toBe('idle')
+
+      await passTo(LATER + RUN)
+      expect(frame()).toBe('end')
+    })
+
+    it('leaves the replay alone when the read carries the same start', async () => {
+      await mount(finished(), REPLAY_AT)
+      await replay()
+      await passTo(REPLAY_AT + 1000)
+      const before = dialog()
+
+      await refetch(finished())
+      await passTo(REPLAY_AT + 1500)
+
+      expect(dialog()).toBe(before)
+      expect(frame()).toBe('run')
+      await passTo(REPLAY_AT + RUN)
+      expect(frame()).toBe('end')
+    })
+  })
+
+  it('opens nothing on mount after the run\'s end, also after a replay was played and the page mounted again', async () => {
+    await mount(finished(), REPLAY_AT)
+    await replay()
+    await passTo(REPLAY_AT + RUN + 100)
+    expect(frame()).toBe('end')
+    mounted!.unmount()
+
+    await mount(finished(), REPLAY_AT + RUN + 5000)
+
+    expect(dialog()).toBeNull()
+  })
+
+  it('sends nothing for the whole replay, restart and close included', async () => {
+    const requests = vi.spyOn(globalThis, 'fetch')
+    await mount(finished(), REPLAY_AT)
+    await replay()
+    await passTo(REPLAY_AT + RUN + 100)
+    againButton()!.click()
+    await settle()
+    closeButton()!.click()
+    await settle()
+
+    expect(requests).not.toHaveBeenCalled()
+  })
+
+  describe('the share row in the dialog', () => {
+    const { shareAtMs } = ceremonyTimeline(2, 'trip', 1)
+    const row = () => dialog()?.querySelector<HTMLElement>('[data-part="share"]') ?? null
+    const tab = (target: Element, shiftKey = false) => {
+      target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true }))
+    }
+
+    it('is hidden for the first frame and shown at the end frame', async () => {
+      await mount(finished(), STARTS)
+      expect(hidden('share')).toBe(true)
+      expect(row()!.style.visibility).toBe('hidden')
+
+      await passTo(ENDS + 100)
+
+      expect(shown('share')).toBe(true)
+      expect(row()!.style.visibility).not.toBe('hidden')
+    })
+
+    it('keeps Tab inside the dialog with the row shown: the last button wraps to the first', async () => {
+      await mount(finished(), STARTS)
+      await passTo(ENDS + 100)
+      const focusable = [...dialog()!.querySelectorAll<HTMLElement>('button')]
+      expect(focusable.map(button => button.textContent?.trim() || button.getAttribute('aria-label'))).toEqual(['Schließen', 'Bild teilen', 'Nochmal ansehen'])
+      againButton()!.focus()
+
+      tab(againButton()!)
+      await settle()
+      expect(document.activeElement).toBe(closeButton())
+
+      tab(closeButton()!, true)
+      await settle()
+      expect(document.activeElement).toBe(againButton())
+    })
+
+    it('keeps Tab inside the dialog during the run before the row shows: neither button is there to be last', async () => {
+      await mount(finished(), STARTS)
+      await passTo(STARTS + shareAtMs - 1)
+      expect(shareButton()).toBeNull()
+      expect(againButton()).toBeNull()
+      closeButton()!.focus()
+
+      tab(closeButton()!)
+      await settle()
+
+      expect(document.activeElement).toBe(skipButton())
+    })
   })
 })
 
@@ -1194,6 +1609,45 @@ describe('a Tie (#315)', () => {
         expect(pieces()).toBe(0)
         mounted!.unmount()
       }
+    })
+  })
+
+  describe('the end frame\'s buttons and watching again (#314)', () => {
+    it('shows „Bild teilen“ 1.4 s after the plate, not after the first landing', async () => {
+      stubScreen(true)
+      const { landAtMs, plateAtMs, shareAtMs } = ceremonyTimeline(4, 'trip', 2)
+      await mount(tie(4, 2), STARTS)
+
+      await passTo(STARTS + plateAtMs + 100)
+      expect(plateAtMs).toBeGreaterThan(landAtMs)
+      expect(shareButton()).toBeNull()
+      await passTo(STARTS + shareAtMs - 10)
+      expect(shareButton()).toBeNull()
+
+      await passTo(STARTS + shareAtMs + 10)
+      expect(shareButton()).not.toBeNull()
+    })
+
+    it('replays a Tie from its first frame, and its end frame shows every Winner again', async () => {
+      stubScreen(true)
+      const { endMs } = ceremonyTimeline(4, 'trip', 2)
+      const at = STARTS + endMs + 60_000
+      await mount(tie(4, 2, 'trip', { members: [player('a', 'Anna', 1), player('c', 'Cleo', 2)] }), at)
+      expect(dialog()).toBeNull()
+
+      replayButton().click()
+      await settle()
+
+      expect(frame()).toBe('run')
+      expect(hidden('plate')).toBe(true)
+      expect(hidden('card')).toBe(true)
+      await passTo(at + endMs - 1)
+      expect(frame()).toBe('run')
+      await passTo(at + endMs)
+      expect(frame()).toBe('end')
+      expect(cards()).toHaveLength(2)
+      expect(sieger()).toBe(2)
+      expect(tieEnd(true)).toBe(true)
     })
   })
 })

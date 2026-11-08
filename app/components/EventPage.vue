@@ -46,6 +46,8 @@ const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
 // The stage's changes go through the one send (#74), held by useStageActions. The dialogs are EventHostDialogs'; the page opens them through `dialogs`.
 const actions = useStageActions(slug, refresh)
 const dialogs = useTemplateRef('dialogs')
+/** The Award ceremony's layer: „Siegerehrung ansehen“ of the finished stage asks it to play again (#314). */
+const ceremonyLayer = useTemplateRef('ceremonyLayer')
 
 const inviteOpen = ref(false)
 const calendarOpen = ref(false)
@@ -218,6 +220,7 @@ const { news } = useStandingsNews(data, slug)
       @add="dialogs?.openAdd()"
       @calendar="calendarOpen = true"
       @share="shareOpen = true"
+      @replay="ceremonyLayer?.replay()"
     />
 
     <!-- A phone's other views (11-event-seite § TabBar): the Standings or the feed alone, with the Head's place taken by their title. -->
@@ -286,6 +289,7 @@ const { news } = useStandingsNews(data, slug)
     <!-- The Award ceremony (#309): mounted always, it opens itself at the start instant of the read's ceremony, for every Member. -->
     <CeremonyLayer
       v-if="data"
+      ref="ceremonyLayer"
       :view="data"
       :server-now="serverClock.now"
       @share="shareOpen = true"

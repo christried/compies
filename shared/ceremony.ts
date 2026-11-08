@@ -25,6 +25,8 @@ const ROWS_AT_MS = 600
 const STAMP_AFTER_LAND_MS = 150
 const GET_UP_AFTER_LAND_MS = 300
 const MEMBERS_AFTER_LAND_MS = 450
+/** The end frame's buttons rise in this long after the landing, in a Tie after the plate (04-motion § 6b `share (+1.4)`, #314); before the end, so `endMs` stays. */
+const SHARE_AFTER_LAND_MS = 1400
 
 /** A Tie's chain: the trophy hops from card to card (+0.54 s each), then onto the plate 0.62 s after the last landing (04-motion § 6b-T). */
 const HOP_MS = 540
@@ -64,6 +66,8 @@ export function ceremonyTimeline(partyCount: number, gag: CeremonyGag, winners: 
     stampAtMs: plateAtMs + STAMP_AFTER_LAND_MS,
     getUpAtMs: plateAtMs + GET_UP_AFTER_LAND_MS,
     membersAtMs: plateAtMs + MEMBERS_AFTER_LAND_MS,
+    // In a Tie the buttons come 1.4 s after the plate, not after the first landing (12-siegerehrung-unentschieden.md: `share (plate +1.4)`, #315).
+    shareAtMs: plateAtMs + SHARE_AFTER_LAND_MS,
     endMs: plateAtMs + 2200,
   }
 }

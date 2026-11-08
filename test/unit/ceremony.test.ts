@@ -61,6 +61,19 @@ describe('the timing (spec #308 § Shared ceremony rules)', () => {
     expect(ceremonyTimeline(8, 'bonk', 1)).toMatchObject({ stampAtMs: 7100, membersAtMs: 7400, getUpAtMs: 7250 })
   })
 
+  // The end frame's buttons rise in 1.4 s after the landing (04-motion § 6b `share (+1.4)`, #314); the run's end is not moved by it.
+  it('shows the share row 1400 ms after the landing, before the end, and leaves the end where it was', () => {
+    for (const parties of [2, 8]) {
+      for (const gag of ['trip', 'bonk'] as const) {
+        const { shareAtMs, landAtMs, endMs } = ceremonyTimeline(parties, gag, 1)
+        expect(shareAtMs).toBe(landAtMs + 1400)
+        expect(shareAtMs).toBeLessThan(endMs)
+      }
+    }
+    expect(ceremonyTimeline(2, 'trip', 1)).toMatchObject({ shareAtMs: 4250, endMs: 5050 })
+    expect(ceremonyTimeline(8, 'bonk', 1)).toMatchObject({ shareAtMs: 8350, endMs: 9150 })
+  })
+
   it('has no row below two Parties', () => {
     expect(ceremonyTimeline(1, 'trip', 1).runAtMs).toBe(900)
     expect(ceremonyTimeline(0, 'trip', 1).runAtMs).toBe(900)
@@ -113,6 +126,19 @@ describe('the timing of a Tie (#315)', () => {
       const single = ceremonyTimeline(5, gag, 1)
       expect(single.plateAtMs).toBe(single.landAtMs)
     }
+  })
+
+  // The share row hangs on the plate in a Tie (12-siegerehrung-unentschieden.md: `share (plate +1.4)`), never on the first landing, or the buttons
+  // would show before the plate has stamped.
+  it('shows the share row 1400 ms after the plate and before the end, for 1, 2, 3 and 8 Winners with both gags', () => {
+    for (const winners of [1, 2, 3, 8]) {
+      for (const gag of ['trip', 'bonk'] as const) {
+        const { shareAtMs, plateAtMs, endMs } = ceremonyTimeline(8, gag, winners)
+        expect(shareAtMs - plateAtMs, `${winners} ${gag}`).toBe(1400)
+        expect(shareAtMs, `${winners} ${gag}`).toBeLessThan(endMs)
+      }
+    }
+    expect(ceremonyTimeline(4, 'trip', 2).shareAtMs).toBe(4460 + 1400)
   })
 
   it('takes a grid from 4 Winners on its own', () => {

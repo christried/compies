@@ -526,6 +526,8 @@
     "banner": "Siegerehrung!",
     "sub": "{event} · {n} Spiel | {event} · {n} Spiele",
     "skip": "Überspringen",
+    "watch": "Siegerehrung ansehen",
+    "again": "Nochmal ansehen",
     "place1": "Platz 1",
     "stamp": "SIEGER",
     "standings": "Endstand",

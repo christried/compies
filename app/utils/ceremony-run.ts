@@ -20,6 +20,8 @@ export interface RunParts {
   people: HTMLElement[]
   compibert: HTMLElement
   trophy: HTMLElement
+  /** The end frame's button row (#314): it rises in after the landing, in a Tie after the plate. */
+  share: HTMLElement
   /** The plate and the cards of a Tie (#315): `card`, `front`, `back` and `stamp` above are then the first Winner's. */
   tie?: TieParts
 }
@@ -78,8 +80,9 @@ export function runPartsOf(root: HTMLElement): RunParts | null {
   const stamp = one('stamp')
   const compibert = one('compibert')
   const trophy = one('trophy')
-  if (!banner || !card || !front || !back || !stamp || !compibert || !trophy) return null
-  return { banner, rows: all('row'), card, front, back, stamp, people: all('person'), compibert, trophy, tie: tiePartsOf(root) }
+  const share = one('share')
+  if (!banner || !card || !front || !back || !stamp || !compibert || !trophy || !share) return null
+  return { banner, rows: all('row'), card, front, back, stamp, people: all('person'), compibert, trophy, share, tie: tiePartsOf(root) }
 }
 
 /** Measures the stage, the card and Compibert's box relative to `root`, which is the offset parent of every part of a single Winner's stage. */
@@ -133,7 +136,7 @@ export interface RunOptions {
  * differently from playing through. The caller moves it with `time()`; it never plays on GSAP's ticker.
  */
 export function buildRun(gsap: Gsap, parts: RunParts, geometry: Geometry, { partyCount, winners, grid, gag, rigState, onBurst }: RunOptions) {
-  const { banner, rows, card, front, back, stamp, people, compibert, trophy, tie } = parts
+  const { banner, rows, card, front, back, stamp, people, compibert, trophy, share, tie } = parts
   const { stopX, cardX, cardY, groundY, handX, handY } = geometry
   const moments = ceremonyTimeline(partyCount, gag, winners, grid)
   const sec = (ms: number) => ms / 1000
@@ -157,6 +160,8 @@ export function buildRun(gsap: Gsap, parts: RunParts, geometry: Geometry, { part
   }
   gsap.set(compibert, { x: START_X, rotation: 0, transformOrigin: '62% 96%' })
   gsap.set(trophy, { opacity: 0, rotation: 0 })
+  // `autoAlpha` also sets `visibility`, so a row that has not risen yet is neither focusable nor read.
+  gsap.set(share, { autoAlpha: 0, y: 16 })
 
   const tl = gsap.timeline({ paused: true, defaults: { overwrite: false } })
   const state = (s: RigState, at: number) => tl.call(() => rigState(s), undefined, at)
@@ -213,6 +218,8 @@ export function buildRun(gsap: Gsap, parts: RunParts, geometry: Geometry, { part
     tl.to(people, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: 'back.out(2)', stagger: 0.08 }, sec(moments.membersAtMs))
   }
   state('laugh', sec(moments.getUpAtMs))
+  // The end frame's buttons: for a Tie 1.4 s after the plate (`shareAtMs` hangs on it), one tween for every stage (#314, #315).
+  tl.to(share, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'back.out(2)' }, sec(moments.shareAtMs))
   state('dance', end)
   tl.set({}, {}, end)
   return tl
