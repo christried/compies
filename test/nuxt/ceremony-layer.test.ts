@@ -1293,6 +1293,41 @@ describe('watching again (#314)', () => {
 
       expect(document.activeElement).toBe(skipButton())
     })
+
+    // The row is out of flow (#314): the stage holds its room from the first frame, and the row's place is set by the layout, not by the
+    // buttons' rendering. A phone: centred above Compibert's box (136 px up, 18 px above his top); the stage pads 136 + 44 + 18 px.
+    it('stands centred above Compibert on a phone, its room held from the first frame', async () => {
+      stubScreen(false)
+      await mount(finished(), STARTS)
+      const stage = row()!.parentElement!
+
+      expect(stage.style.paddingBottom).toBe('198px')
+      expect(row()!.style.bottom).toBe('136px')
+      expect(row()!.classList.contains('justify-center')).toBe(true)
+
+      await passTo(ENDS + 100)
+
+      expect(stage.style.paddingBottom).toBe('198px')
+      expect(row()!.style.bottom).toBe('136px')
+      expect(row()!.classList.contains('justify-center')).toBe(true)
+      expect(row()!.contains(shareButton())).toBe(true)
+      expect(row()!.contains(againButton())).toBe(true)
+    })
+
+    it('keeps its corner on a wide screen', async () => {
+      await mount(finished(), STARTS)
+      const stage = row()!.parentElement!
+
+      expect(stage.style.paddingBottom).toBe('162px')
+      expect(row()!.style.bottom).toBe('34px')
+      expect(row()!.classList.contains('justify-end')).toBe(true)
+
+      await passTo(ENDS + 100)
+
+      expect(stage.style.paddingBottom).toBe('162px')
+      expect(row()!.style.bottom).toBe('34px')
+      expect(row()!.classList.contains('justify-end')).toBe(true)
+    })
   })
 })
 
