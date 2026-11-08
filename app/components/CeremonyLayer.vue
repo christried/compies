@@ -176,6 +176,22 @@ function finish() {
   rig.value = endPose()
 }
 
+/**
+ * Compibert at his stop, where the run's end frame puts him, without GSAP (#308): measured as the run does, set as the inline transform GSAP's `x`
+ * writes. Without it the static markup leaves him at the stage's left edge. A stage that cannot be measured (a part is missing) leaves him there.
+ */
+function standCompibert() {
+  const root = award.value?.root
+  if (!root) return
+  try {
+    const found = runPartsOf(root)
+    if (found) found.compibert.style.transform = `translate(${runGeometry(measureRun(root, found)).stopX}px, 0px)`
+  }
+  catch {
+    // Left-0, like a stage without a run.
+  }
+}
+
 /** The static end frame, without motion: for a chunk that did not load and for a run that could not be built. The frame is then the whole show. */
 function giveUp(gsap?: Gsap, root?: HTMLElement) {
   timeline?.kill()
@@ -183,6 +199,7 @@ function giveUp(gsap?: Gsap, root?: HTMLElement) {
   parts = undefined
   // A build that threw half way may have set parts to their first frame: the static end frame is what their markup says.
   if (gsap && root) gsap.set(root.querySelectorAll('[data-part]'), { clearProps: 'opacity,visibility,transform' })
+  standCompibert()
   failed.value = true
   ready.value = true
   rig.value = endPose()
@@ -198,6 +215,7 @@ async function begin() {
   await nextTick()
   if (stale()) return
   if (reduced.value) {
+    standCompibert()
     rig.value = endPose()
     ready.value = true
     return

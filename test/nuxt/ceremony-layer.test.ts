@@ -789,6 +789,20 @@ describe('when GSAP does not load (#312)', () => {
   })
 })
 
+/** happy-dom has no layout: the stage is as wide as `stage` says, the card stands 300 px in and is 200 wide, Compibert is 100 wide (his stop: 286 px on 1000, 220 on 600). */
+function stubLayout(stage: number) {
+  const layout = { stage }
+  const widths: Record<string, number> = { card: 200, compibert: 100 }
+  vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
+    if (this.dataset.part) return widths[this.dataset.part] ?? 0
+    return this.querySelector(':scope > h2') ? layout.stage : 0
+  })
+  vi.spyOn(HTMLElement.prototype, 'offsetLeft', 'get').mockImplementation(function (this: HTMLElement) {
+    return this.dataset.part === 'card' ? 300 : 0
+  })
+  return layout
+}
+
 // The end frame is static markup that needs no GSAP (review of 0.9, spec #308): whenever the frame is the end frame it shows, whatever the chunk is doing.
 describe('the end frame does not wait for GSAP (#308)', () => {
   const content = () => dialog()?.querySelector(':scope > .overflow-y-auto') ?? null
@@ -841,6 +855,46 @@ describe('the end frame does not wait for GSAP (#308)', () => {
     expect(shareButton()).not.toBeNull()
     expect(againButton()).toBeNull()
     expect(skipButton()).toBeNull()
+  })
+
+  // Compibert stands where the run's end frame puts him (his stop), with or without the chunk.
+  const compibertX = () => part('compibert')[0]!.style.transform
+
+  describe('puts Compibert at his stop', () => {
+    it('under reduced motion, where the full run\'s end frame puts him', async () => {
+      stubLayout(1000)
+      await mount(finished(), STARTS)
+      await passTo(ENDS + 100)
+      const full = compibertX()
+      expect(full).toMatch(/^translate(3d)?\(286px/)
+      mounted!.unmount()
+      chunk.loads = 0
+
+      motion('reduced')
+      await mount(finished(), STARTS)
+
+      expect(frame()).toBe('end')
+      expect(compibertX()).toBe(full)
+      expect(chunk.loads).toBe(0)
+    })
+
+    it('after a chunk that did not load', async () => {
+      stubLayout(1000)
+      chunk.fail = true
+      await mount(finished(), STARTS)
+
+      expect(frame()).toBe('end')
+      expect(compibertX()).toMatch(/^translate(3d)?\(286px/)
+    })
+
+    it('after a build that threw', async () => {
+      stubLayout(1000)
+      chunk.buildFails = true
+      await mount(finished(), STARTS)
+
+      expect(frame()).toBe('end')
+      expect(compibertX()).toMatch(/^translate(3d)?\(286px/)
+    })
   })
 
   it('does nothing for a chunk that arrives after the layer was closed', async () => {
@@ -1228,20 +1282,11 @@ describe('watching again (#314)', () => {
     })
 
     it('measures the stage again for the restart: a screen that changed size since the run sets Compibert\'s stop elsewhere (#308)', async () => {
-      // happy-dom has no layout: the stage is as wide as the test says, the card stands 300 px in and is 200 wide, Compibert is 100 wide.
-      let stage = 1000
-      const widths: Record<string, number> = { card: 200, compibert: 100 }
-      vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
-        if (this.dataset.part) return widths[this.dataset.part] ?? 0
-        return this.querySelector(':scope > h2') ? stage : 0
-      })
-      vi.spyOn(HTMLElement.prototype, 'offsetLeft', 'get').mockImplementation(function (this: HTMLElement) {
-        return this.dataset.part === 'card' ? 300 : 0
-      })
+      const layout = stubLayout(1000)
       const { runEndAtMs } = ceremonyTimeline(2, 'trip', 1)
       await atTheEndFrame()
       const at = serverTime
-      stage = 600
+      layout.stage = 600
 
       againButton()!.click()
       await settle()
