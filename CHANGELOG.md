@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-08 – Siegerehrung
+
+Jetzt gibt es die Siegerehrung: Der Host eröffnet sie im beendeten Event, alle sehen im selben Moment dieselbe Show mit Pokal-Lauf, Stempel und Konfetti, und das Ergebnis gibt es als Bild zum Teilen.
+
 ### Neu
 
 - **Siegerehrung starten:** Der Host kann ein beendetes Event mit „Siegerehrung starten“ in der Host-Steuerung eröffnen. Alle, die das Event offen haben, sehen im selben Moment eine Ebene mit dem Endstand, dem Sieger und seinen Leuten, auch wer erst mittendrin dazukommt. ([#309](https://github.com/christried/compies/issues/309))
