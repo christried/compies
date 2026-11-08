@@ -84,6 +84,7 @@
     "endN": "Session {n} beenden",
     "finish": "Event abschließen",
     "finishTie": "Unentschieden beenden",
+    "ceremony": "Siegerehrung starten",
     "lastGame": "Letztes Spiel hinzufügen",
     "lastGameBlocked": {
       "game_count_range": "Mehr Spiele gehen nicht. Du kannst das Event noch als Unentschieden beenden."
@@ -521,6 +522,31 @@
       "tails": "Schwanz"
     }
   },
+  "ceremony": {
+    "banner": "Siegerehrung!",
+    "sub": "{event} · {n} Spiel | {event} · {n} Spiele",
+    "skip": "Überspringen",
+    "watch": "Siegerehrung ansehen",
+    "again": "Nochmal ansehen",
+    "place1": "Platz 1",
+    "stamp": "SIEGER",
+    "standings": "Endstand",
+    "players": "Die Leute der Sieger",
+    "pts": "{n} P.",
+    "more": "{n} weitere",
+    "live": "Gewonnen hat {list}, {points}.",
+    "tie": {
+      "sub": "{base} · {k} Sieger, je {n} Punkt | {base} · {k} Sieger, je {n} Punkte",
+      "subBoth": "{base} · Beide gleichauf, je {n} Punkt | {base} · Beide gleichauf, je {n} Punkte",
+      "subAll": "{base} · Alle {k} gleichauf, je {n} Punkt | {base} · Alle {k} gleichauf, je {n} Punkte",
+      "plateStamp": "Unentschieden",
+      "list": "Platz 1, unentschieden",
+      "stack": "{team}: {players}",
+      "live": "Unentschieden! Gewonnen haben {names} mit je {n} Punkt. | Unentschieden! Gewonnen haben {names} mit je {n} Punkten.",
+      "liveBoth": "Unentschieden! Beide Parteien gewinnen mit je {n} Punkt: {names}. | Unentschieden! Beide Parteien gewinnen mit je {n} Punkten: {names}.",
+      "liveAll": "Unentschieden! Alle {k} Parteien gewinnen mit je {n} Punkt: {names}. | Unentschieden! Alle {k} Parteien gewinnen mit je {n} Punkten: {names}."
+    }
+  },
   "pickBan": {
     "bans": "{team} bannt, {n} von {total}",
     "picks": "{team} pickt, {n} von {total}",
@@ -945,12 +971,41 @@
     "save": "Speichern"
   },
   "share": {
-    "title": "Teilen",
+    "open": "Bild teilen",
+    "title": "Ergebnis teilen",
+    "format": "Format",
     "landscape": "Querformat",
     "square": "Quadrat",
     "download": "Bild herunterladen",
-    "copyLink": "Link kopieren",
-    "copied": "Link kopiert"
+    "native": "Teilen",
+    "loading": "Bild wird erstellt …",
+    "error": "Das Bild konnte nicht erstellt werden.",
+    "shareFailed": "Teilen hat nicht geklappt.",
+    "image": {
+      "winsOne": "gewinnt mit",
+      "winsMany": "gewinnen mit je",
+      "points": "Punkt | Punkten",
+      "pts": "{n} Punkt | {n} Punkte",
+      "people": "{n} Leute",
+      "person": "1 Person",
+      "games": "{n} Spiel | {n} Spiele",
+      "moreGames": "+{n} weitere",
+      "moreParty": "+1 weitere Partei",
+      "moreParties": "+{n} weitere Parteien",
+      "brand": "Compies",
+      "alt": "{winner} gewinnt {event} mit {points}.",
+      "altPlace": "Platz {rank}: {name}, {points}.",
+      "gameTied": "· {n} gleichauf",
+      "tie": {
+        "label": "Unentschieden · {k} Sieger",
+        "labelBoth": "Unentschieden · beide gleichauf",
+        "labelAll": "Unentschieden · alle {k} gleichauf",
+        "alt": "Unentschieden bei {event}: {names} gewinnen mit je {points}.",
+        "altAll": "Unentschieden bei {event}: {who} Parteien gewinnen mit je {points}: {names}.",
+        "whoBoth": "Beide",
+        "whoAll": "Alle {k}"
+      }
+    }
   },
   "replay": {
     "title": "Battle-Replay",
@@ -1155,7 +1210,7 @@
       },
       "events": {
         "heading": "11. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, wer ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer ein Veto eingelegt hat, sieht bis zum Aufdecken nur das eigene Team. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, wer ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer ein Veto eingelegt hat, sieht bis zum Aufdecken nur das eigene Team. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nIst ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "12. Kalenderdatei",
@@ -1199,7 +1254,7 @@
       },
       "changes": {
         "heading": "22. Änderungen und Stand",
-        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 5. November 2026."
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 8. November 2026."
       }
     }
   },
@@ -1588,6 +1643,7 @@
     "countdownNotRunning": "Der Countdown läuft gerade nicht.",
     "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
     "coinInAir": "Die Münze fliegt noch.",
+    "ceremonyRunning": "Die Siegerehrung läuft noch.",
     "resultInvalid": "Das Ergebnis passt nicht. Lade die Seite neu und versuch es nochmal.",
     "roundNotOpen": "Zu diesem Spiel kann gerade kein Ergebnis eingetragen werden. Vielleicht hat es schon eins.",
     "wrongPhase": "Das geht nicht mehr. Die Seite zeigt den neuen Stand.",

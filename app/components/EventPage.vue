@@ -46,9 +46,12 @@ const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
 // The stage's changes go through the one send (#74), held by useStageActions. The dialogs are EventHostDialogs'; the page opens them through `dialogs`.
 const actions = useStageActions(slug, refresh)
 const dialogs = useTemplateRef('dialogs')
+/** The Award ceremony's layer: „Siegerehrung ansehen“ of the finished stage asks it to play again (#314). */
+const ceremonyLayer = useTemplateRef('ceremonyLayer')
 
 const inviteOpen = ref(false)
 const calendarOpen = ref(false)
+const shareOpen = ref(false)
 
 /** The Host's „Korrigieren“ in the history (#275, historyCorrections): the Standings tab and the phone's view have it, the stage's history does not (#277). */
 const corrections = computed(() => (data.value ? historyCorrections(data.value, actions.enterResult) : null))
@@ -216,6 +219,8 @@ const { news } = useStandingsNews(data, slug)
       @reschedule="dialogs?.openReschedule($event)"
       @add="dialogs?.openAdd()"
       @calendar="calendarOpen = true"
+      @share="shareOpen = true"
+      @replay="ceremonyLayer?.replay()"
     />
 
     <!-- A phone's other views (11-event-seite § TabBar): the Standings or the feed alone, with the Head's place taken by their title. -->
@@ -274,11 +279,20 @@ const { news } = useStandingsNews(data, slug)
       @shown="vetoBarShown = $event"
     />
 
-    <!-- The Host has the dock in every Phase; in a finished Event it holds Einladen only (#277). -->
+    <!-- The Host has the dock in every Phase; in a finished Event it holds Siegerehrung starten and Einladen (#277, #309). -->
     <HostDock
       v-if="data?.event.isHost"
       :actions="hostActions"
       panel
+    />
+
+    <!-- The Award ceremony (#309): mounted always, it opens itself at the start instant of the read's ceremony, for every Member. -->
+    <CeremonyLayer
+      v-if="data"
+      ref="ceremonyLayer"
+      :view="data"
+      :server-now="serverClock.now"
+      @share="shareOpen = true"
     />
 
     <EventHostDialogs
@@ -308,6 +322,14 @@ const { news } = useStandingsNews(data, slug)
       :open="calendarOpen"
       :view="data"
       @close="calendarOpen = false"
+    />
+
+    <!-- „Bild teilen“ (#313): from the finished stage's row and from the ceremony's end frame; mounted once, the sheet asks nothing while closed. -->
+    <ShareDialog
+      v-if="data"
+      :open="shareOpen"
+      :view="data"
+      @close="shareOpen = false"
     />
   </AppShell>
 </template>

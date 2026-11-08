@@ -20,7 +20,7 @@ export interface ChangeEventOptions extends LoadEventOptions {
   beforeBody?: (user: AuthUser) => void
   /**
    * Whether the change may run in a finished Event (default false: a finished Event is read-only for good, #277). Only the Host rotating
-   * the Invite link does; every other change answers `wrong_phase` there, so no write route can forget the rule.
+   * the Invite link and starting the Award ceremony do (#309); every other change answers `wrong_phase` there, so no write route can forget the rule.
    */
   allowFinished?: boolean
   /**

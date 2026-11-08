@@ -389,7 +389,7 @@ describe('finishing the Event', () => {
 
     await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'winner', winners: [1] }]))
     await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
-    expect(pill(page)).toEqual(['Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
   })
 
   it('shows the toast of a refusal and reads the Event again: the Tie that came in meanwhile takes the primary away', async () => {
@@ -420,7 +420,7 @@ describe('finishing the Event', () => {
     await hold(button)
 
     await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
-    expect(pill(page)).toEqual(['Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
     expect(shownToasts()).toEqual([])
   })
 })
@@ -512,7 +512,7 @@ describe('a Tie at the end', () => {
     await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'tie', winners: [1, 2] }]))
     await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
     expect(page.get('h1').text()).toBe('Unentschieden')
-    expect(pill(page)).toEqual(['Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
   })
 
   it('posts the last game without a body and reads the Event again: the dock then offers the next game', async () => {

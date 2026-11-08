@@ -1,17 +1,14 @@
 // Display helpers for Europe/Berlin (ADR 0003). Times are UTC on the wire; the browser shows Berlin
 // wall-clock time whatever its own zone is. The conversion for form values is shared/time.ts.
-import { BERLIN_ZONE } from '~~/shared/time'
+import { BERLIN_ZONE, berlinDay } from '~~/shared/time'
 
-const dayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'short', day: '2-digit', month: '2-digit' })
 const timeFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 const longDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'long', day: 'numeric', month: 'long' })
 const monthFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, month: 'long', year: 'numeric' })
 
 /** A Slot's day as `Sa 24.10.` (Berlin). */
 export function formatSlotDay(instant: Date): string {
-  const parts = Object.fromEntries(dayFormat.formatToParts(instant).map(part => [part.type, part.value]))
-  // de-DE abbreviates the weekday with a period ("Sa."); the design shows it without.
-  return `${(parts.weekday ?? '').replace(/\.$/, '')} ${parts.day}.${parts.month}.`
+  return berlinDay(instant, false)
 }
 
 /** A month and year as `Oktober 2026` (Berlin), for „angelegt im …“. */

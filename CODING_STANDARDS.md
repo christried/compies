@@ -44,6 +44,7 @@ What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its s
 
 - An animation takes the curve and the duration that `docs/design_handoff_compies/04-motion.md` names for its moment, as that entry's tokens (`--cp-ease-pop`, `--cp-dur-slow`). The 1.4 walk-through found a Flip on `--cp-ease-out` that read as a jump where 04-motion asks for `EASE.pop` (#208).
 - Its test asserts that easing and duration, as well as that something animated.
+- Inside the GSAP timelines (ADR 0015, the Award ceremony's Pokal-Lauf) the eases are GSAP's named eases as `04-motion.md` writes them (`back.out(2.2)`), not `--cp-ease-*`, and their test reads the tween vars (`ease`, `duration()`) off the built timeline.
 - An animation that lands on a result (the coin's face, the wheel's slice) also has a test that the landing shows that result. The coin landed on the wrong face in 0.7, and only the browser check saw it (#235).
 
 ## Tests

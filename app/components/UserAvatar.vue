@@ -11,8 +11,8 @@
 const props = withDefaults(defineProps<{
   name: string
   image?: string | null
-  /** 24 for the poll matrix rows (DS People). */
-  size?: 24 | 32 | 40 | 48 | 64
+  /** 24 for the poll matrix rows (DS People); 80 for the Winners in the Award ceremony (#309); 28, 44 and 56 for a Tie's cards (#315). */
+  size?: 24 | 28 | 32 | 40 | 44 | 48 | 56 | 64 | 80
   /** The Team colour index, 1 to 8. */
   team?: number | null
   /** Scaled up with the lift shadow, while it is dragged. */

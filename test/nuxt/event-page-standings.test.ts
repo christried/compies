@@ -1,15 +1,25 @@
-import { registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
-import { readBody } from 'h3'
+import { getQuery, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Leaderboard from '~/components/Leaderboard.vue'
 import { refreshEvent } from '~/composables/useEventView'
 import type { RoundGame } from '~~/shared/game'
-import type { ResultView } from '~~/shared/stage'
+import type { CeremonyView, ResultView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { clickButton, dialog, openHostMenu, regionHeadings, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
-import { afterResult, ENDED, FIRST, members, mount, mountedPage, openRound, played, SECOND, SESSION, serveState, STARTED, team, unmountPage, type Setup } from './event-page-states'
+import { clickButton, clickHostAction, dialog, hostActionElement, openHostMenu, regionHeadings, shownToasts, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
+import { afterResult, ENDED, FIRST, members, mount, mountedPage, openRound, played, SECOND, SESSION, serveState, STARTED, team, unmountPage, type Seat, type Setup } from './event-page-states'
+
+// Counts the GSAP chunk's loads (ADR 0015): opening a finished Event after the run's end must not ask for it, a click on a replay may. Calls through.
+const chunk = vi.hoisted(() => ({ loads: 0 }))
+mockNuxtImport('loadGsap', async () => {
+  const { loadGsap: real } = await vi.importActual<typeof import('~/utils/gsap')>('~/utils/gsap')
+  return () => {
+    chunk.loads++
+    return real()
+  }
+})
 
 // The Standings and the finished Event on the Event page (#274, #275, #276, #277, #283): the Standings as a block of the stage and as a tab, the news they
 // play, the Host's Corrections and the history, and a finished Event read-only for everybody.
@@ -74,15 +84,65 @@ describe('the finished Event page', () => {
     })
   }
 
-  it('gives a Member no dock, and the Host one that holds Einladen and Mehr and nothing else', async () => {
+  // „Bild teilen“ (#313): the row at the top of the finished stage, for everybody, right under the Head and before the Standings.
+  describe('„Bild teilen“', () => {
+    const shareButton = (page: VueWrapper) => page.findAll('main button').find(button => button.text() === 'Bild teilen')
+
+    for (const host of [true, false]) {
+      it(`is the first thing of the stage after the Head, before the Standings, for ${host ? 'the Host' : 'a Member'}`, async () => {
+        const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host, overrides: finishedRead() })
+
+        const page = await mount(slug)
+
+        const button = shareButton(page)!.element
+        expect(button).toBeDefined()
+        const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!.element
+        expect(button.compareDocumentPosition(standings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(page.get('main h1').element.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      })
+    }
+
+    it('is on no other page state, and not in a finished Event without a Result', async () => {
+      const running = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED })], missing: 0, phase: 'running', overrides: finishedRead({ end: null }) })
+      expect(shareButton(await mount(running.slug))).toBeUndefined()
+
+      const empty = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead({ results: [], standings: null, end: null }) })
+      expect(shareButton(await mount(empty.slug))).toBeUndefined()
+    })
+
+    it('opens the share sheet, with the picture of the Event asked for', async () => {
+      const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })
+      const asked: string[] = []
+      registerEndpoint(`/api/e/${slug}/share-image`, {
+        method: 'GET',
+        handler: (event) => {
+          asked.push(String(getQuery(event).format))
+          return new Blob(['png'], { type: 'image/png' })
+        },
+      })
+      URL.createObjectURL = vi.fn(() => 'blob:page')
+      URL.revokeObjectURL = vi.fn()
+      const page = await mount(slug)
+      expect(dialog()).toBeNull()
+
+      await clickButton(page.element, 'Bild teilen')
+      await flushPromises()
+
+      expect(dialog()!.textContent).toContain('Ergebnis teilen')
+      expect(asked).toEqual(['wide'])
+    })
+  })
+
+  it('gives a Member no dock, and the Host one that holds Siegerehrung starten, Einladen and Mehr and nothing else', async () => {
     const member = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })
     expect(toolbar(await mount(member.slug))).toEqual([])
 
     const host = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host: true, overrides: finishedRead({ end: { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: 'wrong_phase' }, lastGame: null } }) })
     const page = await mount(host.slug)
-    expect(toolbar(page)).toEqual(['Einladen', 'Mehr'])
+    expect(toolbar(page)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
     const menu = await openHostMenu(page)
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Einladen'])
+    // „Mehr“ lists every action but a hold or dockOnly one in the pill, so the tap primary repeats there as Rad drehen does in a Session (event-session-start).
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Siegerehrung starten', 'Einladen'])
   })
 
   it('names the winner by the colour when the Team has no frozen name', async () => {
@@ -153,6 +213,131 @@ describe('the finished Event page', () => {
 
     expect(page.findAll('nav[aria-label="Event"] button').map(item => item.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
     expect(page.get('h1').text()).toBe('Wilde Gurken gewinnt das Event')
+  })
+
+  // The Award ceremony (#309) on the page: the layer opens for a Member inside the run, and the Host's dock action holds its reason until the run is over.
+  describe('the Award ceremony', () => {
+    /** A run that started a second ago and plays for a minute more. */
+    const running = (): CeremonyView => ({ startsAt: new Date(Date.now() - 1000).toISOString(), endsAt: new Date(Date.now() + 60_000).toISOString(), gag: 'trip' })
+    /** The same kind of start, its run over a minute ago: the read the page gets after the run. */
+    const over = (): CeremonyView => ({ startsAt: new Date(Date.now() - 120_000).toISOString(), endsAt: new Date(Date.now() - 60_000).toISOString(), gag: 'trip' })
+    /** The finished Event's read with this ceremony, for the Host or a Member. */
+    const readWith = (slug: string, ceremony: CeremonyView, host: boolean) => viewWithSessions(slug, [ENDED_ONE], 0, {
+      event: { phase: 'finished', isHost: host },
+      settings: defaultSettings(),
+      teams: [team(1), team(2)],
+      members: members(),
+      ...finishedRead({ ceremony }),
+    })
+
+    it('opens the layer for a Member who has the page inside the run', async () => {
+      const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead({ ceremony: running() }) })
+
+      await mount(slug)
+
+      await vi.waitFor(() => expect(dialog()?.textContent).toContain('Siegerehrung!'))
+    })
+
+    it('holds Siegerehrung starten disabled with its reason during the run, and posts once the run is over', async () => {
+      const served = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host: true, overrides: finishedRead({ ceremony: running() }) })
+      let posts = 0
+      registerEndpoint(`/api/e/${served.slug}/ceremony`, { method: 'POST', handler: () => {
+        posts += 1
+        return running()
+      } })
+
+      const page = await mount(served.slug)
+
+      const action = await hostActionElement(page, 'Siegerehrung starten')
+      expect(action.getAttribute('aria-disabled')).toBe('true')
+      expect(page.get(`#${action.getAttribute('aria-describedby')}`).text()).toBe('Die Siegerehrung läuft noch.')
+      await clickHostAction(page, 'Siegerehrung starten')
+      expect(shownToasts().map(toast => toast.text)).toContain('Die Siegerehrung läuft noch.')
+      expect(posts).toBe(0)
+
+      // The run is over: the page's read after its end has the ceremony past it, and the action is free and posts once.
+      served.set(readWith(served.slug, over(), true))
+      await refreshEvent(served.slug)
+      await flushPromises()
+      expect((await hostActionElement(page, 'Siegerehrung starten')).getAttribute('aria-disabled')).toBeNull()
+      await clickHostAction(page, 'Siegerehrung starten')
+      await vi.waitFor(() => expect(posts).toBe(1))
+    })
+
+    // „Siegerehrung ansehen“ (#314): once the Host has started the ceremony, everybody can play it again for themselves; nothing plays on its own.
+    describe('„Siegerehrung ansehen“', () => {
+      const watchButton = (page: VueWrapper) => page.findAll('main button').find(button => button.text() === 'Siegerehrung ansehen')
+      /** The page of a finished Event whose ceremony ran a minute ago; counts the posts to the ceremony route. */
+      function afterTheRun({ host = false, kitty: seat }: { host?: boolean, kitty?: Seat } = {}) {
+        const served = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host, overrides: finishedRead({ ceremony: over(), ...(seat ? { members: members({ kitty: seat }) } : {}) }) })
+        const posts = { count: 0 }
+        registerEndpoint(`/api/e/${served.slug}/ceremony`, { method: 'POST', handler: () => {
+          posts.count += 1
+          return over()
+        } })
+        return { ...served, posts }
+      }
+
+      it('is not there before the Host has started the ceremony', async () => {
+        const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', overrides: finishedRead() })
+
+        const page = await mount(slug)
+
+        expect(watchButton(page)).toBeUndefined()
+        expect(page.findAll('main button').some(button => button.text() === 'Bild teilen')).toBe(true)
+      })
+
+      it('is there once the ceremony has started, after „Bild teilen“ and before the Standings, with nothing playing and no GSAP asked for', async () => {
+        const { slug } = afterTheRun()
+        const loadsBefore = chunk.loads
+
+        const page = await mount(slug)
+        await flushPromises()
+
+        const button = watchButton(page)!.element
+        const share = page.findAll('main button').find(item => item.text() === 'Bild teilen')!.element
+        const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!.element
+        expect(share.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(button.compareDocumentPosition(standings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(dialog()).toBeNull()
+        expect(chunk.loads).toBe(loadsBefore)
+      })
+
+      const SEATS: [string, boolean, Seat | undefined][] = [
+        ['the Host', true, undefined],
+        ['a Player', false, { zone: 'team', team: 1 }],
+        ['a Spectator', false, { zone: 'stands' }],
+        ['a Member on the Bench', false, { zone: 'bench' }],
+      ]
+      for (const [who, host, seat] of SEATS) {
+        it(`opens the layer at its first frame for ${who}, and sends nothing`, async () => {
+          const { slug, posts } = afterTheRun({ host, kitty: seat })
+          const page = await mount(slug)
+
+          await watchButton(page)!.trigger('click')
+
+          await vi.waitFor(() => expect(dialog()?.textContent).toContain('Siegerehrung!'))
+          expect(dialog()!.getAttribute('data-frame')).toBe('run')
+          expect(dialog()!.textContent).toContain('Überspringen')
+          expect(posts.count).toBe(0)
+        })
+      }
+
+      it('leaves the Host\'s „Siegerehrung starten“ free, with the replay open and closed', async () => {
+        const { slug, posts } = afterTheRun({ host: true })
+        const page = await mount(slug)
+        expect((await hostActionElement(page, 'Siegerehrung starten')).getAttribute('aria-disabled')).toBeNull()
+
+        await watchButton(page)!.trigger('click')
+        await vi.waitFor(() => expect(dialog()).not.toBeNull())
+        expect((await hostActionElement(page, 'Siegerehrung starten')).getAttribute('aria-disabled')).toBeNull()
+
+        dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Schließen"]')!.click()
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        expect((await hostActionElement(page, 'Siegerehrung starten')).getAttribute('aria-disabled')).toBeNull()
+        expect(posts.count).toBe(0)
+      })
+    })
   })
 })
 

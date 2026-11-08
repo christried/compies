@@ -1,12 +1,12 @@
-import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer, Trophy } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
-import { coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
+import { ceremonyBlockedKey, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { leadersOf } from '~~/shared/finish'
 
 // The Host's dock actions (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers (Event
-// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, or none after the last Session) and
+// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, Siegerehrung starten, or none after the last Session) and
 // dockLayout which actions sit where (named parts: primary, secondary, more; review 1.4 A4). Each action is one entry below.
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
 // a secondary hold. At a Tie (#278) „Unentschieden beenden“ takes the primary's place as a hold, and „Letztes Spiel hinzufügen“ is a plain
@@ -53,6 +53,8 @@ export function useHostActions(
     /** Tosses the Coin flip (#235): no dialog; the send refetches the Event read. */
     coin: () => void actions.toss(),
     bonusVeto: () => toValue(dialogs)?.openBonusVeto(),
+    /** Starts the Award ceremony of the finished Event (#309): a tap, no dialog; the send refetches the Event read. */
+    ceremony: () => void actions.startCeremony(),
   }
 
   return computed((): DockAction[] => {
@@ -71,6 +73,9 @@ export function useHostActions(
     // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
     const coinKey = coinBlockedKey(current, serverNow())
     const coinReason = coinKey === null ? undefined : t(coinKey)
+    // The ceremony's reason is the rule's, with the server clock (#309): it stays while a run plays, and the read at the run's end (viewInstants) clears it.
+    const ceremonyKey = ceremonyBlockedKey(current, serverNow())
+    const ceremonyReason = ceremonyKey === null ? undefined : t(ceremonyKey)
     // The Parties on Place 1 of the Standings this dock shows: what the finish tells the server the Host saw (review 0.8 S2).
     const winners = leadersOf(current.standings ?? [])
 
@@ -137,6 +142,15 @@ export function useHostActions(
         disabledReason: lastGameReason,
         dockOnly: true,
         run: guarded(lastGameReason, () => void handlers.lastGame()),
+      },
+      // The finished Event's primary (#309): a tap, not a hold, since it loses nothing. It stays after the first start, disabled while a run plays.
+      ceremony: {
+        key: 'ceremony',
+        label: t('dock.ceremony'),
+        icon: Trophy,
+        group: t('dock.group.event'),
+        disabledReason: ceremonyReason,
+        run: guarded(ceremonyReason, handlers.ceremony),
       },
       setGame: {
         key: 'setGame',

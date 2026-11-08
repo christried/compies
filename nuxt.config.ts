@@ -1,3 +1,6 @@
+import { copyFileSync, mkdirSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { join } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import { addServerHandler, createResolver, defineNuxtModule } from 'nuxt/kit'
 import { carriesDevSignIn, isStagingBuild, stageBranding } from './stage'
@@ -19,6 +22,36 @@ export default defineNuxtConfig({
       setup(_options, nuxt) {
         if (!carriesDevSignIn(nuxt.options.dev)) return
         addServerHandler({ route: '/api/dev/sign-in', method: 'get', handler: createResolver(import.meta.url).resolve('./server/dev/sign-in') })
+      },
+    }),
+    // GSAP loads through `loadGsap()` on the lead before a run only (ADR 0015). Vite's manifest marks the chunk of every dynamic import
+    // `prefetch`, and vue-bundle-renderer then writes `<link rel="prefetch">` for it on every page that reaches the `import()`: the Event page
+    // does (ceremony layer), so a finished Event fetched 70 kB of GSAP although no run plays. Only GSAP's chunk loses the flag; other
+    // prefetches stay. test/build/gsap-lazy.test.ts checks the hints the build renders.
+    defineNuxtModule({
+      meta: { name: 'gsap-no-prefetch' },
+      setup(_options, nuxt) {
+        nuxt.hook('build:manifest', (manifest) => {
+          for (const chunk of Object.values(manifest)) {
+            if (chunk.src && /[\\/]node_modules[\\/]gsap[\\/]/.test(chunk.src)) chunk.prefetch = chunk.preload = false
+          }
+        })
+      },
+    }),
+    // The Share image's PNG is made by resvg's WebAssembly (#313). Its binary ships with the server as storage `assets:resvg`, which
+    // server/utils/share-assets.ts reads. It is copied out of node_modules into the build folder first: Nitro rewrites a path inside
+    // node_modules to a package specifier, which the raw-asset loader cannot open (a Vercel-preset build failed on it).
+    defineNuxtModule({
+      meta: { name: 'resvg-wasm' },
+      setup(_options, nuxt) {
+        const dir = join(nuxt.options.buildDir, 'resvg')
+        // After Nuxt has cleaned the build folder.
+        nuxt.hook('build:before', () => {
+          mkdirSync(dir, { recursive: true })
+          copyFileSync(createRequire(import.meta.url).resolve('@resvg/resvg-wasm/index_bg.wasm'), join(dir, 'index_bg.wasm'))
+        })
+        nuxt.options.nitro.serverAssets ||= []
+        nuxt.options.nitro.serverAssets.push({ baseName: 'resvg', dir })
       },
     }),
   ],

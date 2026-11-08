@@ -10,7 +10,7 @@ import { useStageActions } from '~/composables/useStageActions'
 
 let testNumber = 0
 
-/** The endpoints of the eleven changes for one slug, what they received, and whether they refuse. */
+/** The endpoints of the twelve changes for one slug, what they received, and whether they refuse. */
 function serve() {
   testNumber += 1
   const slug = `stage-actions-${testNumber}`
@@ -22,6 +22,7 @@ function serve() {
     ['rounds/round-1', 'DELETE'],
     ['rounds/spin', 'POST'],
     ['coin', 'POST'],
+    ['ceremony', 'POST'],
     ['countdown/pause', 'POST'],
     ['sessions/end', 'POST'],
     ['sessions/session-1/reopen', 'POST'],
@@ -71,6 +72,7 @@ describe('useStageActions', () => {
     ['putBackRound', (actions: ReturnType<typeof useStageActions>) => actions.putBackRound('round-1'), 'DELETE rounds/round-1'],
     ['spin', (actions: ReturnType<typeof useStageActions>) => actions.spin(), 'POST rounds/spin'],
     ['toss', (actions: ReturnType<typeof useStageActions>) => actions.toss(), 'POST coin'],
+    ['startCeremony', (actions: ReturnType<typeof useStageActions>) => actions.startCeremony(), 'POST ceremony'],
     ['countdown', (actions: ReturnType<typeof useStageActions>) => actions.countdown('pause'), 'POST countdown/pause'],
     ['endSession', (actions: ReturnType<typeof useStageActions>) => actions.endSession(), 'POST sessions/end'],
     ['reopenSession', (actions: ReturnType<typeof useStageActions>) => actions.reopenSession('session-1'), 'POST sessions/session-1/reopen'],

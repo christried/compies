@@ -1,6 +1,2 @@
-const german = new Intl.ListFormat('de', { style: 'long', type: 'conjunction' })
-
-/** Names as one German sentence part (#274): „A“, „A und B“, „A, B und C“. The one home of the list format. */
-export function joinNames(names: readonly string[]): string {
-  return german.format(names)
-}
+// The list format lives in shared/ since the Share image model needs it too (#313).
+export { joinNames } from '~~/shared/list'

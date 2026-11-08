@@ -69,11 +69,19 @@ describe('legal pages', () => {
     expect(events).toBeDefined()
     expect(retention).toBeDefined()
     expect(events!.text()).toContain('Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat.')
-    expect(events!.text()).toContain('Zum Event selbst speichern wir, wann der Host es abgeschlossen hat.')
+    expect(events!.text()).toContain('Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat.')
     expect(events!.text()).toContain('und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, wer ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.')
     expect(events!.text()).toContain('das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer ein Veto eingelegt hat, sieht bis zum Aufdecken nur das eigene Team.')
     expect(retention!.text()).toContain('Plätze, Teamwörter, eingefrorene Teamnamen, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht.')
     expect(page.get('main').text()).not.toContain('Tiebreaker')
+  })
+
+  it('name the result picture of a finished Event: what it shows, that it is not stored, and the share target (#313, spec #308)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const events = page.findAll('section').find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
+
+    expect(events!.text()).toContain('Ist ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.')
+    expect(page.get('main').text()).toContain('Stand: 8. November 2026.')
   })
 
   it('name the live connection to Cloudflare Workers, since the browser connects there itself (#156)', async () => {
