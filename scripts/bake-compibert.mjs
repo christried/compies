@@ -1,6 +1,6 @@
 // Bakes the two static Compibert poses the Share image renders (#311, spec #308 § Compibert's rig): the full body "dance" and the head
-// "idle", as self-contained SVG without CSS vars, filters, classes or ids (Satori and `<img>` safe). #313 reads them on the server with
-// `useStorage('assets:server').getItem('compibert/compibert-dance.svg')`.
+// "idle", as self-contained SVG without CSS vars, filters, classes or ids (Satori and `<img>` safe). #313 reads them on the server through `SHARE_SVGS` in `server/utils/share-assets.ts`:
+// `useStorage('assets:server').getItemRaw(key)`, the bytes decoded as text (not `getItem`, which may parse or normalise them).
 //
 //   node scripts/bake-compibert.mjs            writes server/assets/compibert/compibert-dance.svg and compibert-head-idle.svg
 //   node scripts/bake-compibert.mjs --check    bakes in memory, exits 1 if a committed file differs (run it after changing the rig)

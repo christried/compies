@@ -36,10 +36,14 @@ export function ceremonyViewOf(row: EventRow, winners: number): CeremonyView | n
  * message of its own: `changeEvent` tells the room `event.changed`, and the clients refetch the Event read, which carries the ceremony.
  */
 export async function startCeremony({ tx, eventRow, user, now }: ChangeCore, randomInt: (n: number) => number): Promise<CeremonyStarted> {
-  // The previous run's end depends on the Winner count (#315), so the Standings are read before the refusal is decided.
+  const isHost = eventRow.hostId === user.id
+  // not_host and wrong_phase need no Standings, so they are refused before the read (#315, review 0.9).
+  const early = ceremonyRejection({ isHost, phase: eventRow.phase, latest: null, now })
+  if (early) throw apiError(early)
+  // The previous run's end depends on the Winner count (#315), so the Standings are read before ceremony_running is decided.
   const known = settingsFromRow(eventRow)
   const winners = known === null ? 0 : leadersOf((await readEnd(tx, eventRow.id, known)).standings).length
-  const rejection = ceremonyRejection({ isHost: eventRow.hostId === user.id, phase: eventRow.phase, latest: ceremonyViewOf(eventRow, winners), now })
+  const rejection = ceremonyRejection({ isHost, phase: eventRow.phase, latest: ceremonyViewOf(eventRow, winners), now })
   if (rejection) throw apiError(rejection)
 
   requireSettings(eventRow)
