@@ -25,7 +25,7 @@ export function ceremonyViewOf(row: EventRow, winners: number): CeremonyView | n
   if (row.ceremonyStartsAt === null || row.ceremonyGag === null || settings === null) return null
   return {
     startsAt: isoInstant(row.ceremonyStartsAt),
-    endsAt: isoInstant(new Date(ceremonyEndsAt(row.ceremonyStartsAt, settings.teamCount, row.ceremonyGag, winners))),
+    endsAt: isoInstant(new Date(ceremonyEndsAt(row.ceremonyStartsAt, { partyCount: settings.teamCount, winners, gag: row.ceremonyGag }))),
     gag: row.ceremonyGag,
   }
 }

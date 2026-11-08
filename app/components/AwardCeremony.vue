@@ -495,12 +495,15 @@ defineExpose({ root, burst })
       aria-hidden="true"
       class="absolute inset-x-0 bottom-0 h-[22px] border-t-(length:--cp-bw) border-line bg-paper-2"
     />
-    <!-- Compibert's box starts at the stage's left edge: the run's x is a stage coordinate (ceremony-run.ts). -->
+    <!-- Compibert's box starts at the stage's left edge: the run's x is a stage coordinate (ceremony-run.ts). The rig (#311) is mounted with
+         the layer's dialog only, so GSAP loads when the ceremony opens and never on a finished Event page that stays closed (ADR 0015);
+         it hides itself from assistive technology. -->
     <div
       data-part="compibert"
       class="pointer-events-none absolute bottom-4 left-0 z-3"
     >
-      <CeremonyCompibert
+      <CompibertRig
+        variant="full"
         :size="compibert"
         :state="state"
       />

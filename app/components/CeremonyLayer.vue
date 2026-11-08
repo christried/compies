@@ -48,7 +48,7 @@ const partyCount = computed(() => props.view.standings?.length ?? 0)
 const roomy = useMediaQuery('(min-width: 48rem)')
 const layout = computed(() => ceremonyLayout(model.value?.winners.length ?? 1, model.value?.rows.length ?? 0, roomy.value === true))
 const shape = computed(() => ({ partyCount: partyCount.value, winners: model.value?.winners.length ?? 1, grid: layout.value.stage === 'grid' }))
-const schedule = computed(() => (ceremony.value ? ceremonyTimeline(shape.value.partyCount, ceremony.value.gag, shape.value.winners, shape.value.grid) : null))
+const schedule = computed(() => (ceremony.value ? ceremonyTimeline({ ...shape.value, gag: ceremony.value.gag }) : null))
 
 /** The start (its ISO instant) this viewer's layer opened for, the one they closed and the one they skipped: in memory only. */
 const openedFor = ref<string | null>(null)
@@ -101,7 +101,7 @@ async function replay() {
   }
   const startsMs = props.serverNow()
   // The server-style end (the default layout, never this screen's): harmless on a phone's grid of 3 Winners, which only waits a little for the clock (#315).
-  const endsAt = new Date(ceremonyEndsAt(startsMs, shape.value.partyCount, start.gag, shape.value.winners)).toISOString()
+  const endsAt = new Date(ceremonyEndsAt(startsMs, { partyCount: shape.value.partyCount, winners: shape.value.winners, gag: start.gag })).toISOString()
   const run: CeremonyView = { startsAt: new Date(startsMs).toISOString(), endsAt, gag: start.gag }
   const restart = open.value
   replayed.value = { of: start.startsAt, run }
@@ -247,7 +247,7 @@ async function begin() {
     })
     // The first seek is silent: a late joiner fires no call, and gets the pose from the clock instead.
     timeline.time(elapsed.value / 1000, true)
-    rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, shape.value.partyCount, ceremony.value.gag, shape.value.winners, shape.value.grid)
+    rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, { ...shape.value, gag: ceremony.value.gag })
     if (frame.value === 'end') finish()
     seek = { from: elapsed.value, to: elapsed.value }
     ready.value = true
@@ -270,7 +270,7 @@ watch(() => (open.value ? ceremony.value?.startsAt : null), (key) => {
   rig.value = 'idle'
   if (!key) return
   reduced.value = reducedMotion()
-  rig.value = reduced.value ? 'cheer' : ceremonyRigState(elapsed.value, shape.value.partyCount, ceremony.value!.gag, shape.value.winners, shape.value.grid)
+  rig.value = reduced.value ? 'cheer' : ceremonyRigState(elapsed.value, { ...shape.value, gag: ceremony.value!.gag })
   void begin()
 }, { immediate: true, flush: 'sync' })
 
