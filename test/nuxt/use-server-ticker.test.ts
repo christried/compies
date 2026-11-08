@@ -18,16 +18,17 @@ interface Setup {
   until?: number | null
   every?: ServerTickerOptions['every']
   withTarget?: boolean
+  ready?: ServerTickerOptions['ready']
 }
 
-async function setUp({ until = null, every, withTarget = false }: Setup = {}) {
+async function setUp({ until = null, every, withTarget = false, ready }: Setup = {}) {
   const pending = ref<number | null>(until)
   const shown = ref(withTarget)
   const seen: { atSetup: number | null | undefined, ticker: Readonly<Ref<number | null>> | undefined, second: Readonly<Ref<number | null>> | undefined } = { atSetup: undefined, ticker: undefined, second: undefined }
   const target = ref<Element | null>(null)
   const page = await mountSuspended(defineComponent({
     setup() {
-      const ticker = useServerTicker(serverNow, { until: () => pending.value, every, target: withTarget ? target : undefined })
+      const ticker = useServerTicker(serverNow, { until: () => pending.value, every, target: withTarget ? target : undefined, ready })
       // A second ticker in the same component keeps its own moment.
       const second = useServerTicker(serverNow, { until: () => null })
       seen.atSetup = ticker.value
@@ -128,6 +129,19 @@ describe('useServerTicker', () => {
 
     vi.advanceTimersByTime(FRAME_MS * 5)
     expect(value()).toBeGreaterThanOrEqual(START + 1000 + FRAME_MS * 4)
+  })
+
+  it('holds null while the ready option is false, and samples at once when it turns true (#287)', async () => {
+    const ready = ref(false)
+    const { value } = await setUp({ until: START + 5000, ready: () => ready.value })
+    vi.advanceTimersByTime(FRAME_MS * 3)
+    expect(value()).toBeNull()
+
+    skew = 1000
+    ready.value = true
+    await nextTick()
+
+    expect(value()).toBe(START + FRAME_MS * 3 + 1000)
   })
 
   it('stops when the moment goes away: a paused Countdown', async () => {

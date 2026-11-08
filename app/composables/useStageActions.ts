@@ -1,7 +1,8 @@
 import { useEventMutation } from '~/composables/useEventMutation'
 import type { CountdownCommand } from '~~/shared/countdown'
 import type { LastGameAdded } from '~~/shared/event'
-import type { FinishRequest, ResultPlace } from '~~/shared/results'
+import type { FinishRequest } from '~~/shared/finish'
+import type { ResultPlace } from '~~/shared/results'
 
 // The stage's changes (#257, Q6 of review 0.7): the Host's Session, round and Countdown actions and the Players' Veto and clip
 // actions, each one `send` to its path. The page holds no request string; a refused change shows the shared error copy, and the
@@ -28,6 +29,8 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
 
   /** Tosses the coin for the Session (#235). */
   const toss = () => send('POST', 'coin')
+  /** Starts the Award ceremony of the finished Event (#309). Not quiet: a refused double start shows „Die Siegerehrung läuft noch.“ */
+  const startCeremony = () => send('POST', 'ceremony')
 
   /** Starts, pauses or resets the Countdown (#236). */
   const countdown = (action: CountdownCommand) => send('POST', `countdown/${action}`)
@@ -38,8 +41,10 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /**
    * Finishes the Event with the outcome the Host held and the Parties he saw on Place 1 (#277, #278, review 0.8 S2); the dock's hold calls this
    * after the hold and learns whether the server took it. The server refuses with `standings_changed` when either differs from the Standings now.
+   * A retry after a lost answer finds the Phase `finished` and answers `wrong_phase`: the first press worked, so it is quiet and counts as taken
+   * (#288, as the last-game path does). The Event is refetched and the page reads finished.
    */
-  const finish = (request: FinishRequest) => send('POST', 'finish', { body: { outcome: request.outcome, winners: request.winners } })
+  const finish = (request: FinishRequest) => send('POST', 'finish', { body: { outcome: request.outcome, winners: request.winners }, quiet: ['wrong_phase'] })
 
   /**
    * Raises the Game count by one while the Standings are a Tie (#278); the dock button learns whether the server took it. A second press finds the count
@@ -53,5 +58,5 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /** Removes a Session, whose Slot goes back to the poll (#55). */
   const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
-  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, countdown, endSession, finish, lastGame, reopenSession, removeSession }
+  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, startCeremony, countdown, endSession, finish, lastGame, reopenSession, removeSession }
 }

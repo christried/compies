@@ -23,6 +23,7 @@ export function useRowDrag(options: RowDragOptions) {
   const dropIndex = ref<number | null>(null)
 
   let middles: number[] = []
+  // A second copy of the press-and-hold machine in useRowDrag/useBoardDrag (review 0.8 Q5, #285): merge both into one usePointerPress when a third list is dragged or either one needs its next bug fix.
   let press: { index: number, pointerId: number, x: number, y: number, touch: boolean, timer?: ReturnType<typeof setTimeout> } | null = null
 
   function listen() {

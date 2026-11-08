@@ -11,14 +11,14 @@ import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
-// The Game pool of an Event (#146). Since 0.8 there is no Tiebreaker pool (ADR 0014, #279): a `tiebreaker` list in a request is
-// accepted and ignored, created with the Event, read back by the Host in full, by every other Member as picture and name only
-// while the Pool preview is on (#148, #224, #225), and otherwise they learn nothing about them (#222).
+// The Game pool of an Event (#146, ADR 0014, #286): the list under `pool`, created with the Event, read back by the Host in full,
+// by every other Member as picture and name only while the Pool preview is on (#148, #224, #225), and otherwise they learn
+// nothing about it (#222).
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 
-describe('the pool of an Event (#146, #279)', () => {
+describe('the pool of an Event (#146, #286)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: ReturnType<typeof createTestServer>
   let hostCookie: string
@@ -87,45 +87,23 @@ describe('the pool of an Event (#146, #279)', () => {
   }
 
   describe('POST /api/e', () => {
-    it('stores the Game pool with the Event, and no Tiebreaker row', async () => {
+    it('stores the Game pool with the Event', async () => {
       const kart = await newGame('Mario Kart')
       const pong = await newGame('Pong')
 
-      const { slug } = await createdEvent({ pools: { main: [kart.id, pong.id] } })
+      const { slug } = await createdEvent({ pool: [kart.id, pong.id] })
 
       const [row] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-      const rows = (await poolRows()).map(({ eventId, gameId, pool }) => ({ eventId, gameId, pool }))
+      const rows = (await poolRows()).map(({ eventId, gameId }) => ({ eventId, gameId }))
       expect(rows).toHaveLength(2)
       expect(rows).toEqual(expect.arrayContaining([
-        { eventId: row!.id, gameId: kart.id, pool: 'main' },
-        { eventId: row!.id, gameId: pong.id, pool: 'main' },
+        { eventId: row!.id, gameId: kart.id },
+        { eventId: row!.id, gameId: pong.id },
       ]))
     })
 
-    it('accepts a tiebreaker list from the 0.7 client and stores only the Game pool (#279)', async () => {
-      const kart = await newGame('Mario Kart')
-      const pong = await newGame('Pong')
-      const chess = await newGame('Schach')
-
-      const response = await create({ pools: { main: [kart.id], tiebreaker: [pong.id, chess.id] } })
-
-      expect(response.status).toBe(200)
-      const rows = await poolRows()
-      expect(rows.map(row => [row.gameId, row.pool])).toEqual([[kart.id, 'main']])
-    })
-
-    it('ignores a tiebreaker list that holds garbage, an unknown game or duplicates, and still creates the Event (#279)', async () => {
-      const kart = await newGame('Mario Kart')
-
-      for (const tiebreaker of [[1], ['00000000-0000-4000-8000-000000000000'], [kart.id, kart.id]]) {
-        const response = await create({ pools: { main: [kart.id], tiebreaker } })
-        expect(response.status).toBe(200)
-      }
-      expect((await poolRows()).every(row => row.pool === 'main')).toBe(true)
-    })
-
-    it('allows an empty Game pool, and no pools at all', async () => {
-      await createdEvent({ pools: { main: [] } })
+    it('allows an empty Game pool, and no pool at all', async () => {
+      await createdEvent({ pool: [] })
       await createdEvent({})
 
       expect(await poolRows()).toEqual([])
@@ -135,7 +113,7 @@ describe('the pool of an Event (#146, #279)', () => {
     it('refuses a game that is not in the library with unknown_game and creates no Event', async () => {
       const kart = await newGame('Mario Kart')
 
-      const response = await create({ pools: { main: [kart.id, '00000000-0000-4000-8000-000000000000'] } })
+      const response = await create({ pool: [kart.id, '00000000-0000-4000-8000-000000000000'] })
 
       expect(response.status).toBe(400)
       expect(response.statusText).toBe('unknown_game')
@@ -146,73 +124,82 @@ describe('the pool of an Event (#146, #279)', () => {
     it('refuses a malformed Game pool with invalid_pools and creates no Event', async () => {
       const kart = await newGame('Mario Kart')
 
-      for (const pools of ['main', { main: 'x' }, { main: ['nope'] }, { main: [kart.id, kart.id] }]) {
-        const response = await create({ pools })
+      for (const pool of ['main', { main: [kart.id] }, ['nope'], [kart.id, kart.id], [42]]) {
+        const response = await create({ pool })
         expect(response.status).toBe(400)
         expect(response.statusText).toBe('invalid_pools')
       }
       expect(await testDb.db.select().from(events)).toEqual([])
     })
+
+    it('refuses the old shape, a `pools` key of any value, with invalid_pools and creates no Event (#286)', async () => {
+      const kart = await newGame('Mario Kart')
+
+      for (const pools of [{ main: [kart.id] }, { main: [] }, [kart.id], 'main', null]) {
+        const response = await create({ pools })
+        expect(response.status).toBe(400)
+        expect(response.statusText).toBe('invalid_pools')
+      }
+      const both = await create({ pool: [kart.id], pools: { main: [kart.id] } })
+      expect(both.status).toBe(400)
+      expect(both.statusText).toBe('invalid_pools')
+      expect(await testDb.db.select().from(events)).toEqual([])
+      expect(await poolRows()).toEqual([])
+    })
   })
 
   describe('GET /api/e/:slug', () => {
-    it('gives the Host the Game pool in full, sorted by name, and no other pool', async () => {
+    it('gives the Host the Game pool in full, as a list sorted by name', async () => {
       const zebra = await newGame('Zebra Rennen')
       const alpha = await newGame('alpha Quest', { playersMin: 2, playersMax: 4, suitabilities: ['teams'] })
       const beta = await newGame('Beta Bowl', { youtubeId: undefined })
-      const { slug } = await createdEvent({ pools: { main: [zebra.id, beta.id, alpha.id], tiebreaker: [zebra.id] } })
+      const { slug } = await createdEvent({ pool: [zebra.id, beta.id, alpha.id] })
 
       const view = await read(hostCookie, slug)
 
-      expect(Object.keys(view.pools!)).toEqual(['main'])
-      expect(view.pools).toEqual({
-        main: [
-          { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: null },
-          { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
-          { id: zebra.id, name: 'Zebra Rennen', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
-        ],
-      })
+      expect(view.pool).toEqual([
+        { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: null },
+        { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
+        { id: zebra.id, name: 'Zebra Rennen', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
+      ])
     })
 
     it('gives a Member who may see the pool only the picture and name of each game, even when it has notes (#224)', async () => {
       const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby', playersMin: 2, suitabilities: ['teams'] })
       const pong = await newGame('Pong')
-      const { slug, inviteUrl } = await createdEvent({ pools: { main: [kart.id, pong.id] } })
+      const { slug, inviteUrl } = await createdEvent({ pool: [kart.id, pong.id] })
       const { cookie } = await signIn(testDb.db, member)
       const invite = new URL(inviteUrl).pathname.slice('/e/'.length)
       expect((await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
 
-      const pools = (await read(cookie, slug)).pools!
+      const pool = (await read(cookie, slug)).pool!
 
-      expect(Object.keys(pools)).toEqual(['main'])
-      expect(pools).toEqual({
-        main: [
-          { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null },
-          { id: pong.id, name: 'Pong', imageUrl: null, youtubeId: null },
-        ],
-      })
+      expect(pool).toEqual([
+        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null },
+        { id: pong.id, name: 'Pong', imageUrl: null, youtubeId: null },
+      ])
     })
 
     it('gives the Host every field of a pool game, the notes too (#224)', async () => {
       const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden', playersMin: 2, playersMax: 4 })
-      const { slug } = await createdEvent({ pools: { main: [kart.id] } })
+      const { slug } = await createdEvent({ pool: [kart.id] })
 
-      expect((await read(hostCookie, slug)).pools!.main).toEqual([
+      expect((await read(hostCookie, slug)).pool!).toEqual([
         { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Settings: 3 Runden' },
       ])
     })
 
-    it('gives the Host an empty Game pool for an Event without pools', async () => {
+    it('gives the Host an empty Game pool for an Event without a pool', async () => {
       const { slug } = await createdEvent({})
 
-      expect((await read(hostCookie, slug)).pools).toEqual({ main: [] })
+      expect((await read(hostCookie, slug)).pool).toEqual([])
     })
 
     it('gives every other Member nothing about the pools under a Hidden wheel, no count and not a trace of the games (the full test is hidden-wheel.test.ts, #148, #222)', async () => {
       const secret = await newGame('Geheimes Spiel')
       const other = await newGame('Anderes Spiel')
       const settings = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 }
-      const { slug, inviteUrl } = await createdEvent({ settings, pools: { main: [secret.id, other.id], tiebreaker: [secret.id] } })
+      const { slug, inviteUrl } = await createdEvent({ settings, pool: [secret.id, other.id] })
       const { cookie } = await signIn(testDb.db, member)
       const invite = new URL(inviteUrl).pathname.slice('/e/'.length)
       expect((await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
@@ -221,7 +208,7 @@ describe('the pool of an Event (#146, #279)', () => {
       const raw = await response.text()
       const view = JSON.parse(raw) as EventView
 
-      expect(view.pools).toBeNull()
+      expect(view.pool).toBeNull()
       expect(raw).not.toContain('Geheimes Spiel')
       expect(raw).not.toContain('Anderes Spiel')
       expect(raw).not.toContain(secret.id)

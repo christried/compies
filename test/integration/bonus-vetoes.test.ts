@@ -122,7 +122,7 @@ describe('Bonus Vetoes (#233)', () => {
       { name: 'Dart', createdBy: hostRow!.id },
       { name: 'Uno', createdBy: hostRow!.id },
     ]).returning()
-    await testDb.db.insert(eventPoolGames).values(inserted.map(game => ({ eventId: eventRow!.id, gameId: game.id, pool: 'main' as const })))
+    await testDb.db.insert(eventPoolGames).values(inserted.map(game => ({ eventId: eventRow!.id, gameId: game.id })))
     if (started) await startRunningSession(request, testDb.db, { slug, hostCookie, seated: [{ cookie: one, email: players.one.email }, { cookie: two, email: players.two.email }] })
     notifier.clear()
     return { slug, eventId: eventRow!.id, hostCookie, one, two }

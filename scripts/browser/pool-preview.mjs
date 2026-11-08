@@ -1,9 +1,10 @@
 // The two-account check of the Pool preview and the pool games' visibility (#224, #225): the Dev Host at 1440 px, the Dev
 // Member at 390 px on one Event of its own. A Member sees picture and name of a pool game only (notes and player count are
 // the Host's); the Host switches the Pool preview off and on and the Member's open page follows without a reload.
-// Usage: node scripts/browser/pool-preview.mjs   (needs pnpm dev and pnpm dev:realtime; one PASS or FAIL line per check, exit code 1 on any FAIL)
+// Usage: node scripts/browser/pool-preview.mjs   (needs pnpm dev and pnpm dev:realtime; one PASS or FAIL line per check, exit code 1 on any FAIL;
+// the lines also go to <tmp>/compies-browser/pool-preview/results.log)
 import { launch, sleep } from './chrome.mjs'
-import { api, createEvent, createGame, joinEvent, open, patchSettings } from './kit.mjs'
+import { api, createEvent, createGame, joinEvent, open, patchSettings, results } from './kit.mjs'
 
 const stamp = Date.now().toString(36)
 const gameName = `Pool-Check ${stamp}`
@@ -12,11 +13,8 @@ const card = 'section:has(> dl)'
 /** The row of the pool game on the Event page: the card's list entry that carries its name. */
 const rowOf = `[...document.querySelectorAll(${JSON.stringify(`${card} li`)})].find(li => li.innerText.includes(${JSON.stringify(gameName)}))`
 
-let failed = false
-function check(name, passed, detail = '') {
-  if (!passed) failed = true
-  console.log(`${passed ? 'PASS' : 'FAIL'}  ${name}${passed || !detail ? '' : `  (${detail})`}`)
-}
+const log = results('pool-preview')
+const { check } = log
 
 /** Polls `read` until it returns true, for at most `seconds`. */
 async function within(seconds, read) {
@@ -36,7 +34,7 @@ try {
   const { slug } = await createEvent(host, {
     name: `Pool-Check ${stamp}`,
     settings: { selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null, poolPreview: true },
-    pools: { main: [game.id] },
+    pool: [game.id],
   })
   await joinEvent(member, slug, host)
   console.log(`Event ${slug}, game ${game.id}`)
@@ -46,7 +44,7 @@ try {
 
   const view = async tab => (await api(tab, 'GET', `/api/e/${slug}`)).body
   const memberView = await view(member)
-  const faces = memberView.pools?.main ?? []
+  const faces = memberView.pool ?? []
   check('Member: the pool games carry exactly id, name, imageUrl, youtubeId', faces.length === 1 && Object.keys(faces[0]).sort().join() === 'id,imageUrl,name,youtubeId', JSON.stringify(faces))
   check('Member: no notes anywhere in the read', !JSON.stringify(memberView).includes(notes))
 
@@ -59,14 +57,14 @@ try {
   check('Host: the „Notizen“ button', await hasNotesButton(host))
   check('Host: the player count', await hasPlayers(host))
 
-  // The Pool preview off: the Member's open page loses the list without a reload, and the read withholds the pools.
+  // The Pool preview off: the Member's open page loses the list without a reload, and the read withholds the pool.
   await member.evaluate('window.__sameDocument = true')
   await patchSettings(host, slug, { poolPreview: false })
   const gone = await within(5, () => member.evaluate(`!(${rowOf}) && document.querySelectorAll(${JSON.stringify(`${card} li`)}).length === 0`))
   check('Preview off: the Member\'s open page has no pool list within 5 s', gone)
   check('Preview off: the page was not reloaded', await member.evaluate('window.__sameDocument === true'))
   const hidden = await view(member)
-  check('Preview off: the read sends pools: null', hidden.pools === null, JSON.stringify(hidden.pools))
+  check('Preview off: the read sends pool: null', hidden.pool === null, JSON.stringify(hidden.pool))
   check('Preview off: no notes in the read', !JSON.stringify(hidden).includes(notes))
 
   // On again: the list is back.
@@ -82,4 +80,4 @@ finally {
   host.close()
   member.close()
 }
-process.exit(failed ? 1 : 0)
+process.exit(log.failed ? 1 : 0)

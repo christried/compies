@@ -27,7 +27,7 @@ export function teamsText(settings: Pick<EventSettings, 'teamCount' | 'teamSize'
 
 /**
  * „Glücksrad (verdeckt)“, „Glücksrad, Spiele erst am Rad“, „Host-Wahl, Spiele erst beim Setzen“, „Host-Wahl“ (#225).
- * A Hidden wheel is told apart from a Pool preview that is off: the pools are always unseen under it.
+ * A Hidden wheel is told apart from a Pool preview that is off: the pool is always unseen under it.
  */
 export function modeText(settings: Pick<EventSettings, 'selectionMode' | 'hiddenWheel' | 'poolPreview'>, t: Translate): string {
   const mode = t(MODE_NAME[settings.selectionMode])
@@ -60,7 +60,7 @@ export interface SummaryRow { key: string, label: string, value: string, setting
 export function summaryRows(
   settings: EventSettings,
   t: Translate,
-  extra: { pools?: { main: number }, dates?: string } = {},
+  extra: { pool?: number, dates?: string } = {},
 ): SummaryRow[] {
   const rows: SummaryRow[] = [
     { key: 'format', label: t('stepper.summary.format'), value: teamsText(settings, t), settings: ['format', 'teamCount', 'teamSize'] },
@@ -72,7 +72,7 @@ export function summaryRows(
     rows.push({ key: 'vetoes', label: t('stepper.summary.vetoes'), value: t('stepper.summary.vetoValue', { n: settings.vetoAllowance }), settings: ['vetoAllowance'] })
   }
   rows.push({ key: 'points', label: t('stepper.summary.points'), value: pointsText(settings.pointsTable, t), settings: ['pointsTable'] })
-  if (extra.pools) rows.push({ key: 'pool', label: t('stepper.summary.pool'), value: t('stepper.summary.poolValue', extra.pools, extra.pools.main), settings: [] })
+  if (extra.pool !== undefined) rows.push({ key: 'pool', label: t('stepper.summary.pool'), value: t('stepper.summary.poolValue', { n: extra.pool }, extra.pool), settings: [] })
   if (extra.dates) rows.push({ key: 'dates', label: t('stepper.summary.dates'), value: extra.dates, settings: [] })
   return rows
 }

@@ -25,6 +25,9 @@ coverage
 .claude/settings.local.json
 .claude/worktrees/
 
+# A browser-check agent's own scripts (docs/agents/browser-frame.md)
+scripts/browser/scratch/
+
 # Local secrets of the realtime Worker, and wrangler state
 .dev.vars
 .wrangler

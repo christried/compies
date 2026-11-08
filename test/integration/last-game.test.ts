@@ -130,8 +130,8 @@ describe('The last game', () => {
     ]).returning()
     const [halo, kart, schach] = inserted as [typeof inserted[number], typeof inserted[number], typeof inserted[number]]
     await testDb.db.insert(eventPoolGames).values([
-      { eventId, gameId: halo.id, pool: 'main' },
-      { eventId, gameId: kart.id, pool: 'main' },
+      { eventId, gameId: halo.id },
+      { eventId, gameId: kart.id },
     ])
 
     const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
@@ -278,6 +278,13 @@ describe('The last game', () => {
 
       expect(await errorOf(await send('POST', `/api/e/${slug}/last-game`, cookie))).toEqual({ status: 409, code: 'wrong_phase' })
       expect(await eventRowOf(pollEvent!.id)).toEqual(before)
+    })
+
+    it('refuses the Host in an Event that is not set up with wrong_phase (#288: the rule\'s order, after the settings are read)', async () => {
+      const game = await running()
+      await testDb.db.update(events).set({ teamCount: null }).where(eq(events.id, game.eventId))
+
+      expect(await errorOf(await addLastGame(game))).toEqual({ status: 409, code: 'wrong_phase' })
     })
 
     it('refuses fewer Results than the Game count with results_missing, and writes nothing', async () => {

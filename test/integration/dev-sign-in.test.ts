@@ -73,12 +73,14 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
     }
   })
 
-  it('answers the API 404 on a production server', async () => {
+  // The staging build carries the route (#247) and runs with NODE_ENV=production, like every Vercel build. Which build
+  // carries it is decided once, at build time (stage.ts, test/build/dev-sign-in.test.ts); the handler adds no second check.
+  it('signs in on a server that runs with NODE_ENV=production, as staging does', async () => {
     vi.stubEnv('NODE_ENV', 'production')
-    const { response, user } = await signInAs('?as=admin')
+    const { response, user } = await signInAs('?as=member&to=/e/staging-check')
 
-    expect(response.status).toBe(404)
-    expect(response.headers.getSetCookie()).toEqual([])
-    expect(user).toBeNull()
+    expect(response.status).toBe(302)
+    expect(response.headers.get('location')).toBe('/e/staging-check')
+    expect(user).toMatchObject({ displayName: 'Dev Member', canHost: false, isAdmin: false })
   })
 })

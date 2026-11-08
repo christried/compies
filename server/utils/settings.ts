@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { eventPoolGames, events } from '../db/schema'
 import { parsePoolChange } from '../domain/pools'
 import { checkSettingsChange, floorsAt, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
@@ -7,12 +7,22 @@ import { moveMember, readSeats } from './board'
 import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange, EventRow } from './event-access'
-import { assertGamesExist } from './pools'
+import { assertGamesExist, assertNoOldPools } from './pools'
 import { roundBeingDrawn } from './rounds'
 import { floorFacts } from './settings-floors'
 import { asRecord } from '../../shared/record'
 
 const BENCH: Place = { zone: 'bench' }
+
+/**
+ * The Event's settings for a rule that needs them (#288): an Event that is not set up cannot be running, so the rule's order
+ * gives it wrong_phase.
+ */
+export function requireSettings(eventRow: EventRow): EventSettings {
+  const settings = settingsFromRow(eventRow)
+  if (settings === null) throw apiError('wrong_phase')
+  return settings
+}
 
 /**
  * The Host's change of an Event's settings and pools (#147, #183), inside the caller's transaction on the locked Event.
@@ -28,15 +38,17 @@ export async function applySettingsChange(
   body: unknown,
   { publish, hostId, now }: { publish: EventChange['publish'], hostId: string, now: Date },
 ): Promise<{ before: EventSettings | null, after: EventSettings }> {
-  const { settings: change, pools: rawPools } = asRecord(body)
-  const parsedPools = parsePoolChange(rawPools)
-  if (!parsedPools.ok) throw apiError(parsedPools.error)
-  const { pools } = parsedPools
+  const record = asRecord(body)
+  assertNoOldPools(record)
+  const { settings: change, pool: rawPool } = record
+  const parsedPool = parsePoolChange(rawPool)
+  if (!parsedPool.ok) throw apiError(parsedPool.error)
+  const { pool } = parsedPool
 
-  // checkSettingsChange checks the Phase too, but a request with pools only never reaches it.
+  // checkSettingsChange checks the Phase too, but a request with a pool only never reaches it.
   if (!settingsEditable(eventRow.phase)) throw apiError('wrong_phase')
   // A body with neither key would change nothing; a top-level `{ poolPreview }` is the likely slip, so refuse it (retro 0.6).
-  if (change === undefined && rawPools === undefined) throw apiError('invalid_settings')
+  if (change === undefined && rawPool === undefined) throw apiError('invalid_settings')
   const before = settingsFromRow(eventRow)
   let after: EventSettings
   if (change !== undefined) {
@@ -45,17 +57,15 @@ export async function applySettingsChange(
     if (!checked.ok) throw apiError(checked.error)
     after = checked.settings
   }
-  // An Event that is not set up must get its settings first: pools alone are not enough.
+  // An Event that is not set up must get its settings first: a pool alone is not enough.
   else if (before === null) throw apiError('invalid_settings')
   else after = before
 
-  // The Game pool only (#279): a Tiebreaker row, the 0.7 code's during the switch-over, is never read or replaced here.
-  const main = pools.main
-  if (main !== undefined) await assertGamesExist(tx, main)
+  if (pool !== undefined) await assertGamesExist(tx, pool)
   if (change !== undefined) await tx.update(events).set(after).where(eq(events.id, eventRow.id))
-  if (main !== undefined) {
-    await tx.delete(eventPoolGames).where(and(eq(eventPoolGames.eventId, eventRow.id), eq(eventPoolGames.pool, 'main')))
-    if (main.length > 0) await tx.insert(eventPoolGames).values(main.map(gameId => ({ eventId: eventRow.id, gameId, pool: 'main' as const })))
+  if (pool !== undefined) {
+    await tx.delete(eventPoolGames).where(eq(eventPoolGames.eventId, eventRow.id))
+    if (pool.length > 0) await tx.insert(eventPoolGames).values(pool.map(gameId => ({ eventId: eventRow.id, gameId })))
   }
   if (before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, now, eventRow.id, after.teamCount, hostId)
   return { before, after }

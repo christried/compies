@@ -8,7 +8,8 @@ import { placeOf } from '../../shared/board'
 import type { EventView } from '../../shared/event'
 import type { BonusVetoView, ResultView, RoundView, VetoView, WheelView } from '../../shared/stage'
 import type { RoundGame } from '../../shared/game'
-import { finishRejection, lastGameRejection, leadersOf, outcomeOf, pointsForPlace, standingsAndEnd } from '../../shared/results'
+import { finishRejection, lastGameRejection, leadersOf, outcomeOf, standingsAndEnd } from '../../shared/finish'
+import { pointsForPlace } from '../../shared/results'
 import { eventHasWheel, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
@@ -17,11 +18,12 @@ import { roundGameView } from './library'
 import { readClip } from './clip'
 import { countdownView, readCountdown } from './countdown'
 import { coinView, readShownToss } from './coin'
+import { ceremonyViewOf } from './ceremony'
 import { readGamePool, setRejectionOf, spinRejectionOf, type DrawRow, type RoundRow } from './rounds'
 import { knownVetoRows, partyVetoesLeft, readBonusTeams, readVetoes, type VetoRow } from './vetoes'
 
 // The stage sections of the Event read (#256, review 0.7 Q1): the round family, the Results, the Standings and the end (#274),
-// the Lucky Wheel, the clip, the Countdown, the Coin flip and the Bonus Vetoes. Each section takes the same context and returns
+// the Lucky Wheel, the clip, the Countdown, the Coin flip, the Award ceremony and the Bonus Vetoes. Each section takes the same context and returns
 // its own fields of EventView; the handler (server/api/e/[slug].get.ts) runs them together. A new stage piece is one entry in `stageSections`.
 // Rows that more than one section needs are read once by readEventRows (the Rounds with their draws, the Results), and passed on;
 // roundsSection's first Promise.all reads the pool, the Vetoes and the Bonus rows, and the other sections read what they need themselves.
@@ -31,8 +33,37 @@ export interface StageContext { db: Db, eventRow: EventRow, rows: EventRows, vie
 /** One piece of the stage in the Event read: returns its own fields of the view. */
 export type StageSection = (ctx: StageContext) => Promise<Partial<EventView>>
 
-/** The stage's sections, run together by the Event read. A new piece (the ceremony) is one entry here. */
-export const stageSections: StageSection[] = [roundsSection, resultsSection, clipSection, countdownSection, coinSection]
+/**
+ * The stage's sections, run together by the Event read. A new piece is one entry here. A tuple, not a `StageSection[]`,
+ * so `StageFields` below can be derived from what each section returns (review 0.8 Q7).
+ */
+export const stageSections = [roundsSection, resultsSection, clipSection, countdownSection, coinSection, ceremonySection] as const satisfies readonly StageSection[]
+
+type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) extends (value: infer I) => void ? I : never
+
+/**
+ * The fields the stage sections give the view together, derived from their return types: the handler's `{ ...fixed, ...stage }` is checked
+ * against EventView, so a section that forgets one of its fields fails `pnpm typecheck`, not only the integration test (review 0.8 Q7).
+ */
+export type StageFields = UnionToIntersection<Awaited<ReturnType<(typeof stageSections)[number]>>>
+
+/**
+ * What the three Lucky Wheel readers (the pool warning, the wheel, the Vetoes) share, built once in roundsSection after its first reads
+ * (review 0.8 Q4): the request's context, the Round and draw rows, the Vetoes and Bonus rows, and the games left. Each reader takes it
+ * plus only what is its own.
+ */
+export interface RoundFacts {
+  eventRow: EventRow
+  settings: EventSettings | null
+  rows: EventRows
+  viewer: Viewer
+  now: Date
+  draws: DrawRow[]
+  roundRows: RoundRow[]
+  vetoRows: readonly VetoRow[]
+  bonusTeams: readonly number[]
+  left: string[]
+}
 
 /**
  * The open Rounds (#228), in start order, and for the Host the answer to setting the next game. A set game is visible to
@@ -59,15 +90,14 @@ export async function roundsSection({ db, eventRow, rows, viewer, now }: StageCo
   ])
   const left = gamesLeft(pool, draws, roundRows)
   const places = rows.members.map(row => placeOf(row))
-  // The Host's pool warning (#234): only the Host reads it, and only while the Event runs (the setup hint covers the rest).
-  const warning = viewer.isHost && eventRow.phase === 'running' && settings !== null ? poolWarningOf(eventRow, settings, rows, viewer, roundRows, draws, vetoRows, bonusTeams, left.length, now) : null
+  const facts: RoundFacts = { eventRow, settings, rows, viewer, now, draws, roundRows, vetoRows, bonusTeams, left }
   return {
     rounds: open,
     roundBeingDrawn: viewer.isHost && roundRows.some(round => isBeingDrawn(round, draws)),
     setGame: viewer.isHost
-      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, draws, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, draws, left, true), respin: roundRows.some(round => waitsForRespin(round, draws)), left, poolWarning: warning }
+      ? { rejection: setRejectionOf(eventRow, rows.sessions, places, roundRows, draws, true), spinRejection: spinRejectionOf(eventRow, rows.sessions, places, roundRows, draws, left, true), respin: roundRows.some(round => waitsForRespin(round, draws)), left, poolWarning: poolWarningOf(facts) }
       : null,
-    wheel: settings !== null && onWheel ? await wheelView(db, eventRow, rows, viewer, settings.hiddenWheel, left, draws, now, vetoRows, bonusTeams) : null,
+    wheel: settings !== null && onWheel ? await wheelView(db, facts, settings.hiddenWheel) : null,
     bonusVetoes: bonusVetoView(eventRow, settings, viewer, bonusTeams),
   }
 }
@@ -114,7 +144,7 @@ export async function resultsSection({ eventRow, rows, viewer, now }: StageConte
  * The window's draw (#232) is the Event's latest draw of any kind, a spin or a game the Host set, and only while it has a window
  * (wheelView picks it): a later draw without one takes the panel away. `game` is its card, already cut to what the viewer may know.
  */
-function vetoView(eventRow: EventRow, rows: EventRows, viewer: Viewer, draws: readonly DrawRow[], vetoRows: readonly VetoRow[], bonusTeams: readonly number[], windowDraw: DrawRow | undefined, game: RoundGame | null, now: Date): VetoView {
+function vetoView({ eventRow, rows, viewer, now, draws, vetoRows, bonusTeams }: RoundFacts, windowDraw: DrawRow | undefined, game: RoundGame | null): VetoView {
   const viewerTeam = partyOf(rows, viewer)
   const windowOpen = (draw: Pick<DrawRow, 'vetoEndsAt'>) => draw.vetoEndsAt !== null && draw.vetoEndsAt > now
   // Another Party's cast on a draw whose window still runs does not exist for this viewer (knownVetoRows, shared with the pool warning).
@@ -148,12 +178,14 @@ function partyOf(rows: EventRows, viewer: Viewer): number | null {
 /**
  * The Host's pool warning (#234, spec #218 § Pool warning): the games left against the games the Host may still need. The Vetoes count
  * as the Host may know them (knownVetoRows): a Veto cast on a draw whose window still runs counts only when the Host plays in that
- * Party, so the warning does not flip when someone casts a sealed Veto. Under Host pick the Vetoes part drops out.
+ * Party, so the warning does not flip when someone casts a sealed Veto. Under Host pick the Vetoes part drops out. Only the Host reads it,
+ * and only while the Event runs (the setup hint covers the rest).
  */
-function poolWarningOf(eventRow: EventRow, settings: EventSettings, rows: EventRows, viewer: Viewer, roundRows: RoundRow[], draws: DrawRow[], vetoRows: readonly VetoRow[], bonusTeams: readonly number[], left: number, now: Date): PoolWarning | null {
+function poolWarningOf({ eventRow, settings, rows, viewer, now, draws, roundRows, vetoRows, bonusTeams, left }: RoundFacts): PoolWarning | null {
+  if (!viewer.isHost || eventRow.phase !== 'running' || settings === null) return null
   const vetoesLeft = eventHasWheel(settings) ? partyVetoesLeft(eventRow, knownVetoRows(vetoRows, draws, partyOf(rows, viewer), now), bonusTeams) : null
   return poolWarning({
-    left,
+    left: left.length,
     gameCount: settings.gameCount,
     roundsStarted: roundsStarted(roundRows),
     roundsWaiting: roundRows.filter(round => waitsForRespin(round, draws)).length,
@@ -167,7 +199,8 @@ function poolWarningOf(eventRow: EventRow, settings: EventSettings, rows: EventR
  * of that spin, and the drawn game's name and card only from the stop instant on, the Host's always. Nothing about any other
  * game reaches that Member: the games are selected only when the viewer may read them.
  */
-async function wheelView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Viewer, hidden: boolean, left: string[], draws: DrawRow[], now: Date, vetoRows: readonly VetoRow[], bonusTeams: readonly number[]): Promise<WheelView> {
+async function wheelView(db: Db, facts: RoundFacts, hidden: boolean): Promise<WheelView> {
+  const { rows, viewer, now, draws, left } = facts
   const latestFirst = [...draws].sort((a, b) => b.committedAt.getTime() - a.committedAt.getTime() || (a.id < b.id ? 1 : -1))
   const spin = latestFirst.find(draw => draw.kind === 'spin')
   // The Veto window's draw (#232): the latest draw of any kind, when it has a window.
@@ -207,7 +240,7 @@ async function wheelView(db: Db, eventRow: EventRow, rows: EventRows, viewer: Vi
           current: latestFirst[0]?.id === spin.id && spin.outcome !== 'vetoed' && rows.rounds.some(({ round }) => round.id === spin.roundId && round.putBackAt === null),
         }
       : null,
-    vetoes: vetoView(eventRow, rows, viewer, draws, vetoRows, bonusTeams, windowDraw, windowGame ? roundGameView(windowGame) : null, now),
+    vetoes: vetoView(facts, windowDraw, windowGame ? roundGameView(windowGame) : null),
   }
 }
 
@@ -230,9 +263,17 @@ export async function countdownSection({ db, eventRow, rows }: StageContext): Pr
  * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member; null otherwise. Its
  * side is in the read for everybody, since the page shows it only from the landing on (the room carries it too).
  */
-export async function coinSection({ db, eventRow, rows }: StageContext): Promise<Pick<EventView, 'coin'>> {
-  const toss = await readShownToss(db, eventRow, rows.sessions)
+export async function coinSection({ db, rows }: StageContext): Promise<Pick<EventView, 'coin'>> {
+  const toss = await readShownToss(db, rows.sessions)
   return { coin: toss ? coinView(toss) : null }
+}
+
+/** The Award ceremony (#309, spec #308): the latest start of a finished Event, identical for every viewer (nothing in it is secret); null before the first start. */
+export async function ceremonySection({ eventRow, rows }: StageContext): Promise<Pick<EventView, 'ceremony'>> {
+  // The end of a run depends on how many Parties are on rank 1 (#315): the Standings of the Results rows, which a finished Event never changes.
+  const settings = settingsFromRow(eventRow)
+  const winners = settings === null ? 0 : leadersOf(standingsAndEnd(rows.results.map(entry => entry.places), settings).standings).length
+  return { ceremony: ceremonyViewOf(eventRow, winners) }
 }
 
 /**

@@ -2,7 +2,9 @@
 // the Coin flip and the Bonus Vetoes, and what the stage's actions answer. shared/event.ts reads them into EventView.
 import type { RoundGame } from './game'
 import type { BonusVetoRejection, PoolWarning, SetRejection, SpinRejection, VetoRejection } from './rounds'
-import type { FinishRejection, LastGameRejection } from './results'
+import type { EndFacts, FinishRejection, LastGameRejection } from './finish'
+import type { Standing } from './results'
+import type { CeremonyGag } from './ceremony'
 
 /**
  * An open Round on the stage (#228, GLOSSARY: Round): its game is set, it was not put back and it has no Result yet. It has no number:
@@ -123,6 +125,13 @@ export interface CountdownView { durationMs: number, remainingMs: number, starte
 export interface CoinView { id: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
 /** What `POST /api/e/:slug/coin` returns: the toss and its instants (ISO), #235. */
 export interface CoinTossed { tossId: string, side: 'heads' | 'tails', startedAt: string, landsAt: string }
+/**
+ * The Award ceremony of a finished Event (#309, spec #308): the latest start, the end of its run and its gag (ISO instants), the same for every
+ * viewer. Null before the first start, for an Event that is not finished and for one without settings. The end is derived (shared/ceremony.ts), never stored.
+ */
+export interface CeremonyView { startsAt: string, endsAt: string, gag: CeremonyGag }
+/** What `POST /api/e/:slug/ceremony` returns: the start that was made (#309). */
+export type CeremonyStarted = CeremonyView
 /** The Bonus Vetoes of the Event (#233): one count per Party, index 0 = team 1, and the Event-level reason the Host cannot grant one now (null when it can). */
 export interface BonusVetoView { granted: number[], rejection: BonusVetoRejection | null }
 /** What `POST /api/e/:slug/bonus-vetoes` returns: the Party and its Bonus Vetoes after the grant (#233). */
@@ -152,7 +161,7 @@ export interface ResultLineView { team: number, place: number, points: number, s
 export interface ResultView { roundId: string, number: number, game: RoundGame, places: ResultLineView[], corrected: boolean, correctedAt: string | null, resultAt: string }
 
 /** A Party's row in the Standings (#274): its team position, its rank (1 + the Parties with more points, so equal points share a rank) and its points. */
-export interface StandingView { team: number, rank: number, points: number }
+export type StandingView = Standing
 
 /**
  * How far the Event is (#274, #277): the Rounds with a Result out of the Game count. `complete`: they reach the Game count, so the Host may
@@ -160,11 +169,7 @@ export interface StandingView { team: number, rank: number, points: number }
  * Same for every Member. `finish`: the Host's part, why the Event cannot be finished now (null when it can); null for every other Member.
  * `lastGame` (#278): the Host's part too, why the last game cannot be added now (null when it can); null for every other Member.
  */
-export interface EndView {
-  played: number
-  gameCount: number
-  complete: boolean
-  tie: number[] | null
+export interface EndView extends EndFacts {
   finish: { rejection: FinishRejection | null } | null
   lastGame: { rejection: LastGameRejection | null } | null
 }

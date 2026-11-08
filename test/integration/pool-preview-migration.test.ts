@@ -90,10 +90,10 @@ describe('migration: Pool preview', () => {
   })
 
   it('shows a Member the pools of Host pick and of a visible wheel, and nothing about the pools of a Hidden wheel or an Event not set up', async () => {
-    expect((await memberRead('host-wahl')).pools).toMatchObject({ main: [{ name: 'Geheimspiel' }] })
-    expect((await memberRead('offenes-rad')).pools).toMatchObject({ main: [{ name: 'Geheimspiel' }] })
-    expect((await memberRead('verdecktes-rad')).pools).toBeNull()
-    expect((await memberRead('nicht-eingerichtet')).pools).toBeNull()
+    expect((await memberRead('host-wahl')).pool).toMatchObject([{ name: 'Geheimspiel' }])
+    expect((await memberRead('offenes-rad')).pool).toMatchObject([{ name: 'Geheimspiel' }])
+    expect((await memberRead('verdecktes-rad')).pool).toBeNull()
+    expect((await memberRead('nicht-eingerichtet')).pool).toBeNull()
   })
 
   it('reads an Event the old code wrote without a Pool preview (set up, visible wheel) as on', async () => {
@@ -102,6 +102,6 @@ describe('migration: Pool preview', () => {
     const view = await memberRead('alter-code')
 
     expect(view.settings?.poolPreview).toBe(true)
-    expect(view.pools).toMatchObject({ main: [{ name: 'Geheimspiel' }] })
+    expect(view.pool).toMatchObject([{ name: 'Geheimspiel' }])
   })
 })

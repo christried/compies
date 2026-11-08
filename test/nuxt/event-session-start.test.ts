@@ -389,7 +389,7 @@ describe('finishing the Event', () => {
 
     await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'winner', winners: [1] }]))
     await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
-    expect(pill(page)).toEqual(['Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
   })
 
   it('shows the toast of a refusal and reads the Event again: the Tie that came in meanwhile takes the primary away', async () => {
@@ -405,6 +405,23 @@ describe('finishing the Event', () => {
 
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toEqual(['Die Tabelle hat sich geändert. Schau sie dir nochmal an.']))
     await vi.waitFor(() => expect(pill(page)).not.toContain('Event abschließen 1 s halten'))
+  })
+
+  it('takes a finish whose first answer was lost as done: the retry answers wrong_phase, shows no toast, and the page reads finished', async () => {
+    // The first press finished the Event; its answer never reached the page, so the hold is sent again.
+    const store = serve(s => hostView(s, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, end: complete }))
+    registerEndpoint(`/api/e/${store.slug}/finish`, { method: 'POST', handler: () => {
+      store.set(hostView(store.slug, ENDED_ONE, { event: { isHost: true, phase: 'finished' }, end: complete }))
+      throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
+    } })
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
+    const button = page.findAll('[role="toolbar"] button').find(item => item.text().startsWith('Event abschließen'))!
+
+    await hold(button)
+
+    await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
+    expect(pill(page)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
+    expect(shownToasts()).toEqual([])
   })
 })
 
@@ -495,7 +512,7 @@ describe('a Tie at the end', () => {
     await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'tie', winners: [1, 2] }]))
     await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
     expect(page.get('h1').text()).toBe('Unentschieden')
-    expect(pill(page)).toEqual(['Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
   })
 
   it('posts the last game without a body and reads the Event again: the dock then offers the next game', async () => {

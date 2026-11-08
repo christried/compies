@@ -19,7 +19,7 @@ const SUN = '2090-06-26T18:30:00.000Z'
 const STARTED = '2090-06-25T18:34:00.000Z'
 
 function mountHead(sessions: PageInput['sessions'], fields: Partial<PageInput> = {}, isHost = false, extra: { winners?: number[], teams?: BoardTeam[] } = {}) {
-  const state = eventPageState({ settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll' }, setGame: null, wheel: null, countdown: null, coin: null, ...fields })
+  const state = eventPageState({ settings, sessions, missingDates: sessions.filter(session => session.startsAt === null).length, event: { phase: 'poll', isHost: false }, setGame: null, wheel: null, countdown: null, coin: null, end: null, ...fields })
   return mountSuspended(EventPageHead, { props: { state, isHost, ...extra }, attachTo: document.body })
 }
 
@@ -110,7 +110,7 @@ describe('EventPageHead', () => {
   // The finished Event (#277): the Head names the winner, or reads „Unentschieden“ for several (#278).
   describe('in a finished Event', () => {
     const ended = dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })
-    const FINISHED: Partial<PageInput> = { event: { phase: 'finished' } }
+    const FINISHED: Partial<PageInput> = { event: { phase: 'finished', isHost: false } }
     const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
 
     it('says the Event is over and names the winner by the Team\'s frozen name', async () => {

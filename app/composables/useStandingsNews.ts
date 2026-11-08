@@ -1,4 +1,4 @@
-import { teamName } from '~/utils/board'
+import { teamNameAt } from '~/utils/board'
 import { freshResult, marksOf, rankMoves, type StandingsNews } from '~/utils/standings-news'
 import type { EventView } from '~~/shared/event'
 import { winnersOf } from '~~/shared/results'
@@ -39,7 +39,7 @@ export function useStandingsNews(data: Readonly<Ref<EventView | null | undefined
   })
 
   function announce(view: EventView, kind: StandingsNews['kind'], number: number, before: StandingView[]): string {
-    const nameOf = (team: number) => teamName(view.teams.find(item => item.position === team) ?? team, t)
+    const nameOf = (team: number) => teamNameAt(view.teams, team, t)
     const moves = rankMoves(before, view.standings ?? [])
     return [
       t(kind === 'entered' ? 'table.announceSaved' : 'table.announceCorrected', { n: number }),

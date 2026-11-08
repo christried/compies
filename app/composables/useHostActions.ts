@@ -1,60 +1,61 @@
-import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer, Trophy } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
-import { coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
+import { ceremonyBlockedKey, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
-import { leadersOf } from '~~/shared/results'
+import { leadersOf } from '~~/shared/finish'
 
 // The Host's dock actions (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers (Event
-// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, or none after the last Session) and
+// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, Siegerehrung starten, or none after the last Session) and
 // dockLayout which actions sit where (named parts: primary, secondary, more; review 1.4 A4). Each action is one entry below.
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
 // a secondary hold. At a Tie (#278) „Unentschieden beenden“ takes the primary's place as a hold, and „Letztes Spiel hinzufügen“ is a plain
 // button beside it; the finish holds send the Parties on Place 1 they showed (review 0.8 S2). „Termin für Session m“ stays while another
 // Session still polls, and „Termine bearbeiten“ while the Date poll is open.
 // Every Phase before the Event finishes has Einstellungen and Einladen (#147). „Termin festlegen“ looks disabled with its reason
-// when no open future Slot can become a Date (#52). What each action does is the page's: it passes the handlers.
+// when no open future Slot can become a Date (#52). What each action does is the stage's change or a dialog the page owns (#283): the page passes `actions` and `dialogs`.
 
-export interface HostActionHandlers {
-  /** Opens the invite sheet. */
-  invite: () => void
-  /** Opens the Slot editor. */
-  editSlots: () => void
-  /** Opens the confirm dialog for the Date. */
-  setDate: () => void
-  /** Opens the start dialog. */
-  start: () => void
-  /** Ends the Running Session; the dock's hold calls it after the hold and learns whether the server took it. */
-  end: () => Promise<boolean>
-  /**
-   * Finishes the Event with a winner (#277); the dock's hold calls it after the hold and learns whether the server took it. The held label is the
-   * outcome sent (#278), `winners` the Parties on Place 1 of the Standings the dock showed (review 0.8 S2).
-   */
-  finish: (winners: number[]) => Promise<boolean>
-  /** Finishes the Event as a Tie (#278), like `finish`. */
-  finishTie: (winners: number[]) => Promise<boolean>
-  /** Adds the last game while the Standings are a Tie (#278); the button learns whether the server took it. */
-  lastGame: () => Promise<boolean>
-  /** Opens the picker for the next game (#228). */
-  setGame: () => void
-  /** Spins the Lucky Wheel (#229). */
-  spin: () => void
-  /** Opens the sheet that sets the Countdown (#236). */
-  countdown: () => void
-  /** Tosses the Coin flip (#235): no dialog; the page sends it and refetches the Event read. */
-  coin: () => void
-  /** Opens the sheet that grants a Party a Bonus Veto (#233). */
-  bonusVeto: () => void
+/** What the dock opens of the Host's dialogs (EventHostDialogs exposes them; the page passes its template ref). */
+export interface HostDialogs {
+  openSlotEditor: () => void
+  openConfirm: () => void
+  openStart: () => void
+  openSetGame: () => void
+  openCountdown: () => void
+  openBonusVeto: () => void
 }
 
 export function useHostActions(
   view: MaybeRefOrGetter<EventView | null | undefined>,
   slug: MaybeRefOrGetter<string>,
   { pollOpen, setBlocked, serverNow }: { pollOpen: MaybeRefOrGetter<boolean>, setBlocked: MaybeRefOrGetter<string | null>, serverNow: () => number },
-  handlers: HostActionHandlers,
+  { actions, dialogs, invite }: { actions: ReturnType<typeof useStageActions>, dialogs: MaybeRefOrGetter<HostDialogs | null | undefined>, invite: () => void },
 ) {
   const { t } = useI18n()
   const { toast } = useToast()
+
+  const handlers = {
+    invite,
+    editSlots: () => toValue(dialogs)?.openSlotEditor(),
+    setDate: () => toValue(dialogs)?.openConfirm(),
+    start: () => toValue(dialogs)?.openStart(),
+    /** Ends the Running Session; the dock's hold calls it after the hold and learns whether the server took it. */
+    end: actions.endSession,
+    // The label the Host held is the outcome, and the Parties on Place 1 the Host saw are the winners, that the server compares with the Standings (#277, #278,
+    // review 0.8 S2): a Correction during the hold is refused, not finished as something else. The hold learns whether the server took it.
+    finish: (winners: number[]) => actions.finish({ outcome: 'winner', winners }),
+    finishTie: (winners: number[]) => actions.finish({ outcome: 'tie', winners }),
+    /** Adds the last game while the Standings are a Tie (#278); the button learns whether the server took it. */
+    lastGame: actions.lastGame,
+    setGame: () => toValue(dialogs)?.openSetGame(),
+    spin: () => void actions.spin(),
+    countdown: () => toValue(dialogs)?.openCountdown(),
+    /** Tosses the Coin flip (#235): no dialog; the send refetches the Event read. */
+    coin: () => void actions.toss(),
+    bonusVeto: () => toValue(dialogs)?.openBonusVeto(),
+    /** Starts the Award ceremony of the finished Event (#309): a tap, no dialog; the send refetches the Event read. */
+    ceremony: () => void actions.startCeremony(),
+  }
 
   return computed((): DockAction[] => {
     const current = toValue(view)
@@ -72,6 +73,9 @@ export function useHostActions(
     // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
     const coinKey = coinBlockedKey(current, serverNow())
     const coinReason = coinKey === null ? undefined : t(coinKey)
+    // The ceremony's reason is the rule's, with the server clock (#309): it stays while a run plays, and the read at the run's end (viewInstants) clears it.
+    const ceremonyKey = ceremonyBlockedKey(current, serverNow())
+    const ceremonyReason = ceremonyKey === null ? undefined : t(ceremonyKey)
     // The Parties on Place 1 of the Standings this dock shows: what the finish tells the server the Host saw (review 0.8 S2).
     const winners = leadersOf(current.standings ?? [])
 
@@ -138,6 +142,15 @@ export function useHostActions(
         disabledReason: lastGameReason,
         dockOnly: true,
         run: guarded(lastGameReason, () => void handlers.lastGame()),
+      },
+      // The finished Event's primary (#309): a tap, not a hold, since it loses nothing. It stays after the first start, disabled while a run plays.
+      ceremony: {
+        key: 'ceremony',
+        label: t('dock.ceremony'),
+        icon: Trophy,
+        group: t('dock.group.event'),
+        disabledReason: ceremonyReason,
+        run: guarded(ceremonyReason, handlers.ceremony),
       },
       setGame: {
         key: 'setGame',

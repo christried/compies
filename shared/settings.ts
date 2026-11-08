@@ -1,7 +1,7 @@
 // Event settings (#138, release 1.3): the values the stepper, the settings rules and the schema share.
 
 import type { Seats } from './board'
-import { beforeFinish, type Phase } from './event'
+import { beforeFinish, type Phase } from './phase'
 import { isRecord } from './record'
 
 /** Formats (GLOSSARY: Format). Only `teams` can be chosen in 1.3; `ffa` is shown „Bald verfügbar“. */
@@ -143,12 +143,21 @@ export function tiePossible(gameCount: number, teamCount: number): boolean {
 }
 
 /**
+ * The three parts of the recommended Game pool size (#288): the Game count, the vetoes of all Parties (Veto allowance × team
+ * count) on the Lucky Wheel, and one game when a Tie is possible (the last game of ADR 0014). `vetoes` is 0 off the Lucky Wheel.
+ */
+export function poolNeed(settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>): { games: number, vetoes: number, extra: 0 | 1 } {
+  const vetoes = hasWheel(settings.selectionMode) ? (settings.vetoAllowance ?? 0) * settings.teamCount : 0
+  return { games: settings.gameCount, vetoes, extra: tiePossible(settings.gameCount, settings.teamCount) ? 1 : 0 }
+}
+
+/**
  * Recommended Game pool size: the Game count, plus the vetoes of all Parties (Veto allowance × team count) on the
  * Lucky Wheel, plus one game when a Tie is possible (the last game of ADR 0014). The Host pick adds only that one game.
  */
 export function recommendedPoolSize(settings: Pick<EventSettings, 'gameCount' | 'teamCount' | 'selectionMode' | 'vetoAllowance'>): number {
-  const vetoes = hasWheel(settings.selectionMode) ? (settings.vetoAllowance ?? 0) * settings.teamCount : 0
-  return settings.gameCount + vetoes + (tiePossible(settings.gameCount, settings.teamCount) ? 1 : 0)
+  const { games, vetoes, extra } = poolNeed(settings)
+  return games + vetoes + extra
 }
 
 /**
@@ -162,9 +171,7 @@ export function poolHint(
 ): null | { games: number, vetoes: number, extra: 0 | 1, needed: number, have: number } {
   const needed = recommendedPoolSize(settings)
   if (poolSize >= needed) return null
-  const vetoes = hasWheel(settings.selectionMode) ? (settings.vetoAllowance ?? 0) * settings.teamCount : 0
-  const extra = tiePossible(settings.gameCount, settings.teamCount) ? 1 : 0
-  return { games: settings.gameCount, vetoes, extra, needed, have: poolSize }
+  return { ...poolNeed(settings), needed, have: poolSize }
 }
 
 type Parsed = { ok: true, settings: EventSettings } | { ok: false, error: SettingsError }

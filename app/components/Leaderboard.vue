@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowDown, ArrowUp, Minus } from '@lucide/vue'
-import { teamName } from '~/utils/board'
+import { teamNameAt } from '~/utils/board'
 import { deltaPop, highlightRow, unwatched, winnerStamp } from '~/utils/motion'
 import { pointsDelta, rankMoves, type StandingsNews } from '~/utils/standings-news'
 import type { BoardTeam } from '~~/shared/event'
@@ -34,7 +34,7 @@ const headingId = useId()
 const root = useTemplateRef('root')
 const confetti = useTemplateRef('confetti')
 
-const nameOf = (team: number) => teamName(props.teams.find(item => item.position === team) ?? team, t)
+const nameOf = (team: number) => teamNameAt(props.teams, team, t)
 
 /** A Leaderboard that mounts with a news younger than this plays it (the first Result creates the stage block in the render that brings the news); an older one is a tab opened later. */
 const FRESH_MS = 1000
@@ -81,6 +81,9 @@ function pillOf(team: number) {
   // A real minus (U+2212), like the artboard's „−“; „+0“ for a Party that gained nothing.
   return { ...PILLS[kind], text: delta < 0 ? `−${-delta}` : `+${delta}` }
 }
+
+// Each row with its pill, computed once per change instead of three times per row (#288). The pill is set exactly while the news plays.
+const rows = computed(() => (props.standings ?? []).map(standing => ({ standing, pill: playing.value ? pillOf(standing.team) : null })))
 
 function burst(news: StandingsNews) {
   const card = root.value
@@ -169,7 +172,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
         :move-class="unwatched() ? undefined : MOVE_CLASS"
       >
         <tr
-          v-for="(standing, index) in standings"
+          v-for="({ standing, pill }, index) in rows"
           :key="standing.team"
           :data-team="standing.team"
           :style="{ '--lb-delay': `${index * STAGGER_MS}ms` }"
@@ -200,17 +203,17 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
                 leave-to-class="opacity-0"
               >
                 <span
-                  v-if="playing"
+                  v-if="pill"
                   data-delta
                   aria-hidden="true"
                   class="inline-flex h-6 flex-none items-center gap-1 rounded-pill border-2 border-line px-2 text-[13px] leading-none font-extrabold"
-                  :class="pillOf(standing.team).classes"
+                  :class="pill.classes"
                 >
                   <component
-                    :is="pillOf(standing.team).icon"
+                    :is="pill.icon"
                     :size="12"
                     :stroke-width="3"
-                  />{{ pillOf(standing.team).text }}
+                  />{{ pill.text }}
                 </span>
               </Transition>
               <CpNum

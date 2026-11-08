@@ -3,12 +3,13 @@
 // about the rows in 0.8 (the `dur-*` utility also set `animation-duration`, which made Vue's TransitionGroup skip every move, #273), so this
 // measures what is drawn: the rows' transforms, the counted numbers, the pills, the stamp, the confetti, the live region.
 // Usage: node scripts/browser/standings.mjs [--third] [--only=<name>[,<name>…]]
-//   (needs pnpm dev and pnpm dev:realtime; one PASS or FAIL line per check, exit code 1 on any FAIL, screenshots to <tmp>/compies-browser/)
+//   (needs pnpm dev and pnpm dev:realtime; one PASS or FAIL line per check, exit code 1 on any FAIL; the lines and the
+//   screenshots also go to <tmp>/compies-browser/standings/)
 // A run is one Member setup on an Event the script creates: `phone-stage` and `phone-tab` (390 px, the Event view and the „Tabelle“ view),
 // `desktop` (1440 px, the stage and the panel's „Tabelle“ tab side by side), each with full motion and with `data-motion="reduced"`, and
 // `desktop-media` (1440 px with the OS setting `prefers-reduced-motion: reduce`). `--third` seats the Dev Admin as a third Party.
-import { launch, shot, sleep } from './chrome.mjs'
-import { api, BASE, clickText, createEvent, createGame, joinEvent, open } from './kit.mjs'
+import { launch, sleep } from './chrome.mjs'
+import { api, BASE, clickText, enterResult, open, placesOf, results, runningEvent } from './kit.mjs'
 
 const stamp = Date.now().toString(36)
 const third = process.argv.includes('--third')
@@ -16,14 +17,8 @@ const only = process.argv.find(arg => arg.startsWith('--only='))?.slice(7).split
 const PARTIES = third ? 3 : 2
 const TABLE = third ? [5, 2, 0] : [5, 0]
 
-let failed = false
-function check(name, passed, detail = '') {
-  if (!passed) failed = true
-  console.log(`${passed ? 'PASS' : 'FAIL'}  ${name}${passed || !detail ? '' : `  (${detail})`}`)
-}
-function skip(name, why) {
-  console.log(`SKIP  ${name}  (${why})`)
-}
+const log = results('standings')
+const { check, skip } = log
 
 // ---------------------------------------------------------------------------------------------------------------------------------
 // In the page: a recorder that writes down, every frame, what the Standings (and the Host's blocks and result sheet) look like.
@@ -123,39 +118,13 @@ function mostChangesInASecond(series) {
 // ---------------------------------------------------------------------------------------------------------------------------------
 // The scenario
 
-async function setUpEvent(host, member, admin, label) {
-  const games = []
-  for (let i = 1; i <= 5; i++) games.push(await createGame(host, { name: `Takt ${i} ${stamp}`, playersMin: 1, playersMax: 8 }))
-  const { slug } = await createEvent(host, {
-    name: `Tabelle in Bewegung ${label} ${stamp}`,
-    settings: { format: 'teams', teamCount: PARTIES, teamSize: 1, gameCount: 6, pointsTable: { preset: 'custom', values: TABLE }, selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null, poolPreview: true },
-    pools: { main: games.map(game => game.id) },
-  })
-  await joinEvent(member, slug, host)
-  if (admin) await joinEvent(admin, slug, host)
-  const seat = async (tab, team) => {
-    const { viewerId } = (await api(tab, 'GET', `/api/e/${slug}`)).body
-    const moved = await api(tab, 'POST', `/api/e/${slug}/move`, { userId: viewerId, to: { zone: 'team', team } })
-    if (moved.status !== 200) throw new Error(`move answered ${moved.status}`)
-  }
-  await seat(host, 1)
-  await seat(member, 2)
-  if (admin) await seat(admin, 3)
-  const started = await api(host, 'POST', `/api/e/${slug}/sessions/start`)
-  if (started.status !== 200) throw new Error(`start answered ${started.status}: ${JSON.stringify(started.body)}`)
-  const roundIds = []
-  for (const game of games.slice(0, 4)) {
-    const set = await api(host, 'POST', `/api/e/${slug}/rounds`, { gameId: game.id })
-    if (set.status !== 200) throw new Error(`set game answered ${set.status}: ${JSON.stringify(set.body)}`)
-    roundIds.push(set.body.roundId)
-  }
-  // Setting a game plays its clip for everybody, and the overlay would cover the Standings in the pictures.
-  await api(host, 'POST', `/api/e/${slug}/clip/skip`)
-  return { slug, roundIds }
-}
-
-/** The Places of a Result: `order` lists the Parties from Place 1 down. */
-const placesOf = order => ({ places: order.map((team, index) => ({ team, place: index + 1 })) })
+/** Host, Member (and with `--third` the Admin) one per Party, the Session started, four Rounds set (their clip skipped). */
+const setUpEvent = (host, member, admin, label) => runningEvent([host, member, admin].filter(Boolean), {
+  name: `Tabelle in Bewegung ${label} ${stamp}`,
+  gameNames: [1, 2, 3, 4, 5].map(i => `Takt ${i} ${stamp}`),
+  settings: { pointsTable: { preset: 'custom', values: TABLE } },
+  set: 4,
+})
 
 /** The sequence of steps: Results, then Corrections of Round 3 (twice), then one more Result that changes no rank. */
 const STEPS = third
@@ -176,11 +145,8 @@ const STEPS = third
       { label: 'Spiel 4 (kein Rang ändert sich)', round: 3, order: [1, 2], kind: 'entered' },
     ]
 
-async function enter(host, slug, roundId, order) {
-  const answer = await api(host, 'PUT', `/api/e/${slug}/rounds/${roundId}/result`, placesOf(order))
-  if (answer.status !== 200) throw new Error(`PUT result answered ${answer.status}: ${JSON.stringify(answer.body)}`)
-  return answer.body
-}
+/** The Host enters a Result: `order` lists the Parties from Place 1 down. */
+const enter = (host, slug, roundId, order) => enterResult(host, slug, roundId, placesOf(order))
 
 /** Records the Member's page across one Result entered by the Host (and, with `watchHost`, the Host's page too). */
 async function record(member, host, run, { shotName = null, watchHost = false } = {}) {
@@ -199,7 +165,7 @@ async function record(member, host, run, { shotName = null, watchHost = false } 
     }
     for (const offset of [700, 1500, 4500]) {
       await sleep(Math.max(0, offset - (Date.now() - (newsAtMs ?? started))))
-      shots.push(await shot(member, `standings-${shotName}-${offset}ms`))
+      shots.push(await log.shot(member, `standings-${shotName}-${offset}ms`))
     }
   }
   // The news is made when the read comes (up to ~1 s after the PUT in a dev server), lasts 4 s and its pills fade for 140 ms.
@@ -521,7 +487,6 @@ try {
   for (const run of RUNS) await scenario(run)
 }
 catch (error) {
-  failed = true
-  console.log(`FAIL  the check itself broke: ${error.stack ?? error}`)
+  check('the check itself broke', false, String(error.stack ?? error))
 }
-process.exit(failed ? 1 : 0)
+process.exit(log.failed ? 1 : 0)

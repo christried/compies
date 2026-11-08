@@ -21,6 +21,7 @@ import {
   parseSettings,
   playersPerTeam,
   poolHint,
+  poolNeed,
   pointsFor,
   recommendedPoolSize,
   risingPlace,
@@ -214,6 +215,25 @@ describe('poolHint', () => {
   it('counts an empty pool, with and without the possible last game', () => {
     expect(poolHint({ ...admin, gameCount: 1 }, 0)).toEqual({ games: 1, vetoes: 0, extra: 0, needed: 1, have: 0 })
     expect(poolHint({ ...admin, gameCount: 1, teamCount: 3 }, 0)).toEqual({ games: 1, vetoes: 0, extra: 1, needed: 2, have: 0 })
+  })
+})
+
+describe('poolNeed (#288)', () => {
+  // The three parts of the recommended Game pool size, the sum recommendedPoolSize returns.
+  it('needs the Game count and the possible last game with Host pick', () => {
+    expect(poolNeed({ gameCount: 10, teamCount: 4, selectionMode: 'admin_pick', vetoAllowance: null })).toEqual({ games: 10, vetoes: 0, extra: 1 })
+  })
+
+  it('needs the vetoes of all Parties on the Lucky Wheel, and the possible last game', () => {
+    expect(poolNeed({ gameCount: 10, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: 5 })).toEqual({ games: 10, vetoes: 10, extra: 1 })
+  })
+
+  it('needs no last game at an odd Game count with two Parties', () => {
+    expect(poolNeed({ gameCount: 9, teamCount: 2, selectionMode: 'admin_pick', vetoAllowance: null })).toEqual({ games: 9, vetoes: 0, extra: 0 })
+  })
+
+  it('needs no vetoes on the Lucky Wheel without a Veto allowance', () => {
+    expect(poolNeed({ gameCount: 9, teamCount: 2, selectionMode: 'lucky_wheel', vetoAllowance: null })).toEqual({ games: 9, vetoes: 0, extra: 0 })
   })
 })
 

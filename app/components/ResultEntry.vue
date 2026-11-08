@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronUp, Equal, GripVertical } from '@lucide/vue'
-import { teamName } from '~/utils/board'
+import { teamNameAt } from '~/utils/board'
 import { draftFromResult, draftPlaces, draftPoints, moveRow, newResultDraft, setScore, toggleLevel } from '~/utils/result-draft'
 import type { BoardTeam } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
@@ -50,10 +50,7 @@ watch(() => props.open, (open) => {
   busy.value = false
 })
 
-const nameOf = (position: number) => {
-  const team = props.teams.find(item => item.position === position)
-  return team ? teamName(team, t) : teamName(position, t)
-}
+const nameOf = (position: number) => teamNameAt(props.teams, position, t)
 
 const places = computed(() => draftPlaces(draft.value))
 const points = computed(() => draftPoints(draft.value, props.pointsTable))

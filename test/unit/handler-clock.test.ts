@@ -18,6 +18,6 @@ describe('the Event API handlers and the clock', () => {
       .map(file => relative(api, file).replaceAll('\\', '/'))
       .sort()
 
-    expect(asking).toEqual(['[slug].get.ts', '[slug]/activity.get.ts', '[slug]/ics.get.ts', 'index.get.ts', 'index.post.ts'].sort())
+    expect(asking).toEqual(['[slug].get.ts', '[slug]/activity.get.ts', '[slug]/ics.get.ts', '[slug]/share-image.get.ts', 'index.get.ts', 'index.post.ts'].sort())
   })
 })

@@ -1,24 +1,20 @@
 import { eq } from 'drizzle-orm'
 import { events } from '../db/schema'
 import type { LastGameAdded } from '../../shared/event'
-import { lastGameRejection } from '../../shared/results'
-import { settingsFromRow } from '../../shared/settings'
+import { lastGameRejection } from '../../shared/finish'
 import { recordActivity } from './activity'
 import { apiError } from './errors'
-import type { EventChange } from './event-access'
+import type { ChangeCore } from './event-access'
 import { readEnd } from './finish'
+import { requireSettings } from './settings'
 
 // The Host adds the last game (#278, spec #272): while the Standings hold a Tie, the Game count goes up by one, so every Party plays one
 // more Round. It runs under the Event lock (changeEvent, `lock: 'update'`): a second press that waits finds the count incomplete and is
 // refused with results_missing, so a double press adds one game.
 
-type Change = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
-
 /** Raises the Game count by one when lastGameRejection passes; refuses with its reason otherwise. Nothing is written before the rule passes. */
-export async function addLastGame({ tx, eventRow, user, publish, now }: Change): Promise<LastGameAdded> {
-  const settings = settingsFromRow(eventRow)
-  // An Event that is not set up cannot be running, so the rule's order gives it wrong_phase (as the finish does).
-  if (settings === null) throw apiError('wrong_phase')
+export async function addLastGame({ tx, eventRow, user, publish, now }: ChangeCore): Promise<LastGameAdded> {
+  const settings = requireSettings(eventRow)
   const { end } = await readEnd(tx, eventRow.id, settings)
   const rejection = lastGameRejection({ isHost: eventRow.hostId === user.id, phase: eventRow.phase, end, gameCount: settings.gameCount })
   if (rejection) throw apiError(rejection)

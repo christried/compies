@@ -20,7 +20,7 @@ export interface ChangeEventOptions extends LoadEventOptions {
   beforeBody?: (user: AuthUser) => void
   /**
    * Whether the change may run in a finished Event (default false: a finished Event is read-only for good, #277). Only the Host rotating
-   * the Invite link does; every other change answers `wrong_phase` there, so no write route can forget the rule.
+   * the Invite link and starting the Award ceremony do (#309); every other change answers `wrong_phase` there, so no write route can forget the rule.
    */
   allowFinished?: boolean
   /**
@@ -44,6 +44,9 @@ export interface EventChange {
   /** Queues messages for after the commit that only these Users' sockets get (#227, the sealed Vetoes of 0.7). A change that throws drops them too. */
   publishTo: (userIds: readonly string[], ...messages: RoomMessage[]) => void
 }
+
+/** What a rule function of a change reads: the transaction, the locked Event, the User, the queue and the request's clock (#288). */
+export type ChangeCore = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish' | 'now'>
 
 /** Messages of a change that go to the sockets of named Users only (#227). */
 interface NamedMessages {

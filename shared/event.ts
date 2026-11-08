@@ -2,9 +2,10 @@ import type { Place, Zone } from './board'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
+import { beforeFinish, PHASES, type Phase } from './phase'
 import type { EventSettings, SettingsFloors } from './settings'
 import type { PoolGame, PoolGameFace } from './game'
-import type { BonusVetoView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
+import type { BonusVetoView, CeremonyView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
@@ -40,14 +41,7 @@ export function slotProblems(proposed: Date[], existing: Date[], now: Date): (Sl
   })
 }
 
-/** The Phases of an Event (GLOSSARY: Phase). The MVP uses poll and date_set; the rest come with 1.0. */
-export const PHASES = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const
-export type Phase = (typeof PHASES)[number]
-
-/** Every Phase before the Event is finished. What may still change (Sessions, settings) is decided by this one set. */
-export function beforeFinish(phase: Phase): boolean {
-  return phase === 'draft' || phase === 'poll' || phase === 'date_set' || phase === 'running'
-}
+export { beforeFinish, PHASES, type Phase }
 
 /** Sessions are added, removed and reopened in every Phase before the Event finishes (#55). */
 export function sessionsEditable(phase: Phase): boolean {
@@ -110,9 +104,6 @@ export interface RemovedSessionView {
   previousStartsAt: string
 }
 
-/** The Event's Game pool, with its games (#146, #279 dropped the Tiebreaker pool): whole for the Host, the face only for every other Member (#224). */
-export interface EventPools { main: (PoolGame | PoolGameFace)[] }
-
 /** What `POST /api/e/:slug/move` returns: the Member and the place they stand in now (#160). */
 export interface MovedMember { userId: string, to: Place }
 
@@ -169,10 +160,11 @@ export interface EventView {
   /** The lowest Team size and Veto allowance the settings editor offers (#147). Only the Host gets them; null for every other Member. */
   settingsFloors: SettingsFloors | null
   /**
-   * The Event's pools (#146): the Host always sees the games, every other Member only while the Pool preview is on (canSeePoolGames,
-   * #148, #222, #225). Null = this viewer learns nothing about the pools, not even how many games they hold.
+   * The Event's Game pool (#146, #286): the games whole for the Host, the face only for every other Member (#224). The Host always
+   * sees them, every other Member only while the Pool preview is on (canSeePoolGames, #148, #222, #225). Null = this viewer learns
+   * nothing about the pool, not even how many games it holds.
    */
-  pools: EventPools | null
+  pool: (PoolGame | PoolGameFace)[] | null
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
   /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */
@@ -215,6 +207,8 @@ export interface EventView {
   countdown: CountdownView | null
   /** The Coin flip (#235): the latest toss of the running Session; every Member gets it, null otherwise. */
   coin: CoinView | null
+  /** The Award ceremony (#309): the latest start of a finished Event, the same for every Member; null before the first start and for an Event that is not finished. */
+  ceremony: CeremonyView | null
   /** The Bonus Vetoes (#233): the Host gets them while the Event has a Lucky Wheel; null for everyone else and without the wheel. */
   bonusVetoes: BonusVetoView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */

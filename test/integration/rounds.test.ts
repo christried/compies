@@ -131,8 +131,8 @@ describe('Rounds', () => {
     ]).returning()
     const [halo, kart, schach] = inserted as [typeof inserted[number], typeof inserted[number], typeof inserted[number]]
     await testDb.db.insert(eventPoolGames).values([
-      { eventId, gameId: halo.id, pool: 'main' },
-      { eventId, gameId: kart.id, pool: 'main' },
+      { eventId, gameId: halo.id },
+      { eventId, gameId: kart.id },
     ])
 
     const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
@@ -174,7 +174,7 @@ describe('Rounds', () => {
       expect(await drawRows()).toMatchObject([{ gameId: game.schach.id, source: 'library' }])
       const view = await read(game)
       expect(view.setGame?.left.sort()).toEqual([game.halo.id, game.kart.id].sort())
-      expect((view.pools?.main ?? []).map(poolGame => poolGame.name)).toEqual(['Halo', 'Kart'])
+      expect((view.pool ?? []).map(poolGame => poolGame.name)).toEqual(['Halo', 'Kart'])
     })
 
     it('takes a pool game out of the games left, and not twice: set again, it is refused with 409 game_already_drawn and opens no second Round (F14)', async () => {
@@ -375,7 +375,7 @@ describe('Rounds', () => {
       const view = await read(game)
       expect(view.rounds).toEqual([])
       expect(view.setGame?.left.sort()).toEqual([game.halo.id, game.kart.id].sort())
-      expect((view.pools?.main ?? []).map(poolGame => poolGame.name)).toEqual(['Halo', 'Kart'])
+      expect((view.pool ?? []).map(poolGame => poolGame.name)).toEqual(['Halo', 'Kart'])
     })
 
     it('writes the feed entry „game put back“ naming the game', async () => {
@@ -733,7 +733,7 @@ describe('Rounds', () => {
         for (const cookie of [game.hostCookie, game.cookies.three]) {
           expect((await read(game, cookie)).wheel).toMatchObject({ count: 2, slices: [{ id: game.halo.id, name: 'Halo' }, { id: game.kart.id, name: 'Kart' }], spin: null })
         }
-        expect((await read(game, game.cookies.three)).pools).toBeNull()
+        expect((await read(game, game.cookies.three)).pool).toBeNull()
       })
 
       it('carries the spin: the names of the slices as they were, and the drawn game for a Member only from the stop', async () => {
@@ -814,14 +814,14 @@ describe('Rounds', () => {
   // The stage sections (#256): each section returns all its fields in every case, so a section left out of the array
   // would show here as a missing key. The shape is asserted per field, not with toEqual, since the stage grows.
   describe('the stage sections of the Event read (#256)', () => {
-    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'bonusVetoes', 'results', 'standings', 'end'] as const
+    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'ceremony', 'bonusVetoes', 'results', 'standings', 'end'] as const
 
     it('gives every stage field to the Host of a Host pick Event, the null ones as null', async () => {
       const game = await running()
       const view = await read(game)
 
       for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
-      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, bonusVetoes: null })
+      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, ceremony: null, bonusVetoes: null })
     })
 
     it('gives the Host of a Lucky Wheel Event its wheel and the Bonus Vetoes', async () => {

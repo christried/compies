@@ -69,12 +69,3 @@ export function draftPoints(draft: ResultDraft, table: Pick<PointsTable, 'values
   const points = partyPoints(placesFromOrder(draft.order, draft.level), table)
   return draft.order.map(team => points[team - 1]!)
 }
-
-/** What the history needs of the page to offer a Correction (#275); null/absent = no „Korrigieren“ (a Member, or the Event has finished). */
-export interface HistoryCorrections {
-  pointsTable: PointsTable
-  /** The Game count, for the sheet's kicker „Korrektur: Spiel 2 von 6“. */
-  total: number
-  /** Sends the corrected Places of a Round; resolves to whether the server took them (the sheet closes then). The page passes `actions.enterResult`: it is the same PUT. */
-  save: (roundId: string, places: ResultPlace[]) => Promise<boolean>
-}

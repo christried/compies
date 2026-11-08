@@ -5,6 +5,7 @@ import { PHASES } from '../../shared/event'
 import { ZONES } from '../../shared/board'
 import { SUITABILITIES } from '../../shared/game'
 import { COIN_SIDES, DRAW_KINDS, DRAW_OUTCOMES, DRAW_SOURCES } from '../../shared/rounds'
+import { CEREMONY_GAGS } from '../../shared/ceremony'
 import { FORMATS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
 
 // MVP schema (#1). Every instant is timestamptz in UTC (ADR 0003); every id is a database-generated uuid.
@@ -71,6 +72,7 @@ export const authVerifications = pgTable('auth_verifications', {
 export const eventPhase = pgEnum('event_phase', PHASES)
 export const eventFormat = pgEnum('event_format', FORMATS)
 export const selectionMode = pgEnum('selection_mode', SELECTION_MODES)
+export const ceremonyGag = pgEnum('ceremony_gag', CEREMONY_GAGS)
 
 export const events = pgTable('events', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -91,14 +93,20 @@ export const events = pgTable('events', {
   // Pool preview (#225): null only for Events not set up and rows the code before 0.6 wrote (storedPoolPreview reads it as on unless the wheel is hidden).
   poolPreview: boolean('pool_preview'),
   vetoAllowance: integer('veto_allowance'),
-  // 0023 (#277): the instant the Host finished the Event (the request's clock, ADR 0013). Written, not read, in 0.8: nothing shows it yet.
+  // 0023 (#277): the instant the Host finished the Event (the request's clock, ADR 0013). Home keeps a finished Event listed for 24 h from it (`eventStaysOnHome`, #282).
   finishedAt: timestamp('finished_at', { withTimezone: true }),
+  // 0025 (#309): the Award ceremony's latest start (the request's clock plus the lead, ADR 0013) and its gag. The run's end is not stored: shared/ceremony.ts derives it. A restart overwrites both.
+  ceremonyStartsAt: timestamp('ceremony_starts_at', { withTimezone: true }),
+  ceremonyGag: ceremonyGag('ceremony_gag'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, table => [
   // A stored end belongs to a finished (or archived) Event, never to a running one (#277). The converse is not checked: the code under the Event lock is the one writer.
   check('events_finished_at_phase_check', sql`${table.finishedAt} IS NULL OR ${table.phase} IN ('finished', 'archived')`),
+  // The ceremony's start and gag are set together, and only in a finished (or archived) Event (#309).
+  check('events_ceremony_pair_check', sql`(${table.ceremonyStartsAt} IS NULL) = (${table.ceremonyGag} IS NULL)`),
+  check('events_ceremony_phase_check', sql`${table.ceremonyStartsAt} IS NULL OR ${table.phase} IN ('finished', 'archived')`),
 ])
 
 // A sitting of an Event on one Date (ADR 0011, #48). The Date lives here, not on the Event.
@@ -203,17 +211,19 @@ export const games = pgTable('games', {
 ])
 
 // Postgres cannot drop an enum value safely, so `tiebreaker` stays in the type although nothing reads or writes it (ADR 0014, #279).
-// Migration 0021 deleted its rows; the 0.7 code serving during the switch-over can still insert one.
+// Since #286 the type and the column below stay only for the 0.8 code that serves while 0.9 builds (ADR 0007); #301 drops both.
 export const poolKind = pgEnum('pool_kind', ['main', 'tiebreaker'])
 
-// The games of an Event's Game pool (#146). Game pool; Tiebreaker pool removed in 0.8 (ADR 0014, #279).
+// The games of an Event's Game pool (#146, ADR 0014): one pool, so a game is in it once.
 export const eventPoolGames = pgTable('event_pool_games', {
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   gameId: uuid('game_id').notNull().references(() => games.id),
-  pool: poolKind('pool').notNull(),
+  // No code reads or writes `pool` since #286. It stays, with its default, only for the 0.8 code that serves while 0.9 builds
+  // (it filters and inserts `pool = 'main'`); #301 drops it together with `poolKind`.
+  pool: poolKind('pool').notNull().default('main'),
 }, table => [
-  primaryKey({ columns: [table.eventId, table.gameId, table.pool] }),
-  // Lookups by game (#171, review S6).
+  primaryKey({ columns: [table.eventId, table.gameId] }),
+  // Lookups by game (#171, review S6). The primary key serves the lookups by Event.
   index('event_pool_games_game_id_idx').on(table.gameId),
 ])
 
