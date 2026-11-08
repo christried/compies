@@ -95,7 +95,7 @@ async function replay() {
   // `useDialog` focuses it as it opens.
   if (!restart) return
   await nextTick()
-  panel.value?.querySelector<HTMLElement>('[data-autofocus]')?.focus()
+  panel.value?.querySelector<HTMLElement>('[data-autofocus]')?.focus({ preventScroll: true })
 }
 defineExpose({ replay })
 
@@ -230,7 +230,8 @@ watch(frame, async (now, was) => {
   finish()
   if (!hadFocus) return
   await nextTick()
-  panel.value?.querySelector<HTMLElement>('[data-end-focus]')?.focus()
+  // `preventScroll`: „Bild teilen“ is at the bottom of a stage that scrolls on a phone, and the end frame has to stay at its top (#313).
+  panel.value?.querySelector<HTMLElement>('[data-end-focus]')?.focus({ preventScroll: true })
 }, { flush: 'pre' })
 
 function skip() {

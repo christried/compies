@@ -86,9 +86,12 @@ defineExpose({ root, burst })
 <template>
   <div
     ref="root"
-    class="relative flex min-h-full flex-col items-center gap-[18px] px-[18px] pt-[22px] text-ink"
+    class="relative flex min-h-full flex-col items-center gap-[18px] px-[18px] pt-[66px] text-ink md:pt-[22px]"
     :style="{ paddingBottom: ground }"
   >
+    <!-- The top padding below md (66 px) clears the layer's „Überspringen“ and close button (top 12 px, 36 px high, and the banner's tilt lifts its
+         corner by about 9 px): at 390 px the banner is 248 px wide and ran under them. The reference reserves nothing there; from md on it is the
+         reference's 22 px. The layer's buttons are the same for a Tie's chain and grid, which share this stage (#315). -->
     <h2
       :id="headingId"
       class="m-0 flex justify-center font-normal"

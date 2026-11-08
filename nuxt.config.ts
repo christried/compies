@@ -24,6 +24,20 @@ export default defineNuxtConfig({
         addServerHandler({ route: '/api/dev/sign-in', method: 'get', handler: createResolver(import.meta.url).resolve('./server/dev/sign-in') })
       },
     }),
+    // GSAP loads through `loadGsap()` on the lead before a run only (ADR 0015). Vite's manifest marks the chunk of every dynamic import
+    // `prefetch`, and vue-bundle-renderer then writes `<link rel="prefetch">` for it on every page that reaches the `import()`: the Event page
+    // does (ceremony layer), so a finished Event fetched 70 kB of GSAP although no run plays. Only GSAP's chunk loses the flag; other
+    // prefetches stay. test/build/gsap-lazy.test.ts checks the hints the build renders.
+    defineNuxtModule({
+      meta: { name: 'gsap-no-prefetch' },
+      setup(_options, nuxt) {
+        nuxt.hook('build:manifest', (manifest) => {
+          for (const chunk of Object.values(manifest)) {
+            if (chunk.src && /[\\/]node_modules[\\/]gsap[\\/]/.test(chunk.src)) chunk.prefetch = chunk.preload = false
+          }
+        })
+      },
+    }),
     // The Share image's PNG is made by resvg's WebAssembly (#313). Its binary ships with the server as storage `assets:resvg`, which
     // server/utils/share-assets.ts reads. It is copied out of node_modules into the build folder first: Nitro rewrites a path inside
     // node_modules to a package specifier, which the raw-asset loader cannot open (a Vercel-preset build failed on it).
