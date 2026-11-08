@@ -1,6 +1,7 @@
 import { initWasm, Resvg } from '@resvg/resvg-wasm'
 import satori from 'satori'
 import type { ShareChip, ShareImageModel, ShareTie, SingleWinner } from '../../shared/share-image'
+import { SURFACE } from '../../shared/team-colors'
 import { teamSymbol } from '../../shared/team-marks'
 import { SHARE_FONTS, type ShareAssets } from './share-assets'
 
@@ -10,7 +11,7 @@ import { SHARE_FONTS, type ShareAssets } from './share-assets'
 
 const INK = '#151515'
 const MUTED = '#5d5650'
-const CARD = '#fffdf8'
+const CARD = SURFACE
 const PAPER = '#fff3df'
 
 // Each family names its Latin-ext file as a second family (share-assets.ts), so a „Ł“ or „ğ“ in a free-text Team name has a glyph.

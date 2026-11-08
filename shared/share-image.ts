@@ -6,7 +6,8 @@ import type { EventView } from './event'
 import { leadersOf } from './finish'
 import { joinNames } from './list'
 import { berlinDay } from './time'
-import { teamColor } from './team-colors'
+import { SURFACE, teamColor } from './team-colors'
+import { teamDisplayName } from './team-name'
 import { characterCount } from './text'
 
 export const SHARE_FORMATS = ['wide', 'square'] as const
@@ -296,6 +297,8 @@ const TIE_ROWS_LOST_BY_WRAP: Record<2 | 3, number> = { 2: 1, 3: 2 }
 const TIE_WRAP_EM = 0.47
 const TIE_WRAP_PX: Record<ShareFormat, number> = { wide: 680, square: 930 }
 const TIE_CHIP_LONG_NAME = 14
+/** Names mode steps its font size down twice: past ONE_LINE_MAX characters, and past this many (the artboard's three sizes). */
+const TIE_NAME_STEP_2_MAX = 22
 const TIE_BURST = { 2: 340, 3: 300, more: 280 }
 
 interface TieShape { tie: ShareTie, rowsMax: number }
@@ -314,7 +317,7 @@ function tieShape(leaders: number[], nameOf: (team: number) => string, format: S
   }
 
   const sizes = TIE_NAME_SIZES[format][k as 2 | 3]
-  const size = longest <= ONE_LINE_MAX ? sizes[0] : longest <= 22 ? sizes[1] : sizes[2]
+  const size = longest <= ONE_LINE_MAX ? sizes[0] : longest <= TIE_NAME_STEP_2_MAX ? sizes[1] : sizes[2]
   const limit = TIE_WRAP_PX[format]
   const wraps = (length: number) => length * size * TIE_WRAP_EM > limit
   const entries = drawn.map(entry => entryOf(entry, wraps(characterCount(entry.name)) ? breakAtMiddle(entry.name) : [entry.name]))
@@ -334,12 +337,12 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
   if (first === undefined) return null
   const text = copy.share.image
 
-  // The one place the server needs the colour-name fallback: shared/board.ts (a Worker imports it) is off-limits, so this reads the same
-  // two keys as `teamName` in app/utils/board.ts; the parity test in share-image.test.ts guards it.
+  // The name a team is shown with, the rule of shared/team-name.ts (as `teamName` in app/utils/board.ts) with the copy this model carries;
+  // the parity test in share-image.test.ts holds the two equal. Drawn names lose what the renderer cannot draw first (`drawable`).
+  const teamCopy = { defaultName: (color: string) => fillCopy(copy.team.defaultName, { color }), colorName: (at: number) => copy.team.colors[at] ?? '' }
   const nameOf = (position: number, plain: boolean): string => {
     const own = source.teams.find(team => team.position === position)?.name ?? null
-    const kept = own === null ? '' : plain ? own.trim() : drawable(own)
-    return kept === '' ? fillCopy(copy.team.defaultName, { color: copy.team.colors[position] ?? '' }) : kept
+    return teamDisplayName(own === null ? null : plain ? own.trim() : drawable(own), position, teamCopy)
   }
 
   const winnerPoints = standings.find(row => row.rank === 1)!.points
@@ -369,7 +372,7 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
   const all: ShareChip[] = results.map((result) => {
     const teams = result.places.filter(place => place.place === 1).map(place => place.team).sort((a, b) => a - b)
     const name = drawable(result.game.name)
-    const chip = { name: teams.length > CAPSULE_STRIPES_MAX ? `${name} ${fillCopy(text.gameTied, { n: teams.length })}` : name, teams, color: teams[0] === undefined ? '#fffdf8' : teamColor(teams[0]).fill }
+    const chip = { name: teams.length > CAPSULE_STRIPES_MAX ? `${name} ${fillCopy(text.gameTied, { n: teams.length })}` : name, teams, color: teams[0] === undefined ? SURFACE : teamColor(teams[0]).fill }
     // A game with a Shared first place gets a capsule: one stripe per Party, at most 4.
     return teams.length > 1 ? { ...chip, stripes: teams.slice(0, CAPSULE_STRIPES_MAX).map(team => teamColor(team).fill) } : chip
   })
