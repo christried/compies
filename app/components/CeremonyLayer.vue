@@ -237,6 +237,8 @@ async function begin() {
     if (!root || !found || !ceremony.value) throw new Error('The ceremony has no parts to move')
     gsapHandle = gsap
     parts = found
+    // From here GSAP writes Compibert's transform: the static stand (#308) is cleared, so the build starts from its own values.
+    found.compibert.style.transform = ''
     timeline = buildRun(gsap, found, runGeometry(measureRun(root, found)), {
       ...shape.value,
       gag: ceremony.value.gag,
@@ -302,20 +304,25 @@ function skip() {
   if (ceremony.value) skippedFor.value = ceremony.value.startsAt
 }
 
-// The end frame follows a resize (the run does not): Compibert stands at the new stopX.
+// The end frame stands Compibert at his stop (#308). With no timeline built yet (a skip while the chunk loads, reduced motion) the static markup
+// does it, and the chunk's `finish()` then sets the same place: no jump. The end frame follows a resize (the run does not): he stands at the new stopX.
 watch([frame, ready], ([which, isReady]) => {
   resizeObserver?.disconnect()
   resizeObserver = undefined
   const root = award.value?.root
-  if (which !== 'end' || !isReady || !root || !parts || !gsapHandle || typeof ResizeObserver === 'undefined') return
+  if (which !== 'end' || !root) return
+  if (!parts) standCompibert()
+  if (!isReady || typeof ResizeObserver === 'undefined') return
   resizeObserver = new ResizeObserver(() => {
-    if (parts) gsapHandle?.set(parts.compibert, { x: runGeometry(measureRun(root, parts)).stopX })
+    if (gsapHandle && parts) gsapHandle.set(parts.compibert, { x: runGeometry(measureRun(root, parts)).stopX })
+    else standCompibert()
   })
   resizeObserver.observe(root)
 }, { flush: 'post' })
 
 // GSAP is preloaded while the ceremony is ahead or running (the lead, a late joiner), so the chunk is there when the layer opens. Never for a
 // ceremony whose end has passed: a finished Event page opened later loads none (ADR 0015). Nor under reduced motion, whose end frame needs none (#308).
+// The rig still loads the chunk under reduced motion, for its blink (#311): that is the rig's, not this watch's. Do not drop it there.
 watch(() => ceremony.value?.startsAt, () => {
   if (import.meta.client && ceremony.value && props.serverNow() < Date.parse(ceremony.value.endsAt) && !reducedMotion()) loadGsap().catch(() => {})
 }, { immediate: true })

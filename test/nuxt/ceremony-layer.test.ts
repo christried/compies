@@ -158,6 +158,7 @@ beforeEach(() => {
 
 afterEach(() => {
   Element.prototype.animate = originalAnimate
+  vi.unstubAllGlobals()
   restoreScreen()
   mounted?.unmount()
   mounted = undefined
@@ -789,6 +790,33 @@ describe('when GSAP does not load (#312)', () => {
   })
 })
 
+/** A ResizeObserver the test fires by hand: `resize` calls every observer that is still connected. `live` counts those. */
+function stubResizeObserver() {
+  const observers: { callback: ResizeObserverCallback, connected: boolean }[] = []
+  class Stub {
+    private readonly entry: { callback: ResizeObserverCallback, connected: boolean }
+    constructor(callback: ResizeObserverCallback) {
+      this.entry = { callback, connected: true }
+      observers.push(this.entry)
+    }
+
+    observe() {}
+
+    unobserve() {}
+
+    disconnect() {
+      this.entry.connected = false
+    }
+  }
+  vi.stubGlobal('ResizeObserver', Stub)
+  return {
+    live: () => observers.filter(observer => observer.connected).length,
+    resize: () => {
+      for (const observer of observers) if (observer.connected) observer.callback([], observer as unknown as ResizeObserver)
+    },
+  }
+}
+
 /** happy-dom has no layout: the stage is as wide as `stage` says, the card stands 300 px in and is 200 wide, Compibert is 100 wide (his stop: 286 px on 1000, 220 on 600). */
 function stubLayout(stage: number) {
   const layout = { stage }
@@ -894,6 +922,38 @@ describe('the end frame does not wait for GSAP (#308)', () => {
 
       expect(frame()).toBe('end')
       expect(compibertX()).toMatch(/^translate(3d)?\(286px/)
+    })
+
+    it('from a skip while the chunk is held, and still once it arrives (no jump)', async () => {
+      stubLayout(1000)
+      let arrive!: () => void
+      chunk.hold = new Promise<void>(resolve => (arrive = resolve))
+      await mount(finished(), STARTS + 500)
+      expect(frame()).toBe('run')
+
+      skipButton()!.click()
+      await settle()
+      expect(frame()).toBe('end')
+      expect(compibertX()).toMatch(/^translate(3d)?\(286px/)
+
+      arrive()
+      await settle()
+      expect(compibertX()).toMatch(/^translate(3d)?\(286px/)
+    })
+
+    it('re-measures him on a resize of a static end frame (reduced motion)', async () => {
+      const observers = stubResizeObserver()
+      const layout = stubLayout(1000)
+      motion('reduced')
+      await mount(finished(), STARTS)
+      expect(compibertX()).toMatch(/^translate(3d)?\(286px/)
+      expect(observers.live()).toBe(1)
+
+      layout.stage = 600
+      observers.resize()
+      await settle()
+
+      expect(compibertX()).toMatch(/^translate(3d)?\(220px/)
     })
   })
 
