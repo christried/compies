@@ -8,40 +8,79 @@ import { ceremonyTimeline } from '../../shared/ceremony'
 describe('ceremonyRigState', () => {
   it('stands idle until the run starts, then runs for 700 ms', () => {
     for (const parties of [2, 8]) {
-      const { runAtMs, runEndAtMs } = ceremonyTimeline(parties, 'trip')
-      expect(ceremonyRigState(0, parties, 'trip')).toBe('idle')
-      expect(ceremonyRigState(runAtMs - 1, parties, 'trip')).toBe('idle')
-      expect(ceremonyRigState(runAtMs, parties, 'trip')).toBe('run')
-      expect(ceremonyRigState(runEndAtMs - 1, parties, 'trip')).toBe('run')
+      const { runAtMs, runEndAtMs } = ceremonyTimeline(parties, 'trip', 1)
+      expect(ceremonyRigState(0, parties, 'trip', 1, false)).toBe('idle')
+      expect(ceremonyRigState(runAtMs - 1, parties, 'trip', 1, false)).toBe('idle')
+      expect(ceremonyRigState(runAtMs, parties, 'trip', 1, false)).toBe('run')
+      expect(ceremonyRigState(runEndAtMs - 1, parties, 'trip', 1, false)).toBe('run')
     }
   })
 
   it('trips: suspense from the end of the run until he gets up, then laughs until the dance', () => {
     for (const parties of [2, 8]) {
-      const { runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline(parties, 'trip')
-      expect(ceremonyRigState(runEndAtMs, parties, 'trip')).toBe('suspense')
-      expect(ceremonyRigState(getUpAtMs - 1, parties, 'trip')).toBe('suspense')
-      expect(ceremonyRigState(getUpAtMs, parties, 'trip')).toBe('laugh')
-      expect(ceremonyRigState(endMs - 1, parties, 'trip')).toBe('laugh')
-      expect(ceremonyRigState(endMs, parties, 'trip')).toBe('dance')
+      const { runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline(parties, 'trip', 1)
+      expect(ceremonyRigState(runEndAtMs, parties, 'trip', 1, false)).toBe('suspense')
+      expect(ceremonyRigState(getUpAtMs - 1, parties, 'trip', 1, false)).toBe('suspense')
+      expect(ceremonyRigState(getUpAtMs, parties, 'trip', 1, false)).toBe('laugh')
+      expect(ceremonyRigState(endMs - 1, parties, 'trip', 1, false)).toBe('laugh')
+      expect(ceremonyRigState(endMs, parties, 'trip', 1, false)).toBe('dance')
     }
   })
 
   it('bonks: cheers for 920 ms, then is confused until he gets up, then laughs until the dance', () => {
     for (const parties of [2, 8]) {
-      const { runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline(parties, 'bonk')
-      expect(ceremonyRigState(runEndAtMs, parties, 'bonk')).toBe('cheer')
-      expect(ceremonyRigState(runEndAtMs + 919, parties, 'bonk')).toBe('cheer')
-      expect(ceremonyRigState(runEndAtMs + 920, parties, 'bonk')).toBe('confused')
-      expect(ceremonyRigState(getUpAtMs - 1, parties, 'bonk')).toBe('confused')
-      expect(ceremonyRigState(getUpAtMs, parties, 'bonk')).toBe('laugh')
-      expect(ceremonyRigState(endMs - 1, parties, 'bonk')).toBe('laugh')
-      expect(ceremonyRigState(endMs, parties, 'bonk')).toBe('dance')
+      const { runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline(parties, 'bonk', 1)
+      expect(ceremonyRigState(runEndAtMs, parties, 'bonk', 1, false)).toBe('cheer')
+      expect(ceremonyRigState(runEndAtMs + 919, parties, 'bonk', 1, false)).toBe('cheer')
+      expect(ceremonyRigState(runEndAtMs + 920, parties, 'bonk', 1, false)).toBe('confused')
+      expect(ceremonyRigState(getUpAtMs - 1, parties, 'bonk', 1, false)).toBe('confused')
+      expect(ceremonyRigState(getUpAtMs, parties, 'bonk', 1, false)).toBe('laugh')
+      expect(ceremonyRigState(endMs - 1, parties, 'bonk', 1, false)).toBe('laugh')
+      expect(ceremonyRigState(endMs, parties, 'bonk', 1, false)).toBe('dance')
     }
   })
 
   it('dances for good after the end', () => {
-    expect(ceremonyRigState(1_000_000, 5, 'trip')).toBe('dance')
+    expect(ceremonyRigState(1_000_000, 5, 'trip', 1, false)).toBe('dance')
+  })
+
+  // A Tie (#315): the run starts later than a sole Winner's with the same rows, and he gets up 300 ms after the plate, not after the first landing.
+  describe('in a Tie', () => {
+    it('stands idle until the run starts at the Tie\'s own moment, then runs for 700 ms', () => {
+      const { runAtMs, runEndAtMs } = ceremonyTimeline(4, 'trip', 2)
+      expect(ceremonyRigState(runAtMs - 1, 4, 'trip', 2, false)).toBe('idle')
+      expect(ceremonyRigState(runAtMs, 4, 'trip', 2, false)).toBe('run')
+      expect(ceremonyRigState(runEndAtMs - 1, 4, 'trip', 2, false)).toBe('run')
+    })
+
+    it('stays in suspense through the hops of a chain and gets up 300 ms after the plate (trip)', () => {
+      const { runEndAtMs, landAtMs, plateAtMs, getUpAtMs, endMs } = ceremonyTimeline(4, 'trip', 2)
+      expect(ceremonyRigState(runEndAtMs, 4, 'trip', 2, false)).toBe('suspense')
+      expect(ceremonyRigState(landAtMs + 600, 4, 'trip', 2, false)).toBe('suspense')
+      expect(getUpAtMs).toBe(plateAtMs + 300)
+      expect(ceremonyRigState(getUpAtMs - 1, 4, 'trip', 2, false)).toBe('suspense')
+      expect(ceremonyRigState(getUpAtMs, 4, 'trip', 2, false)).toBe('laugh')
+      expect(ceremonyRigState(endMs - 1, 4, 'trip', 2, false)).toBe('laugh')
+      expect(ceremonyRigState(endMs, 4, 'trip', 2, false)).toBe('dance')
+    })
+
+    it('cheers for 920 ms, is confused through the hops and laughs after the plate (bonk)', () => {
+      const { runEndAtMs, landAtMs, getUpAtMs, endMs } = ceremonyTimeline(3, 'bonk', 3)
+      expect(ceremonyRigState(runEndAtMs + 919, 3, 'bonk', 3, false)).toBe('cheer')
+      expect(ceremonyRigState(runEndAtMs + 920, 3, 'bonk', 3, false)).toBe('confused')
+      expect(ceremonyRigState(landAtMs + 1000, 3, 'bonk', 3, false)).toBe('confused')
+      expect(ceremonyRigState(getUpAtMs, 3, 'bonk', 3, false)).toBe('laugh')
+      expect(ceremonyRigState(endMs, 3, 'bonk', 3, false)).toBe('dance')
+    })
+
+    it('follows the grid\'s own, shorter moments when the screen shows 3 Winners as a grid', () => {
+      const grid = ceremonyTimeline(3, 'trip', 3, true)
+      const chain = ceremonyTimeline(3, 'trip', 3)
+      expect(ceremonyRigState(grid.getUpAtMs, 3, 'trip', 3, true)).toBe('laugh')
+      expect(ceremonyRigState(grid.getUpAtMs, 3, 'trip', 3, false)).toBe('suspense')
+      expect(ceremonyRigState(grid.endMs, 3, 'trip', 3, true)).toBe('dance')
+      expect(grid.endMs).toBeLessThan(chain.endMs)
+    })
   })
 })
 
@@ -77,5 +116,33 @@ describe('runGeometry', () => {
   it('keeps him 10 px inside the stage on the left, and on the right', () => {
     expect(runGeometry({ ...desktop, card: { left: 20, top: 220, width: 240 } }).stopX).toBe(10)
     expect(runGeometry({ stage: { width: 140, height: 400 }, card: { left: 0, top: 100, width: 240 }, compibert: { width: 120, height: 102 } }).stopX).toBe(10)
+  })
+
+  // A Tie (#315): two cards 240 x 160 side by side under a plate 536 wide, the first at 400 px from the left.
+  describe('of a Tie', () => {
+    const cards = [{ left: 400, top: 260, width: 240, height: 160 }, { left: 696, top: 260, width: 240, height: 160 }]
+    const plate = { left: 400, top: 200, width: 536, height: 40 }
+
+    it('lands the first hop on card 1 of a chain, 40 px above it, and has a stop on every card and on the plate', () => {
+      const geometry = runGeometry({ ...desktop, card: cards[0]!, tie: { grid: false, cards, plate } })
+
+      expect(geometry).toMatchObject({ cardX: 496, cardY: 220 })
+      expect(geometry.tie!.cards).toEqual([{ x: 496, y: 220 }, { x: 792, y: 220 }])
+      expect(geometry.tie!.plate).toEqual({ x: 668 - 24, y: 220 - 26 })
+    })
+
+    it('lands the first hop on the plate\'s centre in a grid, and ripples the cards from the one nearest its centre', () => {
+      const grid = [
+        { left: 400, top: 260, width: 236, height: 120 },
+        { left: 650, top: 260, width: 236, height: 120 },
+        { left: 400, top: 394, width: 236, height: 120 },
+        { left: 650, top: 394, width: 236, height: 120 },
+      ]
+      const geometry = runGeometry({ ...desktop, card: grid[0]!, tie: { grid: true, cards: grid, plate: { left: 400, top: 200, width: 486, height: 40 } } })
+
+      expect(geometry).toMatchObject({ cardX: 643 - 24, cardY: 220 - 26 })
+      expect(geometry.tie!.ripple.slice(0, 2).sort()).toEqual([0, 1])
+      expect(geometry.tie!.ripple.slice(2).sort()).toEqual([2, 3])
+    })
   })
 })

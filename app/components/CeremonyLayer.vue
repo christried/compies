@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RotateCcw, Share2, X } from '@lucide/vue'
-import { ceremonyModel } from '~/utils/ceremony'
-import { buildRun, ceremonyRigState, measureRun, runGeometry, runPartsOf, type RunParts } from '~/utils/ceremony-run'
+import { ceremonyLayout, ceremonyModel } from '~/utils/ceremony'
+import { buildRun, ceremonyRigState, measureRun, runGeometry, runPartsOf, type Burst, type RunParts } from '~/utils/ceremony-run'
 import type { RigState } from '~/utils/compibert-rig'
 import type { Gsap } from '~/utils/gsap'
 import { ceremonyEndsAt, ceremonyPlays, ceremonyTimeline } from '~~/shared/ceremony'
@@ -43,7 +43,12 @@ const model = computed(() => ceremonyModel(props.view, t))
 const startsMs = computed(() => (ceremony.value ? Date.parse(ceremony.value.startsAt) : null))
 /** Every Party has a Standing, so this is the Party count the server stored the end for. */
 const partyCount = computed(() => props.view.standings?.length ?? 0)
-const schedule = computed(() => (ceremony.value ? ceremonyTimeline(partyCount.value, ceremony.value.gag) : null))
+// A Tie (#315): the run's timeline also depends on the Winners and on whether this screen shows them as a grid. The server stored the end for
+// the default layout; a phone's grid of 3 Winners ends up to 1.7 s earlier than that, never later (shared/ceremony.ts).
+const roomy = useMediaQuery('(min-width: 48rem)')
+const layout = computed(() => ceremonyLayout(model.value?.winners.length ?? 1, model.value?.rows.length ?? 0, roomy.value === true))
+const shape = computed(() => ({ partyCount: partyCount.value, winners: model.value?.winners.length ?? 1, grid: layout.value.stage === 'grid' }))
+const schedule = computed(() => (ceremony.value ? ceremonyTimeline(shape.value.partyCount, ceremony.value.gag, shape.value.winners, shape.value.grid) : null))
 
 /** The start (its ISO instant) this viewer's layer opened for, the one they closed and the one they skipped: in memory only. */
 const openedFor = ref<string | null>(null)
@@ -80,7 +85,8 @@ async function replay() {
   const start = synced.value
   if (!start) return
   const startsMs = props.serverNow()
-  const endsAt = new Date(ceremonyEndsAt(startsMs, partyCount.value, start.gag)).toISOString()
+  // The server-style end (the default layout, never this screen's): harmless on a phone's grid of 3 Winners, which only waits a little for the clock (#315).
+  const endsAt = new Date(ceremonyEndsAt(startsMs, shape.value.partyCount, start.gag, shape.value.winners)).toISOString()
   const run: CeremonyView = { startsAt: new Date(startsMs).toISOString(), endsAt, gag: start.gag }
   const restart = open.value
   replayed.value = { of: start.startsAt, run }
@@ -129,13 +135,12 @@ let gsapHandle: Gsap | undefined
 let parts: RunParts | undefined
 let session = 0
 let resizeObserver: ResizeObserver | undefined
-/** The stretch of the clock the last seek covered: the stamp's confetti is for the viewer who saw it live. */
+/** The stretch of the clock the last seek covered: every burst of confetti (the stamp's, a hop's) is for the viewer who saw it live. */
 let seek = { from: 0, to: 0 }
 const LIVE_STAMP_MS = 500
 
-function onStamp() {
-  const stampAt = schedule.value?.stampAtMs ?? 0
-  if (seek.from < stampAt && seek.to - stampAt <= LIVE_STAMP_MS) award.value?.burst()
+function onBurst(burst: Burst) {
+  if (seek.from < burst.atMs && seek.to - burst.atMs <= LIVE_STAMP_MS) award.value?.burst(burst.at === 'hop' ? burst.index : 'stamp')
 }
 
 function teardown() {
@@ -177,14 +182,14 @@ async function begin() {
   gsapHandle = gsap
   parts = found
   timeline = buildRun(gsap, found, runGeometry(measureRun(root, found)), {
-    partyCount: partyCount.value,
+    ...shape.value,
     gag: ceremony.value.gag,
     rigState: state => (rig.value = state),
-    onStamp,
+    onBurst,
   })
   // The first seek is silent: a late joiner fires no call, and gets the pose from the clock instead.
   timeline.time(elapsed.value / 1000, true)
-  rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, partyCount.value, ceremony.value.gag)
+  rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, shape.value.partyCount, ceremony.value.gag, shape.value.winners, shape.value.grid)
   if (frame.value === 'end') finish()
   seek = { from: elapsed.value, to: elapsed.value }
   ready.value = true
@@ -199,9 +204,17 @@ watch(() => (open.value ? ceremony.value?.startsAt : null), (key) => {
   rig.value = 'idle'
   if (!key) return
   reduced.value = reducedMotion()
-  rig.value = reduced.value ? 'cheer' : ceremonyRigState(elapsed.value, partyCount.value, ceremony.value!.gag)
+  rig.value = reduced.value ? 'cheer' : ceremonyRigState(elapsed.value, shape.value.partyCount, ceremony.value!.gag, shape.value.winners, shape.value.grid)
   void begin()
 }, { immediate: true, flush: 'sync' })
+
+// A screen that crosses the phone's width while the layer is open re-lays the stage out (a chain becomes a grid): the run is built again on the
+// new parts, at the clock's place (#315).
+watch(() => `${layout.value.stage}-${layout.value.rows}`, () => {
+  if (!open.value || failed.value) return
+  teardown()
+  void begin()
+}, { flush: 'post' })
 
 // Every frame while the run plays: events fire as the clock crosses them.
 watch(elapsed, (at) => {
@@ -308,6 +321,7 @@ watch(open, async (isOpen, was) => {
           :model="model"
           :heading-id="headingId"
           :state="rig"
+          :layout="layout"
         >
           <!-- The end frame's buttons (#313, #314), rendered once the row shows. „Bild teilen“ takes the focus when the run ends or is skipped (the watch on `frame`). -->
           <template #share>

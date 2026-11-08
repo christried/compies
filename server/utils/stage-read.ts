@@ -269,8 +269,11 @@ export async function coinSection({ db, rows }: StageContext): Promise<Pick<Even
 }
 
 /** The Award ceremony (#309, spec #308): the latest start of a finished Event, identical for every viewer (nothing in it is secret); null before the first start. */
-export async function ceremonySection({ eventRow }: StageContext): Promise<Pick<EventView, 'ceremony'>> {
-  return { ceremony: ceremonyViewOf(eventRow) }
+export async function ceremonySection({ eventRow, rows }: StageContext): Promise<Pick<EventView, 'ceremony'>> {
+  // The end of a run depends on how many Parties are on rank 1 (#315): the Standings of the Results rows, which a finished Event never changes.
+  const settings = settingsFromRow(eventRow)
+  const winners = settings === null ? 0 : leadersOf(standingsAndEnd(rows.results.map(entry => entry.places), settings).standings).length
+  return { ceremony: ceremonyViewOf(eventRow, winners) }
 }
 
 /**

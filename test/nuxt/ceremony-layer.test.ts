@@ -35,18 +35,18 @@ const RigStub = defineComponent({
 
 const T0 = Date.parse('2090-10-30T20:00:00.000Z')
 const STARTS = T0 + CEREMONY_LEAD_MS
-const RUN = ceremonyTimeline(2, 'trip').endMs
+const RUN = ceremonyTimeline(2, 'trip', 1).endMs
 const ENDS = STARTS + RUN
 
 type Layer = InstanceType<typeof CeremonyLayer>['$props']['view']
 
-const ceremonyAt = (startsAt: number, parties = 2, gag: CeremonyGag = 'trip'): CeremonyView => ({
+const ceremonyAt = (startsAt: number, parties = 2, gag: CeremonyGag = 'trip', winners = 1): CeremonyView => ({
   startsAt: new Date(startsAt).toISOString(),
-  endsAt: new Date(startsAt + ceremonyTimeline(parties, gag).endMs).toISOString(),
+  endsAt: new Date(startsAt + ceremonyTimeline(parties, gag, winners).endMs).toISOString(),
   gag,
 })
 /** The Standings of `parties` Parties, the first `winners` of them on rank 1. */
-const standingsOf = (parties: number, winners = 1) => Array.from({ length: parties }, (_, index) => ({ team: index + 1, rank: index < winners ? 1 : index + 1, points: Math.max(9 - index, 1) }))
+const standingsOf = (parties: number, winners = 1) => Array.from({ length: parties }, (_, index) => ({ team: index + 1, rank: index < winners ? 1 : index + 1, points: index < winners ? 9 : Math.max(9 - index, 1) }))
 const team = (position: number, name: string | null = null): BoardTeam => ({ position, name, frozen: true })
 const player = (id: string, name: string, teamPosition: number): MemberView => memberView({ id, name, zone: 'team', team: teamPosition })
 const people = (count: number, teamPosition: number): MemberView[] => Array.from({ length: count }, (_, index) => player(`p${teamPosition}-${index}`, `Leute ${teamPosition}-${index + 1}`, teamPosition))
@@ -288,19 +288,13 @@ describe('closing it', () => {
 
 describe('the live region', () => {
   const status = () => dialog()?.querySelector('[role="status"]')?.textContent?.trim()
-  const AFTER_STAMP = ceremonyTimeline(2, 'trip').stampAtMs + 1000
+  const AFTER_STAMP = ceremonyTimeline(2, 'trip', 1).stampAtMs + 1000
 
   it('names the Winner in a polite live region inside the dialog', async () => {
     await mount(finished(), STARTS + AFTER_STAMP)
 
     expect(dialog()!.querySelector('[role="status"]')?.getAttribute('aria-live')).toBe('polite')
     expect(status()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
-  })
-
-  it('names every Winner of a Tie', async () => {
-    await mount(finished({ standings: [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 1, points: 9 }] }), STARTS + AFTER_STAMP)
-
-    expect(status()).toBe('Unentschieden: Wilde Gurken und Nacht Eulen, je 9 Punkte.')
   })
 })
 
@@ -362,17 +356,6 @@ describe('what the end frame shows', () => {
     expect(text()).toContain('Wilde Gurken')
     expect(text()).toContain('9 P.')
     expect(text()).toContain('SIEGER')
-  })
-
-  it('lists one item per Winner of a Tie, every Team name as plain text, without a team colour in the header', async () => {
-    await mount(finished({ standings: [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 1, points: 9 }] }), STARTS)
-
-    const winners = [...dialog()!.querySelectorAll('[data-testid="winners"] li')].map(item => item.textContent?.trim())
-    expect(winners).toEqual(['Wilde Gurken', 'Nacht Eulen'])
-    expect(rows()).toEqual([])
-    expect(text()).toContain('SIEGER')
-    // The people of both Winners stand in one list.
-    expect(cells().map(cell => cell.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('Anna'), expect.stringContaining('Cleo')]))
   })
 
   it('shows the Players of the Winner with a picture and a name, never the other Party', async () => {
@@ -478,13 +461,13 @@ const everyPartShown = () => ['banner', 'row', 'card', 'back', 'stamp', 'person'
 function run(parties: number, gag: CeremonyGag, overrides: Partial<Layer> = {}): Layer {
   const ceremony = ceremonyAt(STARTS, parties, gag)
   // A fixture cannot lie: the stored end is the timeline's end.
-  expect(Date.parse(ceremony.endsAt) - STARTS).toBe(ceremonyTimeline(parties, gag).endMs)
+  expect(Date.parse(ceremony.endsAt) - STARTS).toBe(ceremonyTimeline(parties, gag, 1).endMs)
   return finished({ ceremony, standings: standingsOf(parties), teams: [], members: [], ...overrides })
 }
 
 describe('a late joiner enters where the run is (#312)', () => {
-  const { rowsAtMs, runAtMs, runEndAtMs, stampAtMs, endMs } = ceremonyTimeline(5, 'bonk')
-  const trip = ceremonyTimeline(5, 'trip')
+  const { rowsAtMs, runAtMs, runEndAtMs, stampAtMs, endMs } = ceremonyTimeline(5, 'bonk', 1)
+  const trip = ceremonyTimeline(5, 'trip', 1)
 
   it('at the first frame sees the banner above, no rows, no card, no stamp, no people, Compibert idle, no confetti', async () => {
     await mount(run(5, 'trip'), STARTS)
@@ -551,7 +534,7 @@ describe('a late joiner enters where the run is (#312)', () => {
 })
 
 describe('the stamp (#312)', () => {
-  const { stampAtMs } = ceremonyTimeline(2, 'trip')
+  const { stampAtMs } = ceremonyTimeline(2, 'trip', 1)
 
   it('bursts 40 pieces of confetti on a wide screen when the clock crosses it, and the live region speaks then', async () => {
     stubScreen(true)
@@ -596,7 +579,7 @@ describe('the end (#312)', () => {
   const CASES = [2, 5, 8].flatMap(parties => CEREMONY_GAGS.map(gag => [parties, gag] as const))
 
   it.each(CASES)('is the end frame at endsAt with %i Parties and the %s gag', async (parties, gag) => {
-    const { endMs } = ceremonyTimeline(parties, gag)
+    const { endMs } = ceremonyTimeline(parties, gag, 1)
     await mount(run(parties, gag), STARTS)
 
     await passTo(STARTS + endMs - 1)
@@ -615,18 +598,6 @@ describe('the end (#312)', () => {
     await mount(run(8, 'trip'), STARTS)
 
     expect(part('row')).toHaveLength(7)
-  })
-
-  it('plays a Tie of two over the same timeline: fewer rows, the end at endsAt', async () => {
-    const { endMs } = ceremonyTimeline(4, 'trip')
-    await mount(run(4, 'trip', { standings: standingsOf(4, 2) }), STARTS)
-    expect(part('row')).toHaveLength(2)
-
-    await passTo(STARTS + endMs - 1)
-    expect(frame()).toBe('run')
-    await passTo(STARTS + endMs)
-    expect(frame()).toBe('end')
-    expect(everyPartShown()).toBe(true)
   })
 
   it('shows 0, 1, 7 and 12 people at the end: the TeamMark, one, and „+N“', async () => {
@@ -676,7 +647,7 @@ describe('Überspringen (#312)', () => {
     skipButton()!.click()
     await settle()
 
-    await passTo(STARTS + ceremonyTimeline(2, 'trip').stampAtMs + 50)
+    await passTo(STARTS + ceremonyTimeline(2, 'trip', 1).stampAtMs + 50)
     expect(pieces()).toBe(0)
     await passTo(ENDS + 100)
 
@@ -737,7 +708,7 @@ describe('reduced motion (#312)', () => {
     expect(spoken()).toBe('Gewonnen hat Wilde Gurken, 9 Punkte.')
     expect(document.activeElement).toBe(closeButton())
 
-    await passTo(STARTS + ceremonyTimeline(2, 'trip').stampAtMs + 50)
+    await passTo(STARTS + ceremonyTimeline(2, 'trip', 1).stampAtMs + 50)
     expect(pieces()).toBe(0)
   })
 })
@@ -745,7 +716,7 @@ describe('reduced motion (#312)', () => {
 describe('closing during the run (#312)', () => {
   it('removes the layer and its confetti, and a refetch of the same start keeps it closed', async () => {
     stubScreen(true)
-    const { stampAtMs } = ceremonyTimeline(2, 'trip')
+    const { stampAtMs } = ceremonyTimeline(2, 'trip', 1)
     await mount(finished(), STARTS)
     await passTo(STARTS + stampAtMs - 100)
     await passTo(STARTS + stampAtMs + 50)
@@ -865,7 +836,7 @@ describe('Bild teilen (#313)', () => {
 
   it('is in the end frame the clock brings, too', async () => {
     // Before the share row shows (#314: the button follows the row, not only the end frame).
-    await mountWithShare(STARTS + ceremonyTimeline(2, 'trip').shareAtMs - 1)
+    await mountWithShare(STARTS + ceremonyTimeline(2, 'trip', 1).shareAtMs - 1)
     expect(shareButton()).toBeNull()
 
     await passTo(ENDS + 100)
@@ -971,7 +942,7 @@ describe('watching again (#314)', () => {
   })
 
   it('takes longer for more Parties: the end follows the Party count', async () => {
-    const { endMs } = ceremonyTimeline(8, 'trip')
+    const { endMs } = ceremonyTimeline(8, 'trip', 1)
     await mount(run(8, 'trip'), REPLAY_AT)
     await replay()
 
@@ -983,9 +954,9 @@ describe('watching again (#314)', () => {
 
   it.each(CEREMONY_GAGS)('plays the read\'s gag, the %s', async (gag) => {
     const view = finished({ ceremony: ceremonyAt(STARTS, 2, gag) })
-    await mount(view, STARTS + ceremonyTimeline(2, gag).endMs + 60_000)
+    await mount(view, STARTS + ceremonyTimeline(2, gag, 1).endMs + 60_000)
     const at = serverTime
-    const { runEndAtMs } = ceremonyTimeline(2, gag)
+    const { runEndAtMs } = ceremonyTimeline(2, gag, 1)
     await replay()
 
     await passTo(at + runEndAtMs + 100)
@@ -1005,20 +976,20 @@ describe('watching again (#314)', () => {
     await passTo(later - CEREMONY_LEAD_MS)
     await refetch(view)
     await passTo(later + 100)
-    await passTo(later + ceremonyTimeline(2, 'bonk').endMs + 100)
+    await passTo(later + ceremonyTimeline(2, 'bonk', 1).endMs + 100)
     closeButton()!.click()
     await settle()
     const at = serverTime
 
     await replay()
-    await passTo(at + ceremonyTimeline(2, 'bonk').runEndAtMs + 100)
+    await passTo(at + ceremonyTimeline(2, 'bonk', 1).runEndAtMs + 100)
 
     expect(rigState()).toBe('cheer')
   })
 
   it('bursts the confetti at the stamp and speaks then, as a synced run does', async () => {
     stubScreen(true)
-    const { stampAtMs } = ceremonyTimeline(2, 'trip')
+    const { stampAtMs } = ceremonyTimeline(2, 'trip', 1)
     await mount(finished(), REPLAY_AT)
     await replay()
     await passTo(REPLAY_AT + stampAtMs - 100)
@@ -1032,7 +1003,7 @@ describe('watching again (#314)', () => {
   })
 
   describe('„Nochmal ansehen“', () => {
-    const { shareAtMs } = ceremonyTimeline(2, 'trip')
+    const { shareAtMs } = ceremonyTimeline(2, 'trip', 1)
 
     async function atTheEndFrame(view: Layer = finished()) {
       await mount(view, STARTS)
@@ -1107,7 +1078,7 @@ describe('watching again (#314)', () => {
 
     it('plays the restarted show to its own end, bursting the confetti and speaking at the stamp again', async () => {
       stubScreen(true)
-      const { stampAtMs } = ceremonyTimeline(2, 'trip')
+      const { stampAtMs } = ceremonyTimeline(2, 'trip', 1)
       await atTheEndFrame()
       const at = serverTime
       againButton()!.click()
@@ -1261,7 +1232,7 @@ describe('watching again (#314)', () => {
   })
 
   describe('the share row in the dialog', () => {
-    const { shareAtMs } = ceremonyTimeline(2, 'trip')
+    const { shareAtMs } = ceremonyTimeline(2, 'trip', 1)
     const row = () => dialog()?.querySelector<HTMLElement>('[data-part="share"]') ?? null
     const tab = (target: Element, shiftKey = false) => {
       target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true }))
@@ -1305,6 +1276,378 @@ describe('watching again (#314)', () => {
       await settle()
 
       expect(document.activeElement).toBe(skipButton())
+    })
+  })
+})
+
+// A Tie (#315, spec #308, 12-siegerehrung-unentschieden.md): several Winners share the plate „Platz 1“. The trophy hops from card to card
+// (a chain, 2 and on a wide screen 3 Winners) or lands on the plate (a grid), the plate stamps „Unentschieden“, and each Winner's people
+// come in under or in its card. Happy-dom has no layout, so what is asserted is what a viewer or a screen reader would find, and when.
+describe('a Tie (#315)', () => {
+  const NAMES = ['Wilde Gurken', 'Nacht Eulen', 'Gelbe Gefahr', 'Käse Turbo', 'Grüne Welle', 'Blaue Bohnen', 'Pinke Panik', 'Team Orange']
+  const named = (parties: number) => Array.from({ length: parties }, (_, index) => team(index + 1, NAMES[index]))
+
+  /** A finished Event of `parties` Parties with the first `winners` on rank 1; the stored end is the default layout's (the server's). */
+  function tie(parties: number, winners: number, gag: CeremonyGag = 'trip', overrides: Partial<Layer> = {}): Layer {
+    const ceremony = ceremonyAt(STARTS, parties, gag, winners)
+    expect(Date.parse(ceremony.endsAt) - STARTS).toBe(ceremonyTimeline(parties, gag, winners).endMs)
+    return finished({ ceremony, standings: standingsOf(parties, winners), teams: named(parties), members: [], ...overrides })
+  }
+
+  const cards = () => [...(dialog()?.querySelectorAll('[data-testid="winner-card"]') ?? [])]
+  const sieger = () => (text().match(/SIEGER/g) ?? []).length
+  const list = (name: string) => dialog()?.querySelector(`ul[aria-label="${name}"]`) ?? null
+  const items = (name: string) => [...(list(name)?.querySelectorAll(':scope > li') ?? [])]
+  const chips = () => [...(dialog()?.querySelectorAll('ol[aria-label="Endstand"] > li') ?? [])]
+  const plate = () => part('plate')[0]
+  const tieEnd = (hasRows: boolean, people = 'person') => ['banner', 'plate', 'plate-stamp', 'card', 'back', 'stamp', people, ...(hasRows ? ['row'] : [])].every(shown) && hidden('front') && hidden('plate-front')
+
+  async function atEnd(view: Layer, endMs: number) {
+    await mount(view, STARTS + endMs - 1)
+    await passTo(STARTS + endMs)
+  }
+
+  describe('the end frame', () => {
+    it('shows one card and one „SIEGER“ per Winner under the plate with its stamp, 2 of 4 Parties on a wide screen', async () => {
+      stubScreen(true)
+      await atEnd(tie(4, 2), ceremonyTimeline(4, 'trip', 2).endMs)
+
+      expect(frame()).toBe('end')
+      expect(cards()).toHaveLength(2)
+      expect(sieger()).toBe(2)
+      expect(plate()!.textContent).toContain('Platz 1')
+      expect(plate()!.textContent).toContain('Unentschieden')
+      expect(dialog()!.querySelectorAll('ol[aria-label="Platz 1, unentschieden"] > li')).toHaveLength(2)
+      expect(cards().map(card => card.textContent)).toEqual([expect.stringContaining('Wilde Gurken'), expect.stringContaining('Nacht Eulen')])
+      expect(cards()[0]!.textContent).toContain('9 P.')
+      expect(tieEnd(true)).toBe(true)
+    })
+
+    it('hides the „=“ badges from assistive technology', async () => {
+      stubScreen(true)
+      await atEnd(tie(4, 2), ceremonyTimeline(4, 'trip', 2).endMs)
+
+      const badges = part('badge')
+      expect(badges).toHaveLength(1)
+      expect(badges[0]!.getAttribute('aria-hidden')).toBe('true')
+    })
+
+    it('lists the Players of every Winning Party in a list named for the Party, never the other Party', async () => {
+      stubScreen(true)
+      const members = [player('a', 'Anna', 1), player('b', 'Bert', 1), player('c', 'Cleo', 2), player('d', 'Dora', 3)]
+      await atEnd(tie(4, 2, 'trip', { members }), ceremonyTimeline(4, 'trip', 2).endMs)
+
+      expect(items('Wilde Gurken').map(item => item.textContent?.trim())).toEqual(['Anna', 'Bert'])
+      expect(items('Nacht Eulen').map(item => item.textContent?.trim())).toEqual(['Cleo'])
+      expect(items('Gelbe Gefahr')).toEqual([])
+      expect(items('Wilde Gurken').every(item => item.querySelector('img') !== null)).toBe(true)
+    })
+
+    it('shows 5 avatars and „+2“ for a Party with 7 Players, and its TeamMark and name for a Party with none', async () => {
+      stubScreen(true)
+      await atEnd(tie(3, 2, 'trip', { members: people(7, 1) }), ceremonyTimeline(3, 'trip', 2).endMs)
+
+      expect(items('Wilde Gurken')).toHaveLength(6)
+      expect(items('Wilde Gurken')[5]!.textContent).toContain('+2')
+      expect(items('Nacht Eulen')).toHaveLength(1)
+      expect(items('Nacht Eulen')[0]!.textContent?.trim()).toBe('Nacht Eulen')
+      expect(items('Nacht Eulen')[0]!.querySelector('img')).toBeNull()
+      expect(items('Nacht Eulen')[0]!.querySelector('svg')).not.toBeNull()
+    })
+
+    it('shows exactly 6 Players of a Party without a „+N“', async () => {
+      stubScreen(true)
+      await atEnd(tie(3, 2, 'trip', { members: people(6, 1) }), ceremonyTimeline(3, 'trip', 2).endMs)
+
+      expect(items('Wilde Gurken')).toHaveLength(6)
+      expect(list('Wilde Gurken')!.textContent).not.toContain('weitere')
+    })
+
+    it('puts the places below the Winners as rows with shared ranks on a wide screen and on a phone, and none when every Party won', async () => {
+      stubScreen(true)
+      await atEnd(tie(4, 2), ceremonyTimeline(4, 'trip', 2).endMs)
+      expect(rows()).toEqual(['3 Gelbe Gefahr 7 P.', '4 Käse Turbo 6 P.'])
+      mounted!.unmount()
+
+      stubScreen(false)
+      await atEnd(tie(4, 2), ceremonyTimeline(4, 'trip', 2).endMs)
+      expect(rows()).toEqual(['3 Gelbe Gefahr 7 P.', '4 Käse Turbo 6 P.'])
+      mounted!.unmount()
+
+      stubScreen(true)
+      await atEnd(tie(2, 2), ceremonyTimeline(2, 'trip', 2).endMs)
+      expect(rows()).toEqual([])
+      expect(part('row')).toHaveLength(0)
+      expect(cards()).toHaveLength(2)
+    })
+
+    it('shows the places below 3 Winners as one line of chips with rank, name and points', async () => {
+      stubScreen(true)
+      await atEnd(tie(5, 3), ceremonyTimeline(5, 'trip', 3).endMs)
+
+      expect(chips().map(chip => [...chip.children].map(part => part.textContent?.trim()).filter(Boolean).join(' '))).toEqual(['4 Käse Turbo 6 P.', '5 Grüne Welle 5 P.'])
+      expect(cards()).toHaveLength(3)
+    })
+
+    it('shows all 8 Winners of 8 Parties as compact cards with their people in a stack named for the Party and its Players', async () => {
+      stubScreen(false)
+      const members = [player('a', 'Anna', 1), player('b', 'Bert', 1), ...people(7, 2)]
+      await atEnd(tie(8, 8, 'bonk', { members }), ceremonyTimeline(8, 'bonk', 8, true).endMs)
+
+      expect(frame()).toBe('end')
+      expect(cards()).toHaveLength(8)
+      expect(sieger()).toBe(8)
+      expect(rows()).toEqual([])
+      expect(plate()!.textContent).toContain('Unentschieden')
+      expect(dialog()!.querySelector('ul[aria-label="Wilde Gurken: Anna, Bert"]')).not.toBeNull()
+      expect(dialog()!.querySelector('ul[aria-label^="Nacht Eulen: Leute 2-1"]')).not.toBeNull()
+      expect(dialog()!.querySelector('ul[aria-label$="2 weitere"]')).not.toBeNull()
+      expect(tieEnd(false, 'stack')).toBe(true)
+    })
+
+    it('shows the longest Team name in full in the DOM of a card and of its list', async () => {
+      stubScreen(true)
+      const longest = Array.from({ length: 6 }, () => 'W'.repeat(12)).join(' ')
+      await atEnd(tie(2, 2, 'trip', { teams: [team(1, longest), team(2, 'B')], members: [player('a', 'Anna', 1)] }), ceremonyTimeline(2, 'trip', 2).endMs)
+
+      expect(cards()[0]!.textContent).toContain(longest)
+      expect(items(longest)).toHaveLength(1)
+    })
+
+    it('keeps Winners that are not adjacent teams in ascending order', async () => {
+      stubScreen(true)
+      const standings = [{ team: 1, rank: 1, points: 5 }, { team: 2, rank: 4, points: 1 }, { team: 3, rank: 1, points: 5 }, { team: 8, rank: 1, points: 5 }]
+      await atEnd(tie(4, 3, 'trip', { standings, teams: [team(1, 'Eins'), team(2, 'Zwei'), team(3, 'Drei'), team(8, 'Acht')] }), ceremonyTimeline(4, 'trip', 3).endMs)
+
+      expect(cards().map(card => card.textContent)).toEqual([expect.stringContaining('Eins'), expect.stringContaining('Drei'), expect.stringContaining('Acht')])
+    })
+  })
+
+  describe('the live region', () => {
+    const { stampAtMs } = ceremonyTimeline(4, 'trip', 2)
+
+    it('names all Winners with the rows below, once the plate has stamped and not before', async () => {
+      stubScreen(true)
+      await mount(tie(4, 2), STARTS)
+      await passTo(STARTS + stampAtMs - 100)
+      expect(spoken()).toBe('')
+
+      await passTo(STARTS + stampAtMs + 50)
+
+      expect(spoken()).toBe('Unentschieden! Gewonnen haben Wilde Gurken und Nacht Eulen mit je 9 Punkten.')
+    })
+
+    it('says „Beide Parteien“ when both of 2 Parties won', async () => {
+      stubScreen(true)
+      await mount(tie(2, 2), STARTS + ceremonyTimeline(2, 'trip', 2).stampAtMs + 100)
+
+      expect(spoken()).toBe('Unentschieden! Beide Parteien gewinnen mit je 9 Punkten: Wilde Gurken und Nacht Eulen.')
+    })
+
+    it('says „Alle 8 Parteien“ when all 8 won', async () => {
+      stubScreen(false)
+      await mount(tie(8, 8), STARTS + ceremonyTimeline(8, 'trip', 8, true).stampAtMs + 100)
+
+      expect(spoken()).toBe('Unentschieden! Alle 8 Parteien gewinnen mit je 9 Punkten: Wilde Gurken, Nacht Eulen, Gelbe Gefahr, Käse Turbo, Grüne Welle, Blaue Bohnen, Pinke Panik und Team Orange.')
+    })
+
+    it('says the line under the banner for the Tie', async () => {
+      stubScreen(true)
+      await mount(tie(4, 2), STARTS)
+
+      expect(text()).toContain('Freitags-Zocken · 3 Spiele · 2 Sieger, je 9 Punkte')
+    })
+  })
+
+  describe('a late joiner', () => {
+    it('after the plate\'s stamp sees every stamp, the plate stamped, the people, Compibert laughing, no confetti and the sentence', async () => {
+      stubScreen(true)
+      const { stampAtMs } = ceremonyTimeline(4, 'bonk', 2)
+      await mount(tie(4, 2, 'bonk', { members: [player('a', 'Anna', 1), player('c', 'Cleo', 2)] }), STARTS + stampAtMs + 1000)
+
+      expect(frame()).toBe('run')
+      expect(shown('stamp')).toBe(true)
+      expect(shown('plate-stamp')).toBe(true)
+      expect(hidden('plate-front')).toBe(true)
+      expect(hidden('front')).toBe(true)
+      expect(shown('person')).toBe(true)
+      expect(rigState()).toBe('laugh')
+      expect(pieces()).toBe(0)
+      expect(spoken()).toContain('Unentschieden!')
+    })
+
+    it('after the first hop sees the first card flipped and the second not, and gets no confetti for the hops that passed', async () => {
+      stubScreen(true)
+      const { landAtMs } = ceremonyTimeline(4, 'trip', 2)
+      await mount(tie(4, 2), STARTS + landAtMs + 300)
+
+      expect(opacityOf(part('back')[0]!)).toBe('1')
+      expect(Number(opacityOf(part('back')[1]!))).toBe(0)
+      expect(pieces()).toBe(0)
+    })
+
+    it('at the first frame sees the plate and the cards not yet in', async () => {
+      stubScreen(true)
+      await mount(tie(4, 2), STARTS)
+
+      expect(hidden('plate')).toBe(true)
+      expect(hidden('card')).toBe(true)
+      expect(hidden('row')).toBe(true)
+      expect(hidden('person')).toBe(true)
+      expect(spoken()).toBe('')
+    })
+  })
+
+  describe('the confetti', () => {
+    it('bursts 14 pieces on a card as the trophy lands on it, then 14 on the next and 40 on the plate at the stamp, on a wide screen', async () => {
+      stubScreen(true)
+      const { landAtMs, stampAtMs } = ceremonyTimeline(3, 'trip', 2)
+      await mount(tie(3, 2), STARTS)
+      await passTo(STARTS + landAtMs - 100)
+      expect(pieces()).toBe(0)
+
+      await passTo(STARTS + landAtMs + 50)
+      expect(pieces()).toBe(14)
+
+      await passTo(STARTS + landAtMs + 600)
+      expect(pieces()).toBe(14 + 14)
+
+      await passTo(STARTS + stampAtMs - 50)
+      await passTo(STARTS + stampAtMs + 50)
+      expect(pieces()).toBe(14 + 14 + 40)
+    })
+
+    it('bursts 8 per card and 20 on the plate on a phone', async () => {
+      stubScreen(false)
+      const { landAtMs, stampAtMs } = ceremonyTimeline(3, 'trip', 2)
+      await mount(tie(3, 2), STARTS)
+      await passTo(STARTS + landAtMs - 100)
+
+      await passTo(STARTS + landAtMs + 50)
+      expect(pieces()).toBe(8)
+
+      await passTo(STARTS + landAtMs + 600)
+      await passTo(STARTS + stampAtMs - 50)
+      await passTo(STARTS + stampAtMs + 50)
+      expect(pieces()).toBe(8 + 8 + 20)
+    })
+
+    it('has no confetti per card in a grid, only the plate\'s', async () => {
+      stubScreen(true)
+      const { landAtMs, stampAtMs } = ceremonyTimeline(8, 'trip', 8)
+      await mount(tie(8, 8), STARTS)
+      await passTo(STARTS + landAtMs - 100)
+      await passTo(STARTS + landAtMs + 100)
+      expect(pieces()).toBe(0)
+
+      await passTo(STARTS + stampAtMs + 50)
+      expect(pieces()).toBe(40)
+    })
+  })
+
+  describe('the end', () => {
+    it('is the end frame at the stored end, with 2 of 4 Parties and both gags', async () => {
+      stubScreen(true)
+      for (const gag of CEREMONY_GAGS) {
+        const { endMs } = ceremonyTimeline(4, gag, 2)
+        await mount(tie(4, 2, gag), STARTS)
+
+        await passTo(STARTS + endMs - 1)
+        expect(frame(), gag).toBe('run')
+        await passTo(STARTS + endMs)
+        expect(frame(), gag).toBe('end')
+        expect(rigState(), gag).toBe('dance')
+        expect(tieEnd(true), gag).toBe(true)
+        mounted!.unmount()
+      }
+    })
+
+    it('ends a phone\'s grid of 3 Winners before the stored chain end, never after it', async () => {
+      stubScreen(false)
+      const grid = ceremonyTimeline(3, 'trip', 3, true)
+      const stored = ceremonyTimeline(3, 'trip', 3)
+      await mount(tie(3, 3), STARTS)
+
+      await passTo(STARTS + grid.endMs - 1)
+      expect(frame()).toBe('run')
+      await passTo(STARTS + grid.endMs)
+      expect(frame()).toBe('end')
+      expect(grid.endMs).toBeLessThanOrEqual(stored.endMs)
+      expect(dialog()).not.toBeNull()
+    })
+  })
+
+  describe('Überspringen and reduced motion', () => {
+    it('shows the end frame at once, speaks the sentence, and fires no confetti', async () => {
+      stubScreen(true)
+      await mount(tie(4, 2), STARTS + 500)
+
+      skipButton()!.click()
+      await settle()
+
+      expect(frame()).toBe('end')
+      expect(tieEnd(true)).toBe(true)
+      expect(rigState()).toBe('dance')
+      expect(spoken()).toBe('Unentschieden! Gewonnen haben Wilde Gurken und Nacht Eulen mit je 9 Punkten.')
+      expect(pieces()).toBe(0)
+      await passTo(STARTS + ceremonyTimeline(4, 'trip', 2).stampAtMs + 50)
+      expect(pieces()).toBe(0)
+    })
+
+    it('opens with the end frame, Compibert cheering, no confetti and the sentence, 2 of 2 and 8 of 8', async () => {
+      motion('reduced')
+      for (const [parties, winners, wide] of [[2, 2, true], [8, 8, false]] as const) {
+        stubScreen(wide)
+        await mount(tie(parties, winners), STARTS)
+
+        expect(frame()).toBe('end')
+        expect(skipButton()).toBeNull()
+        expect(rigState()).toBe('cheer')
+        expect(tieEnd(false, winners === 8 ? 'stack' : 'person')).toBe(true)
+        expect(spoken()).toContain('Unentschieden!')
+        await passTo(STARTS + ceremonyTimeline(parties, 'trip', winners).stampAtMs + 50)
+        expect(pieces()).toBe(0)
+        mounted!.unmount()
+      }
+    })
+  })
+
+  describe('the end frame\'s buttons and watching again (#314)', () => {
+    it('shows „Bild teilen“ 1.4 s after the plate, not after the first landing', async () => {
+      stubScreen(true)
+      const { landAtMs, plateAtMs, shareAtMs } = ceremonyTimeline(4, 'trip', 2)
+      await mount(tie(4, 2), STARTS)
+
+      await passTo(STARTS + plateAtMs + 100)
+      expect(plateAtMs).toBeGreaterThan(landAtMs)
+      expect(shareButton()).toBeNull()
+      await passTo(STARTS + shareAtMs - 10)
+      expect(shareButton()).toBeNull()
+
+      await passTo(STARTS + shareAtMs + 10)
+      expect(shareButton()).not.toBeNull()
+    })
+
+    it('replays a Tie from its first frame, and its end frame shows every Winner again', async () => {
+      stubScreen(true)
+      const { endMs } = ceremonyTimeline(4, 'trip', 2)
+      const at = STARTS + endMs + 60_000
+      await mount(tie(4, 2, 'trip', { members: [player('a', 'Anna', 1), player('c', 'Cleo', 2)] }), at)
+      expect(dialog()).toBeNull()
+
+      replayButton().click()
+      await settle()
+
+      expect(frame()).toBe('run')
+      expect(hidden('plate')).toBe(true)
+      expect(hidden('card')).toBe(true)
+      await passTo(at + endMs - 1)
+      expect(frame()).toBe('run')
+      await passTo(at + endMs)
+      expect(frame()).toBe('end')
+      expect(cards()).toHaveLength(2)
+      expect(sieger()).toBe(2)
+      expect(tieEnd(true)).toBe(true)
     })
   })
 })
