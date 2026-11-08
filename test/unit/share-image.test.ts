@@ -462,7 +462,7 @@ describe('shareImageModel', () => {
   })
 
   describe('the Team names', () => {
-    // The model names Parties from `de.team` because shared/board.ts is off-limits (a Worker imports it): this guards the second copy.
+    // The model names Parties with shared/team-name.ts and the copy it carries, the app's `teamName` with vue-i18n's: this holds the two equal (#329).
     it.each([1, 2, 3, 4, 5, 6, 7, 8])('names team %i as teamNameAt does', (position) => {
       const points = Array.from({ length: 8 }, (_, index) => (index + 1 === position ? 20 : 1))
       const withName = source({ points, names: { [position]: null } })

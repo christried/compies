@@ -1,6 +1,6 @@
 // The name a team is shown with (#161, GLOSSARY: Team name): its own Team name when it has one, else the Team colour's name („Team Rot“).
 // One rule for the app (`teamName` in app/utils/board.ts, with vue-i18n's t) and for the Share image's model on the server (which has no
-// vue-i18n and carries the copy it needs); share-image.test.ts holds the two equal (#329, review 0.9 S5). The Worker does not import this file.
+// vue-i18n and carries the copy it needs); share-image.test.ts holds the two equal (#329). The Worker does not import this file.
 
 /** The two strings the fallback needs, from wherever the caller gets its copy. */
 export interface TeamNameCopy {

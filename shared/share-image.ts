@@ -6,7 +6,7 @@ import type { EventView } from './event'
 import { leadersOf } from './finish'
 import { joinNames } from './list'
 import { berlinDay } from './time'
-import { PAPER, teamColor } from './team-colors'
+import { SURFACE, teamColor } from './team-colors'
 import { teamDisplayName } from './team-name'
 import { characterCount } from './text'
 
@@ -372,7 +372,7 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
   const all: ShareChip[] = results.map((result) => {
     const teams = result.places.filter(place => place.place === 1).map(place => place.team).sort((a, b) => a - b)
     const name = drawable(result.game.name)
-    const chip = { name: teams.length > CAPSULE_STRIPES_MAX ? `${name} ${fillCopy(text.gameTied, { n: teams.length })}` : name, teams, color: teams[0] === undefined ? PAPER : teamColor(teams[0]).fill }
+    const chip = { name: teams.length > CAPSULE_STRIPES_MAX ? `${name} ${fillCopy(text.gameTied, { n: teams.length })}` : name, teams, color: teams[0] === undefined ? SURFACE : teamColor(teams[0]).fill }
     // A game with a Shared first place gets a capsule: one stripe per Party, at most 4.
     return teams.length > 1 ? { ...chip, stripes: teams.slice(0, CAPSULE_STRIPES_MAX).map(team => teamColor(team).fill) } : chip
   })
