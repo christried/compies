@@ -9,7 +9,7 @@ You change no app code and commit nothing. Your **run folder** is `<tmp>/compies
 1. Reset your worktree onto the SHA (`git reset --hard <sha>`), then `pnpm install --frozen-lockfile` and `pnpm --dir realtime install --frozen-lockfile`.
 2. `.env` and `realtime/.dev.vars` are already there (`.worktreeinclude`). If one is missing, copy it from the main checkout without printing it: without `.dev.vars` the Worker refuses every Room publish with a 401.
 3. `pnpm db:migrate` brings the dev database to the SHA's migrations. Test data goes on the dev database only, named „R<release> <run> …“ (e.g. „R08 S7 …“).
-4. Check that ports 3000 and 8787 are free, then start `pnpm dev` and `pnpm dev:realtime`, their output in the run folder's `dev.log` and `rt.log`. You alone use those ports.
+4. Start the servers with `node scripts/browser/serve.mjs start <run>` (`run_in_background`) and wait for its `ready: dev :3000, realtime :8787` line; their output goes to the run folder's `dev.log` and `rt.log`. It exits 1 naming the port if 3000 or 8787 is taken. You alone use those ports. A check of a production build runs `pnpm build` in the foreground first, then `serve.mjs start <run> --only=prod` (`prod.log`, port 3001; the Worker started by the first call already allows that origin). `serve.mjs` owns the servers' process trees, because TaskStop ends the shell and leaves nuxt, the Worker and workerd running on Windows.
 5. Write `browser-report.md` in the run folder before the first check: the tested SHA and a verdict table with one empty row per item of the brief.
 
 ## Checks
@@ -28,7 +28,7 @@ You change no app code and commit nothing. Your **run folder** is `<tmp>/compies
 - Last row: the page errors of each tab (`tab.errors`), and the refused or failed lines in `dev.log` and `rt.log`, with the step they appeared on.
 - Never put a User's personal data in it.
 
-You are done when every item of the brief has its row, every server and Chrome you started is stopped, and your scripts are copied to the run folder's `scripts/`. Return at most 200 words: the report's path, the tested SHA, and one line per FAIL.
+You are done when every item of the brief has its row, every server and Chrome you started is stopped, and your scripts are copied to the run folder's `scripts/`. Stop the servers with `node scripts/browser/serve.mjs stop <run>`, never with TaskStop alone (it stops by itself when its shell dies or after 90 minutes, but only as a backstop), and make the report's last row the `stop` output (`stopped: ports :3000, :8787 free`); a taken port is named there with its PID, and you end nothing yourself. Return at most 200 words: the report's path, the tested SHA, and one line per FAIL.
 
 ## The brief
 
