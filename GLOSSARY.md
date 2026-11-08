@@ -54,6 +54,10 @@ _Avoid_: Share link, join link
 The stable address of an Event that only its Members can open; it survives rotating the Invite link.
 _Avoid_: Session link, Event URL, permalink
 
+**Deleted Event**:
+An Event its Host removed for good: it leaves Home for every Member at once, its Event link and Invite link lead nowhere, and no User can bring it back; its data stays stored until the operator removes it (UI: „Event löschen“).
+_Avoid_: Archived (an archive is readable), cancelled, closed
+
 **Member**:
 A User who has joined an Event through its Invite link. The Host is a Member of their own Event.
 _Avoid_: Participant, attendee, guest
@@ -208,6 +212,14 @@ _Avoid_: Format (an Event has a Format, a game has Suitabilities), game mode
 The free text on a game in the Game library, such as its settings, warm-up and win condition; the game's editors write it, and only Hosts read it, in the library and as the Host of an Event whose pool holds the game (UI: Notizen).
 _Avoid_: Note (a Note belongs to a Vote), description, rules
 
+**Tag**:
+A short word a game's editors attach to it in the Game library, such as a genre or „Co-op“, to find and filter games by; free, shared across the library, and never shown to Members (UI: Tag).
+_Avoid_: Label, category, keyword, genre (a genre is one kind of Tag)
+
+**Price**:
+What a game costs, as its editors last noted it: an amount in euros, where it is bought (Steam, Epic, GOG, the publisher, a Steam key, free-to-play or a subscription) and the day that was checked; a Member sees it wherever they may see the game (UI: Preis).
+_Avoid_: Cost, fee
+
 **Activity feed**:
 The Event's automatic log of what happened, with times, readable by every Member; it never names a game before everyone may know it (UI: Aktivität).
 _Avoid_: History, log, timeline
@@ -256,6 +268,10 @@ _Avoid_: Points, result
 Every Party's points over all Results, highest first; Parties with equal points share a rank, and nothing else orders them (UI: Tabelle).
 _Avoid_: Leaderboard, ranking, scoreboard
 
+**Leading Party**:
+A Party on the first rank of the Standings while the Event runs and at least one Result exists; several when they share the rank, none before the first Result. In a finished Event the Winners lead (UI: führt).
+_Avoid_: Leader, first place (a Place is inside one Result), favourite
+
 **Correction**:
 The Host changing a Result after it was entered, possible until the Event finishes; the Round keeps its number and shows that it was corrected (UI: korrigiert).
 _Avoid_: Edit, fix, amendment
@@ -270,7 +286,7 @@ _Avoid_: Close, end (a Session ends), archive
 
 **Winner**:
 A Party on the first rank of a finished Event's final Standings: one, or several when the Host finished a Tie as „Unentschieden“. Its Players are the ones in the Party at the Finish (UI: Sieger).
-_Avoid_: Champion, victor, leader (a leader is first while the Event still runs)
+_Avoid_: Champion, victor, leader (a Leading Party is first while the Event still runs)
 
 **Share image**:
 The picture of a finished Event's Winners, Standings and played games, landscape or square, that a Member downloads or shares from their own device; only Members of the Event can get it (UI: Ergebnis-Bild).

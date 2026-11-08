@@ -1,10 +1,10 @@
 # Roadmap
 
-Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Terms follow `GLOSSARY.md`.
+Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Terms follow `GLOSSARY.md`.
 
 **Numbering.** Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the user declares ready (`docs/agents/release.md` § Semantic versioning). Before 0.5.1 they were numbered 1.x: 1.0.0 is 0.1.0, 1.1.x is 0.2.x, 1.2.0 is 0.3.0, 1.3.0 is 0.4.0 and 1.4.0 is 0.5.0. Older specs, issues, reviews, ADRs and code comments keep the old numbers; in them, the planned 1.5 „Glücksrad“ is 0.7, 1.6 „Punkte“ is 0.8 and 1.7 „Siegerehrung“ is 0.9.
 
-Each release is one spec and usable on its own. A release is grilled, specced and ticketed in one fresh session **while the release before it is being built**, once the code it builds on exists, never all releases up front: the specs name real modules and seams, and the first game night in the app will change what comes after. The first Event in the app needs at least 0.9 „Siegerehrung“ on production; there is no date pressure. This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
+Each release is one spec and usable on its own. A release is grilled, specced and ticketed in one fresh session **while the release before it is being built**, once the code it builds on exists, never all releases up front: the specs name real modules and seams, and the first game night in the app will change what comes after. 0.9 „Siegerehrung“ was the minimum for the first Event in the app; since 0.10 the first Event gates nothing any more (decided 2026-11-08), and there is no date pressure. This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
 
 | Release | Name | Status |
 |---|---|---|
@@ -15,6 +15,8 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.7 | Glücksrad | released on 2026-11-02: [#218](https://github.com/christried/compies/issues/218), [#263](https://github.com/christried/compies/issues/263) |
 | 0.8 | Punkte | released on 2026-11-05: [#272](https://github.com/christried/compies/issues/272) |
 | 0.9 | Siegerehrung | released on 2026-11-08: [#308](https://github.com/christried/compies/issues/308); the minimum for the first Event |
+| 0.10 | Feinschliff | grilled and ticketed on 2026-11-08: [#332](https://github.com/christried/compies/issues/332) |
+| 0.11 | Profil | next; grilled in its own session while 0.10 is built |
 | 1.0 | | when the user declares COMPIES ready |
 
 ## 0.4 Spielvorbereitung (was 1.3)
@@ -126,7 +128,7 @@ The game round up to „wird gespielt“. (T10; screens 10, 11, 15, 30.) Spec: [
   - the Host sets 5 s to 99:59 and starts, pauses, resumes or resets it;
   - it runs down for every Member at the same moment and shows „Zeit ist um“ at zero;
   - no sound, no feed entry.
-  - Needed for the first Event, so it ships in a plain look; the motion and graphics wait for „Nach dem ersten Event“.
+  - Needed for the first Event, so it ships in a plain look; the motion and graphics come with 0.10.
 - **Host-only pool warning:** shown when the games left are fewer than (Game count − Rounds started) + every Party's remaining Vetoes (Bonus Vetoes included), or under Host pick fewer than the Rounds still to start. It never blocks.
 - **Game notes on the Round card**, open while the game is played, for the Host only (decided 2026-11-01, [#217 comment](https://github.com/christried/compies/issues/217#issuecomment-6560579466)).
 - **Settings lock (A3):** the Hidden wheel can't be switched during a spin or veto window; one summary for „So wird gespielt“ and the stepper.
@@ -215,17 +217,23 @@ The Award ceremony and the Share image; the minimum for the first Event. (T15; s
 - The Datenschutzerklärung stays as it is: the ceremony stores no personal data, and the image shows only what every Member already sees.
 - All other UI _own build_ from `AwardCeremony`, `ShareImage` and `App Ende & Archiv ?s=ceremony` (its share sheet without the link).
 
-## Nach dem ersten Event
+## 0.10 Feinschliff
 
-Picked up right after the first Event played in the app; the issues are opened then, not before.
+The list that waited for the first Event, plus the party hat. Spec: [#332](https://github.com/christried/compies/issues/332). Grilled on 2026-11-08 (`GLOSSARY.md`: Deleted Event, Tag, Price, Leading Party). One integration branch; tickets #333–#343 and #38.
 
-- Countdown motion and graphics: a _Claude Design hand-off_ (`docs/agents/design-handoff.md`).
-- **Event löschen** for the Host: a soft delete (`events.deleted_at`, which Home, the Event read and the deploy check already honour). The 0.9 Release found a placeholder Event on production that only a script could remove.
-- **Tags for games:** searchable and filterable in the library, for example genre, Co-op/Async, zeitsparend/zeitintensiv. Grilled then.
-- **Prices for games:** the amount in €, its source (Steam, Epic, GOG, publisher website, Steam key, Free-to-play, a subscription such as Game Pass) and the date it was checked, because prices change. Grilled then.
-- Mockup vs. live app: the user compares the reference designs with the live app and names every difference (`ready-for-human`); the differences become tickets.
-- Wording sweep: the user goes over all copy in the app (`ready-for-human`), after every other ticket of this list.
+- **Event löschen** (#333, #334): the Host deletes an Event from the Host dock's „Mehr“ in every Phase except while a Session runs, by holding a button. A soft delete (`events.deleted_at`, which Home, the Event read, the invite routes and the deploy check already honour): the Event leaves Home for every Member at once, open pages show „Event gelöscht“ through the usual room publish, the Event link and the Invite link lead there. No undo, no Activity entry, no purge; the Datenschutzerklärung says the data is removed on request. The 0.9 Release found a placeholder Event on production that only a script could remove.
+- **Tags** (#335, #336): free Tags on a game, typed by its editors with suggestions from the Tags in use, normalised, at most 20 characters and 8 per game; a Tag nobody uses is gone. One Tag filter chip in the shared game browser (library, both pool pickers, the compact one too), the search matches Tags, cards show three plus „+N“. Members never see Tags.
+- **Prices** (#337, #338): one Price per game, all optional: an amount in € (0,01 to 999,99, stored in cents), a source from a fixed list (Steam, Epic Games Store, GOG, Publisher-Website, Steam-Key, Free-to-play, Abo; the last two without an amount) and the day it was checked, stamped by the server on every change, with „Preis stimmt noch“ to refresh it. Hosts see it in the library, the pickers and „So wird gespielt“; Members in the pool preview and on the Round card, exactly when they may know the game's name (the 2026-11-01 rule „picture and name only“ widens by the Price, nothing else).
+- **Countdown motion and graphics**: a _Claude Design hand-off_ (#339) for the card's four states, the last ten seconds, the zero moment, the Host's controls, reduced motion; no sound, no Compibert; the sheet stays. Built in #340 on the existing server-timed state.
+- **Party hat** (#38, idea from the first staging review): Compibert's header head wears a party hat on the Event pages, only for the Players in a **Leading Party** (first rank of the Standings with at least one Result, all of them when shared; the Winners on the finished page). Bench, Stands, trailing Parties, Home and the hub pages show the plain head. The hat is a _Claude Design hand-off_ (#341), an accessory on the head crop like the hard hat.
+- **#328**: the AwardCeremony refactor, as written, without a changelog line.
+- **Two human sweeps** (`ready-for-human`), once every other ticket is on the integration branch: mockup vs. live app (#342), then the wording sweep (#343). Small findings land in 0.10 before the version cut; a feature or a redesign goes to 0.11 or later.
+- All other UI _own build_.
+
+## 0.11 Profil
+
+Grilled in its own session while 0.10 is built. The Profil page (screen 25) replaces its Construction page: Display name, avatar from the provider, Ton, „Darstellung: Hell / Dunkel / System“ ([#43](https://github.com/christried/compies/issues/43), with the dark token set checked against every component built since #41), Abmelden. Second provider linking and avatar upload stay out.
 
 ## Out of scope for this roadmap
 
-Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound; push notifications; Compibert states outside the ceremony; second provider, avatar upload and settings (T2b); Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05).
+Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound; push notifications; Compibert states outside the ceremony (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and settings (T2b); Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05).
