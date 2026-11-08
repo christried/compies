@@ -222,7 +222,7 @@ const LABEL_FRAME_PX = 14
 const CAPSULE_STRIPE_PX = 8
 /** A capsule draws at most 4 stripes; a game with more Parties on Place 1 says „· n gleichauf“ in its name. */
 const CAPSULE_STRIPES_MAX = 4
-/** The dot a Tie's picture counts as well (12-siegerehrung-unentschieden: name x 8 + capsule + 36); a single Winner's keeps its older count without it. */
+/** The dot every plain chip draws, a Tie's and a single Winner's alike (`chipMark` in share-render.ts); the estimate must count it on each (#315, review 0.9). */
 const DOT_PX = 11
 
 /** How many of the wide row's chips fit: add chips while they and, if games remain, „+N weitere“ fit; the first always stays. `extra` is the capsule's or dot's width. */
@@ -374,7 +374,7 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
     return teams.length > 1 ? { ...chip, stripes: teams.slice(0, CAPSULE_STRIPES_MAX).map(team => teamColor(team).fill) } : chip
   })
   const shown = format === 'wide'
-    ? wideChipCount(all.map(chip => ({ name: chip.name, extra: chip.stripes ? chip.stripes.length * CAPSULE_STRIPE_PX : several ? DOT_PX : 0 })), gamesLabel)
+    ? wideChipCount(all.map(chip => ({ name: chip.name, extra: chip.stripes ? chip.stripes.length * CAPSULE_STRIPE_PX : DOT_PX })), gamesLabel)
     : squareChipCount(all.map(chip => ({ name: chip.name, stripes: chip.stripes?.length ?? 1 })))
 
   const eventName = drawable(source.event.name)
