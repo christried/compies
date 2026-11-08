@@ -210,17 +210,11 @@ export const games = pgTable('games', {
   index('games_image_key_idx').on(table.imageKey),
 ])
 
-// Postgres cannot drop an enum value safely, so `tiebreaker` stays in the type although nothing reads or writes it (ADR 0014, #279).
-// Since #286 the type and the column below stay only for the 0.8 code that serves while 0.9 builds (ADR 0007); #301 drops both.
-export const poolKind = pgEnum('pool_kind', ['main', 'tiebreaker'])
-
-// The games of an Event's Game pool (#146, ADR 0014): one pool, so a game is in it once.
+// The games of an Event's Game pool (#146, ADR 0014): one pool, so a game is in it once. The Tiebreaker pool's column and
+// type went in two steps (#286 stopped reading them, #301 dropped them once 0.9 served).
 export const eventPoolGames = pgTable('event_pool_games', {
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   gameId: uuid('game_id').notNull().references(() => games.id),
-  // No code reads or writes `pool` since #286. It stays, with its default, only for the 0.8 code that serves while 0.9 builds
-  // (it filters and inserts `pool = 'main'`); #301 drops it together with `poolKind`.
-  pool: poolKind('pool').notNull().default('main'),
 }, table => [
   primaryKey({ columns: [table.eventId, table.gameId] }),
   // Lookups by game (#171, review S6). The primary key serves the lookups by Event.
