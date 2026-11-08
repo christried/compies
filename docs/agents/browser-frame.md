@@ -28,7 +28,7 @@ You change no app code and commit nothing. Your **run folder** is `<tmp>/compies
 - Last row: the page errors of each tab (`tab.errors`), and the refused or failed lines in `dev.log` and `rt.log`, with the step they appeared on.
 - Never put a User's personal data in it.
 
-You are done when every item of the brief has its row, every server and Chrome you started is stopped, and your scripts are copied to the run folder's `scripts/`. Stop the servers with `node scripts/browser/serve.mjs stop <run>`, never with TaskStop alone (it stops by itself when its shell dies or after 90 minutes, but only as a backstop), and make the report's last row the `stop` output (`stopped: ports :3000, :8787 free`); a taken port is named there with its PID, and you end nothing yourself. Return at most 200 words: the report's path, the tested SHA, and one line per FAIL.
+You are done when every item of the brief has its row, every server and Chrome you started is stopped, and your scripts are copied to the run folder's `scripts/`. Always end with `node scripts/browser/serve.mjs stop <run>`, also after a TaskStop: TaskStop kills `serve.mjs` hard on Windows and can leave part of the tree running, and `stop` ends what `serve.mjs` recorded. Make the report's last row the `stop` output (`stopped: ports :3000, :8787 free`); a taken port is named there, and you end nothing yourself. If a check agent died before its `stop`, the orchestrator runs `serve.mjs stop <run>` in that agent's worktree. Return at most 200 words: the report's path, the tested SHA, and one line per FAIL.
 
 ## The brief
 

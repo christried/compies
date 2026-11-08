@@ -19,7 +19,7 @@ const ROOT = fileURLToPath(new URL('../..', import.meta.url))
 
 // `pnpm` is a .cmd on Windows: the command line goes to cmd.exe as one string, so the child's PID is the shell's, the root `taskkill /T` walks from.
 const SERVERS = {
-  dev: { port: 3000, log: 'dev.log', command: 'pnpm dev' },
+  dev: { port: 3000, log: 'dev.log', command: 'pnpm dev', notBuilding: true },
   realtime: {
     port: 8787,
     log: 'rt.log',
@@ -144,17 +144,21 @@ async function stop() {
   while (Date.now() < deadline && instances.some(i => alive(i.pid))) await sleep(500)
   const gone = instances.filter(i => !alive(i.pid))
   if (gone.length < instances.length) say(`stop ${run}: serve.mjs PID ${instances.filter(i => alive(i.pid)).map(i => i.pid).join(', ')} still running after 30 s`)
-  const taken = []
-  for (const port of ports) {
-    const owner = await portOwner(port)
-    if (owner.taken) taken.push(`:${port}${describeOwner(owner)}`)
-  }
   rmSync(stopFile, { force: true })
   for (const instance of gone) {
     // A serve.mjs that was killed hard (not stopped by itself) leaves its file and maybe its tree; the file records the processes it started, so end those.
     const leftover = killRecorded(instance.tree)
     if (leftover.length) say(`stop ${run}: ended the recorded leftovers of the dead serve.mjs PID ${instance.pid}: ${leftover.join(', ')}`)
     rmSync(join(dir, instance.file), { force: true })
+  }
+  const taken = []
+  for (const port of ports) {
+    let owner = await portOwner(port)
+    for (let tries = 0; owner.taken && tries < 20; tries++) { // a socket closes a moment after its process ends
+      await sleep(500)
+      owner = await portOwner(port)
+    }
+    if (owner.taken) taken.push(`:${port}${describeOwner(owner)}`)
   }
   if (taken.length || gone.length < instances.length) {
     say(`stop ${run}: port ${taken.join(', ') || '-'} still taken`)
@@ -298,10 +302,11 @@ async function start() {
       if (child.exited !== null) await shutdown(`${child.name} exited with ${child.exited} before it answered, see ${SERVERS[child.name].log}`, 1)
       if (Date.now() > waitUntil) await shutdown(`${child.name} did not answer within 3 minutes`, 1)
       try {
-        await fetch(`http://localhost:${child.port}/`, { signal: AbortSignal.timeout(10_000) })
-        break
+        const { status } = await fetch(`http://localhost:${child.port}/`, { signal: AbortSignal.timeout(10_000) })
+        if (status < 500 || !SERVERS[child.name].notBuilding) break // nuxt dev answers 503 while it builds
       }
-      catch { await sleep(1000) }
+      catch { /* not up yet */ }
+      await sleep(1000)
     }
   }
   const ready = `ready: ${children.map(c => `${c.name} :${c.port}`).join(', ')}`
