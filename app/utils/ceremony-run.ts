@@ -1,4 +1,4 @@
-import { ceremonyTimeline, CEREMONY_ROW_MS, type CeremonyGag } from '~~/shared/ceremony'
+import { ceremonyTimeline, CEREMONY_ROW_MS, type CeremonyShape } from '~~/shared/ceremony'
 import type { RigState } from './compibert-rig'
 import { addTieEntrance, addTieLanding, boxWithin, setTie, tiePartsOf, tieStops, type TieBox, type TieParts, type TieStops } from './ceremony-tie-run'
 import type { Gsap } from './gsap'
@@ -106,8 +106,9 @@ const BONK_CHEER_MS = 920
  * The pose Compibert's rig must hold `elapsedMs` into the run. The timeline's calls change it as the clock crosses them; a late joiner,
  * a returning tab and a skip set it with this instead, because a seek past a call does not fire it.
  */
-export function ceremonyRigState(elapsedMs: number, partyCount: number, gag: CeremonyGag, winners: number, grid: boolean): RigState {
-  const { runAtMs, runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline(partyCount, gag, winners, grid)
+export function ceremonyRigState(elapsedMs: number, shape: CeremonyShape): RigState {
+  const { gag } = shape
+  const { runAtMs, runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline(shape)
   if (elapsedMs < runAtMs) return 'idle'
   if (elapsedMs < runEndAtMs) return 'run'
   if (elapsedMs >= endMs) return 'dance'
@@ -119,12 +120,9 @@ export function ceremonyRigState(elapsedMs: number, partyCount: number, gag: Cer
 /** A burst of confetti (#315): the stamp of the card or the plate, or the trophy landing on card `index` of a chain. `atMs` is its moment on the timeline. */
 export type Burst = { atMs: number, at: 'stamp' } | { atMs: number, at: 'hop', index: number }
 
-export interface RunOptions {
-  partyCount: number
-  /** The Winner count and whether they stand in a grid: both change the timeline (#315). */
-  winners: number
+/** The run's shape (the Winner count and the grid both change the timeline, #315) and the layer's callbacks. */
+export interface RunOptions extends CeremonyShape {
   grid: boolean
-  gag: CeremonyGag
   /** The timeline's calls: the pose Compibert's rig takes as the clock crosses a moment. */
   rigState: (state: RigState) => void
   /** A burst of confetti. The layer decides whether this viewer saw it live. */
@@ -139,7 +137,7 @@ export interface RunOptions {
 export function buildRun(gsap: Gsap, parts: RunParts, geometry: Geometry, { partyCount, winners, grid, gag, rigState, onBurst }: RunOptions) {
   const { banner, rows, card, front, back, stamp, people, compibert, trophy, share, tie } = parts
   const { stopX, cardX, cardY, groundY, handX, handY } = geometry
-  const moments = ceremonyTimeline(partyCount, gag, winners, grid)
+  const moments = ceremonyTimeline({ partyCount, gag, winners, grid })
   const sec = (ms: number) => ms / 1000
   const rowStep = sec(CEREMONY_ROW_MS)
   const t0 = sec(moments.runAtMs)

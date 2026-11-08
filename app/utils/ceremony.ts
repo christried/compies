@@ -1,3 +1,4 @@
+import { GRID_FROM_WINNERS } from '~~/shared/ceremony'
 import type { EventView } from '~~/shared/event'
 import { leadersOf } from '~~/shared/finish'
 import { teamNameAt } from './board'
@@ -84,12 +85,13 @@ export interface CeremonyLayout {
 }
 
 /**
- * The layout of `winners` Winners with `below` Parties under them. A wide screen (`roomy`) chains 2 and 3 Winners and grids from 4 in
- * 4 columns; a phone chains 2 and grids from 3 in 2 columns. A sole Winner is today's single card.
+ * The layout of `winners` Winners with `below` Parties under them. A wide screen (`roomy`) chains 2 and 3 Winners and grids from
+ * GRID_FROM_WINNERS (the server's default, shared/ceremony.ts) in 4 columns; a phone chains 2 and grids from 3 in 2 columns. A sole
+ * Winner is today's single card.
  */
 export function ceremonyLayout(winners: number, below: number, roomy: boolean): CeremonyLayout {
   if (winners <= 1) return { stage: 'single', rows: below > 0 ? 'side' : 'none', cols: 1 }
-  const chain = winners === 2 || (roomy && winners === 3)
+  const chain = winners === 2 || (roomy && winners < GRID_FROM_WINNERS)
   if (!chain) return { stage: 'grid', rows: below > 0 ? 'chips' : 'none', cols: roomy ? 4 : 2 }
   const rows = below === 0 ? 'none' : winners === 2 ? (roomy ? 'side' : 'below') : 'chips'
   return { stage: 'chain', rows, cols: winners }

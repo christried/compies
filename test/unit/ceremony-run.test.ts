@@ -8,77 +8,77 @@ import { ceremonyTimeline } from '../../shared/ceremony'
 describe('ceremonyRigState', () => {
   it('stands idle until the run starts, then runs for 700 ms', () => {
     for (const parties of [2, 8]) {
-      const { runAtMs, runEndAtMs } = ceremonyTimeline(parties, 'trip', 1)
-      expect(ceremonyRigState(0, parties, 'trip', 1, false)).toBe('idle')
-      expect(ceremonyRigState(runAtMs - 1, parties, 'trip', 1, false)).toBe('idle')
-      expect(ceremonyRigState(runAtMs, parties, 'trip', 1, false)).toBe('run')
-      expect(ceremonyRigState(runEndAtMs - 1, parties, 'trip', 1, false)).toBe('run')
+      const { runAtMs, runEndAtMs } = ceremonyTimeline({ partyCount: parties, gag: 'trip', winners: 1 })
+      expect(ceremonyRigState(0, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('idle')
+      expect(ceremonyRigState(runAtMs - 1, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('idle')
+      expect(ceremonyRigState(runAtMs, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('run')
+      expect(ceremonyRigState(runEndAtMs - 1, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('run')
     }
   })
 
   it('trips: suspense from the end of the run until he gets up, then laughs until the dance', () => {
     for (const parties of [2, 8]) {
-      const { runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline(parties, 'trip', 1)
-      expect(ceremonyRigState(runEndAtMs, parties, 'trip', 1, false)).toBe('suspense')
-      expect(ceremonyRigState(getUpAtMs - 1, parties, 'trip', 1, false)).toBe('suspense')
-      expect(ceremonyRigState(getUpAtMs, parties, 'trip', 1, false)).toBe('laugh')
-      expect(ceremonyRigState(endMs - 1, parties, 'trip', 1, false)).toBe('laugh')
-      expect(ceremonyRigState(endMs, parties, 'trip', 1, false)).toBe('dance')
+      const { runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline({ partyCount: parties, gag: 'trip', winners: 1 })
+      expect(ceremonyRigState(runEndAtMs, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('suspense')
+      expect(ceremonyRigState(getUpAtMs - 1, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('suspense')
+      expect(ceremonyRigState(getUpAtMs, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('laugh')
+      expect(ceremonyRigState(endMs - 1, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('laugh')
+      expect(ceremonyRigState(endMs, { partyCount: parties, gag: 'trip', winners: 1, grid: false })).toBe('dance')
     }
   })
 
   it('bonks: cheers for 920 ms, then is confused until he gets up, then laughs until the dance', () => {
     for (const parties of [2, 8]) {
-      const { runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline(parties, 'bonk', 1)
-      expect(ceremonyRigState(runEndAtMs, parties, 'bonk', 1, false)).toBe('cheer')
-      expect(ceremonyRigState(runEndAtMs + 919, parties, 'bonk', 1, false)).toBe('cheer')
-      expect(ceremonyRigState(runEndAtMs + 920, parties, 'bonk', 1, false)).toBe('confused')
-      expect(ceremonyRigState(getUpAtMs - 1, parties, 'bonk', 1, false)).toBe('confused')
-      expect(ceremonyRigState(getUpAtMs, parties, 'bonk', 1, false)).toBe('laugh')
-      expect(ceremonyRigState(endMs - 1, parties, 'bonk', 1, false)).toBe('laugh')
-      expect(ceremonyRigState(endMs, parties, 'bonk', 1, false)).toBe('dance')
+      const { runEndAtMs, getUpAtMs, endMs } = ceremonyTimeline({ partyCount: parties, gag: 'bonk', winners: 1 })
+      expect(ceremonyRigState(runEndAtMs, { partyCount: parties, gag: 'bonk', winners: 1, grid: false })).toBe('cheer')
+      expect(ceremonyRigState(runEndAtMs + 919, { partyCount: parties, gag: 'bonk', winners: 1, grid: false })).toBe('cheer')
+      expect(ceremonyRigState(runEndAtMs + 920, { partyCount: parties, gag: 'bonk', winners: 1, grid: false })).toBe('confused')
+      expect(ceremonyRigState(getUpAtMs - 1, { partyCount: parties, gag: 'bonk', winners: 1, grid: false })).toBe('confused')
+      expect(ceremonyRigState(getUpAtMs, { partyCount: parties, gag: 'bonk', winners: 1, grid: false })).toBe('laugh')
+      expect(ceremonyRigState(endMs - 1, { partyCount: parties, gag: 'bonk', winners: 1, grid: false })).toBe('laugh')
+      expect(ceremonyRigState(endMs, { partyCount: parties, gag: 'bonk', winners: 1, grid: false })).toBe('dance')
     }
   })
 
   it('dances for good after the end', () => {
-    expect(ceremonyRigState(1_000_000, 5, 'trip', 1, false)).toBe('dance')
+    expect(ceremonyRigState(1_000_000, { partyCount: 5, gag: 'trip', winners: 1, grid: false })).toBe('dance')
   })
 
   // A Tie (#315): the run starts later than a sole Winner's with the same rows, and he gets up 300 ms after the plate, not after the first landing.
   describe('in a Tie', () => {
     it('stands idle until the run starts at the Tie\'s own moment, then runs for 700 ms', () => {
-      const { runAtMs, runEndAtMs } = ceremonyTimeline(4, 'trip', 2)
-      expect(ceremonyRigState(runAtMs - 1, 4, 'trip', 2, false)).toBe('idle')
-      expect(ceremonyRigState(runAtMs, 4, 'trip', 2, false)).toBe('run')
-      expect(ceremonyRigState(runEndAtMs - 1, 4, 'trip', 2, false)).toBe('run')
+      const { runAtMs, runEndAtMs } = ceremonyTimeline({ partyCount: 4, gag: 'trip', winners: 2 })
+      expect(ceremonyRigState(runAtMs - 1, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('idle')
+      expect(ceremonyRigState(runAtMs, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('run')
+      expect(ceremonyRigState(runEndAtMs - 1, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('run')
     })
 
     it('stays in suspense through the hops of a chain and gets up 300 ms after the plate (trip)', () => {
-      const { runEndAtMs, landAtMs, plateAtMs, getUpAtMs, endMs } = ceremonyTimeline(4, 'trip', 2)
-      expect(ceremonyRigState(runEndAtMs, 4, 'trip', 2, false)).toBe('suspense')
-      expect(ceremonyRigState(landAtMs + 600, 4, 'trip', 2, false)).toBe('suspense')
+      const { runEndAtMs, landAtMs, plateAtMs, getUpAtMs, endMs } = ceremonyTimeline({ partyCount: 4, gag: 'trip', winners: 2 })
+      expect(ceremonyRigState(runEndAtMs, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('suspense')
+      expect(ceremonyRigState(landAtMs + 600, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('suspense')
       expect(getUpAtMs).toBe(plateAtMs + 300)
-      expect(ceremonyRigState(getUpAtMs - 1, 4, 'trip', 2, false)).toBe('suspense')
-      expect(ceremonyRigState(getUpAtMs, 4, 'trip', 2, false)).toBe('laugh')
-      expect(ceremonyRigState(endMs - 1, 4, 'trip', 2, false)).toBe('laugh')
-      expect(ceremonyRigState(endMs, 4, 'trip', 2, false)).toBe('dance')
+      expect(ceremonyRigState(getUpAtMs - 1, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('suspense')
+      expect(ceremonyRigState(getUpAtMs, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('laugh')
+      expect(ceremonyRigState(endMs - 1, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('laugh')
+      expect(ceremonyRigState(endMs, { partyCount: 4, gag: 'trip', winners: 2, grid: false })).toBe('dance')
     })
 
     it('cheers for 920 ms, is confused through the hops and laughs after the plate (bonk)', () => {
-      const { runEndAtMs, landAtMs, getUpAtMs, endMs } = ceremonyTimeline(3, 'bonk', 3)
-      expect(ceremonyRigState(runEndAtMs + 919, 3, 'bonk', 3, false)).toBe('cheer')
-      expect(ceremonyRigState(runEndAtMs + 920, 3, 'bonk', 3, false)).toBe('confused')
-      expect(ceremonyRigState(landAtMs + 1000, 3, 'bonk', 3, false)).toBe('confused')
-      expect(ceremonyRigState(getUpAtMs, 3, 'bonk', 3, false)).toBe('laugh')
-      expect(ceremonyRigState(endMs, 3, 'bonk', 3, false)).toBe('dance')
+      const { runEndAtMs, landAtMs, getUpAtMs, endMs } = ceremonyTimeline({ partyCount: 3, gag: 'bonk', winners: 3 })
+      expect(ceremonyRigState(runEndAtMs + 919, { partyCount: 3, gag: 'bonk', winners: 3, grid: false })).toBe('cheer')
+      expect(ceremonyRigState(runEndAtMs + 920, { partyCount: 3, gag: 'bonk', winners: 3, grid: false })).toBe('confused')
+      expect(ceremonyRigState(landAtMs + 1000, { partyCount: 3, gag: 'bonk', winners: 3, grid: false })).toBe('confused')
+      expect(ceremonyRigState(getUpAtMs, { partyCount: 3, gag: 'bonk', winners: 3, grid: false })).toBe('laugh')
+      expect(ceremonyRigState(endMs, { partyCount: 3, gag: 'bonk', winners: 3, grid: false })).toBe('dance')
     })
 
     it('follows the grid\'s own, shorter moments when the screen shows 3 Winners as a grid', () => {
-      const grid = ceremonyTimeline(3, 'trip', 3, true)
-      const chain = ceremonyTimeline(3, 'trip', 3)
-      expect(ceremonyRigState(grid.getUpAtMs, 3, 'trip', 3, true)).toBe('laugh')
-      expect(ceremonyRigState(grid.getUpAtMs, 3, 'trip', 3, false)).toBe('suspense')
-      expect(ceremonyRigState(grid.endMs, 3, 'trip', 3, true)).toBe('dance')
+      const grid = ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3, grid: true })
+      const chain = ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3 })
+      expect(ceremonyRigState(grid.getUpAtMs, { partyCount: 3, gag: 'trip', winners: 3, grid: true })).toBe('laugh')
+      expect(ceremonyRigState(grid.getUpAtMs, { partyCount: 3, gag: 'trip', winners: 3, grid: false })).toBe('suspense')
+      expect(ceremonyRigState(grid.endMs, { partyCount: 3, gag: 'trip', winners: 3, grid: true })).toBe('dance')
       expect(grid.endMs).toBeLessThan(chain.endMs)
     })
   })

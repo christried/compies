@@ -37,17 +37,32 @@ export const CHIP_MS = 300
 /** The run starts this long after the plate and the cards have come in (the single card's offset: 900 - 600). */
 const RUN_AFTER_CARD_MS = 300
 
+/** From this many Winners the default layout (a wide screen) shows them as a grid; `ceremonyLayout` reads it for its roomy branch, a phone grids from 3. */
+export const GRID_FROM_WINNERS = 4
+
+/**
+ * The shape of a run (#327): what its timeline depends on. `partyCount` is the Parties in the Standings, `winners` the Winner count k
+ * (GLOSSARY: Tie; the Parties on rank 1), `gag` the server's pick, `grid` whether the Winners stand in a grid on this screen. The server never
+ * knows a screen, so it leaves `grid` out and the default layout's rule (`GRID_FROM_WINNERS`) applies.
+ */
+export interface CeremonyShape {
+  partyCount: number
+  winners: number
+  gag: CeremonyGag
+  grid?: boolean
+}
+
 /**
  * The run's moments in ms from its start instant, from `AwardCeremony.dc.html` play() (04-motion § 6b, § 6b-T): the banner and the places
  * below the Winners (rows, chips from 3 Winners on) come first, then the plate and the cards, the run, then the gag lands (trip 800 ms, bonk
  * 2200 ms after the run), and the tail up to the dance (2200 ms) is the end. `winners` is the Winner count k (GLOSSARY: Tie; the Parties on
  * rank 1). A Tie has fewer rows and, in a chain, a hop of 540 ms per further card and 620 ms on to the plate, and everything after the
  * landing hangs on the plate (`plateAtMs`); for k = 1 every number is the single Winner's (#309). `grid` says the Winners stand in a grid, where
- * the trophy lands on the plate at once: the client knows it from its screen, the server never passes it (the default, from 4 Winners), so
+ * the trophy lands on the plate at once: the client knows it from its screen, the server never passes it (the default, from GRID_FROM_WINNERS), so
  * a phone that shows 3 Winners as a grid ends up to 1.7 s before the stored end and never after it (#315). The server's `endsAt` and the
  * client's tracks both read this one function (#312), so they cannot drift.
  */
-export function ceremonyTimeline(partyCount: number, gag: CeremonyGag, winners: number, grid = winners >= 4) {
+export function ceremonyTimeline({ partyCount, gag, winners, grid = winners >= GRID_FROM_WINNERS }: CeremonyShape) {
   const below = Math.max(partyCount - winners, 0)
   const rowsEnd = below === 0
     ? ROWS_AT_MS
@@ -72,9 +87,9 @@ export function ceremonyTimeline(partyCount: number, gag: CeremonyGag, winners: 
   }
 }
 
-/** The instant the run ends (epoch ms): the start plus the timeline's end. */
-export function ceremonyEndsAt(startsAt: Instant, partyCount: number, gag: CeremonyGag, winners: number): number {
-  return msOf(startsAt) + ceremonyTimeline(partyCount, gag, winners).endMs
+/** The instant the run ends (epoch ms): the start plus the timeline's end, for the default layout (`shape.grid` left out). */
+export function ceremonyEndsAt(startsAt: Instant, shape: CeremonyShape): number {
+  return msOf(startsAt) + ceremonyTimeline(shape).endMs
 }
 
 /** Whether the latest run has not reached its end at `nowMs`; the lead counts as running. */
