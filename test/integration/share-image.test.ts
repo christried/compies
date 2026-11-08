@@ -113,7 +113,7 @@ describe('the Share image route', () => {
    * An Event with one Session, two Parties of two Players, a Spectator and a Bench Member, and a pool of two games of which only Halo is
    * played (Kart stays in the pool). `finish: false` leaves it running with its result in; the Host's cookie, the Members' and an outsider's come back.
    */
-  async function event({ finish = true }: { finish?: boolean } = {}) {
+  async function event({ finish = true, tie = false }: { finish?: boolean, tie?: boolean } = {}) {
     setAllowlist({ hosts: 'discord:1' })
     const hostCookie = (await signIn(testDb.db, host)).cookie
     const cookies = {} as Record<keyof typeof players | 'outsider', string>
@@ -142,8 +142,8 @@ describe('the Share image route', () => {
     expect((await send('POST', `/api/e/${slug}/move`, cookies.spectator, { userId: ids.spectator, to: { zone: 'stands' } })).status).toBe(200)
     expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
     const round = await (await send('POST', `/api/e/${slug}/rounds`, hostCookie, { gameId: halo!.id })).json() as { roundId: string }
-    expect((await send('PUT', `/api/e/${slug}/rounds/${round.roundId}/result`, hostCookie, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] })).status).toBe(200)
-    if (finish) expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner', winners: [1] })).status).toBe(200)
+    expect((await send('PUT', `/api/e/${slug}/rounds/${round.roundId}/result`, hostCookie, { places: [{ team: 1, place: 1 }, { team: 2, place: tie ? 1 : 2 }] })).status).toBe(200)
+    if (finish) expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, tie ? { outcome: 'tie', winners: [1, 2] } : { outcome: 'winner', winners: [1] })).status).toBe(200)
     notifier.clear()
     return { slug, eventId, hostCookie, cookies }
   }
@@ -265,6 +265,22 @@ describe('the Share image route', () => {
       expect(model.gamesLabel).toBe('1 Spiel')
       expect(model.people).toBe('4 Leute')
       expect(model.pill.event).toBe('Freitags-Zocken')
+    }, 30_000)
+
+    // #315: the picture of a Tie, both Parties on rank 1 and the game's two Parties on its first place (the capsule).
+    it.each([['wide', 1200, 630], ['square', 1080, 1080]])('gives a PNG of the %s format, %i x %i, for a Tie and draws both Winners', async (format, width, height) => {
+      const { slug, cookies } = await event({ tie: true })
+
+      const response = await image(slug, cookies.one, `?format=${format}`)
+
+      expect(response.status).toBe(200)
+      expect(sizeOf(new Uint8Array(await response.arrayBuffer()))).toEqual({ signature: PNG_SIGNATURE, width, height })
+      const model = drawn.models[0]!
+      expect(model.winner).toBeNull()
+      expect(model.tie).toMatchObject({ mode: 'names', label: 'Unentschieden · beide gleichauf' })
+      expect(model.tie!.entries.map(entry => entry.name)).toEqual(['Team Rot', 'Team Orange'])
+      expect(model.chips[0]!.stripes).toHaveLength(2)
+      expect(model.rows).toEqual([])
     }, 30_000)
 
     it('names no Player in what it draws', async () => {

@@ -1,6 +1,6 @@
 import { initWasm, Resvg } from '@resvg/resvg-wasm'
 import satori from 'satori'
-import type { ShareImageModel } from '../../shared/share-image'
+import type { ShareChip, ShareImageModel, ShareTie, SingleWinner } from '../../shared/share-image'
 import { teamSymbol } from '../../shared/team-marks'
 import { SHARE_FONTS, type ShareAssets } from './share-assets'
 
@@ -27,6 +27,12 @@ const LAYOUT = {
     row: { height: 48, gap: 10, inner: 13, padding: '0 19px', border: 3, radius: 12, shadow: 4, font: 24, rank: 38, mark: 28 },
     burst: 330, dance: { width: 250, height: 213 },
     label: { font: 18, right: 4 }, chip: { height: 34, border: 2.5, font: 16, dot: 11, dotBorder: 2, inner: 7, padding: '0 10px', gap: 10 }, moreChips: 16,
+    // The Tie (#315): the artboard `Siegerehrung Unentschieden.dc.html`, wide.
+    tie: {
+      nameTop: 12, nameGap: 8, strip: { width: 14, border: 3, radius: 4, gap: 16 }, shadow: 4,
+      chipsTop: 14, chip: { width: 347, height: 44, gap: 10, strip: { width: 12, height: 28 }, rowGap: 10, colGap: 20 }, chipShadow: 3,
+      lineTop: 14, rowsTop: 20, capsule: { stripe: 8, height: 11, border: 2 },
+    },
   },
   square: {
     padding: '60px 64px', gap: 30,
@@ -35,6 +41,11 @@ const LAYOUT = {
     row: { height: 62, gap: 14, inner: 16, padding: '0 24px', border: 3.5, radius: 14, shadow: 4.5, font: 30, rank: 46, mark: 36 },
     burst: 340, dance: { width: 260, height: 221 },
     label: { font: 24, right: 0 }, chip: { height: 46, border: 3, font: 22, dot: 15, dotBorder: 2.5, inner: 10, padding: '0 14px', gap: 12 }, moreChips: 22,
+    tie: {
+      nameTop: 16, nameGap: 12, strip: { width: 18, border: 3.5, radius: 5, gap: 20 }, shadow: 6,
+      chipsTop: 18, chip: { width: 466, height: 56, gap: 12, strip: { width: 15, height: 36 }, rowGap: 12, colGap: 20 }, chipShadow: 3,
+      lineTop: 0, rowsTop: 0, capsule: { stripe: 11, height: 15, border: 2.5 },
+    },
   },
 } as const
 
@@ -89,8 +100,7 @@ function teamMark(size: number, fill: string, ink: string, team: number): Node {
   }, el('svg', { display: 'flex' }, el('path', {}, undefined, { d: teamSymbol(team), fill: ink }), { width: symbol, height: symbol, viewBox: '0 0 24 24' }))
 }
 
-function winnerBlock(model: ShareImageModel, layout: (typeof LAYOUT)[ShareFormat]): Node {
-  const { winner } = model
+function winnerBlock(winner: SingleWinner, layout: (typeof LAYOUT)[ShareFormat]): Node {
   const { points } = layout
   // The name is clamped to three lines: a very long Team name wraps inside its lines, and what would not fit is cut with an ellipsis
   // rather than drawn past the border.
@@ -107,10 +117,10 @@ function winnerBlock(model: ShareImageModel, layout: (typeof LAYOUT)[ShareFormat
   ])
 }
 
-function rowsBlock(model: ShareImageModel, layout: (typeof LAYOUT)[ShareFormat]): Node | null {
-  if (model.rows.length === 0 && !model.moreRows) return null
+/** The rows under the Winner(s) and the „+N weitere Parteien“ line, as the children of a column. */
+function rowNodes(model: ShareImageModel, layout: (typeof LAYOUT)[ShareFormat]): Node[] {
   const { row } = layout
-  return el('div', { display: 'flex', flexDirection: 'column', gap: row.gap, marginTop: layout.rowsTop }, [
+  return [
     ...model.rows.map(entry => el('div', {
       display: 'flex', alignItems: 'center', boxSizing: 'border-box', gap: row.inner, height: row.height, padding: row.padding, background: CARD,
       border: `${row.border}px solid ${INK}`, borderRadius: row.radius, boxShadow: `${row.shadow}px ${row.shadow}px 0 ${INK}`,
@@ -120,14 +130,90 @@ function rowsBlock(model: ShareImageModel, layout: (typeof LAYOUT)[ShareFormat])
       el('span', { flex: 1, minWidth: 0, fontWeight: 800, fontSize: row.font, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, entry.name),
       el('span', { flexShrink: 0, fontFamily: BUNGEE, fontSize: row.font, lineHeight: 1 }, String(entry.points)),
     ])),
-    model.moreRows ? el('span', { fontWeight: 800, fontSize: layout.moreRows, color: MUTED }, model.moreRows) : null,
+    ...(model.moreRows ? [el('span', { fontWeight: 800, fontSize: layout.moreRows, color: MUTED }, model.moreRows)] : []),
+  ]
+}
+
+function rowsBlock(model: ShareImageModel, layout: (typeof LAYOUT)[ShareFormat], top: number = layout.rowsTop): Node | null {
+  if (model.rows.length === 0 && !model.moreRows) return null
+  return el('div', { display: 'flex', flexDirection: 'column', gap: layout.row.gap, marginTop: top }, rowNodes(model, layout))
+}
+
+/** The sunburst with Compibert dancing on it; `size` is a Tie's square sunburst (340 / 300 / 280), Compibert scaled with it (0.765 of it, #315). */
+function sunburst(burst: string, dance: string, layout: (typeof LAYOUT)[ShareFormat], size: number = layout.burst): Node {
+  const scaled = size !== layout.burst
+  const width = scaled ? Math.round(size * 0.765) : layout.dance.width
+  const height = scaled ? Math.round(width * layout.dance.height / layout.dance.width) : layout.dance.height
+  const left = scaled ? Math.round(size * 0.118) : 40
+  const bottom = scaled ? Math.round(size * 0.065) : 22
+  return el('div', { display: 'flex', position: 'relative', flexShrink: 0, width: size, height: size }, [
+    el('img', { position: 'absolute', left: 0, top: 0, width: size, height: size }, undefined, { src: burst, width: size, height: size }),
+    el('img', { position: 'absolute', left, bottom, width, height }, undefined, { src: dance, width, height }),
   ])
 }
 
-function sunburst(burst: string, dance: string, layout: (typeof LAYOUT)[ShareFormat]): Node {
-  return el('div', { display: 'flex', position: 'relative', flexShrink: 0, width: layout.burst, height: layout.burst }, [
-    el('img', { position: 'absolute', left: 0, top: 0, width: layout.burst, height: layout.burst }, undefined, { src: burst, width: layout.burst, height: layout.burst }),
-    el('img', { position: 'absolute', left: 40, bottom: 22, width: layout.dance.width, height: layout.dance.height }, undefined, { src: dance, width: layout.dance.width, height: layout.dance.height }),
+/** The capsule of a game with a Shared first place: one hard stripe per Party in team order (each stop doubled, no conic gradient: Satori). */
+function capsule(stripes: readonly string[], layout: (typeof LAYOUT)[ShareFormat]): Node {
+  const { capsule: size } = layout.tie
+  const n = stripes.length
+  const stops = stripes.map((color, index) => `${color} ${+(index * 100 / n).toFixed(2)}%, ${color} ${+((index + 1) * 100 / n).toFixed(2)}%`).join(', ')
+  return el('div', {
+    width: n * size.stripe, height: size.height, flexShrink: 0, boxSizing: 'border-box', borderRadius: 999, border: `${size.border}px solid ${INK}`,
+    backgroundImage: `linear-gradient(90deg, ${stops})`,
+  })
+}
+
+function chipMark(entry: ShareChip, layout: (typeof LAYOUT)[ShareFormat]): Node {
+  const { chip } = layout
+  return entry.stripes
+    ? capsule(entry.stripes, layout)
+    : el('div', { width: chip.dot, height: chip.dot, flexShrink: 0, borderRadius: '50%', border: `${chip.dotBorder}px solid ${INK}`, background: entry.color })
+}
+
+// --- the Tie (#315) ---
+
+/** The label above the Winners: „Unentschieden · 2 Sieger“ in capitals. */
+function tieLabel(tie: ShareTie, layout: (typeof LAYOUT)[ShareFormat]): Node {
+  return el('span', { fontWeight: 800, fontSize: layout.label.font, letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.1 }, tie.label)
+}
+
+/** 2 or 3 Winners: one name per line, each with its own strip and a shadow in its colour. */
+function tieNames(tie: ShareTie, layout: (typeof LAYOUT)[ShareFormat]): Node {
+  const { strip } = layout.tie
+  return el('div', { display: 'flex', flexDirection: 'column', gap: layout.tie.nameGap, marginTop: layout.tie.nameTop }, tie.entries.map(entry => el('div', { display: 'flex', alignItems: 'center', gap: strip.gap }, [
+    el('span', {
+      flexShrink: 0, boxSizing: 'border-box', width: strip.width, height: Math.round(tie.size * 0.66), border: `${strip.border}px solid ${INK}`, borderRadius: strip.radius, background: entry.fill,
+    }),
+    el('div', {
+      display: 'flex', flex: 1, minWidth: 0, fontFamily: LILITA, fontSize: tie.size, lineHeight: 0.95, whiteSpace: 'pre-line',
+      textShadow: `${layout.tie.shadow}px ${layout.tie.shadow}px 0 ${entry.fill}`,
+    }, entry.lines.join('\n')),
+  ])))
+}
+
+/** 4 Winners and more: name chips, two to a line, the name clipped with an ellipsis. */
+function tieChips(tie: ShareTie, layout: (typeof LAYOUT)[ShareFormat]): Node {
+  const { chip } = layout.tie
+  return el('div', { display: 'flex', flexWrap: 'wrap', rowGap: chip.rowGap, columnGap: chip.colGap, marginTop: layout.tie.chipsTop }, tie.entries.map(entry => el('div', {
+    display: 'flex', alignItems: 'center', gap: chip.gap, width: chip.width, height: chip.height,
+  }, [
+    el('span', {
+      flexShrink: 0, boxSizing: 'border-box', width: chip.strip.width, height: chip.strip.height, border: `${layout.tie.strip.border}px solid ${INK}`, borderRadius: layout.tie.strip.radius, background: entry.fill,
+    }),
+    el('span', {
+      display: 'flex', flex: 1, minWidth: 0, fontFamily: LILITA, fontSize: tie.size, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      textShadow: `${layout.tie.chipShadow}px ${layout.tie.chipShadow}px 0 ${entry.fill}`,
+    }, entry.name),
+  ])))
+}
+
+/** „gewinnen mit je 14 Punkten“. */
+function tiePoints(tie: ShareTie, layout: (typeof LAYOUT)[ShareFormat]): Node {
+  const { points } = layout
+  return el('div', { display: 'flex', alignItems: 'baseline', marginTop: layout.tie.lineTop, gap: points.gap, fontSize: points.font, fontWeight: 800, lineHeight: 1.1 }, [
+    el('span', {}, tie.lead),
+    el('span', { fontFamily: BUNGEE, fontWeight: 400 }, tie.points),
+    el('span', {}, tie.tail),
   ])
 }
 
@@ -138,7 +224,7 @@ function chips(model: ShareImageModel, layout: (typeof LAYOUT)[ShareFormat]): No
       display: 'flex', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box', gap: chip.inner, height: chip.height, padding: chip.padding, background: CARD,
       border: `${chip.border}px solid ${INK}`, borderRadius: 999, fontWeight: 700, fontSize: chip.font, whiteSpace: 'nowrap',
     }, [
-      el('div', { width: chip.dot, height: chip.dot, flexShrink: 0, borderRadius: '50%', border: `${chip.dotBorder}px solid ${INK}`, background: entry.color }),
+      chipMark(entry, layout),
       el('span', {}, entry.name),
     ])),
     ...(model.moreChips ? [el('span', { display: 'flex', alignItems: 'center', flexShrink: 0, height: chip.height, fontWeight: 800, fontSize: layout.moreChips, color: MUTED, whiteSpace: 'nowrap' }, model.moreChips)] : []),
@@ -149,6 +235,24 @@ type ShareFormat = ShareImageModel['format']
 
 interface Pictures { head: string, burst: string, dance: string, brand: string }
 
+/** The middle of a Tie's picture: wide has the text on the left and the sunburst on the right; square, the label and the Winners across the top, the line and the rows beside the sunburst. */
+function tieMiddle(model: ShareImageModel, tie: ShareTie, pictures: Pictures, layout: (typeof LAYOUT)[ShareFormat]): Node | Node[] {
+  const winners = [tieLabel(tie, layout), tie.mode === 'names' ? tieNames(tie, layout) : tieChips(tie, layout)]
+  if (model.format === 'wide') {
+    return el('div', { display: 'flex', flex: 1, minHeight: 0, alignItems: 'center', gap: 44 }, [
+      el('div', { display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }, [...winners, tiePoints(tie, layout), rowsBlock(model, layout, layout.tie.rowsTop)]),
+      sunburst(pictures.burst, pictures.dance, layout),
+    ])
+  }
+  return [
+    el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0 }, winners),
+    el('div', { display: 'flex', flex: 1, minHeight: 0, alignItems: 'center', gap: 40 }, [
+      el('div', { display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: layout.row.gap }, [tiePoints(tie, layout), ...rowNodes(model, layout)]),
+      sunburst(pictures.burst, pictures.dance, layout, tie.burst),
+    ]),
+  ]
+}
+
 function tree(model: ShareImageModel, pictures: Pictures): Node {
   const layout = LAYOUT[model.format]
   const topBar = el('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: 24 }, [
@@ -157,20 +261,23 @@ function tree(model: ShareImageModel, pictures: Pictures): Node {
   ])
   const label = el('span', { display: 'flex', flexShrink: 0, fontWeight: 800, fontSize: layout.label.font, marginRight: layout.label.right, whiteSpace: 'nowrap' }, model.gamesLabel)
 
-  const middle = model.format === 'wide'
-    // Wide: the text on the left, the sunburst with the dance on the right.
-    ? el('div', { display: 'flex', flex: 1, minHeight: 0, alignItems: 'center', gap: 44 }, [
-        el('div', { display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }, [winnerBlock(model, layout), rowsBlock(model, layout)]),
-        sunburst(pictures.burst, pictures.dance, layout),
-      ])
-    // Square: the name across the top, the rows and the sunburst side by side under it.
-    : [
-        el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0 }, [winnerBlock(model, layout)]),
-        el('div', { display: 'flex', flex: 1, minHeight: 0, alignItems: 'center', gap: 40 }, [
-          el('div', { display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }, [rowsBlock(model, layout)]),
+  const { tie, winner } = model
+  const middle = tie
+    ? tieMiddle(model, tie, pictures, layout)
+    : model.format === 'wide'
+      // Wide: the text on the left, the sunburst with the dance on the right.
+      ? el('div', { display: 'flex', flex: 1, minHeight: 0, alignItems: 'center', gap: 44 }, [
+          el('div', { display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }, [winnerBlock(winner, layout), rowsBlock(model, layout)]),
           sunburst(pictures.burst, pictures.dance, layout),
-        ]),
-      ]
+        ])
+      // Square: the name across the top, the rows and the sunburst side by side under it.
+      : [
+          el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0 }, [winnerBlock(winner, layout)]),
+          el('div', { display: 'flex', flex: 1, minHeight: 0, alignItems: 'center', gap: 40 }, [
+            el('div', { display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }, [rowsBlock(model, layout)]),
+            sunburst(pictures.burst, pictures.dance, layout),
+          ]),
+        ]
 
   const games = model.format === 'wide'
     ? el('div', { display: 'flex', alignItems: 'center', flexShrink: 0, gap: layout.chip.gap, overflow: 'hidden' }, [label, ...chips(model, layout)])
