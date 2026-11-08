@@ -47,9 +47,7 @@ watch([onStage, inView], () => {
 function enter(state: RigState) {
   const reduced = reducedMotion()
   held.value = reduced
-  if (rig) rig.setState(state, reduced)
-  // Under reduced motion there is no rig and no GSAP (#308): the still markup holds the state's pose.
-  else if (reduced && root.value) holdPose(root.value, state)
+  rig?.setState(state, reduced)
 }
 watch(() => props.state, enter)
 
@@ -64,11 +62,6 @@ onMounted(async () => {
     const width = props.size ?? element.clientWidth
     shadow.value = { x: Math.round(width * SHADOW_X * 100) / 100, y: Math.round(width * SHADOW_Y * 100) / 100 }
     cheap.value = true
-  }
-  // Reduced motion never loads the chunk (ADR 0015, #308): the still markup holds the pose, and no loop or blink runs.
-  if (reducedMotion()) {
-    enter(props.state)
-    return
   }
   let gsap
   try {

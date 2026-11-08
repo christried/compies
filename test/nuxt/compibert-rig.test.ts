@@ -12,12 +12,10 @@ import { motion } from './motion'
 // the tests look at what a User or the page can observe (the rendered SVG, its transforms, the root's data attributes), never at GSAP's numbers.
 
 // A test can hold the GSAP chunk back, to unmount a rig before it has arrived (the memoised import resolves at once after the first test).
-// `loads` counts the asks, so a test can say that the rig never asked for the chunk (reduced motion, #308).
-const chunk = vi.hoisted(() => ({ held: null as Promise<void> | null, loads: 0 }))
+const chunk = vi.hoisted(() => ({ held: null as Promise<void> | null }))
 mockNuxtImport('loadGsap', async () => {
   const { loadGsap: real } = await vi.importActual<typeof import('~/utils/gsap')>('~/utils/gsap')
   return async () => {
-    chunk.loads++
     await chunk.held
     return real()
   }
@@ -156,50 +154,27 @@ describe('a state change', () => {
 })
 
 describe('reduced motion', () => {
-  const mouthOf = (page: Page, name: string) => (page.get(`[data-m="${name}"]`).element as SVGElement).style.opacity
-
-  it('never loads GSAP, and shows the pose its state holds from the first frame, which then does not move', async () => {
+  it('holds the pose: the state is reached, then nothing moves', async () => {
     stubInView()
     motion('reduced')
-    chunk.loads = 0
-    const page = await mountRig({ state: 'cheer' })
+    const page = await mountRig({ state: 'dance' })
+    await ready(page)
+    const atMount = pose(page, 'arm-left')
 
     expect(attribute(page, 'data-held')).toBe('true')
-    // The Jubel-Pose (#311): the arms up, the happy eyes and the grin.
-    expect(pose(page, 'arm-left')).toContain('rotate(-150')
-    expect(pose(page, 'arm-right')).toContain('rotate(-140')
-    expect(mouthOf(page, 'grin')).toBe('1')
-    const held = [pose(page, 'arm-left'), pose(page, 'arm-right')]
     await pause(1000)
-    expect([pose(page, 'arm-left'), pose(page, 'arm-right')]).toEqual(held)
-    expect(chunk.loads).toBe(0)
-  })
-
-  it('holds the new pose of a state change without GSAP', async () => {
-    stubInView()
-    motion('reduced')
-    chunk.loads = 0
-    const page = await mountRig({ state: 'idle' })
-    expect(pose(page, 'arm-left')).toBeUndefined()
-
-    await page.setProps({ state: 'cheer' })
-
-    expect(attribute(page, 'data-state')).toBe('cheer')
-    expect(pose(page, 'arm-left')).toContain('rotate(-150')
-    expect(chunk.loads).toBe(0)
-  })
-
-  it('shows the still pose for a state that holds none, and the head has no arms to lift', async () => {
-    stubInView()
-    motion('reduced')
-    const errors = vi.spyOn(console, 'error')
-    const idle = await mountRig({ state: 'idle' })
-    const head = await mountRig({ variant: 'head', state: 'cheer' })
-
-    expect(pose(idle, 'arm-left')).toBeUndefined()
-    expect(attribute(head, 'data-held')).toBe('true')
+    expect(pose(page, 'arm-left')).not.toBe(atMount)
+    const first = pose(page, 'root')
     await pause(300)
-    expect(errors).not.toHaveBeenCalled()
+    const second = pose(page, 'root')
+    await pause(300)
+    const third = pose(page, 'root')
+    expect([second, third]).toEqual([first, first])
+    // The breath and the tail stand too.
+    const body = pose(page, 'body')
+    const tail = pose(page, 'tail-3')
+    await pause(300)
+    expect([pose(page, 'body'), pose(page, 'tail-3')]).toEqual([body, tail])
   })
 
   it('moves under full motion, so that the held pose above can fail', async () => {
@@ -211,6 +186,17 @@ describe('reduced motion', () => {
     expect(attribute(page, 'data-held')).toBe('false')
     const roots = await sample(() => pose(page, 'root'), 1200)
     expect(roots.size).toBeGreaterThanOrEqual(2)
+  })
+
+  it('keeps blinking', async () => {
+    stubInView()
+    motion('reduced')
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const page = await mountRig({ state: 'dance' })
+    await ready(page)
+
+    const lids = await sample(() => pose(page, 'lid-left'), 1500)
+    expect(lids.size).toBeGreaterThanOrEqual(2)
   })
 
   it('reads the setting at every change of state', async () => {

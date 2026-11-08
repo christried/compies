@@ -322,6 +322,7 @@ watch([frame, ready], ([which, isReady]) => {
 
 // GSAP is preloaded while the ceremony is ahead or running (the lead, a late joiner), so the chunk is there when the layer opens. Never for a
 // ceremony whose end has passed: a finished Event page opened later loads none (ADR 0015). Nor under reduced motion, whose end frame needs none (#308).
+// The rig still loads the chunk under reduced motion, for its blink (#311): that is the rig's, not this watch's. Do not drop it there.
 watch(() => ceremony.value?.startsAt, () => {
   if (import.meta.client && ceremony.value && props.serverNow() < Date.parse(ceremony.value.endsAt) && !reducedMotion()) loadGsap().catch(() => {})
 }, { immediate: true })

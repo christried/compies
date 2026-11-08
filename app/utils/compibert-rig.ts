@@ -29,27 +29,6 @@ export function rigMarkup(svg: string, variant: RigVariant, prefix: string): str
     .replace(/viewBox="[^"]*"/, `viewBox="${VIEW_BOX[variant]}" width="100%" height="100%"`)
 }
 
-// The held poses of reduced motion (#308): the arms, the eyes and the mouth that a state's entry tweens leave, drawn without GSAP. Only `cheer`
-// has one: the Jubel-Pose the changelog promises for reduced motion (#311). Every other state, `idle` included, holds the still pose.
-const HELD_POSES: Partial<Record<RigState, { armLeft: number, armRight: number }>> = { cheer: { armLeft: -150, armRight: -140 } }
-
-/**
- * Draws the pose `state` holds in `host`, the still markup, as attributes: the arms turn about their pivots, the eyes and the mouth switch. No GSAP
- * (#308): reduced motion never loads the chunk. A state without a held pose puts the still pose back, so the call can be repeated.
- */
-export function holdPose(host: HTMLElement, state: RigState): void {
-  const held = HELD_POSES[state]
-  for (const [part, angle] of [['arm-left', held?.armLeft], ['arm-right', held?.armRight]] as const) {
-    const element = host.querySelector(`.compibert-${part}`)
-    if (!element) continue
-    if (angle === undefined) element.removeAttribute('transform')
-    else element.setAttribute('transform', `rotate(${angle} ${element.getAttribute('data-pivot') ?? '0 0'})`)
-  }
-  for (const element of host.querySelectorAll<SVGElement>('.cb-ball-left, .cb-ball-right')) element.style.opacity = held ? '0' : ''
-  for (const element of host.querySelectorAll<SVGElement>('.cb-happy-left, .cb-happy-right')) element.style.opacity = held ? '1' : '0'
-  for (const element of host.querySelectorAll<SVGElement>('[data-m]')) element.style.opacity = element.dataset.m === (held ? 'grin' : 'smile') ? '1' : '0'
-}
-
 export interface Rig {
   readonly state: RigState
   /** Eases to rest in 0.25 s (0.2 s when `reduced`) while the state's own tracks start; waits for a landing (root y < -3) up to 8 x 0.04 s, as the reference. */
