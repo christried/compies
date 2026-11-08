@@ -288,7 +288,10 @@ function tree(model: ShareImageModel, pictures: Pictures): Node {
 
   return el('div', {
     display: 'flex', flexDirection: 'column', boxSizing: 'border-box', width: model.width, height: model.height, padding: layout.padding, gap: layout.gap, overflow: 'hidden',
-    background: PAPER, backgroundImage: 'radial-gradient(rgba(21,21,21,.10) 2px, transparent 2.4px)', backgroundSize: '28px 28px',
+    // The reference's faint 28 px dot grid (`radial-gradient(rgba(21,21,21,.10) 2px, transparent 2.4px)`). Satori sizes the stops against the whole
+    // box, not the 28 px tile, so px stops shrank to nothing (the pictures came out flat): the dot is 10 % and 12 % of the tile's radius, the
+    // reference's 2 px and 2.4 px of the 19.8 px.
+    backgroundColor: PAPER, backgroundImage: 'radial-gradient(rgba(21,21,21,.10) 10%, transparent 12%)', backgroundSize: '28px 28px',
     fontFamily: BRICOLAGE, color: INK,
   }, [topBar, ...(Array.isArray(middle) ? middle : [middle]), games])
 }
