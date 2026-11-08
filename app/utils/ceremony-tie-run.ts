@@ -102,7 +102,9 @@ export function tieStops({ cards, plate }: TieBox): TieStops {
 }
 
 /** The shape of the run that the Tie's tracks read; the client always knows its grid. */
-export type TieRunOptions = CeremonyShape & { grid: boolean }
+export interface TieRunOptions extends CeremonyShape {
+  grid: boolean
+}
 
 /** What the tracks need of the run: its timeline, its trophy and the stops. */
 export interface TieRun {

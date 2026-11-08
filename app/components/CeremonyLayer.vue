@@ -4,7 +4,7 @@ import { ceremonyLayout, ceremonyModel } from '~/utils/ceremony'
 import { buildRun, ceremonyRigState, measureRun, runGeometry, runPartsOf, type Burst, type RunParts } from '~/utils/ceremony-run'
 import type { RigState } from '~/utils/compibert-rig'
 import type { Gsap } from '~/utils/gsap'
-import { ceremonyEndsAt, ceremonyPlays, ceremonyTimeline } from '~~/shared/ceremony'
+import { ceremonyEndsAt, ceremonyPlays, type CeremonyShape, ceremonyTimeline } from '~~/shared/ceremony'
 import type { EventView } from '~~/shared/event'
 import type { CeremonyView } from '~~/shared/stage'
 
@@ -48,7 +48,9 @@ const partyCount = computed(() => props.view.standings?.length ?? 0)
 const roomy = useMediaQuery('(min-width: 48rem)')
 const layout = computed(() => ceremonyLayout(model.value?.winners.length ?? 1, model.value?.rows.length ?? 0, roomy.value === true))
 const shape = computed(() => ({ partyCount: partyCount.value, winners: model.value?.winners.length ?? 1, grid: layout.value.stage === 'grid' }))
-const schedule = computed(() => (ceremony.value ? ceremonyTimeline({ ...shape.value, gag: ceremony.value.gag }) : null))
+/** The run's shape on this screen (shared/ceremony.ts `CeremonyShape`); null before the first start. */
+const runShape = computed<CeremonyShape | null>(() => (ceremony.value ? { ...shape.value, gag: ceremony.value.gag } : null))
+const schedule = computed(() => (runShape.value ? ceremonyTimeline(runShape.value) : null))
 
 /** The start (its ISO instant) this viewer's layer opened for, the one they closed and the one they skipped: in memory only. */
 const openedFor = ref<string | null>(null)
@@ -247,7 +249,7 @@ async function begin() {
     })
     // The first seek is silent: a late joiner fires no call, and gets the pose from the clock instead.
     timeline.time(elapsed.value / 1000, true)
-    rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, { ...shape.value, gag: ceremony.value.gag })
+    rig.value = frame.value === 'end' ? endPose() : ceremonyRigState(elapsed.value, runShape.value!)
     if (frame.value === 'end') finish()
     seek = { from: elapsed.value, to: elapsed.value }
     ready.value = true
@@ -270,7 +272,7 @@ watch(() => (open.value ? ceremony.value?.startsAt : null), (key) => {
   rig.value = 'idle'
   if (!key) return
   reduced.value = reducedMotion()
-  rig.value = reduced.value ? 'cheer' : ceremonyRigState(elapsed.value, { ...shape.value, gag: ceremony.value!.gag })
+  rig.value = reduced.value ? 'cheer' : ceremonyRigState(elapsed.value, runShape.value!)
   void begin()
 }, { immediate: true, flush: 'sync' })
 

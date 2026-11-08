@@ -66,7 +66,7 @@ describe('the timing (spec #308 § Shared ceremony rules)', () => {
   it('shows the share row 1400 ms after the landing, before the end, and leaves the end where it was', () => {
     for (const parties of [2, 8]) {
       for (const gag of ['trip', 'bonk'] as const) {
-        const { shareAtMs, landAtMs, endMs } = ceremonyTimeline({ partyCount: parties, gag: gag, winners: 1 })
+        const { shareAtMs, landAtMs, endMs } = ceremonyTimeline({ partyCount: parties, gag, winners: 1 })
         expect(shareAtMs).toBe(landAtMs + 1400)
         expect(shareAtMs).toBeLessThan(endMs)
       }
@@ -99,8 +99,8 @@ describe('the timing of a Tie (#315)', () => {
   ]
   for (const [parties, winners, trip, bonk] of END_MS_TIE) {
     it(`ends ${trip} ms (trip) and ${bonk} ms (bonk) with ${winners} Winners of ${parties} Parties`, () => {
-      expect(ceremonyTimeline({ partyCount: parties, gag: 'trip', winners: winners }).endMs).toBe(trip)
-      expect(ceremonyTimeline({ partyCount: parties, gag: 'bonk', winners: winners }).endMs).toBe(bonk)
+      expect(ceremonyTimeline({ partyCount: parties, gag: 'trip', winners }).endMs).toBe(trip)
+      expect(ceremonyTimeline({ partyCount: parties, gag: 'bonk', winners }).endMs).toBe(bonk)
     })
   }
 
@@ -124,7 +124,7 @@ describe('the timing of a Tie (#315)', () => {
     expect(ceremonyTimeline({ partyCount: 8, gag: 'trip', winners: 8 })).toMatchObject({ landAtMs: 2400, plateAtMs: 2400, stampAtMs: 2550 })
     expect(ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3, grid: true })).toMatchObject({ landAtMs: 2400, plateAtMs: 2400 })
     for (const gag of ['trip', 'bonk'] as const) {
-      const single = ceremonyTimeline({ partyCount: 5, gag: gag, winners: 1 })
+      const single = ceremonyTimeline({ partyCount: 5, gag, winners: 1 })
       expect(single.plateAtMs).toBe(single.landAtMs)
     }
   })
@@ -134,7 +134,7 @@ describe('the timing of a Tie (#315)', () => {
   it('shows the share row 1400 ms after the plate and before the end, for 1, 2, 3 and 8 Winners with both gags', () => {
     for (const winners of [1, 2, 3, 8]) {
       for (const gag of ['trip', 'bonk'] as const) {
-        const { shareAtMs, plateAtMs, endMs } = ceremonyTimeline({ partyCount: 8, gag: gag, winners: winners })
+        const { shareAtMs, plateAtMs, endMs } = ceremonyTimeline({ partyCount: 8, gag, winners })
         expect(shareAtMs - plateAtMs, `${winners} ${gag}`).toBe(1400)
         expect(shareAtMs, `${winners} ${gag}`).toBeLessThan(endMs)
       }
@@ -152,7 +152,7 @@ describe('the timing of a Tie (#315)', () => {
     it(`ends a grid no later than the stored end for every Winner count with the ${gag} gag`, () => {
       for (let winners = 2; winners <= 8; winners++) {
         for (let parties = winners; parties <= 8; parties++) {
-          expect(ceremonyTimeline({ partyCount: parties, gag: gag, winners: winners, grid: true }).endMs, `${winners} of ${parties}`).toBeLessThanOrEqual(ceremonyTimeline({ partyCount: parties, gag: gag, winners: winners }).endMs)
+          expect(ceremonyTimeline({ partyCount: parties, gag, winners, grid: true }).endMs, `${winners} of ${parties}`).toBeLessThanOrEqual(ceremonyTimeline({ partyCount: parties, gag, winners }).endMs)
         }
       }
     })
@@ -166,7 +166,7 @@ describe('the timing of a Tie (#315)', () => {
         for (let winners = 1; winners <= parties; winners++) {
           for (const roomy of [true, false]) {
             const grid = ceremonyLayout(winners, parties - winners, roomy).stage === 'grid'
-            expect(ceremonyTimeline({ partyCount: parties, gag: gag, winners: winners, grid: grid }).endMs, `${winners} of ${parties}, ${roomy ? 'wide' : 'phone'}`).toBeLessThanOrEqual(ceremonyEndsAt(0, { partyCount: parties, gag: gag, winners: winners }))
+            expect(ceremonyTimeline({ partyCount: parties, gag, winners, grid }).endMs, `${winners} of ${parties}, ${roomy ? 'wide' : 'phone'}`).toBeLessThanOrEqual(ceremonyEndsAt(0, { partyCount: parties, gag, winners }))
           }
         }
       }

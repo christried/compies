@@ -53,7 +53,7 @@ type Layer = InstanceType<typeof CeremonyLayer>['$props']['view']
 
 const ceremonyAt = (startsAt: number, parties = 2, gag: CeremonyGag = 'trip', winners = 1): CeremonyView => ({
   startsAt: new Date(startsAt).toISOString(),
-  endsAt: new Date(startsAt + ceremonyTimeline({ partyCount: parties, gag: gag, winners: winners }).endMs).toISOString(),
+  endsAt: new Date(startsAt + ceremonyTimeline({ partyCount: parties, gag, winners }).endMs).toISOString(),
   gag,
 })
 /** The Standings of `parties` Parties, the first `winners` of them on rank 1. */
@@ -477,7 +477,7 @@ const everyPartShown = () => ['banner', 'row', 'card', 'back', 'stamp', 'person'
 function run(parties: number, gag: CeremonyGag, overrides: Partial<Layer> = {}): Layer {
   const ceremony = ceremonyAt(STARTS, parties, gag)
   // A fixture cannot lie: the stored end is the timeline's end.
-  expect(Date.parse(ceremony.endsAt) - STARTS).toBe(ceremonyTimeline({ partyCount: parties, gag: gag, winners: 1 }).endMs)
+  expect(Date.parse(ceremony.endsAt) - STARTS).toBe(ceremonyTimeline({ partyCount: parties, gag, winners: 1 }).endMs)
   return finished({ ceremony, standings: standingsOf(parties), teams: [], members: [], ...overrides })
 }
 
@@ -595,7 +595,7 @@ describe('the end (#312)', () => {
   const CASES = [2, 5, 8].flatMap(parties => CEREMONY_GAGS.map(gag => [parties, gag] as const))
 
   it.each(CASES)('is the end frame at endsAt with %i Parties and the %s gag', async (parties, gag) => {
-    const { endMs } = ceremonyTimeline({ partyCount: parties, gag: gag, winners: 1 })
+    const { endMs } = ceremonyTimeline({ partyCount: parties, gag, winners: 1 })
     await mount(run(parties, gag), STARTS)
 
     await passTo(STARTS + endMs - 1)
@@ -1219,9 +1219,9 @@ describe('watching again (#314)', () => {
 
   it.each(CEREMONY_GAGS)('plays the read\'s gag, the %s', async (gag) => {
     const view = finished({ ceremony: ceremonyAt(STARTS, 2, gag) })
-    await mount(view, STARTS + ceremonyTimeline({ partyCount: 2, gag: gag, winners: 1 }).endMs + 60_000)
+    await mount(view, STARTS + ceremonyTimeline({ partyCount: 2, gag, winners: 1 }).endMs + 60_000)
     const at = serverTime
-    const { runEndAtMs } = ceremonyTimeline({ partyCount: 2, gag: gag, winners: 1 })
+    const { runEndAtMs } = ceremonyTimeline({ partyCount: 2, gag, winners: 1 })
     await replay()
 
     await passTo(at + runEndAtMs + 100)
@@ -1605,7 +1605,7 @@ describe('a Tie (#315)', () => {
   /** A finished Event of `parties` Parties with the first `winners` on rank 1; the stored end is the default layout's (the server's). */
   function tie(parties: number, winners: number, gag: CeremonyGag = 'trip', overrides: Partial<Layer> = {}): Layer {
     const ceremony = ceremonyAt(STARTS, parties, gag, winners)
-    expect(Date.parse(ceremony.endsAt) - STARTS).toBe(ceremonyTimeline({ partyCount: parties, gag: gag, winners: winners }).endMs)
+    expect(Date.parse(ceremony.endsAt) - STARTS).toBe(ceremonyTimeline({ partyCount: parties, gag, winners }).endMs)
     return finished({ ceremony, standings: standingsOf(parties, winners), teams: named(parties), members: [], ...overrides })
   }
 
@@ -1864,7 +1864,7 @@ describe('a Tie (#315)', () => {
     it('is the end frame at the stored end, with 2 of 4 Parties and both gags', async () => {
       stubScreen(true)
       for (const gag of CEREMONY_GAGS) {
-        const { endMs } = ceremonyTimeline({ partyCount: 4, gag: gag, winners: 2 })
+        const { endMs } = ceremonyTimeline({ partyCount: 4, gag, winners: 2 })
         await mount(tie(4, 2, gag), STARTS)
 
         await passTo(STARTS + endMs - 1)
@@ -1920,7 +1920,7 @@ describe('a Tie (#315)', () => {
         expect(rigState()).toBe('cheer')
         expect(tieEnd(false, winners === 8 ? 'stack' : 'person')).toBe(true)
         expect(spoken()).toContain('Unentschieden!')
-        await passTo(STARTS + ceremonyTimeline({ partyCount: parties, gag: 'trip', winners: winners }).stampAtMs + 50)
+        await passTo(STARTS + ceremonyTimeline({ partyCount: parties, gag: 'trip', winners }).stampAtMs + 50)
         expect(pieces()).toBe(0)
         mounted!.unmount()
       }
