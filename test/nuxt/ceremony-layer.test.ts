@@ -16,14 +16,25 @@ import { motion } from './motion'
 // coin-flip.test.ts does. Real GSAP moves the real parts (happy-dom has no layout, so no positions are asserted, and no easing or duration
 // either: ADR 0015 deviates from CODING_STANDARDS § Motion); the rig is a stub that shows the pose the layer asks for (#311 tests the rig).
 
-// A test can make the GSAP chunk fail to load.
-const chunk = vi.hoisted(() => ({ fail: false, loads: 0 }))
+// A test can make the GSAP chunk fail to load, hold it back (`hold`: a promise the chunk waits for) or make the run's build throw.
+const chunk = vi.hoisted(() => ({ fail: false, loads: 0, hold: null as Promise<unknown> | null, buildFails: false }))
 mockNuxtImport('loadGsap', async () => {
   const { loadGsap: real } = await vi.importActual<typeof import('~/utils/gsap')>('~/utils/gsap')
   return async () => {
     chunk.loads++
+    if (chunk.hold) await chunk.hold
     if (chunk.fail) throw new Error('chunk failed')
     return real()
+  }
+})
+vi.mock('~/utils/ceremony-run', async (importOriginal) => {
+  const original = await importOriginal<typeof import('~/utils/ceremony-run')>()
+  return {
+    ...original,
+    buildRun: ((...args: Parameters<typeof original.buildRun>) => {
+      if (chunk.buildFails) throw new Error('build failed')
+      return original.buildRun(...args)
+    }) as typeof original.buildRun,
   }
 })
 
@@ -135,6 +146,8 @@ const originalAnimate = Element.prototype.animate
 beforeEach(() => {
   chunk.fail = false
   chunk.loads = 0
+  chunk.hold = null
+  chunk.buildFails = false
   realRig = false
   Element.prototype.animate = vi.fn(() => ({ onfinish: null })) as unknown as typeof Element.prototype.animate
   serverTime = T0
@@ -446,11 +459,13 @@ describe('Compibert in the end frame (#311)', () => {
 })
 
 // The Pokal-Lauf (#312): the layer moves a paused GSAP timeline with the server's clock. A part is shown when its inline opacity is empty
-// or 1 and hidden when it is 0 (asserted away from a tween), and the stub rig shows the pose the layer asked for.
+// or 1 and hidden when it is 0 (asserted away from a tween); with no GSAP (reduced motion, a failed chunk) the static markup says it: `opacity-0` hides.
+// The stub rig shows the pose the layer asked for.
 const part = (name: string) => [...(dialog()?.querySelectorAll<HTMLElement>(`[data-part="${name}"]`) ?? [])]
 const opacityOf = (element: HTMLElement) => element.style.opacity
-const shown = (name: string) => part(name).length > 0 && part(name).every(element => opacityOf(element) === '' || Number(opacityOf(element)) === 1)
-const hidden = (name: string) => part(name).length > 0 && part(name).every(element => Number(opacityOf(element)) === 0 && opacityOf(element) !== '')
+const staticallyHidden = (element: HTMLElement) => opacityOf(element) === '' && element.classList.contains('opacity-0')
+const shown = (name: string) => part(name).length > 0 && part(name).every(element => (opacityOf(element) === '' && !staticallyHidden(element)) || Number(opacityOf(element)) === 1)
+const hidden = (name: string) => part(name).length > 0 && part(name).every(element => staticallyHidden(element) || (Number(opacityOf(element)) === 0 && opacityOf(element) !== ''))
 const frame = () => dialog()?.getAttribute('data-frame')
 const rigState = () => dialog()?.querySelector('[data-testid="rig"]')?.getAttribute('data-state')
 const pieces = () => dialog()?.querySelectorAll('[class~="layer-confetti"] span').length ?? 0
@@ -774,6 +789,74 @@ describe('when GSAP does not load (#312)', () => {
   })
 })
 
+// The end frame is static markup that needs no GSAP (review of 0.9, spec #308): whenever the frame is the end frame it shows, whatever the chunk is doing.
+describe('the end frame does not wait for GSAP (#308)', () => {
+  const content = () => dialog()?.querySelector(':scope > .overflow-y-auto') ?? null
+  const visible = () => content() !== null && !content()!.classList.contains('opacity-0')
+  const never = () => new Promise<void>(() => {})
+
+  it('shows at once under reduced motion on a page whose chunk never comes, and loads none', async () => {
+    chunk.hold = never()
+    motion('reduced')
+    await mount(finished(), ENDS + 60_000)
+
+    replayButton().click()
+    await settle()
+
+    expect(frame()).toBe('end')
+    expect(visible()).toBe(true)
+    expect(text()).toContain('Wilde Gurken')
+    expect(text()).toContain('SIEGER')
+    expect(chunk.loads).toBe(0)
+  })
+
+  it('shows at once on „Überspringen“ while the chunk is still loading, and stays when the chunk then arrives', async () => {
+    let arrive!: () => void
+    chunk.hold = new Promise<void>((resolve) => { arrive = resolve })
+    await mount(finished(), STARTS + 500)
+    expect(frame()).toBe('run')
+    expect(visible()).toBe(false)
+
+    skipButton()!.click()
+    await settle()
+
+    expect(frame()).toBe('end')
+    expect(visible()).toBe(true)
+    expect(text()).toContain('Wilde Gurken')
+
+    arrive()
+    await settle()
+    expect(frame()).toBe('end')
+    expect(visible()).toBe(true)
+    expect(shown('stamp')).toBe(true)
+  })
+
+  it('shows the end frame when building the run throws, without „Nochmal ansehen“', async () => {
+    chunk.buildFails = true
+    await mount(finished(), STARTS + 500)
+
+    expect(frame()).toBe('end')
+    expect(visible()).toBe(true)
+    expect(text()).toContain('SIEGER')
+    expect(shareButton()).not.toBeNull()
+    expect(againButton()).toBeNull()
+    expect(skipButton()).toBeNull()
+  })
+
+  it('does nothing for a chunk that arrives after the layer was closed', async () => {
+    let arrive!: () => void
+    chunk.hold = new Promise<void>((resolve) => { arrive = resolve })
+    await mount(finished(), STARTS + 500)
+
+    closeButton()!.click()
+    await settle()
+    arrive()
+    await settle()
+
+    expect(dialog()).toBeNull()
+  })
+})
+
 describe('preloading GSAP (#312)', () => {
   it('asks for the chunk during the lead and for a late joiner, so it is there when the layer opens', async () => {
     await mount(finished(), STARTS - CEREMONY_LEAD_MS)
@@ -944,6 +1027,58 @@ describe('watching again (#314)', () => {
     await replay()
 
     expect(dialog()).toBeNull()
+  })
+
+  describe('on a cold page, where the chunk comes after the click (#308)', () => {
+    it('starts at its own zero once the chunk is there: the first frame, not 500 ms into the show', async () => {
+      let arrive!: () => void
+      chunk.hold = new Promise<void>((resolve) => { arrive = resolve })
+      await mount(finished(), REPLAY_AT)
+
+      await replay()
+      await passTo(REPLAY_AT + 500)
+      arrive()
+      await settle()
+
+      expect(dialog()).not.toBeNull()
+      expect(frame()).toBe('run')
+      expect(part('banner')[0]!.style.transform).toContain('-140px')
+      expect(hidden('row')).toBe(true)
+      expect(hidden('stamp')).toBe(true)
+      // The show then runs on the clock of the load, not of the click.
+      await passTo(REPLAY_AT + 500 + RUN - 1)
+      expect(frame()).toBe('run')
+      await passTo(REPLAY_AT + 500 + RUN)
+      expect(frame()).toBe('end')
+    })
+
+    it('opens the end frame as before when the chunk fails', async () => {
+      chunk.fail = true
+      await mount(finished(), REPLAY_AT)
+
+      await replay()
+
+      expect(frame()).toBe('end')
+      expect(againButton()).toBeNull()
+      expect(text()).toContain('SIEGER')
+    })
+
+    it('is cancelled by a close while it waits', async () => {
+      let arrive!: () => void
+      chunk.hold = new Promise<void>((resolve) => { arrive = resolve })
+      await mount(finished(), STARTS + 500)
+      skipButton()!.click()
+      await settle()
+      againButton()!.click()
+      await settle()
+
+      closeButton()!.click()
+      await settle()
+      arrive()
+      await settle()
+
+      expect(dialog()).toBeNull()
+    })
   })
 
   it('plays on the viewer\'s clock: the end frame comes a run\'s length after the click, not at the synced end', async () => {
