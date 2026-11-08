@@ -394,6 +394,9 @@ defineExpose({ root, burst })
                       :style="{ fontSize: `${grid.sfs}px` }"
                     >{{ t('ceremony.stamp') }}</span>
                   </div>
+                  <!-- The stack is not the person cell of the single card and the chain with a smaller size: by the artboard (`cells(…, stack)` in
+                       Siegerehrung Unentschieden.dc.html) it has no ring (`team` is 0), no name, an overlap, a 2 px „+N“ circle and a „+N“ at 0.4 of the size
+                       where the cells have 2.5 px and 0.3 (#308 review S4). -->
                   <ul
                     :aria-label="stackLabel(winner)"
                     data-part="stack"
