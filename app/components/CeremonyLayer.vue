@@ -237,9 +237,13 @@ async function begin() {
   }
 }
 
-// Opens sync, so `reduced` is there before the dialog renders its first frame (no „Überspringen“ under reduced motion). Keyed by the run the
-// layer is open on, not by `open` alone (#314): a replay from the end frame changes the run while the layer stays open, and so tears the
-// timeline down and builds it again on the same dialog element. Open, closed, open and a new start go through `null` as before.
+// The run is torn down and built again whenever the layer opens on a run (#314, #308). `watch(elapsed)` alone would only move the old timeline
+// back to 0 on a replay from the end frame, and that is not enough: the build measures the stage again (a screen that changed size since the
+// run has other stops), starts the rig at its pose for this clock instead of the end frame's `dance`, reads reduced motion and the chunk's
+// failure again, and gives the confetti rule fresh bounds (`seek`). Keyed by the run (`startsAt`), not by `open`, so it holds however `replay()`
+// orders its two writes. `flush: 'sync'` has `reduced` there before the dialog renders its first frame (no „Überspringen“ under reduced motion),
+// and sees the layer close and open again in between, so the replay passes through `null` like a new start: no test can tell the key from a
+// plain `open` here. The geometry case of „Nochmal ansehen“ fails without the rebuild.
 watch(() => (open.value ? ceremony.value?.startsAt : null), (key) => {
   teardown()
   failed.value = false

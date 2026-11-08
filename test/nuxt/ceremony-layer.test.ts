@@ -1227,6 +1227,30 @@ describe('watching again (#314)', () => {
       expect(againButton()).toBeNull()
     })
 
+    it('measures the stage again for the restart: a screen that changed size since the run sets Compibert\'s stop elsewhere (#308)', async () => {
+      // happy-dom has no layout: the stage is as wide as the test says, the card stands 300 px in and is 200 wide, Compibert is 100 wide.
+      let stage = 1000
+      const widths: Record<string, number> = { card: 200, compibert: 100 }
+      vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
+        if (this.dataset.part) return widths[this.dataset.part] ?? 0
+        return this.querySelector(':scope > h2') ? stage : 0
+      })
+      vi.spyOn(HTMLElement.prototype, 'offsetLeft', 'get').mockImplementation(function (this: HTMLElement) {
+        return this.dataset.part === 'card' ? 300 : 0
+      })
+      const { runEndAtMs } = ceremonyTimeline(2, 'trip', 1)
+      await atTheEndFrame()
+      const at = serverTime
+      stage = 600
+
+      againButton()!.click()
+      await settle()
+      await passTo(at + runEndAtMs)
+
+      // Compibert's stop: min(card centre - 24 - 0.9 * 100, 0.45 * stage - 50) = 220 on the new stage, 286 on the old one.
+      expect(part('compibert')[0]!.style.transform).toMatch(/^translate(3d)?\(220px/)
+    })
+
     it('plays the restarted show to its own end, bursting the confetti and speaking at the stamp again', async () => {
       stubScreen(true)
       const { stampAtMs } = ceremonyTimeline(2, 'trip', 1)
