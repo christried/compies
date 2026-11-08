@@ -48,4 +48,4 @@ Never send the operator's personal data or any data of the app's Users (names, e
 
 ### Scripting
 
-Script with `node`. The user's Windows machine has only the Python Store alias; install the latest stable Python only when a task really needs it.
+Script with `node`. A script of more than one line goes to a file (Write tool) and runs with `node <file>`: inline `node -e` breaks on an apostrophe and a Bash heredoc on a backtick. The user's Windows machine has only the Python Store alias; install the latest stable Python only when a task really needs it.

@@ -1,6 +1,6 @@
 # Merge job
 
-The brief of a merge job (`docs/agents/subagents.md`, model `haiku`): one reviewed ticket branch into the integration branch, checked. The orchestrator's spawn prompt names both branches and the ticket number. One merge job runs at a time.
+The brief of a merge job (`docs/agents/subagents.md` § Supervision, model `haiku`): one reviewed ticket branch whose merge conflicts into the integration branch, checked. A clean branch the orchestrator merges itself. The orchestrator's spawn prompt names both branches and the ticket number. One merge job runs at a time.
 
 - Work in the main checkout of the repo, the orchestrator's working directory (not a worktree under `.claude/worktrees/`), in Git Bash on Windows.
 - The orchestrator has already reviewed the diff. Change code only to resolve merge conflicts.
@@ -11,7 +11,7 @@ The brief of a merge job (`docs/agents/subagents.md`, model `haiku`): one review
 1. Get onto the integration branch:
    - `cd "$(git rev-parse --show-toplevel)" && git status --short` must be clean. If it isn't, stop and report.
    - `git fetch origin && git checkout <integration branch> && git merge --ff-only origin/<integration branch>`.
-2. Merge: `git merge --no-ff origin/<ticket branch> -m "Merge <ticket branch> (#<n>)" -m "<the Co-Authored-By line your attribution reminder gives>"`.
+2. Merge: `git merge --no-ff origin/<ticket branch> -m "Merge <ticket branch> (#<n>)" -m "<the attribution lines your own attribution reminder gives>"`. They name the model that merges, so yours are right where the orchestrator's would be wrong.
    - On a conflict, keep both sides:
      - `CHANGELOG.md`: both lines, under the right group headings, in the order Neu, Geändert, Behoben, Entfernt, Sicherheit;
      - `i18n/locales/de.json`: both key sets, as valid JSON (check with `node -e "require('./i18n/locales/de.json')"`);
@@ -21,7 +21,8 @@ The brief of a merge job (`docs/agents/subagents.md`, model `haiku`): one review
 3. Install and check. CI runs the full suite and the build on every push to the integration PR, so here:
    - `pnpm install --frozen-lockfile`;
    - `pnpm typecheck && pnpm lint && pnpm knip`;
-   - `pnpm vitest run <every test file the ticket branch changed>` (list them with `git diff --name-only HEAD^1 HEAD -- test/`).
+   - `pnpm vitest run <every test file the ticket branch changed>` (list them with `git diff --name-only HEAD^1 HEAD -- test/`);
+   - `pnpm test:build` when the merge changed a file under `test/build/` or `nuxt.config.ts`: the default run leaves `test/build/` out, and in 0.9 a merge passed with such a file unrun.
    - A failing test file: rerun it alone once. Passes → note it as flaky and go on. Fails again → `git reset --hard origin/<integration branch>`, report the failing output, and stop without pushing.
 4. All green: `git push origin <integration branch>`.
 

@@ -220,6 +220,7 @@ The Award ceremony and the Share image; the minimum for the first Event. (T15; s
 Picked up right after the first Event played in the app; the issues are opened then, not before.
 
 - Countdown motion and graphics: a _Claude Design hand-off_ (`docs/agents/design-handoff.md`).
+- **Event löschen** for the Host: a soft delete (`events.deleted_at`, which Home, the Event read and the deploy check already honour). The 0.9 Release found a placeholder Event on production that only a script could remove.
 - **Tags for games:** searchable and filterable in the library, for example genre, Co-op/Async, zeitsparend/zeitintensiv. Grilled then.
 - **Prices for games:** the amount in €, its source (Steam, Epic, GOG, publisher website, Steam key, Free-to-play, a subscription such as Game Pass) and the date it was checked, because prices change. Grilled then.
 - Mockup vs. live app: the user compares the reference designs with the live app and names every difference (`ready-for-human`); the differences become tickets.

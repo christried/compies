@@ -9,7 +9,7 @@ They're committed because cloud sessions load a repo's `.claude/skills/` but no 
 Each patch is a paragraph starting with `**COMPIES:**` that points at the rules in `docs/agents/`. The rules live there; a patch stays a pointer. `grep -rn "COMPIES:" .claude/skills` lists them:
 
 - `code-review`: both sub-agents on `sonnet`, each in its own worktree
-- `implement-spec`: subagent rules, integration branch from and into `staging` (where `Closes #n` closes nothing), delivery, the 300k context limit with its handoff, the Release review in place of `code-review`, the worktree cleanup
+- `implement-spec`: subagent rules, frontier tickets only, integration branch from and into `staging` (where `Closes #n` closes nothing), clean merges by the orchestrator, delivery, the 300k context limit with its handoff, the Release review in place of `code-review`, the worktree cleanup
 - `implement`: delivery
 - `grill-with-docs`, `to-spec`, `to-tickets`: design hand-off flags and tickets
 - `handoff`: names the subagents still running

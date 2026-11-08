@@ -1,6 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import { createError, defineEventHandler, getRequestHeader } from 'h3'
-import { deployCheck, type DeployCheck } from '../../domain/game-day'
+import { type CheckedSession, deployCheck, type DeployCheck } from '../../domain/game-day'
+import { numberedSessions } from '../../domain/session'
 import { events, sessions } from '../../db/schema'
 import { isRunning } from '../../../shared/session-state'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, verifyRoomCall } from '../../../shared/room-auth'
@@ -22,12 +23,21 @@ export default defineEventHandler(async (event): Promise<DeployCheck> => {
   if (!signed) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
   const rows = await useDb(event)
-    .select({ startsAt: sessions.startsAt, startedAt: sessions.startedAt, endedAt: sessions.endedAt })
+    .select({ eventId: sessions.eventId, slug: events.slug, id: sessions.id, startsAt: sessions.startsAt, startedAt: sessions.startedAt, endedAt: sessions.endedAt })
     .from(sessions)
     .innerJoin(events, eq(events.id, sessions.eventId))
     .where(and(isNull(events.deletedAt), sessionNotRemoved))
-  // A Running Session (#164) is started and not ended; a removed Session and a deleted Event are left out by the query.
-  // It counts while it started less than 16 h ago (#200), so a Session nobody ended stops blocking the deploy.
-  const runningSince = rows.flatMap(row => (isRunning(row) ? [row.startedAt] : []))
-  return deployCheck({ startsAt: rows.map(row => row.startsAt), runningSince, now: useClock(event).now() })
+  // A removed Session and a deleted Event are left out by the query. The answer names each blocking Session as the
+  // Event page does („Session 2 of `slug`“, retro 0.9), so the Sessions are numbered per Event the same way.
+  const byEvent = new Map<string, typeof rows>()
+  for (const row of rows) byEvent.set(row.eventId, [...(byEvent.get(row.eventId) ?? []), row])
+  const checked: CheckedSession[] = [...byEvent.values()].flatMap(ofEvent => numberedSessions(ofEvent).map(row => ({
+    event: row.slug,
+    number: row.number,
+    startsAt: row.startsAt,
+    // A Running Session (#164) is started and not ended; it counts while it started less than 16 h ago (#200), so a
+    // Session nobody ended stops blocking the deploy.
+    runningSince: isRunning(row) ? row.startedAt : null,
+  })))
+  return deployCheck({ sessions: checked, now: useClock(event).now() })
 })

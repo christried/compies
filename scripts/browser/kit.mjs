@@ -253,6 +253,28 @@ export async function runningEvent(tabs, { name, games = 5, gameNames = [], sett
 }
 
 /**
+ * @public For the agents' own checks (docs/agents/browser-frame.md).
+ * A finished Event for a check (retro 0.9): `runningEvent` with `games` pool games, all set and with the Game count at
+ * `games`, a Result for each that gives the `outcome`, and the Finish. `'winner'`: the first tab's Party wins every
+ * Round. `'tie'`: the Parties take turns on Place 1, so `games` is rounded up to a multiple of the Party count and
+ * every Party ends on the same points. Each 0.9 check rebuilt this by hand; on staging the same requests run as one
+ * `javascript_tool` call per account (`docs/agents/delivery.md` § Issues). Returns `{ slug, games, roundIds, winners }`.
+ */
+export async function finishedEvent(tabs, { name, outcome = 'winner', games = tabs.length, settings = {} }) {
+  const teams = tabs.map((_, index) => index + 1)
+  const count = outcome === 'tie' ? Math.ceil(games / teams.length) * teams.length : games
+  const event = await runningEvent(tabs, { name, games: count, settings: { gameCount: count, ...settings }, set: count })
+  const [host] = tabs
+  for (const [index, roundId] of event.roundIds.entries()) {
+    const order = outcome === 'tie' ? teams.map((_, i) => teams[(i + index) % teams.length]) : teams
+    await enterResult(host, event.slug, roundId, placesOf(order))
+  }
+  const winners = outcome === 'tie' ? teams : [teams[0]]
+  await ok(api(host, 'POST', `/api/e/${event.slug}/finish`, { outcome, winners }), 'finish the Event')
+  return { ...event, winners }
+}
+
+/**
  * The results of one browser check in its own folder, `<tmp>/compies-browser/<name>/` (retro 0.8). `check`, `skip` and
  * `note` print their line and append it to `results.log` there the moment it is decided, so a check that stops early
  * (the s6 agent of 0.8 hit the usage limit) leaves every result it had. Each run opens the log with its script and the
