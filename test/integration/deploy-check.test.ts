@@ -56,6 +56,7 @@ describe('GET /api/internal/deploy-check', () => {
       removedAt: options.removed ? new Date() : null,
       startedAt: options.startedAt ?? (options.running ? new Date() : null),
     })))
+    return eventRow!.slug
   }
 
   /** Whole-day distances in hours: a Berlin day is 23 to 25 hours long, so 36 hours is always another day. */
@@ -89,6 +90,17 @@ describe('GET /api/internal/deploy-check', () => {
 
     expect(body.ok).toBe(false)
     expect(body.reason).toContain('2 Sessions')
+  })
+
+  // Retro 0.9, finding 1: a placeholder Session blocked the Release and the user could not tell which Event to move.
+  it('names each blocking Session by its Event slug and its number on the Event page', async () => {
+    const numbered = await eventWith([now(), hoursFromNow(36)]) // two Sessions, so the Event page numbers them
+    const single = await eventWith([now()]) // one Session, shown without a number
+
+    const body = await (await ask()).json() as { ok: boolean, reason: string }
+
+    expect(body.reason).toContain(`Session 1 of \`${numbered}\``)
+    expect(body.reason).toContain(`the Session of \`${single}\``)
   })
 
   it('says ok on a day without a Session today: yesterday, tomorrow, undated, nothing at all', async () => {

@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { deployCheck, sessionsToday } from '../../server/domain/game-day'
+import { type CheckedSession, deployCheck } from '../../server/domain/game-day'
 
 // The game-day rule behind the Worker deploy guard (#157): a deploy drops every socket, so it must not happen on a day
-// a Session is dated. "Today" is the Berlin calendar day (ADR 0003), whatever the server's clock zone.
+// a Session is dated. "Today" is the Berlin calendar day (ADR 0003), whatever the server's clock zone. The reason names
+// the blocking Sessions by Event slug and number (retro 0.9, finding 1).
 const at = (iso: string) => new Date(iso)
 
-describe('sessionsToday', () => {
+/** How many of the Dates the check counts as today: 0 when it says ok, else the count its reason gives. */
+function sessionsToday(startsAt: (Date | null)[], now: Date): number {
+  const { ok, reason } = deployCheck({ sessions: startsAt.map(date => ({ event: 'freitag', number: null, startsAt: date, runningSince: null })), now })
+  return ok ? 0 : Number(/(\d+) Sessions? (?:is|are) dated today/.exec(reason!)![1])
+}
+
+describe('the Berlin day of a dated Session', () => {
   it('counts the Sessions dated on the Berlin day of now', () => {
     const now = at('2024-01-15T10:00:00Z')
 
@@ -48,29 +55,39 @@ describe('deployCheck', () => {
   const now = at('2024-01-15T10:00:00Z')
   const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000)
 
+  /** A Session of `event`, dated `startsAt`; `running` is its start while it runs. */
+  const session = (event: string, startsAt: Date | null, { number = null, running = null }: { number?: number | null, running?: Date | null } = {}): CheckedSession =>
+    ({ event, number, startsAt, runningSince: running })
+
   it('is ok, without a reason, when no Session is dated today', () => {
-    expect(deployCheck({ startsAt: [at('2024-01-14T19:00:00Z'), at('2024-01-16T19:00:00Z'), null], runningSince: [], now })).toEqual({ ok: true, reason: null })
+    const sessions = [session('freitag', at('2024-01-14T19:00:00Z'), { number: 1 }), session('freitag', at('2024-01-16T19:00:00Z'), { number: 2 }), session('offen', null)]
+
+    expect(deployCheck({ sessions, now })).toEqual({ ok: true, reason: null })
   })
 
-  it('is not ok on a game day and names how many Sessions fall on it', () => {
-    const one = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], runningSince: [], now })
-    const two = deployCheck({ startsAt: [at('2024-01-15T17:00:00Z'), at('2024-01-15T19:00:00Z')], runningSince: [], now })
+  it('is not ok on a game day and names how many Sessions fall on it, and which', () => {
+    const one = deployCheck({ sessions: [session('test-event-6ue2', at('2024-01-15T19:00:00Z'))], now })
+    const two = deployCheck({ sessions: [session('freitag', at('2024-01-15T17:00:00Z'), { number: 2 }), session('samstag', at('2024-01-15T19:00:00Z'))], now })
 
     expect(one).toEqual({ ok: false, reason: expect.stringContaining('game day') })
-    expect(one.reason).toContain('1 Session')
-    expect(two.reason).toContain('2 Sessions')
+    expect(one.reason).toContain('1 Session is dated today')
+    expect(one.reason).toContain('(the Session of `test-event-6ue2`)')
+    expect(two.reason).toContain('2 Sessions are dated today')
+    expect(two.reason).toContain('(Session 2 of `freitag`, the Session of `samstag`)')
   })
 
-  it('is not ok while a Session runs (#164), with a reason of its own, whatever day its Date was', () => {
-    const running = deployCheck({ startsAt: [at('2024-01-10T19:00:00Z')], runningSince: [hoursAgo(2)], now })
+  it('is not ok while a Session runs (#164), with a reason of its own that names it, whatever day its Date was', () => {
+    const running = deployCheck({ sessions: [session('freitag', at('2024-01-10T19:00:00Z'), { number: 1, running: hoursAgo(2) })], now })
 
     expect(running).toEqual({ ok: false, reason: expect.stringContaining('running') })
+    expect(running.reason).toContain('1 Session is running (Session 1 of `freitag`)')
     expect(running.reason).not.toContain('game day')
-    expect(deployCheck({ startsAt: [], runningSince: [hoursAgo(1), hoursAgo(2)], now }).reason).toContain('2 Sessions are running')
+    const both = deployCheck({ sessions: [session('a', null, { running: hoursAgo(1) }), session('b', null, { running: hoursAgo(2) })], now })
+    expect(both.reason).toContain('2 Sessions are running (the Session of `a`, the Session of `b`)')
   })
 
   it('names the running Session first when one runs on a game day', () => {
-    const both = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], runningSince: [hoursAgo(2)], now })
+    const both = deployCheck({ sessions: [session('freitag', at('2024-01-15T19:00:00Z'), { running: hoursAgo(2) })], now })
 
     expect(both.ok).toBe(false)
     expect(both.reason).toContain('running')
@@ -79,25 +96,27 @@ describe('deployCheck', () => {
   it('is not ok while a Session started less than 16 h ago runs, and says so (#200)', () => {
     const justUnder = new Date(now.getTime() - (16 * 3_600_000 - 60_000)) // 15 h 59 min ago
 
-    const body = deployCheck({ startsAt: [], runningSince: [justUnder], now })
+    const body = deployCheck({ sessions: [session('freitag', null, { running: justUnder })], now })
 
     expect(body).toEqual({ ok: false, reason: expect.stringContaining('running') })
   })
 
   it('is ok when the Running Session started exactly 16 h ago or 3 days ago and no Session is dated today (#200)', () => {
-    expect(deployCheck({ startsAt: [], runningSince: [hoursAgo(16)], now })).toEqual({ ok: true, reason: null })
-    expect(deployCheck({ startsAt: [at('2024-01-12T19:00:00Z')], runningSince: [hoursAgo(72)], now })).toEqual({ ok: true, reason: null })
+    expect(deployCheck({ sessions: [session('freitag', null, { running: hoursAgo(16) })], now })).toEqual({ ok: true, reason: null })
+    expect(deployCheck({ sessions: [session('freitag', at('2024-01-12T19:00:00Z'), { running: hoursAgo(72) })], now })).toEqual({ ok: true, reason: null })
   })
 
   it('counts only the Running Sessions that started less than 16 h ago (#200)', () => {
-    const body = deployCheck({ startsAt: [], runningSince: [hoursAgo(2), hoursAgo(16), hoursAgo(40)], now })
+    const sessions = [session('a', null, { running: hoursAgo(2) }), session('b', null, { running: hoursAgo(16) }), session('c', null, { running: hoursAgo(40) })]
+
+    const body = deployCheck({ sessions, now })
 
     expect(body.ok).toBe(false)
-    expect(body.reason).toContain('1 Session is running')
+    expect(body.reason).toContain('1 Session is running (the Session of `a`)')
   })
 
   it('names the game day, not the running Session, when a Session started 17 h ago runs on a game day (#200)', () => {
-    const body = deployCheck({ startsAt: [at('2024-01-15T19:00:00Z')], runningSince: [hoursAgo(17)], now })
+    const body = deployCheck({ sessions: [session('freitag', at('2024-01-15T19:00:00Z'), { running: hoursAgo(17) })], now })
 
     expect(body.ok).toBe(false)
     expect(body.reason).toContain('game day')

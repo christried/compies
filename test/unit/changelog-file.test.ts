@@ -31,4 +31,13 @@ describe('CHANGELOG.md', () => {
   it('has package.json at the newest Release version', () => {
     expect(packageJson.version).toBe(changelog.releases[0]!.version)
   })
+
+  // The changelog is copy: the Neuigkeiten page renders it, so GLOSSARY.md's copy rules hold in it (retro 0.9, finding 7).
+  // Compibert is never named in copy; the lines say „die App-Figur“. A further glossary word the user names joins the list.
+  it('names no glossary word that stays out of copy', () => {
+    const banned = ['Compibert']
+    const lines = source.split('\n').flatMap((line, index) => banned.filter(word => line.includes(word)).map(word => `line ${index + 1} names ${word}`))
+
+    expect(lines).toEqual([])
+  })
 })

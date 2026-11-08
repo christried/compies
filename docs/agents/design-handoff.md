@@ -10,3 +10,4 @@ While grilling or specing, flag each piece of UI as _own build_ or _Claude Desig
 1. Write a paste-ready prompt for the user to paste into Claude Design: context, the COMPIES design system, references, states, mobile and desktop, German copy, and the deliverable as a `.dc.html` for `docs/design_handoff_compies/reference/`.
 2. Publish it as its own ticket titled `Claude Design: <what>`, labelled `ready-for-human` (e.g. #79, #121).
 3. Make it block the build ticket, which waits for the design.
+4. Tell the user which files to copy from the Claude Design export: the `.dc.html` and the hand-off note, nothing else. An export carries the whole `reference/` folder again, and the 0.9 hand-off brought nine duplicated files into the repo.

@@ -46,6 +46,7 @@ What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its s
 - Its test asserts that easing and duration, as well as that something animated.
 - Inside the GSAP timelines (ADR 0015, the Award ceremony's Pokal-Lauf) the eases are GSAP's named eases as `04-motion.md` writes them (`back.out(2.2)`), not `--cp-ease-*`, and their test reads the tween vars (`ease`, `duration()`) off the built timeline.
 - An animation that lands on a result (the coin's face, the wheel's slice) also has a test that the landing shows that result. The coin landed on the wrong face in 0.7, and only the browser check saw it (#235).
+- A motion's static fallback (reduced motion, a failed chunk, a skip) has a test for its geometry, as `test/unit/ceremony-run.test.ts` pins where Compibert stops. In 0.9 a review fix put Compibert at left 0 under reduced motion, no test pinned the stop, and only a deviation note surfaced it.
 
 ## Tests
 
