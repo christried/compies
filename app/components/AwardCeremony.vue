@@ -29,8 +29,15 @@ const compibert = computed(() => (roomy.value ? 150 : 120))
 const cell = computed(() => avatar.value + 16)
 const winners = computed(() => props.model.winners)
 const first = computed(() => winners.value[0]!)
-/** Room for Compibert under the content: his height (the full pose is 404 : 344) and the ground. */
-const ground = computed(() => `${Math.round(compibert.value * 344 / 404) + 34}px`)
+/** Compibert's room under the content, in px: his height (the full pose is 404 : 344) and the ground strip. */
+const track = computed(() => Math.round(compibert.value * 344 / 404) + 34)
+/** The share row's room on a phone (#314): its height (AppButton's `md`, 44 px) and the stage's gap above it. */
+const SHARE_ROW_ROOM = 44 + 18
+/**
+ * The stage's bottom padding, Compibert's `track` on a wide screen and `track` plus the share row's room on a phone (#314). It is set from the
+ * first frame, so the stage keeps its height when the buttons appear mid-run.
+ */
+const ground = computed(() => `${roomy.value ? track.value : track.value + SHARE_ROW_ROOM}px`)
 
 // A Tie's sizes, number for number from the artboard's frame() (card w x h, strip, name, points and stamp font, stamp offset, avatar, cell,
 // gap, name font, „=“ badge, the gap it takes and its icon, the points' padding).
@@ -533,11 +540,15 @@ defineExpose({ root, burst })
       </svg>
     </div>
     <!-- The share row, the layer's buttons of the end frame (#313 „Bild teilen“, #314 „Nochmal ansehen“). It is part of the run (it rises in at
-         `shareAtMs`) and out of flow in the corner the stage leaves free: the buttons appear mid-run, and a row in the content's flow would
-         grow the stage then and move the ground and Compibert, which the run measured. -->
+         `shareAtMs`) and out of flow, so the buttons' appearing mid-run moves nothing the run measured. On a wide screen it stands in the
+         corner the stage leaves free, bottom right, 34 px up. On a phone there is no room beside Compibert (his 120 px and the row's 316 px
+         do not fit in 354 px: browser check c3, #314), so the row stands centred above him, as the reference has it: its bottom 18 px over
+         his box's top (`track`, 136 px), with the stage's bottom padding holding that room from the first frame. -->
     <div
       data-part="share"
-      class="absolute right-[18px] bottom-[34px] z-6 flex flex-wrap justify-end gap-2.5"
+      class="absolute z-6 flex flex-wrap gap-2.5"
+      :class="roomy ? 'right-[18px] justify-end' : 'left-[18px] right-[18px] justify-center'"
+      :style="{ bottom: roomy ? '34px' : `${track}px` }"
     >
       <slot name="share" />
       <slot name="again" />
