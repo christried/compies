@@ -812,7 +812,7 @@ describe('the end frame does not wait for GSAP (#308)', () => {
 
   it('shows at once on „Überspringen“ while the chunk is still loading, and stays when the chunk then arrives', async () => {
     let arrive!: () => void
-    chunk.hold = new Promise<void>((resolve) => { arrive = resolve })
+    chunk.hold = new Promise<void>(resolve => (arrive = resolve))
     await mount(finished(), STARTS + 500)
     expect(frame()).toBe('run')
     expect(visible()).toBe(false)
@@ -845,7 +845,7 @@ describe('the end frame does not wait for GSAP (#308)', () => {
 
   it('does nothing for a chunk that arrives after the layer was closed', async () => {
     let arrive!: () => void
-    chunk.hold = new Promise<void>((resolve) => { arrive = resolve })
+    chunk.hold = new Promise<void>(resolve => (arrive = resolve))
     await mount(finished(), STARTS + 500)
 
     closeButton()!.click()
@@ -1032,7 +1032,7 @@ describe('watching again (#314)', () => {
   describe('on a cold page, where the chunk comes after the click (#308)', () => {
     it('starts at its own zero once the chunk is there: the first frame, not 500 ms into the show', async () => {
       let arrive!: () => void
-      chunk.hold = new Promise<void>((resolve) => { arrive = resolve })
+      chunk.hold = new Promise<void>(resolve => (arrive = resolve))
       await mount(finished(), REPLAY_AT)
 
       await replay()
@@ -1065,7 +1065,7 @@ describe('watching again (#314)', () => {
 
     it('is cancelled by a close while it waits', async () => {
       let arrive!: () => void
-      chunk.hold = new Promise<void>((resolve) => { arrive = resolve })
+      chunk.hold = new Promise<void>(resolve => (arrive = resolve))
       await mount(finished(), STARTS + 500)
       skipButton()!.click()
       await settle()

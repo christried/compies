@@ -233,7 +233,7 @@ async function begin() {
     ready.value = true
   }
   catch {
-    giveUp(gsap, root)
+    giveUp(gsap, root ?? undefined)
   }
 }
 
