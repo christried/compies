@@ -394,9 +394,21 @@ describe('shareImageModel', () => {
       expect(model.moreChips).toBe(`+${6 - model.chips.length} weitere`)
     })
 
+    it('counts the dot on every wide chip, a single Winner’s too, so the chips the row holds fit it (#315)', () => {
+      // The renderer draws a dot in every plain chip: border 5, padding 20, dot 11, inner gap 7, and the gap of 10 after it. Six
+      // 14-character names are 6 x 169 px with the dot, one more than the 994 px left beside „6 Spiele“ (948 px without it).
+      const model = wide({ points: [9, 8, 7, 6, 5, 4], games: played(6, () => 'x'.repeat(14)) })
+      const dotted = (name: string) => name.length * 8 + 5 + 20 + 11 + 7 + 10
+      const room = 1088 - ('6 Spiele'.length * 10 + 14)
+      const shown = model.chips.reduce((sum, chip) => sum + dotted(chip.name), 0)
+      expect(model.chips).toHaveLength(5)
+      expect(model.moreChips).toBe('+1 weitere')
+      expect(shown + 100).toBeLessThanOrEqual(room)
+    })
+
     it('shows a last game that fits instead of „+1 weitere“', () => {
-      // Five chips of 18 characters (190 px each) fit the row only when the last one needs no „+N weitere“ beside it.
-      const model = wide({ games: played(5, () => 'x'.repeat(18)) })
+      // Five chips of 17 characters (193 px each with the dot) fit the row only when the last one needs no „+N weitere“ beside it.
+      const model = wide({ games: played(5, () => 'x'.repeat(17)) })
       expect(model.chips).toHaveLength(5)
       expect(model.moreChips).toBeNull()
     })
