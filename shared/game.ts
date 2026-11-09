@@ -136,27 +136,31 @@ export interface GameFilters {
   players: number | null
   /** A Suitability the game must have. */
   suitability: Suitability | null
+  /** A Tag the game must carry, by key (#336): one at a time. */
+  tag: string | null
   /** Only the viewer's own games („Von mir“). */
   mine: boolean
 }
 
-export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, mine: false }
+export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, tag: null, mine: false }
 
 /**
  * The games the filters keep, combined with AND: a name search (trimmed, without regard to case, `%` and `_` are plain
- * characters), a player count the recommended range covers (a game without any count never matches one), a
- * Suitability and the viewer's own games. One function for the library and both pool pickers (#173).
+ * characters, and the search also reads the labels of the game's Tags (#336)), a player count the recommended range covers
+ * (a game without any count never matches one), a Suitability, a Tag the game must carry, and the viewer's own games. One
+ * function for the library and both pool pickers (#173).
  */
 export function filterGames(games: GameView[], filters: GameFilters, viewerId: string): GameView[] {
   const text = filters.q.trim().toLocaleLowerCase('de')
-  const { players, suitability } = filters
+  const { players, suitability, tag } = filters
   return games.filter((game) => {
-    if (text && !game.name.toLocaleLowerCase('de').includes(text)) return false
+    if (text && !game.name.toLocaleLowerCase('de').includes(text) && !game.tags.some(item => item.label.toLocaleLowerCase('de').includes(text))) return false
     if (players !== null) {
       const { playersMin: min, playersMax: max } = game
       if ((min === null && max === null) || (min !== null && min > players) || (max !== null && max < players)) return false
     }
     if (suitability !== null && !game.suitabilities.includes(suitability)) return false
+    if (tag !== null && !game.tags.some(item => item.key === tag)) return false
     return !filters.mine || game.createdBy.id === viewerId
   })
 }
