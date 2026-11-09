@@ -10,7 +10,7 @@ Pass `model` on every Agent call. `CLAUDE_CODE_SUBAGENT_MODEL=haiku` in `.claude
 
 - **`haiku`**: implementers and merge jobs, by default.
 - **`sonnet`**: an implementer whose task the brief can't carry, because the instructions don't fit or the work needs judgement the brief can't settle in advance (e.g. a design across many modules found only while building). Also both `code-review` sub-agents (Standards and Spec), since the Spec review has to reason about correctness, and the brief drafter (§ Briefs).
-- Implementers and reviewers never run on `opus`, with one exception: under `/implement-spec-max` (`.claude/skills/implement-spec-max/SKILL.md`) every subagent runs on `opus` with `effort: "high"`, from the brief drafter to the Release reviewers. The rest of this document applies there unchanged.
+- Implementers and reviewers never run on `opus`, with one exception: under `/implement-spec-max` (`.claude/skills/implement-spec-max/SKILL.md`) every subagent, from the brief drafter to the Release reviewers, runs on the tier its task rates in that skill's § Model tiers: `fable`, or `opus` or `sonnet` with `effort: "high"`. The rest of this document applies there unchanged.
 
 Reviewers, the `code-review` sub-agents and the Release review alike, and brief drafters run with `isolation: "worktree"`. Merge jobs work in the main checkout, and a reviewer told to stay read-only still checked out a detached head there (0.5.1).
 
