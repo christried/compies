@@ -255,9 +255,7 @@ export function priceTakesAmount(source: PriceSource): boolean {
 }
 
 /**
- * A Price as the User types it (`19,99`, `19.99`, `20`): euros with at most two decimals, from 0,01 to 999,99, as cents. Null for anything else.
- * @public Used by the price form and the cards (Part B of #337); Part B removes this tag.
- */
+ * A Price as the User types it (`19,99`, `19.99`, `20`): euros with at most two decimals, from 0,01 to 999,99, as cents. Null for anything else. */
 export function parsePriceAmount(text: string): number | null {
   const match = /^(\d{1,6})(?:[.,](\d{1,2}))?$/.exec(text.trim())
   if (!match) return null
@@ -298,18 +296,14 @@ const PRICE_SHORT_DAY_FORMAT = new Intl.DateTimeFormat('de-DE', { timeZone: BERL
 const PRICE_YEAR_FORMAT = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, year: 'numeric' })
 
 /**
- * The day a Price was checked, in full, in Berlin (the form's „Stand: 3. November 2026“).
- * @public Used by the price form and the cards (Part B of #337); Part B removes this tag.
- */
+ * The day a Price was checked, in full, in Berlin (the form's „Stand: 3. November 2026“). */
 export function priceCheckedDay(checkedAt: string): string {
   return PRICE_DAY_FORMAT.format(new Date(checkedAt))
 }
 
 /**
  * The Price line of a game (#337, UI): „19,99 € bei Steam · Stand 3. Nov.“, „Free-to-play · Stand 3. Nov.“, „Abo · Stand 3. Nov.“.
- * The year follows the day only when the day is not in the current Berlin year. `now` is a parameter, so tests never read the clock.
- * @public Used by the price form and the cards (Part B of #337); Part B removes this tag.
- */
+ * The year follows the day only when the day is not in the current Berlin year. `now` is a parameter, so tests never read the clock. */
 export function priceLine(price: GamePrice, now: Date): string {
   const { cents, source, checkedAt } = price
   // Free-to-play and Abo carry no amount: their label is the whole line.

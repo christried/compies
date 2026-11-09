@@ -180,6 +180,16 @@ describe('the pool steps', () => {
       expect(inPool(page).exists()).toBe(false)
     })
 
+    it('shows the Price line on the picker row of a library game with a Price (#337)', async () => {
+      library = [game(1, 'Mario Kart', { price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }), pong, chess]
+      const page = await mountCreate()
+      await toPoolStep(page)
+
+      const row = picker(page).findAll('li').find(card => card.get('b').text() === 'Mario Kart')!
+      expect(row.text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+      expect(picker(page).findAll('li').find(card => card.get('b').text() === 'Pong')!.text()).not.toContain('· Stand')
+    })
+
     it('lists the games of the pool in the order they were added, each with a button to take it out', async () => {
       const page = await mountCreate()
       await toPoolStep(page)

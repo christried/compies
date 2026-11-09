@@ -46,12 +46,14 @@ registerEndpoint('/api/games', {
   },
 })
 // Edit mode (#142): the game answers with what was sent, as the server would store it.
+// The Price the PATCH answers with (#337): a test sets it to what the server would stamp.
+let patchPrice: GameView['price'] = null
 registerEndpoint(`/api/games/${saved.id}`, {
   method: 'PATCH',
   handler: async (event) => {
     const body = await readBody(event)
     patchedWith(body)
-    return { ...saved, name: body.name, playersMin: body.playersMin, playersMax: body.playersMax, suitabilities: body.suitabilities, tags: body.tags }
+    return { ...saved, name: body.name, playersMin: body.playersMin, playersMax: body.playersMax, suitabilities: body.suitabilities, tags: body.tags, price: patchPrice }
   },
 })
 
@@ -199,7 +201,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
-    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '' })
+    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null })
   })
 
   it('saves a game without a link and without a clip', async () => {
@@ -209,7 +211,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(posted).toHaveBeenCalled())
-    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '' })
+    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null })
   })
 
   describe('player count and Suitabilities (#142, #171)', () => {
@@ -724,6 +726,238 @@ describe('the game form', () => {
       await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[{ ...existing, name: 'Counter-Strike 2' }]]))
       expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2', playersMin: 2, playersMax: 10, suitabilities: ['teams'] }))
       expect(posted).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Price (#337)', () => {
+    const checkedAt = '2026-11-03T10:00:00.000Z'
+    const stored: GameView = { ...saved, price: { cents: 1999, source: 'steam', checkedAt } }
+
+    beforeEach(() => {
+      patchPrice = null
+      patchedWith.mockClear()
+    })
+
+    function priceGroup(page: Page) {
+      const group = page.findAll('fieldset').find(set => set.find('legend').exists() && set.find('legend').text() === 'Preis')
+      if (!group) throw new Error('no group „Preis“')
+      return group
+    }
+
+    function amount(page: Page) {
+      return field(page, 'Betrag in €')
+    }
+
+    function source(page: Page) {
+      return field(page, 'Wo gibt’s das Spiel?')
+    }
+
+    function confirmButton(page: Page) {
+      return page.findAll('button').find(button => button.text() === 'Preis stimmt noch')
+    }
+
+    function removeButton(page: Page) {
+      return page.findAll('button').find(button => button.text() === 'Preis entfernen')
+    }
+
+    const RANGE = 'Zwischen 0,01 € und 999,99 €'
+
+    it('puts the group „Preis“ after the „Tags“ field and before „Notizen“', async () => {
+      const page = await mountSuspended(GameForm)
+
+      const group = priceGroup(page).element
+      const tags = field(page, 'Tags').element
+      const notes = field(page, 'Notizen').element
+      expect(tags.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(group.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('posts an amount with its source in cents', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue('19,99')
+      await source(page).setValue('steam')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: 1999, source: 'steam' } })))
+    })
+
+    it.each([['19.99', 1999], ['20', 2000]])('reads the amount „%s“ as %i cents', async (text, cents) => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue(text)
+      await source(page).setValue('gog')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents, source: 'gog' } })))
+    })
+
+    it('posts no Price when neither the amount nor the source is filled', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: null })))
+    })
+
+    it('refuses an amount without a source, sends nothing, and clears the message once a source is chosen', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue('19,99')
+
+      await page.get('form').trigger('submit')
+
+      expect(page.text()).toContain('Bitte eine Quelle wählen')
+      expect(posted).not.toHaveBeenCalled()
+
+      await source(page).setValue('steam')
+
+      expect(page.text()).not.toContain('Bitte eine Quelle wählen')
+    })
+
+    it.each(['0', '1000', 'abc'])('shows the range at once for the amount „%s“ and posts nothing', async (text) => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await source(page).setValue('steam')
+
+      await amount(page).setValue(text)
+
+      expect(page.text()).toContain(RANGE)
+      expect(amount(page).attributes('aria-invalid')).toBe('true')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      await page.get('form').trigger('submit')
+      expect(posted).not.toHaveBeenCalled()
+    })
+
+    it('asks for the amount of a paid source only after a save attempt', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await source(page).setValue('epic')
+      expect(page.text()).not.toContain(RANGE)
+
+      await page.get('form').trigger('submit')
+
+      expect(page.text()).toContain(RANGE)
+      expect(posted).not.toHaveBeenCalled()
+    })
+
+    it('disables and empties the amount for Free-to-play and posts the source without an amount', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue('19,99')
+
+      await source(page).setValue('free_to_play')
+
+      expect((amount(page).element as HTMLInputElement).disabled).toBe(true)
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: null, source: 'free_to_play' } })))
+    })
+
+    it('disables and empties the amount for Abo and posts the source without an amount', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue('5')
+
+      await source(page).setValue('subscription')
+
+      expect((amount(page).element as HTMLInputElement).disabled).toBe(true)
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: null, source: 'subscription' } })))
+    })
+
+    it('enables the amount again when a paid source is chosen, still empty', async () => {
+      const page = await mountSuspended(GameForm)
+      await source(page).setValue('free_to_play')
+
+      await source(page).setValue('steam')
+
+      expect((amount(page).element as HTMLInputElement).disabled).toBe(false)
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+    })
+
+    it('prefills the amount and the source of a game with a Price, and saves them with PATCH', async () => {
+      const page = await mountSuspended(GameForm, { props: { game: stored } })
+
+      expect((amount(page).element as HTMLInputElement).value).toBe('19,99')
+      expect((source(page).element as HTMLSelectElement).value).toBe('steam')
+      expect(page.text()).toContain('Stand: 3. November 2026')
+      expect(confirmButton(page)).toBeDefined()
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: 1999, source: 'steam' } })))
+    })
+
+    it('shows the amount of a stored Free-to-play game disabled and empty', async () => {
+      const free: GameView = { ...saved, price: { cents: null, source: 'free_to_play', checkedAt } }
+
+      const page = await mountSuspended(GameForm, { props: { game: free } })
+
+      expect((source(page).element as HTMLSelectElement).value).toBe('free_to_play')
+      expect((amount(page).element as HTMLInputElement).disabled).toBe(true)
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+    })
+
+    it('has neither the line nor „Preis stimmt noch“ in create mode or for a game without a Price', async () => {
+      const create = await mountSuspended(GameForm)
+      expect(create.text()).not.toContain('Stand:')
+      expect(confirmButton(create)).toBeUndefined()
+
+      const plain = await mountSuspended(GameForm, { props: { game: saved } })
+      expect(plain.text()).not.toContain('Stand:')
+      expect(confirmButton(plain)).toBeUndefined()
+    })
+
+    it('„Preis stimmt noch“ sends the stored game and the flag only, and moves the day without saving', async () => {
+      patchPrice = { cents: 1999, source: 'steam', checkedAt: '2026-11-09T08:00:00.000Z' }
+      const page = await mountSuspended(GameForm, { props: { game: stored } })
+      await field(page, 'Name').setValue('Umbenannt')
+
+      await confirmButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(page.text()).toContain('Stand: 9. November 2026'))
+      expect(patchedWith).toHaveBeenCalledTimes(1)
+      const body = patchedWith.mock.lastCall![0]
+      expect(body).toEqual({
+        name: 'Mario Kart',
+        youtubeUrl: LINK,
+        clipStart: 72,
+        clipLength: 30,
+        playersMin: null,
+        playersMax: null,
+        suitabilities: [],
+        notes: null,
+        priceChecked: true,
+      })
+      expect(body).not.toHaveProperty('tags')
+      expect(body).not.toHaveProperty('price')
+      expect(page.emitted('saved')).toBeUndefined()
+      expect(useState<{ text: string }[]>('toasts').value.map(item => item.text)).toContain('Preis bestätigt')
+    })
+
+    it('removes the Price on a click: both fields empty, and the next save sends null in edit mode', async () => {
+      const page = await mountSuspended(GameForm, { props: { game: stored } })
+
+      await removeButton(page)!.trigger('click')
+
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+      expect((source(page).element as HTMLSelectElement).value).toBe('')
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ price: null })))
+    })
+
+    it('shows „Preis entfernen“ only once something is typed or chosen', async () => {
+      const page = await mountSuspended(GameForm)
+      expect(removeButton(page)).toBeUndefined()
+
+      await amount(page).setValue('2')
+
+      expect(removeButton(page)).toBeDefined()
     })
   })
 

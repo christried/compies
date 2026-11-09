@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Clock, Gamepad2, Lock, Pencil, Swords, Tag, Users } from '@lucide/vue'
+import { Clock, Euro, Gamepad2, Lock, Pencil, Swords, Tag, Users } from '@lucide/vue'
 import { formatMonthYear } from '~/utils/berlin-time'
 import { describeGame } from '~/utils/describe-game'
+import { priceLine } from '~~/shared/game'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
-// set length, the facts (player count, Suitabilities, clip length), the Tags (#335) and who created it. The creator and the Platform
+// set length, the facts (player count, Suitabilities, clip length, the Price (#337)), the Tags (#335) and who created it. The creator and the Platform
 // admin get „Bearbeiten“; everyone else gets the reason instead of a dead button. A game that does not exist
 // looks like any missing page; so does the page for Users who may not see the library.
 const { t } = useI18n()
@@ -20,6 +21,8 @@ const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.
 const description = computed(() => (game.value ? describeGame(game.value, t) : null))
 const players = computed(() => description.value?.players ?? null)
 const suitabilities = computed(() => description.value?.suitabilities ?? null)
+// The Price line as a fact, like the card's (#337); `now` is read here, so the year shows only for another year.
+const priceText = computed(() => (game.value?.price ? priceLine(game.value.price, new Date()) : null))
 </script>
 
 <template>
@@ -95,7 +98,7 @@ const suitabilities = computed(() => description.value?.suitabilities ?? null)
             {{ game.name }}
           </h1>
           <ul
-            v-if="players || suitabilities || game.youtubeId"
+            v-if="players || suitabilities || game.youtubeId || game.price"
             class="m-0 flex list-none flex-wrap gap-2 p-0"
           >
             <li
@@ -127,6 +130,17 @@ const suitabilities = computed(() => description.value?.suitabilities ?? null)
                 :size="14"
               />
               {{ t('library.clipFact', { n: game.clipLength }) }}
+            </li>
+            <!-- The price line can be long („19,99 € bei Epic Games Store · Stand 3. Nov. 2025“): the pill wraps instead of a fixed height (#337). -->
+            <li
+              v-if="priceText"
+              class="inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-3 py-1 text-[13px] font-bold"
+            >
+              <AppIcon
+                :icon="Euro"
+                :size="14"
+              />
+              {{ priceText }}
             </li>
           </ul>
           <ul
