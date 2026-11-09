@@ -1,5 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
+import DateTimeField from '~/components/DateTimeField.vue'
 import TagInput from '~/components/TagInput.vue'
 import TextField from '~/components/TextField.vue'
 import { TAG_MAX, type GameTag } from '~~/shared/game'
@@ -42,6 +43,24 @@ describe('field chrome', () => {
     expect(input.element.classList).toContain('border-error-fg')
     expect(input.attributes('aria-invalid')).toBe('true')
     expect(tagInput.get('input[role="combobox"]').attributes('aria-invalid')).toBe('true')
+  })
+
+  it('the DateTimeField date and time inputs take the same field box, valid and invalid (#362)', async () => {
+    const valid = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Beginn' } })
+    const invalid = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Beginn', error: 'Pflichtfeld' } })
+
+    for (const input of valid.findAll('input[type="text"]')) {
+      expect(input.element.classList).toContain('rounded-md')
+      expect(input.element.classList).toContain('bg-surface')
+      expect(input.element.classList).toContain('border-line')
+      expect(input.element.classList).not.toContain('border-error-fg')
+    }
+    for (const input of invalid.findAll('input[type="text"]')) {
+      expect(input.element.classList).toContain('rounded-md')
+      expect(input.element.classList).toContain('bg-surface')
+      expect(input.element.classList).toContain('border-3')
+      expect(input.element.classList).toContain('border-error-fg')
+    }
   })
 
   it('the TextField textarea takes the same chrome as its input', async () => {

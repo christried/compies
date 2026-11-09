@@ -44,7 +44,7 @@ const confetti = useTemplateRef('confetti')
 function burst(target: 'stamp' | number = 'stamp') {
   const stage = root.value
   const count = typeof target === 'number' ? sizes.value.confetti.card : sizes.value.confetti.stamp
-  if (props.layout.stage === 'single') {
+  if (sizes.value.stage.kind === 'single') {
     // The card is a component's root now (#364): found by its part, and the stage is its offsetParent as before.
     const card = stage?.querySelector<HTMLElement>('[data-part="card"]')
     if (!card) return

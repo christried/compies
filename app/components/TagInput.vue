@@ -10,7 +10,7 @@ import { fieldBox } from '~/utils/field-chrome'
 // comma key to hand) is not lost.
 const model = defineModel<GameTag[]>({ required: true })
 const props = defineProps<{
-  /** The Tags in use (`GameList.tagsInUse`): offered while typing, and the spelling a typed Tag takes. */
+  /** The Tags in use (`/api/games/tags`, #365): offered while typing, and the spelling a typed Tag takes. */
   suggestions: GameTag[]
   label: string
 }>()
