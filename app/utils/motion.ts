@@ -1,3 +1,5 @@
+import { MD_QUERY } from '~/composables/useMediaQuery'
+
 /** Whether motion is reduced, by the device or the in-app setting: the tokens put it in `--cp-motion` for JS. */
 export function reducedMotion() {
   return getComputedStyle(document.documentElement).getPropertyValue('--cp-motion').trim() === 'reduced'
@@ -245,9 +247,9 @@ export function leaveInPlace(element: Element): void {
 /** The two parts of a Sheet that move: the dimmed overlay and the panel (the `role="dialog"` section). */
 export interface SheetParts { overlay: Element, panel: Element }
 
-/** Where a Sheet comes from: the side from md up (`AppSheet`'s own breakpoint, 61.25rem), else the bottom. */
+/** Where a Sheet comes from: the side from md up (`AppSheet`'s own breakpoint, `MD_QUERY`), else the bottom. */
 export function sheetSide(): 'right' | 'bottom' {
-  return typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 61.25rem)').matches ? 'right' : 'bottom'
+  return typeof window.matchMedia === 'function' && window.matchMedia(MD_QUERY).matches ? 'right' : 'bottom'
 }
 
 /** The axis the panel slides along: from the side it moves in x, from the bottom in y. */

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
+import { MD_QUERY } from '~/composables/useMediaQuery'
 
 // The keyboard and touch way to move somebody (#160, 02-components § MoveToMenu): every place with the reason it is
 // closed. A popover beside the person on a desktop, a bottom sheet on a phone. Esc, a press outside and a pick close
@@ -23,7 +24,7 @@ const popover = useTemplateRef<HTMLElement>('popover')
 const list = useTemplateRef<{ focusFirst: () => void }>('list')
 
 // The shell's own breakpoint (N8, the page's `wide`): below it the page has a tab bar and sheets come from the bottom.
-const wide = useMediaQuery('(min-width: 61.25rem)')
+const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
 const position = ref({ top: 0, left: 0 })
 
