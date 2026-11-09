@@ -6,7 +6,7 @@ import { useClock } from '../../../utils/clock'
 import { useDb } from '../../../utils/db'
 import { apiError } from '../../../utils/errors'
 import { useImageStore } from '../../../utils/image-store'
-import { gameView, loadGame, requireLibraryViewer } from '../../../utils/library'
+import { gameView, loadGame, loadTags, requireLibraryViewer } from '../../../utils/library'
 import { GAME_IMAGE_MAX_BYTES, canEditGame, type GameView } from '../../../../shared/game'
 
 // Gives a game its image (#143): one WebP of up to GAME_IMAGE_MAX_BYTES as the raw body, from whoever may
@@ -39,5 +39,5 @@ export default defineEventHandler(async (event): Promise<GameView> => {
   }
   // A failed delete only leaves an orphan behind; the Host's save went through.
   if (game.imageKey) await store.delete(game.imageKey).catch(failure => console.error('Image cleanup failed', game.imageKey, failure))
-  return gameView(updated!, creatorName, viewer)
+  return gameView(updated!, creatorName, viewer, (await loadTags(db, [game.id])).get(game.id) ?? [])
 })

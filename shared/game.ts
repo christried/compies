@@ -16,6 +16,9 @@ export const CLIP_START_MAX = 43_199
 export const PLAYERS_MAX = 99
 /** Game notes (#223, GLOSSARY: Game notes): at most this many characters after trimming (characterCount, #76). */
 export const GAME_NOTES_MAX = 1000
+/** A Tag (#335, GLOSSARY: Tag): at most this many characters after trimming (characterCount, so an emoji counts as one). */
+export const TAG_MAX = 20
+export const TAGS_PER_GAME_MAX = 8
 
 /** Suitability (GLOSSARY; UI „Passt zu“): the kinds of play a game works for, any number of them (#171). */
 export const SUITABILITIES = ['teams', 'ffa', 'one_v_one'] as const
@@ -98,8 +101,19 @@ export function isFullPoolGame(game: PoolGame | PoolGameFace): game is PoolGame 
   return 'notes' in game
 }
 
+/** A Tag (#335): `key` is what makes two spellings one Tag, `label` the spelling shown. */
+export interface GameTag {
+  key: string
+  label: string
+}
+
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
 export interface GameView extends PoolGame {
+  /**
+   * The game's Tags in the order the editor sent them (#335). Only the library carries them: PoolGame, PoolGameFace and
+   * RoundGame do not, so no Event read, feed entry or message can name one.
+   */
+  tags: GameTag[]
   /** `name` is the display name if the User set one, like Event members. */
   createdBy: { id: string, name: string }
   createdAt: string
@@ -110,6 +124,8 @@ export interface GameView extends PoolGame {
 /** Every game the viewer may see, by name (GET /api/games, #173). The browser filters them (`filterGames`) and knows the length. */
 export interface GameList {
   games: GameView[]
+  /** Every Tag some game carries, once per key with the label of its earliest row, by key (#335): the form's suggestions and the filter. */
+  tagsInUse: GameTag[]
 }
 
 /** What the game browser filters by (#142, #171, #173). Empty, null and false mean no filter. */
@@ -172,6 +188,30 @@ export function parseGameNotes(raw: unknown): string | null | undefined {
   return gameNotesProblem(trimmed) === null ? trimmed : undefined
 }
 
+/** A Tag as typed: NFC, trimmed, inner whitespace collapsed to one space (the label), lower-cased for the key. Null when nothing is left. No length check (see tagProblem). */
+export function normaliseTag(raw: string): GameTag | null {
+  const label = raw.normalize('NFC').trim().replace(/\s+/g, ' ')
+  return label === '' ? null : { key: label.toLocaleLowerCase('de'), label }
+}
+
+/** What is wrong with a Tag: nothing left after normalising, or longer than TAG_MAX characters. Null when fine (#335). */
+export function tagProblem(raw: string): 'empty' | 'too_long' | null {
+  const tag = normaliseTag(raw)
+  if (!tag) return 'empty'
+  return characterCount(tag.label) > TAG_MAX ? 'too_long' : null
+}
+
+/** The Tags of a game (#335): a list of up to TAGS_PER_GAME_MAX strings that are no problem and no key twice, in the order sent. Undefined for anything else. */
+export function parseTags(raw: unknown): GameTag[] | undefined {
+  if (!Array.isArray(raw) || raw.length > TAGS_PER_GAME_MAX) return undefined
+  const tags: GameTag[] = []
+  for (const item of raw) {
+    if (typeof item !== 'string' || tagProblem(item) !== null) return undefined
+    tags.push(normaliseTag(item)!)
+  }
+  return new Set(tags.map(tag => tag.key)).size === tags.length ? tags : undefined
+}
+
 /** The video id of the pasted link. Absent, null or empty means no clip (null id); undefined when the link is no YouTube link. */
 export function parseYoutubeField(raw: unknown): string | null | undefined {
   if (raw === undefined || raw === null || raw === '') return null
@@ -222,9 +262,11 @@ export interface GameInput {
   suitabilities: Suitability[]
   /** Game notes, trimmed; null when none (#223). */
   notes: string | null
+  /** The Tags sent (#335). Undefined when the body had none: a new game gets none, an edit keeps its own (a 0.9 tab never wipes them). */
+  tags: GameTag[] | undefined
 }
 
-export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities' | 'invalid_game_notes'
+export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities' | 'invalid_game_notes' | 'invalid_tags'
 
 export function parseGameInput(input: unknown): { ok: true, game: GameInput } | { ok: false, error: GameInputError } {
   const body = asRecord(input)
@@ -248,9 +290,12 @@ export function parseGameInput(input: unknown): { ok: true, game: GameInput } | 
   const notes = parseGameNotes(body.notes)
   if (notes === undefined) return { ok: false, error: 'invalid_game_notes' }
 
+  const tags = body.tags === undefined ? undefined : parseTags(body.tags)
+  if (body.tags !== undefined && tags === undefined) return { ok: false, error: 'invalid_tags' }
+
   return {
     ok: true,
-    game: { name, youtubeId, clipStart, clipLength, playersMin: players.min, playersMax: players.max, suitabilities, notes },
+    game: { name, youtubeId, clipStart, clipLength, playersMin: players.min, playersMax: players.max, suitabilities, notes, tags },
   }
 }
 

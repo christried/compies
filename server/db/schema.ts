@@ -221,6 +221,22 @@ export const eventPoolGames = pgTable('event_pool_games', {
   index('event_pool_games_game_id_idx').on(table.gameId),
 ])
 
+// The Tags of a game (#335, GLOSSARY: Tag). `key` is the normalised spelling that makes two Tags one (normaliseTag), `label` the
+// spelling shown; `position` is the order the editor sent them. The Tags in use are the keys some row carries, each with the label of
+// its earliest row (`createdAt`, then game): a Tag no game carries has no row left. Rows go with their game.
+export const gameTags = pgTable('game_tags', {
+  gameId: uuid('game_id').notNull().references(() => games.id, { onDelete: 'cascade' }),
+  key: text('key').notNull(),
+  label: text('label').notNull(),
+  position: integer('position').notNull(),
+  createdAt: createdAt(),
+}, table => [
+  primaryKey({ columns: [table.gameId, table.key] }),
+  check('game_tags_position_check', sql`${table.position} >= 0`),
+  // Lookups by key: the label a new row takes and the Tags in use (#335). The primary key serves lookups by game.
+  index('game_tags_key_idx').on(table.key),
+])
+
 export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)
 
 // The Activity feed (#159, GLOSSARY: Activity feed): what happened in an Event, written in the same transaction as the

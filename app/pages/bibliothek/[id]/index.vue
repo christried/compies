@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Clock, Gamepad2, Lock, Pencil, Swords, Users } from '@lucide/vue'
+import { Clock, Gamepad2, Lock, Pencil, Swords, Tag, Users } from '@lucide/vue'
 import { formatMonthYear } from '~/utils/berlin-time'
 import { describeGame } from '~/utils/describe-game'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
-// set length, the facts (player count, Suitabilities, clip length) and who created it. The creator and the Platform
+// set length, the facts (player count, Suitabilities, clip length), the Tags (#335) and who created it. The creator and the Platform
 // admin get „Bearbeiten“; everyone else gets the reason instead of a dead button. A game that does not exist
 // looks like any missing page; so does the page for Users who may not see the library.
 const { t } = useI18n()
@@ -127,6 +127,23 @@ const suitabilities = computed(() => description.value?.suitabilities ?? null)
                 :size="14"
               />
               {{ t('library.clipFact', { n: game.clipLength }) }}
+            </li>
+          </ul>
+          <ul
+            v-if="game.tags.length > 0"
+            :aria-label="t('library.tags')"
+            class="m-0 flex list-none flex-wrap gap-2 p-0"
+          >
+            <li
+              v-for="tag in game.tags"
+              :key="tag.key"
+              class="inline-flex h-8 max-w-full items-center gap-1.5 rounded-pill border-2 border-line bg-paper-2 px-3 text-[13px] font-bold"
+            >
+              <AppIcon
+                :icon="Tag"
+                :size="14"
+              />
+              <span class="truncate">{{ tag.label }}</span>
             </li>
           </ul>
           <p class="m-0 text-[13px] text-ink-2">

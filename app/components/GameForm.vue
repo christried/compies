@@ -3,13 +3,13 @@ import { ChevronRight } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
 import {
   CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, SUITABILITIES, clipTime, gameNameProblem, gameNotesProblem, parseClipLength, parseClipTime, parseGameInput,
-  parsePlayerCount, type GameView, type Suitability,
+  parsePlayerCount, type GameTag, type GameView, type Suitability,
 } from '~~/shared/game'
 import { parseYouTubeId } from '~~/shared/youtube'
 
 // Create or edit a game (screen 24, `?s=edit`, #141, #142, #171): name, YouTube link, start and length, with a live
 // preview that plays the clip as a Session will, and the recommended player count and „Passt zu“ (the
-// Suitabilities), and the notes (#223). An empty link is fine (a game without a clip); a link that is no YouTube link, or that the
+// Suitabilities), and the Tags (#335), and the notes (#223). An empty link is fine (a game without a clip); a link that is no YouTube link, or that the
 // player cannot play, is „YouTube-Link kaputt“ and blocks saving. With `game` the form edits that game (PATCH).
 // The rules come from shared/game.ts, the same ones the server applies, so the form refuses what the server
 // refuses (#171). No page chrome, so a sheet can hold it (#146); the two columns follow the width of the
@@ -23,6 +23,8 @@ const emit = defineEmits<{ saved: [game: GameView] }>()
 
 const { t } = useI18n()
 const { toast } = useToast()
+// The Tags in use are the Tag field's suggestions (#335).
+const { tagsInUse } = useGameLibrary()
 
 /** The cropped WebP waiting to be uploaded after the game is saved (#143). */
 const image = ref<Blob | null>(null)
@@ -35,6 +37,8 @@ const lengthText = ref(String(props.game?.clipLength ?? CLIP_LENGTH_DEFAULT))
 const playersFromText = ref(props.game?.playersMin == null ? '' : String(props.game.playersMin))
 const playersToText = ref(props.game?.playersMax == null ? '' : String(props.game.playersMax))
 const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
+const tags = ref<GameTag[]>([...(props.game?.tags ?? [])])
+const tagInput = useTemplateRef('tagInput')
 const notes = ref(props.game?.notes ?? '')
 const attempted = ref(false)
 const saving = ref(false)
@@ -114,6 +118,8 @@ const draft = computed(() => ({
   playersMin: countOf(playersFromText.value),
   playersMax: countOf(playersToText.value),
   suitabilities: SUITABILITIES.filter(suitability => suitabilities.value.includes(suitability)),
+  // The labels: the server normalises them again and takes over the spelling in use (#335).
+  tags: tags.value.map(tag => tag.label),
   // The raw text: the shared rules trim it, and refuse it when it is too long.
   notes: notes.value,
 }))
@@ -151,6 +157,8 @@ async function uploadImage(game: GameView): Promise<GameView> {
 
 async function submit() {
   attempted.value = true
+  // A Tag typed and not confirmed counts (#335); one that cannot be added blocks the save and shows why.
+  if (tagInput.value && !tagInput.value.commit()) return
   if (blocked.value || saving.value) return
   saving.value = true
   failure.value = null
@@ -254,6 +262,13 @@ async function submit() {
             </button>
           </div>
         </div>
+
+        <TagInput
+          ref="tagInput"
+          v-model="tags"
+          :suggestions="tagsInUse"
+          :label="t('gameEdit.tags')"
+        />
 
         <TextField
           v-model="notes"

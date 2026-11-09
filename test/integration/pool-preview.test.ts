@@ -10,6 +10,7 @@ import setRound from '../../server/api/e/[slug]/rounds/index.post'
 import startSession from '../../server/api/e/[slug]/sessions/start.post'
 import changeSettings from '../../server/api/e/[slug]/settings.patch'
 import createEvent from '../../server/api/e/index.post'
+import listGames from '../../server/api/games/index.get'
 import createGame from '../../server/api/games/index.post'
 import putImage from '../../server/api/games/[id]/image.put'
 import getImage from '../../server/api/images/[key].get'
@@ -64,6 +65,7 @@ describe('Pool preview secrecy (#225)', () => {
       'DELETE /api/e/:slug/rounds/:id': putBackRound,
       'PUT /api/e/:slug/rounds/:id/result': putResult,
       'POST /api/invite/:invite': joinInvite,
+      'GET /api/games': listGames,
       'POST /api/games': createGame,
       'PUT /api/games/:id/image': putImage,
       'GET /api/images/:key': getImage,
@@ -92,13 +94,15 @@ describe('Pool preview secrecy (#225)', () => {
     vi.unstubAllEnvs()
   })
 
-  interface PoolGame { id: string, name: string, videoId: string, imageUrl: string, imageKey: string, notes: string }
+  interface PoolGame { id: string, name: string, videoId: string, imageUrl: string, imageKey: string, notes: string, tag: string }
 
   async function newGame(name: string, videoId: string): Promise<PoolGame> {
+    // Lower case, so the key and the label are one string (#335).
+    const tag = `tag-${name.split(' ')[0]!.toLowerCase()}`
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: `Hausregel zu ${name}` }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: `Hausregel zu ${name}`, tags: [tag] }),
     })
     expect(created.status).toBe(200)
     const { id } = await created.json() as GameView
@@ -109,7 +113,7 @@ describe('Pool preview secrecy (#225)', () => {
     })
     expect(uploaded.status).toBe(200)
     const view = await uploaded.json() as GameView
-    return { id, name, videoId, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), notes: view.notes! }
+    return { id, name, videoId, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), notes: view.notes!, tag }
   }
 
   /** A, B in the Game pool, C in the library only (#279: there is no Tiebreaker pool); the Player has joined. */
@@ -140,6 +144,8 @@ describe('Pool preview secrecy (#225)', () => {
   const traces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId, game.notes]
   // What a Member who may see the pools gets of a game: its picture and name only; the notes are the Host's (#224).
   const memberTraces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId]
+  // A Tag is in no Event read at all, not even the Host's (#335): the library carries it, nothing else does. The Host's read must hold every trace, so the Tag is not one.
+  const playerTraces = (game: PoolGame) => [...traces(game), game.tag]
 
   function fetchImage(game: PoolGame, cookie: string) {
     return request(game.imageUrl, { headers: { cookie } })
@@ -159,7 +165,7 @@ describe('Pool preview secrecy (#225)', () => {
       const raw = await rawRead(playerCookie, slug)
 
       expect((JSON.parse(raw) as EventView).pool).toBeNull()
-      for (const trace of pool.flatMap(traces)) expect(raw).not.toContain(trace)
+      for (const trace of pool.flatMap(playerTraces)) expect(raw).not.toContain(trace)
       expect(raw).not.toMatch(/api\/images/)
     })
 
@@ -211,7 +217,7 @@ describe('Pool preview secrecy (#225)', () => {
 
       expect((await patch(slug, { poolPreview: false })).status).toBe(200)
       const closed = await rawRead(playerCookie, slug)
-      for (const trace of pool.flatMap(traces)) expect(closed).not.toContain(trace)
+      for (const trace of pool.flatMap(playerTraces)) expect(closed).not.toContain(trace)
       expect((JSON.parse(closed) as EventView).pool).toBeNull()
       for (const game of pool) expect((await fetchImage(game, playerCookie)).status).toBe(404)
     })
@@ -237,10 +243,28 @@ describe('Pool preview secrecy (#225)', () => {
       expect(Object.keys(game).sort()).toEqual(['id', 'imageUrl', 'name', 'youtubeId'])
     }
     for (const game of pool) expect(raw).not.toContain(game.notes)
+    for (const game of pool) expect(raw).not.toContain(game.tag)
     // The control: the Host's game carries every field, the notes too.
     const hostPool = (JSON.parse(await rawRead(hostCookie, slug)) as EventView).pool!
     expect(Object.keys(hostPool[0]!).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'suitabilities', 'youtubeId'])
     expect(hostPool[0]).toMatchObject({ notes: pool[0]!.notes })
+  })
+
+  it.each([
+    ['the Pool preview on', TEST_SETTINGS],
+    ['the Pool preview off', HOST_PICK],
+    ['a visible Lucky Wheel', VISIBLE_WHEEL],
+  ])('carries no Tag in the Host\'s or a Player\'s Event read with %s (#335)', async (_rule, settings) => {
+    const { slug, pool } = await setUp(settings)
+
+    for (const cookie of [hostCookie, playerCookie]) {
+      const raw = await rawRead(cookie, slug)
+      expect(raw).not.toContain('"tags"')
+      for (const game of pool) expect(raw).not.toContain(game.tag)
+    }
+    // The control: the library does carry them.
+    const library = await request('/api/games', { headers: { cookie: hostCookie } })
+    expect(await library.text()).toContain(pool[0]!.tag)
   })
 
   // A game the Host sets is every Member's from the moment it is set, with the Pool preview off too, and nothing else is (#228).
@@ -253,7 +277,7 @@ describe('Pool preview secrecy (#225)', () => {
     /** The games of the Game pool, which a visible wheel shows by name. */
     const wheelGames = new Set<string>()
     /** What must not reach the Player: everything of a game, but a name and an id the wheel shows. */
-    const hidden = (game: PoolGame) => (wheelGames.has(game.id) ? [game.imageKey, game.videoId, game.notes] : traces(game))
+    const hidden = (game: PoolGame) => (wheelGames.has(game.id) ? [game.imageKey, game.videoId, game.notes, game.tag] : playerTraces(game))
     /** A Running Session: Player and Second in a team each, Alpha and Beta in the Game pool, Gamma and Epsilon only in the library. */
     async function runningEvent() {
       const { slug, pool } = await setUp(settings)
@@ -298,7 +322,7 @@ describe('Pool preview secrecy (#225)', () => {
       const got = await whatThePlayerGets(slug, eventId)
       expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [{ game: { id: alpha.id, name: 'Alpha Arena' } }] })
       expect(got.feed).toContain('Alpha Arena')
-      expectNone(got, [alpha], game => [game.notes])
+      expectNone(got, [alpha], game => [game.notes, game.tag])
       expectNone(got, [beta, gamma, library])
       expect((await fetchImage(alpha, playerCookie)).status).toBe(200)
       for (const game of [beta, gamma, library]) expect((await fetchImage(game, playerCookie)).status).toBe(404)
@@ -329,7 +353,7 @@ describe('Pool preview secrecy (#225)', () => {
 
       const got = await whatThePlayerGets(slug, eventId)
       expect(got.feed).toContain('Alpha Arena')
-      expectNone(got, [alpha], game => [game.notes])
+      expectNone(got, [alpha], game => [game.notes, game.tag])
       expectNone(got, [beta, gamma, library])
     })
 
@@ -349,7 +373,7 @@ describe('Pool preview secrecy (#225)', () => {
       expect(view.results).toMatchObject([{ number: 1, game: { id: alpha.id, name: 'Alpha Arena' } }])
       expect(view.standings?.map(row => row.team)).toEqual([1, 2])
       const results = JSON.stringify({ results: view.results, standings: view.standings, end: view.end })
-      expectNone({ results }, [alpha], game => [game.notes])
+      expectNone({ results }, [alpha], game => [game.notes, game.tag])
       expectNone({ results }, [beta, gamma, library])
       // Nothing new goes to the room: the Result travels as the event.changed and the feed entry it already sent.
       expect(new Set(notifier.messages(eventId).map(message => message.type))).toEqual(new Set(['event.changed', 'activity.added']))
@@ -371,8 +395,32 @@ describe('Pool preview secrecy (#225)', () => {
       expect(view.results).toMatchObject([{ number: 1, corrected: true, game: { id: alpha.id, name: 'Alpha Arena' } }])
       expect((JSON.parse(got.feed) as { entries: { type: string }[] }).entries.map(entry => entry.type)).toContain('result_corrected')
       expect(got.feed).toContain('Alpha Arena')
-      expectNone(got, [alpha], game => [game.notes])
+      expectNone(got, [alpha], game => [game.notes, game.tag])
       expectNone(got, [beta, gamma, library])
+    })
+
+    it('carries no Tag in the Host\'s or a Player\'s read of a set game and of its Result (#335)', async () => {
+      const { slug, alpha, beta, gamma, library } = await runningEvent()
+      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+      const reads = async () => [await rawRead(hostCookie, slug), await rawRead(playerCookie, slug)]
+
+      for (const raw of await reads()) {
+        expect(raw).toContain('Alpha Arena')
+        expect(raw).not.toContain('"tags"')
+        for (const game of [alpha, beta, gamma, library]) expect(raw).not.toContain(game.tag)
+      }
+
+      const entered = await request(`/api/e/${slug}/rounds/${roundId}/result`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
+        body: JSON.stringify({ places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] }),
+      })
+      expect(entered.status).toBe(200)
+      for (const raw of await reads()) {
+        expect((JSON.parse(raw) as EventView).results).toHaveLength(1)
+        expect(raw).not.toContain('"tags"')
+        for (const game of [alpha, beta, gamma, library]) expect(raw).not.toContain(game.tag)
+      }
     })
 
     it('reveals nothing more when the Round is put back', async () => {

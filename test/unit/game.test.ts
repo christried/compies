@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
-  isClipLength, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
+  isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
   type GameFilters, type GameView, type Suitability,
 } from '../../shared/game'
 
@@ -250,6 +250,32 @@ describe('parseGameInput', () => {
       expect(parseGameInput({ ...valid, suitabilities })).toEqual({ ok: false, error: 'invalid_suitabilities' })
     })
   })
+
+  describe('Tags (#335)', () => {
+    it('leaves the Tags undefined when the body has none, so an edit keeps its own', () => {
+      const parsed = parseGameInput(valid)
+      expect(parsed).toMatchObject({ ok: true })
+      expect(parsed.ok && parsed.game.tags).toBeUndefined()
+    })
+
+    it('stores the Tags normalised, in the order sent', () => {
+      expect(parseGameInput({ ...valid, tags: ['  Co-op ', 'Battle   Royale'] })).toMatchObject({
+        ok: true,
+        game: { tags: [{ key: 'co-op', label: 'Co-op' }, { key: 'battle royale', label: 'Battle Royale' }] },
+      })
+    })
+
+    it.each([
+      [['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']],
+      [['x'.repeat(21)]],
+      [['Co-op', 'co-op']],
+      [['  ']],
+      ['Co-op'],
+      [null],
+    ])('refuses %j with invalid_tags', (tags) => {
+      expect(parseGameInput({ ...valid, tags })).toEqual({ ok: false, error: 'invalid_tags' })
+    })
+  })
 })
 
 describe('filterGames (#173)', () => {
@@ -268,6 +294,7 @@ describe('filterGames (#173)', () => {
       createdAt: '2026-01-15T10:00:00.000Z',
       canEdit: true,
       notes: null,
+      tags: [],
       ...overrides,
     }
   }
@@ -334,5 +361,86 @@ describe('filterGames (#173)', () => {
   it('combines the filters with AND', () => {
     expect(by({ players: 3, suitability: 'teams', mine: true, q: 'counter' })).toEqual(['Counter-Strike 2'])
     expect(by({ players: 3, suitability: 'ffa', q: 'counter' })).toEqual([])
+  })
+})
+
+describe('normaliseTag (#335)', () => {
+  it('gives one key to the three spellings and keeps each label as typed', () => {
+    expect(normaliseTag(' Co-op ')).toEqual({ key: 'co-op', label: 'Co-op' })
+    expect(normaliseTag('co-op')).toEqual({ key: 'co-op', label: 'co-op' })
+    expect(normaliseTag('CO-OP')).toEqual({ key: 'co-op', label: 'CO-OP' })
+  })
+
+  it('collapses inner whitespace to one space', () => {
+    expect(normaliseTag('Battle \t  Royale')).toEqual({ key: 'battle royale', label: 'Battle Royale' })
+  })
+
+  it('composes to NFC, so a letter and its accent mark are one Tag', () => {
+    const composed = normaliseTag('Caf\u00e9')
+    const decomposed = normaliseTag('Cafe\u0301')
+    expect(decomposed?.key).toBe('caf\u00e9')
+    expect(decomposed).toEqual(composed)
+    expect(decomposed?.label).toBe('Caf\u00e9')
+  })
+
+  it('lower-cases umlauts', () => {
+    expect(normaliseTag('\u00c4RGER')?.key).toBe('\u00e4rger')
+  })
+
+  it.each([[''], ['   '], [' \t'], ['\u00a0']])('gives nothing for %j', (raw) => {
+    expect(normaliseTag(raw)).toBeNull()
+  })
+})
+
+describe('tagProblem (#335)', () => {
+  const flag = '\u{1F1E9}\u{1F1EA}'
+
+  it('counts characters as the User sees them: 20 flags pass, 21 do not', () => {
+    expect(tagProblem(flag.repeat(20))).toBeNull()
+    expect(tagProblem(flag.repeat(21))).toBe('too_long')
+  })
+
+  it('lets 20 letters pass and refuses 21', () => {
+    expect(tagProblem('a'.repeat(20))).toBeNull()
+    expect(tagProblem('a'.repeat(21))).toBe('too_long')
+  })
+
+  it('does not count the spaces around the Tag', () => {
+    expect(tagProblem(' ' + 'a'.repeat(20) + ' ')).toBeNull()
+  })
+
+  it('calls a Tag of spaces empty', () => {
+    expect(tagProblem('  ')).toBe('empty')
+  })
+})
+
+describe('parseTags (#335)', () => {
+  const flag = '\u{1F1E9}\u{1F1EA}'
+
+  it('takes an empty list', () => {
+    expect(parseTags([])).toEqual([])
+  })
+
+  it('keeps the order sent', () => {
+    expect(parseTags(['Retro', 'Co-op', 'Party'])?.map(tag => tag.label)).toEqual(['Retro', 'Co-op', 'Party'])
+  })
+
+  it('takes 8 Tags and refuses 9', () => {
+    const names = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+    expect(parseTags(names.slice(0, 8))).toHaveLength(8)
+    expect(parseTags(names)).toBeUndefined()
+  })
+
+  it('refuses two spellings of one key', () => {
+    expect(parseTags(['Co-op', 'CO-OP'])).toBeUndefined()
+  })
+
+  it.each([[['']], [['  ']], [[42]], ['Co-op'], [null], [undefined]])('refuses %j', (raw) => {
+    expect(parseTags(raw)).toBeUndefined()
+  })
+
+  it('takes a Tag of 20 flags and refuses 21', () => {
+    expect(parseTags([flag.repeat(20)])).toHaveLength(1)
+    expect(parseTags([flag.repeat(21)])).toBeUndefined()
   })
 })

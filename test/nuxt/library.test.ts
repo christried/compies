@@ -1,5 +1,5 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import DetailPage from '~/pages/bibliothek/[id]/index.vue'
@@ -26,6 +26,7 @@ function game(overrides: Partial<GameView>): GameView {
     createdAt: '2026-01-15T10:00:00.000Z',
     canEdit: true,
     notes: null,
+    tags: [],
     ...overrides,
   }
 }
@@ -290,6 +291,8 @@ describe('the new game page', () => {
   })
 })
 
+const tagged = (n: number) => Array.from({ length: n }, (_, index) => ({ key: `tag ${index + 1}`, label: `Tag ${index + 1}` }))
+
 const withPlayers = game({ id: '00000000-0000-4000-8000-0000000000a4', name: 'Halo', playersMin: 2, playersMax: 10, suitabilities: ['teams', 'ffa'], canEdit: false, createdBy: { id: 'someone-else', name: 'Sanne' } })
 
 describe('the library cards and filters (#142, #173)', () => {
@@ -476,6 +479,65 @@ describe('the library cards and filters (#142, #173)', () => {
 
     expect(page.findAll('h2').map(heading => heading.text())).toContain('Die Bibliothek ist leer.')
     expect(page.text()).not.toContain('Nix gefunden.')
+  })
+})
+
+describe('Tags on the card and the game page (#335)', () => {
+  beforeEach(async () => {
+    signInAs(host)
+    await useRouter().push('/bibliothek')
+    listMode = 'ok'
+    await clearNuxtData('games')
+    useState('game-library').value = null
+    await clearNuxtData(`game-${withClip.id}`)
+  })
+
+  const group = (card: { find: (selector: string) => DOMWrapper<Element> }) => card.find('[role="group"][aria-label="Tags"]')
+
+  it('shows the first three Tags and „+2“ for five, with the number spelled out for assistive technology', async () => {
+    list = { games: [game({ id: withClip.id, name: 'Fünf', tags: tagged(5) })] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const card = page.get('main li')
+    expect(group(card).element.children.length).toBe(4)
+    expect([...group(card).element.children].map(child => child.textContent?.trim())).toEqual(['Tag 1', 'Tag 2', 'Tag 3', '+2'])
+    expect(group(card).get('[aria-label="2 weitere Tags"]').text()).toBe('+2')
+    expect(page.findAll('main li')).toHaveLength(1)
+  })
+
+  it('shows three Tags without „+N“, one with the singular label, and none for a game without Tags', async () => {
+    list = {
+      games: [
+        game({ id: withClip.id, name: 'Drei', tags: tagged(3) }),
+        game({ id: withoutClip.id, name: 'Vier', tags: tagged(4) }),
+        game({ id: withPlayers.id, name: 'Keins' }),
+      ],
+    }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const [three, four, none] = page.findAll('main li')
+    expect(group(three!).text()).toBe('Tag 1Tag 2Tag 3')
+    expect(group(four!).get('[aria-label="1 weiterer Tag"]').text()).toBe('+1')
+    expect(group(none!).exists()).toBe(false)
+  })
+
+  it('lists every Tag on the game page under the list named „Tags“, and nothing for a game without Tags', async () => {
+    detail = { ...withClip, tags: tagged(5) }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    expect(page.get('ul[aria-label="Tags"]').findAll('li').map(item => item.text())).toEqual(['Tag 1', 'Tag 2', 'Tag 3', 'Tag 4', 'Tag 5'])
+
+    await clearNuxtData(`game-${withClip.id}`)
+    detail = withClip
+    const plain = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(plain.find('h1').exists()).toBe(true))
+    expect(plain.find('ul[aria-label="Tags"]').exists()).toBe(false)
   })
 })
 

@@ -28,6 +28,7 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     createdAt: '2026-01-15T10:00:00.000Z',
     canEdit: true,
     notes: null,
+    tags: [],
     ...overrides,
   }
 }
@@ -42,7 +43,7 @@ let library: GameView[] = []
 const postedGame = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: library }),
+  handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }] }),
 })
 registerEndpoint('/api/games', {
   method: 'POST',
@@ -447,6 +448,20 @@ describe('the pool steps', () => {
 
       await stepItems(page)[0]!.get('button').trigger('click')
       expect((page.get('input[type="text"]').element as HTMLInputElement).value).toBe('Freitags-Zocken')
+    })
+
+    it('offers a Tag in use from the library list in the sheet\'s form (#335)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await newGameButton(page).trigger('click')
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Tags')!
+      const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
+
+      input.value = 'ret'
+      input.dispatchEvent(new Event('input'))
+
+      await vi.waitFor(() => expect([...dialog()!.querySelectorAll('[role="listbox"] [role="option"]')].map(option => option.textContent?.trim())).toEqual(['Retro']))
     })
 
     it('posts the notes typed in the sheet and puts the game in the pool (#223)', async () => {
