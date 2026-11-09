@@ -6,99 +6,519 @@
 <script src="./support.js"></script>
 </head>
 <body>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#ffd23f"/><rect x="30" y="30" width="40" height="40" fill="#151515"/><rect x="36" y="36" width="14" height="28" fill="#e4572e"/><rect x="50" y="36" width="14" height="28" fill="#3d2d8f"/></svg></template>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@700&amp;display=swap">
 </helmet>
-<div ref="{{ box }}" role="img" aria-label="{{ alt }}" style="width:100%;position:relative">
-<sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
-  <div style="position:relative;width:100%;aspect-ratio:1200/630;overflow:hidden">
-    <div style="position:absolute;left:0;top:0;width:1200px;height:630px;transform:scale({{ k }});transform-origin:0 0;box-sizing:border-box;padding:40px 56px;display:flex;flex-direction:column;gap:22px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 2px,transparent 2.4px);background-size:28px 28px;font-family:'Bricolage Grotesque',sans-serif;color:#151515">
-      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:24px">
-        <span style="padding:6px 14px;background:#151515;color:#fff3df;border-radius:999px;font-weight:800;font-size:20px;letter-spacing:.04em;line-height:1.1;text-transform:uppercase;white-space:nowrap">{{ pill }}</span>
-        <span style="display:flex;align-items:center;gap:11px;font-family:'Lilita One',sans-serif;font-size:32px;line-height:1"><dc-import name="CompibertRig" variant="head" size="{{ 44 }}" still="{{ true }}" hint-size="44px,44px"></dc-import>COMPIES</span>
-      </div>
-      <div style="flex:1;min-height:0;display:flex;align-items:center;gap:44px">
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column">
-          <span style="font-family:'Lilita One',sans-serif;font-size:{{ nameW }}px;line-height:.9;text-shadow:5px 5px 0 {{ w.c }};text-wrap:balance">{{ w.name }}</span>
-          <span style="margin-top:12px;font-size:28px;font-weight:800;line-height:1.1">gewinnt mit <span style="font-family:'Bungee',sans-serif">{{ w.pts }}</span> Punkten</span>
-          <div style="margin-top:22px;display:flex;flex-direction:column;gap:10px">
-            <sc-for list="{{ rest }}" as="r" hint-placeholder-count="3">
-              <div style="display:flex;align-items:center;gap:13px;height:48px;padding:0 19px;box-sizing:border-box;background:#fffdf8;border:3px solid #151515;border-radius:12px;box-shadow:4px 4px 0 #151515">
-                <span style="flex:none;width:38px;font-family:'Bungee',sans-serif;font-size:24px;line-height:1">{{ r.rank }}</span>
-                <i style="flex:none;width:20px;height:20px;border-radius:6px;border:2.5px solid #151515;background:{{ r.c }}"></i>
-                <span style="flex:1;min-width:0;font-weight:800;font-size:24px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
-                <span style="flex:none;font-family:'Bungee',sans-serif;font-size:24px;line-height:1">{{ r.pts }}</span>
-              </div>
-            </sc-for>
-            <sc-if value="{{ moreRows }}"><span style="font-weight:800;font-size:18px;color:#5d5650">{{ moreRowsTxt }}</span></sc-if>
-          </div>
-        </div>
-        <div style="position:relative;flex:none;width:330px;height:330px">
-          <img src="assets/share/sunburst.svg" alt="" width="330" height="330" style="position:absolute;inset:0;width:330px;height:330px;display:block">
-          <div style="position:absolute;left:40px;bottom:22px"><dc-import name="CompibertRig" variant="full" size="{{ 250 }}" state="dance" still="{{ true }}" hint-size="250px,213px"></dc-import></div>
-        </div>
-      </div>
-      <div style="flex:none;display:flex;align-items:center;gap:10px;overflow:hidden">
-        <span style="flex:none;font-weight:800;font-size:18px;margin-right:4px;white-space:nowrap">{{ gamesTxt }}</span>
-        <sc-for list="{{ gamesW }}" as="g" hint-placeholder-count="6">
-          <span style="flex:none;display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;box-sizing:border-box;background:#fffdf8;border:2.5px solid #151515;border-radius:999px;font-weight:700;font-size:16px;white-space:nowrap"><i style="width:11px;height:11px;border-radius:50%;border:2px solid #151515;background:{{ g.c }}"></i>{{ g.name }}</span>
-        </sc-for>
-        <sc-if value="{{ moreW }}"><span style="flex:none;font-weight:800;font-size:16px;color:#5d5650;white-space:nowrap">{{ moreWTxt }}</span></sc-if>
-      </div>
-    </div>
+<div ref="{{ box }}" role="{{ role }}" aria-label="{{ alt }}" style="width:100%;box-sizing:border-box;position:relative;padding:{{ pad }};background:{{ bg }};font-family:'Bricolage Grotesque',sans-serif;color:#151515">
+<sc-if value="{{ sheet }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;margin-bottom:44px">
+    <div style="display:flex;align-items:baseline;white-space:nowrap;gap:10px"><span style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:#151515;color:#fff3df">8</span><span style="font-weight:700;font-size:13px">Share image · Redesign</span></div>
+    <h1 style="margin:0;font-family:'Lilita One',sans-serif;font-weight:400;font-size:72px;line-height:.9">Typo statt Pillen.</h1>
+    <p style="margin:0;font-size:17px;line-height:1.5;text-wrap:pretty">Three directions. No pills, capsules or rounded chips: Event and Dates are a typographic line, the Winner is the loudest element, the Standings a ruled column, the games a text list marked in the winner's Team colour. Every overflow is a slot count, a fixed box or an ellipsis. Each direction at 1200 × 630 and 1080 × 1080 in the four requested states. Single image: <span style="font:700 13px 'JetBrains Mono',monospace">?st=kurz|lang|tie2|tie3|tie5&amp;fmt=wide|square&amp;opt=a|b|c</span></p>
   </div>
 </sc-if>
-<sc-if value="{{ square }}" hint-placeholder-val="{{ false }}">
-  <div style="position:relative;width:100%;aspect-ratio:1/1;overflow:hidden">
-    <div style="position:absolute;left:0;top:0;width:1080px;height:1080px;transform:scale({{ k }});transform-origin:0 0;box-sizing:border-box;padding:60px 64px;display:flex;flex-direction:column;gap:30px;overflow:hidden;background:#fff3df;background-image:radial-gradient(rgba(21,21,21,.10) 2px,transparent 2.4px);background-size:28px 28px;font-family:'Bricolage Grotesque',sans-serif;color:#151515">
-      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:24px">
-        <span style="padding:7px 17px;background:#151515;color:#fff3df;border-radius:999px;font-weight:800;font-size:24px;letter-spacing:.04em;line-height:1.1;text-transform:uppercase;white-space:nowrap">{{ pill }}</span>
-        <span style="display:flex;align-items:center;gap:14px;font-family:'Lilita One',sans-serif;font-size:40px;line-height:1"><dc-import name="CompibertRig" variant="head" size="{{ 56 }}" still="{{ true }}" hint-size="56px,56px"></dc-import>COMPIES</span>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:{{ gap }}px">
+<sc-for list="{{ groups }}" as="o" hint-placeholder-count="1">
+  <div id="{{ o.id }}" style="display:flex;flex-direction:column;gap:28px">
+    <sc-if value="{{ o.chrome }}">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1120px">
+        <div style="display:flex;align-items:center;gap:12px"><a href="#{{ o.id }}" style="font:700 12px 'JetBrains Mono',monospace;padding:4px 9px;background:#151515;color:#fff3df;text-decoration:none">{{ o.id }}</a><span style="font-family:'Lilita One',sans-serif;font-size:38px;line-height:1">{{ o.name }}</span><sc-if value="{{ o.pick }}"><span style="font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;background:#ffd23f;border:2px solid #151515;white-space:nowrap">Meine Wahl</span></sc-if></div>
+        <p style="margin:0;font-size:15px;line-height:1.5;max-width:780px;text-wrap:pretty">{{ o.desc }}</p>
       </div>
-      <div style="flex:none;display:flex;flex-direction:column">
-        <span style="font-family:'Lilita One',sans-serif;font-size:{{ nameS }}px;line-height:.9;text-shadow:7px 7px 0 {{ w.c }};text-wrap:balance">{{ w.name }}</span>
-        <span style="margin-top:16px;font-size:38px;font-weight:800;line-height:1.1">gewinnt mit <span style="font-family:'Bungee',sans-serif">{{ w.pts }}</span> Punkten</span>
+    </sc-if>
+    <sc-for list="{{ o.rows }}" as="row" hint-placeholder-count="1">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-if value="{{ o.chrome }}">
+          <div style="display:flex;align-items:baseline;white-space:nowrap;gap:14px;font-size:13px"><b style="font-size:14px">{{ row.label }}</b><sc-for list="{{ row.frames }}" as="l"><a href="{{ l.url }}" style="color:#5d5650;font:700 11px 'JetBrains Mono',monospace">{{ l.fl }} ↗</a></sc-for></div>
+        </sc-if>
+        <div style="display:flex;gap:28px;align-items:flex-start">
+          <sc-for list="{{ row.frames }}" as="f" hint-placeholder-count="1">
+            <div style="flex:none;position:relative;overflow:hidden;width:{{ f.pw }}px;height:{{ f.ph }}px;outline:{{ f.ol }};box-shadow:{{ f.sh }}">
+              <div style="position:absolute;left:0;top:0;transform-origin:0 0;transform:scale({{ f.k }})">
+
+<sc-if value="{{ f.aW }}">
+<div style="width:1200px;height:630px;box-sizing:border-box;padding:44px 56px 34px;display:flex;flex-direction:column;background:#fff3df;color:#151515;font-family:'Bricolage Grotesque',sans-serif;overflow:hidden">
+  <div style="flex:1;min-height:0;display:flex;gap:48px">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:10px"><dc-import name="CompibertRig" variant="head" size="{{ 36 }}" still="{{ true }}" hint-size="36px,36px"></dc-import><span style="font-family:'Lilita One',sans-serif;font-size:26px;line-height:1">COMPIES</span></div>
+      <div style="margin-top:20px;display:flex;flex-direction:column;font-family:'Lilita One',sans-serif;font-size:{{ f.E.fw }}px;line-height:1.08">
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l1 }}</span>
+        <sc-if value="{{ f.E.has2 }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l2 }}</span></sc-if>
       </div>
-      <div style="flex:1;min-height:0;display:flex;align-items:center;gap:40px">
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
-          <sc-for list="{{ rest }}" as="r" hint-placeholder-count="3">
-            <div style="display:flex;align-items:center;gap:16px;height:62px;padding:0 24px;box-sizing:border-box;background:#fffdf8;border:3.5px solid #151515;border-radius:14px;box-shadow:4.5px 4.5px 0 #151515">
-              <span style="flex:none;width:46px;font-family:'Bungee',sans-serif;font-size:30px;line-height:1">{{ r.rank }}</span>
-              <i style="flex:none;width:26px;height:26px;border-radius:7px;border:3px solid #151515;background:{{ r.c }}"></i>
-              <span style="flex:1;min-width:0;font-weight:800;font-size:30px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
-              <span style="flex:none;font-family:'Bungee',sans-serif;font-size:30px;line-height:1">{{ r.pts }}</span>
+      <span style="margin-top:8px;font-weight:800;font-size:18px;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;color:#5d5650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.dates }}</span>
+      <div style="flex:1;min-height:12px"></div>
+      <div style="flex:none;height:296px;display:flex;flex-direction:column;justify-content:flex-end">
+        <span style="font-weight:800;font-size:18px;line-height:1;letter-spacing:.14em;text-transform:uppercase">{{ f.W.label }}</span>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;row-gap:8px">
+          <sc-for list="{{ f.W.items }}" as="n" hint-placeholder-count="1">
+            <div style="width:{{ f.W.cw }};min-width:0;box-sizing:border-box;padding-right:20px;display:flex;align-items:center;gap:14px">
+              <sc-if value="{{ n.bar }}"><div style="flex:none;width:14px;height:{{ f.W.bh }}px;box-sizing:border-box;border:3px solid #151515;background:{{ n.c }}"></div></sc-if>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;font-family:'Lilita One',sans-serif;font-size:{{ f.W.fw }}px;line-height:1.06">
+                <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l1 }}</span>
+                <sc-if value="{{ n.has2 }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l2 }}</span></sc-if>
+              </div>
             </div>
           </sc-for>
-          <sc-if value="{{ moreRows }}"><span style="font-weight:800;font-size:24px;color:#5d5650">{{ moreRowsTxt }}</span></sc-if>
         </div>
-        <div style="position:relative;flex:none;width:340px;height:340px">
-          <img src="assets/share/sunburst.svg" alt="" width="340" height="340" style="position:absolute;inset:0;width:340px;height:340px;display:block">
-          <div style="position:absolute;left:40px;bottom:22px"><dc-import name="CompibertRig" variant="full" size="{{ 260 }}" state="dance" still="{{ true }}" hint-size="260px,221px"></dc-import></div>
-        </div>
+        <sc-if value="{{ f.W.single }}"><div style="margin-top:14px;width:220px;height:16px;box-sizing:border-box;border:3px solid #151515;background:{{ f.W.c }}"></div></sc-if>
+        <div style="margin-top:14px;display:flex;align-items:baseline;white-space:nowrap;gap:9px;font-weight:800;font-size:26px;line-height:1.1"><span>{{ f.W.pre }}</span><span style="font-family:'Bungee',sans-serif">{{ f.W.p }}</span><span>Punkten</span></div>
       </div>
-      <div style="flex:none;display:flex;flex-direction:column;gap:12px">
-        <span style="font-weight:800;font-size:24px">{{ gamesTxt }}</span>
-        <div style="display:flex;flex-wrap:wrap;gap:12px">
-          <sc-for list="{{ gamesS }}" as="g" hint-placeholder-count="6">
-            <span style="display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;box-sizing:border-box;background:#fffdf8;border:3px solid #151515;border-radius:999px;font-weight:700;font-size:22px;white-space:nowrap"><i style="width:15px;height:15px;border-radius:50%;border:2.5px solid #151515;background:{{ g.c }}"></i>{{ g.name }}</span>
-          </sc-for>
-          <sc-if value="{{ moreS }}"><span style="display:flex;align-items:center;height:46px;font-weight:800;font-size:22px;color:#5d5650">{{ moreSTxt }}</span></sc-if>
+    </div>
+    <div style="flex:none;width:380px;display:flex;flex-direction:column">
+      <div style="position:relative;flex:none;width:250px;height:250px;align-self:flex-end">
+        <img src="assets/share/sunburst.svg" alt="" width="250" height="250" style="position:absolute;left:0;top:0;width:250px;height:250px;display:block">
+        <div style="position:absolute;left:30px;bottom:17px;display:flex"><dc-import name="CompibertRig" variant="full" size="{{ 190 }}" state="dance" still="{{ true }}" hint-size="190px,162px"></dc-import></div>
+      </div>
+      <div style="flex:1;min-height:0"></div>
+      <sc-if value="{{ f.hasR }}">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:3px solid #151515;font-weight:800;font-size:15px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>Endstand</span><span style="color:#5d5650">{{ f.np }}</span></div>
+        <sc-for list="{{ f.R }}" as="r" hint-placeholder-count="3">
+          <sc-if value="{{ r.isRow }}"><div style="display:flex;align-items:center;gap:12px;height:42px;box-sizing:border-box;border-bottom:2px solid #dacfbf">
+            <span style="flex:none;width:30px;font-family:'Bungee',sans-serif;font-size:20px;line-height:1">{{ r.rank }}</span>
+            <div style="flex:none;width:26px;height:26px;box-sizing:border-box;border-radius:50%;border:2.5px solid #151515;background:{{ r.c }};display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" style="display:block"><path d="{{ r.d }}" fill="{{ r.ink }}"></path></svg></div>
+            <span style="flex:1;min-width:0;font-weight:800;font-size:21px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+            <span style="flex:none;font-family:'Bungee',sans-serif;font-size:20px;line-height:1">{{ r.pts }}</span>
+          </div></sc-if>
+          <sc-if value="{{ r.isMore }}"><div style="display:flex;align-items:center;height:38px;font-weight:800;font-size:17px;color:#5d5650">{{ r.txt }}</div></sc-if>
+        </sc-for>
+      </sc-if>
+    </div>
+  </div>
+  <div style="flex:none;margin-top:22px;height:44px;box-sizing:border-box;padding-top:14px;border-top:3px solid #151515;display:flex;align-items:center;gap:18px;overflow:hidden">
+    <span style="flex:none;font-weight:800;font-size:15px;line-height:1;letter-spacing:.12em;text-transform:uppercase">{{ f.gl }}</span>
+    <sc-for list="{{ f.G }}" as="g" hint-placeholder-count="6">
+      <sc-if value="{{ g.isGame }}"><div style="flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:9px">
+        <div style="flex:none;display:flex;height:16px;box-sizing:border-box;border:2.5px solid #151515"><sc-for list="{{ g.segs }}" as="s"><div style="width:11px;background:{{ s.c }};border-left:{{ s.bl }}"></div></sc-for></div>
+        <span style="min-width:0;font-weight:700;font-size:17px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.label }}</span>
+      </div></sc-if>
+      <sc-if value="{{ g.isMore }}"><span style="flex:none;font-weight:800;font-size:17px;color:#5d5650;white-space:nowrap">{{ g.txt }}</span></sc-if>
+    </sc-for>
+    <sc-if value="{{ f.tied }}"><div style="flex:none;margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;color:#5d5650"><div style="display:flex;height:16px;box-sizing:border-box;border:2.5px solid #151515"><sc-for list="{{ f.leg }}" as="s"><div style="width:11px;background:{{ s.c }};border-left:{{ s.bl }}"></div></sc-for></div><span>gleichauf</span></div></sc-if>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ f.aS }}">
+<div style="width:1080px;height:1080px;box-sizing:border-box;padding:60px 64px 56px;display:flex;flex-direction:column;background:#fff3df;color:#151515;font-family:'Bricolage Grotesque',sans-serif;overflow:hidden">
+  <div style="flex:none;height:300px;display:flex;gap:32px">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px"><dc-import name="CompibertRig" variant="head" size="{{ 48 }}" still="{{ true }}" hint-size="48px,48px"></dc-import><span style="font-family:'Lilita One',sans-serif;font-size:34px;line-height:1">COMPIES</span></div>
+      <div style="flex:1;min-height:0"></div>
+      <div style="display:flex;flex-direction:column;font-family:'Lilita One',sans-serif;font-size:{{ f.E.fw }}px;line-height:1.08">
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l1 }}</span>
+        <sc-if value="{{ f.E.has2 }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l2 }}</span></sc-if>
+      </div>
+      <span style="margin-top:10px;font-weight:800;font-size:22px;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;color:#5d5650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.dates }}</span>
+    </div>
+    <div style="position:relative;flex:none;width:300px;height:300px">
+      <img src="assets/share/sunburst.svg" alt="" width="300" height="300" style="position:absolute;left:0;top:0;width:300px;height:300px;display:block">
+      <div style="position:absolute;left:36px;bottom:20px;display:flex"><dc-import name="CompibertRig" variant="full" size="{{ 228 }}" state="dance" still="{{ true }}" hint-size="228px,194px"></dc-import></div>
+    </div>
+  </div>
+  <div style="flex:none;height:330px;margin-top:28px;display:flex;flex-direction:column;justify-content:flex-end">
+    <span style="font-weight:800;font-size:22px;line-height:1;letter-spacing:.14em;text-transform:uppercase">{{ f.W.label }}</span>
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;row-gap:10px">
+      <sc-for list="{{ f.W.items }}" as="n" hint-placeholder-count="1">
+        <div style="width:{{ f.W.cw }};min-width:0;box-sizing:border-box;padding-right:24px;display:flex;align-items:center;gap:18px">
+          <sc-if value="{{ n.bar }}"><div style="flex:none;width:18px;height:{{ f.W.bh }}px;box-sizing:border-box;border:3.5px solid #151515;background:{{ n.c }}"></div></sc-if>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;font-family:'Lilita One',sans-serif;font-size:{{ f.W.fw }}px;line-height:1.06">
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l1 }}</span>
+            <sc-if value="{{ n.has2 }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l2 }}</span></sc-if>
+          </div>
         </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ f.W.single }}"><div style="margin-top:16px;width:300px;height:20px;box-sizing:border-box;border:3.5px solid #151515;background:{{ f.W.c }}"></div></sc-if>
+    <div style="margin-top:16px;display:flex;align-items:baseline;white-space:nowrap;gap:12px;font-weight:800;font-size:34px;line-height:1.1"><span>{{ f.W.pre }}</span><span style="font-family:'Bungee',sans-serif">{{ f.W.p }}</span><span>Punkten</span></div>
+  </div>
+  <div style="flex:1;min-height:0;margin-top:26px;padding-top:22px;border-top:3.5px solid #151515;display:flex;gap:48px;overflow:hidden">
+    <sc-if value="{{ f.hasR }}">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:3px solid #151515;font-weight:800;font-size:18px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>Endstand</span><span style="color:#5d5650">{{ f.np }}</span></div>
+      <sc-for list="{{ f.R }}" as="r" hint-placeholder-count="3">
+        <sc-if value="{{ r.isRow }}"><div style="display:flex;align-items:center;gap:14px;height:52px;box-sizing:border-box;border-bottom:2px solid #dacfbf">
+          <span style="flex:none;width:40px;font-family:'Bungee',sans-serif;font-size:25px;line-height:1">{{ r.rank }}</span>
+          <div style="flex:none;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2.5px solid #151515;background:{{ r.c }};display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" style="display:block"><path d="{{ r.d }}" fill="{{ r.ink }}"></path></svg></div>
+          <span style="flex:1;min-width:0;font-weight:800;font-size:26px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+          <span style="flex:none;font-family:'Bungee',sans-serif;font-size:25px;line-height:1">{{ r.pts }}</span>
+        </div></sc-if>
+        <sc-if value="{{ r.isMore }}"><div style="display:flex;align-items:center;height:46px;font-weight:800;font-size:21px;color:#5d5650">{{ r.txt }}</div></sc-if>
+      </sc-for>
+    </div>
+    </sc-if>
+    <div style="flex:none;width:400px;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;white-space:nowrap;padding-bottom:10px;border-bottom:3px solid #151515;font-weight:800;font-size:18px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>{{ f.gl }}</span><sc-if value="{{ f.tied }}"><span style="display:flex;align-items:center;gap:8px;color:#5d5650;letter-spacing:0;text-transform:none;font-weight:700;font-size:18px"><span style="display:flex;height:18px;box-sizing:border-box;border:2.5px solid #151515"><sc-for list="{{ f.leg }}" as="s"><span style="width:13px;background:{{ s.c }};border-left:{{ s.bl }}"></span></sc-for></span>gleichauf</span></sc-if></div>
+      <sc-for list="{{ f.G }}" as="g" hint-placeholder-count="5">
+        <sc-if value="{{ g.isGame }}"><div style="display:flex;align-items:center;gap:12px;height:44px;box-sizing:border-box;border-bottom:2px solid #dacfbf;min-width:0">
+          <div style="flex:none;display:flex;height:20px;box-sizing:border-box;border:2.5px solid #151515"><sc-for list="{{ g.segs }}" as="s"><div style="width:15px;background:{{ s.c }};border-left:{{ s.bl }}"></div></sc-for></div>
+          <span style="flex:1;min-width:0;font-weight:700;font-size:23px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.label }}</span>
+        </div></sc-if>
+        <sc-if value="{{ g.isMore }}"><div style="display:flex;align-items:center;height:44px;font-weight:800;font-size:21px;color:#5d5650">{{ g.txt }}</div></sc-if>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ f.bW }}">
+<div style="width:1200px;height:630px;box-sizing:border-box;border:6px solid #151515;display:flex;flex-direction:column;background:#fff3df;color:#151515;font-family:'Bricolage Grotesque',sans-serif;overflow:hidden">
+  <div style="flex:none;height:92px;box-sizing:border-box;padding:0 32px;background:#151515;display:flex;align-items:center;gap:24px">
+    <div style="flex:none;display:flex;align-items:center;gap:10px"><dc-import name="CompibertRig" variant="head" size="{{ 40 }}" still="{{ true }}" hint-size="40px,40px"></dc-import><span style="font-family:'Lilita One',sans-serif;font-size:28px;line-height:1;color:#ffd23f">COMPIES</span></div>
+    <div style="flex:none;width:3px;height:44px;background:#5d5650"></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+      <span style="font-family:'Lilita One',sans-serif;font-size:{{ f.E.fw }}px;line-height:1.1;color:#fff3df;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l1 }}</span>
+      <span style="font-weight:800;font-size:15px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#b9ad9f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.dates }}</span>
+    </div>
+  </div>
+  <div style="flex:1;min-height:0;display:flex">
+    <sc-if value="{{ f.W.single }}">
+    <div style="flex:none;width:600px;box-sizing:border-box;border-right:6px solid #151515;background:{{ f.W.c }};color:{{ f.W.ink }};padding:30px 36px;display:flex;flex-direction:column;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="flex:none;width:30px;height:30px;box-sizing:border-box;border-radius:50%;border:2.5px solid #151515;background:#fffdf8;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="16" height="16" style="display:block"><path d="{{ f.W.d }}" fill="#151515"></path></svg></div>
+        <span style="font-weight:800;font-size:18px;line-height:1;letter-spacing:.14em;text-transform:uppercase">{{ f.W.label }}</span>
+      </div>
+      <div style="margin-top:18px;display:flex;flex-direction:column;font-family:'Lilita One',sans-serif;font-size:{{ f.W.fw }}px;line-height:1.04">
+        <sc-for list="{{ f.W.items }}" as="n" hint-placeholder-count="1"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l1 }}</span><sc-if value="{{ n.has2 }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l2 }}</span></sc-if></sc-for>
+      </div>
+      <div style="flex:1;min-height:0"></div>
+      <div style="display:flex;align-items:baseline;white-space:nowrap;gap:12px"><span style="font-family:'Bungee',sans-serif;font-size:72px;line-height:1">{{ f.W.p }}</span><span style="font-weight:800;font-size:22px;letter-spacing:.1em;text-transform:uppercase">Punkte</span></div>
+      <div style="position:absolute;right:20px;bottom:0;display:flex"><dc-import name="CompibertRig" variant="full" size="{{ 200 }}" state="dance" still="{{ true }}" hint-size="200px,170px"></dc-import></div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ f.W.bands }}">
+    <div style="flex:none;width:600px;box-sizing:border-box;border-right:6px solid #151515;display:flex;flex-direction:column">
+      <div style="flex:none;height:52px;box-sizing:border-box;padding:0 28px;background:#ffd23f;display:flex;align-items:center;justify-content:space-between;gap:16px;font-weight:800;font-size:17px;line-height:1;letter-spacing:.12em;text-transform:uppercase">
+        <span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.W.label }}</span>
+        <span style="flex:none;display:flex;align-items:baseline;white-space:nowrap;gap:7px"><span>je</span><span style="font-family:'Bungee',sans-serif;font-size:22px;letter-spacing:0">{{ f.W.p }}</span><span>Punkte</span></span>
+      </div>
+      <sc-for list="{{ f.W.items }}" as="n" hint-placeholder-count="2">
+        <div style="flex:1;min-height:0;box-sizing:border-box;border-top:3px solid #151515;background:{{ n.c }};color:{{ n.ink }};padding:0 28px;display:flex;align-items:center;gap:16px">
+          <sc-if value="{{ n.mark }}"><div style="flex:none;width:34px;height:34px;box-sizing:border-box;border-radius:50%;border:2.5px solid #151515;background:#fffdf8;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" style="display:block"><path d="{{ n.d }}" fill="#151515"></path></svg></div></sc-if>
+          <span style="flex:1;min-width:0;font-family:'Lilita One',sans-serif;font-size:{{ f.W.fw }}px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l1 }}</span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <div style="flex:1;min-width:0;box-sizing:border-box;padding:26px 30px;display:flex;flex-direction:column">
+      <sc-if value="{{ f.hasR }}">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:3px solid #151515;font-weight:800;font-size:15px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>Endstand</span><span style="color:#5d5650">{{ f.np }}</span></div>
+        <sc-for list="{{ f.R }}" as="r" hint-placeholder-count="3">
+          <sc-if value="{{ r.isRow }}"><div style="display:flex;align-items:center;gap:12px;height:44px;box-sizing:border-box;border-bottom:2px solid #dacfbf">
+            <span style="flex:none;width:30px;font-family:'Bungee',sans-serif;font-size:20px;line-height:1">{{ r.rank }}</span>
+            <div style="flex:none;width:26px;height:26px;box-sizing:border-box;border-radius:50%;border:2.5px solid #151515;background:{{ r.c }};display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" style="display:block"><path d="{{ r.d }}" fill="{{ r.ink }}"></path></svg></div>
+            <span style="flex:1;min-width:0;font-weight:800;font-size:21px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+            <span style="flex:none;font-family:'Bungee',sans-serif;font-size:20px;line-height:1">{{ r.pts }}</span>
+          </div></sc-if>
+          <sc-if value="{{ r.isMore }}"><div style="display:flex;align-items:center;height:44px;box-sizing:border-box;border-bottom:2px solid #dacfbf;padding-left:42px;font-weight:800;font-size:17px;color:#5d5650">{{ r.txt }}</div></sc-if>
+        </sc-for>
+      </sc-if>
+      <div style="flex:1;min-height:20px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;white-space:nowrap;padding-bottom:8px;border-bottom:3px solid #151515;font-weight:800;font-size:15px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>{{ f.gl }}</span><sc-if value="{{ f.tied }}"><span style="display:flex;align-items:center;gap:7px;color:#5d5650;letter-spacing:0;text-transform:none;font-weight:700;font-size:15px"><span style="display:flex;flex-direction:column;width:10px;height:20px;box-sizing:border-box;border:2px solid #151515"><sc-for list="{{ f.leg }}" as="s"><span style="flex:1;background:{{ s.c }};border-top:{{ s.bl }}"></span></sc-for></span>gleichauf</span></sc-if></div>
+      <div style="display:flex;flex-wrap:wrap;padding-top:6px">
+        <sc-for list="{{ f.G }}" as="g" hint-placeholder-count="6">
+          <div style="width:50%;height:36px;box-sizing:border-box;padding-right:16px;display:flex;align-items:center;gap:10px;min-width:0">
+            <sc-if value="{{ g.isGame }}"><div style="flex:none;display:flex;flex-direction:column;width:10px;height:24px;box-sizing:border-box;border:2px solid #151515"><sc-for list="{{ g.segs }}" as="s"><div style="flex:1;background:{{ s.c }};border-top:{{ s.bl }}"></div></sc-for></div><span style="flex:1;min-width:0;font-weight:700;font-size:18px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.label }}</span></sc-if>
+            <sc-if value="{{ g.isMore }}"><span style="padding-left:20px;font-weight:800;font-size:17px;color:#5d5650;white-space:nowrap">{{ g.txt }}</span></sc-if>
+          </div>
+        </sc-for>
       </div>
     </div>
   </div>
+</div>
 </sc-if>
+
+<sc-if value="{{ f.bS }}">
+<div style="width:1080px;height:1080px;box-sizing:border-box;border:8px solid #151515;display:flex;flex-direction:column;background:#fff3df;color:#151515;font-family:'Bricolage Grotesque',sans-serif;overflow:hidden">
+  <div style="flex:none;height:196px;box-sizing:border-box;padding:0 44px;background:#151515;display:flex;flex-direction:column;justify-content:center">
+    <div style="display:flex;align-items:center;gap:14px">
+      <dc-import name="CompibertRig" variant="head" size="{{ 48 }}" still="{{ true }}" hint-size="48px,48px"></dc-import><span style="flex:none;font-family:'Lilita One',sans-serif;font-size:34px;line-height:1;color:#ffd23f">COMPIES</span>
+      <span style="flex:1;min-width:0;text-align:right;font-weight:800;font-size:18px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#b9ad9f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.dates }}</span>
+    </div>
+    <div style="margin-top:18px;display:flex;flex-direction:column;font-family:'Lilita One',sans-serif;font-size:{{ f.E.fw }}px;line-height:1.08;color:#fff3df">
+      <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l1 }}</span>
+      <sc-if value="{{ f.E.has2 }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l2 }}</span></sc-if>
+    </div>
+  </div>
+  <sc-if value="{{ f.W.single }}">
+  <div style="flex:none;height:420px;box-sizing:border-box;border-bottom:8px solid #151515;background:{{ f.W.c }};color:{{ f.W.ink }};padding:36px 44px;display:flex;flex-direction:column;position:relative;overflow:hidden">
+    <div style="position:absolute;right:24px;bottom:12px;width:340px;height:340px;display:flex">
+      <img src="assets/share/sunburst.svg" alt="" width="340" height="340" style="position:absolute;left:0;top:0;width:340px;height:340px;display:block">
+      <div style="position:absolute;left:40px;bottom:22px;display:flex"><dc-import name="CompibertRig" variant="full" size="{{ 260 }}" state="dance" still="{{ true }}" hint-size="260px,221px"></dc-import></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="flex:none;width:36px;height:36px;box-sizing:border-box;border-radius:50%;border:3px solid #151515;background:#fffdf8;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" style="display:block"><path d="{{ f.W.d }}" fill="#151515"></path></svg></div>
+      <span style="font-weight:800;font-size:22px;line-height:1;letter-spacing:.14em;text-transform:uppercase">{{ f.W.label }}</span>
+    </div>
+    <div style="margin-top:18px;width:640px;display:flex;flex-direction:column;font-family:'Lilita One',sans-serif;font-size:{{ f.W.fw }}px;line-height:1.04">
+      <sc-for list="{{ f.W.items }}" as="n" hint-placeholder-count="1"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l1 }}</span><sc-if value="{{ n.has2 }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l2 }}</span></sc-if></sc-for>
+    </div>
+    <div style="flex:1;min-height:0"></div>
+    <div style="display:flex;align-items:baseline;white-space:nowrap;gap:14px"><span style="font-family:'Bungee',sans-serif;font-size:80px;line-height:1">{{ f.W.p }}</span><span style="font-weight:800;font-size:26px;letter-spacing:.1em;text-transform:uppercase">Punkte</span></div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ f.W.bands }}">
+  <div style="flex:none;height:420px;box-sizing:border-box;border-bottom:8px solid #151515;display:flex;flex-direction:column">
+    <div style="flex:none;height:64px;box-sizing:border-box;padding:0 44px;background:#ffd23f;display:flex;align-items:center;justify-content:space-between;gap:20px;font-weight:800;font-size:22px;line-height:1;letter-spacing:.12em;text-transform:uppercase">
+      <span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.W.label }}</span>
+      <span style="flex:none;display:flex;align-items:baseline;white-space:nowrap;gap:9px"><span>je</span><span style="font-family:'Bungee',sans-serif;font-size:28px;letter-spacing:0">{{ f.W.p }}</span><span>Punkte</span></span>
+    </div>
+    <sc-for list="{{ f.W.items }}" as="n" hint-placeholder-count="2">
+      <div style="flex:1;min-height:0;box-sizing:border-box;border-top:3.5px solid #151515;background:{{ n.c }};color:{{ n.ink }};padding:0 44px;display:flex;align-items:center;gap:20px">
+        <sc-if value="{{ n.mark }}"><div style="flex:none;width:44px;height:44px;box-sizing:border-box;border-radius:50%;border:3px solid #151515;background:#fffdf8;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="24" height="24" style="display:block"><path d="{{ n.d }}" fill="#151515"></path></svg></div></sc-if>
+        <span style="flex:1;min-width:0;font-family:'Lilita One',sans-serif;font-size:{{ f.W.fw }}px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l1 }}</span>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+  <div style="flex:1;min-height:0;box-sizing:border-box;padding:32px 44px;display:flex;gap:44px;overflow:hidden">
+    <sc-if value="{{ f.hasR }}">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:3px solid #151515;font-weight:800;font-size:18px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>Endstand</span><span style="color:#5d5650">{{ f.np }}</span></div>
+      <sc-for list="{{ f.R }}" as="r" hint-placeholder-count="3">
+        <sc-if value="{{ r.isRow }}"><div style="display:flex;align-items:center;gap:14px;height:52px;box-sizing:border-box;border-bottom:2px solid #dacfbf">
+          <span style="flex:none;width:38px;font-family:'Bungee',sans-serif;font-size:24px;line-height:1">{{ r.rank }}</span>
+          <div style="flex:none;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2.5px solid #151515;background:{{ r.c }};display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" style="display:block"><path d="{{ r.d }}" fill="{{ r.ink }}"></path></svg></div>
+          <span style="flex:1;min-width:0;font-weight:800;font-size:25px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+          <span style="flex:none;font-family:'Bungee',sans-serif;font-size:24px;line-height:1">{{ r.pts }}</span>
+        </div></sc-if>
+        <sc-if value="{{ r.isMore }}"><div style="display:flex;align-items:center;height:52px;box-sizing:border-box;border-bottom:2px solid #dacfbf;padding-left:52px;font-weight:800;font-size:20px;color:#5d5650">{{ r.txt }}</div></sc-if>
+      </sc-for>
+    </div>
+    </sc-if>
+    <div style="flex:none;width:380px;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;white-space:nowrap;padding-bottom:10px;border-bottom:3px solid #151515;font-weight:800;font-size:18px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>{{ f.gl }}</span><sc-if value="{{ f.tied }}"><span style="display:flex;align-items:center;gap:8px;color:#5d5650;letter-spacing:0;text-transform:none;font-weight:700;font-size:18px"><span style="display:flex;flex-direction:column;width:12px;height:24px;box-sizing:border-box;border:2px solid #151515"><sc-for list="{{ f.leg }}" as="s"><span style="flex:1;background:{{ s.c }};border-top:{{ s.bl }}"></span></sc-for></span>gleichauf</span></sc-if></div>
+      <sc-for list="{{ f.G }}" as="g" hint-placeholder-count="6">
+        <div style="height:40px;display:flex;align-items:center;gap:12px;min-width:0">
+          <sc-if value="{{ g.isGame }}"><div style="flex:none;display:flex;flex-direction:column;width:12px;height:28px;box-sizing:border-box;border:2px solid #151515"><sc-for list="{{ g.segs }}" as="s"><div style="flex:1;background:{{ s.c }};border-top:{{ s.bl }}"></div></sc-for></div><span style="flex:1;min-width:0;font-weight:700;font-size:22px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.label }}</span></sc-if>
+          <sc-if value="{{ g.isMore }}"><span style="padding-left:24px;font-weight:800;font-size:20px;color:#5d5650;white-space:nowrap">{{ g.txt }}</span></sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ f.cW }}">
+<div style="width:1200px;height:630px;box-sizing:border-box;padding:34px 56px 30px;display:flex;flex-direction:column;background:#fff3df;color:#151515;font-family:'Bricolage Grotesque',sans-serif;overflow:hidden">
+  <div style="flex:none;height:50px;display:flex;align-items:center;gap:12px">
+    <dc-import name="CompibertRig" variant="head" size="{{ 46 }}" still="{{ true }}" hint-size="46px,46px"></dc-import><span style="flex:none;font-family:'Lilita One',sans-serif;font-size:44px;line-height:1">COMPIES</span>
+    <span style="flex:1;min-width:0;text-align:right;font-weight:800;font-size:17px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#5d5650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.dates }}</span>
+  </div>
+  <div style="flex:none;height:6px;margin-top:12px;background:#151515"></div>
+  <div style="flex:none;height:46px;display:flex;align-items:center"><span style="min-width:0;font-family:'Lilita One',sans-serif;font-size:{{ f.E.fw }}px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l1 }}</span></div>
+  <div style="flex:none;height:2px;background:#151515"></div>
+  <div style="flex:none;height:198px;margin-top:16px;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:baseline;white-space:nowrap;gap:14px;font-weight:800;font-size:18px;line-height:1;letter-spacing:.14em;text-transform:uppercase">
+      <span>{{ f.W.label }}</span>
+      <span style="display:flex;align-items:baseline;white-space:nowrap;gap:7px;color:#5d5650;letter-spacing:.1em"><span>{{ f.W.preS }}</span><span style="font-family:'Bungee',sans-serif;font-size:22px;letter-spacing:0;color:#151515">{{ f.W.p }}</span><span>Punkten</span></span>
+    </div>
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;row-gap:8px">
+      <sc-for list="{{ f.W.items }}" as="n" hint-placeholder-count="1">
+        <div style="width:{{ f.W.cw }};min-width:0;box-sizing:border-box;padding-right:20px;display:flex;align-items:stretch;gap:18px">
+          <div style="flex:none;width:{{ f.W.bw }}px;box-sizing:border-box;border:3px solid #151515;background:{{ n.c }};margin:{{ f.W.bm }}"></div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;font-family:'Lilita One',sans-serif;font-size:{{ f.W.fw }}px;line-height:1.06">
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l1 }}</span>
+            <sc-if value="{{ n.has2 }}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l2 }}</span></sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="flex:1;min-height:0;display:flex;padding-top:14px;border-top:2px solid #151515;overflow:hidden">
+    <sc-if value="{{ f.hasR }}">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:6px;font-weight:800;font-size:14px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>Endstand</span><span style="color:#5d5650">{{ f.np }}</span></div>
+      <sc-for list="{{ f.R }}" as="r" hint-placeholder-count="3">
+        <sc-if value="{{ r.isRow }}"><div style="display:flex;align-items:center;gap:11px;height:34px;box-sizing:border-box;border-bottom:2px solid #dacfbf">
+          <span style="flex:none;width:28px;font-family:'Bungee',sans-serif;font-size:18px;line-height:1">{{ r.rank }}</span>
+          <div style="flex:none;width:22px;height:22px;box-sizing:border-box;border-radius:50%;border:2px solid #151515;background:{{ r.c }};display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" style="display:block"><path d="{{ r.d }}" fill="{{ r.ink }}"></path></svg></div>
+          <span style="flex:1;min-width:0;font-weight:800;font-size:19px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+          <span style="flex:none;font-family:'Bungee',sans-serif;font-size:18px;line-height:1">{{ r.pts }}</span>
+        </div></sc-if>
+        <sc-if value="{{ r.isMore }}"><div style="display:flex;align-items:center;height:34px;font-weight:800;font-size:16px;color:#5d5650">{{ r.txt }}</div></sc-if>
+      </sc-for>
+    </div>
+    <div style="flex:none;width:2px;margin:0 28px;background:#151515"></div>
+    </sc-if>
+    <div style="flex:1.25;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;white-space:nowrap;padding-bottom:6px;font-weight:800;font-size:14px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>{{ f.gl }}</span><sc-if value="{{ f.tied }}"><span style="display:flex;align-items:center;gap:7px;color:#5d5650;letter-spacing:0;text-transform:none;font-weight:700;font-size:14px"><span style="display:flex;width:26px;height:8px;box-sizing:border-box;border:2px solid #151515"><sc-for list="{{ f.leg }}" as="s"><span style="flex:1;background:{{ s.c }};border-left:{{ s.bl }}"></span></sc-for></span>gleichauf</span></sc-if></div>
+      <div style="display:flex;flex-wrap:wrap">
+        <sc-for list="{{ f.G }}" as="g" hint-placeholder-count="6">
+          <div style="width:50%;height:34px;box-sizing:border-box;padding-right:18px;display:flex;align-items:center;min-width:0">
+            <sc-if value="{{ g.isGame }}"><div style="max-width:100%;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:18px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.label }}</span><div style="display:flex;height:8px;box-sizing:border-box;border:2px solid #151515"><sc-for list="{{ g.segs }}" as="s"><div style="flex:1;background:{{ s.c }};border-left:{{ s.bl }}"></div></sc-for></div></div></sc-if>
+            <sc-if value="{{ g.isMore }}"><span style="font-weight:800;font-size:16px;color:#5d5650;white-space:nowrap">{{ g.txt }}</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ f.cS }}">
+<div style="width:1080px;height:1080px;box-sizing:border-box;padding:54px 64px 50px;display:flex;flex-direction:column;background:#fff3df;color:#151515;font-family:'Bricolage Grotesque',sans-serif;overflow:hidden">
+  <div style="flex:none;height:72px;display:flex;align-items:center;justify-content:center;gap:16px"><dc-import name="CompibertRig" variant="head" size="{{ 66 }}" still="{{ true }}" hint-size="66px,66px"></dc-import><span style="font-family:'Lilita One',sans-serif;font-size:66px;line-height:1">COMPIES</span></div>
+  <div style="flex:none;height:8px;margin-top:20px;background:#151515"></div>
+  <div style="flex:none;height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+    <div style="max-width:100%;display:flex;flex-direction:column;align-items:center;font-family:'Lilita One',sans-serif;font-size:{{ f.E.fw }}px;line-height:1.08">
+      <span style="max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l1 }}</span>
+      <sc-if value="{{ f.E.has2 }}"><span style="max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.E.l2 }}</span></sc-if>
+    </div>
+    <span style="margin-top:8px;max-width:100%;font-weight:800;font-size:21px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#5d5650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.dates }}</span>
+  </div>
+  <div style="flex:none;height:3px;background:#151515"></div>
+  <div style="flex:none;height:356px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <span style="font-weight:800;font-size:22px;line-height:1;letter-spacing:.14em;text-transform:uppercase">{{ f.W.label }}</span>
+    <div style="margin-top:14px;width:100%;display:flex;flex-wrap:wrap;justify-content:center;row-gap:10px">
+      <sc-for list="{{ f.W.items }}" as="n" hint-placeholder-count="1">
+        <div style="width:{{ f.W.cw }};min-width:0;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;justify-content:{{ f.W.jc }};gap:16px">
+          <sc-if value="{{ n.bar }}"><div style="flex:none;width:18px;height:{{ f.W.bh }}px;box-sizing:border-box;border:3.5px solid #151515;background:{{ n.c }}"></div></sc-if>
+          <div style="min-width:0;display:flex;flex-direction:column;align-items:{{ f.W.ai }};font-family:'Lilita One',sans-serif;font-size:{{ f.W.fw }}px;line-height:1.06">
+            <span style="max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l1 }}</span>
+            <sc-if value="{{ n.has2 }}"><span style="max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.l2 }}</span></sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ f.W.single }}"><div style="margin-top:18px;width:320px;height:22px;box-sizing:border-box;border:3.5px solid #151515;background:{{ f.W.c }}"></div></sc-if>
+    <div style="margin-top:16px;display:flex;align-items:baseline;white-space:nowrap;gap:12px;font-weight:800;font-size:32px;line-height:1.1"><span>{{ f.W.pre }}</span><span style="font-family:'Bungee',sans-serif">{{ f.W.p }}</span><span>Punkten</span></div>
+  </div>
+  <div style="flex:none;height:3px;background:#151515"></div>
+  <div style="flex:1;min-height:0;display:flex;padding-top:22px;overflow:hidden">
+    <sc-if value="{{ f.hasR }}">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;font-weight:800;font-size:18px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>Endstand</span><span style="color:#5d5650">{{ f.np }}</span></div>
+      <sc-for list="{{ f.R }}" as="r" hint-placeholder-count="3">
+        <sc-if value="{{ r.isRow }}"><div style="display:flex;align-items:center;gap:13px;height:46px;box-sizing:border-box;border-bottom:2px solid #dacfbf">
+          <span style="flex:none;width:36px;font-family:'Bungee',sans-serif;font-size:23px;line-height:1">{{ r.rank }}</span>
+          <div style="flex:none;width:30px;height:30px;box-sizing:border-box;border-radius:50%;border:2.5px solid #151515;background:{{ r.c }};display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="16" height="16" style="display:block"><path d="{{ r.d }}" fill="{{ r.ink }}"></path></svg></div>
+          <span style="flex:1;min-width:0;font-weight:800;font-size:24px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+          <span style="flex:none;font-family:'Bungee',sans-serif;font-size:23px;line-height:1">{{ r.pts }}</span>
+        </div></sc-if>
+        <sc-if value="{{ r.isMore }}"><div style="display:flex;align-items:center;height:44px;font-weight:800;font-size:20px;color:#5d5650">{{ r.txt }}</div></sc-if>
+      </sc-for>
+    </div>
+    <div style="flex:none;width:2px;margin:0 32px;background:#151515"></div>
+    </sc-if>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;white-space:nowrap;padding-bottom:8px;font-weight:800;font-size:18px;line-height:1;letter-spacing:.12em;text-transform:uppercase"><span>{{ f.gl }}</span><sc-if value="{{ f.tied }}"><span style="display:flex;align-items:center;gap:8px;color:#5d5650;letter-spacing:0;text-transform:none;font-weight:700;font-size:18px"><span style="display:flex;width:32px;height:10px;box-sizing:border-box;border:2px solid #151515"><sc-for list="{{ f.leg }}" as="s"><span style="flex:1;background:{{ s.c }};border-left:{{ s.bl }}"></span></sc-for></span>gleichauf</span></sc-if></div>
+      <sc-for list="{{ f.G }}" as="g" hint-placeholder-count="6">
+        <div style="height:42px;display:flex;align-items:center;min-width:0">
+          <sc-if value="{{ g.isGame }}"><div style="max-width:100%;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="font-weight:700;font-size:23px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.label }}</span><div style="display:flex;height:10px;box-sizing:border-box;border:2px solid #151515"><sc-for list="{{ g.segs }}" as="s"><div style="flex:1;background:{{ s.c }};border-left:{{ s.bl }}"></div></sc-for></div></div></sc-if>
+          <sc-if value="{{ g.isMore }}"><span style="font-weight:800;font-size:20px;color:#5d5650;white-space:nowrap">{{ g.txt }}</span></sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</sc-for>
+</div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:720,&quot;height&quot;:378},&quot;format&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;wide&quot;,&quot;square&quot;],&quot;default&quot;:&quot;wide&quot;,&quot;tsType&quot;:&quot;'wide'|'square'&quot;},&quot;session&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Freitags-Zocken&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;date&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Sa 25.10.2026&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;people&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:9,&quot;tsType&quot;:&quot;number&quot;},&quot;rows&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{t:number,name:string,pts:number}[]&quot;},&quot;games&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{name:string,w:number}[]&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;format&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;wide&quot;,&quot;square&quot;],&quot;tsType&quot;:&quot;'wide'|'square'&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;a&quot;,&quot;b&quot;,&quot;c&quot;],&quot;tsType&quot;:&quot;'a'|'b'|'c'&quot;},&quot;session&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;date&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;tsType&quot;:&quot;string|string[]&quot;},&quot;rows&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{t:number,name:string,pts:number,rank?:number}[]&quot;},&quot;games&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{name:string,w:number|number[]}[]&quot;}}">
 const HEX = { 1: '#e4572e', 2: '#f0a202', 3: '#f3e04a', 4: '#56b4e9', 5: '#009e73', 6: '#0072b2', 7: '#cc79a7', 8: '#3d2d8f' };
-const DEF_ROWS = [{ t: 1, name: 'Wilde Gurken', pts: 17 }, { t: 8, name: 'Nacht Eulen', pts: 15 }, { t: 2, name: 'Team Orange', pts: 9 }, { t: 4, name: 'Käse Turbo', pts: 5 }];
-const DEF_GAMES = [{ name: 'Rocket League', w: 1 }, { name: 'Mario Kart 8', w: 8 }, { name: 'Counter-Strike 2', w: 8 }, { name: 'Overcooked 2', w: 1 }, { name: 'Codenames', w: 2 }, { name: 'Gang Beasts', w: 1 }];
+const TINK = t => (t === 6 || t === 8) ? '#fffdf8' : '#151515';
+const SYM = ['M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16Z', 'M12 3.5 21 19.5H3Z', 'M5 5h14v14H5Z', 'M12 2.5 21.5 12 12 21.5 2.5 12Z', 'M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z', 'M3 8.5h18v7H3Z', 'M3 17a9 9 0 0 1 18 0Z', 'M12 2 14.6 9.4 22 12 14.6 14.6 12 22 9.4 14.6 2 12 9.4 9.4Z'];
+const SEP = '2px solid #151515';
+const ST = {
+  kurz: { event: 'Freitags-Zocken', dates: ['Sa 25.10.2026'],
+    rows: [{ t: 1, name: 'Wilde Gurken', pts: 17 }, { t: 8, name: 'Nacht Eulen', pts: 15 }, { t: 2, name: 'Team Orange', pts: 9 }, { t: 4, name: 'Käse Turbo', pts: 5 }],
+    games: [{ name: 'Rocket League', w: 1 }, { name: 'Mario Kart 8', w: 8 }, { name: 'Counter-Strike 2', w: 8 }, { name: 'Overcooked 2', w: 1 }, { name: 'Codenames', w: 2 }, { name: 'Gang Beasts', w: 1 }] },
+  lang: { event: 'Großes Herbst-Turnier der Mittwochsrunde im Vereinsheim Nord', dates: ['Fr 24.10.', 'Sa 25.10.', 'So 26.10.2026'],
+    rows: [{ t: 5, name: 'Die unaufhaltsamen Gurken vom Dach', pts: 31 }, { t: 8, name: 'Nachteulen aus dem dritten Stock', pts: 27 }, { t: 2, name: 'Team Orange', pts: 24 }, { t: 4, name: 'Käse-Turbo Deluxe Edition', pts: 19 }, { t: 7, name: 'Pinke Panther', pts: 16 }, { t: 3, name: 'Gelbe Gefahr', pts: 12 }, { t: 6, name: 'Blaue Bohnen', pts: 9 }, { t: 1, name: 'Rote Rüben Racing', pts: 4 }],
+    games: [{ name: 'Rocket League', w: 5 }, { name: 'Mario Kart 8 Deluxe', w: 8 }, { name: 'Counter-Strike 2', w: 5 }, { name: 'Overcooked! All You Can Eat', w: 2 }, { name: 'Codenames', w: 5 }, { name: 'Gang Beasts', w: 4 }, { name: 'Super Smash Bros. Ultimate', w: 8 }, { name: 'Jackbox Party Pack 9', w: 7 }, { name: 'Fall Guys', w: 5 }, { name: 'Stardew Valley', w: 3 }, { name: 'Tetris 99', w: 2 }, { name: 'Brawlhalla', w: 5 }] },
+  tie2: { event: 'Spieleabend bei Jonas', dates: ['Fr 07.11.2026'],
+    rows: [{ t: 1, name: 'Wilde Gurken', pts: 15 }, { t: 8, name: 'Nacht Eulen', pts: 15 }, { t: 2, name: 'Team Orange', pts: 11 }, { t: 4, name: 'Käse Turbo', pts: 6 }],
+    games: [{ name: 'Rocket League', w: 1 }, { name: 'Mario Kart 8', w: 8 }, { name: 'Codenames', w: [1, 8] }, { name: 'Overcooked 2', w: 2 }, { name: 'Gang Beasts', w: 8 }, { name: 'Tetris 99', w: 1 }] },
+  tie3: { event: 'Zocken im Keller', dates: ['Sa 31.10.2026', 'So 01.11.2026'],
+    rows: [{ t: 5, name: 'Grüne Welle', pts: 14 }, { t: 7, name: 'Pinke Panther', pts: 14 }, { t: 2, name: 'Team Orange', pts: 14 }, { t: 8, name: 'Nacht Eulen', pts: 9 }, { t: 4, name: 'Käse Turbo', pts: 7 }],
+    games: [{ name: 'Rocket League', w: 5 }, { name: 'Mario Kart 8', w: [2, 7] }, { name: 'Codenames', w: 7 }, { name: 'Overcooked 2', w: [2, 5, 7] }, { name: 'Gang Beasts', w: 8 }, { name: 'Tetris 99', w: 2 }, { name: 'Fall Guys', w: 5 }] },
+  tie5: { event: 'Silvester-Spieleturnier', dates: ['Do 31.12.2026'],
+    rows: [{ t: 1, name: 'Wilde Gurken', pts: 12 }, { t: 2, name: 'Team Orange', pts: 12 }, { t: 4, name: 'Käse Turbo', pts: 12 }, { t: 7, name: 'Pinke Panther', pts: 12 }, { t: 8, name: 'Nacht Eulen', pts: 12 }, { t: 3, name: 'Gelbe Gefahr', pts: 8 }, { t: 5, name: 'Grüne Welle', pts: 5 }],
+    games: [{ name: 'Werwölfe', w: [1, 2, 4, 7, 8] }, { name: 'Rocket League', w: 4 }, { name: 'Mario Kart 8', w: [1, 7] }, { name: 'Codenames', w: 2 }, { name: 'Overcooked 2', w: 8 }, { name: 'Gang Beasts', w: 7 }, { name: 'Tetris 99', w: [1, 2] }, { name: 'Jackbox Party Pack 9', w: 4 }, { name: 'Fall Guys', w: 8 }] }
+};
+// tiers: [maxChars, fontPx, lines]; k2/k3/many: font by longest name ≤14 / ≤22 / longer
+const CFG = {
+  aW: { ev: [[22, 46, 1], [34, 34, 1], [99, 32, 2]], k1: [[12, 96, 1], [24, 80, 2], [99, 64, 2]], k2: [72, 56, 44], k3: [56, 46, 38], many: [34, 32, 30], cw: '50%', max: 6, S: 4, G: 6, Gt: 5 },
+  aS: { ev: [[18, 52, 1], [34, 48, 2], [99, 36, 2]], k1: [[12, 128, 1], [18, 96, 1], [99, 84, 2]], k2: [96, 80, 60], k3: [70, 60, 50], many: [42, 42, 42], cw: '50%', max: 8, S: 4, G: 5, Gt: 5 },
+  bW: { ev: [[40, 30, 1], [99, 24, 1]], k1: [[10, 96, 1], [20, 80, 2], [99, 56, 2]], k2: [72, 52, 38], k3: [56, 44, 34], many: [36, 32, 28], cw: '100%', max: 6, S: 4, last: true, G: 6, Gt: 6 },
+  bS: { ev: [[30, 46, 1], [44, 34, 1], [99, 34, 2]], k1: [[10, 112, 1], [20, 92, 2], [99, 64, 2]], k2: [88, 68, 52], k3: [68, 56, 44], many: [40, 36, 32], cw: '100%', max: 6, S: 6, last: true, G: 8, Gt: 8 },
+  cW: { ev: [[44, 34, 1], [99, 28, 1]], k1: [[18, 96, 1], [26, 72, 1], [99, 64, 2]], k2: [64, 54, 44], k3: [42, 38, 34], many: [34, 34, 34], cw: '33.333%', max: 9, S: 5, G: 10, Gt: 10 },
+  cS: { ev: [[26, 48, 1], [99, 40, 2]], k1: [[12, 136, 1], [18, 96, 1], [99, 84, 2]], k2: [92, 76, 60], k3: [72, 60, 50], many: [40, 40, 40], cw: '50%', max: 8, S: 5, G: 6, Gt: 6 }
+};
+const OPTS = [
+  { o: 'a', id: '1a', name: 'Plakat', desc: 'Evolution of 8a. A type stack on the left (kicker, Event in Lilita, Dates in caps, then the Winner), Compibert on the sunburst above a ruled Standings column, the games as one ruled line, each with a hard square in the winner’s colour. Square: Compibert moves to the top right, the Winner runs full width, Standings and games share the bottom.' },
+  { o: 'b', id: '1b', name: 'Anzeigetafel', desc: 'Scoreboard. An ink header carries Event and Dates, the Winner’s Team colour becomes the whole left panel. A tie splits the panel into one band per Winner, so 2, 3 or 6 Winners use the same rule. Standings jump from place 3 to the last place („+N weitere Parteien“ between), games sit in two columns with a team-colour stripe.' },
+  { o: 'c', id: '1c', name: 'Schlagzeile', desc: 'Front page. Masthead, a 6 px rule, the Event as the dateline, the Winner as a headline across the full width with a team-colour block, two columns below: Standings and games, each game underlined in the winner’s colour. Compibert only as the masthead head, so it reads as COMPIES at any size. Square: centred, like a title page.' }
+];
+const ROWS = [['kurz', 'Ein Sieger · kurze Namen'], ['lang', 'Ein Sieger · lange Namen · 8 Parteien · 12 Spiele'], ['tie2', 'Unentschieden · 2 Sieger'], ['tie3', 'Unentschieden · 3 Sieger'], ['tie5', 'Unentschieden · 5 Sieger']];
+const PICK = 'b';
+const tier = (t, n) => t.find(x => n <= x[0]) || t[t.length - 1];
+const by3 = (a, n) => n <= 14 ? a[0] : n <= 22 ? a[1] : a[2];
+function split(s) { const m = s.length / 2; let b = -1; for (let i = 0; i < s.length; i++) if (s[i] === ' ' && (b < 0 || Math.abs(i - m) < Math.abs(b - m))) b = i; return b < 0 ? [s, ''] : [s.slice(0, b), s.slice(b + 1)]; }
+function fmtDates(d) { if (!Array.isArray(d)) return d || ''; return d.length <= 3 ? d.join(' · ') : d[0] + ' – ' + d[d.length - 1] + ' · ' + d.length + ' Termine'; }
+const mk = r => ({ c: HEX[r.t] || '#fffdf8', ink: TINK(r.t), d: SYM[(r.t || 1) - 1] });
+function prep(D) {
+  const rows = D.rows.map(r => Object.assign({}, r)).sort((a, b) => b.pts - a.pts);
+  rows.forEach((r, i) => { r.rank = r.rank || (i && r.pts === rows[i - 1].pts ? rows[i - 1].rank : i + 1); });
+  const games = (D.games || []).map(g => ({ name: g.name, ws: (Array.isArray(g.w) ? g.w : [g.w]).slice().sort((a, b) => a - b) }));
+  return { event: D.event || '', dates: fmtDates(D.dates), rows, win: rows.filter(r => r.rank === 1), rest: rows.filter(r => r.rank > 1), games };
+}
+function frame(P, opt, fmt) {
+  const wide = fmt === 'wide', key = opt + (wide ? 'W' : 'S'), C = CFG[key], k = P.win.length, w0 = P.win[0];
+  const et = tier(C.ev, P.event.length), es = et[2] === 2 ? split(P.event) : [P.event, ''];
+  const longest = Math.max.apply(null, P.win.map(w => w.name.length));
+  const label = k === 1 ? 'Sieger' : P.rest.length ? 'Unentschieden · ' + k + ' Sieger' : k === 2 ? 'Unentschieden · beide gleichauf' : 'Unentschieden · alle ' + k + ' gleichauf';
+  const W = { label, p: String(w0.pts), pre: k === 1 ? 'gewinnt mit' : 'gewinnen mit je', preS: k === 1 ? 'mit' : 'mit je', single: k === 1, bands: k > 1, c: HEX[w0.t], ink: TINK(w0.t), d: SYM[w0.t - 1], jc: 'center', ai: 'center' };
+  if (k === 1) {
+    const t = tier(C.k1, longest), s = t[2] === 2 ? split(w0.name) : [w0.name, ''];
+    Object.assign(W, { fw: t[1], cw: '100%', items: [Object.assign({ l1: s[0], l2: s[1], has2: !!s[1], bar: false, mark: false }, mk(w0))] });
+    W.bw = 24; W.bm = '6px 0';
+  } else {
+    const many = k >= 4, fw = by3(many ? C.many : k === 2 ? C.k2 : C.k3, longest), max = many ? C.max : 3;
+    let items = P.win.map(w => Object.assign({ l1: w.name, l2: '', has2: false, bar: true, mark: true }, mk(w)));
+    if (items.length > max) items = items.slice(0, max - 1).concat([{ l1: '+' + (items.length - max + 1) + ' weitere', l2: '', has2: false, bar: false, mark: false, c: '#fffdf8', ink: '#151515', d: '' }]);
+    Object.assign(W, { fw, items, cw: many ? C.cw : '100%', bh: Math.round(fw * .66), bw: many ? 12 : 16, bm: Math.round(fw * .2) + 'px 0', jc: many ? 'flex-start' : 'center', ai: many ? 'flex-start' : 'center' });
+  }
+  const row = r => Object.assign({ isRow: true, isMore: false, rank: String(r.rank), name: r.name, pts: String(r.pts) }, mk(r));
+  const more = n => ({ isRow: false, isMore: true, txt: n === 1 ? '+1 weitere Partei' : '+' + n + ' weitere Parteien' });
+  const rest = P.rest, S = C.S;
+  const R = rest.length <= S ? rest.map(row) : C.last ? rest.slice(0, S - 2).map(row).concat([more(rest.length - S + 1), row(rest[rest.length - 1])]) : rest.slice(0, S - 1).map(row).concat([more(rest.length - S + 1)]);
+  const segs = ws => ws.slice(0, 4).map((t, i) => ({ c: HEX[t], bl: i ? SEP : 'none' }));
+  const tiedG = P.games.find(g => g.ws.length > 1), G = tiedG ? C.Gt : C.G;
+  const gi = g => ({ isGame: true, isMore: false, label: g.name + (g.ws.length >= 5 ? ' · ' + g.ws.length + ' gleichauf' : ''), segs: segs(g.ws) });
+  const GL = P.games.length <= G ? P.games.map(gi) : P.games.slice(0, G - 1).map(gi).concat([{ isGame: false, isMore: true, txt: '+' + (P.games.length - G + 1) + ' weitere' }]);
+  const f = { aW: false, aS: false, bW: false, bS: false, cW: false, cS: false };
+  f[key] = true;
+  return Object.assign(f, {
+    E: { fw: et[1], l1: es[0], l2: es[1], has2: !!es[1] }, W, R, hasR: rest.length > 0, G: GL,
+    gl: P.games.length + (P.games.length === 1 ? ' Spiel' : ' Spiele'), np: P.rows.length + ' Parteien', dates: P.dates,
+    tied: !!tiedG, leg: tiedG ? segs(tiedG.ws.slice(0, 2)) : [], W0: wide ? 1200 : 1080, H0: wide ? 630 : 1080, fl: wide ? '1200 × 630' : '1080 × 1080'
+  });
+}
+function alt(P) {
+  const ev = P.event;
+  if (P.win.length === 1) return P.win[0].name + ' gewinnt ' + ev + ' mit ' + P.win[0].pts + ' Punkten.' + (P.rest[0] ? ' Platz 2: ' + P.rest[0].name + '.' : '');
+  return 'Unentschieden bei ' + ev + ': ' + P.win.map(w => w.name).join(', ') + ' gewinnen mit je ' + P.win[0].pts + ' Punkten.';
+}
 class Component extends DCLogic {
   box = React.createRef();
   state = { cw: 0 };
-  componentDidMount() { this.attach(); }
+  componentDidMount() {
+    this.attach();
+    if (this.isSheet() && !document.querySelector('meta[name="design_doc_mode"]')) { const m = document.createElement('meta'); m.name = 'design_doc_mode'; m.content = 'canvas'; document.head.appendChild(m); }
+  }
   componentDidUpdate() { this.attach(); }
   attach() {
     const el = this.box.current;
@@ -108,27 +528,29 @@ class Component extends DCLogic {
     measure();
   }
   componentWillUnmount() { clearTimeout(this._t); this._ro && this._ro.disconnect(); }
+  qs() { try { return new URLSearchParams(location.search); } catch (e) { return new URLSearchParams(''); } }
+  isSheet() { const q = this.qs(), p = this.props; return !q.get('st') && !q.get('fmt') && p.format == null && !p.rows; }
   renderVals() {
-    const P = this.props, wide = (P.format || 'wide') !== 'square';
-    const rows = (P.rows && P.rows.length ? P.rows : DEF_ROWS).slice().sort((a, b) => b.pts - a.pts);
-    const games = P.games && P.games.length ? P.games : DEF_GAMES;
-    const w = rows[0], len = w.name.length;
-    const rest = rows.slice(1, 4).map((r, i) => ({ rank: String(i + 2), name: r.name, pts: String(r.pts), c: HEX[r.t] || '#fffdf8' }));
-    const g = games.map(x => ({ name: x.name, c: HEX[x.w] || '#fffdf8' }));
-    const cap = (n, k) => ({ list: g.slice(0, k), more: n > k, txt: '+' + (n - k) + ' weitere' });
-    const gw = cap(g.length, 6), gs = cap(g.length, 9);
-    const people = P.people ? ' · ' + P.people + ' Leute' : '';
-    return {
-      box: this.box, wide, square: !wide,
-      k: this.state.cw ? this.state.cw / (wide ? 1200 : 1080) : (wide ? .6 : .35),
-      pill: (P.session || 'Freitags-Zocken') + ' · ' + (P.date || 'Sa 25.10.2026') + people,
-      w: { name: w.name, pts: String(w.pts), c: HEX[w.t] || '#e4572e' },
-      nameW: len <= 14 ? 96 : len <= 34 ? 84 : 64, nameS: len <= 14 ? 128 : len <= 34 ? 112 : 88,
-      rest, moreRows: rows.length > 4, moreRowsTxt: '+' + (rows.length - 4) + ' weitere Parteien',
-      gamesTxt: games.length + (games.length === 1 ? ' Spiel' : ' Spiele'),
-      gamesW: gw.list, moreW: gw.more, moreWTxt: gw.txt, gamesS: gs.list, moreS: gs.more, moreSTxt: gs.txt,
-      alt: w.name + ' gewinnt ' + (P.session || 'Freitags-Zocken') + ' mit ' + w.pts + ' Punkten.'
-    };
+    const p = this.props, q = this.qs(), sheet = this.isSheet();
+    if (sheet) {
+      const groups = OPTS.map(o => ({
+        id: o.id, name: o.name, desc: o.desc, pick: o.o === PICK, chrome: true,
+        rows: ROWS.map(([st, label]) => {
+          const P = prep(ST[st]);
+          return { label, frames: ['wide', 'square'].map(fmt => {
+            const f = frame(P, o.o, fmt), pw = fmt === 'wide' ? 720 : 460;
+            return Object.assign(f, { pw, ph: Math.round(pw * f.H0 / f.W0), k: pw / f.W0, ol: '3px solid #151515', sh: '6px 6px 0 3px #151515', url: 'ShareImage.dc.html?st=' + st + '&fmt=' + fmt + '&opt=' + o.o });
+          }) };
+        })
+      }));
+      return { box: this.box, sheet: true, role: 'region', alt: 'Share image options', pad: '52px 56px 80px', bg: '#f3e8d4', gap: 88, groups };
+    }
+    const st = q.get('st'), fmt = (q.get('fmt') || p.format || 'wide') === 'square' ? 'square' : 'wide';
+    const opt = ['a', 'b', 'c'].includes(q.get('opt')) ? q.get('opt') : ['a', 'b', 'c'].includes(p.variant) ? p.variant : PICK;
+    const D = p.rows && p.rows.length ? { event: p.session || p.event || '', dates: p.dates || p.date || '', rows: p.rows, games: p.games || [] } : ST[st] || ST.kurz;
+    const P = prep(D), f = frame(P, opt, fmt), cw = this.state.cw || 720;
+    Object.assign(f, { pw: cw, ph: Math.round(cw * f.H0 / f.W0), k: cw / f.W0, ol: 'none', sh: 'none', url: '' });
+    return { box: this.box, sheet: false, role: 'img', alt: alt(P), pad: '0', bg: 'transparent', gap: 0, groups: [{ id: 'img', chrome: false, rows: [{ label: '', frames: [f] }] }] };
   }
 }
 </script>
