@@ -45,9 +45,10 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 
 ## Before you report
 
-1. `git fetch origin && git merge origin/<integration branch>` into your branch, because the integration branch moves while you work. Resolve conflicts by keeping both sides (changelog lines, i18n keys), and keep every removal the integration branch made. Rerun the checks.
-2. Push your branch: `git push -u origin <your branch>`.
-3. Wait for CI on your pushed head: `node scripts/ci-wait.mjs`, in the foreground. One call waits at most 2.5 minutes; exit 2 means CI is still running (a run takes about 6 minutes), so call it again until it exits 0 or 1. It prints one line, then the failures if any. Red: fix, push, and wait again. Report a green head; a red one you can't fix goes into the report with its output.
+1. Push your branch: `git push -u origin <your branch>`.
+2. Wait for CI on your pushed head: `node scripts/ci-wait.mjs`, in the foreground. One call waits at most 2.5 minutes; exit 2 means CI is still running (a run takes about 6 minutes), so call it again until it exits 0 or 1. It prints one line, then the failures if any. Red: fix, push, and wait again. Report a green head; a red one you can't fix goes into the report with its output.
+3. Then `git fetch origin` and check containment: `git merge-base --is-ancestor origin/<integration branch> HEAD`. Contained → done. Not contained, because the integration branch moved during the CI run → `git merge origin/<integration branch>`, resolving conflicts by keeping both sides (changelog lines, i18n keys) and keeping every removal the integration branch made, then rerun the checks, push, and wait for CI again from step 2. Checking only after the CI run avoids the loop in session 2 of 0.10, where all three parallel implementers merged the tip before their CI wait, found it had moved, and needed another round (#363 three, #364 four).
+4. The loop ends when the reported head contains the integration tip and is green, both on the same SHA.
 
 ## Report (once, short, this shape)
 
