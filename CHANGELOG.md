@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-09 – Feinschliff
+
+Feinschliff nach dem ersten Spielabend: Hosts können ein Event löschen, Spiele tragen Tags und Preise, der Countdown hat sein Gesicht bekommen, und zwanzig Kleinigkeiten aus dem Produktions-Check sind erledigt, von der Startseite bis zum Veto ohne Namen.
+
 ### Neu
 
 - **Event löschen:** Als Host kannst du ein Event jetzt in der Host-Steuerung unter „Mehr“ löschen, in jeder Phase, nur nicht während eine Session läuft. Nach einer Sekunde Halten ist es für alle sofort weg: Es verschwindet von der Startseite, und wer es offen hat oder seinen Event-Link oder Einladungslink öffnet, sieht „Event gelöscht“. Rückgängig machen lässt es sich nicht. ([#333](https://github.com/christried/compies/issues/333))
