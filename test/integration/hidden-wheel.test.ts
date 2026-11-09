@@ -150,15 +150,17 @@ describe('Hidden wheel secrecy (#148)', () => {
     vi.unstubAllEnvs()
   })
 
-  interface Secret { id: string, name: string, videoId: string, notes: string, imageUrl: string, imageKey: string }
+  interface Secret { id: string, name: string, videoId: string, notes: string, tag: string, imageUrl: string, imageKey: string }
 
   async function newGame(name: string, videoId: string): Promise<Secret> {
     // Every game carries notes (#224): a Player must not get them under a Hidden wheel.
     const notes = `Hausregel fuer ${name}`
+    // Lower case, so the key and the label are one string; no Event read carries a Tag, not even the Host's (#335).
+    const tag = `tag-${name.split(' ')[0]!.toLowerCase()}`
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes, tags: [tag] }),
     })
     expect(created.status).toBe(200)
     const { id } = await created.json() as GameView
@@ -170,7 +172,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     expect(uploaded.status).toBe(200)
     const view = await uploaded.json() as GameView
     expect(view.youtubeId).toBe(videoId)
-    return { id, name, videoId, notes, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length) }
+    return { id, name, videoId, notes, tag, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length) }
   }
 
   /** A, B in the Game pool, C in the library only (#279: there is no Tiebreaker pool); the Player has joined. */
@@ -200,6 +202,8 @@ describe('Hidden wheel secrecy (#148)', () => {
   }
 
   const traces = (secret: Secret) => [secret.name, secret.id, secret.imageKey, secret.videoId, secret.notes]
+  // The Host's read holds every trace but a Tag: Tags live in the library only (#335).
+  const playerTraces = (secret: Secret) => [...traces(secret), secret.tag]
 
   function setWheelHidden(hidden: boolean) {
     // The Pool preview follows the wheel here, as a Host who made the wheel visible and turned the preview on (#225).
@@ -212,7 +216,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const raw = await rawRead(playerCookie, slug)
 
     expect((JSON.parse(raw) as EventView).pool).toBeNull()
-    for (const trace of secrets.flatMap(traces)) expect(raw).not.toContain(trace)
+    for (const trace of secrets.flatMap(playerTraces)) expect(raw).not.toContain(trace)
     expect(raw).not.toMatch(/api\/images/)
   })
 
@@ -248,10 +252,11 @@ describe('Hidden wheel secrecy (#148)', () => {
     // A Player gets picture and name only (#224): everything but the notes.
     for (const trace of secrets.slice(0, 2).flatMap(traces).filter(trace => !secrets.some(secret => secret.notes === trace))) expect(open).toContain(trace)
     for (const secret of secrets) expect(open).not.toContain(secret.notes)
+    for (const secret of secrets) expect(open).not.toContain(secret.tag)
 
     await setWheelHidden(true)
     const closed = await rawRead(playerCookie, slug)
-    for (const trace of secrets.flatMap(traces)) expect(closed).not.toContain(trace)
+    for (const trace of secrets.flatMap(playerTraces)) expect(closed).not.toContain(trace)
     expect((JSON.parse(closed) as EventView).pool).toBeNull()
   })
 
@@ -259,6 +264,22 @@ describe('Hidden wheel secrecy (#148)', () => {
     const { slug } = await setUp({ ...HIDDEN_WHEEL, hiddenWheel: false })
 
     expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView).pool).not.toBeNull()
+  })
+
+  it.each([
+    ['a Hidden wheel', HIDDEN_WHEEL],
+    ['a visible Lucky wheel', { ...HIDDEN_WHEEL, hiddenWheel: false }],
+  ])('carries no Tag in the Host\'s or a Player\'s Event read under %s (#335)', async (_rule, settings) => {
+    const { slug, secrets } = await setUp(settings)
+
+    for (const cookie of [hostCookie, playerCookie]) {
+      const raw = await rawRead(cookie, slug)
+      expect(raw).not.toContain('"tags"')
+      for (const secret of secrets) expect(raw).not.toContain(secret.tag)
+    }
+    // The control: the library does carry them.
+    const library = await request('/api/games', { headers: { cookie: hostCookie } })
+    expect(await library.text()).toContain(secrets[0]!.tag)
   })
 
   describe('the image route', () => {
@@ -379,7 +400,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     /** Fails on the first trace of a pool game that `raw` holds, and names the place it leaks to (#165). */
     function expectNoTrace(place: string, raw: string, secrets: readonly Secret[]) {
       for (const secret of secrets) {
-        for (const trace of traces(secret)) expect(raw, `${place} leaks ${trace}`).not.toContain(trace)
+        for (const trace of playerTraces(secret)) expect(raw, `${place} leaks ${trace}`).not.toContain(trace)
       }
     }
 
@@ -591,6 +612,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       for (const game of [a, d]) {
         for (const trace of traces(game).filter(trace => trace !== game.notes)) expect(open, `the open Event read lacks ${trace}`).toContain(trace)
         expect(open).not.toContain(game.notes)
+        expect(open).not.toContain(game.tag)
       }
       expectNoTrace('the room', JSON.stringify(notifier.messages(eventId)), games)
 
@@ -632,7 +654,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     return { event: await rawRead(playerCookie, slug), feed: await feed.text(), room: JSON.stringify(notifier.messages(eventId)) }
   }
 
-  function expectNone(what: Record<string, string>, secrets: readonly Secret[], include: (secret: Secret) => string[] = traces) {
+  function expectNone(what: Record<string, string>, secrets: readonly Secret[], include: (secret: Secret) => string[] = playerTraces) {
     for (const [place, raw] of Object.entries(what)) {
       for (const secret of secrets) for (const trace of include(secret)) expect(raw, `${place} leaks ${trace}`).not.toContain(trace)
     }
@@ -662,7 +684,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(got.event).toContain(a.imageKey)
       expect((JSON.parse(got.event) as EventView)).toMatchObject({ pool: null, rounds: [{ game: { id: a.id, name: 'Alpha Arena', youtubeId: 'aaaaaaaaaaa' } }] })
       expect(got.feed).toContain('Alpha Arena')
-      expectNone(got, [a], secret => [secret.notes])
+      expectNone(got, [a], secret => [secret.notes, secret.tag])
       expectNone(got, [b, c, e])
       expect(await imageStatus(a)).toBe(200)
       for (const secret of [b, c, e]) expect(await imageStatus(secret)).toBe(404)
@@ -676,9 +698,33 @@ describe('Hidden wheel secrecy (#148)', () => {
       const got = await whatThePlayerGets(slug, eventId)
       expect((JSON.parse(got.event) as EventView).rounds).toMatchObject([{ game: { id: e.id, name: 'Epsilon Eck' } }])
       expectNone(got, [a, b, c])
-      expectNone(got, [e], secret => [secret.notes])
+      expectNone(got, [e], secret => [secret.notes, secret.tag])
       expect(await imageStatus(e)).toBe(200)
       for (const secret of [a, b, c]) expect(await imageStatus(secret)).toBe(404)
+    })
+
+    it('carries no Tag in the Host\'s or a Player\'s read of a set game and of its Result (#335)', async () => {
+      const { slug, a, b, c, e } = await runningEvent()
+      const roundId = await hostSets(request, slug, hostCookie, a.id)
+      const reads = async () => [await rawRead(hostCookie, slug), await rawRead(playerCookie, slug)]
+
+      for (const raw of await reads()) {
+        expect(raw).toContain('Alpha Arena')
+        expect(raw).not.toContain('"tags"')
+        for (const secret of [a, b, c, e]) expect(raw).not.toContain(secret.tag)
+      }
+
+      const entered = await request(`/api/e/${slug}/rounds/${roundId}/result`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', 'cookie': hostCookie },
+        body: JSON.stringify({ places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] }),
+      })
+      expect(entered.status).toBe(200)
+      for (const raw of await reads()) {
+        expect((JSON.parse(raw) as EventView).results).toHaveLength(1)
+        expect(raw).not.toContain('"tags"')
+        for (const secret of [a, b, c, e]) expect(raw).not.toContain(secret.tag)
+      }
     })
 
     it('gives the Host the notes of the set game on its Round, and every game of the pools', async () => {
@@ -700,7 +746,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const got = await whatThePlayerGets(slug, eventId)
       expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [] })
       expectNone(got, [b, c, e])
-      expectNone(got, [a], secret => [secret.notes])
+      expectNone(got, [a], secret => [secret.notes, secret.tag])
       for (const secret of [b, c, e]) expect(await imageStatus(secret)).toBe(404)
     })
 
@@ -812,7 +858,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(got.feed).toContain(drawn.name)
       expect((JSON.parse(got.feed) as ActivityPage).entries.filter(entry => entry.type === 'game_drawn')).toMatchObject([{ games: { [drawn.id]: drawn.name } }])
       expectNone(got, [undrawn, c, e])
-      expectNone(got, [drawn], secret => [secret.notes])
+      expectNone(got, [drawn], secret => [secret.notes, secret.tag])
       expect(await imageStatus(drawn)).toBe(200)
       for (const secret of [undrawn, c, e]) expect(await imageStatus(secret)).toBe(404)
     })
@@ -824,7 +870,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const raw = await rawRead(playerCookie, slug)
 
       expect((JSON.parse(raw) as EventView).wheel).toMatchObject({ count: 1, slices: null })
-      for (const trace of traces(undrawn)) expect(raw).not.toContain(trace)
+      for (const trace of playerTraces(undrawn)) expect(raw).not.toContain(trace)
     })
 
     it('gives the Host the real names on the wheel throughout: before and after the stop', async () => {
