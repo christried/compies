@@ -9,7 +9,7 @@ Browser checks ran before the review:
 - `b336` at 0833f97: one walk-through note (the library's filter row, item 2).
 - `b337` at 0833f97: one pre-existing FAIL, the detail page h1 overflows with a long unbroken game name.
 - `b338` at 35de3dd: all PASS.
-- `b340` at e5687a6: pending.
+- `b340` at e5687a6: all PASS against the artboard; one finding, the SSR first frame of a late joiner (F10, next fix round).
 
 ## Result
 
@@ -320,7 +320,7 @@ Vocabulary from `codebase-design`. None contradicts an ADR.
 
 ## Still owed
 
-- Browser check `b340` at e5687a6: pending.
+- Browser check `b340` at e5687a6: all PASS; F10 (SSR first frame) for the next fix round.
 - #334 (Datenschutzerklärung) merges before the Release is cut (S5, SPEC-10).
 - The decisions in „For the user“: S1 / SPEC-5 (0026), S14, b336 item 2, #340 decision 2, SPEC-4.
-- After the fix pass: F1 to F8 merged into `fix/332-review` (merge sha pending), then the Release PR names 0026.
+- After the fix pass: F1 to F8 merged into `fix/332-review` (merged ecdb79a, with F9), then the Release PR names 0026.
