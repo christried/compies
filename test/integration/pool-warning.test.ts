@@ -13,7 +13,7 @@ import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
-import { VETO_WINDOW_MS } from '../../shared/rounds'
+import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -32,8 +32,7 @@ const people = {
 
 const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
 const T0 = '2090-10-30T10:00:00.000Z'
-const LEAD = 1500
-const STOP = LEAD + 6000
+const { stop: STOP } = SPIN
 
 describe('the Host\'s pool warning (#234)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
@@ -188,7 +187,7 @@ describe('the Host\'s pool warning (#234)', () => {
     // Team 1 cast its Veto, sealed: the Host, outside the teams, still counts both Parties' Vetoes.
     expect(await warningOf(party)).toEqual({ needed: 3, have: 2 })
 
-    clock.advance(VETO_WINDOW_MS)
+    clock.advance(WINDOW_MS)
     const view = await read(party)
 
     // The draw is vetoed: its Round waits for a respin, so it needs its game again; the vetoed game stays out of the pool.

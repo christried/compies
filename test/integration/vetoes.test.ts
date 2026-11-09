@@ -18,9 +18,9 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
-import { VETO_WINDOW_MS } from '../../shared/rounds'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
+import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Vetoes (#231, spec #218 § Vetoes, Deadlines, Realtime room, Settings lock): the window that opens at the wheel's stop, the
@@ -39,9 +39,7 @@ const outsider = { provider: 'discord', id: '8', name: 'Fremder', email: 'outsid
 
 const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
 const T0 = '2090-10-30T10:00:00.000Z'
-const LEAD = 1500
-const STOP = LEAD + 6000
-const END = STOP + VETO_WINDOW_MS
+const { stop: STOP, end: END } = SPIN
 
 /** The Veto read (`wheel.vetoes`, #231) with the defaults a case does not pin: no own part, nothing revealed, the spin's window. A new read field gets its default here, once. */
 function vetoRead({ left, own = null, revealed = null, draw = expect.objectContaining({ kind: 'spin' }) }: { left: number[], own?: object | null, revealed?: object[] | null, draw?: unknown }) {
@@ -228,10 +226,10 @@ describe('Vetoes', () => {
       const { roundId, drawId, gameId } = await setWithVeto(party)
 
       expect(await roundRows(party)).toMatchObject([{ id: roundId, gameId: null, setAt: null }])
-      expect(await drawRows()).toMatchObject([{ kind: 'set', gameId, stopAt: new Date(T0), vetoEndsAt: new Date(iso(VETO_WINDOW_MS)), outcome: null, settledAt: null }])
+      expect(await drawRows()).toMatchObject([{ kind: 'set', gameId, stopAt: new Date(T0), vetoEndsAt: new Date(iso(WINDOW_MS)), outcome: null, settledAt: null }])
       const view = await read(party, party.cookies.one)
       expect(view.rounds).toEqual([])
-      expect(view.wheel!.vetoes.draw).toMatchObject({ drawId, kind: 'set', stopAt: iso(0), vetoEndsAt: iso(VETO_WINDOW_MS), game: { id: gameId, name: 'Halo', price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } } })
+      expect(view.wheel!.vetoes.draw).toMatchObject({ drawId, kind: 'set', stopAt: iso(0), vetoEndsAt: iso(WINDOW_MS), game: { id: gameId, name: 'Halo', price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } } })
       expect(view.wheel!.vetoes.own).toMatchObject({ team: 1, cast: false, rejection: null })
       expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
     })
@@ -240,7 +238,7 @@ describe('Vetoes', () => {
       const party = await running()
       await setWithVeto(party)
 
-      clock.advance(VETO_WINDOW_MS - 1)
+      clock.advance(WINDOW_MS - 1)
 
       expect(await errorOf(await set(party, party.games[1]!.id))).toEqual({ status: 409, code: 'round_being_drawn' })
       expect(await errorOf(await spin(party))).toEqual({ status: 409, code: 'round_being_drawn' })
@@ -250,11 +248,11 @@ describe('Vetoes', () => {
       const party = await running()
       const { roundId, gameId } = await setWithVeto(party)
 
-      clock.advance(VETO_WINDOW_MS + 30_000)
+      clock.advance(WINDOW_MS + 30_000)
       const view = await read(party, party.cookies.three)
 
-      expect(await roundRows(party)).toMatchObject([{ id: roundId, gameId, setAt: new Date(iso(VETO_WINDOW_MS)) }])
-      expect(await drawRows()).toMatchObject([{ outcome: 'set', settledAt: new Date(iso(VETO_WINDOW_MS)) }])
+      expect(await roundRows(party)).toMatchObject([{ id: roundId, gameId, setAt: new Date(iso(WINDOW_MS)) }])
+      expect(await drawRows()).toMatchObject([{ outcome: 'set', settledAt: new Date(iso(WINDOW_MS)) }])
       expect(view.rounds.map(round => round.game.id)).toEqual([gameId])
       expect(view.wheel!.vetoes.revealed).toEqual([])
     })
@@ -264,11 +262,11 @@ describe('Vetoes', () => {
       const { roundId, drawId, gameId } = await setWithVeto(party)
       expect((await cast(party, drawId, party.cookies.three)).status).toBe(200)
 
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       const view = await read(party)
 
       expect(await roundRows(party)).toMatchObject([{ id: roundId, gameId: null, setAt: null }])
-      expect(await drawRows()).toMatchObject([{ outcome: 'vetoed', settledAt: new Date(iso(VETO_WINDOW_MS)) }])
+      expect(await drawRows()).toMatchObject([{ outcome: 'vetoed', settledAt: new Date(iso(WINDOW_MS)) }])
       expect(view.setGame?.left).not.toContain(gameId)
       expect(view.setGame?.left).toHaveLength(3)
       expect(view.setGame?.respin).toBe(true)
@@ -284,7 +282,7 @@ describe('Vetoes', () => {
       const party = await running({ gameCount: 1 })
       const { roundId, drawId } = await setWithVeto(party)
       await cast(party, drawId, party.cookies.one)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
 
       const response = await set(party, party.games[1]!.id)
 
@@ -299,7 +297,7 @@ describe('Vetoes', () => {
       const [library] = await testDb.db.insert(games).values({ name: 'Bibliothek', createdBy: party.ids.host }).returning()
       const { drawId } = await setWithVeto(party, library!.id)
       await cast(party, drawId, party.cookies.one)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
 
       expect(await errorOf(await set(party, library!.id))).toEqual({ status: 409, code: 'game_already_drawn' })
       expect(await errorOf(await set(party, party.games[0]!.id))).not.toEqual({ status: 409, code: 'game_already_drawn' })
@@ -311,7 +309,7 @@ describe('Vetoes', () => {
       const { drawId } = await setWithVeto(party, library!.id)
       await cast(party, drawId, party.cookies.one)
 
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       const view = await read(party)
 
       expect(view.setGame?.left).toHaveLength(4)
@@ -341,7 +339,7 @@ describe('Vetoes', () => {
       const party = await running({ gameCount: 1 })
       const { drawId } = await setWithVeto(party)
       await cast(party, drawId, party.cookies.one)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       expect((await read(party)).wheel!.vetoes.draw).toMatchObject({ drawId })
 
       clock.advance(1)
@@ -377,7 +375,7 @@ describe('Vetoes', () => {
       expect(other).toMatchObject({ left: [2, 2], own: { team: 2, cast: false, rejection: null }, revealed: null })
       expect((await read(party, party.cookies.one)).wheel!.vetoes.own).toMatchObject({ team: 1, cast: true, rejection: 'veto_already_cast' })
 
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       expect((await read(party, party.cookies.three)).wheel!.vetoes).toMatchObject({ left: [1, 2], revealed: [{ team: 1 }] })
     })
 
@@ -457,7 +455,7 @@ describe('Vetoes', () => {
       clock.advance(STOP)
       expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
 
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       const view = await read(party)
 
       expect(await roundRows(party)).toMatchObject([{ id: roundId, gameId: null, setAt: null, putBackAt: null }])
@@ -476,7 +474,7 @@ describe('Vetoes', () => {
       // Sealed and open: the spin is still the latest draw, and nothing has settled.
       expect((await read(party, party.cookies.three)).wheel?.spin?.current).toBe(true)
 
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
 
       expect((await read(party, party.cookies.three)).wheel?.spin?.current).toBe(false)
       expect((await read(party)).wheel?.spin?.current).toBe(false)
@@ -487,7 +485,7 @@ describe('Vetoes', () => {
       const { roundId, drawId } = await spun(party)
       clock.advance(STOP)
       await cast(party, drawId, party.cookies.one)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
 
       const response = await spin(party)
 
@@ -497,7 +495,7 @@ describe('Vetoes', () => {
       const rows = await drawRows()
       expect(rows.map(row => row.roundId)).toEqual([roundId, roundId])
       expect(rows[0]!.gameId).not.toBe(rows[1]!.gameId)
-      expect(rows[1]).toMatchObject({ outcome: null, vetoEndsAt: new Date(iso(END + STOP + VETO_WINDOW_MS)) })
+      expect(rows[1]).toMatchObject({ outcome: null, vetoEndsAt: new Date(iso(END + STOP + WINDOW_MS)) })
     })
 
     it('sets a game the Host picks into the waiting Round, settled set at once', async () => {
@@ -505,7 +503,7 @@ describe('Vetoes', () => {
       const { roundId, drawId } = await spun(party)
       clock.advance(STOP)
       await cast(party, drawId, party.cookies.three)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       const [vetoedDraw] = await drawRows()
       const other = party.games.find(game => game.id !== vetoedDraw!.gameId)!
 
@@ -530,10 +528,10 @@ describe('Vetoes', () => {
       const first = await spun(party)
       clock.advance(STOP)
       await cast(party, first.drawId, party.cookies.one)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       // The respin sets (team 2 keeps its Veto but does not use it), then the Host puts the Round back.
       const second = await spun(party)
-      clock.advance(STOP + VETO_WINDOW_MS)
+      clock.advance(STOP + WINDOW_MS)
       expect((await putBackRound(party, second.roundId)).status).toBe(200)
 
       const view = await read(party)
@@ -640,7 +638,7 @@ describe('Vetoes', () => {
         const party = await running({ allowance: 1 })
         const first = await windowOpen(party)
         await cast(party, first.drawId, party.cookies.one)
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
         const second = await windowOpen(party)
 
         expect(await errorOf(await cast(party, second.drawId, party.cookies.two))).toEqual({ status: 409, code: 'no_vetoes_left' })
@@ -652,7 +650,7 @@ describe('Vetoes', () => {
         await testDb.db.insert(bonusVetoes).values({ eventId: party.eventId, team: 1, grantedBy: party.ids.host, grantedAt: new Date(T0) })
         const first = await windowOpen(party)
         await cast(party, first.drawId, party.cookies.one)
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
         const second = await windowOpen(party)
 
         expect((await cast(party, second.drawId, party.cookies.two)).status).toBe(200)
@@ -745,7 +743,7 @@ describe('Vetoes', () => {
         await cast(party, drawId, party.cookies.two)
         await cast(party, drawId, party.cookies.three)
 
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
 
         for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three, party.cookies.bench, party.cookies.stands]) {
           const veto = (await read(party, cookie)).wheel!.vetoes
@@ -760,7 +758,7 @@ describe('Vetoes', () => {
         const [row] = await drawRows()
         await cast(party, drawId, party.cookies.one)
 
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
         const view = await read(party)
 
         expect(view.setGame?.left).not.toContain(row!.gameId)
@@ -774,7 +772,7 @@ describe('Vetoes', () => {
         const [row] = await drawRows()
         await cast(party, drawId, party.cookies.two)
         await cast(party, drawId, party.cookies.three)
-        clock.advance(VETO_WINDOW_MS - 1)
+        clock.advance(WINDOW_MS - 1)
         await read(party)
         expect((await feedOf(party, party.cookies.one)).map(entry => entry.type)).toEqual(['game_drawn'])
 
@@ -794,7 +792,7 @@ describe('Vetoes', () => {
         const party = await running()
         const { drawId } = await windowOpen(party)
         await cast(party, drawId, party.cookies.one)
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
         await read(party)
         const draws = await drawRows()
         const rounds = await roundRows(party)
@@ -812,7 +810,7 @@ describe('Vetoes', () => {
         const party = await running()
         await windowOpen(party)
 
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
 
         expect((await read(party, party.cookies.three)).wheel!.vetoes).toEqual(vetoRead({ left: [2, 2], own: { team: 2, cast: false, rejection: 'veto_window_closed' }, revealed: [] }))
       })
@@ -845,7 +843,7 @@ describe('Vetoes', () => {
         await cast(party, drawId, party.cookies.two)
         await cast(party, drawId, party.cookies.three)
 
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
 
         for (const who of viewers) {
           const { wheel } = await read(party, cookieOf(party, who))
@@ -860,7 +858,7 @@ describe('Vetoes', () => {
         await cast(party, drawId, party.cookies.two)
         await cast(party, drawId, party.cookies.three)
 
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
 
         for (const who of viewers) {
           const entry = (await feedOf(party, cookieOf(party, who))).find(item => item.type === 'vetoes_revealed')
@@ -936,7 +934,7 @@ describe('Vetoes', () => {
       clock.advance(STOP)
       for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three]) expect((await read(party, cookie)).clip).toMatchObject({ drawId, startAt: iso(STOP), endsAt: iso(END) })
       await cast(party, drawId, party.cookies.one)
-      clock.advance(VETO_WINDOW_MS - 1)
+      clock.advance(WINDOW_MS - 1)
       expect((await read(party)).clip).not.toBeNull()
 
       clock.advance(1)
@@ -948,7 +946,7 @@ describe('Vetoes', () => {
       const first = await spun(party)
       clock.advance(STOP)
       await cast(party, first.drawId, party.cookies.one)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       const second = await spun(party)
 
       clock.advance(STOP)
@@ -969,7 +967,7 @@ describe('Vetoes', () => {
       expect(await errorOf(await hide(party, true))).toEqual({ status: 409, code: 'locked_while_drawn' })
       expect((await read(party)).roundBeingDrawn).toBe(true)
 
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       expect((await read(party)).roundBeingDrawn).toBe(false)
       expect((await hide(party, true)).status).toBe(200)
       expect((await read(party)).settings?.hiddenWheel).toBe(true)
@@ -997,7 +995,7 @@ describe('Vetoes', () => {
       const { drawId } = await spun(party)
       clock.advance(STOP)
       await cast(party, drawId, party.cookies.one)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
 
       expect((await hide(party, true)).status).toBe(200)
     })
@@ -1012,7 +1010,7 @@ describe('Vetoes', () => {
         const { drawId } = await spun(party)
         clock.advance(STOP)
         await cast(party, drawId, cookie)
-        clock.advance(VETO_WINDOW_MS)
+        clock.advance(WINDOW_MS)
         await read(party)
       }
 
@@ -1033,7 +1031,7 @@ describe('Vetoes', () => {
       expect(await errorOf(await setAllowance(party, 4))).toEqual({ status: 409, code: 'locked_while_drawn' })
       expect((await read(party)).settings?.vetoAllowance).toBe(3)
 
-      clock.advance(VETO_WINDOW_MS - 1)
+      clock.advance(WINDOW_MS - 1)
       expect((await read(party)).settingsFloors?.vetoAllowance).toBe(0)
 
       clock.advance(1)

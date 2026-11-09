@@ -1,7 +1,7 @@
 import { inArray } from 'drizzle-orm'
 import { games } from '../db/schema'
 import { WHEEL_UNKNOWN } from '../domain/wheel'
-import { drawGameKnown } from '../domain/pool-preview'
+import { drawGameKnown, windowEnded } from '../../shared/draw-timeline'
 import { bonusVetoCounts, bonusVetoRejection, gamesLeft, isBeingDrawn, isOpen, poolWarning, roundsStarted, vetoRejection, waitsForRespin, type PoolWarning } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import { placeOf } from '../../shared/board'
@@ -146,7 +146,6 @@ export async function resultsSection({ eventRow, rows, viewer, now }: StageConte
  */
 function vetoView({ eventRow, rows, viewer, now, draws, vetoRows, bonusTeams }: RoundFacts, windowDraw: DrawRow | undefined, game: RoundGame | null): VetoView {
   const viewerTeam = partyOf(rows, viewer)
-  const windowOpen = (draw: Pick<DrawRow, 'vetoEndsAt'>) => draw.vetoEndsAt !== null && draw.vetoEndsAt > now
   // Another Party's cast on a draw whose window still runs does not exist for this viewer (knownVetoRows, shared with the pool warning).
   const left = partyVetoesLeft(eventRow, knownVetoRows(vetoRows, draws, viewerTeam, now), bonusTeams)
   const castOnDraw = vetoRows.filter(row => row.drawId === windowDraw?.id)
@@ -165,7 +164,7 @@ function vetoView({ eventRow, rows, viewer, now, draws, vetoRows, bonusTeams }: 
           left: left[viewerTeam - 1] ?? 0,
         }),
       }
-  const revealed = windowDraw && !windowOpen(windowDraw) ? castOnDraw.map(({ team }) => ({ team })).sort((a, b) => a.team - b.team) : null
+  const revealed = windowDraw && windowEnded(windowDraw, now) ? castOnDraw.map(({ team }) => ({ team })).sort((a, b) => a.team - b.team) : null
   const draw = windowDraw ? { drawId: windowDraw.id, kind: windowDraw.kind, stopAt: windowDraw.stopAt.toISOString(), vetoEndsAt: windowDraw.vetoEndsAt!.toISOString(), game } : null
   return { left, own, revealed, draw }
 }

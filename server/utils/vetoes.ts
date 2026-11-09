@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { bonusVetoes, draws, rounds, vetoes } from '../db/schema'
 import type { BonusVetoGranted } from '../../shared/stage'
+import { vetoesSealed } from '../../shared/draw-timeline'
 import { bonusVetoCounts, bonusVetoRejection, vetoesLeftByParty } from '../../shared/rounds'
 import { settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
@@ -11,12 +12,12 @@ import type { ChangeCore, EventRow } from './event-access'
 // The Vetoes of an Event (GLOSSARY: Veto, Veto allowance, Bonus Veto; #231, #233): the rows the rules count Vetoes left from, each
 // Party's Vetoes left, and the Host's Bonus Vetoes. Casting and settling are in rounds.ts, next to the draws they belong to.
 
-export type VetoRow = typeof vetoes.$inferSelect & { drawSettledAt: Date | null }
+export type VetoRow = typeof vetoes.$inferSelect & { drawVetoEndsAt: Date | null }
 
-/** Every Veto cast in the Event, on settled and open draws alike, put-back Rounds included: spent stays spent. `drawSettledAt` is null while the draw's window still runs. */
+/** Every Veto cast in the Event, on settled and open draws alike, put-back Rounds included: spent stays spent. `drawVetoEndsAt` is the end of the draw's window, which the Draw timeline (windowEnded) asks whether it has passed. */
 export function readVetoes(db: Db, eventId: string): Promise<VetoRow[]> {
   return db
-    .select({ drawId: vetoes.drawId, team: vetoes.team, userId: vetoes.userId, castAt: vetoes.castAt, drawSettledAt: draws.settledAt })
+    .select({ drawId: vetoes.drawId, team: vetoes.team, userId: vetoes.userId, castAt: vetoes.castAt, drawVetoEndsAt: draws.vetoEndsAt })
     .from(vetoes)
     .innerJoin(draws, eq(vetoes.drawId, draws.id))
     .innerJoin(rounds, eq(draws.roundId, rounds.id))
@@ -36,8 +37,8 @@ export async function readBonusTeams(db: Db, eventId: string): Promise<number[]>
  * no number gives a sealed Veto away.
  */
 export function knownVetoRows<T extends { drawId: string, team: number }>(vetoRows: readonly T[], drawRows: readonly Pick<typeof draws.$inferSelect, 'id' | 'vetoEndsAt'>[], viewerTeam: number | null, now: Date): T[] {
-  const open = new Set(drawRows.filter(draw => draw.vetoEndsAt !== null && draw.vetoEndsAt > now).map(draw => draw.id))
-  return vetoRows.filter(row => !open.has(row.drawId) || row.team === viewerTeam)
+  const sealed = new Set(drawRows.filter(draw => vetoesSealed(draw, now)).map(draw => draw.id))
+  return vetoRows.filter(row => !sealed.has(row.drawId) || row.team === viewerTeam)
 }
 
 /** Each Party's Vetoes left (index 0 = team 1) from the Event's settings and rows. An Event that is not set up has no Parties. */

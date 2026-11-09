@@ -3,7 +3,6 @@ import { teamNameAt } from '~/utils/board'
 import { joinNames } from '~/utils/list'
 import { clockTick, revealTile, vetoStamp } from '~/utils/motion'
 import { teamVar } from '~/utils/team-style'
-import { VETO_WINDOW_MS } from '~~/shared/rounds'
 import type { BoardTeam } from '~~/shared/event'
 import type { WheelView } from '~~/shared/stage'
 
@@ -26,14 +25,12 @@ const { t } = useI18n()
 const vetoes = computed(() => props.wheel.vetoes)
 // The draw the window belongs to: the latest one of any kind (#232), a spin or a game the Host set; a set draw's window opens at once.
 const draw = computed(() => vetoes.value.draw)
-const { mounted, now, endsAt, open, msLeft, secondsLeft } = useVetoClock(() => draw.value, props.serverNow)
+const { open, ended, secondsLeft, fraction } = useVetoClock(() => draw.value, props.serverNow)
 const revealed = computed(() => vetoes.value.revealed)
 /** Shown from the stop on while the window runs, and after it as long as this draw is the latest with a window. */
-const shown = computed(() => endsAt.value !== null && (open.value || (mounted.value && now.value >= endsAt.value)))
+const shown = computed(() => open.value || ended.value)
 /** The window has ended but the reveal has not come in yet: the page reads again in a moment. */
 const revealing = computed(() => shown.value && !open.value && revealed.value === null)
-
-const fraction = computed(() => Math.min(1, msLeft.value / VETO_WINDOW_MS))
 
 const timer = useTemplateRef<HTMLElement>('timer')
 watch(secondsLeft, (seconds) => {

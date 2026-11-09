@@ -3,7 +3,8 @@ import { viewInstants, waitsForSettle } from '../../app/utils/event-instants'
 import type { EventView } from '../../shared/event'
 import type { SpinView, VetoView } from '../../shared/stage'
 
-// When a read still misses what a passed instant decides (review 0.7, F13): the page reads again while this holds.
+// When a read still misses what a passed instant decides (review 0.7, F13): the page reads again while this holds. The edges of
+// "passed" (stop, end, to the millisecond) are the Draw timeline's, pinned in draw-timeline.test.ts; here one case per branch.
 
 const NOW = Date.UTC(2090, 10, 7, 20, 0, 0)
 const iso = (offsetMs: number) => new Date(NOW + offsetMs).toISOString()
@@ -60,22 +61,19 @@ describe('viewInstants', () => {
 describe('waitsForSettle', () => {
   it('waits for a spin whose stop has passed but which carries no game for this viewer', () => {
     expect(waitsForSettle(view({ spin: spin(-1, false) }), NOW)).toBe(true)
-    expect(waitsForSettle(view({ spin: spin(0, false) }), NOW)).toBe(true)
   })
 
   it('is settled before the stop, and once the spin carries its game (the Host has it from the start)', () => {
-    expect(waitsForSettle(view({ spin: spin(1, false) }), NOW)).toBe(false)
+    expect(waitsForSettle(view({ spin: spin(5000, false) }), NOW)).toBe(false)
     expect(waitsForSettle(view({ spin: spin(-1, true) }), NOW)).toBe(false)
-    expect(waitsForSettle(view({ spin: spin(5000, true) }), NOW)).toBe(false)
   })
 
   it('waits for a Veto window whose end has passed but whose Vetoes are not revealed', () => {
     expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: -1 }, null) }), NOW)).toBe(true)
-    expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: 0 }, null) }), NOW)).toBe(true)
   })
 
   it('is settled while the window runs, once the Vetoes are revealed (also none), and without a window', () => {
-    expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: 1 }, null) }), NOW)).toBe(false)
+    expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: 5000 }, null) }), NOW)).toBe(false)
     expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: -1 }, []) }), NOW)).toBe(false)
     expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: -1 }, [{ team: 1 }]) }), NOW)).toBe(false)
     expect(waitsForSettle(view({}), NOW)).toBe(false)

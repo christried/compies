@@ -187,11 +187,11 @@ export function startSection(eventRow: EventRow, rows: EventRows, viewer: Viewer
   return { start: { sessionId: next?.id ?? null, number: next?.number ?? null, rejection } }
 }
 
-export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer): Promise<Pick<EventView, 'settings' | 'settingsFloors' | 'pool'>> {
+export async function poolsSection(db: Db, eventRow: EventRow, viewer: Viewer, now: Date): Promise<Pick<EventView, 'settings' | 'settingsFloors' | 'pool'>> {
   const settings = settingsFromRow(eventRow)
   const [floors, pool] = await Promise.all([
     // The floors at the saved team count; an Event that is not set up counts all teams (#197).
-    viewer.isHost ? floorFacts(db, eventRow.id).then(facts => floorsAt(facts, settings?.teamCount)) : null,
+    viewer.isHost ? floorFacts(db, eventRow.id, now).then(facts => floorsAt(facts, settings?.teamCount)) : null,
     // Nothing about the pools is selected for a viewer who may not see them (#222).
     canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings })) ? eventPool(db, eventRow.id, viewer.isHost) : null,
   ])

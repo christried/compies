@@ -19,7 +19,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
-import { VETO_WINDOW_MS } from '../../shared/rounds'
+import { WINDOW_MS } from '../draw-offsets'
 import { TEST_SETTINGS } from './fixtures'
 import { createInterleavingDb, createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -247,7 +247,7 @@ describe('Results', () => {
 
       expect(await errorOf(await enter(game, windowed, { places: twoParties }))).toEqual({ status: 409, code: 'round_not_open' })
 
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       expect((await enter(game, windowed, { places: twoParties })).status).toBe(200)
       expect((await roundRows(game)).find(round => round.id === windowed)).toMatchObject({ gameId: game.halo.id, number: 1 })
     })
@@ -358,7 +358,7 @@ describe('Results', () => {
       const vetoed = (await (await set(game, game.halo.id, true)).json() as { roundId: string }).roundId
       const [draw] = await testDb.db.select().from(draws).where(eq(draws.roundId, vetoed))
       expect((await send('POST', `/api/e/${game.slug}/draws/${draw!.id}/veto`, game.cookies.one)).status).toBe(200)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       expect(await errorOf(await enter(game, vetoed, { places: twoParties }))).toEqual({ status: 409, code: 'round_not_open' })
     })
 
@@ -861,7 +861,7 @@ describe('Results', () => {
       const windowed = (await (await set(game, game.halo.id, true)).json() as { roundId: string }).roundId
       const [draw] = await testDb.db.select().from(draws).where(eq(draws.roundId, windowed))
       expect((await send('POST', `/api/e/${game.slug}/draws/${draw!.id}/veto`, game.cookies.one)).status).toBe(200)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       await set(game, game.kart.id)
       const put = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
       expect((await send('DELETE', `/api/e/${game.slug}/rounds/${put}`, game.hostCookie)).status).toBe(200)
