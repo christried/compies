@@ -41,9 +41,9 @@ function onChange(event: Event) {
   <div :class="wrapperClass">
     <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -- the label arrives through $attrs: the caller's aria-label, or a label for its id -->
     <select
-      v-bind="$attrs"
       :value="modelValue"
       :aria-invalid="variant === 'field' && invalid ? 'true' : undefined"
+      v-bind="$attrs"
       :class="selectClass"
       @change="onChange"
     >
