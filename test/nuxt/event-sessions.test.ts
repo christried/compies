@@ -615,6 +615,24 @@ describe('several Sessions on the Event page', () => {
       expect(rowOf(page, 2).get('button').attributes('aria-expanded')).toBe('true')
       page.unmount()
     })
+
+    it('closes the menu when the Event is read again and the row has started or turned into a poll (no empty menu is left open)', async () => {
+      const store = hostDated()
+      const page = await mountSuspended(EventPage, { route: `/e/${store.slug}`, attachTo: document.body })
+      const menu = await openSessionMenu(rowOf(page, 2).element, 2)
+      expect(openMenus()).toHaveLength(1)
+
+      store.set(viewWithSessions(store.slug, [
+        { number: 1, startsAt: FIRST, startedAt: '2026-10-30T19:34:00.000Z', endedAt: '2026-10-30T22:12:00.000Z' },
+        { number: 2, startsAt: SECOND, startedAt: '2026-10-31T19:30:00.000Z' },
+      ], 0, { event: { phase: 'running', isHost: true }, slots: [], bestSlotId: null }))
+      await refreshNuxtData()
+
+      // Any menu at all: an emptied one has no title to match `openMenus`.
+      await vi.waitFor(() => expect(document.querySelectorAll('[role="menu"]')).toHaveLength(0))
+      expect(document.body.contains(menu)).toBe(false)
+      page.unmount()
+    })
   })
 
   describe('the Anmerkungen of a dated Session (#349)', () => {

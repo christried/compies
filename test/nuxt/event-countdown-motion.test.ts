@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventCountdown from '~/components/EventCountdown.vue'
 import type { CountdownView } from '~~/shared/stage'
+import { serverClockReadyKey } from '~/composables/useServerClock'
 import { stubInView } from './in-view'
 import { motion } from './motion'
 
@@ -92,6 +93,23 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
+})
+
+describe('the frame before the ticker has a value (the server render, #340)', () => {
+  // The ticker is null until the page has mounted, and the server render shows that frame: a Member who opens the page while it runs
+  // must get the current second and tone at once, not the start state that flips about half a second later. A clock that is not ready
+  // holds the ticker at null, which is the same frame.
+  it('shows the current second and the warning tone of a running Countdown at 7 s left', async () => {
+    mounted = await mountSuspended(EventCountdown, {
+      props: { countdown: runningWith(7000), serverNow, isHost: false, command },
+      global: { provide: { [serverClockReadyKey as symbol]: () => false } },
+    })
+    const page = mounted
+
+    expect(timeOf(page)).toBe('7')
+    expect(tile(page).classes()).toContain('bg-warning')
+    expect(litPips(page)).toBe(7)
+  })
 })
 
 describe('the four states', () => {

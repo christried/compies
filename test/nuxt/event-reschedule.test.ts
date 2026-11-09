@@ -102,6 +102,27 @@ describe('rescheduling and reopening the Date', () => {
     await vi.waitFor(() => expect(sent).toEqual({ startsAt: '2026-10-24T20:00' }))
   })
 
+  it('moves the focus into the reschedule dialog opened from Verschieben, keeps Tab inside it, and closes it on Escape (#349)', async () => {
+    const store = serve(setView({ isHost: true }))
+    const page = await mountSuspended(EventPage, { route: `/e/${store.slug}`, attachTo: document.body })
+    const trigger = page.get('button[aria-label="Mehr: Session"]').element as HTMLElement
+
+    await clickMenuItem(await openSessionMenu(page.element), 'Verschieben')
+
+    const dialog = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(element => element.textContent?.includes('Termin verschieben?'))
+    await vi.waitFor(() => expect(dialog()?.contains(document.activeElement)).toBe(true))
+    // The dialog is mounted already open (the Session it shows is only known once the menu picked it): Tab from the last control wraps to the first.
+    const items = [...dialog()!.querySelectorAll<HTMLElement>('button, input, [data-autofocus]')]
+    items.at(-1)!.focus()
+    items.at(-1)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+    expect(dialog()!.contains(document.activeElement)).toBe(true)
+
+    document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(dialog()).toBeUndefined())
+    expect(document.activeElement).toBe(trigger)
+    page.unmount()
+  })
+
   it('withdraws the Date after a one second hold on Neue Terminsuche, and every Member then sees the notice', async () => {
     let reopened = 0
     const store = serve(setView({ isHost: true }))

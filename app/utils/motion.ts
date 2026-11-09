@@ -233,6 +233,9 @@ export function sheetSide(): 'right' | 'bottom' {
   return typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 61.25rem)').matches ? 'right' : 'bottom'
 }
 
+/** The axis the panel slides along: from the side it moves in x, from the bottom in y. */
+const sheetAxis = () => (sheetSide() === 'right' ? 'translateX' : 'translateY')
+
 const sheetMs = (token: string, fallback: string) => Number.parseFloat(motionToken(token, fallback))
 
 /** The Sheet's enter: the panel slides in from its side, the overlay fades in. Nothing waits for it. */
@@ -244,7 +247,7 @@ export function sheetEnter(parts: SheetParts): void {
     for (const part of [parts.overlay, parts.panel]) part.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing, fill: 'backwards' })
     return
   }
-  const axis = sheetSide() === 'right' ? 'translateX' : 'translateY'
+  const axis = sheetAxis()
   parts.panel.animate([{ transform: `${axis}(100%)` }, { transform: `${axis}(0)` }], { duration: sheetMs('--cp-dur-slow', '360ms'), easing, fill: 'backwards' })
   parts.overlay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing, fill: 'backwards' })
 }
@@ -262,7 +265,7 @@ export function sheetLeave(parts: SheetParts): Promise<void> {
   let panelDuration = fade
   let panelFrames = fadeOut
   if (!reducedMotion()) {
-    const axis = sheetSide() === 'right' ? 'translateX' : 'translateY'
+    const axis = sheetAxis()
     panelDuration = sheetMs('--cp-dur-base', '220ms')
     panelFrames = [{ transform: `${axis}(0)` }, { transform: `${axis}(100%)` }]
   }
