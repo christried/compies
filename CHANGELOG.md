@@ -6,6 +6,10 @@
 
 - **Profil:** „Profil“ in der Navigation öffnet jetzt eine eigene Seite. Dort siehst du dein Bild und änderst deinen Anzeigenamen, so oft du willst: Nach „Speichern“ steht der neue Name sofort oben in deinem Menü, und die anderen sehen ihn beim nächsten Laden überall, auch bei allem, was schon gespielt ist. Abmelden kannst du dort auch. ([#399](https://github.com/christried/compies/issues/399))
 
+### Geändert
+
+- **Datenschutzerklärung:** Sie nennt jetzt, was bei Darstellung und Anzeigename gespeichert wird: Deine Darstellung (Hell, Dunkel oder System) liegt bei deinem Nutzerkonto, ein Cookie merkt sie auf dem Gerät, solange sie Dunkel oder System ist, und deinen Anzeigenamen kannst du jederzeit ändern. ([#405](https://github.com/christried/compies/issues/405))
+
 ## [0.10.1] - 2026-11-09 – Partyhut
 
 Der Partyhut für das führende Team, schnellere lange Spielelisten und ein Countdown, der auf dem Handy nicht mehr aus dem Bild läuft, dazu Aufräumarbeiten nach dem Review von 0.10, die niemand sieht.
