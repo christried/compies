@@ -439,7 +439,6 @@
   },
   "wheel": {
     "title": "Glücksrad",
-    "count": "{n} Spiel auf dem Rad | {n} Spiele auf dem Rad",
     "empty": "Das Rad ist leer",
     "spinning": "Das Rad dreht …",
     "where": "Wo bleibt es stehen?",
