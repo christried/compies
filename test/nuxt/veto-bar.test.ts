@@ -3,9 +3,9 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VetoBar from '~/components/VetoBar.vue'
 import { clockTick, revealTile, sealStamp, vetoStamp } from '~/utils/motion'
+import type { BoardTeam } from '~~/shared/event'
 import type { OwnVetoView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
 import { VETO_WINDOW_MS } from '~~/shared/rounds'
-import { memberView } from './event-page'
 
 // The Veto bar (review 0.7, F4; reference App Spielrunde „Clip + Veto-Fenster“, „Eigenes Veto versiegelt“): the Veto window's hold
 // button in a fixed layer, for a Player of a Party while the window is open. And the window's motion (04-motion § Veto window), whose
@@ -15,17 +15,17 @@ const STOP = Date.parse('2090-10-30T20:00:10.000Z')
 const END = STOP + VETO_WINDOW_MS
 const iso = (ms: number) => new Date(ms).toISOString()
 const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
-const members = [memberView({ id: 'me', name: 'Eins', zone: 'team', team: 1 }), memberView({ id: 'mate', name: 'Zwei', zone: 'team', team: 1 })]
+const teams: BoardTeam[] = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
 const spin: SpinView = { roundId: 'r1', drawId: 'd1', spinStartAt: iso(STOP - 6000), stopAt: iso(STOP), slices: 4, resultIndex: 0, resultOffset: 0.5, labels: null, game: halo, current: true }
 const windowOf = (fields: Partial<VetoDrawView> = {}): VetoDrawView => ({ drawId: 'd1', kind: 'spin', stopAt: iso(STOP), vetoEndsAt: iso(END), game: halo, ...fields })
-const own = (fields: Partial<OwnVetoView> = {}): OwnVetoView => ({ team: 1, castBy: null, rejection: null, ...fields })
+const own = (fields: Partial<OwnVetoView> = {}): OwnVetoView => ({ team: 1, cast: false, rejection: null, ...fields })
 const wheelOf = (vetoes: Partial<VetoView> = {}): WheelView => ({ count: 3, slices: null, spin, vetoes: { left: [2, 2], own: own(), revealed: null, draw: windowOf(), ...vetoes } })
 
 let serverMs = STOP
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(wheel: WheelView, props: { cast?: (drawId: string) => Promise<boolean>, solo?: boolean } = {}) {
-  page = await mountSuspended(VetoBar, { props: { wheel, members, viewerId: 'me', serverNow: () => serverMs, cast: () => Promise.resolve(true), ...props } })
+async function mount(wheel: WheelView, props: { cast?: (drawId: string) => Promise<boolean>, solo?: boolean, teams?: BoardTeam[] } = {}) {
+  page = await mountSuspended(VetoBar, { props: { wheel, teams, serverNow: () => serverMs, cast: () => Promise.resolve(true), ...props } })
   await vi.advanceTimersByTimeAsync(300)
   await flushPromises()
   return page
@@ -114,19 +114,19 @@ describe('who gets the bar and when', () => {
     expect(bar().exists()).toBe(false)
   })
 
-  it('tells the sealed Veto: the pill is locked, with the seal stamp for the Player who cast', async () => {
+  it('tells the sealed Veto by Party, the same to the caster and to a teammate: the pill is locked, with the seal stamp (#355)', async () => {
     serverMs = STOP + 1000
-    await mount(wheelOf({ own: own({ castBy: 'me', rejection: 'veto_already_cast' }) }))
+    await mount(wheelOf({ own: own({ cast: true, rejection: 'veto_already_cast' }) }))
 
-    expect(text()).toContain('Veto eingelegt')
-    expect(text()).toContain('Die anderen sehen es erst beim Aufdecken.')
+    expect(text()).toContain('Team Rot hat schon ein Veto eingelegt')
+    expect(text()).toContain('Ein Veto pro Team und Spiel. Die anderen sehen es erst beim Aufdecken.')
     expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Versiegelt')
     expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(false)
   })
 
   it('lets the button column take the locked pill\'s width at the desktop width, label and stamp side by side (#218)', async () => {
     serverMs = STOP + 1000
-    await mount(wheelOf({ own: own({ castBy: 'me', rejection: 'veto_already_cast' }) }))
+    await mount(wheelOf({ own: own({ cast: true, rejection: 'veto_already_cast' }) }))
 
     // The column is the bar's last child. A fixed desktop width cut the pill's label to „Vet…“ under the stamp.
     const column = bar().element.lastElementChild as HTMLElement
@@ -144,13 +144,20 @@ describe('who gets the bar and when', () => {
     expect(column.className).not.toMatch(/(^|\s)md:w-\[260px\]/)
   })
 
-  it('names the teammate who cast for the Party, with no stamp', async () => {
+  it('names the Party by its Team name in the lock, also for a Party of one (#355)', async () => {
     serverMs = STOP + 1000
-    await mount(wheelOf({ own: own({ castBy: 'mate', rejection: 'veto_already_cast' }) }))
+    const named: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, teams[1]!]
+    await mount(wheelOf({ own: own({ cast: true, rejection: 'veto_already_cast' }) }), { teams: named, solo: true })
 
-    expect(text()).toContain('Zwei hat schon gevetot')
-    expect(text()).toContain('Ein Veto pro Team und Spiel. Euer Team hat für dieses Spiel schon gevetot.')
-    expect(page!.find('[data-testid="veto-seal"]').exists()).toBe(false)
+    expect(text()).toContain('Wilde Gurken hat schon ein Veto eingelegt')
+  })
+
+  it('shows the hold button and the Party\'s Vetoes left, not the lock, while the Party has not cast (#355)', async () => {
+    serverMs = STOP + 1000
+    await mount(wheelOf({ own: own({ cast: false }) }))
+
+    expect(text()).not.toContain('hat schon ein Veto eingelegt')
+    expect(page!.find('[data-testid="veto-locked"]').exists()).toBe(false)
   })
 
   it('says that no Veto is left, with the button disabled', async () => {

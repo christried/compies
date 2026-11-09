@@ -862,7 +862,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         spin: {
           roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null, current: true,
         },
-        vetoes: { left: [0, 0], own: { team: 1, castBy: null, rejection: 'no_veto_window' }, revealed: null, draw: null },
+        vetoes: { left: [0, 0], own: { team: 1, cast: false, rejection: 'no_veto_window' }, revealed: null, draw: null },
       })
       expect(row.sliceLabels).toHaveLength(2)
       expect(new Set(row.sliceLabels).size).toBe(2)
@@ -981,7 +981,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const idOf = async (email: string) => (await testDb.db.select().from(users).where(eq(users.email, email)))[0]!.id
 
     /** A Running Session with a Veto allowance of 3; the wheel stopped, and Player 1 (team 1) cast the Veto. The room's record starts at the cast. */
-    async function castByPlayer() {
+    async function playerCasts() {
       const running = await runningEvent()
       const spun = await request(`/api/e/${running.slug}/rounds/spin`, { method: 'POST', headers: { cookie: hostCookie } })
       expect(spun.status).toBe(200)
@@ -997,25 +997,48 @@ describe('Hidden wheel secrecy (#148)', () => {
     const wheelOf = async (cookie: string, slug: string) => (JSON.parse(await rawRead(cookie, slug)) as EventView).wheel!
 
     it('reaches nobody before the end of the window: not the other Party, nor the Host, through the read, the numbers, the feed or the room', async () => {
-      const { slug, eventId, playerId, secondId } = await castByPlayer()
+      const { slug, eventId, playerId, secondId } = await playerCasts()
 
       const other = await wheelOf((await signIn(testDb.db, second)).cookie, slug)
-      expect(other.vetoes).toEqual({ left: [3, 3], own: { team: 2, castBy: null, rejection: null }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
+      expect(other.vetoes).toEqual({ left: [3, 3], own: { team: 2, cast: false, rejection: null }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
       expect(await wheelOf(hostCookie, slug)).toMatchObject({ vetoes: { left: [3, 3], own: null, revealed: null } })
       for (const cookie of [hostCookie, (await signIn(testDb.db, second)).cookie]) {
-        expect(await rawRead(cookie, slug), 'the Event read').not.toContain(`"castBy":"${playerId}"`)
+        expect(JSON.stringify((JSON.parse(await rawRead(cookie, slug)) as EventView).wheel), 'the Event read').not.toContain(playerId)
         const feed = JSON.parse(await (await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie } })).text()) as ActivityPage
         expect(feed.entries.map(entry => entry.type)).not.toContain('vetoes_revealed')
       }
       // The Party's own Player sees it at once.
-      expect((await wheelOf(playerCookie, slug)).vetoes).toEqual({ left: [2, 3], own: { team: 1, castBy: playerId, rejection: 'veto_already_cast' }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
+      expect((await wheelOf(playerCookie, slug)).vetoes).toEqual({ left: [2, 3], own: { team: 1, cast: true, rejection: 'veto_already_cast' }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
       // The room: only the named send to the Party's Users, and neither event.changed nor any other message.
       expect(notifier.sends(eventId)).toEqual([{ to: [playerId], messages: [expect.objectContaining({ type: 'veto.cast', team: 1 })] }])
       expect(JSON.stringify(notifier.messages(eventId))).not.toContain(secondId)
     })
 
+    it('names the caster to nobody: not the Party\'s Player, not the Host, not the other Party, before or after the end of the window (#355)', async () => {
+      const { slug, row, playerId, secondId } = await playerCasts()
+      const secondCookie = (await signIn(testDb.db, second)).cookie
+      const hostId = await idOf(host.email)
+      // The feed names Members in other entries (a move): only the Veto entry must hold no Player.
+      const feedText = async (cookie: string) => JSON.stringify(((await (await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie } })).json()) as ActivityPage).entries.filter(entry => entry.type === 'vetoes_revealed'))
+
+      const everyRead = async () => {
+        for (const [who, cookie] of [['the Player', playerCookie], ['the Host', hostCookie], ['the other Party', secondCookie]] as const) {
+          const wheel = JSON.stringify(await wheelOf(cookie, slug))
+          for (const id of [playerId, secondId, hostId]) expect(wheel, `${who}'s Event read`).not.toContain(id)
+          const feed = await feedText(cookie)
+          for (const id of [playerId, secondId]) expect(feed, `${who}'s feed`).not.toContain(id)
+        }
+      }
+      await everyRead()
+      expect((await wheelOf(playerCookie, slug)).vetoes.own).toEqual({ team: 1, cast: true, rejection: 'veto_already_cast' })
+
+      clock.set(row.vetoEndsAt!)
+      await everyRead()
+      expect((await wheelOf(hostCookie, slug)).vetoes.revealed).toEqual([{ team: 1 }])
+    })
+
     it('keeps the Veto allowance floor of the Host where it was before the end of the window, and the allowance cannot be lowered under the sealed cast', async () => {
-      const { slug, row } = await castByPlayer()
+      const { slug, row } = await playerCasts()
       const hostView = async () => JSON.parse(await rawRead(hostCookie, slug)) as EventView
       const lower = async () => await request(`/api/e/${slug}/settings`, { method: 'PATCH', headers: { 'cookie': hostCookie, 'content-type': 'application/json' }, body: JSON.stringify({ settings: { vetoAllowance: 0 } }) })
 
@@ -1028,13 +1051,13 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect((await hostView()).settingsFloors?.vetoAllowance).toBe(1)
     })
 
-    it('reaches everyone at the end of the window, with who cast it', async () => {
-      const { slug, row, playerId } = await castByPlayer()
+    it('reaches everyone at the end of the window: the Party that cast it, not the Player', async () => {
+      const { slug, row } = await playerCasts()
       clock.set(row.vetoEndsAt!)
 
       const other = await wheelOf((await signIn(testDb.db, second)).cookie, slug)
 
-      expect(other.vetoes).toEqual({ left: [2, 3], own: { team: 2, castBy: null, rejection: 'veto_window_closed' }, revealed: [{ team: 1, userId: playerId }], draw: expect.objectContaining({ kind: 'spin' }) })
+      expect(other.vetoes).toEqual({ left: [2, 3], own: { team: 2, cast: false, rejection: 'veto_window_closed' }, revealed: [{ team: 1 }], draw: expect.objectContaining({ kind: 'spin' }) })
     })
   })
 })
