@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { clickIconButton, dialog, serve, view, viewWithSessions } from './event-page'
+import { clickMenuItem, dialog, openSessionMenu, serve, view, viewWithSessions } from './event-page'
 
 // „In den Kalender“ (#81): the calendar button of a dated Session in the Sessions card (#166) opens the sheet where a Member picks their calendar. Google and
 // Outlook get the calendar file's title and description, the Date in UTC and an end 7 h later.
@@ -30,7 +30,7 @@ describe('the calendar sheet', () => {
     }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickIconButton(page.element, 'Session in den Kalender')
+    await clickMenuItem(await openSessionMenu(page.element), 'Session in den Kalender')
 
     const sheet = dialog()!
     expect(sheet.textContent).toContain('In welchen Kalender?')
@@ -76,7 +76,7 @@ describe('the calendar sheet', () => {
     ], 1, { event: { phase: 'poll' } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickIconButton(page.element, 'Session 1 in den Kalender')
+    await clickMenuItem(await openSessionMenu(page.element, 1), 'Session 1 in den Kalender')
 
     const sheet = dialog()!
     const links = linksIn(sheet)

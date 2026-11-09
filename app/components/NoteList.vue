@@ -4,8 +4,8 @@ import { VOTE_LOOK } from '~/utils/vote-look'
 
 // The Notes on the Votes of one Slot (#102), in the order of „Wer kann wann?“: name (your own as „Name (du)“), a
 // dot in the Vote's colour and the text. The Vote's label is there for screen readers, so the colour is not the
-// only signal. Renders nothing without Notes.
-defineProps<{ notes: NoteRow[] }>()
+// only signal. Renders nothing without Notes. `heading` false drops the heading, for a disclosure whose button is the heading (#349).
+withDefaults(defineProps<{ notes: NoteRow[], heading?: boolean }>(), { heading: true })
 
 const { t } = useI18n()
 </script>
@@ -15,7 +15,10 @@ const { t } = useI18n()
     v-if="notes.length > 0"
     class="flex flex-col gap-1"
   >
-    <b class="text-[12px]">{{ t('mvp.notes.heading') }}</b>
+    <b
+      v-if="heading"
+      class="text-[12px]"
+    >{{ t('mvp.notes.heading') }}</b>
     <ul class="m-0 flex list-none flex-col gap-1 p-0 text-[13px]">
       <li
         v-for="row in notes"

@@ -4,19 +4,21 @@ import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 // The keyboard and touch way to move somebody (#160, 02-components § MoveToMenu): every place with the reason it is
 // closed. A popover beside the person on a desktop, a bottom sheet on a phone. Esc, a press outside and a pick close
 // it; the focus goes back to the person.
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   open: boolean
   /** The person it moves; the title asks where to. */
-  name: string
+  name?: string
+  /** A title of its own, for a menu that moves nobody (the Session rows' „Mehr“, #349). */
+  title?: string
   targets: MoveTarget[]
   /** The person's button, which the popover sits under and which gets the focus back. */
   anchor: HTMLElement | null
-}>()
+}>(), { name: '', title: undefined })
 
 const emit = defineEmits<{ close: [], pick: [key: string] }>()
 
 const { t } = useI18n()
-const title = computed(() => t('board.whereTo', { name: props.name }))
+const shownTitle = computed(() => props.title ?? t('board.whereTo', { name: props.name }))
 const popover = useTemplateRef<HTMLElement>('popover')
 const list = useTemplateRef<{ focusFirst: () => void }>('list')
 
@@ -53,12 +55,13 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPoin
   <AppSheet
     v-if="narrow"
     :open="open"
-    :title="title"
+    :title="shownTitle"
     @close="close"
   >
     <MoveToMenuList
       ref="list"
       :targets="targets"
+      :label="shownTitle"
       @pick="emit('pick', $event)"
     />
   </AppSheet>
@@ -75,11 +78,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPoin
       @keydown.esc.stop="close"
     >
       <p class="m-0 px-3 pt-1 font-display text-[18px] leading-tight">
-        {{ title }}
+        {{ shownTitle }}
       </p>
       <MoveToMenuList
         ref="list"
         :targets="targets"
+        :label="shownTitle"
         @pick="emit('pick', $event)"
       />
     </div>

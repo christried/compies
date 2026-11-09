@@ -93,7 +93,7 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
 }
 
 /** The `GET /api/e/:slug` body of an Event with several Sessions (#49): the Sessions come as the server numbers them. */
-export function viewWithSessions(slug: string, sessions: { startsAt: string | null, number: number | null, startedAt?: string | null, endedAt?: string | null }[], missingDates: number, overrides: EventOverrides = {}) {
+export function viewWithSessions(slug: string, sessions: { startsAt: string | null, number: number | null, startedAt?: string | null, endedAt?: string | null, notes?: SessionNote[] }[], missingDates: number, overrides: EventOverrides = {}) {
   return {
     ...view(slug, [], overrides),
     sessions: sessions.map((session, index) => ({ id: `session-${slug}-${index}`, previousStartsAt: null, notes: [], startedAt: null, endedAt: null, ...session })),
@@ -234,5 +234,33 @@ export async function hostActionElement(page: Mounted, label: string): Promise<H
 export async function clickHostAction(page: Mounted, label: string) {
   const element = await hostActionElement(page, label)
   element.click()
+  await new Promise(resolve => setTimeout(resolve))
+}
+
+/**
+ * Opens the „Mehr“ menu of a Session row (#349) and returns its menu: clicks the trigger „Mehr: Session n“ (or „Mehr: Session“ for the
+ * only Session) inside `root`. The menu is teleported, so it is read from the document; the header's user menu is a menu too, so the „Mehr:“ label scopes it.
+ */
+export async function openSessionMenu(root: ParentNode, n?: number): Promise<HTMLElement> {
+  const label = n === undefined ? 'Mehr: Session' : `Mehr: Session ${n}`
+  const trigger = root.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)
+  expect(trigger, label).not.toBeNull()
+  trigger!.click()
+  await new Promise(resolve => setTimeout(resolve))
+  const menu = [...document.querySelectorAll<HTMLElement>('[role="menu"]')].find(element => element.getAttribute('aria-label')?.startsWith('Mehr:'))
+  expect(menu, `menu of ${label}`).toBeDefined()
+  return menu!
+}
+
+/** The item of a menu with this label; a hold item carries a „1 s halten“ badge after it, so the label is a prefix. */
+export function menuItem(menu: ParentNode, label: string): HTMLElement {
+  const item = [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(element => element.textContent?.trim().startsWith(label))
+  expect(item, label).toBeDefined()
+  return item!
+}
+
+/** Clicks the item of a menu with this label and lets Vue run the handler. */
+export async function clickMenuItem(menu: ParentNode, label: string) {
+  menuItem(menu, label).click()
   await new Promise(resolve => setTimeout(resolve))
 }
