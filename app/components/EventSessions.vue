@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ArrowDown, CalendarClock, Download, Plus, Search, Trash2 } from '@lucide/vue'
+import { ArrowDown, CalendarClock, Download, Ellipsis, Plus, Search, Trash2 } from '@lucide/vue'
+import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { formatSessionWhen, formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
-import { shownSessionNumbers } from '~/utils/event-page'
+import { sessionMenuKeys, shownSessionNumbers, type SessionMenuKey } from '~/utils/event-page'
 import { jumpTo, pollHeadingId } from '~/utils/jump'
 import { noteRows } from '~/utils/notes'
 import { SESSIONS_MAX, type EventView } from '~~/shared/event'
@@ -11,8 +12,10 @@ import { isStarted, sessionState, type SessionState } from '~~/shared/session-st
 // number, when it is (or who still has to vote), its state and what the viewer can do. Sessions that wait for a Date are
 // numbered after the dated ones, as the dock's „Termin für Session m“. Everybody can put a dated Session in their calendar
 // (the calendar sheet, #81); the Host moves it (Verschieben), starts a new search for its Date (Neue Terminsuche) or
-// removes it, both as one second holds (#74), as long as it has not started. A Session that polls links to the poll. „Session
-// hinzufügen“ sits at the end. The Event page runs the actions and opens the dialogs and sheets.
+// removes it, both as one second holds (#74), as long as it has not started. All of that sits in one „Mehr“ menu at the end of
+// the row (#349, the MoveToMenu, sessionMenuKeys says which entries); a Session that polls links to the poll instead. The Notes of
+// a Slot are a collapsed disclosure under the row. „Session hinzufügen“ sits at the end. The Event page runs the actions and opens
+// the dialogs and sheets.
 const props = withDefaults(defineProps<{
   view: EventView
   /** Neue Terminsuche and Entfernen: each resolves to whether the server took it. */
@@ -71,6 +74,55 @@ const rows = computed(() => {
 })
 
 const title = (number: number | null) => (number === null ? t('event.sessions.session') : t('event.sessions.sessionN', { n: number }))
+
+const menuKeys = (row: (typeof rows.value)[number]) => sessionMenuKeys({ kind: row.kind, isHost: isHost.value, canChangeSessions: props.canChangeSessions, several: several.value })
+
+// The „Mehr“ menu of the row whose trigger was pressed (as the GameBoard's, #160).
+const menu = ref<{ rowId: string, anchor: HTMLElement } | null>(null)
+
+function openMenu(event: MouseEvent, rowId: string) {
+  menu.value = { rowId, anchor: event.currentTarget as HTMLElement }
+}
+
+/** Closes the menu and gives the focus back to the trigger, which is gone when its row turned into a poll. */
+function closeMenu() {
+  const anchor = menu.value?.anchor
+  menu.value = null
+  if (anchor?.isConnected) anchor.focus()
+}
+
+/** A hold entry: the menu closes once the server took the action; a refusal leaves it open and the hold goes idle by itself (#74). */
+const holdThen = (run: () => Promise<boolean>) => async () => {
+  const worked = await run()
+  if (worked) closeMenu()
+  return worked
+}
+
+const menuRow = computed(() => rows.value.find(row => row.id === menu.value?.rowId))
+const menuTitle = computed(() => (menuRow.value ? t('event.sessions.more', { title: title(menuRow.value.number) }) : ''))
+
+const targets = computed<MoveTarget[]>(() => {
+  const row = menuRow.value
+  if (!row) return []
+  const entry = (key: SessionMenuKey): MoveTarget => {
+    switch (key) {
+      case 'calendar': return { key, label: row.number === null ? t('event.sessions.calendarSingle') : t('event.sessions.calendar', { n: row.number }), icon: Download, reason: null }
+      case 'reschedule': return { key, label: t('poll.reschedule'), icon: CalendarClock, reason: null }
+      case 'reopen': return { key, label: t('mvp.reopen.cta'), icon: Search, reason: null, hold: holdThen(() => props.reopen(row.id)) }
+      case 'remove': return { key, label: t('mvp.sessions.remove'), icon: Trash2, reason: null, hold: holdThen(() => props.remove(row.id)) }
+    }
+  }
+  return menuKeys(row).map(entry)
+})
+
+/** A plain entry: the menu closes first, so the focus is on the trigger before a dialog or sheet opens (as HostDock.runFromMenu). */
+function pick(key: string) {
+  const rowId = menu.value?.rowId
+  if (rowId === undefined) return
+  closeMenu()
+  if (key === 'calendar') emit('calendar')
+  else if (key === 'reschedule') emit('reschedule', rowId)
+}
 </script>
 
 <template>
@@ -127,50 +179,11 @@ const title = (number: number | null) => (number === null ? t('event.sessions.se
         </span>
 
         <div
-          v-if="row.kind === 'set' || (row.kind === 'undated' && pollOpen)"
-          class="flex flex-wrap items-center gap-2"
+          v-if="menuKeys(row).length > 0 || (row.kind === 'undated' && pollOpen)"
+          class="flex flex-none items-center gap-2"
         >
-          <template v-if="row.kind === 'set'">
-            <AppButton
-              v-if="isHost"
-              variant="secondary"
-              @click="emit('reschedule', row.id)"
-            >
-              <AppIcon
-                :icon="CalendarClock"
-                :size="16"
-              />
-              {{ t('poll.reschedule') }}
-            </AppButton>
-            <template v-if="isHost && canChangeSessions">
-              <HoldToConfirmButton
-                variant="secondary"
-                size="dock"
-                hint="badge"
-                :label="t('mvp.reopen.cta')"
-                :icon="Search"
-                :action="() => reopen(row.id)"
-              />
-              <HoldToConfirmButton
-                v-if="several"
-                variant="secondary"
-                size="dock"
-                hint="badge"
-                :label="t('mvp.sessions.remove')"
-                :icon="Trash2"
-                :action="() => remove(row.id)"
-              />
-            </template>
-            <IconButton
-              :icon="Download"
-              :label="row.number === null ? t('event.sessions.calendarSingle') : t('event.sessions.calendar', { n: row.number })"
-              :size="36"
-              aria-haspopup="dialog"
-              @click="emit('calendar')"
-            />
-          </template>
           <AppButton
-            v-else
+            v-if="row.kind === 'undated' && pollOpen"
             variant="secondary"
             @click="jumpTo(pollHeadingId(pollNumber))"
           >
@@ -180,13 +193,27 @@ const title = (number: number | null) => (number === null ? t('event.sessions.se
               :size="16"
             />
           </AppButton>
+          <IconButton
+            v-else
+            :icon="Ellipsis"
+            :label="t('event.sessions.more', { title: title(row.number) })"
+            :size="40"
+            aria-haspopup="menu"
+            :aria-expanded="menu?.rowId === row.id"
+            @click="openMenu($event, row.id)"
+          />
         </div>
 
         <div
           v-if="row.notes.length > 0"
           class="basis-full pl-12"
         >
-          <NoteList :notes="row.notes" />
+          <GameNotesDisclosure :label="t('mvp.notes.headingCount', { n: row.notes.length }, row.notes.length)">
+            <NoteList
+              :notes="row.notes"
+              :heading="false"
+            />
+          </GameNotesDisclosure>
         </div>
       </li>
     </ol>
@@ -211,5 +238,14 @@ const title = (number: number | null) => (number === null ? t('event.sessions.se
         {{ t('mvp.sessions.max', { max: SESSIONS_MAX }) }}
       </p>
     </template>
+
+    <MoveToMenu
+      :open="menu !== null"
+      :title="menuTitle"
+      :targets="targets"
+      :anchor="menu?.anchor ?? null"
+      @close="menu = null"
+      @pick="pick"
+    />
   </section>
 </template>

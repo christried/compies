@@ -48,7 +48,7 @@ Orders existing cards per state. Rule: what has to happen now goes on top.
 **Ref:** 1a–5c (card „Sessions“)
 
 - **Row:** number disc 36 (Bungee 15, `primary` while running) · title 15 / 800 + sub 13 / 600 ink-2 (date as `<time datetime>`, „7 von 11 haben abgestimmt“, „Läuft seit 20:34“, „Sa 25.10., 20:34 bis 23:12“) · PhasePill (Kein Termin · Terminumfrage · Termin steht · Läuft · Beendet) · actions.
-- **Actions per row:** dated → IconButton `.ics` (all) + „Verschieben“ (host). Polling → „Abstimmen“ (member) / „Zur Umfrage“ (host), both jump to the poll. Undated without poll → „Umfrage starten“ (host); in `setup` it is `aria-disabled` with the reason in the sub line. Running / ended → none.
+- **Actions per row:** dated → IconButton `.ics` (all) + „Verschieben“ (host). Polling → „Abstimmen“ (member) / „Zur Umfrage“ (host), both jump to the poll. Undated without poll → „Umfrage starten“ (host); in `setup` it is `aria-disabled` with the reason in the sub line. Running / ended → none. 0.10 (#349): everything but the poll's primary action sits in one „Mehr“ menu at the row's end (popover from md, sheet below); the Slot's Anmerkungen are a collapsed disclosure „Anmerkungen (n)“.
 - **Footer:** „+ Session hinzufügen“ text button (host).
 - **Desktop / mobile:** rows wrap; actions drop under the title on 390.
 

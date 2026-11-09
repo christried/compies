@@ -3,7 +3,7 @@ import { readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { clickButton, closeNotice, sanneAndLarsi, serve, view, type EventOverrides } from './event-page'
+import { clickButton, clickMenuItem, closeNotice, menuItem, openSessionMenu, sanneAndLarsi, serve, view, type EventOverrides } from './event-page'
 
 describe('rescheduling and reopening the Date', () => {
   beforeEach(() => {
@@ -73,8 +73,9 @@ describe('rescheduling and reopening the Date', () => {
 
   it('offers Neue Terminsuche as a secondary hold next to Verschieben to the Host only', async () => {
     const hostPage = await mountSuspended(EventPage, { route: `/e/${serve(setView({ isHost: true })).slug}` })
-    expect(hostPage.text()).toContain('Neue Terminsuche')
-    expect(hostPage.text()).toContain('Verschieben')
+    const menu = await openSessionMenu(hostPage.element)
+    expect(menu.textContent).toContain('Neue Terminsuche')
+    expect(menu.textContent).toContain('Verschieben')
 
     const memberPage = await mountSuspended(EventPage, { route: `/e/${serve(setView()).slug}` })
     expect(memberPage.text()).not.toContain('Neue Terminsuche')
@@ -92,7 +93,7 @@ describe('rescheduling and reopening the Date', () => {
     })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
-    await clickButton(page.element, 'Verschieben')
+    await clickMenuItem(await openSessionMenu(page.element), 'Verschieben')
     // Matched by title: a confirm dialog from an earlier test can still sit in the body.
     const rescheduleDialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(element => element.textContent?.includes('Termin verschieben?'))
     expect(rescheduleDialog).toBeDefined()
@@ -117,9 +118,9 @@ describe('rescheduling and reopening the Date', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const hold = page.findAll('button').find(button => button.text().startsWith('Neue Terminsuche'))!
+    const hold = menuItem(await openSessionMenu(page.element), 'Neue Terminsuche')
 
-    await hold.trigger('pointerdown')
+    hold.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     await new Promise(resolve => setTimeout(resolve, 1100))
 
     await vi.waitFor(() => expect(reopened).toBe(1))

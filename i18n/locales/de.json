@@ -198,7 +198,8 @@
       "toPoll": "Zur Umfrage",
       "vote": "Abstimmen",
       "calendar": "Session {n} in den Kalender",
-      "calendarSingle": "Session in den Kalender"
+      "calendarSingle": "Session in den Kalender",
+      "more": "Mehr: {title}"
     }
   },
   "board": {
@@ -1362,6 +1363,7 @@
       "nextMonth": "Nächster Monat"
     },
     "notes": {
+      "headingCount": "Anmerkung ({n}) | Anmerkungen ({n})",
       "add": "Anmerkung",
       "addA11y": "Anmerkung hinzufügen",
       "edit": "Anmerkung bearbeiten",
