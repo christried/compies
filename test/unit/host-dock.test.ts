@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GAME_ACTIONS, ceremonyBlockedKey, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockInput, type DockKey, type DockLayout } from '../../app/utils/host-dock'
+import { GAME_ACTIONS, ceremonyRejectionAt, coinRejectionAt, dockLayout, hostDockState, type DockInput, type DockKey, type DockLayout } from '../../app/utils/host-dock'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, derived from
 // the Event read, and which actions sit where (the layout, review 1.4 A4, #228).
@@ -426,52 +426,32 @@ describe('dockLayout', () => {
   })
 })
 
-describe('coinBlockedKey (#235)', () => {
+describe('coinRejectionAt (#235)', () => {
   const LANDS = '2090-10-30T20:00:05.100Z'
   const flying = { sessions: RUNNING, coin: { id: 'c', side: 'heads' as const, startedAt: '2090-10-30T20:00:01.500Z', landsAt: LANDS } }
 
   it('says why the Host cannot toss while the coin flies: „Die Münze fliegt noch.“', () => {
-    expect(coinBlockedKey(flying, Date.parse(LANDS) - 1)).toBe('error.coinInAir')
+    expect(coinRejectionAt(flying, Date.parse(LANDS) - 1)).toBe('coin_in_air')
   })
 
   it('has no reason once the coin has landed, without a toss, or when no Session runs', () => {
-    expect(coinBlockedKey(flying, Date.parse(LANDS))).toBeNull()
-    expect(coinBlockedKey({ sessions: RUNNING, coin: null }, Date.parse(LANDS) - 1)).toBeNull()
-    expect(coinBlockedKey({ sessions: [dated('a', 1)], coin: flying.coin }, Date.parse(LANDS) - 1)).toBe('error.noRunningSession')
+    expect(coinRejectionAt(flying, Date.parse(LANDS))).toBeNull()
+    expect(coinRejectionAt({ sessions: RUNNING, coin: null }, Date.parse(LANDS) - 1)).toBeNull()
+    expect(coinRejectionAt({ sessions: [dated('a', 1)], coin: flying.coin }, Date.parse(LANDS) - 1)).toBe('no_running_session')
   })
 })
 
-describe('ceremonyBlockedKey (#309)', () => {
+describe('ceremonyRejectionAt (#309)', () => {
   const ENDS = '2090-10-30T20:00:05.050Z'
   const run = { event: { phase: 'finished' as const }, ceremony: { startsAt: '2090-10-30T20:00:00.000Z', endsAt: ENDS, gag: 'trip' as const } }
 
   it('says why the Host cannot start while a run plays, the lead included: „Die Siegerehrung läuft noch.“', () => {
-    expect(ceremonyBlockedKey(run, Date.parse(ENDS) - 1)).toBe('error.ceremonyRunning')
-    expect(ceremonyBlockedKey(run, Date.parse(run.ceremony.startsAt) - 1500)).toBe('error.ceremonyRunning')
+    expect(ceremonyRejectionAt(run, Date.parse(ENDS) - 1)).toBe('ceremony_running')
+    expect(ceremonyRejectionAt(run, Date.parse(run.ceremony.startsAt) - 1500)).toBe('ceremony_running')
   })
 
   it('has no reason before the first start, nor at the end of the run', () => {
-    expect(ceremonyBlockedKey({ event: run.event, ceremony: null }, Date.parse(ENDS))).toBeNull()
-    expect(ceremonyBlockedKey(run, Date.parse(ENDS))).toBeNull()
-  })
-})
-
-describe('lastGameBlockedKey (#278)', () => {
-  it('says the maximum in the dock\'s own words and every other reason in the shared copy', () => {
-    expect(lastGameBlockedKey('game_count_range')).toBe('dock.lastGameBlocked.game_count_range')
-    expect(lastGameBlockedKey('results_missing')).toBe('error.resultsMissing')
-    expect(lastGameBlockedKey('no_tie')).toBe('error.noTie')
-  })
-})
-
-describe('setBlockedKey', () => {
-  it('uses the start rule\'s words for the teams and the dock\'s own for the rest', () => {
-    expect(setBlockedKey('teams_uneven')).toBe('dock.startBlocked.teams_uneven')
-    expect(setBlockedKey('teams_empty')).toBe('dock.startBlocked.teams_empty')
-    expect(setBlockedKey('game_count_reached')).toBe('dock.setBlocked.game_count_reached')
-    expect(setBlockedKey('round_being_drawn')).toBe('dock.setBlocked.round_being_drawn')
-    expect(setBlockedKey('no_running_session')).toBe('dock.setBlocked.no_running_session')
-    expect(setBlockedKey('no_wheel')).toBe('dock.setBlocked.no_wheel')
-    expect(setBlockedKey('pool_empty')).toBe('dock.setBlocked.pool_empty')
+    expect(ceremonyRejectionAt({ event: run.event, ceremony: null }, Date.parse(ENDS))).toBeNull()
+    expect(ceremonyRejectionAt(run, Date.parse(ENDS))).toBeNull()
   })
 })

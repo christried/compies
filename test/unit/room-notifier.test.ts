@@ -110,16 +110,16 @@ describe('memoryRoomNotifier', () => {
 
   it('records the named Users of a send, and messages() returns broadcast and named messages (#227)', async () => {
     const notifier = memoryRoomNotifier()
-    const member = envelope({ type: 'member.joined', userId: 'user-1' }, NOW)
+    const vetoed = envelope({ type: 'veto.cast', drawId: 'draw-1', team: 1 }, NOW)
     await notifier.publish('event-1', [changed])
-    await notifier.publish('event-1', [member], ['user-1'])
+    await notifier.publish('event-1', [vetoed], ['user-1'])
     await notifier.publish('event-1', [changed], [])
 
     expect(notifier.sends('event-1')).toEqual([
       { to: null, messages: [changed] },
-      { to: ['user-1'], messages: [member] },
+      { to: ['user-1'], messages: [vetoed] },
     ])
-    expect(notifier.messages('event-1')).toEqual([changed, member])
+    expect(notifier.messages('event-1')).toEqual([changed, vetoed])
 
     notifier.clear()
     expect(notifier.sends('event-1')).toEqual([])

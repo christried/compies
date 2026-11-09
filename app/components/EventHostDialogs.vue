@@ -150,7 +150,7 @@ const { send: sendDelete } = useEventMutation(() => props.slug, () => (deleted ?
 
 function deleteEvent() {
   return sendDelete('DELETE', '', {
-    errorKeys: { session_running: 'dock.deleteBlocked' },
+    place: 'deleteEvent',
     done: () => {
       deleted = true
       clearNuxtData(HOME_EVENTS_KEY)

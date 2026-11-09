@@ -406,7 +406,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
   // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.joined', 'member.moved', 'team.wordSet', 'team.nameReset', 'team.nameFrozen', 'session.started', 'session.ended', 'veto.cast'] as const satisfies readonly RoomMessageType[]
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
@@ -479,7 +479,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const player2Cookie = (await signIn(testDb.db, player2)).cookie
       const ids = { player: await userIdOf(player.email), player2: await userIdOf(player2.email) }
 
-      // 1. Both Players join through the Invite link (member.joined).
+      // 1. Both Players join through the Invite link (member_joined).
       expect((await send('POST', `/api/invite/${token}`, playerCookie)).status).toBe(200)
       expect((await send('POST', `/api/invite/${token}`, player2Cookie)).status).toBe(200)
 
@@ -523,7 +523,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect((await send('POST', `/api/e/${slug}/rotate`, hostCookie)).status).toBe(200)
 
       // 10. The Host starts the Session, sets a game that is in no pool and puts it back (event.changed, activity.added), then ends
-      // the Session (session.started, team.nameFrozen, session.ended). That game is everyone's from the moment it is set (#228).
+      // the Session. That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
       const e = await newGame('Epsilon Eck', 'eeeeeeeeeee')
       const roundId = await hostSets(request, slug, hostCookie, e.id)
