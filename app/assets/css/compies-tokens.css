@@ -1,7 +1,7 @@
 /* =====================================================================
    COMPIES design tokens · v1.0 · framework-agnostic CSS custom properties
    Light = 3a "Memphis Klassik 3.0" · Dark = 3b "Bühne"
-   Mode:   <html data-theme="light|dark">  (light only for now; dark and system come with #43)
+   Mode:   <html data-theme="light|dark|system">  (system = the dark set under prefers-color-scheme: dark, #402)
    Motion: <html data-motion="reduced">    (in-app setting; OS setting handled via media query)
    ===================================================================== */
 
@@ -79,6 +79,45 @@
   --cp-tex-size: 100% 100%;
   --cp-sticker-rim: #fffdf8;
   --cp-sticker-shadow: 0 4px 10px rgba(0,0,0,.55);
+}
+
+/* System (#402): the dark set again, for a device that asks for dark. A selector cannot join a media
+   query, so the block is a copy; test/unit/system-appearance.test.ts keeps it equal to the one above. */
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    color-scheme: dark;
+    --cp-paper: #17121d;
+    --cp-paper-2: #120e17;
+    --cp-surface: #221b2b;
+    --cp-surface-2: #2d2438;
+    --cp-overlay: rgba(8,5,12,.66);
+    --cp-ink: #f7efe1;
+    --cp-ink-2: #b9ad9f;
+    --cp-ink-3: #75697f;
+    --cp-line: #f7efe1;
+    --cp-line-soft: rgba(247,239,225,.18);
+    --cp-primary: #ffd23f;   --cp-on-primary: #17121d;
+    --cp-hot: #ff5a36;       --cp-on-hot: #17121d;
+    --cp-mint: #3fd6c6;      --cp-pop: #ff7fc0;   --cp-cobalt: #6b93ff;
+    --cp-focus: #8fb3ff;
+    --cp-success: #45d483;   --cp-on-success: #17121d;  --cp-success-fg: #5fe39a;
+    --cp-warning: #ffb020;   --cp-on-warning: #17121d;  --cp-warning-fg: #ffc552;
+    --cp-error:   #ff5a36;   --cp-on-error:   #17121d;  --cp-error-fg:   #ff8466;
+    --cp-info:    #6b93ff;   --cp-on-info:    #17121d;  --cp-info-fg:    #9bb6ff;
+    --cp-online: #45d483;    --cp-offline: #6f6478;
+    --cp-bw: 2.5px;  --cp-bw-thin: 2px;
+    --cp-shadow-ink: #0b0810;
+    --cp-shadow-sm: 3px 3px 0 #0b0810;
+    --cp-shadow-btn: 4px 4px 0 #0b0810;
+    --cp-shadow-card: 6px 6px 0 #ff5a36;
+    --cp-shadow-modal: 10px 10px 0 #ff5a36;
+    --cp-shadow-lift: 9px 13px 0 #0b0810;
+    --cp-shadow-soft: 0 12px 28px rgba(0,0,0,.5);
+    --cp-tex-image: radial-gradient(ellipse at 50% -10%, rgba(255,176,32,.14), transparent 55%), radial-gradient(ellipse at 50% 120%, rgba(0,0,0,.5), transparent 60%);
+    --cp-tex-size: 100% 100%;
+    --cp-sticker-rim: #fffdf8;
+    --cp-sticker-shadow: 0 4px 10px rgba(0,0,0,.55);
+  }
 }
 
 /* ---------- mode-independent ---------- */
