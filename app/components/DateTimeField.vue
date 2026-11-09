@@ -258,7 +258,6 @@ watch(timeOpen, async (open) => {
   const item = list.querySelectorAll<HTMLElement>('[role="option"]')[Math.floor((hours * 60 + minutes) / 15)]
   if (item) list.scrollTop = item.offsetTop - list.clientHeight / 2 + item.offsetHeight / 2
 })
-
 </script>
 
 <template>
