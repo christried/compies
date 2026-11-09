@@ -258,6 +258,31 @@ describe('the state of the last ten seconds, keyed to the second (late joiners)'
     expect(tile(three).classes()).toContain('text-error-fg')
   })
 
+  it('lit pips are warning-coloured from 10 to 6 and error-coloured from 5 to 1, running and paused', async () => {
+    for (let s = 10; s >= 1; s--) {
+      const lit = s >= 6 ? 'bg-warning' : 'bg-error'
+      const other = s >= 6 ? 'bg-error' : 'bg-warning'
+      for (const countdown of [runningWith(s * 1000 - 500), pausedAt(s * 1000 - 400)]) {
+        const page = await mount(countdown)
+        const pips = page.findAll('[data-pip]')
+
+        expect(pips.filter(p => p.attributes('data-lit') === 'true'), `${s} s lit`).toHaveLength(s)
+        for (const pip of pips) {
+          if (pip.attributes('data-lit') === 'true') {
+            expect(pip.classes(), `${s} s lit pip`).toContain(lit)
+            expect(pip.classes(), `${s} s lit pip`).not.toContain(other)
+          }
+          else {
+            expect(pip.classes(), `${s} s unlit pip`).not.toContain('bg-warning')
+            expect(pip.classes(), `${s} s unlit pip`).not.toContain('bg-error')
+            expect(pip.classes(), `${s} s unlit pip`).toContain('border-dashed')
+          }
+        }
+        page.unmount()
+      }
+    }
+  })
+
   it('shows the bar as the share left while running above ten seconds', async () => {
     const page = await mount(runningWith(150_000))
 
