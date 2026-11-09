@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, gamesToStart, headerPill, pagePill, pollingNumber, seatNote, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, gamesToStart, headerPill, pagePill, pollingNumber, seatNote, sessionMenuKeys, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn } from '../../app/utils/event-page'
 import type { BoardTeam, MemberView } from '../../shared/event'
 import type { RoundView } from '../../shared/stage'
 
@@ -494,5 +494,33 @@ describe('headerPill', () => {
 
   it('shows the poll without a label', () => {
     expect(headerPill(state([undated('a'), undated('b')]), 'poll', fakeT)).toEqual({ phase: 'poll', label: undefined })
+  })
+})
+
+describe('sessionMenuKeys (#349)', () => {
+  const host = { isHost: true, canChangeSessions: true, several: true }
+  const member = { isHost: false, canChangeSessions: true, several: true }
+
+  it('gives the Host of a dated Session the calendar, Verschieben, Neue Terminsuche and Entfernen, in that order', () => {
+    expect(sessionMenuKeys({ kind: 'set', ...host })).toEqual(['calendar', 'reschedule', 'reopen', 'remove'])
+  })
+
+  it('leaves Entfernen out for the only Session', () => {
+    expect(sessionMenuKeys({ kind: 'set', ...host, several: false })).toEqual(['calendar', 'reschedule', 'reopen'])
+  })
+
+  it('leaves Neue Terminsuche and Entfernen out once Sessions cannot change any more (a finished Event)', () => {
+    expect(sessionMenuKeys({ kind: 'set', ...host, canChangeSessions: false })).toEqual(['calendar', 'reschedule'])
+  })
+
+  it('gives a Member of a dated Session the calendar only', () => {
+    expect(sessionMenuKeys({ kind: 'set', ...member })).toEqual(['calendar'])
+  })
+
+  it('gives a Session that polls, runs or ended no menu, to the Host and a Member alike', () => {
+    for (const kind of ['undated', 'running', 'ended'] as const) {
+      expect(sessionMenuKeys({ kind, ...host }), `Host ${kind}`).toEqual([])
+      expect(sessionMenuKeys({ kind, ...member }), `Member ${kind}`).toEqual([])
+    }
   })
 })
