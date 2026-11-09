@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Equal } from '@lucide/vue'
 import { boxWithin } from '~/utils/ceremony-tie-run'
-import { chainSizes, gridSizes, groupWidth, plateSizes } from '~/utils/ceremony-sizes'
+import { ceremonySizes } from '~/utils/ceremony-sizes'
 import { teamSurfaceStyle, teamVar } from '~/utils/team-style'
 import type { CeremonyLayout, CeremonyModel, CeremonyPerson, CeremonyWinner } from '~/utils/ceremony'
 import type { RigState } from '~/utils/compibert-rig'
@@ -25,28 +25,10 @@ const props = defineProps<{
 const { t } = useI18n()
 // A phone (below md, as AppShell's side panel) gets the smaller sizes of the reference's `mob` variant.
 const roomy = useRoomy()
-const avatar = computed((): 80 | 64 => (roomy.value ? 80 : 64))
-const compibert = computed(() => (roomy.value ? 150 : 120))
-/** The cell of a person is a little wider than the avatar; three cells make a row. */
-const cell = computed(() => avatar.value + 16)
 const winners = computed(() => props.model.winners)
 const first = computed(() => winners.value[0]!)
-/** Compibert's room under the content, in px: his height (the full pose is 404 : 344) and the ground strip. */
-const track = computed(() => Math.round(compibert.value * 344 / 404) + 34)
-/** The share row's room on a phone (#314): its height (AppButton's `md`, 44 px) and the stage's gap above it. */
-const SHARE_ROW_ROOM = 44 + 18
-/**
- * The stage's bottom padding, Compibert's `track` on a wide screen and `track` plus the share row's room on a phone (#314). It is set from the
- * first frame, so the stage keeps its height when the buttons appear mid-run.
- */
-const ground = computed(() => `${roomy.value ? track.value : track.value + SHARE_ROW_ROOM}px`)
-
-// The sizes of a Tie's chain, grid and plate (`app/utils/ceremony-sizes.ts`, #328).
-const chain = computed(() => chainSizes(roomy.value, winners.value.length))
-const grid = computed(() => gridSizes(roomy.value))
-const plate = computed(() => plateSizes(roomy.value))
-/** The width of the Winner group, which the plate takes (#315). */
-const winnersWidth = computed(() => groupWidth(props.layout, winners.value.length, roomy.value))
+// Every number that changes with `roomy` (the single card's people, a Tie's chain, grid and plate, Compibert, the ground, the confetti): `app/utils/ceremony-sizes.ts` (#328, #364).
+const sizes = computed(() => ceremonySizes(roomy.value, props.layout, winners.value.length))
 
 /** What a screen reader hears of a grid card's stack: the Party and its Players' names, the rest counted. */
 function stackLabel(winner: CeremonyWinner) {
@@ -58,13 +40,10 @@ const root = useTemplateRef<HTMLElement>('root')
 const card = useTemplateRef<HTMLElement>('card')
 const confetti = useTemplateRef('confetti')
 
-/**
- * Confetti, from just above a card's or the plate's top centre. A sole Winner's stamp: 40 pieces on a desktop, 20 on a phone (04-motion § Confetti).
- * A Tie's stamp bursts from the plate with the same counts, and the trophy landing on a card of a chain (`index`) 14, on a phone 8 (6b-T).
- */
+/** Confetti, from just above a card's or the plate's top centre: the stamp's, or the trophy's landing on the card of a chain (`index`). Counts: `sizes.confetti`. */
 function burst(target: 'stamp' | number = 'stamp') {
   const stage = root.value
-  const count = typeof target === 'number' ? (roomy.value ? 14 : 8) : roomy.value ? 40 : 20
+  const count = typeof target === 'number' ? sizes.value.confetti.card : sizes.value.confetti.stamp
   if (props.layout.stage === 'single') {
     if (!card.value) return
     confetti.value?.burst(card.value.offsetLeft + card.value.offsetWidth / 2, card.value.offsetTop - 10, count)
@@ -85,7 +64,7 @@ defineExpose({ root, burst })
   <div
     ref="root"
     class="relative flex min-h-full flex-col items-center gap-[18px] px-[18px] pt-[66px] text-ink md:pt-[22px]"
-    :style="{ paddingBottom: ground }"
+    :style="{ paddingBottom: `${sizes.ground.paddingBottom}px` }"
   >
     <!-- The top padding below md (66 px) clears the layer's „Überspringen“ and close button (top 12 px, 36 px high, and the banner's tilt lifts its
          corner by about 9 px): at 390 px the banner is 248 px wide and ran under them. The reference reserves nothing there; from md on it is the
@@ -104,7 +83,7 @@ defineExpose({ root, burst })
     </p>
 
     <div
-      v-if="layout.stage === 'single'"
+      v-if="sizes.stage.kind === 'single'"
       class="flex w-full max-w-[820px] flex-wrap items-start justify-center gap-x-7 gap-y-5"
     >
       <div class="flex max-w-full flex-none flex-col items-center gap-4">
@@ -145,18 +124,18 @@ defineExpose({ root, burst })
         <ul
           :aria-label="t('ceremony.players')"
           class="m-0 flex list-none flex-wrap justify-center gap-x-2.5 gap-y-3 p-0"
-          :style="{ maxWidth: `${cell * 3 + 20}px` }"
+          :style="{ maxWidth: `${sizes.stage.peopleMaxWidth}px` }"
         >
           <li
             v-for="(person, index) in first.people"
             :key="index"
             data-part="person"
             class="flex flex-col items-center gap-1.5"
-            :style="{ width: `${cell}px` }"
+            :style="{ width: `${sizes.stage.cellWidth}px` }"
           >
             <CeremonyPersonCell
               :person="person"
-              :size="avatar"
+              :size="sizes.stage.avatarSize"
             />
           </li>
         </ul>
@@ -200,30 +179,30 @@ defineExpose({ root, burst })
           <div
             data-part="plate"
             class="relative box-border flex flex-none items-center justify-center rounded-[12px] border-(length:--cp-bw) border-line bg-primary text-on-primary shadow-sm"
-            :style="{ width: `${winnersWidth}px`, height: `${plate.height}px` }"
+            :style="{ width: `${sizes.groupWidth}px`, height: `${sizes.plate.height}px` }"
           >
             <span
               class="absolute top-0 bottom-0 left-3 flex items-center font-num leading-none"
-              :style="{ fontSize: `${plate.labelFontSize}px` }"
+              :style="{ fontSize: `${sizes.plate.labelFontSize}px` }"
             >{{ t('ceremony.place1') }}</span>
             <!-- „???“ becomes the stamp; the static end frame has the stamp and no „???“, as the single card has no front. -->
             <span class="relative grid place-items-center">
               <span
                 data-part="plate-stamp"
                 class="-rotate-3 rounded-[6px] border-[3px] border-hot bg-surface px-2.5 py-0.5 font-num leading-[1.15] text-hot uppercase"
-                :style="{ fontSize: `${plate.stampFontSize}px` }"
+                :style="{ fontSize: `${sizes.plate.stampFontSize}px` }"
               >{{ t('ceremony.tie.plateStamp') }}</span>
               <span
                 data-part="plate-front"
                 aria-hidden="true"
                 class="absolute inset-0 grid place-items-center font-num opacity-0"
-                :style="{ fontSize: `${plate.stampFontSize}px` }"
+                :style="{ fontSize: `${sizes.plate.stampFontSize}px` }"
               >???</span>
             </span>
           </div>
 
           <ol
-            v-if="layout.stage === 'chain'"
+            v-if="sizes.stage.kind === 'chain'"
             :aria-label="t('ceremony.tie.list')"
             data-stage="chain"
             class="m-0 flex list-none items-start justify-center p-0"
@@ -235,13 +214,13 @@ defineExpose({ root, burst })
             >
               <div
                 class="flex flex-col items-center"
-                :style="{ gap: `${chain.peopleGap}px` }"
+                :style="{ gap: `${sizes.stage.peopleGap}px` }"
               >
                 <div
                   data-testid="winner-card"
                   data-part="card"
                   class="relative box-border flex-none overflow-hidden rounded-[16px] border-(length:--cp-bw) border-line bg-surface shadow-card"
-                  :style="{ width: `${chain.cardWidth}px`, height: `${chain.cardHeight}px` }"
+                  :style="{ width: `${sizes.stage.cardWidth}px`, height: `${sizes.stage.cardHeight}px` }"
                 >
                   <div
                     data-part="back"
@@ -249,13 +228,13 @@ defineExpose({ root, burst })
                   >
                     <div
                       class="flex min-w-0 flex-none items-center border-b-(length:--cp-bw) border-line px-3 font-extrabold"
-                      :style="{ height: `${chain.stripHeight}px`, fontSize: `${chain.nameFontSize}px`, ...teamSurfaceStyle(winner.team) }"
+                      :style="{ height: `${sizes.stage.stripHeight}px`, fontSize: `${sizes.stage.nameFontSize}px`, ...teamSurfaceStyle(winner.team) }"
                     >
                       <span class="truncate">{{ winner.name }}</span>
                     </div>
                     <div
                       class="flex flex-1 items-start font-num leading-none"
-                      :style="{ padding: chain.pointsPadding, fontSize: `${chain.pointsFontSize}px` }"
+                      :style="{ padding: sizes.stage.pointsPadding, fontSize: `${sizes.stage.pointsFontSize}px` }"
                     >
                       {{ t('ceremony.pts', { n: winner.points }) }}
                     </div>
@@ -270,26 +249,26 @@ defineExpose({ root, burst })
                   <span
                     data-part="stamp"
                     class="absolute -rotate-8 rounded-[6px] border-[3px] border-hot bg-surface px-2.5 py-0.5 font-num text-hot"
-                    :style="{ right: `${chain.stampOffset}px`, bottom: `${chain.stampOffset}px`, fontSize: `${chain.stampFontSize}px` }"
+                    :style="{ right: `${sizes.stage.stampOffset}px`, bottom: `${sizes.stage.stampOffset}px`, fontSize: `${sizes.stage.stampFontSize}px` }"
                   >{{ t('ceremony.stamp') }}</span>
                 </div>
                 <ul
                   :aria-label="winner.name"
                   data-part="party"
                   class="m-0 flex list-none flex-wrap justify-center p-0"
-                  :style="{ width: `${chain.cardWidth}px`, gap: `10px ${chain.cellGapX}px` }"
+                  :style="{ width: `${sizes.stage.cardWidth}px`, gap: `10px ${sizes.stage.cellGapX}px` }"
                 >
                   <li
                     v-for="(person, at) in winner.people"
                     :key="at"
                     data-part="person"
                     class="flex flex-col items-center gap-[5px]"
-                    :style="{ width: `${chain.cellWidth}px` }"
+                    :style="{ width: `${sizes.stage.cellWidth}px` }"
                   >
                     <CeremonyPersonCell
                       :person="person"
-                      :size="chain.avatarSize"
-                      :name-font-size="chain.personNameFontSize"
+                      :size="sizes.stage.avatarSize"
+                      :name-font-size="sizes.stage.personNameFontSize"
                     />
                   </li>
                 </ul>
@@ -299,14 +278,14 @@ defineExpose({ root, burst })
                 data-part="badge"
                 aria-hidden="true"
                 class="flex flex-none items-center justify-center"
-                :style="{ width: `${chain.badgeGap}px`, height: `${chain.cardHeight}px` }"
+                :style="{ width: `${sizes.stage.badgeGap}px`, height: `${sizes.stage.cardHeight}px` }"
               >
                 <span
                   class="box-border grid place-items-center rounded-pill border-[2.5px] border-line bg-primary text-on-primary shadow-sm"
-                  :style="{ width: `${chain.badgeSize}px`, height: `${chain.badgeSize}px` }"
+                  :style="{ width: `${sizes.stage.badgeSize}px`, height: `${sizes.stage.badgeSize}px` }"
                 >
                   <Equal
-                    :size="chain.badgeIconSize"
+                    :size="sizes.stage.badgeIconSize"
                     :stroke-width="3"
                     aria-hidden="true"
                   />
@@ -320,7 +299,7 @@ defineExpose({ root, burst })
             :aria-label="t('ceremony.tie.list')"
             data-stage="grid"
             class="m-0 flex list-none flex-wrap justify-center p-0"
-            :style="{ gap: `${grid.cardGap}px`, width: `${winnersWidth}px` }"
+            :style="{ gap: `${sizes.stage.cardGap}px`, width: `${sizes.groupWidth}px` }"
           >
             <li
               v-for="winner in winners"
@@ -328,7 +307,7 @@ defineExpose({ root, burst })
               data-testid="winner-card"
               data-part="card"
               class="relative box-border flex-none overflow-hidden rounded-[14px] border-(length:--cp-bw) border-line bg-surface shadow-card"
-              :style="{ width: `${grid.cardWidth}px`, height: `${grid.cardHeight}px` }"
+              :style="{ width: `${sizes.stage.cardWidth}px`, height: `${sizes.stage.cardHeight}px` }"
             >
               <div
                 data-part="back"
@@ -336,23 +315,23 @@ defineExpose({ root, burst })
               >
                 <div
                   class="flex min-w-0 flex-none items-center border-b-(length:--cp-bw) border-line px-2.5 font-extrabold"
-                  :style="{ height: `${grid.stripHeight}px`, fontSize: `${grid.nameFontSize}px`, ...teamSurfaceStyle(winner.team) }"
+                  :style="{ height: `${sizes.stage.stripHeight}px`, fontSize: `${sizes.stage.nameFontSize}px`, ...teamSurfaceStyle(winner.team) }"
                 >
                   <span class="truncate">{{ winner.name }}</span>
                 </div>
                 <div
                   class="flex flex-1 flex-col justify-center px-2.5"
-                  :style="{ gap: `${grid.backGap}px` }"
+                  :style="{ gap: `${sizes.stage.backGap}px` }"
                 >
                   <div class="flex items-center justify-between gap-2">
                     <span
                       class="font-num leading-none"
-                      :style="{ fontSize: `${grid.pointsFontSize}px` }"
+                      :style="{ fontSize: `${sizes.stage.pointsFontSize}px` }"
                     >{{ t('ceremony.pts', { n: winner.points }) }}</span>
                     <span
                       data-part="stamp"
                       class="-rotate-8 rounded-[5px] border-[2.5px] border-hot bg-surface px-[7px] py-px font-num leading-[1.2] text-hot"
-                      :style="{ fontSize: `${grid.stampFontSize}px` }"
+                      :style="{ fontSize: `${sizes.stage.stampFontSize}px` }"
                     >{{ t('ceremony.stamp') }}</span>
                   </div>
                   <ul
@@ -364,11 +343,11 @@ defineExpose({ root, burst })
                       v-for="(person, at) in winner.people"
                       :key="at"
                       class="flex"
-                      :style="{ marginLeft: at > 0 ? `${-grid.avatarOverlap}px` : '0' }"
+                      :style="{ marginLeft: at > 0 ? `${-sizes.stage.avatarOverlap}px` : '0' }"
                     >
                       <CeremonyPersonCell
                         :person="person"
-                        :size="grid.avatarSize"
+                        :size="sizes.stage.avatarSize"
                         stack
                       />
                     </li>
@@ -452,7 +431,7 @@ defineExpose({ root, burst })
     >
       <CompibertRig
         variant="full"
-        :size="compibert"
+        :size="sizes.compibert"
         :state="state"
       />
     </div>
@@ -497,12 +476,12 @@ defineExpose({ root, burst })
          `shareAtMs`) and out of flow, so the buttons' appearing mid-run moves nothing the run measured. On a wide screen it stands in the
          corner the stage leaves free, bottom right, 34 px up. On a phone there is no room beside Compibert (his 120 px and the row's 316 px
          do not fit in 354 px: browser check c3, #314), so the row stands centred above him, as the reference has it: its bottom 18 px over
-         his box's top (`track`, 136 px), with the stage's bottom padding holding that room from the first frame. -->
+         his box's top (`ground.shareBottom`, 136 px), with the stage's bottom padding holding that room from the first frame. -->
     <div
       data-part="share"
       class="absolute z-6 flex flex-wrap gap-2.5"
       :class="roomy ? 'right-[18px] justify-end' : 'left-[18px] right-[18px] justify-center'"
-      :style="{ bottom: roomy ? '34px' : `${track}px` }"
+      :style="{ bottom: `${sizes.ground.shareBottom}px` }"
     >
       <slot name="share" />
       <slot name="again" />
