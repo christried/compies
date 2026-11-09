@@ -106,6 +106,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Data:** Event config; library (suggestions by format + player count).
 - **Host vs player:** Host only.
 - **States:** 1 Name · 2 Format: Teams · 2 Format: Jeder gegen jeden · 3 Spiele · 4 Punkte · 4 Eigene Tabelle (Fehler) · 5 Lucky Wheel · 5 Pick & Ban + Info · 5 Loser-Modi noch gesperrt · 6 Spielepool · 7 Tiebreaker · 8 Termin · Fertig
+- **As built (#353):** the Fertig state has no „Geschafft“ kicker above its title, and every page's back link is the shared `BackLink`: 14 / 800 in `ink`, underlined, with an arrow, 44 px tall (the jump link's style, 11-event-seite § EventPageHead), not small and muted (the user's call, 2026-11-09).
 - **Realtime:** —
 
 
