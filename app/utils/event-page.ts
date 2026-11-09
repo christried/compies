@@ -1,4 +1,4 @@
-import { hasStarted, nextSession, noSessionLeft, runningOf, sessionState } from '~~/shared/session-state'
+import { hasStarted, nextSession, noSessionLeft, runningOf, sessionState, type SessionState } from '~~/shared/session-state'
 import { datePollOpen, type EventView, type Phase, SESSIONS_MAX, type SessionView } from '~~/shared/event'
 import type { EndView } from '~~/shared/stage'
 import { teamNameAt } from './board'
@@ -144,6 +144,22 @@ export function pollingNumber(sessions: Pick<SessionView, 'startsAt'>[], missing
 export function shownSessionNumbers(sessions: Pick<SessionView, 'startsAt' | 'number'>[], missingDates: number): (number | null)[] {
   let nth = 0
   return sessions.map(session => (session.startsAt === null ? pollingNumber(sessions, missingDates, ++nth) : session.number))
+}
+
+export type SessionMenuKey = 'calendar' | 'reschedule' | 'reopen' | 'remove'
+
+/**
+ * The entries of a Session row's „Mehr“ menu, in order, destructive last (#349); empty means the row has no menu. Only a dated Session
+ * that has not started has one: everybody can take it to the calendar, the Host moves it, and while Sessions can change (`canChangeSessions`)
+ * starts a new search for its Date or, with more than one Session, removes it.
+ */
+export function sessionMenuKeys(input: { kind: SessionState, isHost: boolean, canChangeSessions: boolean, several: boolean }): SessionMenuKey[] {
+  if (input.kind !== 'set') return []
+  const keys: SessionMenuKey[] = ['calendar']
+  if (input.isHost) keys.push('reschedule')
+  if (input.isHost && input.canChangeSessions) keys.push('reopen')
+  if (input.isHost && input.canChangeSessions && input.several) keys.push('remove')
+  return keys
 }
 
 /**
