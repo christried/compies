@@ -220,3 +220,61 @@ export function leaveInPlace(element: Element): void {
   element.inert = true
   if (reducedMotion() || unwatched()) element.style.display = 'none'
 }
+
+// The Sheet (04-motion § UI enters, 02-components § Sheet, #348). Web Animations, not GSAP (ADR 0015): `AppSheet` is on nearly every page, and the
+// exact `--cp-ease-*` curves are CSS tokens. The panel slides (`dur-slow` in, `dur-base` out), the overlay fades (`dur-fast`); under reduced motion both
+// only fade over `dur-fast`, with no transform. UI never overshoots.
+
+/** The two parts of a Sheet that move: the dimmed overlay and the panel (the `role="dialog"` section). */
+export interface SheetParts { overlay: Element, panel: Element }
+
+/** Where a Sheet comes from: the side from md up (`AppSheet`'s own breakpoint, 61.25rem), else the bottom. */
+export function sheetSide(): 'right' | 'bottom' {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 61.25rem)').matches ? 'right' : 'bottom'
+}
+
+const sheetMs = (token: string, fallback: string) => Number.parseFloat(motionToken(token, fallback))
+
+/** The Sheet's enter: the panel slides in from its side, the overlay fades in. Nothing waits for it. */
+export function sheetEnter(parts: SheetParts): void {
+  if (typeof parts.panel.animate !== 'function') return
+  const easing = motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)')
+  const fade = sheetMs('--cp-dur-fast', '140ms')
+  if (reducedMotion()) {
+    for (const part of [parts.overlay, parts.panel]) part.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing, fill: 'backwards' })
+    return
+  }
+  const axis = sheetSide() === 'right' ? 'translateX' : 'translateY'
+  parts.panel.animate([{ transform: `${axis}(100%)` }, { transform: `${axis}(0)` }], { duration: sheetMs('--cp-dur-slow', '360ms'), easing, fill: 'backwards' })
+  parts.overlay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing, fill: 'backwards' })
+}
+
+/**
+ * The Sheet's exit. Resolves when both parts are out: when their animations finish, at the latest after the longer duration + 50 ms (a backgrounded tab
+ * may never finish one), and at once where nothing can animate (no `animate`, a hidden tab). `forwards` holds the last frame until the caller removes the
+ * element, so nothing flashes back.
+ */
+export function sheetLeave(parts: SheetParts): Promise<void> {
+  if (typeof parts.panel.animate !== 'function' || unwatched()) return Promise.resolve()
+  const easing = motionToken('--cp-ease-in', 'cubic-bezier(.7,0,.84,0)')
+  const fade = sheetMs('--cp-dur-fast', '140ms')
+  const fadeOut: Keyframe[] = [{ opacity: 1 }, { opacity: 0 }]
+  let panelDuration = fade
+  let panelFrames = fadeOut
+  if (!reducedMotion()) {
+    const axis = sheetSide() === 'right' ? 'translateX' : 'translateY'
+    panelDuration = sheetMs('--cp-dur-base', '220ms')
+    panelFrames = [{ transform: `${axis}(0)` }, { transform: `${axis}(100%)` }]
+  }
+  const animations = [
+    parts.panel.animate(panelFrames, { duration: panelDuration, easing, fill: 'forwards' }),
+    parts.overlay.animate(fadeOut, { duration: fade, easing, fill: 'forwards' }),
+  ]
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, Math.max(panelDuration, fade) + 50)
+    void Promise.all(animations.map(animation => animation.finished?.catch(() => {}))).then(() => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
