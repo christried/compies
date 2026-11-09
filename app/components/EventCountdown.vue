@@ -34,13 +34,15 @@ const pulse = useTemplateRef<HTMLElement>('pulse')
 const actionsRow = useTemplateRef<HTMLElement>('actionsRow')
 
 // The server ticker (#257) reads the clock every frame while the Countdown runs and holds still when it is paused, at zero or scrolled
-// out of view. Before the page has mounted it is null: the stored facts stand in (a running one at its start instant), so the server
-// render and the first client render agree, and the real time shows at mount.
+// out of view. Before the page has mounted it is null: the frame is then read off the clock as it was when this component was created,
+// and that reading is kept in the payload, so the server render shows the current second and tone at once (a late joiner no longer sees
+// the start state for half a second) and the first client render agrees with it. The real time shows at mount.
+const created = useState<number>(`countdown-created-${useId()}`, () => props.serverNow())
 const now = useServerTicker(() => props.serverNow(), {
   until: () => countdownEndsAt(props.countdown),
   target: root,
 })
-const at = computed(() => now.value ?? (props.countdown.startedAt === null ? 0 : Date.parse(props.countdown.startedAt)))
+const at = computed(() => now.value ?? created.value)
 const frame = computed(() => countdownFrame(props.countdown, at.value))
 
 const host = computed(() => props.hostName ?? t('countdown.hostFallback'))
