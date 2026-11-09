@@ -15,7 +15,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.7 | Glücksrad | released on 2026-11-02: [#218](https://github.com/christried/compies/issues/218), [#263](https://github.com/christried/compies/issues/263) |
 | 0.8 | Punkte | released on 2026-11-05: [#272](https://github.com/christried/compies/issues/272) |
 | 0.9 | Siegerehrung | released on 2026-11-08: [#308](https://github.com/christried/compies/issues/308); the minimum for the first Event |
-| 0.10 | Feinschliff | grilled and ticketed on 2026-11-08: [#332](https://github.com/christried/compies/issues/332) |
+| 0.10 | Feinschliff | released on 2026-11-09: [#332](https://github.com/christried/compies/issues/332); the list that waited for the first Event, plus the production check |
 | 0.11 | Profil | next; grilled in its own session while 0.10 is built |
 | 0.12 | Eventseite | the Event page findings of the production check; grilled in its own session |
 | 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled in its own session |
