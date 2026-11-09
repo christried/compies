@@ -42,11 +42,11 @@ const SHARE_ROW_ROOM = 44 + 18
 const ground = computed(() => `${roomy.value ? track.value : track.value + SHARE_ROW_ROOM}px`)
 
 // The sizes of a Tie's chain, grid and plate (`app/utils/ceremony-sizes.ts`, #328).
-const chain = computed(() => chainSizes(roomy.value === true, winners.value.length))
-const grid = computed(() => gridSizes(roomy.value === true))
-const plate = computed(() => plateSizes(roomy.value === true))
+const chain = computed(() => chainSizes(roomy.value, winners.value.length))
+const grid = computed(() => gridSizes(roomy.value))
+const plate = computed(() => plateSizes(roomy.value))
 /** The width of the Winner group, which the plate takes (#315). */
-const winnersWidth = computed(() => groupWidth(props.layout, winners.value.length, roomy.value === true))
+const winnersWidth = computed(() => groupWidth(props.layout, winners.value.length, roomy.value))
 
 /** What a screen reader hears of a grid card's stack: the Party and its Players' names, the rest counted. */
 function stackLabel(winner: CeremonyWinner) {
