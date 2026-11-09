@@ -2,7 +2,6 @@
 import { Equal } from '@lucide/vue'
 import { boxWithin } from '~/utils/ceremony-tie-run'
 import { ceremonySizes } from '~/utils/ceremony-sizes'
-import { teamSurfaceStyle } from '~/utils/team-style'
 import type { CeremonyLayout, CeremonyModel, CeremonyPerson, CeremonyWinner } from '~/utils/ceremony'
 import type { RigState } from '~/utils/compibert-rig'
 
@@ -12,6 +11,8 @@ import type { RigState } from '~/utils/compibert-rig'
 // and reduced motion see); the Pokal-Lauf (#312, `app/utils/ceremony-run.ts`) takes the `data-part` elements to their first frame and plays
 // them from there. A Tie (#315, 12-siegerehrung-unentschieden.md, reference Siegerehrung Unentschieden.dc.html frame()) stands under one shared
 // plate „Platz 1“: a chain of cards joined by „=“ (2 Winners, on a wide screen 3) or a grid of compact cards, each with its Party's people.
+// The stage keeps the banner, the lists with their `aria-label`s and `data-rows`, the people's `<li>`s, Compibert, the trophy, the share row and the
+// confetti; a Winner's card (`CeremonyWinnerCard`) and a Standing's row (`CeremonyStandingRow`) are components (#364), and every size comes from `sizes`.
 const props = defineProps<{
   model: CeremonyModel
   /** The id of the banner's heading, which names the dialog the layer puts around this. */
@@ -37,7 +38,6 @@ function stackLabel(winner: CeremonyWinner) {
 }
 
 const root = useTemplateRef<HTMLElement>('root')
-const card = useTemplateRef<HTMLElement>('card')
 const confetti = useTemplateRef('confetti')
 
 /** Confetti, from just above a card's or the plate's top centre: the stamp's, or the trophy's landing on the card of a chain (`index`). Counts: `sizes.confetti`. */
@@ -45,8 +45,10 @@ function burst(target: 'stamp' | number = 'stamp') {
   const stage = root.value
   const count = typeof target === 'number' ? sizes.value.confetti.card : sizes.value.confetti.stamp
   if (props.layout.stage === 'single') {
-    if (!card.value) return
-    confetti.value?.burst(card.value.offsetLeft + card.value.offsetWidth / 2, card.value.offsetTop - 10, count)
+    // The card is a component's root now (#364): found by its part, and the stage is its offsetParent as before.
+    const card = stage?.querySelector<HTMLElement>('[data-part="card"]')
+    if (!card) return
+    confetti.value?.burst(card.offsetLeft + card.offsetWidth / 2, card.offsetTop - 10, count)
     return
   }
   const element = typeof target === 'number'
@@ -87,39 +89,10 @@ defineExpose({ root, burst })
       class="flex w-full max-w-[820px] flex-wrap items-start justify-center gap-x-7 gap-y-5"
     >
       <div class="flex max-w-full flex-none flex-col items-center gap-4">
-        <div
-          ref="card"
-          data-testid="winner-card"
-          data-part="card"
-          class="relative h-[160px] w-[240px] max-w-full overflow-hidden rounded-[16px] border-(length:--cp-bw) border-line bg-surface shadow-card"
-        >
-          <div data-part="back">
-            <div
-              class="flex h-10 flex-none items-center overflow-hidden border-b-(length:--cp-bw) border-line px-3 text-[16px] font-extrabold whitespace-nowrap"
-              :style="teamSurfaceStyle(first.team)"
-            >
-              <span class="truncate">{{ first.name }}</span>
-            </div>
-            <div class="flex flex-col gap-1 px-3.5 py-3">
-              <span class="text-[13px] font-bold text-ink-2">{{ t('ceremony.place1') }}</span>
-              <span class="font-num text-[32px] leading-none">{{ t('ceremony.pts', { n: model.points }) }}</span>
-            </div>
-          </div>
-          <!-- The front is decoration (opacity-0 in the static end frame, the run shows it at its first frame): „Platz 1“ stays real text on the back. -->
-          <div
-            data-part="front"
-            aria-hidden="true"
-            class="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-paper-2 opacity-0"
-          >
-            <span class="font-num text-[48px] leading-none">???</span>
-            <span class="text-[13px] font-bold text-ink-2">{{ t('ceremony.place1') }}</span>
-          </div>
-          <!-- The stamp is a physical sticker: fixed in both modes. -->
-          <span
-            data-part="stamp"
-            class="absolute right-3 bottom-3 -rotate-8 rounded-[6px] border-[3px] border-hot bg-surface px-2.5 py-0.5 font-num text-[20px] text-hot"
-          >{{ t('ceremony.stamp') }}</span>
-        </div>
+        <CeremonyWinnerCard
+          :winner="first"
+          :stage="sizes.stage"
+        />
 
         <ul
           :aria-label="t('ceremony.players')"
@@ -205,42 +178,10 @@ defineExpose({ root, burst })
                 class="flex flex-col items-center"
                 :style="{ gap: `${sizes.stage.peopleGap}px` }"
               >
-                <div
-                  data-testid="winner-card"
-                  data-part="card"
-                  class="relative box-border flex-none overflow-hidden rounded-[16px] border-(length:--cp-bw) border-line bg-surface shadow-card"
-                  :style="{ width: `${sizes.stage.cardWidth}px`, height: `${sizes.stage.cardHeight}px` }"
-                >
-                  <div
-                    data-part="back"
-                    class="absolute inset-0 flex flex-col"
-                  >
-                    <div
-                      class="flex min-w-0 flex-none items-center border-b-(length:--cp-bw) border-line px-3 font-extrabold"
-                      :style="{ height: `${sizes.stage.stripHeight}px`, fontSize: `${sizes.stage.nameFontSize}px`, ...teamSurfaceStyle(winner.team) }"
-                    >
-                      <span class="truncate">{{ winner.name }}</span>
-                    </div>
-                    <div
-                      class="flex flex-1 items-start font-num leading-none"
-                      :style="{ padding: sizes.stage.pointsPadding, fontSize: `${sizes.stage.pointsFontSize}px` }"
-                    >
-                      {{ t('ceremony.pts', { n: winner.points }) }}
-                    </div>
-                  </div>
-                  <div
-                    data-part="front"
-                    aria-hidden="true"
-                    class="absolute inset-0 flex flex-col items-center justify-center bg-paper-2 opacity-0"
-                  >
-                    <span class="font-num text-[40px] leading-none">???</span>
-                  </div>
-                  <span
-                    data-part="stamp"
-                    class="absolute -rotate-8 rounded-[6px] border-[3px] border-hot bg-surface px-2.5 py-0.5 font-num text-hot"
-                    :style="{ right: `${sizes.stage.stampOffset}px`, bottom: `${sizes.stage.stampOffset}px`, fontSize: `${sizes.stage.stampFontSize}px` }"
-                  >{{ t('ceremony.stamp') }}</span>
-                </div>
+                <CeremonyWinnerCard
+                  :winner="winner"
+                  :stage="sizes.stage"
+                />
                 <ul
                   :aria-label="winner.name"
                   data-part="party"
@@ -290,67 +231,31 @@ defineExpose({ root, burst })
             class="m-0 flex list-none flex-wrap justify-center p-0"
             :style="{ gap: `${sizes.stage.cardGap}px`, width: `${sizes.groupWidth}px` }"
           >
-            <li
+            <CeremonyWinnerCard
               v-for="winner in winners"
               :key="winner.team"
-              data-testid="winner-card"
-              data-part="card"
-              class="relative box-border flex-none overflow-hidden rounded-[14px] border-(length:--cp-bw) border-line bg-surface shadow-card"
-              :style="{ width: `${sizes.stage.cardWidth}px`, height: `${sizes.stage.cardHeight}px` }"
+              :winner="winner"
+              :stage="sizes.stage"
             >
-              <div
-                data-part="back"
-                class="absolute inset-0 flex flex-col"
+              <ul
+                :aria-label="stackLabel(winner)"
+                data-part="stack"
+                class="m-0 flex list-none items-center p-0"
               >
-                <div
-                  class="flex min-w-0 flex-none items-center border-b-(length:--cp-bw) border-line px-2.5 font-extrabold"
-                  :style="{ height: `${sizes.stage.stripHeight}px`, fontSize: `${sizes.stage.nameFontSize}px`, ...teamSurfaceStyle(winner.team) }"
+                <li
+                  v-for="(person, at) in winner.people"
+                  :key="at"
+                  class="flex"
+                  :style="{ marginLeft: at > 0 ? `${-sizes.stage.avatarOverlap}px` : '0' }"
                 >
-                  <span class="truncate">{{ winner.name }}</span>
-                </div>
-                <div
-                  class="flex flex-1 flex-col justify-center px-2.5"
-                  :style="{ gap: `${sizes.stage.backGap}px` }"
-                >
-                  <div class="flex items-center justify-between gap-2">
-                    <span
-                      class="font-num leading-none"
-                      :style="{ fontSize: `${sizes.stage.pointsFontSize}px` }"
-                    >{{ t('ceremony.pts', { n: winner.points }) }}</span>
-                    <span
-                      data-part="stamp"
-                      class="-rotate-8 rounded-[5px] border-[2.5px] border-hot bg-surface px-[7px] py-px font-num leading-[1.2] text-hot"
-                      :style="{ fontSize: `${sizes.stage.stampFontSize}px` }"
-                    >{{ t('ceremony.stamp') }}</span>
-                  </div>
-                  <ul
-                    :aria-label="stackLabel(winner)"
-                    data-part="stack"
-                    class="m-0 flex list-none items-center p-0"
-                  >
-                    <li
-                      v-for="(person, at) in winner.people"
-                      :key="at"
-                      class="flex"
-                      :style="{ marginLeft: at > 0 ? `${-sizes.stage.avatarOverlap}px` : '0' }"
-                    >
-                      <CeremonyPersonCell
-                        :person="person"
-                        :size="sizes.stage.avatarSize"
-                        stack
-                      />
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div
-                data-part="front"
-                aria-hidden="true"
-                class="absolute inset-0 flex flex-col items-center justify-center bg-paper-2 opacity-0"
-              >
-                <span class="font-num text-[32px] leading-none">???</span>
-              </div>
-            </li>
+                  <CeremonyPersonCell
+                    :person="person"
+                    :size="sizes.stage.avatarSize"
+                    stack
+                  />
+                </li>
+              </ul>
+            </CeremonyWinnerCard>
           </ol>
         </div>
 
@@ -389,8 +294,8 @@ defineExpose({ root, burst })
       aria-hidden="true"
       class="absolute inset-x-0 bottom-0 h-[22px] border-t-(length:--cp-bw) border-line bg-paper-2"
     />
-    <!-- Compibert's box starts at the stage's left edge: the run's x is a stage coordinate (ceremony-run.ts). The rig (#311), 150 px on a
-         desktop and 120 on a phone, holds the pose the layer decides (the run's timeline, then the dance; under reduced motion the cheer,
+    <!-- Compibert's box starts at the stage's left edge: the run's x is a stage coordinate (ceremony-run.ts). The rig (#311), sized by `sizes.compibert`,
+         holds the pose the layer decides (the run's timeline, then the dance; under reduced motion the cheer,
          held). It is mounted with the layer's dialog only, so GSAP loads when the ceremony opens and never on a finished Event page that
          stays closed (ADR 0015), and it hides itself from assistive technology. -->
     <div
