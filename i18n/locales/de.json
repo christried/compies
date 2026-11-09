@@ -1073,9 +1073,11 @@
     "title": "Einstellungen",
     "soundHelp": "Clips starten mit Ton. Wird auf diesem Gerät gemerkt.",
     "theme": "Darstellung",
+    "themeHelp": "Gilt auf allen deinen Geräten. System folgt deinem Gerät.",
     "light": "Hell",
     "dark": "Dunkel",
-    "system": "System"
+    "system": "System",
+    "themeSaveFailed": "Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal."
   },
   "eventSettings": {
     "kicker": "Einstellungen",

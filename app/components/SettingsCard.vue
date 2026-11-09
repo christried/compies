@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { Volume2 } from '@lucide/vue'
+import { Sun, Volume2 } from '@lucide/vue'
+import type { Appearance } from '~~/shared/auth'
 
 // The card „Einstellungen“ on the Profil page (screen 25, shipped trimmed, #400): one SettingsRow per setting. Ton is the device's Sound
-// (GLOSSARY § Sound), the same state as the header's button, stored as before. Darstellung follows as the second row (#404).
+// (GLOSSARY § Sound), the same state as the header's button, stored as before. Darstellung is the User's Appearance (GLOSSARY § Appearance,
+// #404): a tap shows it at once and saves it; a failed save switches back with a notice.
 const { t } = useI18n()
 const sound = useSound()
+const appearance = useAppearance()
+const appearanceOptions = computed<{ value: Appearance, label: string }[]>(() => [
+  { value: 'light', label: t('settings.light') },
+  { value: 'dark', label: t('settings.dark') },
+  { value: 'system', label: t('settings.system') },
+])
 </script>
 
 <template>
@@ -34,6 +42,31 @@ const sound = useSound()
           />
         </template>
       </SettingsRow>
+
+      <SettingsRow
+        :icon="Sun"
+        :title="t('settings.theme')"
+        :description="t('settings.themeHelp')"
+      >
+        <template #default="{ descriptionId }">
+          <SegmentedControl
+            :model-value="appearance.appearance.value"
+            :options="appearanceOptions"
+            :label="t('settings.theme')"
+            :aria-describedby="descriptionId"
+            @update:model-value="appearance.choose"
+          />
+        </template>
+      </SettingsRow>
+    </div>
+
+    <div
+      v-if="appearance.failed.value"
+      class="px-[18px] pt-1.5 pb-3"
+    >
+      <NoticeBanner tone="critical">
+        {{ t('settings.themeSaveFailed') }}
+      </NoticeBanner>
     </div>
   </section>
 </template>
