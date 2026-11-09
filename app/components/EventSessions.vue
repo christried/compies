@@ -115,6 +115,12 @@ const targets = computed<MoveTarget[]>(() => {
   return menuKeys(row).map(entry)
 })
 
+// A Realtime refetch can start or end the row's Session, turn it into a poll or remove it while its menu is open: the menu then has no
+// entries (and its trigger is gone), so it closes, without a focus call (#349, review SPEC-2).
+watch(targets, (entries) => {
+  if (menu.value !== null && entries.length === 0) menu.value = null
+})
+
 /** A plain entry: the menu closes first, so the focus is on the trigger before a dialog or sheet opens (as HostDock.runFromMenu). */
 function pick(key: string) {
   const rowId = menu.value?.rowId
