@@ -201,14 +201,21 @@ watch(actionsKey, () => {
             >{{ character }}</span>
           </span>
         </span>
+        <!-- The ghost's box is 1.315 times the tile at rest and 1.644 in the burst: the wrapper clips that empty box, so the page does not scroll
+          sideways at 390 px (#379). The rings, the digits and the stamp are not clipped: they radiate past the tile on purpose. -->
         <span
           v-if="frame.view === 'done'"
-          ref="ghost"
-          data-cd="ghost"
           aria-hidden="true"
-          class="pointer-events-none absolute inset-0 grid place-items-center font-timer text-[68px] leading-[.9] opacity-0 md:text-[96px]"
-          style="transform: scale(1.315)"
-        >1</span>
+          class="pointer-events-none absolute inset-0 overflow-hidden"
+        >
+          <span
+            ref="ghost"
+            data-cd="ghost"
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 grid place-items-center font-timer text-[68px] leading-[.9] opacity-0 md:text-[96px]"
+            style="transform: scale(1.315)"
+          >1</span>
+        </span>
         <span
           v-if="frame.view === 'paused'"
           data-cd="badge"
