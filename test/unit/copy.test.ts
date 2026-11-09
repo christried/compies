@@ -77,6 +77,11 @@ describe('copy rules', () => {
     expect(normalise(valueOf('legal.impressum.contact.text'))).toContain(address)
     expect(normalise(valueOf('legal.datenschutz.controller.text'))).toContain(address)
   })
+
+  it('has no „Geschafft“ kicker left on the Event-created screen (#353)', () => {
+    expect(Object.keys(de.stepper.done)).not.toContain('kicker')
+    expect(entries.some(e => e.value === 'Geschafft')).toBe(false)
+  })
 })
 
 // A number in the copy that can be 1 needs a singular form (#268): „1 Spiele auf dem Rad“ reached staging in 0.7 (#263).

@@ -1497,7 +1497,6 @@
     },
     "create": "Event erstellen",
     "done": {
-      "kicker": "Geschafft",
       "title": "Event erstellt",
       "heading": "{name} steht!",
       "datesPoll": "Umfrage, {n} Vorschlag | Umfrage, {n} Vorschläge",

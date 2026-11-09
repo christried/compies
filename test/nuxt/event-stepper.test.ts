@@ -471,7 +471,10 @@ describe('the stepper', () => {
           poolPreview: true,
         },
       })
-      expect(page.text()).toContain('Geschafft')
+      expect(page.text()).not.toContain('Geschafft')
+      expect(page.get('h1').text()).toBe('Freitags-Zocken steht!')
+      const back = page.findAll('a').find(a => a.text() === 'Zurück')!
+      expect(back.attributes('href')).toBe('/')
       expect(page.text()).toContain('4 Teams à 2, Host-Wahl, 6 Spiele.')
       const list = page.get('dl')
       expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Auswahl', 'Punkte', 'Pool', 'Termin'])

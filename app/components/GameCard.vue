@@ -39,6 +39,7 @@ const shownTags = computed(() => (props.game.tags ?? []).slice(0, TAGS_SHOWN))
 const moreTags = computed(() => Math.max(0, (props.game.tags ?? []).length - TAGS_SHOWN))
 
 // One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.
+// The body grows, so the actions sit on the card's bottom edge in a stretched grid row (#351).
 const LAYOUT = {
   row: {
     box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5',
@@ -50,14 +51,14 @@ const LAYOUT = {
   card: {
     box: 'flex-col overflow-hidden rounded-[14px]',
     cover: 'aspect-[16/10] w-full border-b-2',
-    body: 'px-3 pt-2.5 pb-3',
+    body: 'flex-auto px-3 pt-2.5 pb-3',
     name: 'line-clamp-2',
     actions: 'px-3 pb-3',
   },
   responsive: {
     box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5 md:min-h-0 md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:rounded-[14px] md:p-0',
     cover: 'size-[46px] rounded-[9px] border-2 md:aspect-[16/10] md:size-auto md:w-full md:rounded-none md:border-0 md:border-b-2',
-    body: 'flex-1 md:flex-none md:px-3 md:pt-2.5 md:pb-3',
+    body: 'flex-1 md:flex-auto md:px-3 md:pt-2.5 md:pb-3',
     name: 'truncate md:line-clamp-2 md:whitespace-normal',
     actions: 'md:px-3 md:pb-3',
   },

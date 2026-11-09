@@ -16,6 +16,8 @@
 - **Glücksrad-Karte:** Die Karte des Glücksrads zeigt nicht mehr, wie viele Spiele auf dem Rad liegen; Screenreader lesen die Zahl weiter vor. ([#354](https://github.com/christried/compies/issues/354))
 - **Clip-Fenster:** Im Clip-Fenster klebt „Clip läuft für alle“ nicht mehr als Pille über dem Video; der Host sieht den Status jetzt unten neben „Clip überspringen“, alle anderen sehen nur das Video. ([#356](https://github.com/christried/compies/issues/356))
 - Im Setup steht bei Optionen, die noch nicht wählbar sind, jetzt fett „Bald verfügbar“ mit Schloss unter dem Titel statt in einer Pille. ([#350](https://github.com/christried/compies/issues/350))
+- Beim Zusammenstellen des Spielepools und bei „Nächstes Spiel setzen“ sitzen die Plus-Knöpfe aller Spielkarten einer Reihe jetzt auf einer Höhe, unten an der Karte. ([#351](https://github.com/christried/compies/issues/351))
+- Der Zurück-Link oben auf Impressum, Datenschutzerklärung, Neuigkeiten, in der Bibliothek und nach dem Anlegen eines Events ist jetzt größer und kräftiger, und das kleine „Geschafft“ über dem Titel nach dem Anlegen ist weg. ([#353](https://github.com/christried/compies/issues/353))
 
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
