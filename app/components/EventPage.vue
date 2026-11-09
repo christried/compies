@@ -271,8 +271,7 @@ const { news } = useStandingsNews(data, slug)
     <VetoBar
       v-if="data?.wheel"
       :wheel="data.wheel"
-      :members="data.members"
-      :viewer-id="data.viewerId"
+      :teams="data.teams"
       :solo="data.settings?.teamSize === 1"
       :server-now="serverClock.now"
       :cast="actions.castVeto"

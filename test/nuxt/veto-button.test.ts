@@ -5,15 +5,15 @@ import VetoButton from '~/components/VetoButton.vue'
 import type { OwnVetoView } from '~~/shared/stage'
 
 // The hold-to-veto button of a Player (#231, 04-motion § Hold to confirm, reference App Spielrunde „Eigenes Veto versiegelt“): ready,
-// holding, cast, sealed for the Player who cast, locked for their teammates, disabled when no Veto is left, and absent for everybody
+// holding, cast (locked and sealed for the whole Party, #355: nobody learns which Player cast), disabled when no Veto is left, and absent for everybody
 // who plays in no Party or when the window is not open. It sits in the VetoBar (F4), which has the title and the lines around it.
 
-const own = (fields: Partial<OwnVetoView> = {}): OwnVetoView => ({ team: 1, castBy: null, rejection: null, ...fields })
+const own = (fields: Partial<OwnVetoView> = {}): OwnVetoView => ({ team: 1, cast: false, rejection: null, ...fields })
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(props: { own?: OwnVetoView | null, open?: boolean, cast?: () => Promise<boolean> } = {}) {
-  page = await mountSuspended(VetoButton, { props: { own: own(), open: true, viewerId: 'me', cast: () => Promise.resolve(true), ...props } })
+  page = await mountSuspended(VetoButton, { props: { own: own(), open: true, cast: () => Promise.resolve(true), ...props } })
   await flushPromises()
   return page
 }
@@ -63,20 +63,12 @@ describe('the hold-to-veto button', () => {
     expect(cast).toHaveBeenCalledTimes(1)
   })
 
-  it('shows the Player who cast the sealed Veto a locked pill with the seal stamp, and no button to hold', async () => {
-    await mount({ own: own({ castBy: 'me', rejection: 'veto_already_cast' }) })
+  it('shows every Player of a Party that cast a locked pill with the seal stamp, and no button to hold: the caster and a teammate alike (#355)', async () => {
+    await mount({ own: own({ cast: true, rejection: 'veto_already_cast' }) })
 
     expect(text()).toContain('Veto ist drin')
     expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Versiegelt')
     expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(false)
-  })
-
-  it('locks the button for a teammate once the Party cast, without the stamp', async () => {
-    await mount({ own: own({ castBy: 'mate', rejection: 'veto_already_cast' }) })
-
-    expect(text()).toContain('Veto ist drin')
-    expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(false)
-    expect(page!.find('[data-testid="veto-seal"]').exists()).toBe(false)
   })
 
   it('is disabled when the Party has no Veto left, and a hold casts nothing', async () => {

@@ -227,7 +227,7 @@ describe('Vetoes', () => {
       const view = await read(party, party.cookies.one)
       expect(view.rounds).toEqual([])
       expect(view.wheel!.vetoes.draw).toMatchObject({ drawId, kind: 'set', stopAt: iso(0), vetoEndsAt: iso(VETO_WINDOW_MS), game: { id: gameId, name: 'Halo', price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } } })
-      expect(view.wheel!.vetoes.own).toEqual({ team: 1, castBy: null, rejection: null })
+      expect(view.wheel!.vetoes.own).toEqual({ team: 1, cast: false, rejection: null })
       expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
     })
 
@@ -267,7 +267,7 @@ describe('Vetoes', () => {
       expect(view.setGame?.left).not.toContain(gameId)
       expect(view.setGame?.left).toHaveLength(3)
       expect(view.setGame?.respin).toBe(true)
-      expect(view.wheel!.vetoes.revealed).toEqual([{ team: 2, userId: party.ids.three }])
+      expect(view.wheel!.vetoes.revealed).toEqual([{ team: 2 }])
 
       const respun = await spin(party)
       expect(respun.status).toBe(200)
@@ -369,11 +369,11 @@ describe('Vetoes', () => {
       await cast(party, drawId, party.cookies.one)
 
       const other = (await read(party, party.cookies.three)).wheel!.vetoes
-      expect(other).toMatchObject({ left: [2, 2], own: { team: 2, castBy: null, rejection: null }, revealed: null })
-      expect((await read(party, party.cookies.one)).wheel!.vetoes.own).toEqual({ team: 1, castBy: party.ids.one, rejection: 'veto_already_cast' })
+      expect(other).toMatchObject({ left: [2, 2], own: { team: 2, cast: false, rejection: null }, revealed: null })
+      expect((await read(party, party.cookies.one)).wheel!.vetoes.own).toEqual({ team: 1, cast: true, rejection: 'veto_already_cast' })
 
       clock.advance(VETO_WINDOW_MS)
-      expect((await read(party, party.cookies.three)).wheel!.vetoes).toMatchObject({ left: [1, 2], revealed: [{ team: 1, userId: party.ids.one }] })
+      expect((await read(party, party.cookies.three)).wheel!.vetoes).toMatchObject({ left: [1, 2], revealed: [{ team: 1 }] })
     })
 
     it('reveals only the set game to a Member under a Hidden wheel: nothing else of the pool', async () => {
@@ -685,14 +685,14 @@ describe('Vetoes', () => {
     })
 
     describe('sealed until the window ends', () => {
-      it('shows the casting Party that it cast, and who: the caster and the teammate alike, the teammate locked out', async () => {
+      it('shows the casting Party that it cast: the caster and the teammate alike, the teammate locked out', async () => {
         const party = await running()
         const { drawId } = await windowOpen(party)
         await cast(party, drawId, party.cookies.one)
 
         for (const cookie of [party.cookies.one, party.cookies.two]) {
           const { vetoes: veto } = (await read(party, cookie)).wheel!
-          expect(veto).toEqual({ left: [1, 2], own: { team: 1, castBy: party.ids.one, rejection: 'veto_already_cast' }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
+          expect(veto).toEqual({ left: [1, 2], own: { team: 1, cast: true, rejection: 'veto_already_cast' }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
         }
       })
 
@@ -702,7 +702,7 @@ describe('Vetoes', () => {
         await cast(party, drawId, party.cookies.one)
 
         const other = (await read(party, party.cookies.three)).wheel!.vetoes
-        expect(other).toEqual({ left: [2, 2], own: { team: 2, castBy: null, rejection: null }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
+        expect(other).toEqual({ left: [2, 2], own: { team: 2, cast: false, rejection: null }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
         for (const cookie of [party.hostCookie, party.cookies.bench, party.cookies.stands]) {
           expect((await read(party, cookie)).wheel!.vetoes).toEqual({ left: [2, 2], own: null, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
         }
@@ -734,7 +734,7 @@ describe('Vetoes', () => {
     })
 
     describe('the reveal at the end of the window', () => {
-      it('shows every Party\'s Veto to everyone from the end on, with who cast it, and counts the Vetoes as used up', async () => {
+      it('shows every Party\'s Veto to everyone from the end on, and counts the Vetoes as used up', async () => {
         const party = await running()
         const { drawId } = await windowOpen(party)
         await cast(party, drawId, party.cookies.two)
@@ -744,7 +744,7 @@ describe('Vetoes', () => {
 
         for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three, party.cookies.bench, party.cookies.stands]) {
           const veto = (await read(party, cookie)).wheel!.vetoes
-          expect(veto.revealed).toEqual([{ team: 1, userId: party.ids.two }, { team: 2, userId: party.ids.three }])
+          expect(veto.revealed).toEqual([{ team: 1 }, { team: 2 }])
           expect(veto.left).toEqual([1, 1])
         }
       })
@@ -763,7 +763,7 @@ describe('Vetoes', () => {
         expect(view.setGame?.spinRejection).toBeNull()
       })
 
-      it('writes „vetoes revealed“ into the feed from the end on, not before, with who cast them and the vetoed game', async () => {
+      it('writes „vetoes revealed“ into the feed from the end on, not before, with the Parties that cast them and the vetoed game', async () => {
         const party = await running()
         const { roundId, drawId } = await windowOpen(party)
         const [row] = await drawRows()
@@ -780,8 +780,8 @@ describe('Vetoes', () => {
         expect(entries[0]).toMatchObject({
           at: iso(END),
           type: 'vetoes_revealed',
-          params: { roundId, drawId, gameId: row!.gameId, vetoes: [{ team: 1, userId: party.ids.two }, { team: 2, userId: party.ids.three }] },
-          people: { [party.ids.two]: 'Zwei', [party.ids.three]: 'Drei' },
+          params: { roundId, drawId, gameId: row!.gameId, vetoes: [{ team: 1 }, { team: 2 }] },
+          people: {},
         })
       })
 
@@ -809,7 +809,112 @@ describe('Vetoes', () => {
 
         clock.advance(VETO_WINDOW_MS)
 
-        expect((await read(party, party.cookies.three)).wheel!.vetoes).toEqual({ left: [2, 2], own: { team: 2, castBy: null, rejection: 'veto_window_closed' }, revealed: [], draw: expect.objectContaining({ kind: 'spin' }) })
+        expect((await read(party, party.cookies.three)).wheel!.vetoes).toEqual({ left: [2, 2], own: { team: 2, cast: false, rejection: 'veto_window_closed' }, revealed: [], draw: expect.objectContaining({ kind: 'spin' }) })
+      })
+    })
+
+    // A Veto belongs to the Party (#355): no client ever learns which Player cast it; only the `vetoes` row keeps it.
+    describe('no caster in any payload (#355)', () => {
+      const viewers = ['host', 'one', 'two', 'three', 'bench', 'stands'] as const
+      const cookieOf = (party: Party, who: typeof viewers[number]) => who === 'host' ? party.hostCookie : party.cookies[who]
+
+      /** The text holds no id of any User of the Party: caster, teammate, other Party, Host, Bench, Stands. */
+      function expectNoUserId(party: Party, text: string, where: string) {
+        for (const id of Object.values(party.ids)) expect(text, where).not.toContain(id)
+      }
+
+      it('keeps the caster out of the Event read while the window runs: the casting Party sees that it cast, the others see nothing', async () => {
+        const party = await running()
+        const { drawId } = await windowOpen(party)
+        expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
+
+        for (const who of viewers) expectNoUserId(party, JSON.stringify((await read(party, cookieOf(party, who))).wheel), `the Event read of ${who}`)
+        for (const who of ['one', 'two'] as const) expect((await read(party, cookieOf(party, who))).wheel!.vetoes.own, who).toEqual({ team: 1, cast: true, rejection: 'veto_already_cast' })
+        expect((await read(party, party.cookies.three)).wheel!.vetoes.own!.cast).toBe(false)
+        expect((await read(party, party.hostCookie)).wheel!.vetoes.own).toBeNull()
+      })
+
+      it('keeps the caster out of the reveal: every viewer gets the Parties that vetoed, nothing else', async () => {
+        const party = await running()
+        const { drawId } = await windowOpen(party)
+        await cast(party, drawId, party.cookies.two)
+        await cast(party, drawId, party.cookies.three)
+
+        clock.advance(VETO_WINDOW_MS)
+
+        for (const who of viewers) {
+          const { wheel } = await read(party, cookieOf(party, who))
+          expect(wheel!.vetoes.revealed, who).toEqual([{ team: 1 }, { team: 2 }])
+          expectNoUserId(party, JSON.stringify(wheel), `the Event read of ${who} after the reveal`)
+        }
+      })
+
+      it('names the Parties only in the feed entry, and no Player: `params.vetoes` has the team, `people` is empty', async () => {
+        const party = await running()
+        const { drawId } = await windowOpen(party)
+        await cast(party, drawId, party.cookies.two)
+        await cast(party, drawId, party.cookies.three)
+
+        clock.advance(VETO_WINDOW_MS)
+
+        for (const who of viewers) {
+          const entry = (await feedOf(party, cookieOf(party, who))).find(item => item.type === 'vetoes_revealed')
+          expect(entry, who).toBeDefined()
+          expect((entry!.params as { vetoes: unknown[] }).vetoes, who).toEqual([{ team: 1 }, { team: 2 }])
+          expect(entry!.people, who).toEqual({})
+          expectNoUserId(party, JSON.stringify(entry), `the feed entry of ${who}`)
+        }
+      })
+
+      it('strips the caster from an entry that was written with it: the old deployment still writes it while this one rolls out', async () => {
+        const party = await running()
+        const { roundId, drawId } = await windowOpen(party)
+        const [row] = await drawRows()
+        await testDb.db.insert(activity).values({
+          eventId: party.eventId, type: 'vetoes_revealed', actorId: null, at: new Date(iso(-1000)),
+          params: { roundId, drawId, gameId: row!.gameId, vetoes: [{ team: 1, userId: party.ids.two }] } as never,
+        })
+
+        for (const who of viewers) {
+          const entry = (await feedOf(party, cookieOf(party, who))).find(item => item.type === 'vetoes_revealed')
+          expect(entry, who).toBeDefined()
+          expect((entry!.params as { vetoes: unknown[] }).vetoes, who).toEqual([{ team: 1 }])
+          expect(entry!.people, who).toEqual({})
+          expectNoUserId(party, JSON.stringify(entry), `the legacy feed entry of ${who}`)
+        }
+      })
+
+      it('sends the room the Party only: no Player in any message, and the POST answers the draw and the Party', async () => {
+        const party = await running()
+        const { drawId } = await windowOpen(party)
+        notifier.clear()
+
+        const response = await cast(party, drawId, party.cookies.one)
+
+        expect(await response.json()).toEqual({ drawId, team: 1 })
+        // The `to` list of a send is routing (the whole Party), not payload: only the messages are checked.
+        expectNoUserId(party, JSON.stringify(notifier.messages(party.eventId)), 'the room messages')
+        expectNoUserId(party, JSON.stringify(notifier.sends(party.eventId).map(send => send.messages)), 'the sealed sends')
+      })
+
+      it('keeps the pool warning and the settings floors free of a Player: they carry numbers only', async () => {
+        const party = await running()
+        const { drawId } = await windowOpen(party)
+        await cast(party, drawId, party.cookies.one)
+
+        for (const cookie of [party.hostCookie, party.cookies.one]) {
+          const view = await read(party, cookie)
+          expectNoUserId(party, JSON.stringify({ pool: view.setGame?.poolWarning ?? null, floors: view.settingsFloors }), 'the pool warning and the floors')
+        }
+      })
+
+      it('still stores the Player who cast it: only the database keeps it', async () => {
+        const party = await running()
+        const { drawId } = await windowOpen(party)
+
+        await cast(party, drawId, party.cookies.one)
+
+        expect(await vetoRows()).toEqual([{ drawId, team: 1, userId: party.ids.one, castAt: new Date(iso(STOP)) }])
       })
     })
   })

@@ -25,7 +25,6 @@ const wheel = computed(() => props.view.wheel!)
       v-if="wheel.vetoes.draw"
       :wheel="wheel"
       :teams="view.teams"
-      :members="view.members"
       :server-now="serverNow"
     />
   </div>

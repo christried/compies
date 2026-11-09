@@ -25,13 +25,13 @@ export function dueDraws(db: Db, eventId: string, now: Date) {
  * the instant settles it), in the caller's transaction under the Event row lock. One arm per kind of instant. A draw without a
  * Veto window is set at its stop. A draw with one settles at the end of the window: its outcome follows from its Vetoes
  * (drawOutcome). Set, its Round has the game; vetoed, the Round stays without a game and waits for a respin, and the feed gets
- * „vetoes_revealed“ with who cast them. Everything is stamped with the instant that decided it, not with `now`. Idempotent: a
+ * „vetoes_revealed“ with the Parties that cast them (#355: not the Players). Everything is stamped with the instant that decided it, not with `now`. Idempotent: a
  * settled draw has an outcome and is not due again.
  */
 export async function settleDue(tx: Db, eventRow: Pick<EventRow, 'id'>, now: Date): Promise<void> {
   for (const draw of await dueDraws(tx, eventRow.id, now)) {
     const settledAt = draw.vetoEndsAt ?? draw.stopAt
-    const casts = draw.vetoEndsAt ? await tx.select({ team: vetoes.team, userId: vetoes.userId }).from(vetoes).where(eq(vetoes.drawId, draw.id)).orderBy(asc(vetoes.team)) : []
+    const casts = draw.vetoEndsAt ? await tx.select({ team: vetoes.team }).from(vetoes).where(eq(vetoes.drawId, draw.id)).orderBy(asc(vetoes.team)) : []
     const outcome = drawOutcome(casts.length)
     const [settled] = await tx.update(draws).set({ outcome, settledAt }).where(and(eq(draws.id, draw.id), isNull(draws.outcome))).returning({ id: draws.id })
     if (!settled) continue

@@ -14,7 +14,7 @@ const EVENT = '00000000-0000-4000-8000-0000000000e1'
 
 const NEW_KINDS = {
   game_drawn: { roundId: 'r1', drawId: 'd1', gameId: 'g1' },
-  vetoes_revealed: { roundId: 'r1', drawId: 'd1', gameId: 'g1', vetoes: [{ team: 2, userId: HOST }] },
+  vetoes_revealed: { roundId: 'r1', drawId: 'd1', gameId: 'g1', vetoes: [{ team: 2 }] },
   game_set: { roundId: 'r1', gameId: 'g1' },
   game_put_back: { roundId: 'r1', gameId: 'g1' },
   bonus_veto_granted: { team: 1 },

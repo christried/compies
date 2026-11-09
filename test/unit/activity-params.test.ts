@@ -29,7 +29,7 @@ const NAMED: Record<ActivityType, { params: unknown, people: string[], games: st
   game_count_changed: { params: { from: 3, to: 4 }, people: [], games: [] },
   team_size_changed: { params: { from: 2, to: 3 }, people: [], games: [] },
   game_drawn: { params: { roundId: 'r', drawId: 'd', gameId: 'g1' }, people: [], games: ['g1'] },
-  vetoes_revealed: { params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }] }, people: ['u1', 'u2'], games: ['g1'] },
+  vetoes_revealed: { params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 1 }, { team: 2 }] }, people: [], games: ['g1'] },
   game_set: { params: { roundId: 'r', gameId: 'g1' }, people: [], games: ['g1'] },
   game_put_back: { params: { roundId: 'r', gameId: 'g1' }, people: [], games: ['g1'] },
   bonus_veto_granted: { params: { team: 2 }, people: [], games: [] },
@@ -65,10 +65,8 @@ describe('the people and games of an entry', () => {
     expect(activityPeople('coin_tossed', { side: 'heads' })).toEqual([])
   })
 
-  it('names every Member whose Veto a reveal shows', () => {
-    const vetoes = [{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }]
-
-    expect(activityPeople('vetoes_revealed', { roundId: 'r', drawId: 'd', gameId: 'g', vetoes })).toEqual(['u1', 'u2'])
+  it('names no Member in a Veto reveal: a Veto belongs to its Party (#355)', () => {
+    expect(activityPeople('vetoes_revealed', { roundId: 'r', drawId: 'd', gameId: 'g', vetoes: [{ team: 1 }, { team: 2 }] })).toEqual([])
   })
 
   it('names the game of a draw, a Veto reveal, a set and a put back, and no game in the other entries (#228)', () => {

@@ -110,7 +110,7 @@ describe('feedSessions', () => {
 })
 
 describe('the sentence of an entry', () => {
-  const text = (entry: ActivityEntry) => activityParts(entry, t)?.map(part => part.text).join('') ?? null
+  const text = (entry: ActivityEntry, teams?: BoardTeam[]) => activityParts(entry, t, teams)?.map(part => part.text).join('') ?? null
 
   it('names the actor and the Session number', () => {
     expect(text({ ...base, type: 'member_joined', params: {} })).toBe('Sanne ist dem Event beigetreten')
@@ -185,13 +185,26 @@ describe('the sentence of an entry', () => {
     expect(text(drawn)).toBeNull()
   })
 
-  it('says who vetoed once the Vetoes are revealed, the Players in bold, and names no game (#231)', () => {
-    const revealed = (vetoes: { team: number, userId: string }[]): ActivityEntry => ({ ...base, type: 'vetoes_revealed', people: { u1: 'Eins', u2: 'Zwei', u3: 'Drei' }, params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes } })
+  it('says which Parties vetoed once the Vetoes are revealed, the Teams in bold, and names no game (#231, #355)', () => {
+    const revealed = (vetoes: { team: number }[]): ActivityEntry => ({ ...base, type: 'vetoes_revealed', params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes } })
 
-    expect(text(revealed([{ team: 1, userId: 'u1' }]))).toBe('Veto von Eins')
-    expect(text(revealed([{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }]))).toBe('Veto von Eins und Zwei')
-    expect(text(revealed([{ team: 1, userId: 'u1' }, { team: 2, userId: 'u2' }, { team: 3, userId: 'u3' }]))).toBe('Veto von Eins, Zwei und Drei')
-    expect(activityParts(revealed([{ team: 1, userId: 'u1' }]), t)).toEqual([{ text: 'Veto von ', strong: false }, { text: 'Eins', strong: true }])
+    expect(text(revealed([{ team: 1 }]))).toBe('Veto von Team Rot')
+    expect(text(revealed([{ team: 1 }, { team: 2 }]))).toBe('Veto von Team Rot und Team Orange')
+    expect(text(revealed([{ team: 1 }, { team: 2 }, { team: 3 }]))).toBe('Veto von Team Rot, Team Orange und Team Gelb')
+    expect(activityParts(revealed([{ team: 1 }]), t)).toEqual([{ text: 'Veto von ', strong: false }, { text: 'Team Rot', strong: true }])
+  })
+
+  it('names a Party of a Veto by its frozen Team name when the feed has the teams (#355)', () => {
+    const entry: ActivityEntry = { ...base, type: 'vetoes_revealed', params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 2 }] } }
+
+    expect(activityParts(entry, t, [{ position: 2, name: 'Wilde Gurken', frozen: true }])?.map(part => part.text).join('')).toBe('Veto von Wilde Gurken')
+  })
+
+  it('ignores a caster a stored entry still holds: it names the Party, not the Player (#355)', () => {
+    const old: ActivityEntry = { ...base, type: 'vetoes_revealed', people: { u1: 'Eins' }, params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 1, userId: 'u1' }] as never } }
+
+    expect(text(old)).toBe('Veto von Team Rot')
+    expect(text(old)).not.toContain('Eins')
   })
 
   it('says a coin toss with its side, Kopf or Schwanz (#235)', () => {
