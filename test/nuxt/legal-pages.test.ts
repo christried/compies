@@ -81,7 +81,19 @@ describe('legal pages', () => {
     const events = page.findAll('section').find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
 
     expect(events!.text()).toContain('Ist ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.')
-    expect(page.get('main').text()).toContain('Stand: 8. November 2026.')
+  })
+
+  it('say what deleting an Event means: unreachable for every Member at once, data kept until removed on request, no automatic purge, and the new Stand (#334, spec #332)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const sections = page.findAll('section')
+    const events = sections.find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
+    const retention = sections.find(s => s.get('h2').text() === '16. Speicherdauer')
+
+    expect(events!.text()).toContain('Der Host kann ein Event jederzeit löschen, nur nicht, solange eine Session läuft. Ein gelöschtes Event ist für alle Mitglieder sofort nicht mehr erreichbar: nicht auf der Startseite, nicht über den Link zum Event und nicht über den Einladungslink. Dort steht dann nur, dass das Event gelöscht wurde.')
+    expect(retention!.text()).toContain('Die Daten eines gelöschten Events bleiben zunächst gespeichert, als gelöscht markiert, aber in Compies für niemanden mehr abrufbar. Auf Anfrage an die unter Abschnitt 1 genannte Adresse entfernen wir sie aus der Datenbank. Eine automatische Löschung gibt es nicht.')
+    expect(retention!.text()).toContain('bleiben gespeichert, solange das Event besteht.')
+    expect(page.get('main').text()).toContain('Stand: 9. November 2026.')
+    expect(page.get('main').text()).not.toContain('Stand: 8. November 2026.')
   })
 
   it('name the live connection to Cloudflare Workers, since the browser connects there itself (#156)', async () => {
