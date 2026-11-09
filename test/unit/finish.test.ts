@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { endOf, finishRejection, lastGameRejection, leadersOf, outcomeOf, standingsAndEnd } from '../../shared/finish'
+import { endOf, finishRejection, lastGameRejection, leadersOf, leadingTeams, outcomeOf, standingsAndEnd } from '../../shared/finish'
 import { standingsOf } from '../../shared/results'
 import { GAME_COUNT_MAX } from '../../shared/settings'
 
@@ -21,6 +21,45 @@ describe('leadersOf', () => {
 
   it('lists all eight Parties when eight are level', () => {
     expect(leadersOf(standingsOf([4, 4, 4, 4, 4, 4, 4, 4]))).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
+})
+
+// The Leading Party (#38, GLOSSARY: Leading Party): the Parties on the first rank while the Event runs, the Winners once it is finished.
+describe('leadingTeams', () => {
+  it('is empty before the first Result, whatever the standings say', () => {
+    expect(leadingTeams(standingsOf([0, 0, 0]), 'running', false)).toEqual([])
+  })
+
+  it('lists the one Party on rank 1 while the Event runs', () => {
+    expect(leadingTeams(standingsOf([1, 3, 2]), 'running', true)).toEqual([2])
+  })
+
+  it('lists every Party that shares the first rank, in team order', () => {
+    expect(leadingTeams(standingsOf([2, 0, 2]), 'running', true)).toEqual([1, 3])
+  })
+
+  it('lists all eight Parties when all are level on the first rank', () => {
+    expect(leadingTeams(standingsOf([4, 4, 4, 4, 4, 4, 4, 4]), 'running', true)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
+
+  it('lists the Winners of a finished Event: one Party', () => {
+    expect(leadingTeams(standingsOf([3, 1, 0]), 'finished', true)).toEqual([1])
+  })
+
+  it('lists the Parties of a Tie as the Winners of a finished Event', () => {
+    expect(leadingTeams(standingsOf([1, 1, 0]), 'finished', true)).toEqual([1, 2])
+  })
+
+  it.each(['draft', 'poll', 'date_set', 'archived'] as const)('is empty in the %s Phase, with Results and standings', (phase) => {
+    expect(leadingTeams(standingsOf([3, 1, 0]), phase, true)).toEqual([])
+  })
+
+  it('is empty in a finished Event without Results', () => {
+    expect(leadingTeams(standingsOf([3, 1, 0]), 'finished', false)).toEqual([])
+  })
+
+  it('is empty without standings', () => {
+    expect(leadingTeams([], 'running', true)).toEqual([])
   })
 })
 
