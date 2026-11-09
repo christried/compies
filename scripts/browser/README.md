@@ -24,9 +24,19 @@ A browser-check agent writes its own scripts in `scratch/` here (gitignored), so
 
 The game edit route is `/bibliothek/<id>/bearbeiten`; `?s=edit` is an artboard state, not a route.
 
+## Staging
+
+A check runs against staging with `BASE_URL=https://staging.compies.christried.me` and the staging project's „Protection Bypass for Automation“ secret in `VERCEL_AUTOMATION_BYPASS_SECRET` (Vercel → the project → Settings → Deployment Protection). `open()` then visits `/api/health` once per profile with the bypass query, which sets Vercel's bypass cookie, and signs in through the dev route as on `pnpm dev`; the secret reaches staging only, never a header on every request. So 390 px on staging, which Claude in Chrome cannot show (retro 0.10), is one call:
+
+```
+BASE_URL=https://staging.compies.christried.me VERCEL_AUTOMATION_BYPASS_SECRET=… node scripts/browser/shots.mjs e/<slug>
+```
+
+The secret is a credential like every other: it lives in `.env` (gitignored; the scripts read it with `node --env-file=.env …`) or in the user's `!` command, never in a transcript, an issue or a report. Test data lands on the staging database and follows `docs/agents/delivery.md` § Issues, „Events on staging“. The Worker and `pnpm dev` stay off: a staging check talks to the deployed app alone. Untested until the first run with the secret; that run removes this sentence.
+
 Limits:
 - Headless Chrome never starts the browser's own image drag, so a native drag problem shows only on a real device. `nativeDrags` catches the ones it does start.
-- It signs in through `/api/dev/sign-in` on `pnpm dev` only. Staging and production need Claude in Chrome (`claude --chrome`) or the user. A Player check on staging signs in with `https://staging.compies.christried.me/api/dev/sign-in?as=member&to=/e/<slug>` in Claude in Chrome (#247); production has no dev sign-in.
+- It signs in through `/api/dev/sign-in`, which `pnpm dev` and the staging build carry (#247) and production never does: production needs the user. Staging sits behind Vercel Authentication, which § Staging passes; without the secret, a Player check on staging signs in with `https://staging.compies.christried.me/api/dev/sign-in?as=member&to=/e/<slug>` in Claude in Chrome (`claude --chrome`), at the desktop width only.
 - `shots.mjs` without a selector captures the viewport: pass the selector of anything below the fold (e.g. `'section:has(> dl)'` for „So wird gespielt“).
 - A `pnpm dev` started in the background outlives its stopped shell on Windows (TaskStop ends the shell, not nuxt, the Worker or workerd), and an agent may not `taskkill` a PID: start and stop the servers with `serve.mjs`.
 - `Network.setBlockedURLs` doesn't block WebSockets in headless Chrome. To check a failed connect, point the page at a port nothing listens on: `REALTIME_URL=http://localhost:8788 pnpm dev` (the Worker runs on 8787, and the shell's value wins over `.env`).

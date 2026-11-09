@@ -11,6 +11,12 @@ const recordCast = {
   selector: 'TSAsExpression > TSTypeReference[typeName.name="Record"] > TSTypeParameterInstantiation > TSUnknownKeyword',
   message: 'Use asRecord() or isRecord() from shared/record.ts instead of a cast.',
 }
+// A duration token is a CSS <time> that the production build minifies (`360ms` → `.36s`); parsed as a number it ran
+// every Web Animation for a fraction of a millisecond on production from 0.5 to 0.10 (#370). motionMs() parses the unit.
+const durationToken = {
+  selector: 'CallExpression[callee.name="motionToken"][arguments.0.value=/^--cp-dur-/]',
+  message: 'Read a duration token with motionMs() from app/utils/motion.ts, which parses ms and s (#370).',
+}
 
 export default withNuxt(
   {
@@ -40,8 +46,8 @@ export default withNuxt(
     files: ['app/**', 'server/**', 'shared/**'],
     ignores: ['shared/auth.ts'],
     rules: {
-      'no-restricted-syntax': ['error', shownNameCopy],
-      'vue/no-restricted-syntax': ['error', shownNameCopy],
+      'no-restricted-syntax': ['error', shownNameCopy, durationToken],
+      'vue/no-restricted-syntax': ['error', shownNameCopy, durationToken],
     },
   },
   {

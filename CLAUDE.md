@@ -48,4 +48,4 @@ Never send the operator's personal data or any data of the app's Users (names, e
 
 ### Scripting
 
-Script with `node`. A script of more than one line goes to a file (Write tool) and runs with `node <file>`: inline `node -e` breaks on an apostrophe and a Bash heredoc on a backtick. The user's Windows machine has only the Python Store alias; install the latest stable Python only when a task really needs it.
+Script with `node`. A script of more than one line goes to a file (Write tool) and runs with `node <file>`: inline `node -e` breaks on an apostrophe and a Bash heredoc on a backtick. An edit of a Markdown file goes through the Edit tool or a node script file: `sed -i` with a `#` in the pattern, a `printf` with backticks and `sed -i "${L}d"` with an empty `L` each broke a file in 0.10. A background command is its own call: a Bash list that ends in `&` backgrounds the whole list. The user's Windows machine has only the Python Store alias; install the latest stable Python only when a task really needs it.
