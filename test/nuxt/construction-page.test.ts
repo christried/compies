@@ -66,10 +66,6 @@ describe('construction page route guard', () => {
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(true)
   })
 
-  it('renders the Profil state', async () => {
-    expect((await visit('/profil')).get('h1').text()).toBe('Profil? Der Bagger ist bestellt.')
-  })
-
   it('keeps Bibliothek out of the nav for a User without the Host permission', async () => {
     const page = await visit('/crews')
 

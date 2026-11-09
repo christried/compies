@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { LogOut } from '@lucide/vue'
 import { constructionSite } from '~/utils/construction'
 import { datePollOpen, type HomeEvent, type HomeView } from '~~/shared/event'
 import { HOME_EVENTS_KEY } from '~/utils/event-data'
@@ -8,9 +7,6 @@ import { HOME_EVENTS_KEY } from '~/utils/event-data'
 const route = useRoute()
 const user = useAuthUser()
 const site = computed(() => constructionSite(route.path, user.value))
-
-const { t } = useI18n()
-const signOut = useSignOut()
 
 // Shares the Home list (same key), so the CTA can point at the User's latest open poll (#12): the
 // most recently created one, whatever its place in Home order. ISO strings sort as their times.
@@ -26,23 +22,6 @@ const latestPollSlug = computed(() => (home.value?.events ?? [])
     <ConstructionPage
       :area="site.area"
       :latest-poll-slug="latestPollSlug"
-    >
-      <!-- Signing out is the only working action on Profil in the MVP. -->
-      <template
-        v-if="site.area === 'profil'"
-        #secondary
-      >
-        <AppButton
-          variant="secondary"
-          size="lg"
-          @click="signOut"
-        >
-          <template #icon>
-            <AppIcon :icon="LogOut" />
-          </template>
-          {{ t('mvp.site.profil.logout') }}
-        </AppButton>
-      </template>
-    </ConstructionPage>
+    />
   </AppShell>
 </template>
