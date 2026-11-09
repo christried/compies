@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/CustomEase.min.js"></script>
+<script src="./compibert-options.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button{font:inherit;color:inherit}button:focus-visible,a:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff3df"></rect><g transform="translate(30 25) scale(.5)" stroke-linejoin="round"><path d="M40 20 L67 84 Q40 98 13 84 Z" fill="#ff4f4f" stroke="#151515" stroke-width="8"></path><circle cx="40" cy="15" r="11" fill="#ffd23f" stroke="#151515" stroke-width="7"></circle></g></svg></template>
+</helmet>
+<div ref="{{ root }}" data-motion="{{ motion }}" lang="de" style="min-height:100vh;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-size:15px;line-height:1.5">
+<main style="max-width:1240px;margin:0 auto;padding:40px clamp(16px,3vw,40px) 96px;display:flex;flex-direction:column;gap:64px">
+
+  <header style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end">
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Compibert, Accessoire 2</span>
+      <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(56px,6vw + 20px,112px);line-height:.88">Partyhut.</h1>
+      <p style="margin:0;max-width:62ch;font-size:17px;line-height:1.5;text-wrap:pretty">Wer vorne liegt, trägt ihn. While an Event runs, the Players of the Party that shares rank 1 see the header head wearing it; on the finished Event page the Winners keep it. Hot cone, yellow spiral, yellow pompom: a pointed red silhouette that cannot be confused with the round yellow hard hat.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;box-shadow:var(--cp-shadow-card)">
+      <span style="font-size:13px;font-weight:700">Files</span>
+      <div style="display:flex;flex-direction:column;gap:8px;font-family:var(--cp-font-mono);font-size:13px">
+        <a href="assets/compibert/partyhut.svg" style="display:flex;justify-content:space-between;gap:12px"><span>compibert/partyhut.svg</span><span style="color:var(--cp-ink-2)">80 × 100, new</span></a>
+        <a href="assets/baustelle/bauhelm.svg" style="display:flex;justify-content:space-between;gap:12px"><span>baustelle/bauhelm.svg</span><span style="color:var(--cp-ink-2)">160 × 80, precedent</span></a>
+        <a href="Compibert Rig.dc.html" style="display:flex;justify-content:space-between;gap:12px"><span>Compibert Rig</span><span style="color:var(--cp-ink-2)">unchanged</span></a>
+      </div>
+    </div>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">01 Im Header</h2>
+      <span style="color:var(--cp-ink-2)">Phone 30 px, desktop 34 px, next to the wordmark. Left without, right with.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:24px">
+      <div data-theme="light" style="display:flex;flex-direction:column;gap:14px;padding:20px;background-color:var(--cp-paper);color:var(--cp-ink);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Hell</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <div style="height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="off" style="width:30px;height:30px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+          <div style="height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="on" style="width:30px;height:30px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+          <div style="height:60px;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="off" style="width:34px;height:34px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+          <div style="height:60px;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="on" style="width:34px;height:34px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;font-size:13px;color:var(--cp-ink-2)"><span>ohne · alle anderen</span><span>mit · Führung / Sieg</span></div>
+      </div>
+      <div data-theme="dark" style="display:flex;flex-direction:column;gap:14px;padding:20px;background-color:var(--cp-paper);color:var(--cp-ink);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Dunkel</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <div style="height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="off" style="width:30px;height:30px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+          <div style="height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="on" style="width:30px;height:30px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+          <div style="height:60px;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="off" style="width:34px;height:34px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+          <div style="height:60px;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="on" style="width:34px;height:34px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;font-size:13px;color:var(--cp-ink-2)"><span>ohne · alle anderen</span><span>mit · Führung / Sieg</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">02 Kopf-Crop, vier Größen</h2>
+      <span style="color:var(--cp-ink-2)">viewBox 212 40 192 192. The dashed line is the crop edge: the pompom stays clear of it at every size.</span>
+    </div>
+    <div data-theme="light" style="display:flex;flex-direction:column;gap:14px;padding:20px;background-color:var(--cp-paper);color:var(--cp-ink);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+      <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Hell</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>30 px</span><span style="font-weight:500;color:var(--cp-ink-2)">Header Phone</span></div><div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;height:132px"><div data-cb="head" data-hat="off" style="width:30px;height:30px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:30px;height:30px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>ohne</span><span>mit</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>34 px</span><span style="font-weight:500;color:var(--cp-ink-2)">Header Desktop</span></div><div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;height:132px"><div data-cb="head" data-hat="off" style="width:34px;height:34px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:34px;height:34px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>ohne</span><span>mit</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>56 px</span></div><div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;height:132px"><div data-cb="head" data-hat="off" style="width:56px;height:56px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:56px;height:56px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>ohne</span><span>mit</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>120 px</span></div><div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;height:132px"><div data-cb="head" data-hat="off" style="width:120px;height:120px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:120px;height:120px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>ohne</span><span>mit</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px dashed var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>Zum Vergleich, 34 + 56 px</span></div><div style="display:grid;grid-template-columns:repeat(4,1fr);place-items:center;height:132px"><div data-cb="head" data-hat="bau" style="width:34px;height:34px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:34px;height:34px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="bau" style="width:56px;height:56px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:56px;height:56px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>Bauhelm</span><span>Partyhut</span><span>Bauhelm</span><span>Partyhut</span></div></div>
+      </div>
+    </div>
+    <div data-theme="dark" style="display:flex;flex-direction:column;gap:14px;padding:20px;background-color:var(--cp-paper);color:var(--cp-ink);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+      <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Dunkel</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>30 px</span><span style="font-weight:500;color:var(--cp-ink-2)">Header Phone</span></div><div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;height:132px"><div data-cb="head" data-hat="off" style="width:30px;height:30px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:30px;height:30px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>ohne</span><span>mit</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>34 px</span><span style="font-weight:500;color:var(--cp-ink-2)">Header Desktop</span></div><div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;height:132px"><div data-cb="head" data-hat="off" style="width:34px;height:34px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:34px;height:34px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>ohne</span><span>mit</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>56 px</span></div><div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;height:132px"><div data-cb="head" data-hat="off" style="width:56px;height:56px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:56px;height:56px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>ohne</span><span>mit</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>120 px</span></div><div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;height:132px"><div data-cb="head" data-hat="off" style="width:120px;height:120px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:120px;height:120px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>ohne</span><span>mit</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--cp-surface);border:2px dashed var(--cp-line);border-radius:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700"><span>Zum Vergleich, 34 + 56 px</span></div><div style="display:grid;grid-template-columns:repeat(4,1fr);place-items:center;height:132px"><div data-cb="head" data-hat="bau" style="width:34px;height:34px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:34px;height:34px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="bau" style="width:56px;height:56px;outline:1px dashed var(--cp-ink-3)"></div><div data-cb="head" data-hat="on" style="width:56px;height:56px;outline:1px dashed var(--cp-ink-3)"></div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);text-align:center;font-size:12px;color:var(--cp-ink-2)"><span>Bauhelm</span><span>Partyhut</span><span>Bauhelm</span><span>Partyhut</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">03 Ganzer Rig</h2>
+      <span style="color:var(--cp-ink-2)">The hat is a child of compibert-head, inside cb-fig: it follows every head move and takes the figure's outline (hard shadow light, sticker rim dark).</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:24px">
+      <div data-theme="light" style="display:flex;flex-direction:column;gap:14px;padding:20px;background-color:var(--cp-paper);color:var(--cp-ink);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Hell · harter Schatten</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px 12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="full" data-hat="off" data-state="idle" style="width:200px;max-width:100%;aspect-ratio:404/344"></div><span style="font-size:12px;color:var(--cp-ink-2)">Ruhe · ohne</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px 12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="full" data-hat="on" data-state="idle" style="width:200px;max-width:100%;aspect-ratio:404/344"></div><span style="font-size:12px;color:var(--cp-ink-2)">Ruhe · mit</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px 12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="full" data-hat="off" data-state="dance" style="width:200px;max-width:100%;aspect-ratio:404/344"></div><span style="font-size:12px;color:var(--cp-ink-2)">Tanzen · ohne</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px 12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="full" data-hat="on" data-state="dance" style="width:200px;max-width:100%;aspect-ratio:404/344"></div><span style="font-size:12px;color:var(--cp-ink-2)">Tanzen · mit</span></div>
+        </div>
+      </div>
+      <div data-theme="dark" style="display:flex;flex-direction:column;gap:14px;padding:20px;background-color:var(--cp-paper);color:var(--cp-ink);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Dunkel · Sticker-Rand</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px 12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="full" data-hat="off" data-state="idle" style="width:200px;max-width:100%;aspect-ratio:404/344"></div><span style="font-size:12px;color:var(--cp-ink-2)">Ruhe · ohne</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px 12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="full" data-hat="on" data-state="idle" style="width:200px;max-width:100%;aspect-ratio:404/344"></div><span style="font-size:12px;color:var(--cp-ink-2)">Ruhe · mit</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px 12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="full" data-hat="off" data-state="dance" style="width:200px;max-width:100%;aspect-ratio:404/344"></div><span style="font-size:12px;color:var(--cp-ink-2)">Tanzen · ohne</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px 12px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="full" data-hat="on" data-state="dance" style="width:200px;max-width:100%;aspect-ratio:404/344"></div><span style="font-size:12px;color:var(--cp-ink-2)">Tanzen · mit</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">04 Auftritt</h2>
+      <span style="color:var(--cp-ink-2)">Pops on when a Result puts your Party in front while the page is open. Present on load without motion. Goes away without motion.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px;align-items:stretch">
+      <div data-theme="light" style="display:flex;flex-direction:column;gap:16px;padding:20px;background-color:var(--cp-paper);color:var(--cp-ink);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+        <div style="height:60px;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:10px"><div data-cb="head" data-hat="live" style="width:34px;height:34px;flex:none"></div><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+        <div style="display:grid;place-items:center;padding:20px;background:var(--cp-surface);border:2px solid var(--cp-line);border-radius:12px"><div data-cb="head" data-hat="live" style="width:160px;height:160px"></div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <button type="button" onClick="{{ toggleLead }}" style="height:44px;padding:0 16px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;cursor:pointer;font-weight:700;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn)">{{ leadLabel }}</button>
+          <button type="button" onClick="{{ toggleReduced }}" aria-pressed="{{ isReduced }}" style="height:44px;padding:0 16px;border:2px solid var(--cp-line);border-radius:999px;cursor:pointer;font-weight:700;background:{{ reducedBg }};color:var(--cp-ink)">Reduzierte Bewegung</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Timeline</span>
+        <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;font-size:14px">
+          <span style="font-weight:700">Target</span><span style="font-family:var(--cp-font-mono);font-size:13px">.compibert-hat-art (inner group)</span>
+          <span style="font-weight:700">Tween</span><span style="font-family:var(--cp-font-mono);font-size:13px">scale 0 → 1, rotation −12 → 0</span>
+          <span style="font-weight:700">Origin</span><span style="font-family:var(--cp-font-mono);font-size:13px">svgOrigin "40 86" (hat base centre, hat units)</span>
+          <span style="font-weight:700">Duration</span><span style="font-family:var(--cp-font-mono);font-size:13px">0.22 s · --cp-dur-base</span>
+          <span style="font-weight:700">Ease</span><span style="font-family:var(--cp-font-mono);font-size:13px">EASE.pop · --cp-ease-pop (.34,1.56,.64,1)</span>
+          <span style="font-weight:700">Reduced</span><span style="font-size:14px">No tween. The hat is set to its end state in the same frame.</span>
+        </div>
+        <p style="margin:0;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">A physical object, so the overshoot of pop is allowed (04-motion rules). The pop grows from the brim, so it never pokes past the crop's top edge: at peak overshoot (scale ≈ 1.1) the pompom reaches y ≈ 52, still 12 units inside.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px;border-bottom:var(--cp-bw) solid var(--cp-line);padding-bottom:14px">
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:clamp(32px,1.4vw + 24px,46px);line-height:.95">05 Übergabe</h2>
+      <span style="color:var(--cp-ink-2)">Everything the useCompibert port needs. Rig coordinates are the full rig's viewBox 0 36 404 344.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">partyhut.svg · 80 × 100</span>
+        <div style="display:grid;place-items:center;padding:16px;background-color:var(--cp-paper-2);background-image:var(--cp-tex-image);background-size:12px 12px;border-radius:10px">
+          <svg viewBox="-4 -4 88 108" width="220" height="270" style="display:block;overflow:visible"><rect x="0" y="0" width="80" height="100" style="fill:none;stroke:#8f857a;stroke-width:.6;stroke-dasharray:2 2"></rect><g stroke-linejoin="round"><path d="M40 20 L67 84 Q40 98 13 84 Z" fill="#ff4f4f"></path><path d="M27.3 50 Q37.4 48 45.9 34 L50.1 44 Q40.4 58 23.1 60 Z" fill="#ffd23f"></path><path d="M18.1 72 Q38.4 72 55.2 56 L59.4 66 Q37.4 82 13.8 82 Z" fill="#ffd23f"></path><path d="M40 20 L67 84 Q40 98 13 84 Z" fill="none" stroke="#151515" stroke-width="8"></path><circle cx="40" cy="15" r="11" fill="#ffd23f" stroke="#151515" stroke-width="7"></circle></g><circle cx="40" cy="86" r="3" style="fill:#3a86ff;stroke:#151515;stroke-width:1.2"></circle><text x="45" y="99" style="font:600 5px 'JetBrains Mono',monospace;fill:#5d5650">pivot 40 86</text></svg>
+        </div>
+        <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:13px">
+          <span style="width:14px;height:14px;border:2px solid #151515;border-radius:4px;background:#ff4f4f"></span><span>Cone #ff4f4f (hot, light value)</span>
+          <span style="width:14px;height:14px;border:2px solid #151515;border-radius:4px;background:#ffd23f"></span><span>Spiral + pompom #ffd23f (primary)</span>
+          <span style="width:14px;height:14px;border:2px solid #151515;border-radius:4px;background:#151515"></span><span>Ink #151515, cone 8, pompom 7 (≈ 5.6 / 4.9 in rig units, matching the figure's 6)</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;padding:20px;background:var(--cp-surface);border:var(--cp-bw) solid var(--cp-line);border-radius:14px;grid-column:span 2;min-width:0">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-weight:700">Mount (rig coordinates)</span>
+          <pre style="margin:0;padding:14px;background:var(--cp-paper-2);border-radius:10px;font-family:var(--cp-font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word">&lt;g id="{u}compibert-hat" class="compibert-hat"
+   transform="translate(324.4 56) scale(.7) rotate(15 40 86)"&gt;
+  &lt;g class="compibert-hat-art"&gt;…partyhut.svg contents…&lt;/g&gt;
+&lt;/g&gt;</pre>
+          <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px;text-wrap:pretty">
+            <li>Last child of compibert-head (after fx), same slot as the hard hat. Hat base centre lands at rig 352.4 / 116.2 on the front of the crown, cone tilted 15° forward; pompom centre at 365.3 / 68.2.</li>
+            <li>API: <code style="font-family:var(--cp-font-mono);font-size:13px">accessory="hardhat" | "partyhat"</code>, one at a time. The inner group exists only so the entrance can scale without touching the mount transform.</li>
+            <li>Elastic dropped: at 30 px it crosses the eye and reads as a scratch.</li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-weight:700">Clearance in the head crop (top edge y 40, right edge x 404)</span>
+          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:0;font-size:13px;border:2px solid var(--cp-line);border-radius:10px;overflow:hidden">
+            <span style="padding:6px 10px;font-weight:700;background:var(--cp-paper-2)">Head pose</span><span style="padding:6px 10px;font-weight:700;background:var(--cp-paper-2)">Pompom top</span><span style="padding:6px 10px;font-weight:700;background:var(--cp-paper-2)">Pompom right</span>
+            <span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft)">Rest</span><span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">y 58</span><span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">x 375</span>
+            <span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft)">Idle tilt −8°</span><span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">y 45</span><span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">x 368</span>
+            <span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft)">Confused −12°</span><span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">y 39.4</span><span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">x 365</span>
+            <span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft)">+12° (idle +6 with eye-follow neck +6)</span><span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">y 66</span><span style="padding:6px 10px;border-top:1px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">x 400</span>
+          </div>
+          <span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">Only the confused peak touches the edge, by 0.6 units (0.1 px at 30 px). The cheer jump lifts the whole head out of the crop and clips the crest as well; that is unchanged and the hat goes with it.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-weight:700">When it shows</span>
+          <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px;text-wrap:pretty">
+            <li>Event running: my Party's rank in the Standings is 1 (ties count, so several Parties can wear it).</li>
+            <li>Event finished: my Party is among the Winners. Spectators and Players without a Party: never.</li>
+            <li>Header head only. Other Compibert instances (ceremony, moments) stay as they are.</li>
+            <li>Flag flips false → true while the page is open (result.saved / result.corrected): play the pop. Mount, hydration, route change, reconnect: set without motion. Flag flips true → false: remove in the same frame.</li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-weight:700">Entrance code</span>
+          <pre style="margin:0;padding:14px;background:var(--cp-paper-2);border-radius:10px;font-family:var(--cp-font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word">const art = el.querySelector('.compibert-hat-art')
+if (reduced()) gsap.set(art, { scale: 1, rotation: 0, svgOrigin: '40 86' })
+else gsap.fromTo(art, { scale: 0, rotation: -12 },
+  { scale: 1, rotation: 0, svgOrigin: '40 86', duration: .22, ease: EASE.pop })</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lead: true, reduced: false };
+  root = React.createRef();
+  rigs = [];
+  live = [];
+  hatSVG(kind) {
+    if (kind === 'bau') return '<g class="compibert-hat" transform="translate(236 6) scale(.95) rotate(-7 80 66)"><g stroke="#151515" stroke-linejoin="round" fill="#ffd23f"><path d="M24 66 C24 26 52 8 80 8 C108 8 136 26 136 66 Z" stroke-width="6"/><rect x="70" y="9" width="20" height="56" rx="6" stroke-width="4"/><rect x="6" y="60" width="148" height="14" rx="7" stroke-width="6"/></g></g>';
+    return '<g class="compibert-hat" transform="translate(324.4 56) scale(.7) rotate(15 40 86)"><g class="compibert-hat-art" stroke-linejoin="round"><path d="M40 20 L67 84 Q40 98 13 84 Z" fill="#ff4f4f"/><path d="M27.3 50 Q37.4 48 45.9 34 L50.1 44 Q40.4 58 23.1 60 Z" fill="#ffd23f"/><path d="M18.1 72 Q38.4 72 55.2 56 L59.4 66 Q37.4 82 13.8 82 Z" fill="#ffd23f"/><path d="M40 20 L67 84 Q40 98 13 84 Z" fill="none" stroke="#151515" stroke-width="8"/><circle cx="40" cy="15" r="11" fill="#ffd23f" stroke="#151515" stroke-width="7"/></g></g>';
+  }
+  componentDidMount() {
+    const go = () => (window.gsap && window.CBO && window.CustomEase && this.root.current) ? this.boot() : (this._t = setTimeout(go, 60));
+    go();
+  }
+  boot() {
+    gsap.registerPlugin(CustomEase);
+    this.pop = CustomEase.get('pop') || CustomEase.create('pop', '.34,1.56,.64,1');
+    const s = document.documentElement.style;
+    if (!s.getPropertyValue('--cb-body')) { Object.entries(CBO.CW.Minze).forEach(([k, v]) => s.setProperty('--cb-' + k, v)); s.setProperty('--cb-ink', '#151515'); }
+    gsap.defaults({ overwrite: 'auto' });
+    this.root.current.querySelectorAll('[data-cb]').forEach((d, i) => {
+      const view = d.dataset.cb, hat = d.dataset.hat;
+      d.dataset.view = view; d.dataset.rig = 'F2';
+      const r = CBO.mount(d, 'ph' + i);
+      r.st = d.dataset.state || 'idle';
+      if (hat !== 'off') {
+        r.p.head.insertAdjacentHTML('beforeend', this.hatSVG(hat));
+        r.hat = r.p.head.querySelector('.compibert-hat');
+        r.art = r.hat.querySelector('.compibert-hat-art');
+        if (hat === 'live') { this.live.push(r); if (!this.state.lead) r.hat.style.display = 'none'; }
+      }
+      const dark = !!d.closest('[data-theme="dark"]');
+      CBO.treat(r, (d.clientWidth < 40 || view !== 'full') ? 'Pur' : dark ? 'Sticker' : 'Harter Schatten');
+      CBO.toState(r, r.st);
+      this.rigs.push(r);
+    });
+    this._mv = e => { if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = 0; CBO.track(this.rigs, e.clientX, e.clientY); }); };
+    window.addEventListener('pointermove', this._mv);
+  }
+  componentWillUnmount() {
+    clearTimeout(this._t);
+    this._mv && window.removeEventListener('pointermove', this._mv);
+    this.rigs.forEach(r => CBO.kill(r));
+  }
+  toggleLead = () => {
+    const lead = !this.state.lead;
+    this.setState({ lead });
+    this.live.forEach(r => {
+      gsap.killTweensOf(r.art);
+      if (!lead) { r.hat.style.display = 'none'; return; }
+      r.hat.style.display = '';
+      if (this.state.reduced) gsap.set(r.art, { scale: 1, rotation: 0, svgOrigin: '40 86' });
+      else gsap.fromTo(r.art, { scale: 0, rotation: -12 }, { scale: 1, rotation: 0, svgOrigin: '40 86', duration: .22, ease: this.pop });
+    });
+  };
+  toggleReduced = () => {
+    const reduced = !this.state.reduced;
+    this.setState({ reduced });
+    this.rigs.forEach(r => { r.reduced = reduced; CBO.toState(r, r.st); });
+  };
+  renderVals() {
+    return {
+      root: this.root,
+      motion: this.state.reduced ? 'reduced' : 'full',
+      leadLabel: this.state.lead ? 'Führung abgeben' : 'Ergebnis landet: Führung',
+      toggleLead: this.toggleLead,
+      toggleReduced: this.toggleReduced,
+      isReduced: this.state.reduced,
+      reducedBg: this.state.reduced ? 'var(--cp-primary)' : 'var(--cp-surface)'
+    };
+  }
+}
+</script>
+</body>
+</html>
