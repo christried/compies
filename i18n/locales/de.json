@@ -1640,6 +1640,7 @@
     "suitabilitiesInvalid": "Diese Angabe bei „Passt zu“ kennen wir nicht.",
     "gameNotesInvalid": "Die Notizen sind zu lang.",
     "tagsInvalid": "Höchstens 8 Tags mit je höchstens 20 Zeichen, keiner doppelt.",
+    "priceInvalid": "Der Preis braucht eine Quelle und einen Betrag von 0,01 € bis 999,99 €. Bei Free-to-play und Abo gibt es keinen Betrag.",
     "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",

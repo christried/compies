@@ -21,6 +21,7 @@ const saved: GameView = {
   canEdit: true,
   notes: null,
   tags: [],
+  price: null,
 }
 
 // The Tags in use feed the suggestions of the Tag field (#335).
