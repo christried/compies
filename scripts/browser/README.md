@@ -17,7 +17,7 @@ A new check imports two modules. `chrome.mjs` is the DevTools protocol and knows
 - `results(name)`: the check's folder `<tmp>/compies-browser/<name>/` with `check(label, passed, measured)`, `skip` and `note` (each line printed and appended to its `results.log` at once, after a header with the script and the tested SHA), `shot` and `failed`;
 - `open(tab, path, width, height, waitFor, { news })`: the dev sign-in, with the Nuxt devtools hidden; `theme(tab, 'dark')`;
 - `api(tab, method, path, body)`, and `ok(answer, what)` for its body (it throws unless the answer is a 200);
-- the scenario helpers `createGame`, `createEvent`, `joinEvent`, `runningEvent(tabs, { name, games, set, settings })` (one Party per tab, the Session started, games set), `setGame`, `enterResult` with `placesOf(order)`, `eventView`, `patchSettings` (throws when the answer lacks the change);
+- the scenario helpers `createGame`, `createEvent`, `joinEvent`, `runningEvent(tabs, { name, games, set, settings })` (one Party per tab, the Session started, games set), `finishedEvent(tabs, { name, outcome: 'winner' | 'tie', games })` (on top of it: every game set, Results for the outcome, the Finish), `setGame`, `enterResult` with `placesOf(order)`, `eventView`, `patchSettings` (throws when the answer lacks the change);
 - a User's hands: `clickText`, `mouseClick`, `typeInto`, `pressKey`, `drag(tab, from, to, { touch })`, `stepperNext`; and the page read back: `textOf`, `visibleButtons`, `switches`, `animations(tab)`.
 
 A browser-check agent writes its own scripts in `scratch/` here (gitignored), so they import `../kit.mjs` from whichever worktree runs them (`docs/agents/browser-frame.md`).

@@ -1,4 +1,4 @@
-import { CEREMONY_ROW_MS, CHIP_MS, CHIP_STEP_MS, HOP_MS, ceremonyTimeline } from '~~/shared/ceremony'
+import { CEREMONY_ROW_MS, CHIP_MS, CHIP_STEP_MS, HOP_MS, ceremonyTimeline, type CeremonyShape } from '~~/shared/ceremony'
 import type { Gsap } from './gsap'
 
 type Timeline = ReturnType<Gsap['timeline']>
@@ -101,12 +101,9 @@ export function tieStops({ cards, plate }: TieBox): TieStops {
   }
 }
 
-/** The options of the run that the Tie's tracks read. */
-export interface TieRunOptions {
-  partyCount: number
-  winners: number
+/** The shape of the run that the Tie's tracks read; the client always knows its grid. */
+export interface TieRunOptions extends CeremonyShape {
   grid: boolean
-  gag: 'trip' | 'bonk'
 }
 
 /** What the tracks need of the run: its timeline, its trophy and the stops. */
@@ -140,7 +137,7 @@ export function setTie(gsap: Gsap, { tie, rows, people }: { tie: TieParts, rows:
 
 /** The places below, the plate and the cards come in (04-motion 6b-T: rows or chips, then plate, cards and badges at `cardAtMs`). */
 export function addTieEntrance({ tl, tie, rows, options }: TieRun) {
-  const { rowsAtMs, cardAtMs } = ceremonyTimeline(options.partyCount, options.gag, options.winners, options.grid)
+  const { rowsAtMs, cardAtMs } = ceremonyTimeline(options)
   const last = [...rows].reverse()
   if (tie.chips) tl.to(last, { y: 0, opacity: 1, duration: sec(CHIP_MS), ease: 'power3.out', stagger: sec(CHIP_STEP_MS) }, sec(rowsAtMs))
   else tl.to(last, { x: 0, opacity: 1, duration: 0.45, ease: 'power3.out', stagger: sec(CEREMONY_ROW_MS) }, sec(rowsAtMs))
@@ -165,7 +162,7 @@ function flip(tl: Timeline, tie: TieParts, index: number, at: number, stampAfter
  */
 export function addTieLanding({ tl, tie, trophy, stops, options, burst }: TieRun) {
   const { winners, grid } = options
-  const moments = ceremonyTimeline(options.partyCount, options.gag, winners, grid)
+  const moments = ceremonyTimeline(options)
   const plateAt = sec(moments.plateAtMs)
 
   if (!grid) {

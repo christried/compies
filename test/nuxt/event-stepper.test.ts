@@ -138,7 +138,7 @@ describe('the stepper', () => {
   })
 
   describe('Format', () => {
-    // The options that cannot be chosen yet carry their chip and no note about it (#174).
+    // The options that cannot be chosen yet carry their line and no note about it (#174).
     it('has no note under the Format cards about the options that are coming', async () => {
       const page = await mountCreate()
       await stepTo(page, 1)
@@ -471,7 +471,10 @@ describe('the stepper', () => {
           poolPreview: true,
         },
       })
-      expect(page.text()).toContain('Geschafft')
+      expect(page.text()).not.toContain('Geschafft')
+      expect(page.get('h1').text()).toBe('Freitags-Zocken steht!')
+      const back = page.findAll('a').find(a => a.text() === 'Zurück')!
+      expect(back.attributes('href')).toBe('/')
       expect(page.text()).toContain('4 Teams à 2, Host-Wahl, 6 Spiele.')
       const list = page.get('dl')
       expect(list.findAll('dt').map(term => term.text())).toEqual(['Format', 'Spiele', 'Auswahl', 'Punkte', 'Pool', 'Termin'])

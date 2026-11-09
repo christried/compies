@@ -90,7 +90,7 @@ export type ActivityParams = CheckedParams<{
   game_count_changed: { from: number, to: number }
   team_size_changed: { from: number, to: number }
   game_drawn: { roundId: string, drawId: string, gameId: string }
-  vetoes_revealed: { roundId: string, drawId: string, gameId: string, vetoes: { team: number, userId: string }[] }
+  vetoes_revealed: { roundId: string, drawId: string, gameId: string, vetoes: { team: number }[] }
   game_set: { roundId: string, gameId: string }
   game_put_back: { roundId: string, gameId: string }
   bonus_veto_granted: { team: number }
@@ -109,7 +109,8 @@ export type ActivityParams = CheckedParams<{
  */
 export const ACTIVITY_NAMES: { [T in ActivityType]?: { people?: (params: ActivityParams[T]) => string[], games?: (params: ActivityParams[T]) => string[] } } = {
   member_moved: { people: params => [params.userId] },
-  vetoes_revealed: { people: params => params.vetoes.map(veto => veto.userId), games: params => [params.gameId] },
+  // A Veto names its Party, never its caster (#355): no `people`.
+  vetoes_revealed: { games: params => [params.gameId] },
   game_drawn: { games: params => [params.gameId] },
   game_set: { games: params => [params.gameId] },
   game_put_back: { games: params => [params.gameId] },

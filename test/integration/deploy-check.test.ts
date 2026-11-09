@@ -50,12 +50,13 @@ describe('GET /api/internal/deploy-check', () => {
       phase: 'date_set',
       deletedAt: options.deleted ? new Date() : null,
     }).returning()
-    await testDb.db.insert(sessions).values(dates.map(startsAt => ({
+    const sessionRows = await testDb.db.insert(sessions).values(dates.map(startsAt => ({
       eventId: eventRow!.id,
       startsAt,
       removedAt: options.removed ? new Date() : null,
       startedAt: options.startedAt ?? (options.running ? new Date() : null),
-    })))
+    }))).returning()
+    return { id: eventRow!.id, slug: eventRow!.slug, sessions: sessionRows }
   }
 
   /** Whole-day distances in hours: a Berlin day is 23 to 25 hours long, so 36 hours is always another day. */
@@ -89,6 +90,20 @@ describe('GET /api/internal/deploy-check', () => {
 
     expect(body.ok).toBe(false)
     expect(body.reason).toContain('2 Sessions')
+  })
+
+  // Retro 0.9, finding 1: a placeholder Session blocked the Release and the user could not tell which Event to move.
+  // #332 (S2): the deploy log is public and a slug is typed by the Host, so the reason names the Event and the Session by id.
+  it('names each blocking Session by its id, its Event id and its number on the Event page, and prints no slug', async () => {
+    const numbered = await eventWith([now(), hoursFromNow(36)]) // two Sessions, so the Event page numbers them
+    const single = await eventWith([now()]) // one Session, shown without a number
+
+    const body = await (await ask()).json() as { ok: boolean, reason: string }
+
+    expect(body.reason).toContain(`Session 1 \`${numbered.sessions[0]!.id}\` of Event \`${numbered.id}\``)
+    expect(body.reason).toContain(`the Session \`${single.sessions[0]!.id}\` of Event \`${single.id}\``)
+    expect(body.reason).not.toContain(numbered.slug)
+    expect(body.reason).not.toContain(single.slug)
   })
 
   it('says ok on a day without a Session today: yesterday, tomorrow, undated, nothing at all', async () => {

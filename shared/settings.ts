@@ -30,6 +30,11 @@ export const TEAM_SIZE_MIN = 1
 export const TEAM_SIZE_MAX = 6
 /** At most this many Players in teams (team count × Team size). */
 export const TEAM_PLAYERS_MAX = 24
+
+/** A Team position clamped to 1..TEAM_COUNT_MAX, the one clamp the Team colours, symbols and TeamMark read (#329). */
+export function teamPosition(position: number): number {
+  return Math.max(1, Math.min(TEAM_COUNT_MAX, Math.round(position)))
+}
 export const GAME_COUNT_MIN = 1
 export const GAME_COUNT_MAX = 30
 export const GAME_COUNT_DEFAULT = 10

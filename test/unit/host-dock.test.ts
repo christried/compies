@@ -197,7 +197,7 @@ describe('dockLayout reads the closing decision (#285)', () => {
   it('lays a running Session out as closed when it is closed, whatever its primary is', () => {
     const spin = hostDockState(input({ settings, sessions: RUNNING }))
 
-    expect(dockLayout({ ...spin, closing: 'finish' }, { pollOpen: false, bonusVetoOpen: false })).toEqual({ primary: ['finish'], secondary: ['end', 'invite'], more: ['coin', 'countdown', 'settings'] })
+    expect(dockLayout({ ...spin, closing: 'finish' }, { pollOpen: false, bonusVetoOpen: false })).toEqual({ primary: ['finish'], secondary: ['end', 'invite'], more: ['coin', 'countdown', 'settings', 'delete'] })
   })
 })
 
@@ -256,18 +256,30 @@ describe('dockLayout', () => {
     for (const bonusVetoOpen of [false, true]) expect(layout(fields, { pollOpen: true, bonusVetoOpen }).primary).toEqual(primary)
   })
 
-  it.each(STATES.filter(state => !state.finished))('ends Mehr with the settings in $name, and keeps them out of Mehr in setup, where they are the primary', ({ fields, primary }) => {
+  it.each(STATES.filter(state => !state.finished))('ends Mehr with the settings and then delete in $name, and keeps the settings out of Mehr in setup, where they are the primary (#333)', ({ fields, primary }) => {
     for (const open of OPENS) {
       const { more } = layout(fields, open)
+      expect(more.at(-1)).toBe('delete')
       if (primary.includes('settings')) expect(more).not.toContain('settings')
-      else expect(more.at(-1)).toBe('settings')
+      else expect(more.at(-2)).toBe('settings')
     }
   })
 
-  it('leaves Siegerehrung starten and Einladen in a finished Event: no Mehr, whatever else is open (#277, #309)', () => {
+  // „Event löschen“ (#333): last in Mehr in every state and every open part, never in the pill, and once.
+  it.each(STATES)('lists delete last in Mehr and never in the pill in $name, for every open part (#333)', ({ fields }) => {
+    for (const open of OPENS) {
+      const { primary, secondary, more } = layout(fields, open)
+      expect(more.at(-1)).toBe('delete')
+      expect(more.filter(key => key === 'delete')).toHaveLength(1)
+      expect(primary).not.toContain('delete')
+      expect(secondary).not.toContain('delete')
+    }
+  })
+
+  it('leaves Siegerehrung starten and Einladen in a finished Event, and Event löschen in Mehr (#277, #309, #333)', () => {
     const finished = STATES.find(state => state.finished)!
 
-    for (const open of OPENS) expect(layout(finished.fields, open)).toEqual({ primary: ['ceremony'], secondary: ['invite'], more: [] })
+    for (const open of OPENS) expect(layout(finished.fields, open)).toEqual({ primary: ['ceremony'], secondary: ['invite'], more: ['delete'] })
   })
 
   it('puts Event abschließen first and keeps Session beenden next to it in a running Session, without the actions that could only be disabled (#277)', () => {
@@ -309,9 +321,9 @@ describe('dockLayout', () => {
       const slots: DockKey[] = open.pollOpen ? ['slots'] : []
       const bonus: DockKey[] = open.bonusVetoOpen ? ['bonusVeto'] : []
       const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || open.bonusVetoOpen)
-      expect(layout({ sessions: RUNNING, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates, ...slots, ...game, 'settings'] })
-      expect(layout({ sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates, ...slots, ...bonus, 'settings'] })
-      expect(layout({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus, 'settings'] })
+      expect(layout({ sessions: RUNNING, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates, ...slots, ...game, 'settings', 'delete'] })
+      expect(layout({ sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates, ...slots, ...bonus, 'settings', 'delete'] })
+      expect(layout({ sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, open)).toEqual({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus, 'settings', 'delete'] })
     }
   })
 
@@ -352,7 +364,8 @@ describe('dockLayout', () => {
       const { more } = layout(fields, open)
       const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || open.bonusVetoOpen)
       expect(more.filter(key => GAME_ACTIONS.includes(key))).toEqual(game)
-      expect(more.slice(more.length - game.length - 1)).toEqual([...game, 'settings'])
+      const withoutDelete = more.slice(0, -1)
+      expect(withoutDelete.slice(withoutDelete.length - game.length - 1)).toEqual([...game, 'settings'])
     }
   })
 
@@ -388,22 +401,22 @@ describe('dockLayout', () => {
   const bonus = (open: Open): DockKey[] => (open.bonusVetoOpen ? ['bonusVeto'] : [])
   const game = (open: Open): DockKey[] => GAME_ACTIONS.filter(key => key !== 'bonusVeto' || open.bonusVetoOpen)
   const PINNED: Record<string, (open: Open) => DockLayout> = {
-    'setup': open => ({ primary: ['settings'], secondary: ['invite'], more: [...dates(open), ...slots(open)] }),
-    'poll': open => ({ primary: dates(open), secondary: ['invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
-    'teams': open => ({ primary: ['start'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
-    'between, another Session polls': open => ({ primary: ['start'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
-    'running under Host pick': open => ({ primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
-    'running in the Lucky Wheel': open => ({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates(open), ...slots(open), ...game(open), 'settings'] }),
-    'after the last Session': open => ({ primary: [], secondary: ['invite'], more: [...bonus(open), 'settings'] }),
-    'complete, a Session runs': open => ({ primary: ['finish'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
-    'complete in the Lucky Wheel, a Session runs': open => ({ primary: ['finish'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
-    'complete, between Sessions': open => ({ primary: ['finish'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
-    'complete, between Sessions with none left to start and one polling': open => ({ primary: ['finish'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings'] }),
-    'complete after the last Session': open => ({ primary: ['finish'], secondary: ['invite'], more: [...bonus(open), 'settings'] }),
-    'a Tie, a Session runs': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings'] }),
-    'a Tie between Sessions': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates(open), ...slots(open), ...bonus(open), 'settings'] }),
-    'a Tie after the last Session': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus(open), 'settings'] }),
-    'finished': () => ({ primary: ['ceremony'], secondary: ['invite'], more: [] }),
+    'setup': open => ({ primary: ['settings'], secondary: ['invite'], more: [...dates(open), ...slots(open), 'delete'] }),
+    'poll': open => ({ primary: dates(open), secondary: ['invite'], more: [...slots(open), ...bonus(open), 'settings', 'delete'] }),
+    'teams': open => ({ primary: ['start'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings', 'delete'] }),
+    'between, another Session polls': open => ({ primary: ['start'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings', 'delete'] }),
+    'running under Host pick': open => ({ primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings', 'delete'] }),
+    'running in the Lucky Wheel': open => ({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates(open), ...slots(open), ...game(open), 'settings', 'delete'] }),
+    'after the last Session': open => ({ primary: [], secondary: ['invite'], more: [...bonus(open), 'settings', 'delete'] }),
+    'complete, a Session runs': open => ({ primary: ['finish'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings', 'delete'] }),
+    'complete in the Lucky Wheel, a Session runs': open => ({ primary: ['finish'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings', 'delete'] }),
+    'complete, between Sessions': open => ({ primary: ['finish'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings', 'delete'] }),
+    'complete, between Sessions with none left to start and one polling': open => ({ primary: ['finish'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings', 'delete'] }),
+    'complete after the last Session': open => ({ primary: ['finish'], secondary: ['invite'], more: [...bonus(open), 'settings', 'delete'] }),
+    'a Tie, a Session runs': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings', 'delete'] }),
+    'a Tie between Sessions': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates(open), ...slots(open), ...bonus(open), 'settings', 'delete'] }),
+    'a Tie after the last Session': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus(open), 'settings', 'delete'] }),
+    'finished': () => ({ primary: ['ceremony'], secondary: ['invite'], more: ['delete'] }),
   }
 
   it.each(STATES)('pins the layout of $name for every open part, as today (#285)', ({ name, fields }) => {

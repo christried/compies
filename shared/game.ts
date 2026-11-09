@@ -1,4 +1,4 @@
-import { asRecord } from './record'
+import { asRecord, isRecord } from './record'
 import { characterCount } from './text'
 import { parseYouTubeId } from './youtube'
 
@@ -16,6 +16,15 @@ export const CLIP_START_MAX = 43_199
 export const PLAYERS_MAX = 99
 /** Game notes (#223, GLOSSARY: Game notes): at most this many characters after trimming (characterCount, #76). */
 export const GAME_NOTES_MAX = 1000
+/** A Tag (#335, GLOSSARY: Tag): at most this many characters after trimming (characterCount, so an emoji counts as one). */
+export const TAG_MAX = 20
+export const TAGS_PER_GAME_MAX = 8
+
+/** The sources a game's Price is bought from (#337, GLOSSARY: Price), in the order the form lists them. Their German names are `price.source.*` in de.json (app/utils/price.ts). */
+export const PRICE_SOURCES = ['steam', 'epic', 'gog', 'publisher', 'steam_key', 'free_to_play', 'subscription'] as const
+export type PriceSource = (typeof PRICE_SOURCES)[number]
+/** The most a Price can be, in cents: 999,99 € (#337). The least is 1 cent. */
+export const PRICE_CENTS_MAX = 99_999
 
 /** Suitability (GLOSSARY; UI „Passt zu“): the kinds of play a game works for, any number of them (#171). */
 export const SUITABILITIES = ['teams', 'ffa', 'one_v_one'] as const
@@ -79,17 +88,19 @@ export interface PoolGame {
   suitabilities: Suitability[]
   /** Game notes (#223); null = none. In a pool only the Host reads them (#224). */
   notes: string | null
+  /** The game's Price (#337, #338); null when it has none. It travels with the name: wherever a Member may know the game's name they get it too. */
+  price: GamePrice | null
 }
 
 /**
- * What a Member who may see a pool gets of its games: what draws the picture and the name, nothing else (#224). The
+ * What a Member who may see a pool gets of its games: picture, name and Price, nothing else (#224, #338). The
  * Host's pool game is the whole PoolGame. `youtubeId` is the card's thumbnail for a game without an image of its own.
  */
-export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId'>
+export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId' | 'price'>
 
 /**
  * A set game as its Round shows it to every Member (#228): the whole PoolGame but the notes, which only the Host reads
- * (decided 2026-11-01, #217 comment). The player count and the clip are there because the Round card and the clip show them.
+ * (decided 2026-11-01, #217 comment). The player count, the clip and the Price are there because the Round card and the clip show them.
  */
 export type RoundGame = Omit<PoolGame, 'notes'>
 
@@ -98,8 +109,19 @@ export function isFullPoolGame(game: PoolGame | PoolGameFace): game is PoolGame 
   return 'notes' in game
 }
 
+/** A Tag (#335): `key` is what makes two spellings one Tag, `label` the spelling shown. */
+export interface GameTag {
+  key: string
+  label: string
+}
+
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
 export interface GameView extends PoolGame {
+  /**
+   * The game's Tags in the order the editor sent them (#335). Only the library carries them: PoolGame, PoolGameFace and
+   * RoundGame do not, so no Event read, feed entry or message can name one.
+   */
+  tags: GameTag[]
   /** `name` is the display name if the User set one, like Event members. */
   createdBy: { id: string, name: string }
   createdAt: string
@@ -110,6 +132,8 @@ export interface GameView extends PoolGame {
 /** Every game the viewer may see, by name (GET /api/games, #173). The browser filters them (`filterGames`) and knows the length. */
 export interface GameList {
   games: GameView[]
+  /** Every Tag some game carries, once per key with the label of its earliest row, by key (#335): the form's suggestions and the filter. */
+  tagsInUse: GameTag[]
 }
 
 /** What the game browser filters by (#142, #171, #173). Empty, null and false mean no filter. */
@@ -120,27 +144,31 @@ export interface GameFilters {
   players: number | null
   /** A Suitability the game must have. */
   suitability: Suitability | null
+  /** A Tag the game must carry, by key (#336): one at a time. */
+  tag: string | null
   /** Only the viewer's own games („Von mir“). */
   mine: boolean
 }
 
-export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, mine: false }
+export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, tag: null, mine: false }
 
 /**
  * The games the filters keep, combined with AND: a name search (trimmed, without regard to case, `%` and `_` are plain
- * characters), a player count the recommended range covers (a game without any count never matches one), a
- * Suitability and the viewer's own games. One function for the library and both pool pickers (#173).
+ * characters, and the search also reads the labels of the game's Tags (#336)), a player count the recommended range covers
+ * (a game without any count never matches one), a Suitability, a Tag the game must carry, and the viewer's own games. One
+ * function for the library and both pool pickers (#173).
  */
 export function filterGames(games: GameView[], filters: GameFilters, viewerId: string): GameView[] {
   const text = filters.q.trim().toLocaleLowerCase('de')
-  const { players, suitability } = filters
+  const { players, suitability, tag } = filters
   return games.filter((game) => {
-    if (text && !game.name.toLocaleLowerCase('de').includes(text)) return false
+    if (text && !game.name.toLocaleLowerCase('de').includes(text) && !game.tags.some(item => item.label.toLocaleLowerCase('de').includes(text))) return false
     if (players !== null) {
       const { playersMin: min, playersMax: max } = game
       if ((min === null && max === null) || (min !== null && min > players) || (max !== null && max < players)) return false
     }
     if (suitability !== null && !game.suitabilities.includes(suitability)) return false
+    if (tag !== null && !game.tags.some(item => item.key === tag)) return false
     return !filters.mine || game.createdBy.id === viewerId
   })
 }
@@ -170,6 +198,83 @@ export function parseGameNotes(raw: unknown): string | null | undefined {
   const trimmed = raw.trim()
   if (trimmed === '') return null
   return gameNotesProblem(trimmed) === null ? trimmed : undefined
+}
+
+/** A Tag as typed: NFC, trimmed, inner whitespace collapsed to one space (the label), lower-cased for the key. Null when nothing is left. No length check (see tagProblem). */
+export function normaliseTag(raw: string): GameTag | null {
+  const label = raw.normalize('NFC').trim().replace(/\s+/g, ' ')
+  return label === '' ? null : { key: label.toLocaleLowerCase('de'), label }
+}
+
+/** What is wrong with a Tag: nothing left after normalising, or longer than TAG_MAX characters. Null when fine (#335). */
+export function tagProblem(raw: string): 'empty' | 'too_long' | null {
+  const tag = normaliseTag(raw)
+  if (!tag) return 'empty'
+  return characterCount(tag.label) > TAG_MAX ? 'too_long' : null
+}
+
+/** The Tags of a game (#335): a list of up to TAGS_PER_GAME_MAX strings that are no problem and no key twice, in the order sent. Undefined for anything else. */
+export function parseTags(raw: unknown): GameTag[] | undefined {
+  if (!Array.isArray(raw) || raw.length > TAGS_PER_GAME_MAX) return undefined
+  const tags: GameTag[] = []
+  for (const item of raw) {
+    if (typeof item !== 'string' || tagProblem(item) !== null) return undefined
+    tags.push(normaliseTag(item)!)
+  }
+  return new Set(tags.map(tag => tag.key)).size === tags.length ? tags : undefined
+}
+
+/** A Price as the form and the server read it (#337): `cents` is null exactly for Free-to-play and Abo. */
+export interface GamePriceInput {
+  cents: number | null
+  source: PriceSource
+}
+
+/** A Price as the library shows it (#337): its amount, source and the UTC instant (ISO string) the day was last checked. */
+export interface GamePrice extends GamePriceInput {
+  checkedAt: string
+}
+
+/** A source that takes an amount: every one but Free-to-play and Abo (#337). */
+export function priceTakesAmount(source: PriceSource): boolean {
+  return source !== 'free_to_play' && source !== 'subscription'
+}
+
+/**
+ * A Price as the User types it (`19,99`, `19.99`, `20`): euros with at most two decimals, from 0,01 to 999,99, as cents. Null for anything else. */
+export function parsePriceAmount(text: string): number | null {
+  const match = /^(\d{1,6})(?:[.,](\d{1,2}))?$/.exec(text.trim())
+  if (!match) return null
+  const cents = Number(match[1]) * 100 + Number((match[2] ?? '0').padEnd(2, '0'))
+  return cents >= 1 && cents <= PRICE_CENTS_MAX ? cents : null
+}
+
+/** Cents as the form writes them: two decimals after a comma, no currency sign (1999 → „19,99“). Compared as integers, never formatted from a float. */
+export function formatPriceAmount(cents: number): string {
+  return `${Math.floor(cents / 100)},${String(cents % 100).padStart(2, '0')}`
+}
+
+function isPriceSource(value: unknown): value is PriceSource {
+  return (PRICE_SOURCES as readonly unknown[]).includes(value)
+}
+
+function isPriceCents(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= PRICE_CENTS_MAX
+}
+
+/**
+ * A Price of a request body (#337): null for no Price, the Price when it is whole, undefined when it is not. An amount needs a
+ * source, and a source with an amount must take one. The caller reads an absent `price` as the game's own, as it does for `tags`.
+ */
+export function parsePrice(raw: unknown): GamePriceInput | null | undefined {
+  if (raw === null) return null
+  if (!isRecord(raw)) return undefined
+  const { source, cents } = raw
+  const hasCents = cents !== undefined && cents !== null
+  if (source === undefined || source === null) return hasCents ? undefined : null
+  if (!isPriceSource(source)) return undefined
+  if (!priceTakesAmount(source)) return hasCents ? undefined : { cents: null, source }
+  return isPriceCents(cents) ? { cents, source } : undefined
 }
 
 /** The video id of the pasted link. Absent, null or empty means no clip (null id); undefined when the link is no YouTube link. */
@@ -222,9 +327,15 @@ export interface GameInput {
   suitabilities: Suitability[]
   /** Game notes, trimmed; null when none (#223). */
   notes: string | null
+  /** The Tags sent (#335). Undefined when the body had none: a new game gets none, an edit keeps its own (a 0.9 tab never wipes them). */
+  tags: GameTag[] | undefined
+  /** The Price sent (#337): null clears it, undefined (no `price` in the body) keeps the game's own, as `tags` does. */
+  price: GamePriceInput | null | undefined
+  /** „Preis stimmt noch“ (#337): true restamps the stored Price's day without changing it; false when absent. */
+  priceChecked: boolean
 }
 
-export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities' | 'invalid_game_notes'
+export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities' | 'invalid_game_notes' | 'invalid_tags' | 'invalid_price'
 
 export function parseGameInput(input: unknown): { ok: true, game: GameInput } | { ok: false, error: GameInputError } {
   const body = asRecord(input)
@@ -248,9 +359,28 @@ export function parseGameInput(input: unknown): { ok: true, game: GameInput } | 
   const notes = parseGameNotes(body.notes)
   if (notes === undefined) return { ok: false, error: 'invalid_game_notes' }
 
+  const tags = body.tags === undefined ? undefined : parseTags(body.tags)
+  if (body.tags !== undefined && tags === undefined) return { ok: false, error: 'invalid_tags' }
+
+  const price = body.price === undefined ? undefined : parsePrice(body.price)
+  if (body.price !== undefined && price === undefined) return { ok: false, error: 'invalid_price' }
+  if (body.priceChecked !== undefined && typeof body.priceChecked !== 'boolean') return { ok: false, error: 'invalid_price' }
+
   return {
     ok: true,
-    game: { name, youtubeId, clipStart, clipLength, playersMin: players.min, playersMax: players.max, suitabilities, notes },
+    game: {
+      name,
+      youtubeId,
+      clipStart,
+      clipLength,
+      playersMin: players.min,
+      playersMax: players.max,
+      suitabilities,
+      notes,
+      tags,
+      price,
+      priceChecked: body.priceChecked === true,
+    },
   }
 }
 

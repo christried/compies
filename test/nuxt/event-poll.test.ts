@@ -21,9 +21,20 @@ describe('the Event poll', () => {
 
     expect(page.get('header').text()).toContain('Freitags-Zocken')
     expect(page.findAll('h1')).toHaveLength(1)
-    expect(page.get('[aria-labelledby]').text()).toContain('2 von 3 haben abgestimmt')
+    expect(page.get('[aria-labelledby]').text()).toContain('2 von 3 haben vollständig abgestimmt')
     const cards = page.findAll('[role="radiogroup"]').map(group => group.attributes('aria-label'))
     expect(cards).toEqual(['Fr 23.10. 20:00', 'Sa 24.10. 20:00', 'Di 20.10. 20:00'])
+  })
+
+  it('shows „Als CSV exportieren“ to the Host and not to a Member', async () => {
+    const hostView = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
+    const hostPage = await mountSuspended(EventPage, { route: `/e/${hostView.slug}` })
+    expect(hostPage.findAll('button').map(button => button.text())).toContain('Als CSV exportieren')
+    hostPage.unmount()
+
+    const { slug } = serve(s => view(s, sanneAndLarsi))
+    const memberPage = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    expect(memberPage.findAll('button').map(button => button.text())).not.toContain('Als CSV exportieren')
   })
 
   it('shows no refresh hint, and keeps the section headings at their levels', async () => {

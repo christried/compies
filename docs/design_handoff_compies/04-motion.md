@@ -168,6 +168,9 @@ Started by `ceremony.started {startAt, gag}` and played with `playAt`. Labels `b
 - share (+1.4): share card `y 16→0, opacity` 0.35 `back.out(2)`.
 - Skip / reduced: end frame (everything set), no run, no confetti; winner announced via live region.
 
+### Countdown [1.4]
+- Its motion is specified in `13-countdown.md` § „04-motion addition“ (state changes `dur-fast` `ease-snap`, the tick and the zero burst, the entrance, reduced motion). § Motion citations of a Countdown animation resolve there.
+
 ### Confetti [1.0]
 - Sticker pieces (white rim, hard shadow) from an origin: phase 1 `x rnd(−200,200), y rnd(−200,−70), rotation rnd(−360,360)` 0.5 `power2.out`; phase 2 `y += rnd(300,460), x += rnd(−50,50), rotation += 420` rnd(1.3,2) `power1.in`; fade last 0.35. 40 pieces desktop, 20 mobile. `layer-confetti`, no pointer events.
 - Reduced: none.

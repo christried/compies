@@ -116,7 +116,7 @@ describe('the synced clip', () => {
     for (const key of Object.keys(players) as (keyof typeof players)[]) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
 
     const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo Infinite', createdBy: ids.host, youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30 },
+      { name: 'Halo Infinite', createdBy: ids.host, youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30, priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') },
       { name: 'Kart Racer', createdBy: ids.host },
     ]).returning()
     const [halo, kart] = inserted as [typeof inserted[number], typeof inserted[number]]
@@ -166,7 +166,7 @@ describe('the synced clip', () => {
           drawId: (await testDb.db.select().from(draws))[0]!.id,
           startAt: iso(0),
           endsAt: iso(CLIP_MS),
-          game: { id: game.halo.id, name: 'Halo Infinite', youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30 },
+          game: { id: game.halo.id, name: 'Halo Infinite', youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30, price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } },
         })
       }
     })

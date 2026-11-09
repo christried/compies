@@ -183,6 +183,27 @@
       "when": 1793910793720,
       "tag": "0025_award_ceremony",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794166121157,
+      "tag": "0026_drop_pool_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1794207363602,
+      "tag": "0027_game_tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1794209593773,
+      "tag": "0028_game_prices",
+      "breakpoints": true
     }
   ]
 }

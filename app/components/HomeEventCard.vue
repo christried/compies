@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CalendarCheck, ChevronRight, CircleAlert, CircleCheck, Sparkles } from '@lucide/vue'
 import { formatSlotWhen } from '~/utils/berlin-time'
 import { pagePill } from '~/utils/event-page'
 import { datePollOpen, type HomeEvent } from '~~/shared/event'
@@ -60,13 +61,21 @@ const ownStatus = computed(() => {
 
 const CTA_LABEL = { open: 'mvp.home.open', vote: 'mvp.home.vote', view: 'mvp.home.view' } as const
 const ctaLabel = computed(() => t(CTA_LABEL[props.event.action]))
+
+const WhenIcon = computed(() => showsBestSlot.value ? Sparkles : CalendarCheck)
+// Not voted yet: the own status warns (icon + words), otherwise it is plain good news.
+const warnsVote = computed(() => isPoll.value && !props.event.viewerVoted)
+const showsDates = computed(() => hasSeveralSessions.value && datesMissing.value)
 </script>
 
 <template>
-  <article class="flex h-full min-w-0 flex-col gap-3.5 rounded-[20px] border-2 border-line bg-surface p-5 shadow-card">
-    <div class="flex min-w-0 items-start justify-between gap-3">
-      <div class="flex min-w-0 flex-col gap-0.5">
-        <h3 class="m-0 truncate font-display text-[24px] leading-tight font-normal">
+  <article
+    class="flex h-full min-w-0 flex-col gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-[18px] text-ink"
+    :class="event.action === 'vote' && 'shadow-card'"
+  >
+    <div class="flex min-w-0 items-start gap-2.5">
+      <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+        <h3 class="m-0 font-display text-[26px] leading-[1.05] font-normal text-pretty [overflow-wrap:anywhere]">
           {{ event.name }}
         </h3>
         <span class="text-[13px] text-ink-2">{{ hostLine }}</span>
@@ -77,23 +86,50 @@ const ctaLabel = computed(() => t(CTA_LABEL[props.event.action]))
       />
     </div>
 
-    <div class="flex flex-col gap-0.5">
-      <span class="text-[12px] font-bold text-ink-2">{{ whenLabel }}</span>
-      <span class="font-num text-[20px] leading-tight tabular-nums">{{ whenValue }}</span>
+    <div
+      v-if="whenValue"
+      class="flex items-center gap-3 rounded-[12px] bg-paper-2 px-3 py-2.5"
+    >
+      <AppIcon
+        :icon="WhenIcon"
+        :size="18"
+      />
+      <div class="flex min-w-0 flex-1 flex-col leading-[1.3]">
+        <span class="text-[12px] font-bold text-ink-2">{{ whenLabel }}</span>
+        <b>{{ whenValue }}</b>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1 text-[13px] text-ink-2">
-      <span v-if="hasSeveralSessions && datesMissing">{{ datesText }}</span>
-      <span v-if="isPoll">{{ votedText }}</span>
-      <span>{{ ownStatus }}</span>
-    </div>
-
-    <div class="mt-auto pt-1">
+    <div class="mt-auto flex flex-wrap items-center gap-x-2.5 gap-y-2">
+      <div class="flex min-w-[150px] flex-1 flex-col gap-0.5 text-[13px]">
+        <span
+          v-if="showsDates"
+          class="font-semibold text-ink-2"
+        >{{ datesText }}</span>
+        <span
+          v-if="isPoll"
+          class="font-semibold text-ink-2"
+        >{{ votedText }}</span>
+        <span
+          class="inline-flex items-center gap-1.5 font-bold"
+          :class="warnsVote ? 'text-warning-fg' : 'text-success-fg'"
+        >
+          <AppIcon
+            :icon="warnsVote ? CircleAlert : CircleCheck"
+            :size="15"
+          />
+          {{ ownStatus }}
+        </span>
+      </div>
       <AppButton
         :to="eventPath(event.slug)"
         :variant="event.action === 'vote' ? 'primary' : 'secondary'"
       >
         {{ ctaLabel }}
+        <AppIcon
+          :icon="ChevronRight"
+          :size="16"
+        />
       </AppButton>
     </div>
   </article>

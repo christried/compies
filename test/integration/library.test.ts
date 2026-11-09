@@ -1,10 +1,11 @@
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import listGames from '../../server/api/games/index.get'
 import createGame from '../../server/api/games/index.post'
 import readGame from '../../server/api/games/[id].get'
 import editGame from '../../server/api/games/[id].patch'
-import { games, users } from '../../server/db/schema'
+import { gameTags, games, users } from '../../server/db/schema'
+import { testClock } from '../../server/utils/clock'
 import type { GameList, GameView } from '../../shared/game'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -17,6 +18,8 @@ const otherHost = { provider: 'discord', id: '3', name: 'Zweiter', email: 'host2
 describe('the Game library API (#141)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: ReturnType<typeof createTestServer>
+  // The server's clock (#337): the Price's day is stamped with it. Moved by the Prices tests, back to its start before each.
+  const clock = testClock('2026-11-03T10:00:00.000Z')
 
   beforeAll(async () => {
     testDb = await createTestDb()
@@ -25,7 +28,7 @@ describe('the Game library API (#141)', () => {
       'POST /api/games': createGame,
       'GET /api/games/:id': readGame,
       'PATCH /api/games/:id': editGame,
-    })
+    }, { clock })
   })
 
   afterAll(async () => {
@@ -119,7 +122,7 @@ describe('the Game library API (#141)', () => {
       expect(row).toMatchObject({ name: 'Mario Kart', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, imageKey: null })
       expect(game).toEqual({
         id: row!.id, name: 'Mario Kart', imageUrl: null, youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45,
-        playersMin: null, playersMax: null, suitabilities: [],
+        playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null,
         createdBy: { id: row!.createdBy, name: 'Hostess' }, createdAt: row!.createdAt.toISOString(), canEdit: true, notes: null,
       })
     })
@@ -179,7 +182,7 @@ describe('the Game library API (#141)', () => {
     it('is empty without games', async () => {
       const cookie = await cookieOf(host)
 
-      expect(await (await list(cookie)).json()).toEqual({ games: [] })
+      expect(await (await list(cookie)).json()).toEqual({ games: [], tagsInUse: [] })
     })
 
     it('orders by name, ignoring case', async () => {
@@ -559,6 +562,431 @@ describe('the Game library API (#141)', () => {
 
       expect(queried).toEqual(plain)
       expect(queried.games).toHaveLength(4)
+    })
+  })
+
+  describe('Tags (#335)', () => {
+    const flag = '\u{1F1E9}\u{1F1EA}'
+
+    function edit(cookie: string | undefined, id: string, body: unknown) {
+      return request(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+        body: JSON.stringify(body),
+      })
+    }
+
+    async function tagRows(gameId?: string) {
+      const rows = await testDb.db.select().from(gameTags).orderBy(asc(gameTags.gameId), asc(gameTags.position))
+      return rows.filter(row => !gameId || row.gameId === gameId).map(({ key, label, position }) => ({ key, label, position }))
+    }
+
+    async function tagsInUse(cookie: string) {
+      return ((await (await list(cookie)).json()) as GameList).tagsInUse
+    }
+
+    it('stores the Tags trimmed and collapsed, in the order sent, and answers them on the game, the list and the detail', async () => {
+      const cookie = await cookieOf(host)
+
+      const game = await created(cookie, { name: 'Mario Kart', tags: ['  Co-op ', 'Battle   Royale'] })
+
+      const expected = [{ key: 'co-op', label: 'Co-op' }, { key: 'battle royale', label: 'Battle Royale' }]
+      expect(game.tags).toEqual(expected)
+      expect(((await (await list(cookie)).json()) as GameList).games[0]!.tags).toEqual(expected)
+      expect(((await (await read(game.id, cookie)).json()) as GameView).tags).toEqual(expected)
+      expect(await tagRows()).toEqual([
+        { key: 'co-op', label: 'Co-op', position: 0 },
+        { key: 'battle royale', label: 'Battle Royale', position: 1 },
+      ])
+    })
+
+    it('gives a game without tags an empty list, and the library no Tags in use', async () => {
+      const cookie = await cookieOf(host)
+
+      const game = await created(cookie, { name: 'Mario Kart' })
+
+      expect(game.tags).toEqual([])
+      expect(await tagsInUse(cookie)).toEqual([])
+      expect(await tagRows()).toEqual([])
+    })
+
+    it('stores exactly 8 Tags and a Tag of 20 flags', async () => {
+      const cookie = await cookieOf(host)
+      const eight = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+
+      const game = await created(cookie, { name: 'Mario Kart', tags: eight })
+      const flags = await created(cookie, { name: 'Flaggen', tags: [flag.repeat(20)] })
+
+      expect(game.tags.map(tag => tag.label)).toEqual(eight)
+      expect(flags.tags).toEqual([{ key: flag.repeat(20), label: flag.repeat(20) }])
+    })
+
+    it.each([
+      ['nine Tags', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']],
+      ['a Tag of 21 characters', ['x'.repeat(21)]],
+      ['a Tag of 21 flags', [flag.repeat(21)]],
+      ['one key twice', ['Co-op', 'co-op']],
+      ['a Tag of spaces', ['  ']],
+      ['text instead of a list', 'Co-op'],
+    ])('refuses %s with invalid_tags and stores nothing', async (_name, tags) => {
+      const cookie = await cookieOf(host)
+
+      const response = await create(cookie, { name: 'Mario Kart', tags })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_tags')
+      expect(await testDb.db.select().from(games)).toHaveLength(0)
+      expect(await tagRows()).toEqual([])
+    })
+
+    it('keeps the game and its Tags when an edit is refused', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op'] })
+
+      const response = await edit(cookie, id, { name: 'Neu', tags: ['a', 'A'] })
+
+      expect(response.statusText).toBe('invalid_tags')
+      expect(await tagRows(id)).toEqual([{ key: 'co-op', label: 'Co-op', position: 0 }])
+      expect((await testDb.db.select().from(games))[0]!.name).toBe('Mario Kart')
+    })
+
+    it('reorders, adds and drops Tags on an edit and answers the new order', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op', 'Party'] })
+
+      const response = await edit(cookie, id, { name: 'Mario Kart', tags: ['Retro', 'Co-op'] })
+
+      expect(((await response.json()) as GameView).tags.map(tag => tag.label)).toEqual(['Retro', 'Co-op'])
+      expect(await tagRows(id)).toEqual([
+        { key: 'retro', label: 'Retro', position: 0 },
+        { key: 'co-op', label: 'Co-op', position: 1 },
+      ])
+    })
+
+    it('clears every Tag with an empty list', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op', 'Party'] })
+
+      const response = await edit(cookie, id, { name: 'Mario Kart', tags: [] })
+
+      expect(((await response.json()) as GameView).tags).toEqual([])
+      expect(await tagRows()).toEqual([])
+    })
+
+    it('keeps the Tags when an edit sends none, as a browser tab of 0.9 does', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op', 'Party'] })
+
+      const response = await edit(cookie, id, { name: 'Mario Kart 8' })
+
+      expect(((await response.json()) as GameView).tags.map(tag => tag.label)).toEqual(['Co-op', 'Party'])
+      expect(await tagRows(id)).toHaveLength(2)
+    })
+
+    it('keeps the spelling a Tag already has on the game when it is typed in another case', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op'] })
+
+      const response = await edit(cookie, id, { name: 'Mario Kart', tags: ['CO-OP', 'Party'] })
+
+      expect(((await response.json()) as GameView).tags.map(tag => tag.label)).toEqual(['Co-op', 'Party'])
+    })
+
+    it('shows a Tag under the spelling first used in the library, on a second game too', async () => {
+      const cookie = await cookieOf(host)
+      await created(cookie, { name: 'Mario Kart', tags: ['Co-op'] })
+
+      const second = await created(cookie, { name: 'Halo', tags: ['CO-OP'] })
+
+      expect(second.tags).toEqual([{ key: 'co-op', label: 'Co-op' }])
+      expect(await tagRows(second.id)).toEqual([{ key: 'co-op', label: 'Co-op', position: 0 }])
+      expect(await tagsInUse(cookie)).toEqual([{ key: 'co-op', label: 'Co-op' }])
+    })
+
+    it('lists the Tags in use once per key, by key with the umlaut where German sorts it', async () => {
+      const cookie = await cookieOf(host)
+      await created(cookie, { name: 'Eins', tags: ['Retro', 'Co-op'] })
+      await created(cookie, { name: 'Zwei', tags: ['Ärger', 'retro'] })
+
+      expect(await tagsInUse(cookie)).toEqual([
+        { key: 'ärger', label: 'Ärger' },
+        { key: 'co-op', label: 'Co-op' },
+        { key: 'retro', label: 'Retro' },
+      ])
+    })
+
+    it('drops a Tag from the Tags in use when its last game loses it, and keeps one another game carries', async () => {
+      const cookie = await cookieOf(host)
+      const first = await created(cookie, { name: 'Eins', tags: ['Co-op', 'Retro'] })
+      await created(cookie, { name: 'Zwei', tags: ['Retro'] })
+
+      await edit(cookie, first.id, { name: 'Eins', tags: [] })
+
+      expect((await tagsInUse(cookie)).map(tag => tag.key)).toEqual(['retro'])
+    })
+
+    it('refuses another Host\'s edit of the Tags, and answers a Member as for a missing route', async () => {
+      const { id } = await created(await cookieOf(host), { name: 'Mario Kart', tags: ['Co-op'] })
+
+      const other = await edit(await cookieOf(otherHost), id, { name: 'Mario Kart', tags: [] })
+      const guest = await edit(await cookieOf(member), id, { name: 'Mario Kart', tags: [] })
+
+      expect(other.status).toBe(403)
+      expect(other.statusText).toBe('not_game_editor')
+      expect(guest.status).toBe(404)
+      expect(await tagRows(id)).toEqual([{ key: 'co-op', label: 'Co-op', position: 0 }])
+    })
+  })
+
+  describe('Prices (#337)', () => {
+    const T1 = '2026-11-03T10:00:00.000Z'
+    const T2 = '2026-11-05T09:00:00.000Z'
+    const T3 = '2026-11-07T09:00:00.000Z'
+    const steam = { cents: 1999, source: 'steam' }
+
+    beforeEach(() => {
+      clock.set(T1)
+    })
+
+    function edit(cookie: string | undefined, id: string, body: unknown) {
+      return request(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+        body: JSON.stringify(body),
+      })
+    }
+
+    /** The three Price columns of the stored row, the day as its ISO string (or null). */
+    async function storedPrice(id: string) {
+      const [row] = await testDb.db.select().from(games).where(eq(games.id, id))
+      return { cents: row!.priceCents, source: row!.priceSource, checkedAt: row!.priceCheckedAt?.toISOString() ?? null }
+    }
+
+    /** The game's Tags as stored, in position order: what a Price edit must leave as it was. */
+    async function tagRowsOf(gameId: string) {
+      const rows = await testDb.db.select().from(gameTags).where(eq(gameTags.gameId, gameId)).orderBy(asc(gameTags.position))
+      return rows.map(({ key, label, position }) => ({ key, label, position }))
+    }
+
+    it('stores a Price with the day of the server clock and answers it on the game, the detail and the list', async () => {
+      const cookie = await cookieOf(host)
+
+      const game = await created(cookie, { name: 'Mario Kart', price: steam })
+
+      const expected = { cents: 1999, source: 'steam', checkedAt: T1 }
+      expect(game.price).toEqual(expected)
+      expect(await storedPrice(game.id)).toEqual(expected)
+      expect(((await (await read(game.id, cookie)).json()) as GameView).price).toEqual(expected)
+      expect(((await (await list(cookie)).json()) as GameList).games[0]!.price).toEqual(expected)
+    })
+
+    it('stores no Price for a game sent without one, or with price null', async () => {
+      const cookie = await cookieOf(host)
+
+      const without = await created(cookie, { name: 'Ohne' })
+      const withNull = await created(cookie, { name: 'Null', price: null })
+
+      expect(without.price).toBeNull()
+      expect(withNull.price).toBeNull()
+      expect(await storedPrice(without.id)).toEqual({ cents: null, source: null, checkedAt: null })
+      expect(await storedPrice(withNull.id)).toEqual({ cents: null, source: null, checkedAt: null })
+    })
+
+    it('stores a free game and a subscription with no amount, stamped with the day', async () => {
+      const cookie = await cookieOf(host)
+
+      const free = await created(cookie, { name: 'Frei', price: { cents: null, source: 'free_to_play' } })
+      const abo = await created(cookie, { name: 'Abo', price: { cents: null, source: 'subscription' } })
+
+      expect(free.price).toEqual({ cents: null, source: 'free_to_play', checkedAt: T1 })
+      expect(await storedPrice(abo.id)).toEqual({ cents: null, source: 'subscription', checkedAt: T1 })
+    })
+
+    it.each([
+      [{ price: { cents: 1999, source: null } }],
+      [{ price: { cents: 1999 } }],
+      [{ price: { cents: 500, source: 'free_to_play' } }],
+      [{ price: { cents: 500, source: 'subscription' } }],
+      [{ price: { cents: null, source: 'steam' } }],
+      [{ price: { cents: 0, source: 'steam' } }],
+      [{ price: { cents: 100_000, source: 'steam' } }],
+      [{ price: { cents: 19.5, source: 'steam' } }],
+      [{ price: { cents: '1999', source: 'steam' } }],
+      [{ price: { cents: 1999, source: 'amazon' } }],
+      [{ price: 'steam' }],
+      [{ priceChecked: 'yes' }],
+      [{ priceChecked: true }],
+    ])('refuses %j with invalid_price and stores no game', async (extra) => {
+      const response = await create(await cookieOf(host), { name: 'Mario Kart', ...extra })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_price')
+      expect(await testDb.db.select().from(games)).toEqual([])
+    })
+
+    it('moves the day when the amount changes, and when the source changes', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', price: steam })
+
+      clock.set(T2)
+      const amount = await edit(cookie, id, { name: 'Mario Kart', price: { cents: 2499, source: 'steam' } })
+      expect((await amount.json() as GameView).price).toEqual({ cents: 2499, source: 'steam', checkedAt: T2 })
+
+      clock.set(T3)
+      const source = await edit(cookie, id, { name: 'Mario Kart', price: { cents: 2499, source: 'epic' } })
+      expect((await source.json() as GameView).price).toEqual({ cents: 2499, source: 'epic', checkedAt: T3 })
+      expect(await storedPrice(id)).toEqual({ cents: 2499, source: 'epic', checkedAt: T3 })
+    })
+
+    it('keeps the day when a save changes the name and not the Price', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', price: steam })
+
+      clock.set(T2)
+      const response = await edit(cookie, id, { name: 'Mario Kart 8', price: steam })
+
+      expect(await response.json()).toMatchObject({ name: 'Mario Kart 8', price: { cents: 1999, source: 'steam', checkedAt: T1 } })
+    })
+
+    it('keeps the Price and its day when an edit has no price, as a browser tab of 0.9 sends it', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', price: steam })
+
+      clock.set(T2)
+      const response = await edit(cookie, id, { name: 'Mario Kart 8' })
+
+      expect(await response.json()).toMatchObject({ name: 'Mario Kart 8', price: { cents: 1999, source: 'steam', checkedAt: T1 } })
+      expect(await storedPrice(id)).toEqual({ cents: 1999, source: 'steam', checkedAt: T1 })
+    })
+
+    it('„Preis stimmt noch“ moves only the day, and keeps the rest of the game as the form sent it', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, {
+        name: 'Mario Kart',
+        youtubeUrl: 'https://youtu.be/dQw4w9WgXcQ',
+        clipStart: 72,
+        clipLength: 45,
+        playersMin: 2,
+        playersMax: 8,
+        suitabilities: ['teams'],
+        notes: 'Die Fernbedienung nicht vergessen',
+        tags: ['Co-op'],
+        price: steam,
+      })
+      const before = await testDb.db.select().from(games).where(eq(games.id, id))
+      const tagsBefore = await tagRowsOf(id)
+
+      clock.set(T2)
+      const response = await edit(cookie, id, {
+        name: 'Mario Kart',
+        youtubeUrl: 'https://youtu.be/dQw4w9WgXcQ',
+        clipStart: 72,
+        clipLength: 45,
+        playersMin: 2,
+        playersMax: 8,
+        suitabilities: ['teams'],
+        notes: 'Die Fernbedienung nicht vergessen',
+        priceChecked: true,
+      })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchObject({ price: { cents: 1999, source: 'steam', checkedAt: T2 }, tags: [{ key: 'co-op', label: 'Co-op' }] })
+      const [after] = await testDb.db.select().from(games).where(eq(games.id, id))
+      expect(after).toMatchObject({
+        name: before[0]!.name,
+        youtubeId: before[0]!.youtubeId,
+        clipStart: before[0]!.clipStart,
+        clipLength: before[0]!.clipLength,
+        playersMin: before[0]!.playersMin,
+        playersMax: before[0]!.playersMax,
+        suitabilities: before[0]!.suitabilities,
+        notes: before[0]!.notes,
+        priceCents: 1999,
+        priceSource: 'steam',
+        priceCheckedAt: new Date(T2),
+      })
+      expect(await tagRowsOf(id)).toEqual(tagsBefore)
+    })
+
+    it('„Preis stimmt noch“ sent with the Price itself also moves the day only', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', price: steam })
+
+      clock.set(T2)
+      const response = await edit(cookie, id, { name: 'Mario Kart', price: steam, priceChecked: true })
+
+      expect(await response.json()).toMatchObject({ price: { cents: 1999, source: 'steam', checkedAt: T2 } })
+    })
+
+    it.each([
+      [{ priceChecked: true }],
+      [{ priceChecked: true, price: null }],
+    ])('refuses %j on a game without a Price, with invalid_price, and changes nothing', async (extra) => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart' })
+
+      clock.set(T2)
+      const response = await edit(cookie, id, { name: 'Mario Kart 8', ...extra })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('invalid_price')
+      expect(await storedPrice(id)).toEqual({ cents: null, source: null, checkedAt: null })
+      expect((await (await read(id, cookie)).json() as GameView).name).toBe('Mario Kart')
+    })
+
+    it('clears the Price with price null, and clears it again without an error', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', price: steam })
+
+      clock.set(T2)
+      const first = await edit(cookie, id, { name: 'Mario Kart', price: null })
+      const second = await edit(cookie, id, { name: 'Mario Kart', price: null })
+
+      expect(first.status).toBe(200)
+      expect(await first.json()).toMatchObject({ price: null })
+      expect(second.status).toBe(200)
+      expect(await storedPrice(id)).toEqual({ cents: null, source: null, checkedAt: null })
+    })
+
+    it('moves the day and clears the amount when a paid game becomes free', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', price: steam })
+
+      clock.set(T2)
+      const response = await edit(cookie, id, { name: 'Mario Kart', price: { cents: null, source: 'free_to_play' } })
+
+      expect(await response.json()).toMatchObject({ price: { cents: null, source: 'free_to_play', checkedAt: T2 } })
+    })
+
+    it('refuses an edit with an invalid Price, changes nothing, and saves the Tags and the Price of a valid one together', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart', price: steam })
+
+      const refused = await edit(cookie, id, { name: 'Mario Kart 8', price: { cents: 500, source: 'free_to_play' } })
+      expect(refused.status).toBe(400)
+      expect(refused.statusText).toBe('invalid_price')
+      expect((await (await read(id, cookie)).json() as GameView).name).toBe('Mario Kart')
+
+      clock.set(T2)
+      const saved = await edit(cookie, id, { name: 'Mario Kart 8', tags: ['Co-op'], price: { cents: 2499, source: 'gog' } })
+      expect(await saved.json()).toMatchObject({ name: 'Mario Kart 8', tags: [{ key: 'co-op', label: 'Co-op' }], price: { cents: 2499, source: 'gog', checkedAt: T2 } })
+    })
+
+    it('lets the Platform admin change the Price of another Host\'s game, and refuses another Host with not_game_editor and keeps it', async () => {
+      const { id } = await created(await cookieOf(host), { name: 'Mario Kart', price: steam })
+
+      const other = await edit(await cookieOf(otherHost), id, { name: 'Mario Kart', price: null })
+      expect(other.status).toBe(403)
+      expect(other.statusText).toBe('not_game_editor')
+      expect(await storedPrice(id)).toEqual({ cents: 1999, source: 'steam', checkedAt: T1 })
+
+      const guest = await edit(await cookieOf(member), id, { name: 'Mario Kart', price: null })
+      expect(guest.status).toBe(404)
+      expect(await storedPrice(id)).toEqual({ cents: 1999, source: 'steam', checkedAt: T1 })
+
+      const superAdmin = await edit(await cookieOf(admin), id, { name: 'Mario Kart', price: { cents: 2499, source: 'steam' } })
+      expect(superAdmin.status).toBe(200)
+      expect(await storedPrice(id)).toEqual({ cents: 2499, source: 'steam', checkedAt: T1 })
     })
   })
 })

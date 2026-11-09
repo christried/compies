@@ -67,6 +67,17 @@ function paramUserIds({ type, params }: ActivityRow): string[] {
 }
 
 /**
+ * The params an entry may show (#355): a Veto names its Party, never the Player who cast it. The cut runs on every `vetoes_revealed`
+ * row, not only on rows written before #355: the previous deployment serves until the switch-over and still writes `userId` into
+ * the entries it settles meanwhile. Any other type goes out as stored.
+ */
+function publicParams(row: ActivityRow): ActivityRow['params'] {
+  if (row.type !== 'vetoes_revealed') return row.params
+  const params = row.params as ActivityParams['vetoes_revealed']
+  return { ...params, vetoes: params.vetoes.map(({ team }) => ({ team })) }
+}
+
+/**
  * The names of the games these rows name (ACTIVITY_NAMES) that may be named yet (#228, #229), keyed by Event and game: a game a
  * draw of the Event has, from the draw's stop instant on (a set draw stops at its commit, so a set game is named at once; a
  * put-back Round's game too: everyone saw it set), or a game a Round of the Event has set (that Round settled at or after the
@@ -113,7 +124,7 @@ export async function activityEntries(db: Db, rows: ActivityRow[], now: Date): P
       return name === undefined ? [] : [[id, name]]
     })),
     type: row.type,
-    params: row.params,
+    params: publicParams(row),
   }) as ActivityEntry)
 }
 

@@ -52,6 +52,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+// Whether this stage has shown the Event without a Countdown (#332): a Countdown that arrives after that was set while the page is open,
+// and its card announces it. A stage that opens on an Event that already has one (load, or a client navigation) stays quiet.
+const sawNoCountdown = ref(props.view.countdown === null)
+watch(() => props.view.countdown === null, (none) => {
+  if (none) sawNoCountdown.value = true
+})
+
 const hostName = computed(() => props.view.members.find(member => member.isHost)?.name ?? '')
 
 // The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
@@ -172,7 +179,9 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         :countdown="view.countdown!"
         :server-now="serverNow"
         :is-host="view.event.isHost"
+        :host-name="view.members.find(m => m.isHost)?.name"
         :command="actions.countdown"
+        :announce-set="sawNoCountdown"
       />
 
       <CoinFlip

@@ -140,7 +140,7 @@ export async function resultsSection({ eventRow, rows, viewer, now }: StageConte
  * The Vetoes of the Lucky Wheel for one viewer (#231, spec #218 § Vetoes: sealed until the end of the window). A Veto cast on a
  * draw whose window still runs is the casting Party's own business: it counts toward `left` and shows as cast only for that
  * Party's Players. From `vetoEndsAt` on (the draw is settled by then, settleBeforeRead) every Party's Vetoes count and the
- * Vetoes of the window's draw are listed with who cast them. Bench and Stands, and a Host outside the teams, get no own part.
+ * Vetoes of the window's draw are listed by Party. Which Player cast one never leaves the server (#355). Bench and Stands, and a Host outside the teams, get no own part.
  * The window's draw (#232) is the Event's latest draw of any kind, a spin or a game the Host set, and only while it has a window
  * (wheelView picks it): a later draw without one takes the panel away. `game` is its card, already cut to what the viewer may know.
  */
@@ -154,7 +154,8 @@ function vetoView({ eventRow, rows, viewer, now, draws, vetoRows, bonusTeams }: 
     ? null
     : {
         team: viewerTeam,
-        castBy: castOnDraw.find(row => row.team === viewerTeam)?.userId ?? null,
+        // The viewer's own Party only (the seal): castOnDraw holds other Parties' sealed casts while the window runs.
+        cast: castOnDraw.some(row => row.team === viewerTeam),
         rejection: vetoRejection({
           viewerTeam,
           draw: windowDraw ? { stopAt: windowDraw.stopAt, vetoEndsAt: windowDraw.vetoEndsAt, outcome: windowDraw.outcome } : null,
@@ -164,7 +165,7 @@ function vetoView({ eventRow, rows, viewer, now, draws, vetoRows, bonusTeams }: 
           left: left[viewerTeam - 1] ?? 0,
         }),
       }
-  const revealed = windowDraw && !windowOpen(windowDraw) ? castOnDraw.map(({ team, userId }) => ({ team, userId })).sort((a, b) => a.team - b.team) : null
+  const revealed = windowDraw && !windowOpen(windowDraw) ? castOnDraw.map(({ team }) => ({ team })).sort((a, b) => a.team - b.team) : null
   const draw = windowDraw ? { drawId: windowDraw.id, kind: windowDraw.kind, stopAt: windowDraw.stopAt.toISOString(), vetoEndsAt: windowDraw.vetoEndsAt!.toISOString(), game } : null
   return { left, own, revealed, draw }
 }

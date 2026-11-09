@@ -1,5 +1,6 @@
 import type { Place } from '~~/shared/board'
 import type { BoardTeam } from '~~/shared/event'
+import { teamDisplayName } from '~~/shared/team-name'
 import type { Translate } from './settings-summary'
 
 // The Game board's pure client parts (#160): the key a zone is known by in the DOM, and the name a team is shown with (#161).
@@ -18,12 +19,12 @@ export function placeFromKey(key: string | undefined): Place | null {
 
 /**
  * The name a team is shown with (#161): its Team name when it has one (a BoardTeam from the Event read), else the Team
- * colour's name („Team Rot“). A bare position is always the colour's name: the Activity feed keeps it, because its entries
- * store the position and a name that changes later would rewrite history.
+ * colour's name („Team Rot“), the rule of shared/team-name.ts with vue-i18n's copy. A bare position is always the colour's name:
+ * the Activity feed keeps it, because its entries store the position and a name that changes later would rewrite history.
  */
 export function teamName(team: BoardTeam | number, t: Translate): string {
-  if (typeof team !== 'number' && team.name !== null) return team.name
-  return t('team.defaultName', { color: t(`team.colors.${typeof team === 'number' ? team : team.position}`) })
+  const [own, position] = typeof team === 'number' ? [null, team] : [team.name, team.position]
+  return teamDisplayName(own, position, { defaultName: color => t('team.defaultName', { color }), colorName: at => t(`team.colors.${at}`) })
 }
 
 /** The name of the team at `position`: its Team name when `teams` has it with one, else the Team colour's name (#288). */

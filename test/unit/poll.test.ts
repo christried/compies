@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bestSlotId, hasVoted, parseNote, parseVoteValue, voteRejection } from '../../server/domain/poll'
+import { bestSlotId, hasVoted, parseNote, parseVoteValue, pollStanding, voteRejection } from '../../server/domain/poll'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). Slots before this instant are past.
 const now = new Date('2026-10-22T10:00:00Z')
@@ -65,6 +65,43 @@ describe('hasVoted', () => {
 
   it('is false when there is nothing to vote on', () => {
     expect(hasVoted([], [], ME)).toBe(false)
+  })
+})
+
+// The count behind „x von y haben vollständig abgestimmt“ (#352). These pin an existing rule, so they pass from the start.
+describe('pollStanding progress (#352)', () => {
+  const members = ['a', 'b', 'c']
+  const progress = (slots: ReturnType<typeof slot>[], votes: ReturnType<typeof vote>[]) => pollStanding({ slots, votes, memberIds: members, viewerId: 'a', now }).progress
+
+  it('counts nobody when nobody has voted', () => {
+    expect(progress([FRI, SAT_LATE], [])).toEqual({ voted: 0, total: 3 })
+  })
+
+  it('does not count a Member with a Vote on only some of the Slots', () => {
+    expect(progress([FRI, SAT_LATE], [vote('fri', 'a', 'yes')])).toEqual({ voted: 0, total: 3 })
+  })
+
+  it('counts a Member with a Vote on every Slot', () => {
+    const votes = [vote('fri', 'a', 'yes'), vote('sat-late', 'a', 'no'), vote('fri', 'b', 'maybe'), vote('sat-late', 'b', 'yes')]
+
+    expect(progress([FRI, SAT_LATE], votes)).toEqual({ voted: 2, total: 3 })
+  })
+
+  it('stops counting a Member once a Slot is added after their Vote', () => {
+    expect(progress([FRI], [vote('fri', 'a', 'yes')])).toEqual({ voted: 1, total: 3 })
+    expect(progress([FRI, SAT_LATE], [vote('fri', 'a', 'yes')])).toEqual({ voted: 0, total: 3 })
+  })
+
+  it('does not require a Vote on a past Slot', () => {
+    expect(progress([FRI, PAST], [vote('fri', 'a', 'yes')])).toEqual({ voted: 1, total: 3 })
+  })
+
+  it('counts nobody when no Slot is left to vote on', () => {
+    expect(progress([PAST], [vote('past', 'a', 'yes')])).toEqual({ voted: 0, total: 3 })
+  })
+
+  it('counts zero of zero when there are no Members', () => {
+    expect(pollStanding({ slots: [FRI], votes: [vote('fri', 'a', 'yes')], memberIds: [], viewerId: 'a', now }).progress).toEqual({ voted: 0, total: 0 })
   })
 })
 

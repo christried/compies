@@ -24,6 +24,12 @@ const entries = collect(de)
 const isLegal = (key: string) => key.startsWith('legal.')
 
 describe('copy rules', () => {
+  // The Home kicker „Hallo {name}“ is gone (#347): the locale has no key for it.
+  it('has no „Hallo {name}“ greeting key on Home (#347)', () => {
+    expect(entries.filter(e => e.key === 'mvp.home.hello')).toEqual([])
+    expect(entries.filter(e => /^Hallo \{/.test(e.value))).toEqual([])
+  })
+
   it('never names Compibert in the locale file or the offline page', () => {
     const hits = entries.filter(e => /compibert/i.test(e.value)).map(e => e.key)
     expect(hits).toEqual([])
@@ -70,6 +76,11 @@ describe('copy rules', () => {
     expect(addressesIn(entries.map(e => e.value).join('\n'))).toEqual([address])
     expect(normalise(valueOf('legal.impressum.contact.text'))).toContain(address)
     expect(normalise(valueOf('legal.datenschutz.controller.text'))).toContain(address)
+  })
+
+  it('has no „Geschafft“ kicker left on the Event-created screen (#353)', () => {
+    expect(Object.keys(de.stepper.done)).not.toContain('kicker')
+    expect(entries.some(e => e.value === 'Geschafft')).toBe(false)
   })
 })
 

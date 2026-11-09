@@ -1,0 +1,87 @@
+import { mountSuspended } from '@nuxt/test-utils/runtime'
+import type { VueWrapper } from '@vue/test-utils'
+import { h } from 'vue'
+import { afterEach, describe, expect, it } from 'vitest'
+import GameCard from '~/components/GameCard.vue'
+import { GAME_NAME_MAX, type GameView } from '~~/shared/game'
+
+// The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
+// buttons of every card share one bottom edge, whatever the length of the name, the player count, Suitabilities, Price and Tags.
+
+type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price'>> & { name: string }
+type Layout = 'card' | 'row' | 'responsive'
+
+let page: VueWrapper | undefined
+
+async function mount(game: Props, layout: Layout, withActions = true) {
+  const { name, ...rest } = game
+  page = await mountSuspended(GameCard, {
+    props: {
+      game: { id: 'g-1', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null, ...rest, name },
+      layout,
+    },
+    slots: withActions ? { actions: () => h('button', { type: 'button' }, 'Hinzufügen') } : {},
+  })
+  return page
+}
+
+// The root's children: the cover, the body (the element that holds the name `<b>`), and the actions wrapper when there is one.
+const root = () => page!.element as HTMLElement
+const body = () => root().querySelector('b')!.parentElement as HTMLElement
+const lastChild = () => root().lastElementChild as HTMLElement
+
+const LONG_NAME = 'x'.repeat(GAME_NAME_MAX)
+const FULL = { playersMin: 2, playersMax: 6, suitabilities: ['teams', 'one_v_one'] as GameView['suitabilities'], tags: [{ key: 'a', label: 'Retro' }, { key: 'b', label: 'Koop' }, { key: 'c', label: 'Party' }], price: { cents: 1999, source: 'steam' as const, checkedAt: '2026-11-01T10:00:00.000Z' } }
+
+afterEach(() => {
+  page?.unmount()
+  page = undefined
+})
+
+describe('the game card structure (#351)', () => {
+  it('in the responsive layout, the actions are the last child and the body grows in the md column', async () => {
+    await mount({ name: 'Mario Kart' }, 'responsive')
+
+    expect(lastChild().querySelector('button')?.textContent).toBe('Hinzufügen')
+    expect(root().className).toContain('md:flex-col')
+    expect(root().className).toContain('md:items-stretch')
+    expect(body().className).toContain('md:flex-auto')
+    expect(body().className).not.toContain('md:flex-none')
+  })
+
+  it('in the card layout, the card is a column, the body grows, and the actions are the last child', async () => {
+    await mount({ name: 'Mario Kart' }, 'card')
+
+    expect(root().className).toContain('flex-col')
+    expect(body().className).toContain('flex-auto')
+    expect(lastChild().querySelector('button')?.textContent).toBe('Hinzufügen')
+  })
+
+  it('in the row layout, the card is no column, and the actions are still the last child', async () => {
+    await mount({ name: 'Mario Kart' }, 'row')
+
+    expect(root().className).not.toContain('flex-col')
+    expect(lastChild().querySelector('button')?.textContent).toBe('Hinzufügen')
+  })
+
+  it('keeps the same structure for a long card and a short one, so the row can stretch them to one height', async () => {
+    await mount({ name: LONG_NAME, ...FULL }, 'responsive')
+    const longRoot = root().className
+    const longLast = lastChild().querySelector('button') !== null
+    page!.unmount()
+
+    await mount({ name: 'Pong' }, 'responsive')
+
+    expect(root().className).toBe(longRoot)
+    expect(longLast).toBe(true)
+    expect(lastChild().querySelector('button')?.textContent).toBe('Hinzufügen')
+    expect(body().className).toContain('md:flex-auto')
+  })
+
+  it('without an actions slot there is no actions wrapper, and the body is the last child', async () => {
+    await mount({ name: 'Mario Kart' }, 'responsive', false)
+
+    expect(lastChild()).toBe(body())
+    expect(lastChild().querySelector('button')).toBeNull()
+  })
+})

@@ -126,7 +126,7 @@ describe('Results', () => {
     for (const [key] of seated) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
 
     const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo', createdBy: ids.host },
+      { name: 'Halo', createdBy: ids.host, priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') },
       { name: 'Kart', createdBy: ids.host },
       { name: 'Schach', createdBy: ids.host },
     ]).returning()
@@ -744,6 +744,19 @@ describe('Results', () => {
       expect(await readAll(game)).toMatchObject(expected)
       expect(await readAll(game, game.cookies.two)).toMatchObject(expected)
       expect(await readAll(game, game.cookies.four)).toMatchObject(expected)
+    })
+
+    it('names the Price of the set game in its Result for the Host and a Player, as the library has it (#338)', async () => {
+      const game = await running()
+      const roundId = (await (await set(game, game.halo.id)).json() as { roundId: string }).roundId
+      expect((await enter(game, roundId, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] })).status).toBe(200)
+
+      const price = { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' }
+      for (const cookie of [game.hostCookie, game.cookies.one]) {
+        const view = await read(game, cookie)
+        expect(view.results).toMatchObject([{ number: 1, game: { id: game.halo.id, name: 'Halo', price } }])
+        expect(view.results[0]!.game).not.toHaveProperty('tags')
+      }
     })
 
     it('lists the Results by number, not by the order the Rounds started or were entered', async () => {

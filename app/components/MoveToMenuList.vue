@@ -3,6 +3,7 @@ import type { Component } from 'vue'
 
 // The list of places inside the MoveToMenu (#160): every team, the Bench and the Stands. A place the person cannot
 // go to stays in the list, dimmed, with the reason under it (`aria-disabled`, so it keeps its focus and is read out).
+// The Session rows' „Mehr“ menu (#349) reuses it for actions: a target with `hold` is a one second hold inside the menu.
 export interface MoveTarget {
   /** The key of the place (`placeKey`). */
   key: string
@@ -12,9 +13,15 @@ export interface MoveTarget {
   team?: number
   /** Why the person cannot go there; null when they can. */
   reason: string | null
+  /** An entry that is held for a second instead of clicked (#74); it resolves to whether it worked, and never has a reason. */
+  hold?: () => Promise<boolean>
 }
 
-defineProps<{ targets: MoveTarget[] }>()
+defineProps<{
+  targets: MoveTarget[]
+  /** The menu's accessible name. */
+  label?: string
+}>()
 const emit = defineEmits<{ pick: [key: string] }>()
 
 const list = useTemplateRef<HTMLElement>('list')
@@ -36,6 +43,7 @@ defineExpose({ focusFirst: () => list.value?.querySelector<HTMLElement>('[role="
   <ul
     ref="list"
     role="menu"
+    :aria-label="label"
     tabindex="-1"
     class="m-0 flex list-none flex-col gap-1 p-0"
     @keydown="onKeydown"
@@ -45,7 +53,19 @@ defineExpose({ focusFirst: () => list.value?.querySelector<HTMLElement>('[role="
       :key="target.key"
       role="none"
     >
+      <HoldToConfirmButton
+        v-if="target.hold"
+        menuitem
+        block
+        variant="secondary"
+        size="dock"
+        hint="badge"
+        :label="target.label"
+        :icon="target.icon"
+        :action="target.hold"
+      />
       <button
+        v-else
         type="button"
         role="menuitem"
         class="flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-[15px]"

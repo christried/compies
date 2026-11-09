@@ -3,7 +3,7 @@ import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { clickButton, clickHostAction, dialog, sanneAndLarsi, serve, shownToasts, view } from './event-page'
+import { clickButton, clickHostAction, dialog, openSessionMenu, sanneAndLarsi, serve, shownToasts, view } from './event-page'
 
 describe('setting the Date', () => {
   beforeEach(() => {
@@ -70,7 +70,7 @@ describe('setting the Date', () => {
     expect(dialog()).toBeNull()
   })
 
-  it('shows the calendar button of the Session to every Member, and Verschieben only to the Host', async () => {
+  it('shows the calendar entry of the Session to every Member, and Verschieben only to the Host', async () => {
     const member = serve(s => view(s, [], {
       event: { phase: 'date_set', startsAt: '2026-10-24T18:00:00.000Z' },
       slots: [],
@@ -79,9 +79,8 @@ describe('setting the Date', () => {
     const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
     // The control is about the Date, so it is labelled as a calendar entry, not as a file download. It opens the
     // calendar sheet (#81, event-calendar.test.ts).
-    const calendarButton = memberPage.findAll('button[aria-label="Session in den Kalender"]')
-    expect(calendarButton).toHaveLength(1)
-    expect(calendarButton[0]!.attributes('aria-haspopup')).toBe('dialog')
+    const memberMenu = await openSessionMenu(memberPage.element)
+    expect([...memberMenu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Session in den Kalender'])
     expect(memberPage.text()).not.toContain('Verschieben')
 
     const hostStore = serve(s => view(s, [], {
@@ -90,7 +89,7 @@ describe('setting the Date', () => {
       bestSlotId: null,
     }))
     const hostPage = await mountSuspended(EventPage, { route: `/e/${hostStore.slug}` })
-    expect(hostPage.text()).toContain('Verschieben')
+    expect((await openSessionMenu(hostPage.element)).textContent).toContain('Verschieben')
     expect(hostPage.text()).toContain('Einladen')
   })
 

@@ -54,15 +54,16 @@ export interface SpinView {
   current: boolean
 }
 
-/** A Veto of a Party and the Player who cast it (#231); the Event read shows it from the end of the window on. */
-export interface VetoCastView { team: number, userId: string }
+/** A Veto of a Party (#231); the Event read shows it from the end of the window on. It names the Party only, never the Player who cast it (#355). */
+export interface VetoCastView { team: number }
 
 /**
- * The viewer's own Party in the Veto window (#231): its team, the Player of it who cast (null: not yet, the Party's Players learn it
- * at once, nobody else before the end of the window), and why the Party cannot cast on the window's draw (VetoView.draw) now, or null when it may.
+ * The viewer's own Party in the Veto window (#231): its team, whether the Party has cast (the Party's Players learn it at once, nobody
+ * else before the end of the window, and nobody ever learns which Player cast it, #355), and why the Party cannot cast on the window's
+ * draw (VetoView.draw) now, or null when it may.
  * Only a Player of a Party gets it: the Bench, the Stands and a Host outside the teams get `own: null`.
  */
-export interface OwnVetoView { team: number, castBy: string | null, rejection: VetoRejection | null }
+export interface OwnVetoView { team: number, cast: boolean, rejection: VetoRejection | null }
 
 /**
  * The Vetoes of the Lucky Wheel (#231, spec #218 § Vetoes, sealed until the end of the window). `left` is every Party's Vetoes left

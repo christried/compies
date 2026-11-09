@@ -12,6 +12,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 **Scope:** [MVP] · **Ref:** `App MVP Terminfindung ?s=home`
 
 - **Layout:** Hub shell. Desktop: header 64 + HubNav (Events active, Archiv/Bibliothek/Profil with tape marker), content max 1040, title row (kicker „Hallo {name}“, h1 44 px, host CTA right), section „Deine Events“ as 2-col card grid (gap 14), BaustelleZone below. Mobile (<600): h1 32, 1-col cards, bottom tab bar with the same 4 items (markers top-right). Tablet 600–979: 2-col cards, tab bar.
+- **Deviation (0.10, #347):** the title row has no kicker „Hallo {name}“; the user decided against it on 2026-11-09. The h1 and the host CTA stay as drawn. The reference artboard still shows the kicker.
 - **Components:** AppShell, AppHeader, HubNav, NavSoonMarker, AppButton, PhasePill, Event card (local), EmptyState, BaustelleZone, Compibert (bust, sleep)
 - **Data:** Events the user is a member of: name, host name, phase, best slot so far (or confirmed date), votedCount/total, my vote status.
 - **Host vs player:** Host (canHost): „Neue Terminumfrage“ (primary) in the title row. Without the right: no button, no notice. Nav: Bibliothek only with the Host permission or as Platform admin; Admin only as Platform admin. Card CTA: „Öffnen“ (host) / „Abstimmen“ (not voted, primary) / „Ansehen“ (voted or date set).
@@ -106,6 +107,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Data:** Event config; library (suggestions by format + player count).
 - **Host vs player:** Host only.
 - **States:** 1 Name · 2 Format: Teams · 2 Format: Jeder gegen jeden · 3 Spiele · 4 Punkte · 4 Eigene Tabelle (Fehler) · 5 Lucky Wheel · 5 Pick & Ban + Info · 5 Loser-Modi noch gesperrt · 6 Spielepool · 7 Tiebreaker · 8 Termin · Fertig
+- **As built (#353):** the Fertig state has no „Geschafft“ kicker above its title, and every page's back link is the shared `BackLink`: 14 / 800 in `ink`, underlined, with an arrow, 44 px tall (the jump link's style, 11-event-seite § EventPageHead), not small and muted (the user's call, 2026-11-09).
 - **Realtime:** —
 
 

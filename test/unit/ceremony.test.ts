@@ -39,52 +39,52 @@ describe('the timing (spec #308 § Shared ceremony rules)', () => {
 
   for (const [parties, [trip, bonk]] of Object.entries(END_MS)) {
     it(`ends ${trip} ms (trip) and ${bonk} ms (bonk) after the start with ${parties} Parties`, () => {
-      expect(ceremonyTimeline(Number(parties), 'trip', 1).endMs).toBe(trip)
-      expect(ceremonyTimeline(Number(parties), 'bonk', 1).endMs).toBe(bonk)
+      expect(ceremonyTimeline({ partyCount: Number(parties), gag: 'trip', winners: 1 }).endMs).toBe(trip)
+      expect(ceremonyTimeline({ partyCount: Number(parties), gag: 'bonk', winners: 1 }).endMs).toBe(bonk)
     })
   }
 
   it('starts the run after the banner and the rows, and lands the gag after the run', () => {
-    expect(ceremonyTimeline(2, 'trip', 1)).toMatchObject({ runAtMs: 1350, landAtMs: 2850, endMs: 5050 })
-    expect(ceremonyTimeline(2, 'bonk', 1)).toMatchObject({ runAtMs: 1350, landAtMs: 4250, endMs: 6450 })
-    expect(ceremonyTimeline(8, 'trip', 1)).toMatchObject({ runAtMs: 4050, landAtMs: 5550, endMs: 7750 })
-    expect(ceremonyTimeline(8, 'bonk', 1)).toMatchObject({ runAtMs: 4050, landAtMs: 6950, endMs: 9150 })
+    expect(ceremonyTimeline({ partyCount: 2, gag: 'trip', winners: 1 })).toMatchObject({ runAtMs: 1350, landAtMs: 2850, endMs: 5050 })
+    expect(ceremonyTimeline({ partyCount: 2, gag: 'bonk', winners: 1 })).toMatchObject({ runAtMs: 1350, landAtMs: 4250, endMs: 6450 })
+    expect(ceremonyTimeline({ partyCount: 8, gag: 'trip', winners: 1 })).toMatchObject({ runAtMs: 4050, landAtMs: 5550, endMs: 7750 })
+    expect(ceremonyTimeline({ partyCount: 8, gag: 'bonk', winners: 1 })).toMatchObject({ runAtMs: 4050, landAtMs: 6950, endMs: 9150 })
   })
 
   // The moments the Pokal-Lauf's tracks and the layer's flags hang on (#312), from AwardCeremony.dc.html play().
   it('puts the rows at 600 ms, the card after them, and the run ends 700 ms after its start', () => {
-    expect(ceremonyTimeline(2, 'trip', 1)).toMatchObject({ rowsAtMs: 600, cardAtMs: 1050, runEndAtMs: 2050 })
-    expect(ceremonyTimeline(8, 'bonk', 1)).toMatchObject({ rowsAtMs: 600, cardAtMs: 3750, runEndAtMs: 4750 })
+    expect(ceremonyTimeline({ partyCount: 2, gag: 'trip', winners: 1 })).toMatchObject({ rowsAtMs: 600, cardAtMs: 1050, runEndAtMs: 2050 })
+    expect(ceremonyTimeline({ partyCount: 8, gag: 'bonk', winners: 1 })).toMatchObject({ rowsAtMs: 600, cardAtMs: 3750, runEndAtMs: 4750 })
   })
 
   it('stamps 150 ms after the landing, pops the people in at 450 ms and gets Compibert up at 300 ms', () => {
-    expect(ceremonyTimeline(2, 'trip', 1)).toMatchObject({ stampAtMs: 3000, membersAtMs: 3300, getUpAtMs: 3150 })
-    expect(ceremonyTimeline(8, 'bonk', 1)).toMatchObject({ stampAtMs: 7100, membersAtMs: 7400, getUpAtMs: 7250 })
+    expect(ceremonyTimeline({ partyCount: 2, gag: 'trip', winners: 1 })).toMatchObject({ stampAtMs: 3000, membersAtMs: 3300, getUpAtMs: 3150 })
+    expect(ceremonyTimeline({ partyCount: 8, gag: 'bonk', winners: 1 })).toMatchObject({ stampAtMs: 7100, membersAtMs: 7400, getUpAtMs: 7250 })
   })
 
   // The end frame's buttons rise in 1.4 s after the landing (04-motion § 6b `share (+1.4)`, #314); the run's end is not moved by it.
   it('shows the share row 1400 ms after the landing, before the end, and leaves the end where it was', () => {
     for (const parties of [2, 8]) {
       for (const gag of ['trip', 'bonk'] as const) {
-        const { shareAtMs, landAtMs, endMs } = ceremonyTimeline(parties, gag, 1)
+        const { shareAtMs, landAtMs, endMs } = ceremonyTimeline({ partyCount: parties, gag, winners: 1 })
         expect(shareAtMs).toBe(landAtMs + 1400)
         expect(shareAtMs).toBeLessThan(endMs)
       }
     }
-    expect(ceremonyTimeline(2, 'trip', 1)).toMatchObject({ shareAtMs: 4250, endMs: 5050 })
-    expect(ceremonyTimeline(8, 'bonk', 1)).toMatchObject({ shareAtMs: 8350, endMs: 9150 })
+    expect(ceremonyTimeline({ partyCount: 2, gag: 'trip', winners: 1 })).toMatchObject({ shareAtMs: 4250, endMs: 5050 })
+    expect(ceremonyTimeline({ partyCount: 8, gag: 'bonk', winners: 1 })).toMatchObject({ shareAtMs: 8350, endMs: 9150 })
   })
 
   it('has no row below two Parties', () => {
-    expect(ceremonyTimeline(1, 'trip', 1).runAtMs).toBe(900)
-    expect(ceremonyTimeline(0, 'trip', 1).runAtMs).toBe(900)
+    expect(ceremonyTimeline({ partyCount: 1, gag: 'trip', winners: 1 }).runAtMs).toBe(900)
+    expect(ceremonyTimeline({ partyCount: 0, gag: 'trip', winners: 1 }).runAtMs).toBe(900)
   })
 
   it('takes the start as epoch ms, a Date or an ISO string', () => {
     const expected = STARTS + 5050
-    expect(ceremonyEndsAt(STARTS, 2, 'trip', 1)).toBe(expected)
-    expect(ceremonyEndsAt(new Date(STARTS), 2, 'trip', 1)).toBe(expected)
-    expect(ceremonyEndsAt(new Date(STARTS).toISOString(), 2, 'trip', 1)).toBe(expected)
+    expect(ceremonyEndsAt(STARTS, { partyCount: 2, gag: 'trip', winners: 1 })).toBe(expected)
+    expect(ceremonyEndsAt(new Date(STARTS), { partyCount: 2, gag: 'trip', winners: 1 })).toBe(expected)
+    expect(ceremonyEndsAt(new Date(STARTS).toISOString(), { partyCount: 2, gag: 'trip', winners: 1 })).toBe(expected)
   })
 })
 
@@ -99,32 +99,32 @@ describe('the timing of a Tie (#315)', () => {
   ]
   for (const [parties, winners, trip, bonk] of END_MS_TIE) {
     it(`ends ${trip} ms (trip) and ${bonk} ms (bonk) with ${winners} Winners of ${parties} Parties`, () => {
-      expect(ceremonyTimeline(parties, 'trip', winners).endMs).toBe(trip)
-      expect(ceremonyTimeline(parties, 'bonk', winners).endMs).toBe(bonk)
+      expect(ceremonyTimeline({ partyCount: parties, gag: 'trip', winners }).endMs).toBe(trip)
+      expect(ceremonyTimeline({ partyCount: parties, gag: 'bonk', winners }).endMs).toBe(bonk)
     })
   }
 
   it('has no rows when every Party won: the plate and the cards come at 600 ms', () => {
-    expect(ceremonyTimeline(2, 'trip', 2)).toMatchObject({ rowsAtMs: 600, cardAtMs: 600, runAtMs: 900 })
+    expect(ceremonyTimeline({ partyCount: 2, gag: 'trip', winners: 2 })).toMatchObject({ rowsAtMs: 600, cardAtMs: 600, runAtMs: 900 })
   })
 
   it('has 450 ms rows below 2 Winners and 200 ms chips below 3 or more', () => {
     // 4 Parties, 2 Winners: two rows (450 each). 5 Parties, 3 Winners: two chips (200 apart, the last 300 long). 8 Parties, 4 Winners: four.
-    expect(ceremonyTimeline(4, 'trip', 2).cardAtMs).toBe(1500)
-    expect(ceremonyTimeline(5, 'trip', 3).cardAtMs).toBe(1100)
-    expect(ceremonyTimeline(8, 'trip', 4).cardAtMs).toBe(1500)
+    expect(ceremonyTimeline({ partyCount: 4, gag: 'trip', winners: 2 }).cardAtMs).toBe(1500)
+    expect(ceremonyTimeline({ partyCount: 5, gag: 'trip', winners: 3 }).cardAtMs).toBe(1100)
+    expect(ceremonyTimeline({ partyCount: 8, gag: 'trip', winners: 4 }).cardAtMs).toBe(1500)
   })
 
   it('hangs the plate on the last landing of the chain: 540 ms per further card, then 620 ms', () => {
-    expect(ceremonyTimeline(4, 'trip', 2)).toMatchObject({ landAtMs: 3300, plateAtMs: 4460, stampAtMs: 4610, getUpAtMs: 4760, membersAtMs: 4910, endMs: 6660 })
-    expect(ceremonyTimeline(3, 'trip', 3)).toMatchObject({ landAtMs: 2400, plateAtMs: 4100 })
+    expect(ceremonyTimeline({ partyCount: 4, gag: 'trip', winners: 2 })).toMatchObject({ landAtMs: 3300, plateAtMs: 4460, stampAtMs: 4610, getUpAtMs: 4760, membersAtMs: 4910, endMs: 6660 })
+    expect(ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3 })).toMatchObject({ landAtMs: 2400, plateAtMs: 4100 })
   })
 
   it('lands on the plate at once in a grid, and the plate is the landing for a single Winner', () => {
-    expect(ceremonyTimeline(8, 'trip', 8)).toMatchObject({ landAtMs: 2400, plateAtMs: 2400, stampAtMs: 2550 })
-    expect(ceremonyTimeline(3, 'trip', 3, true)).toMatchObject({ landAtMs: 2400, plateAtMs: 2400 })
+    expect(ceremonyTimeline({ partyCount: 8, gag: 'trip', winners: 8 })).toMatchObject({ landAtMs: 2400, plateAtMs: 2400, stampAtMs: 2550 })
+    expect(ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3, grid: true })).toMatchObject({ landAtMs: 2400, plateAtMs: 2400 })
     for (const gag of ['trip', 'bonk'] as const) {
-      const single = ceremonyTimeline(5, gag, 1)
+      const single = ceremonyTimeline({ partyCount: 5, gag, winners: 1 })
       expect(single.plateAtMs).toBe(single.landAtMs)
     }
   })
@@ -134,17 +134,17 @@ describe('the timing of a Tie (#315)', () => {
   it('shows the share row 1400 ms after the plate and before the end, for 1, 2, 3 and 8 Winners with both gags', () => {
     for (const winners of [1, 2, 3, 8]) {
       for (const gag of ['trip', 'bonk'] as const) {
-        const { shareAtMs, plateAtMs, endMs } = ceremonyTimeline(8, gag, winners)
+        const { shareAtMs, plateAtMs, endMs } = ceremonyTimeline({ partyCount: 8, gag, winners })
         expect(shareAtMs - plateAtMs, `${winners} ${gag}`).toBe(1400)
         expect(shareAtMs, `${winners} ${gag}`).toBeLessThan(endMs)
       }
     }
-    expect(ceremonyTimeline(4, 'trip', 2).shareAtMs).toBe(4460 + 1400)
+    expect(ceremonyTimeline({ partyCount: 4, gag: 'trip', winners: 2 }).shareAtMs).toBe(4460 + 1400)
   })
 
   it('takes a grid from 4 Winners on its own', () => {
-    expect(ceremonyTimeline(4, 'trip', 4)).toEqual(ceremonyTimeline(4, 'trip', 4, true))
-    expect(ceremonyTimeline(3, 'trip', 3)).toEqual(ceremonyTimeline(3, 'trip', 3, false))
+    expect(ceremonyTimeline({ partyCount: 4, gag: 'trip', winners: 4 })).toEqual(ceremonyTimeline({ partyCount: 4, gag: 'trip', winners: 4, grid: true }))
+    expect(ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3 })).toEqual(ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3, grid: false }))
   })
 
   // A phone shows 3 Winners as a grid, the server never knows the device and stores the chain's end: the phone is early, never late.
@@ -152,7 +152,7 @@ describe('the timing of a Tie (#315)', () => {
     it(`ends a grid no later than the stored end for every Winner count with the ${gag} gag`, () => {
       for (let winners = 2; winners <= 8; winners++) {
         for (let parties = winners; parties <= 8; parties++) {
-          expect(ceremonyTimeline(parties, gag, winners, true).endMs, `${winners} of ${parties}`).toBeLessThanOrEqual(ceremonyTimeline(parties, gag, winners).endMs)
+          expect(ceremonyTimeline({ partyCount: parties, gag, winners, grid: true }).endMs, `${winners} of ${parties}`).toBeLessThanOrEqual(ceremonyTimeline({ partyCount: parties, gag, winners }).endMs)
         }
       }
     })
@@ -166,7 +166,7 @@ describe('the timing of a Tie (#315)', () => {
         for (let winners = 1; winners <= parties; winners++) {
           for (const roomy of [true, false]) {
             const grid = ceremonyLayout(winners, parties - winners, roomy).stage === 'grid'
-            expect(ceremonyTimeline(parties, gag, winners, grid).endMs, `${winners} of ${parties}, ${roomy ? 'wide' : 'phone'}`).toBeLessThanOrEqual(ceremonyEndsAt(0, parties, gag, winners))
+            expect(ceremonyTimeline({ partyCount: parties, gag, winners, grid }).endMs, `${winners} of ${parties}, ${roomy ? 'wide' : 'phone'}`).toBeLessThanOrEqual(ceremonyEndsAt(0, { partyCount: parties, gag, winners }))
           }
         }
       }
@@ -174,11 +174,11 @@ describe('the timing of a Tie (#315)', () => {
   }
 
   it('stores the chain\'s end for 3 Winners: a phone\'s grid is up to 1.7 s earlier', () => {
-    expect(ceremonyTimeline(3, 'trip', 3).endMs - ceremonyTimeline(3, 'trip', 3, true).endMs).toBe(1700)
+    expect(ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3 }).endMs - ceremonyTimeline({ partyCount: 3, gag: 'trip', winners: 3, grid: true }).endMs).toBe(1700)
   })
 
   it('takes the Winner count into the end instant', () => {
-    expect(ceremonyEndsAt(STARTS, 4, 'trip', 2)).toBe(STARTS + 6660)
+    expect(ceremonyEndsAt(STARTS, { partyCount: 4, gag: 'trip', winners: 2 })).toBe(STARTS + 6660)
   })
 })
 

@@ -62,6 +62,8 @@
   },
   "dock": {
     "label": "Host-Steuerung",
+    "delete": "Event löschen",
+    "deleteBlocked": "Geht erst, wenn keine Session läuft.",
     "setDate": "Termin festlegen",
     "settings": "Einstellungen",
     "setup": "Event einrichten",
@@ -192,11 +194,12 @@
       "count": "{n} Session | {n} Sessions",
       "session": "Session",
       "sessionN": "Session {n}",
-      "voted": "{voted} von {total} haben abgestimmt",
+      "voted": "{voted} von {total} haben vollständig abgestimmt",
       "toPoll": "Zur Umfrage",
       "vote": "Abstimmen",
       "calendar": "Session {n} in den Kalender",
-      "calendarSingle": "Session in den Kalender"
+      "calendarSingle": "Session in den Kalender",
+      "more": "Mehr: {title}"
     }
   },
   "board": {
@@ -404,7 +407,7 @@
       },
       "wheel": {
         "title": "Glücksrad",
-        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Wer ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
+        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Welche Partei ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
         "hideWheel": "Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.",
         "hostSees": "Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.",
         "good": "Maximale Spannung und Chaos.",
@@ -437,7 +440,6 @@
   },
   "wheel": {
     "title": "Glücksrad",
-    "count": "{n} Spiel auf dem Rad | {n} Spiele auf dem Rad",
     "empty": "Das Rad ist leer",
     "spinning": "Das Rad dreht …",
     "where": "Wo bleibt es stehen?",
@@ -487,15 +489,13 @@
     "cast": "Veto eingelegt",
     "locked": "Veto ist drin",
     "stamp": "Versiegelt",
-    "byMate": "{name} hat schon gevetot",
+    "byParty": "{team} hat schon ein Veto eingelegt",
     "hint": "Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.",
-    "hintSealed": "Die anderen sehen es erst beim Aufdecken.",
-    "hintMate": "Ein Veto pro Team und Spiel. Euer Team hat für dieses Spiel schon gevetot.",
+    "hintSealed": "Ein Veto pro Team und Spiel. Die anderen sehen es erst beim Aufdecken.",
     "revealing": "Aufdecken …",
     "revealed": "Aufgedeckt",
     "tileVeto": "Veto",
     "tileNone": "Kein Veto",
-    "tileBy": "von {name}",
     "tileSpared": "Vetos gespart",
     "outcomeVeto": "Veto von {list}. {game} fliegt vom Rad, es wird neu gedreht.",
     "outcomeVetoSet": "Veto von {list}. {game} fliegt raus, es wird neu gewählt.",
@@ -841,6 +841,12 @@
     "renewed": "Erneuert.",
     "renewedText": "Neuer Link aktiv. Der alte führt jetzt ins Leere."
   },
+  "eventDelete": {
+    "title": "Event löschen?",
+    "text": "Das Event verschwindet sofort für alle, auch seine Links funktionieren nicht mehr. Das lässt sich nicht rückgängig machen.",
+    "hold": "Event löschen",
+    "done": "Event gelöscht"
+  },
   "pushAsk": {
     "title": "Danke fürs Abstimmen! Sollen wir Bescheid sagen?",
     "yes": "Ja, gern",
@@ -892,11 +898,25 @@
     },
     "home": "Zur Startseite"
   },
+  "price": {
+    "source": {
+      "steam": "Steam",
+      "epic": "Epic Games Store",
+      "gog": "GOG",
+      "publisher": "Publisher-Website",
+      "steam_key": "Steam-Key",
+      "free_to_play": "Free-to-play",
+      "subscription": "Abo"
+    },
+    "offer": "{amount} € bei {source}",
+    "line": "{offer} · Stand {day}"
+  },
   "library": {
     "title": "Bibliothek",
     "search": "Spiele suchen",
     "filterPlayers": "Spielerzahl",
     "filterSuitability": "Passt zu",
+    "filterTag": "Tag",
     "filterMine": "Von mir",
     "none": "Nichts gefunden. Vielleicht heißt es anders?",
     "create": "Spiel anlegen",
@@ -922,7 +942,10 @@
     "playersFrom": "ab {min}",
     "playersUpTo": "bis {max}",
     "playersBetween": "{min} bis {max}",
-    "notes": "Notizen"
+    "notes": "Notizen",
+    "tags": "Tags",
+    "moreTags": "+{n}",
+    "moreTagsLabel": "{n} weiterer Tag | {n} weitere Tags"
   },
   "gameEdit": {
     "kicker": "Bibliothek",
@@ -962,6 +985,24 @@
     "notes": "Notizen",
     "notesHelp": "Einstellungen, Aufwärmen, Siegbedingung, Hausregeln. Alle Hosts können sie lesen.",
     "notesTooLong": "Höchstens {max} Zeichen.",
+    "tags": "Tags",
+    "tagsHelp": "Enter oder Komma fügt einen Tag hinzu.",
+    "tagTooLong": "Höchstens {max} Zeichen",
+    "tagsTooMany": "Höchstens {max} Tags",
+    "tagRemove": "Tag „{label}“ entfernen",
+    "tagSuggestions": "Vorschläge",
+    "price": "Preis",
+    "priceAmount": "Betrag in €",
+    "priceAmountHelp": "Zum Beispiel 19,99",
+    "priceNoAmount": "Bei dieser Quelle gibt es keinen Betrag.",
+    "priceSource": "Wo gibt’s das Spiel?",
+    "priceSourceNone": "Keine Angabe",
+    "priceNeedsSource": "Bitte eine Quelle wählen",
+    "priceRange": "Zwischen 0,01 € und 999,99 €",
+    "priceChecked": "Stand: {day}",
+    "priceConfirm": "Preis stimmt noch",
+    "priceConfirmed": "Preis bestätigt",
+    "priceRemove": "Preis entfernen",
     "saveChanges": "Änderungen speichern",
     "editKicker": "Bearbeiten",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
@@ -1210,7 +1251,7 @@
       },
       "events": {
         "heading": "11. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, wer ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer ein Veto eingelegt hat, sieht bis zum Aufdecken nur das eigene Team. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr.\n\nIst ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, welches Team ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Dass ein Team ein Veto eingelegt hat, sieht bis zum Aufdecken nur dieses Team; welcher Spieler es war, erfährt niemand. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr. Der Host kann ein Event jederzeit löschen, nur nicht, solange eine Session läuft. Ein gelöschtes Event ist für alle Mitglieder sofort nicht mehr erreichbar: nicht auf der Startseite, nicht über den Link zum Event und nicht über den Einladungslink. Dort steht dann nur, dass das Event gelöscht wurde.\n\nIst ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "12. Kalenderdatei",
@@ -1230,7 +1271,7 @@
       },
       "retention": {
         "heading": "16. Speicherdauer",
-        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Plätze, Teamwörter, eingefrorene Teamnamen, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht. Ein Teamwort wird gelöscht, sobald du dein Team verlässt. Spielbilder bleiben gespeichert, solange das Spiel besteht und das Bild nicht ersetzt wird (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
+        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Plätze, Teamwörter, eingefrorene Teamnamen, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht. Die Daten eines gelöschten Events bleiben zunächst gespeichert, als gelöscht markiert, aber in Compies für niemanden mehr abrufbar. Auf Anfrage an die unter Abschnitt 1 genannte Adresse entfernen wir sie aus der Datenbank. Eine automatische Löschung gibt es nicht. Ein Teamwort wird gelöscht, sobald du dein Team verlässt. Spielbilder bleiben gespeichert, solange das Spiel besteht und das Bild nicht ersetzt wird (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
       },
       "obligation": {
         "heading": "17. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
@@ -1254,14 +1295,13 @@
       },
       "changes": {
         "heading": "22. Änderungen und Stand",
-        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 8. November 2026."
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 9. November 2026."
       }
     }
   },
   "mvp": {
     "_scope": "[MVP] Terminfindung zuerst. Remove keys as the real screens replace them.",
     "home": {
-      "hello": "Hallo {name}",
       "title": "Wann zocken wir?",
       "titleEmpty": "Noch nix los.",
       "events": "Deine Events",
@@ -1320,6 +1360,7 @@
       "nextMonth": "Nächster Monat"
     },
     "notes": {
+      "headingCount": "Anmerkung ({n}) | Anmerkungen ({n})",
       "add": "Anmerkung",
       "addA11y": "Anmerkung hinzufügen",
       "edit": "Anmerkung bearbeiten",
@@ -1456,7 +1497,6 @@
     },
     "create": "Event erstellen",
     "done": {
-      "kicker": "Geschafft",
       "title": "Event erstellt",
       "heading": "{name} steht!",
       "datesPoll": "Umfrage, {n} Vorschlag | Umfrage, {n} Vorschläge",
@@ -1567,8 +1607,6 @@
   },
   "countdown": {
     "title": "Countdown",
-    "paused": "Pausiert",
-    "ended": "Zeit ist um",
     "start": "Starten",
     "pause": "Pausieren",
     "resume": "Fortsetzen",
@@ -1578,11 +1616,44 @@
     "seconds": "Sekunden",
     "set": "Stellen",
     "range": "Zwischen 5 Sekunden und 99:59.",
-    "running": "Der Countdown läuft schon."
+    "running": "Der Countdown läuft schon.",
+    "pill": {
+      "ready": "Bereit",
+      "running": "Läuft",
+      "paused": "Pausiert",
+      "done": "Zeit ist um"
+    },
+    "stamp": "Zeit ist um",
+    "hostFallback": "Der Host",
+    "meta": {
+      "set": "Gestellt auf {time}",
+      "readyHost": "Gestellt auf {time}. Starte, wenn alle bereit sind.",
+      "ready": "Gestellt auf {time}. {host} startet ihn.",
+      "pausedHost": "Angehalten. „Fortsetzen“ macht bei {time} weiter.",
+      "paused": "{host} hat angehalten, bei {time} geht’s weiter.",
+      "doneHost": "Bleibt stehen, bis du zurücksetzt.",
+      "done": "Bleibt stehen, bis {host} zurücksetzt."
+    },
+    "sr": {
+      "timer": "Noch {duration}",
+      "timerReady": "Countdown gestellt auf {duration}",
+      "timerPaused": "Pausiert, noch {duration}",
+      "timerDone": "Zeit ist um"
+    },
+    "live": {
+      "set": "Countdown gestellt: {duration}.",
+      "running": "Countdown läuft. Noch {duration}.",
+      "paused": "Countdown pausiert. Noch {duration}.",
+      "final": "Noch 10 Sekunden.",
+      "done": "Zeit ist um.",
+      "reset": "Countdown zurückgesetzt: {duration}."
+    },
+    "nMinutes": "{n} Minute | {n} Minuten",
+    "nSeconds": "{n} Sekunde | {n} Sekunden"
   },
   "clip": {
     "label": "Clip: {name}",
-    "live": "Clip läuft für alle",
+    "live": "läuft für alle",
     "closeForMe": "Für mich schließen"
   },
   "poolWarning": {
@@ -1622,6 +1693,8 @@
     "playersInvalid": "Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.",
     "suitabilitiesInvalid": "Diese Angabe bei „Passt zu“ kennen wir nicht.",
     "gameNotesInvalid": "Die Notizen sind zu lang.",
+    "tagsInvalid": "Höchstens 8 Tags mit je höchstens 20 Zeichen, keiner doppelt.",
+    "priceInvalid": "Der Preis braucht eine Quelle und einen Betrag von 0,01 € bis 999,99 €. Bei Free-to-play und Abo gibt es keinen Betrag.",
     "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",

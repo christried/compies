@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Equal } from '@lucide/vue'
 import { boxWithin } from '~/utils/ceremony-tie-run'
+import { chainSizes, gridSizes, groupWidth, plateSizes } from '~/utils/ceremony-sizes'
+import { teamSurfaceStyle, teamVar } from '~/utils/team-style'
 import type { CeremonyLayout, CeremonyModel, CeremonyPerson, CeremonyWinner } from '~/utils/ceremony'
 import type { RigState } from '~/utils/compibert-rig'
 
@@ -22,8 +24,8 @@ const props = defineProps<{
 
 const { t } = useI18n()
 // A phone (below md, as AppShell's side panel) gets the smaller sizes of the reference's `mob` variant.
-const roomy = useMediaQuery('(min-width: 48rem)')
-const avatar = computed(() => (roomy.value ? 80 : 64))
+const roomy = useRoomy()
+const avatar = computed((): 80 | 64 => (roomy.value ? 80 : 64))
 const compibert = computed(() => (roomy.value ? 150 : 120))
 /** The cell of a person is a little wider than the avatar; three cells make a row. */
 const cell = computed(() => avatar.value + 16)
@@ -39,23 +41,12 @@ const SHARE_ROW_ROOM = 44 + 18
  */
 const ground = computed(() => `${roomy.value ? track.value : track.value + SHARE_ROW_ROOM}px`)
 
-// A Tie's sizes, number for number from the artboard's frame() (card w x h, strip, name, points and stamp font, stamp offset, avatar, cell,
-// gap, name font, „=“ badge, the gap it takes and its icon, the points' padding).
-const CHAIN_WIDE_2 = { w: 240, h: 160, strip: 40, nfs: 16, pfs: 32, sfs: 20, so: 12, av: 56, cell: 68, gx: 10, ns: 13, eq: 40, eg: 56, ei: 18, pp: '12px 14px', mgap: 14 } as const
-const CHAIN_WIDE_3 = { w: 220, h: 140, strip: 36, nfs: 15, pfs: 28, sfs: 18, so: 10, av: 48, cell: 60, gx: 8, ns: 12, eq: 36, eg: 48, ei: 16, pp: '11px 13px', mgap: 14 } as const
-const CHAIN_PHONE = { w: 160, h: 120, strip: 32, nfs: 13, pfs: 24, sfs: 15, so: 8, av: 44, cell: 50, gx: 5, ns: 12, eq: 28, eg: 34, ei: 14, pp: '9px 11px', mgap: 10 } as const
-const GRID_WIDE = { w: 236, h: 120, strip: 36, nfs: 15, pfs: 22, sfs: 13, av: 28, ov: 8, gap: 14, bg: 10 } as const
-const GRID_PHONE = { w: 171, h: 96, strip: 30, nfs: 13, pfs: 18, sfs: 11, av: 24, ov: 7, gap: 12, bg: 7 } as const
-const chain = computed(() => (!roomy.value ? CHAIN_PHONE : winners.value.length === 2 ? CHAIN_WIDE_2 : CHAIN_WIDE_3))
-const grid = computed(() => (roomy.value ? GRID_WIDE : GRID_PHONE))
-/** The width of the Winner group, which the plate takes. */
-const groupWidth = computed(() => {
-  const k = winners.value.length
-  if (props.layout.stage === 'chain') return k * chain.value.w + (k - 1) * chain.value.eg
-  const columns = Math.min(k, props.layout.cols)
-  return columns * grid.value.w + (columns - 1) * grid.value.gap
-})
-const plate = computed(() => (roomy.value ? { h: 40, label: 15, stamp: 20 } : { h: 34, label: 12, stamp: 15 }))
+// The sizes of a Tie's chain, grid and plate (`app/utils/ceremony-sizes.ts`, #328).
+const chain = computed(() => chainSizes(roomy.value === true, winners.value.length))
+const grid = computed(() => gridSizes(roomy.value === true))
+const plate = computed(() => plateSizes(roomy.value === true))
+/** The width of the Winner group, which the plate takes (#315). */
+const winnersWidth = computed(() => groupWidth(props.layout, winners.value.length, roomy.value === true))
 
 /** What a screen reader hears of a grid card's stack: the Party and its Players' names, the rest counted. */
 function stackLabel(winner: CeremonyWinner) {
@@ -126,7 +117,7 @@ defineExpose({ root, burst })
           <div data-part="back">
             <div
               class="flex h-10 flex-none items-center overflow-hidden border-b-(length:--cp-bw) border-line px-3 text-[16px] font-extrabold whitespace-nowrap"
-              :style="{ backgroundColor: `var(--cp-team-${first.team})`, backgroundImage: `var(--cp-team-${first.team}-pattern)`, color: `var(--cp-team-${first.team}-ink)` }"
+              :style="teamSurfaceStyle(first.team)"
             >
               <span class="truncate">{{ first.name }}</span>
             </div>
@@ -163,24 +154,10 @@ defineExpose({ root, burst })
             class="flex flex-col items-center gap-1.5"
             :style="{ width: `${cell}px` }"
           >
-            <UserAvatar
-              v-if="person.kind === 'player'"
-              :name="person.name"
-              :image="person.image"
-              :team="person.team"
+            <CeremonyPersonCell
+              :person="person"
               :size="avatar"
             />
-            <TeamMark
-              v-else-if="person.kind === 'mark'"
-              :team="person.team"
-              :size="avatar"
-            />
-            <span
-              v-else
-              class="box-border grid place-items-center rounded-pill border-[2.5px] border-line bg-paper-2 font-num text-ink"
-              :style="{ width: `${avatar}px`, height: `${avatar}px`, fontSize: `${Math.round(avatar * 0.3)}px` }"
-            >+{{ person.n }}</span>
-            <span class="max-w-full truncate text-[13px] leading-[1.1] font-extrabold">{{ person.kind === 'player' || person.kind === 'mark' ? person.name : t('ceremony.more', { n: person.n }) }}</span>
           </li>
         </ul>
       </div>
@@ -201,7 +178,7 @@ defineExpose({ root, burst })
             <i
               aria-hidden="true"
               class="size-[18px] flex-none rounded-[5px] border-2 border-line"
-              :style="{ backgroundColor: `var(--cp-team-${row.team})`, backgroundImage: `var(--cp-team-${row.team}-pattern)` }"
+              :style="{ backgroundColor: teamVar(row.team), backgroundImage: teamVar(row.team, 'pattern') }"
             />
             <span class="truncate">{{ row.name }}</span>
           </span>
@@ -223,24 +200,24 @@ defineExpose({ root, burst })
           <div
             data-part="plate"
             class="relative box-border flex flex-none items-center justify-center rounded-[12px] border-(length:--cp-bw) border-line bg-primary text-on-primary shadow-sm"
-            :style="{ width: `${groupWidth}px`, height: `${plate.h}px` }"
+            :style="{ width: `${winnersWidth}px`, height: `${plate.height}px` }"
           >
             <span
               class="absolute top-0 bottom-0 left-3 flex items-center font-num leading-none"
-              :style="{ fontSize: `${plate.label}px` }"
+              :style="{ fontSize: `${plate.labelFontSize}px` }"
             >{{ t('ceremony.place1') }}</span>
             <!-- „???“ becomes the stamp; the static end frame has the stamp and no „???“, as the single card has no front. -->
             <span class="relative grid place-items-center">
               <span
                 data-part="plate-stamp"
                 class="-rotate-3 rounded-[6px] border-[3px] border-hot bg-surface px-2.5 py-0.5 font-num leading-[1.15] text-hot uppercase"
-                :style="{ fontSize: `${plate.stamp}px` }"
+                :style="{ fontSize: `${plate.stampFontSize}px` }"
               >{{ t('ceremony.tie.plateStamp') }}</span>
               <span
                 data-part="plate-front"
                 aria-hidden="true"
                 class="absolute inset-0 grid place-items-center font-num opacity-0"
-                :style="{ fontSize: `${plate.stamp}px` }"
+                :style="{ fontSize: `${plate.stampFontSize}px` }"
               >???</span>
             </span>
           </div>
@@ -258,13 +235,13 @@ defineExpose({ root, burst })
             >
               <div
                 class="flex flex-col items-center"
-                :style="{ gap: `${chain.mgap}px` }"
+                :style="{ gap: `${chain.peopleGap}px` }"
               >
                 <div
                   data-testid="winner-card"
                   data-part="card"
                   class="relative box-border flex-none overflow-hidden rounded-[16px] border-(length:--cp-bw) border-line bg-surface shadow-card"
-                  :style="{ width: `${chain.w}px`, height: `${chain.h}px` }"
+                  :style="{ width: `${chain.cardWidth}px`, height: `${chain.cardHeight}px` }"
                 >
                   <div
                     data-part="back"
@@ -272,13 +249,13 @@ defineExpose({ root, burst })
                   >
                     <div
                       class="flex min-w-0 flex-none items-center border-b-(length:--cp-bw) border-line px-3 font-extrabold"
-                      :style="{ height: `${chain.strip}px`, fontSize: `${chain.nfs}px`, backgroundColor: `var(--cp-team-${winner.team})`, backgroundImage: `var(--cp-team-${winner.team}-pattern)`, color: `var(--cp-team-${winner.team}-ink)` }"
+                      :style="{ height: `${chain.stripHeight}px`, fontSize: `${chain.nameFontSize}px`, ...teamSurfaceStyle(winner.team) }"
                     >
                       <span class="truncate">{{ winner.name }}</span>
                     </div>
                     <div
                       class="flex flex-1 items-start font-num leading-none"
-                      :style="{ padding: chain.pp, fontSize: `${chain.pfs}px` }"
+                      :style="{ padding: chain.pointsPadding, fontSize: `${chain.pointsFontSize}px` }"
                     >
                       {{ t('ceremony.pts', { n: winner.points }) }}
                     </div>
@@ -293,43 +270,27 @@ defineExpose({ root, burst })
                   <span
                     data-part="stamp"
                     class="absolute -rotate-8 rounded-[6px] border-[3px] border-hot bg-surface px-2.5 py-0.5 font-num text-hot"
-                    :style="{ right: `${chain.so}px`, bottom: `${chain.so}px`, fontSize: `${chain.sfs}px` }"
+                    :style="{ right: `${chain.stampOffset}px`, bottom: `${chain.stampOffset}px`, fontSize: `${chain.stampFontSize}px` }"
                   >{{ t('ceremony.stamp') }}</span>
                 </div>
                 <ul
                   :aria-label="winner.name"
                   data-part="party"
                   class="m-0 flex list-none flex-wrap justify-center p-0"
-                  :style="{ width: `${chain.w}px`, gap: `10px ${chain.gx}px` }"
+                  :style="{ width: `${chain.cardWidth}px`, gap: `10px ${chain.cellGapX}px` }"
                 >
                   <li
                     v-for="(person, at) in winner.people"
                     :key="at"
                     data-part="person"
                     class="flex flex-col items-center gap-[5px]"
-                    :style="{ width: `${chain.cell}px` }"
+                    :style="{ width: `${chain.cellWidth}px` }"
                   >
-                    <UserAvatar
-                      v-if="person.kind === 'player'"
-                      :name="person.name"
-                      :image="person.image"
-                      :team="person.team"
-                      :size="chain.av"
+                    <CeremonyPersonCell
+                      :person="person"
+                      :size="chain.avatarSize"
+                      :name-font-size="chain.personNameFontSize"
                     />
-                    <TeamMark
-                      v-else-if="person.kind === 'mark'"
-                      :team="person.team"
-                      :size="chain.av"
-                    />
-                    <span
-                      v-else
-                      class="box-border grid place-items-center rounded-pill border-[2.5px] border-line bg-paper-2 font-num text-ink"
-                      :style="{ width: `${chain.av}px`, height: `${chain.av}px`, fontSize: `${Math.round(chain.av * 0.3)}px` }"
-                    >+{{ person.n }}</span>
-                    <span
-                      class="max-w-full truncate leading-[1.1] font-extrabold"
-                      :style="{ fontSize: `${chain.ns}px` }"
-                    >{{ person.kind === 'player' || person.kind === 'mark' ? person.name : t('ceremony.more', { n: person.n }) }}</span>
                   </li>
                 </ul>
               </div>
@@ -338,14 +299,14 @@ defineExpose({ root, burst })
                 data-part="badge"
                 aria-hidden="true"
                 class="flex flex-none items-center justify-center"
-                :style="{ width: `${chain.eg}px`, height: `${chain.h}px` }"
+                :style="{ width: `${chain.badgeGap}px`, height: `${chain.cardHeight}px` }"
               >
                 <span
                   class="box-border grid place-items-center rounded-pill border-[2.5px] border-line bg-primary text-on-primary shadow-sm"
-                  :style="{ width: `${chain.eq}px`, height: `${chain.eq}px` }"
+                  :style="{ width: `${chain.badgeSize}px`, height: `${chain.badgeSize}px` }"
                 >
                   <Equal
-                    :size="chain.ei"
+                    :size="chain.badgeIconSize"
                     :stroke-width="3"
                     aria-hidden="true"
                   />
@@ -359,7 +320,7 @@ defineExpose({ root, burst })
             :aria-label="t('ceremony.tie.list')"
             data-stage="grid"
             class="m-0 flex list-none flex-wrap justify-center p-0"
-            :style="{ gap: `${grid.gap}px`, width: `${groupWidth}px` }"
+            :style="{ gap: `${grid.cardGap}px`, width: `${winnersWidth}px` }"
           >
             <li
               v-for="winner in winners"
@@ -367,7 +328,7 @@ defineExpose({ root, burst })
               data-testid="winner-card"
               data-part="card"
               class="relative box-border flex-none overflow-hidden rounded-[14px] border-(length:--cp-bw) border-line bg-surface shadow-card"
-              :style="{ width: `${grid.w}px`, height: `${grid.h}px` }"
+              :style="{ width: `${grid.cardWidth}px`, height: `${grid.cardHeight}px` }"
             >
               <div
                 data-part="back"
@@ -375,28 +336,25 @@ defineExpose({ root, burst })
               >
                 <div
                   class="flex min-w-0 flex-none items-center border-b-(length:--cp-bw) border-line px-2.5 font-extrabold"
-                  :style="{ height: `${grid.strip}px`, fontSize: `${grid.nfs}px`, backgroundColor: `var(--cp-team-${winner.team})`, backgroundImage: `var(--cp-team-${winner.team}-pattern)`, color: `var(--cp-team-${winner.team}-ink)` }"
+                  :style="{ height: `${grid.stripHeight}px`, fontSize: `${grid.nameFontSize}px`, ...teamSurfaceStyle(winner.team) }"
                 >
                   <span class="truncate">{{ winner.name }}</span>
                 </div>
                 <div
                   class="flex flex-1 flex-col justify-center px-2.5"
-                  :style="{ gap: `${grid.bg}px` }"
+                  :style="{ gap: `${grid.backGap}px` }"
                 >
                   <div class="flex items-center justify-between gap-2">
                     <span
                       class="font-num leading-none"
-                      :style="{ fontSize: `${grid.pfs}px` }"
+                      :style="{ fontSize: `${grid.pointsFontSize}px` }"
                     >{{ t('ceremony.pts', { n: winner.points }) }}</span>
                     <span
                       data-part="stamp"
                       class="-rotate-8 rounded-[5px] border-[2.5px] border-hot bg-surface px-[7px] py-px font-num leading-[1.2] text-hot"
-                      :style="{ fontSize: `${grid.sfs}px` }"
+                      :style="{ fontSize: `${grid.stampFontSize}px` }"
                     >{{ t('ceremony.stamp') }}</span>
                   </div>
-                  <!-- The stack is not the person cell of the single card and the chain with a smaller size: by the artboard (`cells(…, stack)` in
-                       Siegerehrung Unentschieden.dc.html) it has no ring (`team` is 0), no name, an overlap, a 2 px „+N“ circle and a „+N“ at 0.4 of the size
-                       where the cells have 2.5 px and 0.3 (#308 review S4). -->
                   <ul
                     :aria-label="stackLabel(winner)"
                     data-part="stack"
@@ -406,24 +364,13 @@ defineExpose({ root, burst })
                       v-for="(person, at) in winner.people"
                       :key="at"
                       class="flex"
-                      :style="{ marginLeft: at > 0 ? `${-grid.ov}px` : '0' }"
+                      :style="{ marginLeft: at > 0 ? `${-grid.avatarOverlap}px` : '0' }"
                     >
-                      <UserAvatar
-                        v-if="person.kind === 'player'"
-                        :name="person.name"
-                        :image="person.image"
-                        :size="grid.av"
+                      <CeremonyPersonCell
+                        :person="person"
+                        :size="grid.avatarSize"
+                        stack
                       />
-                      <TeamMark
-                        v-else-if="person.kind === 'mark'"
-                        :team="person.team"
-                        :size="grid.av"
-                      />
-                      <span
-                        v-else
-                        class="box-border grid place-items-center rounded-pill border-2 border-line bg-paper-2 font-num text-ink"
-                        :style="{ width: `${grid.av}px`, height: `${grid.av}px`, fontSize: `${Math.round(grid.av * 0.4)}px` }"
-                      >+{{ person.n }}</span>
                     </li>
                   </ul>
                 </div>
@@ -458,7 +405,7 @@ defineExpose({ root, burst })
               <i
                 aria-hidden="true"
                 class="size-[18px] flex-none rounded-[5px] border-2 border-line"
-                :style="{ backgroundColor: `var(--cp-team-${row.team})`, backgroundImage: `var(--cp-team-${row.team}-pattern)` }"
+                :style="{ backgroundColor: teamVar(row.team), backgroundImage: teamVar(row.team, 'pattern') }"
               />
               <span class="truncate">{{ row.name }}</span>
             </span>
@@ -483,7 +430,7 @@ defineExpose({ root, burst })
           <i
             aria-hidden="true"
             class="size-4 flex-none rounded-[5px] border-2 border-line"
-            :style="{ backgroundColor: `var(--cp-team-${row.team})`, backgroundImage: `var(--cp-team-${row.team}-pattern)` }"
+            :style="{ backgroundColor: teamVar(row.team), backgroundImage: teamVar(row.team, 'pattern') }"
           />
           <span class="min-w-0 truncate text-[14px] font-extrabold">{{ row.name }}</span>
           <span class="flex-none font-num text-[14px]">{{ t('ceremony.pts', { n: row.points }) }}</span>
@@ -495,12 +442,16 @@ defineExpose({ root, burst })
       aria-hidden="true"
       class="absolute inset-x-0 bottom-0 h-[22px] border-t-(length:--cp-bw) border-line bg-paper-2"
     />
-    <!-- Compibert's box starts at the stage's left edge: the run's x is a stage coordinate (ceremony-run.ts). -->
+    <!-- Compibert's box starts at the stage's left edge: the run's x is a stage coordinate (ceremony-run.ts). The rig (#311), 150 px on a
+         desktop and 120 on a phone, holds the pose the layer decides (the run's timeline, then the dance; under reduced motion the cheer,
+         held). It is mounted with the layer's dialog only, so GSAP loads when the ceremony opens and never on a finished Event page that
+         stays closed (ADR 0015), and it hides itself from assistive technology. -->
     <div
       data-part="compibert"
       class="pointer-events-none absolute bottom-4 left-0 z-3"
     >
-      <CeremonyCompibert
+      <CompibertRig
+        variant="full"
         :size="compibert"
         :state="state"
       />

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
-  isClipLength, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount,
+  isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
+  formatPriceAmount, parsePrice, parsePriceAmount, priceTakesAmount,
   type GameFilters, type GameView, type Suitability,
 } from '../../shared/game'
 
@@ -144,9 +145,9 @@ describe('parseGameInput', () => {
 
   describe('YouTube link', () => {
     it.each([[undefined], [null], ['']])('gives a game without a clip for %j', (youtubeUrl) => {
-      expect(parseGameInput({ ...valid, youtubeUrl })).toEqual({
+      expect(parseGameInput({ ...valid, youtubeUrl })).toMatchObject({
         ok: true,
-        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
+        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, priceChecked: false },
       })
     })
 
@@ -250,6 +251,32 @@ describe('parseGameInput', () => {
       expect(parseGameInput({ ...valid, suitabilities })).toEqual({ ok: false, error: 'invalid_suitabilities' })
     })
   })
+
+  describe('Tags (#335)', () => {
+    it('leaves the Tags undefined when the body has none, so an edit keeps its own', () => {
+      const parsed = parseGameInput(valid)
+      expect(parsed).toMatchObject({ ok: true })
+      expect(parsed.ok && parsed.game.tags).toBeUndefined()
+    })
+
+    it('stores the Tags normalised, in the order sent', () => {
+      expect(parseGameInput({ ...valid, tags: ['  Co-op ', 'Battle   Royale'] })).toMatchObject({
+        ok: true,
+        game: { tags: [{ key: 'co-op', label: 'Co-op' }, { key: 'battle royale', label: 'Battle Royale' }] },
+      })
+    })
+
+    it.each([
+      [['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']],
+      [['x'.repeat(21)]],
+      [['Co-op', 'co-op']],
+      [['  ']],
+      ['Co-op'],
+      [null],
+    ])('refuses %j with invalid_tags', (tags) => {
+      expect(parseGameInput({ ...valid, tags })).toEqual({ ok: false, error: 'invalid_tags' })
+    })
+  })
 })
 
 describe('filterGames (#173)', () => {
@@ -268,6 +295,8 @@ describe('filterGames (#173)', () => {
       createdAt: '2026-01-15T10:00:00.000Z',
       canEdit: true,
       notes: null,
+      tags: [],
+      price: null,
       ...overrides,
     }
   }
@@ -334,5 +363,267 @@ describe('filterGames (#173)', () => {
   it('combines the filters with AND', () => {
     expect(by({ players: 3, suitability: 'teams', mine: true, q: 'counter' })).toEqual(['Counter-Strike 2'])
     expect(by({ players: 3, suitability: 'ffa', q: 'counter' })).toEqual([])
+  })
+
+  describe('the Tag filter and the search over Tags (#336)', () => {
+    const tag = (label: string) => ({ key: label.toLocaleLowerCase('de'), label })
+    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }, 'me').map(item => item.name)
+
+    const coop = game('Pandemie', { tags: [tag('Co-op'), tag('Retro')] })
+    const kart = game('Kart Rennen', { tags: [tag('Retro')] })
+    const bare = game('Schach')
+    const tagged = [coop, kart, bare]
+
+    it('NO_FILTERS carries no Tag', () => {
+      expect(NO_FILTERS.tag).toBeNull()
+      expect(NO_FILTERS).toEqual({ q: '', players: null, suitability: null, tag: null, mine: false })
+    })
+
+    it('keeps the games carrying the Tag key, in the given order, and any one of several Tags does', () => {
+      expect(found(tagged, { tag: 'retro' })).toEqual(['Pandemie', 'Kart Rennen'])
+      expect(found(tagged, { tag: 'co-op' })).toEqual(['Pandemie'])
+    })
+
+    it('drops a game without Tags under a Tag filter, and an unknown key keeps nothing', () => {
+      expect(found(tagged, { tag: 'retro' })).not.toContain('Schach')
+      expect(found(tagged, { tag: 'nie-da' })).toEqual([])
+    })
+
+    it('compares the Tag by key: the label spelling as filter keeps nothing', () => {
+      const spelled = [game('Pandemie', { tags: [{ key: 'co-op', label: 'CO-OP' }] })]
+
+      expect(found(spelled, { tag: 'co-op' })).toEqual(['Pandemie'])
+      expect(found(spelled, { tag: 'CO-OP' })).toEqual([])
+    })
+
+    it('combines the Tag with the search and the other filters with AND', () => {
+      expect(found(tagged, { tag: 'retro', q: 'kart' })).toEqual(['Kart Rennen'])
+      expect(found(tagged, { tag: 'retro', q: 'schach' })).toEqual([])
+      expect(found([...tagged, game('Retro Halo', { tags: [tag('Retro')], playersMin: 2, playersMax: 4 })], { tag: 'retro', players: 3 })).toEqual(['Retro Halo'])
+    })
+
+    it('matches the search text against a Tag label, whatever the case, the spaces and the umlauts', () => {
+      const brettspiel = [game('Brettspiel', { tags: [{ key: 'kurz', label: 'Zeitsparend' }] })]
+
+      expect(found(brettspiel, { q: 'zeitspar' })).toEqual(['Brettspiel'])
+      expect(found(brettspiel, { q: 'ZEITSPAR' })).toEqual(['Brettspiel'])
+      expect(found(brettspiel, { q: ' zeit ' })).toEqual(['Brettspiel'])
+      expect(found([game('Brettspiel', { tags: [{ key: 'ärger', label: 'Ärger' }] })], { q: 'ärger' })).toEqual(['Brettspiel'])
+    })
+
+    it('does not match the search text against a Tag key, only the label', () => {
+      const brettspiel = [game('Brettspiel', { tags: [{ key: 'kurz', label: 'Zeitsparend' }] })]
+
+      expect(found(brettspiel, { q: 'kurz' })).toEqual([])
+    })
+
+    it('still matches names when a game carries Tags, and reads % in a Tag label as a plain character', () => {
+      const withPercent = [game('Rocket', { tags: [{ key: '100%', label: '100%' }] }), game('Halo', { tags: [tag('Retro')] })]
+
+      expect(found(withPercent, { q: 'rocket' })).toEqual(['Rocket'])
+      expect(found(withPercent, { q: '%' })).toEqual(['Rocket'])
+      expect(found(withPercent, { q: '1000' })).toEqual([])
+    })
+
+    it('reads search and Tag over the same list in the same order, and a game with no Tags is never found through a label', () => {
+      expect(found(tagged, { q: 'retro' })).toEqual(['Pandemie', 'Kart Rennen'])
+      expect(found(tagged, { q: 'retro', tag: 'retro' })).toEqual(['Pandemie', 'Kart Rennen'])
+      expect(found([game('Leer', { tags: [] })], { q: 'retro' })).toEqual([])
+    })
+  })
+})
+
+describe('normaliseTag (#335)', () => {
+  it('gives one key to the three spellings and keeps each label as typed', () => {
+    expect(normaliseTag(' Co-op ')).toEqual({ key: 'co-op', label: 'Co-op' })
+    expect(normaliseTag('co-op')).toEqual({ key: 'co-op', label: 'co-op' })
+    expect(normaliseTag('CO-OP')).toEqual({ key: 'co-op', label: 'CO-OP' })
+  })
+
+  it('collapses inner whitespace to one space', () => {
+    expect(normaliseTag('Battle \t  Royale')).toEqual({ key: 'battle royale', label: 'Battle Royale' })
+  })
+
+  it('composes to NFC, so a letter and its accent mark are one Tag', () => {
+    const composed = normaliseTag('Caf\u00e9')
+    const decomposed = normaliseTag('Cafe\u0301')
+    expect(decomposed?.key).toBe('caf\u00e9')
+    expect(decomposed).toEqual(composed)
+    expect(decomposed?.label).toBe('Caf\u00e9')
+  })
+
+  it('lower-cases umlauts', () => {
+    expect(normaliseTag('\u00c4RGER')?.key).toBe('\u00e4rger')
+  })
+
+  it.each([[''], ['   '], [' \t'], ['\u00a0']])('gives nothing for %j', (raw) => {
+    expect(normaliseTag(raw)).toBeNull()
+  })
+})
+
+describe('tagProblem (#335)', () => {
+  const flag = '\u{1F1E9}\u{1F1EA}'
+
+  it('counts characters as the User sees them: 20 flags pass, 21 do not', () => {
+    expect(tagProblem(flag.repeat(20))).toBeNull()
+    expect(tagProblem(flag.repeat(21))).toBe('too_long')
+  })
+
+  it('lets 20 letters pass and refuses 21', () => {
+    expect(tagProblem('a'.repeat(20))).toBeNull()
+    expect(tagProblem('a'.repeat(21))).toBe('too_long')
+  })
+
+  it('does not count the spaces around the Tag', () => {
+    expect(tagProblem(' ' + 'a'.repeat(20) + ' ')).toBeNull()
+  })
+
+  it('calls a Tag of spaces empty', () => {
+    expect(tagProblem('  ')).toBe('empty')
+  })
+})
+
+describe('parseTags (#335)', () => {
+  const flag = '\u{1F1E9}\u{1F1EA}'
+
+  it('takes an empty list', () => {
+    expect(parseTags([])).toEqual([])
+  })
+
+  it('keeps the order sent', () => {
+    expect(parseTags(['Retro', 'Co-op', 'Party'])?.map(tag => tag.label)).toEqual(['Retro', 'Co-op', 'Party'])
+  })
+
+  it('takes 8 Tags and refuses 9', () => {
+    const names = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+    expect(parseTags(names.slice(0, 8))).toHaveLength(8)
+    expect(parseTags(names)).toBeUndefined()
+  })
+
+  it('refuses two spellings of one key', () => {
+    expect(parseTags(['Co-op', 'CO-OP'])).toBeUndefined()
+  })
+
+  it.each([[['']], [['  ']], [[42]], ['Co-op'], [null], [undefined]])('refuses %j', (raw) => {
+    expect(parseTags(raw)).toBeUndefined()
+  })
+
+  it('takes a Tag of 20 flags and refuses 21', () => {
+    expect(parseTags([flag.repeat(20)])).toHaveLength(1)
+    expect(parseTags([flag.repeat(21)])).toBeUndefined()
+  })
+})
+
+describe('parsePriceAmount (#337)', () => {
+  it.each([
+    ['19,99', 1999],
+    ['19.99', 1999],
+    ['20', 2000],
+    ['19,9', 1990],
+    ['0,01', 1],
+    ['0,05', 5],
+    ['999,99', 99_999],
+    [' 19,99 ', 1999],
+  ])('reads %j as %i cents', (text, cents) => {
+    expect(parsePriceAmount(text)).toBe(cents)
+  })
+
+  it.each(['0', '0,00', '1000', '1000,00', 'abc', '', '19,999', '19,', '-5', '1,2,3', '€ 5', '١٩'])('refuses %j', (text) => {
+    expect(parsePriceAmount(text)).toBeNull()
+  })
+})
+
+describe('formatPriceAmount (#337)', () => {
+  it.each([
+    [1999, '19,99'],
+    [2000, '20,00'],
+    [1, '0,01'],
+    [5, '0,05'],
+    [99_999, '999,99'],
+  ])('writes %i as %j', (cents, text) => {
+    expect(formatPriceAmount(cents)).toBe(text)
+  })
+})
+
+describe('priceTakesAmount (#337)', () => {
+  it.each(['steam', 'epic', 'gog', 'publisher', 'steam_key'] as const)('takes an amount for %s', (source) => {
+    expect(priceTakesAmount(source)).toBe(true)
+  })
+
+  it.each(['free_to_play', 'subscription'] as const)('takes no amount for %s', (source) => {
+    expect(priceTakesAmount(source)).toBe(false)
+  })
+})
+
+describe('parsePrice (#337)', () => {
+  it('reads no Price as no Price', () => {
+    expect(parsePrice(null)).toBeNull()
+  })
+
+  it('reads a paid Price as it is', () => {
+    expect(parsePrice({ cents: 1999, source: 'steam' })).toEqual({ cents: 1999, source: 'steam' })
+  })
+
+  it.each([{ source: 'free_to_play' }, { cents: null, source: 'subscription' }])('reads %j as a source without an amount', (raw) => {
+    expect(parsePrice(raw)).toEqual({ cents: null, source: raw.source })
+  })
+
+  it.each([[{ cents: null, source: null }], [{}], [{ source: null }], [{ cents: null }]])('reads %j as no Price', (raw) => {
+    expect(parsePrice(raw)).toBeNull()
+  })
+
+  it.each([
+    [{ cents: 1999, source: null }],
+    [{ cents: 1999 }],
+    [{ cents: 500, source: 'free_to_play' }],
+    [{ cents: 500, source: 'subscription' }],
+    [{ cents: null, source: 'steam' }],
+    [{ cents: 0, source: 'steam' }],
+    [{ cents: 100_000, source: 'steam' }],
+    [{ cents: 19.5, source: 'steam' }],
+    [{ cents: '1999', source: 'steam' }],
+    [{ cents: -1, source: 'steam' }],
+    [{ cents: 1999, source: 'amazon' }],
+    ['steam'],
+    [42],
+    [[]],
+  ])('refuses %j', (raw) => {
+    expect(parsePrice(raw)).toBeUndefined()
+  })
+})
+
+describe('parseGameInput Price (#337)', () => {
+  const valid = { name: 'Mario Kart' }
+
+  it('leaves the Price undefined and the flag false when the body has neither', () => {
+    const parsed = parseGameInput(valid)
+    expect(parsed.ok && parsed.game.price).toBeUndefined()
+    expect(parsed.ok && parsed.game.priceChecked).toBe(false)
+  })
+
+  it('reads a null Price as no Price', () => {
+    expect(parseGameInput({ ...valid, price: null })).toMatchObject({ ok: true, game: { price: null } })
+  })
+
+  it('reads a Price and the flag', () => {
+    expect(parseGameInput({ ...valid, price: { cents: 1999, source: 'steam' }, priceChecked: true })).toMatchObject({
+      ok: true,
+      game: { price: { cents: 1999, source: 'steam' }, priceChecked: true },
+    })
+  })
+
+  it('reads a false flag as not checked', () => {
+    expect(parseGameInput({ ...valid, priceChecked: false })).toMatchObject({ ok: true, game: { priceChecked: false } })
+  })
+
+  it.each([
+    [{ price: { cents: 1999, source: null } }],
+    [{ price: { cents: 1999 } }],
+    [{ price: 'steam' }],
+    [{ price: { cents: 500, source: 'free_to_play' } }],
+    [{ priceChecked: 'yes' }],
+    [{ price: { cents: 1999, source: 'steam' }, priceChecked: 'yes' }],
+  ])('refuses %j with invalid_price', (body) => {
+    expect(parseGameInput({ ...valid, ...body })).toEqual({ ok: false, error: 'invalid_price' })
   })
 })

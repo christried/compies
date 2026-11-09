@@ -101,6 +101,20 @@ describe('game images (#143)', () => {
     }
   })
 
+  it('answers the game with its Tags (#335)', async () => {
+    const creator = await cookieOf(host)
+    const created = await request('/api/games', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'cookie': creator },
+      body: JSON.stringify({ name: 'Mario Kart', tags: ['Co-op', 'Retro'] }),
+    })
+    const { id } = await created.json() as GameView
+
+    const view = await (await upload(id, creator, webp())).json() as GameView
+
+    expect(view.tags).toEqual([{ key: 'co-op', label: 'Co-op' }, { key: 'retro', label: 'Retro' }])
+  })
+
   it('shows up as imageUrl when the game is read back from the library', async () => {
     const creator = await cookieOf(host)
     const { id } = await newGame(creator)

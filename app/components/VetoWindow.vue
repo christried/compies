@@ -2,8 +2,9 @@
 import { teamNameAt } from '~/utils/board'
 import { joinNames } from '~/utils/list'
 import { clockTick, revealTile, vetoStamp } from '~/utils/motion'
+import { teamVar } from '~/utils/team-style'
 import { VETO_WINDOW_MS } from '~~/shared/rounds'
-import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { BoardTeam } from '~~/shared/event'
 import type { WheelView } from '~~/shared/stage'
 
 // The Veto window on the stage (#231, 02-components § VetoWindow, 04-motion § Veto window, reference App Spielrunde „Clip + Veto-Fenster“,
@@ -12,11 +13,10 @@ import type { WheelView } from '~~/shared/stage'
 // ten seconds tick) and every Party's Vetoes left in its Team colour. The hold-to-veto button is not here: it sits in the VetoBar, a
 // fixed layer (review 0.7, F4). Nobody sees another Party's cast before the end: the numbers and tiles come from the server per
 // viewer. At the end the page reads again (useInstantRefresh), and the tiles turn over, with a „VETO“ stamp on every Party that
-// vetoed, then the outcome says what happens to the game. A Party's tile after a reload shows the same, without the turning.
+// vetoed (the Party, never the Player: nobody learns who cast it, #355), then the outcome says what happens to the game. A Party's tile after a reload shows the same, without the turning.
 const props = defineProps<{
   wheel: WheelView
   teams: readonly BoardTeam[]
-  members: readonly MemberView[]
   /** The server's time in epoch ms (useServerClock). */
   serverNow: () => number
 }>()
@@ -44,16 +44,16 @@ interface Tile {
   team: number
   name: string
   left: number
-  cast: { name: string } | null
+  /** The Party vetoed (known from the reveal on). */
+  cast: boolean
 }
 const tiles = computed((): Tile[] => vetoes.value.left.map((left, index) => {
   const team = index + 1
-  const veto = revealed.value?.find(entry => entry.team === team)
   return {
     team,
     name: teamNameAt(props.teams, team, t),
     left,
-    cast: veto ? { name: props.members.find(member => member.id === veto.userId)?.name ?? '' } : null,
+    cast: revealed.value?.some(entry => entry.team === team) ?? false,
   }
 }))
 
@@ -62,7 +62,7 @@ const outcome = computed(() => {
   if (revealed.value === null) return null
   const game = draw.value?.game?.name ?? ''
   if (!vetoed.value) return t('veto.outcomeSet', { game })
-  const list = joinNames(revealed.value.map(entry => props.members.find(member => member.id === entry.userId)?.name ?? ''))
+  const list = joinNames(revealed.value.map(entry => teamNameAt(props.teams, entry.team, t)))
   // A vetoed spin flies off the wheel and the wheel spins again; a vetoed set game is chosen anew (#232).
   return t(draw.value?.kind === 'set' ? 'veto.outcomeVetoSet' : 'veto.outcomeVeto', { list, game })
 })
@@ -125,7 +125,7 @@ watch(revealed, (now, before) => {
         data-testid="veto-tile"
         class="flex min-h-20 flex-col gap-1 rounded-[14px] border-(length:--cp-bw) bg-surface p-2.5"
         :class="revealed !== null && !tile.cast ? 'bg-paper-2' : ''"
-        :style="{ borderColor: `var(--cp-team-${tile.team})` }"
+        :style="{ borderColor: teamVar(tile.team) }"
       >
         <TeamChip
           :team="tile.team"
@@ -136,7 +136,7 @@ watch(revealed, (now, before) => {
             {{ t('veto.left', tile.left) }}
           </p>
         </template>
-        <!-- The stamp sits in the row, beside the text, so at 390 px it never covers „von …“ (F8). -->
+        <!-- The stamp sits in the row, beside the text, so at 390 px it never covers it (F8). A Veto names no Player (#355): the TeamChip names the Party. -->
         <div
           v-else
           class="flex items-end justify-between gap-2"
@@ -145,8 +145,11 @@ watch(revealed, (now, before) => {
             <p class="m-0 text-[14px] font-bold">
               {{ tile.cast ? t('veto.tileVeto') : t('veto.tileNone') }}
             </p>
-            <p class="m-0 text-[13px] text-ink-2">
-              {{ tile.cast ? t('veto.tileBy', { name: tile.cast.name }) : t('veto.tileSpared') }}
+            <p
+              v-if="!tile.cast"
+              class="m-0 text-[13px] text-ink-2"
+            >
+              {{ t('veto.tileSpared') }}
             </p>
           </div>
           <span

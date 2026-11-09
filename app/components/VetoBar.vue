@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { clockTick } from '~/utils/motion'
 import { clockText, vetoActionShown, vetoBarState } from '~/utils/veto-bar'
+import { teamNameAt } from '~/utils/board'
+import type { BoardTeam } from '~~/shared/event'
 import type { WheelView } from '~~/shared/stage'
 
 // The Veto bar (review 0.7, F4; 02-components § VetoWindow, 04-motion § Veto window, reference App Spielrunde „Clip + Veto-Fenster“,
@@ -11,8 +13,8 @@ import type { WheelView } from '~~/shared/stage'
 // the Host dock on the page it sits above the dock. It rises in with `animate-veto-in` and leaves with the fade the clip uses.
 const props = defineProps<{
   wheel: WheelView
-  members: readonly { id: string, name: string }[]
-  viewerId: string
+  /** The Event's Teams: the lock names the Party, never the Player who cast (#355). */
+  teams: readonly BoardTeam[]
   /** A Party is a single Player (team size 1): the bar speaks to „du“ instead of „euer Team“. */
   solo?: boolean
   /** The server's time in epoch ms (useServerClock). */
@@ -31,14 +33,13 @@ const shown = computed(() => open.value && vetoActionShown(own.value))
 // The page leaves room under its blocks while the bar covers the bottom.
 const emit = defineEmits<{ shown: [shown: boolean] }>()
 watch(shown, value => emit('shown', value), { immediate: true })
-const state = computed(() => (own.value ? vetoBarState(own.value, props.viewerId) : 'ready'))
+const state = computed(() => (own.value ? vetoBarState(own.value) : 'ready'))
 const left = computed(() => vetoes.value.left[(own.value?.team ?? 1) - 1] ?? 0)
 const title = computed(() => {
-  if (state.value === 'mine') return t('veto.cast')
-  if (state.value === 'mate') return t('veto.byMate', { name: props.members.find(member => member.id === own.value?.castBy)?.name ?? '' })
+  if (state.value === 'cast' && own.value) return t('veto.byParty', { team: teamNameAt(props.teams, own.value.team, t) })
   return t(props.solo ? 'veto.soloLeft' : 'veto.partyLeft', left.value)
 })
-const sub = computed(() => ({ ready: t('veto.hint'), mine: t('veto.hintSealed'), mate: t('veto.hintMate'), none: '' })[state.value])
+const sub = computed(() => ({ ready: t('veto.hint'), cast: t('veto.hintSealed'), none: '' })[state.value])
 
 /** The last ten seconds turn red and tick once a second (04-motion § Veto window); a reduced-motion page does not pulse. */
 const urgent = computed(() => secondsLeft.value <= 10)
@@ -82,7 +83,6 @@ watch(secondsLeft, () => {
         <VetoButton
           :own="own"
           :open="open"
-          :viewer-id="viewerId"
           :cast="() => cast(vetoes.draw!.drawId)"
         />
       </div>

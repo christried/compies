@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
+import { ChevronDown, ChevronRight, CircleAlert } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
+import { formatFullDay } from '~/utils/berlin-time'
+import { priceSourceLabel } from '~/utils/price'
 import {
-  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, SUITABILITIES, clipTime, gameNameProblem, gameNotesProblem, parseClipLength, parseClipTime, parseGameInput,
-  parsePlayerCount, type GameView, type Suitability,
+  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, PRICE_SOURCES, SUITABILITIES, clipTime, formatPriceAmount, gameNameProblem,
+  gameNotesProblem, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parsePriceAmount, priceTakesAmount, type GamePrice, type GameTag,
+  type GameView, type PriceSource, type Suitability,
 } from '~~/shared/game'
 import { parseYouTubeId } from '~~/shared/youtube'
 
 // Create or edit a game (screen 24, `?s=edit`, #141, #142, #171): name, YouTube link, start and length, with a live
 // preview that plays the clip as a Session will, and the recommended player count and „Passt zu“ (the
-// Suitabilities), and the notes (#223). An empty link is fine (a game without a clip); a link that is no YouTube link, or that the
+// Suitabilities), and the Tags (#335), and the notes (#223), and the Price (#337: the amount, the source, the day it was checked). An empty link is fine (a game without a clip); a link that is no YouTube link, or that the
 // player cannot play, is „YouTube-Link kaputt“ and blocks saving. With `game` the form edits that game (PATCH).
 // The rules come from shared/game.ts, the same ones the server applies, so the form refuses what the server
 // refuses (#171). No page chrome, so a sheet can hold it (#146); the two columns follow the width of the
@@ -23,6 +26,8 @@ const emit = defineEmits<{ saved: [game: GameView] }>()
 
 const { t } = useI18n()
 const { toast } = useToast()
+// The Tags in use are the Tag field's suggestions (#335).
+const { tagsInUse } = useGameLibrary()
 
 /** The cropped WebP waiting to be uploaded after the game is saved (#143). */
 const image = ref<Blob | null>(null)
@@ -35,7 +40,16 @@ const lengthText = ref(String(props.game?.clipLength ?? CLIP_LENGTH_DEFAULT))
 const playersFromText = ref(props.game?.playersMin == null ? '' : String(props.game.playersMin))
 const playersToText = ref(props.game?.playersMax == null ? '' : String(props.game.playersMax))
 const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
+const tags = ref<GameTag[]>([...(props.game?.tags ?? [])])
+const tagInput = useTemplateRef('tagInput')
 const notes = ref(props.game?.notes ?? '')
+// The Price (#337): the amount as typed, the source, and what the server holds: the „Stand:“ line and „Preis stimmt noch“ read it.
+const priceText = ref(props.game?.price?.cents == null ? '' : formatPriceAmount(props.game.price.cents))
+const priceSource = ref<PriceSource | ''>(props.game?.price?.source ?? '')
+const storedPrice = ref<GamePrice | null>(props.game?.price ?? null)
+const confirming = ref(false)
+const sourceId = useId()
+const sourceErrorId = `${sourceId}-error`
 const attempted = ref(false)
 const saving = ref(false)
 const failure = ref<string | null>(null)
@@ -89,6 +103,26 @@ const toError = computed(() => (toInvalid.value || rangeInverted.value ? t('erro
 // Game notes (#223): the shared rule says when they are too long; the message shows at once, like the name's.
 const notesError = computed(() => (gameNotesProblem(notes.value) === 'too_long' ? t('gameEdit.notesTooLong', { max: GAME_NOTES_MAX }) : undefined))
 
+// The Price (#337). Free-to-play and Abo take no amount, so choosing one empties the amount field. The amount is the shared
+// rule's (parsePriceAmount); the errors show at once for a wrong amount, and for a missing one only after a save attempt.
+const amountless = computed(() => priceSource.value !== '' && !priceTakesAmount(priceSource.value))
+watch(priceSource, (source) => {
+  if (source !== '' && !priceTakesAmount(source)) priceText.value = ''
+})
+const priceCents = computed(() => parsePriceAmount(priceText.value))
+const priceEntered = computed(() => priceText.value.trim() !== '')
+const amountError = computed(() => {
+  if (amountless.value) return undefined
+  if (priceEntered.value && priceCents.value === null) return t('gameEdit.priceRange')
+  if (attempted.value && priceSource.value !== '' && !priceEntered.value) return t('gameEdit.priceRange')
+  return undefined
+})
+const amountHelp = computed(() => {
+  if (amountless.value) return t('gameEdit.priceNoAmount')
+  return amountError.value ? undefined : t('gameEdit.priceAmountHelp')
+})
+const sourceError = computed(() => (attempted.value && priceEntered.value && priceSource.value === '' ? t('gameEdit.priceNeedsSource') : undefined))
+
 /** Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. */
 const blocker = computed<string | null>(() => {
   if (nameProblem.value === 'empty') return t('gameEdit.nameRequired')
@@ -96,6 +130,8 @@ const blocker = computed<string | null>(() => {
   if (linkError.value) return t('gameEdit.linkRequired')
   if (fromError.value || toError.value) return t('error.playersInvalid')
   if (notesError.value) return notesError.value
+  if (sourceError.value) return sourceError.value
+  if (amountError.value) return amountError.value
   return startError.value ?? lengthError.value ?? null
 })
 
@@ -114,8 +150,14 @@ const draft = computed(() => ({
   playersMin: countOf(playersFromText.value),
   playersMax: countOf(playersToText.value),
   suitabilities: SUITABILITIES.filter(suitability => suitabilities.value.includes(suitability)),
+  // The labels: the server normalises them again and takes over the spelling in use (#335).
+  tags: tags.value.map(tag => tag.label),
   // The raw text: the shared rules trim it, and refuse it when it is too long.
   notes: notes.value,
+  // null when neither the amount nor the source is set. An amount the rule refuses stays as its text, so the rules refuse it (#337).
+  price: priceEntered.value || priceSource.value !== ''
+    ? { cents: amountless.value ? null : (priceCents.value ?? priceText.value), source: priceSource.value || null }
+    : null,
 }))
 
 /** The form is blocked exactly when a field says why, or the shared rules refuse the body, or the player reported the link broken (#171). */
@@ -149,8 +191,53 @@ async function uploadImage(game: GameView): Promise<GameView> {
   }
 }
 
+/** „Preis entfernen“ (#337): empties both fields; in edit mode nothing is deleted until the save sends `price: null`. */
+function removePrice() {
+  priceText.value = ''
+  priceSource.value = ''
+}
+
+/**
+ * „Preis stimmt noch“ (#337, edit mode): stamps today's day on the stored Price. It sends the stored game and the flag only,
+ * never what is typed, so it saves nothing else; `tags` and `price` are left out, so the server keeps them.
+ */
+async function confirmPrice() {
+  const game = props.game
+  if (!game || confirming.value) return
+  confirming.value = true
+  failure.value = null
+  try {
+    const answer = await $fetch<GameView>(`/api/games/${game.id}`, {
+      method: 'PATCH',
+      body: {
+        name: game.name,
+        youtubeUrl: game.youtubeId ? `https://youtu.be/${game.youtubeId}` : '',
+        clipStart: game.clipStart,
+        clipLength: game.clipLength,
+        playersMin: game.playersMin,
+        playersMax: game.playersMax,
+        suitabilities: game.suitabilities,
+        notes: game.notes,
+        priceChecked: true,
+      },
+    })
+    storedPrice.value = answer.price
+    toast({ tone: 'success', text: t('gameEdit.priceConfirmed') })
+    // The page does not navigate: the list and the game's own page show the new day (no `saved` event).
+    await Promise.all([refreshGameLibrary(), refreshNuxtData(libraryGameKey(game.id))])
+  }
+  catch (error) {
+    failure.value = t(apiErrorKey(error))
+  }
+  finally {
+    confirming.value = false
+  }
+}
+
 async function submit() {
   attempted.value = true
+  // A Tag typed and not confirmed counts (#335); one that cannot be added blocks the save and shows why.
+  if (tagInput.value && !tagInput.value.commit()) return
   if (blocked.value || saving.value) return
   saving.value = true
   failure.value = null
@@ -254,6 +341,94 @@ async function submit() {
             </button>
           </div>
         </div>
+
+        <TagInput
+          ref="tagInput"
+          v-model="tags"
+          :suggestions="tagsInUse"
+          :label="t('gameEdit.tags')"
+        />
+
+        <fieldset class="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
+          <legend class="mb-1.5 text-[14px] font-bold">
+            {{ t('gameEdit.price') }}
+          </legend>
+          <div class="grid grid-cols-2 gap-2.5">
+            <TextField
+              v-model="priceText"
+              :label="t('gameEdit.priceAmount')"
+              :help="amountHelp"
+              :error="amountError"
+              :disabled="amountless"
+              inputmode="text"
+              autocomplete="off"
+            />
+            <div class="flex min-w-0 flex-col gap-1.5">
+              <label
+                :for="sourceId"
+                class="text-[14px] font-bold"
+              >{{ t('gameEdit.priceSource') }}</label>
+              <div class="relative">
+                <select
+                  :id="sourceId"
+                  v-model="priceSource"
+                  :aria-invalid="sourceError ? 'true' : undefined"
+                  :aria-describedby="sourceError ? sourceErrorId : undefined"
+                  class="h-control-lg w-full appearance-none rounded-md bg-surface pr-10 pl-3.5 text-[17px] text-ink"
+                  :class="sourceError ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'"
+                >
+                  <option value="">
+                    {{ t('gameEdit.priceSourceNone') }}
+                  </option>
+                  <option
+                    v-for="source in PRICE_SOURCES"
+                    :key="source"
+                    :value="source"
+                  >
+                    {{ priceSourceLabel(source, t) }}
+                  </option>
+                </select>
+                <AppIcon
+                  :icon="ChevronDown"
+                  :size="18"
+                  class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-ink"
+                />
+              </div>
+              <span
+                v-if="sourceError"
+                :id="sourceErrorId"
+                class="flex items-center gap-1.5 text-small font-bold text-error-fg"
+              >
+                <AppIcon
+                  :icon="CircleAlert"
+                  :size="14"
+                />
+                {{ sourceError }}
+              </span>
+            </div>
+          </div>
+          <div
+            v-if="storedPrice"
+            class="flex flex-wrap items-center gap-3"
+          >
+            <span class="text-small text-ink-2">{{ t('gameEdit.priceChecked', { day: formatFullDay(new Date(storedPrice.checkedAt)) }) }}</span>
+            <AppButton
+              variant="secondary"
+              :disabled="confirming"
+              @click="confirmPrice"
+            >
+              {{ t('gameEdit.priceConfirm') }}
+            </AppButton>
+          </div>
+          <div v-if="priceText !== '' || priceSource !== ''">
+            <AppButton
+              variant="secondary"
+              @click="removePrice"
+            >
+              {{ t('gameEdit.priceRemove') }}
+            </AppButton>
+          </div>
+        </fieldset>
 
         <TextField
           v-model="notes"

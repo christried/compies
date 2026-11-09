@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { teamName } from '~/utils/board'
+import { teamVar } from '~/utils/team-style'
+import { teamPosition } from '~~/shared/settings'
 import { TEAM_SYMBOLS } from '~~/shared/team-marks'
 
 // A team's colour and symbol, never colour alone (DS People, TeamMark.dc.html, 02-components § TeamMark). Next to the
@@ -14,7 +16,7 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 
-const index = computed(() => Math.max(1, Math.min(8, Math.round(props.team))))
+const index = computed(() => teamPosition(props.team))
 const label = computed(() => (props.standalone ? teamName(index.value, t) : undefined))
 </script>
 
@@ -22,7 +24,7 @@ const label = computed(() => (props.standalone ? teamName(index.value, t) : unde
   <span
     class="grid flex-none place-items-center rounded-pill border-line"
     :class="size >= 28 ? 'border-[2.5px]' : 'border-2'"
-    :style="{ width: `${size}px`, height: `${size}px`, background: `var(--cp-team-${index})` }"
+    :style="{ width: `${size}px`, height: `${size}px`, background: teamVar(index) }"
     :role="standalone ? 'img' : undefined"
     :aria-label="label"
     :aria-hidden="standalone ? undefined : 'true'"
@@ -36,7 +38,7 @@ const label = computed(() => (props.standalone ? teamName(index.value, t) : unde
     >
       <path
         :d="TEAM_SYMBOLS[index - 1]"
-        :fill="`var(--cp-team-${index}-ink)`"
+        :fill="teamVar(index, 'ink')"
       />
     </svg>
   </span>

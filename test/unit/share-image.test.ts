@@ -34,7 +34,7 @@ const bench = (id: string): MemberView => ({ id, name: `Spieler ${id}`, image: n
 const result = (number: number, name: string, firsts: number[], teamCount: number): ResultView => ({
   roundId: `r${number}`,
   number,
-  game: { id: `g${number}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 10, playersMin: null, playersMax: null, suitabilities: [] },
+  game: { id: `g${number}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 10, playersMin: null, playersMax: null, suitabilities: [], price: null },
   places: Array.from({ length: teamCount }, (_, index) => index + 1)
     .map(team => ({ team, place: firsts.includes(team) ? 1 : firsts.length + 1, points: 0, score: null })),
   corrected: false, correctedAt: null, resultAt: '2026-10-25T20:00:00Z',
@@ -462,7 +462,7 @@ describe('shareImageModel', () => {
   })
 
   describe('the Team names', () => {
-    // The model names Parties from `de.team` because shared/board.ts is off-limits (a Worker imports it): this guards the second copy.
+    // The model names Parties with shared/team-name.ts and the copy it carries, the app's `teamName` with vue-i18n's: this holds the two equal (#329).
     it.each([1, 2, 3, 4, 5, 6, 7, 8])('names team %i as teamNameAt does', (position) => {
       const points = Array.from({ length: 8 }, (_, index) => (index + 1 === position ? 20 : 1))
       const withName = source({ points, names: { [position]: null } })

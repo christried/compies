@@ -6,6 +6,7 @@ import EventRounds from '~/components/EventRounds.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, EventView } from '~~/shared/event'
 import type { EndView, RoundView, SetGameView } from '~~/shared/stage'
+import { formatShortDay } from '~/utils/berlin-time'
 import type { GameView, PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
@@ -19,10 +20,10 @@ const FIRST = '2026-10-30T19:00:00.000Z'
 const STARTED = '2026-10-30T19:30:00.000Z'
 const ENDED = '2026-10-30T22:00:00.000Z'
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Hausregel: keine Raketen' }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Hausregel: keine Raketen', price: null }
 const kart: PoolGame = { ...halo, id: 'g-kart', name: 'Kart', notes: null }
 const pong: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
-const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true }
+const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true, tags: [], price: null }
 
 const round = (id: string, game: PoolGame, notes?: string): RoundView => {
   const { notes: _notes, ...shown } = game
@@ -540,7 +541,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('opens a sheet that lists the games left in the Game pool first, then the library', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
@@ -561,7 +562,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('sets the chosen game from the bar and closes once the server took it', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
@@ -620,7 +621,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('can pick a game of the library that is not in the pool', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id], poolWarning: null })
     const stage = await mount(slug)
@@ -645,7 +646,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('says so when the pool has nothing left, and still offers the library', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [schach] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null })
     const stage = await mount(slug)
@@ -742,5 +743,69 @@ describe('the Lucky Wheel on the stage (#229)', () => {
     const item = await hostActionElement(stage, 'Nächstes Spiel setzen')
 
     expect(item.getAttribute('role')).toBe('menuitem')
+  })
+})
+
+describe('the Price on the Round card (#338)', () => {
+  // The page reads the clock for the year of „Stand“, so the Price is checked today: the test expects the line for today.
+  const priced = (game: PoolGame, cents: number | null = 1999, source: 'steam' | 'free_to_play' = 'steam'): PoolGame => ({
+    ...game,
+    price: { cents: source === 'free_to_play' ? null : cents, source, checkedAt: new Date().toISOString() },
+  })
+  /** The line a Price checked today shows, spelled out so the German words are pinned (#332: they come from de.json now). */
+  const stand = () => `Stand ${formatShortDay(new Date())}`
+
+  it('shows the Price line on the open Round card of a Member', async () => {
+    const game = priced(halo)
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', game)] })
+
+    const stage = await mount(slug)
+
+    expect(stage.get('[aria-label="Offene Spiele"] li').text()).toContain(`19,99 € bei Steam · ${stand()}`)
+  })
+
+  it('shows the Price line to the Host too, and the open Game notes still show', async () => {
+    const game = priced(halo)
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', game, halo.notes!)] })
+
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    expect(rounds.text()).toContain(`19,99 € bei Steam · ${stand()}`)
+    expect(rounds.text()).toContain('Hausregel: keine Raketen')
+  })
+
+  it('shows no „Stand“ and no „€“ on the card of a Round whose game has no Price', async () => {
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', kart)] })
+
+    const stage = await mount(slug)
+
+    const card = stage.get('[aria-label="Offene Spiele"] li')
+    expect(card.text()).toContain('Kart')
+    expect(card.text()).not.toContain('Stand')
+    expect(card.text()).not.toContain('€')
+  })
+
+  it('shows the Price line only on the card of the Round whose game has one, when two Rounds are open', async () => {
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', priced(halo)), round('r2', kart)] })
+
+    const stage = await mount(slug)
+
+    const [withPrice, withoutPrice] = stage.findAll('[aria-label="Offene Spiele"] > li')
+    expect(withPrice!.text()).toContain('Halo')
+    expect(withPrice!.text()).toContain('€')
+    expect(withoutPrice!.text()).toContain('Kart')
+    expect(withoutPrice!.text()).not.toContain('€')
+  })
+
+  it('shows a Free-to-play game with no amount on its card, as „Free-to-play · Stand …“', async () => {
+    const game = priced(halo, null, 'free_to_play')
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', game)] })
+
+    const stage = await mount(slug)
+
+    const card = stage.get('[aria-label="Offene Spiele"] li')
+    expect(card.text()).toContain(`Free-to-play · ${stand()}`)
+    expect(card.text()).not.toContain('€')
   })
 })

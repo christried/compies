@@ -110,9 +110,10 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     // What the wheel drew (#229) is in the feed from its stop on, and the server names the game only then (the same rule).
     case 'game_drawn':
       return entry.games[entry.params.gameId] === undefined ? null : t('activity.wheel', { game: entry.games[entry.params.gameId] })
-    // The Vetoes of a draw, from the end of its Veto window on (#231): who cast them. It names no game, so a Hidden wheel stays hidden.
+    // The Vetoes of a draw, from the end of its Veto window on (#231): the Parties that cast them, by Team name, never the Player (#355;
+    // an entry stored before that may still hold a `userId`, which is not read). It names no game, so a Hidden wheel stays hidden.
     case 'vetoes_revealed': {
-      const list = joinNames(entry.params.vetoes.map(veto => entry.people[veto.userId] ?? ''))
+      const list = joinNames(entry.params.vetoes.map(veto => teamNameAt(teams, veto.team, t)))
       return t('activity.veto', { list })
     }
     // A coin toss says its side from the landing on (#235): the entry is written with the landing as its instant, so the feed has it then.

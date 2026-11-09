@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LuckyWheel from '~/components/LuckyWheel.vue'
-import type { RoundGame } from '~~/shared/game'
+import { GAME_NAME_MAX, type RoundGame } from '~~/shared/game'
 import type { SpinView, WheelView } from '~~/shared/stage'
 import { stubInView } from './in-view'
 
@@ -15,7 +15,7 @@ const START = Date.UTC(2090, 10, 7, 20, 0, 0)
 const STOP = START + 6000
 const iso = (ms: number) => new Date(ms).toISOString()
 
-const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 
 /** A spin of four slices that lands in the third (Pong) at a quarter of it: the final angle is -(2 + .25) * 90 - 1800. */
 const FINAL = -2002.5
@@ -64,11 +64,23 @@ afterEach(() => {
 })
 
 describe('the wheel at rest', () => {
-  it('shows the games on the wheel, counted, as an image of the wheel with its labels', async () => {
+  it('shows no count line for a Member or a Host, and the accessible name keeps the count (#354)', async () => {
+    await mount(wheelOf(null))
+    expect(text()).not.toContain('auf dem Rad')
+    expect(text()).not.toMatch(/\d+ Spiele?\b/)
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 3 Spielen')
+    page!.unmount()
+
+    await mount(wheelOf(null), { isHost: true })
+    expect(text()).not.toContain('auf dem Rad')
+    expect(text()).not.toMatch(/\d+ Spiele?\b/)
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 3 Spielen')
+  })
+
+  it('shows the games on the wheel as an image of the wheel with its labels', async () => {
     await mount(wheelOf(null))
 
     expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 3 Spielen')
-    expect(text()).toContain('3 Spiele auf dem Rad')
     for (const name of ['Halo', 'Kart', 'Schach']) expect(text()).toContain(name)
     expect(text()).not.toContain('Das Glücksrad sagt')
   })
@@ -90,20 +102,37 @@ describe('the wheel at rest', () => {
     expect(label.attributes('font-size')).toBe('9')
   })
 
-  it('counts one game in the singular, and its slice keeps the first fill rather than the surface colour (#263)', async () => {
+  it('names one game in the singular, and its slice keeps the first fill rather than the surface colour (#263)', async () => {
     await mount(wheelOf(null, { count: 1, slices: [{ id: 'a', name: 'Halo' }] }))
 
     expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 1 Spiel')
-    expect(text()).toContain('1 Spiel auf dem Rad')
+    expect(text()).not.toContain('1 Spiel auf dem Rad')
     expect(text()).not.toContain('1 Spiele')
     expect(page!.get('[data-testid="wheel-slice"]').attributes('fill')).toBe('var(--cp-primary)')
   })
 
-  it('counts two games in the plural (#263)', async () => {
+  it('names two games in the plural, with no count line (#263, #354)', async () => {
     await mount(wheelOf(null, { count: 2, slices: [{ id: 'a', name: 'Halo' }, { id: 'b', name: 'Kart' }] }))
 
     expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 2 Spielen')
-    expect(text()).toContain('2 Spiele auf dem Rad')
+    expect(text()).not.toContain('2 Spiele auf dem Rad')
+  })
+
+  it('names zero games in the accessible name, and says the wheel is empty, with no count line (#354)', async () => {
+    await mount(wheelOf(null, { count: 0, slices: [] }))
+
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 0 Spielen')
+    expect(text()).toContain('Das Rad ist leer')
+    expect(text()).not.toContain('auf dem Rad')
+  })
+
+  it('keeps the accessible name and no count line for the longest game name (#354)', async () => {
+    const name = 'A'.repeat(GAME_NAME_MAX)
+    await mount(wheelOf(null, { count: 2, slices: [{ id: 'a', name }, { id: 'b', name: 'Kart' }] }))
+
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 2 Spielen')
+    expect(text()).not.toContain('auf dem Rad')
+    expect(page!.get('[data-testid="wheel-label-0"]').text()).toBe(`${'A'.repeat(21)}…`)
   })
 
   it('gives the last of five slices the surface colour, so it never shares the first slice\'s fill (#263)', async () => {
@@ -129,10 +158,11 @@ describe('the wheel at rest', () => {
     expect(text()).toContain('Das Rad ist leer')
   })
 
-  it('shows a Member under a Hidden wheel the count and ??? instead of the games', async () => {
+  it('shows a Member under a Hidden wheel the placeholders instead of the games, and the count in the accessible name only', async () => {
     await mount(wheelOf(null, { slices: null }), { hidden: true })
 
-    expect(text()).toContain('3 Spiele auf dem Rad')
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 3 Spielen')
+    expect(text()).not.toContain('auf dem Rad')
     expect(text()).not.toContain('Halo')
     expect(text().match(/\?\?\?/g)).toHaveLength(3)
   })
@@ -145,6 +175,20 @@ describe('the spin toward its stop', () => {
     await at(START - 500)
     expect(rotation()).toBe(0)
     expect(text()).toContain('Das Rad dreht')
+  })
+
+  it('says the wheel is turning while it runs, and shows no count line after the stop (#354)', async () => {
+    await mount(wheelOf(spinOf()))
+
+    await at(START + 3000)
+    expect(text()).toContain('Das Rad dreht')
+    expect(text()).not.toContain('auf dem Rad')
+
+    // The drawn slice is still on the wheel until stop + 2.2 s, so the name counts the four slices drawn.
+    await at(STOP + 100)
+    expect(text()).not.toContain('Das Rad dreht')
+    expect(text()).not.toContain('auf dem Rad')
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 4 Spielen')
   })
 
   it('turns toward the stop, further the later the server time is, and lands on the final angle at the stop', async () => {
@@ -245,6 +289,23 @@ describe('the result', () => {
     expect(page!.get('[role="status"]').text()).toBe('')
   })
 
+  it('shows the Price line of the drawn game on its result card, and none for a game without a Price (#338)', async () => {
+    // The card reads the year of „Stand“ once, at mount: the clock is pinned to 2026 so the line has no year (the spin itself is in 2090).
+    vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
+    const priced: RoundGame = { ...halo, price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
+    await mount(wheelOf(spinOf({ game: priced })))
+    await at(STOP)
+    expect(text()).toContain('Das Glücksrad sagt')
+    expect(text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+    page!.unmount()
+
+    await mount(wheelOf(spinOf({ game: halo })))
+    await at(STOP)
+    expect(text()).toContain('Das Glücksrad sagt')
+    expect(text()).not.toContain('Stand')
+    expect(text()).not.toContain('€')
+  })
+
   it('lets the drawn slice leave 2.2 s after the stop and the others close the gap', async () => {
     await mount(wheelOf(spinOf({ game: halo })))
     await at(STOP + 100)
@@ -255,6 +316,7 @@ describe('the result', () => {
     // The Event read has taken the drawn game off the wheel by now: the idle wheel holds the three that are left.
     expect(text()).not.toContain('Pong')
     expect(page!.findAll('[data-testid="wheel-slice"]')).toHaveLength(3)
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 3 Spielen')
   })
 })
 

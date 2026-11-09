@@ -1,11 +1,12 @@
 import { rmSync } from 'node:fs'
 import type { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createTestDbBefore, migrateTo } from './harness'
+import { createTestDbBefore, migrateThrough } from './harness'
 
 // The migration that drops the Tiebreaker pool (#279, ADR 0014): its rows are deleted, the Game pool's stay. The enum value
 // stays, so the code that serves until the switch-over (ADR 0007) can still insert a `tiebreaker` row afterwards, and a
-// later migration run leaves it alone.
+// later run of this migration leaves it alone. The database stops at this migration: 0024 deletes those rows and 0026 drops
+// the column (#286, #301).
 
 const MIGRATION = '0021_drop_tiebreaker_pools'
 
@@ -25,7 +26,7 @@ describe('migration: the Tiebreaker pool is dropped', () => {
     const before = await createTestDbBefore(MIGRATION)
     client = before.client
     folder = before.folder
-    migrate = () => migrateTo(before.db)
+    migrate = () => migrateThrough(before.db, MIGRATION)
     await client.query(`INSERT INTO users (id, name, email) VALUES ($1, 'Host', 'host@example.com')`, [HOST])
     await client.query(`INSERT INTO events (id, slug, invite_token, host_id, name, phase) VALUES ($1, 'eins', 'token-eins', $3, 'eins', 'poll'), ($2, 'zwei', 'token-zwei', $3, 'zwei', 'poll')`, [E1, E2, HOST])
     await client.query(`INSERT INTO games (id, name, created_by) VALUES ($1, 'Alpha', $4), ($2, 'Beta', $4), ($3, 'Gamma', $4)`, [A, B, C, HOST])

@@ -125,7 +125,7 @@ describe('Rounds', () => {
     for (const key of Object.keys(players) as (keyof typeof players)[]) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
 
     const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo', createdBy: ids.host, notes: 'Hausregel Halo', imageKey: 'halo-key', youtubeId: 'aaaaaaaaaaa', playersMin: 2, playersMax: 4 },
+      { name: 'Halo', createdBy: ids.host, notes: 'Hausregel Halo', imageKey: 'halo-key', youtubeId: 'aaaaaaaaaaa', playersMin: 2, playersMax: 4, priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') },
       { name: 'Kart', createdBy: ids.host, notes: 'Hausregel Kart' },
       { name: 'Schach', createdBy: ids.host, notes: 'Hausregel Schach', playersMin: 2, playersMax: 2 },
     ]).returning()
@@ -221,10 +221,24 @@ describe('Rounds', () => {
       const asHost = await read(game)
       const asPlayer = await read(game, game.cookies.three)
 
-      expect(asHost.rounds).toMatchObject([{ game: { id: game.halo.id, name: 'Halo', imageUrl: '/api/images/halo-key', youtubeId: 'aaaaaaaaaaa', playersMin: 2, playersMax: 4 }, notes: 'Hausregel Halo' }])
-      expect(asPlayer.rounds).toMatchObject([{ game: { id: game.halo.id, name: 'Halo', imageUrl: '/api/images/halo-key', playersMin: 2, playersMax: 4 } }])
+      const price = { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' }
+      expect(asHost.rounds).toMatchObject([{ game: { id: game.halo.id, name: 'Halo', imageUrl: '/api/images/halo-key', youtubeId: 'aaaaaaaaaaa', playersMin: 2, playersMax: 4, price }, notes: 'Hausregel Halo' }])
+      expect(asPlayer.rounds).toMatchObject([{ game: { id: game.halo.id, name: 'Halo', imageUrl: '/api/images/halo-key', playersMin: 2, playersMax: 4, price } }])
       expect(asPlayer.rounds[0]).not.toHaveProperty('notes')
       expect(asPlayer.rounds[0]!.game).not.toHaveProperty('notes')
+      expect(asPlayer.rounds[0]!.game).not.toHaveProperty('tags')
+    })
+
+    it('shows a Round game without a Price as price null, to the Host and to a Player alike (#338)', async () => {
+      const game = await running()
+      await set(game, game.kart.id)
+
+      const asHost = await read(game)
+      const asPlayer = await read(game, game.cookies.three)
+
+      expect(asHost.rounds).toMatchObject([{ game: { id: game.kart.id, name: 'Kart', price: null } }])
+      expect(asPlayer.rounds).toMatchObject([{ game: { id: game.kart.id, name: 'Kart', price: null } }])
+      expect(asPlayer.rounds[0]!.game).toHaveProperty('price', null)
     })
 
     it('says in the Event read, for the Host only, whether a game can be set now', async () => {
@@ -242,6 +256,7 @@ describe('Rounds', () => {
       const [round] = await roundRows(game)
       const page = await (await send('GET', `/api/e/${game.slug}/activity`, game.cookies.three)).json() as ActivityPage
       expect(page.entries).toMatchObject([{ type: 'game_set', actor: { name: 'Hostess' }, params: { roundId: round!.id, gameId: game.halo.id }, games: { [game.halo.id]: 'Halo' } }])
+      expect(JSON.stringify(page)).not.toContain('"price"')
       const messages = notifier.messages(game.eventId)
       expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added'])
     })

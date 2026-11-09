@@ -28,7 +28,7 @@ Merge PRs into `staging` yourself once CI is green; merges into `main` and produ
 
 ### Subagents
 
-Pass `model` on every spawn: `haiku` for implementers by default, `sonnet` when the brief can't carry the task and for code-review agents. See `docs/agents/subagents.md`.
+Pass `model` on every spawn: `haiku` for implementers by default, `sonnet` when the brief can't carry the task and for code-review agents. See `docs/agents/subagents.md`. `/implement-spec-max` is `/implement-spec` with every subagent on `opus` at high effort.
 
 ### Design hand-off
 
@@ -48,4 +48,4 @@ Never send the operator's personal data or any data of the app's Users (names, e
 
 ### Scripting
 
-Script with `node`. The user's Windows machine has only the Python Store alias; install the latest stable Python only when a task really needs it.
+Script with `node`. A script of more than one line goes to a file (Write tool) and runs with `node <file>`: inline `node -e` breaks on an apostrophe and a Bash heredoc on a backtick. The user's Windows machine has only the Python Store alias; install the latest stable Python only when a task really needs it.

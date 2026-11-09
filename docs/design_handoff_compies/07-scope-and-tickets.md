@@ -1,5 +1,7 @@
 # 07 Scope & tickets
 
+> **Superseded for everything after the MVP:** `docs/roadmap.md` holds the Release order, what each Release ships and which of the tickets below stay out. The ticket numbers (T…) and labels here are still referenced from there.
+
 ## Labels
 
 | Label | Meaning |
