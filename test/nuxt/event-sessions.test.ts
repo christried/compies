@@ -332,7 +332,7 @@ describe('several Sessions on the Event page', () => {
       const hostPage = await mountSuspended(EventPage, { route: `/e/${host.slug}`, attachTo: document.body })
 
       expect(rowText(hostPage, 2)).toContain('Terminumfrage')
-      expect(rowText(hostPage, 2)).toContain('2 von 3 haben abgestimmt')
+      expect(rowText(hostPage, 2)).toContain('2 von 3 haben vollständig abgestimmt')
       await clickButton(rowOf(hostPage, 2).element, 'Zur Umfrage')
       expect(document.activeElement?.id).toBe('poll-session-2')
       hostPage.unmount()
