@@ -481,8 +481,9 @@ describe('the zero burst (04-motion § Countdown)', () => {
 
 describe('the card stays inside the viewport (#379)', () => {
   // The ghost is the invisible last digit that blows out in the burst (scale 1.315 at rest, 1.644 at its peak): its box is wider than the tile,
-  // and an unclipped box makes the page scroll sideways on a 390 px phone. Its own wrapper clips it; nothing on the way from the rings, the
-  // digits or the stamp to the card does, because the shock rings radiate past the tile on purpose.
+  // and an unclipped box makes the page scroll sideways on a 390 px phone. Its own wrapper clips it, and the stamp (held at scale 2.4 until
+  // its drop) has one too; nothing on the way from the rings or the digits to the card does, because the shock rings radiate past the
+  // tile on purpose.
   const ghost = (p: Page) => p.get('[data-cd="ghost"]')
   const card = (p: Page) => p.get('[data-cd="card"]')
   const stamp = (p: Page) => p.get('[data-cd="stamp"]')
@@ -510,9 +511,21 @@ describe('the card stays inside the viewport (#379)', () => {
     expect((ghost(page).element as HTMLElement).style.transform).toBe('scale(1.315)')
   })
 
-  it('done: no element from the rings, the digits or the stamp up to the card clips its overflow', async () => {
+  it('done: the stamp sits in a clipping wrapper inside the tile, and keeps its own element and classes', async () => {
     const page = await mount(DONE)
-    for (const el of [page.get('[data-cd="ringA"]').element, page.get('[data-cd="ringB"]').element, digits(page).element, stamp(page).element]) {
+    const wrapper = stamp(page).element.parentElement!
+
+    expect(wrapper.classList).toContain('overflow-hidden')
+    expect(wrapper).not.toBe(tile(page).element)
+    expect(wrapper.parentElement).toBe(tile(page).element)
+    expect(stamp(page).classes()).toContain('rounded-[8px]')
+    expect(stamp(page).classes()).toContain('whitespace-nowrap')
+    expect((stamp(page).element as HTMLElement).style.transform).toBe('translate(-50%, -50%) rotate(-6deg)')
+  })
+
+  it('done: no element from the rings or the digits up to the card clips its overflow', async () => {
+    const page = await mount(DONE)
+    for (const el of [page.get('[data-cd="ringA"]').element, page.get('[data-cd="ringB"]').element, digits(page).element]) {
       const chain = chainToCard(el)
       expect(chain.at(-1)).toBe(card(page).element)
       expect(chain.some(hasOverflowClass)).toBe(false)
