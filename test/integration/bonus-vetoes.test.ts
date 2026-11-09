@@ -15,7 +15,8 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
 import type { EventView } from '../../shared/event'
 import type { BonusVetoGranted } from '../../shared/stage'
-import { BONUS_VETO_MAX, VETO_WINDOW_MS } from '../../shared/rounds'
+import { BONUS_VETO_MAX } from '../../shared/rounds'
+import { SPIN } from '../draw-offsets'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { startRunningSession } from './running-session'
@@ -33,9 +34,7 @@ const players = {
 const SLOT = '2090-10-30T20:30'
 const T0 = '2090-10-30T10:00:00.000Z'
 // A draw starts a lead after its spin, stops after 6 s, and its Veto window (when one opens) runs 60 s past the stop.
-const LEAD = 1500
-const STOP = LEAD + 6000
-const END = STOP + VETO_WINDOW_MS
+const { stop: STOP, end: END } = SPIN
 
 describe('Bonus Vetoes (#233)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>

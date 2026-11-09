@@ -4,7 +4,7 @@ import { shownName } from '../../shared/auth'
 import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType, type InstantActivityType } from '../../shared/activity'
 import type { RoomMessage } from '../../shared/realtime'
 import type { Db } from './db'
-import { stoppedDraws } from './draws'
+import { stoppedDraws } from './draw-timeline'
 import { apiError } from './errors'
 
 // The Activity feed (#159, GLOSSARY: Activity feed). One home: every entry is written by recordActivity and every

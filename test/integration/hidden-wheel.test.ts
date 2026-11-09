@@ -44,6 +44,7 @@ import type { CreatedEvent, EventView } from '../../shared/event'
 import type { GamePrice, GameView } from '../../shared/game'
 import type { RoomMessageType } from '../../shared/realtime'
 import de from '../../i18n/locales/de.json'
+import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { hostPutsBack, hostSets, startRunningSession } from './running-session'
@@ -535,7 +536,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       if (castVeto) {
         // The wheel stops (the clock moves past it) and Player 1 casts a Veto: veto.cast goes to Player 1's Party only (#231).
         const [drawn] = (await testDb.db.select().from(draws)).filter(row => row.kind === 'spin')
-        clock.advance(8000)
+        clock.advance(SPIN.stop + 500)
         expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
       }
       // The Host sets a Countdown and starts it (event.changed, #236); ending the Session clears it.
@@ -564,7 +565,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       // #235, from the landing on, result_entered, #273, and result_corrected, #275). The rest come with #233 (bonus_veto_granted) and
       // #277 (event_finished): the finish is written only by the case that finishes the flow's Event, below.
       const written = ACTIVITY_TYPES.filter(type => !['bonus_veto_granted', 'event_finished'].includes(type))
-      clock.advance(70_000)
+      clock.advance(WINDOW_MS + 10_000)
       expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
     })
 
@@ -637,7 +638,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const { slug, eventId, games } = await lobbyFlow()
       const [a, , , d] = games
       // The Session ended with a Round still being drawn; Rad verdecken is locked until its Veto window has run out (#231).
-      clock.advance(70_000)
+      clock.advance(WINDOW_MS + 10_000)
 
       expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { hiddenWheel: false, poolPreview: true } })).status).toBe(200)
 
@@ -931,7 +932,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     it('keeps the undrawn game off the wheel for a Player after the removal too: the wheel has the count and nothing more', async () => {
       const { slug, undrawn, stopAt } = await spun()
-      clock.set(new Date(stopAt + 60_000))
+      clock.set(new Date(stopAt + WINDOW_MS))
 
       const raw = await rawRead(playerCookie, slug)
 

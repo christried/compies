@@ -5,14 +5,14 @@ import VetoBar from '~/components/VetoBar.vue'
 import { clockTick, revealTile, sealStamp, vetoStamp } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
 import type { OwnVetoView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
-import { VETO_WINDOW_MS } from '~~/shared/rounds'
+import { WINDOW_MS } from '../draw-offsets'
 
 // The Veto bar (review 0.7, F4; reference App Spielrunde „Clip + Veto-Fenster“, „Eigenes Veto versiegelt“): the Veto window's hold
 // button in a fixed layer, for a Player of a Party while the window is open. And the window's motion (04-motion § Veto window), whose
 // easings and durations the standard asks every animation to pin (CODING_STANDARDS § Motion).
 
 const STOP = Date.parse('2090-10-30T20:00:10.000Z')
-const END = STOP + VETO_WINDOW_MS
+const END = STOP + WINDOW_MS
 const iso = (ms: number) => new Date(ms).toISOString()
 const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const teams: BoardTeam[] = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]

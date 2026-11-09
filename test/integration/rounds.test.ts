@@ -18,6 +18,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
+import { SPIN } from '../draw-offsets'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -509,8 +510,7 @@ describe('Rounds', () => {
   // stops 6 s later, and the game is set by whichever read or write comes first after the stop. The Hidden wheel's secrecy is
   // in hidden-wheel.test.ts.
   describe('spinning the wheel', () => {
-    const LEAD = 1500
-    const STOP = LEAD + 6000
+    const { lead: LEAD, stop: STOP } = SPIN
     const iso = (offsetMs: number) => new Date(new Date(T0).getTime() + offsetMs).toISOString()
     const spin = (game: Game, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/rounds/spin`, cookie)
     const feedOf = async (game: Game, cookie: string) => (await (await send('GET', `/api/e/${game.slug}/activity`, cookie)).json() as ActivityPage).entries

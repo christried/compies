@@ -4,7 +4,8 @@
 // The spin (#229) and the Veto window (#231) are more arms of a Round's draws.
 
 import type { Seats } from './board'
-import { msOf, type Instant } from './instant'
+import { windowOpen } from './draw-timeline'
+import type { Instant } from './instant'
 import { runningOf, teamsRejection, type SessionTimes, type TeamsRejection } from './session-state'
 import type { Phase } from './phase'
 import { hasWheel, type EventSettings } from './settings'
@@ -131,10 +132,6 @@ export function setRejection({ isHost, settings, sessions, seats, rounds, draws 
   return rounds.some(round => isBeingDrawn(round, draws)) ? 'round_being_drawn' : null
 }
 
-/** The spin starts this long after the commit, so every client has the message and starts together (#229, spec #218 § Drawing). */
-export const SPIN_LEAD_MS = 1500
-/** How long the wheel spins (04-motion § Lucky Wheel: 3 to 10 s); there is no setting for it. The stop is the start plus this. */
-export const SPIN_DURATION_MS = 6000
 /** A reduced-motion client spins this long, ending at the same stop instant. */
 export const SPIN_REDUCED_MS = 1200
 
@@ -155,9 +152,6 @@ export function spinRejection({ left, ...input }: SpinInput): SpinRejection | nu
   if (!hasWheel(input.settings!.selectionMode)) return 'no_wheel'
   return left.length === 0 ? 'pool_empty' : null
 }
-
-/** The Veto window: every Party with a Veto left has this long after the wheel's stop to reject the game (#231, spec #218 § Vetoes). */
-export const VETO_WINDOW_MS = 60_000
 
 /** What a Party's Vetoes left are counted from (#231): the Veto allowance, the Bonus Vetoes granted and the Vetoes cast, as the team numbers they belong to. */
 export interface VetoLedger {
@@ -208,15 +202,14 @@ export interface VetoInput {
 
 /**
  * The reason the viewer cannot cast a Veto on the draw now, or null (#231): they are no Player, no Session runs, the draw has no window (or is
- * unknown), the window is closed (from its end on, before the stop, or the draw settled), their Party cast on this draw already,
+ * unknown), the window is closed (not windowOpen: from its end on, before the stop, or the draw settled), their Party cast on this draw already,
  * or their Party has no Veto left.
  */
 export function vetoRejection({ viewerTeam, draw, now, running, castTeams, left }: VetoInput): VetoRejection | null {
   if (viewerTeam === null) return 'not_a_player'
   if (!running) return 'no_running_session'
   if (draw === null || draw.vetoEndsAt === null) return 'no_veto_window'
-  const at = msOf(now)
-  if (draw.outcome !== null || at >= msOf(draw.vetoEndsAt) || at < msOf(draw.stopAt)) return 'veto_window_closed'
+  if (draw.outcome !== null || !windowOpen(draw, now)) return 'veto_window_closed'
   if (castTeams.includes(viewerTeam)) return 'veto_already_cast'
   return left < 1 ? 'no_vetoes_left' : null
 }

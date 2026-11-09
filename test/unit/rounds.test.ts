@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { BONUS_VETO_MAX, VETO_WINDOW_MS, bonusVetoCounts, bonusVetoRejection, drawOutcome, gameTaken, gamesLeft, isBeingDrawn, isOpen, opensWindow, poolWarning, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
+import { BONUS_VETO_MAX, bonusVetoCounts, bonusVetoRejection, drawOutcome, gameTaken, gamesLeft, isBeingDrawn, isOpen, opensWindow, poolWarning, roundsStarted, roundState, setRejection, spinRejection, vetoRejection, vetoesLeftByParty, waitsForRespin, type DrawFacts, type RoundFacts, type SetInput, type SpinInput, type VetoInput } from '../../shared/rounds'
 import type { SessionTimes } from '../../shared/session-state'
+import { WINDOW_MS } from '../draw-offsets'
 import { floorsAt } from '../../shared/settings'
 
 // The round rules (#228, spec #218 § Rounds): the games left in the Game pool, a Round's state, how many Rounds have
@@ -267,15 +268,9 @@ describe('drawOutcome', () => {
   })
 })
 
-describe('the Veto window', () => {
-  it('lasts 60 seconds', () => {
-    expect(VETO_WINDOW_MS).toBe(60_000)
-  })
-})
-
 describe('vetoRejection', () => {
   const stopAt = at(19)
-  const vetoEndsAt = stopAt + VETO_WINDOW_MS
+  const vetoEndsAt = stopAt + WINDOW_MS
   const open_ = { stopAt, vetoEndsAt, outcome: null }
   const input = (fields: Partial<VetoInput> = {}): VetoInput => ({
     viewerTeam: 1,
@@ -304,11 +299,9 @@ describe('vetoRejection', () => {
     expect(vetoRejection(input({ draw: null }))).toBe('no_veto_window')
   })
 
-  it('refuses from the end of the window on, to the millisecond, and before the stop', () => {
-    expect(vetoRejection(input({ now: vetoEndsAt - 1 }))).toBeNull()
+  // The window's edges themselves (stop - 1, stop, end - 1, end) are pinned in draw-timeline.test.ts; this is the wiring.
+  it('refuses from the end of the window on', () => {
     expect(vetoRejection(input({ now: vetoEndsAt }))).toBe('veto_window_closed')
-    expect(vetoRejection(input({ now: stopAt }))).toBeNull()
-    expect(vetoRejection(input({ now: stopAt - 1 }))).toBe('veto_window_closed')
   })
 
   it('refuses a draw that has settled, whatever the clock says', () => {

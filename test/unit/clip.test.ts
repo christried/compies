@@ -1,21 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { clipPosition, clipWindow } from '../../shared/clip'
+import { clipPosition } from '../../shared/clip'
+import { clipWindow } from '../../shared/draw-timeline'
 
 // The clip's rule (#230, spec #218 § Clip): it starts at the draw's stop and runs for the game's clip length; the second of the
 // video to play now follows from the start second and the time since the start.
 
 const STOP = Date.parse('2090-10-30T10:00:07.500Z')
-
-describe('clipWindow', () => {
-  it('starts at the stop and ends the clip length later', () => {
-    expect(clipWindow({ stopAt: STOP }, { clipLength: 30 })).toEqual({ startAt: STOP, endsAt: STOP + 30_000 })
-  })
-
-  it('takes an instant as a Date or an ISO string too', () => {
-    expect(clipWindow({ stopAt: new Date(STOP) }, { clipLength: 5 })).toEqual({ startAt: STOP, endsAt: STOP + 5_000 })
-    expect(clipWindow({ stopAt: '2090-10-30T10:00:07.500Z' }, { clipLength: 60 })).toEqual({ startAt: STOP, endsAt: STOP + 60_000 })
-  })
-})
 
 describe('clipPosition', () => {
   const clip = { ...clipWindow({ stopAt: STOP }, { clipLength: 30 }), game: { clipStart: 90 } }

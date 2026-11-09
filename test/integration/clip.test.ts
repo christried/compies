@@ -15,6 +15,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
 import de from '../../i18n/locales/de.json'
+import { SPIN } from '../draw-offsets'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -31,8 +32,7 @@ const players = {
 
 const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
 const T0 = '2090-10-30T10:00:00.000Z'
-const LEAD = 1500
-const STOP = LEAD + 6000
+const { stop: STOP } = SPIN
 const CLIP_MS = 30_000
 
 describe('the synced clip', () => {
