@@ -36,7 +36,7 @@ registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => {
     listed()
-    return { games: [kart, pong].map(game => ({ ...game, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true })) }
+    return { games: [kart, pong].map(game => ({ ...game, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true })), tagsInUse: [] }
   },
 })
 

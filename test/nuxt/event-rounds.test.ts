@@ -541,7 +541,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('opens a sheet that lists the games left in the Game pool first, then the library', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
@@ -562,7 +562,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('sets the chosen game from the bar and closes once the server took it', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
@@ -621,7 +621,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('can pick a game of the library that is not in the pool', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id], poolWarning: null })
     const stage = await mount(slug)
@@ -646,7 +646,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('says so when the pool has nothing left, and still offers the library', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [schach] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null })
     const stage = await mount(slug)
