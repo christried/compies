@@ -47,6 +47,6 @@ A ticket that changes a page isn't done on tests alone: look at the page on `pnp
 - every decision the user made in chat, first posted as a comment on its issue, then pointed to;
 - the friction worth a `/retro`: what cost time, what a check, a doc or a brief should have caught.
 
-End by telling the user the handoff's path, to start the next session with `/implement-spec` and that path.
+End by telling the user the handoff's path, to start the next session with `/implement-spec` and that path. A `/retro` followed by an `/implement-spec` in one session starts the run near the limit (session 1 of the 0.10 follow-ups began at 239k), so run `/clear` between them.
 
 The orchestrator does every merge into `staging` and `main` (`docs/agents/delivery.md`).
