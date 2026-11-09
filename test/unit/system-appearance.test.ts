@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { compile } from 'tailwindcss'
 import { describe, expect, it } from 'vitest'
 
 // „System“ is CSS only (#402): `<html data-theme="system">` draws the dark set under `@media (prefers-color-scheme: dark)`
@@ -8,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 const root = resolve(import.meta.dirname, '../..')
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8')
 const tokens = read('app/assets/css/compies-tokens.css')
+const theme = read('app/assets/css/compies-theme.css')
 
 const DARK_MEDIA = /@media\s*\(\s*prefers-color-scheme:\s*dark\s*\)\s*\{/g
 const PAPER = '--cp-paper: #17121d;'
@@ -16,6 +18,19 @@ const PAPER = '--cp-paper: #17121d;'
 const clean = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
 /** `[data-theme="dark"]` and `[data-theme=dark]` read alike, and whitespace does not count. */
 const normalise = (text: string) => text.replace(/\[data-theme="(\w+)"\]/g, '[data-theme=$1]').replace(/\s+/g, ' ').trim()
+
+/** Every `.css` and `.vue` file under a directory, as paths relative to the repo root. */
+function sourceFiles(dir: string): string[] {
+  return readdirSync(join(root, dir), { withFileTypes: true }).flatMap((entry) => {
+    const path = `${dir}/${entry.name}`
+    if (entry.isDirectory()) return sourceFiles(path)
+    return /\.(css|vue)$/.test(entry.name) ? [path] : []
+  })
+}
+
+/** The CSS of a file: a `.css` file whole, a Vue file's `<style>` blocks. */
+const stylesOf = (path: string, text: string) =>
+  path.endsWith('.vue') ? [...text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n') : text
 
 /** Splits CSS into what stands inside its `@media (prefers-color-scheme: dark)` blocks and what stands outside. */
 function splitDarkMedia(css: string): { inside: string, outside: string } {
@@ -114,5 +129,38 @@ describe('twinGaps', () => {
 
   it('reports a dark rule whose twin stands outside the dark media query', () => {
     expect(twinGaps('[data-theme=dark] .x { color: red; } [data-theme=system] .x { color: red; }')).toEqual(['[data-theme=dark] .x'])
+  })
+})
+
+describe('the stylesheets under app/', () => {
+  const files = sourceFiles('app').map(path => ({ path, css: stylesOf(path, read(path)) }))
+
+  it('give every dark rule its System twin, in the same file (#402)', () => {
+    const withDark = files.filter(f => rulesFor(splitDarkMedia(clean(f.css)).outside, 'dark').size > 0).map(f => f.path)
+    expect(withDark).toEqual(expect.arrayContaining([
+      'app/assets/css/compies-tokens.css',
+      'app/assets/css/compies-theme.css',
+      'app/components/Compibert.vue',
+      'app/components/CompibertRig.vue',
+    ]))
+    expect(files.flatMap(f => twinGaps(f.css).map(selector => `${f.path}: ${selector}`))).toEqual([])
+  })
+
+  it('never draw System dark on a device that asks for light (#402)', () => {
+    const outside = files.filter(f => rulesFor(splitDarkMedia(clean(f.css)).outside, 'system').size > 0).map(f => f.path)
+    expect(outside).toEqual([])
+  })
+})
+
+describe('the dark: variant', () => {
+  // Tailwind's own compiler is the seam: it shows what a `dark:` utility really emits.
+  it('gives every dark: utility its System twin under the dark media query (#402)', async () => {
+    const variant = clean(theme).match(/@custom-variant dark\s*\{[\s\S]*?\n\}/)?.[0]
+    expect(variant).toBeDefined()
+
+    const compiler = await compile(`${variant}\n@theme { --color-ink: #151515; }\n@tailwind utilities;`)
+    const css = normalise(compiler.build(['dark:bg-ink']))
+    expect(css).toContain('.dark\\:bg-ink:where([data-theme=dark], [data-theme=dark] *) { background-color: var(--color-ink); }')
+    expect(css).toContain('@media (prefers-color-scheme: dark) { .dark\\:bg-ink:where([data-theme=system], [data-theme=system] *) { background-color: var(--color-ink); } }')
   })
 })

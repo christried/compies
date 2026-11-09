@@ -7,7 +7,17 @@
 @import "tailwindcss";
 @import "./compies-tokens.css";
 
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+/* Dunkel, and System on a device that asks for dark (#402). */
+@custom-variant dark {
+  &:where([data-theme=dark], [data-theme=dark] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme=system], [data-theme=system] *) {
+      @slot;
+    }
+  }
+}
 @custom-variant reduced (&:where([data-motion=reduced], [data-motion=reduced] *));
 
 /* mode-dependent → reference the variables */
