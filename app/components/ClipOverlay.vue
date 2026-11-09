@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { SkipForward, Volume2, VolumeX, X } from '@lucide/vue'
+import { MD_QUERY } from '~/composables/useMediaQuery'
 import { YOUTUBE_HOST, YOUTUBE_PLAYING, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
 import { clipPosition } from '~~/shared/clip'
 import type { ClipView } from '~~/shared/stage'
@@ -32,7 +33,7 @@ const TICK_MS = 250
 
 const { t } = useI18n()
 const sound = useSound()
-const wide = useMediaQuery('(min-width: 61.25rem)')
+const wide = useMediaQuery(MD_QUERY)
 const stage = useTemplateRef<HTMLElement>('stage')
 
 const videoId = computed(() => props.clip.game.youtubeId)

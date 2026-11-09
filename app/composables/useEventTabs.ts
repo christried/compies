@@ -1,6 +1,7 @@
 import { History, LayoutGrid, Trophy } from '@lucide/vue'
 import type { Component } from 'vue'
 import type { useEventRoom } from '~/composables/useEventRoom'
+import { MD_QUERY } from '~/composables/useMediaQuery'
 import type { TabBarItem } from '~/components/TabBar.vue'
 import type { PanelTab } from '~/components/SidePanel.vue'
 
@@ -27,7 +28,7 @@ function isTabKey(key: string): key is EventTabKey {
 
 export function useEventTabs(room: Pick<ReturnType<typeof useEventRoom>, 'on'>) {
   const { t } = useI18n()
-  const wide = useMediaQuery('(min-width: 61.25rem)')
+  const wide = useMediaQuery(MD_QUERY)
   const panelTab = ref('activity')
   const activeView = ref<EventTabKey>('event')
   const unread = ref(0)

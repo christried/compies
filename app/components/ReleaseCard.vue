@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Calendar, Link as LinkIcon, Sparkles } from '@lucide/vue'
 import type { Release } from '~~/shared/changelog'
+import { MD_QUERY } from '~/composables/useMediaQuery'
 import { formatReleaseDate } from '~/utils/changelog'
 import { confetti } from '~/utils/confetti'
 import { reducedMotion } from '~/utils/motion'
@@ -48,7 +49,7 @@ function celebrate() {
     { delay: 300, duration: 160, easing: 'ease-out' },
   )
   const chip = stamp.value.parentElement!
-  const count = window.matchMedia('(min-width: 61.25rem)').matches ? 18 : 10
+  const count = window.matchMedia(MD_QUERY).matches ? 18 : 10
   const target = layer.value
   setTimeout(() => confetti(target, chip.offsetLeft + chip.offsetWidth / 2, chip.offsetTop + chip.offsetHeight / 2, count), 320)
   markSeen(props.release.version)
