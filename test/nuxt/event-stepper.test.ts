@@ -138,7 +138,7 @@ describe('the stepper', () => {
   })
 
   describe('Format', () => {
-    // The options that cannot be chosen yet carry their chip and no note about it (#174).
+    // The options that cannot be chosen yet carry their line and no note about it (#174).
     it('has no note under the Format cards about the options that are coming', async () => {
       const page = await mountCreate()
       await stepTo(page, 1)
