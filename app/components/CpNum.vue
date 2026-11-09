@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { COUNT_TICK_MS, countAt } from '~/utils/count-up'
-import { motionToken, reducedMotion } from '~/utils/motion'
+import { motionMs, reducedMotion } from '~/utils/motion'
 
 // A live number with tabular figures so it does not jump when it changes (02-components § CpNum).
 // With `say`, the digits are hidden from screen readers and `say` is read instead ("noch 42 Sekunden").
@@ -38,7 +38,7 @@ function start() {
     return
   }
   const to = props.value as number
-  const duration = Number.parseFloat(motionToken('--cp-dur-slower', '600ms'))
+  const duration = motionMs('--cp-dur-slower', '600ms')
   const began = Date.now()
   let wrote = began
   shown.value = from

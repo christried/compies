@@ -8,6 +8,24 @@ export function motionToken(name: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
 }
 
+const CSS_TIME = /^\s*(-?\d*\.?\d+)\s*(ms|s)\s*$/i
+
+/** A CSS `<time>` in milliseconds, or undefined when the value is not one. */
+function parseMs(value: string): number | undefined {
+  const match = CSS_TIME.exec(value)
+  if (!match) return undefined
+  const amount = Number(match[1])
+  return match[2]?.toLowerCase() === 's' ? amount * 1000 : amount
+}
+
+/**
+ * A duration token in milliseconds. The production CSS is minified, which writes `360ms` as `.36s`, and `parseFloat` read that as 0.36 ms: every
+ * Web Animation ran at once (#370). Both spellings give 360; a value that is not a time takes the fallback.
+ */
+export function motionMs(name: string, fallback: string): number {
+  return parseMs(motionToken(name, fallback)) ?? parseMs(fallback) ?? 0
+}
+
 /** The landing of an avatar that took a new place, by an own drop, the menu or somebody else's move (04-motion § Avatar: `scale .6→1.12→1`). */
 export function pop(element: Element): void {
   const picture = element.firstElementChild
@@ -27,7 +45,7 @@ export function glide(element: Element, from: Pick<DOMRect, 'left' | 'top'>, to:
   const dx = from.left - to.left
   const dy = from.top - to.top
   if (dx === 0 && dy === 0) return
-  const duration = Number.parseFloat(kind === 'bounce' ? motionToken('--cp-dur-slower', '600ms') : motionToken('--cp-dur-slow', '360ms'))
+  const duration = kind === 'bounce' ? motionMs('--cp-dur-slower', '600ms') : motionMs('--cp-dur-slow', '360ms')
   const easing = kind === 'bounce' ? motionToken('--cp-ease-spring', 'cubic-bezier(.5,1.8,.4,.8)') : motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)')
   element.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], { duration, easing })
 }
@@ -35,7 +53,7 @@ export function glide(element: Element, from: Pick<DOMRect, 'left' | 'top'>, to:
 /** What a Member whose place changed gets under reduced motion instead of the glide and the pop: a short fade at the new place (04-motion § Avatar: „Reduced: position changes with a 0.14 fade“, #237). */
 export function fade(element: Element): void {
   if (!reducedMotion() || typeof element.animate !== 'function') return
-  element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: Number.parseFloat(motionToken('--cp-dur-fast', '140ms')), easing: motionToken('--cp-ease-out', 'ease-out') })
+  element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: motionMs('--cp-dur-fast', '140ms'), easing: motionToken('--cp-ease-out', 'ease-out') })
 }
 
 // The Veto window (04-motion § Veto window, #231). Under reduced motion each of these is a 0.2 s fade at the same moment: no stagger, no delay (F10).
@@ -78,7 +96,7 @@ export function clockTick(element: Element): void {
 /** One second of the last ten ticks: `scale 1→1.14→1` in `dur-base`, `EASE.pop` per segment, started `intoMs` into its span (the time already spent in this second). A boundary seen `dur-base` or more late, or not yet reached, plays nothing: the steady frame is right. */
 export function countdownTick(element: Element, intoMs: number): void {
   if (reducedMotion() || typeof element.animate !== 'function') return
-  const duration = Number.parseFloat(motionToken('--cp-dur-base', '220ms'))
+  const duration = motionMs('--cp-dur-base', '220ms')
   if (intoMs < 0 || intoMs >= duration) return
   const easing = motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)')
   const animation = element.animate([{ transform: 'scale(1)', easing }, { transform: 'scale(1.14)', offset: 0.5, easing }, { transform: 'scale(1)' }], { duration })
@@ -101,11 +119,10 @@ const BURST_CARD_SHADOW = '6px 6px 0 var(--cp-error)'
  * The caller decides whether to play it at all (the viewer saw the last second, the frame is not 0.76 s late, motion is not reduced).
  */
 export function countdownBurst(parts: CountdownBurstParts, elapsedMs: number): void {
-  const ms = (token: string, fallback: string) => Number.parseFloat(motionToken(token, fallback))
-  const fast = ms('--cp-dur-fast', '140ms')
-  const base = ms('--cp-dur-base', '220ms')
-  const slow = ms('--cp-dur-slow', '360ms')
-  const slower = ms('--cp-dur-slower', '600ms')
+  const fast = motionMs('--cp-dur-fast', '140ms')
+  const base = motionMs('--cp-dur-base', '220ms')
+  const slow = motionMs('--cp-dur-slow', '360ms')
+  const slower = motionMs('--cp-dur-slower', '600ms')
   const easeIn = motionToken('--cp-ease-in', 'cubic-bezier(.7,0,.84,0)')
   const easeOut = motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)')
   const easePop = motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)')
@@ -236,19 +253,17 @@ export function sheetSide(): 'right' | 'bottom' {
 /** The axis the panel slides along: from the side it moves in x, from the bottom in y. */
 const sheetAxis = () => (sheetSide() === 'right' ? 'translateX' : 'translateY')
 
-const sheetMs = (token: string, fallback: string) => Number.parseFloat(motionToken(token, fallback))
-
 /** The Sheet's enter: the panel slides in from its side, the overlay fades in. Nothing waits for it. */
 export function sheetEnter(parts: SheetParts): void {
   if (typeof parts.panel.animate !== 'function') return
   const easing = motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)')
-  const fade = sheetMs('--cp-dur-fast', '140ms')
+  const fade = motionMs('--cp-dur-fast', '140ms')
   if (reducedMotion()) {
     for (const part of [parts.overlay, parts.panel]) part.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing, fill: 'backwards' })
     return
   }
   const axis = sheetAxis()
-  parts.panel.animate([{ transform: `${axis}(100%)` }, { transform: `${axis}(0)` }], { duration: sheetMs('--cp-dur-slow', '360ms'), easing, fill: 'backwards' })
+  parts.panel.animate([{ transform: `${axis}(100%)` }, { transform: `${axis}(0)` }], { duration: motionMs('--cp-dur-slow', '360ms'), easing, fill: 'backwards' })
   parts.overlay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing, fill: 'backwards' })
 }
 
@@ -260,13 +275,13 @@ export function sheetEnter(parts: SheetParts): void {
 export function sheetLeave(parts: SheetParts): Promise<void> {
   if (typeof parts.panel.animate !== 'function' || unwatched()) return Promise.resolve()
   const easing = motionToken('--cp-ease-in', 'cubic-bezier(.7,0,.84,0)')
-  const fade = sheetMs('--cp-dur-fast', '140ms')
+  const fade = motionMs('--cp-dur-fast', '140ms')
   const fadeOut: Keyframe[] = [{ opacity: 1 }, { opacity: 0 }]
   let panelDuration = fade
   let panelFrames = fadeOut
   if (!reducedMotion()) {
     const axis = sheetAxis()
-    panelDuration = sheetMs('--cp-dur-base', '220ms')
+    panelDuration = motionMs('--cp-dur-base', '220ms')
     panelFrames = [{ transform: `${axis}(0)` }, { transform: `${axis}(100%)` }]
   }
   const animations = [
