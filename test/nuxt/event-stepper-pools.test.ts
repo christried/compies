@@ -527,15 +527,51 @@ describe('the game browser in the pool steps (#173)', () => {
     useState('game-library').value = null
   })
 
-  it('is the compact browser: the search and „Alle / Von mir“, without the player count and „Passt zu“', async () => {
+  it('is the compact browser: the search, „Alle“, the Tag and „Von mir“, without the player count and „Passt zu“ (#336)', async () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
     expect(page.find('input[type="search"]').exists()).toBe(true)
     const chips = picker(page).element.parentElement!.querySelectorAll('button[aria-pressed]')
     expect([...chips].map(chip => chip.textContent!.trim())).toEqual(['Alle', 'Von mir'])
+    const tag = page.get('select[aria-label="Tag"]')
+    expect([...tag.element.querySelectorAll('option')].map(option => option.textContent!.trim())).toEqual(['Tag', 'Retro'])
+    const all = [...chips].find(chip => chip.textContent!.trim() === 'Alle')!
+    const mine = [...chips].find(chip => chip.textContent!.trim() === 'Von mir')!
+    expect(all.compareDocumentPosition(tag.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(tag.element.compareDocumentPosition(mine) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(false)
     expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(false)
+  })
+
+  it('picks a Tag and shows only the cards of the games carrying it, a ＋ still adds a hidden game, and „Alle“ resets the Tag (#336)', async () => {
+    const retroKart = game(4, 'Retro Kart', { tags: [{ key: 'retro', label: 'Retro' }] })
+    library = [kart, pong, chess, retroKart]
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    await page.get('select[aria-label="Tag"]').setValue('retro')
+
+    expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Retro Kart'])
+    await toggle(page, 'Retro Kart in den Pool').trigger('click')
+    expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Retro Kart'])
+    expect(pressed(page)).toEqual(['Retro Kart aus dem Pool nehmen'])
+
+    await page.findAll('button[aria-pressed]').find(button => button.text() === 'Alle')!.trigger('click')
+
+    expect(picker(page).findAll('li')).toHaveLength(4)
+    expect((page.get('select[aria-label="Tag"]').element as HTMLSelectElement).value).toBe('')
+  })
+
+  it('keeps the Tag out of the address too (#336)', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    const before = useRouter().currentRoute.value.fullPath
+
+    await page.get('select[aria-label="Tag"]').setValue('retro')
+
+    await new Promise(resolve => setTimeout(resolve, 400))
+    expect(useRouter().currentRoute.value.fullPath).toBe(before)
   })
 
   it('keeps its filters out of the address', async () => {

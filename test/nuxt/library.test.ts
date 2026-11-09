@@ -6,7 +6,7 @@ import DetailPage from '~/pages/bibliothek/[id]/index.vue'
 import EditPage from '~/pages/bibliothek/[id]/bearbeiten.vue'
 import LibraryPage from '~/pages/bibliothek/index.vue'
 import NewGamePage from '~/pages/bibliothek/neu.vue'
-import type { GameView } from '~~/shared/game'
+import type { GameTag, GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 
 const host = { ...kitty, canHost: true }
@@ -37,7 +37,7 @@ const withoutClip = game({ id: '00000000-0000-4000-8000-0000000000a3', name: 'Br
 
 // One endpoint per path for the file (a second registration is not replaced); each test sets what it returns.
 // The list is every game; the browser filters it (#173), so the tests look at the rendered cards.
-let list: { games: GameView[] } = { games: [] }
+let list: { games: GameView[], tagsInUse?: GameTag[] } = { games: [] }
 let listMode: 'ok' | 'hang' = 'ok'
 let detail: GameView | null = withClip
 const patched = vi.fn()
@@ -46,7 +46,7 @@ registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => {
     if (listMode === 'hang') return new Promise(() => {})
-    return { games: list.games }
+    return { games: list.games, tagsInUse: list.tagsInUse ?? [] }
   },
 })
 registerEndpoint(`/api/games/${withClip.id}`, {
@@ -330,7 +330,7 @@ describe('the library cards and filters (#142, #173)', () => {
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
-    for (const label of ['Spielerzahl', 'Passt zu']) {
+    for (const label of ['Spielerzahl', 'Passt zu', 'Tag']) {
       expect(page.get(`select[aria-label="${label}"]`).classes()).toContain('pr-9')
     }
   })
@@ -367,6 +367,7 @@ describe('the library cards and filters (#142, #173)', () => {
     expect(chips).toEqual(expect.arrayContaining(['Alle', 'Von mir']))
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(true)
     expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(true)
+    expect(page.find('select[aria-label="Tag"]').exists()).toBe(true)
   })
 
   it('filters the cards on every keystroke and writes the search to the address after a short pause', async () => {
@@ -480,6 +481,177 @@ describe('the library cards and filters (#142, #173)', () => {
 
     expect(page.findAll('h2').map(heading => heading.text())).toContain('Die Bibliothek ist leer.')
     expect(page.text()).not.toContain('Nix gefunden.')
+  })
+})
+
+describe('the Tag filter (#336)', () => {
+  beforeEach(async () => {
+    signInAs(host)
+    await useRouter().push('/bibliothek')
+    listMode = 'ok'
+    list = { games: [] }
+    await clearNuxtData('games')
+    useState('game-library').value = null
+  })
+
+  const names = (page: VueWrapper) => page.findAll('main ul li').map(card => card.get('b, a').text())
+  const chip = (page: VueWrapper, text: string) => page.findAll('main button').find(button => button.text() === text)!
+  const query = () => useRouter().currentRoute.value.query
+  const tagSelect = (page: VueWrapper) => page.get('select[aria-label="Tag"]')
+  const options = (page: VueWrapper) => page.findAll('select[aria-label="Tag"] option')
+
+  const tag = (key: string, label: string): GameTag => ({ key, label })
+  const retro = tag('retro', 'Retro')
+  const coopTag = tag('co-op', 'Co-op')
+  const angerTag = tag('ärger', 'Ärger')
+  const pandemie = game({ id: '00000000-0000-4000-8000-0000000000b1', name: 'Pandemie', tags: [coopTag] })
+  const kart = game({ id: '00000000-0000-4000-8000-0000000000b2', name: 'Retro Kart', tags: [retro] })
+  const brettspiel = game({ id: '00000000-0000-4000-8000-0000000000b3', name: 'Brettspiel', tags: [tag('kurz', 'Zeitsparend')] })
+
+  it('offers the Tags in use by label in German order, the keys as values, behind a placeholder', async () => {
+    list = { games: [pandemie, kart], tagsInUse: [retro, coopTag, angerTag] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    expect(options(page).map(option => option.text())).toEqual(['Tag', 'Ärger', 'Co-op', 'Retro'])
+    expect(options(page).map(option => (option.element as HTMLOptionElement).value)).toEqual(['', 'ärger', 'co-op', 'retro'])
+  })
+
+  it('keeps the select with only the placeholder when no Tag is in use', async () => {
+    list = { games: [withClip], tagsInUse: [] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    expect(options(page).map(option => option.text())).toEqual(['Tag'])
+  })
+
+  it('keeps the games carrying the Tag picked in the select, shows the chip on, and puts the key in the address', async () => {
+    list = { games: [pandemie, kart, withClip], tagsInUse: [coopTag, retro] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    await tagSelect(page).setValue('co-op')
+
+    expect(names(page)).toEqual(['Pandemie'])
+    expect(tagSelect(page).classes()).toContain('bg-ink')
+    await vi.waitFor(() => expect(query().tag).toBe('co-op'))
+  })
+
+  it('finds a game by a Tag label typed in the search, and not by the Tag key', async () => {
+    list = { games: [brettspiel, kart], tagsInUse: [tag('kurz', 'Zeitsparend'), retro] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    await page.get('input[type="search"]').setValue('zeitspar')
+
+    expect(names(page)).toEqual(['Brettspiel'])
+  })
+
+  it('does not find a game by a Tag key that no label spells', async () => {
+    list = { games: [brettspiel, kart], tagsInUse: [tag('kurz', 'Zeitsparend'), retro] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    await page.get('input[type="search"]').setValue('kurz')
+
+    expect(names(page)).toEqual([])
+  })
+
+  it('takes the Tag from the address on reload, normalised to its key, and ignores an empty one', async () => {
+    list = { games: [pandemie, kart], tagsInUse: [coopTag, retro] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?tag=co-op' })
+    await settle(page)
+    expect(names(page)).toEqual(['Pandemie'])
+    expect((tagSelect(page).element as HTMLSelectElement).value).toBe('co-op')
+
+    const typed = await mountSuspended(LibraryPage, { route: '/bibliothek?tag=Co-op' })
+    await settle(typed)
+    expect(names(typed)).toEqual(['Pandemie'])
+    expect((tagSelect(typed).element as HTMLSelectElement).value).toBe('co-op')
+
+    for (const route of ['/bibliothek?tag=%20', '/bibliothek?tag=']) {
+      const blank = await mountSuspended(LibraryPage, { route })
+      await settle(blank)
+      expect(names(blank)).toEqual(['Pandemie', 'Retro Kart'])
+    }
+  })
+
+  it('follows back and forward through the address without a reload', async () => {
+    list = { games: [pandemie, kart], tagsInUse: [coopTag, retro] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?tag=co-op' })
+    await settle(page)
+
+    await useRouter().push('/bibliothek?tag=retro')
+
+    await vi.waitFor(() => expect(names(page)).toEqual(['Retro Kart']))
+    expect((tagSelect(page).element as HTMLSelectElement).value).toBe('retro')
+  })
+
+  it('„Alle“ clears the Tag with the other filters and takes it out of the address', async () => {
+    list = { games: [pandemie, kart, withPlayers], tagsInUse: [coopTag, retro] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?tag=co-op&q=halo' })
+    await settle(page)
+    expect(names(page)).toEqual([])
+
+    await chip(page, 'Alle').trigger('click')
+
+    expect(names(page)).toEqual(['Pandemie', 'Retro Kart', 'Halo'])
+    await vi.waitFor(() => expect(query()).toEqual({}))
+  })
+
+  it('combines the Tag with „Von mir“ in the address', async () => {
+    const fremd = game({ id: '00000000-0000-4000-8000-0000000000b4', name: 'Fremd', tags: [coopTag], createdBy: { id: 'someone-else', name: 'Anna' } })
+    list = { games: [pandemie, fremd], tagsInUse: [coopTag] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?tag=co-op&mine=1' })
+    await settle(page)
+
+    expect(names(page)).toEqual(['Pandemie'])
+  })
+
+  it('keeps a Tag no game carries as the select value, shows „Nix gefunden.“, offers it last, and „Alle“ clears it', async () => {
+    list = { games: [pandemie, kart], tagsInUse: [coopTag, retro] }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek?tag=weg' })
+    await settle(page)
+
+    expect(page.findAll('h2').map(heading => heading.text())).toContain('Nix gefunden.')
+    expect((tagSelect(page).element as HTMLSelectElement).value).toBe('weg')
+    expect(tagSelect(page).classes()).toContain('bg-ink')
+    expect(options(page).map(option => option.text())).toEqual(['Tag', 'Co-op', 'Retro', 'weg'])
+
+    await chip(page, 'Alle').trigger('click')
+
+    expect(names(page)).toEqual(['Pandemie', 'Retro Kart'])
+    await vi.waitFor(() => expect(query()).toEqual({}))
+  })
+
+  it('no longer offers a Tag once its last game lost it', async () => {
+    list = { games: [pandemie, kart], tagsInUse: [coopTag, retro] }
+    const first = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(first)
+    expect(options(first).map(option => option.text())).toContain('Co-op')
+
+    await clearNuxtData('games')
+    useState('game-library').value = null
+    list = { games: [kart], tagsInUse: [retro] }
+    const second = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(second)
+
+    expect(options(second).map(option => option.text())).toEqual(['Tag', 'Retro'])
+  })
+
+  it('shows the longest Tag in full to the assistive technology and keeps the select inside the row', async () => {
+    const longest = 'a'.repeat(20)
+    list = { games: [kart], tagsInUse: [tag(longest, longest)] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    expect(options(page).map(option => option.text())).toEqual(['Tag', longest])
+    expect(tagSelect(page).classes()).toContain('max-w-full')
   })
 })
 

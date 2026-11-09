@@ -364,6 +364,73 @@ describe('filterGames (#173)', () => {
     expect(by({ players: 3, suitability: 'teams', mine: true, q: 'counter' })).toEqual(['Counter-Strike 2'])
     expect(by({ players: 3, suitability: 'ffa', q: 'counter' })).toEqual([])
   })
+
+  describe('the Tag filter and the search over Tags (#336)', () => {
+    const tag = (label: string) => ({ key: label.toLocaleLowerCase('de'), label })
+    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }, 'me').map(item => item.name)
+
+    const coop = game('Pandemie', { tags: [tag('Co-op'), tag('Retro')] })
+    const kart = game('Kart Rennen', { tags: [tag('Retro')] })
+    const bare = game('Schach')
+    const tagged = [coop, kart, bare]
+
+    it('NO_FILTERS carries no Tag', () => {
+      expect(NO_FILTERS.tag).toBeNull()
+      expect(NO_FILTERS).toEqual({ q: '', players: null, suitability: null, tag: null, mine: false })
+    })
+
+    it('keeps the games carrying the Tag key, in the given order, and any one of several Tags does', () => {
+      expect(found(tagged, { tag: 'retro' })).toEqual(['Pandemie', 'Kart Rennen'])
+      expect(found(tagged, { tag: 'co-op' })).toEqual(['Pandemie'])
+    })
+
+    it('drops a game without Tags under a Tag filter, and an unknown key keeps nothing', () => {
+      expect(found(tagged, { tag: 'retro' })).not.toContain('Schach')
+      expect(found(tagged, { tag: 'nie-da' })).toEqual([])
+    })
+
+    it('compares the Tag by key: the label spelling as filter keeps nothing', () => {
+      const spelled = [game('Pandemie', { tags: [{ key: 'co-op', label: 'CO-OP' }] })]
+
+      expect(found(spelled, { tag: 'co-op' })).toEqual(['Pandemie'])
+      expect(found(spelled, { tag: 'CO-OP' })).toEqual([])
+    })
+
+    it('combines the Tag with the search and the other filters with AND', () => {
+      expect(found(tagged, { tag: 'retro', q: 'kart' })).toEqual(['Kart Rennen'])
+      expect(found(tagged, { tag: 'retro', q: 'schach' })).toEqual([])
+      expect(found([...tagged, game('Retro Halo', { tags: [tag('Retro')], playersMin: 2, playersMax: 4 })], { tag: 'retro', players: 3 })).toEqual(['Retro Halo'])
+    })
+
+    it('matches the search text against a Tag label, whatever the case, the spaces and the umlauts', () => {
+      const brettspiel = [game('Brettspiel', { tags: [{ key: 'kurz', label: 'Zeitsparend' }] })]
+
+      expect(found(brettspiel, { q: 'zeitspar' })).toEqual(['Brettspiel'])
+      expect(found(brettspiel, { q: 'ZEITSPAR' })).toEqual(['Brettspiel'])
+      expect(found(brettspiel, { q: ' zeit ' })).toEqual(['Brettspiel'])
+      expect(found([game('Brettspiel', { tags: [{ key: 'ärger', label: 'Ärger' }] })], { q: 'ärger' })).toEqual(['Brettspiel'])
+    })
+
+    it('does not match the search text against a Tag key, only the label', () => {
+      const brettspiel = [game('Brettspiel', { tags: [{ key: 'kurz', label: 'Zeitsparend' }] })]
+
+      expect(found(brettspiel, { q: 'kurz' })).toEqual([])
+    })
+
+    it('still matches names when a game carries Tags, and reads % in a Tag label as a plain character', () => {
+      const withPercent = [game('Rocket', { tags: [{ key: '100%', label: '100%' }] }), game('Halo', { tags: [tag('Retro')] })]
+
+      expect(found(withPercent, { q: 'rocket' })).toEqual(['Rocket'])
+      expect(found(withPercent, { q: '%' })).toEqual(['Rocket'])
+      expect(found(withPercent, { q: '1000' })).toEqual([])
+    })
+
+    it('reads search and Tag over the same list in the same order, and a game with no Tags is never found through a label', () => {
+      expect(found(tagged, { q: 'retro' })).toEqual(['Pandemie', 'Kart Rennen'])
+      expect(found(tagged, { q: 'retro', tag: 'retro' })).toEqual(['Pandemie', 'Kart Rennen'])
+      expect(found([game('Leer', { tags: [] })], { q: 'retro' })).toEqual([])
+    })
+  })
 })
 
 describe('normaliseTag (#335)', () => {
