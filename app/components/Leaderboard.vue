@@ -223,7 +223,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
                 :say="t('table.points', { n: standing.points }, standing.points)"
               />
             </div>
-            <!-- The stamp is a physical sticker: fixed ink on the yellow in both modes (`DS Scoring` data-won). Decorative: the live region says who won. -->
+            <!-- The stamp is a physical sticker: the yellow is the same in both Appearances (`DS Scoring` data-won), its border and ink are tokens so they stay visible on Dunkel (#406). Decorative: the live region says who won. -->
             <Transition
               leave-active-class="transition-opacity dur-fast ease-in"
               leave-to-class="opacity-0"
@@ -232,7 +232,7 @@ onBeforeUnmount(() => clearTimeout(burstTimer))
                 v-if="celebrate && playing?.winners.includes(standing.team)"
                 data-stamp
                 aria-hidden="true"
-                class="absolute -top-6 -right-2.5 rounded-[10px] border-[3px] border-[#151515] bg-primary px-2.5 py-0.5 font-display text-[16px] leading-[1.2] whitespace-nowrap text-[#151515] shadow-sm"
+                class="absolute -top-6 -right-2.5 rounded-[10px] border-[3px] border-line bg-primary px-2.5 py-0.5 font-display text-[16px] leading-[1.2] whitespace-nowrap text-on-primary shadow-sm"
                 style="transform: rotate(8deg)"
               >{{ t(playing.kind === 'entered' ? 'table.winStamp' : 'table.wonStamp', { n: playing.number }) }}</span>
             </Transition>

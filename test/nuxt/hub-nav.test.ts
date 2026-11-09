@@ -45,6 +45,18 @@ describe('HubNav', () => {
     expect(labels(nav)).toEqual(['Events', 'Archiv', 'Profil'])
   })
 
+  it('gives every item the hover tint, so the Dunkel fix of the utility reaches the nav (#406)', async () => {
+    const viewers = [undefined, { canHost: false, isAdmin: true }]
+    for (const layout of ['header', 'tabs'] as const) {
+      for (const viewer of viewers) {
+        const nav = await mountSuspended(HubNav, { props: { layout, viewer }, route: '/' })
+        const links = nav.findAll('a')
+        expect(links).toHaveLength(viewer ? 5 : 3)
+        for (const item of links) expect(item.classes(), `${layout}: ${item.text()}`).toContain('hover:tint')
+      }
+    }
+  })
+
   it('shows Bibliothek, and not Admin, to a User with the Host permission', async () => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'tabs', viewer: { canHost: true, isAdmin: false } }, route: '/' })
 
