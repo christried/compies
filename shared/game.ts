@@ -1,5 +1,6 @@
-import { asRecord } from './record'
+import { asRecord, isRecord } from './record'
 import { characterCount } from './text'
+import { BERLIN_ZONE } from './time'
 import { parseYouTubeId } from './youtube'
 
 // The Game library (#141, spec #138): the rules and shapes the server and the screens share. The input rules
@@ -19,6 +20,22 @@ export const GAME_NOTES_MAX = 1000
 /** A Tag (#335, GLOSSARY: Tag): at most this many characters after trimming (characterCount, so an emoji counts as one). */
 export const TAG_MAX = 20
 export const TAGS_PER_GAME_MAX = 8
+
+/** The sources a game's Price is bought from (#337, GLOSSARY: Price), in the order the form lists them. */
+export const PRICE_SOURCES = ['steam', 'epic', 'gog', 'publisher', 'steam_key', 'free_to_play', 'subscription'] as const
+export type PriceSource = (typeof PRICE_SOURCES)[number]
+/** The German names of the sources (UI); Free-to-play and Abo are the whole Price line when they have no amount. */
+export const PRICE_SOURCE_LABELS: Record<PriceSource, string> = {
+  steam: 'Steam',
+  epic: 'Epic Games Store',
+  gog: 'GOG',
+  publisher: 'Publisher-Website',
+  steam_key: 'Steam-Key',
+  free_to_play: 'Free-to-play',
+  subscription: 'Abo',
+}
+/** The most a Price can be, in cents: 999,99 € (#337). The least is 1 cent. */
+export const PRICE_CENTS_MAX = 99_999
 
 /** Suitability (GLOSSARY; UI „Passt zu“): the kinds of play a game works for, any number of them (#171). */
 export const SUITABILITIES = ['teams', 'ffa', 'one_v_one'] as const
@@ -114,6 +131,11 @@ export interface GameView extends PoolGame {
    * RoundGame do not, so no Event read, feed entry or message can name one.
    */
   tags: GameTag[]
+  /**
+   * The game's Price (#337), null when it has none. Only the library carries it, like `tags`: PoolGame, PoolGameFace and RoundGame
+   * do not, until #338 gives it to Members.
+   */
+  price: GamePrice | null
   /** `name` is the display name if the User set one, like Event members. */
   createdBy: { id: string, name: string }
   createdAt: string
@@ -216,6 +238,88 @@ export function parseTags(raw: unknown): GameTag[] | undefined {
   return new Set(tags.map(tag => tag.key)).size === tags.length ? tags : undefined
 }
 
+/** A Price as the form and the server read it (#337): `cents` is null exactly for Free-to-play and Abo. */
+export interface GamePriceInput {
+  cents: number | null
+  source: PriceSource
+}
+
+/** A Price as the library shows it (#337): its amount, source and the UTC instant (ISO string) the day was last checked. */
+export interface GamePrice extends GamePriceInput {
+  checkedAt: string
+}
+
+/** A source that takes an amount: every one but Free-to-play and Abo (#337). */
+export function priceTakesAmount(source: PriceSource): boolean {
+  return source !== 'free_to_play' && source !== 'subscription'
+}
+
+/**
+ * A Price as the User types it (`19,99`, `19.99`, `20`): euros with at most two decimals, from 0,01 to 999,99, as cents. Null for anything else.
+ * @public Used by the price form and the cards (Part B of #337); Part B removes this tag.
+ */
+export function parsePriceAmount(text: string): number | null {
+  const match = /^(\d{1,6})(?:[.,](\d{1,2}))?$/.exec(text.trim())
+  if (!match) return null
+  const cents = Number(match[1]) * 100 + Number((match[2] ?? '0').padEnd(2, '0'))
+  return cents >= 1 && cents <= PRICE_CENTS_MAX ? cents : null
+}
+
+/** Cents as the form writes them: two decimals after a comma, no currency sign (1999 → „19,99“). Compared as integers, never formatted from a float. */
+export function formatPriceAmount(cents: number): string {
+  return `${Math.floor(cents / 100)},${String(cents % 100).padStart(2, '0')}`
+}
+
+function isPriceSource(value: unknown): value is PriceSource {
+  return (PRICE_SOURCES as readonly unknown[]).includes(value)
+}
+
+function isPriceCents(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= PRICE_CENTS_MAX
+}
+
+/**
+ * A Price of a request body (#337): null for no Price, the Price when it is whole, undefined when it is not. An amount needs a
+ * source, and a source with an amount must take one. The caller reads an absent `price` as the game's own, as it does for `tags`.
+ */
+export function parsePrice(raw: unknown): GamePriceInput | null | undefined {
+  if (raw === null) return null
+  if (!isRecord(raw)) return undefined
+  const { source, cents } = raw
+  const hasCents = cents !== undefined && cents !== null
+  if (source === undefined || source === null) return hasCents ? undefined : null
+  if (!isPriceSource(source)) return undefined
+  if (!priceTakesAmount(source)) return hasCents ? undefined : { cents: null, source }
+  return isPriceCents(cents) ? { cents, source } : undefined
+}
+
+const PRICE_DAY_FORMAT = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'long', year: 'numeric' })
+const PRICE_SHORT_DAY_FORMAT = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'short' })
+const PRICE_YEAR_FORMAT = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, year: 'numeric' })
+
+/**
+ * The day a Price was checked, in full, in Berlin (the form's „Stand: 3. November 2026“).
+ * @public Used by the price form and the cards (Part B of #337); Part B removes this tag.
+ */
+export function priceCheckedDay(checkedAt: string): string {
+  return PRICE_DAY_FORMAT.format(new Date(checkedAt))
+}
+
+/**
+ * The Price line of a game (#337, UI): „19,99 € bei Steam · Stand 3. Nov.“, „Free-to-play · Stand 3. Nov.“, „Abo · Stand 3. Nov.“.
+ * The year follows the day only when the day is not in the current Berlin year. `now` is a parameter, so tests never read the clock.
+ * @public Used by the price form and the cards (Part B of #337); Part B removes this tag.
+ */
+export function priceLine(price: GamePrice, now: Date): string {
+  const { cents, source, checkedAt } = price
+  // Free-to-play and Abo carry no amount: their label is the whole line.
+  const offer = cents === null ? PRICE_SOURCE_LABELS[source] : `${formatPriceAmount(cents)} € bei ${PRICE_SOURCE_LABELS[source]}`
+  const checked = new Date(checkedAt)
+  const checkedYear = PRICE_YEAR_FORMAT.format(checked)
+  const year = checkedYear === PRICE_YEAR_FORMAT.format(now) ? '' : ` ${checkedYear}`
+  return `${offer} · Stand ${PRICE_SHORT_DAY_FORMAT.format(checked)}${year}`
+}
+
 /** The video id of the pasted link. Absent, null or empty means no clip (null id); undefined when the link is no YouTube link. */
 export function parseYoutubeField(raw: unknown): string | null | undefined {
   if (raw === undefined || raw === null || raw === '') return null
@@ -268,9 +372,13 @@ export interface GameInput {
   notes: string | null
   /** The Tags sent (#335). Undefined when the body had none: a new game gets none, an edit keeps its own (a 0.9 tab never wipes them). */
   tags: GameTag[] | undefined
+  /** The Price sent (#337): null clears it, undefined (no `price` in the body) keeps the game's own, as `tags` does. */
+  price: GamePriceInput | null | undefined
+  /** „Preis stimmt noch“ (#337): true restamps the stored Price's day without changing it; false when absent. */
+  priceChecked: boolean
 }
 
-export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities' | 'invalid_game_notes' | 'invalid_tags'
+export type GameInputError = 'invalid_game_name' | 'invalid_youtube' | 'invalid_clip' | 'invalid_players' | 'invalid_suitabilities' | 'invalid_game_notes' | 'invalid_tags' | 'invalid_price'
 
 export function parseGameInput(input: unknown): { ok: true, game: GameInput } | { ok: false, error: GameInputError } {
   const body = asRecord(input)
@@ -297,9 +405,25 @@ export function parseGameInput(input: unknown): { ok: true, game: GameInput } | 
   const tags = body.tags === undefined ? undefined : parseTags(body.tags)
   if (body.tags !== undefined && tags === undefined) return { ok: false, error: 'invalid_tags' }
 
+  const price = body.price === undefined ? undefined : parsePrice(body.price)
+  if (body.price !== undefined && price === undefined) return { ok: false, error: 'invalid_price' }
+  if (body.priceChecked !== undefined && typeof body.priceChecked !== 'boolean') return { ok: false, error: 'invalid_price' }
+
   return {
     ok: true,
-    game: { name, youtubeId, clipStart, clipLength, playersMin: players.min, playersMax: players.max, suitabilities, notes, tags },
+    game: {
+      name,
+      youtubeId,
+      clipStart,
+      clipLength,
+      playersMin: players.min,
+      playersMax: players.max,
+      suitabilities,
+      notes,
+      tags,
+      price,
+      priceChecked: body.priceChecked === true,
+    },
   }
 }
 

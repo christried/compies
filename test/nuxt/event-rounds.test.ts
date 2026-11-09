@@ -22,7 +22,7 @@ const ENDED = '2026-10-30T22:00:00.000Z'
 const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Hausregel: keine Raketen' }
 const kart: PoolGame = { ...halo, id: 'g-kart', name: 'Kart', notes: null }
 const pong: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
-const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true, tags: [] }
+const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true, tags: [], price: null }
 
 const round = (id: string, game: PoolGame, notes?: string): RoundView => {
   const { notes: _notes, ...shown } = game

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
-  type GameFilters, type GameView, type Suitability,
+  formatPriceAmount, parsePrice, parsePriceAmount, priceCheckedDay, priceLine, priceTakesAmount,
+  type GameFilters, type GamePrice, type GameView, type Suitability,
 } from '../../shared/game'
 
 describe('clipTime', () => {
@@ -144,9 +145,9 @@ describe('parseGameInput', () => {
 
   describe('YouTube link', () => {
     it.each([[undefined], [null], ['']])('gives a game without a clip for %j', (youtubeUrl) => {
-      expect(parseGameInput({ ...valid, youtubeUrl })).toEqual({
+      expect(parseGameInput({ ...valid, youtubeUrl })).toMatchObject({
         ok: true,
-        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
+        game: { name: 'Mario Kart', youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, priceChecked: false },
       })
     })
 
@@ -295,6 +296,7 @@ describe('filterGames (#173)', () => {
       canEdit: true,
       notes: null,
       tags: [],
+      price: null,
       ...overrides,
     }
   }
@@ -509,5 +511,160 @@ describe('parseTags (#335)', () => {
   it('takes a Tag of 20 flags and refuses 21', () => {
     expect(parseTags([flag.repeat(20)])).toHaveLength(1)
     expect(parseTags([flag.repeat(21)])).toBeUndefined()
+  })
+})
+
+describe('parsePriceAmount (#337)', () => {
+  it.each([
+    ['19,99', 1999],
+    ['19.99', 1999],
+    ['20', 2000],
+    ['19,9', 1990],
+    ['0,01', 1],
+    ['0,05', 5],
+    ['999,99', 99_999],
+    [' 19,99 ', 1999],
+  ])('reads %j as %i cents', (text, cents) => {
+    expect(parsePriceAmount(text)).toBe(cents)
+  })
+
+  it.each(['0', '0,00', '1000', '1000,00', 'abc', '', '19,999', '19,', '-5', '1,2,3', '€ 5', '١٩'])('refuses %j', (text) => {
+    expect(parsePriceAmount(text)).toBeNull()
+  })
+})
+
+describe('formatPriceAmount (#337)', () => {
+  it.each([
+    [1999, '19,99'],
+    [2000, '20,00'],
+    [1, '0,01'],
+    [5, '0,05'],
+    [99_999, '999,99'],
+  ])('writes %i as %j', (cents, text) => {
+    expect(formatPriceAmount(cents)).toBe(text)
+  })
+})
+
+describe('priceTakesAmount (#337)', () => {
+  it.each(['steam', 'epic', 'gog', 'publisher', 'steam_key'] as const)('takes an amount for %s', (source) => {
+    expect(priceTakesAmount(source)).toBe(true)
+  })
+
+  it.each(['free_to_play', 'subscription'] as const)('takes no amount for %s', (source) => {
+    expect(priceTakesAmount(source)).toBe(false)
+  })
+})
+
+describe('parsePrice (#337)', () => {
+  it('reads no Price as no Price', () => {
+    expect(parsePrice(null)).toBeNull()
+  })
+
+  it('reads a paid Price as it is', () => {
+    expect(parsePrice({ cents: 1999, source: 'steam' })).toEqual({ cents: 1999, source: 'steam' })
+  })
+
+  it.each([{ source: 'free_to_play' }, { cents: null, source: 'subscription' }])('reads %j as a source without an amount', (raw) => {
+    expect(parsePrice(raw)).toEqual({ cents: null, source: raw.source })
+  })
+
+  it.each([[{ cents: null, source: null }], [{}], [{ source: null }], [{ cents: null }]])('reads %j as no Price', (raw) => {
+    expect(parsePrice(raw)).toBeNull()
+  })
+
+  it.each([
+    [{ cents: 1999, source: null }],
+    [{ cents: 1999 }],
+    [{ cents: 500, source: 'free_to_play' }],
+    [{ cents: 500, source: 'subscription' }],
+    [{ cents: null, source: 'steam' }],
+    [{ cents: 0, source: 'steam' }],
+    [{ cents: 100_000, source: 'steam' }],
+    [{ cents: 19.5, source: 'steam' }],
+    [{ cents: '1999', source: 'steam' }],
+    [{ cents: -1, source: 'steam' }],
+    [{ cents: 1999, source: 'amazon' }],
+    ['steam'],
+    [42],
+    [[]],
+  ])('refuses %j', (raw) => {
+    expect(parsePrice(raw)).toBeUndefined()
+  })
+})
+
+describe('priceCheckedDay (#337)', () => {
+  it('writes the Berlin day in full', () => {
+    expect(priceCheckedDay('2026-11-03T10:00:00.000Z')).toBe('3. November 2026')
+  })
+
+  it('takes the Berlin day, so an instant just before midnight UTC is the next day', () => {
+    expect(priceCheckedDay('2026-11-02T23:30:00.000Z')).toBe('3. November 2026')
+  })
+})
+
+describe('priceLine (#337)', () => {
+  const now = new Date('2026-11-09T12:00:00.000Z')
+  const checkedAt = '2026-11-03T10:00:00.000Z'
+
+  it.each<[GamePrice['cents'], GamePrice['source'], string]>([
+    [1999, 'steam', '19,99 € bei Steam · Stand 3. Nov.'],
+    [2000, 'epic', '20,00 € bei Epic Games Store · Stand 3. Nov.'],
+    [1999, 'gog', '19,99 € bei GOG · Stand 3. Nov.'],
+    [1999, 'publisher', '19,99 € bei Publisher-Website · Stand 3. Nov.'],
+    [1999, 'steam_key', '19,99 € bei Steam-Key · Stand 3. Nov.'],
+    [null, 'free_to_play', 'Free-to-play · Stand 3. Nov.'],
+    [null, 'subscription', 'Abo · Stand 3. Nov.'],
+  ])('writes %s with the amount %s', (cents, source, text) => {
+    expect(priceLine({ cents, source, checkedAt }, now)).toBe(text)
+  })
+
+  it('appends the year when the day was checked in another year', () => {
+    expect(priceLine({ cents: 1999, source: 'steam', checkedAt: '2025-11-03T10:00:00.000Z' }, now)).toBe('19,99 € bei Steam · Stand 3. Nov. 2025')
+  })
+
+  it('takes the Berlin day, so an instant just before midnight UTC is the next day', () => {
+    expect(priceLine({ cents: 1999, source: 'steam', checkedAt: '2026-11-02T23:30:00.000Z' }, now)).toBe('19,99 € bei Steam · Stand 3. Nov.')
+  })
+
+  it('compares the Berlin years: New Year in Berlin is the new year, whatever UTC says', () => {
+    const newYear = '2025-12-31T23:30:00.000Z'
+    expect(priceLine({ cents: null, source: 'subscription', checkedAt: newYear }, new Date('2026-06-01T10:00:00.000Z'))).toBe('Abo · Stand 1. Jan.')
+    expect(priceLine({ cents: null, source: 'subscription', checkedAt: newYear }, new Date('2025-12-31T12:00:00.000Z'))).toBe('Abo · Stand 1. Jan. 2026')
+  })
+})
+
+describe('parseGameInput Price (#337)', () => {
+  const valid = { name: 'Mario Kart' }
+
+  it('leaves the Price undefined and the flag false when the body has neither', () => {
+    const parsed = parseGameInput(valid)
+    expect(parsed.ok && parsed.game.price).toBeUndefined()
+    expect(parsed.ok && parsed.game.priceChecked).toBe(false)
+  })
+
+  it('reads a null Price as no Price', () => {
+    expect(parseGameInput({ ...valid, price: null })).toMatchObject({ ok: true, game: { price: null } })
+  })
+
+  it('reads a Price and the flag', () => {
+    expect(parseGameInput({ ...valid, price: { cents: 1999, source: 'steam' }, priceChecked: true })).toMatchObject({
+      ok: true,
+      game: { price: { cents: 1999, source: 'steam' }, priceChecked: true },
+    })
+  })
+
+  it('reads a false flag as not checked', () => {
+    expect(parseGameInput({ ...valid, priceChecked: false })).toMatchObject({ ok: true, game: { priceChecked: false } })
+  })
+
+  it.each([
+    [{ price: { cents: 1999, source: null } }],
+    [{ price: { cents: 1999 } }],
+    [{ price: 'steam' }],
+    [{ price: { cents: 500, source: 'free_to_play' } }],
+    [{ priceChecked: 'yes' }],
+    [{ price: { cents: 1999, source: 'steam' }, priceChecked: 'yes' }],
+  ])('refuses %j with invalid_price', (body) => {
+    expect(parseGameInput({ ...valid, ...body })).toEqual({ ok: false, error: 'invalid_price' })
   })
 })

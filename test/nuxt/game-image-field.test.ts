@@ -26,6 +26,7 @@ const created: GameView = {
   canEdit: true,
   notes: null,
   tags: [],
+  price: null,
 }
 const withImage: GameView = { ...created, imageUrl: '/api/images/b1-abc.webp' }
 

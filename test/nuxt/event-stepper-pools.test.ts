@@ -29,6 +29,7 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     canEdit: true,
     notes: null,
     tags: [],
+    price: null,
     ...overrides,
   }
 }
