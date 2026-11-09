@@ -2,7 +2,7 @@
 import { Equal } from '@lucide/vue'
 import { boxWithin } from '~/utils/ceremony-tie-run'
 import { ceremonySizes } from '~/utils/ceremony-sizes'
-import { teamSurfaceStyle, teamVar } from '~/utils/team-style'
+import { teamSurfaceStyle } from '~/utils/team-style'
 import type { CeremonyLayout, CeremonyModel, CeremonyPerson, CeremonyWinner } from '~/utils/ceremony'
 import type { RigState } from '~/utils/compibert-rig'
 
@@ -146,23 +146,12 @@ defineExpose({ root, burst })
         :aria-label="t('ceremony.standings')"
         class="m-0 flex max-w-[420px] min-w-0 flex-[1_1_300px] list-none flex-col gap-2.5 p-0"
       >
-        <li
+        <CeremonyStandingRow
           v-for="row in model.rows"
           :key="row.team"
-          data-part="row"
-          class="grid min-h-[52px] grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-2.5 rounded-[12px] border-(length:--cp-bw) border-line bg-surface px-3.5 shadow-sm"
-        >
-          <span class="font-num text-[22px]">{{ row.rank }}</span>
-          <span class="flex min-w-0 items-center gap-2 font-extrabold">
-            <i
-              aria-hidden="true"
-              class="size-[18px] flex-none rounded-[5px] border-2 border-line"
-              :style="{ backgroundColor: teamVar(row.team), backgroundImage: teamVar(row.team, 'pattern') }"
-            />
-            <span class="truncate">{{ row.name }}</span>
-          </span>
-          <span class="font-num text-[18px]">{{ t('ceremony.pts', { n: row.points }) }}</span>
-        </li>
+          :row="row"
+          variant="side"
+        />
       </ol>
     </div>
 
@@ -372,24 +361,12 @@ defineExpose({ root, burst })
           class="m-0 flex list-none flex-col p-0"
           :class="layout.rows === 'side' ? 'mt-[52px] w-[380px] flex-none gap-2.5' : 'mt-1 w-full gap-2'"
         >
-          <li
+          <CeremonyStandingRow
             v-for="row in model.rows"
             :key="row.team"
-            data-part="row"
-            class="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-2.5 rounded-[12px] border-(length:--cp-bw) border-line bg-surface px-3.5 shadow-sm"
-            :class="layout.rows === 'side' ? 'min-h-[52px]' : 'min-h-[48px]'"
-          >
-            <span class="font-num text-[22px]">{{ row.rank }}</span>
-            <span class="flex min-w-0 items-center gap-2 font-extrabold">
-              <i
-                aria-hidden="true"
-                class="size-[18px] flex-none rounded-[5px] border-2 border-line"
-                :style="{ backgroundColor: teamVar(row.team), backgroundImage: teamVar(row.team, 'pattern') }"
-              />
-              <span class="truncate">{{ row.name }}</span>
-            </span>
-            <span class="font-num text-[18px]">{{ t('ceremony.pts', { n: row.points }) }}</span>
-          </li>
+            :row="row"
+            :variant="layout.rows"
+          />
         </ol>
       </div>
 
@@ -399,21 +376,12 @@ defineExpose({ root, burst })
         data-rows="chips"
         class="m-0 flex max-w-full list-none flex-wrap justify-center gap-2 p-0"
       >
-        <li
+        <CeremonyStandingRow
           v-for="row in model.rows"
           :key="row.team"
-          data-part="row"
-          class="box-border flex h-10 max-w-full items-center gap-2 rounded-pill border-[2.5px] border-line bg-surface pr-3.5 pl-[5px] shadow-sm"
-        >
-          <span class="grid size-7 flex-none place-items-center rounded-pill bg-paper-2 font-num text-[14px] leading-none">{{ row.rank }}</span>
-          <i
-            aria-hidden="true"
-            class="size-4 flex-none rounded-[5px] border-2 border-line"
-            :style="{ backgroundColor: teamVar(row.team), backgroundImage: teamVar(row.team, 'pattern') }"
-          />
-          <span class="min-w-0 truncate text-[14px] font-extrabold">{{ row.name }}</span>
-          <span class="flex-none font-num text-[14px]">{{ t('ceremony.pts', { n: row.points }) }}</span>
-        </li>
+          :row="row"
+          variant="chips"
+        />
       </ol>
     </template>
 
