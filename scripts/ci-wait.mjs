@@ -11,10 +11,10 @@
 // 6-minute run ends in one notification instead of a failed one every 2.5 minutes (retro 0.10).
 // A run that completed as a failure with zero jobs is a GitHub start failure (annotation „workflow file issue“, twice on
 // 2026-11-09 with ci.yml unchanged), not a red run: the script re-runs it once with `gh run rerun` and keeps waiting; a
-// second one exits 1 with the run's URL (retro 0.10, #388).
+// second one exits 1 with the run's URL. A later call recognises the single re-run by the run's attempt number (retro 0.10, #388).
 // It prints one line while waiting, not a progress log.
 import { execFileSync } from 'node:child_process'
-import { verdict } from './ci-verdict.mjs'
+import { rerunDecision } from './ci-verdict.mjs'
 
 const args = process.argv.slice(2)
 const untilDone = args.includes('--until-done')
@@ -28,7 +28,7 @@ const CALL_MS = untilDone ? 20 * 60_000 : 150_000
 const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const jobCountOf = id => Number(gh('api', `repos/{owner}/{repo}/actions/runs/${id}/jobs`, '--jq', '.total_count'))
-const runsOf = () => JSON.parse(gh('run', 'list', '--workflow', 'ci.yml', '--commit', sha, '--json', 'databaseId,status,conclusion,event,url'))
+const runsOf = () => JSON.parse(gh('run', 'list', '--workflow', 'ci.yml', '--commit', sha, '--json', 'databaseId,status,conclusion,event,url,attempt'))
 
 /** The failing step's log from its first failure marker on, without the job/step/timestamp prefix and colour codes. */
 function failures(id) {
@@ -45,6 +45,8 @@ let runs = []
 // Runs already re-run after a start failure, with the time of the re-run. A re-run keeps the run id; for a moment
 // the list may still show the old completed state, which does not count as done.
 const rerun = new Map()
+// The jobs are counted for a failed run only.
+const decisionOf = run => rerunDecision(run, run.conclusion === 'success' ? 1 : jobCountOf(run.databaseId), rerun.has(run.databaseId))
 const done = run => run.status === 'completed' && !(Date.now() - (rerun.get(run.databaseId) ?? -Infinity) < RERUN_SETTLE_MS)
 console.log(`waiting for CI on ${sha.slice(0, 7)} …`)
 while (Date.now() - started < CALL_MS) {
@@ -54,8 +56,7 @@ while (Date.now() - started < CALL_MS) {
     process.exit(1)
   }
   if (runs.length > 0 && runs.every(done)) {
-    const startFailures = runs.filter(run => run.conclusion !== 'success' && verdict(run, jobCountOf(run.databaseId)) === 'start-failure')
-    const fresh = startFailures.filter(run => !rerun.has(run.databaseId))
+    const fresh = runs.filter(run => decisionOf(run) === 'rerun')
     if (fresh.length === 0) break
     for (const run of fresh) {
       console.log(`start failure (zero jobs): ${run.event} ${run.url} – re-running once`)
@@ -80,8 +81,8 @@ if (red.length === 0) {
   process.exit(0)
 }
 for (const run of red) {
-  // Re-run once already (or by an earlier call): there is no job log to show.
-  if (verdict(run, jobCountOf(run.databaseId)) === 'start-failure') {
+  // Re-run once already (by this call or an earlier one): there is no job log to show.
+  if (decisionOf(run) === 'twice') {
     console.log(`start failure (zero jobs) twice: ${run.event} ${run.url}`)
     continue
   }
