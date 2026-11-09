@@ -186,7 +186,7 @@ describe('the game page', () => {
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
     expect(page.get('h1').text()).toBe('W'.repeat(GAME_NAME_MAX))
-    expect(page.get('h1').classes()).toContain('break-words')
+    expect(page.get('h1').classes()).toContain('[overflow-wrap:anywhere]')
   })
 
   it('shows a game without a clip with the placeholder and no preview', async () => {
