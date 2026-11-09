@@ -1,6 +1,7 @@
 import { makeSignature } from 'better-auth/crypto'
 import { defineEventHandler, getQuery, sendRedirect, setCookie } from 'h3'
 import { users } from '../db/schema'
+import { isAppearance, type Appearance } from '../../shared/auth'
 import { createAuth } from '../utils/auth'
 import { useDb } from '../utils/db'
 import { CURRENT_RELEASE } from '../utils/release'
@@ -8,7 +9,8 @@ import { CURRENT_RELEASE } from '../utils/release'
 // Signs in without Discord or Twitch, so the user and agents can open Host and Member pages and take screenshots
 // (retro 1.3). Only the builds carriesDevSignIn names register this route (stage.ts, read by nuxt.config.ts; #247).
 // The handler has no check of its own: the staging build carries it and runs with NODE_ENV=production.
-// `?as=host|member|admin` picks the User, `?to=/path` where to land, `?news=unseen` leaves „Was ist neu“ unseen.
+// `?as=host|member|admin` picks the User, `?to=/path` where to land, `?news=unseen` leaves „Was ist neu“ unseen,
+// `?appearance=dark|system|light` sets the Appearance, light when absent (#401).
 const PEOPLE = {
   host: { name: 'Dev Host', canHost: true, isAdmin: false },
   member: { name: 'Dev Member', canHost: false, isAdmin: false },
@@ -31,12 +33,14 @@ export default defineEventHandler(async (event) => {
 
   // The same three Users every time; the permissions are set here, since no allowlist knows them. Every sign-in marks
   // the current Release seen, so a Release never opens the pop-up on the dev server (review 0.5.1 T2); `?news=unseen`
-  // stores null, for the one check that wants the pop-up.
+  // stores null, for the one check that wants the pop-up. The Appearance is reset on every sign-in like the news, so a
+  // check starts from a known look: the one `?appearance=` names, else light (#401).
   const newsSeen = query.news === 'unseen' ? null : CURRENT_RELEASE
+  const appearance: Appearance = isAppearance(query.appearance) ? query.appearance : 'light'
   const db = useDb(event)
   const [user] = await db.insert(users)
-    .values({ ...person, displayName: person.name, image: PICTURE, email: `${as}@dev.compies.invalid`, emailVerified: true, newsSeen })
-    .onConflictDoUpdate({ target: users.email, set: { canHost: person.canHost, isAdmin: person.isAdmin, image: PICTURE, newsSeen } })
+    .values({ ...person, displayName: person.name, image: PICTURE, email: `${as}@dev.compies.invalid`, emailVerified: true, newsSeen, appearance })
+    .onConflictDoUpdate({ target: users.email, set: { canHost: person.canHost, isAdmin: person.isAdmin, image: PICTURE, newsSeen, appearance } })
     .returning({ id: users.id })
 
   // A Better Auth login session, with the cookie signed the way Better Auth signs it.

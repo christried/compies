@@ -74,7 +74,7 @@ async function save() {
               :image="user?.image"
               :size="64"
             />
-            <span class="text-small text-ink-2">{{ t('onboarding.avatarHint') }}</span>
+            <span class="text-small text-ink-2">{{ t('profile.avatarHelp') }}</span>
           </div>
         </div>
 

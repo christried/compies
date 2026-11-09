@@ -66,6 +66,28 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
     expect(later.user).toMatchObject({ newsSeen: null })
   })
 
+  // `?appearance=` sets the dev User's Appearance on every sign-in, light without it, so a check starts from a known look (#401).
+  it.each(['dark', 'system'])('sets the Appearance to %s with `?appearance=`', async (appearance) => {
+    const { user } = await signInAs(`?as=host&appearance=${appearance}`)
+
+    expect(user).toMatchObject({ appearance })
+  })
+
+  it('resets the Appearance to light on a later sign-in without `?appearance=`', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=host&appearance=dark', db)
+
+    const { user } = await signInAs('?as=host', db)
+
+    expect(user).toMatchObject({ appearance: 'light' })
+  })
+
+  it('signs in light with an Appearance that is none', async () => {
+    const { user } = await signInAs('?as=host&appearance=sepia')
+
+    expect(user).toMatchObject({ appearance: 'light' })
+  })
+
   it('lands on Home for a `to` outside the app', async () => {
     for (const to of ['https://example.org', '//example.org']) {
       const { response } = await signInAs(`?to=${encodeURIComponent(to)}`)

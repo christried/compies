@@ -298,27 +298,12 @@
   "profile": {
     "title": "Profil",
     "avatar": "Profilbild",
-    "avatarHelp": "Standard ist dein Discord-Bild. JPG oder PNG, wird rund zugeschnitten.",
-    "avatarAlt": "Dein Profilbild",
-    "upload": "Hochladen",
-    "useDiscord": "Discord-Bild nutzen",
+    "avatarHelp": "Kommt von Discord oder Twitch. Ein neues Bild siehst du nach deiner nächsten Anmeldung.",
     "displayName": "Anzeigename",
-    "displayNameHelp": "Muss nicht eindeutig sein. Alle in der Lobby sehen ihn.",
+    "displayNameHelp": "Muss nicht eindeutig sein. Alle sehen ihn überall in Compies.",
     "displayNameEmpty": "Ohne Namen geht es nicht. Wie sollen dich die anderen nennen?",
-    "accounts": "Verbundene Konten",
-    "connectedAs": "Verbunden als {user}",
-    "connected": "Verbunden",
-    "notConnected": "Nicht verbunden",
-    "connect": "Verbinden",
-    "disconnect": "Trennen",
-    "lastAccount": "Ein Konto muss verbunden bleiben, sonst kannst du dich nicht mehr anmelden.",
-    "mySessions": "Meine Events",
-    "sessionState": {
-      "running": "Läuft",
-      "planned": "Geplant",
-      "poll": "Umfrage",
-      "archived": "Archiv"
-    }
+    "saved": "Gespeichert.",
+    "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal."
   },
   "setup": {
     "step": "Event erstellen, Schritt {n} von {total}",
@@ -799,7 +784,6 @@
     "kicker": "Fast geschafft",
     "title": "Wie sollen wir dich nennen?",
     "nameHint": "Muss nicht eindeutig sein. Max. 32 Zeichen.",
-    "avatarHint": "Kommt von Discord oder Twitch und bleibt dort aktuell.",
     "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal.",
     "nameMissing": "Ohne Namen geht’s nicht.",
     "avatarFromProvider": "Bild von {provider} nehmen",
@@ -1089,8 +1073,7 @@
     "theme": "Darstellung",
     "light": "Hell",
     "dark": "Dunkel",
-    "system": "System",
-    "language": "Sprache"
+    "system": "System"
   },
   "eventSettings": {
     "kicker": "Einstellungen",
@@ -1405,11 +1388,6 @@
       "archiv": {
         "title": "Das Archiv wird noch gemauert.",
         "text": "Hier landen später alle Abende mit Tabelle, Chat und Siegerbild. Bis dahin zählt: einen Termin finden."
-      },
-      "profil": {
-        "title": "Profil? Der Bagger ist bestellt.",
-        "text": "Name und Bild kommen gerade von Discord oder Twitch. Hochladen und Einstellungen folgen in einer der nächsten Versionen.",
-        "logout": "Abmelden"
       },
       "admin": {
         "title": "Der Admin-Bereich hat noch keine Tür.",
