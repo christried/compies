@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { teamVar } from '~/utils/team-style'
+
 // A person (DS People, Avatar.dc.html): the provider image, or the initial when there is none. With a `team` the
 // avatar carries the Team colour as a ring and the team's mark on the rim, bottom left; `lifted` is the avatar in the hand
 // while it is dragged on the Game board (#160). `online` (#162) puts the presence dot on the rim, bottom right: online
@@ -28,7 +30,7 @@ watch(() => props.image, () => failed.value = false)
 const shadow = computed(() => {
   const ring = props.size >= 40 ? [3, 5] : [2, 4]
   return [
-    ...(props.team ? [`0 0 0 ${ring[0]}px var(--cp-team-${props.team})`, `0 0 0 ${ring[1]}px var(--cp-line)`] : []),
+    ...(props.team ? [`0 0 0 ${ring[0]}px ${teamVar(props.team)}`, `0 0 0 ${ring[1]}px var(--cp-line)`] : []),
     ...(props.lifted ? ['var(--cp-shadow-lift)'] : []),
   ].join(', ') || undefined
 })
