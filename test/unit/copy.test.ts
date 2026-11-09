@@ -124,6 +124,7 @@ const RETIRED: Record<string, string> = {
   'Admin-Wahl': 'Host-Wahl',
   'Passende Formate': 'Passt zu',
   'Tiebreaker': 'Unentschieden',
+  'Lobby': 'Event',
 }
 
 // The changelog lines that announce a removal name the removed feature by its old word, so they are the one place a retired word may stay: the

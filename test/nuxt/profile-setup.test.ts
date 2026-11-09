@@ -17,6 +17,12 @@ describe('profile setup', () => {
     expect(page.text()).toContain('8/32')
   })
 
+  it('says where the picture comes from and when a new one shows (#399)', async () => {
+    const page = await mountSuspended(SetupPage, { route: '/einrichten' })
+
+    expect(page.text()).toContain('Kommt von Discord oder Twitch. Ein neues Bild siehst du nach deiner nächsten Anmeldung.')
+  })
+
   it('stops at 32 characters, counting an emoji as one like the server does', async () => {
     const page = await mountSuspended(SetupPage, { route: '/einrichten' })
 

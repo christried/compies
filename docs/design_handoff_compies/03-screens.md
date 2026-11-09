@@ -329,6 +329,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Host vs player:** —
 - **States:** Profil · Bild lädt hoch · Letztes Konto · Einstellungen
 - **Realtime:** —
+- **Deviation (0.11, #398):** ships trimmed: one column at most 640 px wide, with a card „Profil“ (picture, Anzeigename with „Speichern“) and a card „Einstellungen“ (Ton, Darstellung), then „Abmelden“, instead of the Profil / Einstellungen tablist. No Meine Sessions, no Verbundene Konten, no upload states (Hochladen, „Discord-Bild nutzen“), no Push, Sprache or Weniger Bewegung rows. The Anzeigename takes 32 characters, not 24. The reference artboard still shows the full screen.
 
 
 ### 26 Plattform-Admin
