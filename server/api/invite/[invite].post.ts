@@ -30,7 +30,6 @@ export default defineEventHandler(async (event): Promise<JoinedEvent> => {
     const added = await addMember(tx, eventRow.id, user.id)
     if (added) {
       await recordActivity(tx, (...queued) => void messages.push(...queued), eventRow.id, { type: 'member_joined', actorId: user.id, params: {}, now: useClock(event).now() })
-      messages.push({ type: 'member.joined', userId: user.id })
     }
     return added
   })

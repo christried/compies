@@ -17,6 +17,5 @@ export default defineEventHandler((event): Promise<SessionEnded> => changeEvent(
   await tx.update(sessions).set({ endedAt: now }).where(eq(sessions.id, running.id))
   await onSessionEnded(tx, eventRow)
   await recordActivity(tx, publish, eventRow.id, { type: 'session_ended', actorId: user.id, params: { sessionId: running.id, number: await shownNumber(tx, eventRow.id, running.id) }, now })
-  publish({ type: 'session.ended', sessionId: running.id })
   return { sessionId: running.id, phase: eventRow.phase }
 }))

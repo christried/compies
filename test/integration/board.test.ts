@@ -373,7 +373,7 @@ describe('the Game board', () => {
   })
 
   describe('joining through the Invite link', () => {
-    it('publishes member.joined with the new Member, and nothing for a repeated join', async () => {
+    it('publishes event.changed and activity.added for the new Member, and nothing for a repeated join', async () => {
       const game = await setup()
       const newcomer = { provider: 'twitch', id: '9', name: 'Neu', email: 'new@example.com', image: undefined } as const
       const cookie = (await signIn(testDb.db, newcomer)).cookie
@@ -381,7 +381,7 @@ describe('the Game board', () => {
 
       expect((await send('POST', `/api/invite/${game.invite}`, cookie)).status).toBe(200)
 
-      expect(notifier.messages(game.eventId).filter(message => message.type === 'member.joined')).toMatchObject([{ userId: row!.id }])
+      expect(notifier.messages(game.eventId).filter(message => message.type === 'activity.added')).toMatchObject([{ entry: { type: 'member_joined', actor: { id: row!.id } } }])
       notifier.clear()
       await send('POST', `/api/invite/${game.invite}`, cookie)
       expect(notifier.messages(game.eventId)).toEqual([])

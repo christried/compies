@@ -27,7 +27,7 @@ describe('a send to named Users from a change', () => {
       // A test-only change: named Users get a message, and `refuse` makes the rule refuse after it queued the send.
       'POST /api/e/:slug/named-send': defineEventHandler(event => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ body, publishTo }) => {
         const { to, refuse } = asRecord(body)
-        publishTo(Array.isArray(to) ? to.map(String) : [], { type: 'team.nameReset', team: 1 })
+        publishTo(Array.isArray(to) ? to.map(String) : [], { type: 'veto.cast', drawId: 'draw-1', team: 1 })
         if (refuse === true) throw apiError('wrong_phase')
         return { done: true }
       })),
@@ -82,7 +82,7 @@ describe('a send to named Users from a change', () => {
     expect(response.status).toBe(200)
     expect(notifier.sends(eventId)).toEqual([
       { to: null, messages: [expect.objectContaining({ type: 'event.changed', v: 1 })] },
-      { to: [hostId], messages: [expect.objectContaining({ type: 'team.nameReset', team: 1, v: 1 })] },
+      { to: [hostId], messages: [expect.objectContaining({ type: 'veto.cast', drawId: 'draw-1', team: 1, v: 1 })] },
     ])
   })
 
