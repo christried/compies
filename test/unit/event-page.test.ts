@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, gamesToStart, headerPill, pagePill, pollingNumber, seatNote, sessionMenuKeys, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, gamesToStart, headerPill, pagePill, pollingNumber, seatNote, sessionMenuKeys, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn, wearsPartyhat } from '../../app/utils/event-page'
 import type { BoardTeam, MemberView } from '../../shared/event'
-import type { RoundView } from '../../shared/stage'
+import type { RoundGame } from '../../shared/game'
+import type { ResultView, RoundView, StandingView } from '../../shared/stage'
+import { standingsOf } from '../../shared/results'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the order of the blocks
 // follow it. It is hostDockState's `kind` without the Host's start rule, so Members have it too.
@@ -439,6 +441,67 @@ describe('seatNote', () => {
 
   it('is null when the viewer is not among the Members', () => {
     expect(seatNote({ ...hostView({ zone: 'stands' }), viewerId: 'nobody' }, fakeT)).toBeNull()
+  })
+})
+
+// The Party hat (#38): the viewer's own seat against the Leading Parties of the Event read the page holds.
+describe('wearsPartyhat', () => {
+  const ME = 'viewer'
+  const HOST = 'host'
+  const game: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
+  const resultOf = (number: number): ResultView => ({ roundId: `r${number}`, number, game, places: [{ team: 1, place: 1, points: 1, score: null }], corrected: false, correctedAt: null, resultAt: '2090-10-30T19:34:00.000Z' })
+  const seated = (id: string, zone: MemberView['zone'], team: number | null = null, isHost = false): MemberView => ({ id, name: id, image: null, isHost, zone, team, teamWord: null })
+
+  /** A view of `phase` with the Standings from the points (null: none) and one Result unless `results` says none. */
+  function partyView({ members, points, viewerId = ME, phase = 'running', results = [resultOf(1)] }: { members: MemberView[], points: number[] | null, viewerId?: string, phase?: 'running' | 'finished', results?: ResultView[] }) {
+    return { members, viewerId, standings: points === null ? null : standingsOf(points) as StandingView[], results, event: { phase } }
+  }
+
+  it('is yes for a Player seated in the Leading Party', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 2)], points: [1, 3, 2] }))).toBe(true)
+  })
+
+  it('is no for a Player seated in a trailing Party', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1)], points: [1, 3, 2] }))).toBe(false)
+  })
+
+  it('is no for a Player on the Bench, and in the Stands', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'bench')], points: [1, 3, 2] }))).toBe(false)
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'stands')], points: [1, 3, 2] }))).toBe(false)
+  })
+
+  it('is no when the viewer is not among the Members', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 2)], points: [1, 3, 2], viewerId: 'nobody' }))).toBe(false)
+  })
+
+  it('is no before the first Result, even for a Player in the first rank', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1)], points: [0, 0], results: [] }))).toBe(false)
+  })
+
+  it('is no without Standings', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1)], points: null }))).toBe(false)
+  })
+
+  it('is yes for a Player in the Winners\' Party on the finished page', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1)], points: [3, 1, 0], phase: 'finished' }))).toBe(true)
+  })
+
+  it('is yes for the Host seated in the Leading Party, and no for the Host on the Bench', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(HOST, 'team', 2, true)], points: [1, 3, 2], viewerId: HOST }))).toBe(true)
+    expect(wearsPartyhat(partyView({ members: [seated(HOST, 'bench', null, true)], points: [1, 3, 2], viewerId: HOST }))).toBe(false)
+  })
+
+  it('is yes for a Player in either Party that shares the first rank', () => {
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1)], points: [2, 0, 2] }))).toBe(true)
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 3)], points: [2, 0, 2] }))).toBe(true)
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 2)], points: [2, 0, 2] }))).toBe(false)
+  })
+
+  it('is yes only for the Player whose own Party leads in a free-for-all', () => {
+    const others = [seated('p2', 'team', 2), seated('p3', 'team', 3)]
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1), ...others], points: [3, 1, 0] }))).toBe(true)
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 2), ...others], points: [3, 1, 0] }))).toBe(false)
+    expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 3), ...others], points: [3, 1, 0] }))).toBe(false)
   })
 })
 

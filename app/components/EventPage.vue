@@ -3,7 +3,7 @@ import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { viewInstants, waitsForSettle } from '~/utils/event-instants'
-import { dateBlockedKey, eventPageState, headerPill } from '~/utils/event-page'
+import { dateBlockedKey, eventPageState, headerPill, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
@@ -86,6 +86,9 @@ const hostActions = useHostActions(
 // The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4).
 const pageState = computed(() => (data.value ? eventPageState(data.value) : null))
 
+// Compibert's header wears the party hat for a Player seated in a Leading Party (#38); no data (loading, error) is the plain head.
+const accessory = computed(() => (data.value && wearsPartyhat(data.value) ? 'partyhat' as const : undefined))
+
 // The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
 const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
 
@@ -98,7 +101,10 @@ const { news } = useStandingsNews(data, slug)
 </script>
 
 <template>
-  <AppShell kind="event">
+  <AppShell
+    kind="event"
+    :accessory="accessory"
+  >
     <template
       v-if="data"
       #title

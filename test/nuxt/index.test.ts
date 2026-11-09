@@ -66,6 +66,15 @@ describe('home page', () => {
     expect(page.text()).not.toContain('Hallo')
   })
 
+  // The hub shell never passes the header a party hat (#38): Compibert stays the plain head on Home, whatever the Member's Events say.
+  it('draws the plain head in the header, with no party hat', async () => {
+    homeEvents = [card({ name: 'Freitags-Zocken', phase: 'running', isHost: false })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    expect(page.get('header .compibert').find('.compibert-hat').exists()).toBe(false)
+  })
+
   // The title row holds the h1 and, for a Host, the CTA; the kicker „Hallo {name}“ is gone (#347).
   it.each([
     ['a Member', kitty],

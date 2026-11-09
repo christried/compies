@@ -1,5 +1,6 @@
 import { hasStarted, nextSession, noSessionLeft, runningOf, sessionState, type SessionState } from '~~/shared/session-state'
 import { datePollOpen, type EventView, type Phase, SESSIONS_MAX, type SessionView } from '~~/shared/event'
+import { leadingTeams } from '~~/shared/finish'
 import type { EndView } from '~~/shared/stage'
 import { teamNameAt } from './board'
 import type { Translate } from './settings-summary'
@@ -191,6 +192,16 @@ export function seatNote(view: Pick<EventView, 'members' | 'viewerId' | 'teams'>
   if (me.zone === 'stands') return t('event.notice.seatStands')
   if (me.zone !== 'team' || me.team === null) return null
   return t('event.notice.seatTeam', { team: teamNameAt(view.teams, me.team, t) })
+}
+
+/**
+ * Whether Compibert's header wears the party hat for this viewer (#38): seated in a team that is a Leading Party (leadingTeams, from the
+ * Standings and the Results the page holds). The Host is a Member here, and a Member on the Bench or in the Stands never wears it.
+ */
+export function wearsPartyhat(view: Pick<EventView, 'members' | 'viewerId' | 'standings' | 'results'> & { event: Pick<EventView['event'], 'phase'> }): boolean {
+  const me = view.members.find(member => member.id === view.viewerId)
+  if (!me || me.zone !== 'team' || me.team === null) return false
+  return leadingTeams(view.standings ?? [], view.event.phase, view.results.length > 0).includes(me.team)
 }
 
 /** What the Teams-bleiben notice names: the next Session by its number, or „der nächsten“ when it has none yet or is the only one. */

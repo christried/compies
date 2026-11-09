@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Partyhut:** Führt dein Team die Tabelle an, trägt die App-Figur oben in der Kopfzeile eines Events jetzt einen Partyhut, auch bei Gleichstand an der Spitze und nach dem Event bei den Siegern. Der Hut hüpft kurz auf, wenn ein Ergebnis dein Team nach vorn bringt, und ist wieder weg, sobald ein anderes Team vorbeizieht oder ein Ergebnis korrigiert wird; bei reduzierter Bewegung erscheint er ohne Hüpfer. Auf der Startseite und den anderen Seiten bleibt die App-Figur ohne Hut. ([#38](https://github.com/christried/compies/issues/38))
+
 ### Geändert
 
 - **Lange Spielelisten laden schneller:** In der Bibliothek, beim Füllen des Spielepools und bei „Nächstes Spiel setzen“ zeigt die Liste zuerst 40 Spiele und lädt beim Scrollen weitere nach, oder mit „Mehr laden“. Suche und Filter durchsuchen weiter die ganze Bibliothek. ([#369](https://github.com/christried/compies/issues/369))
