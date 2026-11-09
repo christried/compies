@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-11-09 – Partyhut
+
+Der Partyhut für das führende Team, schnellere lange Spielelisten und ein Countdown, der auf dem Handy nicht mehr aus dem Bild läuft, dazu Aufräumarbeiten nach dem Review von 0.10, die niemand sieht.
+
 ### Neu
 
 - **Partyhut:** Führt dein Team die Tabelle an, trägt die App-Figur oben in der Kopfzeile eines Events jetzt einen Partyhut, auch bei Gleichstand an der Spitze und nach dem Event bei den Siegern. Der Hut hüpft kurz auf, wenn ein Ergebnis dein Team nach vorn bringt, und ist wieder weg, sobald ein anderes Team vorbeizieht oder ein Ergebnis korrigiert wird; bei reduzierter Bewegung erscheint er ohne Hüpfer. Auf der Startseite und den anderen Seiten bleibt die App-Figur ohne Hut. ([#38](https://github.com/christried/compies/issues/38))
