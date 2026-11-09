@@ -10,6 +10,7 @@ All files are in `reference/assets/`. Serve static files from `public/` in Nuxt 
 | `compibert/compibert-bust.svg` | Bust crop (`150 36 254 254`) |
 | `compibert/compibert-head.svg` | Head crop (`212 40 192 192`), header logo |
 | `baustelle/bauhelm.svg` **[MVP]** | Hard hat (160 × 80). In the rig: child `compibert-hat` of `compibert-head`, `transform="translate(236 6) scale(.95) rotate(-7 80 66)"` |
+| `compibert/partyhut.svg` (#341, 2026-11-09) | Party hat (80 × 100, pivot `40 86`; cone `#ff4f4f`, spiral and pompom `#ffd23f`, ink `#151515`). In the rig: last child `compibert-hat` of `compibert-head` (the hard hat's slot, one accessory at a time), `transform="translate(324.4 56) scale(.7) rotate(15 40 86)"`, with an inner `<g class="compibert-hat-art">` that holds the SVG contents so the entrance can scale without touching the mount. The pompom stays inside the head crop in every pose (confused −12° touches the top edge by 0.6 units). Entrance when the hat appears on an open page: `.compibert-hat-art` scale 0 → 1, rotation −12 → 0, `svgOrigin "40 86"`, 0.22 s `--cp-dur-base`, `--cp-ease-pop`; on load, hydration, route change and reconnect set without motion; removal in the same frame; reduced motion sets the end state. Reference `../Partyhut.dc.html` (sizes 30/34/56/120 px, light and dark, full rig, § 05 Übergabe) |
 | `../compibert-options.js` | Reference builder: mount, states, eye-follow, outline treatments. Port to `useCompibert` |
 | `../CompibertRig.dc.html`, `../Compibert Rig.dc.html` | Live rig + parts/state documentation |
 
@@ -67,6 +68,8 @@ Cue ids: `boot-steps boot-skid cb-hi ui-hover ui-press ui-hold-fill ui-hold-done
 MVP: no sound needed (the poll has no sound moments). Ship the mute toggle anyway so it exists when sounds arrive.
 
 ## Share image (8a „Poster“) — Satori-compatible
+
+> **Superseded** on 2026-11-09 by [14-share-image-redesign.md](14-share-image-redesign.md) (1b „Anzeigetafel“, #357): no pills, typography carries the hierarchy. The section below describes the 0.9 picture and stays for the history.
 
 Rendered server-side with nuxt-og-image (Satori) at **1200 × 630** (wide, OG/Discord) and **1080 × 1080** (square). Always light theme. **Flexbox only**, no grid, no conic gradients, no filters, no transforms on SVG children. Fonts loaded as buffers: Lilita One, Bungee, Bricolage Grotesque (700, 800).
 
