@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { APPEARANCES, isAppearance, type AuthUser } from '../../shared/auth'
+import { APPEARANCE_COOKIE, APPEARANCES, appearanceCookieValue, isAppearance, type AuthUser } from '../../shared/auth'
 import { THEME_COLORS, renderedAppearance, themeColorMetas } from '../../app/utils/appearance'
 
 // A User's Appearance (#401, GLOSSARY): Hell, Dunkel or System, light unless they choose otherwise. The page renders the signed-in User's,
-// and the browser bar takes the page background of that look.
+// signed out the device's cookie (#403), and the browser bar takes the page background of that look.
 
 describe('isAppearance', () => {
   it('knows the three Appearances, in this order', () => {
@@ -29,6 +29,49 @@ describe('renderedAppearance', () => {
   it('renders light for a User state without a valid Appearance (an answer of the deployment before)', () => {
     expect(renderedAppearance({ user: {} as Pick<AuthUser, 'appearance'> })).toBe('light')
     expect(renderedAppearance({ user: { appearance: 'sepia' } as unknown as Pick<AuthUser, 'appearance'> })).toBe('light')
+  })
+
+  // Signed out, the device's cookie decides (#403): `dark` or `system`, light otherwise.
+  it.each(['dark', 'system'] as const)('renders a signed-out visitor with the cookie %s in that Appearance', (cookie) => {
+    expect(renderedAppearance({ user: null, cookie })).toBe(cookie)
+  })
+
+  it('renders a signed-out visitor without the cookie light', () => {
+    expect(renderedAppearance({ user: null, cookie: undefined })).toBe('light')
+    expect(renderedAppearance({ user: null, cookie: null })).toBe('light')
+  })
+
+  it('renders a signed-out visitor with an invalid cookie light', () => {
+    for (const cookie of ['light', 'sepia', 'Dark', '', '"dark"']) {
+      expect(renderedAppearance({ user: null, cookie }), cookie).toBe('light')
+    }
+  })
+
+  // The rule has no field for it: the plugin reads only `compies-appearance` (test/nuxt and test/build prove the page).
+  it('renders a visitor with only the old nuxt-color-mode cookie light', () => {
+    expect(renderedAppearance({ user: null })).toBe('light')
+  })
+
+  it('lets a signed-in User win over the cookie, also another User\'s on a shared device', () => {
+    expect(renderedAppearance({ user: { appearance: 'light' }, cookie: 'dark' })).toBe('light')
+    expect(renderedAppearance({ user: { appearance: 'dark' }, cookie: 'system' })).toBe('dark')
+    expect(renderedAppearance({ user: { appearance: 'system' }, cookie: 'dark' })).toBe('system')
+  })
+
+  it('renders light for a User state without a valid Appearance, whatever the cookie says', () => {
+    expect(renderedAppearance({ user: {} as Pick<AuthUser, 'appearance'>, cookie: 'dark' })).toBe('light')
+  })
+})
+
+describe('the Appearance cookie', () => {
+  it('is named compies-appearance', () => {
+    expect(APPEARANCE_COOKIE).toBe('compies-appearance')
+  })
+
+  it('holds dark or system, and nothing for Hell', () => {
+    expect(appearanceCookieValue('light')).toBeNull()
+    expect(appearanceCookieValue('dark')).toBe('dark')
+    expect(appearanceCookieValue('system')).toBe('system')
   })
 })
 
