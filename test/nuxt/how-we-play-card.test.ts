@@ -1,9 +1,9 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import HowWePlayCard from '~/components/HowWePlayCard.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { EventView } from '~~/shared/event'
-import type { PoolGame, PoolGameFace } from '~~/shared/game'
+import { GAME_NAME_MAX, type PoolGame, type PoolGameFace } from '~~/shared/game'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { serve, view, viewWithSessions } from './event-page'
@@ -14,13 +14,13 @@ import { serve, view, viewWithSessions } from './event-page'
 function poolGame(name: string, overrides: Partial<PoolGame> = {}): PoolGame {
   return {
     id: `id-${name}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30,
-    playersMin: null, playersMax: null, suitabilities: [], notes: null, ...overrides,
+    playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null, ...overrides,
   }
 }
 
-// What the server gives a Member who may see the pools (#224): picture and name, no more.
+// What the server gives a Member who may see the pools (#224, #338): picture, name and Price, no more.
 function faceOf(game: PoolGame): PoolGameFace {
-  return { id: game.id, name: game.name, imageUrl: game.imageUrl, youtubeId: game.youtubeId }
+  return { id: game.id, name: game.name, imageUrl: game.imageUrl, youtubeId: game.youtubeId, price: game.price }
 }
 
 const wheel: EventSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3, gameCount: 6, teamCount: 4, teamSize: 2, pointsTable: { preset: 'linear', values: [3, 2, 1, 0] } }
@@ -290,5 +290,86 @@ describe('the card on the Event page (#148)', () => {
     const section = page.findAll('section').find(candidate => candidate.find('h2')?.text() === 'So wird gespielt')!
     expect(section.findAll('a').map(link => link.text())).toContain('Bearbeiten')
     expect(section.findAll('[title="Fest seit dem Start"]')).toHaveLength(3)
+  })
+})
+
+describe('the Price under a pool game (#338)', () => {
+  // The Price line counts the year from today (Berlin), so the clock is pinned: „Stand 3. Nov.“ in 2026.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const steam = { cents: 1999, source: 'steam' as const, checkedAt: '2026-11-03T10:00:00.000Z' }
+
+  it('shows the Host the Price line under the name of a game with a Price, and none under a game without one', async () => {
+    const card = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart', { price: steam }), poolGame('Pong')] })
+
+    const [withPrice, withoutPrice] = card.findAll('ul')[0]!.findAll('li')
+    expect(withPrice!.text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+    expect(withPrice!.text().indexOf('Mario Kart')).toBeLessThan(withPrice!.text().indexOf('19,99 €'))
+    expect(withoutPrice!.text()).not.toContain('Stand')
+    expect(withoutPrice!.text()).not.toContain('€')
+  })
+
+  it('shows a Member of a visible pool the Price line of a game, and none under a game without one; no count or Notizen come with it', async () => {
+    const kart = poolGame('Mario Kart', { price: steam, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
+    const card = await mountCard({ settings: wheel, pool: [faceOf(kart), faceOf(poolGame('Pong'))] })
+
+    const [withPrice, withoutPrice] = card.findAll('ul')[0]!.findAll('li')
+    expect(withPrice!.text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+    expect(withPrice!.text()).not.toMatch(/Notizen|2–4|Teams/)
+    expect(withoutPrice!.text()).not.toContain('Stand')
+  })
+
+  it('reads a game without an amount as its source and „Stand“, with no „€“: Free-to-play and Abo', async () => {
+    const free = poolGame('Tetris', { price: { cents: null, source: 'free_to_play', checkedAt: steam.checkedAt } })
+    const abo = poolGame('Plattformer', { price: { cents: null, source: 'subscription', checkedAt: steam.checkedAt } })
+    const card = await mountCard({ settings: wheel, pool: [faceOf(free), faceOf(abo)] })
+
+    const [tetris, plattformer] = card.findAll('ul')[0]!.findAll('li')
+    expect(tetris!.text()).toContain('Free-to-play · Stand 3. Nov.')
+    expect(plattformer!.text()).toContain('Abo · Stand 3. Nov.')
+    expect(tetris!.text()).not.toContain('€')
+    expect(plattformer!.text()).not.toContain('€')
+  })
+
+  it('names the year of a Price checked in an earlier year: „Stand 3. Nov. 2025“', async () => {
+    const card = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart', { price: { ...steam, checkedAt: '2025-11-03T10:00:00.000Z' } })] })
+
+    expect(card.get('li').text()).toContain('19,99 € bei Steam · Stand 3. Nov. 2025')
+  })
+
+  it('shows no Price and no „Stand“ anywhere in the card when the Member has no pool (preview off or Hidden wheel)', async () => {
+    const card = await mountCard({ settings: wheel, pool: null })
+
+    expect(card.text()).not.toContain('Stand')
+    expect(card.text()).not.toContain('€')
+  })
+
+  it('keeps a game with the longest name and the longest Price line on one row: both texts in its li, and both truncate', async () => {
+    const longName = 'M'.repeat(GAME_NAME_MAX)
+    const longPrice = { cents: 99999, source: 'epic' as const, checkedAt: '2025-11-03T10:00:00.000Z' }
+    const card = await mountCard({ settings: wheel, pool: [faceOf(poolGame(longName, { price: longPrice }))] })
+
+    const item = card.get('li')
+    expect(item.text()).toContain(longName)
+    expect(item.text()).toContain('999,99 € bei Epic Games Store · Stand 3. Nov. 2025')
+    expect(item.get('b').classes()).toContain('truncate')
+    const priceSpan = item.findAll('span').find(span => span.text().includes('€'))!
+    expect(priceSpan.classes()).toContain('truncate')
+  })
+
+  it('shows the line on a pool of exactly one game, and the empty pool says „Noch keine Spiele.“ with no line', async () => {
+    const single = await mountCard({ settings: wheel, pool: [faceOf(poolGame('Mario Kart', { price: steam }))] })
+    expect(single.findAll('li')).toHaveLength(1)
+    expect(single.get('li').text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+
+    const empty = await mountCard({ settings: wheel, pool: [] })
+    expect(empty.text()).toContain('Noch keine Spiele.')
+    expect(empty.text()).not.toContain('Stand')
   })
 })

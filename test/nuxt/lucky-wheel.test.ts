@@ -15,7 +15,7 @@ const START = Date.UTC(2090, 10, 7, 20, 0, 0)
 const STOP = START + 6000
 const iso = (ms: number) => new Date(ms).toISOString()
 
-const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 
 /** A spin of four slices that lands in the third (Pong) at a quarter of it: the final angle is -(2 + .25) * 90 - 1800. */
 const FINAL = -2002.5
@@ -243,6 +243,23 @@ describe('the result', () => {
     expect(text()).not.toContain('Das Glücksrad sagt')
     expect(text()).not.toContain('Zuletzt gezogen')
     expect(page!.get('[role="status"]').text()).toBe('')
+  })
+
+  it('shows the Price line of the drawn game on its result card, and none for a game without a Price (#338)', async () => {
+    // The card reads the year of „Stand“ once, at mount: the clock is pinned to 2026 so the line has no year (the spin itself is in 2090).
+    vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
+    const priced: RoundGame = { ...halo, price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
+    await mount(wheelOf(spinOf({ game: priced })))
+    await at(STOP)
+    expect(text()).toContain('Das Glücksrad sagt')
+    expect(text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+    page!.unmount()
+
+    await mount(wheelOf(spinOf({ game: halo })))
+    await at(STOP)
+    expect(text()).toContain('Das Glücksrad sagt')
+    expect(text()).not.toContain('Stand')
+    expect(text()).not.toContain('€')
   })
 
   it('lets the drawn slice leave 2.2 s after the stop and the others close the gap', async () => {
