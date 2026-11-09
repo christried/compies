@@ -4,7 +4,8 @@ import { Volume2, VolumeX } from '@lucide/vue'
 // Logo (Compibert head), then the hub nav or the event title area, then sound toggle and
 // the avatar menu when signed in. The `actions` slot is the page's own buttons (the Event page's Einladen, #166).
 // Full-width pages (sign-in, setup) stretch the header edge to edge, so the logo sits at the left edge.
-defineProps<{ kind: 'hub' | 'event' | 'bare', flush?: boolean }>()
+// `accessory` is the head's party hat on the Event page (#38); the hub and the other pages pass none.
+defineProps<{ kind: 'hub' | 'event' | 'bare', flush?: boolean, accessory?: 'partyhat' }>()
 
 const { t } = useI18n()
 const sound = useSound()
@@ -23,7 +24,10 @@ const user = useAuthUser()
         class="flex items-center gap-2 text-ink no-underline"
       >
         <span class="w-[30px] md:w-[34px]">
-          <Compibert variant="head" />
+          <Compibert
+            variant="head"
+            :accessory="accessory"
+          />
         </span>
         <span
           class="font-display text-[22px] leading-none uppercase"

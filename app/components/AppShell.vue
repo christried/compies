@@ -12,7 +12,9 @@ withDefaults(defineProps<{
   flush?: boolean
   /** A hub page that is a task, not a place, leaves out the phone tab bar (screen M2). */
   noTabs?: boolean
-}>(), { kind: 'hub', flush: false, noTabs: false })
+  /** The head's party hat (#38): the Event page passes it for a Player in a Leading Party; every other page passes none. */
+  accessory?: 'partyhat'
+}>(), { kind: 'hub', flush: false, noTabs: false, accessory: undefined })
 
 const { t } = useI18n()
 const user = useAuthUser()
@@ -28,6 +30,7 @@ const user = useAuthUser()
     <AppHeader
       :kind="kind"
       :flush="flush"
+      :accessory="accessory"
     >
       <template #title>
         <slot name="title" />
