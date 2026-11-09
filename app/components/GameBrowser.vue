@@ -68,9 +68,10 @@ const limit = ref(PAGE_SIZE)
 const visible = computed(() => shown.value.slice(0, limit.value))
 const remaining = computed(() => shown.value.length - visible.value.length)
 // Any change of the filters starts at the first page again (#369): after a search narrowed the list and „Alle“ widened it, 40 cards, not the 120 loaded before.
-watch(filters, () => {
+// Compared by value, not by identity (#369): „Alle“ replaces the object with `{ ...NO_FILTERS }`, and with nothing chosen that click must keep the loaded cards; a deep watch would reset them.
+watch(() => JSON.stringify(filters.value), () => {
   limit.value = PAGE_SIZE
-}, { deep: true })
+})
 
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
 const status = useTemplateRef<HTMLElement>('status')

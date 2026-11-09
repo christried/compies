@@ -225,6 +225,21 @@ describe('the library paging (#369)', () => {
     expect(status(page).text()).toBe('40 von 100 Spielen')
   })
 
+  it('keeps the loaded cards when „Alle“ is clicked with nothing chosen (#369)', async () => {
+    list = { games: library(176) }
+    const page = await mountLibrary()
+    await moreButton(page)!.trigger('click')
+    await flushPromises()
+    await moreButton(page)!.trigger('click')
+    await flushPromises()
+    expect(names(page)).toHaveLength(120)
+
+    await chip(page, 'Alle').trigger('click')
+    await flushPromises()
+
+    expect(names(page)).toHaveLength(120)
+  })
+
   it('keeps the cards drawn so far when the library list is refreshed', async () => {
     list = { games: library(176) }
     const page = await mountLibrary()
