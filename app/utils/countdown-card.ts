@@ -22,10 +22,17 @@ export interface CountdownFrame {
   pips: number | null
   /** The bar's width, 0..1: the share left while running or paused, 1 while ready. */
   fill: number
+  /**
+   * In the last ten (final) and s >= WARNING_UNTIL_S: the warning colour holds. False otherwise, at zero too. Independent of the view: a paused
+   * frame in the last ten has tone 'calm' (the tile stays paper) and warning true/false for its pips and digits.
+   */
+  warning: boolean
 }
 
 /** The last ten seconds: seconds only, the tone, the scale and the pips switch on (04-motion § Countdown). */
 const FINAL_FROM_S = 10
+/** How many pips the last ten draws: the template's row. */
+export const PIP_COUNT = FINAL_FROM_S
 /** The warning tone holds down to this second, then the error tone. */
 const WARNING_UNTIL_S = 6
 const SCALE_STEP = 0.035
@@ -38,14 +45,14 @@ export function countdownFrame(c: CountdownFacts, atMs: number): CountdownFrame 
   const left = state === 'ended' ? 0 : remainingMsAt(c, atMs)
   const s = Math.ceil(Math.max(0, left) / 1000)
 
-  if (state === 'ended') return { view: 'done', s: 0, final: false, text: '0:00', tone: 'err', digitFg: 'on', scale: 1, pips: 0, fill: 0 }
+  if (state === 'ended') return { view: 'done', s: 0, final: false, text: '0:00', tone: 'err', digitFg: 'on', scale: 1, pips: 0, fill: 0, warning: false }
 
   const view = state
   const final = view !== 'ready' && s >= 1 && s <= FINAL_FROM_S
   const fill = view === 'ready' ? 1 : left / c.durationMs
 
   if (!final) {
-    return { view, s, final, text: countdownClock(s), tone: view === 'running' ? 'run' : 'calm', digitFg: view === 'running' ? 'on' : 'ink', scale: 1, pips: null, fill }
+    return { view, s, final, text: countdownClock(s), tone: view === 'running' ? 'run' : 'calm', digitFg: view === 'running' ? 'on' : 'ink', scale: 1, pips: null, fill, warning: false }
   }
   const warning = s >= WARNING_UNTIL_S
   return {
@@ -59,7 +66,44 @@ export function countdownFrame(c: CountdownFacts, atMs: number): CountdownFrame 
     scale: 1 + (FINAL_FROM_S - s) * SCALE_STEP,
     pips: s,
     fill,
+    warning,
   }
+}
+
+// What the status region says (13-countdown § Accessibility): one message per change of the Host, never per second. The rule is pure so it can
+// be read and tested without a component; the composable only turns a message into text.
+
+/** What the status region last spoke about. */
+export interface Heard { view: CountdownFrame['view'], final: boolean, durationMs: number }
+export type Announcement = 'set' | 'running' | 'paused' | 'done' | 'reset' | 'final'
+
+export function heardAt(c: CountdownFacts, atMs: number): Heard {
+  const { view, final } = countdownFrame(c, atMs)
+  return { view, final, durationMs: c.durationMs }
+}
+
+/**
+ * The one message the status region writes for a change (13-countdown § Accessibility), or null. `before` is null at the first sample the
+ * component takes (the page load, or the card appearing): a card that appears while the page is open is the Host setting it (the stage says so
+ * with `announceSet`); one that is there when the page opens, by load or by a client navigation, says nothing (the timer text has it).
+ * A change that also enters the last ten says its own message only. It is asked on every frame, so the same input twice gives null.
+ */
+export function announce(before: Heard | null, now: Heard, announceSet: boolean): Announcement | null {
+  if (before === null) return now.view === 'ready' && announceSet ? 'set' : null
+  if (now.view !== before.view) {
+    if (now.view === 'running' || now.view === 'paused' || now.view === 'done') return now.view
+    return 'reset'
+  }
+  if (now.view === 'ready' && now.durationMs !== before.durationMs) return 'set'
+  if (now.view === 'running' && now.final && !before.final) return 'final'
+  return null
+}
+
+/** A sample with 0 < left <= 1000 while it runs: the viewer saw the last second (the burst's witness). */
+export function lastSecondAt(c: CountdownFacts, atMs: number): boolean {
+  if (countdownState(c, atMs) !== 'running') return false
+  const left = remainingMsAt(c, atMs)
+  return left > 0 && left <= 1000
 }
 
 /**
