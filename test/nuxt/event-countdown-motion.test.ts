@@ -266,7 +266,7 @@ describe('the state of the last ten seconds, keyed to the second (late joiners)'
         const page = await mount(countdown)
         const pips = page.findAll('[data-pip]')
 
-        expect(pips.filter(p => p.attributes('data-lit') === 'true'), `${s} s lit`).toHaveLength(s)
+        expect(pips.filter((p: { attributes: (name: string) => string | undefined }) => p.attributes('data-lit') === 'true'), `${s} s lit`).toHaveLength(s)
         for (const pip of pips) {
           if (pip.attributes('data-lit') === 'true') {
             expect(pip.classes(), `${s} s lit pip`).toContain(lit)

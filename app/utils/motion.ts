@@ -105,22 +105,24 @@ export function countdownTick(element: Element, intoMs: number): void {
   animation.currentTime = intoMs
 }
 
-/** How long the zero burst runs, from the Countdown's end: a viewer later than this gets the steady view without it. */
-export const COUNTDOWN_BURST_MS = 760
-
 /** The elements the zero burst moves: the last second's ghost, the tile, the two shock outlines, the digits' wrapper, the stamp and the card. */
-export interface CountdownBurstParts { ghost: Element, tile: Element, ringA: Element, ringB: Element, digits: Element, stamp: Element, card: Element }
+interface CountdownBurstParts { ghost: Element, tile: Element, ringA: Element, ringB: Element, digits: Element, stamp: Element, card: Element }
 
 /** The burst's end: the stamp's resting transform (it is centred by the transform, so its keyframes carry the translate) and the card's error shadow. */
 const BURST_STAMP_REST = 'translate(-50%, -50%) rotate(-6deg) scale(1)'
 const BURST_CARD_SHADOW = '6px 6px 0 var(--cp-error)'
 
+/** One of the burst's seven animations: what it moves, its keyframes, and when and how it runs. */
+interface BurstTrack { el: Element, frames: Keyframe[], delay: number, duration: number, easing: string }
+
 /**
- * The zero burst, 0.76 s (04-motion § Countdown): seven tracks that start together `elapsedMs` after the Countdown's end (each is sought to it, so a client up to
- * 0.76 s late joins in the middle). `fill: 'backwards'` holds each track's first frame through its delay. Its end is the steady „Zeit ist um“ view, so nothing snaps.
- * The caller decides whether to play it at all (the viewer saw the last second, the frame is not 0.76 s late, motion is not reduced).
+ * The zero burst, 0.76 s at the default tokens (04-motion § Countdown): seven tracks that start together `elapsedMs` after the Countdown's end (each is
+ * sought to it, so a client up to 0.76 s late joins in the middle). `fill: 'backwards'` holds each track's first frame through its delay. Its end is the
+ * steady „Zeit ist um“ view, so nothing snaps. It plays nothing when motion is reduced, before zero, or at the end of its longest track (read from the
+ * tokens it uses, not a constant), and says whether it played. The caller decides only whether the viewer saw the last second.
  */
-export function countdownBurst(parts: CountdownBurstParts, elapsedMs: number): void {
+export function countdownBurst(parts: CountdownBurstParts, elapsedMs: number): boolean {
+  if (reducedMotion()) return false
   const fast = motionMs('--cp-dur-fast', '140ms')
   const base = motionMs('--cp-dur-base', '220ms')
   const slow = motionMs('--cp-dur-slow', '360ms')
@@ -130,20 +132,25 @@ export function countdownBurst(parts: CountdownBurstParts, elapsedMs: number): v
   const easePop = motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)')
   const easeSnap = motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)')
   const ring: Keyframe[] = [{ transform: 'scale(1, 1)', opacity: 1 }, { transform: 'scale(1.12, 1.4)', opacity: 0 }]
-  const tracks: [Element, Keyframe[], number, number, string][] = [
-    [parts.ghost, [{ transform: 'scale(1.315)', opacity: 1 }, { transform: 'scale(1.644)', opacity: 0 }], 0, fast, easeIn],
-    [parts.tile, [{ transform: 'scale(1)', offset: 0 }, { transform: 'scale(1.06)', offset: 0.4 }, { transform: 'scale(1)', offset: 1 }], 0, slow, easeOut],
-    [parts.ringA, ring, 0, slower, easeOut],
-    [parts.ringB, ring, 160, slower, easeOut],
-    [parts.digits, [{ transform: 'scale(1.4)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], 80, base, easeOut],
-    [parts.stamp, [{ transform: 'translate(-50%, -50%) rotate(-14deg) scale(2.4)', opacity: 0 }, { transform: BURST_STAMP_REST, opacity: 1 }], 200, slow, easePop],
-    [parts.card, [{ boxShadow: 'var(--cp-shadow-card)' }, { boxShadow: BURST_CARD_SHADOW }], 200, base, easeSnap],
+  const tracks: BurstTrack[] = [
+    { el: parts.ghost, frames: [{ transform: 'scale(1.315)', opacity: 1 }, { transform: 'scale(1.644)', opacity: 0 }], delay: 0, duration: fast, easing: easeIn },
+    { el: parts.tile, frames: [{ transform: 'scale(1)', offset: 0 }, { transform: 'scale(1.06)', offset: 0.4 }, { transform: 'scale(1)', offset: 1 }], delay: 0, duration: slow, easing: easeOut },
+    { el: parts.ringA, frames: ring, delay: 0, duration: slower, easing: easeOut },
+    { el: parts.ringB, frames: ring, delay: 160, duration: slower, easing: easeOut },
+    { el: parts.digits, frames: [{ transform: 'scale(1.4)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], delay: 80, duration: base, easing: easeOut },
+    { el: parts.stamp, frames: [{ transform: 'translate(-50%, -50%) rotate(-14deg) scale(2.4)', opacity: 0 }, { transform: BURST_STAMP_REST, opacity: 1 }], delay: 200, duration: slow, easing: easePop },
+    { el: parts.card, frames: [{ boxShadow: 'var(--cp-shadow-card)' }, { boxShadow: BURST_CARD_SHADOW }], delay: 200, duration: base, easing: easeSnap },
   ]
-  for (const [element, keyframes, delay, duration, easing] of tracks) {
-    if (typeof element.animate !== 'function') continue
-    const animation = element.animate(keyframes, { duration, delay, easing, fill: 'backwards' })
+  const end = Math.max(...tracks.map(track => track.delay + track.duration))
+  if (elapsedMs < 0 || elapsedMs >= end) return false
+  let played = false
+  for (const { el, frames, delay, duration, easing } of tracks) {
+    if (typeof el.animate !== 'function') continue
+    const animation = el.animate(frames, { duration, delay, easing, fill: 'backwards' })
     animation.currentTime = elapsedMs
+    played = true
   }
+  return played
 }
 
 // The Standings in motion (04-motion § Leaderboard, #276). The rows' glide is Vue's move transition on the Leaderboard's `tbody` group (`lb-swap`),
