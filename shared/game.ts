@@ -99,17 +99,19 @@ export interface PoolGame {
   suitabilities: Suitability[]
   /** Game notes (#223); null = none. In a pool only the Host reads them (#224). */
   notes: string | null
+  /** The game's Price (#337, #338); null when it has none. It travels with the name: wherever a Member may know the game's name they get it too. */
+  price: GamePrice | null
 }
 
 /**
- * What a Member who may see a pool gets of its games: what draws the picture and the name, nothing else (#224). The
+ * What a Member who may see a pool gets of its games: picture, name and Price, nothing else (#224, #338). The
  * Host's pool game is the whole PoolGame. `youtubeId` is the card's thumbnail for a game without an image of its own.
  */
-export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId'>
+export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId' | 'price'>
 
 /**
  * A set game as its Round shows it to every Member (#228): the whole PoolGame but the notes, which only the Host reads
- * (decided 2026-11-01, #217 comment). The player count and the clip are there because the Round card and the clip show them.
+ * (decided 2026-11-01, #217 comment). The player count, the clip and the Price are there because the Round card and the clip show them.
  */
 export type RoundGame = Omit<PoolGame, 'notes'>
 
@@ -131,11 +133,6 @@ export interface GameView extends PoolGame {
    * RoundGame do not, so no Event read, feed entry or message can name one.
    */
   tags: GameTag[]
-  /**
-   * The game's Price (#337), null when it has none. Only the library carries it, like `tags`: PoolGame, PoolGameFace and RoundGame
-   * do not, until #338 gives it to Members.
-   */
-  price: GamePrice | null
   /** `name` is the display name if the User set one, like Event members. */
   createdBy: { id: string, name: string }
   createdAt: string

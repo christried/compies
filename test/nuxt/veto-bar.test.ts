@@ -14,7 +14,7 @@ import { memberView } from './event-page'
 const STOP = Date.parse('2090-10-30T20:00:10.000Z')
 const END = STOP + VETO_WINDOW_MS
 const iso = (ms: number) => new Date(ms).toISOString()
-const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const members = [memberView({ id: 'me', name: 'Eins', zone: 'team', team: 1 }), memberView({ id: 'mate', name: 'Zwei', zone: 'team', team: 1 })]
 const spin: SpinView = { roundId: 'r1', drawId: 'd1', spinStartAt: iso(STOP - 6000), stopAt: iso(STOP), slices: 4, resultIndex: 0, resultOffset: 0.5, labels: null, game: halo, current: true }
 const windowOf = (fields: Partial<VetoDrawView> = {}): VetoDrawView => ({ drawId: 'd1', kind: 'spin', stopAt: iso(STOP), vetoEndsAt: iso(END), game: halo, ...fields })

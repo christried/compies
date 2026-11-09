@@ -12,7 +12,7 @@ import { memberView } from './event-page'
 const STOP = Date.parse('2090-10-30T20:00:10.000Z')
 const END = STOP + VETO_WINDOW_MS
 const iso = (ms: number) => new Date(ms).toISOString()
-const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
 // Members with a picture, as every Discord and Twitch account has (standards N4).
 const members = [memberView({ id: 'me', name: 'Eins', zone: 'team', team: 1 }), memberView({ id: 'mate', name: 'Zwei', zone: 'team', team: 1 }), memberView({ id: 'other', name: 'Drei', zone: 'team', team: 2 })]

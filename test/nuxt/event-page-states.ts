@@ -74,7 +74,7 @@ export async function mount(slug: string) {
   return page
 }
 
-export const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+export const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 /** A Round that is open with the Event's first Result entered: the Standings are there and the Rounds follow the Host's next game. */
 export const openRound: RoundView = { id: 'r2', startedAt: STARTED, setAt: STARTED, game: { ...halo, id: 'g-kart', name: 'Kart' } }
 export const played: ResultView = { roundId: 'r1', number: 1, game: halo, places: [{ team: 2, place: 1, points: 1, score: null }, { team: 1, place: 2, points: 0, score: null }], corrected: false, correctedAt: null, resultAt: STARTED }

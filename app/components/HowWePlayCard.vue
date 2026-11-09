@@ -9,7 +9,7 @@ import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/setti
 // of a Lucky Wheel) and Punkte of the Event's settings for every Member, and the Game pool below them. `pool` is what the server
 // decided this viewer may see (canSeePoolGames): the games, or null: nothing about the pool, not even how many (#222, #225).
 // This component shows what it is given and never asks for more. The Host gets the games with the Pool preview off or under
-// a Hidden wheel too, with a note that nobody else sees them. A Member's games come as picture and name only; the
+// a Hidden wheel too, with a note that nobody else sees them. A Member's games come as picture, name and Price; the
 // Host's come whole, with the player count on the card and, under a game with notes (#224), a collapsed „Notizen“
 // disclosure. Both show from what the game carries, so no second check of who looks. The Host can edit the settings for
 // as long as the Event allows (`editTo` is the settings page, null when they cannot). From the first Session on, the rows

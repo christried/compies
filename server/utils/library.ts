@@ -42,7 +42,7 @@ export async function loadGame(db: Db, id: string): Promise<{ game: typeof games
   return { game: row.game, creatorName: creatorNameOf(row) }
 }
 
-/** A games row as an Event's pool shows it to a Member (#224): picture and name only. */
+/** A games row as an Event's pool shows it to a Member (#224): picture, name and Price (#338). */
 export function poolGameFace(row: typeof games.$inferSelect): PoolGameFace {
   return {
     id: row.id,
@@ -50,6 +50,7 @@ export function poolGameFace(row: typeof games.$inferSelect): PoolGameFace {
     // Served by GET /api/images/:key; a replaced image gets a new key, so its URL never serves stale (#143).
     imageUrl: row.imageKey ? `/api/images/${row.imageKey}` : null,
     youtubeId: row.youtubeId,
+    price: priceOf(row),
   }
 }
 
@@ -77,7 +78,6 @@ export function gameView(row: typeof games.$inferSelect, creatorName: string, vi
   return {
     ...poolGameView(row),
     tags,
-    price: priceOf(row),
     createdBy: { id: row.createdBy, name: creatorName },
     createdAt: row.createdAt.toISOString(),
     canEdit: canEditGame(viewer, row),
