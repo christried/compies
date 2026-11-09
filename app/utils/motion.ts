@@ -1,4 +1,4 @@
-import { MD_QUERY } from '~/composables/useMediaQuery'
+import { MD_QUERY } from '../composables/useMediaQuery'
 
 /** Whether motion is reduced, by the device or the in-app setting: the tokens put it in `--cp-motion` for JS. */
 export function reducedMotion() {
