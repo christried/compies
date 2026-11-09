@@ -26,8 +26,8 @@ const emit = defineEmits<{ saved: [game: GameView] }>()
 
 const { t } = useI18n()
 const { toast } = useToast()
-// The Tags in use are the Tag field's suggestions (#335).
-const { tagsInUse } = useGameLibrary()
+// The Tags in use are the Tag field's suggestions (#335), from `/api/games/tags` (#365): the form does not load the library.
+const { tagsInUse } = useTagsInUse()
 
 /** The cropped WebP waiting to be uploaded after the game is saved (#143). */
 const image = ref<Blob | null>(null)

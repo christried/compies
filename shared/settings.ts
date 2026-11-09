@@ -3,6 +3,7 @@
 import type { Seats } from './board'
 import { beforeFinish, type Phase } from './phase'
 import { isRecord } from './record'
+import { TEAM_COUNT_MAX } from './team-position'
 
 /** Formats (GLOSSARY: Format). Only `teams` can be chosen in 1.3; `ffa` is shown „Bald verfügbar“. */
 export const FORMATS = ['teams', 'ffa'] as const
@@ -25,16 +26,12 @@ export interface PointsTable {
 // The settings rules (#144). The stepper and the server both use them; the server stores what parseSettings returns.
 
 export const TEAM_COUNT_MIN = 2
-export const TEAM_COUNT_MAX = 8
+// The constant's home is the leaf team-position.ts; settings and the server parsers keep importing it from here.
+export { TEAM_COUNT_MAX }
 export const TEAM_SIZE_MIN = 1
 export const TEAM_SIZE_MAX = 6
 /** At most this many Players in teams (team count × Team size). */
 export const TEAM_PLAYERS_MAX = 24
-
-/** A Team position clamped to 1..TEAM_COUNT_MAX, the one clamp the Team colours, symbols and TeamMark read (#329). */
-export function teamPosition(position: number): number {
-  return Math.max(1, Math.min(TEAM_COUNT_MAX, Math.round(position)))
-}
 export const GAME_COUNT_MIN = 1
 export const GAME_COUNT_MAX = 30
 export const GAME_COUNT_DEFAULT = 10

@@ -3,7 +3,8 @@ import { defineEventHandler, getRouterParam, readBody } from 'h3'
 import { games } from '../../db/schema'
 import { useDb } from '../../utils/db'
 import { apiError } from '../../utils/errors'
-import { gameView, loadGame, loadTags, priceColumns, requireLibraryViewer, saveTags } from '../../utils/library'
+import { saveTags } from '../../utils/game-tags'
+import { loadGame, priceColumns, readGameViews, requireLibraryViewer } from '../../utils/library'
 import { useClock } from '../../utils/clock'
 import { canEditGame, isPriceCheckOnly, parseGameInput, type GameView } from '../../../shared/game'
 
@@ -28,12 +29,13 @@ export default defineEventHandler(async (event): Promise<GameView> => {
 
   const { tags, price, priceChecked, ...columns } = pieces
   const now = useClock(event).now()
-  const { updated, stored } = await db.transaction(async (tx) => {
+  const view = await db.transaction(async (tx) => {
     const [current] = await tx.select().from(games).where(eq(games.id, game.id)).for('update')
     const priceCols = priceColumns({ price, priceChecked }, current!, now)
     const [row] = await tx.update(games).set({ ...columns, ...priceCols }).where(eq(games.id, game.id)).returning()
     if (tags !== undefined) await saveTags(tx, game.id, tags)
-    return { updated: row!, stored: await loadTags(tx, [game.id]) }
+    const [built] = await readGameViews(tx, [{ game: row!, creatorName }], viewer)
+    return built!
   })
-  return gameView(updated, creatorName, viewer, stored.get(game.id) ?? [])
+  return view
 })
