@@ -13,7 +13,7 @@ import { clickButton, clickHostAction, dialog, regionHeadings, serve, shownToast
 // Session runs, the Host's dock action „Countdown“ under „Mehr“, and the sheet „Countdown stellen“ with its minutes and seconds
 // (5 s to 99:59), which is disabled while one runs. The server clock here is the real one: the page is not synced to a room.
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null, price: null }
 const pool = [halo]
 const round = (id: string, startedAt: string): RoundView => ({ id, startedAt, setAt: startedAt, game: halo })
 

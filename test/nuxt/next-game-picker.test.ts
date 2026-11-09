@@ -9,7 +9,7 @@ import { clickButton, dialog } from './event-page'
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
 // time the sheet opens, there only in a Selection mode with a wheel, and its value goes out with the game that is picked.
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null, price: null }
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 

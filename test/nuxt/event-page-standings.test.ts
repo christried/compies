@@ -26,7 +26,7 @@ mockNuxtImport('loadGsap', async () => {
 
 // The finished Event (#277): read-only for everybody, and its stage is the winner, the Standings and the history.
 describe('the finished Event page', () => {
-  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
   const resultOf = (number: number, winner: number, teams = 2): ResultView => ({
     roundId: `r${number}`,
     number,

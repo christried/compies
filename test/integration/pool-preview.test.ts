@@ -19,7 +19,7 @@ import { eventMembers, eventPoolGames, events, games, users } from '../../server
 import { memoryImageStore } from '../../server/utils/image-store'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { CreatedEvent, EventView } from '../../shared/event'
-import type { GameView } from '../../shared/game'
+import type { GamePrice, GameView } from '../../shared/game'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, createTestServer } from './harness'
 import { hostPutsBack, hostSets, startRunningSession } from './running-session'
@@ -94,18 +94,19 @@ describe('Pool preview secrecy (#225)', () => {
     vi.unstubAllEnvs()
   })
 
-  interface PoolGame { id: string, name: string, videoId: string, imageUrl: string, imageKey: string, notes: string, tag: string }
+  interface PoolGame { id: string, name: string, videoId: string, imageUrl: string, imageKey: string, notes: string, tag: string, cents: number, price: GamePrice | null }
 
   async function newGame(name: string, videoId: string): Promise<PoolGame> {
-    // Lower case, so the key and the label are one string (#335).
+    // Lower case, so the key and the label are one string (#335). The Price's cents are distinct per game (#338): the amount names its game in a read.
     const tag = `tag-${name.split(' ')[0]!.toLowerCase()}`
+    const cents = 1000 + 111 * (name.charCodeAt(0) - 64)
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: `Hausregel zu ${name}`, tags: [tag], price: { cents: 1999, source: 'steam' } }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: `Hausregel zu ${name}`, tags: [tag], price: { cents, source: 'steam' } }),
     })
     expect(created.status).toBe(200)
-    const { id } = await created.json() as GameView
+    const { id, price } = await created.json() as GameView
     const uploaded = await request(`/api/games/${id}/image`, {
       method: 'PUT',
       headers: { 'content-type': 'image/webp', 'cookie': hostCookie },
@@ -113,7 +114,7 @@ describe('Pool preview secrecy (#225)', () => {
     })
     expect(uploaded.status).toBe(200)
     const view = await uploaded.json() as GameView
-    return { id, name, videoId, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), notes: view.notes!, tag }
+    return { id, name, videoId, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), notes: view.notes!, tag, cents, price }
   }
 
   /** A, B in the Game pool, C in the library only (#279: there is no Tiebreaker pool); the Player has joined. */
@@ -141,9 +142,11 @@ describe('Pool preview secrecy (#225)', () => {
   }
 
   // Everything a pool game shows: the Event read of a viewer who may see the pools holds all of it, that of one who may not holds none of it (notes too, #223, #224).
-  const traces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId, game.notes]
-  // What a Member who may see the pools gets of a game: its picture and name only; the notes are the Host's (#224).
-  const memberTraces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId]
+  // The Price's amount is a trace too (#338): distinct per game, it names the game whose Price a read carries.
+  const priceTrace = (game: PoolGame) => `"cents":${game.cents}`
+  const traces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId, game.notes, priceTrace(game)]
+  // What a Member who may see the pools gets of a game: its picture, name and Price; the notes are the Host's (#224, #338).
+  const memberTraces = (game: PoolGame) => [game.name, game.id, game.imageKey, game.videoId, priceTrace(game)]
   // A Tag is in no Event read at all, not even the Host's (#335): the library carries it, nothing else does. The Host's read must hold every trace, so the Tag is not one.
   const playerTraces = (game: PoolGame) => [...traces(game), game.tag]
 
@@ -233,38 +236,59 @@ describe('Pool preview secrecy (#225)', () => {
     for (const game of pool.slice(0, 2)) expect((await fetchImage(game, playerCookie)).status).toBe(200)
   })
 
-  it('gives a Player who may see the pools only the id, name, picture and video id of each game, never its notes, players, Suitabilities or clip', async () => {
+  it('gives a Player who may see the pools only the id, name, picture, video id and Price of each game, never its notes, Tags, players, Suitabilities or clip', async () => {
     const { slug, pool } = await setUp(TEST_SETTINGS)
 
     const raw = await rawRead(playerCookie, slug)
     const { pool: shown } = JSON.parse(raw) as EventView
 
-    // The face keeps its keys: a Price is in no Member's pool read yet (#337). #338 gives it to Members and flips this assertion.
+    // The face's keys: the Price is what a Member's pool game adds to the picture and the name (#338).
     for (const game of shown!) {
-      expect(Object.keys(game).sort()).toEqual(['id', 'imageUrl', 'name', 'youtubeId'])
+      expect(Object.keys(game).sort()).toEqual(['id', 'imageUrl', 'name', 'price', 'youtubeId'])
     }
+    expect(shown![0]!.price).toEqual(pool[0]!.price)
+    expect(shown![1]!.price).toEqual(pool[1]!.price)
     for (const game of pool) expect(raw).not.toContain(game.notes)
     for (const game of pool) expect(raw).not.toContain(game.tag)
-    // The control: the Host's game carries every field, the notes too.
+    // The control: the Host's game carries every field, the notes and the Price too.
     const hostPool = (JSON.parse(await rawRead(hostCookie, slug)) as EventView).pool!
-    expect(Object.keys(hostPool[0]!).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'suitabilities', 'youtubeId'])
-    expect(hostPool[0]).toMatchObject({ notes: pool[0]!.notes })
+    expect(Object.keys(hostPool[0]!).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'price', 'suitabilities', 'youtubeId'])
+    expect(hostPool[0]).toMatchObject({ notes: pool[0]!.notes, price: pool[0]!.price })
   })
 
   it.each([
-    ['the Pool preview on', TEST_SETTINGS],
-    ['the Pool preview off', HOST_PICK],
-    ['a visible Lucky Wheel', VISIBLE_WHEEL],
-  ])('carries no Tag in the Host\'s or a Player\'s Event read with %s (#335)', async (_rule, settings) => {
+    ['the Pool preview on', TEST_SETTINGS, true],
+    ['the Pool preview off', HOST_PICK, false],
+    ['a visible Lucky Wheel', VISIBLE_WHEEL, false],
+  ])('carries no Tag in the Host\'s or a Player\'s Event read, and the Price only where the pool shows it, with %s (#335, #338)', async (_rule, settings, playerSeesPool) => {
     const { slug, pool } = await setUp(settings)
+    const [alpha, beta, gamma] = pool as [PoolGame, PoolGame, PoolGame]
 
-    for (const cookie of [hostCookie, playerCookie]) {
-      const raw = await rawRead(cookie, slug)
-      expect(raw).not.toContain('"tags"')
-      expect(raw).not.toContain('"price"')
-      expect(raw).not.toContain('"checkedAt"')
-      for (const game of pool) expect(raw).not.toContain(game.tag)
+    // The Host sees the pool in full, Gamma (in the library only) not at all.
+    const hostRaw = await rawRead(hostCookie, slug)
+    expect(hostRaw).not.toContain('"tags"')
+    expect(hostRaw).toContain('"price"')
+    expect(hostRaw).toContain('"checkedAt"')
+    expect(hostRaw).toContain(priceTrace(alpha))
+    expect(hostRaw).toContain(priceTrace(beta))
+    expect(hostRaw).not.toContain(priceTrace(gamma))
+    for (const game of pool) expect(hostRaw).not.toContain(game.tag)
+
+    const playerRaw = await rawRead(playerCookie, slug)
+    expect(playerRaw).not.toContain('"tags"')
+    for (const game of pool) expect(playerRaw).not.toContain(game.tag)
+    if (playerSeesPool) {
+      expect(playerRaw).toContain('"price"')
+      expect(playerRaw).toContain('"checkedAt"')
+      expect(playerRaw).toContain(priceTrace(alpha))
+      expect(playerRaw).toContain(priceTrace(beta))
     }
+    else {
+      expect(playerRaw).not.toContain('"price"')
+      expect(playerRaw).not.toContain('"checkedAt"')
+      for (const game of pool) expect(playerRaw).not.toContain(priceTrace(game))
+    }
+    expect(playerRaw).not.toContain(priceTrace(gamma))
     // The control: the library does carry them.
     const library = await request('/api/games', { headers: { cookie: hostCookie } })
     expect(await library.text()).toContain(pool[0]!.tag)
@@ -280,7 +304,7 @@ describe('Pool preview secrecy (#225)', () => {
     /** The games of the Game pool, which a visible wheel shows by name. */
     const wheelGames = new Set<string>()
     /** What must not reach the Player: everything of a game, but a name and an id the wheel shows. */
-    const hidden = (game: PoolGame) => (wheelGames.has(game.id) ? [game.imageKey, game.videoId, game.notes, game.tag] : playerTraces(game))
+    const hidden = (game: PoolGame) => (wheelGames.has(game.id) ? [game.imageKey, game.videoId, game.notes, game.tag, priceTrace(game)] : playerTraces(game))
     /** A Running Session: Player and Second in a team each, Alpha and Beta in the Game pool, Gamma and Epsilon only in the library. */
     async function runningEvent() {
       const { slug, pool } = await setUp(settings)
@@ -323,12 +347,24 @@ describe('Pool preview secrecy (#225)', () => {
       await hostSets(request, slug, hostCookie, alpha.id)
 
       const got = await whatThePlayerGets(slug, eventId)
-      expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [{ game: { id: alpha.id, name: 'Alpha Arena' } }] })
+      expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [{ game: { id: alpha.id, name: 'Alpha Arena', price: alpha.price } }] })
       expect(got.feed).toContain('Alpha Arena')
+      expect(got.feed).not.toContain('"price"')
+      expect(got.room).not.toContain('"price"')
+      expect(got.room).not.toContain('"checkedAt"')
       expectNone(got, [alpha], game => [game.notes, game.tag])
       expectNone(got, [beta, gamma, library])
       expect((await fetchImage(alpha, playerCookie)).status).toBe(200)
       for (const game of [beta, gamma, library]) expect((await fetchImage(game, playerCookie)).status).toBe(404)
+    })
+
+    it('gives a Player the set game with its Price and no notes or Tags, under the same keys as its name', async () => {
+      const { slug, alpha } = await runningEvent()
+      await hostSets(request, slug, hostCookie, alpha.id)
+
+      const [round] = (JSON.parse(await rawRead(playerCookie, slug)) as EventView).rounds
+      expect(Object.keys(round!.game).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'playersMax', 'playersMin', 'price', 'suitabilities', 'youtubeId'])
+      expect(round!.game.price).toEqual(alpha.price)
     })
 
     it('shows a Player a library game that is set, and none of the pools\' games', async () => {
@@ -356,6 +392,8 @@ describe('Pool preview secrecy (#225)', () => {
 
       const got = await whatThePlayerGets(slug, eventId)
       expect(got.feed).toContain('Alpha Arena')
+      expect(got.feed).not.toContain('"price"')
+      expect(got.room).not.toContain('"price"')
       expectNone(got, [alpha], game => [game.notes, game.tag])
       expectNone(got, [beta, gamma, library])
     })
@@ -373,7 +411,9 @@ describe('Pool preview secrecy (#225)', () => {
 
       const got = await whatThePlayerGets(slug, eventId)
       const view = JSON.parse(got.event) as EventView
-      expect(view.results).toMatchObject([{ number: 1, game: { id: alpha.id, name: 'Alpha Arena' } }])
+      expect(view.results).toMatchObject([{ number: 1, game: { id: alpha.id, name: 'Alpha Arena', price: alpha.price } }])
+      expect(got.feed).not.toContain('"price"')
+      expect(got.room).not.toContain('"price"')
       expect(view.standings?.map(row => row.team)).toEqual([1, 2])
       const results = JSON.stringify({ results: view.results, standings: view.standings, end: view.end })
       expectNone({ results }, [alpha], game => [game.notes, game.tag])
@@ -395,25 +435,40 @@ describe('Pool preview secrecy (#225)', () => {
 
       const got = await whatThePlayerGets(slug, eventId)
       const view = JSON.parse(got.event) as EventView
-      expect(view.results).toMatchObject([{ number: 1, corrected: true, game: { id: alpha.id, name: 'Alpha Arena' } }])
+      expect(view.results).toMatchObject([{ number: 1, corrected: true, game: { id: alpha.id, name: 'Alpha Arena', price: alpha.price } }])
       expect((JSON.parse(got.feed) as { entries: { type: string }[] }).entries.map(entry => entry.type)).toContain('result_corrected')
       expect(got.feed).toContain('Alpha Arena')
+      expect(got.feed).not.toContain('"price"')
+      expect(got.room).not.toContain('"price"')
       expectNone(got, [alpha], game => [game.notes, game.tag])
       expectNone(got, [beta, gamma, library])
     })
 
-    it('carries no Tag in the Host\'s or a Player\'s read of a set game and of its Result (#335)', async () => {
+    it('carries no Tag in the Host\'s or a Player\'s read of a set game and of its Result, and the Price only of the set game for a Player (#335, #338)', async () => {
       const { slug, alpha, beta, gamma, library } = await runningEvent()
       const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+      // The Host sees the pool (Alpha, Beta) and the set game; the Player sees the set game only.
       const reads = async () => [await rawRead(hostCookie, slug), await rawRead(playerCookie, slug)]
+      const expectPrices = (hostRaw: string, playerRaw: string) => {
+        expect(hostRaw).toContain('"price"')
+        expect(hostRaw).toContain('"checkedAt"')
+        expect(hostRaw).toContain(priceTrace(alpha))
+        expect(hostRaw).toContain(priceTrace(beta))
+        expect(hostRaw).not.toContain(priceTrace(gamma))
+        expect(hostRaw).not.toContain(priceTrace(library))
+        expect(playerRaw).toContain('"price"')
+        expect(playerRaw).toContain('"checkedAt"')
+        expect(playerRaw).toContain(priceTrace(alpha))
+        for (const game of [beta, gamma, library]) expect(playerRaw).not.toContain(priceTrace(game))
+      }
 
-      for (const raw of await reads()) {
-        expect(raw).toContain('Alpha Arena')
+      const [hostBefore, playerBefore] = await reads()
+      expect(playerBefore).toContain('Alpha Arena')
+      for (const raw of [hostBefore!, playerBefore!]) {
         expect(raw).not.toContain('"tags"')
-        expect(raw).not.toContain('"price"')
-        expect(raw).not.toContain('"checkedAt"')
         for (const game of [alpha, beta, gamma, library]) expect(raw).not.toContain(game.tag)
       }
+      expectPrices(hostBefore!, playerBefore!)
 
       const entered = await request(`/api/e/${slug}/rounds/${roundId}/result`, {
         method: 'PUT',
@@ -421,13 +476,15 @@ describe('Pool preview secrecy (#225)', () => {
         body: JSON.stringify({ places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] }),
       })
       expect(entered.status).toBe(200)
-      for (const raw of await reads()) {
+      const [hostAfter, playerAfter] = await reads()
+      expect((JSON.parse(hostAfter!) as EventView).results).toMatchObject([{ game: { price: alpha.price } }])
+      expect((JSON.parse(playerAfter!) as EventView).results).toMatchObject([{ game: { price: alpha.price } }])
+      for (const raw of [hostAfter!, playerAfter!]) {
         expect((JSON.parse(raw) as EventView).results).toHaveLength(1)
         expect(raw).not.toContain('"tags"')
-        expect(raw).not.toContain('"price"')
-        expect(raw).not.toContain('"checkedAt"')
         for (const game of [alpha, beta, gamma, library]) expect(raw).not.toContain(game.tag)
       }
+      expectPrices(hostAfter!, playerAfter!)
     })
 
     it('reveals nothing more when the Round is put back', async () => {
@@ -438,6 +495,9 @@ describe('Pool preview secrecy (#225)', () => {
 
       const got = await whatThePlayerGets(slug, eventId)
       expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [] })
+      expect(got.event).not.toContain('"price"')
+      expect(got.feed).not.toContain('"price"')
+      expect(got.room).not.toContain('"price"')
       expectNone(got, [beta, gamma, library])
     })
   })

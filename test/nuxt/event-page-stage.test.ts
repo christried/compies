@@ -157,7 +157,7 @@ describe('the session-needed notice on the Event page', () => {
     results: [],
     standings: played > 0 ? [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }] : null,
   })
-  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+  const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
   const openRound = (id: string): RoundView => ({ id, startedAt: STARTED, setAt: STARTED, game: { ...halo, id: `g-${id}`, name: `Spiel ${id}` } })
   const notice = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('[role="status"]').filter(element => element.text().includes(TEXT))
 

@@ -318,7 +318,7 @@ describe('the blocks of the stage', () => {
   // Only in `done`; a Member's page lists it too and renders nothing (the Host check is the page's).
   const LEFT_ONE: Partial<PageInput> = { end: { played: 2, gameCount: 3, complete: false, tie: null, finish: null, lastGame: null } }
   const DONE_ONE = [dated('a', 1, SAT, ENDED)]
-  const round = (id: string): RoundView => ({ id, startedAt: SAT, setAt: SAT, game: { id: `g-${id}`, name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] } })
+  const round = (id: string): RoundView => ({ id, startedAt: SAT, setAt: SAT, game: { id: `g-${id}`, name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null } })
 
   it('lists the session-needed notice right under the reopen notices after the last Session, before the open Rounds (#278)', () => {
     expect(blocks(DONE_ONE, { ...RUNNING, ...LEFT_ONE })).toEqual(['head', 'reopen', 'sessionNeeded', 'rounds', 'standings', 'cards', 'board'])

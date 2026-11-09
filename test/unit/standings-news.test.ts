@@ -5,7 +5,7 @@ import type { ResultView, StandingView } from '../../shared/stage'
 // What is new on the Standings page (#276, spec #272): which Result the page has not seen yet, and how the Standings moved. Pure, so the
 // rules hold without Vue. The page keeps the marks it last read (`marksOf`); a Result is fresh by its entry or by a later Correction.
 
-const game = { id: 'g', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] } as ResultView['game']
+const game = { id: 'g', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null } as ResultView['game']
 /** The instant of minute `minute` of one day, ISO UTC (ADR 0003). */
 const at = (minute: number) => new Date(Date.UTC(2090, 10, 1, 10, minute)).toISOString()
 const result = (number: number, fields: Partial<ResultView> = {}): ResultView => ({

@@ -131,7 +131,7 @@ describe('Vetoes', () => {
     for (const key of Object.keys(people) as (keyof typeof people)[]) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
 
     const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo', createdBy: ids.host },
+      { name: 'Halo', createdBy: ids.host, priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') },
       { name: 'Kart', createdBy: ids.host },
       { name: 'Dart', createdBy: ids.host },
       { name: 'Uno', createdBy: ids.host },
@@ -226,7 +226,7 @@ describe('Vetoes', () => {
       expect(await drawRows()).toMatchObject([{ kind: 'set', gameId, stopAt: new Date(T0), vetoEndsAt: new Date(iso(VETO_WINDOW_MS)), outcome: null, settledAt: null }])
       const view = await read(party, party.cookies.one)
       expect(view.rounds).toEqual([])
-      expect(view.wheel!.vetoes.draw).toMatchObject({ drawId, kind: 'set', stopAt: iso(0), vetoEndsAt: iso(VETO_WINDOW_MS), game: { id: gameId, name: 'Halo' } })
+      expect(view.wheel!.vetoes.draw).toMatchObject({ drawId, kind: 'set', stopAt: iso(0), vetoEndsAt: iso(VETO_WINDOW_MS), game: { id: gameId, name: 'Halo', price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } } })
       expect(view.wheel!.vetoes.own).toEqual({ team: 1, castBy: null, rejection: null })
       expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
     })

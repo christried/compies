@@ -13,7 +13,7 @@ import { restoreScreen, stubScreen } from './event-page'
 const START = Date.UTC(2090, 10, 7, 20, 0, 0)
 const iso = (ms: number) => new Date(ms).toISOString()
 
-const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const kart: RoundGame = { ...halo, id: 'g-kart', name: 'Kart', youtubeId: null }
 const clipOf = (game: RoundGame = halo): ClipView => ({ drawId: 'd1', startAt: iso(START), endsAt: iso(START + game.clipLength * 1000), game })
 
