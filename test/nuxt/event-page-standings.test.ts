@@ -142,7 +142,7 @@ describe('the finished Event page', () => {
     expect(toolbar(page)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
     const menu = await openHostMenu(page)
     // „Mehr“ lists every action but a hold or dockOnly one in the pill, so the tap primary repeats there as Rad drehen does in a Session (event-session-start).
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Siegerehrung starten', 'Einladen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Siegerehrung starten', 'Event löschen', 'Einladen'])
   })
 
   it('names the winner by the colour when the Team has no frozen name', async () => {

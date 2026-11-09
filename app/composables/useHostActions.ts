@@ -1,4 +1,4 @@
-import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer, Trophy } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer, Trash2, Trophy } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { ceremonyBlockedKey, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
 import type { EventView } from '~~/shared/event'
@@ -11,7 +11,8 @@ import { leadersOf } from '~~/shared/finish'
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
 // a secondary hold. At a Tie (#278) „Unentschieden beenden“ takes the primary's place as a hold, and „Letztes Spiel hinzufügen“ is a plain
 // button beside it; the finish holds send the Parties on Place 1 they showed (review 0.8 S2). „Termin für Session m“ stays while another
-// Session still polls, and „Termine bearbeiten“ while the Date poll is open.
+// Session still polls, and „Termine bearbeiten“ while the Date poll is open. „Event löschen“ (#333) is in Mehr in every state; it opens the
+// delete sheet, whose hold deletes, and it is disabled with its reason while a Session runs.
 // Every Phase before the Event finishes has Einstellungen and Einladen (#147). „Termin festlegen“ looks disabled with its reason
 // when no open future Slot can become a Date (#52). What each action does is the stage's change or a dialog the page owns (#283): the page passes `actions` and `dialogs`.
 
@@ -23,6 +24,8 @@ export interface HostDialogs {
   openSetGame: () => void
   openCountdown: () => void
   openBonusVeto: () => void
+  /** Opens the delete sheet (#333); its hold deletes the Event. */
+  openDelete: () => void
 }
 
 export function useHostActions(
@@ -55,6 +58,8 @@ export function useHostActions(
     bonusVeto: () => toValue(dialogs)?.openBonusVeto(),
     /** Starts the Award ceremony of the finished Event (#309): a tap, no dialog; the send refetches the Event read. */
     ceremony: () => void actions.startCeremony(),
+    /** Opens the delete sheet (#333): no send here, the sheet's hold sends it. */
+    delete: () => toValue(dialogs)?.openDelete(),
   }
 
   return computed((): DockAction[] => {
@@ -76,6 +81,8 @@ export function useHostActions(
     // The ceremony's reason is the rule's, with the server clock (#309): it stays while a run plays, and the read at the run's end (viewInstants) clears it.
     const ceremonyKey = ceremonyBlockedKey(current, serverNow())
     const ceremonyReason = ceremonyKey === null ? undefined : t(ceremonyKey)
+    // „Event löschen“ (#333) is refused while a Session runs: the same rule the route applies (runningOf), so the reason shows at once.
+    const deleteReason = current.runningSessionId === null ? undefined : t('dock.deleteBlocked')
     // The Parties on Place 1 of the Standings this dock shows: what the finish tells the server the Host saw (review 0.8 S2).
     const winners = leadersOf(current.standings ?? [])
 
@@ -194,6 +201,8 @@ export function useHostActions(
         group: t('dock.group.game'),
         run: handlers.bonusVeto,
       },
+      // „Event löschen“ (#333): in Mehr in every state; it opens the delete sheet, whose hold deletes. While a Session runs it is disabled with the reason.
+      delete: { key: 'delete', label: t('dock.delete'), icon: Trash2, group: t('dock.group.event'), disabledReason: deleteReason, run: guarded(deleteReason, handlers.delete) },
     }
 
     // The dock lists the parts in this order; `more` waits behind „Mehr“, the others sit in the pill.

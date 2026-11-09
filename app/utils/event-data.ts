@@ -4,3 +4,7 @@
 export function eventDataKey(slug: string): string {
   return `event-${slug}`
 }
+
+// The key of Home's list (`GET /api/e`), shared by Home and the 404 page (#12). The Host's delete drops it, so the Event is gone from
+// the list on arrival (#333).
+export const HOME_EVENTS_KEY = 'home-events'

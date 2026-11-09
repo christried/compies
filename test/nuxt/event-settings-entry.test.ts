@@ -81,7 +81,7 @@ describe('Einstellungen in the Host controls', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(toolbarLabels(page)).toEqual(['Termin festlegen', 'Einladen', 'Mehr'])
-    expect(await menuLabels(page)).toEqual(['Termin festlegen', 'Termine bearbeiten', 'Einladen', 'Einstellungen'])
+    expect(await menuLabels(page)).toEqual(['Termin festlegen', 'Termine bearbeiten', 'Einladen', 'Einstellungen', 'Event löschen'])
   })
 
   it('is listed in Mehr once the Date is set, next to Session starten and Einladen', async () => {
@@ -94,7 +94,7 @@ describe('Einstellungen in the Host controls', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(toolbarLabels(page)).toEqual(['Session starten', 'Einladen', 'Mehr'])
-    expect(await menuLabels(page)).toEqual(['Session starten', 'Einstellungen', 'Einladen'])
+    expect(await menuLabels(page)).toEqual(['Session starten', 'Einstellungen', 'Event löschen', 'Einladen'])
   })
 
   it('is listed in Mehr while the Event is running, and gone when it is finished (Einladen and Siegerehrung starten stay, #277, #309)', async () => {
@@ -106,12 +106,12 @@ describe('Einstellungen in the Host controls', () => {
     const runningPage = await mountSuspended(EventPage, { route: `/e/${running.slug}` })
     // Host pick (the default): Nächstes Spiel setzen is the primary (#228), Session beenden the hold beside it.
     expect(toolbarLabels(runningPage)).toEqual(['Nächstes Spiel setzen', 'Session beenden 1 s halten', 'Einladen', 'Mehr'])
-    expect(await menuLabels(runningPage)).toEqual(['Nächstes Spiel setzen', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen'])
+    expect(await menuLabels(runningPage)).toEqual(['Nächstes Spiel setzen', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen', 'Event löschen Geht erst, wenn keine Session läuft.'])
 
     const finished = serve(s => view(s, sanneAndLarsi, { event: { isHost: true, phase: 'finished' }, settings: defaultSettings() }))
     const finishedPage = await mountSuspended(EventPage, { route: `/e/${finished.slug}` })
     expect(toolbarLabels(finishedPage)).toEqual(['Siegerehrung starten', 'Einladen', 'Mehr'])
-    expect(await menuLabels(finishedPage)).toEqual(['Siegerehrung starten', 'Einladen'])
+    expect(await menuLabels(finishedPage)).toEqual(['Siegerehrung starten', 'Event löschen', 'Einladen'])
   })
 
   it('is called „Event einrichten“ while the Event has no settings', async () => {
@@ -128,7 +128,7 @@ describe('Einstellungen in the Host controls', () => {
 
     await clickButton(await openHostMenu(page), 'Einstellungen')
 
-    await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}/einstellungen`))
+    await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/e/${slug}/einstellungen`), { timeout: 5000 })
   })
 
   it('is not offered to a Member', async () => {

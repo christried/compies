@@ -115,6 +115,8 @@ export interface SessionEnded { sessionId: string, phase: Phase }
 export interface EventFinished { phase: Phase, winners: number[] }
 /** What `POST /api/e/:slug/last-game` answers (#278): the Game count after the raise. The request has no body. */
 export interface LastGameAdded { gameCount: number }
+/** What `DELETE /api/e/:slug` answers (#333): the slug of the Event that is deleted now. The request has no body. */
+export interface EventDeleted { slug: string }
 
 /**
  * What the Host sees of the start rule (#164): the next Session (the earliest dated one that has not started), its

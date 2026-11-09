@@ -84,7 +84,7 @@ function unclosed(input: DockInput, page: EventPageState): HostDockState {
 }
 
 /** The actions the dock can hold, by key. */
-export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto' | 'finish' | 'finishTie' | 'lastGame' | 'ceremony'
+export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto' | 'finish' | 'finishTie' | 'lastGame' | 'ceremony' | 'delete'
 
 /**
  * Which actions the dock holds per state, in named parts (review 1.4 A4, #228): the `primary` action(s), the `secondary` ones
@@ -104,12 +104,19 @@ export const GAME_ACTIONS: DockKey[] = ['bonusVeto', 'coin', 'countdown']
  * may grant a Bonus Veto (#233: the Event has a Lucky Wheel and no reason refuses it), so the action sits in Mehr in every layout but setup.
  */
 export function dockLayout(state: HostDockState, open: { pollOpen: boolean, bonusVetoOpen: boolean }): DockLayout {
+  const layout = stateLayout(state, open)
+  // „Event löschen“ (#333) is the last of Mehr in every state, setup and finished included, and never in the pill: one place for it.
+  return { ...layout, more: [...layout.more, 'delete'] }
+}
+
+/** The layout of the state's own actions, before „Event löschen“ (#333) joins Mehr in dockLayout. */
+function stateLayout(state: HostDockState, open: { pollOpen: boolean, bonusVetoOpen: boolean }): DockLayout {
   const { pollOpen, bonusVetoOpen } = open
   const dates: DockKey[] = pollOpen ? ['setDate'] : []
   const slots: DockKey[] = pollOpen ? ['slots'] : []
   const bonus: DockKey[] = bonusVetoOpen ? ['bonusVeto'] : []
   if (state.kind === 'setup') return { primary: ['settings'], secondary: ['invite'], more: [...dates, ...slots] }
-  // A finished Event is read-only for good: the Host can still rotate the link (#277) and start the ceremony (#309), and nothing else remains. HostDock lists „Einladen“ in „Mehr“ too.
+  // A finished Event is read-only for good: the Host can still rotate the link (#277) and start the ceremony (#309), and nothing else remains but „Event löschen“ in Mehr (#333). HostDock lists „Einladen“ in „Mehr“ too.
   if (state.kind === 'finished') return { primary: ['ceremony'], secondary: ['invite'], more: [] }
   // The running layouts compose the game actions once (GAME_ACTIONS), in Mehr before the settings.
   const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || bonusVetoOpen)

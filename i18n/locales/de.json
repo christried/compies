@@ -62,6 +62,8 @@
   },
   "dock": {
     "label": "Host-Steuerung",
+    "delete": "Event löschen",
+    "deleteBlocked": "Geht erst, wenn keine Session läuft.",
     "setDate": "Termin festlegen",
     "settings": "Einstellungen",
     "setup": "Event einrichten",
@@ -840,6 +842,12 @@
     "renewShare": "Den neuen Link musst du neu teilen.",
     "renewed": "Erneuert.",
     "renewedText": "Neuer Link aktiv. Der alte führt jetzt ins Leere."
+  },
+  "eventDelete": {
+    "title": "Event löschen?",
+    "text": "Das Event verschwindet sofort für alle, auch seine Links funktionieren nicht mehr. Das lässt sich nicht rückgängig machen.",
+    "hold": "Event löschen",
+    "done": "Event gelöscht"
   },
   "pushAsk": {
     "title": "Danke fürs Abstimmen! Sollen wir Bescheid sagen?",

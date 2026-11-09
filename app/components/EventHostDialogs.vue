@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Lock, Play } from '@lucide/vue'
+import { HOME_EVENTS_KEY } from '~/utils/event-data'
 import { dateBlockedKey } from '~/utils/event-page'
 import { isFullPoolGame } from '~~/shared/game'
 import { hasStarted } from '~~/shared/session-state'
@@ -8,7 +9,7 @@ import type { DatedSessionView, EventView } from '~~/shared/event'
 
 // The Host's dialogs and sheets of the Event page (#52, #55, #164): the Date confirm dialog, the reschedule dialog, the
 // Slot editor, the add-Session sheet, the start dialog and the picker of the next game (#228). The page opens them (from the dock, the poll and the Sessions
-// card) through the methods this component exposes.
+// card) through the methods this component exposes. The delete sheet (#333) sends the Host's delete and leaves for Home.
 // Each closes only when the server took the change (useEventMutation's `send`, #74).
 const props = defineProps<{
   slug: string
@@ -141,7 +142,26 @@ function grantBonusVeto(team: number) {
   return send('POST', 'bonus-vetoes', { body: { team } })
 }
 
+// „Event löschen“ (#333): the sheet's hold deletes. Once the server took it the page reads nothing more (its read answers 410 from now on):
+// Home's list is dropped so the Event is gone on arrival, the toast says so and the Host lands on Home.
+const deleteOpen = ref(false)
+let deleted = false
+const { send: sendDelete } = useEventMutation(() => props.slug, () => (deleted ? undefined : props.refresh()))
+
+function deleteEvent() {
+  return sendDelete('DELETE', '', {
+    errorKeys: { session_running: 'dock.deleteBlocked' },
+    done: () => {
+      deleted = true
+      clearNuxtData(HOME_EVENTS_KEY)
+      toast({ tone: 'success', text: t('eventDelete.done') })
+      void navigateTo('/')
+    },
+  })
+}
+
 defineExpose({
+  openDelete: () => (deleteOpen.value = true),
   openConfirm,
   openSetGame: () => (pickerOpen.value = true),
   openCountdown: () => (countdownOpen.value = true),
@@ -240,5 +260,11 @@ defineExpose({
     :busy="adding"
     @close="addOpen = false"
     @submit="addSession"
+  />
+
+  <EventDeleteSheet
+    :open="deleteOpen"
+    :remove="deleteEvent"
+    @close="deleteOpen = false"
   />
 </template>
