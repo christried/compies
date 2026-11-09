@@ -2,6 +2,7 @@
 import { Plus } from '@lucide/vue'
 import { shownName } from '~~/shared/auth'
 import type { HomeView } from '~~/shared/event'
+import { HOME_EVENTS_KEY } from '~/utils/event-data'
 
 // Home (screen M1, #12): every Event the User is a Member of, in the order the server sends (open
 // polls to vote on, other open polls, Dates upcoming first). Users with the Host permission get „Neue Terminumfrage“.
@@ -11,7 +12,7 @@ import type { HomeView } from '~~/shared/event'
 
 const { t } = useI18n()
 const user = useAuthUser()
-const { data, status, error, refresh } = useFetch<HomeView>('/api/e', { key: 'home-events' })
+const { data, status, error, refresh } = useFetch<HomeView>('/api/e', { key: HOME_EVENTS_KEY })
 
 const pending = computed(() => status.value === 'pending')
 const events = computed(() => data.value?.events ?? [])
