@@ -6,6 +6,10 @@
 
 - **Lange Spielelisten laden schneller:** In der Bibliothek, beim Füllen des Spielepools und bei „Nächstes Spiel setzen“ zeigt die Liste zuerst 40 Spiele und lädt beim Scrollen weitere nach, oder mit „Mehr laden“. Suche und Filter durchsuchen weiter die ganze Bibliothek. ([#369](https://github.com/christried/compies/issues/369))
 
+### Behoben
+
+- **Countdown:** Auf dem Handy wird die Seite bei „Zeit ist um“ nicht mehr breiter als der Bildschirm: Sie lässt sich nicht mehr zur Seite schieben, auch nicht während der Stempel aufschlägt. ([#379](https://github.com/christried/compies/issues/379))
+
 ## [0.10.0] - 2026-11-09 – Feinschliff
 
 Feinschliff nach dem ersten Spielabend: Hosts können ein Event löschen, Spiele tragen Tags und Preise, der Countdown hat sein Gesicht bekommen, und zwanzig Kleinigkeiten aus dem Produktions-Check sind erledigt, von der Startseite bis zum Veto ohne Namen.
