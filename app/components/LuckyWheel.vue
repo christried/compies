@@ -125,7 +125,7 @@ const drawnOpacity = computed(() => {
 const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
 const status = computed(() => {
   if (timing.value && clock.value !== null && clock.value < timing.value.stopAt) return t('wheel.spinning')
-  return count.value === 0 ? t('wheel.empty') : t('wheel.count', { n: count.value }, count.value)
+  return count.value === 0 ? t('wheel.empty') : null
 })
 const headingId = useId()
 </script>
@@ -143,7 +143,10 @@ const headingId = useId()
       >
         {{ t('wheel.title') }}
       </h2>
-      <p class="m-0 text-[14px] font-bold text-ink-2">
+      <p
+        v-if="status"
+        class="m-0 text-[14px] font-bold text-ink-2"
+      >
         {{ status }}
       </p>
     </div>
