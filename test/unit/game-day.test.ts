@@ -3,12 +3,12 @@ import { type CheckedSession, deployCheck } from '../../server/domain/game-day'
 
 // The game-day rule behind the Worker deploy guard (#157): a deploy drops every socket, so it must not happen on a day
 // a Session is dated. "Today" is the Berlin calendar day (ADR 0003), whatever the server's clock zone. The reason names
-// the blocking Sessions by Event slug and number (retro 0.9, finding 1).
+// the blocking Sessions by Event id, Session id and number, never by a slug: the deploy log is public (retro 0.9, finding 1; #332).
 const at = (iso: string) => new Date(iso)
 
 /** How many of the Dates the check counts as today: 0 when it says ok, else the count its reason gives. */
 function sessionsToday(startsAt: (Date | null)[], now: Date): number {
-  const { ok, reason } = deployCheck({ sessions: startsAt.map(date => ({ event: 'freitag', number: null, startsAt: date, runningSince: null })), now })
+  const { ok, reason } = deployCheck({ sessions: startsAt.map(date => ({ eventId: 'event-freitag', sessionId: 'session-freitag', number: null, startsAt: date, runningSince: null })), now })
   return ok ? 0 : Number(/(\d+) Sessions? (?:is|are) dated today/.exec(reason!)![1])
 }
 
@@ -57,7 +57,7 @@ describe('deployCheck', () => {
 
   /** A Session of `event`, dated `startsAt`; `running` is its start while it runs. */
   const session = (event: string, startsAt: Date | null, { number = null, running = null }: { number?: number | null, running?: Date | null } = {}): CheckedSession =>
-    ({ event, number, startsAt, runningSince: running })
+    ({ eventId: `event-${event}`, sessionId: `session-${event}-${number ?? 0}`, number, startsAt, runningSince: running })
 
   it('is ok, without a reason, when no Session is dated today', () => {
     const sessions = [session('freitag', at('2024-01-14T19:00:00Z'), { number: 1 }), session('freitag', at('2024-01-16T19:00:00Z'), { number: 2 }), session('offen', null)]
@@ -66,24 +66,24 @@ describe('deployCheck', () => {
   })
 
   it('is not ok on a game day and names how many Sessions fall on it, and which', () => {
-    const one = deployCheck({ sessions: [session('test-event-6ue2', at('2024-01-15T19:00:00Z'))], now })
+    const one = deployCheck({ sessions: [session('solo', at('2024-01-15T19:00:00Z'))], now })
     const two = deployCheck({ sessions: [session('freitag', at('2024-01-15T17:00:00Z'), { number: 2 }), session('samstag', at('2024-01-15T19:00:00Z'))], now })
 
     expect(one).toEqual({ ok: false, reason: expect.stringContaining('game day') })
     expect(one.reason).toContain('1 Session is dated today')
-    expect(one.reason).toContain('(the Session of `test-event-6ue2`)')
+    expect(one.reason).toContain('(the Session `session-solo-0` of Event `event-solo`)')
     expect(two.reason).toContain('2 Sessions are dated today')
-    expect(two.reason).toContain('(Session 2 of `freitag`, the Session of `samstag`)')
+    expect(two.reason).toContain('(Session 2 `session-freitag-2` of Event `event-freitag`, the Session `session-samstag-0` of Event `event-samstag`)')
   })
 
   it('is not ok while a Session runs (#164), with a reason of its own that names it, whatever day its Date was', () => {
     const running = deployCheck({ sessions: [session('freitag', at('2024-01-10T19:00:00Z'), { number: 1, running: hoursAgo(2) })], now })
 
     expect(running).toEqual({ ok: false, reason: expect.stringContaining('running') })
-    expect(running.reason).toContain('1 Session is running (Session 1 of `freitag`)')
+    expect(running.reason).toContain('1 Session is running (Session 1 `session-freitag-1` of Event `event-freitag`)')
     expect(running.reason).not.toContain('game day')
     const both = deployCheck({ sessions: [session('a', null, { running: hoursAgo(1) }), session('b', null, { running: hoursAgo(2) })], now })
-    expect(both.reason).toContain('2 Sessions are running (the Session of `a`, the Session of `b`)')
+    expect(both.reason).toContain('2 Sessions are running (the Session `session-a-0` of Event `event-a`, the Session `session-b-0` of Event `event-b`)')
   })
 
   it('names the running Session first when one runs on a game day', () => {
@@ -112,7 +112,7 @@ describe('deployCheck', () => {
     const body = deployCheck({ sessions, now })
 
     expect(body.ok).toBe(false)
-    expect(body.reason).toContain('1 Session is running (the Session of `a`)')
+    expect(body.reason).toContain('1 Session is running (the Session `session-a-0` of Event `event-a`)')
   })
 
   it('names the game day, not the running Session, when a Session started 17 h ago runs on a game day (#200)', () => {

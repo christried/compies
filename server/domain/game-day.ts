@@ -2,8 +2,9 @@ import { utcToBerlin } from '../../shared/time'
 
 // The game-day rule behind the Worker deploy guard (#157, spec #153 § Deploys). Deploying the production Worker drops
 // every open socket, so it must not happen while Members are playing. Pure: the endpoint loads the Sessions and asks.
-// The answer names each blocking Session by its Event's slug (retro 0.9, finding 1): the user has no other way to see
-// which Event blocks a deploy on production, where agents cannot look into the database.
+// The answer names each blocking Session by its id and its Event's id (retro 0.9, finding 1): the user has no other way
+// to see which Event blocks a deploy on production, where agents cannot look into the database. Never by slug or name:
+// the reason lands in the public GitHub Actions log, and a slug is typed by the Host (#332).
 
 export interface DeployCheck {
   ok: boolean
@@ -11,9 +12,10 @@ export interface DeployCheck {
   reason: string | null
 }
 
-/** A Session the check looks at: its Event's slug, its number on the Event page (null for an Event's only Session), its Date and, while it runs, its start. */
+/** A Session the check looks at: its id and its Event's id, its number on the Event page (null for an Event's only Session), its Date and, while it runs, its start. */
 export interface CheckedSession {
-  event: string
+  eventId: string
+  sessionId: string
   number: number | null
   startsAt: Date | null
   /** When the Running Session started (#164), null unless it is started and not ended. */
@@ -32,8 +34,8 @@ const isToday = (startsAt: Date | null, now: Date) => startsAt !== null && berli
  */
 export const RUNNING_BLOCKS_FOR_MS = 16 * 60 * 60 * 1000
 
-/** „Session 2 of `slug`“, or „the Session of `slug`“ for an Event's only Session, as the Event page numbers them. */
-const nameOf = (session: CheckedSession) => `${session.number === null ? 'the Session' : `Session ${session.number}`} of \`${session.event}\``
+/** „Session 2 `id` of Event `id`“, or „the Session `id` of Event `id`“ for an Event's only Session, as the Event page numbers them. */
+const nameOf = (session: CheckedSession) => `${session.number === null ? 'the Session' : `Session ${session.number}`} \`${session.sessionId}\` of Event \`${session.eventId}\``
 
 const listOf = (sessions: CheckedSession[]) => sessions.map(nameOf).join(', ')
 
