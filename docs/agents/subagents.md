@@ -16,7 +16,7 @@ Reviewers, the `code-review` sub-agents and the Release review alike, and brief 
 
 ## Briefs
 
-One brief per ticket: files to change, data shapes, migration, tests at which seam with which cases, edge cases, what not to touch and an acceptance checklist. The model is the spawn prompt's (§ Model per subagent), not the brief's: session 2 of 0.10 rewrote every brief's model line. The more precise the brief, the more of the work Haiku can take.
+One brief per ticket: files to change, data shapes, migration, tests at which seam with which cases, edge cases, what not to touch and an acceptance checklist. The model is the spawn prompt's (§ Model per subagent), not the brief's: session 2 of 0.10 rewrote every brief's model line. The more precise the brief, the more of the work Haiku can take. A brief's changelog line is checked against the banned list in `test/unit/changelog-file.test.ts` before the spawn, so the implementer never meets it in CI.
 
 A `sonnet` brief drafter writes it. Its prompt names the ticket, the integration branch and this section; it reads the ticket, its spec and the code, writes the brief to a file in the orchestrator's scratchpad, and returns the path and its open questions. The orchestrator reads the brief rather than the code, checks it against this list and the ticket, settles the questions, and edits it before the spawn. It opens the code only where the brief touches a secret or is unsure. In 0.7 the orchestrator wrote every brief from the code itself, and that reading, with the diffs, filled its 300k context in each of the five sessions.
 
