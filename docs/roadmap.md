@@ -1,6 +1,6 @@
 # Roadmap
 
-Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (`docs/reviews/prod_review_1.md`, #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings, § Später the ideas for after the roadmap. Terms follow `GLOSSARY.md`.
+Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (the user's production-check notes (sorted here, then removed on 2026-11-09), #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings, § Später the ideas for after the roadmap. Terms follow `GLOSSARY.md`.
 
 **Numbering.** Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the user declares ready (`docs/agents/release.md` § Semantic versioning). Before 0.5.1 they were numbered 1.x: 1.0.0 is 0.1.0, 1.1.x is 0.2.x, 1.2.0 is 0.3.0, 1.3.0 is 0.4.0 and 1.4.0 is 0.5.0. Older specs, issues, reviews, ADRs and code comments keep the old numbers; in them, the planned 1.5 „Glücksrad“ is 0.7, 1.6 „Punkte“ is 0.8 and 1.7 „Siegerehrung“ is 0.9.
 
@@ -230,7 +230,7 @@ The list that waited for the first Event, plus the party hat. Spec: [#332](https
 - **Party hat** (#38, idea from the first staging review): Compibert's header head wears a party hat on the Event pages, only for the Players in a **Leading Party** (first rank of the Standings with at least one Result, all of them when shared; the Winners on the finished page). Bench, Stands, trailing Parties, Home and the hub pages show the plain head. The hat is a _Claude Design hand-off_ (#341), an accessory on the head crop like the hard hat.
 - **#328**: the AwardCeremony refactor, as written, without a changelog line.
 - **Two human sweeps** (`ready-for-human`), once every other ticket is on the integration branch: mockup vs. live app (#342), then the wording sweep (#343). Small findings land in 0.10 before the version cut; a feature or a redesign goes to 0.11 or later.
-- **Production check** (2026-11-09, `docs/reviews/prod_review_1.md`, sorted on #342): ten small fixes as tickets #347–#356 (Home card to the reference, Sheet motion, the Sessions card's menu, „Bald verfügbar“ without a chip, aligned picker buttons, „vollständig abgestimmt“ and CSV for Hosts, the back link, the wheel card without a count, anonymous Vetoes, the clip status in the Host's footer). The bigger findings are 0.12 and 0.13 below.
+- **Production check** (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09), sorted on #342): ten small fixes as tickets #347–#356 (Home card to the reference, Sheet motion, the Sessions card's menu, „Bald verfügbar“ without a chip, aligned picker buttons, „vollständig abgestimmt“ and CSV for Hosts, the back link, the wheel card without a count, anonymous Vetoes, the clip status in the Host's footer). The bigger findings are 0.12 and 0.13 below.
 - All other UI _own build_.
 
 ## 0.11 Profil
@@ -239,7 +239,7 @@ Grilled in its own session while 0.10 is built. The Profil page (screen 25) repl
 
 ## 0.12 Eventseite
 
-The Event page findings of the first production check (2026-11-09, `docs/reviews/prod_review_1.md`), to be grilled in its own session. Each line is the user's intent, checked against the hand-off and the Glossary; the grilling settles the rules. Where a line contradicts the hand-off or the Glossary it says so, and the grilling records the change (Glossary, ADR, a note in `docs/design_handoff_compies/`).
+The Event page findings of the first production check (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09)), to be grilled in its own session. Each line is the user's intent, checked against the hand-off and the Glossary; the grilling settles the rules. Where a line contradicts the hand-off or the Glossary it says so, and the grilling records the change (Glossary, ADR, a note in `docs/design_handoff_compies/`).
 
 - **Bench and Tribüne become one Tribüne**, without „Zuschauer spielen nicht mit“; from the Tribüne people move into the teams. Contradicts `02-components.md` § BenchZone / StandsZone and `GLOSSARY.md` § Bench, Stands, Spectator; a zone migration.
 - **The stage reorders by what just happened**: a drawn game's Veto window goes to the top, a spinning wheel goes to the top, a settled Round's „Gerade dran“ goes to the top, a Result moves the Standings to the top; animated and a little delayed so everyone can follow. The Game board stays below and never moves up (a Bonus Veto does not lift it). Contradicts `11-event-seite.md` § EventPage, which orders by Event state („what has to happen now goes on top“ is the same idea, the trigger is new).
@@ -262,7 +262,7 @@ The wheel, the clip and the Share image findings of the first production check, 
 
 ## Später
 
-The user's list for after the roadmap (2026-11-09, `docs/reviews/prod_review_1.md`), one line each, not grilled:
+The user's list for after the roadmap (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09)), one line each, not grilled:
 
 - A LICENSE for the public repository, chosen together with the user.
 - The Veto allowance stays hidden from Members until the Event starts, so nobody plans around it.
