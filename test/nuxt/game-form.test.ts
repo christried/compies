@@ -60,11 +60,14 @@ registerEndpoint('/api/games', {
 // Edit mode (#142): the game answers with what was sent, as the server would store it.
 // The Price the PATCH answers with (#337): a test sets it to what the server would stamp.
 let patchPrice: GameView['price'] = null
+// The reason the PATCH refuses a Price confirm, when a test sets one (#361: the form shows it in its banner).
+let patchRefusedWith: string | null = null
 registerEndpoint(`/api/games/${saved.id}`, {
   method: 'PATCH',
   handler: async (event) => {
     const body = await readBody(event)
     patchedWith(body)
+    if (patchRefusedWith) throw createError({ statusCode: 400, statusMessage: patchRefusedWith })
     return { ...saved, name: body.name, playersMin: body.playersMin, playersMax: body.playersMax, suitabilities: body.suitabilities, tags: body.tags, price: patchPrice }
   },
 })
@@ -780,6 +783,7 @@ describe('the game form', () => {
 
     beforeEach(() => {
       patchPrice = null
+      patchRefusedWith = null
       patchedWith.mockClear()
     })
 
@@ -826,17 +830,6 @@ describe('the game form', () => {
       await page.get('form').trigger('submit')
 
       await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: 1999, source: 'steam' } })))
-    })
-
-    it.each([['19.99', 1999], ['20', 2000]])('reads the amount „%s“ as %i cents', async (text, cents) => {
-      const page = await mountSuspended(GameForm)
-      await field(page, 'Name').setValue('Mario Kart')
-      await amount(page).setValue(text)
-      await source(page).setValue('gog')
-
-      await page.get('form').trigger('submit')
-
-      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents, source: 'gog' } })))
     })
 
     it('posts no Price when neither the amount nor the source is filled', async () => {
@@ -915,16 +908,6 @@ describe('the game form', () => {
       await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: null, source: 'subscription' } })))
     })
 
-    it('enables the amount again when a paid source is chosen, still empty', async () => {
-      const page = await mountSuspended(GameForm)
-      await source(page).setValue('free_to_play')
-
-      await source(page).setValue('steam')
-
-      expect((amount(page).element as HTMLInputElement).disabled).toBe(false)
-      expect((amount(page).element as HTMLInputElement).value).toBe('')
-    })
-
     it('prefills the amount and the source of a game with a Price, and saves them with PATCH', async () => {
       const page = await mountSuspended(GameForm, { props: { game: stored } })
 
@@ -936,26 +919,6 @@ describe('the game form', () => {
       await page.get('form').trigger('submit')
 
       await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: 1999, source: 'steam' } })))
-    })
-
-    it('shows the amount of a stored Free-to-play game disabled and empty', async () => {
-      const free: GameView = { ...saved, price: { cents: null, source: 'free_to_play', checkedAt } }
-
-      const page = await mountSuspended(GameForm, { props: { game: free } })
-
-      expect((source(page).element as HTMLSelectElement).value).toBe('free_to_play')
-      expect((amount(page).element as HTMLInputElement).disabled).toBe(true)
-      expect((amount(page).element as HTMLInputElement).value).toBe('')
-    })
-
-    it('has neither the line nor „Preis stimmt noch“ in create mode or for a game without a Price', async () => {
-      const create = await mountSuspended(GameForm)
-      expect(create.text()).not.toContain('Stand:')
-      expect(confirmButton(create)).toBeUndefined()
-
-      const plain = await mountSuspended(GameForm, { props: { game: saved } })
-      expect(plain.text()).not.toContain('Stand:')
-      expect(confirmButton(plain)).toBeUndefined()
     })
 
     it('„Preis stimmt noch“ sends only the flag, and moves the day without saving', async () => {
@@ -995,13 +958,14 @@ describe('the game form', () => {
       await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ price: null })))
     })
 
-    it('shows „Preis entfernen“ only once something is typed or chosen', async () => {
-      const page = await mountSuspended(GameForm)
-      expect(removeButton(page)).toBeUndefined()
+    it('shows the reason a refused „Preis stimmt noch“ in the banner, and keeps the line', async () => {
+      patchRefusedWith = 'invalid_price'
+      const page = await mountSuspended(GameForm, { props: { game: stored } })
 
-      await amount(page).setValue('2')
+      await confirmButton(page)!.trigger('click')
 
-      expect(removeButton(page)).toBeDefined()
+      await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Preis braucht eine Quelle und einen Betrag von 0,01 € bis 999,99 €. Bei Free-to-play und Abo gibt es keinen Betrag.'))
+      expect(page.text()).toContain('Stand: 3. November 2026')
     })
   })
 

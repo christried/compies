@@ -2,6 +2,9 @@ import { formatPriceAmount, type GamePrice, type PriceSource } from '~~/shared/g
 import { berlinYear, formatShortDay } from './berlin-time'
 import type { Translate } from './settings-summary'
 
+/** A Price as the form holds it while the User types (#337): the amount as cents, or as its text when the shared rule refuses it, so the rules refuse the body too; the source, or null while none is chosen. */
+export type PriceDraft = { cents: number | string | null, source: PriceSource | null } | null
+
 // The words of a game's Price (#337, GLOSSARY: Price; #332 S3: UI copy lives in de.json, not in shared/game.ts, which keeps
 // the data rules). Pure, with vue-i18n's `t` passed in, like describe-game.ts.
 
