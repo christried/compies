@@ -2,7 +2,7 @@
 import { Gamepad2, Users } from '@lucide/vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { describeGame } from '~/utils/describe-game'
-import type { GameView, PoolGameFace } from '~~/shared/game'
+import { type GameView, type PoolGameFace, priceLine } from '~~/shared/game'
 import { youTubeThumbnail } from '~~/shared/youtube'
 
 // A game as a card or a row (02-components § GameCard, #141). The cover is the uploaded image, else the
@@ -11,15 +11,18 @@ import { youTubeThumbnail } from '~~/shared/youtube'
 // without it the card is a plain element, not a button. #146 and #148 reuse it; a game that came as its face only (a Member's
 // pool game, #224) has no player count and no Suitabilities to show, so the card shows neither. `layout="responsive"` (#173) is a row
 // below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
-// three Tags and „+N“ (#335); the pool, Round and wheel games carry none. They are spans, not a list: the tests count the cards as `li`.
+// three Tags and „+N“ (#335) and its Price line under the meta line (#337); the pool, Round and wheel games carry neither. They are
+// spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well.
 const props = withDefaults(defineProps<{
-  game: PoolGameFace & Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags'>>
+  game: PoolGameFace & Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price'>>
   layout?: 'card' | 'row' | 'responsive'
   to?: RouteLocationRaw
 }>(), { layout: 'card', to: undefined })
 
 const { t } = useI18n()
 const NuxtLink = resolveComponent('NuxtLink')
+const now = new Date()
+const priceText = computed(() => (props.game.price ? priceLine(props.game.price, now) : null))
 
 const cover = computed(() => props.game.imageUrl ?? (props.game.youtubeId ? youTubeThumbnail(props.game.youtubeId) : null))
 // The compact player count and the Suitabilities („Passt zu“, #171: „Teams, 1 gegen 1“).
@@ -119,6 +122,11 @@ const look = computed(() => LAYOUT[props.layout])
         </span>
         <span v-if="suitabilities">{{ suitabilities }}</span>
       </div>
+      <span
+        v-if="priceText"
+        class="text-[12px] font-bold text-ink-2"
+        :class="layout === 'card' ? '' : layout === 'row' ? 'truncate' : 'truncate md:whitespace-normal'"
+      >{{ priceText }}</span>
       <div
         v-if="shownTags.length > 0"
         role="group"
