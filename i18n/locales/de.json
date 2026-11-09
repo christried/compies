@@ -1303,7 +1303,6 @@
   "mvp": {
     "_scope": "[MVP] Terminfindung zuerst. Remove keys as the real screens replace them.",
     "home": {
-      "hello": "Hallo {name}",
       "title": "Wann zocken wir?",
       "titleEmpty": "Noch nix los.",
       "events": "Deine Events",
