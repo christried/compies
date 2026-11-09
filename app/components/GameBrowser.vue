@@ -4,8 +4,9 @@ import type { RouteLocationRaw } from 'vue-router'
 import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, type GameFilters, type GameView } from '~~/shared/game'
 
 // The one game browser (#173, review B4): the library page and both pool pickers show the Game library through it.
-// It owns the single fetch (`useGameLibrary`), the search field with the magnifying glass, the filters and the five
-// states, loading, error, empty library, no match and results, as one state machine. What differs is handed in: the
+// It owns the single fetch (`useGameLibrary`), the search field with the magnifying glass, the filters, the five
+// states, loading, error, empty library, no match and results, as one state machine, and the paging of the results
+// (#369: 40 cards a page over the filtered list, more by a sentinel or „Mehr laden“). What differs is handed in: the
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
 // search, „Alle“, the Tag and „Von mir“), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
 // („Neues Spiel anlegen“, on the search row). The filtering is client side (`filterGames`), so it follows every
@@ -49,6 +50,44 @@ const anyFilter = computed(() => {
   const { q, players, suitability, tag, mine } = filters.value
   return Boolean(q.trim() || players !== null || suitability || tag !== null || mine)
 })
+
+// The paging (#369): the search and the filters run over the whole library, only the cards drawn are cut. The dev
+// library's ~1500 cards cost 1.1-1.5 s at the open of the picker sheet.
+const PAGE_SIZE = 40
+const limit = ref(PAGE_SIZE)
+const visible = computed(() => shown.value.slice(0, limit.value))
+const remaining = computed(() => shown.value.length - visible.value.length)
+// Any change of the filters starts at the first page again (#369): after a search narrowed the list and „Alle“ widened it, 40 cards, not the 120 loaded before.
+watch(() => JSON.stringify(filters.value), () => {
+  limit.value = PAGE_SIZE
+})
+
+const sentinel = useTemplateRef<HTMLElement>('sentinel')
+const status = useTemplateRef<HTMLElement>('status')
+let observer: IntersectionObserver | undefined
+function more() {
+  limit.value += PAGE_SIZE
+}
+async function onMore() {
+  more()
+  // The click that drew the last page removes the button it was on: focus goes to the status line, not to the page.
+  if (remaining.value === 0) {
+    await nextTick()
+    status.value?.focus()
+  }
+}
+// A fresh observer per page and per sentinel: one that still sees the sentinel after a page (a tall screen) fires again at once, which a long-lived observer would not.
+watch([sentinel, () => visible.value.length], () => {
+  observer?.disconnect()
+  observer = undefined
+  const element = sentinel.value
+  if (!element || typeof IntersectionObserver === 'undefined') return
+  observer = new IntersectionObserver((entries) => {
+    if (entries.some(entry => entry.isIntersecting)) more()
+  }, { rootMargin: '0px 0px 400px 0px' })
+  observer.observe(element)
+}, { flush: 'post' })
+onBeforeUnmount(() => observer?.disconnect())
 
 function set(changes: Partial<GameFilters>) {
   filters.value = { ...filters.value, ...changes }
@@ -263,7 +302,7 @@ const SELECT = 'h-11 appearance-none rounded-pill border-(length:--cp-bw) py-0 p
       :class="GRID"
     >
       <li
-        v-for="game in shown"
+        v-for="game in visible"
         :key="game.id"
         class="min-w-0"
       >
@@ -285,5 +324,30 @@ const SELECT = 'h-11 appearance-none rounded-pill border-(length:--cp-bw) py-0 p
         </GameCard>
       </li>
     </ul>
+
+    <template v-if="state === 'results' && shown.length > PAGE_SIZE">
+      <div
+        v-if="remaining > 0"
+        ref="sentinel"
+        aria-hidden="true"
+        class="h-px"
+      />
+      <p
+        ref="status"
+        role="status"
+        tabindex="-1"
+        class="m-0 text-center text-small text-ink-2"
+      >
+        {{ t('library.shownOf', { shown: visible.length, total: shown.length }) }}
+      </p>
+      <AppButton
+        v-if="remaining > 0"
+        variant="secondary"
+        class="self-center"
+        @click="onMore"
+      >
+        {{ t('library.loadMore') }}
+      </AppButton>
+    </template>
   </div>
 </template>

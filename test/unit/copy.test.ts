@@ -99,6 +99,7 @@ const NEVER_ONE: Record<string, string> = {
   'mvp.home.datesStanding': 'the Home card shows it only for an Event with several Sessions',
   'archive.meta': 'no caller yet: its two counts need two messages once the archive shows it',
   'share.image.people': 'the Share image says „1 Person“ (share.image.person) for one Player and this text from two (#313)',
+  'library.shownOf': 'the status line shows only above one page of 40 cards (#369), so total is at least 41',
 }
 
 describe('counted copy', () => {
