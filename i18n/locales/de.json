@@ -1643,7 +1643,7 @@
   },
   "clip": {
     "label": "Clip: {name}",
-    "live": "Clip läuft für alle",
+    "live": "läuft für alle",
     "closeForMe": "Für mich schließen"
   },
   "poolWarning": {
