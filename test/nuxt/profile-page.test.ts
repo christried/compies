@@ -245,4 +245,195 @@ describe('the Profil page', () => {
       page.unmount()
     })
   })
+
+  describe('the row „Darstellung“ (#404)', () => {
+    type Page = Awaited<ReturnType<typeof mount>>
+    const theme = () => document.documentElement.getAttribute('data-theme')
+    const group = (page: Page) => page.get('main [role="radiogroup"]')
+    const themeColors = () => [...document.head.querySelectorAll('meta[name="theme-color"]')]
+      .map(meta => ({ content: meta.getAttribute('content'), media: meta.getAttribute('media') }))
+    const option = (page: Page, label: string) => group(page).findAll('[role="radio"]').find(r => r.text() === label)!
+    const checked = (page: Page) => group(page).findAll('[role="radio"]')
+      .filter(r => r.attributes('aria-checked') === 'true').map(r => r.text())
+    const notice = (page: Page) => page.find('section[aria-labelledby="settings-card-title"] [role="alert"]')
+
+    // Each case starts from Kitty on light (the outer beforeEach) and sees its own change arrive: unhead writes the head on a timeout.
+    beforeEach(async () => {
+      await vi.waitFor(() => expect(theme()).toBe('light'))
+    })
+
+    it('shows the row with its description and the User\'s saved value', async () => {
+      signInAs({ ...kitty, appearance: 'system' })
+      const page = await mount()
+
+      expect(group(page).attributes('aria-label')).toBe('Darstellung')
+      const described = group(page).attributes('aria-describedby')
+      expect(page.get(`[id="${described}"]`).text()).toBe('Gilt auf allen deinen Geräten. System folgt deinem Gerät.')
+      expect(checked(page)).toEqual(['System'])
+      expect(page.findAll('main h2').map(h => h.text())).toEqual(['Profil', 'Einstellungen'])
+
+      signInAs(kitty)
+      expect(checked(await mount())).toEqual(['Hell'])
+    })
+
+    it('names its three options', async () => {
+      const page = await mount()
+
+      const radios = group(page).findAll('[role="radio"]')
+      expect(radios.map(r => r.text())).toEqual(['Hell', 'Dunkel', 'System'])
+    })
+
+    it('switches the page and the browser bar at a tap, before the save answers', async () => {
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const received: unknown[] = []
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: async (event) => {
+          const { appearance } = await readBody(event)
+          received.push(appearance)
+          await gate
+          return { appearance }
+        },
+      })
+      const page = await mount()
+
+      await option(page, 'Dunkel').trigger('click')
+
+      await vi.waitFor(() => expect(received).toEqual(['dark']))
+      await vi.waitFor(() => expect(theme()).toBe('dark'))
+      expect(themeColors()).toEqual([{ content: '#17121d', media: null }])
+      expect(checked(page)).toEqual(['Dunkel'])
+      expect(useAuthUser().value?.appearance).toBe('dark')
+
+      release()
+      await flushPromises()
+      expect(theme()).toBe('dark')
+      expect(notice(page).exists()).toBe(false)
+    })
+
+    it('gives System both browser bar colours', async () => {
+      const received: unknown[] = []
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: async (event) => {
+          const { appearance } = await readBody(event)
+          received.push(appearance)
+          return { appearance }
+        },
+      })
+      const page = await mount()
+
+      await option(page, 'System').trigger('click')
+
+      await vi.waitFor(() => expect(theme()).toBe('system'))
+      // In any order: unhead keeps an element it already placed where it is (test/nuxt/appearance.test.ts).
+      expect(themeColors()).toHaveLength(2)
+      expect(themeColors()).toEqual(expect.arrayContaining([
+        { content: '#fff3df', media: '(prefers-color-scheme: light)' },
+        { content: '#17121d', media: '(prefers-color-scheme: dark)' },
+      ]))
+      expect(received).toEqual(['system'])
+    })
+
+    it('switches back and says so when the save fails, and hides the notice at the next tap', async () => {
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: () => {
+          throw createError({ statusCode: 500 })
+        },
+      })
+      const page = await mount()
+
+      await option(page, 'Dunkel').trigger('click')
+
+      await vi.waitFor(() => expect(notice(page).exists()).toBe(true))
+      expect(notice(page).text()).toBe('Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal.')
+      await vi.waitFor(() => expect(theme()).toBe('light'))
+      expect(themeColors()).toEqual([{ content: '#fff3df', media: null }])
+      expect(checked(page)).toEqual(['Hell'])
+      expect(useAuthUser().value?.appearance).toBe('light')
+
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: async event => ({ appearance: (await readBody(event)).appearance }),
+      })
+      await option(page, 'Dunkel').trigger('click')
+      expect(notice(page).exists()).toBe(false)
+      await flushPromises()
+      await vi.waitFor(() => expect(theme()).toBe('dark'))
+    })
+
+    it('sends nothing for a tap on the chosen option', async () => {
+      const save = vi.fn()
+      registerEndpoint('/api/me/appearance', { method: 'POST', handler: save })
+      const page = await mount()
+
+      await option(page, 'Hell').trigger('click')
+
+      await flushPromises()
+      expect(save).not.toHaveBeenCalled()
+      expect(theme()).toBe('light')
+    })
+
+    it('shows quick taps at once and sends only the newest once the first save is back', async () => {
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const received: unknown[] = []
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: async (event) => {
+          const { appearance } = await readBody(event)
+          received.push(appearance)
+          if (received.length === 1) await gate
+          return { appearance }
+        },
+      })
+      const page = await mount()
+
+      await option(page, 'Dunkel').trigger('click')
+      await vi.waitFor(() => expect(received).toEqual(['dark']))
+      await option(page, 'Hell').trigger('click')
+      await option(page, 'System').trigger('click')
+
+      expect(checked(page)).toEqual(['System'])
+      expect(received).toEqual(['dark'])
+
+      release()
+      await vi.waitFor(() => expect(received).toEqual(['dark', 'system']))
+      await vi.waitFor(() => expect(theme()).toBe('system'))
+      expect(useAuthUser().value?.appearance).toBe('system')
+    })
+
+    it('takes the keyboard: one tab stop, arrows move and choose', async () => {
+      const received: unknown[] = []
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: async (event) => {
+          const { appearance } = await readBody(event)
+          received.push(appearance)
+          return { appearance }
+        },
+      })
+      const page = await mountSuspended(ProfilePage, { route: '/profil', attachTo: document.body })
+
+      const radios = group(page).findAll('[role="radio"]')
+      expect(radios.map(r => r.element.tagName)).toEqual(['BUTTON', 'BUTTON', 'BUTTON'])
+      expect(radios.map(r => r.attributes('type'))).toEqual(['button', 'button', 'button'])
+      expect(radios.map(r => r.attributes('tabindex'))).toEqual(['0', '-1', '-1'])
+
+      ;(option(page, 'Hell').element as HTMLButtonElement).focus()
+      await option(page, 'Hell').trigger('keydown', { key: 'ArrowRight' })
+
+      await vi.waitFor(() => expect(received).toEqual(['dark']))
+      await vi.waitFor(() => expect(theme()).toBe('dark'))
+      await flushPromises()
+      expect(document.activeElement).toBe(option(page, 'Dunkel').element)
+      page.unmount()
+    })
+  })
 })
