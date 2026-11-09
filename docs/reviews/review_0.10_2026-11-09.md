@@ -69,6 +69,31 @@ Refactors, not for the Release (from fixes.md):
 - Q8, Q11: four routes repeat the Tag load; `GameForm` fetches the whole library for Tag suggestions.
 - Q13, S12, Q14: `teamPosition` sits between the constants in `settings.ts`; `useRoomy` returns `boolean | null` (five `=== true`); `RunOptions` and `TieRunOptions` duplicate their shape.
 
+## Second round: the ten production-check tickets (#347–#356)
+
+The Release grew by ten tickets from `docs/reviews/prod_review_1.md` after the review above. They were reviewed once more with `code-review` (Standards + Spec, both `sonnet`) over `e5687a6...baa8726` and checked in the browser (`b10x`, baa8726); both reports are comments on #332 (2026-11-09). Result: no Must-fix in code. Standards 1 Should-fix (S1, the 0026 comment edit), 7 Notes; Spec 1 Must-fix for the user (SPEC-1, the two Datenschutzerklärung sentences of #355, merge with #334), 2 Should-fix, 7 Notes; the #355 secrecy audit found no leak on any of the six viewer types. Browser check: all twelve items PASS except two frame-time limits in the picker sheets, which come from the ~1500-card dev library rendering synchronously, not from #348 (follow-up ticket).
+
+### Fixed before `staging`, second round
+
+Branch for all rows: `fix/332-review-2`, merged 6874691.
+
+| | Finding | Fix |
+|---|---|---|
+| F10 | b340 item 7 | The Countdown's pre-mount frame reads the clock once at creation (`useState` under a `useId` key, so server and first client render agree) instead of the start instant: a late joiner's server frame already shows the current second and tone. Test: 7 s left renders „7“, the warning tile and seven pips. |
+| F11 | SPEC-2 (round 2) | The Session row's „Mehr“ menu closes when a Realtime refetch leaves it without entries (the Session started or ended, turned into a poll or was removed). Test in `event-sessions.test.ts`. |
+| F12 | SPEC-6 (round 2) | The library detail h1 uses `[overflow-wrap:anywhere]` (as `HomeEventCard`) instead of `break-words`, which is `overflow-wrap: break-word` in Tailwind 4; the test asserts that class. |
+| F13 | S1 (round 2) | F9's header comment in `drizzle/0026_drop_pool_column.sql` and the test comment are reverted to their `staging` content: a migration that has run on staging is never edited (§ Database). The 0026 window stays a Release-PR note. |
+| F14 | S3, S7 (round 2) | One `sheetAxis()` in `motion.ts`; the shadowing `list` in `useGameLibrary.ts` renamed. Behaviour unchanged. |
+| F15 | b10x walk-through | `useDialog` focuses in on mount when `open` is already true. Cause: `EventHostDialogs` mounts `DateRescheduleDialog` through a `v-if` on the picked Session, so the dialog opened from the Sessions menu never saw `open` change: no focus-in, no Esc, no Tab trap. Only this dialog mounted open. Test in `event-reschedule.test.ts`. |
+
+Dispositions outside the round: SPEC-3 (focus after Entfernen falls to `body`, the trigger is gone), SPEC-5 (seven `v-if` parents skip the Sheet exit, accepted in the brief), SPEC-8 (the compact poll's button keeps the short „· 2 von 3“), S5, S6 (flag props on shared components), S8 (changelog style, fixed on the branch), b10x notes (press outside the popover leaves focus where the click landed, as the GameBoard's menu; back-link gutter follows each page's content edge).
+
+### Follow-up tickets, second round
+
+- S2: seven whole-object `toEqual` on `wheel.vetoes` (`vetoes.test.ts`, `hidden-wheel.test.ts`) had to change shape for #355; § Tests prefers `toMatchObject` or a fixture builder on read sections that grow.
+- S4: `'(min-width: 61.25rem)'` is now in five places (`motion.ts`, `ClipOverlay`, `MoveToMenu`, `useEventTabs`, `ReleaseCard`) next to the theme's `--breakpoint-md`: one `MD_QUERY` constant.
+- b10x: `NextGamePicker` and the StepPool library sheet render the whole library synchronously (1.1–1.5 s frame at ~1500 cards, exit 317–557 ms after Esc): render the list lazily (virtualise or page it).
+
 ## Standards review
 
 Count: **1 Must-fix, 3 Should-fix, 12 Note.**
