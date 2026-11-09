@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
-  formatPriceAmount, parsePrice, parsePriceAmount, priceTakesAmount,
+  formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
   type GameFilters, type GameView, type Suitability,
 } from '../../shared/game'
 
@@ -625,5 +625,31 @@ describe('parseGameInput Price (#337)', () => {
     [{ price: { cents: 1999, source: 'steam' }, priceChecked: 'yes' }],
   ])('refuses %j with invalid_price', (body) => {
     expect(parseGameInput({ ...valid, ...body })).toEqual({ ok: false, error: 'invalid_price' })
+  })
+})
+
+describe('isPriceCheckOnly (#360)', () => {
+  it('is true for the flag alone', () => {
+    expect(isPriceCheckOnly({ priceChecked: true })).toBe(true)
+  })
+
+  it.each([
+    [{}],
+    [null],
+    [undefined],
+    ['priceChecked'],
+    [[true]],
+    [{ priceChecked: false }],
+    [{ priceChecked: 'yes' }],
+    [{ priceChecked: 1 }],
+    [{ priceChecked: true, name: 'Mario Kart' }],
+    [{ priceChecked: true, price: null }],
+    [{ priceChecked: true, tags: [] }],
+  ])('is false for %j', (body) => {
+    expect(isPriceCheckOnly(body)).toBe(false)
+  })
+
+  it('leaves the parser as it was: the flag alone still has no name and is refused', () => {
+    expect(parseGameInput({ priceChecked: true })).toEqual({ ok: false, error: 'invalid_game_name' })
   })
 })
