@@ -1117,7 +1117,7 @@ Past Events you played in; read-only detail.
 
 The mascot: inline SVG rig + GSAP + state machine.
 
-- **Props / variants:** `variant: head | bust | full | emote | tail`, `size`, `state`, `still?: boolean`, `accessory?: "hardhat"` (MVP)
+- **Props / variants:** `variant: head | bust | full | emote | tail`, `size`, `state`, `still?: boolean`, `accessory?: "hardhat" | "partyhat"` (MVP; the party hat is the Event page's header head only, #38)
 - **Framed pose:** the bust is a framed upper-body pose with a round sticker frame, and the frame is part of the pose, so every use shows it (empty states, the set Date, sign-in). Head and full have no frame.
 - **States:** 16 states (see 04-motion)
 - **Slots:** —
