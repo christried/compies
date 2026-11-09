@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -636,6 +638,38 @@ describe('focus after a Host action', () => {
     await flush()
 
     expect(document.activeElement).not.toBe(page.findAll('button')[0]!.element)
+  })
+})
+
+// The CSS transitions of the card (13-countdown § 04-motion addition, #332 S4): state changes of the tile and the pill take `dur-fast` with
+// `ease-snap`, the card enters with `animate-enter` (fade, `dur-base`, `ease-out`), and reduced motion turns the transitions off. jsdom
+// computes no transition, so the test reads the classes and the tokens they stand for.
+describe('the card’s CSS transitions', () => {
+  const themeCss = readFileSync(resolve(import.meta.dirname, '../../app/assets/css/compies-theme.css'), 'utf8')
+  const tokensCss = readFileSync(resolve(import.meta.dirname, '../../app/assets/css/compies-tokens.css'), 'utf8')
+
+  it('moves the tile’s and the pill’s colours with dur-fast and ease-snap, and not under reduced motion', async () => {
+    const page = await mount(READY)
+
+    for (const element of [tile(page), page.get('[data-testid="countdown-pill"]')]) {
+      expect(element.classes()).toEqual(expect.arrayContaining(['transition-colors', 'dur-fast', 'ease-snap', 'motion-reduce:transition-none', 'reduced:transition-none']))
+    }
+  })
+
+  it('enters with animate-enter', async () => {
+    const page = await mount(READY)
+
+    expect(tile(page).element.closest('section')!.classList).toContain('animate-enter')
+  })
+
+  it('has tokens that are the curve and the duration 04-motion names', () => {
+    expect(tokensCss).toMatch(/--cp-dur-fast:\s*140ms/)
+    expect(tokensCss).toMatch(/--cp-dur-base:\s*220ms/)
+    expect(tokensCss).toContain(`--cp-ease-snap: ${SNAP};`)
+    expect(tokensCss).toContain(`--cp-ease-out: ${OUT};`)
+    expect(themeCss).toMatch(/--dur-fast:\s*var\(--cp-dur-fast\)/)
+    expect(themeCss).toMatch(/--ease-snap:\s*var\(--cp-ease-snap\)/)
+    expect(themeCss).toMatch(/--animate-enter:\s*cp-fade-in var\(--cp-dur-base\) var\(--cp-ease-out\) both/)
   })
 })
 
