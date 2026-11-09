@@ -102,32 +102,40 @@ describe('RadioCardGroup with a lockedReason', () => {
   })
 })
 
-// The „Bald verfügbar“ chip sits on the title line, so on a narrow card it wraps under the title and the
-// description keeps the full text width (#174).
-describe('RadioCardGroup chip placement (#174)', () => {
-  it('puts the chip on the title line, next to the label', async () => {
+// A planned option shows „Bald verfügbar“ as a bold line under its title, lock included, not as a pill (#350).
+describe('RadioCardGroup planned line (#350)', () => {
+  it('shows no pill anywhere in the group', async () => {
     const page = await mountGroup()
 
-    const locked = radios(page)[0]!
-    const chip = page.get(`[id="${locked.attributes('aria-describedby')}"]`)
-    const title = locked.get('b')
-    expect(chip.element.parentElement).toBe(title.element.parentElement)
-    expect(chip.text()).toContain('Bald verfügbar')
+    expect(page.findAll('.rounded-pill')).toHaveLength(0)
   })
 
-  it('gives the description the whole text column, not a column beside the chip', async () => {
+  it('puts the bold lock line between the title and the description, with no border', async () => {
     const page = await mountGroup()
 
     const locked = radios(page)[0]!
-    const title = locked.get('b').element.parentElement!
+    const line = page.get(`[id="${locked.attributes('aria-describedby')}"]`)
+    expect(line.text()).toContain('Bald verfügbar')
+    expect(line.classes()).toContain('font-bold')
+    expect(line.classes().some(name => name.startsWith('border'))).toBe(false)
+    expect(line.element.previousElementSibling).toBe(locked.get('b').element)
+    expect(line.element.nextElementSibling!.textContent).toBe('Jede Person ist eine eigene Partei.')
+    expect(line.find('svg').exists()).toBe(true)
+  })
+
+  it('gives the description the whole text column, under the line', async () => {
+    const page = await mountGroup()
+
+    const locked = radios(page)[0]!
     const description = locked.findAll('span').find(span => span.text() === 'Jede Person ist eine eigene Partei.')!
-    expect(description.element.parentElement).toBe(title.parentElement)
+    expect(description.element.parentElement).toBe(locked.get('b').element.parentElement)
   })
 
-  it('leaves no chip on a card that is open', async () => {
+  it('shows no line on a card that is open', async () => {
     const page = await mountGroup()
 
     const open = radios(page)[1]!
-    expect(open.findAll('span').some(span => span.text() === 'Bald verfügbar')).toBe(false)
+    expect(open.text()).not.toContain('Bald verfügbar')
+    expect(open.attributes('aria-describedby')).toBeUndefined()
   })
 })
