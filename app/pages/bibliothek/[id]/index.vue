@@ -2,7 +2,7 @@
 import { Clock, Euro, Gamepad2, Lock, Pencil, Swords, Tag, Users } from '@lucide/vue'
 import { formatMonthYear } from '~/utils/berlin-time'
 import { describeGame } from '~/utils/describe-game'
-import { priceLine } from '~~/shared/game'
+import { priceLine } from '~/utils/price'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
 // set length, the facts (player count, Suitabilities, clip length, the Price (#337)), the Tags (#335) and who created it. The creator and the Platform
@@ -22,7 +22,7 @@ const description = computed(() => (game.value ? describeGame(game.value, t) : n
 const players = computed(() => description.value?.players ?? null)
 const suitabilities = computed(() => description.value?.suitabilities ?? null)
 // The Price line as a fact, like the card's (#337); `now` is read here, so the year shows only for another year.
-const priceText = computed(() => (game.value?.price ? priceLine(game.value.price, new Date()) : null))
+const priceText = computed(() => (game.value?.price ? priceLine(game.value.price, new Date(), t) : null))
 </script>
 
 <template>

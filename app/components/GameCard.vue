@@ -2,7 +2,8 @@
 import { Gamepad2, Users } from '@lucide/vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { describeGame } from '~/utils/describe-game'
-import { type GameView, type PoolGameFace, priceLine } from '~~/shared/game'
+import type { GameView, PoolGameFace } from '~~/shared/game'
+import { priceLine } from '~/utils/price'
 import { youTubeThumbnail } from '~~/shared/youtube'
 
 // A game as a card or a row (02-components § GameCard, #141). The cover is the uploaded image, else the
@@ -22,7 +23,7 @@ const props = withDefaults(defineProps<{
 const { t } = useI18n()
 const NuxtLink = resolveComponent('NuxtLink')
 const now = new Date()
-const priceText = computed(() => (props.game.price ? priceLine(props.game.price, now) : null))
+const priceText = computed(() => (props.game.price ? priceLine(props.game.price, now, t) : null))
 
 const cover = computed(() => props.game.imageUrl ?? (props.game.youtubeId ? youTubeThumbnail(props.game.youtubeId) : null))
 // The compact player count and the Suitabilities („Passt zu“, #171: „Teams, 1 gegen 1“).

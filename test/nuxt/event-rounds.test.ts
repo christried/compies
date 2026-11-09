@@ -6,7 +6,8 @@ import EventRounds from '~/components/EventRounds.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, EventView } from '~~/shared/event'
 import type { EndView, RoundView, SetGameView } from '~~/shared/stage'
-import { priceLine, type GameView, type PoolGame } from '~~/shared/game'
+import { formatShortDay } from '~/utils/berlin-time'
+import type { GameView, PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, serve, shownToasts, viewWithSessions, type Mounted, type Wrapper } from './event-page'
@@ -751,6 +752,8 @@ describe('the Price on the Round card (#338)', () => {
     ...game,
     price: { cents: source === 'free_to_play' ? null : cents, source, checkedAt: new Date().toISOString() },
   })
+  /** The line a Price checked today shows, spelled out so the German words are pinned (#332: they come from de.json now). */
+  const stand = () => `Stand ${formatShortDay(new Date())}`
 
   it('shows the Price line on the open Round card of a Member', async () => {
     const game = priced(halo)
@@ -758,7 +761,7 @@ describe('the Price on the Round card (#338)', () => {
 
     const stage = await mount(slug)
 
-    expect(stage.get('[aria-label="Offene Spiele"] li').text()).toContain(priceLine(game.price!, new Date()))
+    expect(stage.get('[aria-label="Offene Spiele"] li').text()).toContain(`19,99 € bei Steam · ${stand()}`)
   })
 
   it('shows the Price line to the Host too, and the open Game notes still show', async () => {
@@ -768,7 +771,7 @@ describe('the Price on the Round card (#338)', () => {
     const stage = await mount(slug)
 
     const rounds = stage.get('[aria-label="Offene Spiele"]')
-    expect(rounds.text()).toContain(priceLine(game.price!, new Date()))
+    expect(rounds.text()).toContain(`19,99 € bei Steam · ${stand()}`)
     expect(rounds.text()).toContain('Hausregel: keine Raketen')
   })
 
@@ -802,8 +805,7 @@ describe('the Price on the Round card (#338)', () => {
     const stage = await mount(slug)
 
     const card = stage.get('[aria-label="Offene Spiele"] li')
-    expect(card.text()).toContain(priceLine(game.price!, new Date()))
-    expect(card.text()).toContain('Free-to-play · Stand')
+    expect(card.text()).toContain(`Free-to-play · ${stand()}`)
     expect(card.text()).not.toContain('€')
   })
 })

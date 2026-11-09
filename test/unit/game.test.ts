@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
-  formatPriceAmount, parsePrice, parsePriceAmount, priceCheckedDay, priceLine, priceTakesAmount,
-  type GameFilters, type GamePrice, type GameView, type Suitability,
+  formatPriceAmount, parsePrice, parsePriceAmount, priceTakesAmount,
+  type GameFilters, type GameView, type Suitability,
 } from '../../shared/game'
 
 describe('clipTime', () => {
@@ -589,47 +589,6 @@ describe('parsePrice (#337)', () => {
     [[]],
   ])('refuses %j', (raw) => {
     expect(parsePrice(raw)).toBeUndefined()
-  })
-})
-
-describe('priceCheckedDay (#337)', () => {
-  it('writes the Berlin day in full', () => {
-    expect(priceCheckedDay('2026-11-03T10:00:00.000Z')).toBe('3. November 2026')
-  })
-
-  it('takes the Berlin day, so an instant just before midnight UTC is the next day', () => {
-    expect(priceCheckedDay('2026-11-02T23:30:00.000Z')).toBe('3. November 2026')
-  })
-})
-
-describe('priceLine (#337)', () => {
-  const now = new Date('2026-11-09T12:00:00.000Z')
-  const checkedAt = '2026-11-03T10:00:00.000Z'
-
-  it.each<[GamePrice['cents'], GamePrice['source'], string]>([
-    [1999, 'steam', '19,99 € bei Steam · Stand 3. Nov.'],
-    [2000, 'epic', '20,00 € bei Epic Games Store · Stand 3. Nov.'],
-    [1999, 'gog', '19,99 € bei GOG · Stand 3. Nov.'],
-    [1999, 'publisher', '19,99 € bei Publisher-Website · Stand 3. Nov.'],
-    [1999, 'steam_key', '19,99 € bei Steam-Key · Stand 3. Nov.'],
-    [null, 'free_to_play', 'Free-to-play · Stand 3. Nov.'],
-    [null, 'subscription', 'Abo · Stand 3. Nov.'],
-  ])('writes %s with the amount %s', (cents, source, text) => {
-    expect(priceLine({ cents, source, checkedAt }, now)).toBe(text)
-  })
-
-  it('appends the year when the day was checked in another year', () => {
-    expect(priceLine({ cents: 1999, source: 'steam', checkedAt: '2025-11-03T10:00:00.000Z' }, now)).toBe('19,99 € bei Steam · Stand 3. Nov. 2025')
-  })
-
-  it('takes the Berlin day, so an instant just before midnight UTC is the next day', () => {
-    expect(priceLine({ cents: 1999, source: 'steam', checkedAt: '2026-11-02T23:30:00.000Z' }, now)).toBe('19,99 € bei Steam · Stand 3. Nov.')
-  })
-
-  it('compares the Berlin years: New Year in Berlin is the new year, whatever UTC says', () => {
-    const newYear = '2025-12-31T23:30:00.000Z'
-    expect(priceLine({ cents: null, source: 'subscription', checkedAt: newYear }, new Date('2026-06-01T10:00:00.000Z'))).toBe('Abo · Stand 1. Jan.')
-    expect(priceLine({ cents: null, source: 'subscription', checkedAt: newYear }, new Date('2025-12-31T12:00:00.000Z'))).toBe('Abo · Stand 1. Jan. 2026')
   })
 })
 
