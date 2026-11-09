@@ -29,6 +29,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
   - Working for an integration branch: the line goes in your report, not in `CHANGELOG.md`. The orchestrator adds it when it merges your branch (`docs/agents/release.md` § Changelog lines).
   - A branch whose PR goes straight into `staging`: add it under `## [Unreleased]` in `CHANGELOG.md`, in the group the brief names.
 - Shell: this is Windows, and the Bash tool is Git Bash. Script with `node` from a file, never Python; inline `node -e` in bash mangles backticks.
+- Scratch files (`red.log`, a throwaway script) go to your scratchpad directory, never into the checkout: `*.log` is gitignored, so git status hides them, and two stayed in the root after 0.10.
 - Touch only what your brief allows. If the brief and the ticket disagree, or the code makes the brief wrong, do what the ticket needs and say so in the report.
 
 ## Commits

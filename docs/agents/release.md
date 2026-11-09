@@ -17,9 +17,11 @@ Every Release runs these steps in this order. A step finds work → tickets, fix
 
 1. **Review.** Once every ticket of the Release is on `staging`, review the Release diff (`vPREVIOUS...origin/staging`) in three `sonnet` subagents: `code-review` Standards, `code-review` Spec against the Release spec and its tickets, and `thermo-nuclear-code-quality-review` with `improve-codebase-architecture`. Each reviewer writes its report to a file in the orchestrator's scratchpad and returns at most 300 words: the path and its finding headlines. A `haiku` agent merges the files into `docs/reviews/review_x.y_YYYY-MM-DD.md`; the orchestrator reads the headlines and turns what must change into tickets (0.9: three full reports in the orchestrator's context cost what a whole ticket does).
    - A Release that is one spec on one integration branch gets this review on the integration branch (`vPREVIOUS...<integration branch>`), as `/implement-spec`'s code review, and its fixes land before the integration PR merges. In 0.5.1 a two-axis review on the integration branch and this review on `staging` covered the same diff, and only the second found #242.
-2. **Walk-through.** Open a `ready-for-human` issue „Staging walk-through x.y“ with a checklist built from the spec's acceptance criteria. The user walks staging and notes what is off; each finding becomes a ticket.
-3. **Cut.** Only then the version cut and the Release PR below.
-4. **Retro.** After the merge into `main`, ask the user to run `/retro` on the Release's sessions: what the review and the walk-through caught that a check, a standard or a brief should have caught earlier. Its rules land in `CLAUDE.md`, `docs/agents/` or a new automated check.
+   - The Release's browser check of its UI tickets (one brief, `docs/agents/browser-frame.md`) runs against the production build: `pnpm build`, then `serve.mjs start <run> --only=prod` (port 3001). `pnpm dev` serves the CSS unminified, and every dev check of 0.10 passed while the minified duration tokens broke every Web Animation on staging (#370).
+2. **Verify on staging.** Once the integration PR is on `staging`, verify each ticket there and close it (`docs/agents/delivery.md` § Issues). A FAIL is fixed on `staging` before the cut. A fix that lands after the cut and changes nothing Users see needs no new cut (0.10: #370 rode into the Release PR).
+3. **Walk-through.** Open a `ready-for-human` issue „Staging walk-through x.y“ with a checklist built from the spec's acceptance criteria. The user walks staging and notes what is off; each finding becomes a ticket.
+4. **Cut.** Only then the version cut and the Release PR below.
+5. **Retro.** After the merge into `main`, ask the user to run `/retro` on the Release's sessions: what the review and the walk-through caught that a check, a standard or a brief should have caught earlier. Its rules land in `CLAUDE.md`, `docs/agents/` or a new automated check.
 
 ## Version cut (own PR into `staging`)
 
@@ -58,7 +60,7 @@ Which case applies depends on what `staging` holds after the cut.
 - If `main` and `staging` have diverged (the merge commit on `main` is not in `staging`), merge `main` back into `staging` so the next Release PR is clean.
 - Delete the `release/x.y.z` branch once it is merged (Case B only).
 - Mark the Release as released in `docs/roadmap.md`.
-- Ask the user to run `/retro` (step 4 of § Review, walk-through, retro).
+- Ask the user to run `/retro` (step 5 of § Review, walk-through, retro).
 
 ## Semantic versioning
 

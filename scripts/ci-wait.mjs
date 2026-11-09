@@ -1,20 +1,24 @@
 // Waits for the CI runs of one commit and says whether `check` passed (retro 0.7). CI runs on every pushed branch, so
 // an implementer's head gets the full suite and the build without loading this machine (docs/agents/implementer-frame.md).
 //
-//   node scripts/ci-wait.mjs [sha]    (default: HEAD, which must be pushed)
+//   node scripts/ci-wait.mjs [sha] [--until-done]    (default: HEAD, which must be pushed)
 //
 // Exit 0: every CI run of the commit passed. Exit 1: one failed or was cancelled (the failing step's output follows,
 // cut to its failures), or no run appeared within two minutes. Exit 2: CI is still running after 2.5 minutes, so run it
 // again. One call stays under the 3 minutes after which Claude Code moves a command to the background: that ends the
 // agent's turn and wakes the orchestrator with an interim notice (three times in session 7 of 0.8, retro 0.8).
+// `--until-done` is for a call that already runs in the background (the orchestrator's): it waits up to 20 minutes, so a
+// 6-minute run ends in one notification instead of a failed one every 2.5 minutes (retro 0.10).
 // It prints one line while waiting, not a progress log.
 import { execFileSync } from 'node:child_process'
 
+const args = process.argv.slice(2)
+const untilDone = args.includes('--until-done')
 // `gh run list --commit` matches the full SHA only.
-const sha = execFileSync('git', ['rev-parse', process.argv[2] ?? 'HEAD'], { encoding: 'utf8' }).trim()
+const sha = execFileSync('git', ['rev-parse', args.find(arg => !arg.startsWith('--')) ?? 'HEAD'], { encoding: 'utf8' }).trim()
 const POLL_MS = 15_000
 const APPEAR_MS = 120_000
-const CALL_MS = 150_000
+const CALL_MS = untilDone ? 20 * 60_000 : 150_000
 
 const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))

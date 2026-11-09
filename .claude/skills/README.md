@@ -12,7 +12,7 @@ Each patch is a paragraph starting with `**COMPIES:**` that points at the rules 
 - `implement-spec`: subagent rules, frontier tickets only, integration branch from and into `staging` (where `Closes #n` closes nothing), clean merges by the orchestrator, delivery, the 300k context limit with its handoff, the Release review in place of `code-review`, the worktree cleanup
 - `implement`: delivery
 - `implement-spec-max`: a copy of the patched `implement-spec` whose one extra paragraph, `**COMPIES (max):**`, puts every subagent on `opus` at `effort: "high"`. A change to `implement-spec` is mirrored here: `diff .claude/skills/implement-spec/SKILL.md .claude/skills/implement-spec-max/SKILL.md` shows only the name, the description and that paragraph.
-- `grill-with-docs`, `to-spec`, `to-tickets`: design hand-off flags and tickets
+- `grill-with-docs`, `to-spec`, `to-tickets`: design hand-off flags and tickets; migration numbers, ADR citations, changelog groups and site counts come from the repo (retro 0.10)
 - `handoff`: names the subagents still running
 
 ## Updating to a new release

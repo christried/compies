@@ -16,7 +16,7 @@ The issue tracker and triage label vocabulary should have been provided to you. 
 
 Check with the user that these seams match their expectations.
 
-**COMPIES:** under Implementation Decisions, flag each piece of UI as _own build_ or _Claude Design hand-off_ (`docs/agents/design-handoff.md`).
+**COMPIES:** under Implementation Decisions, flag each piece of UI as _own build_ or _Claude Design hand-off_ (`docs/agents/design-handoff.md`). A migration is „the next after the newest file in `drizzle/`“, never a number (0.10's spec said „0026“, which existed). A change to who may open what (an invite answer, a 404 against a 410) cites the ADR it keeps or amends (0.10's story 8 contradicted ADR 0006).
 
 3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
 
