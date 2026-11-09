@@ -1,4 +1,4 @@
-import { ceremonyTimeline, CEREMONY_ROW_MS, type CeremonyShape } from '~~/shared/ceremony'
+import { ceremonyTimeline, CEREMONY_ROW_MS, type CeremonyShape, type RunShape } from '~~/shared/ceremony'
 import type { RigState } from './compibert-rig'
 import { addTieEntrance, addTieLanding, boxWithin, setTie, tiePartsOf, tieStops, type TieBox, type TieParts, type TieStops } from './ceremony-tie-run'
 import type { Gsap } from './gsap'
@@ -121,8 +121,7 @@ export function ceremonyRigState(elapsedMs: number, shape: CeremonyShape): RigSt
 export type Burst = { atMs: number, at: 'stamp' } | { atMs: number, at: 'hop', index: number }
 
 /** The run's shape (the Winner count and the grid both change the timeline, #315) and the layer's callbacks. */
-export interface RunOptions extends CeremonyShape {
-  grid: boolean
+export interface RunOptions extends RunShape {
   /** The timeline's calls: the pose Compibert's rig takes as the clock crosses a moment. */
   rigState: (state: RigState) => void
   /** A burst of confetti. The layer decides whether this viewer saw it live. */
