@@ -17,8 +17,8 @@ export function apiFailure(failure: unknown): ApiFailure {
   return { status: error?.statusCode, code: error?.data?.statusMessage ?? error?.statusMessage, data: isRecord(data) ? data : undefined }
 }
 
-/** The copy for each error code the UI can explain. Codes not listed fall back to the caller's copy. */
-const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
+/** The shared words of every reason. `null` = no words on purpose: the caller's fallback shows (the ten codes at the end). The Record is total, so a new ApiErrorCode fails typecheck until it is worded or set to null here. */
+const SHARED: Record<ApiErrorCode, string | null> = {
   in_past: 'error.slotPast',
   slot_past: 'error.slotPast',
   slot_taken: 'error.slotTakenDate',
@@ -102,18 +102,52 @@ const CODE_COPY: Partial<Record<ApiErrorCode, string>> = {
   ceremony_running: 'error.ceremonyRunning',
   round_not_open: 'error.roundNotOpen',
   invalid_result: 'error.resultInvalid',
+  // The ten codes without words, each an intended fallback to the caller's line (#417): none is reached by a normal click.
+  invalid_name: null, // create parser; the setup wizard validates the name first
+  invalid_mode: null, // create parser; the wizard validates the date mode first
+  invalid_slots: null, // create parser; the wizard validates the slots first
+  invalid_time: null, // a malformed value only; the Slot editor has its own words (place slotEditor), the wizard validates
+  invalid_value: null, // fixed shapes from the client; a vote falls back to error.voteFailed by its own fallback
+  invalid_settings: null, // the editor sends a complete draft
+  wheel_options_without_wheel: null, // only a draft with wheel options in a mode without a wheel: a defensive refusal
+  invalid_cursor: null, // the Activity feed's cursor is the id the client was given
+  no_such_team: null, // only by a race (the Host lowers the team count under an open board), then the generic line shows
+  no_live_connection: null, // never copy: useEventRoom takes it as no live connection and polls
 }
 
-/** The i18n key for an error code: the screen's own key if it has one, else the shared one, else `fallback`. */
-export function errorCopyKey(code: ApiErrorCode, overrides: Partial<Record<ApiErrorCode, string>> = {}, fallback = 'error.saveFailed'): string {
-  return overrides[code] ?? CODE_COPY[code] ?? fallback
+/** Words that differ from SHARED in one place, as data. Each entry says where it shows. */
+const PLACES = {
+  /** The dock's disabled reason of „Nächstes Spiel setzen“ and „Rad drehen“ only. The toast of a refused set/spin request keeps the shared words. */
+  setGame: { no_running_session: 'dock.setBlocked.no_running_session' },
+  /** „Letztes Spiel hinzufügen“: its disabled reason and its toast (#278). */
+  lastGame: { game_count_range: 'dock.lastGameBlocked.game_count_range' },
+  /** „Event löschen“ (#333): its disabled reason and the toast of a refused delete. */
+  deleteEvent: { session_running: 'dock.deleteBlocked' },
+  /** The toasts of the Slot editor sheet (SlotEditSheet). */
+  slotEditor: { invalid_time: 'mvp.slots.incomplete', wrong_phase: 'mvp.slots.locked' },
+  /** The inline row error of the setup wizard's direct-dates mode: two Sessions on one Date is the Date rule, not a duplicate Slot (StepSessions). */
+  directDates: { duplicate_slot: 'error.dateDuplicate' },
+  /** The failure line of the settings editor (einstellungen.vue). */
+  eventSettings: { wrong_phase: 'eventSettings.wrongPhase' },
+} as const satisfies Record<string, Partial<Record<ApiErrorCode, string>>>
+
+/** Where a reason is worded differently from the shared words. Absent (undefined) = the shared words. */
+export type ReasonPlace = keyof typeof PLACES
+
+const FALLBACK = 'error.saveFailed'
+
+function words(code: string, place?: ReasonPlace): string | null | undefined {
+  const own: Partial<Record<ApiErrorCode, string>> = place === undefined ? {} : PLACES[place]
+  return own[code as ApiErrorCode] ?? SHARED[code as ApiErrorCode] // undefined for a code the contract does not know
 }
 
-/**
- * The i18n key for a failed call: the screen's own key for a code if it has one, else the shared one,
- * else `fallback`. Placeholders such as `{max}` are the caller's to fill.
- */
-export function apiErrorKey(failure: unknown, fallback = 'error.saveFailed', overrides: Partial<Record<ApiErrorCode, string>> = {}): string {
-  const code = apiFailure(failure).code as ApiErrorCode | undefined
-  return code ? errorCopyKey(code, overrides, fallback) : fallback
+/** The i18n key of a rule's reason in a place. A code without words answers 'error.saveFailed' (the ten nulls of SHARED). */
+export function reasonKey(code: ApiErrorCode, place?: ReasonPlace): string {
+  return words(code, place) ?? FALLBACK
+}
+
+/** The i18n key of a failed call: the failure's code in `place`, else `fallback`. Placeholders such as `{max}` are the caller's to fill. */
+export function apiErrorKey(failure: unknown, fallback = FALLBACK, place?: ReasonPlace): string {
+  const code = apiFailure(failure).code
+  return (code ? words(code, place) : null) || fallback
 }

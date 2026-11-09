@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CalendarCheck, CalendarDays, Minus, Plus, X } from '@lucide/vue'
 import type { Component } from 'vue'
-import { errorCopyKey } from '~/utils/api-error'
+import { reasonKey } from '~/utils/api-error'
 import type { EventDraft, SessionsDraft, StepLocks } from '~/utils/event-draft'
 import { SESSIONS_MAX, SLOTS_MAX, slotProblems as slotRuleProblems, type SlotProblem } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
@@ -54,11 +54,10 @@ function rowProblems(values: string[]) {
   return instants.map(instant => (instant === null ? null : problems[next++] ?? null))
 }
 const slotProblems = computed(() => rowProblems(dates.value.slots))
-const slotErrors = computed(() => slotProblems.value.map(problem => (problem ? t(errorCopyKey(problem)) : undefined)))
+const slotErrors = computed(() => slotProblems.value.map(problem => (problem ? t(reasonKey(problem)) : undefined)))
 // Direct mode: two Sessions on one Date is the Date rule, not a duplicate Slot.
-const DIRECT_COPY = { duplicate_slot: 'error.dateDuplicate' }
 const directProblems = computed(() => rowProblems(dates.value.direct))
-const directErrors = computed(() => directProblems.value.map(problem => (problem ? t(errorCopyKey(problem, DIRECT_COPY)) : undefined)))
+const directErrors = computed(() => directProblems.value.map(problem => (problem ? t(reasonKey(problem, 'directDates')) : undefined)))
 
 /** A past row blocks with its own call to action; any other row error blocks with that row's text. */
 function rowBlocker(problems: (SlotProblem | null)[], errors: (string | undefined)[]): string | null {

@@ -8,9 +8,8 @@ import StepName from '~/components/stepper/StepName.vue'
 import StepPool from '~/components/stepper/StepPool.vue'
 import StepPoints from '~/components/stepper/StepPoints.vue'
 import StepSessions from '~/components/stepper/StepSessions.vue'
-import { apiErrorKey } from '~/utils/api-error'
+import { apiErrorKey, type ReasonPlace } from '~/utils/api-error'
 import type { EventDraft, StepKey, StepLocks } from '~/utils/event-draft'
-import type { ApiErrorCode } from '~~/shared/errors'
 import { SLOTS_MAX } from '~~/shared/event'
 import { hasWheel } from '~~/shared/settings'
 
@@ -19,7 +18,7 @@ import { hasWheel } from '~~/shared/settings'
 // (`locks`) and what the last step does (`submit`); the wizard owns the rest: current and reached step, Weiter, the
 // blocker the steps report, the failure line and the info column, and lays it out with EventStepper. A step edits the
 // whole draft through `v-model`, reports its blocker through `v-model:blocker` and takes `locks`, which it may ignore.
-// `submit` receives the draft; when it throws, the wizard shows the error's copy (`errorCopy` has the page's own) and
+// `submit` receives the draft; when it throws, the wizard shows the error's copy (`errorPlace` has the page's own words) and
 // stays on the last step. What follows a success is the page's. A new step goes into STEPS below. The steps are
 // imported, not auto-imported: Nuxt would name those in `stepper/` with a folder prefix.
 const props = defineProps<{
@@ -34,8 +33,8 @@ const props = defineProps<{
   savingLabel: string
   /** Every step is a link from the start (the editor), instead of those the Host has been to. */
   reachAll?: boolean
-  /** Copy for error codes the page words itself, before the shared copy (`apiErrorKey`). */
-  errorCopy?: Partial<Record<ApiErrorCode, string>>
+  /** Where a refusal shows, for the page's own words (ReasonPlace). */
+  errorPlace?: ReasonPlace
   submit: (draft: EventDraft) => Promise<void>
 }>()
 const draft = defineModel<EventDraft>({ required: true })
@@ -96,7 +95,7 @@ async function next() {
     await props.submit(draft.value)
   }
   catch (error) {
-    failure.value = t(apiErrorKey(error, 'error.saveFailed', props.errorCopy), { max: SLOTS_MAX })
+    failure.value = t(apiErrorKey(error, 'error.saveFailed', props.errorPlace), { max: SLOTS_MAX })
   }
   finally {
     saving.value = false

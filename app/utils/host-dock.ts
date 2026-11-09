@@ -1,7 +1,6 @@
 import { eventHasWheel } from '~~/shared/settings'
-import { coinRejection } from '~~/shared/coin'
-import { ceremonyRejection } from '~~/shared/ceremony'
-import { errorCopyKey } from './api-error'
+import { coinRejection, type CoinRejection } from '~~/shared/coin'
+import { ceremonyRejection, type CeremonyRejection } from '~~/shared/ceremony'
 import type { SetRejection, SpinRejection } from '~~/shared/rounds'
 import type { LastGameRejection } from '~~/shared/finish'
 import type { StartRejection } from '~~/shared/session-state'
@@ -147,34 +146,17 @@ function stateLayout(state: HostDockState, open: { pollOpen: boolean, bonusVetoO
 }
 
 /**
- * The copy key of the reason the coin cannot be tossed now, or null (#235): the dock's disabled reason while a toss flies, from the
- * Event read's toss and the server clock. The reason is the rule's (coinRejection, the Host asks here); its copy is the API's.
+ * The rule's reason the coin cannot be tossed now, or null (#235): the dock's disabled reason while a toss flies, from the
+ * Event read's toss and the server clock. The reason is the rule's (coinRejection, the Host asks here); its words are reasonKey's.
  */
-export function coinBlockedKey({ sessions, coin }: Pick<EventView, 'sessions' | 'coin'>, nowMs: number): string | null {
-  const rejection = coinRejection({ isHost: true, sessions, latest: coin, now: nowMs })
-  return rejection === null ? null : errorCopyKey(rejection)
+export function coinRejectionAt({ sessions, coin }: Pick<EventView, 'sessions' | 'coin'>, nowMs: number): CoinRejection | null {
+  return coinRejection({ isHost: true, sessions, latest: coin, now: nowMs })
 }
 
 /**
- * The copy key of the reason the ceremony cannot start now, or null (#309): the dock's disabled reason while a run plays, from the Event read's
- * ceremony and the server clock. The reason is the rule's (ceremonyRejection, the Host asks here); its copy is the API's.
+ * The rule's reason the ceremony cannot start now, or null (#309): the dock's disabled reason while a run plays, from the Event read's
+ * ceremony and the server clock. The reason is the rule's (ceremonyRejection, the Host asks here); its words are reasonKey's.
  */
-export function ceremonyBlockedKey({ event, ceremony }: Pick<EventView, 'ceremony'> & { event: Pick<EventView['event'], 'phase'> }, nowMs: number): string | null {
-  const rejection = ceremonyRejection({ isHost: true, phase: event.phase, latest: ceremony, now: nowMs })
-  return rejection === null ? null : errorCopyKey(rejection)
-}
-
-/** The i18n key of the reason a game cannot be set or the wheel not spun now: the start rule's words for the teams, the dock's own for the rest. */
-export function setBlockedKey(rejection: SpinRejection): string {
-  switch (rejection) {
-    case 'not_set_up':
-    case 'teams_empty':
-    case 'teams_uneven': return `dock.startBlocked.${rejection}`
-    default: return `dock.setBlocked.${rejection}`
-  }
-}
-
-/** The i18n key of the reason the last game cannot be added now (#278): the maximum in the dock's own words, the rest in the shared copy. */
-export function lastGameBlockedKey(rejection: LastGameRejection): string {
-  return rejection === 'game_count_range' ? 'dock.lastGameBlocked.game_count_range' : errorCopyKey(rejection)
+export function ceremonyRejectionAt({ event, ceremony }: Pick<EventView, 'ceremony'> & { event: Pick<EventView['event'], 'phase'> }, nowMs: number): CeremonyRejection | null {
+  return ceremonyRejection({ isHost: true, phase: event.phase, latest: ceremony, now: nowMs })
 }
