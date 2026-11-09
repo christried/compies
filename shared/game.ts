@@ -331,7 +331,7 @@ export interface GameInput {
   tags: GameTag[] | undefined
   /** The Price sent (#337): null clears it, undefined (no `price` in the body) keeps the game's own, as `tags` does. */
   price: GamePriceInput | null | undefined
-  /** „Preis stimmt noch“ (#337): true restamps the stored Price's day without changing it; false when absent. */
+  /** „Preis stimmt noch“ (#337): true restamps the stored Price's day without changing it; false when absent. The flag alone, with no other key, is the restamp (#360, see isPriceCheckOnly). */
   priceChecked: boolean
 }
 
@@ -382,6 +382,13 @@ export function parseGameInput(input: unknown): { ok: true, game: GameInput } | 
       priceChecked: body.priceChecked === true,
     },
   }
+}
+
+/** „Preis stimmt noch“ (#360): a body with `priceChecked: true` and no other key restamps the Price day and nothing else. */
+export function isPriceCheckOnly(input: unknown): boolean {
+  if (!isRecord(input)) return false
+  const keys = Object.keys(input)
+  return keys.length === 1 && keys[0] === 'priceChecked' && input.priceChecked === true
 }
 
 /** A clip start as the User types it: seconds (`72`), `m:ss` (`1:12`) or `h:mm:ss`, up to CLIP_START_MAX. Null for anything else. */

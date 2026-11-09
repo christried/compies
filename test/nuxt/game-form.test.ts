@@ -958,7 +958,7 @@ describe('the game form', () => {
       expect(confirmButton(plain)).toBeUndefined()
     })
 
-    it('„Preis stimmt noch“ sends the stored game and the flag only, and moves the day without saving', async () => {
+    it('„Preis stimmt noch“ sends only the flag, and moves the day without saving', async () => {
       patchPrice = { cents: 1999, source: 'steam', checkedAt: '2026-11-09T08:00:00.000Z' }
       const page = await mountSuspended(GameForm, { props: { game: stored } })
       await field(page, 'Name').setValue('Umbenannt')
@@ -967,22 +967,21 @@ describe('the game form', () => {
 
       await vi.waitFor(() => expect(page.text()).toContain('Stand: 9. November 2026'))
       expect(patchedWith).toHaveBeenCalledTimes(1)
-      const body = patchedWith.mock.lastCall![0]
-      expect(body).toEqual({
-        name: 'Mario Kart',
-        youtubeUrl: LINK,
-        clipStart: 72,
-        clipLength: 30,
-        playersMin: null,
-        playersMax: null,
-        suitabilities: [],
-        notes: null,
-        priceChecked: true,
-      })
-      expect(body).not.toHaveProperty('tags')
-      expect(body).not.toHaveProperty('price')
+      expect(patchedWith.mock.lastCall![0]).toEqual({ priceChecked: true })
       expect(page.emitted('saved')).toBeUndefined()
       expect(useState<{ text: string }[]>('toasts').value.map(item => item.text)).toContain('Preis bestätigt')
+    })
+
+    it('„Preis stimmt noch“ sends exactly the flag for a game with no link and every other field set', async () => {
+      patchPrice = { cents: 1999, source: 'steam', checkedAt: '2026-11-09T08:00:00.000Z' }
+      const full: GameView = { ...stored, youtubeId: null, playersMin: 2, playersMax: 8, suitabilities: ['teams'], notes: 'Notiz' }
+      const page = await mountSuspended(GameForm, { props: { game: full } })
+
+      await confirmButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(page.text()).toContain('Stand: 9. November 2026'))
+      expect(patchedWith).toHaveBeenCalledTimes(1)
+      expect(patchedWith.mock.lastCall![0]).toEqual({ priceChecked: true })
     })
 
     it('removes the Price on a click: both fields empty, and the next save sends null in edit mode', async () => {
