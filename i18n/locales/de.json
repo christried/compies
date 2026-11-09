@@ -1070,6 +1070,8 @@
     "place": "Platz {n}"
   },
   "settings": {
+    "title": "Einstellungen",
+    "soundHelp": "Clips starten mit Ton. Wird auf diesem Gerät gemerkt.",
     "theme": "Darstellung",
     "light": "Hell",
     "dark": "Dunkel",

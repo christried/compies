@@ -151,4 +151,98 @@ describe('the Profil page', () => {
     expect(useRoute().path).toBe('/anmelden')
     expect(useRoute().query.redirect).toBe('/profil')
   })
+
+  describe('the card „Einstellungen“ (#400)', () => {
+    type Page = Awaited<ReturnType<typeof mount>>
+    const toggleIn = (page: Page) => page.get('main [role="switch"]')
+    const headerSound = (page: Page) => page.get('header button[aria-label="Ton"]')
+    const resolve = (page: Page, id: string | undefined) => page.get(`[id="${id}"]`).text()
+
+    beforeEach(() => {
+      useState('sound-enabled').value = true
+      try {
+        localStorage.removeItem('compies-sound')
+      }
+      catch {
+        // Storage blocked: the default (sound on) stands.
+      }
+    })
+
+    it('sits between the card „Profil“ and „Abmelden“, titled „Einstellungen“', async () => {
+      const page = await mount()
+
+      expect(page.findAll('main h2').map(h => h.text())).toEqual(['Profil', 'Einstellungen'])
+      const section = page.get('section[aria-labelledby="settings-card-title"]')
+      const abmelden = page.findAll('main button').find(b => b.text() === 'Abmelden')!
+      expect(section.element.compareDocumentPosition(abmelden.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('shows the row „Ton“ with its description, starting on', async () => {
+      const page = await mount()
+
+      const sw = toggleIn(page)
+      expect(resolve(page, sw.attributes('aria-labelledby'))).toBe('Ton')
+      expect(resolve(page, sw.attributes('aria-describedby'))).toBe('Clips starten mit Ton. Wird auf diesem Gerät gemerkt.')
+      expect(sw.attributes('aria-checked')).toBe('true')
+      expect(headerSound(page).attributes('aria-pressed')).toBe('true')
+    })
+
+    it('changes the header\'s toggle from the row\'s switch', async () => {
+      const page = await mount()
+
+      await toggleIn(page).trigger('click')
+
+      expect(toggleIn(page).attributes('aria-checked')).toBe('false')
+      expect(headerSound(page).attributes('aria-pressed')).toBe('false')
+      expect(localStorage.getItem('compies-sound')).toBe('off')
+    })
+
+    it('changes the row\'s switch from the header\'s toggle', async () => {
+      const page = await mount()
+
+      await headerSound(page).trigger('click')
+      expect(toggleIn(page).attributes('aria-checked')).toBe('false')
+
+      await headerSound(page).trigger('click')
+      expect(toggleIn(page).attributes('aria-checked')).toBe('true')
+      expect(localStorage.getItem('compies-sound')).toBe('on')
+    })
+
+    it('keeps the choice over a reload through the existing storage', async () => {
+      const first = await mount()
+      await toggleIn(first).trigger('click')
+      first.unmount()
+
+      // A reload: a fresh app state that has not read the storage yet.
+      useState('sound-enabled').value = true
+      const page = await mount()
+      await flushPromises()
+
+      expect(toggleIn(page).attributes('aria-checked')).toBe('false')
+      expect(headerSound(page).attributes('aria-pressed')).toBe('false')
+    })
+
+    it('shows the switch off when the device stored „off“ before', async () => {
+      localStorage.setItem('compies-sound', 'off')
+
+      const page = await mount()
+      await flushPromises()
+
+      expect(toggleIn(page).attributes('aria-checked')).toBe('false')
+    })
+
+    it('names the switch „Ton“ and lets the keyboard reach it', async () => {
+      const page = await mountSuspended(ProfilePage, { route: '/profil', attachTo: document.body })
+
+      const sw = toggleIn(page)
+      expect(sw.element.tagName).toBe('BUTTON')
+      expect(sw.attributes('type')).toBe('button')
+      expect(sw.attributes('tabindex')).toBeUndefined()
+      expect(sw.attributes('aria-disabled')).toBeUndefined()
+      expect(resolve(page, sw.attributes('aria-labelledby'))).toBe('Ton')
+      ;(sw.element as HTMLButtonElement).focus()
+      expect(document.activeElement).toBe(sw.element)
+      page.unmount()
+    })
+  })
 })

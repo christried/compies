@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { LogOut } from '@lucide/vue'
 
-// Profil (screen 25, shipped trimmed, #399): one column, the card „Profil“ and „Abmelden“. The card „Einstellungen“ follows with #400.
+// Profil (screen 25, shipped trimmed, #399): one column, the card „Profil“, the card „Einstellungen“ (#400) and „Abmelden“.
 const { t } = useI18n()
 useHead({ title: () => t('profile.title') })
 const signOut = useSignOut()
@@ -15,6 +15,8 @@ const signOut = useSignOut()
       </h1>
 
       <ProfileCard />
+
+      <SettingsCard />
 
       <button
         type="button"
