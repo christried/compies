@@ -27,6 +27,23 @@ describe('setting the Date', () => {
     expect(selectedOption()).toBe('Fr 23.10., 20:00 Uhr')
   })
 
+  it('gives every option the hover tint and the vote counts the Dunkel hover colour, selected or not (#406)', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    await clickHostAction(page, 'Termin festlegen')
+
+    const options = [...dialog()!.querySelectorAll<HTMLElement>('[role="radio"]')]
+    expect(options.length).toBeGreaterThan(1)
+    expect(options.filter(o => o.getAttribute('aria-checked') === 'true')).toHaveLength(1)
+    for (const option of options) {
+      expect(option.classList.contains('hover:tint'), option.textContent ?? '').toBe(true)
+      expect(option.classList.contains('group'), option.textContent ?? '').toBe(true)
+      // The counts sit on the hover tint: ink-2 on the selected option's 14 % hover is 3.84:1 on Dunkel, ink is 7.41:1.
+      const counts = option.querySelector<HTMLElement>('span.text-ink-2:last-child')
+      expect(counts?.classList.contains('dark:group-hover:text-ink'), option.textContent ?? '').toBe(true)
+    }
+  })
+
   it('preselects the Best slot when the Host opens the dialog from the dock', async () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
