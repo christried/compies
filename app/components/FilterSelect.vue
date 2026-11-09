@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
-import { CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
+import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 import { fieldBox } from '~/utils/field-chrome'
 
 // A select with its arrow drawn here (#176): the browser's own arrow sits on the border, so the arrow gets room inside
@@ -29,7 +29,7 @@ const wrapperClass = computed(() => {
 })
 const selectClass = computed(() => (props.variant === 'field'
   ? ['h-control-lg w-full appearance-none pr-10 pl-3.5 text-[17px] text-ink', fieldBox(props.invalid)]
-  : ['h-11 appearance-none rounded-pill border-(length:--cp-bw) py-0 pr-9 pl-4 text-[15px] font-bold transition-colors', props.capped && 'max-w-full truncate', modelValue.value !== '' ? CHIP_ON : CHIP_OFF]))
+  : ['appearance-none py-0 pr-9 pl-4 text-[15px]', CHIP_SHAPE, props.capped && 'max-w-full truncate', modelValue.value !== '' ? CHIP_ON : CHIP_OFF]))
 const chevronClass = computed(() => (props.variant === 'chip' && modelValue.value !== '' ? 'text-paper' : 'text-ink'))
 
 function onChange(event: Event) {
@@ -41,9 +41,9 @@ function onChange(event: Event) {
   <div :class="wrapperClass">
     <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -- the label arrives through $attrs: the caller's aria-label, or a label for its id -->
     <select
-      v-bind="$attrs"
       :value="modelValue"
       :aria-invalid="variant === 'field' && invalid ? 'true' : undefined"
+      v-bind="$attrs"
       :class="selectClass"
       @change="onChange"
     >
