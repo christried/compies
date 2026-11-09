@@ -19,6 +19,14 @@ export function isAppearance(value: unknown): value is Appearance {
   return (APPEARANCES as readonly unknown[]).includes(value)
 }
 
+/** The cookie that keeps a device's Appearance for the signed-out pages (#403): `dark` or `system`, never `light`. */
+export const APPEARANCE_COOKIE = 'compies-appearance'
+
+/** What the cookie holds for an Appearance: its value for Dunkel and System, none for Hell (#403). */
+export function appearanceCookieValue(appearance: Appearance): 'dark' | 'system' | null {
+  return appearance === 'light' ? null : appearance
+}
+
 /** A Display name has 1–32 characters after trimming; an emoji counts as one. */
 export const DISPLAY_NAME_MAX = 32
 
