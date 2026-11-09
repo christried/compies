@@ -1,4 +1,4 @@
-import { teamPosition } from './settings'
+import { teamPosition } from './team-position'
 
 /** Circle, triangle, square, diamond, cross, bar, arc, star: one 24-box symbol path per Team colour (TeamMark.dc.html). TeamMark.vue and the Share image draw the same strings (#313). */
 export const TEAM_SYMBOLS: readonly string[] = [

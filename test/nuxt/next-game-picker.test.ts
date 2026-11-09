@@ -208,3 +208,55 @@ describe('the Tag filter of the library list (#336)', () => {
     await vi.waitFor(() => expect(tagSelect().value).toBe(''))
   })
 })
+
+describe('the library list of the picker (#369)', () => {
+  const cardNames = (list: string) => [...dialog()!.querySelectorAll(`${list} li`)].map(card => card.querySelector('b, a')!.textContent!.trim())
+  const libraryCards = () => cardNames('ul[aria-label="Bibliothek"]')
+  const poolCards = () => cardNames('ul[aria-label="Spiele, die im Pool noch übrig sind"]')
+  const moreButton = () => [...dialog()!.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Mehr laden')
+  const pool = Array.from({ length: 45 }, (_, index) => ({ ...halo, id: `g-pool-${index}`, name: `Pool ${index + 1}` }))
+
+  beforeEach(async () => {
+    signInAs({ ...kitty, canHost: true })
+    await clearNuxtData('games')
+    useState('game-library').value = null
+    libraryGames = Array.from({ length: 41 }, (_, index) => libraryGame(index + 1, `Spiel ${index + 1}`))
+    libraryTags = []
+  })
+
+  it('draws the first 40 library cards, and the pool list in full', async () => {
+    await mount({ pool })
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(40))
+
+    expect(poolCards()).toHaveLength(45)
+  })
+
+  it('draws card 41 with „Mehr laden“, and its ✓ picks it for the footer', async () => {
+    await mount({ pool })
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(40))
+
+    moreButton()!.click()
+    await flushPromises()
+    expect(libraryCards()).toHaveLength(41)
+    dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Spiel 41 auswählen"]')!.click()
+    await flushPromises()
+
+    expect(dialog()!.querySelector('footer')!.textContent).toContain('Spiel 41')
+    const set = [...dialog()!.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Setzen')!
+    expect(set.disabled).toBe(false)
+  })
+
+  it('starts each opening of the sheet on the first 40 cards', async () => {
+    await mount({ pool })
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(40))
+    moreButton()!.click()
+    await flushPromises()
+    expect(libraryCards()).toHaveLength(41)
+
+    await page!.setProps({ open: false })
+    await page!.setProps({ open: true })
+    await flushPromises()
+
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(40))
+  })
+})

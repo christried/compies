@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CircleAlert, X } from '@lucide/vue'
 import { TAG_MAX, TAGS_PER_GAME_MAX, normaliseTag, tagProblem, type GameTag } from '~~/shared/game'
+import { fieldBox } from '~/utils/field-chrome'
 
 // The Tag field of the game form (#335, GLOSSARY: Tag): the game's Tags as chips and a text field after them. Enter or a
 // comma confirms the text, Backspace on the empty field takes the last chip back, and the Tags in use are offered as the
@@ -9,7 +10,7 @@ import { TAG_MAX, TAGS_PER_GAME_MAX, normaliseTag, tagProblem, type GameTag } fr
 // comma key to hand) is not lost.
 const model = defineModel<GameTag[]>({ required: true })
 const props = defineProps<{
-  /** The Tags in use (`GameList.tagsInUse`): offered while typing, and the spelling a typed Tag takes. */
+  /** The Tags in use (`/api/games/tags`, #365): offered while typing, and the spelling a typed Tag takes. */
   suggestions: GameTag[]
   label: string
 }>()
@@ -171,8 +172,8 @@ defineExpose({ commit })
     <!-- The box is the field to the eye: a tap anywhere in it lands in the input. -->
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -- a click anywhere in the box focuses the input, which takes the keyboard -->
     <div
-      class="focus-within:focus-ring relative flex min-h-control-lg cursor-text flex-wrap items-center gap-1.5 rounded-[12px] bg-surface px-2.5 py-1.5"
-      :class="error ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'"
+      class="focus-within:focus-ring relative flex min-h-control-lg cursor-text flex-wrap items-center gap-1.5 px-2.5 py-1.5"
+      :class="fieldBox(Boolean(error))"
       @click="inputEl?.focus()"
     >
       <span

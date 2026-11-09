@@ -1,9 +1,11 @@
-import type { GameList } from '~~/shared/game'
+import type { GameList, GameTag } from '~~/shared/game'
 
 /** The last library list the browser showed, kept while no browser is mounted (see `useGameLibrary`). */
 const STALE_KEY = 'game-library'
 /** The fetch key of the library list; `refreshGameLibrary` refreshes it by this key. */
 const GAMES_KEY = 'games'
+/** The fetch key of the Tags in use (#365); `refreshGameLibrary` refreshes it too. */
+const TAGS_KEY = 'game-tags'
 
 /**
  * The library list (`/api/games`: every game the viewer may see, #173), for the game browser and the game form's Tag
@@ -30,8 +32,14 @@ export function useGameLibrary() {
   }
 }
 
-/** After a game was made or edited: the list in a mounted browser reloads in place, and one that mounts later starts from a fresh load. */
+/** The Tags in use (`/api/games/tags`, #365): the game form's suggestions, without loading the whole library. Empty before the first answer. */
+export function useTagsInUse() {
+  const { data } = useFetch<GameTag[]>('/api/games/tags', { key: TAGS_KEY, default: () => [] })
+  return { tagsInUse: computed(() => data.value ?? []) }
+}
+
+/** After a game was made or edited: the list in a mounted browser reloads in place, and one that mounts later starts from a fresh load. The Tags in use reload too, so a new Tag is suggested at once. */
 export async function refreshGameLibrary() {
   useState<GameList | null>(STALE_KEY, () => null).value = null
-  await refreshNuxtData(GAMES_KEY)
+  await Promise.all([refreshNuxtData(GAMES_KEY), refreshNuxtData(TAGS_KEY)])
 }

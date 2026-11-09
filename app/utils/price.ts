@@ -5,6 +5,9 @@ import type { Translate } from './settings-summary'
 // The words of a game's Price (#337, GLOSSARY: Price; #332 S3: UI copy lives in de.json, not in shared/game.ts, which keeps
 // the data rules). Pure, with vue-i18n's `t` passed in, like describe-game.ts.
 
+/** A Price as the form holds it while the User types (#337): the amount as cents, or as its text when the shared rule refuses it, so the rules refuse the body too; the source, or null while none is chosen. */
+export type PriceDraft = { cents: number | string | null, source: PriceSource | null } | null
+
 /** The German name of a source („Steam“, „Epic Games Store“); Free-to-play and Abo are the whole Price line when they have no amount. */
 export function priceSourceLabel(source: PriceSource, t: Translate): string {
   return t(`price.source.${source}`)

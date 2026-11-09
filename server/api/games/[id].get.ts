@@ -1,6 +1,6 @@
 import { defineEventHandler, getRouterParam } from 'h3'
 import { useDb } from '../../utils/db'
-import { gameView, loadGame, loadTags, requireLibraryViewer } from '../../utils/library'
+import { loadGame, readGameViews, requireLibraryViewer } from '../../utils/library'
 import type { GameView } from '../../../shared/game'
 
 // One game of the library (#141). An unknown id and text that is no uuid answer like a missing route;
@@ -9,5 +9,6 @@ export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
   const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '')
-  return gameView(game, creatorName, viewer, (await loadTags(db, [game.id])).get(game.id) ?? [])
+  const [view] = await readGameViews(db, [{ game, creatorName }], viewer)
+  return view!
 })

@@ -1,4 +1,4 @@
-import { CEREMONY_ROW_MS, CHIP_MS, CHIP_STEP_MS, HOP_MS, ceremonyTimeline, type CeremonyShape } from '~~/shared/ceremony'
+import { CEREMONY_ROW_MS, CHIP_MS, CHIP_STEP_MS, HOP_MS, ceremonyTimeline, type RunShape } from '~~/shared/ceremony'
 import type { Gsap } from './gsap'
 
 type Timeline = ReturnType<Gsap['timeline']>
@@ -101,11 +101,6 @@ export function tieStops({ cards, plate }: TieBox): TieStops {
   }
 }
 
-/** The shape of the run that the Tie's tracks read; the client always knows its grid. */
-export interface TieRunOptions extends CeremonyShape {
-  grid: boolean
-}
-
 /** What the tracks need of the run: its timeline, its trophy and the stops. */
 export interface TieRun {
   tl: Timeline
@@ -113,7 +108,7 @@ export interface TieRun {
   rows: HTMLElement[]
   trophy: HTMLElement
   stops: TieStops
-  options: TieRunOptions
+  options: RunShape
   /** A burst of confetti: the moment (ms) and where. The layer decides whether the viewer saw it live. */
   burst: (burst: { atMs: number, at: 'stamp' } | { atMs: number, at: 'hop', index: number }) => void
 }

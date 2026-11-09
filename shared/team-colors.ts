@@ -1,6 +1,6 @@
 // The eight Team colours as hex, for places that cannot read CSS variables: the Share image is drawn on the server in the light
 // look (#313). The tokens in `compies-tokens.css` (`--cp-team-N`, `-ink`) stay the source; `team-colors.test.ts` keeps this equal to them.
-import { teamPosition } from './settings'
+import { teamPosition } from './team-position'
 
 /** The light look's surface (`--cp-surface`, cards and panels): the ink on the two dark Team colours, the Share image's card, and its chip of a game nobody won. */
 export const SURFACE = '#fffdf8'
