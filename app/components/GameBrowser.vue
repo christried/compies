@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ChevronDown, Search } from '@lucide/vue'
+import { Search } from '@lucide/vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, type GameFilters, type GameView } from '~~/shared/game'
+import { CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
 
 // The one game browser (#173, review B4): the library page and both pool pickers show the Game library through it.
 // It owns the single fetch (`useGameLibrary`), the search field with the magnifying glass, the filters, the five
@@ -38,6 +39,14 @@ const strayTag = computed(() => {
   const key = filters.value.tag
   return key !== null && !tagsInUse.value.some(tag => tag.key === key) ? key : null
 })
+
+// The options of the three filter selects (FilterSelect, #362): the empty option is the „nothing chosen“ value ''.
+const playerOptions = computed(() => PLAYER_CHOICES.map(n => ({ value: String(n), label: t('library.players', { n }) })))
+const suitabilityOptions = computed(() => SUITABILITIES.map(suitability => ({ value: suitability, label: t(`library.suitability.${suitability}`) })))
+const tagChoices = computed(() => [
+  ...tagOptions.value.map(tag => ({ value: tag.key, label: tag.label })),
+  ...(strayTag.value ? [{ value: strayTag.value, label: strayTag.value }] : []),
+])
 
 const shown = computed(() => filterGames(games.value ?? [], filters.value, viewerId))
 // Loading means no list yet: a revalidation of a list we already hold shows no skeleton.
@@ -92,24 +101,10 @@ onBeforeUnmount(() => observer?.disconnect())
 function set(changes: Partial<GameFilters>) {
   filters.value = { ...filters.value, ...changes }
 }
-function onPlayers(event: Event) {
-  set({ players: parsePlayerCount((event.target as HTMLSelectElement).value) })
-}
-function onSuitability(event: Event) {
-  const value = (event.target as HTMLSelectElement).value
-  set({ suitability: SUITABILITIES.find(suitability => suitability === value) ?? null })
-}
-function onTag(event: Event) {
-  set({ tag: (event.target as HTMLSelectElement).value || null })
-}
 
 // The grid wraps as many cards as fit from md up; below it the cards are rows.
 const GRID = 'md:grid md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] md:items-stretch md:gap-3'
 const CHIP = 'inline-flex h-11 items-center gap-1.5 rounded-pill border-(length:--cp-bw) px-4 text-small font-bold transition-colors'
-const CHIP_OFF = 'border-line bg-surface text-ink hover:bg-paper-2'
-const CHIP_ON = 'border-line bg-ink text-paper'
-// A select is a chip too, but the browser's own arrow sits on the border, so the arrow is drawn here, with room for it (#176).
-const SELECT = 'h-11 appearance-none rounded-pill border-(length:--cp-bw) py-0 pr-9 pl-4 text-[15px] font-bold transition-colors'
 </script>
 
 <template>
@@ -149,88 +144,29 @@ const SELECT = 'h-11 appearance-none rounded-pill border-(length:--cp-bw) py-0 p
           {{ t('library.all') }}
         </button>
         <template v-if="!compact">
-          <div class="relative flex-none">
-            <select
-              :value="filters.players === null ? '' : String(filters.players)"
-              :aria-label="t('library.filterPlayers')"
-              :class="[SELECT, filters.players !== null ? CHIP_ON : CHIP_OFF]"
-              @change="onPlayers"
-            >
-              <option value="">
-                {{ t('library.filterPlayers') }}
-              </option>
-              <option
-                v-for="n in PLAYER_CHOICES"
-                :key="n"
-                :value="String(n)"
-              >
-                {{ t('library.players', { n }) }}
-              </option>
-            </select>
-            <AppIcon
-              :icon="ChevronDown"
-              :size="18"
-              class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
-              :class="filters.players !== null ? 'text-paper' : 'text-ink'"
-            />
-          </div>
-          <div class="relative flex-none">
-            <select
-              :value="filters.suitability ?? ''"
-              :aria-label="t('library.filterSuitability')"
-              :class="[SELECT, filters.suitability ? CHIP_ON : CHIP_OFF]"
-              @change="onSuitability"
-            >
-              <option value="">
-                {{ t('library.filterSuitability') }}
-              </option>
-              <option
-                v-for="suitability in SUITABILITIES"
-                :key="suitability"
-                :value="suitability"
-              >
-                {{ t(`library.suitability.${suitability}`) }}
-              </option>
-            </select>
-            <AppIcon
-              :icon="ChevronDown"
-              :size="18"
-              class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
-              :class="filters.suitability ? 'text-paper' : 'text-ink'"
-            />
-          </div>
-        </template>
-        <div class="relative max-w-full flex-none">
-          <select
-            :value="filters.tag ?? ''"
-            :aria-label="t('library.filterTag')"
-            :class="[SELECT, 'max-w-full truncate', filters.tag !== null ? CHIP_ON : CHIP_OFF]"
-            @change="onTag"
-          >
-            <option value="">
-              {{ t('library.filterTag') }}
-            </option>
-            <option
-              v-for="tag in tagOptions"
-              :key="tag.key"
-              :value="tag.key"
-            >
-              {{ tag.label }}
-            </option>
-            <option
-              v-if="strayTag"
-              :value="strayTag"
-            >
-              {{ strayTag }}
-            </option>
-          </select>
-          <AppIcon
-            :icon="ChevronDown"
-            :size="18"
-            class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
-            :class="filters.tag !== null ? 'text-paper' : 'text-ink'"
+          <FilterSelect
+            :model-value="filters.players === null ? '' : String(filters.players)"
+            :options="playerOptions"
+            :empty-label="t('library.filterPlayers')"
+            :aria-label="t('library.filterPlayers')"
+            @update:model-value="set({ players: parsePlayerCount($event) })"
           />
-        </div>
+          <FilterSelect
+            :model-value="filters.suitability ?? ''"
+            :options="suitabilityOptions"
+            :empty-label="t('library.filterSuitability')"
+            :aria-label="t('library.filterSuitability')"
+            @update:model-value="set({ suitability: SUITABILITIES.find(suitability => suitability === $event) ?? null })"
+          />
+        </template>
+        <FilterSelect
+          capped
+          :model-value="filters.tag ?? ''"
+          :options="tagChoices"
+          :empty-label="t('library.filterTag')"
+          :aria-label="t('library.filterTag')"
+          @update:model-value="set({ tag: $event || null })"
+        />
         <button
           type="button"
           :aria-pressed="filters.mine ? 'true' : 'false'"

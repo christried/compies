@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CircleAlert } from '@lucide/vue'
 import { characterCount, cutToCharacters } from '~~/shared/text'
+import { fieldBox } from '~/utils/field-chrome'
 
 // Labelled input or, with `multiline`, text area (02-components § TextField). Help and error are linked with
 // aria-describedby. With `maxlength` it shows a counter, announced only from 80 % of the maximum.
@@ -75,8 +76,8 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
       :aria-invalid="error || invalid ? 'true' : undefined"
       :aria-describedby="describedBy"
       :disabled="disabled"
-      class="field-sizing-content min-h-[9.5rem] resize-none overflow-hidden rounded-md bg-surface px-3.5 py-2.5 text-[17px] leading-[1.45] text-ink disabled:cursor-not-allowed disabled:opacity-60"
-      :class="error || invalid ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'"
+      class="field-sizing-content min-h-[9.5rem] resize-none overflow-hidden px-3.5 py-2.5 text-[17px] leading-[1.45] text-ink disabled:cursor-not-allowed disabled:opacity-60"
+      :class="fieldBox(Boolean(error || invalid))"
       @input="onInput"
     />
     <input
@@ -90,8 +91,8 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
       :aria-invalid="error || invalid ? 'true' : undefined"
       :aria-describedby="describedBy"
       :disabled="disabled"
-      class="h-control-lg rounded-md bg-surface px-3.5 text-[17px] text-ink disabled:cursor-not-allowed disabled:opacity-60"
-      :class="error || invalid ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'"
+      class="h-control-lg px-3.5 text-[17px] text-ink disabled:cursor-not-allowed disabled:opacity-60"
+      :class="fieldBox(Boolean(error || invalid))"
       @input="onInput"
     >
     <div class="flex items-start gap-3 text-small">
