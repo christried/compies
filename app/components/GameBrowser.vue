@@ -65,7 +65,7 @@ function onTag(event: Event) {
 }
 
 // The grid wraps as many cards as fit from md up; below it the cards are rows.
-const GRID = 'md:grid md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] md:gap-3'
+const GRID = 'md:grid md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] md:items-stretch md:gap-3'
 const CHIP = 'inline-flex h-11 items-center gap-1.5 rounded-pill border-(length:--cp-bw) px-4 text-small font-bold transition-colors'
 const CHIP_OFF = 'border-line bg-surface text-ink hover:bg-paper-2'
 const CHIP_ON = 'border-line bg-ink text-paper'
