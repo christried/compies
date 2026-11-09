@@ -22,6 +22,7 @@
 - **Terminumfrage:** Die Umfrage und die Session-Karte zählen jetzt, wer vollständig abgestimmt hat („2 von 3 haben vollständig abgestimmt“). Wer nur auf einen Teil der Termine geantwortet hat, zählt noch nicht. ([#352](https://github.com/christried/compies/issues/352))
 - **CSV-Export:** „Als CSV exportieren“ in „Wer kann wann?“ gibt es nur noch für den Host. ([#352](https://github.com/christried/compies/issues/352))
 - **Session-Karte:** Verschieben, Neue Terminsuche, Entfernen und der Kalender stecken jetzt hinter einem „Mehr“-Knopf am Ende der Zeile, damit jede Session am Desktop in einer Zeile Platz hat. Die Anmerkungen zu einem Termin sind eingeklappt; die Überschrift zeigt, wie viele es sind. ([#349](https://github.com/christried/compies/issues/349))
+- **Seitenleisten und Sheets:** Einladen, Host-Steuerung, Kalender, Ergebnis eintragen und alle anderen Seitenleisten und Sheets gleiten jetzt ein und wieder aus, statt sofort zu erscheinen; bei reduzierter Bewegung blenden sie nur ein und aus. ([#348](https://github.com/christried/compies/issues/348))
 
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
