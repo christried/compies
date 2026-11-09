@@ -46,6 +46,8 @@ registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }] }),
 })
+// The game form's suggestions come from the Tags in use (#365), the same Tag the list answers.
+registerEndpoint('/api/games/tags', { method: 'GET', handler: () => [{ key: 'retro', label: 'Retro' }] })
 registerEndpoint('/api/games', {
   method: 'POST',
   handler: async (event) => {
@@ -461,7 +463,7 @@ describe('the pool steps', () => {
       expect((page.get('input[type="text"]').element as HTMLInputElement).value).toBe('Freitags-Zocken')
     })
 
-    it('offers a Tag in use from the library list in the sheet\'s form (#335)', async () => {
+    it('offers a Tag in use in the sheet\'s form (#335, #365)', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
       await newGameButton(page).trigger('click')

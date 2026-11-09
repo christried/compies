@@ -4,6 +4,7 @@ import listGames from '../../server/api/games/index.get'
 import createGame from '../../server/api/games/index.post'
 import readGame from '../../server/api/games/[id].get'
 import editGame from '../../server/api/games/[id].patch'
+import listTags from '../../server/api/games/tags.get'
 import { gameTags, games, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import type { GameList, GameView } from '../../shared/game'
@@ -26,6 +27,7 @@ describe('the Game library API (#141)', () => {
     request = createTestServer(testDb.db, {
       'GET /api/games': listGames,
       'POST /api/games': createGame,
+      'GET /api/games/tags': listTags,
       'GET /api/games/:id': readGame,
       'PATCH /api/games/:id': editGame,
     }, { clock })
@@ -56,6 +58,10 @@ describe('the Game library API (#141)', () => {
 
   function read(id: string, cookie?: string) {
     return request(`/api/games/${id}`, { headers: cookie ? { cookie } : {} })
+  }
+
+  function tags(cookie?: string) {
+    return request('/api/games/tags', { headers: cookie ? { cookie } : {} })
   }
 
   function create(cookie: string | undefined, body: unknown) {
@@ -725,6 +731,24 @@ describe('the Game library API (#141)', () => {
       expect((await tagsInUse(cookie)).map(tag => tag.key)).toEqual(['retro'])
     })
 
+    it('answers every game of a batch with its own Tags, a Tag-less game among them, on the list and the detail', async () => {
+      const cookie = await cookieOf(host)
+      const charlie = await created(cookie, { name: 'Charlie', tags: ['Retro'] })
+      const alpha = await created(cookie, { name: 'Alpha', tags: ['Co-op', 'Party'] })
+      const bravo = await created(cookie, { name: 'Bravo' })
+
+      const listed = ((await (await list(cookie)).json()) as GameList).games
+      const byName = (name: string) => listed.find(game => game.name === name)!.tags
+
+      expect(listed.map(game => game.name)).toEqual(['Alpha', 'Bravo', 'Charlie'])
+      expect(byName('Alpha')).toEqual([{ key: 'co-op', label: 'Co-op' }, { key: 'party', label: 'Party' }])
+      expect(byName('Bravo')).toEqual([])
+      expect(byName('Charlie')).toEqual([{ key: 'retro', label: 'Retro' }])
+      for (const game of [alpha, bravo, charlie]) {
+        expect(((await (await read(game.id, cookie)).json()) as GameView).tags).toEqual(byName(game.name))
+      }
+    })
+
     it('refuses another Host\'s edit of the Tags, and answers a Member as for a missing route', async () => {
       const { id } = await created(await cookieOf(host), { name: 'Mario Kart', tags: ['Co-op'] })
 
@@ -735,6 +759,74 @@ describe('the Game library API (#141)', () => {
       expect(other.statusText).toBe('not_game_editor')
       expect(guest.status).toBe(404)
       expect(await tagRows(id)).toEqual([{ key: 'co-op', label: 'Co-op', position: 0 }])
+    })
+  })
+
+  describe('GET /api/games/tags (#365)', () => {
+    function edit(cookie: string | undefined, id: string, body: unknown) {
+      return request(`/api/games/${id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+        body: JSON.stringify(body),
+      })
+    }
+
+    it('answers an empty list without games, and without Tags on a game', async () => {
+      const cookie = await cookieOf(host)
+      expect(await (await tags(cookie)).json()).toEqual([])
+
+      await created(cookie, { name: 'Mario Kart' })
+
+      const response = await tags(cookie)
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual([])
+    })
+
+    it('answers one Tag as one entry, with no game id, count or creator', async () => {
+      const cookie = await cookieOf(host)
+      await created(cookie, { name: 'Mario Kart', tags: ['Co-op'] })
+
+      expect(await (await tags(cookie)).json()).toEqual([{ key: 'co-op', label: 'Co-op' }])
+    })
+
+    it('answers the Tags in use once per key, by key, under the first label, as the list does', async () => {
+      const cookie = await cookieOf(host)
+      await created(cookie, { name: 'Eins', tags: ['Retro', 'Co-op'] })
+      await created(cookie, { name: 'Zwei', tags: ['Ärger', 'retro'] })
+
+      const answer = await (await tags(cookie)).json()
+
+      expect(answer).toEqual([
+        { key: 'ärger', label: 'Ärger' },
+        { key: 'co-op', label: 'Co-op' },
+        { key: 'retro', label: 'Retro' },
+      ])
+      expect(answer).toEqual(((await (await list(cookie)).json()) as GameList).tagsInUse)
+    })
+
+    it('drops a Tag when its last game loses it, and keeps one another game carries', async () => {
+      const cookie = await cookieOf(host)
+      const first = await created(cookie, { name: 'Eins', tags: ['Co-op', 'Retro'] })
+      await created(cookie, { name: 'Zwei', tags: ['Retro'] })
+
+      await edit(cookie, first.id, { name: 'Eins', tags: [] })
+
+      expect(await (await tags(cookie)).json()).toEqual([{ key: 'retro', label: 'Retro' }])
+    })
+
+    it('answers signed-out visitors and a Member as for a missing route, and the Host and the Platform admin with the list', async () => {
+      await created(await cookieOf(host), { name: 'Mario Kart', tags: ['Co-op'] })
+
+      for (const cookie of [undefined, await cookieOf(member)]) {
+        const response = await tags(cookie)
+        expect(response.status).toBe(404)
+        expect(response.statusText).toBe('Not Found')
+      }
+      for (const profile of [host, admin]) {
+        const response = await tags(await cookieOf(profile))
+        expect(response.status).toBe(200)
+        expect(await response.json()).toEqual([{ key: 'co-op', label: 'Co-op' }])
+      }
     })
   })
 
