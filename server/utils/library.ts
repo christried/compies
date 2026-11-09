@@ -91,6 +91,7 @@ function gameView(row: typeof games.$inferSelect, creatorName: string, viewer: A
 /**
  * The library's views of `rows`, in their order (#365). The Tags of all the rows come from one query; a game without Tags
  * answers []. `db` may be a transaction, so a write answers the Tags it has just stored. No rows, no query.
+ * The ids are bind parameters of one `inArray`, and Postgres takes at most about 65k of them per statement (#365).
  */
 export async function readGameViews(db: Db, rows: { game: typeof games.$inferSelect, creatorName: string }[], viewer: AuthUser): Promise<GameView[]> {
   if (rows.length === 0) return []

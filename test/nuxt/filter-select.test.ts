@@ -29,6 +29,15 @@ describe('FilterSelect', () => {
     expect((chosen.get('select').element as HTMLSelectElement).value).toBe('3')
   })
 
+  it('shows a modelValue that changes from outside, the pairing PriceField relies on in place of v-model (#362)', async () => {
+    const page = await mountSuspended(FilterSelect, { props })
+
+    await page.setProps({ modelValue: '4' })
+
+    expect((page.get('select').element as HTMLSelectElement).value).toBe('4')
+    expect(page.get('select').classes()).toContain('bg-ink')
+  })
+
   it('emits the chosen value, and the empty value when the empty option is chosen', async () => {
     const page = await mountSuspended(FilterSelect, { props })
 
@@ -94,6 +103,12 @@ describe('FilterSelect', () => {
     expect(page.element.hasAttribute('id')).toBe(false)
     expect(page.element.hasAttribute('aria-label')).toBe(false)
     expect(page.element.hasAttribute('aria-describedby')).toBe(false)
+  })
+
+  it('passes an aria-invalid a caller sets through to the select, as any attribute (#362)', async () => {
+    const page = await mountSuspended(FilterSelect, { props, attrs: { 'aria-invalid': 'true' } })
+
+    expect(page.get('select').attributes('aria-invalid')).toBe('true')
   })
 
   describe('field (the form look of TextField)', () => {
