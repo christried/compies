@@ -105,7 +105,7 @@ describe('game images (#143)', () => {
     const creator = await cookieOf(host)
     const created = await request('/api/games', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', cookie: creator },
+      headers: { 'content-type': 'application/json', 'cookie': creator },
       body: JSON.stringify({ name: 'Mario Kart', tags: ['Co-op', 'Retro'] }),
     })
     const { id } = await created.json() as GameView

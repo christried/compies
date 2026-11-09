@@ -922,7 +922,10 @@
     "playersFrom": "ab {min}",
     "playersUpTo": "bis {max}",
     "playersBetween": "{min} bis {max}",
-    "notes": "Notizen"
+    "notes": "Notizen",
+    "tags": "Tags",
+    "moreTags": "+{n}",
+    "moreTagsLabel": "{n} weiterer Tag | {n} weitere Tags"
   },
   "gameEdit": {
     "kicker": "Bibliothek",
@@ -962,6 +965,12 @@
     "notes": "Notizen",
     "notesHelp": "Einstellungen, Aufwärmen, Siegbedingung, Hausregeln. Alle Hosts können sie lesen.",
     "notesTooLong": "Höchstens {max} Zeichen.",
+    "tags": "Tags",
+    "tagsHelp": "Enter oder Komma fügt einen Tag hinzu.",
+    "tagTooLong": "Höchstens {max} Zeichen",
+    "tagsTooMany": "Höchstens {max} Tags",
+    "tagRemove": "Tag „{label}“ entfernen",
+    "tagSuggestions": "Vorschläge",
     "saveChanges": "Änderungen speichern",
     "editKicker": "Bearbeiten",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
@@ -1622,6 +1631,7 @@
     "playersInvalid": "Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.",
     "suitabilitiesInvalid": "Diese Angabe bei „Passt zu“ kennen wir nicht.",
     "gameNotesInvalid": "Die Notizen sind zu lang.",
+    "tagsInvalid": "Höchstens 8 Tags mit je höchstens 20 Zeichen, keiner doppelt.",
     "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",

@@ -10,9 +10,10 @@ import { youTubeThumbnail } from '~~/shared/youtube'
 // the name is the link and stretches over the whole card (so `#actions` can hold buttons of their own);
 // without it the card is a plain element, not a button. #146 and #148 reuse it; a game that came as its face only (a Member's
 // pool game, #224) has no player count and no Suitabilities to show, so the card shows neither. `layout="responsive"` (#173) is a row
-// below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`.
+// below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
+// three Tags and „+N“ (#335); the pool, Round and wheel games carry none. They are spans, not a list: the tests count the cards as `li`.
 const props = withDefaults(defineProps<{
-  game: PoolGameFace & Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities'>>
+  game: PoolGameFace & Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags'>>
   layout?: 'card' | 'row' | 'responsive'
   to?: RouteLocationRaw
 }>(), { layout: 'card', to: undefined })
@@ -29,6 +30,9 @@ const description = computed(() => describeGame({
 }, t))
 const players = computed(() => description.value.playersCompact)
 const suitabilities = computed(() => description.value.suitabilities)
+const TAGS_SHOWN = 3
+const shownTags = computed(() => (props.game.tags ?? []).slice(0, TAGS_SHOWN))
+const moreTags = computed(() => Math.max(0, (props.game.tags ?? []).length - TAGS_SHOWN))
 
 // One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.
 const LAYOUT = {
@@ -114,6 +118,25 @@ const look = computed(() => LAYOUT[props.layout])
           {{ players }}
         </span>
         <span v-if="suitabilities">{{ suitabilities }}</span>
+      </div>
+      <div
+        v-if="shownTags.length > 0"
+        role="group"
+        :aria-label="t('library.tags')"
+        class="flex gap-1"
+        :class="layout === 'card' ? 'flex-wrap' : layout === 'row' ? 'flex-nowrap overflow-hidden' : 'flex-nowrap overflow-hidden md:flex-wrap'"
+      >
+        <span
+          v-for="tag in shownTags"
+          :key="tag.key"
+          class="max-w-[9rem] truncate rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] leading-5 font-bold"
+        >{{ tag.label }}</span>
+        <span
+          v-if="moreTags > 0"
+          :title="t('library.moreTagsLabel', { n: moreTags }, moreTags)"
+          :aria-label="t('library.moreTagsLabel', { n: moreTags }, moreTags)"
+          class="flex-none rounded-pill px-1 text-[11px] leading-5 font-bold text-ink-2"
+        >{{ t('library.moreTags', { n: moreTags }) }}</span>
       </div>
     </div>
 

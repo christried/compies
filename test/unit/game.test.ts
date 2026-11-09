@@ -294,6 +294,7 @@ describe('filterGames (#173)', () => {
       createdAt: '2026-01-15T10:00:00.000Z',
       canEdit: true,
       notes: null,
+      tags: [],
       ...overrides,
     }
   }
