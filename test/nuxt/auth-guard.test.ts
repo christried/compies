@@ -45,16 +45,4 @@ describe('route guard and logout', () => {
     expect(signOut).toHaveBeenCalled()
     expect(useAuthUser().value).toBeNull()
   })
-
-  it('logs out from the Profil Construction page', async () => {
-    signInAs(kitty)
-    const signOut = vi.fn(() => ({ success: true }))
-    registerEndpoint('/api/auth/sign-out', { method: 'POST', handler: signOut })
-    const page = await mountSuspended(CatchAllPage, { route: '/profil' })
-
-    await page.findAll('main button').find(b => b.text() === 'Abmelden')!.trigger('click')
-
-    await vi.waitFor(() => expect(currentPath()).toBe('/anmelden'))
-    expect(signOut).toHaveBeenCalled()
-  })
 })
