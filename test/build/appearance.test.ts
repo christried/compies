@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 // The built page carries its Appearance from the first byte (#401): a visitor without a User gets `data-theme="light"` and the
-// one light browser bar colour in the server-rendered HTML, before any script runs. The built server runs without a database:
+// one light browser bar colour in the server-rendered HTML, before any script runs, or the device's cookie's look (#403). The built server runs without a database:
 // a signed-out request never opens one (Better Auth finds no login session cookie, and the Pool connects only on a query).
 // Run `pnpm test:build` (builds first).
 const SERVER = resolve(import.meta.dirname, '../../.output/server/index.mjs')
@@ -65,5 +65,38 @@ describe('Appearance in the built page', () => {
     expect(metas).toHaveLength(1)
     expect(metas[0]).toContain('content="#fff3df"')
     expect(metas[0]).not.toContain('media=')
+  })
+
+  // Signed out, the device's cookie decides (#403), already in the server HTML: the Anmelden page after Abmelden
+  // has no light flash. The page render only reads the cookie and never writes it.
+  async function anmeldenWith(cookie: string) {
+    const response = await fetch(`${origin}/anmelden`, { headers: { cookie } })
+    const html = await response.text()
+    expect(response.status).toBe(200)
+    expect(response.headers.getSetCookie().find(line => line.startsWith('compies-appearance='))).toBeUndefined()
+    return { html, metas: html.match(/<meta[^>]*name="theme-color"[^>]*>/g) ?? [] }
+  }
+
+  it('renders a visitor with the cookie dark in Dunkel, with the one dark theme-color meta', async () => {
+    const { html, metas } = await anmeldenWith('compies-appearance=dark')
+
+    expect(html).toMatch(/<html[^>]*\sdata-theme="dark"/)
+    expect(metas).toHaveLength(1)
+    expect(metas[0]).toContain('content="#17121d"')
+    expect(metas[0]).not.toContain('media=')
+  })
+
+  it('renders a visitor with the cookie system in System, with both theme-color metas and their media', async () => {
+    const { html, metas } = await anmeldenWith('compies-appearance=system')
+
+    expect(html).toMatch(/<html[^>]*\sdata-theme="system"/)
+    expect(metas).toHaveLength(2)
+    for (const meta of metas) expect(meta).toContain('media=')
+  })
+
+  it.each(['nuxt-color-mode=dark', 'compies-appearance=sepia'])('renders a visitor with only %s light', async (cookie) => {
+    const { html } = await anmeldenWith(cookie)
+
+    expect(html).toMatch(/<html[^>]*\sdata-theme="light"/)
   })
 })
