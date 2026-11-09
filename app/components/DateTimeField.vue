@@ -25,6 +25,7 @@ import {
 } from 'reka-ui'
 import type { Ref } from 'vue'
 import { joinBerlinLocal, splitBerlinLocal, utcToBerlin } from '~~/shared/time'
+import { fieldBox } from '~/utils/field-chrome'
 
 // A Berlin date and time in two own fields (ADR 0010, 02-components § DateTimeField). The value is
 // `YYYY-MM-DDTHH:mm` in Europe/Berlin, or empty until both parts are set and valid (ADR 0003).
@@ -258,9 +259,6 @@ watch(timeOpen, async (open) => {
   if (item) list.scrollTop = item.offsetTop - list.clientHeight / 2 + item.offsetHeight / 2
 })
 
-function fieldClass(hasError: boolean | undefined) {
-  return hasError ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'
-}
 </script>
 
 <template>
@@ -293,8 +291,8 @@ function fieldClass(hasError: boolean | undefined) {
               autocomplete="off"
               :placeholder="t('mvp.dateTime.datePlaceholder')"
               :aria-invalid="error ? 'true' : undefined"
-              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-10 pl-3 text-[17px] font-semibold text-ink"
-              :class="fieldClass(!!error)"
+              class="hit-44 h-12 min-h-11 w-full py-0 pr-10 pl-3 text-[17px] font-semibold text-ink"
+              :class="fieldBox(!!error)"
               @input="onDateInput"
               @keydown.down.prevent="date.show(true)"
             >
@@ -421,8 +419,8 @@ function fieldClass(hasError: boolean | undefined) {
               autocomplete="off"
               :placeholder="t('mvp.dateTime.timePlaceholder')"
               :aria-invalid="error || timeInvalid ? 'true' : undefined"
-              class="hit-44 h-12 min-h-11 w-full rounded-md bg-surface py-0 pr-10 pl-3 font-num text-[17px] text-ink"
-              :class="fieldClass(!!error || timeInvalid)"
+              class="hit-44 h-12 min-h-11 w-full py-0 pr-10 pl-3 font-num text-[17px] text-ink"
+              :class="fieldBox(!!error || timeInvalid)"
               @input="onTimeInput"
               @blur="commitTime"
               @keydown.enter="commitTime"
