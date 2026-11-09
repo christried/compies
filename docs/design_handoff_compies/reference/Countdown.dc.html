@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="./tokens/lucide-subset.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:inherit;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--cp-focus)}button{font:inherit;color:inherit}</style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#ffd23f"></rect><rect x="22" y="34" width="56" height="32" rx="6" fill="#ff4f4f" stroke="#151515" stroke-width="4"></rect></svg></template>
+<div ref="{{ root }}" data-theme="light" lang="de" style="width:max-content;min-width:100%;box-sizing:border-box;padding:80px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:16px;line-height:1.45;display:flex;flex-direction:column;gap:110px">
+
+  <sc-if value="{{ notOnly }}" hint-placeholder-val="{{ true }}">
+  <section style="display:flex;flex-direction:column;gap:28px;max-width:1880px">
+    <span style="font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-ink-2)">Reference · Event page stage card · 1.4</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:96px;line-height:.92">Countdown</h1>
+    <p style="margin:0;max-width:80ch;font-size:19px;text-wrap:pretty">The Host sets a Countdown from the dock. Every Member sees this card on the stage, between the open Rounds and the Standings. Every visual here is a function of the time left, <b>ceil((endsAt − serverNow) / 1000)</b>, so a late joiner sees exactly what everyone else sees. Handoff: <b>13-countdown.md</b>. No new tokens.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:16px">
+      <sc-for list="{{ dec }}" as="d" hint-placeholder-count="6">
+        <div style="flex:0 0 290px;display:flex;flex-direction:column;gap:8px;padding:18px 20px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)">
+          <b style="font-family:var(--cp-font-display);font-weight:400;font-size:24px;line-height:1">{{ d.t }}</b>
+          <span style="font-size:15px;text-wrap:pretty">{{ d.b }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+  </sc-if>
+
+  <section id="switch" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:18px 22px;border:var(--cp-bw) solid var(--cp-line);border-radius:20px;background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);max-width:1500px">
+      <sc-for list="{{ switches }}" as="g" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="flex:none;width:110px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">{{ g.n }}</span>
+          <div role="radiogroup" aria-label="{{ g.n }}" style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{ o.on }}" onClick="{{ o.pick }}" style="height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--cp-line);background:{{ o.bg }};color:{{ o.fg }};font-size:14px;font-weight:800;cursor:pointer" style-focus="outline:3px solid var(--cp-focus);outline-offset:3px">{{ o.n }}</button></sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{ isLive }}"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="flex:none;width:110px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Simulieren</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ sims }}" as="m" hint-placeholder-count="3"><button type="button" onClick="{{ m.on }}" style="height:44px;padding:0 16px;border-radius:999px;border:2px dashed var(--cp-line);background:var(--cp-paper-2);font-size:14px;font-weight:800;cursor:pointer" style-focus="outline:3px solid var(--cp-focus);outline-offset:3px">{{ m.n }}</button></sc-for>
+        </div>
+      </div></sc-if>
+      <span style="font-family:var(--cp-font-mono);font-size:13px;color:var(--cp-ink-2)">{{ url }}</span>
+    </div>
+  </section>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="3">
+  <section id="{{ sec.id }}" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;gap:22px;align-items:flex-start;max-width:1600px">
+      <span style="flex:none;display:grid;place-items:center;min-width:64px;height:64px;box-sizing:border-box;padding:0 12px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-primary);box-shadow:var(--cp-shadow-sm);font-family:var(--cp-font-num);font-size:24px">{{ sec.no }}</span>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:52px;line-height:1">{{ sec.title }}</h2>
+        <ul style="margin:0;padding-left:22px;max-width:1180px;font-size:18px;line-height:1.5;display:flex;flex-direction:column;gap:4px;text-wrap:pretty">
+          <sc-for list="{{ sec.notes }}" as="n" hint-placeholder-count="2"><li>{{ n }}</li></sc-for>
+        </ul>
+      </div>
+    </div>
+    <sc-for list="{{ sec.rows }}" as="row" hint-placeholder-count="1">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <sc-if value="{{ row.label }}"><span style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">{{ row.label }}</span></sc-if>
+      <div style="display:flex;gap:{{ row.gap }};align-items:flex-start">
+      <sc-for list="{{ row.frames }}" as="f" hint-placeholder-count="2">
+      <div id="{{ f.id }}" style="flex:none;display:flex;flex-direction:column;gap:12px;width:{{ f.wpx }}">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px"><a href="{{ f.href }}" style="display:inline-grid;place-items:center;min-width:44px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-family:var(--cp-font-mono);font-size:15px;font-weight:700;text-decoration:none" style-hover="color:var(--cp-paper)">{{ f.id }}</a><b style="font-size:{{ f.labelS }};font-weight:800">{{ f.label }}</b><sc-if value="{{ f.sub }}"><span style="flex-basis:100%;font-size:16px;color:var(--cp-ink-2);text-wrap:pretty">{{ f.sub }}</span></sc-if></div>
+
+        <div data-theme="{{ f.theme }}" data-live="{{ f.liveFlag }}" lang="de" style="position:relative;width:{{ f.wpx }};height:{{ f.hpx }};box-sizing:border-box;padding:{{ f.fpad }};border:var(--cp-bw) solid var(--cp-line);border-radius:{{ f.rad }};overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);box-shadow:{{ f.fsh }};display:flex;flex-direction:column;font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45">
+
+          <sc-if value="{{ f.shell }}"><header style="flex:none;position:relative;z-index:10;height:{{ f.hh }};box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 {{ f.hpad }};border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <span style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px"><img src="./assets/compibert/compibert-head.svg" alt="COMPIES" width="{{ f.logoS }}" height="{{ f.logoS }}" style="display:block"><sc-if value="{{ f.desk }}"><span aria-hidden="true" style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></sc-if></span>
+            <sc-if value="{{ f.desk }}"><span aria-hidden="true" style="flex:none;width:2px;height:28px;background:var(--cp-line-soft)"></span></sc-if>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:0 10px;flex-wrap:wrap"><b style="font-size:15px;white-space:nowrap">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800;white-space:nowrap"><span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:var(--cp-hot);border:1.5px solid var(--cp-line)"></span>Läuft · Session 1 von 2</span></div>
+            <sc-if value="{{ f.desk }}"><button type="button" style="flex:none;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><span aria-hidden="true" style="display:block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:{{ I.link }} center / contain no-repeat;mask:{{ I.link }} center / contain no-repeat"></span>Einladen</button></sc-if>
+            <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ I.volume }} center / contain no-repeat;mask:{{ I.volume }} center / contain no-repeat"></span></span></button>
+            <button type="button" aria-label="{{ f.acct }}" style="flex:none;position:relative;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer"><span aria-hidden="true" style="display:grid;place-items:center;width:34px;height:34px;box-sizing:border-box;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ f.avBg }};color:#151515;font-weight:800;font-size:14px">{{ f.ini }}</span><sc-if value="{{ f.host }}"><span aria-hidden="true" style="position:absolute;right:0;top:0;display:grid;place-items:center;width:18px;height:18px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><span style="display:block;width:10px;height:10px;background:currentColor;-webkit-mask:{{ I.crown }} center / contain no-repeat;mask:{{ I.crown }} center / contain no-repeat"></span></span></sc-if></button>
+          </header></sc-if>
+
+          <div style="flex:1;min-height:0;display:flex">
+            <div style="flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column">
+              <main style="width:100%;max-width:1100px;margin:0 auto;box-sizing:border-box;padding:{{ f.pad }};display:flex;flex-direction:column;gap:{{ f.gap }}">
+
+                <sc-if value="{{ f.shell }}"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Session 1 von 2 läuft seit 20:34</span><h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ f.h1 }};line-height:1">Session 1 läuft</h1></div></sc-if>
+
+                <sc-if value="{{ f.shell }}"><div role="region" aria-labelledby="{{ f.rid }}" style="display:flex;flex-direction:column;gap:4px;padding:14px 16px 10px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+                  <div style="display:flex;align-items:baseline;gap:10px"><h2 id="{{ f.rid }}" style="margin:0;font-size:18px;font-weight:800">Offene Runden</h2><span style="font-size:13px;font-weight:600;color:var(--cp-ink-2)">Spiel 3 von 6</span></div>
+                  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;min-height:60px;padding:6px 0">
+                    <span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-family:var(--cp-font-num);font-size:15px">3</span>
+                    <div style="flex:1;min-width:150px;display:flex;flex-direction:column;line-height:1.3"><b style="font-size:15px">Mario Kart 8</b><span style="font-size:13px;font-weight:600;color:var(--cp-ink-2)">Wird gespielt · Ergebnis offen</span></div>
+                    <sc-if value="{{ f.host }}"><button type="button" style="flex:none;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:13px;cursor:pointer"><span aria-hidden="true" style="display:block;width:16px;height:16px;background:currentColor;-webkit-mask:{{ I.trophy }} center / contain no-repeat;mask:{{ I.trophy }} center / contain no-repeat"></span>Ergebnis eintragen</button></sc-if>
+                  </div>
+                </div></sc-if>
+
+                <section role="region" aria-labelledby="{{ f.hid }}" data-cd="card" style="position:relative;display:flex;flex-direction:column;gap:14px;padding:{{ f.c.pad }};border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:{{ f.c.shadow }}">
+                  <div style="display:flex;align-items:center;gap:10px;min-height:32px">
+                    <span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><span style="display:block;width:17px;height:17px;background:currentColor;-webkit-mask:{{ I.timer }} center / contain no-repeat;mask:{{ I.timer }} center / contain no-repeat"></span></span>
+                    <h2 id="{{ f.hid }}" style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ f.c.h2 }};line-height:1">Countdown</h2>
+                    <span style="margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:6px;height:28px;box-sizing:border-box;padding:0 11px;border-radius:999px;border:2px solid var(--cp-line);background:{{ f.c.pillBg }};color:{{ f.c.pillFg }};font-size:13px;font-weight:800;white-space:nowrap;transition:background-color var(--cp-dur-fast) var(--cp-ease-snap)">
+                      <sc-if value="{{ f.c.pillDot }}"><span aria-hidden="true" style="width:8px;height:8px;border-radius:50%;background:{{ f.c.pillDotC }};border:1.5px solid var(--cp-line)"></span></sc-if>
+                      <sc-if value="{{ f.c.pillIc }}"><span aria-hidden="true" style="display:block;width:14px;height:14px;background:currentColor;-webkit-mask:{{ f.c.pillIc }} center / contain no-repeat;mask:{{ f.c.pillIc }} center / contain no-repeat"></span></sc-if>
+                      {{ f.c.pill }}
+                    </span>
+                  </div>
+
+                  <div style="display:{{ f.c.disp }};grid-template-columns:{{ f.c.cols }};flex-direction:column;gap:{{ f.c.gap }};align-items:center">
+                    <div data-cd="tile" style="position:relative;align-self:stretch;height:{{ f.c.tileH }};box-sizing:border-box;border:var(--cp-bw) {{ f.c.tileBs }} var(--cp-line);border-radius:12px;background:{{ f.c.tileBg }};color:{{ f.c.tileFg }};display:grid;place-items:center;transform:{{ f.c.tileT }};transition:background-color var(--cp-dur-fast) var(--cp-ease-snap),color var(--cp-dur-fast) var(--cp-ease-snap)">
+                      <span data-cd="ringA" aria-hidden="true" style="position:absolute;inset:-3px;border:var(--cp-bw) solid var(--cp-error);border-radius:12px;opacity:{{ f.c.rAo }};transform:{{ f.c.rAt }};pointer-events:none"></span>
+                      <span data-cd="ringB" aria-hidden="true" style="position:absolute;inset:-3px;border:var(--cp-bw) solid var(--cp-error);border-radius:12px;opacity:{{ f.c.rBo }};transform:{{ f.c.rBt }};pointer-events:none"></span>
+                      <span role="timer" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap">{{ f.c.say }}</span>
+                      <span data-cd="digits" aria-hidden="true" style="display:inline-flex;transform:{{ f.c.digT }};opacity:{{ f.c.digO }}">
+                        <span data-cd="pulse" style="display:inline-flex;align-items:baseline;font-family:{{ f.c.ff }};font-weight:400;font-size:{{ f.c.fs }};line-height:.9;white-space:nowrap;transform:{{ f.c.pulseT }}"><sc-for list="{{ f.c.chars }}" as="ch" hint-placeholder-count="4"><span style="display:inline-block;width:{{ ch.w }};text-align:center">{{ ch.ch }}</span></sc-for></span>
+                      </span>
+                      <sc-if value="{{ f.c.done }}"><span data-cd="ghost" aria-hidden="true" style="position:absolute;inset:0;display:grid;place-items:center;font-family:{{ f.c.ff }};font-size:{{ f.c.fs }};line-height:.9;opacity:{{ f.c.ghO }};transform:{{ f.c.ghT }};pointer-events:none">1</span></sc-if>
+                      <sc-if value="{{ f.c.paused }}"><span aria-hidden="true" style="position:absolute;top:8px;right:8px;display:grid;place-items:center;width:30px;height:30px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)"><span style="display:block;width:15px;height:15px;background:currentColor;-webkit-mask:{{ I.pause }} center / contain no-repeat;mask:{{ I.pause }} center / contain no-repeat"></span></span></sc-if>
+                      <sc-if value="{{ f.c.done }}"><span data-cd="stamp" aria-hidden="true" style="position:absolute;left:50%;top:50%;padding:{{ f.c.stPad }};border:var(--cp-bw) solid var(--cp-line);border-radius:8px;background:var(--cp-surface);color:var(--cp-ink);box-shadow:var(--cp-shadow-sm);font-family:var(--cp-font-num);font-size:{{ f.c.stFs }};line-height:1;white-space:nowrap;opacity:{{ f.c.stO }};transform:{{ f.c.stT }}">Zeit ist um</span></sc-if>
+                    </div>
+
+                    <div style="align-self:stretch;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:12px">
+                      <sc-if value="{{ f.c.bar }}"><div aria-hidden="true" style="height:16px;box-sizing:border-box;border:var(--cp-bw-thin) solid var(--cp-line);border-radius:999px;background:var(--cp-paper-2);overflow:hidden"><span data-cd="fill" style="display:block;height:100%;width:{{ f.c.fillW }};box-sizing:border-box;border-right:{{ f.c.fillBr }};background-color:var(--cp-primary);background-image:{{ f.c.fillImg }}"></span></div></sc-if>
+                      <sc-if value="{{ f.c.pips }}"><div aria-hidden="true" style="display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;height:16px">
+                        <sc-for list="{{ f.c.pipList }}" as="p" hint-placeholder-count="10"><span style="box-sizing:border-box;border-radius:5px;border:var(--cp-bw-thin) {{ p.bs }} {{ p.bc }};background:{{ p.bg }}"></span></sc-for>
+                      </div></sc-if>
+                      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+                        <span style="flex:1 1 200px;font-size:14px;font-weight:700;color:var(--cp-ink-2);text-wrap:pretty">{{ f.c.meta }}</span>
+                        <sc-if value="{{ f.c.hasBtns }}"><div style="flex:{{ f.c.btnsFlex }};display:flex;gap:10px">
+                          <sc-for list="{{ f.c.btns }}" as="b" hint-placeholder-count="1"><button type="button" onClick="{{ b.on }}" style="flex:{{ f.c.btnFlex }};display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink);box-shadow:var(--cp-shadow-btn);font-size:15px;font-weight:800;white-space:nowrap;cursor:pointer;transition:transform var(--cp-dur-instant) var(--cp-ease-snap),box-shadow var(--cp-dur-instant) var(--cp-ease-snap)" style-hover="transform:translateY(-2px)" style-active="transform:translate(4px,4px);box-shadow:none" style-focus="outline:3px solid var(--cp-focus);outline-offset:3px"><span aria-hidden="true" style="display:block;flex:none;width:18px;height:18px;background:currentColor;-webkit-mask:{{ b.m }} center / contain no-repeat;mask:{{ b.m }} center / contain no-repeat"></span>{{ b.n }}</button></sc-for>
+                        </div></sc-if>
+                      </div>
+                    </div>
+                  </div>
+                  <p role="status" aria-live="polite" style="position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap">{{ f.c.liveMsg }}</p>
+                </section>
+
+                <sc-if value="{{ f.shell }}"><div role="region" aria-labelledby="{{ f.sid }}" style="display:flex;flex-direction:column;gap:4px;padding:14px 16px 8px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+                  <div style="display:flex;align-items:baseline;gap:10px"><h2 id="{{ f.sid }}" style="margin:0;font-size:18px;font-weight:800">Tabelle</h2><span style="font-size:13px;font-weight:600;color:var(--cp-ink-2)">nach 2 von 6 Spielen</span></div>
+                  <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column">
+                    <sc-for list="{{ standings }}" as="r" hint-placeholder-count="4"><li style="display:flex;align-items:center;gap:12px;min-height:48px;border-top:{{ r.bt }}">
+                      <span style="flex:none;width:24px;font-family:var(--cp-font-num);font-size:15px;text-align:center">{{ r.rank }}</span>
+                      <span aria-hidden="true" style="flex:none;width:22px;height:22px;box-sizing:border-box;border-radius:6px;border:2px solid var(--cp-line);background-color:var(--cp-team-{{ r.t }});background-image:var(--cp-team-{{ r.t }}-pattern);background-size:12px 12px"></span>
+                      <b style="flex:1;min-width:0;font-size:15px">{{ r.n }}</b>
+                      <span style="flex:none;font-family:var(--cp-font-num);font-size:20px">{{ r.pts }}</span>
+                    </li></sc-for>
+                  </ol>
+                </div></sc-if>
+              </main>
+            </div>
+
+            <sc-if value="{{ f.panel }}"><aside aria-label="Seitenleiste" style="flex:none;width:340px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);display:flex;flex-direction:column">
+              <div role="tablist" aria-label="Seitenleiste" style="flex:none;display:flex;gap:4px;padding:6px 10px 0;border-bottom:2px solid var(--cp-line-soft)">
+                <button type="button" role="tab" aria-selected="true" style="display:flex;align-items:center;gap:8px;height:46px;padding:0 12px;border:0;border-bottom:3px solid var(--cp-hot);background:transparent;font-weight:800;font-size:14px;cursor:pointer"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ I.history }} center / contain no-repeat;mask:{{ I.history }} center / contain no-repeat"></span>Aktivität</button>
+              </div>
+              <div role="log" aria-label="Aktivität" style="flex:1;min-height:0;overflow:hidden;padding:0 12px 12px;display:flex;flex-direction:column;justify-content:flex-end">
+                <div style="padding:12px 0 6px;font-size:12px;font-weight:800;color:var(--cp-ink-2);text-transform:uppercase;letter-spacing:.08em">Session 1</div>
+                <sc-for list="{{ feed }}" as="e" hint-placeholder-count="5"><div style="display:flex;gap:10px;padding:8px 0;border-top:1.5px solid var(--cp-line-soft);font-size:14px;line-height:1.35"><span style="flex:none;width:40px;font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2);padding-top:2px">{{ e.t }}</span><span style="text-wrap:pretty">{{ e.x }}</span></div></sc-for>
+              </div>
+            </aside></sc-if>
+          </div>
+
+          <sc-if value="{{ f.dock }}"><div role="toolbar" aria-label="Host-Steuerung" style="position:absolute;z-index:30;bottom:20px;left:550px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:6px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+            <button type="button" style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-weight:800;font-size:15px;white-space:nowrap;cursor:pointer"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ I.hand }} center / contain no-repeat;mask:{{ I.hand }} center / contain no-repeat"></span>Session 1 beenden<span style="font-size:12px;font-weight:700">1 s halten</span></button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 16px;border-radius:999px;border:0;background:transparent;font-weight:800;font-size:15px;cursor:pointer"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ I.link }} center / contain no-repeat;mask:{{ I.link }} center / contain no-repeat"></span>Einladen</button>
+            <button type="button" style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 16px;border-radius:999px;border:0;background:transparent;font-weight:800;font-size:15px;cursor:pointer"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ I.ellipsis }} center / contain no-repeat;mask:{{ I.ellipsis }} center / contain no-repeat"></span>Mehr</button>
+          </div></sc-if>
+
+          <sc-if value="{{ f.crown }}"><button type="button" aria-label="Host-Steuerung" style="position:absolute;z-index:30;right:14px;bottom:80px;display:grid;place-items:center;width:56px;height:56px;padding:0;border-radius:50%;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);cursor:pointer"><span aria-hidden="true" style="display:block;width:24px;height:24px;background:currentColor;-webkit-mask:{{ I.crown }} center / contain no-repeat;mask:{{ I.crown }} center / contain no-repeat"></span></button></sc-if>
+
+          <sc-if value="{{ f.tabs }}"><nav aria-label="Event" style="position:absolute;z-index:20;left:0;right:0;bottom:0;height:64px;display:flex;border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+            <a href="#" aria-current="page" onClick="{{ noop }}" style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--cp-ink);text-decoration:none;font-size:12px;font-weight:800"><span aria-hidden="true" style="position:absolute;top:0;left:30%;right:30%;height:3px;background:var(--cp-hot)"></span><span aria-hidden="true" style="display:block;width:22px;height:22px;background:currentColor;-webkit-mask:{{ I.grid }} center / contain no-repeat;mask:{{ I.grid }} center / contain no-repeat"></span>Event</a>
+            <a href="#" onClick="{{ noop }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--cp-ink-2);text-decoration:none;font-size:12px;font-weight:700"><span aria-hidden="true" style="display:block;width:22px;height:22px;background:currentColor;-webkit-mask:{{ I.history }} center / contain no-repeat;mask:{{ I.history }} center / contain no-repeat"></span>Aktivität</a>
+          </nav></sc-if>
+        </div>
+      </div>
+      </sc-for>
+      </div>
+    </div>
+    </sc-for>
+  </section>
+  </sc-for>
+
+  <sc-if value="{{ notOnly }}" hint-placeholder-val="{{ true }}">
+  <section id="numbers" style="display:flex;flex-direction:column;gap:28px;max-width:1500px">
+    <div style="display:flex;gap:22px;align-items:flex-start">
+      <span style="flex:none;display:grid;place-items:center;min-width:64px;height:64px;box-sizing:border-box;padding:0 12px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-primary);box-shadow:var(--cp-shadow-sm);font-family:var(--cp-font-num);font-size:24px">M</span>
+      <div style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:52px;line-height:1">Motion in numbers</h2><span style="font-size:18px;color:var(--cp-ink-2);max-width:96ch;text-wrap:pretty">The same tables drive every frame on this page and the live demo, so what you see is what the numbers say.</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start">
+      <div style="border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:2px solid var(--cp-line-soft);font-weight:800">The last ten, keyed by s = ceil(left / 1000)</div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead><tr><sc-for list="{{ tenHead }}" as="h" hint-placeholder-count="5"><th scope="col" style="text-align:left;padding:8px 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2);border-bottom:2px solid var(--cp-line-soft)">{{ h }}</th></sc-for></tr></thead>
+          <tbody><sc-for list="{{ tenRows }}" as="r" hint-placeholder-count="10"><tr>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-num)">{{ r.s }}</td>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft)"><span style="display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:18px;height:18px;box-sizing:border-box;border-radius:4px;border:2px solid var(--cp-line);background:{{ r.bg }}"></span><code style="font-family:var(--cp-font-mono);font-size:12px">{{ r.tok }}</code></span></td>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-size:12px">{{ r.scale }}</td>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-size:12px">{{ r.pips }}</td>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-size:13px">{{ r.say }}</td>
+          </tr></sc-for></tbody>
+        </table>
+      </div>
+      <div style="border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:2px solid var(--cp-line-soft);font-weight:800">Zero burst, t = serverNow − endsAt (ms)</div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead><tr><sc-for list="{{ burstHead }}" as="h" hint-placeholder-count="5"><th scope="col" style="text-align:left;padding:8px 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2);border-bottom:2px solid var(--cp-line-soft)">{{ h }}</th></sc-for></tr></thead>
+          <tbody><sc-for list="{{ burstRows }}" as="r" hint-placeholder-count="7"><tr>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-size:13px;font-weight:700">{{ r.what }}</td>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-size:12px">{{ r.when }}</td>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-size:12px">{{ r.tok }}</td>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-size:12px">{{ r.ease }}</td>
+            <td style="padding:7px 12px;border-bottom:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-size:12px">{{ r.val }}</td>
+          </tr></sc-for></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;face&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;timer&quot;,&quot;num&quot;],&quot;default&quot;:&quot;timer&quot;,&quot;tsType&quot;:&quot;'timer' | 'num'&quot;,&quot;section&quot;:&quot;Countdown&quot;},&quot;demoSeconds&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:15,&quot;min&quot;:5,&quot;max&quot;:120,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Live-Demo&quot;}}">
+const DUR=300000;
+const EZ={snap:[.2,0,0,1],out:[.16,1,.3,1],in:[.7,0,.84,0],pop:[.34,1.56,.64,1]};
+function bez([x1,y1,x2,y2]){
+  const A=(a,b)=>1-3*b+3*a,B=(a,b)=>3*b-6*a,C=a=>3*a;
+  const calc=(t,a,b)=>((A(a,b)*t+B(a,b))*t+C(a))*t, slope=(t,a,b)=>3*A(a,b)*t*t+2*B(a,b)*t+C(a);
+  return x=>{ if(x<=0) return 0; if(x>=1) return 1; let lo=0,hi=1,t=x;
+    for(let i=0;i<40;i++){ const cx=calc(t,x1,x2); if(Math.abs(cx-x)<1e-5) break; if(cx<x) lo=t; else hi=t; t=(lo+hi)/2; }
+    return calc(t,y1,y2); };
+}
+const EF={}; for(const k in EZ) EF[k]=bez(EZ[k]);
+const CB=k=>`cubic-bezier(${EZ[k].join(',')})`;
+const STEP=s=>1+(10-s)*0.035;
+const BURST=[
+  {k:'ghost',d:0,dur:140,e:'in',tok:'dur-fast',from:{o:1,s:1},to:{o:0,s:1.25},what:'Last „1“ blows out',val:'scale ×1→×1.25 · opacity 1→0'},
+  {k:'tile',d:0,dur:360,e:'out',tok:'dur-slow',kf:true,what:'Tile thump',val:'scale 1 → 1.06 (40 %) → 1'},
+  {k:'ringA',d:0,dur:600,e:'out',tok:'dur-slower',from:{o:1,sx:1,sy:1},to:{o:0,sx:1.12,sy:1.4},what:'Shock outline 1 (error)',val:'scale 1→1.12/1.4 · opacity 1→0'},
+  {k:'ringB',d:160,dur:600,e:'out',tok:'dur-slower',from:{o:1,sx:1,sy:1},to:{o:0,sx:1.12,sy:1.4},what:'Shock outline 2',val:'same, +160'},
+  {k:'zero',d:80,dur:220,e:'out',tok:'dur-base',from:{o:0,s:1.4},to:{o:1,s:1},what:'„0:00“ lands',val:'scale 1.4→1 · opacity 0→1'},
+  {k:'stamp',d:200,dur:360,e:'pop',tok:'dur-slow',from:{o:0,s:2.4,r:-14},to:{o:1,s:1,r:-6},what:'Stamp „Zeit ist um“',val:'scale 2.4→1 · rotate −14°→−6°'},
+  {k:'shadow',d:200,dur:220,e:'snap',tok:'dur-base',from:{p:0},to:{p:1},what:'Card shadow ink → error',val:'shadow-card → 6px 6px 0 error'},
+];
+const lerp=(a,b,t)=>a+(b-a)*t, cl=v=>Math.max(0,Math.min(1,v));
+function sample(tr,t){
+  const e=EF[tr.e](cl((t-tr.d)/tr.dur));
+  if(tr.kf) return {s:e<.4?lerp(1,1.06,e/.4):lerp(1.06,1,(e-.4)/.6)};
+  const o={}; for(const k in tr.to) o[k]=lerp(tr.from[k],tr.to[k],e); if(o.o!=null) o.o=cl(o.o); return o;
+}
+const TF={ghost:v=>`scale(${(STEP(1)*v.s).toFixed(3)})`,tile:v=>`scale(${v.s.toFixed(3)})`,ringA:v=>`scale(${v.sx.toFixed(3)},${v.sy.toFixed(3)})`,ringB:v=>`scale(${v.sx.toFixed(3)},${v.sy.toFixed(3)})`,zero:v=>`scale(${v.s.toFixed(3)})`,stamp:v=>`translate(-50%,-50%) rotate(${v.r.toFixed(1)}deg) scale(${v.s.toFixed(3)})`};
+const FMT=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+const SAY=s=>{ const m=Math.floor(s/60),r=s%60,p=[]; if(m) p.push(m===1?'1 Minute':m+' Minuten'); if(r||!m) p.push(r===1?'1 Sekunde':r+' Sekunden'); return p.join(' '); };
+const TONE={calm:['var(--cp-paper-2)','var(--cp-ink)'],run:['var(--cp-primary)','var(--cp-on-primary)'],warn:['var(--cp-warning)','var(--cp-on-warning)'],err:['var(--cp-error)','var(--cp-on-error)']};
+const STATES={
+  ready:{n:'Bereit · Host',kind:'ready',rem:DUR,host:true},
+  'ready-m':{n:'Bereit · Member',kind:'ready',rem:DUR,host:false},
+  run:{n:'Läuft 3:45',kind:'running',rem:224600,host:true},
+  final:{n:'Läuft 0:07',kind:'running',rem:6400,host:true},
+  paused:{n:'Pausiert 2:10',kind:'paused',rem:130000,host:true},
+  burst:{n:'Null-Moment',kind:'done',rem:0,host:false,burstT:240},
+  done:{n:'Zeit ist um · Host',kind:'done',rem:0,host:true},
+  'done-m':{n:'Zeit ist um · Member',kind:'done',rem:0,host:false},
+  reduced:{n:'Reduziert 0:03',kind:'running',rem:2400,host:false,reduced:true},
+};
+const noop=e=>e&&e.preventDefault&&e.preventDefault();
+
+class Component extends DCLogic {
+  state={st:'live',vp:'desk',theme:'light',motion:'full',role:'host',only:false,L:{kind:'ready',dur:15000,endsAt:0,rem:15000},burstAt:null,tick:0,icons:0};
+  root=React.createRef();
+  componentDidMount(){
+    const q=new URLSearchParams(location.search), up={};
+    if(STATES[q.get('st')]||q.get('st')==='live') up.st=q.get('st');
+    if(['desk','mob'].includes(q.get('vp'))) up.vp=q.get('vp');
+    if(['light','dark'].includes(q.get('theme'))) up.theme=q.get('theme');
+    if(q.get('motion')==='reduced') up.motion='reduced';
+    if(q.get('only')==='1') up.only=true;
+    this.setState(up,()=>{ if(this.state.st==='live') this.start(); });
+    if(!window.CP_ICONS){ this._ih=()=>this.setState(s=>({icons:s.icons+1})); window.addEventListener('cp-icons',this._ih); }
+    const loop=()=>{ this._raf=requestAnimationFrame(loop); this.frameTick(); }; loop();
+  }
+  componentWillUnmount(){ cancelAnimationFrame(this._raf); this._ih&&window.removeEventListener('cp-icons',this._ih); }
+  demo(){ return (this.props.demoSeconds??15)*1000; }
+  red(){ return this.state.motion==='reduced'; }
+  liveEl(){ const r=this.root.current; return r&&r.querySelector('[data-live="1"]'); }
+  setL(L,extra){ this._ls=undefined; this.setState({L,burstAt:null,...(extra||{})}); }
+  start=()=>{ const L=this.state.L; this._saw=false; const rem=L.kind==='ready'?L.dur:L.rem; this.setL({...L,kind:'running',endsAt:Date.now()+rem}); };
+  pause=()=>{ const L=this.state.L; this.setL({...L,kind:'paused',rem:Math.max(0,L.endsAt-Date.now())}); };
+  resume=()=>{ const L=this.state.L; this.setL({...L,kind:'running',endsAt:Date.now()+L.rem}); };
+  reset=()=>{ const L=this.state.L; this._saw=false; this.setL({...L,kind:'ready',rem:L.dur}); };
+  simSet=()=>{ this._saw=false; const d=this.demo(); this.setL({kind:'ready',dur:d,rem:d,endsAt:0}); };
+  simLate=()=>{ this._saw=false; const d=Math.max(this.demo(),8000); this.setL({kind:'running',dur:d,rem:6700,endsAt:Date.now()+6700}); };
+  simAfter=()=>{ this._saw=false; const d=this.demo(); this.setL({kind:'running',dur:d,rem:0,endsAt:Date.now()-2500}); };
+  frameTick(){
+    const S=this.state, L=S.L; if(S.st!=='live'||L.kind!=='running') return;
+    const now=Date.now(), rem=L.endsAt-now, fr=this.liveEl();
+    if(rem<=0){
+      const late=now-L.endsAt, burst=this._saw&&!this.red()&&late<760;
+      this._ls=0; this.setState({L:{...L,kind:'done',rem:0},burstAt:burst?L.endsAt:null}); return;
+    }
+    if(rem<=1000) this._saw=true;
+    if(fr){ const f=fr.querySelector('[data-cd="fill"]'); if(f) f.style.width=(rem/L.dur*100).toFixed(2)+'%'; }
+    const s=Math.ceil(rem/1000);
+    if(s!==this._ls){ this._ls=s; this.setState(st=>({tick:st.tick+1}),()=>{
+      if(s>10||this.red()) return; const into=s*1000-(this.state.L.endsAt-Date.now()); if(into>=220||into<0) return;
+      const el=this.liveEl()&&this.liveEl().querySelector('[data-cd="pulse"]'); if(!el) return;
+      const a=el.animate([{transform:'scale(1)',easing:CB('pop')},{transform:'scale(1.14)',offset:.5,easing:CB('pop')},{transform:'scale(1)'}],{duration:220}); a.currentTime=into; }); }
+  }
+  componentDidUpdate(){
+    const S=this.state;
+    if(S.burstAt&&S.burstAt!==this._played){ this._played=S.burstAt; const fr=this.liveEl(); if(fr) this.playBurst(fr,Date.now()-S.burstAt); }
+    if(this._url!==this.urlStr()){ this._url=this.urlStr(); try{ history.replaceState(null,'',location.pathname+this._url); }catch(e){} }
+  }
+  playBurst(fr,elapsed){
+    const card=fr.querySelector('[data-cd="card"]'); if(!card) return;
+    const cs=getComputedStyle(card), sh=cs.getPropertyValue('--cp-shadow-card').trim(), err=cs.getPropertyValue('--cp-error').trim();
+    for(const tr of BURST){
+      let el,kf;
+      if(tr.k==='shadow'){ el=card; kf=[{boxShadow:sh},{boxShadow:`6px 6px 0 ${err}`}]; }
+      else { el=fr.querySelector(`[data-cd="${tr.k==='zero'?'digits':tr.k}"]`);
+        kf=tr.kf?[{transform:'scale(1)',offset:0},{transform:'scale(1.06)',offset:.4},{transform:'scale(1)',offset:1}]:[tr.from,tr.to].map(v=>{ const o={transform:TF[tr.k](v)}; if(v.o!=null) o.opacity=v.o; return o; }); }
+      if(!el) continue;
+      const a=el.animate(kf,{duration:tr.dur,delay:tr.d,easing:CB(tr.e),fill:'backwards'}); a.currentTime=elapsed;
+    }
+  }
+  urlStr(){ const S=this.state; return `?st=${S.st}&vp=${S.vp}&theme=${S.theme}`+(S.motion==='reduced'?'&motion=reduced':'')+(S.only?'&only=1':''); }
+  icons(){
+    const C=window.CP_ICONS||{};
+    const m=n=>{ const els=(C[n]||[]).map(([t,a])=>'<'+t+' '+Object.entries(a).map(([k,v])=>`${k}="${v}"`).join(' ')+'/>').join('');
+      return `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${els}</svg>`)}")`; };
+    const I={}; [['play','play'],['pause','pause'],['rotate','rotate-ccw'],['bell','bell-ring'],['timer','timer'],['volume','volume-2'],['crown','crown'],['grid','layout-grid'],['history','history'],['link','link'],['ellipsis','ellipsis'],['trophy','trophy'],['hand','hand'],['hourglass','hourglass']].forEach(([k,n])=>I[k]=m(n));
+    return I;
+  }
+  card(o,I){
+    const {kind,rem,dur,host,desk,face}=o, done=kind==='done', paused=kind==='paused';
+    const s=done?0:Math.ceil(Math.max(0,kind==='ready'?dur:rem)/1000);
+    const final=!done&&kind!=='ready'&&s>=1&&s<=10;
+    const tone=done?'err':final?(s>=6?'warn':'err'):kind==='running'?'run':'calm';
+    let [tileBg,tileFg]=TONE[tone];
+    if(paused){ tileBg='var(--cp-paper-2)'; tileFg=final?(s>=6?'var(--cp-warning-fg)':'var(--cp-error-fg)'):'var(--cp-ink)'; }
+    const num=face==='num', fsPx=desk?(num?76:96):(num?56:68);
+    const slot=num?'var(--cp-num-slot)':'var(--cp-timer-slot)', sep=num?'var(--cp-num-sep)':'var(--cp-timer-sep)';
+    const text=done?'0:00':final?String(s):FMT(s);
+    const chars=[...text].map(ch=>({ch,w:/[0-9]/.test(ch)?slot:sep}));
+    const B={}; if(done){ const t=o.burstT==null?Infinity:o.burstT; BURST.forEach(tr=>B[tr.k]=sample(tr,t)); }
+    const durS=FMT(Math.round(dur/1000));
+    const P=kind==='ready'?{t:'Bereit',bg:'var(--cp-surface)',fg:'var(--cp-ink)',dot:'var(--cp-ink-3)'}:kind==='running'?{t:'Läuft',bg:'var(--cp-primary)',fg:'var(--cp-on-primary)',dot:'var(--cp-hot)'}:paused?{t:'Pausiert',bg:'var(--cp-surface)',fg:'var(--cp-ink)',ic:I.pause}:{t:'Zeit ist um',bg:'var(--cp-error)',fg:'var(--cp-on-error)',ic:I.bell};
+    const meta=kind==='ready'?(host?`Gestellt auf ${durS}. Starte, wenn alle bereit sind.`:`Gestellt auf ${durS}. Sanne startet ihn.`):kind==='running'?`Gestellt auf ${durS}`:paused?(host?`Angehalten. „Fortsetzen“ macht bei ${FMT(s)} weiter.`:`Sanne hat angehalten, bei ${FMT(s)} geht’s weiter.`):(host?'Bleibt stehen, bis du zurücksetzt.':'Bleibt stehen, bis Sanne zurücksetzt.');
+    const A=o.actions||{}, mk=(n,ic,on)=>({n,m:I[ic],on:on||noop});
+    const btns=!host?[]:kind==='ready'?[mk('Starten','play',A.start)]:kind==='running'?[mk('Pausieren','pause',A.pause)]:paused?[mk('Fortsetzen','play',A.resume),mk('Zurücksetzen','rotate',A.reset)]:[mk('Zurücksetzen','rotate',A.reset)];
+    const fill=kind==='ready'?100:Math.max(0,Math.min(100,rem/dur*100));
+    const pipList=Array.from({length:10},(_,i)=>{ const lit=i<s; return {bg:lit?TONE[s>=6?'warn':'err'][0]:'transparent',bs:lit?'solid':'dashed',bc:lit?'var(--cp-line)':'var(--cp-ink-3)'}; });
+    const say=done?'Zeit ist um':kind==='ready'?`Countdown gestellt auf ${SAY(s)}`:paused?`Pausiert, noch ${SAY(s)}`:`Noch ${SAY(s)}`;
+    const liveMsg=kind==='ready'?`Countdown gestellt: ${SAY(s)}.`:done?'Zeit ist um.':paused?`Countdown pausiert. Noch ${SAY(s)}.`:final?'Noch 10 Sekunden.':`Countdown läuft. Noch ${SAY(s)}.`;
+    const shP=done?B.shadow.p:0;
+    return {pad:desk?'16px 18px 18px':'14px',h2:desk?'28px':'24px',disp:desk?'grid':'flex',cols:desk?'300px minmax(0,1fr)':'none',gap:desk?'22px':'12px',tileH:desk?'132px':'100px',
+      tileBs:paused?'dashed':'solid',tileBg,tileFg,ff:num?'var(--cp-font-num)':'var(--cp-font-timer)',fs:fsPx+'px',chars,
+      digT:final?`scale(${STEP(s).toFixed(3)})`:done?TF.zero(B.zero):'none',digO:done?B.zero.o:1,pulseT:o.pulse&&final?'scale(1.14)':'none',
+      tileT:done?TF.tile(B.tile):'none',done,paused,ghO:done?B.ghost.o:0,ghT:done?TF.ghost(B.ghost):'none',
+      rAo:done?B.ringA.o:0,rAt:done?TF.ringA(B.ringA):'none',rBo:done?B.ringB.o:0,rBt:done?TF.ringB(B.ringB):'none',
+      stO:done?B.stamp.o:0,stT:done?TF.stamp(B.stamp):'none',stFs:desk?'24px':'19px',stPad:desk?'9px 14px':'7px 11px',
+      shadow:shP>=.5?'6px 6px 0 var(--cp-error)':'var(--cp-shadow-card)',
+      pill:P.t,pillBg:P.bg,pillFg:P.fg,pillDot:!!P.dot,pillDotC:P.dot||'',pillIc:P.ic||'',
+      bar:!final&&!done,fillW:fill.toFixed(2)+'%',fillBr:fill>0&&fill<100?'var(--cp-bw-thin) solid var(--cp-line)':'0',fillImg:paused?'repeating-linear-gradient(-45deg, transparent 0 6px, var(--cp-line-soft) 6px 12px)':'none',
+      pips:final||done,pipList,meta,hasBtns:btns.length>0,btns,btnsFlex:desk?'none':'1 1 100%',btnFlex:desk?'none':'1 1 0',say,liveMsg};
+  }
+  frame(o,I){
+    const desk=!!o.desk, shell=!o.cardOnly, host=!!o.host;
+    const c=this.card({...o,desk,dur:o.dur||DUR},I);
+    return {id:o.id,href:'#'+o.id,label:o.label,sub:o.sub||'',labelS:shell?'24px':'17px',theme:o.theme||'light',liveFlag:o.live?'1':'0',
+      wpx:shell?(desk?'1440px':'390px'):(desk?'760px':'390px'),hpx:shell?(desk?'900px':'844px'):'auto',rad:shell?(desk?'14px':'36px'):'20px',fpad:shell?'0':'16px',fsh:shell?'var(--cp-shadow-card)':'none',
+      shell,desk,host,panel:shell&&desk,tabs:shell&&!desk,crown:shell&&!desk&&host,dock:shell&&desk&&host,
+      hh:desk?'64px':'56px',hpad:desk?'20px':'12px',logoS:desk?34:30,ini:host?'S':'K',avBg:host?'var(--cp-primary)':'var(--cp-team-4)',acct:'Konto von '+(host?'Sanne':'Kitty'),
+      pad:!shell?'0':desk?'24px 24px 40px':(host?'16px 14px 92px':'16px 14px 80px'),gap:desk?'22px':'16px',h1:desk?'44px':'34px',
+      hid:o.id+'-cd',rid:o.id+'-rd',sid:o.id+'-st',c};
+  }
+  renderVals(){
+    const S=this.state, I=this.icons(), face=this.props.face==='num'?'num':'timer';
+    const F=o=>this.frame({...o,face},I);
+    const pick=(k,v)=>()=>{ this.setState({[k]:v},()=>{ if(k==='st'&&v==='live'&&this.state.L.kind==='ready') this.start(); }); };
+    const seg=(n,k,opts)=>({n,opts:opts.map(([v,l])=>{ const on=S[k]===v; return {n:l,on,pick:pick(k,v),bg:on?'var(--cp-ink)':'var(--cp-surface)',fg:on?'var(--cp-paper)':'var(--cp-ink)'}; })});
+    const switches=[seg('Zustand','st',[['live','Live-Demo'],...Object.entries(STATES).map(([k,v])=>[k,v.n])]),seg('Viewport','vp',[['desk','Desktop 1440'],['mob','Mobil 390']]),seg('Theme','theme',[['light','Hell'],['dark','Dunkel']])];
+    if(S.st==='live'){ switches.push(seg('Rolle','role',[['host','Host'],['member','Member']])); switches.push(seg('Bewegung','motion',[['full','Voll'],['reduced','Reduziert']])); }
+    let focus;
+    if(S.st==='live'){
+      const L=S.L, now=Date.now(); let kind=L.kind, rem=kind==='running'?L.endsAt-now:kind==='paused'?L.rem:kind==='ready'?L.dur:0;
+      if(kind==='running'&&rem<=0){ kind='done'; rem=0; }
+      focus=F({id:'live',label:'Live-Demo',sub:'Runs on a simulated server clock. The Host buttons on the card work. Use „Simulieren“ to land mid-way or after zero.',theme:S.theme,desk:S.vp==='desk',host:S.role==='host',kind,rem,dur:L.dur,live:true,actions:{start:this.start,pause:this.pause,resume:this.resume,reset:this.reset}});
+    } else { const X=STATES[S.st]; focus=F({...X,id:'focus',label:X.n,sub:X.reduced?'Reduced motion: the same frame, no pulse, no burst.':'',theme:S.theme,desk:S.vp==='desk'}); }
+    const sections=[{id:'focus-sec',no:'▶',title:'State switch',notes:['?st=…&vp=desk|mob&theme=light|dark (+ &motion=reduced, &only=1 to hide everything else). The frame below follows the switch.'],rows:[{label:'',gap:'48px',frames:[focus]}]}];
+    if(!S.only){
+      const M=[
+        ['ready','Bereit · Host','Set, not started. Calm: paper-2 well, full bar, the set time. „Starten“ is the only action.'],
+        ['ready-m','Bereit · Member','No buttons, so the card is 60 px shorter. The line says who starts it.'],
+        ['run','Läuft bei 3:45 · Host','Tile turns Sonne (primary), the bar drains continuously from endsAt. „Pausieren“.'],
+        ['final','Läuft bei 0:07 · Host (inside the last ten)','Seconds only, digits ×1.105, warning fill, the bar becomes 10 pips with 7 lit. A late joiner at 7 s lands right here.'],
+        ['paused','Pausiert bei 2:10 · Host','Clearly stopped: no fill, dashed tile, pause badge, hatched bar. „Fortsetzen“ + „Zurücksetzen“ in today’s order.'],
+        ['burst','Null-Moment · Frame at +240 ms · Member','Only for viewers who saw the last second live. Shock outlines, „0:00“ landing, the stamp on its way down.'],
+        ['done','Zeit ist um · Host','Steady and loud: error tile, stamp, error card shadow, empty pips. Stays until „Zurücksetzen“. Nothing loops.'],
+        ['done-m','Zeit ist um · Member','Same, no button. A Member who opens the page now sees this at once, no burst.'],
+        ['reduced','Reduziert bei 0:03 · Member','Colour and size steps stay (error, ×1.245, 3 pips). No pulse, no thump, no burst.'],
+      ];
+      M.forEach(([k,t,n],i)=>{ const X=STATES[k], no=String(i+1);
+        sections.push({id:'s'+no,no,title:t,notes:[n],rows:[{label:'',gap:'48px',frames:[
+          F({...X,id:no+'a',label:'Desktop · hell',theme:'light',desk:true}),F({...X,id:no+'b',label:'Desktop · dunkel',theme:'dark',desk:true}),
+          F({...X,id:no+'c',label:'Mobil · hell',theme:'light',desk:false}),F({...X,id:no+'d',label:'Mobil · dunkel',theme:'dark',desk:false})]}]}); });
+      const ten=(theme,pulse,suffix)=>Array.from({length:10},(_,i)=>{ const s=10-i; return F({id:'T'+s+suffix,label:pulse?`${s} · Puls-Spitze +110 ms`:`${s} · steady`,kind:'running',rem:s*1000-500,host:false,theme,desk:false,cardOnly:true,pulse}); });
+      sections.push({id:'ten',no:'10',title:'The last ten, keyed moments',notes:['Each frame is a pure function of s = ceil(left / 1000). Fill: warning for 10–6, error for 5–1. Digits grow 3.5 % per second (×1.000 → ×1.315). One pip goes per second.','On every second boundary the digits tick (animate-tick: scale 1.14 at 50 %, dur-base, ease-pop), sought to the time already elapsed in that second. A viewer who arrives later than 220 ms into a second just gets the steady frame.'],
+        rows:[{label:'Hell · steady',gap:'24px',frames:ten('light',false,'')},{label:'Hell · pulse peak (+110 ms)',gap:'24px',frames:ten('light',true,'p')},{label:'Dunkel · steady',gap:'24px',frames:ten('dark',false,'d')}]});
+      const bt=[0,60,120,200,280,400,760];
+      const bf=theme=>bt.map(t=>F({id:'B'+t+(theme==='dark'?'d':''),label:`+${t} ms`,kind:'done',rem:0,host:false,theme,desk:false,cardOnly:true,burstT:t}));
+      sections.push({id:'burst',no:'11',title:'Zero burst, 0.76 s',notes:['Played with playAt(tl, endsAt) only if this client rendered a frame with 0 < left ≤ 1000 ms. Hidden tab or late by up to 760 ms: it seeks in. Opened afterwards: steady state at once. Reduced: none.','+760 ms is exactly the steady „Zeit ist um“ frame (2…8 above).'],
+        rows:[{label:'Hell',gap:'24px',frames:bf('light')},{label:'Dunkel',gap:'24px',frames:bf('dark')}]});
+    }
+    const tenRows=Array.from({length:10},(_,i)=>{ const s=10-i; return {s:String(s),bg:s>=6?'var(--cp-warning)':'var(--cp-error)',tok:s>=6?'--cp-warning / on-warning':'--cp-error / on-error',scale:'×'+STEP(s).toFixed(3),pips:`${s} of 10`,say:s===10?'„Noch 10 Sekunden.“ (once)':'—'}; });
+    const burstRows=BURST.map(b=>({what:b.what,when:`${b.d}–${b.d+b.dur}`,tok:'--cp-'+b.tok,ease:'--cp-ease-'+b.e,val:b.val}));
+    return {root:this.root,noop,I,notOnly:!S.only,isLive:S.st==='live',switches,url:'Countdown.dc.html'+this.urlStr(),
+      sims:[{n:`Neu stellen (${FMT(this.demo()/1000)})`,on:this.simSet},{n:'Spät öffnen bei 0:07',on:this.simLate},{n:'Nach Null öffnen',on:this.simAfter}],
+      sections,tenHead:['s','Tile fill','Digits','Pips','Screen reader'],tenRows,burstHead:['What','t (ms)','Duration','Ease','Values'],burstRows,
+      standings:[[1,1,'Wilde Gurken',12],[2,8,'Nacht Eulen',9],[3,4,'Käse Turbo',7],[4,2,'Team Orange',4]].map(([rank,t,n,pts],i)=>({rank:String(rank),t,n,pts:String(pts),bt:i?'1.5px solid var(--cp-line-soft)':'0'})),
+      feed:[['20:34','Sanne hat Session 1 gestartet.'],['20:41','Spiel 1: Gang Beasts. Wilde Gurken gewinnt.'],['21:02','Spiel 2: Codenames. Nacht Eulen gewinnt.'],['21:12','Das Glücksrad sagt: Mario Kart 8.'],['21:14','Kein Veto. Mario Kart 8 wird gespielt.']].map(([t,x])=>({t,x})),
+      dec:[
+        {t:'Time is the input',b:'Colour, size, pips and pulse are read from ceil((endsAt − serverNow) / 1000) on every frame. Nothing counts by itself.'},
+        {t:'Sonne → Warnung → Fehler',b:'Primary tile while running, warning from 10, error from 5. In the last ten only the seconds show, growing 3.5 % per second.'},
+        {t:'Fixed height',b:'The card never changes height between states. Growth is a transform inside the tile, so Rounds above and Standings below never move.'},
+        {t:'Loud, then still',b:'Zero gets one 0.76 s burst for those who saw it coming. Then „Zeit ist um“ stays, steady, until the Host resets. No loop.'},
+        {t:'Lilita, not Bungee',b:'The brief says Bungee; DS Foundations says timers use --cp-font-timer (Lilita One), like the veto timer. Default follows the DS. The „face“ tweak shows Bungee.'},
+        {t:'No new tokens',b:'Only existing colour, type, radius, shadow and motion tokens. The error card shadow is 6px 6px 0 var(--cp-error), a composition.'},
+      ]};
+  }
+}
+</script>
+</body>
+</html>
