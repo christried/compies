@@ -38,6 +38,18 @@ export function pop(element: Element): void {
   )
 }
 
+/**
+ * Compibert's party hat appearing on an open page (04-motion § Compibert, #38): scale 0→1 and rotation −12°→0 from the brim (the art group's
+ * origin is the hat base, 05-assets), `--cp-dur-base`, `--cp-ease-pop`. Nothing under reduced motion: the hat is simply there.
+ */
+export function hatPop(element: Element): void {
+  if (reducedMotion() || typeof element.animate !== 'function') return
+  element.animate(
+    [{ transform: 'scale(0) rotate(-12deg)' }, { transform: 'scale(1) rotate(0deg)' }],
+    { duration: motionMs('--cp-dur-base', '220ms'), easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') },
+  )
+}
+
 /** How an element travels: `glide` to a new place, `bounce` back after a refusal. */
 export type GlideKind = 'glide' | 'bounce'
 
