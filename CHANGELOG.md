@@ -18,6 +18,7 @@
 - Im Setup steht bei Optionen, die noch nicht wählbar sind, jetzt fett „Bald verfügbar“ mit Schloss unter dem Titel statt in einer Pille. ([#350](https://github.com/christried/compies/issues/350))
 - Beim Zusammenstellen des Spielepools und bei „Nächstes Spiel setzen“ sitzen die Plus-Knöpfe aller Spielkarten einer Reihe jetzt auf einer Höhe, unten an der Karte. ([#351](https://github.com/christried/compies/issues/351))
 - Der Zurück-Link oben auf Impressum, Datenschutzerklärung, Neuigkeiten, in der Bibliothek und nach dem Anlegen eines Events ist jetzt größer und kräftiger, und das kleine „Geschafft“ über dem Titel nach dem Anlegen ist weg. ([#353](https://github.com/christried/compies/issues/353))
+- **Startseite:** Die Begrüßung „Hallo …“ ist weg, und die Event-Karten sehen aus wie im Entwurf: Name, Phase, Host, der beste oder feste Termin, wie viele vollständig abgestimmt haben und ein Knopf je nach Rolle („Öffnen“, „Abstimmen“, „Ansehen“). ([#347](https://github.com/christried/compies/issues/347))
 
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
