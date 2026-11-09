@@ -186,6 +186,15 @@ describe('the Tag filter of the library list (#336)', () => {
     expect(tagSelect().value).toBe('')
   })
 
+  it('keeps the ✓ of a library card in the last child of its card, on the bottom edge (#351)', async () => {
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
+
+    const check = dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Retro Kart auswählen"]')!
+    const card = check.closest('ul[aria-label="Bibliothek"] > li')!.firstElementChild as HTMLElement
+    expect(card.lastElementChild!.contains(check)).toBe(true)
+  })
+
   it('starts each opening of the sheet without a Tag', async () => {
     await mount()
     await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))

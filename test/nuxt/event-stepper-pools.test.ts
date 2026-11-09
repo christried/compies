@@ -584,6 +584,27 @@ describe('the game browser in the pool steps (#173)', () => {
     expect(useRouter().currentRoute.value.fullPath).toBe(before)
   })
 
+  it('stretches the picker\'s cards to the row\'s height, the ＋ on the bottom edge (#351)', async () => {
+    const longCard = game(5, 'Ein sehr langer Spielname über zwei Zeilen hinweg, damit die Karte höher wird', {
+      playersMin: 2, playersMax: 6, suitabilities: ['teams'], tags: [{ key: 'retro', label: 'Retro' }, { key: 'koop', label: 'Koop' }, { key: 'party', label: 'Party' }],
+      price: { cents: 1999, source: 'steam', checkedAt: '2026-11-01T10:00:00.000Z' },
+    })
+    library = [kart, pong, chess, longCard]
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    expect(picker(page).classes()).toContain('md:grid')
+    expect(picker(page).classes()).toContain('md:items-stretch')
+    for (const item of picker(page).findAll('li')) {
+      const card = item.element.firstElementChild as HTMLElement
+      expect(card.className).toContain('h-full')
+      expect(card.lastElementChild!.querySelector('button')).not.toBeNull()
+    }
+    const plus = toggle(page, 'Mario Kart in den Pool').element
+    const kartCard = plus.closest('li')!.firstElementChild as HTMLElement
+    expect(kartCard.lastElementChild!.contains(plus)).toBe(true)
+  })
+
   it('keeps its filters out of the address', async () => {
     const page = await mountCreate()
     await toPoolStep(page)
