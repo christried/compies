@@ -146,7 +146,8 @@ export function priceOf(row: typeof games.$inferSelect): GamePrice | null {
 /**
  * The price columns an input changes (#337). Absent price and no flag: {} (nothing written). The day moves when the stored cents or
  * source change, or when `priceChecked` is sent; an unchanged save keeps it. `price: null` clears all three. Throws
- * apiError('invalid_price') when `priceChecked` is sent and the game would have no Price after the save. `stored` is null on create.
+ * apiError('invalid_price') when `priceChecked` is sent and the game would have no Price after the save. `stored` is the game's row as
+ * the route's transaction read it under its lock (#360), null on create. Thrown inside that transaction, the refusal writes nothing.
  */
 export function priceColumns(
   input: { price: GamePriceInput | null | undefined, priceChecked: boolean },
