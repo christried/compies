@@ -16,7 +16,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.8 | Punkte | released on 2026-11-05: [#272](https://github.com/christried/compies/issues/272) |
 | 0.9 | Siegerehrung | released on 2026-11-08: [#308](https://github.com/christried/compies/issues/308); the minimum for the first Event |
 | 0.10 | Feinschliff | released on 2026-11-09: [#332](https://github.com/christried/compies/issues/332); the list that waited for the first Event, plus the production check. 0.10.1 „Partyhut“ released on 2026-11-09: the review follow-ups, the Partyhut ([#38](https://github.com/christried/compies/issues/38)) and the Countdown fix ([#379](https://github.com/christried/compies/issues/379)) |
-| 0.11 | Profil | next; grilled on 2026-11-09 |
+| 0.11 | Profil | next; grilled on 2026-11-09: [#398](https://github.com/christried/compies/issues/398) |
 | 0.12 | Eventseite | the Event page findings of the production check; grilled in its own session |
 | 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled in its own session |
 | 1.0 | | when the user declares COMPIES ready |
@@ -235,7 +235,7 @@ The list that waited for the first Event, plus the party hat. Spec: [#332](https
 
 ## 0.11 Profil
 
-The Profil page (screen 25, trimmed) replaces its Construction page, and the app gets its dark look ([#43](https://github.com/christried/compies/issues/43)). Grilled on 2026-11-09 (`GLOSSARY.md`: Display name, Appearance, Sound).
+The Profil page (screen 25, trimmed) replaces its Construction page, and the app gets its dark look ([#43](https://github.com/christried/compies/issues/43)). Spec: [#398](https://github.com/christried/compies/issues/398). Grilled on 2026-11-09 (`GLOSSARY.md`: Display name, Appearance, Sound).
 
 - **The page:**
   - One column (max 640 px) on every width: the h1 „Profil“, a card „Profil“ (the avatar with its hint, then Anzeigename), a card „Einstellungen“ (the rows Ton and Darstellung), and „Abmelden“ as a text button.
