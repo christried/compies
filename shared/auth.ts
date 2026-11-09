@@ -1,3 +1,5 @@
+import { characterCount } from './text'
+
 // Sign-in facts the app and the server share.
 
 export const SIGN_IN_PROVIDERS = ['discord', 'twitch'] as const
@@ -10,6 +12,14 @@ export function isSignInProvider(value: unknown): value is SignInProvider {
 
 /** A Display name has 1–32 characters after trimming; an emoji counts as one. */
 export const DISPLAY_NAME_MAX = 32
+
+/** The Display name to store: trimmed, 1–32 characters (emoji count as one). Null when invalid. */
+export function parseDisplayName(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const name = raw.trim()
+  const length = characterCount(name)
+  return length >= 1 && length <= DISPLAY_NAME_MAX ? name : null
+}
 
 /**
  * The signed-in User as the app knows them: what `GET /api/me` and profile setup answer, and what `getUser`
@@ -41,7 +51,7 @@ export interface SavedNewsSeen {
   newsSeen: string
 }
 
-/** What `POST /api/profile/setup` returns: the User with the Display name just saved. */
+/** What `POST /api/profile/setup` returns, at setup and on a rename from the Profil page (#399): the User with the Display name just saved. */
 export interface SavedProfile {
   user: AuthUser
 }

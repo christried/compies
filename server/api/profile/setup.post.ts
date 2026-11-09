@@ -1,12 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { createError, defineEventHandler, readBody } from 'h3'
 import { users } from '../../db/schema'
-import { parseDisplayName } from '../../domain/profile'
 import { useDb } from '../../utils/db'
 import { requireUser, userColumns } from '../../utils/user'
-import type { SavedProfile } from '../../../shared/auth'
+import { parseDisplayName, type SavedProfile } from '../../../shared/auth'
 
-// Profile setup (screen 03): the Display name. Better Auth never writes this column (ADR 0004).
+// The Display name, at profile setup (screen 03) and on the Profil page (#399). Better Auth never writes this column (ADR 0004).
 export default defineEventHandler(async (event): Promise<SavedProfile> => {
   const { id } = await requireUser(event)
   const body = await readBody<{ displayName?: unknown } | null>(event)
