@@ -19,10 +19,11 @@ export function useGameLibrary() {
     if (list) stale.value = list
   }, { immediate: true })
 
+  const list = computed(() => data.value ?? stale.value)
   return {
-    games: computed(() => data.value?.games ?? stale.value?.games ?? null),
-    // Some fixtures answer the games only, so the Tags in use may be missing.
-    tagsInUse: computed(() => data.value?.tagsInUse ?? stale.value?.tagsInUse ?? []),
+    games: computed(() => list.value?.games ?? null),
+    // No Tags in use before the first answer; every answer carries them (GameList).
+    tagsInUse: computed(() => list.value?.tagsInUse ?? []),
     status,
     error,
     refresh,

@@ -4,7 +4,7 @@ import { teamNameAt } from '~/utils/board'
 import { joinNames } from '~/utils/list'
 import type { HistoryCorrections } from '~/utils/history-corrections'
 import type { BoardTeam } from '~~/shared/event'
-import { priceLine } from '~~/shared/game'
+import { priceLine } from '~/utils/price'
 import { winnersOf } from '~~/shared/results'
 import type { ResultView, RoundView } from '~~/shared/stage'
 
@@ -58,7 +58,7 @@ const now = new Date()
 // Each numbered row with what the template shows of it, computed once per change instead of per use (#288).
 const rows = computed(() => props.results.map((result) => {
   const winners = winnersOf(result.places)
-  const price = result.game.price ? priceLine(result.game.price, now) : null
+  const price = result.game.price ? priceLine(result.game.price, now, t) : null
   return { result, winners, names: joinNames(winners.map(nameOf)), text: winnerText(winners), scores: scoresOf(result), price }
 }))
 </script>

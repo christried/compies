@@ -1,6 +1,5 @@
 import { asRecord, isRecord } from './record'
 import { characterCount } from './text'
-import { BERLIN_ZONE } from './time'
 import { parseYouTubeId } from './youtube'
 
 // The Game library (#141, spec #138): the rules and shapes the server and the screens share. The input rules
@@ -21,19 +20,9 @@ export const GAME_NOTES_MAX = 1000
 export const TAG_MAX = 20
 export const TAGS_PER_GAME_MAX = 8
 
-/** The sources a game's Price is bought from (#337, GLOSSARY: Price), in the order the form lists them. */
+/** The sources a game's Price is bought from (#337, GLOSSARY: Price), in the order the form lists them. Their German names are `price.source.*` in de.json (app/utils/price.ts). */
 export const PRICE_SOURCES = ['steam', 'epic', 'gog', 'publisher', 'steam_key', 'free_to_play', 'subscription'] as const
 export type PriceSource = (typeof PRICE_SOURCES)[number]
-/** The German names of the sources (UI); Free-to-play and Abo are the whole Price line when they have no amount. */
-export const PRICE_SOURCE_LABELS: Record<PriceSource, string> = {
-  steam: 'Steam',
-  epic: 'Epic Games Store',
-  gog: 'GOG',
-  publisher: 'Publisher-Website',
-  steam_key: 'Steam-Key',
-  free_to_play: 'Free-to-play',
-  subscription: 'Abo',
-}
 /** The most a Price can be, in cents: 999,99 € (#337). The least is 1 cent. */
 export const PRICE_CENTS_MAX = 99_999
 
@@ -286,29 +275,6 @@ export function parsePrice(raw: unknown): GamePriceInput | null | undefined {
   if (!isPriceSource(source)) return undefined
   if (!priceTakesAmount(source)) return hasCents ? undefined : { cents: null, source }
   return isPriceCents(cents) ? { cents, source } : undefined
-}
-
-const PRICE_DAY_FORMAT = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'long', year: 'numeric' })
-const PRICE_SHORT_DAY_FORMAT = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'short' })
-const PRICE_YEAR_FORMAT = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, year: 'numeric' })
-
-/**
- * The day a Price was checked, in full, in Berlin (the form's „Stand: 3. November 2026“). */
-export function priceCheckedDay(checkedAt: string): string {
-  return PRICE_DAY_FORMAT.format(new Date(checkedAt))
-}
-
-/**
- * The Price line of a game (#337, UI): „19,99 € bei Steam · Stand 3. Nov.“, „Free-to-play · Stand 3. Nov.“, „Abo · Stand 3. Nov.“.
- * The year follows the day only when the day is not in the current Berlin year. `now` is a parameter, so tests never read the clock. */
-export function priceLine(price: GamePrice, now: Date): string {
-  const { cents, source, checkedAt } = price
-  // Free-to-play and Abo carry no amount: their label is the whole line.
-  const offer = cents === null ? PRICE_SOURCE_LABELS[source] : `${formatPriceAmount(cents)} € bei ${PRICE_SOURCE_LABELS[source]}`
-  const checked = new Date(checkedAt)
-  const checkedYear = PRICE_YEAR_FORMAT.format(checked)
-  const year = checkedYear === PRICE_YEAR_FORMAT.format(now) ? '' : ` ${checkedYear}`
-  return `${offer} · Stand ${PRICE_SHORT_DAY_FORMAT.format(checked)}${year}`
 }
 
 /** The video id of the pasted link. Absent, null or empty means no clip (null id); undefined when the link is no YouTube link. */

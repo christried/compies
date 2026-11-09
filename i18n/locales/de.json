@@ -899,6 +899,19 @@
     },
     "home": "Zur Startseite"
   },
+  "price": {
+    "source": {
+      "steam": "Steam",
+      "epic": "Epic Games Store",
+      "gog": "GOG",
+      "publisher": "Publisher-Website",
+      "steam_key": "Steam-Key",
+      "free_to_play": "Free-to-play",
+      "subscription": "Abo"
+    },
+    "offer": "{amount} € bei {source}",
+    "line": "{offer} · Stand {day}"
+  },
   "library": {
     "title": "Bibliothek",
     "search": "Spiele suchen",

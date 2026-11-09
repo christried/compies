@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronRight, CircleAlert } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
+import { formatFullDay } from '~/utils/berlin-time'
+import { priceSourceLabel } from '~/utils/price'
 import {
-  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, PRICE_SOURCES, PRICE_SOURCE_LABELS, SUITABILITIES, clipTime, formatPriceAmount, gameNameProblem,
-  gameNotesProblem, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parsePriceAmount, priceCheckedDay, priceTakesAmount, type GamePrice, type GameTag,
+  CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, PRICE_SOURCES, SUITABILITIES, clipTime, formatPriceAmount, gameNameProblem,
+  gameNotesProblem, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parsePriceAmount, priceTakesAmount, type GamePrice, type GameTag,
   type GameView, type PriceSource, type Suitability,
 } from '~~/shared/game'
 import { parseYouTubeId } from '~~/shared/youtube'
@@ -383,7 +385,7 @@ async function submit() {
                     :key="source"
                     :value="source"
                   >
-                    {{ PRICE_SOURCE_LABELS[source] }}
+                    {{ priceSourceLabel(source, t) }}
                   </option>
                 </select>
                 <AppIcon
@@ -409,7 +411,7 @@ async function submit() {
             v-if="storedPrice"
             class="flex flex-wrap items-center gap-3"
           >
-            <span class="text-small text-ink-2">{{ t('gameEdit.priceChecked', { day: priceCheckedDay(storedPrice.checkedAt) }) }}</span>
+            <span class="text-small text-ink-2">{{ t('gameEdit.priceChecked', { day: formatFullDay(new Date(storedPrice.checkedAt)) }) }}</span>
             <AppButton
               variant="secondary"
               :disabled="confirming"

@@ -20,11 +20,15 @@ const props = withDefaults(defineProps<{
   command: (action: CountdownCommand) => Promise<boolean>
   /** The Host's name for the Members' lines. */
   hostName?: string
-}>(), { hostName: undefined })
+  /**
+   * The card appeared while the page was open (the stage had rendered the Event without a Countdown): the status region then says it was set.
+   * A card that is there when the page opens, by load or by a client navigation, says nothing (13-countdown § Accessibility, #332).
+   */
+  announceSet?: boolean
+}>(), { hostName: undefined, announceSet: false })
 
 const { t } = useI18n()
 const headingId = useId()
-const nuxtApp = useNuxtApp()
 const root = useTemplateRef<HTMLElement>('root')
 const pulse = useTemplateRef<HTMLElement>('pulse')
 const actionsRow = useTemplateRef<HTMLElement>('actionsRow')
@@ -111,8 +115,9 @@ watch(now, (sample) => {
   }
   if (announced === null) {
     announced = { view: seen.view, final: seen.final, durationMs: props.countdown.durationMs }
-    // A card that appears while the page is open is the Host setting it; one that is there at load says nothing (the timer text has it).
-    if (seen.view === 'ready' && !nuxtApp.isHydrating) live.value = t('countdown.live.set', { duration: durationSet.value })
+    // A card that appears while the page is open is the Host setting it (the stage says so with `announceSet`); one that is there when the
+    // page opens, by load or by a client navigation, says nothing (the timer text has it).
+    if (seen.view === 'ready' && props.announceSet) live.value = t('countdown.live.set', { duration: durationSet.value })
   }
 }, { flush: 'sync', immediate: true })
 
