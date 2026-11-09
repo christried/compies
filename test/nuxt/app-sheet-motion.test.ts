@@ -59,6 +59,8 @@ beforeEach(() => {
 
 afterEach(() => {
   Element.prototype.animate = realAnimate
+  document.documentElement.style.removeProperty('--cp-dur-slow')
+  document.documentElement.style.removeProperty('--cp-dur-fast')
   vi.useRealTimers()
   vi.restoreAllMocks()
 })
@@ -101,6 +103,15 @@ describe('AppSheet motion (#348)', () => {
     expect(panel!.options.duration).toBe(360)
     expect(panel!.options.easing).toBe(OUT)
     expect(JSON.stringify(calls.map(c => c.keyframes))).not.toContain('translateX')
+  })
+
+  it('the minified seconds spelling (.36s, .14s) gives the same 360 and 140 ms (#370)', async () => {
+    document.documentElement.style.setProperty('--cp-dur-slow', '.36s')
+    document.documentElement.style.setProperty('--cp-dur-fast', '.14s')
+    await mountSheet({ open: true })
+
+    expect(callsOn('panel')[0]!.options.duration).toBe(360)
+    expect(callsOn('overlay')[0]!.options.duration).toBe(140)
   })
 
   it('leaves with the exit numbers: panel 220 ms ease-in, overlay 140 ms ease-in', async () => {
