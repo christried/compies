@@ -7,7 +7,7 @@ import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, type GameFilt
 // It owns the single fetch (`useGameLibrary`), the search field with the magnifying glass, the filters and the five
 // states, loading, error, empty library, no match and results, as one state machine. What differs is handed in: the
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
-// search and „Alle / Von mir“), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
+// search, „Alle“, the Tag and „Von mir“), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
 // („Neues Spiel anlegen“, on the search row). The filtering is client side (`filterGames`), so it follows every
 // keystroke. The grid from md up and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
 defineProps<{
@@ -26,9 +26,17 @@ defineSlots<{
 
 const { t } = useI18n()
 const viewerId = useAuthUser().value?.id ?? ''
-const { games, error, refresh } = useGameLibrary()
+const { games, tagsInUse, error, refresh } = useGameLibrary()
 
 const PLAYER_CHOICES = Array.from({ length: 24 }, (_, index) => index + 1)
+
+// The Tags offered: the ones some game carries, by label (German collation); `tagsInUse` comes by key (#336).
+const tagOptions = computed(() => [...tagsInUse.value].sort((a, b) => a.label.localeCompare(b.label, 'de')))
+// An active Tag that no game carries (an old address, or its last game lost it): shown as the chip's value so the filter says what it does, but not offered.
+const strayTag = computed(() => {
+  const key = filters.value.tag
+  return key !== null && !tagsInUse.value.some(tag => tag.key === key) ? key : null
+})
 
 const shown = computed(() => filterGames(games.value ?? [], filters.value, viewerId))
 // Loading means no list yet: a revalidation of a list we already hold shows no skeleton.
@@ -38,8 +46,8 @@ const state = computed(() => {
   return shown.value.length === 0 ? 'noMatch' : 'results'
 })
 const anyFilter = computed(() => {
-  const { q, players, suitability, mine } = filters.value
-  return Boolean(q.trim() || players !== null || suitability || mine)
+  const { q, players, suitability, tag, mine } = filters.value
+  return Boolean(q.trim() || players !== null || suitability || tag !== null || mine)
 })
 
 function set(changes: Partial<GameFilters>) {
@@ -51,6 +59,9 @@ function onPlayers(event: Event) {
 function onSuitability(event: Event) {
   const value = (event.target as HTMLSelectElement).value
   set({ suitability: SUITABILITIES.find(suitability => suitability === value) ?? null })
+}
+function onTag(event: Event) {
+  set({ tag: (event.target as HTMLSelectElement).value || null })
 }
 
 // The grid wraps as many cards as fit from md up; below it the cards are rows.
@@ -150,6 +161,37 @@ const SELECT = 'h-11 appearance-none rounded-pill border-(length:--cp-bw) py-0 p
             />
           </div>
         </template>
+        <div class="relative max-w-full flex-none">
+          <select
+            :value="filters.tag ?? ''"
+            :aria-label="t('library.filterTag')"
+            :class="[SELECT, 'max-w-full truncate', filters.tag !== null ? CHIP_ON : CHIP_OFF]"
+            @change="onTag"
+          >
+            <option value="">
+              {{ t('library.filterTag') }}
+            </option>
+            <option
+              v-for="tag in tagOptions"
+              :key="tag.key"
+              :value="tag.key"
+            >
+              {{ tag.label }}
+            </option>
+            <option
+              v-if="strayTag"
+              :value="strayTag"
+            >
+              {{ strayTag }}
+            </option>
+          </select>
+          <AppIcon
+            :icon="ChevronDown"
+            :size="18"
+            class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
+            :class="filters.tag !== null ? 'text-paper' : 'text-ink'"
+          />
+        </div>
         <button
           type="button"
           :aria-pressed="filters.mine ? 'true' : 'false'"
