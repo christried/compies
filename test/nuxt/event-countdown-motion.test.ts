@@ -36,9 +36,9 @@ const READY: CountdownView = { durationMs: DURATION, remainingMs: DURATION, star
 const pausedAt = (remainingMs: number): CountdownView => ({ durationMs: DURATION, remainingMs, startedAt: null })
 const DONE: CountdownView = { durationMs: DURATION, remainingMs: 0, startedAt: null }
 
-async function mount(countdown: CountdownView, options: { isHost?: boolean, hostName?: string, attachTo?: HTMLElement } = {}) {
+async function mount(countdown: CountdownView, options: { isHost?: boolean, hostName?: string, attachTo?: HTMLElement, announceSet?: boolean } = {}) {
   mounted = await mountSuspended(EventCountdown, {
-    props: { countdown, serverNow, isHost: options.isHost ?? true, command, hostName: options.hostName },
+    props: { countdown, serverNow, isHost: options.isHost ?? true, command, hostName: options.hostName, announceSet: options.announceSet },
     attachTo: options.attachTo,
   })
   return mounted
@@ -497,10 +497,17 @@ describe('for the screen reader', () => {
     expect(status(done)).toBe('')
   })
 
-  it('announces a card that appears ready after the page has loaded', async () => {
-    const page = await mount(READY)
+  it('announces a card that appears ready after the page has loaded (the stage says so)', async () => {
+    const page = await mount(READY, { announceSet: true })
 
     expect(status(page)).toBe('Countdown gestellt: 5 Minuten.')
+  })
+
+  it('writes nothing for a ready card that was there when the page opened, by load or by navigation (#332)', async () => {
+    const page = await mount(READY)
+
+    expect(status(page)).toBe('')
+    expect(timer(page)).toBe('Countdown gestellt auf 5 Minuten')
   })
 
   it('does not write per second', async () => {
@@ -543,7 +550,7 @@ describe('for the screen reader', () => {
   })
 
   it('writes the start of a ready card, and its own message only when the start also enters the last ten', async () => {
-    const page = await mount({ durationMs: 8000, remainingMs: 8000, startedAt: null })
+    const page = await mount({ durationMs: 8000, remainingMs: 8000, startedAt: null }, { announceSet: true })
     expect(status(page)).toBe('Countdown gestellt: 8 Sekunden.')
 
     await page.setProps({ countdown: { durationMs: 8000, remainingMs: 8000, startedAt: new Date(serverTime).toISOString() } })

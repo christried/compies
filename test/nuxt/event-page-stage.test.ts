@@ -4,7 +4,8 @@ import { refreshEvent } from '~/composables/useEventView'
 import type { RoundGame } from '~~/shared/game'
 import type { RoundView } from '~~/shared/stage'
 import { kitty, signInAs } from './auth'
-import { dialog, regionHeadings, stubScreen, type EventOverrides } from './event-page'
+import { defaultSettings } from '~~/shared/settings'
+import { dialog, regionHeadings, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
 import { afterResult, ENDED, FIRST, members, mount, mountedPage, SECOND, SESSION, serveState, STARTED, team, unmountPage, type Seat, type Setup } from './event-page-states'
 
 // The stage of the Event page while it plays (#166, #228, #283): the order of its blocks in a running Event, between two Sessions and after the last one,
@@ -278,5 +279,49 @@ describe('the session-needed notice on the Event page', () => {
     cardButton.click()
     await flushPromises()
     expect(dialog()?.textContent).toContain('Session hinzufügen')
+  })
+})
+
+// A Countdown that the Host sets while the page is open is announced; one that is there when the page opens, by load or by a
+// navigation, is not (#340, 13-countdown § Accessibility; #332 F8). The stage remembers it rendered the Event without one.
+describe('the arrival of the Countdown on the Event page', () => {
+  const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
+  const READY = { durationMs: 300_000, remainingMs: 300_000, startedAt: null }
+  const countdownStatus = (page: Awaited<ReturnType<typeof mount>>) =>
+    page.get('[data-testid="countdown-tile"]').element.closest('section')!.querySelector('[role="status"]')!.textContent
+
+  beforeEach(() => {
+    signInAs(kitty)
+    stubScreen(true)
+  })
+
+  afterEach(unmountPage)
+
+  it('says nothing for a Countdown that is already set when the page opens', async () => {
+    const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: { countdown: READY } })
+
+    const page = await mount(slug)
+    await flushPromises()
+
+    expect(countdownStatus(page)).toBe('')
+  })
+
+  it('announces „Countdown gestellt“ when the Host sets it while the page is open', async () => {
+    const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0 })
+    const page = await mount(served.slug)
+    expect(page.find('[data-testid="countdown-tile"]').exists()).toBe(false)
+
+    served.set(viewWithSessions(served.slug, [RUNNING_ONE], 0, {
+      event: { phase: 'running', isHost: false },
+      settings: defaultSettings(),
+      teams: [team(1), team(2)],
+      members: members(),
+      runningSessionId: `session-${served.slug}-0`,
+      countdown: READY,
+    }))
+    await refreshEvent(served.slug)
+    await flushPromises()
+
+    expect(countdownStatus(page)).toBe('Countdown gestellt: 5 Minuten.')
   })
 })
