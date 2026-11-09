@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
-import { shownName } from '~~/shared/auth'
 import type { HomeView } from '~~/shared/event'
 import { HOME_EVENTS_KEY } from '~/utils/event-data'
 
@@ -18,7 +17,6 @@ const pending = computed(() => status.value === 'pending')
 const events = computed(() => data.value?.events ?? [])
 const empty = computed(() => !error.value && !!data.value && events.value.length === 0)
 
-const greetingName = computed(() => (user.value ? shownName(user.value) : ''))
 const title = computed(() => t(empty.value ? 'mvp.home.titleEmpty' : 'mvp.home.title'))
 
 useRefreshOnReturn(refresh)
@@ -29,9 +27,6 @@ useRefreshOnReturn(refresh)
     <div class="mx-auto flex w-full max-w-[1040px] flex-col gap-6">
       <header class="flex flex-wrap items-end gap-4">
         <div class="flex min-w-[200px] flex-1 flex-col gap-1">
-          <span class="text-[13px] font-bold text-ink-2">
-            {{ t('mvp.home.hello', { name: greetingName }) }}
-          </span>
           <h1 class="m-0 text-[32px] leading-none md:text-[44px]">
             {{ title }}
           </h1>
