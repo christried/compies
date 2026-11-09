@@ -4,8 +4,8 @@ import { nextTick } from 'vue'
 import PollMatrix from '~/components/PollMatrix.vue'
 import { kitty, signInAs } from './auth'
 
-// "Wer kann wann?" with its CSV export (#84): the button sits with the matrix, shows for every Member,
-// and downloads the file in the browser with no request.
+// "Wer kann wann?" with its CSV export (#84): the button sits with the matrix, shows only to the Host
+// (canExport, #352), and downloads the file in the browser with no request.
 
 const props = {
   people: [{ id: 'u1', name: 'Anna', image: null, isHost: true }, { id: 'u2', name: 'Bo', image: null, isHost: false }],
@@ -56,7 +56,7 @@ describe('PollMatrix', () => {
     expect(rowHeader.classes()).toEqual(expect.arrayContaining(['sticky', 'left-0', 'bg-surface']))
   }, 15000)
 
-  it('shows the CSV button to a Member and downloads <slug>-terminumfrage.csv', async () => {
+  it('shows the CSV button only when canExport is set, and downloads <slug>-terminumfrage.csv', async () => {
     const createObjectURL = vi.fn(() => 'blob:poll')
     const revokeObjectURL = vi.fn()
     Object.assign(URL, { createObjectURL, revokeObjectURL })
@@ -64,7 +64,11 @@ describe('PollMatrix', () => {
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
       clicked.push(this)
     })
-    const page = await mountSuspended(PollMatrix, { props, route: '/e/freitags-zocken-k7q2' })
+    const hidden = await mountSuspended(PollMatrix, { props, route: '/e/freitags-zocken-k7q2' })
+    expect(hidden.findAll('button').map(candidate => candidate.text())).not.toContain('Als CSV exportieren')
+    hidden.unmount()
+
+    const page = await mountSuspended(PollMatrix, { props: { ...props, canExport: true }, route: '/e/freitags-zocken-k7q2' })
 
     const button = page.findAll('button').find(candidate => candidate.text() === 'Als CSV exportieren')
     expect(button).toBeDefined()
