@@ -28,7 +28,7 @@ Set auto-merge on PRs into `staging` yourself; merges into `main` and production
 
 ### Subagents
 
-Pass `model` on every spawn: `haiku` for implementers by default, `sonnet` when the brief can't carry the task and for code-review agents. See `docs/agents/subagents.md`. `/implement-spec-max` is `/implement-spec` with every subagent on `opus` at high effort.
+Pass `model` on every spawn: `haiku` for implementers by default, `sonnet` when the brief can't carry the task and for code-review agents. See `docs/agents/subagents.md`. `/implement-spec-max` is `/implement-spec` with every subagent on `fable`, or on `opus` or `sonnet` at high effort, by how hard its task is.
 
 ### Design hand-off
 
