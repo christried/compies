@@ -201,8 +201,9 @@ watch(actionsKey, () => {
             >{{ character }}</span>
           </span>
         </span>
-        <!-- The ghost's box is 1.315 times the tile at rest and 1.644 in the burst: the wrapper clips that empty box, so the page does not scroll
-          sideways at 390 px (#379). The rings, the digits and the stamp are not clipped: they radiate past the tile on purpose. -->
+        <!-- The ghost's box is 1.315 times the tile at rest and 1.644 in the burst, and the stamp's box is held at scale 2.4 until its drop: the
+          wrappers clip those empty boxes, so the page does not scroll sideways at 390 px (#379). The rings and the digits are not clipped:
+          they radiate past the tile on purpose. -->
         <span
           v-if="frame.view === 'done'"
           aria-hidden="true"
@@ -227,14 +228,20 @@ watch(actionsKey, () => {
             :size="15"
           />
         </span>
+        <!-- The stamp's box is held at scale 2.4 until its drop, so it gets the ghost's clipping wrapper (#379). -->
         <span
           v-if="frame.view === 'done'"
-          ref="stamp"
-          data-cd="stamp"
           aria-hidden="true"
-          class="absolute top-1/2 left-1/2 rounded-[8px] border-(length:--cp-bw) border-line bg-surface px-2.75 py-1.75 font-num text-[19px] leading-none whitespace-nowrap text-ink shadow-sm md:px-3.5 md:py-2.25 md:text-[24px]"
-          style="transform: translate(-50%, -50%) rotate(-6deg)"
-        >{{ t('countdown.stamp') }}</span>
+          class="pointer-events-none absolute inset-0 overflow-hidden"
+        >
+          <span
+            ref="stamp"
+            data-cd="stamp"
+            aria-hidden="true"
+            class="absolute top-1/2 left-1/2 rounded-[8px] border-(length:--cp-bw) border-line bg-surface px-2.75 py-1.75 font-num text-[19px] leading-none whitespace-nowrap text-ink shadow-sm md:px-3.5 md:py-2.25 md:text-[24px]"
+            style="transform: translate(-50%, -50%) rotate(-6deg)"
+          >{{ t('countdown.stamp') }}</span>
+        </span>
       </div>
 
       <div class="flex min-w-0 flex-col justify-center gap-3 self-stretch">
