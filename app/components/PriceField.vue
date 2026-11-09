@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, CircleAlert } from '@lucide/vue'
+import { CircleAlert } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
 import { formatFullDay } from '~/utils/berlin-time'
 import { priceSourceLabel, type PriceDraft } from '~/utils/price'
@@ -57,6 +57,11 @@ const amountHelp = computed(() => {
   return amountError.value ? undefined : t('gameEdit.priceAmountHelp')
 })
 const sourceError = computed(() => (props.attempted && priceEntered.value && priceSource.value === '' ? t('gameEdit.priceNeedsSource') : undefined))
+const sourceOptions = computed(() => PRICE_SOURCES.map(source => ({ value: source, label: priceSourceLabel(source, t) })))
+/** The source the FilterSelect chose: a value that is no source is „none chosen“ (#362). */
+function setSource(value: string) {
+  priceSource.value = PRICE_SOURCES.find(source => source === value) ?? ''
+}
 
 // The Price as the form holds it (#337): the amount as cents, or as its text when the shared rule refuses it, so the
 // rules refuse the body too; the source, or null while none is chosen.
@@ -125,32 +130,16 @@ async function confirmPrice() {
           :for="sourceId"
           class="text-[14px] font-bold"
         >{{ t('gameEdit.priceSource') }}</label>
-        <div class="relative">
-          <select
-            :id="sourceId"
-            v-model="priceSource"
-            :aria-invalid="sourceError ? 'true' : undefined"
-            :aria-describedby="sourceError ? sourceErrorId : undefined"
-            class="h-control-lg w-full appearance-none rounded-md bg-surface pr-10 pl-3.5 text-[17px] text-ink"
-            :class="sourceError ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'"
-          >
-            <option value="">
-              {{ t('gameEdit.priceSourceNone') }}
-            </option>
-            <option
-              v-for="source in PRICE_SOURCES"
-              :key="source"
-              :value="source"
-            >
-              {{ priceSourceLabel(source, t) }}
-            </option>
-          </select>
-          <AppIcon
-            :icon="ChevronDown"
-            :size="18"
-            class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-ink"
-          />
-        </div>
+        <FilterSelect
+          :id="sourceId"
+          :model-value="priceSource"
+          variant="field"
+          :options="sourceOptions"
+          :empty-label="t('gameEdit.priceSourceNone')"
+          :invalid="Boolean(sourceError)"
+          :aria-describedby="sourceError ? sourceErrorId : undefined"
+          @update:model-value="setSource"
+        />
         <span
           v-if="sourceError"
           :id="sourceErrorId"
