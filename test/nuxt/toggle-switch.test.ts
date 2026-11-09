@@ -71,4 +71,33 @@ describe('ToggleSwitch', () => {
       expect(page.get('[role="switch"]').classes()).toContain('aria-disabled:text-ink-3')
     })
   })
+
+  describe('named from outside, the track alone (#400)', () => {
+    it('takes its name and description from the ids it is given, and shows no text', async () => {
+      const page = await mountSuspended(ToggleSwitch, { props: { modelValue: false, labelledby: 'row-title', describedby: 'row-description' } })
+
+      const sw = page.get('[role="switch"]')
+      expect(sw.attributes('aria-labelledby')).toBe('row-title')
+      expect(sw.attributes('aria-describedby')).toBe('row-description')
+      expect(page.text()).toBe('')
+      expect(sw.classes()).toContain('flex-none')
+      expect(sw.classes()).not.toContain('w-full')
+    })
+
+    it('describes nothing without describedby', async () => {
+      const page = await mountSuspended(ToggleSwitch, { props: { modelValue: true, labelledby: 'row-title' } })
+
+      const sw = page.get('[role="switch"]')
+      expect(sw.attributes('aria-describedby')).toBeUndefined()
+      expect(sw.attributes('aria-checked')).toBe('true')
+    })
+
+    it('still asks for the opposite value on a click', async () => {
+      const page = await mountSuspended(ToggleSwitch, { props: { modelValue: false, labelledby: 'row-title' } })
+
+      await page.get('[role="switch"]').trigger('click')
+
+      expect(page.emitted('update:modelValue')).toEqual([[true]])
+    })
+  })
 })
