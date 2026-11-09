@@ -24,12 +24,14 @@ export interface MatrixSlot {
   past: boolean
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   people: MatrixPerson[]
   slots: MatrixSlot[]
   votes: { slotId: string, userId: string, value: VoteValue, note?: string | null }[]
   meId: string
-}>()
+  /** The CSV button is for the Host only (#352); a caller that forgets it shows no button. */
+  canExport?: boolean
+}>(), { canExport: false })
 
 const { t } = useI18n()
 const route = useRoute()
@@ -202,7 +204,7 @@ const cellsOf = (person: MatrixPerson) => props.slots.map(slot => cells.value.ge
       :note="active?.note ?? ''"
       @close="closeDialog"
     />
-    <div>
+    <div v-if="canExport">
       <AppButton
         variant="secondary"
         size="md"

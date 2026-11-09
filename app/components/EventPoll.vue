@@ -165,6 +165,7 @@ function removeMissing() {
           :slots="slots"
           :votes="shown"
           :me-id="view.viewerId"
+          :can-export="view.event.isHost"
         />
       </template>
     </div>
