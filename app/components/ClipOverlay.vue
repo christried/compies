@@ -199,10 +199,6 @@ onBeforeUnmount(() => {
           :game="clip.game"
           class="w-full max-w-[420px]"
         />
-        <span class="pointer-events-none absolute top-2.5 left-2.5 inline-flex h-[30px] items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-2.5 text-[12px] font-extrabold">
-          <span class="size-2 rounded-full bg-hot animate-live" />
-          {{ t('clip.live') }}
-        </span>
       </div>
       <div
         role="progressbar"
@@ -237,6 +233,16 @@ onBeforeUnmount(() => {
           @click="toggleMute"
         />
         <span class="flex-1" />
+        <span
+          v-if="isHost"
+          class="inline-flex items-center gap-1.5 text-[13px] font-bold whitespace-nowrap text-ink-2"
+        >
+          <span
+            class="size-2 flex-none rounded-full bg-hot animate-live"
+            aria-hidden="true"
+          />
+          {{ t('clip.live') }}
+        </span>
         <AppButton
           v-if="isHost"
           variant="secondary"
