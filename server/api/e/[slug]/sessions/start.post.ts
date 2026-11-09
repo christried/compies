@@ -26,7 +26,5 @@ export default defineEventHandler((event): Promise<SessionStarted> => changeEven
     await tx.update(events).set({ phase: 'running' }).where(eq(events.id, eventRow.id))
   }
   await recordActivity(tx, publish, eventRow.id, { type: 'session_started', actorId: user.id, params: { sessionId: next.id, number: await shownNumber(tx, eventRow.id, next.id) }, now })
-  publish({ type: 'session.started', sessionId: next.id })
-  if (first) publish({ type: 'team.nameFrozen' })
   return { sessionId: next.id, phase: 'running' }
 }))

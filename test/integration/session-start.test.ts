@@ -273,17 +273,14 @@ describe('Starting and ending Sessions', () => {
       ])
     })
 
-    it('publishes event.changed, one session.started, one team.nameFrozen and one activity.added, and records one entry', async () => {
+    it('publishes event.changed and one activity.added, and records one entry', async () => {
       const game = await ready()
 
       await start(game)
 
       const messages = notifier.messages(game.eventId)
-      expect(messages[0]!.type).toBe('event.changed')
-      const count = (type: string) => messages.filter(message => message.type === type).length
-      expect({ changed: count('event.changed'), started: count('session.started'), frozen: count('team.nameFrozen'), added: count('activity.added') }).toEqual({ changed: 1, started: 1, frozen: 1, added: 1 })
+      expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added'])
       const rows = await sessionRows(game)
-      expect(messages.find(message => message.type === 'session.started')).toMatchObject({ sessionId: rows[0]!.id })
       const entries = await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))
       expect(entries).toHaveLength(1)
       expect(entries[0]).toMatchObject({ type: 'session_started', actorId: game.ids.host, params: { sessionId: rows[0]!.id, number: 1 } })
@@ -316,8 +313,7 @@ describe('Starting and ending Sessions', () => {
       expect(view.event.phase).toBe('running')
       expect(view.runningSessionId).toBeNull()
       const messages = notifier.messages(game.eventId)
-      expect(messages.map(message => message.type).sort()).toEqual(['activity.added', 'event.changed', 'session.ended'])
-      expect(messages.find(message => message.type === 'session.ended')).toMatchObject({ sessionId: rows[0]!.id })
+      expect(messages.map(message => message.type).sort()).toEqual(['activity.added', 'event.changed'])
       const entries = await testDb.db.select().from(activity)
       expect(entries).toHaveLength(1)
       expect(entries[0]).toMatchObject({ type: 'session_ended', actorId: game.ids.host, params: { sessionId: rows[0]!.id, number: 1 } })
@@ -358,8 +354,7 @@ describe('Starting and ending Sessions', () => {
       const rows = await sessionRows(game)
       expect(await response.json()).toEqual({ sessionId: rows[1]!.id, phase: 'running' })
       expect(rows[1]!.startedAt).toBeInstanceOf(Date)
-      expect(notifier.messages(game.eventId).filter(message => message.type === 'team.nameFrozen')).toHaveLength(0)
-      expect(notifier.messages(game.eventId).filter(message => message.type === 'session.started')).toHaveLength(1)
+      expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added'])
       const teams = await testDb.db.select().from(eventTeams).where(eq(eventTeams.eventId, game.eventId)).orderBy(eventTeams.position)
       expect(teams.map(row => row.frozenName)).toEqual(['Wilde', null])
       const entries = await testDb.db.select().from(activity).where(eq(activity.type, 'session_started')).orderBy(activity.at)
