@@ -15,6 +15,7 @@
 - **Countdown:** Der Countdown hat ein neues Gesicht: ein großer Zeitblock, der in den letzten zehn Sekunden von Gelb auf Rot wechselt und bei Null „Zeit ist um“ stempelt; bei reduzierter Bewegung ohne Bewegung. ([#340](https://github.com/christried/compies/issues/340))
 - **Glücksrad-Karte:** Die Karte des Glücksrads zeigt nicht mehr, wie viele Spiele auf dem Rad liegen; Screenreader lesen die Zahl weiter vor. ([#354](https://github.com/christried/compies/issues/354))
 - **Clip-Fenster:** Im Clip-Fenster klebt „Clip läuft für alle“ nicht mehr als Pille über dem Video; der Host sieht den Status jetzt unten neben „Clip überspringen“, alle anderen sehen nur das Video. ([#356](https://github.com/christried/compies/issues/356))
+- Im Setup steht bei Optionen, die noch nicht wählbar sind, jetzt fett „Bald verfügbar“ mit Schloss unter dem Titel statt in einer Pille. ([#350](https://github.com/christried/compies/issues/350))
 
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
