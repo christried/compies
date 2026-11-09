@@ -1,7 +1,10 @@
-/** What a completed CI run means (#388): a failed run GitHub never gave a job is a start failure, not a red run. */
+/**
+ * What a completed CI run means (#388): a failed run GitHub never gave a job is a start failure, not a red run. A
+ * cancelled run with zero jobs is red: someone cancelled it, and a re-run would undo that.
+ */
 export function verdict(run, jobCount) {
   if (run.conclusion === 'success') return 'green'
-  return jobCount === 0 ? 'start-failure' : 'red'
+  return run.conclusion === 'failure' && jobCount === 0 ? 'start-failure' : 'red'
 }
 
 /**
