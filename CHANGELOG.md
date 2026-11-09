@@ -10,6 +10,10 @@
 - **Preise:** In der Bibliothek kannst du zu einem Spiel jetzt einen Preis eintragen: den Betrag in Euro und wo es das Spiel gibt, etwa bei Steam, bei GOG oder als Free-to-play. Die App merkt sich den Tag, an dem der Preis geprüft wurde, und mit „Preis stimmt noch“ frischst du ihn mit einem Tipp auf. Karte, Spielseite und die Auswahl für den Spielpool zeigen den Preis. ([#337](https://github.com/christried/compies/issues/337))
 - **Preise für Mitglieder:** Unter jedem Spiel siehst du jetzt, was es kostet und wo es das gibt, etwa „19,99 € bei Steam · Stand 3. Nov.“, damit du es vor dem Spielabend besorgen kannst: in „So wird gespielt“, sobald der Host den Spielepool zeigt, auf der Karte des Spiels, das gerade dran ist, und im Spielverlauf. Den Preis siehst du nie früher als den Namen des Spiels, bei verdecktem Rad also erst nach dem Stopp. ([#338](https://github.com/christried/compies/issues/338))
 
+### Geändert
+
+- **Countdown:** Der Countdown hat ein neues Gesicht: ein großer Zeitblock, der in den letzten zehn Sekunden von Gelb auf Rot wechselt und bei Null „Zeit ist um“ stempelt; bei reduzierter Bewegung ohne Bewegung. ([#340](https://github.com/christried/compies/issues/340))
+
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
 Jetzt gibt es die Siegerehrung: Der Host eröffnet sie im beendeten Event, alle sehen im selben Moment dieselbe Show mit Pokal-Lauf, Stempel und Konfetti, und das Ergebnis gibt es als Bild zum Teilen.
