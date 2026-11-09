@@ -72,6 +72,61 @@ export function clockTick(element: Element): void {
   element.animate([{ transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 260, easing: motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)') })
 }
 
+// The Countdown card (04-motion § Countdown, #340). Both pieces are Web Animations started at a time inside their span, because the instants come
+// from the server clock (ADR 0013): a viewer who is a little late joins the animation where it stands, and one who is too late gets the steady view.
+
+/** One second of the last ten ticks: `scale 1→1.14→1` in `dur-base`, `EASE.pop` per segment, started `intoMs` into its span (the time already spent in this second). A boundary seen `dur-base` or more late, or not yet reached, plays nothing: the steady frame is right. */
+export function countdownTick(element: Element, intoMs: number): void {
+  if (reducedMotion() || typeof element.animate !== 'function') return
+  const duration = Number.parseFloat(motionToken('--cp-dur-base', '220ms'))
+  if (intoMs < 0 || intoMs >= duration) return
+  const easing = motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)')
+  const animation = element.animate([{ transform: 'scale(1)', easing }, { transform: 'scale(1.14)', offset: 0.5, easing }, { transform: 'scale(1)' }], { duration })
+  animation.currentTime = intoMs
+}
+
+/** How long the zero burst runs, from the Countdown's end: a viewer later than this gets the steady view without it. */
+export const COUNTDOWN_BURST_MS = 760
+
+/** The elements the zero burst moves: the last second's ghost, the tile, the two shock outlines, the digits' wrapper, the stamp and the card. */
+export interface CountdownBurstParts { ghost: Element, tile: Element, ringA: Element, ringB: Element, digits: Element, stamp: Element, card: Element }
+
+/** The burst's end: the stamp's resting transform (it is centred by the transform, so its keyframes carry the translate) and the card's error shadow. */
+const BURST_STAMP_REST = 'translate(-50%, -50%) rotate(-6deg) scale(1)'
+const BURST_CARD_SHADOW = '6px 6px 0 var(--cp-error)'
+
+/**
+ * The zero burst, 0.76 s (04-motion § Countdown): seven tracks that start together `elapsedMs` after the Countdown's end (each is sought to it, so a client up to
+ * 0.76 s late joins in the middle). `fill: 'backwards'` holds each track's first frame through its delay. Its end is the steady „Zeit ist um“ view, so nothing snaps.
+ * The caller decides whether to play it at all (the viewer saw the last second, the frame is not 0.76 s late, motion is not reduced).
+ */
+export function countdownBurst(parts: CountdownBurstParts, elapsedMs: number): void {
+  const ms = (token: string, fallback: string) => Number.parseFloat(motionToken(token, fallback))
+  const fast = ms('--cp-dur-fast', '140ms')
+  const base = ms('--cp-dur-base', '220ms')
+  const slow = ms('--cp-dur-slow', '360ms')
+  const slower = ms('--cp-dur-slower', '600ms')
+  const easeIn = motionToken('--cp-ease-in', 'cubic-bezier(.7,0,.84,0)')
+  const easeOut = motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)')
+  const easePop = motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)')
+  const easeSnap = motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)')
+  const ring: Keyframe[] = [{ transform: 'scale(1, 1)', opacity: 1 }, { transform: 'scale(1.12, 1.4)', opacity: 0 }]
+  const tracks: [Element, Keyframe[], number, number, string][] = [
+    [parts.ghost, [{ transform: 'scale(1.315)', opacity: 1 }, { transform: 'scale(1.644)', opacity: 0 }], 0, fast, easeIn],
+    [parts.tile, [{ transform: 'scale(1)', offset: 0 }, { transform: 'scale(1.06)', offset: 0.4 }, { transform: 'scale(1)', offset: 1 }], 0, slow, easeOut],
+    [parts.ringA, ring, 0, slower, easeOut],
+    [parts.ringB, ring, 160, slower, easeOut],
+    [parts.digits, [{ transform: 'scale(1.4)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], 80, base, easeOut],
+    [parts.stamp, [{ transform: 'translate(-50%, -50%) rotate(-14deg) scale(2.4)', opacity: 0 }, { transform: BURST_STAMP_REST, opacity: 1 }], 200, slow, easePop],
+    [parts.card, [{ boxShadow: 'var(--cp-shadow-card)' }, { boxShadow: BURST_CARD_SHADOW }], 200, base, easeSnap],
+  ]
+  for (const [element, keyframes, delay, duration, easing] of tracks) {
+    if (typeof element.animate !== 'function') continue
+    const animation = element.animate(keyframes, { duration, delay, easing, fill: 'backwards' })
+    animation.currentTime = elapsedMs
+  }
+}
+
 // The Standings in motion (04-motion § Leaderboard, #276). The rows' glide is Vue's move transition on the Leaderboard's `tbody` group (`lb-swap`),
 // the count is CpNum's (`lb-count`); these are the pieces drawn by the Web Animations API.
 

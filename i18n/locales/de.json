@@ -1597,8 +1597,6 @@
   },
   "countdown": {
     "title": "Countdown",
-    "paused": "Pausiert",
-    "ended": "Zeit ist um",
     "start": "Starten",
     "pause": "Pausieren",
     "resume": "Fortsetzen",
@@ -1608,7 +1606,40 @@
     "seconds": "Sekunden",
     "set": "Stellen",
     "range": "Zwischen 5 Sekunden und 99:59.",
-    "running": "Der Countdown läuft schon."
+    "running": "Der Countdown läuft schon.",
+    "pill": {
+      "ready": "Bereit",
+      "running": "Läuft",
+      "paused": "Pausiert",
+      "done": "Zeit ist um"
+    },
+    "stamp": "Zeit ist um",
+    "hostFallback": "Der Host",
+    "meta": {
+      "set": "Gestellt auf {time}",
+      "readyHost": "Gestellt auf {time}. Starte, wenn alle bereit sind.",
+      "ready": "Gestellt auf {time}. {host} startet ihn.",
+      "pausedHost": "Angehalten. „Fortsetzen“ macht bei {time} weiter.",
+      "paused": "{host} hat angehalten, bei {time} geht’s weiter.",
+      "doneHost": "Bleibt stehen, bis du zurücksetzt.",
+      "done": "Bleibt stehen, bis {host} zurücksetzt."
+    },
+    "sr": {
+      "timer": "Noch {duration}",
+      "timerReady": "Countdown gestellt auf {duration}",
+      "timerPaused": "Pausiert, noch {duration}",
+      "timerDone": "Zeit ist um"
+    },
+    "live": {
+      "set": "Countdown gestellt: {duration}.",
+      "running": "Countdown läuft. Noch {duration}.",
+      "paused": "Countdown pausiert. Noch {duration}.",
+      "final": "Noch 10 Sekunden.",
+      "done": "Zeit ist um.",
+      "reset": "Countdown zurückgesetzt: {duration}."
+    },
+    "nMinutes": "{n} Minute | {n} Minuten",
+    "nSeconds": "{n} Sekunde | {n} Sekunden"
   },
   "clip": {
     "label": "Clip: {name}",

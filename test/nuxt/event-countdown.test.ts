@@ -51,10 +51,10 @@ afterEach(() => {
 })
 
 describe('the time left while it runs', () => {
-  it('shows the time left as mm:ss, from the server clock', async () => {
+  it('shows the time left as m:ss, from the server clock', async () => {
     const page = await mount(MINUTE)
 
-    expect(timeOf(page).text()).toBe('01:00')
+    expect(timeOf(page).text()).toBe('1:00')
     expect(page.get('section').attributes('aria-labelledby')).toBeTruthy()
     expect(page.get('h2').text()).toBe('Countdown')
   })
@@ -63,20 +63,20 @@ describe('the time left while it runs', () => {
     const page = await mount(MINUTE)
 
     await passTime(10_000)
-    expect(timeOf(page).text()).toBe('00:50')
+    expect(timeOf(page).text()).toBe('0:50')
 
     await passTime(45_000)
-    expect(timeOf(page).text()).toBe('00:05')
+    expect(timeOf(page).text()).toBe('5')
   })
 
-  it('rounds up to whole seconds: 59.5 s left shows 01:00 (ceil, never a decrement)', async () => {
+  it('rounds up to whole seconds: 59.5 s left shows 1:00 (ceil, never a decrement)', async () => {
     const page = await mount(MINUTE)
 
     await passTime(500)
 
-    expect(timeOf(page).text()).toBe('01:00')
+    expect(timeOf(page).text()).toBe('1:00')
     await passTime(500)
-    expect(timeOf(page).text()).toBe('00:59')
+    expect(timeOf(page).text()).toBe('0:59')
   })
 
   it('takes the time from the server clock, not from the User\'s own clock', async () => {
@@ -84,7 +84,7 @@ describe('the time left while it runs', () => {
 
     const page = await mount(MINUTE)
 
-    expect(timeOf(page).text()).toBe('01:00')
+    expect(timeOf(page).text()).toBe('1:00')
     expect(serverNow).toHaveBeenCalled()
   })
 
@@ -93,7 +93,7 @@ describe('the time left while it runs', () => {
 
     const page = await mount(MINUTE)
 
-    expect(timeOf(page).text()).toBe('00:30')
+    expect(timeOf(page).text()).toBe('0:30')
   })
 
   it('uses tabular digits so the time does not jump', async () => {
@@ -137,9 +137,9 @@ describe('its ticker (#257)', () => {
 
     view.see(true)
     await nextTick()
-    expect(timeOf(page).text()).toBe('00:35')
+    expect(timeOf(page).text()).toBe('0:35')
     await passTime(5_000)
-    expect(timeOf(page).text()).toBe('00:30')
+    expect(timeOf(page).text()).toBe('0:30')
     vi.unstubAllGlobals()
   })
 
@@ -150,7 +150,7 @@ describe('its ticker (#257)', () => {
     const reads = serverNow.mock.calls.length
     await passTime(5_000)
 
-    expect(timeOf(page).text()).toBe('00:00')
+    expect(timeOf(page).text()).toBe('0:00')
     expect(page.text()).toContain('Zeit ist um')
     expect(serverNow.mock.calls.length).toBe(reads)
   })
@@ -163,7 +163,7 @@ describe('its ticker (#257)', () => {
     const reads = serverNow.mock.calls.length
     await passTime(5_000)
 
-    expect(timeOf(page).text()).toBe('01:00')
+    expect(timeOf(page).text()).toBe('1:00')
     expect(serverNow.mock.calls.length).toBe(reads)
   })
 
@@ -174,7 +174,7 @@ describe('its ticker (#257)', () => {
     await page.setProps({ countdown: { durationMs: 60_000, remainingMs: 25_000, startedAt: new Date(serverTime).toISOString() } })
     await passTime(5_000)
 
-    expect(timeOf(page).text()).toBe('00:20')
+    expect(timeOf(page).text()).toBe('0:20')
   })
 })
 
@@ -182,11 +182,11 @@ describe('paused and at zero', () => {
   it('shows the stored remainder and „Pausiert“ while paused, without moving', async () => {
     const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null })
 
-    expect(timeOf(page).text()).toBe('00:25')
+    expect(timeOf(page).text()).toBe('0:25')
     expect(page.text()).toContain('Pausiert')
 
     await passTime(10_000)
-    expect(timeOf(page).text()).toBe('00:25')
+    expect(timeOf(page).text()).toBe('0:25')
   })
 
   it('shows „Zeit ist um“ at zero, and keeps it there', async () => {
@@ -194,7 +194,7 @@ describe('paused and at zero', () => {
 
     await passTime(61_000)
 
-    expect(timeOf(page).text()).toBe('00:00')
+    expect(timeOf(page).text()).toBe('0:00')
     expect(page.text()).toContain('Zeit ist um')
     await passTime(30_000)
     expect(page.text()).toContain('Zeit ist um')
@@ -203,7 +203,7 @@ describe('paused and at zero', () => {
   it('shows the full duration while ready, without „Pausiert“ or „Zeit ist um“', async () => {
     const page = await mount({ durationMs: 300_000, remainingMs: 300_000, startedAt: null })
 
-    expect(timeOf(page).text()).toBe('05:00')
+    expect(timeOf(page).text()).toBe('5:00')
     expect(page.text()).not.toContain('Pausiert')
     expect(page.text()).not.toContain('Zeit ist um')
   })
@@ -247,6 +247,6 @@ describe('the Host\'s controls, by state', () => {
     const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null }, false)
 
     expect(page.findAll('button')).toHaveLength(0)
-    expect(timeOf(page).text()).toBe('00:25')
+    expect(timeOf(page).text()).toBe('0:25')
   })
 })

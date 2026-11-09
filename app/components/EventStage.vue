@@ -172,6 +172,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         :countdown="view.countdown!"
         :server-now="serverNow"
         :is-host="view.event.isHost"
+        :host-name="view.members.find(m => m.isHost)?.name"
         :command="actions.countdown"
       />
 
