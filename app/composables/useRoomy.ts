@@ -1,7 +1,10 @@
+import { computed } from 'vue'
+
 /**
- * Whether the screen is `md` or wider: the Award ceremony's wide sizes and layout (#309, #315). `null` until the browser was asked,
- * as useMediaQuery (#328: one breakpoint for the stage and the layer).
+ * Whether the screen is `md` or wider: the Award ceremony's wide sizes and layout (#309, #315). `false` until the browser was asked
+ * (useMediaQuery is `null` there), so a caller never writes `=== true` (#328: one breakpoint for the stage and the layer; #366: one boolean).
  */
 export function useRoomy() {
-  return useMediaQuery('(min-width: 48rem)')
+  const matches = useMediaQuery('(min-width: 48rem)')
+  return computed(() => matches.value === true)
 }

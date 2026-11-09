@@ -52,6 +52,9 @@ export interface CeremonyShape {
   grid?: boolean
 }
 
+/** The shape of a run on a screen: the client always knows its grid (`ceremonyEndsAt` on the server leaves it out) and its gag. */
+export type RunShape = Required<CeremonyShape>
+
 /**
  * The run's moments in ms from its start instant, from `AwardCeremony.dc.html` play() (04-motion § 6b, § 6b-T): the banner and the places
  * below the Winners (rows, chips from 3 Winners on) come first, then the plate and the cards, the run, then the gag lands (trip 800 ms, bonk
