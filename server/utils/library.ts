@@ -1,11 +1,11 @@
 import { and, asc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { canEditGame, canSeeLibrary, type GameTag, type GameView, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
+import { canEditGame, canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
 import { shownName, type AuthUser } from '../../shared/auth'
 import { gameTags, games, users } from '../db/schema'
 import { isUuid } from '../domain/uuid'
 import type { Db } from './db'
-import { apiNotFound } from './errors'
+import { apiError, apiNotFound } from './errors'
 import { getUser } from './user'
 
 // Shared parts of the Game library routes (#141).
@@ -72,11 +72,12 @@ export function roundGameView(row: typeof games.$inferSelect): RoundGame {
   return game
 }
 
-/** A games row as the library shows it to `viewer`: the pool view plus creator, edit rights and the Tags (#335). */
+/** A games row as the library shows it to `viewer`: the pool view plus creator, edit rights, the Tags (#335) and the Price (#337). */
 export function gameView(row: typeof games.$inferSelect, creatorName: string, viewer: AuthUser, tags: GameTag[]): GameView {
   return {
     ...poolGameView(row),
     tags,
+    price: priceOf(row),
     createdBy: { id: row.createdBy, name: creatorName },
     createdAt: row.createdAt.toISOString(),
     canEdit: canEditGame(viewer, row),
@@ -134,4 +135,30 @@ export async function saveTags(tx: Db, gameId: string, tags: GameTag[]): Promise
     .insert(gameTags)
     .values(tags.map((tag, position) => ({ gameId, key: tag.key, label: labelInUse.get(tag.key) ?? tag.label, position })))
     .onConflictDoUpdate({ target: [gameTags.gameId, gameTags.key], set: { position: sql`excluded.position` } })
+}
+
+/** The row's Price as the library shows it (#337); null when none. */
+export function priceOf(row: typeof games.$inferSelect): GamePrice | null {
+  if (!row.priceSource || !row.priceCheckedAt) return null
+  return { cents: row.priceCents, source: row.priceSource, checkedAt: row.priceCheckedAt.toISOString() }
+}
+
+/**
+ * The price columns an input changes (#337). Absent price and no flag: {} (nothing written). The day moves when the stored cents or
+ * source change, or when `priceChecked` is sent; an unchanged save keeps it. `price: null` clears all three. Throws
+ * apiError('invalid_price') when `priceChecked` is sent and the game would have no Price after the save. `stored` is null on create.
+ */
+export function priceColumns(
+  input: { price: GamePriceInput | null | undefined, priceChecked: boolean },
+  stored: typeof games.$inferSelect | null,
+  now: Date,
+): Partial<typeof games.$inferInsert> {
+  const storedPrice = stored ? priceOf(stored) : null
+  const resulting = input.price === undefined ? storedPrice : input.price
+  if (input.priceChecked && resulting === null) throw apiError('invalid_price')
+  if (input.price === null) return { priceCents: null, priceSource: null, priceCheckedAt: null }
+  if (input.price === undefined) return input.priceChecked ? { priceCheckedAt: now } : {}
+  const changed = !storedPrice || storedPrice.cents !== input.price.cents || storedPrice.source !== input.price.source
+  if (!input.priceChecked && !changed) return {}
+  return { priceCents: input.price.cents, priceSource: input.price.source, priceCheckedAt: now }
 }

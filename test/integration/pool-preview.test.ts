@@ -102,7 +102,7 @@ describe('Pool preview secrecy (#225)', () => {
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: `Hausregel zu ${name}`, tags: [tag] }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: `Hausregel zu ${name}`, tags: [tag], price: { cents: 1999, source: 'steam' } }),
     })
     expect(created.status).toBe(200)
     const { id } = await created.json() as GameView
@@ -239,6 +239,7 @@ describe('Pool preview secrecy (#225)', () => {
     const raw = await rawRead(playerCookie, slug)
     const { pool: shown } = JSON.parse(raw) as EventView
 
+    // The face keeps its keys: a Price is in no Member's pool read yet (#337). #338 gives it to Members and flips this assertion.
     for (const game of shown!) {
       expect(Object.keys(game).sort()).toEqual(['id', 'imageUrl', 'name', 'youtubeId'])
     }
@@ -260,6 +261,8 @@ describe('Pool preview secrecy (#225)', () => {
     for (const cookie of [hostCookie, playerCookie]) {
       const raw = await rawRead(cookie, slug)
       expect(raw).not.toContain('"tags"')
+      expect(raw).not.toContain('"price"')
+      expect(raw).not.toContain('"checkedAt"')
       for (const game of pool) expect(raw).not.toContain(game.tag)
     }
     // The control: the library does carry them.
@@ -407,6 +410,8 @@ describe('Pool preview secrecy (#225)', () => {
       for (const raw of await reads()) {
         expect(raw).toContain('Alpha Arena')
         expect(raw).not.toContain('"tags"')
+        expect(raw).not.toContain('"price"')
+        expect(raw).not.toContain('"checkedAt"')
         for (const game of [alpha, beta, gamma, library]) expect(raw).not.toContain(game.tag)
       }
 
@@ -419,6 +424,8 @@ describe('Pool preview secrecy (#225)', () => {
       for (const raw of await reads()) {
         expect((JSON.parse(raw) as EventView).results).toHaveLength(1)
         expect(raw).not.toContain('"tags"')
+        expect(raw).not.toContain('"price"')
+        expect(raw).not.toContain('"checkedAt"')
         for (const game of [alpha, beta, gamma, library]) expect(raw).not.toContain(game.tag)
       }
     })

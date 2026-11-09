@@ -160,7 +160,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes, tags: [tag] }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes, tags: [tag], price: { cents: 1999, source: 'steam' } }),
     })
     expect(created.status).toBe(200)
     const { id } = await created.json() as GameView
@@ -275,6 +275,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     for (const cookie of [hostCookie, playerCookie]) {
       const raw = await rawRead(cookie, slug)
       expect(raw).not.toContain('"tags"')
+      expect(raw).not.toContain('"price"')
+      expect(raw).not.toContain('"checkedAt"')
       for (const secret of secrets) expect(raw).not.toContain(secret.tag)
     }
     // The control: the library does carry them.
@@ -711,6 +713,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       for (const raw of await reads()) {
         expect(raw).toContain('Alpha Arena')
         expect(raw).not.toContain('"tags"')
+        expect(raw).not.toContain('"price"')
+        expect(raw).not.toContain('"checkedAt"')
         for (const secret of [a, b, c, e]) expect(raw).not.toContain(secret.tag)
       }
 
@@ -723,6 +727,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       for (const raw of await reads()) {
         expect((JSON.parse(raw) as EventView).results).toHaveLength(1)
         expect(raw).not.toContain('"tags"')
+        expect(raw).not.toContain('"price"')
+        expect(raw).not.toContain('"checkedAt"')
         for (const secret of [a, b, c, e]) expect(raw).not.toContain(secret.tag)
       }
     })
