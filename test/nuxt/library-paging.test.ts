@@ -99,8 +99,9 @@ describe('the library paging (#369)', () => {
     list = { games: library(41) }
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek', attachTo: document.body })
     await settle(page)
-    moreButton(page)!.element.focus()
-    expect(document.activeElement).toBe(moreButton(page)!.element)
+    const button = moreButton(page)!.element as HTMLElement
+    button.focus()
+    expect(document.activeElement).toBe(button)
 
     observers.see(true)
     await flushPromises()
