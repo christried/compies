@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Event löschen:** Als Host kannst du ein Event jetzt in der Host-Steuerung unter „Mehr“ löschen, in jeder Phase, nur nicht während eine Session läuft. Nach einer Sekunde Halten ist es für alle sofort weg: Es verschwindet von der Startseite, und wer es offen hat oder seinen Event-Link oder Einladungslink öffnet, sieht „Event gelöscht“. Rückgängig machen lässt es sich nicht. ([#333](https://github.com/christried/compies/issues/333))
+- **Tags:** In der Bibliothek kannst du einem Spiel jetzt bis zu acht Tags geben, etwa ein Genre oder „Co-op“: tippen und mit Enter oder Komma bestätigen. Beim Tippen schlägt das Formular die Tags vor, die es schon gibt. Die Karte zeigt bis zu drei Tags, die Spielseite alle. Tags sehen nur Hosts. ([#335](https://github.com/christried/compies/issues/335))
+- **Tag-Filter:** In der Bibliothek filterst du die Spiele jetzt nach einem Tag: Im Filter „Tag“ stehen alle Tags, die ein Spiel gerade trägt, und die Suche findet Spiele auch über ihre Tags. Den Filter gibt es auch beim Füllen des Spielepools und bei „Nächstes Spiel setzen“. In der Bibliothek steht der gewählte Tag in der Adresse, Neuladen und Zurück behalten ihn. Tags sehen nur Hosts. ([#336](https://github.com/christried/compies/issues/336))
+- **Preise:** In der Bibliothek kannst du zu einem Spiel jetzt einen Preis eintragen: den Betrag in Euro und wo es das Spiel gibt, etwa bei Steam, bei GOG oder als Free-to-play. Die App merkt sich den Tag, an dem der Preis geprüft wurde, und mit „Preis stimmt noch“ frischst du ihn mit einem Tipp auf. Karte, Spielseite und die Auswahl für den Spielpool zeigen den Preis. ([#337](https://github.com/christried/compies/issues/337))
+- **Preise für Mitglieder:** Unter jedem Spiel siehst du jetzt, was es kostet und wo es das gibt, etwa „19,99 € bei Steam · Stand 3. Nov.“, damit du es vor dem Spielabend besorgen kannst: in „So wird gespielt“, sobald der Host den Spielepool zeigt, auf der Karte des Spiels, das gerade dran ist, und im Spielverlauf. Den Preis siehst du nie früher als den Namen des Spiels, bei verdecktem Rad also erst nach dem Stopp. ([#338](https://github.com/christried/compies/issues/338))
+
+### Geändert
+
+- **Countdown:** Der Countdown hat ein neues Gesicht: ein großer Zeitblock, der in den letzten zehn Sekunden von Gelb auf Rot wechselt und bei Null „Zeit ist um“ stempelt; bei reduzierter Bewegung ohne Bewegung. ([#340](https://github.com/christried/compies/issues/340))
+- **Glücksrad-Karte:** Die Karte des Glücksrads zeigt nicht mehr, wie viele Spiele auf dem Rad liegen; Screenreader lesen die Zahl weiter vor. ([#354](https://github.com/christried/compies/issues/354))
+- **Clip-Fenster:** Im Clip-Fenster klebt „läuft für alle“ nicht mehr als Pille über dem Video; der Host sieht den Status jetzt unten neben „Clip überspringen“, alle anderen sehen nur das Video. ([#356](https://github.com/christried/compies/issues/356))
+- **Bald verfügbar:** Im Setup steht bei Optionen, die noch nicht wählbar sind, jetzt fett „Bald verfügbar“ mit Schloss unter dem Titel statt in einer Pille. ([#350](https://github.com/christried/compies/issues/350))
+- **Spielepool-Picker:** Beim Zusammenstellen des Spielepools und bei „Nächstes Spiel setzen“ sitzen die Plus-Knöpfe aller Spielkarten einer Reihe jetzt auf einer Höhe, unten an der Karte. ([#351](https://github.com/christried/compies/issues/351))
+- **Zurück-Link:** Der Zurück-Link oben auf Impressum, Datenschutzerklärung, Neuigkeiten, in der Bibliothek und nach dem Anlegen eines Events ist jetzt größer und kräftiger, und das kleine „Geschafft“ über dem Titel nach dem Anlegen ist weg. ([#353](https://github.com/christried/compies/issues/353))
+- **Startseite:** Die Begrüßung „Hallo …“ ist weg, und die Event-Karten sehen aus wie im Entwurf: Name, Phase, Host, der beste oder feste Termin, wie viele vollständig abgestimmt haben und ein Knopf je nach Rolle („Öffnen“, „Abstimmen“, „Ansehen“). ([#347](https://github.com/christried/compies/issues/347))
+- **Terminumfrage:** Die Umfrage und die Session-Karte zählen jetzt, wer vollständig abgestimmt hat („2 von 3 haben vollständig abgestimmt“). Wer nur auf einen Teil der Termine geantwortet hat, zählt noch nicht. ([#352](https://github.com/christried/compies/issues/352))
+- **CSV-Export:** „Als CSV exportieren“ in „Wer kann wann?“ gibt es nur noch für den Host. ([#352](https://github.com/christried/compies/issues/352))
+- **Session-Karte:** Verschieben, Neue Terminsuche, Entfernen und der Kalender stecken jetzt hinter einem „Mehr“-Knopf am Ende der Zeile, damit jede Session am Desktop in einer Zeile Platz hat. Die Anmerkungen zu einem Termin sind eingeklappt; die Überschrift zeigt, wie viele es sind. ([#349](https://github.com/christried/compies/issues/349))
+- **Seitenleisten und Sheets:** Einladen, Host-Steuerung, Kalender, Ergebnis eintragen und alle anderen Seitenleisten und Sheets gleiten jetzt ein und wieder aus, statt sofort zu erscheinen; bei reduzierter Bewegung blenden sie nur ein und aus. ([#348](https://github.com/christried/compies/issues/348))
+- **Veto ohne Namen:** Wer aus einem Team das Veto eingelegt hat, erfährt niemand mehr, auch das eigene Team nicht. Das Veto-Fenster, das Aufdecken und die Aktivität nennen nur die Partei („Veto von Team Orange“), und die Sperre am Veto-Knopf sagt „Team Rot hat schon ein Veto eingelegt“. ([#355](https://github.com/christried/compies/issues/355))
+- **Datenschutzerklärung:** Die Datenschutzerklärung beschreibt jetzt, was beim Löschen eines Events passiert: Es ist für alle Mitglieder sofort nicht mehr erreichbar, seine Daten bleiben als gelöscht markiert gespeichert und werden auf Anfrage aus der Datenbank entfernt. ([#334](https://github.com/christried/compies/issues/334))
+
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
 Jetzt gibt es die Siegerehrung: Der Host eröffnet sie im beendeten Event, alle sehen im selben Moment dieselbe Show mit Pokal-Lauf, Stempel und Konfetti, und das Ergebnis gibt es als Bild zum Teilen.

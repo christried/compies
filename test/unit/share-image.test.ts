@@ -34,7 +34,7 @@ const bench = (id: string): MemberView => ({ id, name: `Spieler ${id}`, image: n
 const result = (number: number, name: string, firsts: number[], teamCount: number): ResultView => ({
   roundId: `r${number}`,
   number,
-  game: { id: `g${number}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 10, playersMin: null, playersMax: null, suitabilities: [] },
+  game: { id: `g${number}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 10, playersMin: null, playersMax: null, suitabilities: [], price: null },
   places: Array.from({ length: teamCount }, (_, index) => index + 1)
     .map(team => ({ team, place: firsts.includes(team) ? 1 : firsts.length + 1, points: 0, score: null })),
   corrected: false, correctedAt: null, resultAt: '2026-10-25T20:00:00Z',

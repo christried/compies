@@ -5,8 +5,8 @@ import { Lock } from '@lucide/vue'
 // Big choice cards in a radio group (02-components § RadioCardGroup): Format, Selection mode, points preset. The
 // group is typed by its values (T), so a caller gets back the value type it passed in, with no cast (review D1).
 // Roving tabindex, arrows move and select (the focus follows), Space/Enter select. A locked option is the
-// LockedOption look (dashed, „Bald verfügbar“ chip) with aria-disabled: no click, no keyboard, and the
-// arrow keys skip it. With `lockedReason` the whole group is locked (#147): the chosen card stays marked, every card
+// LockedOption look (dashed, a bold „Bald verfügbar“ line under the title, #350) with aria-disabled: no click,
+// no keyboard, and the arrow keys skip it. With `lockedReason` the whole group is locked (#147): the chosen card stays marked, every card
 // is aria-disabled and described by the reason, and nothing can be chosen.
 const props = withDefaults(defineProps<{
   modelValue: T
@@ -52,7 +52,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
 
 const reasonId = `${uid}-group-locked`
 
-/** The ids of what describes an option: its „Bald verfügbar“ chip and the reason of a locked group. */
+/** The ids of what describes an option: its „Bald verfügbar“ line and the reason of a locked group. */
 function describedBy(option: { value: T, locked?: boolean }) {
   const ids = [option.locked ? `${uid}-${option.value}-locked` : null, props.lockedReason ? reasonId : null].filter(Boolean)
   return ids.length > 0 ? ids.join(' ') : undefined
@@ -104,20 +104,18 @@ const COLUMNS = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' 
         />
       </span>
       <span class="flex min-w-0 flex-1 flex-col leading-[1.3]">
-        <!-- The chip shares the title line and wraps under the title on a narrow card, so the description keeps the full width (#174). -->
-        <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <b class="text-[15px]">{{ option.label }}</b>
-          <span
-            v-if="option.locked"
-            :id="`${uid}-${option.value}-locked`"
-            class="inline-flex h-[22px] flex-none items-center gap-1 rounded-pill border-2 border-dashed border-ink-2 px-[7px] text-[11px] font-bold whitespace-nowrap text-ink-2"
-          >
-            <AppIcon
-              :icon="Lock"
-              :size="11"
-            />
-            {{ t('stepper.locked') }}
-          </span>
+        <!-- Planned options: a bold line under the title, no pill (#350). -->
+        <b class="text-[15px]">{{ option.label }}</b>
+        <span
+          v-if="option.locked"
+          :id="`${uid}-${option.value}-locked`"
+          class="inline-flex items-center gap-1.5 text-[13px] font-bold text-ink-2"
+        >
+          <AppIcon
+            :icon="Lock"
+            :size="14"
+          />
+          {{ t('stepper.locked') }}
         </span>
         <span class="text-[12px] text-ink-2">{{ option.desc }}</span>
       </span>

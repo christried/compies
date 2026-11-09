@@ -13,17 +13,25 @@ export function useDialog(open: Ref<boolean>, container: Ref<HTMLElement | null>
     return [...(container.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
   }
 
-  watch(open, async (isOpen) => {
-    if (isOpen) {
-      returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
-      await nextTick()
-      const initial = container.value?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0]
-      initial?.focus()
-    }
+  async function focusIn() {
+    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    await nextTick()
+    const initial = container.value?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0]
+    initial?.focus()
+  }
+
+  watch(open, (isOpen) => {
+    if (isOpen) void focusIn()
     else {
       returnFocus?.focus()
       returnFocus = null
     }
+  })
+
+  // A dialog that is mounted already open (its parent `v-if`s it on the very thing that opens it, like the reschedule dialog that needs
+  // the Session picked from the menu) never sees `open` change, so the watch above would not fire: focus moves in on mount too (#349).
+  onMounted(() => {
+    if (open.value) void focusIn()
   })
 
   function onKeydown(event: KeyboardEvent) {

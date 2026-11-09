@@ -77,7 +77,7 @@ describe('waitsForSettle', () => {
   it('is settled while the window runs, once the Vetoes are revealed (also none), and without a window', () => {
     expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: 1 }, null) }), NOW)).toBe(false)
     expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: -1 }, []) }), NOW)).toBe(false)
-    expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: -1 }, [{ team: 1, userId: 'u1' }]) }), NOW)).toBe(false)
+    expect(waitsForSettle(view({ vetoes: vetoes({ endsOffset: -1 }, [{ team: 1 }]) }), NOW)).toBe(false)
     expect(waitsForSettle(view({}), NOW)).toBe(false)
   })
 

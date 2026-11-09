@@ -4,6 +4,8 @@
 // it truncates on one line; the full name is in `title` (hover) and stays whole in the DOM,
 // so it is the accessible name too. `compact` is the mark alone, for tight rows, and then the chip carries the name as
 // its label.
+import { teamVar } from '~/utils/team-style'
+
 const props = withDefaults(defineProps<{
   /** The Team colour index, 1 to 8. */
   team: number
@@ -28,7 +30,7 @@ const props = withDefaults(defineProps<{
     <span
       v-if="!compact"
       class="min-w-0 rounded-[6px] px-1.5 py-px font-display text-[13px] leading-[1.3] font-normal hyphens-auto [overflow-wrap:anywhere] line-clamp-2 md:line-clamp-none md:truncate md:px-2 md:text-[19px]"
-      :style="{ backgroundColor: `var(--cp-team-${props.team})`, color: `var(--cp-team-${props.team}-ink)` }"
+      :style="{ backgroundColor: teamVar(props.team), color: teamVar(props.team, 'ink') }"
     >{{ name }}</span>
   </span>
 </template>

@@ -63,6 +63,21 @@ describe('home page', () => {
     expect(page.text()).toContain('Compies')
     expect(page.get('h1').text()).toBe('Wann zocken wir?')
     expect(page.get('h3').text()).toBe('Freitags-Zocken')
+    expect(page.text()).not.toContain('Hallo')
+  })
+
+  // The title row holds the h1 and, for a Host, the CTA; the kicker „Hallo {name}“ is gone (#347).
+  it.each([
+    ['a Member', kitty],
+    ['a Host', { ...kitty, canHost: true }],
+  ])('has no kicker above the h1 for %s: the header holds the h1 and, for a Host, the CTA (#347)', async (_, user) => {
+    signInAs(user)
+    homeEvents = [card({ name: 'Freitags-Zocken' })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    const header = page.findAll('header').find(element => element.find('h1').exists())!
+    expect(header.findAll('span:not([aria-hidden])')).toEqual([])
   })
 
   it('says on the construction card what is still being built, and what already works (#196)', async () => {

@@ -23,16 +23,17 @@ export default defineEventHandler(async (event): Promise<DeployCheck> => {
   if (!signed) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
   const rows = await useDb(event)
-    .select({ eventId: sessions.eventId, slug: events.slug, id: sessions.id, startsAt: sessions.startsAt, startedAt: sessions.startedAt, endedAt: sessions.endedAt })
+    .select({ eventId: sessions.eventId, id: sessions.id, startsAt: sessions.startsAt, startedAt: sessions.startedAt, endedAt: sessions.endedAt })
     .from(sessions)
     .innerJoin(events, eq(events.id, sessions.eventId))
     .where(and(isNull(events.deletedAt), sessionNotRemoved))
-  // A removed Session and a deleted Event are left out by the query. The answer names each blocking Session as the
-  // Event page does („Session 2 of `slug`“, retro 0.9), so the Sessions are numbered per Event the same way.
+  // A removed Session and a deleted Event are left out by the query. The answer names each blocking Session by ids and
+  // numbers it as the Event page does („Session 2“, retro 0.9), so the Sessions are numbered per Event the same way.
   const byEvent = new Map<string, typeof rows>()
   for (const row of rows) byEvent.set(row.eventId, [...(byEvent.get(row.eventId) ?? []), row])
   const checked: CheckedSession[] = [...byEvent.values()].flatMap(ofEvent => numberedSessions(ofEvent).map(row => ({
-    event: row.slug,
+    eventId: row.eventId,
+    sessionId: row.id,
     number: row.number,
     startsAt: row.startsAt,
     // A Running Session (#164) is started and not ended; it counts while it started less than 16 h ago (#200), so a

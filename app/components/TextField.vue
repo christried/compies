@@ -27,7 +27,9 @@ const props = withDefaults(defineProps<{
   inputmode?: 'numeric' | 'text' | 'url'
   /** With `maxlength`: longer input is cut to the maximum instead of being shown with an error. */
   cutAtMax?: boolean
-}>(), { multiline: false, help: undefined, error: undefined, type: 'text', maxlength: undefined, id: undefined, invalid: false, autocomplete: undefined, inputmode: undefined, cutAtMax: false })
+  /** Muted and not editable: the Price amount of a source that takes none (#337). */
+  disabled?: boolean
+}>(), { multiline: false, help: undefined, error: undefined, type: 'text', maxlength: undefined, id: undefined, invalid: false, autocomplete: undefined, inputmode: undefined, cutAtMax: false, disabled: false })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
@@ -72,7 +74,8 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
       :value="modelValue"
       :aria-invalid="error || invalid ? 'true' : undefined"
       :aria-describedby="describedBy"
-      class="field-sizing-content min-h-[9.5rem] resize-none overflow-hidden rounded-md bg-surface px-3.5 py-2.5 text-[17px] leading-[1.45] text-ink"
+      :disabled="disabled"
+      class="field-sizing-content min-h-[9.5rem] resize-none overflow-hidden rounded-md bg-surface px-3.5 py-2.5 text-[17px] leading-[1.45] text-ink disabled:cursor-not-allowed disabled:opacity-60"
       :class="error || invalid ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'"
       @input="onInput"
     />
@@ -86,7 +89,8 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
       :inputmode="inputmode"
       :aria-invalid="error || invalid ? 'true' : undefined"
       :aria-describedby="describedBy"
-      class="h-control-lg rounded-md bg-surface px-3.5 text-[17px] text-ink"
+      :disabled="disabled"
+      class="h-control-lg rounded-md bg-surface px-3.5 text-[17px] text-ink disabled:cursor-not-allowed disabled:opacity-60"
       :class="error || invalid ? 'border-3 border-error-fg' : 'border-(length:--cp-bw) border-line'"
       @input="onInput"
     >

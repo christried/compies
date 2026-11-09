@@ -158,10 +158,30 @@ describe('the pool of an Event (#146, #286)', () => {
       const view = await read(hostCookie, slug)
 
       expect(view.pool).toEqual([
-        { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: null },
-        { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
-        { id: zebra.id, name: 'Zebra Rennen', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null },
+        { id: alpha.id, name: 'alpha Quest', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: null, price: null },
+        { id: beta.id, name: 'Beta Bowl', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null },
+        { id: zebra.id, name: 'Zebra Rennen', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null },
       ])
+    })
+
+    it('gives the Host and a joined Member the Price of each pool game as the library has it, and a Member only the face keys (#338)', async () => {
+      const kart = await newGame('Mario Kart', { price: { cents: 1999, source: 'steam' } })
+      const tetris = await newGame('Tetris', { price: { cents: null, source: 'free_to_play' } })
+      const { slug, inviteUrl } = await createdEvent({ pool: [kart.id, tetris.id] })
+      const { cookie } = await signIn(testDb.db, member)
+      const invite = new URL(inviteUrl).pathname.slice('/e/'.length)
+      expect((await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
+
+      const hostPool = (await read(hostCookie, slug)).pool!
+      const memberPool = (await read(cookie, slug)).pool!
+
+      expect(kart.price).toMatchObject({ cents: 1999, source: 'steam' })
+      expect(tetris.price).toMatchObject({ cents: null, source: 'free_to_play' })
+      for (const game of [kart, tetris]) {
+        expect(hostPool.find(item => item.id === game.id)).toMatchObject({ price: game.price })
+        expect(memberPool.find(item => item.id === game.id)).toMatchObject({ price: game.price })
+      }
+      for (const face of memberPool) expect(Object.keys(face).sort()).toEqual(['id', 'imageUrl', 'name', 'price', 'youtubeId'])
     })
 
     it('gives a Member who may see the pool only the picture and name of each game, even when it has notes (#224)', async () => {
@@ -175,8 +195,8 @@ describe('the pool of an Event (#146, #286)', () => {
       const pool = (await read(cookie, slug)).pool!
 
       expect(pool).toEqual([
-        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null },
-        { id: pong.id, name: 'Pong', imageUrl: null, youtubeId: null },
+        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null },
+        { id: pong.id, name: 'Pong', imageUrl: null, youtubeId: null, price: null },
       ])
     })
 
@@ -185,7 +205,7 @@ describe('the pool of an Event (#146, #286)', () => {
       const { slug } = await createdEvent({ pool: [kart.id] })
 
       expect((await read(hostCookie, slug)).pool!).toEqual([
-        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Settings: 3 Runden' },
+        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Settings: 3 Runden', price: null },
       ])
     })
 

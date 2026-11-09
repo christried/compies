@@ -28,6 +28,8 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     createdAt: '2026-01-15T10:00:00.000Z',
     canEdit: true,
     notes: null,
+    tags: [],
+    price: null,
     ...overrides,
   }
 }
@@ -42,7 +44,7 @@ let library: GameView[] = []
 const postedGame = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: library }),
+  handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }] }),
 })
 registerEndpoint('/api/games', {
   method: 'POST',
@@ -176,6 +178,16 @@ describe('the pool steps', () => {
       expect(pressed(page)).toEqual([])
       expect(page.text()).toContain('Im Pool: 0 Spiele')
       expect(inPool(page).exists()).toBe(false)
+    })
+
+    it('shows the Price line on the picker row of a library game with a Price (#337)', async () => {
+      library = [game(1, 'Mario Kart', { price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }), pong, chess]
+      const page = await mountCreate()
+      await toPoolStep(page)
+
+      const row = picker(page).findAll('li').find(card => card.get('b').text() === 'Mario Kart')!
+      expect(row.text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+      expect(picker(page).findAll('li').find(card => card.get('b').text() === 'Pong')!.text()).not.toContain('· Stand')
     })
 
     it('lists the games of the pool in the order they were added, each with a button to take it out', async () => {
@@ -449,6 +461,20 @@ describe('the pool steps', () => {
       expect((page.get('input[type="text"]').element as HTMLInputElement).value).toBe('Freitags-Zocken')
     })
 
+    it('offers a Tag in use from the library list in the sheet\'s form (#335)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await newGameButton(page).trigger('click')
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Tags')!
+      const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
+
+      input.value = 'ret'
+      input.dispatchEvent(new Event('input'))
+
+      await vi.waitFor(() => expect([...dialog()!.querySelectorAll('[role="listbox"] [role="option"]')].map(option => option.textContent?.trim())).toEqual(['Retro']))
+    })
+
     it('posts the notes typed in the sheet and puts the game in the pool (#223)', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
@@ -511,15 +537,72 @@ describe('the game browser in the pool steps (#173)', () => {
     useState('game-library').value = null
   })
 
-  it('is the compact browser: the search and „Alle / Von mir“, without the player count and „Passt zu“', async () => {
+  it('is the compact browser: the search, „Alle“, the Tag and „Von mir“, without the player count and „Passt zu“ (#336)', async () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
     expect(page.find('input[type="search"]').exists()).toBe(true)
     const chips = picker(page).element.parentElement!.querySelectorAll('button[aria-pressed]')
     expect([...chips].map(chip => chip.textContent!.trim())).toEqual(['Alle', 'Von mir'])
+    const tag = page.get('select[aria-label="Tag"]')
+    expect([...tag.element.querySelectorAll('option')].map(option => option.textContent!.trim())).toEqual(['Tag', 'Retro'])
+    const all = [...chips].find(chip => chip.textContent!.trim() === 'Alle')!
+    const mine = [...chips].find(chip => chip.textContent!.trim() === 'Von mir')!
+    expect(all.compareDocumentPosition(tag.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(tag.element.compareDocumentPosition(mine) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(false)
     expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(false)
+  })
+
+  it('picks a Tag and shows only the cards of the games carrying it, a ＋ still adds a hidden game, and „Alle“ resets the Tag (#336)', async () => {
+    const retroKart = game(4, 'Retro Kart', { tags: [{ key: 'retro', label: 'Retro' }] })
+    library = [kart, pong, chess, retroKart]
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    await page.get('select[aria-label="Tag"]').setValue('retro')
+
+    expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Retro Kart'])
+    await toggle(page, 'Retro Kart in den Pool').trigger('click')
+    expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Retro Kart'])
+    expect(pressed(page)).toEqual(['Retro Kart aus dem Pool nehmen'])
+
+    await page.findAll('button[aria-pressed]').find(button => button.text() === 'Alle')!.trigger('click')
+
+    expect(picker(page).findAll('li')).toHaveLength(4)
+    expect((page.get('select[aria-label="Tag"]').element as HTMLSelectElement).value).toBe('')
+  })
+
+  it('keeps the Tag out of the address too (#336)', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    const before = useRouter().currentRoute.value.fullPath
+
+    await page.get('select[aria-label="Tag"]').setValue('retro')
+
+    await new Promise(resolve => setTimeout(resolve, 400))
+    expect(useRouter().currentRoute.value.fullPath).toBe(before)
+  })
+
+  it('stretches the picker\'s cards to the row\'s height, the ＋ on the bottom edge (#351)', async () => {
+    const longCard = game(5, 'Ein sehr langer Spielname über zwei Zeilen hinweg, damit die Karte höher wird', {
+      playersMin: 2, playersMax: 6, suitabilities: ['teams'], tags: [{ key: 'retro', label: 'Retro' }, { key: 'koop', label: 'Koop' }, { key: 'party', label: 'Party' }],
+      price: { cents: 1999, source: 'steam', checkedAt: '2026-11-01T10:00:00.000Z' },
+    })
+    library = [kart, pong, chess, longCard]
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    expect(picker(page).classes()).toContain('md:grid')
+    expect(picker(page).classes()).toContain('md:items-stretch')
+    for (const item of picker(page).findAll('li')) {
+      const card = item.element.firstElementChild as HTMLElement
+      expect(card.className).toContain('h-full')
+      expect(card.lastElementChild!.querySelector('button')).not.toBeNull()
+    }
+    const plus = toggle(page, 'Mario Kart in den Pool').element
+    const kartCard = plus.closest('li')!.firstElementChild as HTMLElement
+    expect(kartCard.lastElementChild!.contains(plus)).toBe(true)
   })
 
   it('keeps its filters out of the address', async () => {

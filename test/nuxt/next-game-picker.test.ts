@@ -1,15 +1,15 @@
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import NextGamePicker from '~/components/NextGamePicker.vue'
-import type { PoolGame } from '~~/shared/game'
+import type { GameTag, GameView, PoolGame } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 import { clickButton, dialog } from './event-page'
 
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
 // time the sheet opens, there only in a Selection mode with a wheel, and its value goes out with the game that is picked.
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null, price: null }
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
@@ -105,5 +105,106 @@ describe('the sheet\'s footer', () => {
     expect(footer.textContent).toContain('Setzen')
     expect(footer.className).toContain('sticky')
     expect(footer.className).toContain('-bottom-5')
+  })
+})
+
+// The library list the sheet's game browser fetches (#336): one endpoint for the file, each test sets what it answers.
+function libraryGame(n: number, name: string, overrides: Partial<GameView> = {}): GameView {
+  return {
+    id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`,
+    name,
+    imageUrl: null,
+    youtubeId: null,
+    clipStart: 0,
+    clipLength: 30,
+    playersMin: null,
+    playersMax: null,
+    suitabilities: [],
+    createdBy: { id: kitty.id, name: 'Kitty' },
+    createdAt: '2026-01-15T10:00:00.000Z',
+    canEdit: true,
+    notes: null,
+    tags: [],
+    price: null,
+    ...overrides,
+  }
+}
+
+let libraryGames: GameView[] = []
+let libraryTags: GameTag[] = []
+registerEndpoint('/api/games', {
+  method: 'GET',
+  handler: () => ({ games: libraryGames, tagsInUse: libraryTags }),
+})
+
+describe('the Tag filter of the library list (#336)', () => {
+  const retroKart = libraryGame(1, 'Retro Kart', { tags: [{ key: 'retro', label: 'Retro' }] })
+  const coop = libraryGame(2, 'Pandemie', { tags: [{ key: 'co-op', label: 'Co-op' }] })
+  const chess = libraryGame(3, 'Schach')
+
+  const tagSelect = () => dialog()!.querySelector<HTMLSelectElement>('select[aria-label="Tag"]')!
+  const cardNames = (list: string) => [...dialog()!.querySelectorAll(`${list} li`)].map(card => card.querySelector('b, a')!.textContent!.trim())
+  const libraryCards = () => cardNames('ul[aria-label="Bibliothek"]')
+  const poolCards = () => cardNames('ul[aria-label="Spiele, die im Pool noch übrig sind"]')
+  const pick = async (value: string) => {
+    tagSelect().value = value
+    tagSelect().dispatchEvent(new Event('change'))
+    await flushPromises()
+  }
+
+  beforeEach(async () => {
+    signInAs({ ...kitty, canHost: true })
+    await clearNuxtData('games')
+    useState('game-library').value = null
+    libraryGames = [retroKart, coop, chess]
+    libraryTags = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }]
+  })
+
+  it('offers the Tags in use by label, next to „Alle“ and „Von mir“, and no player count or „Passt zu“', async () => {
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
+
+    expect([...tagSelect().querySelectorAll('option')].map(option => option.textContent!.trim())).toEqual(['Tag', 'Co-op', 'Retro'])
+    expect(dialog()!.querySelector('select[aria-label="Spielerzahl"]')).toBeNull()
+    expect(dialog()!.querySelector('select[aria-label="Passt zu"]')).toBeNull()
+  })
+
+  it('narrows the library cards to the Tag and leaves the pool list alone; „Alle“ resets it', async () => {
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
+
+    await pick('retro')
+
+    expect(libraryCards()).toEqual(['Retro Kart'])
+    expect(poolCards()).toEqual(['Halo'])
+
+    const all = [...dialog()!.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Alle')!
+    all.click()
+    await flushPromises()
+
+    expect(libraryCards()).toHaveLength(3)
+    expect(tagSelect().value).toBe('')
+  })
+
+  it('keeps the ✓ of a library card in the last child of its card, on the bottom edge (#351)', async () => {
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
+
+    const check = dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Retro Kart auswählen"]')!
+    const card = check.closest('ul[aria-label="Bibliothek"] > li')!.firstElementChild as HTMLElement
+    expect(card.lastElementChild!.contains(check)).toBe(true)
+  })
+
+  it('starts each opening of the sheet without a Tag', async () => {
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
+    await pick('co-op')
+    expect(tagSelect().value).toBe('co-op')
+
+    await page!.setProps({ open: false })
+    await page!.setProps({ open: true })
+    await flushPromises()
+
+    await vi.waitFor(() => expect(tagSelect().value).toBe(''))
   })
 })

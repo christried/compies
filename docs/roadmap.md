@@ -1,6 +1,6 @@
 # Roadmap
 
-Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Terms follow `GLOSSARY.md`.
+Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (the user's production-check notes (sorted here, then removed on 2026-11-09), #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings, § Später the ideas for after the roadmap. Terms follow `GLOSSARY.md`.
 
 **Numbering.** Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the user declares ready (`docs/agents/release.md` § Semantic versioning). Before 0.5.1 they were numbered 1.x: 1.0.0 is 0.1.0, 1.1.x is 0.2.x, 1.2.0 is 0.3.0, 1.3.0 is 0.4.0 and 1.4.0 is 0.5.0. Older specs, issues, reviews, ADRs and code comments keep the old numbers; in them, the planned 1.5 „Glücksrad“ is 0.7, 1.6 „Punkte“ is 0.8 and 1.7 „Siegerehrung“ is 0.9.
 
@@ -17,6 +17,8 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.9 | Siegerehrung | released on 2026-11-08: [#308](https://github.com/christried/compies/issues/308); the minimum for the first Event |
 | 0.10 | Feinschliff | grilled and ticketed on 2026-11-08: [#332](https://github.com/christried/compies/issues/332) |
 | 0.11 | Profil | next; grilled in its own session while 0.10 is built |
+| 0.12 | Eventseite | the Event page findings of the production check; grilled in its own session |
+| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled in its own session |
 | 1.0 | | when the user declares COMPIES ready |
 
 ## 0.4 Spielvorbereitung (was 1.3)
@@ -228,12 +230,57 @@ The list that waited for the first Event, plus the party hat. Spec: [#332](https
 - **Party hat** (#38, idea from the first staging review): Compibert's header head wears a party hat on the Event pages, only for the Players in a **Leading Party** (first rank of the Standings with at least one Result, all of them when shared; the Winners on the finished page). Bench, Stands, trailing Parties, Home and the hub pages show the plain head. The hat is a _Claude Design hand-off_ (#341), an accessory on the head crop like the hard hat.
 - **#328**: the AwardCeremony refactor, as written, without a changelog line.
 - **Two human sweeps** (`ready-for-human`), once every other ticket is on the integration branch: mockup vs. live app (#342), then the wording sweep (#343). Small findings land in 0.10 before the version cut; a feature or a redesign goes to 0.11 or later.
+- **Production check** (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09), sorted on #342): ten small fixes as tickets #347–#356 (Home card to the reference, Sheet motion, the Sessions card's menu, „Bald verfügbar“ without a chip, aligned picker buttons, „vollständig abgestimmt“ and CSV for Hosts, the back link, the wheel card without a count, anonymous Vetoes, the clip status in the Host's footer). The bigger findings are 0.12 and 0.13 below.
 - All other UI _own build_.
 
 ## 0.11 Profil
 
 Grilled in its own session while 0.10 is built. The Profil page (screen 25) replaces its Construction page: Display name, avatar from the provider, Ton, „Darstellung: Hell / Dunkel / System“ ([#43](https://github.com/christried/compies/issues/43), with the dark token set checked against every component built since #41), Abmelden. Second provider linking and avatar upload stay out.
 
+## 0.12 Eventseite
+
+The Event page findings of the first production check (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09)), to be grilled in its own session. Each line is the user's intent, checked against the hand-off and the Glossary; the grilling settles the rules. Where a line contradicts the hand-off or the Glossary it says so, and the grilling records the change (Glossary, ADR, a note in `docs/design_handoff_compies/`).
+
+- **Bench and Tribüne become one Tribüne**, without „Zuschauer spielen nicht mit“; from the Tribüne people move into the teams. Contradicts `02-components.md` § BenchZone / StandsZone and `GLOSSARY.md` § Bench, Stands, Spectator; a zone migration.
+- **The stage reorders by what just happened**: a drawn game's Veto window goes to the top, a spinning wheel goes to the top, a settled Round's „Gerade dran“ goes to the top, a Result moves the Standings to the top; animated and a little delayed so everyone can follow. The Game board stays below and never moves up (a Bonus Veto does not lift it). Contradicts `11-event-seite.md` § EventPage, which orders by Event state („what has to happen now goes on top“ is the same idea, the trigger is new).
+- **The Standings move up first, then their result animation plays** (`04-motion.md` § Leaderboard): the rows, the points, the confetti for the winner of the Round, after the block has arrived at the top.
+- **Spielepool, „Zuletzt gezogen“ and „Gerade dran“ show picture and name only**; everything else the library knows about the game (player count, Suitabilities, Tags, Price, Notes for the Host) opens in a game dialog, the library entry as a dialog. Several pool games fit next to each other that way. On „Gerade dran“ the Host's Notes stay open on the card. Touches the 2026-11-01 rule „picture and name only for Members“ (it now holds for the Host's rows too, with the dialog carrying the rest).
+- **The stepper's picker shows everything but the Notes**: Tags, player count, Suitabilities, Price; a Notes indicator opens them in a popover or dialog.
+- **Team names never freeze**: Players change their Team word all Event long; after the first word the builder collapses to the name with a pencil, still visibly editable. Contradicts `GLOSSARY.md` § Team name (freezes at the first Session start) and `02-components.md` § TeamNameBuilder (`frozen`). Open: which name the Result sentences and the Activity feed keep (#273 uses the frozen one).
+- **The feed and a chat label Parties by their current Team name**, not the colour name; earlier entries keep the name of their moment, which may confuse and is meant to.
+- **The finished page waits for the Award ceremony**: Standings and Spielverlauf of a finished Event show only after the Host has started the ceremony once; before that every Member sees that the ceremony is pending. Then everyone can watch it again. `GLOSSARY.md` § Award ceremony grows that line.
+
+## 0.13 Glücksrad & Clip
+
+The wheel, the clip and the Share image findings of the first production check, to be grilled in its own session after 0.12. Sound enters the app here, which lifts it out of § Out of scope.
+
+- **The Lucky Wheel as the hand-off has it, with sound**: `02-components.md` § LuckyWheel, `04-motion.md` § Lucky Wheel, the cues wheel-windup, wheel-tick, wheel-stop, wheel-morph, wheel-slice-out from `05-assets.md`, Compibert beside the wheel. Nothing of the motion and none of the cues is built; `useSound` is a mute toggle that plays nothing yet, so the SoundUnlockPrompt and Web-Audio scheduling to server time (`04-motion.md` § Synchronised moments) come with it. A big Release on its own.
+- **The clip raw**: no YouTube title, no pause button, no „More videos“ shelf, no share link, no interaction for Players; the Host keeps „Clip überspringen“; the remaining time stays. Fact (2026-11-09): the player already runs with controls off, modest branding, related videos off, keyboard and fullscreen off; the title bar at the start and on pause and the shelf on pause cannot be switched off since YouTube removed `showinfo`. The options are a pointer-blocking overlay with an oversized, cropped iframe, or never pausing. The grilling decides.
+- **The Veto window lasts the clip length plus 30 s**, 30 s for a game without a clip. Contradicts `GLOSSARY.md` § Veto window (60 s), `02-components.md` § VetoWindow and the 0.7 reasoning („the 60 s veto window fits the longest clip“); an ADR.
+- **Clips 10–120 s** (today 5–60), with start, end and length as inputs of which two suffice. From the user's later list, pulled here because the Veto window depends on it: a 120 s clip makes a 150 s window.
+- **The Share image without pills**: more text-based, graphic where it helps, no capsule for the Event name, no chips for the games. A _Claude Design hand-off_, [#357](https://github.com/christried/compies/issues/357) (`ready-for-human`), which blocks the build ticket of this Release.
+
+## Später
+
+The user's list for after the roadmap (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09)), one line each, not grilled:
+
+- A LICENSE for the public repository, chosen together with the user.
+- The Veto allowance stays hidden from Members until the Event starts, so nobody plans around it.
+- Game notes as rich text with an editor, up to 2000 characters.
+- The Game library is one per User, and every text in the app says so; later a game can be shared (a share view, a modal perhaps, with „zu meiner Bibliothek hinzufügen“). Contradicts `GLOSSARY.md` § Game library and the 0.6 rule of one note per game shared across Hosts.
+- „Noch eins hinzufügen“ after creating a game.
+- The game's image can be adjusted after upload (the visible crop).
+- Min and max players are optional and say so subtly; a minimum of 2 is not shown on the card, since no COMPIES game is for one person.
+- The project's folder structure for humans: sub-categorised folders instead of one components and one composables folder.
+- Last of all: a walkthrough tour for invited Players with Compibert (as the one with Topfbert in malkochen), a pop-up „du wurdest als Host freigeschaltet“ for new Hosts, and a second tour for the Host features.
+- The wording sweep (#343) as a throwaway app (`/prototype`): every text with where it appears, a field for the replacement, „so lassen“, „Alternativen“ for a second pass with alternatives, and a notes field for styling or position remarks.
+- Game notes split into general notes and notes for one Event.
+- Ctrl+Enter submits the game form.
+- One functional-review ticket that collects every staging walkthrough of every Release (all checkboxes), to repeat the whole check once.
+- Archive a game in the library (not playable any more, servers gone).
+- Age-restricted videos do not play embedded. Not fixable: YouTube requires a signed-in viewer on youtube.com for age-gated videos; such a game gets the card fallback the Glossary's Clip entry describes.
+- A pass over every use of the mono font: show each to the user and decide whether it stays.
+
 ## Out of scope for this roadmap
 
-Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound; push notifications; Compibert states outside the ceremony (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and settings (T2b); Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05).
+Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound before 0.13; push notifications; Compibert states outside the ceremony (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and settings (T2b); Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05).

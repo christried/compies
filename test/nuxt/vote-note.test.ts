@@ -420,10 +420,13 @@ describe('Notes on Votes', () => {
 
       const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
+      // Collapsed until opened (#349).
+      expect(page.text()).not.toContain(NOTE)
+      await page.findAll('section button').find(button => button.text().startsWith('Anmerkung (1)'))!.trigger('click')
       const list = page.get('section li')
       expect(list.text()).toContain('Larsi')
       expect(list.text()).toContain(NOTE)
-      expect(page.text()).toContain('Anmerkungen')
+      expect(page.text()).toContain('Anmerkung (1)')
       expect(page.findAll('section button').some(button => button.text() === 'Anmerkung')).toBe(false)
     })
   })

@@ -3,7 +3,7 @@ import { boolean, check, doublePrecision, index, integer, jsonb, pgEnum, pgTable
 import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
 import { ZONES } from '../../shared/board'
-import { SUITABILITIES } from '../../shared/game'
+import { PRICE_SOURCES, SUITABILITIES } from '../../shared/game'
 import { COIN_SIDES, DRAW_KINDS, DRAW_OUTCOMES, DRAW_SOURCES } from '../../shared/rounds'
 import { CEREMONY_GAGS } from '../../shared/ceremony'
 import { FORMATS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
@@ -184,6 +184,8 @@ export const pollVotes = pgTable('poll_votes', {
 
 // A game's Suitability (#171): an Event's Format stays teams or free-for-all; a game can suit more kinds of play.
 export const gameSuitability = pgEnum('game_suitability', SUITABILITIES)
+// A game's Price source (#337, GLOSSARY: Price): an enum of its own, since the glossary term is its own.
+export const priceSource = pgEnum('price_source', PRICE_SOURCES)
 
 // The Game library (#141, brief §15): one global library that Hosts fill. Games are never deleted, so
 // Events that used them keep working. `imageKey` names the image in the image store (#143); `youtubeId`
@@ -201,6 +203,10 @@ export const games = pgTable('games', {
   suitabilities: gameSuitability('suitabilities').array().default(sql`'{}'`).notNull(),
   // Game notes (#223): plain text, at most GAME_NOTES_MAX characters; null = none.
   notes: text('notes'),
+  // The Price (#337, GLOSSARY: Price): amount in cents, where it is bought, the day it was last checked. All null = no Price.
+  priceCents: integer('price_cents'),
+  priceSource: priceSource('price_source'),
+  priceCheckedAt: timestamp('price_checked_at', { withTimezone: true }),
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -208,6 +214,10 @@ export const games = pgTable('games', {
   index('games_created_by_idx').on(table.createdBy),
   // Lookups by image key (#171, review S6).
   index('games_image_key_idx').on(table.imageKey),
+  // The day and the source are set together; an amount only for a paid source, and an amount is 0,01 to 999,99 (#337).
+  check('games_price_checked_pair_check', sql`(${table.priceCheckedAt} IS NULL) = (${table.priceSource} IS NULL)`),
+  check('games_price_cents_source_check', sql`${table.priceCents} IS NULL OR (${table.priceSource} IS NOT NULL AND ${table.priceSource} NOT IN ('free_to_play', 'subscription'))`),
+  check('games_price_cents_range_check', sql`${table.priceCents} IS NULL OR ${table.priceCents} BETWEEN 1 AND 99999`),
 ])
 
 // The games of an Event's Game pool (#146, ADR 0014): one pool, so a game is in it once. The Tiebreaker pool's column and
@@ -219,6 +229,22 @@ export const eventPoolGames = pgTable('event_pool_games', {
   primaryKey({ columns: [table.eventId, table.gameId] }),
   // Lookups by game (#171, review S6). The primary key serves the lookups by Event.
   index('event_pool_games_game_id_idx').on(table.gameId),
+])
+
+// The Tags of a game (#335, GLOSSARY: Tag). `key` is the normalised spelling that makes two Tags one (normaliseTag), `label` the
+// spelling shown; `position` is the order the editor sent them. The Tags in use are the keys some row carries, each with the label of
+// its earliest row (`createdAt`, then game): a Tag no game carries has no row left. Rows go with their game.
+export const gameTags = pgTable('game_tags', {
+  gameId: uuid('game_id').notNull().references(() => games.id, { onDelete: 'cascade' }),
+  key: text('key').notNull(),
+  label: text('label').notNull(),
+  position: integer('position').notNull(),
+  createdAt: createdAt(),
+}, table => [
+  primaryKey({ columns: [table.gameId, table.key] }),
+  check('game_tags_position_check', sql`${table.position} >= 0`),
+  // Lookups by key: the label a new row takes and the Tags in use (#335). The primary key serves lookups by game.
+  index('game_tags_key_idx').on(table.key),
 ])
 
 export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)

@@ -14,7 +14,7 @@ import { memberView, SANNE, view } from './event-page'
 
 const STOP = Date.parse('2090-10-30T20:00:10.000Z')
 const iso = (ms: number) => new Date(ms).toISOString()
-const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
 const members = [
   memberView({ id: SANNE, name: 'Sanne', isHost: true, zone: 'team', team: 1 }),
@@ -86,10 +86,11 @@ describe('StageWheel', () => {
     expect(text()).not.toContain('???')
   })
 
-  it('shows a Member the count and ??? under a Hidden wheel, where the server sends no games', async () => {
+  it('shows a Member the placeholders and ??? under a Hidden wheel, where the server sends no games, and the count in the accessible name (#354)', async () => {
     await mount(viewOf({ ...wheelOf(false), slices: null }, { hiddenWheel: true }))
 
-    expect(text()).toContain('3 Spiele auf dem Rad')
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 3 Spielen')
+    expect(text()).not.toContain('auf dem Rad')
     expect(text()).not.toContain('Halo')
     expect(text().match(/\?\?\?/g)).toHaveLength(3)
   })

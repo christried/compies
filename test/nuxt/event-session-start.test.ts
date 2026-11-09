@@ -102,7 +102,7 @@ describe('the Host dock per state', () => {
 
     expect(pill(page)).toEqual(['Rad drehen', 'Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
     const menu = await openHostMenu(page)
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Rad drehen', 'Nächstes Spiel setzen', 'Bonus-Veto geben', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Rad drehen', 'Nächstes Spiel setzen', 'Bonus-Veto geben', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen', 'Event löschen Geht erst, wenn keine Session läuft.'])
   })
 
   it('offers Session 2 starten between Sessions', async () => {
@@ -137,7 +137,7 @@ describe('the Host dock per state', () => {
 
     const menu = await openHostMenu(page)
 
-    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Nächstes Spiel setzen', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen'])
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())).toEqual(['Nächstes Spiel setzen', 'Münzwurf', 'Countdown', 'Einladen', 'Einstellungen', 'Event löschen Geht erst, wenn keine Session läuft.'])
   })
 })
 

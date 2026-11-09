@@ -89,7 +89,7 @@ A short free text a Member adds to their Vote, such as a time limit or a counter
 _Avoid_: Comment, remark, reason
 
 **Has voted**:
-A Member has voted once they have a Vote on every open Slot that still lies in the future; Slots that have passed or became a Date do not count, and with no such Slot left nobody has voted.
+A Member has voted once they have a Vote on every open Slot that still lies in the future; Slots that have passed or became a Date do not count, and with no such Slot left nobody has voted (UI: „haben vollständig abgestimmt“).
 _Avoid_: Done, complete, responded
 
 **Best slot**:
@@ -189,7 +189,7 @@ One try at a Round's game: a spin of the Lucky Wheel or a game the Host sets. It
 _Avoid_: Spin (a spin is only one kind of Draw), pick, roll
 
 **Veto window**:
-The 60 seconds after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster).
+The 60 seconds after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster). A Veto belongs to its Party: a Party's Players see that their Party has cast, never which of them did, and only the database keeps who cast it.
 _Avoid_: Veto round, voting time, grace period
 
 **Clip**:

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Lock, Plus } from '@lucide/vue'
+import { teamVar } from '~/utils/team-style'
 
 // One team on the Game board (#160, 02-components § TeamZone, App Lobby screen 09): one header band in the team's
 // colour and pattern with its mark, its name (a TeamChip, #161) and the count (with a lock once the name is frozen, #164); under it the `builder` slot (the Team
@@ -42,7 +43,7 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
     <!-- The pattern is the colour's second signal; the TeamChip puts the name on a solid chip of the colour, never on the pattern. -->
     <header
       class="flex items-center gap-2 rounded-t-[11px] border-b-2 border-line px-2 py-1.5 md:px-3 md:py-2"
-      :style="{ backgroundColor: `var(--cp-team-${team})`, backgroundImage: `var(--cp-team-${team}-pattern)`, backgroundSize: '16px 16px' }"
+      :style="{ backgroundColor: teamVar(team), backgroundImage: teamVar(team, 'pattern'), backgroundSize: '16px 16px' }"
     >
       <slot name="header">
         <!-- A level 3 heading, as the Bench and the Stands have, so the teams stay in heading navigation. -->

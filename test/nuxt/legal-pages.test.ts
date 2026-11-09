@@ -70,8 +70,8 @@ describe('legal pages', () => {
     expect(retention).toBeDefined()
     expect(events!.text()).toContain('Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat.')
     expect(events!.text()).toContain('Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat.')
-    expect(events!.text()).toContain('und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, wer ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.')
-    expect(events!.text()).toContain('das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Wer ein Veto eingelegt hat, sieht bis zum Aufdecken nur das eigene Team.')
+    expect(events!.text()).toContain('und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, welches Team ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.')
+    expect(events!.text()).toContain('das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Dass ein Team ein Veto eingelegt hat, sieht bis zum Aufdecken nur dieses Team; welcher Spieler es war, erfährt niemand.')
     expect(retention!.text()).toContain('Plätze, Teamwörter, eingefrorene Teamnamen, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht.')
     expect(page.get('main').text()).not.toContain('Tiebreaker')
   })
@@ -81,7 +81,19 @@ describe('legal pages', () => {
     const events = page.findAll('section').find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
 
     expect(events!.text()).toContain('Ist ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.')
-    expect(page.get('main').text()).toContain('Stand: 8. November 2026.')
+  })
+
+  it('say what deleting an Event means: unreachable for every Member at once, data kept until removed on request, no automatic purge, and the new Stand (#334, spec #332)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const sections = page.findAll('section')
+    const events = sections.find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
+    const retention = sections.find(s => s.get('h2').text() === '16. Speicherdauer')
+
+    expect(events!.text()).toContain('Der Host kann ein Event jederzeit löschen, nur nicht, solange eine Session läuft. Ein gelöschtes Event ist für alle Mitglieder sofort nicht mehr erreichbar: nicht auf der Startseite, nicht über den Link zum Event und nicht über den Einladungslink. Dort steht dann nur, dass das Event gelöscht wurde.')
+    expect(retention!.text()).toContain('Die Daten eines gelöschten Events bleiben zunächst gespeichert, als gelöscht markiert, aber in Compies für niemanden mehr abrufbar. Auf Anfrage an die unter Abschnitt 1 genannte Adresse entfernen wir sie aus der Datenbank. Eine automatische Löschung gibt es nicht.')
+    expect(retention!.text()).toContain('bleiben gespeichert, solange das Event besteht.')
+    expect(page.get('main').text()).toContain('Stand: 9. November 2026.')
+    expect(page.get('main').text()).not.toContain('Stand: 8. November 2026.')
   })
 
   it('name the live connection to Cloudflare Workers, since the browser connects there itself (#156)', async () => {

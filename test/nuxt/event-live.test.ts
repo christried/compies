@@ -1,4 +1,5 @@
 import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { createError } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { RETURN_DEDUPE_MS } from '~/composables/usePollRefresh'
@@ -103,6 +104,33 @@ describe('the live Event page', () => {
 
     await vi.waitFor(() => expect(served.reads).toBe(before + 1))
     await vi.waitFor(() => expect(page.text()).toContain('Samstags-Zocken'))
+  })
+
+  // The Host deletes the Event while a Member has it open (#333): the room's event.changed refetches, the read answers 410, and the page shows
+  // „Event gelöscht“ in place of the Event, with the phone's TabBar gone.
+  it('shows Event gelöscht on a Member\'s open phone page once the room says it changed and the read answers 410 (#333)', async () => {
+    stubScreen(false)
+    const slug = 'live-deleted'
+    const served = { gone: false }
+    registerEndpoint(`/api/e/${slug}`, {
+      method: 'GET',
+      handler: () => {
+        if (served.gone) throw createError({ statusCode: 410, statusMessage: 'Event deleted' })
+        return { ...view(slug, []), event: { slug, name: 'Freitags-Zocken', phase: 'poll', isHost: false } }
+      },
+    })
+    registerEndpoint(`/api/e/${slug}/activity`, { method: 'GET', handler: () => ({ entries: [], next: null }) })
+    registerEndpoint(`/api/e/${slug}/room`, { method: 'POST', handler: () => ({ url: 'https://rt.test', room: `event-id-${slug}`, token: 'token' }) })
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    mounted.push(page)
+    await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
+    expect(page.find('nav[aria-label="Event"]').exists()).toBe(true)
+
+    served.gone = true
+    sendMessage('event.changed')
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Event gelöscht'))
+    expect(page.find('nav[aria-label="Event"]').exists()).toBe(false)
   })
 
   it('shows an Activity feed entry the room sends in the side panel under „Aktivität“, on the same socket', async () => {

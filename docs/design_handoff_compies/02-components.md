@@ -190,6 +190,7 @@ Big choice cards (format, mode, points preset, date mode).
 - **Desktop / mobile:** Desktop 2 columns + InfoSheet on the right; mobile 1 column, info via button → bottom sheet.
 - **Accessibility:** `role="radiogroup"`; roving tabindex; arrows move, Space selects.
 - **Motion:** selection lift `dur-base ease-out`.
+- **As built (#350):** a planned option has no chip: „Bald verfügbar“ is a bold 13 px line with the lock under the title, in the card's muted ink (the user's call, 2026-11-09: fewer pills outside status displays). The shared note under the group stays dropped (#174).
 
 ## SegmentedControl
 **Scope:** [MVP] · **Ref:** M2, DS Basics

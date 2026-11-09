@@ -20,7 +20,18 @@ const saved: GameView = {
   createdAt: '2026-10-28T10:00:00.000Z',
   canEdit: true,
   notes: null,
+  tags: [],
+  price: null,
 }
+
+// The Tags in use feed the suggestions of the Tag field (#335).
+registerEndpoint('/api/games', {
+  method: 'GET',
+  handler: () => ({
+    games: [],
+    tagsInUse: [{ key: 'co-op', label: 'Co-op' }, { key: 'coop-klassiker', label: 'Coop-Klassiker' }, { key: 'retro', label: 'Retro' }],
+  }),
+})
 
 // One endpoint for the file; each test sets whether it fails and sees what was posted.
 const posted = vi.fn()
@@ -35,12 +46,14 @@ registerEndpoint('/api/games', {
   },
 })
 // Edit mode (#142): the game answers with what was sent, as the server would store it.
+// The Price the PATCH answers with (#337): a test sets it to what the server would stamp.
+let patchPrice: GameView['price'] = null
 registerEndpoint(`/api/games/${saved.id}`, {
   method: 'PATCH',
   handler: async (event) => {
     const body = await readBody(event)
     patchedWith(body)
-    return { ...saved, name: body.name, playersMin: body.playersMin, playersMax: body.playersMax, suitabilities: body.suitabilities }
+    return { ...saved, name: body.name, playersMin: body.playersMin, playersMax: body.playersMax, suitabilities: body.suitabilities, tags: body.tags, price: patchPrice }
   },
 })
 
@@ -188,7 +201,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
-    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: '' })
+    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null })
   })
 
   it('saves a game without a link and without a clip', async () => {
@@ -198,7 +211,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(posted).toHaveBeenCalled())
-    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: '' })
+    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null })
   })
 
   describe('player count and Suitabilities (#142, #171)', () => {
@@ -390,6 +403,305 @@ describe('the game form', () => {
     })
   })
 
+  describe('Tags (#335)', () => {
+    const flag = '\u{1F1E9}\u{1F1EA}'
+
+    function tagsField(page: Page) {
+      return field(page, 'Tags')
+    }
+
+    /** The chips, by the accessible name of their remove button. */
+    function chips(page: Page) {
+      return page.findAll('button')
+        .map(button => /^Tag „(.*)“ entfernen$/.exec(button.attributes('aria-label') ?? '')?.[1])
+        .filter((label): label is string => label !== undefined)
+    }
+
+    function removeButton(page: Page, label: string) {
+      return page.get(`button[aria-label="Tag „${label}“ entfernen"]`)
+    }
+
+    function options(page: Page) {
+      return page.findAll('[role="listbox"] [role="option"]').map(option => option.text())
+    }
+
+    async function type(page: Page, text: string) {
+      await tagsField(page).setValue(text)
+    }
+
+    async function enter(page: Page) {
+      await tagsField(page).trigger('keydown', { key: 'Enter' })
+    }
+
+    async function addTag(page: Page, text: string) {
+      await type(page, text)
+      await enter(page)
+    }
+
+    /** The suggestions come from the library list, which loads after the form mounts. */
+    async function withSuggestions(page: Page, text: string) {
+      await type(page, text)
+      await vi.waitFor(() => expect(page.find('[role="listbox"]').exists()).toBe(true))
+    }
+
+    it('puts the field „Tags“ after „Passt zu“ and before „Notizen“', async () => {
+      const page = await mountSuspended(GameForm)
+
+      const teams = page.findAll('button').find(button => button.text() === 'Teams')!.element
+      const tags = tagsField(page).element
+      const notes = field(page, 'Notizen').element
+      expect(teams.compareDocumentPosition(tags) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(tags.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(page.text()).toContain('Enter oder Komma fügt einen Tag hinzu.')
+    })
+
+    it('adds a chip with Enter and empties the field, and Enter does not save the game', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await type(page, 'Party')
+
+      const keydown = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      tagsField(page).element.dispatchEvent(keydown)
+      await nextTick()
+
+      expect(keydown.defaultPrevented).toBe(true)
+      expect(chips(page)).toEqual(['Party'])
+      expect((tagsField(page).element as HTMLInputElement).value).toBe('')
+      expect(posted).not.toHaveBeenCalled()
+    })
+
+    it('does not treat Enter during an IME composition as a confirmation', async () => {
+      const page = await mountSuspended(GameForm)
+      await type(page, 'Party')
+
+      await tagsField(page).trigger('keydown', { key: 'Enter', isComposing: true })
+
+      expect(chips(page)).toEqual([])
+    })
+
+    it('adds a chip at a comma, and keeps the text after the last comma', async () => {
+      const page = await mountSuspended(GameForm)
+
+      await type(page, 'Party,')
+      expect(chips(page)).toEqual(['Party'])
+      expect((tagsField(page).element as HTMLInputElement).value).toBe('')
+
+      await type(page, 'a, b,c')
+      expect(chips(page)).toEqual(['Party', 'a', 'b'])
+      expect((tagsField(page).element as HTMLInputElement).value).toBe('c')
+    })
+
+    it('removes the last chip with Backspace on an empty field, and only edits the text otherwise', async () => {
+      const page = await mountSuspended(GameForm)
+      await addTag(page, 'Party')
+      await addTag(page, 'Retro')
+
+      await type(page, 'Co')
+      await tagsField(page).trigger('keydown', { key: 'Backspace' })
+      expect(chips(page)).toEqual(['Party', 'Retro'])
+
+      await type(page, '')
+      await tagsField(page).trigger('keydown', { key: 'Backspace' })
+      expect(chips(page)).toEqual(['Party'])
+    })
+
+    it('removes the chip whose button is named for it', async () => {
+      const page = await mountSuspended(GameForm)
+      await addTag(page, 'Party')
+      await addTag(page, 'Retro')
+
+      await removeButton(page, 'Party').trigger('click')
+
+      expect(chips(page)).toEqual(['Retro'])
+    })
+
+    it('adds nothing for whitespace, and no second chip for another spelling of a chip', async () => {
+      const page = await mountSuspended(GameForm)
+
+      await addTag(page, '   ')
+      expect(chips(page)).toEqual([])
+      expect(page.text()).not.toContain('Höchstens')
+
+      await addTag(page, 'Party')
+      await addTag(page, 'party')
+      expect(chips(page)).toEqual(['Party'])
+      expect((tagsField(page).element as HTMLInputElement).value).toBe('')
+    })
+
+    describe('suggestions', () => {
+      it('lists the Tags in use that contain the text, in a listbox, and not the others', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await withSuggestions(page, 'co')
+
+        expect(options(page)).toEqual(['Co-op', 'Coop-Klassiker'])
+        expect(page.get('[role="listbox"]').attributes('aria-label')).toBe('Vorschläge')
+        expect(tagsField(page).attributes('role')).toBe('combobox')
+      })
+
+      it('puts prefix matches before the others', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await withSuggestions(page, 'op')
+
+        expect(options(page)).toEqual(['Co-op', 'Coop-Klassiker'])
+        // „r“ starts Retro and sits inside Coop-Klassiker: the prefix match comes first although it is last in the list.
+        await type(page, 'r')
+        expect(options(page)).toEqual(['Retro', 'Coop-Klassiker'])
+      })
+
+      it('moves through them with the arrow keys and adds the active one with Enter', async () => {
+        const page = await mountSuspended(GameForm)
+        await withSuggestions(page, 'co')
+
+        await tagsField(page).trigger('keydown', { key: 'ArrowDown' })
+        await tagsField(page).trigger('keydown', { key: 'ArrowDown' })
+        expect(page.findAll('[role="option"]')[1]!.attributes('aria-selected')).toBe('true')
+        await enter(page)
+
+        expect(chips(page)).toEqual(['Coop-Klassiker'])
+        expect((tagsField(page).element as HTMLInputElement).value).toBe('')
+      })
+
+      it('wraps around at both ends', async () => {
+        const page = await mountSuspended(GameForm)
+        await withSuggestions(page, 'co')
+
+        await tagsField(page).trigger('keydown', { key: 'ArrowUp' })
+        expect(page.findAll('[role="option"]')[1]!.attributes('aria-selected')).toBe('true')
+        await tagsField(page).trigger('keydown', { key: 'ArrowDown' })
+        expect(page.findAll('[role="option"]')[0]!.attributes('aria-selected')).toBe('true')
+      })
+
+      it('adds the option that is clicked', async () => {
+        const page = await mountSuspended(GameForm)
+        await withSuggestions(page, 'co')
+
+        await page.findAll('[role="option"]')[0]!.trigger('click')
+
+        expect(chips(page)).toEqual(['Co-op'])
+      })
+
+      it('closes with Escape and keeps the text', async () => {
+        const page = await mountSuspended(GameForm)
+        await withSuggestions(page, 'co')
+
+        await tagsField(page).trigger('keydown', { key: 'Escape' })
+
+        expect(page.find('[role="listbox"]').exists()).toBe(false)
+        expect((tagsField(page).element as HTMLInputElement).value).toBe('co')
+      })
+
+      it('does not offer a Tag that is already a chip', async () => {
+        const page = await mountSuspended(GameForm)
+        await withSuggestions(page, 'co')
+        await page.findAll('[role="option"]')[0]!.trigger('click')
+
+        await type(page, 'co')
+
+        expect(options(page)).toEqual(['Coop-Klassiker'])
+      })
+
+      it('shows a Tag typed in capitals under the spelling in use', async () => {
+        const page = await mountSuspended(GameForm)
+        await withSuggestions(page, 'CO-OP')
+
+        await enter(page)
+
+        expect(chips(page)).toEqual(['Co-op'])
+      })
+
+      it('shows no list for text that matches nothing', async () => {
+        const page = await mountSuspended(GameForm)
+        await withSuggestions(page, 'co')
+
+        await type(page, 'zzz')
+
+        expect(page.find('[role="listbox"]').exists()).toBe(false)
+      })
+    })
+
+    describe('limits', () => {
+      it('shows „Höchstens 20 Zeichen“ at once for 21 characters and adds nothing, and takes 20 flags', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await type(page, 'x'.repeat(21))
+        expect(page.text()).toContain('Höchstens 20 Zeichen')
+        expect(tagsField(page).attributes('aria-invalid')).toBe('true')
+        await enter(page)
+        expect(chips(page)).toEqual([])
+
+        await type(page, flag.repeat(20))
+        expect(page.text()).not.toContain('Höchstens 20 Zeichen')
+        await enter(page)
+        expect(chips(page)).toEqual([flag.repeat(20)])
+      })
+
+      it('refuses a ninth Tag with „Höchstens 8 Tags“ and clears the message when a chip is removed', async () => {
+        const page = await mountSuspended(GameForm)
+        for (const name of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) await addTag(page, name)
+
+        await addTag(page, 'i')
+
+        expect(chips(page)).toHaveLength(8)
+        expect(page.text()).toContain('Höchstens 8 Tags')
+        expect((tagsField(page).element as HTMLInputElement).value).toBe('i')
+
+        await removeButton(page, 'a').trigger('click')
+
+        expect(page.text()).not.toContain('Höchstens 8 Tags')
+        expect(chips(page)).toHaveLength(7)
+      })
+    })
+
+    describe('saving', () => {
+      it('posts the Tags as labels in chip order', async () => {
+        const page = await mountSuspended(GameForm)
+        await field(page, 'Name').setValue('Mario Kart')
+        await addTag(page, 'Retro')
+        await addTag(page, 'Co-op')
+
+        await page.get('form').trigger('submit')
+
+        await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ tags: ['Retro', 'Co-op'] })))
+      })
+
+      it('sends a Tag that was typed and not confirmed', async () => {
+        const page = await mountSuspended(GameForm)
+        await field(page, 'Name').setValue('Mario Kart')
+        await addTag(page, 'Retro')
+        await type(page, 'Party')
+
+        await page.get('form').trigger('submit')
+
+        await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ tags: ['Retro', 'Party'] })))
+      })
+
+      it('does not save while the typed Tag is too long', async () => {
+        const page = await mountSuspended(GameForm)
+        await field(page, 'Name').setValue('Mario Kart')
+        await type(page, 'x'.repeat(21))
+
+        await page.get('form').trigger('submit')
+
+        expect(posted).not.toHaveBeenCalled()
+        expect(page.text()).toContain('Höchstens 20 Zeichen')
+      })
+
+      it('prefills the chips of the game when editing, and PATCHes them', async () => {
+        patchedWith.mockClear()
+        const existing: GameView = { ...saved, tags: [{ key: 'co-op', label: 'Co-op' }, { key: 'retro', label: 'Retro' }] }
+        const page = await mountSuspended(GameForm, { props: { game: existing } })
+        expect(chips(page)).toEqual(['Co-op', 'Retro'])
+
+        await removeButton(page, 'Co-op').trigger('click')
+        await page.get('form').trigger('submit')
+
+        await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ tags: ['Retro'] })))
+      })
+    })
+  })
+
   describe('edit mode (#142)', () => {
     const existing: GameView = {
       ...saved,
@@ -414,6 +726,238 @@ describe('the game form', () => {
       await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[{ ...existing, name: 'Counter-Strike 2' }]]))
       expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2', playersMin: 2, playersMax: 10, suitabilities: ['teams'] }))
       expect(posted).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Price (#337)', () => {
+    const checkedAt = '2026-11-03T10:00:00.000Z'
+    const stored: GameView = { ...saved, price: { cents: 1999, source: 'steam', checkedAt } }
+
+    beforeEach(() => {
+      patchPrice = null
+      patchedWith.mockClear()
+    })
+
+    function priceGroup(page: Page) {
+      const group = page.findAll('fieldset').find(set => set.find('legend').exists() && set.find('legend').text() === 'Preis')
+      if (!group) throw new Error('no group „Preis“')
+      return group
+    }
+
+    function amount(page: Page) {
+      return field(page, 'Betrag in €')
+    }
+
+    function source(page: Page) {
+      return field(page, 'Wo gibt’s das Spiel?')
+    }
+
+    function confirmButton(page: Page) {
+      return page.findAll('button').find(button => button.text() === 'Preis stimmt noch')
+    }
+
+    function removeButton(page: Page) {
+      return page.findAll('button').find(button => button.text() === 'Preis entfernen')
+    }
+
+    const RANGE = 'Zwischen 0,01 € und 999,99 €'
+
+    it('puts the group „Preis“ after the „Tags“ field and before „Notizen“', async () => {
+      const page = await mountSuspended(GameForm)
+
+      const group = priceGroup(page).element
+      const tags = field(page, 'Tags').element
+      const notes = field(page, 'Notizen').element
+      expect(tags.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(group.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('posts an amount with its source in cents', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue('19,99')
+      await source(page).setValue('steam')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: 1999, source: 'steam' } })))
+    })
+
+    it.each([['19.99', 1999], ['20', 2000]])('reads the amount „%s“ as %i cents', async (text, cents) => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue(text)
+      await source(page).setValue('gog')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents, source: 'gog' } })))
+    })
+
+    it('posts no Price when neither the amount nor the source is filled', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: null })))
+    })
+
+    it('refuses an amount without a source, sends nothing, and clears the message once a source is chosen', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue('19,99')
+
+      await page.get('form').trigger('submit')
+
+      expect(page.text()).toContain('Bitte eine Quelle wählen')
+      expect(posted).not.toHaveBeenCalled()
+
+      await source(page).setValue('steam')
+
+      expect(page.text()).not.toContain('Bitte eine Quelle wählen')
+    })
+
+    it.each(['0', '1000', 'abc'])('shows the range at once for the amount „%s“ and posts nothing', async (text) => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await source(page).setValue('steam')
+
+      await amount(page).setValue(text)
+
+      expect(page.text()).toContain(RANGE)
+      expect(amount(page).attributes('aria-invalid')).toBe('true')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      await page.get('form').trigger('submit')
+      expect(posted).not.toHaveBeenCalled()
+    })
+
+    it('asks for the amount of a paid source only after a save attempt', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await source(page).setValue('epic')
+      expect(page.text()).not.toContain(RANGE)
+
+      await page.get('form').trigger('submit')
+
+      expect(page.text()).toContain(RANGE)
+      expect(posted).not.toHaveBeenCalled()
+    })
+
+    it('disables and empties the amount for Free-to-play and posts the source without an amount', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue('19,99')
+
+      await source(page).setValue('free_to_play')
+
+      expect((amount(page).element as HTMLInputElement).disabled).toBe(true)
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: null, source: 'free_to_play' } })))
+    })
+
+    it('disables and empties the amount for Abo and posts the source without an amount', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await amount(page).setValue('5')
+
+      await source(page).setValue('subscription')
+
+      expect((amount(page).element as HTMLInputElement).disabled).toBe(true)
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: null, source: 'subscription' } })))
+    })
+
+    it('enables the amount again when a paid source is chosen, still empty', async () => {
+      const page = await mountSuspended(GameForm)
+      await source(page).setValue('free_to_play')
+
+      await source(page).setValue('steam')
+
+      expect((amount(page).element as HTMLInputElement).disabled).toBe(false)
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+    })
+
+    it('prefills the amount and the source of a game with a Price, and saves them with PATCH', async () => {
+      const page = await mountSuspended(GameForm, { props: { game: stored } })
+
+      expect((amount(page).element as HTMLInputElement).value).toBe('19,99')
+      expect((source(page).element as HTMLSelectElement).value).toBe('steam')
+      expect(page.text()).toContain('Stand: 3. November 2026')
+      expect(confirmButton(page)).toBeDefined()
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ price: { cents: 1999, source: 'steam' } })))
+    })
+
+    it('shows the amount of a stored Free-to-play game disabled and empty', async () => {
+      const free: GameView = { ...saved, price: { cents: null, source: 'free_to_play', checkedAt } }
+
+      const page = await mountSuspended(GameForm, { props: { game: free } })
+
+      expect((source(page).element as HTMLSelectElement).value).toBe('free_to_play')
+      expect((amount(page).element as HTMLInputElement).disabled).toBe(true)
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+    })
+
+    it('has neither the line nor „Preis stimmt noch“ in create mode or for a game without a Price', async () => {
+      const create = await mountSuspended(GameForm)
+      expect(create.text()).not.toContain('Stand:')
+      expect(confirmButton(create)).toBeUndefined()
+
+      const plain = await mountSuspended(GameForm, { props: { game: saved } })
+      expect(plain.text()).not.toContain('Stand:')
+      expect(confirmButton(plain)).toBeUndefined()
+    })
+
+    it('„Preis stimmt noch“ sends the stored game and the flag only, and moves the day without saving', async () => {
+      patchPrice = { cents: 1999, source: 'steam', checkedAt: '2026-11-09T08:00:00.000Z' }
+      const page = await mountSuspended(GameForm, { props: { game: stored } })
+      await field(page, 'Name').setValue('Umbenannt')
+
+      await confirmButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(page.text()).toContain('Stand: 9. November 2026'))
+      expect(patchedWith).toHaveBeenCalledTimes(1)
+      const body = patchedWith.mock.lastCall![0]
+      expect(body).toEqual({
+        name: 'Mario Kart',
+        youtubeUrl: LINK,
+        clipStart: 72,
+        clipLength: 30,
+        playersMin: null,
+        playersMax: null,
+        suitabilities: [],
+        notes: null,
+        priceChecked: true,
+      })
+      expect(body).not.toHaveProperty('tags')
+      expect(body).not.toHaveProperty('price')
+      expect(page.emitted('saved')).toBeUndefined()
+      expect(useState<{ text: string }[]>('toasts').value.map(item => item.text)).toContain('Preis bestätigt')
+    })
+
+    it('removes the Price on a click: both fields empty, and the next save sends null in edit mode', async () => {
+      const page = await mountSuspended(GameForm, { props: { game: stored } })
+
+      await removeButton(page)!.trigger('click')
+
+      expect((amount(page).element as HTMLInputElement).value).toBe('')
+      expect((source(page).element as HTMLSelectElement).value).toBe('')
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ price: null })))
+    })
+
+    it('shows „Preis entfernen“ only once something is typed or chosen', async () => {
+      const page = await mountSuspended(GameForm)
+      expect(removeButton(page)).toBeUndefined()
+
+      await amount(page).setValue('2')
+
+      expect(removeButton(page)).toBeDefined()
     })
   })
 

@@ -61,7 +61,6 @@ const datesLine = computed(() => (poll.value
         v-if="created"
         class="mx-auto flex w-full max-w-[900px] flex-col gap-3.5"
       >
-        <span class="text-small font-bold text-ink-2">{{ t('stepper.done.kicker') }}</span>
         <section class="flex flex-col gap-5 rounded-xl border-3 border-line bg-primary p-5 text-on-primary shadow-card md:flex-row md:items-center">
           <Compibert
             variant="bust"

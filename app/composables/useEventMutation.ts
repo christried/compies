@@ -30,13 +30,13 @@ export function useEventMutation(slug: MaybeRefOrGetter<string>, refresh: () => 
   const { t } = useI18n()
   const { toast } = useToast()
 
-  /** Sends one change to `/api/e/<slug>/<path>` and resolves to whether the server took it. Never throws. */
+  /** Sends one change to `/api/e/<slug>/<path>` and resolves to whether the server took it. Never throws. `''` is the Event itself, `/api/e/<slug>` (#333). */
   async function send<Answer = unknown>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, options: SendOptions<Answer> = {}) {
     const { body, busy, errorKeys, done, fallback = 'error.saveFailed', quiet, refused, refusalText } = options
     if (busy) busy.value = true
     let taken = false
     try {
-      const answer = await $fetch<Answer>(`/api/e/${toValue(slug)}/${path}`, { method, body })
+      const answer = await $fetch<Answer>(path === '' ? `/api/e/${toValue(slug)}` : `/api/e/${toValue(slug)}/${path}`, { method, body })
       taken = true
       // Nitro wraps `$fetch<Answer>`'s result in a conditional type that TypeScript cannot resolve for a generic Answer.
       done?.(answer as Answer)

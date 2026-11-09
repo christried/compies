@@ -68,6 +68,8 @@ describe('apiErrorKey', () => {
   it('explains the player count, the Formats and the edit refusal (#142)', () => {
     expect(apiErrorKey(refusal(400, 'invalid_players'))).toBe('error.playersInvalid')
     expect(apiErrorKey(refusal(400, 'invalid_suitabilities'))).toBe('error.suitabilitiesInvalid')
+    expect(apiErrorKey(refusal(400, 'invalid_tags'))).toBe('error.tagsInvalid')
+    expect(apiErrorKey(refusal(400, 'invalid_price'))).toBe('error.priceInvalid')
     expect(apiErrorKey(refusal(403, 'not_game_editor'))).toBe('error.notGameEditor')
   })
 

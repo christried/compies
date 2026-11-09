@@ -13,7 +13,7 @@ import { restoreScreen, stubScreen } from './event-page'
 const START = Date.UTC(2090, 10, 7, 20, 0, 0)
 const iso = (ms: number) => new Date(ms).toISOString()
 
-const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [] }
+const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const kart: RoundGame = { ...halo, id: 'g-kart', name: 'Kart', youtubeId: null }
 const clipOf = (game: RoundGame = halo): ClipView => ({ drawId: 'd1', startAt: iso(START), endsAt: iso(START + game.clipLength * 1000), game })
 
@@ -298,6 +298,39 @@ describe('the Host\'s skip', () => {
 
     expect(text()).not.toContain('Clip überspringen')
   })
+
+  it('shows a Member no status over or under the video (#356)', async () => {
+    await mount(clipOf(), { isHost: false })
+
+    expect(text()).not.toContain('läuft für alle')
+    expect(page!.element.querySelector('.animate-live')).toBeNull()
+    expect(page!.element.querySelector('[role="progressbar"]')).not.toBeNull()
+  })
+
+  it('puts the Host\'s status in the footer next to „Clip überspringen“, as a dot and text, no pill (#356)', async () => {
+    await mount(clipOf(), { isHost: true })
+
+    const status = [...page!.element.querySelectorAll('span')].find(span => span.textContent?.trim() === 'läuft für alle')!
+    const skipButton = buttons().find(button => button.name === 'Clip überspringen')!.element
+    expect(status).toBeDefined()
+    expect(status.parentElement!.contains(skipButton)).toBe(true)
+    expect(status.nextElementSibling).toBe(skipButton)
+    const dot = status.firstElementChild!
+    expect(dot.classList).toContain('size-2')
+    expect(dot.classList).toContain('rounded-full')
+    expect(dot.classList).toContain('animate-live')
+    expect(dot.getAttribute('aria-hidden')).toBe('true')
+    expect(status.classList).not.toContain('border')
+    expect(status.classList).not.toContain('rounded-pill')
+    expect(page!.element.querySelector('.aspect-video')!.contains(status)).toBe(false)
+  })
+
+  it('shows the Host\'s status in the footer for a game without a video too, not over the card (#356)', async () => {
+    await mount(clipOf(kart), { isHost: true })
+
+    expect(text()).toContain('läuft für alle')
+    expect(page!.element.querySelector('.aspect-video')!.textContent).not.toContain('läuft für alle')
+  })
 })
 
 describe('a game without a video', () => {
@@ -343,7 +376,7 @@ describe('how it opens and closes (04-motion § Clip overlay)', () => {
 
 describe('the motion of the running clip', () => {
   it('eases the bar over one tick, and pulses the LIVE dot through a calm twin of its own', async () => {
-    await mount(clipOf())
+    await mount(clipOf(), { isHost: true })
     await ready()
 
     const bar: HTMLElement = page!.element.querySelector('[role="progressbar"] > span')!

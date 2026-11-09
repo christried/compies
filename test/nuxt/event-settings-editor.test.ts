@@ -27,7 +27,7 @@ const SIX = '00000000-0000-4000-8000-000000000006'
 const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => memberView({ id, name: id.slice(-4), zone, team })
 
 function poolGame(n: number, name: string): PoolGame {
-  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null }
+  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null }
 }
 
 // The library the pool steps pick from.
@@ -36,7 +36,7 @@ registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => {
     listed()
-    return { games: [kart, pong].map(game => ({ ...game, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true })) }
+    return { games: [kart, pong].map(game => ({ ...game, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true })), tagsInUse: [] }
   },
 })
 
