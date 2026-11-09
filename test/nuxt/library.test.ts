@@ -1,7 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import DetailPage from '~/pages/bibliothek/[id]/index.vue'
 import EditPage from '~/pages/bibliothek/[id]/bearbeiten.vue'
 import LibraryPage from '~/pages/bibliothek/index.vue'
@@ -711,6 +711,91 @@ describe('Tags on the card and the game page (#335)', () => {
     const plain = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(plain.find('h1').exists()).toBe(true))
     expect(plain.find('ul[aria-label="Tags"]').exists()).toBe(false)
+  })
+})
+
+describe('Price (#337)', () => {
+  beforeEach(async () => {
+    // The day is pinned: „Stand 3. Nov.“ carries the year only when the checked day is not this year (#337).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
+    signInAs(host)
+    await useRouter().push('/bibliothek')
+    listMode = 'ok'
+    list = { games: [] }
+    detail = withClip
+    await clearNuxtData('games')
+    useState('game-library').value = null
+    await clearNuxtData(`game-${withClip.id}`)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const checked = '2026-11-03T10:00:00.000Z'
+  const steam = { cents: 1999, source: 'steam' as const, checkedAt: checked }
+
+  it('shows the Price line under the name of a card, in the German line', async () => {
+    list = { games: [game({ id: withClip.id, name: 'Counter-Strike 2', price: steam })] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const card = page.get('main li')
+    expect(card.text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+    expect(card.text().indexOf('19,99 € bei Steam')).toBeGreaterThan(card.text().indexOf('Counter-Strike 2'))
+    expect(page.findAll('main li')).toHaveLength(1)
+  })
+
+  it('shows no Price line on a card of a game without a Price', async () => {
+    list = { games: [game({ id: withoutClip.id, name: 'Brettspiel' })] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    expect(page.get('main li').text()).not.toContain('· Stand')
+  })
+
+  it('shows „Free-to-play“ and „Abo“ without an amount, with their day', async () => {
+    list = {
+      games: [
+        game({ id: withClip.id, name: 'Kostenlos', price: { cents: null, source: 'free_to_play', checkedAt: checked } }),
+        game({ id: withoutClip.id, name: 'Abo', price: { cents: null, source: 'subscription', checkedAt: checked } }),
+      ],
+    }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const [free, subscription] = page.findAll('main li')
+    expect(free!.text()).toContain('Free-to-play · Stand 3. Nov.')
+    expect(subscription!.text()).toContain('Abo · Stand 3. Nov.')
+  })
+
+  it('shows the year of a day checked in an earlier year', async () => {
+    list = { games: [game({ id: withClip.id, name: 'Alt', price: { ...steam, checkedAt: '2025-11-03T10:00:00.000Z' } })] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    expect(page.get('main li').text()).toContain('19,99 € bei Steam · Stand 3. Nov. 2025')
+  })
+
+  it('shows the Price as a fact on the game page, and none for a game without a Price', async () => {
+    detail = { ...withClip, price: { cents: 1999, source: 'epic', checkedAt: checked } }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    expect(page.get('h1').text()).toBe('Counter-Strike 2')
+    expect(page.text()).toContain('19,99 € bei Epic Games Store · Stand 3. Nov.')
+
+    await clearNuxtData(`game-${withClip.id}`)
+    detail = withClip
+    const plain = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(plain.find('h1').exists()).toBe(true))
+    expect(plain.text()).not.toContain('· Stand')
   })
 })
 
