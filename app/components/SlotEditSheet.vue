@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
-import { errorCopyKey } from '~/utils/api-error'
+import { reasonKey } from '~/utils/api-error'
 import { formatSlotWhen } from '~/utils/berlin-time'
 import { SLOTS_MAX, slotProblems, type ChangedSlot } from '~~/shared/event'
 import { berlinToUtc, utcToBerlin } from '~~/shared/time'
@@ -58,7 +58,7 @@ function problemText(value: string, changing: string | null = null) {
   if (value === '') return undefined
   const existing = props.slots.filter(slot => slot.id !== changing).map(slot => new Date(slot.startsAt))
   const problem = slotProblems([berlinToUtc(value)], existing, berlinToUtc(now.value))[0]
-  return problem ? t(errorCopyKey(problem)) : undefined
+  return problem ? t(reasonKey(problem)) : undefined
 }
 
 const addProblem = computed(() => problemText(newSlot.value))
@@ -66,12 +66,9 @@ const addBlocked = computed(() => newSlot.value === '' || addProblem.value !== u
 const changeProblem = computed(() => problemText(changedTime.value, changingId.value))
 const changeBlocked = computed(() => changedTime.value === '' || changeProblem.value !== undefined)
 
-/** The editor's own copy for two refusals; the rest is the shared error copy. */
-const errorKeys = { invalid_time: 'mvp.slots.incomplete', wrong_phase: 'mvp.slots.locked' }
-
 function add() {
   if (addBlocked.value || busy.value) return
-  send('POST', 'slots', { body: { startsAt: newSlot.value }, busy, errorKeys, done: () => (newSlot.value = '') })
+  send('POST', 'slots', { body: { startsAt: newSlot.value }, busy, place: 'slotEditor', done: () => (newSlot.value = '') })
 }
 
 function startChange(slot: EditableSlot) {
@@ -83,11 +80,11 @@ function startChange(slot: EditableSlot) {
 function saveChange() {
   if (changeBlocked.value || saving.value) return
   const body = { startsAt: changedTime.value }
-  send<ChangedSlot>('PATCH', `slots/${changingId.value}`, { body, busy: saving, errorKeys, done: () => (changingId.value = null) })
+  send<ChangedSlot>('PATCH', `slots/${changingId.value}`, { body, busy: saving, place: 'slotEditor', done: () => (changingId.value = null) })
 }
 
 function remove(slotId: string) {
-  return send('DELETE', `slots/${slotId}`, { errorKeys })
+  return send('DELETE', `slots/${slotId}`, { place: 'slotEditor' })
 }
 </script>
 
