@@ -5,9 +5,10 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     projects: [
-      // Pure domain rules. App utils import shared code through Nuxt's `~~` alias, so it is set here too.
+      // Pure domain rules. App utils import shared code through Nuxt's `~~` alias and each other through `~`, so both
+      // are set here too (retro 0.10: a `~` import in motion.ts was green on its PR and red on staging, #376).
       {
-        resolve: { alias: { '~~': fileURLToPath(new URL('.', import.meta.url)) } },
+        resolve: { alias: { '~~': fileURLToPath(new URL('.', import.meta.url)), '~': fileURLToPath(new URL('./app', import.meta.url)) } },
         test: { name: 'unit', include: ['test/unit/**/*.test.ts'], environment: 'node' },
       },
       // HTTP handlers against PGlite with the committed migrations applied. The PGlite load in `beforeAll` can pass the

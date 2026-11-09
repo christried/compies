@@ -43,6 +43,11 @@ const LEAD = 1500
 const STOP = LEAD + 6000
 const END = STOP + VETO_WINDOW_MS
 
+/** The Veto read (`wheel.vetoes`, #231) with the defaults a case does not pin: no own part, nothing revealed, the spin's window. A new read field gets its default here, once. */
+function vetoRead({ left, own = null, revealed = null, draw = expect.objectContaining({ kind: 'spin' }) }: { left: number[], own?: object | null, revealed?: object[] | null, draw?: unknown }) {
+  return { left, own, revealed, draw }
+}
+
 describe('Vetoes', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: ReturnType<typeof createTestServer>
@@ -227,7 +232,7 @@ describe('Vetoes', () => {
       const view = await read(party, party.cookies.one)
       expect(view.rounds).toEqual([])
       expect(view.wheel!.vetoes.draw).toMatchObject({ drawId, kind: 'set', stopAt: iso(0), vetoEndsAt: iso(VETO_WINDOW_MS), game: { id: gameId, name: 'Halo', price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } } })
-      expect(view.wheel!.vetoes.own).toEqual({ team: 1, cast: false, rejection: null })
+      expect(view.wheel!.vetoes.own).toMatchObject({ team: 1, cast: false, rejection: null })
       expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
     })
 
@@ -267,7 +272,7 @@ describe('Vetoes', () => {
       expect(view.setGame?.left).not.toContain(gameId)
       expect(view.setGame?.left).toHaveLength(3)
       expect(view.setGame?.respin).toBe(true)
-      expect(view.wheel!.vetoes.revealed).toEqual([{ team: 2 }])
+      expect(view.wheel!.vetoes.revealed).toMatchObject([{ team: 2 }])
 
       const respun = await spin(party)
       expect(respun.status).toBe(200)
@@ -370,7 +375,7 @@ describe('Vetoes', () => {
 
       const other = (await read(party, party.cookies.three)).wheel!.vetoes
       expect(other).toMatchObject({ left: [2, 2], own: { team: 2, cast: false, rejection: null }, revealed: null })
-      expect((await read(party, party.cookies.one)).wheel!.vetoes.own).toEqual({ team: 1, cast: true, rejection: 'veto_already_cast' })
+      expect((await read(party, party.cookies.one)).wheel!.vetoes.own).toMatchObject({ team: 1, cast: true, rejection: 'veto_already_cast' })
 
       clock.advance(VETO_WINDOW_MS)
       expect((await read(party, party.cookies.three)).wheel!.vetoes).toMatchObject({ left: [1, 2], revealed: [{ team: 1 }] })
@@ -692,7 +697,7 @@ describe('Vetoes', () => {
 
         for (const cookie of [party.cookies.one, party.cookies.two]) {
           const { vetoes: veto } = (await read(party, cookie)).wheel!
-          expect(veto).toEqual({ left: [1, 2], own: { team: 1, cast: true, rejection: 'veto_already_cast' }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
+          expect(veto).toEqual(vetoRead({ left: [1, 2], own: { team: 1, cast: true, rejection: 'veto_already_cast' } }))
         }
       })
 
@@ -744,7 +749,7 @@ describe('Vetoes', () => {
 
         for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three, party.cookies.bench, party.cookies.stands]) {
           const veto = (await read(party, cookie)).wheel!.vetoes
-          expect(veto.revealed).toEqual([{ team: 1 }, { team: 2 }])
+          expect(veto.revealed).toMatchObject([{ team: 1 }, { team: 2 }])
           expect(veto.left).toEqual([1, 1])
         }
       })
@@ -809,7 +814,7 @@ describe('Vetoes', () => {
 
         clock.advance(VETO_WINDOW_MS)
 
-        expect((await read(party, party.cookies.three)).wheel!.vetoes).toEqual({ left: [2, 2], own: { team: 2, cast: false, rejection: 'veto_window_closed' }, revealed: [], draw: expect.objectContaining({ kind: 'spin' }) })
+        expect((await read(party, party.cookies.three)).wheel!.vetoes).toEqual(vetoRead({ left: [2, 2], own: { team: 2, cast: false, rejection: 'veto_window_closed' }, revealed: [] }))
       })
     })
 

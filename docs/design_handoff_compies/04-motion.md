@@ -192,7 +192,7 @@ Inline SVG rig (`reference/assets/compibert/compibert-{full,bust,head}.svg`), re
 
 ### Vue API
 ```ts
-<Compibert variant="head|bust|full|emote|tail" :size="120" state="idle" still? accessory="hardhat"? />
+<Compibert variant="head|bust|full|emote|tail" :size="120" state="idle" still? accessory="hardhat" | "partyhat"? />
 const bus = useCompibertBus()   // emit('spin' | 'brake' | 'stop' | 'win' | 'lose' | 'join' | 'emote:clap' | 'load' | 'error' | 'ok' | 'empty' | 'award' | 'boot')
 ```
 Components never set states directly; they emit events. Each `<Compibert>` subscribes to the bus (or gets a local `state` prop for scenes).
@@ -235,8 +235,11 @@ Every part is a `<g>` with `id="compibert-<part>"`, class of the same name and `
 | `compibert-mouth-*` | smile, grin, frown, flat, wobble, o, roar; crossfade 0.1 s |
 | `compibert-fx-*` | z ×3, tear, anger, sweat, question, dots ×3; hidden at rest |
 | `compibert-hat` **[MVP, new]** | hard hat accessory, child of `compibert-head` (moves with it). Art: `assets/baustelle/bauhelm.svg`, placed with `transform="translate(236 6) scale(.95) rotate(-7 80 66)"` in rig units. Shown only when `accessory="hardhat"`. |
+| `compibert-hat` (party hat, #38) | party hat accessory, the same slot as the hard hat (one accessory at a time), child of `compibert-head`. Art: `assets/compibert/partyhut.svg`, placed with `transform="translate(324.4 56) scale(.7) rotate(15 40 86)"` in rig units, the art in an inner `compibert-hat-art` group. Shown only when `accessory="partyhat"`, on the Event page's header head only (05-assets). |
 
 Hierarchy (outer → inner): root › torso › neck › head › (eye-left, brow-left, jaw, fx, hat). Legs, shins, arms, tail-1…3, body, shadow hang off root/torso as in `compibert-full.svg`. Profile face: only `-left` eye parts exist („left“ = screen-left/near side).
+
+**Party hat entrance** (#38): `.compibert-hat-art` in a translate sandwich (`translate(40 86)` around it, `translate(-40 -86)` inside), so its origin is the hat base (hat units `40 86`, the design's `svgOrigin`). Scale 0 → 1 and rotation −12° → 0 from there, `--cp-dur-base` (0.22 s), `--cp-ease-pop`, overshoot allowed (a physical object). It plays only when the hat appears while the page is open (the flag flips false → true); none on load, hydration or a route change, none under reduced motion (the hat is set at once). Built with the Web Animations API in `motion.ts` (`hatPop`), not GSAP: the head crop is a still v-html string (ADR 0015).
 
 ### State table (event → state)
 

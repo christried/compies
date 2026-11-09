@@ -11,6 +11,8 @@ import { fileURLToPath } from 'node:url'
 import { OUT, resize, shot, sleep } from './chrome.mjs'
 
 export const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
+// Staging sits behind Vercel Authentication; its „Protection Bypass for Automation“ secret lets a check in (README § Staging).
+const VERCEL_BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
 
 /** Logs every Element.animate of the page in `window.__animations`: who moved (a person by user id), from what, how. */
 const ANIMATION_SPY = `(() => {
@@ -47,8 +49,24 @@ export async function open(tab, path, width, height, waitFor = 'body', { news = 
     await tab.send('Page.addScriptToEvaluateOnNewDocument', { source: HIDE_DEVTOOLS })
     tab.spying = true
   }
+  if (VERCEL_BYPASS && !tab.bypassed) {
+    // One visit with the bypass query sets Vercel's bypass cookie for this profile; the secret goes to BASE only, never
+    // into a header that every request (a YouTube iframe's too) would carry.
+    await tab.send('Page.navigate', { url: `${BASE}/api/health?x-vercel-protection-bypass=${encodeURIComponent(VERCEL_BYPASS)}&x-vercel-set-bypass-cookie=true` })
+    await loaded(tab)
+    tab.bypassed = true
+  }
   await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}` })
   await hydrated(tab, waitFor)
+}
+
+/** Waits until the document has loaded (a plain page, no Nuxt). */
+async function loaded(tab) {
+  for (let i = 0; i < 40; i++) {
+    await sleep(250)
+    if (await tab.evaluate(`document.readyState === 'complete'`).catch(() => false)) return
+  }
+  throw new Error(`${tab.account}: ${BASE} never loaded`)
 }
 
 /** Waits until Nuxt has hydrated (the dev server takes up to 20 s) and `selector` is on the page. */

@@ -55,6 +55,8 @@ Notes for the stack decision (leave the final call to the Claude Code session):
 | [10-footer-und-anmerkungen.md](10-footer-und-anmerkungen.md) | Page footer, „NEU“ chip, slimmer profile menu, the Note popover/dialog in „Wer kann wann?“ and the Note editor (1.2) |
 | [11-event-seite.md](11-event-seite.md) | The Event page with Game board, Activity feed and Host dock per state, desktop and mobile (1.4); ref `reference/App Event-Seite.dc.html` |
 | [12-siegerehrung-unentschieden.md](12-siegerehrung-unentschieden.md) | The Tie variant of the Award ceremony and the Share image: several Winners, the „gleichauf“ game chip (0.9, #310); ref `reference/Siegerehrung Unentschieden.dc.html` |
+| [13-countdown.md](13-countdown.md) | The Countdown card (0.10, #340): four states, the last ten seconds, the zero burst, Host controls, phone and desktop, reduced motion; § 04-motion addition; ref `reference/Countdown.dc.html` |
+| [14-share-image-redesign.md](14-share-image-redesign.md) | The Share image redesign 1b „Anzeigetafel“ (#357): layout trees for 1200 × 630 and 1080 × 1080, sizes, fonts, hex colours, Winner and Tie states, overflow rules, Satori check; replaces 05-assets § Share image and 12 § ShareImage (tie); ref `reference/ShareImage.dc.html` |
 | `reference/` | The HTML design files, tokens, assets and earlier docs (handoff.md, compibert-handoff.md, Spec Changes.md) |
 | `brief/00-product-brief.md` | The product brief (single source of truth for scope) |
 

@@ -258,6 +258,31 @@ describe('the state of the last ten seconds, keyed to the second (late joiners)'
     expect(tile(three).classes()).toContain('text-error-fg')
   })
 
+  it('lit pips are warning-coloured from 10 to 6 and error-coloured from 5 to 1, running and paused', async () => {
+    for (let s = 10; s >= 1; s--) {
+      const lit = s >= 6 ? 'bg-warning' : 'bg-error'
+      const other = s >= 6 ? 'bg-error' : 'bg-warning'
+      for (const countdown of [runningWith(s * 1000 - 500), pausedAt(s * 1000 - 400)]) {
+        const page = await mount(countdown)
+        const pips = page.findAll('[data-pip]')
+
+        expect(pips.filter((p: { attributes: (name: string) => string | undefined }) => p.attributes('data-lit') === 'true'), `${s} s lit`).toHaveLength(s)
+        for (const pip of pips) {
+          if (pip.attributes('data-lit') === 'true') {
+            expect(pip.classes(), `${s} s lit pip`).toContain(lit)
+            expect(pip.classes(), `${s} s lit pip`).not.toContain(other)
+          }
+          else {
+            expect(pip.classes(), `${s} s unlit pip`).not.toContain('bg-warning')
+            expect(pip.classes(), `${s} s unlit pip`).not.toContain('bg-error')
+            expect(pip.classes(), `${s} s unlit pip`).toContain('border-dashed')
+          }
+        }
+        page.unmount()
+      }
+    }
+  })
+
   it('shows the bar as the share left while running above ten seconds', async () => {
     const page = await mount(runningWith(150_000))
 
@@ -451,6 +476,84 @@ describe('the zero burst (04-motion § Countdown)', () => {
     await page.setProps({ countdown: { durationMs: DURATION, remainingMs: DURATION, startedAt: new Date(serverTime - DURATION - 100).toISOString() } })
 
     expect(burstCalls()).toHaveLength(0)
+  })
+})
+
+describe('the card stays inside the viewport (#379)', () => {
+  // The ghost is the invisible last digit that blows out in the burst (scale 1.315 at rest, 1.644 at its peak): its box is wider than the tile,
+  // and an unclipped box makes the page scroll sideways on a 390 px phone. Its own wrapper clips it, and the stamp (held at scale 2.4 until
+  // its drop) has one too; nothing on the way from the rings or the digits to the card does, because the shock rings radiate past the
+  // tile on purpose.
+  const ghost = (p: Page) => p.get('[data-cd="ghost"]')
+  const card = (p: Page) => p.get('[data-cd="card"]')
+  const stamp = (p: Page) => p.get('[data-cd="stamp"]')
+  const hasOverflowClass = (el: Element) => [...el.classList].some(c => /^(md:)?overflow-/.test(c))
+  /** The element and its ancestors up to and including the card. */
+  function chainToCard(el: Element): Element[] {
+    const chain: Element[] = []
+    for (let node: Element | null = el; node; node = node.parentElement) {
+      chain.push(node)
+      if (node.getAttribute('data-cd') === 'card') break
+    }
+    return chain
+  }
+
+  it('done: the ghost sits in a clipping wrapper inside the tile, and keeps its resting scale', async () => {
+    const page = await mount(DONE)
+    const wrapper = ghost(page).element.parentElement!
+
+    expect(wrapper.classList).toContain('overflow-hidden')
+    expect(wrapper).not.toBe(tile(page).element)
+    expect(wrapper.parentElement).toBe(tile(page).element)
+    expect(wrapper.classList).toContain('pointer-events-none')
+    expect(wrapper.classList).toContain('absolute')
+    expect(wrapper.getAttribute('aria-hidden')).toBe('true')
+    expect((ghost(page).element as HTMLElement).style.transform).toBe('scale(1.315)')
+  })
+
+  it('done: the stamp sits in a wrapper that clips horizontally on phones only, inside the tile, and keeps its own element and classes', async () => {
+    const page = await mount(DONE)
+    const wrapper = stamp(page).element.parentElement!
+
+    expect(wrapper.classList).toContain('max-md:overflow-x-clip')
+    expect(wrapper.classList).not.toContain('overflow-hidden')
+    expect(wrapper).not.toBe(tile(page).element)
+    expect(wrapper.parentElement).toBe(tile(page).element)
+    expect(stamp(page).classes()).toContain('rounded-[8px]')
+    expect(stamp(page).classes()).toContain('whitespace-nowrap')
+    expect((stamp(page).element as HTMLElement).style.transform).toBe('translate(-50%, -50%) rotate(-6deg)')
+  })
+
+  it('done: no element from the rings or the digits up to the card clips its overflow', async () => {
+    const page = await mount(DONE)
+    for (const el of [page.get('[data-cd="ringA"]').element, page.get('[data-cd="ringB"]').element, digits(page).element]) {
+      const chain = chainToCard(el)
+      expect(chain.at(-1)).toBe(card(page).element)
+      expect(chain.some(hasOverflowClass)).toBe(false)
+    }
+  })
+
+  it.each([
+    ['ready', READY],
+    ['running', runningWith(224_600)],
+    ['the last ten', runningWith(7000)],
+    ['paused', pausedAt(130_000)],
+    ['done', DONE],
+  ])('%s: neither the card nor the tile clips, and the ghost exists only in done', async (_state, countdown) => {
+    const page = await mount(countdown)
+
+    expect(hasOverflowClass(card(page).element)).toBe(false)
+    expect(hasOverflowClass(tile(page).element)).toBe(false)
+    expect(page.find('[data-cd="ghost"]').exists()).toBe(countdown === DONE)
+  })
+
+  it('after the burst, the ghost animation still targets the inner ghost, inside its clipping wrapper', async () => {
+    const page = await mount(runningWith(1800))
+    await passTime(1000)
+    await passTime(900)
+
+    expect(burstCalls()[0]!.el).toBe(ghost(page).element)
+    expect(ghost(page).element.parentElement!.classList).toContain('overflow-hidden')
   })
 })
 

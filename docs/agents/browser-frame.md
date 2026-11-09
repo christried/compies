@@ -32,6 +32,6 @@ You are done when every item of the brief has its row, every server and Chrome y
 
 ## The brief
 
-The orchestrator writes it; the frame covers everything above. Each item names the page, the account, the width and theme, what to measure, its pass condition as a number (a motion limit scaled to the distance), and the ticket bullet the condition tests. Items that need data name it: a 60-character game name without spaces, a pool of one game, a Tie.
+The orchestrator writes it; the frame covers everything above. Each item names the page, the account, the width and theme, what to measure, its pass condition as a number (a motion limit scaled to the distance), and the ticket bullet the condition tests. Items that need data name it: a 60-character game name without spaces, a pool of one game, a Tie. A literal in a pass condition (a JSON fragment, a copy string, a count) is copied from the code or the test that pins it, and an item about what a viewer may know quotes the decision or the Datenschutzerklärung sentence with its link: three 0.10 items failed on typed literals (`"cents":1999` against the server's `"cents": 1999`), and one paraphrased a secrecy decision.
 
 A FAIL whose pass condition contradicts a ticket is a question for the orchestrator, never a fix brief: in 0.9 an item asked for no GSAP request under reduced motion, #311 asked for a blink there, and a fix agent removed the blink to pass the item, which cost a round to revert.

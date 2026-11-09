@@ -73,6 +73,11 @@ function webp(payload: string): Uint8Array {
 
 const HIDDEN_WHEEL = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWheel: true, vetoAllowance: 3 } as const
 
+/** The Veto read (`wheel.vetoes`, #231) with the defaults a case does not pin: no own part, nothing revealed, the spin's window. A new read field gets its default here, once. */
+function vetoRead({ left, own = null, revealed = null, draw = expect.objectContaining({ kind: 'spin' }) }: { left: number[], own?: object | null, revealed?: object[] | null, draw?: unknown }) {
+  return { left, own, revealed, draw }
+}
+
 describe('Hidden wheel secrecy (#148)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: ReturnType<typeof createTestServer>
@@ -862,7 +867,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         spin: {
           roundId: row.roundId, drawId: row.id, spinStartAt: row.spinStartAt!.toISOString(), stopAt: row.stopAt.toISOString(), slices: 2, resultIndex: row.resultIndex, resultOffset: row.resultOffset, labels: row.sliceLabels, game: null, current: true,
         },
-        vetoes: { left: [0, 0], own: { team: 1, cast: false, rejection: 'no_veto_window' }, revealed: null, draw: null },
+        vetoes: vetoRead({ left: [0, 0], own: { team: 1, cast: false, rejection: 'no_veto_window' }, draw: null }),
       })
       expect(row.sliceLabels).toHaveLength(2)
       expect(new Set(row.sliceLabels).size).toBe(2)
@@ -1008,7 +1013,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         expect(feed.entries.map(entry => entry.type)).not.toContain('vetoes_revealed')
       }
       // The Party's own Player sees it at once.
-      expect((await wheelOf(playerCookie, slug)).vetoes).toEqual({ left: [2, 3], own: { team: 1, cast: true, rejection: 'veto_already_cast' }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
+      expect((await wheelOf(playerCookie, slug)).vetoes).toEqual(vetoRead({ left: [2, 3], own: { team: 1, cast: true, rejection: 'veto_already_cast' } }))
       // The room: only the named send to the Party's Users, and neither event.changed nor any other message.
       expect(notifier.sends(eventId)).toEqual([{ to: [playerId], messages: [expect.objectContaining({ type: 'veto.cast', team: 1 })] }])
       expect(JSON.stringify(notifier.messages(eventId))).not.toContain(secondId)

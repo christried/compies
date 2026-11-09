@@ -1,3 +1,8 @@
+import { onBeforeUnmount, onMounted, readonly, ref } from 'vue'
+
+/** The md breakpoint, `--breakpoint-md` in `app/assets/css/compies-theme.css` (980 px): the desktop shell. Pinned by test/unit/md-query.test.ts (#368). */
+export const MD_QUERY = '(min-width: 61.25rem)'
+
 /**
  * Whether a media query matches, kept up to date. `null` until the browser has been asked (the server render and the first
  * client render), so a caller can leave out what depends on it instead of rendering the wrong layout and swapping it.

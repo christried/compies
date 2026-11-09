@@ -32,6 +32,8 @@ Winners stand side by side under one shared plate „Platz 1“. The trophy hops
 - **Motion:** see 04-motion § Award ceremony, Unentschieden (below).
 
 ## ShareImage (tie)
+
+> **Superseded** on 2026-11-09 by [14-share-image-redesign.md](14-share-image-redesign.md) § Winner states (#357). The ceremony part above stands.
 **Scope:** [1.0] · **Ref:** Siegerehrung Unentschieden § B, ShareImage (8a „Poster“)
 
 - **Props / variants:** `rows[]` gains `rank`; new `outcome` (as above); `games[].w: number | number[]` (array = several Parties on Place 1 in that game).

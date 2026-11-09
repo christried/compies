@@ -8,29 +8,7 @@ import LibraryPage from '~/pages/bibliothek/index.vue'
 import NewGamePage from '~/pages/bibliothek/neu.vue'
 import { GAME_NAME_MAX, type GameTag, type GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
-
-const host = { ...kitty, canHost: true }
-
-function game(overrides: Partial<GameView>): GameView {
-  return {
-    id: '00000000-0000-4000-8000-0000000000a1',
-    name: 'Mario Kart',
-    imageUrl: null,
-    youtubeId: null,
-    clipStart: 0,
-    clipLength: 30,
-    playersMin: null,
-    playersMax: null,
-    suitabilities: [],
-    createdBy: { id: kitty.id, name: 'Sanne' },
-    createdAt: '2026-01-15T10:00:00.000Z',
-    canEdit: true,
-    notes: null,
-    tags: [],
-    price: null,
-    ...overrides,
-  }
-}
+import { game, host, settle } from './helpers/library'
 
 const withClip = game({ id: '00000000-0000-4000-8000-0000000000a2', name: 'Counter-Strike 2', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 30 })
 const withoutClip = game({ id: '00000000-0000-4000-8000-0000000000a3', name: 'Brettspiel' })
@@ -70,10 +48,6 @@ registerEndpoint('/api/games/00000000-0000-4000-8000-0000000000ff', {
     throw createError({ statusCode: 404, statusMessage: 'Not Found' })
   },
 })
-
-async function settle(page: Awaited<ReturnType<typeof mountSuspended>>) {
-  await vi.waitFor(() => expect(page.find('[aria-busy="true"]').exists()).toBe(false))
-}
 
 describe('the library page', () => {
   beforeEach(async () => {

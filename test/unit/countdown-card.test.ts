@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countdownFrame, durationWords } from '../../app/utils/countdown-card'
+import { announce, countdownFrame, durationWords, heardAt, lastSecondAt, PIP_COUNT } from '../../app/utils/countdown-card'
 import de from '../../i18n/locales/de.json'
 import type { CountdownFacts } from '../../shared/countdown'
 
@@ -24,7 +24,7 @@ describe('the last ten seconds while it runs', () => {
       it(`${left} ms left is the ${s} row: bare seconds, scale, ${s} pips and the ${s >= 6 ? 'warning' : 'error'} tone`, () => {
         const frame = running(left)
 
-        expect(frame).toMatchObject({ view: 'running', s, final: true, text: String(s), pips: s, tone: s >= 6 ? 'warn' : 'err', digitFg: 'on' })
+        expect(frame).toMatchObject({ view: 'running', s, final: true, text: String(s), pips: s, tone: s >= 6 ? 'warn' : 'err', digitFg: 'on', warning: s >= 6 })
         expect(frame.scale).toBeCloseTo(1 + (10 - s) * 0.035, 6)
       })
     }
@@ -36,7 +36,7 @@ describe('the last ten seconds while it runs', () => {
   })
 
   it('shows the time as m:ss and the bar at 11 seconds, with the run tone', () => {
-    expect(running(11_000)).toMatchObject({ view: 'running', s: 11, final: false, text: '0:11', pips: null, tone: 'run', scale: 1 })
+    expect(running(11_000)).toMatchObject({ view: 'running', s: 11, final: false, text: '0:11', pips: null, tone: 'run', scale: 1, warning: false })
     expect(running(10_001)).toMatchObject({ s: 11, text: '0:11', pips: null })
   })
 
@@ -53,13 +53,13 @@ describe('paused', () => {
     it(`inside the last ten at ${s} s keeps the pips and the scale of that second, on paper with a readable digit colour`, () => {
       const frame = countdownFrame(pausedWith(s * 1000 - 400), T0)
 
-      expect(frame).toMatchObject({ view: 'paused', s, final: true, text: String(s), pips: s, tone: 'calm', digitFg: s >= 6 ? 'warning-fg' : 'error-fg' })
+      expect(frame).toMatchObject({ view: 'paused', s, final: true, text: String(s), pips: s, tone: 'calm', digitFg: s >= 6 ? 'warning-fg' : 'error-fg', warning: s >= 6 })
       expect(frame.scale).toBeCloseTo(1 + (10 - s) * 0.035, 6)
     })
   }
 
   it('at 2:10 shows m:ss and the bar', () => {
-    expect(countdownFrame(pausedWith(130_000), T0)).toMatchObject({ view: 'paused', text: '2:10', tone: 'calm', digitFg: 'ink', pips: null, scale: 1 })
+    expect(countdownFrame(pausedWith(130_000), T0)).toMatchObject({ view: 'paused', text: '2:10', tone: 'calm', digitFg: 'ink', pips: null, scale: 1, warning: false })
   })
 
   it('does not move with the clock', () => {
@@ -69,7 +69,7 @@ describe('paused', () => {
 
 describe('ready', () => {
   it('shows the full duration, calm, with the full bar', () => {
-    expect(countdownFrame(READY, T0)).toMatchObject({ view: 'ready', s: 300, final: false, text: '5:00', tone: 'calm', digitFg: 'ink', pips: null, fill: 1, scale: 1 })
+    expect(countdownFrame(READY, T0)).toMatchObject({ view: 'ready', s: 300, final: false, text: '5:00', tone: 'calm', digitFg: 'ink', pips: null, fill: 1, scale: 1, warning: false })
   })
 
   it('is never final, not even for the shortest duration', () => {
@@ -82,7 +82,7 @@ describe('done', () => {
   const past = running(0)
 
   it('shows 0:00 on the error tone with no pip lit', () => {
-    expect(stored).toMatchObject({ view: 'done', s: 0, final: false, text: '0:00', tone: 'err', digitFg: 'on', pips: 0, scale: 1, fill: 0 })
+    expect(stored).toMatchObject({ view: 'done', s: 0, final: false, text: '0:00', tone: 'err', digitFg: 'on', pips: 0, scale: 1, fill: 0, warning: false })
   })
 
   it('is the same frame for a stored zero and for a running one past its end', () => {
@@ -94,7 +94,7 @@ describe('done', () => {
 describe('the edges', () => {
   it('1000 ms left and 1 ms left are both the 1 row', () => {
     expect(running(1000)).toMatchObject({ view: 'running', s: 1, text: '1', pips: 1, tone: 'err' })
-    expect(running(1)).toMatchObject({ view: 'running', s: 1, text: '1', pips: 1, tone: 'err' })
+    expect(running(1)).toMatchObject({ view: 'running', s: 1, text: '1', pips: 1, tone: 'err', warning: false })
   })
 
   it('0 ms left is done', () => {
@@ -109,6 +109,126 @@ describe('the edges', () => {
 
   it('the longest duration, 5999 s, reads 99:59', () => {
     expect(countdownFrame({ durationMs: 5_999_000, remainingMs: 5_999_000, startedAt: null }, T0).text).toBe('99:59')
+  })
+})
+
+describe('the pip row', () => {
+  it('is ten pips wide', () => {
+    expect(PIP_COUNT).toBe(10)
+  })
+})
+
+describe('what the status region says', () => {
+  /** What the region heard of a running Countdown with `leftMs` left (of 300 s). */
+  const heardRunning = (leftMs: number) => {
+    const { facts, at } = runningWith(leftMs)
+    return heardAt(facts, at)
+  }
+  const heardReady = () => heardAt(READY, T0)
+  const heardPaused = (leftMs: number) => heardAt(pausedWith(leftMs), T0)
+  const heardDone = () => heardAt({ durationMs: DURATION, remainingMs: 0, startedAt: null }, T0)
+
+  describe('at the first sample', () => {
+    it('says the set of a ready card when the stage announces it', () => {
+      expect(announce(null, heardReady(), true)).toBe('set')
+    })
+
+    it('says nothing for a ready card that was there when the page opened', () => {
+      expect(announce(null, heardReady(), false)).toBeNull()
+    })
+
+    it.each([
+      ['running', () => heardRunning(100_000)],
+      ['paused', () => heardPaused(100_000)],
+      ['done', heardDone],
+    ])('says nothing for a %s card, even when the stage announces', (_view, heard) => {
+      expect(announce(null, heard(), true)).toBeNull()
+    })
+  })
+
+  describe('on a change of the view', () => {
+    it.each([
+      ['ready to running', heardReady, () => heardRunning(100_000), 'running'],
+      ['running to paused', () => heardRunning(100_000), () => heardPaused(100_000), 'paused'],
+      ['paused to running', () => heardPaused(100_000), () => heardRunning(100_000), 'running'],
+      ['running to done', () => heardRunning(100), heardDone, 'done'],
+      ['running to ready', () => heardRunning(100_000), heardReady, 'reset'],
+      ['done to ready', heardDone, heardReady, 'reset'],
+      ['paused to ready', () => heardPaused(100_000), heardReady, 'reset'],
+    ] as const)('%s says %s', (_change, before, now, message) => {
+      expect(announce(before(), now(), false)).toBe(message)
+    })
+
+    it('says only the start when a ready card of 8 s starts inside the last ten', () => {
+      const short: CountdownFacts = { durationMs: 8000, remainingMs: 8000, startedAt: null }
+      const started: CountdownFacts = { durationMs: 8000, remainingMs: 8000, startedAt: T0 }
+
+      expect(announce(heardAt(short, T0), heardAt(started, T0), false)).toBe('running')
+    })
+  })
+
+  describe('inside one view', () => {
+    it('says the last ten when a running card gets from 10.5 s to 9.5 s left (the 11 row to the 10 row)', () => {
+      expect(announce(heardRunning(10_500), heardRunning(9_500), false)).toBe('final')
+    })
+
+    it('says nothing from 9.5 s to 8.5 s left, already inside the last ten', () => {
+      expect(announce(heardRunning(9_500), heardRunning(8_500), false)).toBeNull()
+    })
+
+    it('says nothing from 224 s to 223 s left', () => {
+      expect(announce(heardRunning(224_000), heardRunning(223_000), false)).toBeNull()
+    })
+
+    it('says nothing when a paused card is already in the last ten', () => {
+      expect(announce(heardPaused(130_000), heardPaused(7_000), false)).toBeNull()
+    })
+
+    it('says the set when a ready card gets another length', () => {
+      const longer: CountdownFacts = { durationMs: 600_000, remainingMs: 600_000, startedAt: null }
+
+      expect(announce(heardReady(), heardAt(longer, T0), false)).toBe('set')
+    })
+
+    it('says nothing when a running or paused card gets another length', () => {
+      const running = (durationMs: number) => heardAt({ durationMs, remainingMs: durationMs, startedAt: T0 }, T0 + 1000)
+      const paused = (durationMs: number) => heardAt({ durationMs, remainingMs: 100_000, startedAt: null }, T0)
+
+      expect(announce(running(300_000), running(600_000), false)).toBeNull()
+      expect(announce(paused(300_000), paused(600_000), false)).toBeNull()
+    })
+
+    it('says nothing for the same input twice: it is asked on every frame', () => {
+      const seen = heardRunning(9_500)
+
+      expect(announce(seen, seen, true)).toBeNull()
+      expect(announce(heardReady(), heardReady(), true)).toBeNull()
+    })
+
+    it('says nothing from done to done', () => {
+      expect(announce(heardDone(), heardDone(), false)).toBeNull()
+    })
+  })
+})
+
+describe('the last second', () => {
+  it.each([
+    [1000, true],
+    [1, true],
+    [0, false],
+    [1001, false],
+  ])('a running Countdown with %i ms left: %s', (leftMs, seen) => {
+    const { facts, at } = runningWith(leftMs)
+
+    expect(lastSecondAt(facts, at)).toBe(seen)
+  })
+
+  it('a paused one with 500 ms left is not the last second the viewer saw', () => {
+    expect(lastSecondAt(pausedWith(500), T0)).toBe(false)
+  })
+
+  it('a ready one is not', () => {
+    expect(lastSecondAt(READY, T0)).toBe(false)
   })
 })
 

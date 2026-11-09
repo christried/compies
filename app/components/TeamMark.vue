@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { teamName } from '~/utils/board'
 import { teamVar } from '~/utils/team-style'
-import { teamPosition } from '~~/shared/settings'
+import { teamPosition } from '~~/shared/team-position'
 import { TEAM_SYMBOLS } from '~~/shared/team-marks'
 
 // A team's colour and symbol, never colour alone (DS People, TeamMark.dc.html, 02-components § TeamMark). Next to the

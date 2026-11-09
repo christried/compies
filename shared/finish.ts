@@ -12,6 +12,15 @@ export function leadersOf(standings: readonly Standing[]): number[] {
 }
 
 /**
+ * The Leading Parties (#38, GLOSSARY: Leading Party): while the Event runs or is finished, and once a Result exists, the Parties on the first
+ * rank (the Winners of a finished Event). Empty before the first Result and in every other Phase. The Party hat follows it (partyhat).
+ */
+export function leadingTeams(standings: readonly Standing[], phase: Phase, hasResults: boolean): number[] {
+  if (!((phase === 'running' || phase === 'finished') && hasResults)) return []
+  return leadersOf(standings)
+}
+
+/**
  * How far the Event is (#274, #277): the Rounds with a Result out of the Game count. `complete`: they reach the Game count, so the Host may
  * finish (nothing finishes by itself). `tie`: the team positions on rank 1 when `complete` and more than one holds it (GLOSSARY: Tie), else null.
  * Same for every Member; stage.ts's EndView adds the Host's part (`finish`, `lastGame`) to these.
