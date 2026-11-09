@@ -511,11 +511,12 @@ describe('the card stays inside the viewport (#379)', () => {
     expect((ghost(page).element as HTMLElement).style.transform).toBe('scale(1.315)')
   })
 
-  it('done: the stamp sits in a clipping wrapper inside the tile, and keeps its own element and classes', async () => {
+  it('done: the stamp sits in a wrapper that clips horizontally on phones only, inside the tile, and keeps its own element and classes', async () => {
     const page = await mount(DONE)
     const wrapper = stamp(page).element.parentElement!
 
-    expect(wrapper.classList).toContain('overflow-hidden')
+    expect(wrapper.classList).toContain('max-md:overflow-x-clip')
+    expect(wrapper.classList).not.toContain('overflow-hidden')
     expect(wrapper).not.toBe(tile(page).element)
     expect(wrapper.parentElement).toBe(tile(page).element)
     expect(stamp(page).classes()).toContain('rounded-[8px]')

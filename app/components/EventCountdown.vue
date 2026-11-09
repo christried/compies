@@ -228,11 +228,12 @@ watch(actionsKey, () => {
             :size="15"
           />
         </span>
-        <!-- The stamp's box is held at scale 2.4 until its drop, so it gets the ghost's clipping wrapper (#379). -->
+        <!-- The stamp's box is held at scale 2.4 until its drop, so its wrapper clips it horizontally on phones only (#379): that keeps the
+          page from widening at 390 px, while the drop's vertical spill and the desktop drop stay as designed. -->
         <span
           v-if="frame.view === 'done'"
           aria-hidden="true"
-          class="pointer-events-none absolute inset-0 overflow-hidden"
+          class="pointer-events-none absolute inset-0 max-md:overflow-x-clip"
         >
           <span
             ref="stamp"
