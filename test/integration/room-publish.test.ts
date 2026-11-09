@@ -148,7 +148,7 @@ describe('publishing to the room', () => {
     const { eventId, invite, strangerCookie } = await pollEvent()
 
     expect((await send('POST', `/api/invite/${invite}`, strangerCookie)).status).toBe(200)
-    expect(types(eventId)).toEqual(['event.changed', 'activity.added', 'member.joined'])
+    expect(types(eventId)).toEqual(['event.changed', 'activity.added'])
 
     notifier.clear()
     expect((await send('POST', `/api/invite/${invite}`, strangerCookie)).status).toBe(200)

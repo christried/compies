@@ -185,22 +185,17 @@ describe('Team names', () => {
       expect(await names(game)).toEqual([null, null])
     })
 
-    it('publishes team.wordSet once per set, with null for a removed word, and nothing on a refusal', async () => {
+    it('publishes only event.changed for a set and a removed word, and nothing on a refusal', async () => {
       const game = await setup()
       await seat(game, 'one', 2)
       notifier.clear()
 
       await word(game, game.cookies.one, 'Wilde')
-      expect(notifier.messages(game.eventId)).toMatchObject([
-        { type: 'event.changed' },
-        { type: 'team.wordSet', team: 2, userId: game.ids.one, word: 'Wilde' },
-      ])
+      expect(notifier.messages(game.eventId)).toMatchObject([{ type: 'event.changed' }])
 
       notifier.clear()
       await word(game, game.cookies.one, '')
-      expect(notifier.messages(game.eventId).filter(message => message.type === 'team.wordSet')).toMatchObject([
-        { type: 'team.wordSet', team: 2, userId: game.ids.one, word: null },
-      ])
+      expect(notifier.messages(game.eventId)).toMatchObject([{ type: 'event.changed' }])
 
       notifier.clear()
       await word(game, game.cookies.one, 'Zu viele Wörter')
@@ -308,7 +303,7 @@ describe('Team names', () => {
       expect(await names(game)).toEqual([null, 'Rote'])
     })
 
-    it('publishes team.nameReset and activity.added once, and writes one team_name_reset entry by the Host', async () => {
+    it('publishes event.changed and activity.added once, and writes one team_name_reset entry by the Host', async () => {
       const game = await setup()
       await seat(game, 'one', 2)
       await word(game, game.cookies.one, 'Wilde')
@@ -318,8 +313,7 @@ describe('Team names', () => {
       await resetName(game, game.hostCookie, 2)
 
       const messages = notifier.messages(game.eventId)
-      expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added', 'team.nameReset'])
-      expect(messages.find(message => message.type === 'team.nameReset')).toMatchObject({ type: 'team.nameReset', team: 2 })
+      expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added'])
       const entries = await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))
       expect(entries).toHaveLength(1)
       expect(entries[0]).toMatchObject({ type: 'team_name_reset', actorId: game.ids.host, params: { team: 2 } })
