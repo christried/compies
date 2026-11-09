@@ -198,8 +198,8 @@ function removePrice() {
 }
 
 /**
- * „Preis stimmt noch“ (#337, edit mode): stamps today's day on the stored Price. It sends the stored game and the flag only,
- * never what is typed, so it saves nothing else; `tags` and `price` are left out, so the server keeps them.
+ * „Preis stimmt noch“ (#337, edit mode): stamps today's day on the stored Price. It sends the flag alone (#360): the server
+ * restamps the day on its own row, so nothing the page holds, and nothing a Host changed since the page loaded, is written back.
  */
 async function confirmPrice() {
   const game = props.game
@@ -209,17 +209,7 @@ async function confirmPrice() {
   try {
     const answer = await $fetch<GameView>(`/api/games/${game.id}`, {
       method: 'PATCH',
-      body: {
-        name: game.name,
-        youtubeUrl: game.youtubeId ? `https://youtu.be/${game.youtubeId}` : '',
-        clipStart: game.clipStart,
-        clipLength: game.clipLength,
-        playersMin: game.playersMin,
-        playersMax: game.playersMax,
-        suitabilities: game.suitabilities,
-        notes: game.notes,
-        priceChecked: true,
-      },
+      body: { priceChecked: true },
     })
     storedPrice.value = answer.price
     toast({ tone: 'success', text: t('gameEdit.priceConfirmed') })

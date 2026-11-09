@@ -8,12 +8,12 @@ import { useClock } from '../../utils/clock'
 import { canEditGame, isPriceCheckOnly, parseGameInput, type GameView } from '../../../shared/game'
 
 // Edits a game of the library (#142). The body is the whole game, as the form sends it, except that `{ priceChecked: true }`
-// alone restamps the Price day and nothing else (#360). Only the creator and
-// the Platform admin may edit; another Host gets not_game_editor, and a Member or an unknown game the
-// answer of a missing route. The image and the creator stay as they are. A body without `tags` keeps the game's Tags
-// (a 0.9 tab never sends them, #335); a list, even an empty one, replaces them. The Price (#337) follows the same rule
-// for `price` (absent keeps it); the day is stamped by the server's clock when the Price changes or `priceChecked` is sent.
-// The Price day is decided on the row read inside the transaction, under a lock (#360), not on the row read above.
+// alone restamps the Price day and nothing else (#360). Only the creator and the Platform admin may edit; another Host
+// gets not_game_editor, and a Member or an unknown game the answer of a missing route. The image and the creator stay as
+// they are. A body without `tags` keeps the game's Tags (a 0.9 tab never sends them, #335); a list, even an empty one,
+// replaces them. The Price (#337) follows the same rule for `price` (absent keeps it); the day is stamped by the server's
+// clock when the Price changes or `priceChecked` is sent. The Price day is decided on the row read inside the transaction,
+// under a lock (#360), not on the row read above.
 export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
