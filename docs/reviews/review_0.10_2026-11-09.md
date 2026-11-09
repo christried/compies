@@ -28,18 +28,18 @@ Browser checks ran before the review:
 
 ### Fixed before `staging`
 
-Branch for all rows: `fix/332-review` (merge sha: „pending“).
+Branch for all rows: `fix/332-review`, merged ecdb79a.
 
 | | Finding | Fix | Branch |
 |---|---|---|---|
-| F1 | S2 | The deploy check prints the Event's id and the Session's id instead of the slug; the delivery doc's „names the Event and the Session that block“ stays true by id. Test: the check's output has no slug. | `fix/332-review` (merge sha: „pending“) |
-| F2 | S3, Q1 | `PRICE_SOURCE_LABELS`, `priceLine`, `priceCheckedDay` and the three `Intl` day formats leave `shared/game.ts`: the wording goes into `de.json` under `price.*`, the day format into `app/utils/berlin-time.ts`, the helper into `app/utils/price.ts`. `shared/game.ts` keeps `PRICE_SOURCES`, `parsePrice`, the range. The rendered strings do not change. | `fix/332-review` (merge sha: „pending“) |
-| F3 | S4 | An assertion of easing and duration for the Countdown's CSS transitions (tile, pill, card root, reduced variants) in `event-countdown-motion.test.ts`. | `fix/332-review` (merge sha: „pending“) |
-| F4 | S6, SPEC-3 | The `GameCard.vue` header comment is corrected: pool and Round games carry a Price since #338; only wheel slices carry neither. | `fix/332-review` (merge sha: „pending“) |
-| F5 | Q7, S8 | The `tagsInUse ?? []` fallback in `useGameLibrary` goes; the test fixtures that stub `/api/games` answer `tagsInUse`. | `fix/332-review` (merge sha: „pending“) |
-| F6 | S15 | `docs/design_handoff_compies/04-motion.md` gets a § Countdown pointer to `13-countdown.md` § „04-motion addition“, so the § Motion citations resolve. | `fix/332-review` (merge sha: „pending“) |
-| F7 | SPEC-2 (b337 item 2) | The detail page h1 (`app/pages/bibliothek/[id]/index.vue:97`) gets `break-words` (overflow-wrap: anywhere); a component test mounts a name of `GAME_NAME_MAX` characters without spaces and asserts the class. | `fix/332-review` (merge sha: „pending“) |
-| F8 | SPEC-1 | „Countdown gestellt“ is announced only when the Countdown appears while the Event page is already open, not on a client-side arrival. Tests: mount with a Countdown present (no message); set it afterwards (message). | `fix/332-review` (merge sha: „pending“) |
+| F1 | S2 | The deploy check prints the Event's id and the Session's id instead of the slug; the delivery doc's „names the Event and the Session that block“ stays true by id. Test: the check's output has no slug. | `fix/332-review`, merged ecdb79a |
+| F2 | S3, Q1 | `PRICE_SOURCE_LABELS`, `priceLine`, `priceCheckedDay` and the three `Intl` day formats leave `shared/game.ts`: the wording goes into `de.json` under `price.*`, the day format into `app/utils/berlin-time.ts`, the helper into `app/utils/price.ts`. `shared/game.ts` keeps `PRICE_SOURCES`, `parsePrice`, the range. The rendered strings do not change. | `fix/332-review`, merged ecdb79a |
+| F3 | S4 | An assertion of easing and duration for the Countdown's CSS transitions (tile, pill, card root, reduced variants) in `event-countdown-motion.test.ts`. | `fix/332-review`, merged ecdb79a |
+| F4 | S6, SPEC-3 | The `GameCard.vue` header comment is corrected: pool and Round games carry a Price since #338; only wheel slices carry neither. | `fix/332-review`, merged ecdb79a |
+| F5 | Q7, S8 | The `tagsInUse ?? []` fallback in `useGameLibrary` goes; the test fixtures that stub `/api/games` answer `tagsInUse`. | `fix/332-review`, merged ecdb79a |
+| F6 | S15 | `docs/design_handoff_compies/04-motion.md` gets a § Countdown pointer to `13-countdown.md` § „04-motion addition“, so the § Motion citations resolve. | `fix/332-review`, merged ecdb79a |
+| F7 | SPEC-2 (b337 item 2) | The detail page h1 (`app/pages/bibliothek/[id]/index.vue:97`) gets `break-words` (overflow-wrap: anywhere); a component test mounts a name of `GAME_NAME_MAX` characters without spaces and asserts the class. | `fix/332-review`, merged ecdb79a |
+| F8 | SPEC-1 | „Countdown gestellt“ is announced only when the Countdown appears while the Event page is already open, not on a client-side arrival. Tests: mount with a Countdown present (no message); set it afterwards (message). | `fix/332-review`, merged ecdb79a |
 
 Notes on the table:
 - F1: Standards S2 recommends asking the user first (the naming was approved as retro-0.9 finding 1, and that approval does not record the public log). fixes.md puts F1 in the fix pass; confirm before the merge.
