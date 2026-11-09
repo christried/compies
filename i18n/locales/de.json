@@ -1597,8 +1597,6 @@
   },
   "countdown": {
     "title": "Countdown",
-    "paused": "Pausiert",
-    "ended": "Zeit ist um",
     "start": "Starten",
     "pause": "Pausieren",
     "resume": "Fortsetzen",

@@ -30,7 +30,8 @@ const FINAL_FROM_S = 10
 const WARNING_UNTIL_S = 6
 const SCALE_STEP = 0.035
 
-const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+/** Seconds as `m:ss`, unpadded minutes: the card's time and the `{time}` of its lines. */
+export const countdownClock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
 export function countdownFrame(c: CountdownFacts, atMs: number): CountdownFrame {
   const state = countdownState(c, atMs)
@@ -44,7 +45,7 @@ export function countdownFrame(c: CountdownFacts, atMs: number): CountdownFrame 
   const fill = view === 'ready' ? 1 : left / c.durationMs
 
   if (!final) {
-    return { view, s, final, text: clock(s), tone: view === 'running' ? 'run' : 'calm', digitFg: view === 'running' ? 'on' : 'ink', scale: 1, pips: null, fill }
+    return { view, s, final, text: countdownClock(s), tone: view === 'running' ? 'run' : 'calm', digitFg: view === 'running' ? 'on' : 'ink', scale: 1, pips: null, fill }
   }
   const warning = s >= WARNING_UNTIL_S
   return {
