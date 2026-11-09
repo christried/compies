@@ -94,7 +94,7 @@ const priceText = computed(() => (game.value?.price ? priceLine(game.value.price
             alt=""
             class="aspect-[16/10] w-40 rounded-[12px] border-(length:--cp-bw) border-line object-cover shadow-card"
           >
-          <h1 class="m-0 font-display text-[32px] leading-none text-balance md:text-[44px]">
+          <h1 class="m-0 font-display text-[32px] leading-none text-balance break-words md:text-[44px]">
             {{ game.name }}
           </h1>
           <ul

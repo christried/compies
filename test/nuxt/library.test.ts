@@ -6,7 +6,7 @@ import DetailPage from '~/pages/bibliothek/[id]/index.vue'
 import EditPage from '~/pages/bibliothek/[id]/bearbeiten.vue'
 import LibraryPage from '~/pages/bibliothek/index.vue'
 import NewGamePage from '~/pages/bibliothek/neu.vue'
-import type { GameTag, GameView } from '~~/shared/game'
+import { GAME_NAME_MAX, type GameTag, type GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 
 const host = { ...kitty, canHost: true }
@@ -177,6 +177,16 @@ describe('the game page', () => {
     expect(page.text()).toContain('Angelegt von Sanne im Januar 2026')
     expect(page.text()).toContain('Ausschnitt 1:12 – 1:42')
     expect(page.get('a[href="/bibliothek"]').text()).toContain('Bibliothek')
+  })
+
+  // The longest name allowed, without a space, made the heading wider than the page at 390 px (b337, #332): the heading breaks inside the word.
+  it('lets the heading break a longest-allowed name without spaces', async () => {
+    detail = { ...withClip, name: 'W'.repeat(GAME_NAME_MAX) }
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    expect(page.get('h1').text()).toBe('W'.repeat(GAME_NAME_MAX))
+    expect(page.get('h1').classes()).toContain('break-words')
   })
 
   it('shows a game without a clip with the placeholder and no preview', async () => {
