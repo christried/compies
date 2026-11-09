@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Event löschen:** Als Host kannst du ein Event jetzt in der Host-Steuerung unter „Mehr“ löschen, in jeder Phase, nur nicht während eine Session läuft. Nach einer Sekunde Halten ist es für alle sofort weg: Es verschwindet von der Startseite, und wer es offen hat oder seinen Event-Link oder Einladungslink öffnet, sieht „Event gelöscht“. Rückgängig machen lässt es sich nicht. ([#333](https://github.com/christried/compies/issues/333))
+
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
 Jetzt gibt es die Siegerehrung: Der Host eröffnet sie im beendeten Event, alle sehen im selben Moment dieselbe Show mit Pokal-Lauf, Stempel und Konfetti, und das Ergebnis gibt es als Bild zum Teilen.
