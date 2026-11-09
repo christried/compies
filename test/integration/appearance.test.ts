@@ -40,6 +40,8 @@ describe('the Appearance of a User', () => {
     return request('/api/me/appearance', { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body })
   }
 
+  const appearanceCookie = (response: Response) => response.headers.getSetCookie().find(line => line.startsWith('compies-appearance='))
+
   async function appearanceOf(cookie: string) {
     const { user } = await (await request('/api/me', { headers: { cookie } })).json()
     return user.appearance
@@ -104,6 +106,50 @@ describe('the Appearance of a User', () => {
     const again = await signIn(testDb.db, kitty)
 
     expect(await appearanceOf(again.cookie)).toBe('dark')
+  })
+
+  // The device keeps Dunkel and System in a cookie for the signed-out pages (#403); the route writes it after the save.
+  describe('the Appearance cookie from the route', () => {
+    it.each(['dark', 'system'])('sets %s for a year, readable by the page', async (value) => {
+      const { cookie } = await signIn(testDb.db, kitty)
+
+      const line = appearanceCookie(await choose(cookie, JSON.stringify({ appearance: value })))
+
+      expect(line).toMatch(new RegExp(`^compies-appearance=${value};`))
+      expect(line).toContain('Max-Age=31536000')
+      expect(line).toContain('Path=/')
+      expect(line).toContain('SameSite=Lax')
+      expect(line).not.toContain('HttpOnly')
+      expect(line).not.toContain('Secure')
+    })
+
+    it('removes it for Hell', async () => {
+      const { cookie } = await signIn(testDb.db, kitty)
+
+      const line = appearanceCookie(await choose(`${cookie}; compies-appearance=dark`, JSON.stringify({ appearance: 'light' })))
+
+      expect(line).toMatch(/^compies-appearance=;/)
+      expect(line).toContain('Max-Age=0')
+      expect(line).toContain('Path=/')
+    })
+
+    it('marks it Secure on https, as the login session cookie is', async () => {
+      vi.stubEnv('BETTER_AUTH_URL', 'https://localhost')
+      const { cookie } = await signIn(testDb.db, kitty)
+
+      const line = appearanceCookie(await choose(cookie, JSON.stringify({ appearance: 'dark' })))
+
+      expect(line).toMatch(/^compies-appearance=dark;/)
+      expect(line).toContain('Secure')
+    })
+
+    it('writes nothing for a refused value or without sign-in', async () => {
+      const { cookie } = await signIn(testDb.db, kitty)
+
+      expect(appearanceCookie(await choose(cookie, JSON.stringify({ appearance: 'sepia' })))).toBeUndefined()
+      expect(appearanceCookie(await choose(cookie, ''))).toBeUndefined()
+      expect(appearanceCookie(await choose('', JSON.stringify({ appearance: 'dark' })))).toBeUndefined()
+    })
   })
 
   it('carries the Appearance in the User the Display name route answers', async () => {
