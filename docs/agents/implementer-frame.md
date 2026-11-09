@@ -39,7 +39,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 
 ## Checks
 
-- `pnpm typecheck && pnpm lint && pnpm knip`, and the test files you touched (`pnpm vitest run test/nuxt/x.test.ts`). They must pass before you push.
+- `pnpm typecheck && pnpm lint && pnpm knip`, and the test files you touched (`pnpm vitest run test/nuxt/x.test.ts`). They must pass before you push. A branch that touches `CHANGELOG.md` also runs `pnpm vitest run test/unit/changelog-file.test.ts` before the push: the Partyhut line (#380) failed that test in CI, one 6-minute round late.
 - The full `pnpm test` and `pnpm test:build` run in CI on every push of your branch, not on this machine: several agents share it, and running them in parallel stalled it in Release 1.4. Your report waits for that run (§ Before you report). In 0.7 a test file nobody had touched broke the integration branch four times, each found only after the merge.
 - The orchestrator checks pages in the browser; you work without a dev server.
 
