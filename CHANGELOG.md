@@ -13,6 +13,7 @@
 ### Geändert
 
 - **Countdown:** Der Countdown hat ein neues Gesicht: ein großer Zeitblock, der in den letzten zehn Sekunden von Gelb auf Rot wechselt und bei Null „Zeit ist um“ stempelt; bei reduzierter Bewegung ohne Bewegung. ([#340](https://github.com/christried/compies/issues/340))
+- **Glücksrad-Karte:** Die Karte des Glücksrads zeigt nicht mehr, wie viele Spiele auf dem Rad liegen; Screenreader lesen die Zahl weiter vor. ([#354](https://github.com/christried/compies/issues/354))
 
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
