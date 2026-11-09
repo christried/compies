@@ -27,7 +27,19 @@ const CALL_MS = untilDone ? 20 * 60_000 : 150_000
 
 const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
-const jobCountOf = id => Number(gh('api', `repos/{owner}/{repo}/actions/runs/${id}/jobs`, '--jq', '.total_count'))
+// A failed gh call ends the script in one line naming the run (#388), not with a stack trace that hides the URL.
+const fail = (what, error) => {
+  console.log(`${what}: ${String(error.stderr || error.message).trim().split('\n')[0]}`)
+  process.exit(1)
+}
+const jobCountOf = (run) => {
+  try {
+    return Number(gh('api', `repos/{owner}/{repo}/actions/runs/${run.databaseId}/jobs`, '--jq', '.total_count'))
+  }
+  catch (error) {
+    return fail(`jobs count failed for ${run.url}`, error)
+  }
+}
 const runsOf = () => JSON.parse(gh('run', 'list', '--workflow', 'ci.yml', '--commit', sha, '--json', 'databaseId,status,conclusion,event,url,attempt'))
 
 /** The failing step's log from its first failure marker on, without the job/step/timestamp prefix and colour codes. */
@@ -42,12 +54,12 @@ function failures(id) {
 
 const started = Date.now()
 let runs = []
-// Runs already re-run after a start failure, with the time of the re-run. A re-run keeps the run id; for a moment
-// the list may still show the old completed state, which does not count as done.
-const rerun = new Map()
+// Run id → the time of its re-run after a start failure. A re-run keeps the run id; for a moment the list may still
+// show the old completed state, which does not count as done.
+const rerunAt = new Map()
 // The jobs are counted for a failed run only.
-const decisionOf = run => rerunDecision(run, run.conclusion === 'success' ? 1 : jobCountOf(run.databaseId), rerun.has(run.databaseId))
-const done = run => run.status === 'completed' && !(Date.now() - (rerun.get(run.databaseId) ?? -Infinity) < RERUN_SETTLE_MS)
+const decisionOf = run => rerunDecision(run, run.conclusion === 'success' ? 1 : jobCountOf(run), rerunAt.has(run.databaseId))
+const done = run => run.status === 'completed' && !(Date.now() - (rerunAt.get(run.databaseId) ?? -Infinity) < RERUN_SETTLE_MS)
 console.log(`waiting for CI on ${sha.slice(0, 7)} …`)
 while (Date.now() - started < CALL_MS) {
   runs = runsOf()
@@ -60,8 +72,13 @@ while (Date.now() - started < CALL_MS) {
     if (fresh.length === 0) break
     for (const run of fresh) {
       console.log(`start failure (zero jobs): ${run.event} ${run.url} – re-running once`)
-      gh('run', 'rerun', String(run.databaseId))
-      rerun.set(run.databaseId, Date.now())
+      try {
+        gh('run', 'rerun', String(run.databaseId))
+      }
+      catch (error) {
+        fail(`re-run failed for ${run.url}`, error)
+      }
+      rerunAt.set(run.databaseId, Date.now())
     }
   }
   await sleep(POLL_MS)

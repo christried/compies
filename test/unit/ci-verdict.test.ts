@@ -15,8 +15,8 @@ describe('scripts/ci-verdict.mjs', () => {
     expect(verdict({ conclusion: 'failure' }, 0)).toBe('start-failure')
   })
 
-  it('calls a cancelled run with zero jobs a start failure', () => {
-    expect(verdict({ conclusion: 'cancelled' }, 0)).toBe('start-failure')
+  it('calls a cancelled run with zero jobs red: someone cancelled it, so a re-run would undo that', () => {
+    expect(verdict({ conclusion: 'cancelled' }, 0)).toBe('red')
   })
 
   it('calls a failed run with jobs red', () => {
