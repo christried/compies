@@ -1,9 +1,9 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import GameForm from '~/components/GameForm.vue'
-import type { GameView } from '~~/shared/game'
+import type { GameTag, GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 
 const saved: GameView = {
@@ -24,13 +24,25 @@ const saved: GameView = {
   price: null,
 }
 
-// The Tags in use feed the suggestions of the Tag field (#335).
+// The Tags in use feed the suggestions of the Tag field (#335). The form asks `/api/games/tags` for them (#365), not the library.
+const suggestedTags: GameTag[] = [{ key: 'co-op', label: 'Co-op' }, { key: 'coop-klassiker', label: 'Coop-Klassiker' }, { key: 'retro', label: 'Retro' }]
+let tagsInUse: GameTag[] = suggestedTags
+const tagsRequested = vi.fn()
+registerEndpoint('/api/games/tags', {
+  method: 'GET',
+  handler: () => {
+    tagsRequested()
+    return tagsInUse
+  },
+})
+// The whole library: the form must not load it for its suggestions (#365), so a call here is a regression.
+const libraryRequested = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({
-    games: [],
-    tagsInUse: [{ key: 'co-op', label: 'Co-op' }, { key: 'coop-klassiker', label: 'Coop-Klassiker' }, { key: 'retro', label: 'Retro' }],
-  }),
+  handler: () => {
+    libraryRequested()
+    return { games: [], tagsInUse: suggestedTags }
+  },
 })
 
 // One endpoint for the file; each test sets whether it fails and sees what was posted.
@@ -76,6 +88,9 @@ describe('the game form', () => {
     signInAs({ ...kitty, canHost: true })
     posted.mockClear()
     failWith = null
+    tagsInUse = suggestedTags
+    tagsRequested.mockClear()
+    libraryRequested.mockClear()
   })
 
   it('has the clip length at 30 seconds from the start', async () => {
@@ -438,7 +453,7 @@ describe('the game form', () => {
       await enter(page)
     }
 
-    /** The suggestions come from the library list, which loads after the form mounts. */
+    /** The suggestions come from `/api/games/tags`, which loads after the form mounts. */
     async function withSuggestions(page: Page, text: string) {
       await type(page, text)
       await vi.waitFor(() => expect(page.find('[role="listbox"]').exists()).toBe(true))
@@ -618,6 +633,36 @@ describe('the game form', () => {
         await type(page, 'zzz')
 
         expect(page.find('[role="listbox"]').exists()).toBe(false)
+      })
+
+      it('gets its suggestions from the Tags in use, and does not load the library (#365)', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await withSuggestions(page, 'co')
+
+        expect(options(page)).toEqual(['Co-op', 'Coop-Klassiker'])
+        expect(libraryRequested).not.toHaveBeenCalled()
+      })
+
+      it('offers no list and no error while no Tag is in use yet (#365)', async () => {
+        tagsInUse = []
+        const page = await mountSuspended(GameForm)
+        await vi.waitFor(() => expect(tagsRequested).toHaveBeenCalled())
+        await flushPromises()
+
+        await type(page, 'co')
+
+        expect(page.find('[role="listbox"]').exists()).toBe(false)
+        expect(tagsField(page).attributes('aria-invalid')).toBeUndefined()
+      })
+
+      it('offers the one Tag in use as the only option (#365)', async () => {
+        tagsInUse = [{ key: 'co-op', label: 'Co-op' }]
+        const page = await mountSuspended(GameForm)
+
+        await withSuggestions(page, 'co')
+
+        expect(options(page)).toEqual(['Co-op'])
       })
     })
 
