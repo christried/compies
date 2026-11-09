@@ -19,6 +19,9 @@
 - Beim Zusammenstellen des Spielepools und bei „Nächstes Spiel setzen“ sitzen die Plus-Knöpfe aller Spielkarten einer Reihe jetzt auf einer Höhe, unten an der Karte. ([#351](https://github.com/christried/compies/issues/351))
 - Der Zurück-Link oben auf Impressum, Datenschutzerklärung, Neuigkeiten, in der Bibliothek und nach dem Anlegen eines Events ist jetzt größer und kräftiger, und das kleine „Geschafft“ über dem Titel nach dem Anlegen ist weg. ([#353](https://github.com/christried/compies/issues/353))
 - **Startseite:** Die Begrüßung „Hallo …“ ist weg, und die Event-Karten sehen aus wie im Entwurf: Name, Phase, Host, der beste oder feste Termin, wie viele vollständig abgestimmt haben und ein Knopf je nach Rolle („Öffnen“, „Abstimmen“, „Ansehen“). ([#347](https://github.com/christried/compies/issues/347))
+- **Terminumfrage:** Die Umfrage und die Session-Karte zählen jetzt, wer vollständig abgestimmt hat („2 von 3 haben vollständig abgestimmt“). Wer nur auf einen Teil der Termine geantwortet hat, zählt noch nicht. ([#352](https://github.com/christried/compies/issues/352))
+- **CSV-Export:** „Als CSV exportieren“ in „Wer kann wann?“ gibt es nur noch für den Host. ([#352](https://github.com/christried/compies/issues/352))
+- **Session-Karte:** Verschieben, Neue Terminsuche, Entfernen und der Kalender stecken jetzt hinter einem „Mehr“-Knopf am Ende der Zeile, damit jede Session am Desktop in einer Zeile Platz hat. Die Anmerkungen zu einem Termin sind eingeklappt; die Überschrift zeigt, wie viele es sind. ([#349](https://github.com/christried/compies/issues/349))
 
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 

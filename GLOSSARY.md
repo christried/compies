@@ -89,7 +89,7 @@ A short free text a Member adds to their Vote, such as a time limit or a counter
 _Avoid_: Comment, remark, reason
 
 **Has voted**:
-A Member has voted once they have a Vote on every open Slot that still lies in the future; Slots that have passed or became a Date do not count, and with no such Slot left nobody has voted.
+A Member has voted once they have a Vote on every open Slot that still lies in the future; Slots that have passed or became a Date do not count, and with no such Slot left nobody has voted (UI: „haben vollständig abgestimmt“).
 _Avoid_: Done, complete, responded
 
 **Best slot**:

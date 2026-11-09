@@ -30,6 +30,8 @@ const props = withDefaults(defineProps<{
   icon?: Component
   /** Runs after the hold; resolves to whether it worked (e.g. the server took it). */
   action?: () => Promise<boolean>
+  /** The button is an item of a menu (#349): `role="menuitem"`, so the menu's arrow keys find it. */
+  menuitem?: boolean
 }>(), {
   holdingLabel: undefined,
   doneLabel: undefined,
@@ -42,6 +44,7 @@ const props = withDefaults(defineProps<{
   disabledReason: undefined,
   icon: undefined,
   action: undefined,
+  menuitem: false,
 })
 
 const emit = defineEmits<{ confirm: [] }>()
@@ -121,6 +124,7 @@ const visibleLabel = computed(() => {
   >
     <button
       type="button"
+      :role="menuitem ? 'menuitem' : undefined"
       class="outline-memphis hit-44 relative inline-flex cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden rounded-pill border-(length:--cp-bw) border-line whitespace-nowrap shadow-btn transition-[transform,translate,box-shadow] dur-instant ease-snap select-none hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
       :class="{ 'bg-hot text-ink': variant === 'hot', 'bg-primary text-on-primary': variant === 'primary', 'bg-surface text-ink': variant === 'secondary', 'h-12 px-5 text-body font-bold': size === 'card', 'h-control-lg px-5 font-extrabold': size === 'lg', 'h-11 px-4 text-[14px] font-bold': size === 'dock', 'min-h-14 px-5 text-body font-bold': size === 'row', 'w-full justify-start': block }"
       :aria-disabled="disabled ? 'true' : undefined"
