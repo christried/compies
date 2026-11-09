@@ -634,4 +634,39 @@ describe('the game browser in the pool steps (#173)', () => {
     expect(inPool(page).exists()).toBe(false)
     expect(maybeToggle(page, 'Pong in den Pool').exists()).toBe(true)
   })
+
+  describe('paging (#369)', () => {
+    const moreButton = (page: Page) => page.findAll('button').find(button => button.text() === 'Mehr laden')!
+    const forty = Array.from({ length: 41 }, (_, index) => game(index + 1, `Spiel ${index + 1}`))
+
+    it('draws 40 cards, and „Mehr laden“ draws the 41st, which a ＋ puts in the pool', async () => {
+      library = forty
+      const page = await mountCreate()
+      await toPoolStep(page)
+      expect(picker(page).findAll('li')).toHaveLength(40)
+
+      await moreButton(page).trigger('click')
+      await vi.waitFor(() => expect(picker(page).findAll('li')).toHaveLength(41))
+      await toggle(page, 'Spiel 41 in den Pool').trigger('click')
+
+      expect(page.findAll('h2').map(heading => heading.text())).toContain('Im Pool: 1 Spiel')
+      expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Spiel 41'])
+      expect(toggle(page, 'Spiel 41 aus dem Pool nehmen').classes()).toContain('bg-error')
+    })
+
+    it('keeps a game in the pool while paging hides its card', async () => {
+      library = forty
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await moreButton(page).trigger('click')
+      await vi.waitFor(() => expect(picker(page).findAll('li')).toHaveLength(41))
+      await toggle(page, 'Spiel 41 in den Pool').trigger('click')
+
+      await searchInput(page).setValue('Spiel')
+
+      expect(picker(page).findAll('li')).toHaveLength(40)
+      expect(moreButton(page)).toBeDefined()
+      expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Spiel 41'])
+    })
+  })
 })
