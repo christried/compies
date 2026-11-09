@@ -2,7 +2,7 @@
 import { Search } from '@lucide/vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, type GameFilters, type GameView } from '~~/shared/game'
-import { CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
+import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 
 // The one game browser (#173, review B4): the library page and both pool pickers show the Game library through it.
 // It owns the single fetch (`useGameLibrary`), the search field with the magnifying glass, the filters, the five
@@ -104,7 +104,7 @@ function set(changes: Partial<GameFilters>) {
 
 // The grid wraps as many cards as fit from md up; below it the cards are rows.
 const GRID = 'md:grid md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] md:items-stretch md:gap-3'
-const CHIP = 'inline-flex h-11 items-center gap-1.5 rounded-pill border-(length:--cp-bw) px-4 text-small font-bold transition-colors'
+const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
 </script>
 
 <template>
