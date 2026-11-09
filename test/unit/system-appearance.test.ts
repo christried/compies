@@ -10,6 +10,7 @@ const root = resolve(import.meta.dirname, '../..')
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8')
 const tokens = read('app/assets/css/compies-tokens.css')
 const theme = read('app/assets/css/compies-theme.css')
+const offlinePage = read('public/offline.html')
 
 const DARK_MEDIA = /@media\s*\(\s*prefers-color-scheme:\s*dark\s*\)\s*\{/g
 const PAPER = '--cp-paper: #17121d;'
@@ -149,6 +150,25 @@ describe('the stylesheets under app/', () => {
   it('never draw System dark on a device that asks for light (#402)', () => {
     const outside = files.filter(f => rulesFor(splitDarkMedia(clean(f.css)).outside, 'system').size > 0).map(f => f.path)
     expect(outside).toEqual([])
+  })
+})
+
+describe('the offline page', () => {
+  // It has no User and no cookie to read, so it always follows the device (#402).
+  const { dark } = tokenBlocks(tokens)
+  const style = offlinePage.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? ''
+  const offline = declarations(splitDarkMedia(clean(style)).inside.match(/:root\s*\{([^{}]*)\}/)?.[1] ?? '')
+
+  it('follows a device that asks for dark with the dark tokens (#402)', () => {
+    expect(offline['color-scheme']).toBe('dark')
+    const names = Object.keys(offline).filter(name => name.startsWith('--'))
+    expect(names.length).toBeGreaterThanOrEqual(8)
+    for (const name of names) expect(offline[name], name).toBe(dark[`--cp-${name.slice(2)}`])
+  })
+
+  it('colours the browser bar with the dark page background under the dark media query (#402)', () => {
+    expect(dark['--cp-paper']).toBe('#17121d')
+    expect(offlinePage).toContain('<meta name="theme-color" content="#17121d" media="(prefers-color-scheme: dark)">')
   })
 })
 

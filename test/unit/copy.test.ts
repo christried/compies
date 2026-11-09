@@ -59,10 +59,6 @@ describe('copy rules', () => {
     expect(hits).toEqual([])
   })
 
-  it('ships the offline page light only, whatever the system uses', () => {
-    expect(offlinePage).not.toMatch(/prefers-color-scheme:\s*dark/)
-  })
-
   // The contact address (#221): the only email address in the copy is the operator's contact address on
   // christried.me. The vue-i18n escape `{'@'}` is normalised first; addresses are found by pattern.
   it('names compies@christried.me as the only email address in the legal texts, in the Impressum and in § 1 of the Datenschutzerklärung', () => {
