@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Search } from '@lucide/vue'
+import type { ComponentPublicInstance } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, type GameFilters, type GameView } from '~~/shared/game'
 import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
@@ -67,23 +68,33 @@ const limit = ref(PAGE_SIZE)
 const visible = computed(() => shown.value.slice(0, limit.value))
 const remaining = computed(() => shown.value.length - visible.value.length)
 // Any change of the filters starts at the first page again (#369): after a search narrowed the list and „Alle“ widened it, 40 cards, not the 120 loaded before.
-watch(() => JSON.stringify(filters.value), () => {
+watch(filters, () => {
   limit.value = PAGE_SIZE
-})
+}, { deep: true })
 
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
 const status = useTemplateRef<HTMLElement>('status')
+const moreButton = useTemplateRef<ComponentPublicInstance>('moreButton')
 let observer: IntersectionObserver | undefined
 function more() {
   limit.value += PAGE_SIZE
 }
-async function onMore() {
-  more()
-  // The click that drew the last page removes the button it was on: focus goes to the status line, not to the page.
+// The page that draws the last card removes the button it was on: focus goes to the status line, not to the page.
+async function focusStatusWhenDone() {
   if (remaining.value === 0) {
     await nextTick()
     status.value?.focus()
   }
+}
+async function onMore() {
+  more()
+  await focusStatusWhenDone()
+}
+// The sentinel draws a page too (#369): when „Mehr laden“ had the focus, the same focus rule applies; any other focus stays where it is.
+async function onSentinel() {
+  const onButton = document.activeElement === moreButton.value?.$el
+  more()
+  if (onButton) await focusStatusWhenDone()
 }
 // A fresh observer per page and per sentinel: one that still sees the sentinel after a page (a tall screen) fires again at once, which a long-lived observer would not.
 watch([sentinel, () => visible.value.length], () => {
@@ -92,7 +103,7 @@ watch([sentinel, () => visible.value.length], () => {
   const element = sentinel.value
   if (!element || typeof IntersectionObserver === 'undefined') return
   observer = new IntersectionObserver((entries) => {
-    if (entries.some(entry => entry.isIntersecting)) more()
+    if (entries.some(entry => entry.isIntersecting)) void onSentinel()
   }, { rootMargin: '0px 0px 400px 0px' })
   observer.observe(element)
 }, { flush: 'post' })
@@ -278,6 +289,7 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
       </p>
       <AppButton
         v-if="remaining > 0"
+        ref="moreButton"
         variant="secondary"
         class="self-center"
         @click="onMore"

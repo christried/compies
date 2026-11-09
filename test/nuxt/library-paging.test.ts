@@ -94,6 +94,23 @@ describe('the library paging (#369)', () => {
     page.unmount()
   })
 
+  it('moves the focus to the count when the sentinel draws the last page while „Mehr laden“ has the focus', async () => {
+    const observers = stubInView()
+    list = { games: library(41) }
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek', attachTo: document.body })
+    await settle(page)
+    moreButton(page)!.element.focus()
+    expect(document.activeElement).toBe(moreButton(page)!.element)
+
+    observers.see(true)
+    await flushPromises()
+
+    expect(names(page)).toEqual(listed(41))
+    expect(moreButton(page)).toBeUndefined()
+    expect(document.activeElement).toBe(status(page).element)
+    page.unmount()
+  })
+
   it('loads the next 40 when the sentinel comes into view, and keeps the list in order', async () => {
     const observers = stubInView()
     list = { games: library(176) }
