@@ -17,7 +17,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
 async function loadUser(): Promise<AuthUser | null> {
   if (import.meta.client) return (await $fetch<MeView>('/api/me')).user
-  // Better Auth may extend the login session while reading it; pass its cookie on to the browser.
+  // Better Auth may extend the login session while reading it, and the route corrects the Appearance cookie (#403); pass
+  // every cookie on to the browser.
   const event = useRequestEvent()!
   const response = await $fetch.raw<MeView>('/api/me', { headers: useRequestHeaders(['cookie']) })
   for (const cookie of response.headers.getSetCookie()) appendResponseHeader(event, 'set-cookie', cookie)
