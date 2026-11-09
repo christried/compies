@@ -5,6 +5,7 @@
 ### Neu
 
 - **Event löschen:** Als Host kannst du ein Event jetzt in der Host-Steuerung unter „Mehr“ löschen, in jeder Phase, nur nicht während eine Session läuft. Nach einer Sekunde Halten ist es für alle sofort weg: Es verschwindet von der Startseite, und wer es offen hat oder seinen Event-Link oder Einladungslink öffnet, sieht „Event gelöscht“. Rückgängig machen lässt es sich nicht. ([#333](https://github.com/christried/compies/issues/333))
+- **Tags:** In der Bibliothek kannst du einem Spiel jetzt bis zu acht Tags geben, etwa ein Genre oder „Co-op“: tippen und mit Enter oder Komma bestätigen. Beim Tippen schlägt das Formular die Tags vor, die es schon gibt. Die Karte zeigt bis zu drei Tags, die Spielseite alle. Tags sehen nur Hosts. ([#335](https://github.com/christried/compies/issues/335))
 
 ## [0.9.0] - 2026-11-08 – Siegerehrung
 
