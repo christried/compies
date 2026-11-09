@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestDb, createTestDbBefore, migrateTo } from './harness'
 
 // The migration that drops `event_pool_games.pool` and the `pool_kind` type (#301, step 2 of #286): every pool row keeps its
-// Event and game, the column and the type are gone. The 0.9 code that serves while this runs never names the column (ADR 0007).
+// Event and game, the column and the type are gone. The 0.9.0 code that serves while this runs still names the column in a pool save, which fails until the switch-over; the window is accepted (ADR 0007, the Release PR names it).
 
 const MIGRATION = '0026_drop_pool_column'
 
