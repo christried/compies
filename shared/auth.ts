@@ -8,6 +8,15 @@ export function isSignInProvider(value: unknown): value is SignInProvider {
   return (SIGN_IN_PROVIDERS as readonly unknown[]).includes(value)
 }
 
+/** A User's Appearance (GLOSSARY): Hell, Dunkel or System; light unless they choose otherwise (#401). */
+export const APPEARANCES = ['light', 'dark', 'system'] as const
+
+export type Appearance = typeof APPEARANCES[number]
+
+export function isAppearance(value: unknown): value is Appearance {
+  return (APPEARANCES as readonly unknown[]).includes(value)
+}
+
 /** A Display name has 1–32 characters after trimming; an emoji counts as one. */
 export const DISPLAY_NAME_MAX = 32
 
@@ -24,6 +33,8 @@ export interface AuthUser {
   isAdmin: boolean
   /** The newest Release the User has seen in „Was ist neu“ (#184); null before any. */
   newsSeen: string | null
+  /** The User's Appearance (#401); light for every User who never chose. */
+  appearance: Appearance
 }
 
 /** The name a User is shown with: the Display name once they set one, else the provider name (one rule for Home, the menu, Event members, hosts and game creators). */
@@ -39,6 +50,11 @@ export interface MeView {
 /** What `POST /api/me/news-seen` returns: the newest Release the User has seen now (#184). */
 export interface SavedNewsSeen {
   newsSeen: string
+}
+
+/** What POST /api/me/appearance returns: the Appearance just saved (#401). */
+export interface SavedAppearance {
+  appearance: Appearance
 }
 
 /** What `POST /api/profile/setup` returns: the User with the Display name just saved. */
