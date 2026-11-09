@@ -4,7 +4,7 @@ import { ceremonyLayout, ceremonyModel } from '~/utils/ceremony'
 import { buildRun, ceremonyRigState, measureRun, runGeometry, runPartsOf, type Burst, type RunParts } from '~/utils/ceremony-run'
 import type { RigState } from '~/utils/compibert-rig'
 import type { Gsap } from '~/utils/gsap'
-import { ceremonyEndsAt, ceremonyPlays, type CeremonyShape, ceremonyTimeline } from '~~/shared/ceremony'
+import { ceremonyEndsAt, ceremonyPlays, type RunShape, ceremonyTimeline } from '~~/shared/ceremony'
 import type { EventView } from '~~/shared/event'
 import type { CeremonyView } from '~~/shared/stage'
 
@@ -46,10 +46,11 @@ const partyCount = computed(() => props.view.standings?.length ?? 0)
 // A Tie (#315): the run's timeline also depends on the Winners and on whether this screen shows them as a grid. The server stored the end for
 // the default layout; a phone's grid of 3 Winners ends up to 1.7 s earlier than that, never later (shared/ceremony.ts).
 const roomy = useRoomy()
-const layout = computed(() => ceremonyLayout(model.value?.winners.length ?? 1, model.value?.rows.length ?? 0, roomy.value === true))
-const shape = computed(() => ({ partyCount: partyCount.value, winners: model.value?.winners.length ?? 1, grid: layout.value.stage === 'grid' }))
-/** The run's shape on this screen (shared/ceremony.ts `CeremonyShape`); null before the first start. */
-const runShape = computed<CeremonyShape | null>(() => (ceremony.value ? { ...shape.value, gag: ceremony.value.gag } : null))
+const layout = computed(() => ceremonyLayout(model.value?.winners.length ?? 1, model.value?.rows.length ?? 0, roomy.value))
+/** The run's shape on this screen (shared/ceremony.ts `RunShape`); null before the first start. */
+const runShape = computed<RunShape | null>(() => (ceremony.value
+  ? { partyCount: partyCount.value, winners: model.value?.winners.length ?? 1, grid: layout.value.stage === 'grid', gag: ceremony.value.gag }
+  : null))
 const schedule = computed(() => (runShape.value ? ceremonyTimeline(runShape.value) : null))
 
 /** The start (its ISO instant) this viewer's layer opened for, the one they closed and the one they skipped: in memory only. */
@@ -90,7 +91,8 @@ function close() {
  */
 async function replay() {
   const start = synced.value
-  if (!start || waiting) return
+  const shape = runShape.value
+  if (!start || !shape || waiting) return
   // The chunk comes before the zero is stamped (#308): a Member who opens a finished page later has none yet (it is preloaded for a run that is
   // ahead or on), and the download would eat the first part of the show. Under reduced motion the end frame needs none; a chunk that fails
   // opens the end frame as ever, because `begin()` fails the same way. A close (or a new start) while it loads cancels the replay.
@@ -103,7 +105,7 @@ async function replay() {
   }
   const startsMs = props.serverNow()
   // The server-style end (the default layout, never this screen's): harmless on a phone's grid of 3 Winners, which only waits a little for the clock (#315).
-  const endsAt = new Date(ceremonyEndsAt(startsMs, { partyCount: shape.value.partyCount, winners: shape.value.winners, gag: start.gag })).toISOString()
+  const endsAt = new Date(ceremonyEndsAt(startsMs, { partyCount: shape.partyCount, winners: shape.winners, gag: start.gag })).toISOString()
   const run: CeremonyView = { startsAt: new Date(startsMs).toISOString(), endsAt, gag: start.gag }
   const restart = open.value
   replayed.value = { of: start.startsAt, run }
@@ -236,14 +238,14 @@ async function begin() {
   const root = award.value?.root
   try {
     const found = root ? runPartsOf(root) : null
-    if (!root || !found || !ceremony.value) throw new Error('The ceremony has no parts to move')
+    const shape = runShape.value
+    if (!root || !found || !shape) throw new Error('The ceremony has no parts to move')
     gsapHandle = gsap
     parts = found
     // From here GSAP writes Compibert's transform: the static stand (#308) is cleared, so the build starts from its own values.
     found.compibert.style.transform = ''
     timeline = buildRun(gsap, found, runGeometry(measureRun(root, found)), {
-      ...shape.value,
-      gag: ceremony.value.gag,
+      ...shape,
       rigState: state => (rig.value = state),
       onBurst,
     })
