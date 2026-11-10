@@ -62,8 +62,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     /**
      * The lobby of 1.4 under a Hidden wheel: a Host, two Players in two teams of one, and every step a Player could see
      * through the room or the feed. Returns the Event and the four games that sit in its pools at some point (#165).
+     * With `castVeto` Player 1 casts a Veto in the open window before the Session ends: a Veto is refused after it (F15).
      */
-    /** With `castVeto` Player 1 casts a Veto in the open window before the Session ends: a Veto is refused after it (F15). */
     async function lobbyFlow({ castVeto = false }: { castVeto?: boolean } = {}) {
       const a = await newGame('Alpha Arena', 'aaaaaaaaaaa')
       const b = await newGame('Beta Bowling', 'bbbbbbbbbbb')

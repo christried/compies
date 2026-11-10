@@ -11,36 +11,26 @@ import { sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
 
-// The Event scenario (#418, spec #413): glossary verbs over the HTTP surface, in place of the `running()` / `event()` builders
-// that every integration test file used to write for itself. A Host with an Event, Players seated in teams, a Running Session,
-// a spin, the clock past the stop.
+// The Event scenario (#418, spec #413): glossary verbs over the HTTP surface. A verb is the happy path: it asserts `status === 200`
+// itself and answers what it created (an id, rows). A test that wants a refusal calls `send` (`sendVia`, ./app) and reads it with
+// `errorOf`.
 //
-// The rule that shapes it: a verb is the happy path. It asserts `status === 200` itself and answers what it created (an id, rows).
-// A test that wants a refusal calls `send` (`sendVia`, ./app) and reads it with `errorOf`. Where a builder differs from the others
-// it is an OPTION with the majority as its default, never a second sequence in a test file. A file that needs one thing the
-// others do not keeps a short local wrapper that calls these verbs and then inserts its own rows; it never copies the sign-in /
-// seat / start sequence. The cast (profiles, ids, emails, names) is the caller's: assertions name it.
+// In order of use:
+// - `signInAs`, or `hostSignsIn` for a Host (it sets the allowlist).
+// - `startRunningEvent` (an Event with a Running Session) or `setUpEvent` (the same, no Session started). Options: `host`,
+//   `players` and `seats` (a Player not seated is a Member on the Bench), `outsiders` (none), `sessions` (2), `slots` (one per
+//   Session, from 2090-10-30), `extraSlots` (none), `confirmed` (every Session), `settings` (spread over `TEST_SETTINGS`), `games`
+//   (none), `join` ('rows'), `quiet` ('room').
+// - A file that makes its own games over HTTP: `hostCreatesEvent` + `playersJoin`, then `startRunningSession` (the first Date, one
+//   Player per team, the start) or `hostSetsDates` + `playersTakeSeats` + `hostStartsSession`.
+// - The verbs on an Event take `(rig, event, …)`, the clock verbs `(rig, drawId)`, the reads `(rig, cookie, slug)`.
 //
-// What the builders needed, and the option that carries it (`startRunningEvent`):
+// What does not belong here: the cast (profiles, ids, emails, names) is the caller's, since assertions name it. A file that needs
+// one extra thing keeps a short local wrapper that calls these verbs and then inserts its own rows; it never copies the sign-in /
+// seat / start sequence.
 //
-// | test file (builder)                           | what is special                                          | options                                              |
-// |-----------------------------------------------|----------------------------------------------------------|------------------------------------------------------|
-// | rounds (`running`)                            | 2 teams of 2, 3 games with notes/image/video/price       | `settings`, `games`, `quiet: 'room-and-feed'`        |
-// | results (`running`)                           | 2 or 3 teams, points table by team count                 | `settings` (teamCount, teamSize, pointsTable), `seats`, `quiet: 'room-and-feed'` |
-// | clip (`running`)                              | 2 teams of 1, clipStart/clipLength, Hidden wheel         | `settings`, `games`, `quiet: 'room'`                 |
-// | vetoes (`running`)                            | Bench + Stands Member, 1 outsider, Members by rows       | `players`, `seats` (team or 'stands'), `outsiders`   |
-// | finish, last-game (`running`)                 | fewer Dates than Sessions                                | `sessions`, `slots`, `confirmed`                     |
-// | bonus-vetoes, pool-warning (`event`)          | not started; N games in the pool                         | `start: false`, `confirmed: 0` / `seats: []`, `games`|
-// | coin, countdown (`event`)                     | not running; two Members, no Dates                       | `start: false`, `confirmed: 0`, `seats: []`          |
-// | hidden-wheel (`runningEvent`)                 | joins by Invite, games made over HTTP, 1 Session         | `join: 'invite'`, or `hostCreatesEvent` + `playersJoin` + `startRunningSession` |
-// | finished-readonly (`finishedWheel`)           | finishes through the API after one Result                | `startRunningEvent` + `hostSpins`/`hostSets` + `hostEntersResult` + `hostFinishes` |
-// | share-image (`event`)                         | Spectator + Bench Member + outsider, optional finish     | `seats` with 'stands', `outsiders`, `hostFinishes`   |
-// | session-start, team-names, settings-teams     | Event in its poll or with one Date, Members on the Bench | `confirmed: 0 | 1`, `extraSlots` (a Slot beyond the Sessions), `seats: []`, `start: false`; settings-teams seats by the Host (a `send`) |
-// | delete-event (`buildEvent(phase)`)            | one Event per Phase, a stranger                          | `confirmed`, `start`, `hostEndsSession`, `outsiders`  |
-//
-// Not expressed: an Event with no settings (session-start `settings: false` updates the row after the set-up: a local wrapper), and an
-// Event whose games are created over HTTP with an image upload (hidden-wheel: the Host must be signed in first, so it goes through
-// `hostSignsIn` + the local `newGame` + `hostCreatesEvent({ pool })` + `playersJoin` + `startRunningSession`).
+// Not expressed: an Event with no settings (session-start updates the row after `setUpEvent`), and games made over HTTP with an
+// image upload (hidden-wheel-world: its own `newGame`, then `hostCreatesEvent({ pool })`).
 
 /** Where the verbs run: the app (`createTestApp`), its database, and the doubles the test already owns. A test rig, not the Event page's Stage (#415). */
 export interface Rig {
