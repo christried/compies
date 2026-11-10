@@ -153,7 +153,8 @@ export const eventMembers = pgTable('event_members', {
   eventId: uuid('event_id').notNull().references(() => events.id),
   userId: uuid('user_id').notNull().references(() => users.id),
   joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
-  zone: memberZone('zone').default('bench').notNull(),
+  /** `bench` is legacy: only the deployment before 0.12 writes it (ADR 0007 switch-over, #437); the code reads it as the Stands. */
+  zone: memberZone('zone').default('stands').notNull(),
   /** The team position (1..team count) while the zone is `team`, else null (#160). */
   team: integer('team'),
   /** When the Member took this team seat; the latest one wins the race for a last place (#160). Null outside a team. */

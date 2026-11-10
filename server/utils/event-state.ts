@@ -278,7 +278,7 @@ export function seatOf(state: EventState<'members'>, userId: string): Place | nu
   return row ? placeOf(row) : null
 }
 
-/** The Party a User plays in: the team of a Member on a team seat; null on the Bench, in the Stands and for a User who is no Member. */
+/** The Party a User plays in: the team of a Member on a team seat; null on the Stands and for a User who is no Member. */
 export function partyOf(state: EventState<'members'>, userId: string): number | null {
   const place = seatOf(state, userId)
   return place?.zone === 'team' ? place.team : null

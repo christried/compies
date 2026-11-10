@@ -1,4 +1,4 @@
-import type { Place, Zone } from './board'
+import type { Place, PlaceZone } from './board'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
@@ -143,7 +143,7 @@ export interface MemberView {
   name: string
   image: string | null
   isHost: boolean
-  zone: Zone
+  zone: PlaceZone
   team: number | null
   /** The Member's Team word; null without one, and always null outside a team (#161). */
   teamWord: string | null
