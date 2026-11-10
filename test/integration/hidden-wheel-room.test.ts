@@ -6,6 +6,7 @@ import type { Place } from '../../shared/board'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import type { RoomMessageType } from '../../shared/realtime'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
+import { sendVia } from './app'
 import { hiddenWheelWorld, HIDDEN_WHEEL, type Secret } from './hidden-wheel-world'
 import { hostPutsBack, hostSets } from './scenario'
 import { signIn } from './sign-in'
@@ -36,13 +37,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const player2 = { provider: 'twitch', id: '5', name: 'Zweite', email: 'second@example.com', image: undefined } as const
     const team = (position: number): Place => ({ zone: 'team', team: position })
 
-    function send(method: string, path: string, cookie: string, body?: unknown) {
-      return request(path, {
-        method,
-        headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), cookie },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      })
-    }
+    const send = sendVia(() => request)
 
     async function userIdOf(email: string) {
       const [row] = await testDb.db.select().from(users).where(eq(users.email, email))

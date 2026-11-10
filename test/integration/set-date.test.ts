@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { pollSlots, pollVotes, eventMembers, events, sessions } from '../../server/db/schema'
-import { createTestApp, type TestRequest } from './app'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createInterleavingDb, createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -60,28 +60,22 @@ describe('setting the Dates from the shared Date poll', () => {
     await testDb.db.insert(eventMembers).values({ eventId, userId: await userId(cookie) })
   }
 
+  const send = sendVia(() => request)
+
   function confirm(cookie: string | undefined, slug: string, slotId: unknown) {
-    return request(`/api/e/${slug}/confirm`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
-      body: JSON.stringify({ slotId }),
-    })
+    return send('POST', `/api/e/${slug}/confirm`, cookie, { slotId })
   }
 
   function vote(cookie: string, slug: string, slotId: string, value: string) {
-    return request(`/api/e/${slug}/slots/${slotId}/vote`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ value }),
-    })
+    return send('PUT', `/api/e/${slug}/slots/${slotId}/vote`, cookie, { value })
   }
 
   function ics(cookie: string | undefined, slug: string) {
-    return request(`/api/e/${slug}/ics`, { headers: cookie ? { cookie } : {} })
+    return send('GET', `/api/e/${slug}/ics`, cookie)
   }
 
   function read(cookie: string, slug: string) {
-    return request(`/api/e/${slug}`, { headers: { cookie } })
+    return send('GET', `/api/e/${slug}`, cookie)
   }
 
   async function eventRow(eventId: string) {

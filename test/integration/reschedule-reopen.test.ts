@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { pollSlots, pollVotes, eventMembers, events, sessions } from '../../server/db/schema'
-import { createTestApp, type TestRequest } from './app'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -73,16 +73,10 @@ describe('reschedule and reopen', () => {
     await testDb.db.insert(eventMembers).values({ eventId, userId: await userId(cookie) })
   }
 
-  function post(path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method: 'POST',
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   function confirm(cookie: string | undefined, slug: string, body: unknown) {
-    return post(`/api/e/${slug}/confirm`, cookie, body)
+    return send('POST', `/api/e/${slug}/confirm`, cookie, body)
   }
 
   /** The per-Session path of the Event's one Session (#55). */
@@ -92,27 +86,23 @@ describe('reschedule and reopen', () => {
   }
 
   async function reschedule(cookie: string | undefined, slug: string, body: unknown) {
-    return post(await onlySessionPath(slug, 'reschedule'), cookie, body)
+    return send('POST', await onlySessionPath(slug, 'reschedule'), cookie, body)
   }
 
   async function reopen(cookie: string | undefined, slug: string) {
-    return post(await onlySessionPath(slug, 'reopen'), cookie)
+    return send('POST', await onlySessionPath(slug, 'reopen'), cookie)
   }
 
   function vote(cookie: string, slug: string, slotId: string, value: string) {
-    return request(`/api/e/${slug}/slots/${slotId}/vote`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ value }),
-    })
+    return send('PUT', `/api/e/${slug}/slots/${slotId}/vote`, cookie, { value })
   }
 
   function view(cookie: string, slug: string) {
-    return request(`/api/e/${slug}`, { headers: { cookie } })
+    return send('GET', `/api/e/${slug}`, cookie)
   }
 
   function ics(cookie: string, slug: string) {
-    return request(`/api/e/${slug}/ics`, { headers: { cookie } })
+    return send('GET', `/api/e/${slug}/ics`, cookie)
   }
 
   async function eventRow(eventId: string) {
@@ -246,7 +236,7 @@ describe('reschedule and reopen', () => {
     }
 
     function rescheduleOne(cookie: string | undefined, slug: string, sessionId: string, body: unknown) {
-      return post(`/api/e/${slug}/sessions/${sessionId}/reschedule`, cookie, body)
+      return send('POST', `/api/e/${slug}/sessions/${sessionId}/reschedule`, cookie, body)
     }
 
     it('requires sign-in', async () => {

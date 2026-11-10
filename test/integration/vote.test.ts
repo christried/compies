@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
-import { createTestApp, type TestRequest } from './app'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -60,16 +60,14 @@ describe('poll votes and the Event read', () => {
     return { slug, eventId: event!.id, slotIdAt }
   }
 
+  const send = sendVia(() => request)
+
   function vote(cookie: string | undefined, slug: string, slotId: string, value: unknown) {
-    return request(`/api/e/${slug}/slots/${slotId}/vote`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
-      body: JSON.stringify({ value }),
-    })
+    return send('PUT', `/api/e/${slug}/slots/${slotId}/vote`, cookie, { value })
   }
 
   function read(cookie: string | undefined, slug: string) {
-    return request(`/api/e/${slug}`, { headers: cookie ? { cookie } : {} })
+    return send('GET', `/api/e/${slug}`, cookie)
   }
 
   describe('GET /api/e/:slug', () => {
