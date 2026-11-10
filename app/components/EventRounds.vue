@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GAME_GRID } from '~/utils/game-grid'
 import { CARD_REFLOW_CLASS, leaveInPlace, unwatched } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
 import type { ResultPlace } from '~~/shared/results'
@@ -6,8 +7,9 @@ import type { PointsTable } from '~~/shared/settings'
 import type { EndView, RoundView } from '~~/shared/stage'
 
 // The open Rounds on the stage (#228, 11-event-seite § EventPage, screen 15): every Round whose game is set and not put back,
-// as a GameCard row with „wird gespielt“, in the order they started. An open Round has no Result and so no number (the number
-// comes with the Result, #273). Everyone sees the game's name, picture and player count; the Host also gets its Game notes, open,
+// as a GameCard tile (#435: picture and name only, no „wird gespielt“ badge and no Price; the Price returns in the game dialog, #444),
+// in the order they started. An open Round has no Result and so no number (the number comes with the Result, #273). Everyone sees
+// the game's name and picture; the Host also gets its Game notes, open,
 // „Ergebnis eintragen“, which opens the result sheet for that Round (#273), and „Zurücklegen“ as a hold, which removes the Round and returns
 // a pool game to the pool. Everyone else reads under the card that the Host enters the Result. The sheet closes when its Round leaves the
 // list (a Result from another tab, or a refetch after a refusal). The sheet's kicker is „Spiel {played + 1} von {gameCount}“ from `end` (#274):
@@ -91,16 +93,13 @@ watch(resultFor, async (id, was) => {
         :key="round.id"
         class="flex min-w-0 flex-col gap-2"
       >
-        <GameCard
-          :game="round.game"
-          layout="row"
-        >
-          <template #actions>
-            <span class="rounded-pill border-2 border-line bg-primary px-2.5 py-0.5 text-[12px] font-extrabold whitespace-nowrap text-on-primary">
-              {{ t('rounds.playing') }}
-            </span>
-          </template>
-        </GameCard>
+        <!-- The Round's game as a tile in the pool's grid, one column wide (#435); the „wird gespielt“ badge is gone. -->
+        <div :class="GAME_GRID">
+          <GameCard
+            :game="round.game"
+            layout="tile"
+          />
+        </div>
         <GameNotesDisclosure
           v-if="round.notes"
           :notes="round.notes"
