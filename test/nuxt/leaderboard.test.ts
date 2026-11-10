@@ -16,7 +16,7 @@ const three = named(['Wilde Gurken', 'Die Füchse', null])
 const end = (played: number, gameCount = 6): EndView => ({ played, gameCount, complete: played >= gameCount, tie: null, finish: null, lastGame: null })
 const standing = (team: number, rank: number, points: number): StandingView => ({ team, rank, points })
 
-type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean, celebrate?: boolean, news?: StandingsNews | null, labelledBy?: string }
+type Props = { standings?: StandingView[], end?: EndView, teams?: BoardTeam[], framed?: boolean, celebrate?: boolean, news?: StandingsNews | null, hold?: boolean, labelledBy?: string }
 let page: VueWrapper | undefined
 
 async function mount(props: Props = {}) {
@@ -625,5 +625,208 @@ describe('the Standings in motion (#276)', () => {
     await receives(newsOf())
 
     expect(animationsOn('td')).toHaveLength(0)
+  })
+})
+
+// The stage block's table waits for its block (#442, `hold`): until the block has arrived on top it shows the Standings the page saw before the Result, and the sequence starts in the
+// render that turns `hold` off. The panel's and the phone's tab never get `hold`, so they play at once (the cases above).
+describe('a table that is held until its block has arrived (#442)', () => {
+  /** After Spiel 3 (Team 1 won again): +3 for Team 1 on top of AFTER. */
+  const AFTER_TWO = [standing(1, 1, 9), standing(2, 2, 5), standing(3, 3, 1)]
+  const second = (overrides: Partial<StandingsNews> = {}) => newsOf({ key: 2, number: 3, before: AFTER, ...overrides })
+  const ranks = () => rows().map(row => cells(row)[0]!.text())
+  const teamsOf = () => rows().map(row => row.attributes('data-team'))
+
+  /** A Result read while the block is still on its way: the news and the new Standings with `hold` on. */
+  async function heldReceives(news: StandingsNews | null, standings = AFTER) {
+    await page!.setProps({ standings, news, hold: true })
+    await nextTick()
+  }
+  async function release() {
+    await page!.setProps({ hold: false })
+    await nextTick()
+  }
+
+  it('shows the Standings before the Result: their order, points and ranks, and nothing of the sequence', async () => {
+    await mount({ standings: BEFORE, celebrate: true, framed: true })
+
+    await heldReceives(newsOf())
+
+    expect(teamsOf()).toEqual(['2', '1', '3'])
+    expect(ranks()).toEqual(['1.', '2.', '3.'])
+    expect(column()).toEqual(['5', '3', '0'])
+    expect(pills()).toHaveLength(0)
+    expect(stamps()).toHaveLength(0)
+    vi.advanceTimersByTime(5000)
+    await nextTick()
+    expect(confettiPieces()).toHaveLength(0)
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it('plays the sequence in the render that releases it: the pills, the new order, the count from before, the stamp and the confetti', async () => {
+    await mount({ standings: BEFORE, celebrate: true, framed: true })
+    await heldReceives(newsOf())
+
+    await release()
+
+    expect(teamsOf()).toEqual(['1', '2', '3'])
+    expect(ranks()).toEqual(['1.', '2.', '3.'])
+    expect(pills().map(pill => pill.text())).toEqual(['+3', '+0', '+1'])
+    expect(animationsOn('[data-delta]')).toHaveLength(3)
+    expect(animationsOn('[data-stamp]')).toHaveLength(1)
+    expect(stamps()[0]!.text()).toBe('Sieg in Spiel 2!')
+    // Rows are Team 1, 2, 3: the count starts from 3, 5, 0 and lands on 6, 5, 1.
+    expect(column()).toEqual(['3', '5', '0'])
+    await run(900)
+    expect(column()).toEqual(['6', '5', '1'])
+    vi.advanceTimersByTime(600)
+    await nextTick()
+    expect(confettiPieces()).toHaveLength(18)
+  })
+
+  it('plays at once without `hold`: the panel\'s tab and the phone\'s view do not wait', async () => {
+    await mount({ standings: BEFORE, celebrate: true, framed: true })
+
+    await receives(newsOf())
+
+    expect(pills()).toHaveLength(3)
+    expect(teamsOf()).toEqual(['1', '2', '3'])
+  })
+
+  it('stays calm for a news made long ago also with `hold`, and when the hold ends', async () => {
+    await mount({ standings: AFTER, news: newsOf({ at: Date.now() - 1500 }), hold: true, celebrate: true })
+
+    expect(column()).toEqual(['6', '5', '1'])
+    expect(pills()).toHaveLength(0)
+
+    await release()
+
+    expect(pills()).toHaveLength(0)
+    expect(column()).toEqual(['6', '5', '1'])
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it('holds the first Result too: every Party at 0 until the block has arrived, then it counts', async () => {
+    const zero = [standing(2, 1, 0), standing(1, 1, 0), standing(3, 1, 0)]
+    await mount({ standings: zero, end: end(0), celebrate: true, framed: true })
+
+    await page!.setProps({ standings: AFTER, end: end(1), news: newsOf({ before: zero, number: 1, winners: [1] }), hold: true })
+    await nextTick()
+
+    expect(column()).toEqual(['0', '0', '0'])
+    expect(page!.text()).toContain('Nach Spiel 1 von 6')
+    await release()
+    expect(column()).toEqual(['0', '0', '0'])
+    await run(900)
+    expect(column()).toEqual(['6', '5', '1'])
+  })
+
+  it('plays two Results read inside one wait as one sequence: from the table the viewer saw to the latest Result', async () => {
+    await mount({ standings: BEFORE, celebrate: true, framed: true })
+    await heldReceives(newsOf())
+
+    await heldReceives(second(), AFTER_TWO)
+
+    expect(column()).toEqual(['5', '3', '0'])
+    await release()
+
+    // One set of pills with both Results' gain, one stamp (the second's winner), counted from the first table.
+    expect(pills().map(pill => pill.text())).toEqual(['+6', '+0', '+1'])
+    expect(stamps()).toHaveLength(1)
+    expect(stamps()[0]!.text()).toBe('Sieg in Spiel 3!')
+    expect(column()).toEqual(['3', '5', '0'])
+    await run(900)
+    expect(column()).toEqual(['9', '5', '1'])
+  })
+
+  it('plays two Results in a row as two sequences: the second counts from the first\'s result', async () => {
+    await mount({ standings: BEFORE, celebrate: true, framed: true })
+    await receives(newsOf())
+    await run(900)
+    expect(pills()).toHaveLength(3)
+
+    // The second Result is read while the block is on its way again: the pills of the first leave, the table on screen stays.
+    await heldReceives(second(), AFTER_TWO)
+
+    expect(pills()).toHaveLength(0)
+    expect(column()).toEqual(['6', '5', '1'])
+    expect(teamsOf()).toEqual(['1', '2', '3'])
+    await release()
+
+    expect(pills().map(pill => pill.text())).toEqual(['+3', '+0', '+0'])
+    expect(column()).toEqual(['6', '5', '1'])
+    await run(900)
+    expect(column()).toEqual(['9', '5', '1'])
+  })
+
+  it('shows the new table when the news is gone while it is held, and `hold` with no news does nothing', async () => {
+    await mount({ standings: BEFORE, celebrate: true, framed: true })
+    await heldReceives(newsOf())
+    expect(column()).toEqual(['5', '3', '0'])
+
+    await heldReceives(null)
+
+    expect(teamsOf()).toEqual(['1', '2', '3'])
+    expect(column()).toEqual(['6', '5', '1'])
+    await release()
+    expect(pills()).toHaveLength(0)
+    expect(animate).not.toHaveBeenCalled()
+
+    await page!.setProps({ standings: AFTER_TWO, hold: true })
+    await nextTick()
+    expect(column()).toEqual(['9', '5', '1'])
+  })
+
+  it('draws a Party the news did not know last, at 0 and on its current rank, and leaves out one the Standings lack', async () => {
+    await mount({ standings: [standing(2, 1, 5), standing(1, 2, 3)], end: end(2), celebrate: true })
+
+    // Team 3 is new to the table; Team 2 is not in the Standings any more.
+    await heldReceives(newsOf({ before: [standing(2, 1, 5), standing(1, 2, 3)] }), [standing(1, 1, 6), standing(3, 2, 1)])
+    // The row that left is gone once its leave frame has run (the group's own transition, jsdom runs on the fake frames).
+    await run(100)
+
+    expect(teamsOf()).toEqual(['1', '3'])
+    expect(ranks()).toEqual(['2.', '2.'])
+    expect(column()).toEqual(['3', '0'])
+    await release()
+    expect(teamsOf()).toEqual(['1', '3'])
+    expect(ranks()).toEqual(['1.', '2.'])
+  })
+
+  it('holds a table of two Parties and one of eight', async () => {
+    await mount({ standings: [standing(2, 1, 4), standing(1, 2, 1)], teams: named(['A', 'B']), end: end(1) })
+    await heldReceives(newsOf({ before: [standing(2, 1, 4), standing(1, 2, 1)], winners: [1] }), [standing(1, 1, 5), standing(2, 2, 4)])
+    expect(teamsOf()).toEqual(['2', '1'])
+    expect(column()).toEqual(['4', '1'])
+    await release()
+    expect(teamsOf()).toEqual(['1', '2'])
+    page!.unmount()
+
+    const eight = Array.from({ length: 8 }, (_, index) => standing(8 - index, index + 1, 8 - index))
+    const later = Array.from({ length: 8 }, (_, index) => standing(index + 1, index + 1, 20 - index))
+    await mount({ standings: eight, teams: named(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']), end: end(1) })
+    await heldReceives(newsOf({ before: eight, winners: [1] }), later)
+    expect(teamsOf()).toEqual(['8', '7', '6', '5', '4', '3', '2', '1'])
+    expect(column()).toEqual(['8', '7', '6', '5', '4', '3', '2', '1'])
+    await release()
+    expect(teamsOf()).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
+    expect(pills()).toHaveLength(8)
+  })
+
+  it('plays the reduced sequence after the hold: the final numbers at once, the 0.2 s fades, no confetti', async () => {
+    motion('reduced')
+    await mount({ standings: BEFORE, celebrate: true, framed: true })
+    await heldReceives(newsOf())
+    expect(column()).toEqual(['5', '3', '0'])
+    expect(animate).not.toHaveBeenCalled()
+
+    await release()
+    vi.advanceTimersByTime(600)
+    await nextTick()
+
+    expect(column()).toEqual(['6', '5', '1'])
+    expect(confettiPieces()).toHaveLength(0)
+    expect(animationsOn('[data-stamp]')[0]![1]).toMatchObject({ duration: 200 })
+    expect(animationsOn('[data-delta]')[0]![1]).toMatchObject({ duration: 200 })
   })
 })

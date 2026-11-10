@@ -86,8 +86,13 @@ const hostActions = useHostActions(
 // The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4) at the order clock's `now` (#441: a block that
 // something just happened in rises half a second after its moment). The clock lives here, not in the stage, so it survives a switch of the phone's tab; the stage
 // and the phone's Event tab read the same state.
-const orderAt = useStageOrder(() => data.value, serverClock.now)
-const pageState = computed(() => (data.value ? eventPageState(data.value, orderAt.value) : null))
+const { orderAt, counted, arrivals } = useStageOrder(() => data.value, serverClock.now)
+const pageState = computed(() => (data.value ? eventPageState(data.value, orderAt.value, counted.value) : null))
+/** The Standings' sequence waits while their block has not arrived on top (#442): false for a null clock (server render, reload, hidden tab) and for a view without a Result moment, which have no arrival. */
+const standingsHeld = computed(() => {
+  const arrival = arrivals.value.standings
+  return orderAt.value !== null && arrival !== undefined && arrival > orderAt.value
+})
 
 // Compibert's header wears the party hat for a Player seated in a Leading Party (#38); no data (loading, error) is the plain head.
 const accessory = computed(() => (data.value && wearsPartyhat(data.value) ? 'partyhat' as const : undefined))
@@ -215,6 +220,7 @@ const { news } = useStandingsNews(data, slug)
       :view="data"
       :page-state="pageState"
       :news="news"
+      :standings-held="standingsHeld"
       :actions="actions"
       :votes="votes"
       :slots="slots"

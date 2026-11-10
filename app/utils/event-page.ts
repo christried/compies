@@ -2,7 +2,7 @@ import { hasStarted, nextSession, noSessionLeft, runningOf, sessionState, type S
 import type { EventView, Phase, SessionView } from '~~/shared/event'
 import { leadingTeams } from '~~/shared/finish'
 import { teamNameAt } from './board'
-import { stageBlocks, type Block, type PageKind, type StageInput } from './event-stage'
+import { stageBlocks, type Block, type PageKind, type StageCounted, type StageInput } from './event-stage'
 import type { Translate } from './settings-summary'
 
 // The one state of the Event page for everybody (#166, 11-event-seite § EventPage): the Head and the blocks of the stage
@@ -201,9 +201,9 @@ export function pageFacts({ settings, sessions, missingDates, event }: Pick<Even
 
 /**
  * The state of the Event page: its facts and the blocks the Stage module lists for its kind, in the order of `now` (epoch ms, server time; the page's order clock, #441).
- * null counts every moment: the server render, a hidden tab, a Host dock that only wants the facts.
+ * null counts every moment: the server render, a hidden tab, a Host dock that only wants the facts. `counted` is what the page has counted already (#442): a block keeps the place of its last counted moment.
  */
-export function eventPageState(input: PageInput, now: number | null = null): EventPageState {
+export function eventPageState(input: PageInput, now: number | null = null, counted?: StageCounted): EventPageState {
   const facts = pageFacts(input)
-  return { ...facts, blocks: stageBlocks(input, facts.kind, now) }
+  return { ...facts, blocks: stageBlocks(input, facts.kind, now, counted) }
 }

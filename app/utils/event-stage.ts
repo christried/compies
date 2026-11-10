@@ -46,6 +46,8 @@ interface StagePiece {
   moment?: (view: StageInput) => number | null
   /** Who sees the piece; omitted = everybody. */
   audience?: 'host' | 'members'
+  /** Something waits for this block to arrive on top (#442: the Standings' result sequence); `stageArrivals` lists its arrival. */
+  arrives?: true
   /** Whether the view has the piece (a block that shows data is listed only while its data is there, #256); omitted = always. */
   present?: (view: StageInput, ctx: { kind: PageKind, pollOpen: boolean }) => boolean
   /** The instants (server time, epoch ms) at which the page must read the Event again (ADR 0013); a piece with a deadline adds them here (#256). */
@@ -120,6 +122,7 @@ const PIECES: StagePiece[] = [
   {
     block: 'standings',
     at: { running: 6, between: 5, done: 6, finished: 4 },
+    arrives: true,
     present: played,
     moment: ({ results }) => latest(...(results ?? []).flatMap(result => [msOf(result.resultAt), result.correctedAt === null ? null : msOf(result.correctedAt)])),
   },
@@ -152,6 +155,12 @@ const PIECES: StagePiece[] = [
 /** A block the view lists for a kind: its rank there, whether it is pinned and its moment (null: none; a finished Event has none, so it never reorders). */
 interface Listed { block: Block, rank: number, pinned: boolean, moment: number | null }
 
+/**
+ * What the page has counted (#442): per block, the latest moment it showed the block risen at. A block whose newer moment is not counted yet keeps the place its last counted
+ * moment gave it, so a read never lowers a block the page already shows risen (a reload's first read, a second Result). Epoch ms.
+ */
+export type StageCounted = Partial<Record<Block, number>>
+
 /** The pieces whose block sits in the kind, that the viewer sees and the view has, with what the order reads of each. */
 function listed(view: StageInput, kind: PageKind): Listed[] {
   const ctx = { kind, pollOpen: datePollOpen(view.event.phase, view.missingDates) }
@@ -167,22 +176,43 @@ function listed(view: StageInput, kind: PageKind): Listed[] {
 
 const byRank = (a: Listed, b: Listed) => a.rank - b.rank
 
+/** Whether a moment is counted at `now`: `moment + RISE_DELAY_MS <= now`; null counts every moment. */
+const isCounted = (moment: number, now: number | null) => now === null || moment + RISE_DELAY_MS <= now
+
 /**
- * The one place that arranges the blocks of a kind (#441): (1) the pinned blocks, by rank; (2) every block whose moment is counted (`moment + RISE_DELAY_MS <= now`),
- * newest first, equal moments by rank; (3) the rest by rank (a stable sort, so equal ranks keep the table's order). `now` null counts every moment: the server render,
- * the first client render, a hidden tab and a reload show the order that is settled. A pure function of the view and `now`.
+ * The one place that arranges the blocks of a kind (#441): (1) the pinned blocks, by rank; (2) every block with a key, newest first, equal keys by rank; (3) the rest by rank
+ * (a stable sort, so equal ranks keep the table's order). A piece's key is its moment when that is counted (`moment + RISE_DELAY_MS <= now`), else the moment the page last counted
+ * for the block (`counted`, #442), else none. `now` null counts every moment: the server render, the first client render, a hidden tab and a reload show the order that is settled.
+ * A pure function of the view, `now` and `counted`.
  */
-function arranged(pieces: Listed[], now: number | null): Block[] {
-  const counted = (piece: Listed) => piece.moment !== null && (now === null || piece.moment + RISE_DELAY_MS <= now)
+function arranged(pieces: Listed[], now: number | null, counted?: StageCounted): Block[] {
+  const keyOf = (piece: Listed) => (piece.moment === null ? null : isCounted(piece.moment, now) ? piece.moment : (counted?.[piece.block] ?? null))
+  const keys = new Map(pieces.map(piece => [piece, keyOf(piece)] as const))
   const pinned = pieces.filter(piece => piece.pinned).sort(byRank)
-  const lifted = pieces.filter(piece => !piece.pinned && counted(piece)).sort((a, b) => b.moment! - a.moment! || byRank(a, b))
-  const rest = pieces.filter(piece => !piece.pinned && !counted(piece)).sort(byRank)
+  const lifted = pieces.filter(piece => !piece.pinned && keys.get(piece) !== null).sort((a, b) => keys.get(b)! - keys.get(a)! || byRank(a, b))
+  const rest = pieces.filter(piece => !piece.pinned && keys.get(piece) === null).sort(byRank)
   return [...pinned, ...lifted, ...rest].map(piece => piece.block)
 }
 
-/** The blocks of the stage for a page kind, top to bottom, at `now` (epoch ms, server time; null: every moment counted): the pieces whose block sits in the kind, that the viewer sees and the view has. */
-export function stageBlocks(view: StageInput, kind: PageKind, now: number | null): Block[] {
-  return arranged(listed(view, kind), now)
+/** The blocks of the stage for a page kind, top to bottom, at `now` (epoch ms, server time; null: every moment counted) and with what the page `counted` already: the pieces whose block sits in the kind, that the viewer sees and the view has. */
+export function stageBlocks(view: StageInput, kind: PageKind, now: number | null, counted?: StageCounted): Block[] {
+  return arranged(listed(view, kind), now, counted)
+}
+
+/**
+ * What the page has counted after a read at `now` (#442), from what it had (`before`): each listed block whose moment is counted now gets that moment (the truth, also when it is lower than
+ * before: a put-back, #441); a block whose moment is not counted yet keeps its `before`; blocks the kind does not list and pieces without a moment are dropped. Returns `before` itself when
+ * nothing changed, so a watcher sees no churn.
+ */
+export function stageCounted(view: StageInput, kind: PageKind, now: number | null, before: StageCounted = {}): StageCounted {
+  const next: StageCounted = {}
+  for (const { block, moment } of listed(view, kind)) {
+    if (moment === null) continue
+    const at = isCounted(moment, now) ? moment : before[block]
+    if (at !== undefined) next[block] = at
+  }
+  const same = Object.keys(next).length === Object.keys(before).length && Object.entries(next).every(([block, at]) => before[block as Block] === at)
+  return same ? before : next
 }
 
 /** The moments (epoch ms) of the blocks the kind lists that have one; none for a finished Event, which never reorders (#441). */
@@ -193,6 +223,32 @@ export function stageMoments(view: StageInput, kind: PageKind): Partial<Record<B
 /** The instants (epoch ms) at which a moment is counted: one per moment plus RISE_DELAY_MS. The page's order clock sleeps until the next one (useStageOrder, #441). */
 export function stageRises(view: StageInput, kind: PageKind): number[] {
   return Object.values(stageMoments(view, kind)).map(moment => moment + RISE_DELAY_MS)
+}
+
+/**
+ * The instant (epoch ms) a block has arrived on top (#442), or null when the kind does not list it or it has no moment (a finished Event has none). Its rise is `moment + RISE_DELAY_MS`;
+ * when the rise moves it (it is in `risen` of the order just before and at the rise) the block glides for `settleMs` (the glide's duration plus one frame, from the caller: this module
+ * reads no CSS), else it is on top at the rise. `counted` is what the page has counted, as in `stageBlocks`.
+ */
+export function stageArrival(view: StageInput, kind: PageKind, block: Block, settleMs: number, counted?: StageCounted): number | null {
+  const pieces = listed(view, kind)
+  const moment = pieces.find(piece => piece.block === block)?.moment
+  if (moment === undefined || moment === null) return null
+  const rise = moment + RISE_DELAY_MS
+  return risen(arranged(pieces, rise - 1, counted), arranged(pieces, rise, counted)).includes(block) ? rise + settleMs : rise
+}
+
+/**
+ * The arrivals (`stageArrival`) of every listed block something waits for (`arrives`), by block: the order clock keeps them and sleeps until them too (useStageOrder). A function of `counted` as it was
+ * *before* the block's moment was counted: once it is, the block has no place to move from, so the clock asks when the moment first shows up and remembers the answer.
+ */
+export function stageArrivals(view: StageInput, kind: PageKind, settleMs: number, counted?: StageCounted): Partial<Record<Block, number>> {
+  const arrivals: Partial<Record<Block, number>> = {}
+  for (const { block, arrives } of PIECES) {
+    const at = arrives && block ? stageArrival(view, kind, block, settleMs, counted) : null
+    if (block && at !== null) arrivals[block] = at
+  }
+  return arrivals
 }
 
 /**

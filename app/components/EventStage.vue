@@ -23,6 +23,8 @@ const props = defineProps<{
   pageState: EventPageState
   /** What is new on the Standings (#276): the stage block celebrates it. */
   news: StandingsNews | null
+  /** The Standings' block has not arrived on top yet (#442): the stage's table keeps the Standings from before the Result until it has. The panel's tab never waits. */
+  standingsHeld: boolean
   actions: ReturnType<typeof useStageActions>
   votes: OptimisticVotes
   /** The open Slots with their day and time in Berlin, for the poll. */
@@ -176,6 +178,7 @@ watch(() => props.pageState.blocks, (after, before) => {
         :end="view.end!"
         :teams="view.teams"
         :news="news"
+        :hold="standingsHeld"
       />
 
       <!-- The history of the finished stage is read-only for everyone: no `corrections` (#275), not even for the Host (#277). -->
