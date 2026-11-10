@@ -81,7 +81,7 @@ export function useHostActions(
     const lastGameReason = reasonText(state.lastGameRejection, 'lastGame')
     // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
     const coinReason = reasonText(coinRejectionAt(current, serverNow()))
-    // The ceremony's reason is the rule's, with the server clock (#309): it stays while a run plays, and the read at the run's end (viewInstants) clears it.
+    // The ceremony's reason is the rule's, with the server clock (#309): it stays while a run plays, and the read at the run's end (stageInstants) clears it.
     const ceremonyReason = reasonText(ceremonyRejectionAt(current, serverNow()))
     // „Event löschen“ (#333) is refused while a Session runs: the same rule the route applies (runningOf), so the reason shows at once.
     const deleteReason = current.runningSessionId === null ? undefined : reasonText('session_running', 'deleteEvent')
