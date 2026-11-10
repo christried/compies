@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import NextGamePicker from '~/components/NextGamePicker.vue'
 import type { GameTag, GameView, PoolGame } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
-import { clickButton, dialog } from './event-page'
+import { clickButton, dialog, restoreScreen, stubScreen } from './event-page'
 
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
 // time the sheet opens, there only in a Selection mode with a wheel, and its value goes out with the game that is picked.
@@ -258,5 +258,61 @@ describe('the library list of the picker (#369)', () => {
     await flushPromises()
 
     await vi.waitFor(() => expect(libraryCards()).toHaveLength(40))
+  })
+})
+
+// The Notes button of a game in the picker (#436): on a pool game and a library game with Notes, and on no other; Escape closes its
+// popover, the sheet stays open and the focus goes back to the button.
+describe('the Notes button of a game in the picker (#436)', () => {
+  const poolWithNotes: PoolGame = { ...halo, notes: 'Settings: 3 Runden\nWarmup: Lobby' }
+  const poolWithout: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
+  const poolList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
+  const libraryList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Bibliothek"]')!
+  const notesButtons = (root: ParentNode) => root.querySelectorAll<HTMLButtonElement>('button[aria-label="Notizen ansehen"]')
+  const rowOf = (list: HTMLElement, name: string) => [...list.querySelectorAll<HTMLElement>('li')].find(row => row.querySelector('b')?.textContent?.trim() === name)!
+  const popover = () => document.querySelector<HTMLElement>('[role="dialog"]:not([data-sheet])')
+  const sheet = () => document.querySelector('[data-sheet="panel"]')
+
+  beforeEach(async () => {
+    stubScreen(true)
+    signInAs({ ...kitty, canHost: true })
+    await clearNuxtData('games')
+    useState('game-library').value = null
+    libraryGames = [libraryGame(1, 'Retro Kart', { notes: 'Setup: Tisch' }), libraryGame(2, 'Schach')]
+    libraryTags = []
+  })
+
+  afterEach(() => restoreScreen())
+
+  it('shows it on the pool game with Notes next to its ✓, and on none of the others', async () => {
+    await mount({ pool: [poolWithNotes, poolWithout] })
+
+    expect(notesButtons(rowOf(poolList(), 'Halo'))).toHaveLength(1)
+    expect(rowOf(poolList(), 'Halo').querySelector('button[aria-label="Halo auswählen"]')).not.toBeNull()
+    expect(notesButtons(rowOf(poolList(), 'Pong'))).toHaveLength(0)
+  })
+
+  it('shows it on the library game with Notes in the browser only', async () => {
+    await mount({ pool: [poolWithout] })
+    await vi.waitFor(() => expect(libraryList().querySelectorAll('li')).toHaveLength(2))
+
+    expect(notesButtons(rowOf(libraryList(), 'Retro Kart'))).toHaveLength(1)
+    expect(notesButtons(rowOf(libraryList(), 'Schach'))).toHaveLength(0)
+    expect(notesButtons(poolList())).toHaveLength(0)
+  })
+
+  it('closes its popover on Escape, keeps the picker sheet open and gives the focus back to the button', async () => {
+    await mount({ pool: [poolWithNotes] })
+    const trigger = notesButtons(poolList())[0]!
+    trigger.click()
+    await flushPromises()
+    expect(popover()).not.toBeNull()
+
+    popover()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+
+    expect(popover()).toBeNull()
+    expect(sheet()).not.toBeNull()
+    expect(document.activeElement).toBe(trigger)
   })
 })

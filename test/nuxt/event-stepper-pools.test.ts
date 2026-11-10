@@ -447,6 +447,16 @@ describe('the pool steps', () => {
       expect(dialog()!.querySelector('form')).not.toBeNull()
     })
 
+    it('shows the Free-to-play hint of the game form in the sheet (#423)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+
+      await newGameButton(page).trigger('click')
+
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      expect(dialog()!.textContent).toContain('Ohne Preis bekommt das Spiel den Tag „Free-to-play“.')
+    })
+
     it('puts the new game in the pool, closes the sheet and keeps what the Host typed in the other steps', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
@@ -670,5 +680,73 @@ describe('the game browser in the pool steps (#173)', () => {
       expect(moreButton(page)).toBeDefined()
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Spiel 41'])
     })
+  })
+})
+
+// The Notes button of a game in the pool steps (#436): on a game with Notes, in the compact browser and on the chosen games, and on no
+// other. The ＋ and the ✕ stay where they are.
+describe('the Notes button of a game in the pool steps (#436)', () => {
+  const withNotes = game(1, 'Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby' })
+  const notesButtons = (root: { element: Element }) => root.element.querySelectorAll('button[aria-label="Notizen ansehen"]')
+  const cardOf = (page: Page, name: string) => picker(page).findAll('li').find(card => card.get('b').text() === name)!
+
+  beforeEach(async () => {
+    useState('toasts').value = []
+    library = [withNotes, pong, chess]
+    await clearNuxtData('games')
+    useState('game-library').value = null
+  })
+
+  it('shows a Notes button on the library game with Notes, and none on the others, in the compact browser', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    expect(notesButtons(picker(page))).toHaveLength(1)
+    expect(notesButtons(cardOf(page, 'Mario Kart'))).toHaveLength(1)
+    expect(notesButtons(cardOf(page, 'Pong'))).toHaveLength(0)
+    expect(maybeToggle(page, 'Mario Kart in den Pool').exists()).toBe(true)
+  })
+
+  it('shows the Notes button on a chosen game with Notes, next to its ✕', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Mario Kart in den Pool').trigger('click')
+    await toggle(page, 'Pong in den Pool').trigger('click')
+
+    const rows = inPool(page)!.findAll('li')
+    const kartRow = rows.find(row => row.get('b').text() === 'Mario Kart')!
+    const pongRow = rows.find(row => row.get('b').text() === 'Pong')!
+    expect(notesButtons(kartRow)).toHaveLength(1)
+    expect(kartRow.element.querySelector('button[aria-label="Mario Kart aus dem Pool nehmen"]')).not.toBeNull()
+    expect(notesButtons(pongRow)).toHaveLength(0)
+    expect(pongRow.element.querySelector('button[aria-label="Pong aus dem Pool nehmen"]')).not.toBeNull()
+  })
+
+  it('shows it on the only chosen game when that game has Notes', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Mario Kart in den Pool').trigger('click')
+
+    expect(inPool(page)!.findAll('li')).toHaveLength(1)
+    expect(notesButtons(inPool(page)!)).toHaveLength(1)
+  })
+
+  it('shows no Notes button anywhere when no library game has Notes, and the ＋ and ✕ stay', async () => {
+    library = [pong, chess]
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Pong in den Pool').trigger('click')
+
+    expect(notesButtons(page)).toHaveLength(0)
+    expect(maybeToggle(page, 'Schach in den Pool').exists()).toBe(true)
+    expect(maybeToggle(page, 'Pong aus dem Pool nehmen').exists()).toBe(true)
+  })
+
+  it('shows the Notes button in the browser while the pool is empty', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    expect(page.text()).toContain('Noch leer. Du kannst auch ohne Spiele weitermachen.')
+    expect(notesButtons(picker(page))).toHaveLength(1)
   })
 })

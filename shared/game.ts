@@ -230,6 +230,23 @@ export function parseTags(raw: unknown): GameTag[] | undefined {
   return new Set(tags.map(tag => tag.key)).size === tags.length ? tags : undefined
 }
 
+/** The Tag „Free-to-play“ (#423): the key the rule reads and the label it is stored under. */
+export const FREE_TO_PLAY_TAG: GameTag = { key: 'free-to-play', label: 'Free-to-play' }
+
+/**
+ * The Tags a game is stored with after a save (#423). Pure. `price` is the Price after the save (null for none).
+ * Free-to-play is present when there is no Price or its source is free_to_play; otherwise it is removed, also when typed.
+ * A missing one is appended after the others, unless eight other Tags already fill the game (the save still succeeds).
+ */
+export function tagsWithFreeToPlay(tags: GameTag[], price: GamePriceInput | null): GameTag[] {
+  const free = price === null || price.source === 'free_to_play'
+  const others = tags.filter(tag => tag.key !== FREE_TO_PLAY_TAG.key)
+  if (!free) return others
+  if (tags.some(tag => tag.key === FREE_TO_PLAY_TAG.key)) return tags
+  if (others.length >= TAGS_PER_GAME_MAX) return tags
+  return [...tags, FREE_TO_PLAY_TAG]
+}
+
 /** A Price as the form and the server read it (#337): `cents` is null exactly for Free-to-play and Abo. */
 export interface GamePriceInput {
   cents: number | null
