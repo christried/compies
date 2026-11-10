@@ -429,6 +429,9 @@ function readRings(kit) {
     const rect = el.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0 || !inDocument(rect)) continue
     el.focus()
+    // A control with `transition-colors` animates `outline-color` from its text colour to --cp-focus for 80 to 150 ms; read at once, the
+    // ring would be the text colour (#17121d on the selected option of a segmented control, #430). What a User sees at rest counts.
+    for (const animation of document.getAnimations()) if (animation instanceof CSSTransition) animation.finish()
     const stack = reach(el, () => el.getBoundingClientRect())
     if (!stack) {
       unseen.push(`${pathOf(el)} (ring)`)
