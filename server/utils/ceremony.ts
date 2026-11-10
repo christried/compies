@@ -7,7 +7,7 @@ import type { CeremonyStarted, CeremonyView } from '../../shared/stage'
 import { settingsFromRow } from '../../shared/settings'
 import { apiError } from './errors'
 import type { ChangeCore, EventRow } from './event-access'
-import { readEnd } from './finish'
+import { readEventState } from './event-state'
 import { requireSettings } from './settings'
 
 // The Award ceremony of an Event (GLOSSARY: Award ceremony; spec #308, #309). The start and the gag are two columns of `events`; the
@@ -42,7 +42,7 @@ export async function startCeremony({ tx, eventRow, user, now }: ChangeCore, ran
   if (early) throw apiError(early)
   // The previous run's end depends on the Winner count (#315), so the Standings are read before ceremony_running is decided.
   const known = settingsFromRow(eventRow)
-  const winners = known === null ? 0 : leadersOf((await readEnd(tx, eventRow.id, known)).standings).length
+  const winners = known === null ? 0 : leadersOf((await readEventState(tx, eventRow, now, ['rounds'])).standing!.standings).length
   const rejection = ceremonyRejection({ isHost, phase: eventRow.phase, latest: ceremonyViewOf(eventRow, winners), now })
   if (rejection) throw apiError(rejection)
 
