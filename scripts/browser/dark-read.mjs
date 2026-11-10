@@ -183,12 +183,38 @@ function makeKit(exclusionSelector) {
     return stack
   }
 
-  /** Scrolls a rect's element to the middle and returns the stack at the rect's centre, or null when that point is off the viewport. */
+  /**
+   * The middle of what of `rect` can be seen: cut to the viewport and to every ancestor that clips (`overflow` other than visible). A text
+   * that runs on past its box (`truncate`: the 60-character game name, #408) has its rect's middle outside the viewport and under the clip;
+   * the middle of the part that shows is where it is hit. Null when nothing shows.
+   */
+  function visibleMiddle(el, rect) {
+    let { left, top, right, bottom } = rect
+    for (let e = el; e && e !== document.documentElement; e = e.parentElement) {
+      const style = getComputedStyle(e)
+      if (style.overflowX === 'visible' && style.overflowY === 'visible') continue
+      const box = e.getBoundingClientRect()
+      if (style.overflowX !== 'visible') {
+        left = Math.max(left, box.left)
+        right = Math.min(right, box.right)
+      }
+      if (style.overflowY !== 'visible') {
+        top = Math.max(top, box.top)
+        bottom = Math.min(bottom, box.bottom)
+      }
+    }
+    left = Math.max(left, 0)
+    top = Math.max(top, 0)
+    right = Math.min(right, window.innerWidth)
+    bottom = Math.min(bottom, window.innerHeight)
+    return right > left && bottom > top ? { x: (left + right) / 2, y: (top + bottom) / 2 } : null
+  }
+
+  /** Scrolls a rect's element to the middle and returns the stack at the middle of what shows of the rect, or null when that is off the viewport. */
   function reach(el, rectOf) {
     el.scrollIntoView({ block: 'center', behavior: 'instant' })
     const rect = rectOf()
-    const x = rect.left + rect.width / 2
-    const y = rect.top + rect.height / 2
+    const { x, y } = visibleMiddle(el, rect) ?? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
     if (x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return null
     return stackAt(el, x, y)
   }
