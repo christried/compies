@@ -430,8 +430,15 @@ function readRings(kit) {
   return { rings, unseen }
 }
 
+/** The page function behind `keysOf`: the DOM path of every element matching `selector`. */
+function readKeys(kit, selector) {
+  return [...document.querySelectorAll(selector)].map(el => kit.pathOf(el))
+}
+
 const sources = fn => `(${fn})((${makeKit})(${JSON.stringify(EXCLUDED.map(entry => entry.selector).join(', '))}))`
 
+/** Evaluated in the page: the keys (DOM paths) of the elements matching `selector`, as the readings' items carry them (#408, `State.differs`). */
+export const keysOf = selector => `(${readKeys})((${makeKit})(''), ${JSON.stringify(selector)})`
 /** Evaluated in the page: the `Reading` (theme, scheme, texts, boxes, surfaces, excluded, unseen). */
 export const READ = sources(readPage)
 /** Evaluated in the page after a Tab press: `{ rings, unseen }`. */

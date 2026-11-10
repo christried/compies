@@ -161,7 +161,8 @@ export const STATES = [
     },
   }),
   // Both cards; „Darstellung“ and „Speichern“ are never clicked.
-  page('profil', 'hub', 'host', () => '/profil'),
+  // The control „Darstellung“ shows the stored choice, so it is „Dunkel“ in one pass and „System“ in the other: it stays out of the comparison.
+  page('profil', 'hub', 'host', () => '/profil', { differs: '[role="radiogroup"]' }),
   page('baustelle-archiv', 'hub', 'host', () => '/archiv'),
   page('baustelle-admin', 'hub', 'admin', () => '/admin'),
   page('baustelle-allgemein', 'hub', 'member', () => '/gibt-es-nicht'),

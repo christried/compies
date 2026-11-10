@@ -20,6 +20,8 @@
 //             appearances?: ('dark' | 'system')[],   // default both
 //             viewport?: true,               // the screenshot is the viewport, as for a dialog: fixed layers that are no dialog (a clip, a bar, a toast)
 //             open(ctx): Promise<void>,
+//             differs?: string,                      // a selector: what matches it or sits inside it is measured as before but left out of the Dunkel = System comparison
+//                                            // (a control that shows the stored Appearance is „Dunkel“ in one pass and „System“ in the other); the comparison's line says how many
 //             stillHolds?(ctx): Promise<void>,       // called once after the page and its stops were read; throws when what the state shows ended meanwhile (a Veto window, a Clip)
 //             stops?: { name, widths?, viewport?, go(ctx): Promise<void> }[] }   // further states on the same page load, in order
 //   ctx = { tab, tabs, width, height, appearance, data, signOut(how) }   // 390 × 844 and 1440 × 900; `tabs` = { host, member, admin }, the other accounts for the API
@@ -34,7 +36,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { closeAll, colorScheme, launchAll } from './chrome.mjs'
 import { cut, judgeBox, judgeRing, judgeSurface, judgeText, label, lines, same } from './contrast.mjs'
-import { READ, READ_RINGS } from './dark-read.mjs'
+import { keysOf, READ, READ_RINGS } from './dark-read.mjs'
 import { api, createEvent, createGame, eventView, ok, open, pressKey, results } from './kit.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -213,7 +215,9 @@ async function measure({ tab, state, name, width, appearance, first, viewport = 
     ...reading.surfaces.map(raw => ({ kind: 'surface', ...raw })),
     ...rings.map(raw => ({ kind: 'ring', ...raw })),
   ]
-  readings.set(`${name}|${width}|${appearance}`, { items, state })
+  // The DOM paths of what `differs` names, to leave their items out of the comparison.
+  const leave = state.differs ? await tab.evaluate(keysOf(state.differs)) : []
+  readings.set(`${name}|${width}|${appearance}`, { items, state, leave })
   return true
 }
 
@@ -292,9 +296,14 @@ try {
     const where = `[${dark.state.group}/${name} ${width} dark/system]`
     const twin = readings.get(`${name}|${width}|system`)
     if (!twin) continue
-    const differences = same(dark.items, twin.items)
+    // An item is left out when its path is a path the state's `differs` named or goes on from it (`>` a child, `#` the element's own text or value).
+    const left = item => [...dark.leave, ...twin.leave].some(key => item.key === key || item.key.startsWith(`${key}>`) || item.key.startsWith(`${key}#`))
+    const kept = items => items.filter(item => !left(item))
+    const out = dark.items.length - kept(dark.items).length
+    const outNote = out ? `, ${out} left out` : ''
+    const differences = same(kept(dark.items), kept(twin.items))
     if (!differences.length) {
-      log.check(`${where} Dunkel = System (${dark.items.length} elements)`, true)
+      log.check(`${where} Dunkel = System (${kept(dark.items).length} elements${outNote})`, true)
       continue
     }
     const byChange = new Map()
@@ -304,7 +313,7 @@ try {
     }
     for (const group of byChange.values()) {
       const texts = group.slice(0, 3).map(difference => label(difference.text, COPY, dark.state.static === true)).join(', ')
-      log.check(`${where} Dunkel = System: ${group[0].what} ×${group.length} ${texts}`, false, `Dunkel ${group[0].dark}, System ${group[0].system}`)
+      log.check(`${where} Dunkel = System${outNote ? ` (${out} left out)` : ''}: ${group[0].what} ×${group.length} ${texts}`, false, `Dunkel ${group[0].dark}, System ${group[0].system}`)
       findings.lines.push({
         outcome: 'fail', why: null, fg: group[0].dark, bg: group[0].system, ratio: null, need: null, kind: `same-${group[0].what}`, role: group[0].role,
         texts: group.slice(0, 3).map(difference => label(difference.text, COPY, dark.state.static === true)), count: group.length, keys: group.map(difference => difference.key),
