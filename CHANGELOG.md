@@ -6,12 +6,14 @@
 
 - **Profil:** „Profil“ in der Navigation öffnet jetzt eine eigene Seite. Dort siehst du dein Bild und änderst deinen Anzeigenamen, so oft du willst: Nach „Speichern“ steht der neue Name sofort oben in deinem Menü, und die anderen sehen ihn beim nächsten Laden überall, auch bei allem, was schon gespielt ist. Abmelden kannst du dort auch. ([#399](https://github.com/christried/compies/issues/399))
 - **Darstellung:** Auf der Profil-Seite wählst du jetzt zwischen Hell, Dunkel und System. Die Seite wechselt sofort, und deine Wahl gilt auf jedem Gerät, auf dem du angemeldet bist, ab dem nächsten Laden. Mit System folgt Compies deinem Gerät, auch wenn es abends auf dunkel umschaltet. Wer nichts wählt, bleibt bei Hell. ([#404](https://github.com/christried/compies/issues/404))
+- **Notizen im Spiele-Picker:** Beim Füllen des Spielepools und bei „Nächstes Spiel setzen“ hat ein Spiel mit Notizen jetzt einen Knopf „Notizen ansehen“. Er zeigt die Notizen, ohne dass du die Auswahl verlässt: am Desktop neben dem Spiel, auf dem Handy als Sheet von unten. ([#436](https://github.com/christried/compies/issues/436))
 
 ### Geändert
 
 - **Datenschutzerklärung:** Sie nennt jetzt, was bei Darstellung und Anzeigename gespeichert wird: Deine Darstellung (Hell, Dunkel oder System) liegt bei deinem Nutzerkonto, ein Cookie merkt sie auf dem Gerät, solange sie Dunkel oder System ist, und deinen Anzeigenamen kannst du jederzeit ändern. ([#405](https://github.com/christried/compies/issues/405))
 - Gibt es ein Team nicht mehr, weil der Host die Anzahl Teams gesenkt hat, sagt das Spielbrett jetzt „Dieses Team gibt es nicht mehr.“ Ohne laufende Session nennen „Nächstes Spiel setzen“ und „Rad drehen“ denselben Grund wie die Meldung: „Es läuft gerade keine Session.“ ([#421](https://github.com/christried/compies/issues/421))
 - **Tags in Farbe:** In der Bibliothek trägt jeder Tag eines Spiels jetzt eine eigene Farbe, auf der Spielkarte, auf der Seite des Spiels und im Formular. Derselbe Tag hat überall dieselbe Farbe; nur wenn zwei Tags eines Spiels dieselbe hätten, nimmt der spätere die nächste freie, so dass sich bis zu acht Tags eines Spiels nie eine Farbe teilen. ([#427](https://github.com/christried/compies/issues/427))
+- **Spiele auf der Eventseite als Kacheln:** Jedes Spiel zeigt sich dort mit Bild und Namen, im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“. ([#435](https://github.com/christried/compies/issues/435))
 
 ## [0.10.1] - 2026-11-09 – Partyhut
 

@@ -289,14 +289,17 @@ describe('the result', () => {
     expect(page!.get('[role="status"]').text()).toBe('')
   })
 
-  it('shows the Price line of the drawn game on its result card, and none for a game without a Price (#338)', async () => {
-    // The card reads the year of „Stand“ once, at mount: the clock is pinned to 2026 so the line has no year (the spin itself is in 2090).
+  it('shows the drawn game on its result card as a tile, cover and name, and no Price line (#435, was #338)', async () => {
+    // The clock is pinned so that a Price line would carry „Stand 3. Nov.“: the tile must not show it (the spin itself is in 2090).
     vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
     const priced: RoundGame = { ...halo, price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
     await mount(wheelOf(spinOf({ game: priced })))
     await at(STOP)
     expect(text()).toContain('Das Glücksrad sagt')
-    expect(text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+    expect(page!.get('[data-cover]').attributes('data-cover')).toBe('placeholder')
+    expect(text()).toContain('Halo')
+    expect(text()).not.toContain('19,99 €')
+    expect(text()).not.toContain('Stand')
     page!.unmount()
 
     await mount(wheelOf(spinOf({ game: halo })))

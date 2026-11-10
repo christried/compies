@@ -40,7 +40,7 @@ const draft = ref(draftFromEvent(data.value ?? { settings: null, pool: [] }))
 
 // The settings page has no room, so no server clock: the User's own clock stands in. The refresh only lifts the lock text sooner;
 // the server decides the lock itself (settleBeforeRead, locked_while_drawn), so a clock that is off only delays the text (#261).
-useInstantRefresh(() => (view.value ? viewInstants(view.value) : []), Date.now, () => void refreshEvent(slug.value))
+useInstantRefresh(() => (view.value ? stageInstants(view.value) : []), Date.now, () => void refreshEvent(slug.value))
 
 const heading = computed(() => t(notSetUp.value ? 'eventSettings.setupHeading' : 'eventSettings.heading'))
 useHead({ title: () => `${heading.value} · ${data.value?.event.name ?? ''}` })
