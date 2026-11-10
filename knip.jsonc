@@ -31,6 +31,8 @@
         "scripts/ci-wait.mjs!",
         // Run with node by the orchestrator to remove finished agents' worktrees (docs/agents/delivery.md § Branch hygiene).
         "scripts/worktree-clean.mjs!",
+        // Run with node by the orchestrator to merge a reviewed ticket branch into the integration branch without a working tree (docs/agents/subagents.md § Supervision, #478).
+        "scripts/merge-into.mjs!",
         // Run by hand with node after a change to the rig; its output (server/assets/compibert/*.svg) is committed, `--check` guards it (#311).
         "scripts/bake-compibert.mjs!"
       ],
