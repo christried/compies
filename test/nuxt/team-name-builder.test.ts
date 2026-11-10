@@ -404,6 +404,53 @@ describe('the folded team name (#439)', () => {
     expect(document.activeElement).not.toBe(pencil(page, 'Wilde Gurken').element)
   })
 
+  it('keeps the field, the draft and the focus when another Player\'s word names the team meanwhile (#488)', async () => {
+    const { page, words } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1))] })
+    field(page, 'Team Rot').element.focus()
+    await type(field(page, 'Team Rot'), 'Wil')
+
+    await page.setProps({ teams: teamsNamed('Gurken'), members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1), 'Gurken')] })
+    await settle()
+
+    expect(field(page, 'Gurken').exists()).toBe(true)
+    expect(field(page, 'Gurken').element.value).toBe('Wil')
+    expect(document.activeElement).toBe(field(page, 'Gurken').element)
+    expect(pencil(page, 'Gurken').exists()).toBe(false)
+    expect(words).toEqual([])
+
+    await field(page, 'Gurken').trigger('keydown', { key: 'Enter' })
+    await settle()
+
+    expect(words).toEqual(['Wil'])
+    expect(field(page, 'Gurken').exists()).toBe(false)
+    expect(document.activeElement).toBe(pencil(page, 'Gurken').element)
+  })
+
+  it('folds a field that is not in use when another Player\'s word names the team (#488)', async () => {
+    const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1))] })
+
+    await page.setProps({ teams: teamsNamed('Gurken'), members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1), 'Gurken')] })
+    await settle()
+
+    expect(field(page, 'Gurken').exists()).toBe(false)
+    expect(pencil(page, 'Gurken').exists()).toBe(true)
+  })
+
+  it('folds after the Player\'s own first word is saved with Enter (#488)', async () => {
+    const { page, words } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1))] })
+    field(page, 'Team Rot').element.focus()
+    await type(field(page, 'Team Rot'), 'Wilde')
+    await field(page, 'Team Rot').trigger('keydown', { key: 'Enter' })
+    await settle()
+    expect(words).toEqual(['Wilde'])
+
+    await page.setProps({ teams: teamsNamed('Wilde'), members: [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1))] })
+    await settle()
+
+    expect(field(page, 'Wilde').exists()).toBe(false)
+    expect(document.activeElement).toBe(pencil(page, 'Wilde').element)
+  })
+
   it('shows the field and no pencil for a team without words, counted at 0/12', async () => {
     const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1))] })
 

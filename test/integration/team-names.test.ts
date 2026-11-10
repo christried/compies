@@ -139,6 +139,19 @@ describe('Team names', () => {
       expect((await read(game)).members.find(member => member.id === game.ids.one)?.teamWord).toBe('Gurkenfreund')
     })
 
+    it('refuses a word with a control character with 400 invalid_team_word and keeps the saved word (#488)', async () => {
+      const game = await setup()
+      await seat(game, 'one', 1)
+      expect((await word(game, game.cookies.one, 'Wilde')).status).toBe(200)
+
+      for (const bad of ['Wil\u0002de', '\u0003\u0004', 'Wilde\u007F']) {
+        const response = await word(game, game.cookies.one, bad)
+        expect(response.status).toBe(400)
+        expect(await codeOf(response)).toBe('invalid_team_word')
+      }
+      expect((await read(game)).members.find(member => member.id === game.ids.one)?.teamWord).toBe('Wilde')
+    })
+
     it('removes the word with an empty one', async () => {
       const game = await setup()
       await seat(game, 'one', 1)

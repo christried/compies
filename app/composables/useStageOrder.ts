@@ -25,9 +25,11 @@ export type StageArrivals = Partial<Record<Block, number>>
  * page learns the arrival. A null clock (server render, a reload, a hidden tab) has none.
  *
  * A hidden tab takes the order at once: while `unwatched()` the value is null, a tab that turns hidden clears it and its timer, and a tab that shows again keeps null
- * until the next read. The timer and the listener are client only and end with the scope, as in useInstantRefresh.
+ * until the next read. So does a server clock that is not ready (#488, as for the tickers, #287): until `ready` the page's clock is the device's own, which may run minutes
+ * ahead (no wait, no hold for the whole page's life, because the clock never goes back) or behind (a timer on the wrong clock), so the value stays null and the read that
+ * follows the clock turning ready takes the synced time. The timer and the listener are client only and end with the scope, as in useInstantRefresh.
  */
-export function useStageOrder(view: () => StageInput | null | undefined, serverNow: () => number) {
+export function useStageOrder(view: () => StageInput | null | undefined, serverNow: () => number, ready: () => boolean = () => true) {
   const orderAt = ref<number | null>(null)
   const counted = shallowRef<StageCounted>({})
   const arrivals = shallowRef<StageArrivals>({})
@@ -87,8 +89,8 @@ export function useStageOrder(view: () => StageInput | null | undefined, serverN
   // The view may be loaded already: the null clock counts every moment.
   sync()
 
-  watch(view, () => {
-    if (unwatched()) {
+  watch([view, ready], () => {
+    if (unwatched() || !ready()) {
       stop()
       orderAt.value = null
       sync()

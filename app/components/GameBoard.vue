@@ -14,8 +14,8 @@ import type { EventSettings } from '~~/shared/settings'
 // a long press on touch), or from the keyboard through the MoveToMenu. An own move shows at once and glides home with
 // a toast when the server refuses it; somebody else's move arrives through the room (`member.moved`) and glides in (#208).
 // Four phases: `setup` (an Event without settings has no teams), `poll` (no Session has a Date: Players cannot take a
-// team yet), `open` (Team choice is open) and `running` (the first Session has started, #164: teams and names are locked
-// for Players, the Stands stay free, the Host moves anyone). Avatars are keyed by user id, so the refetch that follows a move keeps the
+// team yet), `open` (Team choice is open) and `running` (the first Session has started, #164: teams are locked for
+// Players, their Team word stays open (#438), the Stands stay free, the Host moves anyone). Avatars are keyed by user id, so the refetch that follows a move keeps the
 // glide going. The room comes from the Event page: one socket per page.
 const props = withDefaults(defineProps<{
   slug: string

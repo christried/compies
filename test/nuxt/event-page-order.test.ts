@@ -1,5 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
-import { effectScope, nextTick, shallowRef, TransitionGroup } from 'vue'
+import { effectScope, nextTick, ref, shallowRef, TransitionGroup } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshEvent } from '~/composables/useEventView'
 import { useStageOrder } from '~/composables/useStageOrder'
@@ -542,9 +542,9 @@ describe('the clock of the stage order', () => {
   })
 
   /** The order clock on a view the test replaces, as the page's `data` is replaced by every read. */
-  function clock(initial: StageInput | null = stageInput()) {
+  function clock(initial: StageInput | null = stageInput(), ready: () => boolean = () => true) {
     const view = shallowRef<StageInput | null>(initial)
-    const { orderAt, counted, arrivals } = scope.run(() => useStageOrder(() => view.value, now))!
+    const { orderAt, counted, arrivals } = scope.run(() => useStageOrder(() => view.value, now, ready))!
     return { view, orderAt, counted, arrivals }
   }
   const read = async (view: ReturnType<typeof clock>['view'], next: StageInput) => {
@@ -757,5 +757,48 @@ describe('the clock of the stage order', () => {
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
     document.dispatchEvent(new Event('visibilitychange'))
     expect(orderAt.value).toBe(T + 100)
+  })
+  describe('before the server clock is ready (#488)', () => {
+    // Until the first clock.pong the page's clock is the device's own (useServerClock): a read must not take it. A device clock a minute ahead
+    // used to set orderAt a minute ahead for good (no 0.5 s wait, the Standings never held), one a minute behind armed the timer on the wrong clock.
+    it('takes no order from a device clock that runs ahead, and the synced clock once it is ready', async () => {
+      const ready = ref(false)
+      const { view, orderAt } = clock(stageInput(), () => ready.value)
+      vi.setSystemTime(new Date(T + 100))
+      skew = 60_000
+
+      await read(view, stageInput({ countdown: countdownAt(T) }))
+
+      expect(orderAt.value).toBeNull()
+      expect(vi.getTimerCount()).toBe(0)
+
+      skew = 0
+      ready.value = true
+      await nextTick()
+
+      expect(orderAt.value).toBe(T + 100)
+      expect(vi.getTimerCount()).toBe(1)
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS - 100)
+      expect(orderAt.value).toBe(T + RISE_DELAY_MS)
+    })
+
+    it('arms no timer on a device clock that runs behind, and arms it on the synced clock once it is ready', async () => {
+      const ready = ref(false)
+      const { view, orderAt } = clock(stageInput(), () => ready.value)
+      vi.setSystemTime(new Date(T + 100))
+      skew = -60_000
+
+      await read(view, stageInput({ countdown: countdownAt(T) }))
+
+      expect(orderAt.value).toBeNull()
+      expect(vi.getTimerCount()).toBe(0)
+
+      skew = 0
+      ready.value = true
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS - 100)
+
+      expect(orderAt.value).toBe(T + RISE_DELAY_MS)
+    })
   })
 })

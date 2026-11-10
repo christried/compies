@@ -88,7 +88,9 @@ describe('legal pages', () => {
     expect(events!.text()).toContain('Zu jedem Eintrag, der ein Team nennt, speichert der Feed den Namen, den das Team in diesem Moment hatte, und damit die Teamwörter darin. Dein Teamwort bleibt in diesen Einträgen deshalb stehen, solange das Event besteht, auch wenn du dein Team verlässt oder dein Teamwort änderst.')
     expect(retention!.text()).toContain('Ein Teamwort wird gelöscht, sobald du dein Team verlässt; im aktuellen Namen des Teams steht es dann nicht mehr. Ausgenommen sind die Einträge des Aktivitäts-Feeds: Sie behalten den Teamnamen von damals, das Wort bleibt dort, solange das Event besteht (Abschnitt 11).')
     expect(live!.text()).toContain('das Zurücksetzen von Teamnamen, Start und Ende einer Session')
-    const text = page.get('main').text()
+    // The one place a frozen name is named: Events finished before 0.12 keep the name frozen at their first Session's start (#446, Spec F1).
+    expect(retention!.text()).toContain('Abschnitt 11). In Events, die vor Version 0.12 abgeschlossen wurden, bleibt außerdem der Teamname gespeichert, der beim Start der ersten Session eingefroren wurde, mit den Teamwörtern darin, solange das Event besteht.')
+    const text = page.get('main').text().replace('der beim Start der ersten Session eingefroren wurde', '')
     expect(text).not.toContain('Bench')
     expect(text).not.toContain('eingefroren')
     expect(text).not.toContain('Einfrieren')

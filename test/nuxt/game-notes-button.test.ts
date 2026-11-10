@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameNotesButton from '~/components/GameNotesButton.vue'
 import { GAME_NAME_MAX } from '~~/shared/game'
 import { restoreScreen, stubScreen } from './event-page'
@@ -127,5 +127,32 @@ describe('the Notes button of a game (#436)', () => {
 
     expect(popover()!.querySelector('h2')!.textContent).toBe(name)
     expect(popover()!.querySelector('h2')!.className).toContain('[overflow-wrap:anywhere]')
+  })
+  it('stays inside the window for a button low in the picker (#488)', async () => {
+    const realHeight = window.innerHeight
+    window.innerHeight = 800
+    const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(650, 400, 40, 36)
+      if (this.getAttribute('role') === 'dialog') return at(0, 0, 288, 300)
+      return at(0, 0, 0, 0)
+    })
+    try {
+      await mount({ notes: NOTES })
+
+      await open()
+
+      const style = popover()!.style
+      const top = Number.parseFloat(style.top)
+      const left = Number.parseFloat(style.left)
+      expect(top).toBeGreaterThanOrEqual(0)
+      expect(top + 300).toBeLessThanOrEqual(800)
+      expect(left).toBeGreaterThanOrEqual(0)
+      expect(left + 288).toBeLessThanOrEqual(window.innerWidth)
+    }
+    finally {
+      measure.mockRestore()
+      window.innerHeight = realHeight
+    }
   })
 })

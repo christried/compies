@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { NotebookText, X } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
+import { placeNotePopover } from '~/utils/note-popover'
 
 // The Notes of a game in a picker (#436, 02-components § GameCard, deviation 0.12): a Notes button that opens the game's notes read-only,
 // line breaks kept. From md up a popover beside the button, below it a sheet from the bottom (the pattern of the Sessions card's „Mehr“,
 // #349). It is not a menu: MoveToMenu holds menu targets, so it stays out. Esc, a press outside and a scroll that would move the popover
-// away from its button close it; the focus goes back to the button. No notes, no button.
+// away from its button close it; the focus goes back to the button. No notes, no button. The popover sits where placeNotePopover puts it
+// (above or below the button, inside the window), measured once it is drawn (#488).
 withDefaults(defineProps<{
   name: string
   notes: string | null
   /** The button's visual diameter: the picker's rows are 36, its cards 40. */
   size?: 36 | 40
 }>(), { size: 40 })
-
-const POPOVER_WIDTH = 288
 
 const { t } = useI18n()
 const wide = useMediaQuery(MD_QUERY)
@@ -26,9 +26,20 @@ const popover = useTemplateRef<HTMLElement>('popover')
 const closeButton = useTemplateRef<{ $el: HTMLElement }>('close')
 
 function show() {
-  const rect = trigger.value?.$el.getBoundingClientRect()
-  if (rect) position.value = { top: rect.bottom + 6, left: Math.max(8, Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - 8)) }
   open.value = true
+}
+
+// Measured once drawn, before the focus moves into it and before the browser paints.
+function place() {
+  const cell = trigger.value?.$el.getBoundingClientRect()
+  const box = popover.value?.getBoundingClientRect()
+  if (!cell || !box) return
+  const { top, left } = placeNotePopover({
+    cell,
+    size: { width: box.width, height: box.height },
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+  })
+  position.value = { top, left }
 }
 
 function close() {
@@ -39,6 +50,7 @@ function close() {
 watch(open, async (isOpen) => {
   if (!isOpen || narrow.value) return
   await nextTick()
+  place()
   closeButton.value?.$el.focus({ preventScroll: true })
 })
 

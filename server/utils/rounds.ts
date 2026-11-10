@@ -140,7 +140,7 @@ export async function castVeto({ tx, eventRow, user, publishTo, now }: Pick<Even
   const [cast] = await tx.insert(vetoes).values({ drawId, team, userId: user.id, castAt: now }).onConflictDoNothing().returning({ team: vetoes.team })
   if (!cast) throw apiError('veto_already_cast')
   // The Users of the casting Party come from the Members the state read: nobody changes seats under the lock.
-  const party = state.members.filter(member => member.zone === 'team' && member.team === team)
+  const party = state.members.filter(member => partyOf(state, member.id) === team)
   publishTo(party.map(member => member.id), { type: 'veto.cast', drawId, team })
   return { drawId, team }
 }

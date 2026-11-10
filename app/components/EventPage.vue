@@ -88,7 +88,7 @@ const hostActions = useHostActions(
 // and the phone's Event tab read the same state.
 // A finished page waits for the Award ceremony (#445): until the Host has started it, and for a viewer who saw it waiting, until their run of the first start is over (useCeremonyHold).
 const { held, release } = useCeremonyHold(data)
-const { orderAt, counted, arrivals } = useStageOrder(() => data.value, serverClock.now)
+const { orderAt, counted, arrivals } = useStageOrder(() => data.value, serverClock.now, () => serverClock.ready.value)
 const pageState = computed(() => (data.value ? eventPageState({ ...data.value, ceremonyHeld: held.value }, orderAt.value, counted.value) : null))
 /** What waits for the ceremony asks the page state, which the Stage module decides (waitsForCeremony): the Winners, the party hat, the Tabelle tab and the feed. */
 const waits = computed(() => (pageState.value ? waitsForCeremony(pageState.value) : false))
