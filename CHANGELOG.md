@@ -12,6 +12,7 @@
 - **Datenschutzerklärung:** Sie nennt jetzt, was bei Darstellung und Anzeigename gespeichert wird: Deine Darstellung (Hell, Dunkel oder System) liegt bei deinem Nutzerkonto, ein Cookie merkt sie auf dem Gerät, solange sie Dunkel oder System ist, und deinen Anzeigenamen kannst du jederzeit ändern. ([#405](https://github.com/christried/compies/issues/405))
 - Gibt es ein Team nicht mehr, weil der Host die Anzahl Teams gesenkt hat, sagt das Spielbrett jetzt „Dieses Team gibt es nicht mehr.“ Ohne laufende Session nennen „Nächstes Spiel setzen“ und „Rad drehen“ denselben Grund wie die Meldung: „Es läuft gerade keine Session.“ ([#421](https://github.com/christried/compies/issues/421))
 - **Tags in Farbe:** In der Bibliothek trägt jeder Tag eines Spiels jetzt eine eigene Farbe, auf der Spielkarte, auf der Seite des Spiels und im Formular. Derselbe Tag hat überall dieselbe Farbe; nur wenn zwei Tags eines Spiels dieselbe hätten, nimmt der spätere die nächste freie, so dass sich bis zu acht Tags eines Spiels nie eine Farbe teilen. ([#427](https://github.com/christried/compies/issues/427))
+- **Spiele auf der Eventseite als Kacheln:** Jedes Spiel zeigt sich dort mit Bild und Namen, im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“. ([#435](https://github.com/christried/compies/issues/435))
 
 ## [0.10.1] - 2026-11-09 – Partyhut
 
