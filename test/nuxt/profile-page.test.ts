@@ -252,6 +252,11 @@ describe('the Profil page', () => {
     const group = (page: Page) => page.get('main [role="radiogroup"]')
     const themeColors = () => [...document.head.querySelectorAll('meta[name="theme-color"]')]
       .map(meta => ({ content: meta.getAttribute('content'), media: meta.getAttribute('media') }))
+    // Hell and Dunkel give both media one colour (#404).
+    const bothMedia = (content: string) => [
+      { content, media: '(prefers-color-scheme: light)' },
+      { content, media: '(prefers-color-scheme: dark)' },
+    ]
     const option = (page: Page, label: string) => group(page).findAll('[role="radio"]').find(r => r.text() === label)!
     const checked = (page: Page) => group(page).findAll('[role="radio"]')
       .filter(r => r.attributes('aria-checked') === 'true').map(r => r.text())
@@ -304,7 +309,7 @@ describe('the Profil page', () => {
 
       await vi.waitFor(() => expect(received).toEqual(['dark']))
       await vi.waitFor(() => expect(theme()).toBe('dark'))
-      expect(themeColors()).toEqual([{ content: '#17121d', media: null }])
+      expect(themeColors()).toEqual(bothMedia('#17121d'))
       expect(checked(page)).toEqual(['Dunkel'])
       expect(useAuthUser().value?.appearance).toBe('dark')
 
@@ -329,12 +334,10 @@ describe('the Profil page', () => {
       await option(page, 'System').trigger('click')
 
       await vi.waitFor(() => expect(theme()).toBe('system'))
-      // In any order: unhead keeps an element it already placed where it is (test/nuxt/appearance.test.ts).
-      expect(themeColors()).toHaveLength(2)
-      expect(themeColors()).toEqual(expect.arrayContaining([
+      expect(themeColors()).toEqual([
         { content: '#fff3df', media: '(prefers-color-scheme: light)' },
         { content: '#17121d', media: '(prefers-color-scheme: dark)' },
-      ]))
+      ])
       expect(received).toEqual(['system'])
     })
 
@@ -352,7 +355,7 @@ describe('the Profil page', () => {
       await vi.waitFor(() => expect(notice(page).exists()).toBe(true))
       expect(notice(page).text()).toBe('Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal.')
       await vi.waitFor(() => expect(theme()).toBe('light'))
-      expect(themeColors()).toEqual([{ content: '#fff3df', media: null }])
+      expect(themeColors()).toEqual(bothMedia('#fff3df'))
       expect(checked(page)).toEqual(['Hell'])
       expect(useAuthUser().value?.appearance).toBe('light')
 
