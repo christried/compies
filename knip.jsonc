@@ -17,6 +17,9 @@
         // staging build only (#178, #247).
         "server/dev/sign-in.ts!",
         // The browser checks are run with node by agents (scripts/browser/README.md); chrome.mjs and kit.mjs are what they import.
+        // The Dunkel-Check (#407): the runner imports the state files by name pattern, which knip cannot follow.
+        "scripts/browser/dark.mjs!",
+        "scripts/browser/dark-states-*.mjs!",
         "scripts/browser/moves.mjs!",
         "scripts/browser/pool-preview.mjs!",
         "scripts/browser/serve.mjs!",

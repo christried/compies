@@ -1,7 +1,7 @@
 // The COMPIES kit for browser checks (retro 1.4, split from the DevTools protocol in 0.6): the dev sign-in, JSON
 // requests with the account's cookie, the animation spy, the mouse and touch drag, the results log, and the helpers
 // the scenarios share (creating a game and an Event, joining by Invite link, a running Event with Results, clicking,
-// typing and pressing keys like a User, the theme, the settings switches, the stepper). The helpers the agents' own
+// typing and pressing keys like a User, the Appearance, the settings switches, the stepper). The helpers the agents' own
 // checks had copied from session to session in a temp folder live here since the 0.8 retro. The protocol itself
 // (launch, send/evaluate, resize, screenshot) is `chrome.mjs`.
 import { execFileSync } from 'node:child_process'
@@ -40,9 +40,11 @@ const HIDE_DEVTOOLS = `document.addEventListener('DOMContentLoaded', () => {
 /**
  * Signs in through the dev route as the tab's account and opens `path`, logging animations from the first frame on and
  * with the Nuxt devtools hidden. The dev sign-in marks the newest „Was ist neu“ seen, so its dialog never covers the
- * page; `news: true` leaves it unseen, to check the dialog itself.
+ * page; `news: true` leaves it unseen, to check the dialog itself. `appearance` (`'dark'`, `'system'`, `'light'`) sets the
+ * User's Appearance with the sign-in, light when absent (#401); `setup: true` signs in a User who has not set up yet
+ * (`name=unset`), for the setup page.
  */
-export async function open(tab, path, width, height, waitFor = 'body', { news = false } = {}) {
+export async function open(tab, path, width, height, waitFor = 'body', { news = false, appearance, setup = false } = {}) {
   await resize(tab, width, height)
   if (!tab.spying) {
     await tab.send('Page.addScriptToEvaluateOnNewDocument', { source: ANIMATION_SPY })
@@ -56,12 +58,37 @@ export async function open(tab, path, width, height, waitFor = 'body', { news = 
     await loaded(tab)
     tab.bypassed = true
   }
-  await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}` })
+  await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}${appearance ? `&appearance=${appearance}` : ''}${setup ? '&name=unset' : ''}` })
   await hydrated(tab, waitFor)
 }
 
+/**
+ * Opens `path` signed out the way a User gets there (#398: sign-out does not touch the Appearance cookie): signs in with
+ * `appearance`, loads a page (the server-side `GET /api/me` writes `compies-appearance` for Dunkel and System), signs
+ * out through the route the app's own button calls, and loads `path`. `plain` is a page without Nuxt (`/offline.html`).
+ * Returns how the sign-out went: `'route'`, or `'cookies'` when the route refused (on :3001 Better Auth may refuse the
+ * origin, `BETTER_AUTH_URL` is :3000) and every cookie but the Appearance's was deleted over the protocol instead.
+ */
+export async function openSignedOut(tab, path, width, height, waitFor = 'body', { appearance, plain = false } = {}) {
+  await open(tab, '/impressum', width, height, 'body', { appearance })
+  let how = 'route'
+  const { status } = await api(tab, 'POST', '/api/auth/sign-out', {})
+  if (status !== 200) {
+    how = 'cookies'
+    const { result } = await tab.send('Network.getCookies', { urls: [BASE] })
+    for (const cookie of result.cookies) {
+      if (cookie.name !== 'compies-appearance') await tab.send('Network.deleteCookies', { name: cookie.name, domain: cookie.domain, path: cookie.path })
+    }
+  }
+  await tab.send('Page.navigate', { url: `${BASE}${path}` })
+  await (plain ? loaded(tab) : hydrated(tab, waitFor))
+  const me = await api(tab, 'GET', '/api/me')
+  if (me.body?.user !== null) throw new Error(`${tab.account}: still signed in on ${path} after sign-out by ${how} (GET /api/me answered ${JSON.stringify(me.body)?.slice(0, 80)})`)
+  return how
+}
+
 /** Waits until the document has loaded (a plain page, no Nuxt). */
-async function loaded(tab) {
+export async function loaded(tab) {
   for (let i = 0; i < 40; i++) {
     await sleep(250)
     if (await tab.evaluate(`document.readyState === 'complete'`).catch(() => false)) return
@@ -222,9 +249,6 @@ export const visibleButtons = tab => tab.evaluate(`${visible('button, a, [role=b
 
 /** @public For the agents' own checks (docs/agents/browser-frame.md). The `innerText` of the first element matching `selector`. */
 export const textOf = (tab, selector = 'body') => tab.evaluate(`document.querySelector(${JSON.stringify(selector)})?.innerText`)
-
-/** @public For the agents' own checks (docs/agents/browser-frame.md). Light or dark, as the theme switch sets it (`data-theme` on `<html>`). */
-export const theme = (tab, name) => tab.evaluate(`document.documentElement.setAttribute('data-theme', ${JSON.stringify(name)})`)
 
 /** The Event view the tab's account reads (`GET /api/e/:slug`). */
 export const eventView = (tab, slug) => ok(api(tab, 'GET', `/api/e/${slug}`), `GET /api/e/${slug}`)
