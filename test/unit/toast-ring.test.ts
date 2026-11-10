@@ -14,10 +14,8 @@ const theme = readFileSync(resolve(import.meta.dirname, '../../app/assets/css/co
 const clean = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
 const normalise = (text: string) => text.replace(/\[data-theme="(\w+)"\]/g, '[data-theme=$1]').replace(/\s+/g, ' ').trim()
 
-/** The body of the light block (`:root, [data-theme="light"]`) or the dark one (`[data-theme="dark"]`), up to its closing brace at line start. */
-const block = (selector: RegExp) => tokens.match(selector)?.[0] ?? ''
-const light = block(/:root, \[data-theme="light"\] \{[\s\S]*?\n\}/)
-const dark = block(/\[data-theme="dark"\] \{[\s\S]*?\n\}/)
+/** The body of the dark block (`[data-theme="dark"]`), up to its closing brace at line start. */
+const dark = tokens.match(/\[data-theme="dark"\] \{[\s\S]*?\n\}/)?.[0] ?? ''
 
 /** The value of a token in a block; the colon right after the name keeps `--cp-on-error` and `--cp-ink-2` apart from `--cp-ink`. */
 const colour = (css: string, name: string) => {
@@ -63,7 +61,7 @@ describe('the error toast ring in Dunkel', () => {
   it('Hell does not change: no outline-on-error rule applies outside the dark selectors', async () => {
     // Hell keeps its ring (#1f5fe0 on the red, 1.71:1); the open Hell follow-up is the user's call (#409).
     const css = await build(['dark:focus-visible:outline-on-error'])
-    const selectors = [...css.matchAll(/([^{};]*outline-on-error[^{}]*)\{/g)].map(match => match[1])
+    const selectors = [...css.matchAll(/([^{};]*outline-on-error[^{}]*)\{/g)].map(match => match[1] ?? '')
     expect(selectors.length).toBeGreaterThan(0)
     for (const selector of selectors) {
       expect(selector.includes(':where([data-theme=dark]') || selector.includes(':where([data-theme=system]')).toBe(true)
