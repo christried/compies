@@ -1,4 +1,4 @@
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import ImpressumPage from '~/pages/impressum.vue'
@@ -213,5 +213,23 @@ describe('Appearance on a signed-out page', () => {
 
     expect(theme()).toBe('dark')
     expect(themeColors()).toEqual(bothMedia('#17121d'))
+  })
+})
+
+// Where the browser has no CookieStore, Nuxt follows a cookie the server set only when `refreshCookie` asks it to re-read it
+// (it posts to the plugin's BroadcastChannel). happy-dom has the store, so there `refreshCookie` is a no-op and the seam is the
+// call itself: without it a User who chose Dunkel on Profil and signs out keeps the light look on the sign-in page (Q9).
+const { refreshCookie } = vi.hoisted(() => ({ refreshCookie: vi.fn() }))
+mockNuxtImport('refreshCookie', () => refreshCookie)
+
+describe('Abmelden and the Appearance cookie', () => {
+  it('has the plugin re-read the device\'s cookie, so the sign-in page keeps the look', async () => {
+    registerEndpoint('/api/auth/sign-out', { method: 'POST', handler: () => ({ success: true }) })
+    signInAs({ ...kitty, appearance: 'dark' })
+
+    await useSignOut()()
+
+    expect(refreshCookie).toHaveBeenCalledWith('compies-appearance')
+    expect(useAuthUser().value).toBeNull()
   })
 })

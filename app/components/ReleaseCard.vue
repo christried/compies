@@ -134,7 +134,7 @@ onBeforeUnmount(() => observer?.disconnect())
         <IconButton
           :icon="LinkIcon"
           :label="t('news.copy', { v: release.version })"
-          class="hover:bg-primary focus-visible:bg-primary"
+          class="hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
           @click="copyLink"
         />
       </div>
