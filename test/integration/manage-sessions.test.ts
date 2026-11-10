@@ -1,19 +1,9 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getMe from '../../server/api/me.get'
-import listHome from '../../server/api/e/index.get'
-import createEvent from '../../server/api/e/index.post'
-import getEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import downloadIcs from '../../server/api/e/[slug]/ics.get'
-import addSession from '../../server/api/e/[slug]/sessions/index.post'
-import removeSession from '../../server/api/e/[slug]/sessions/[id].delete'
-import reopenSession from '../../server/api/e/[slug]/sessions/[id]/reopen.post'
-import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import { eventMembers, events, pollSlots, pollVotes, sessions, users } from '../../server/db/schema'
+import { eventMembers, events, pollSlots, sessions } from '../../server/db/schema'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createInterleavingDb, createTestDb, createTestServer } from './harness'
+import { createInterleavingDb, createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Managing each Session (#55, ADR 0011): add, remove and Reopen one Session, with the Phase, the Slots and
@@ -24,23 +14,11 @@ const outsider = { provider: 'discord', id: '3', name: 'Fremd', email: 'outsider
 
 describe('managing each Session', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'GET /api/me': getMe,
-      'GET /api/e': listHome,
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': getEvent,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'GET /api/e/:slug/ics': downloadIcs,
-      'POST /api/e/:slug/sessions': addSession,
-      'DELETE /api/e/:slug/sessions/:id': removeSession,
-      'POST /api/e/:slug/sessions/:id/reopen': reopenSession,
-      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -49,11 +27,7 @@ describe('managing each Session', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -100,13 +74,7 @@ describe('managing each Session', () => {
     return { slug, eventId: event!.id }
   }
 
-  function send(method: 'POST' | 'DELETE', path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   function add(cookie: string | undefined, slug: string, body: unknown = {}) {
     return send('POST', `/api/e/${slug}/sessions`, cookie, body)
@@ -541,10 +509,7 @@ describe('managing each Session', () => {
       const racingDb = createInterleavingDb(testDb.client, /update "sessions"/i, async () => {
         competitor = (await remove(cookie, slug, undatedSecond!.id)).status
       })
-      const racingRequest = createTestServer(racingDb, {
-        'POST /api/e/:slug/confirm': confirmDate,
-        'DELETE /api/e/:slug/sessions/:id': removeSession,
-      })
+      const racingRequest = createTestApp(racingDb)
 
       const confirmed = await racingRequest(`/api/e/${slug}/confirm`, {
         method: 'POST',
