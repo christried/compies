@@ -38,6 +38,15 @@ export function pop(element: Element): void {
   )
 }
 
+/** A Team name that arrived or changed (#439): the composed name pops in `dur-slow` on `ease-pop`, the scale of `pop` on the name's own element. Nothing under reduced motion. */
+export function namePop(element: Element): void {
+  if (reducedMotion() || typeof element.animate !== 'function') return
+  element.animate(
+    [{ transform: 'scale(.6)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }],
+    { duration: motionMs('--cp-dur-slow', '360ms'), easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') },
+  )
+}
+
 /**
  * Compibert's party hat appearing on an open page (04-motion § Compibert, #38): scale 0→1 and rotation −12°→0 from the brim (the art group's
  * origin is the hat base, 05-assets), `--cp-dur-base`, `--cp-ease-pop`. Nothing under reduced motion: the hat is simply there.
