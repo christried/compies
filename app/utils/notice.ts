@@ -12,7 +12,7 @@ const TINT: Record<NoticeTone, string> = {
 }
 
 const CHIP: Record<NoticeTone, string> = {
-  info: 'bg-info text-ink',
+  info: 'bg-info text-on-info',
   warning: 'bg-warning text-on-warning',
   critical: 'bg-error text-on-error',
   success: 'bg-success text-on-success',

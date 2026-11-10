@@ -27,3 +27,23 @@ describe('text on the primary fill', () => {
     expect(contrast(colour(dark, 'cp-on-primary'), colour(dark, 'cp-surface'))).toBeLessThan(4.5)
   })
 })
+
+// The icon chip of a notice (`CHIP` in app/utils/notice.ts) draws its icon in the on-token of its fill. The info chip had
+// `text-ink`: 2.54:1 on the Dunkel blue. Its on-token is ink in Hell, so the swap changes nothing there; the other three
+// tones already had theirs.
+describe('the icon chip of a notice', () => {
+  it('has an info on-token that is the same colour as ink in Hell, so the swap from text-ink changes nothing there', () => {
+    expect(colour(light, 'cp-on-info')).toBe(colour(light, 'cp-ink'))
+  })
+
+  it('does not read on the info fill in Dunkel with ink: why the chip takes text-on-info', () => {
+    expect(contrast(colour(dark, 'cp-ink'), colour(dark, 'cp-info'))).toBeLessThan(3)
+  })
+
+  for (const tone of ['info', 'warning', 'error', 'success']) {
+    it(`reads the on-token of the ${tone} fill, as a graphic, in Hell and in Dunkel`, () => {
+      expect(contrast(colour(light, `cp-on-${tone}`), colour(light, `cp-${tone}`))).toBeGreaterThanOrEqual(3)
+      expect(contrast(colour(dark, `cp-on-${tone}`), colour(dark, `cp-${tone}`))).toBeGreaterThanOrEqual(3)
+    })
+  }
+})
