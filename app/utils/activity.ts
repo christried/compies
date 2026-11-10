@@ -21,10 +21,11 @@ const STRONG = new Set(['name', 'actor', 'team', 'date', 'game', 'list'])
 /**
  * The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. `teams` are the
  * Event's teams, whose Team names a Result's sentence uses (#273); without them a team is named by its colour, as bonus_veto_granted does.
+ * `winnersHidden`: the finished page waits for the Award ceremony, so the Event's end names nobody (#445).
  */
-export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTeam[] = []): { text: string, strong: boolean }[] | null {
+export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTeam[] = [], winnersHidden = false): { text: string, strong: boolean }[] | null {
   const marked: Translate = (key, named, plural) => t(key, named && Object.fromEntries(Object.entries(named).map(([name, value]) => [name, STRONG.has(name) ? OPEN + String(value) + CLOSE : value])), plural)
-  const text = sentence(entry, marked, teams)
+  const text = sentence(entry, marked, teams, winnersHidden)
   if (text === null) return null
   return text.split(OPEN).flatMap((chunk, index) => {
     if (index === 0) return chunk ? [{ text: chunk, strong: false }] : []
@@ -63,7 +64,7 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
   }
 }
 
-function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): string | null {
+function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[], winnersHidden: boolean): string | null {
   const name = entry.actor?.name ?? ''
   switch (entry.type) {
     case 'member_joined':
@@ -140,6 +141,7 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     case 'event_finished': {
       const { winners } = entry.params
       if (winners.length === 0) return null
+      if (winnersHidden) return t('activity.eventFinishedPlain')
       const list = joinNames(winners.map(position => teamNameAt(teams, position, t)))
       return winners.length === 1 ? t('activity.eventFinished', { list, count: 1 }, 1) : t('activity.eventFinishedTie', { list })
     }

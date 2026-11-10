@@ -232,6 +232,13 @@
       "when": 1794325565969,
       "tag": "0032_one_stands",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794333840411,
+      "tag": "0033_ceremony_shown",
+      "breakpoints": true
     }
   ]
 }

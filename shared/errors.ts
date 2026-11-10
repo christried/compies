@@ -164,6 +164,8 @@ export const API_ERROR_STATUS = {
   coin_in_air: 409,
   /** The Host starts the Award ceremony while the current run has not reached its end (#309). */
   ceremony_running: 409,
+  /** The Share image is asked for before the Host first started the Award ceremony (#445). */
+  ceremony_pending: 409,
   /** The Party has its 9 Bonus Vetoes already: the Host cannot grant it another (#233). */
   bonus_veto_limit: 409,
   wrong_phase: 409,
