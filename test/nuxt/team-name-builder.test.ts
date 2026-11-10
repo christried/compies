@@ -436,7 +436,7 @@ describe('the folded team name (#439)', () => {
   })
 
   it('shows the Host who is not in a team the name and the reset, never a field or the pencil', async () => {
-    const members = [member(SANNE, 'Sanne', { zone: 'bench' }, null, true), ...wilde]
+    const members = [member(SANNE, 'Sanne', { zone: 'stands' }, null, true), ...wilde]
     const { page } = await mountBoard({ members, teams: teamsNamed('Wilde Gurken'), viewerId: SANNE, isHost: true })
 
     expect(zone(page, 'Wilde Gurken').text()).toContain('Wilde Gurken')
