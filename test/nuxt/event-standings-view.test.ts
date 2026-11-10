@@ -18,6 +18,7 @@ const played: ResultView = { roundId: 'r1', number: 1, game: halo, places: [{ te
 const open: RoundView = { id: 'r2', startedAt: '2026-11-02T21:00:00.000Z', setAt: '2026-11-02T21:00:00.000Z', game: { ...halo, id: 'g-kart', name: 'Kart' } }
 
 const view = {
+  event: { isHost: false },
   standings: [{ team: 2, rank: 1, points: 1 }, { team: 1, rank: 2, points: 0 }],
   end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
   results: [played],
@@ -34,7 +35,7 @@ const pencils = (wrapper: VueWrapper) => wrapper.findAll('button[aria-label="Spi
 let page: VueWrapper | undefined
 
 /** Vue Test Utils stubs TransitionGroup with an element of its own, which would take the place of the Leaderboard's `tbody`: the real one renders it. */
-type Props = { view: Pick<EventView, 'standings' | 'end' | 'results' | 'rounds' | 'teams'>, corrections?: HistoryCorrections | null, news?: StandingsNews | null }
+type Props = { view: Pick<EventView, 'standings' | 'end' | 'results' | 'rounds' | 'teams'> & { event: Pick<EventView['event'], 'isHost'> }, corrections?: HistoryCorrections | null, news?: StandingsNews | null }
 const global = { stubs: { TransitionGroup: false } }
 const mountTab = (props: Props) => mountSuspended(StandingsTab, { props, global })
 const mountPhone = (props: Props) => mountSuspended(EventStandingsView, { props, global })
