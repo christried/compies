@@ -71,8 +71,8 @@ const items = RELEASES.map((release, i) => {
         :key="item.version"
         :href="`#${item.version}`"
         :aria-label="item.label"
-        class="inline-flex h-11 flex-none items-center rounded-pill border-2 border-line px-3.5 font-num text-[14px] leading-none text-ink no-underline shadow-sm"
-        :class="item.newest ? 'bg-primary' : 'bg-surface'"
+        class="inline-flex h-11 flex-none items-center rounded-pill border-2 border-line px-3.5 font-num text-[14px] leading-none no-underline shadow-sm"
+        :class="item.newest ? 'bg-primary text-on-primary' : 'bg-surface text-ink'"
         @click.prevent="emit('jump', item.version)"
       >{{ item.version }}</a>
     </div>
