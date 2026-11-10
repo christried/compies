@@ -748,6 +748,31 @@ describe('the game form', () => {
         await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ tags: ['Retro'] })))
       })
     })
+
+    // Each chip wears a Team colour by its key (#427); `tag-colors.test.ts` pins „retro“ and „indie“ at 7 of their own.
+    describe('chip colours (#427)', () => {
+      const chipStyle = (page: Page, label: string) => removeButton(page, label).element.parentElement!.getAttribute('style') ?? ''
+
+      it('colours each chip as it is added, the next free colour for a Tag whose own an earlier chip wears', async () => {
+        const page = await mountSuspended(GameForm)
+        await addTag(page, 'Retro')
+        expect(chipStyle(page, 'Retro')).toContain('var(--cp-team-7)')
+        expect(chipStyle(page, 'Retro')).toContain('var(--cp-team-7-ink)')
+
+        await addTag(page, 'Indie')
+        expect(chipStyle(page, 'Indie')).toContain('var(--cp-team-8)')
+      })
+
+      it('recolours the chips when one is removed', async () => {
+        const existing: GameView = { ...saved, tags: [{ key: 'retro', label: 'Retro' }, { key: 'indie', label: 'Indie' }] }
+        const page = await mountSuspended(GameForm, { props: { game: existing } })
+        expect(chipStyle(page, 'Indie')).toContain('var(--cp-team-8)')
+
+        await removeButton(page, 'Retro').trigger('click')
+
+        expect(chipStyle(page, 'Indie')).toContain('var(--cp-team-7)')
+      })
+    })
   })
 
   describe('edit mode (#142)', () => {

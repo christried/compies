@@ -4,6 +4,7 @@ import type { RouteLocationRaw } from 'vue-router'
 import { describeGame } from '~/utils/describe-game'
 import type { GameView, PoolGameFace } from '~~/shared/game'
 import { priceLine } from '~/utils/price'
+import { colorTags } from '~~/shared/tag-colors'
 import { youTubeThumbnail } from '~~/shared/youtube'
 
 // A game as a card or a row (02-components § GameCard, #141). The cover is the uploaded image, else the
@@ -12,7 +13,7 @@ import { youTubeThumbnail } from '~~/shared/youtube'
 // without it the card is a plain element, not a button. #146 and #148 reuse it; a game that came as its face only (a Member's
 // pool game, #224) has no player count and no Suitabilities to show, so the card shows neither. `layout="responsive"` (#173) is a row
 // below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
-// three Tags and „+N“ (#335) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. They are
+// three Tags and „+N“ (#335), each in the colour the game's whole Tag order gives it (#427, as on its page) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. They are
 // spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well.
 const props = withDefaults(defineProps<{
   game: PoolGameFace & Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price'>>
@@ -35,7 +36,7 @@ const description = computed(() => describeGame({
 const players = computed(() => description.value.playersCompact)
 const suitabilities = computed(() => description.value.suitabilities)
 const TAGS_SHOWN = 3
-const shownTags = computed(() => (props.game.tags ?? []).slice(0, TAGS_SHOWN))
+const shownTags = computed(() => colorTags(props.game.tags ?? []).slice(0, TAGS_SHOWN))
 const moreTags = computed(() => Math.max(0, (props.game.tags ?? []).length - TAGS_SHOWN))
 
 // One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.
@@ -136,11 +137,14 @@ const look = computed(() => LAYOUT[props.layout])
         class="flex gap-1"
         :class="layout === 'card' ? 'flex-wrap' : layout === 'row' ? 'flex-nowrap overflow-hidden' : 'flex-nowrap overflow-hidden md:flex-wrap'"
       >
-        <span
+        <TagChip
           v-for="tag in shownTags"
           :key="tag.key"
-          class="max-w-[9rem] truncate rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] leading-5 font-bold"
-        >{{ tag.label }}</span>
+          :color="tag.color"
+          class="max-w-[9rem] truncate px-2 text-[11px] leading-5"
+        >
+          {{ tag.label }}
+        </TagChip>
         <span
           v-if="moreTags > 0"
           :title="t('library.moreTagsLabel', { n: moreTags }, moreTags)"
