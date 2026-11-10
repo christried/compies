@@ -85,3 +85,31 @@ describe('the game card structure (#351)', () => {
     expect(lastChild().querySelector('button')).toBeNull()
   })
 })
+
+// Each Tag chip wears a Team colour by its key (#427); `tag-colors.test.ts` pins the colours of these keys (retro 7, co-op 1,
+// koop 2, horror 5, indie 7). The „+N“ stays neutral.
+describe('the Tag chips on a game card (#427)', () => {
+  const chips = () => [...root().querySelectorAll<HTMLElement>('[role="group"] > span')]
+
+  it('colours each shown Tag by its key, with its ink, and leaves the „+N“ neutral', async () => {
+    const tags = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }, { key: 'koop', label: 'Koop' }, { key: 'horror', label: 'Horror' }]
+    await mount({ name: 'Mario Kart', tags }, 'card')
+
+    const [retro, coop, koop, more] = chips()
+    expect(retro!.getAttribute('style')).toContain('var(--cp-team-7)')
+    expect(retro!.getAttribute('style')).toContain('var(--cp-team-7-ink)')
+    expect(coop!.getAttribute('style')).toContain('var(--cp-team-1)')
+    expect(koop!.getAttribute('style')).toContain('var(--cp-team-2)')
+    expect(more!.textContent).toBe('+1')
+    expect(more!.getAttribute('style') ?? '').not.toContain('--cp-team')
+  })
+
+  it('gives a Tag whose colour an earlier Tag wears the next free one, as on the game page', async () => {
+    // „Indie“ has the colour 7 of its own, like „Retro“ before it.
+    const tags = [{ key: 'retro', label: 'Retro' }, { key: 'indie', label: 'Indie' }]
+    await mount({ name: 'Mario Kart', tags }, 'card')
+
+    expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-7)')
+    expect(chips()[1]!.getAttribute('style')).toContain('var(--cp-team-8)')
+  })
+})

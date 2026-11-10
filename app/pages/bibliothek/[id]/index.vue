@@ -3,9 +3,10 @@ import { Clock, Euro, Gamepad2, Lock, Pencil, Swords, Tag, Users } from '@lucide
 import { formatMonthYear } from '~/utils/berlin-time'
 import { describeGame } from '~/utils/describe-game'
 import { priceLine } from '~/utils/price'
+import { tagColors } from '~~/shared/tag-colors'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
-// set length, the facts (player count, Suitabilities, clip length, the Price (#337)), the Tags (#335) and who created it. The creator and the Platform
+// set length, the facts (player count, Suitabilities, clip length, the Price (#337)), the Tags (#335, each in its colour, #427) and who created it. The creator and the Platform
 // admin get „Bearbeiten“; everyone else gets the reason instead of a dead button. A game that does not exist
 // looks like any missing page; so does the page for Users who may not see the library.
 const { t } = useI18n()
@@ -23,6 +24,7 @@ const players = computed(() => description.value?.players ?? null)
 const suitabilities = computed(() => description.value?.suitabilities ?? null)
 // The Price line as a fact, like the card's (#337); `now` is read here, so the year shows only for another year.
 const priceText = computed(() => (game.value?.price ? priceLine(game.value.price, new Date(), t) : null))
+const tagChipColors = computed(() => tagColors(game.value?.tags.map(tag => tag.key) ?? []))
 </script>
 
 <template>
@@ -148,17 +150,19 @@ const priceText = computed(() => (game.value?.price ? priceLine(game.value.price
             :aria-label="t('library.tags')"
             class="m-0 flex list-none flex-wrap gap-2 p-0"
           >
-            <li
-              v-for="tag in game.tags"
+            <TagChip
+              v-for="(tag, index) in game.tags"
               :key="tag.key"
-              class="inline-flex h-8 max-w-full items-center gap-1.5 rounded-pill border-2 border-line bg-paper-2 px-3 text-[13px] font-bold"
+              as="li"
+              :color="tagChipColors[index]!"
+              class="inline-flex h-8 max-w-full items-center gap-1.5 px-3 text-[13px]"
             >
               <AppIcon
                 :icon="Tag"
                 :size="14"
               />
               <span class="truncate">{{ tag.label }}</span>
-            </li>
+            </TagChip>
           </ul>
           <p class="m-0 text-[13px] text-ink-2">
             {{ t('library.createdBy', { name: game.createdBy.name, month: createdMonth }) }}
