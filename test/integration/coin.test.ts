@@ -1,24 +1,16 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getActivity from '../../server/api/e/[slug]/activity.get'
-import tossCoin from '../../server/api/e/[slug]/coin.post'
-import endSession from '../../server/api/e/[slug]/sessions/end.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import { activity, coinTosses, countdowns, draws, eventMembers, eventPoolGames, events, games, pollSlots, rounds, sessions, users } from '../../server/db/schema'
+import { coinTosses, pollSlots, sessions, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
 import type { EventView } from '../../shared/event'
 import type { CoinTossed } from '../../shared/stage'
 import { COIN_DURATION_MS, COIN_LEAD_MS } from '../../shared/coin'
-import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { startRunningSession } from './running-session'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { startRunningEvent, type Stage } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // The Coin flip (#235, spec #218 § Coin flip): the Host tosses a coin in a running Session, through the HTTP API with a test clock and
 // the in-memory room. The server picks the side and the toss lands at the same instant for everyone; the feed shows the entry only from
@@ -30,7 +22,6 @@ const players = {
   two: { provider: 'discord', id: '3', name: 'Zwei', email: 'two@example.com', image: undefined },
 } as const
 
-const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
 const T0 = '2090-10-30T10:00:00.000Z'
 const T0_MS = Date.parse(T0)
 const STARTS = T0_MS + COIN_LEAD_MS
@@ -38,22 +29,15 @@ const LANDS = STARTS + COIN_DURATION_MS
 
 describe('the Coin flip (#235)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let stage: Stage
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'GET /api/e/:slug/activity': getActivity,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/sessions/end': endSession,
-      'POST /api/e/:slug/coin': tossCoin,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
+    stage = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -64,59 +48,25 @@ describe('the Coin flip (#235)', () => {
     stubAuthEnv()
     clock.set(T0)
     notifier.clear()
-    await testDb.db.delete(coinTosses)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(countdowns)
-    await testDb.db.delete(draws)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
-
-  async function errorOf(response: Response) {
-    return { status: response.status, code: (await response.json() as { statusMessage: string }).statusMessage }
-  }
+  const send = sendVia(() => request)
 
   /** An Event with a Host and two Members. `running` starts its first Session (both Members seated in a team each). */
   async function event({ running = true }: { running?: boolean } = {}) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies = {
-      one: (await signIn(testDb.db, players.one)).cookie,
-      two: (await signIn(testDb.db, players.two)).cookie,
-    }
-    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings: TEST_SETTINGS })
-    const { slug } = await created.json() as { slug: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    for (const profile of [players.one, players.two]) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: row!.id })
-    }
-    if (running) {
-      await startRunningSession(request, testDb.db, {
-        slug,
-        hostCookie,
-        seated: [{ cookie: cookies.one, email: players.one.email }, { cookie: cookies.two, email: players.two.email }],
-      })
-    }
-    notifier.clear()
-    return { slug, eventId: eventRow!.id, hostCookie, cookies }
+    const ev = await startRunningEvent(stage, {
+      host,
+      players,
+      seats: running ? [['one', 1], ['two', 2]] : [],
+      confirmed: running ? 1 : 0,
+      start: running,
+    })
+    return { slug: ev.slug, eventId: ev.eventId, hostCookie: ev.host.cookie, cookies: { one: ev.players.one.cookie, two: ev.players.two.cookie } }
   }
 
   type Event = Awaited<ReturnType<typeof event>>
