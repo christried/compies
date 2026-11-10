@@ -1,24 +1,18 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import me from '../../server/api/me.get'
-import appearance from '../../server/api/me/appearance.post'
-import profileSetup from '../../server/api/profile/setup.post'
 import { authSessions, users } from '../../server/db/schema'
-import { createTestDb, createTestServer } from './harness'
-import { createAuthServer, signIn, stubAuthEnv } from './sign-in'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { signIn, stubAuthEnv } from './sign-in'
 
 // A User's Appearance lives on the User, not on a device (#401, GLOSSARY: Appearance): light until they choose otherwise.
 describe('the Appearance of a User', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'GET /api/me': me,
-      'POST /api/me/appearance': appearance,
-      'POST /api/profile/setup': profileSetup,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -27,7 +21,7 @@ describe('the Appearance of a User', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -210,7 +204,7 @@ describe('the Appearance of a User', () => {
   it('leaves the Appearance cookie alone on sign-out', async () => {
     const { cookie } = await signIn(testDb.db, kitty)
 
-    const response = await createAuthServer(testDb.db)('/api/auth/sign-out', {
+    const response = await request('/api/auth/sign-out', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'origin': 'http://localhost', 'cookie': `${cookie}; compies-appearance=dark` },
       body: '{}',
