@@ -1,12 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getMe from '../../server/api/me.get'
-import createEvent from '../../server/api/e/index.post'
-import downloadIcs from '../../server/api/e/[slug]/ics.get'
-import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
-import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { events, sessions } from '../../server/db/schema'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // One calendar file for all Sessions (#53): one entry per Session with a Date, stable UIDs, the Session's own
@@ -16,16 +13,11 @@ const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@examp
 
 describe('the calendar file for several Sessions', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'GET /api/me': getMe,
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug/ics': downloadIcs,
-      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -34,11 +26,7 @@ describe('the calendar file for several Sessions', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
     setAllowlist({ hosts: 'discord:1' })
   })
 
