@@ -2,22 +2,27 @@
 // and in System on a dark device, and writes one verdict per colour pairing: text 4.5:1 (3:1 large), a control's edge
 // 3:1, a focus ring 3:1, a surface that differs from what it sits on, and that Dunkel and System are the same page.
 //
-//   node scripts/browser/dark.mjs [--run=<name>] [--only=<state>,…] [--width=390|1440] [--base=<ref>]
+//   node scripts/browser/dark.mjs [--run=<name>] [--only=<state>,…] [--group=<group>,…] [--width=390|1440] [--base=<ref>]
 //
 // `BASE_URL` as in every check; `--run` (default `dark`) is the results folder, the name of the `serve.mjs` run too.
+// `--group` next to `--only` runs the states whose `group` matches (a re-run per page group, #408, #409).
 // FAIL lines are the product: the exit code is 1 on any, and the findings are what #409 is split from. Beside
 // `results.log` and the screenshots the folder gets `findings.json` and `report.md`, rewritten after every state.
 //
-// A state file exports `STATES`, a list of:
+// A state file exports `STATES`, a list of the following, and may export `async function cleanup({ tabs, data })`: the runner calls each
+// in its `finally`, before the tabs are signed in light again, each in its own try/catch (a failure is a NOTE line). It takes down what
+// the file's states made on the dev database.
 //
 //   State = { name, group,                   // `group` names the file's area: 'signed-out', 'app', …
 //             account: 'host' | 'member' | 'admin', signedOut?: true,
 //             static?: true,                 // committed content only: every text may be named in the log
 //             widths?: number[],             // default [390, 1440]
 //             appearances?: ('dark' | 'system')[],   // default both
+//             viewport?: true,               // the screenshot is the viewport, as for a dialog: fixed layers that are no dialog (a clip, a bar, a toast)
 //             open(ctx): Promise<void>,
-//             stops?: { name, widths?, go(ctx): Promise<void> }[] }   // further states on the same page load, in order
-//   ctx = { tab, width, height, appearance, data, signOut(how) }     // 390 × 844 and 1440 × 900
+//             stillHolds?(ctx): Promise<void>,       // called once after the page and its stops were read; throws when what the state shows ended meanwhile (a Veto window, a Clip)
+//             stops?: { name, widths?, viewport?, go(ctx): Promise<void> }[] }   // further states on the same page load, in order
+//   ctx = { tab, tabs, width, height, appearance, data, signOut(how) }   // 390 × 844 and 1440 × 900; `tabs` = { host, member, admin }, the other accounts for the API
 //   data = { slug, invitePath, game, longGame }                      // made once by this runner
 //
 // `open` signs in (`open`, `openSignedOut`) with `ctx.appearance` and loads the page; a `signedOut` state reports how its
@@ -40,6 +45,7 @@ const SCHEMES = { dark: 'light', system: 'dark' } // the device's scheme per pas
 const args = Object.fromEntries(process.argv.slice(2).map(arg => arg.replace(/^--/, '').split('=')).map(([key, value]) => [key, value ?? true]))
 const run = typeof args.run === 'string' ? args.run : 'dark'
 const only = typeof args.only === 'string' ? args.only.split(',') : null
+const groups = typeof args.group === 'string' ? args.group.split(',') : null
 const onlyWidth = args.width ? Number(args.width) : null
 const baseRef = typeof args.base === 'string' ? args.base : 'origin/spec/398-profil'
 
@@ -61,18 +67,21 @@ const flatten = (value, out = []) => {
 const COPY = flatten(JSON.parse(readFileSync(join(HERE, '../../i18n/locales/de.json'), 'utf8')))
 
 const states = []
+const cleanups = []
 for (const file of readdirSync(HERE).filter(name => /^dark-states-.*\.mjs$/.test(name)).sort()) {
-  states.push(...(await import(pathToFileURL(join(HERE, file)).href)).STATES)
+  const loaded = await import(pathToFileURL(join(HERE, file)).href)
+  states.push(...loaded.STATES)
+  if (loaded.cleanup) cleanups.push(loaded.cleanup)
 }
-const chosen = states.filter(state => !only || only.includes(state.name))
-if (!chosen.length) throw new Error(`No state matches --only=${only}; the states are ${states.map(state => state.name).join(', ')}`)
+const chosen = states.filter(state => (!only || only.includes(state.name)) && (!groups || groups.includes(state.group)))
+if (!chosen.length) throw new Error(`No state matches ${[only && `--only=${only}`, groups && `--group=${groups}`].filter(Boolean).join(' ')}; the states are ${states.map(state => state.name).join(', ')}`)
 
 const log = results(run)
 const started = Date.now()
 const take = (name, prefix = '') => `${prefix}${name}`.replace(/[^\w-]+/g, '-')
 
 /** The summary the run writes: per state its counts, every FAIL and SKIP line, and the totals. */
-const findings = { sha: git('rev-parse', '--short', 'HEAD'), base: git('rev-parse', '--short', baseRef), run, startedAt: new Date(started).toISOString(), seconds: 0, states: {}, lines: [] }
+const findings = { sha: git('rev-parse', '--short', 'HEAD'), base: git('rev-parse', '--short', baseRef), run, startedAt: new Date(started).toISOString(), seconds: 0, states: {}, lines: [], holds: [] }
 const signOuts = new Set()
 const pageErrors = []
 
@@ -118,6 +127,7 @@ function writeSummary() {
     '## FAIL',
     ...(groups.length ? groups.flatMap(group => [`### ${group}`, ...lineList.filter(line => line.outcome === 'fail' && line.group === group).map(line => `- ${where(line)}: ${describe(line)}`)]) : ['None.']),
     '',
+    ...(findings.holds.length ? ['## Did not hold while it was read', ...findings.holds.map(hold => `- ${hold.group}/${hold.state} ${hold.width} ${hold.appearance}: ${hold.message}`), ''] : []),
     '## Texts skipped on a picture',
     ...(lineList.filter(line => line.outcome === 'skip' && line.why === 'picture' && line.kind === 'text').map(line => `- ${where(line)}: ${line.role} ${line.texts.join(', ')} ×${line.count}`)),
   ]
@@ -158,7 +168,7 @@ const settle = tab => tab.evaluate(`(async () => {
 const readings = new Map()
 
 /** Reads, shoots and judges one page: `where` is the log prefix, `name` the state or stop. Returns false when the page is not dark. */
-async function measure({ tab, state, name, width, appearance, first }) {
+async function measure({ tab, state, name, width, appearance, first, viewport = false }) {
   const where = `[${state.group}/${name} ${width} ${appearance}]`
   await settle(tab)
   const reading = await tab.evaluate(READ)
@@ -171,7 +181,7 @@ async function measure({ tab, state, name, width, appearance, first }) {
     }
   }
   const overlay = reading.surfaces.some(surface => surface.kind === 'dialog' || surface.kind === 'menu')
-  const file = await log.shot(tab, take(`${name}-${width}-${appearance}`), overlay ? undefined : 'body')
+  const file = await log.shot(tab, take(`${name}-${width}-${appearance}`), overlay || viewport ? undefined : 'body')
   stat(state).shots.push(file.split(/[\\/]/).pop())
   await pressKey(tab, 'Tab')
   const { rings, unseen: ringsUnseen } = await tab.evaluate(READ_RINGS)
@@ -221,9 +231,10 @@ async function makeData(host) {
 }
 
 const tabs = await launchAll(['host', 'member', 'admin'])
+let cleanupData
 try {
   await open(tabs.host, '/', 1440, 900)
-  const data = await makeData(tabs.host)
+  const data = cleanupData = await makeData(tabs.host)
   const passes = ['dark', 'system']
   for (const appearance of passes) {
     for (const tab of Object.values(tabs)) await colorScheme(tab, SCHEMES[appearance])
@@ -232,12 +243,12 @@ try {
       stat(state)
       for (const width of (state.widths ?? [390, 1440]).filter(value => !onlyWidth || value === onlyWidth)) {
         const tab = tabs[state.account]
-        const ctx = { tab, width, height: HEIGHTS[width] ?? 900, appearance, data, signOut: how => signOuts.add(how) }
+        const ctx = { tab, tabs, width, height: HEIGHTS[width] ?? 900, appearance, data, signOut: how => signOuts.add(how) }
         try {
           await state.open(ctx)
           // The SSR page of a production build is visible before it hydrates (README).
           if ((process.env.BASE_URL ?? '').includes(':3001')) await new Promise(resolve => setTimeout(resolve, 4000))
-          if (!await measure({ tab, state, name: state.name, width, appearance, first: true })) continue
+          if (!await measure({ tab, state, name: state.name, width, appearance, first: true, viewport: state.viewport === true })) continue
         }
         catch (error) {
           log.check(`[${state.group}/${state.name} ${width} ${appearance}] state not reached`, false, String(error.message).slice(0, 200))
@@ -248,10 +259,22 @@ try {
           if (stop.widths && !stop.widths.includes(width)) continue
           try {
             await stop.go(ctx)
-            await measure({ tab, state, name: `${state.name}/${stop.name}`, width, appearance, first: false })
+            await measure({ tab, state, name: `${state.name}/${stop.name}`, width, appearance, first: false, viewport: state.viewport === true || stop.viewport === true })
           }
           catch (error) {
             log.check(`[${state.group}/${state.name}/${stop.name} ${width} ${appearance}] state not reached`, false, String(error.message).slice(0, 200))
+            stat(state).fail++
+          }
+        }
+        // What the state shows can end while it is read (a Veto window, a Clip): one FAIL line, for the script and not the page.
+        if (state.stillHolds) {
+          try {
+            await state.stillHolds(ctx)
+          }
+          catch (error) {
+            const message = String(error.message).slice(0, 200)
+            log.check(`[${state.group}/${state.name} ${width} ${appearance}] did not hold while it was read`, false, message)
+            findings.holds.push({ state: state.name, group: state.group, width, appearance, message })
             stat(state).fail++
           }
         }
@@ -292,6 +315,14 @@ try {
   }
 }
 finally {
+  for (const cleanup of cleanups) {
+    try {
+      await cleanup({ tabs, data: cleanupData })
+    }
+    catch (error) {
+      log.note(`cleanup failed: ${String(error.message).slice(0, 150)}`)
+    }
+  }
   // Light again for the next check: the dev Users were on Dunkel or System during the run.
   for (const tab of Object.values(tabs)) {
     try {
