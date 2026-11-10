@@ -1,10 +1,9 @@
 import { and, eq } from 'drizzle-orm'
 import { vi } from 'vitest'
-import auth from '../../server/api/auth/[...all]'
 import { authAccounts } from '../../server/db/schema'
 import { createAuth } from '../../server/utils/auth'
 import type { Db } from '../../server/utils/db'
-import { createTestServer } from './harness'
+import { createTestApp } from './app'
 
 /** What Discord or Twitch reports about the User signing in. */
 export interface ProviderProfile {
@@ -77,7 +76,7 @@ function joinCookies(...headers: (string | undefined)[]) {
 }
 
 export function createAuthServer(db: Db) {
-  return createTestServer(db, { 'GET /api/auth/**': auth, 'POST /api/auth/**': auth })
+  return createTestApp(db)
 }
 
 /** Where the provider sends the browser, and the cookies that came with it. */
