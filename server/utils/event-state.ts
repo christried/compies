@@ -29,7 +29,7 @@ import type { DrawRow, RoundRow } from './rounds'
 import { eventSessions, type SessionRow } from './sessions'
 import type { VetoRow } from './vetoes'
 
-// The Event state (GLOSSARY: Event state, #416): the facts every rule of an Event runs on, read in parts, and each rule's reason for a User at
+// The Event state (#416): the facts every rule of an Event runs on, read in parts, and each rule's reason for a User at
 // `now`. The Event read and every write route under `changeEvent` take their facts from here, so the dock's reason and the route's refusal
 // cannot drift apart (review 0.8 Q2, #288). The state is the writer's truth: all draws and their games, every Veto cast. What a viewer may
 // know of it (a sealed Veto, a drawn game before its stop) is a separate step the Event read takes on top (knownVetoRows, drawGameKnown).

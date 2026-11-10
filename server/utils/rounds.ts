@@ -58,7 +58,7 @@ async function insertDraw(tx: Db, roundId: string, now: Date, fields: Omit<typeo
  * Host allowed a Veto (#232, „Veto erlauben“) and some Party has one left (opensWindow): then the draw carries a Veto window from
  * now, the Round gets no game until it settles (settleDue), and everyone sees the game from now on. A Veto allowed in a Selection
  * mode without a wheel is `no_wheel`. A Round that waits for a respin takes the game itself (#231). Refused with the reason of
- * setRejection, `no_wheel`, or `unknown_game`.
+ * setReason, `no_wheel`, or `unknown_game`.
  */
 export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCore, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
   const state = await readEventState(tx, eventRow, now, ['sessions', 'members', 'rounds', 'pool'])
@@ -94,7 +94,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
  * at the commit (opensWindow), the draw gets a Veto window that ends a window length after the stop (#231), and settles at its
  * end; otherwise it settles at the stop (settleDue). A Round that waits for a respin takes the draw itself; otherwise a Round
  * starts. The feed's entry waits for the stop (`at`, not published). The room hears `event.changed` only; the clients refetch the
- * Event read, which shows the wheel per viewer (#258). Refused with the reason of spinRejection.
+ * Event read, which shows the wheel per viewer (#258). Refused with the reason of spinReason.
  */
 export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore, randomInt: (n: number) => number): Promise<RoundSpun> {
   const state = await readEventState(tx, eventRow, now, ['sessions', 'members', 'rounds', 'pool'])
@@ -127,7 +127,7 @@ export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore
  * A Player casts their Party's Veto on a draw (#231, spec #218 § Vetoes), in the caller's transaction on the locked Event, with
  * `broadcast: false`: the cast is sealed until the window ends, so nothing tells the room that it happened. Only the Users of
  * the casting Party get `veto.cast` (the named send), the Host among them only when they play in that Party. Anything due settles
- * first. Refused with the reason of vetoRejection; the table's primary key is the Party's one Veto per draw, and a clash that
+ * first. Refused with the reason of vetoReason (the Event state, #416); the table's primary key is the Party's one Veto per draw, and a clash that
  * got past the check (it cannot under the lock) answers `veto_already_cast` too.
  */
 export async function castVeto({ tx, eventRow, user, publishTo, now }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publishTo' | 'now'>, drawId: string): Promise<VetoCast> {

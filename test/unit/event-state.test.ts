@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { games, roundPlaces } from '../../server/db/schema'
+import { GAME_COUNT_MAX } from '../../shared/settings'
 import type { CoinRow } from '../../server/utils/coin'
 import {
   bonusCountsOf,
@@ -353,6 +354,14 @@ describe('finishReason and lastGameReason', () => {
     expect(lastGameReason(state({ rounds: tied }), true)).toBeNull()
     expect(lastGameReason(state({ rounds: tied }, eventRow({ gameCount: 20 })), true)).toBe('results_missing')
   })
+
+  it('refuses the last game at the Game count maximum with game_count_range, and still lets the Host finish the Tie', () => {
+    const alternating = Array.from({ length: GAME_COUNT_MAX }, (_, index) => played(`r${index}`, index + 1, index % 2 === 0 ? [[1, 1], [2, 2]] : [[1, 2], [2, 1]])).flat()
+    const maximum = state({ rounds: alternating }, eventRow({ gameCount: GAME_COUNT_MAX }))
+
+    expect(lastGameReason(maximum, true)).toBe('game_count_range')
+    expect(finishReason(maximum, true, { outcome: 'tie', winners: [1, 2] })).toBeNull()
+  })
 })
 
 describe('coinReason', () => {
@@ -414,6 +423,8 @@ describe('floorsOf', () => {
     const putBack = joined(round('r9', { putBackAt: at(-5) }), { draw: draw('d9', 'r9') })
 
     expect(floorsOf(state({ rounds: [...manyRounds(2), putBack] })).roundsStarted).toBe(2)
+    expect(floorsOf(state({ rounds: [putBack] })).roundsStarted).toBe(0)
+    expect(floorsOf(state({ rounds: [] })).roundsStarted).toBe(0)
   })
 
   it('takes the Team size floor from the fullest team that remains', () => {

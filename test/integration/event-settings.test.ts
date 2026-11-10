@@ -507,10 +507,10 @@ describe('changing the settings of an Event (#147)', () => {
   })
 
   describe('settingsFloors in GET /api/e/:slug', () => {
-    it('gives the Host the floors and every other Member null', async () => {
+    // The Host's floors are the state's (floorsOf: test/unit/event-state.test.ts, and the settings floor case of test/integration/event-state.test.ts).
+    it('gives every other Member null', async () => {
       const slug = await createdEvent()
 
-      expect((await read(slug)).settingsFloors).toEqual({ teamSize: 1, vetoAllowance: 0, gameCount: 0 })
       expect((await read(slug, memberCookie)).settingsFloors).toBeNull()
     })
   })
