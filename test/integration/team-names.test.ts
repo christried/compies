@@ -1,16 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import setTeamWord from '../../server/api/e/[slug]/team-word.post'
-import resetTeamName from '../../server/api/e/[slug]/teams/[position]/reset-name.post'
-import { activity, eventMembers, eventPoolGames, events, games, pollSlots, users } from '../../server/db/schema'
+import { activity, eventMembers, events, pollSlots, users } from '../../server/db/schema'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { EventView } from '../../shared/event'
+import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Team names (#161, spec #153 stories 34-41): a Player in a team gives one word, the team's name is the words in the
@@ -22,20 +17,12 @@ const three = { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example
 
 describe('Team names', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const notifier = memoryRoomNotifier()
-  const routes = {
-    'POST /api/e': createEvent,
-    'GET /api/e/:slug': readEvent,
-    'POST /api/e/:slug/confirm': confirmDate,
-    'POST /api/e/:slug/move': moveMember,
-    'POST /api/e/:slug/team-word': setTeamWord,
-    'POST /api/e/:slug/teams/:position/reset-name': resetTeamName,
-  } as const
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, routes, { roomNotifier: notifier })
+    request = createTestApp(testDb.db, { roomNotifier: notifier })
   })
 
   afterAll(async () => {
@@ -45,13 +32,7 @@ describe('Team names', () => {
   beforeEach(async () => {
     stubAuthEnv()
     notifier.clear()
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(games)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -92,13 +73,7 @@ describe('Team names', () => {
 
   type Game = Awaited<ReturnType<typeof setup>>
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   /** Seats a Player in a team through the move route, one after the other so the join order is the call order. */
   async function seat(game: Game, key: 'one' | 'two' | 'three', teamNumber: number) {
@@ -122,9 +97,8 @@ describe('Team names', () => {
     return (await read(game)).teams.map(team => team.name)
   }
 
-  async function errorOf(response: Response) {
-    return (await response.json() as { statusMessage: string }).statusMessage
-  }
+  /** The machine-readable code of an error response (`statusMessage`), without its status. */
+  const codeOf = async (response: Response) => (await errorOf(response)).code
 
   describe('setting a Team word', () => {
     it('lets a Player in a team set their word, and the Event read shows the member with it', async () => {
@@ -144,12 +118,12 @@ describe('Team names', () => {
 
       const onBench = await word(game, game.cookies.one, 'Wilde')
       expect(onBench.status).toBe(409)
-      expect(await errorOf(onBench)).toBe('not_in_team')
+      expect(await codeOf(onBench)).toBe('not_in_team')
 
       await send('POST', `/api/e/${game.slug}/move`, game.cookies.one, { userId: game.ids.one, to: { zone: 'stands' } })
       const inStands = await word(game, game.cookies.one, 'Wilde')
       expect(inStands.status).toBe(409)
-      expect(await errorOf(inStands)).toBe('not_in_team')
+      expect(await codeOf(inStands)).toBe('not_in_team')
     })
 
     it('answers 401 when signed out and 404 for a User who is no Member', async () => {
@@ -169,7 +143,7 @@ describe('Team names', () => {
       for (const bad of ['Gurkenfreunde', 'Wilde Gurken', undefined, 7]) {
         const response = await word(game, game.cookies.one, bad)
         expect(response.status).toBe(400)
-        expect(await errorOf(response)).toBe('invalid_team_word')
+        expect(await codeOf(response)).toBe('invalid_team_word')
       }
       expect((await read(game)).members.find(member => member.id === game.ids.one)?.teamWord).toBe('Gurkenfreund')
     })
@@ -329,7 +303,7 @@ describe('Team names', () => {
       const response = await resetName(game, game.cookies.one, 1)
 
       expect(response.status).toBe(403)
-      expect(await errorOf(response)).toBe('not_host')
+      expect(await codeOf(response)).toBe('not_host')
       expect(await names(game)).toEqual(['Wilde', null])
       expect(notifier.messages(game.eventId)).toEqual([])
       expect(await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))).toEqual([])
@@ -341,7 +315,7 @@ describe('Team names', () => {
       for (const position of [0, 3, 'x', '1.5']) {
         const response = await resetName(game, game.hostCookie, position)
         expect(response.status).toBe(400)
-        expect(await errorOf(response)).toBe('no_such_team')
+        expect(await codeOf(response)).toBe('no_such_team')
       }
       expect(notifier.messages(game.eventId)).toEqual([])
     })
@@ -353,7 +327,7 @@ describe('Team names', () => {
       const response = await resetName(game, game.hostCookie, 1)
 
       expect(response.status).toBe(400)
-      expect(await errorOf(response)).toBe('no_such_team')
+      expect(await codeOf(response)).toBe('no_such_team')
     })
 
     it('still writes the entry for a team without words', async () => {
