@@ -1,15 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import addSlot from '../../server/api/e/[slug]/slots/index.post'
-import removeSlot from '../../server/api/e/[slug]/slots/[slotId].delete'
-import changeSlot from '../../server/api/e/[slug]/slots/[slotId].patch'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createInterleavingDb, createTestDb, createTestServer } from './harness'
+import { createInterleavingDb, createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Slots are far in the future so the "in the future" rule holds without a fake clock. Past times are
@@ -20,19 +14,11 @@ const outsider = { provider: 'discord', id: '4', name: 'Fremd', email: 'outsider
 
 describe('the Host edits Slots', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/slots': addSlot,
-      'DELETE /api/e/:slug/slots/:slotId': removeSlot,
-      'PATCH /api/e/:slug/slots/:slotId': changeSlot,
-      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -41,11 +27,7 @@ describe('the Host edits Slots', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -306,7 +288,7 @@ describe('the Host edits Slots', () => {
       const racingDb = createInterleavingDb(testDb.client, /insert into "poll_votes"/i, async () => {
         removed = await remove(cookie, slug, slot!.id)
       })
-      const racingRequest = createTestServer(racingDb, { 'PUT /api/e/:slug/slots/:slotId/vote': putVote })
+      const racingRequest = createTestApp(racingDb)
 
       const voted = await racingRequest(`/api/e/${slug}/slots/${slot!.id}/vote`, {
         method: 'PUT',
@@ -458,7 +440,7 @@ describe('the Host edits Slots', () => {
         const racingDb = createInterleavingDb(testDb.client, /update "poll_slots"/i, async () => {
           confirmed = await confirm(cookie, slug, slot.id)
         })
-        const racingRequest = createTestServer(racingDb, { 'PATCH /api/e/:slug/slots/:slotId': changeSlot })
+        const racingRequest = createTestApp(racingDb)
 
         const changed = await racingRequest(`/api/e/${slug}/slots/${slot.id}`, {
           method: 'PATCH',
@@ -480,7 +462,7 @@ describe('the Host edits Slots', () => {
         const racingDb = createInterleavingDb(testDb.client, /update "sessions"/i, async () => {
           changed = await change(cookie, slug, slot.id, { startsAt: '2090-11-01T20:00' })
         })
-        const racingRequest = createTestServer(racingDb, { 'POST /api/e/:slug/confirm': confirmDate })
+        const racingRequest = createTestApp(racingDb)
 
         const confirmed = await racingRequest(`/api/e/${slug}/confirm`, {
           method: 'POST',
