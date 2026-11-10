@@ -22,6 +22,7 @@
 //             open(ctx): Promise<void>,
 //             differs?: string,                      // a selector: what matches it or sits inside it is measured as before but left out of the Dunkel = System comparison
 //                                            // (a control that shows the stored Appearance is „Dunkel“ in one pass and „System“ in the other); the comparison's line says how many
+//             after?(ctx): Promise<void>,            // called after the read, also when the read throws: puts back what the state changed (a failure is a NOTE line)
 //             stillHolds?(ctx): Promise<void>,       // called once after the page and its stops were read; throws when what the state shows ended meanwhile (a Veto window, a Clip)
 //             stops?: { name, widths?, viewport?, go(ctx): Promise<void> }[] }   // further states on the same page load, in order
 //   ctx = { tab, tabs, width, height, appearance, data, signOut(how) }   // 390 × 844 and 1440 × 900; `tabs` = { host, member, admin }, the other accounts for the API
@@ -234,6 +235,45 @@ async function makeData(host) {
   return { slug, invitePath: new URL(inviteUrl, 'http://x').pathname, game, longGame }
 }
 
+/** One state at one width and Appearance: the page, then its stops, then whether what it shows still held. */
+async function readState(state, ctx) {
+  const { tab, width, appearance } = ctx
+  try {
+    await state.open(ctx)
+    // The SSR page of a production build is visible before it hydrates (README).
+    if ((process.env.BASE_URL ?? '').includes(':3001')) await new Promise(resolve => setTimeout(resolve, 4000))
+    if (!await measure({ tab, state, name: state.name, width, appearance, first: true, viewport: state.viewport === true })) return
+  }
+  catch (error) {
+    log.check(`[${state.group}/${state.name} ${width} ${appearance}] state not reached`, false, String(error.message).slice(0, 200))
+    stat(state).fail++
+    return
+  }
+  for (const stop of state.stops ?? []) {
+    if (stop.widths && !stop.widths.includes(width)) continue
+    try {
+      await stop.go(ctx)
+      await measure({ tab, state, name: `${state.name}/${stop.name}`, width, appearance, first: false, viewport: state.viewport === true || stop.viewport === true })
+    }
+    catch (error) {
+      log.check(`[${state.group}/${state.name}/${stop.name} ${width} ${appearance}] state not reached`, false, String(error.message).slice(0, 200))
+      stat(state).fail++
+    }
+  }
+  // What the state shows can end while it is read (a Veto window, a Clip): one FAIL line, for the script and not the page.
+  if (state.stillHolds) {
+    try {
+      await state.stillHolds(ctx)
+    }
+    catch (error) {
+      const message = String(error.message).slice(0, 200)
+      log.check(`[${state.group}/${state.name} ${width} ${appearance}] did not hold while it was read`, false, message)
+      findings.holds.push({ state: state.name, group: state.group, width, appearance, message })
+      stat(state).fail++
+    }
+  }
+}
+
 const tabs = await launchAll(['host', 'member', 'admin'])
 let cleanupData
 try {
@@ -246,40 +286,16 @@ try {
       if (state.appearances && !state.appearances.includes(appearance)) continue
       stat(state)
       for (const width of (state.widths ?? [390, 1440]).filter(value => !onlyWidth || value === onlyWidth)) {
-        const tab = tabs[state.account]
-        const ctx = { tab, tabs, width, height: HEIGHTS[width] ?? 900, appearance, data, signOut: how => signOuts.add(how) }
+        const ctx = { tab: tabs[state.account], tabs, width, height: HEIGHTS[width] ?? 900, appearance, data, signOut: how => signOuts.add(how) }
         try {
-          await state.open(ctx)
-          // The SSR page of a production build is visible before it hydrates (README).
-          if ((process.env.BASE_URL ?? '').includes(':3001')) await new Promise(resolve => setTimeout(resolve, 4000))
-          if (!await measure({ tab, state, name: state.name, width, appearance, first: true, viewport: state.viewport === true })) continue
+          await readState(state, ctx)
         }
-        catch (error) {
-          log.check(`[${state.group}/${state.name} ${width} ${appearance}] state not reached`, false, String(error.message).slice(0, 200))
-          stat(state).fail++
-          continue
-        }
-        for (const stop of state.stops ?? []) {
-          if (stop.widths && !stop.widths.includes(width)) continue
+        finally {
           try {
-            await stop.go(ctx)
-            await measure({ tab, state, name: `${state.name}/${stop.name}`, width, appearance, first: false, viewport: state.viewport === true || stop.viewport === true })
+            await state.after?.(ctx)
           }
           catch (error) {
-            log.check(`[${state.group}/${state.name}/${stop.name} ${width} ${appearance}] state not reached`, false, String(error.message).slice(0, 200))
-            stat(state).fail++
-          }
-        }
-        // What the state shows can end while it is read (a Veto window, a Clip): one FAIL line, for the script and not the page.
-        if (state.stillHolds) {
-          try {
-            await state.stillHolds(ctx)
-          }
-          catch (error) {
-            const message = String(error.message).slice(0, 200)
-            log.check(`[${state.group}/${state.name} ${width} ${appearance}] did not hold while it was read`, false, message)
-            findings.holds.push({ state: state.name, group: state.group, width, appearance, message })
-            stat(state).fail++
+            log.note(`[${state.group}/${state.name} ${width} ${appearance}] after failed: ${String(error.message).slice(0, 150)}`)
           }
         }
         writeSummary()
