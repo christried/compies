@@ -454,19 +454,39 @@ describe('roundBeingDrawnOf', () => {
 
 describe('teamNamesOf', () => {
   const words = [member('a', 'team', 1, { teamWord: 'Gurken', teamJoinedAt: at(-3) }), member('b', 'team', 1, { teamWord: 'Bande', teamJoinedAt: at(-2) }), member('c', 'team', 2)]
+  const finished = (fields: Partial<EventRow> = {}) => eventRow({ phase: 'finished', ...fields })
 
   it('composes the name from the words of the team in the order they joined, null without words', () => {
     expect(teamNamesOf(state({ members: words, teams: [] }))).toEqual([
-      { position: 1, name: 'Gurken Bande', frozen: false },
-      { position: 2, name: null, frozen: false },
+      { position: 1, name: 'Gurken Bande' },
+      { position: 2, name: null },
     ])
   })
 
-  it('takes the frozen name, null for the colour, whatever the words say', () => {
-    expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: 'Alt' }, { position: 2, frozenName: null }] }))).toEqual([
-      { position: 1, name: 'Alt', frozen: true },
-      { position: 2, name: null, frozen: true },
-    ])
+  it('composes in an Event that is not finished even when stored names exist: the previous deployment may still write them (#438)', () => {
+    const rows = [{ position: 1, frozenName: 'Alt' }, { position: 2, frozenName: null }]
+
+    for (const phase of ['running', 'date_set'] as const) {
+      expect(teamNamesOf(state({ members: words, teams: rows }, eventRow({ phase })))).toEqual([
+        { position: 1, name: 'Gurken Bande' },
+        { position: 2, name: null },
+      ])
+    }
+  })
+
+  it('shows the stored name of a finished Event, null for the colour whatever the words say', () => {
+    for (const phase of ['finished', 'archived'] as const) {
+      expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: 'Alt' }, { position: 2, frozenName: null }] }, eventRow({ phase })))).toEqual([
+        { position: 1, name: 'Alt' },
+        { position: 2, name: null },
+      ])
+    }
+    expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: null }] }, finished()))[0]).toEqual({ position: 1, name: null })
+  })
+
+  it('composes a finished Event without a row, and mixes a stored name with a composed one', () => {
+    expect(teamNamesOf(state({ members: words, teams: [] }, finished())).map(entry => entry.name)).toEqual(['Gurken Bande', null])
+    expect(teamNamesOf(state({ members: words, teams: [{ position: 2, frozenName: 'Die allerlängsten' }] }, finished())).map(entry => entry.name)).toEqual(['Gurken Bande', 'Die allerlängsten'])
   })
 
   it('lists as many teams as the settings say, none for an Event that is not set up', () => {
@@ -474,10 +494,11 @@ describe('teamNamesOf', () => {
     expect(teamNamesOf(state({ members: words }, eventRow(noSettings)))).toEqual([])
   })
 
-  it('mixes frozen and composed names: a frozen team keeps its name while another still follows its words', () => {
-    const names = teamNamesOf(state({ members: words, teams: [{ position: 2, frozenName: 'Die allerlängsten' }] }))
+  it('names a team by one word, two words or the longest word four times', () => {
+    const longest = 'Gurkenfreund'
+    const four = ['a', 'b', 'c', 'd'].map((id, index) => member(id, 'team', 1, { teamWord: longest, teamJoinedAt: at(-10 + index) }))
 
-    expect(names.map(entry => entry.name)).toEqual(['Gurken Bande', 'Die allerlängsten'])
-    expect(names.map(entry => entry.frozen)).toEqual([false, true])
+    expect(teamNamesOf(state({ members: [member('a', 'team', 1, { teamWord: 'Eins', teamJoinedAt: at(-3) })] }))[0]?.name).toBe('Eins')
+    expect(teamNamesOf(state({ members: four }))[0]?.name).toBe(Array(4).fill(longest).join(' '))
   })
 })

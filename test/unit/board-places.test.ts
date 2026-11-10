@@ -33,14 +33,14 @@ describe('teamName', () => {
   })
 
   it('names a team with its Team name, and with its colour when the name is null', () => {
-    expect(teamName({ position: 1, name: 'Wilde Gurken', frozen: true }, t)).toBe('Wilde Gurken')
-    expect(teamName({ position: 1, name: null, frozen: false }, t)).toBe('Team Rot')
+    expect(teamName({ position: 1, name: 'Wilde Gurken' }, t)).toBe('Wilde Gurken')
+    expect(teamName({ position: 1, name: null }, t)).toBe('Team Rot')
   })
 })
 
 describe('teamNameAt', () => {
   // The name of a team by its position (#288): the Event's teams where the position has one, else the colour's name.
-  const teams = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
+  const teams = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: null }]
 
   it('names the team at a position with its Team name', () => {
     expect(teamNameAt(teams, 1, t)).toBe('Wilde Gurken')

@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { events } from '../db/schema'
+import { eventTeams, events } from '../db/schema'
 import type { EventFinished } from '../../shared/event'
 import { leadersOf, type FinishRequest } from '../../shared/finish'
 import { recordActivity } from './activity'
@@ -11,7 +11,7 @@ import { requireSettings } from './settings'
 
 // The Host finishes the Event (#277, spec #272): once every Round up to the Game count has its Result, the Event is finished for good. The
 // finish ends the Running Session, withdraws the Sessions that have not started, sets the Phase and the end instant, and writes one feed
-// entry. It runs under the Event lock (changeEvent, `lock: 'update'`), so a Result that races it waits and then answers wrong_phase.
+// entry, and deletes the stored Team names (#438). It runs under the Event lock (changeEvent, `lock: 'update'`), so a Result that races it waits and then answers wrong_phase.
 
 /**
  * Finishes the Event with the outcome and the winners the Host saw (#277), or refuses with the reason of finishReason. Nothing is written
@@ -26,6 +26,9 @@ export async function finishEvent({ tx, eventRow, user, publish, now }: ChangeCo
 
   await tx.update(events).set({ phase: 'finished', finishedAt: now }).where(eq(events.id, eventRow.id))
   await closeSessions(tx, eventRow, now)
+  // An Event the previous deployment started during the switch-over has frozen names the new code ignores while it runs; without this the names
+  // would jump back to them now (#438). Rows remain only in an Event finished before 0.12.
+  await tx.delete(eventTeams).where(eq(eventTeams.eventId, eventRow.id))
   // The rule above refused an Event without settings, so the Standings exist.
   const winners = leadersOf(state.standing!.standings)
   // Only this entry: the Sessions' removal and end are the finish's own, not a feed entry each (#277).

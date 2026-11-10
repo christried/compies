@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
-import { eventMembers, eventTeams } from '../db/schema'
-import { composeTeamName, type Place } from '../../shared/board'
+import { eventMembers } from '../db/schema'
+import type { Place } from '../../shared/board'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import type { EventChange } from './event-access'
@@ -47,18 +47,4 @@ export async function lastToJoin(tx: Db, eventId: string, team: number): Promise
     .orderBy(desc(eventMembers.teamJoinedAt))
     .limit(1)
   return row?.userId ?? null
-}
-
-/**
- * Freezes the Team names at the first Session start (#164): one `event_teams` row per team position 1..`teamCount`
- * with the name composed from the team's words (null without words: the Team colour's name). Called once, by the start
- * that finds no Session started; the rows are the names from then on, whatever happens to the words.
- */
-export async function freezeTeamNames(tx: Db, eventId: string, teamCount: number): Promise<void> {
-  const members = await tx
-    .select({ team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
-    .from(eventMembers)
-    .where(eq(eventMembers.eventId, eventId))
-  const rows = Array.from({ length: teamCount }, (_, index) => ({ eventId, position: index + 1, frozenName: composeTeamName(members, index + 1) }))
-  await tx.insert(eventTeams).values(rows)
 }

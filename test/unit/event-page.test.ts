@@ -204,11 +204,11 @@ describe('seatNote', () => {
   })
 
   it('names the Team by its name for a Host in a named Team', () => {
-    expect(seatNote(hostView({ zone: 'team', team: 1 }, [{ position: 1, name: 'Rot', frozen: false }]), fakeT)).toBe('event.notice.seatTeam(team=Rot)')
+    expect(seatNote(hostView({ zone: 'team', team: 1 }, [{ position: 1, name: 'Rot' }]), fakeT)).toBe('event.notice.seatTeam(team=Rot)')
   })
 
   it('names a Team without a name by its default name and colour', () => {
-    expect(seatNote(hostView({ zone: 'team', team: 2 }, [{ position: 2, name: null, frozen: false }]), fakeT))
+    expect(seatNote(hostView({ zone: 'team', team: 2 }, [{ position: 2, name: null }]), fakeT))
       .toBe('event.notice.seatTeam(team=team.defaultName(color=team.colors.2))')
   })
 

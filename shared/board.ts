@@ -95,10 +95,10 @@ export function teamWords(seats: readonly TeamSeat[]): string[] {
 }
 
 /**
- * The Team name (GLOSSARY: Team name, #161, #164). `frozen` undefined means the team is not frozen: the name is
- * composed from its words in the order given (teamWords), joined by a space. From the first Session start `frozen` is
- * what `event_teams.frozen_name` holds: the string, or null for the Team colour's name, which stays null even when
- * words exist (the Host reset it). Null means the client shows the Team colour's name.
+ * The Team name (GLOSSARY: Team name, #161, #438). `frozen` undefined means the name is composed from its words in the
+ * order given (teamWords), joined by a space. A value is what `event_teams.frozen_name` holds, read only in an Event
+ * finished before 0.12 (the previous deployment may still write rows): the string, or null for the Team colour's name,
+ * which stays null even when words exist. Null means the client shows the Team colour's name.
  */
 export function composedTeamName({ frozen, words }: { frozen?: string | null, words: readonly string[] }): string | null {
   if (frozen !== undefined) return frozen
@@ -110,7 +110,7 @@ export interface TeamMember { team: number | null, teamWord: string | null, team
 
 /**
  * The Team name of one team from the Event's Members (composedTeamName of its words, teamWords): the Event read shows it
- * and the first start freezes it (#161, #164). `frozen` is the frozen name, or undefined while the team is not frozen.
+ * (#161). `frozen` is the stored name of a finished Event (#438), or undefined: then the name is composed.
  */
 export function composeTeamName(members: readonly TeamMember[], position: number, frozen?: string | null): string | null {
   const seats = members
