@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { hostGameIds } from '../../server/utils/library'
+import type { EventView } from '../../shared/event'
 
 // The games the Host's read names as tiles (#443): the Game pool, the open Rounds' games and the latest spin's game, each id once.
 
 const face = (id: string) => ({ id, name: id, imageUrl: null, youtubeId: null, price: null })
 const roundGame = (id: string) => ({ ...face(id), clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [] })
 const round = (id: string, gameId: string) => ({ id, startedAt: '2026-11-10T10:00:00.000Z', setAt: '2026-11-10T10:00:00.000Z', game: roundGame(gameId) })
-const wheel = (gameId: string | null) => ({ count: 2, slices: null, vetoes: { left: [], own: null, revealed: null, draw: null }, spin: { game: gameId === null ? null : roundGame(gameId) } }) as never
+const wheel = (gameId: string | null): NonNullable<EventView['wheel']> => ({ count: 2, slices: null, vetoes: { left: [], own: null, revealed: null, draw: null }, spin: { game: gameId === null ? null : roundGame(gameId) } }) as unknown as NonNullable<EventView['wheel']>
 
 describe('hostGameIds (#443)', () => {
   it('is empty with no pool, no Rounds and no wheel', () => {

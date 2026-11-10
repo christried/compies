@@ -1575,6 +1575,9 @@
       "more": "{label}: mehr"
     }
   },
+  "gameDialog": {
+    "openLibrary": "In der Bibliothek öffnen"
+  },
   "howWePlay": {
     "title": "So wird gespielt",
     "edit": "Bearbeiten",
