@@ -3,7 +3,7 @@ import { Clock, Euro, Gamepad2, Lock, Pencil, Swords, Tag, Users } from '@lucide
 import { formatMonthYear } from '~/utils/berlin-time'
 import { describeGame } from '~/utils/describe-game'
 import { priceLine } from '~/utils/price'
-import { tagColors } from '~~/shared/tag-colors'
+import { colorTags } from '~~/shared/tag-colors'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
 // set length, the facts (player count, Suitabilities, clip length, the Price (#337)), the Tags (#335, each in its colour, #427) and who created it. The creator and the Platform
@@ -24,7 +24,7 @@ const players = computed(() => description.value?.players ?? null)
 const suitabilities = computed(() => description.value?.suitabilities ?? null)
 // The Price line as a fact, like the card's (#337); `now` is read here, so the year shows only for another year.
 const priceText = computed(() => (game.value?.price ? priceLine(game.value.price, new Date(), t) : null))
-const tagChipColors = computed(() => tagColors(game.value?.tags.map(tag => tag.key) ?? []))
+const tagChips = computed(() => colorTags(game.value?.tags ?? []))
 </script>
 
 <template>
@@ -151,10 +151,10 @@ const tagChipColors = computed(() => tagColors(game.value?.tags.map(tag => tag.k
             class="m-0 flex list-none flex-wrap gap-2 p-0"
           >
             <TagChip
-              v-for="(tag, index) in game.tags"
+              v-for="tag in tagChips"
               :key="tag.key"
               as="li"
-              :color="tagChipColors[index]!"
+              :color="tag.color"
               class="inline-flex h-8 max-w-full items-center gap-1.5 px-3 text-[13px]"
             >
               <AppIcon

@@ -2,7 +2,7 @@
 import { CircleAlert, X } from '@lucide/vue'
 import { TAG_MAX, TAGS_PER_GAME_MAX, normaliseTag, tagProblem, type GameTag } from '~~/shared/game'
 import { fieldBox } from '~/utils/field-chrome'
-import { tagColors } from '~~/shared/tag-colors'
+import { colorTags } from '~~/shared/tag-colors'
 
 // The Tag field of the game form (#335, GLOSSARY: Tag): the game's Tags as chips and a text field after them. Enter or a
 // comma confirms the text, Backspace on the empty field takes the last chip back, and the Tags in use are offered as the
@@ -150,8 +150,8 @@ function onEscape(event: KeyboardEvent) {
   active.value = -1
 }
 
-// Each chip's colour (#427), in chip order: adding or removing a chip recolours the ones after it as the game page will.
-const colors = computed(() => tagColors(model.value.map(tag => tag.key)))
+// The chips with their colours (#427), in chip order: adding or removing a chip recolours the ones after it as the game page will.
+const chips = computed(() => colorTags(model.value))
 
 function remove(index: number) {
   tooMany.value = false
@@ -181,9 +181,9 @@ defineExpose({ commit })
       @click="inputEl?.focus()"
     >
       <TagChip
-        v-for="(tag, index) in model"
+        v-for="(tag, index) in chips"
         :key="tag.key"
-        :color="colors[index]!"
+        :color="tag.color"
         class="inline-flex h-8 items-center gap-1 pr-1 pl-3 text-small"
       >
         <span class="max-w-[16rem] truncate">{{ tag.label }}</span>

@@ -4,7 +4,7 @@ import type { RouteLocationRaw } from 'vue-router'
 import { describeGame } from '~/utils/describe-game'
 import type { GameView, PoolGameFace } from '~~/shared/game'
 import { priceLine } from '~/utils/price'
-import { tagColors } from '~~/shared/tag-colors'
+import { colorTags } from '~~/shared/tag-colors'
 import { youTubeThumbnail } from '~~/shared/youtube'
 
 // A game as a card or a row (02-components § GameCard, #141). The cover is the uploaded image, else the
@@ -36,11 +36,7 @@ const description = computed(() => describeGame({
 const players = computed(() => description.value.playersCompact)
 const suitabilities = computed(() => description.value.suitabilities)
 const TAGS_SHOWN = 3
-const shownTags = computed(() => {
-  const tags = props.game.tags ?? []
-  const colors = tagColors(tags.map(tag => tag.key))
-  return tags.slice(0, TAGS_SHOWN).map((tag, index) => ({ ...tag, color: colors[index]! }))
-})
+const shownTags = computed(() => colorTags(props.game.tags ?? []).slice(0, TAGS_SHOWN))
 const moreTags = computed(() => Math.max(0, (props.game.tags ?? []).length - TAGS_SHOWN))
 
 // One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.

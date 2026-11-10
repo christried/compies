@@ -2,7 +2,11 @@
 // glance. A Tag's own colour comes from its key (the label's spelling does not matter), so it is the same on every game, page
 // and load; a Tag whose colour an earlier Tag of the same game already wears takes the next free one.
 
-const COLOURS = 8
+import type { GameTag } from './game'
+import { TEAM_COUNT_MAX } from './team-position'
+
+/** As many Tag colours as Team colours. */
+const COLOR_COUNT = TEAM_COUNT_MAX
 
 /**
  * The colour a Tag key wears when nothing clashes: 1 to 8, from a 32-bit FNV-1a hash of the key's UTF-16 code units. FNV's
@@ -20,7 +24,7 @@ function ownColour(key: string): number {
   hash ^= hash >>> 13
   hash = Math.imul(hash, 0xC2B2AE35)
   hash ^= hash >>> 16
-  return ((hash >>> 0) % COLOURS) + 1
+  return ((hash >>> 0) % COLOR_COUNT) + 1
 }
 
 /**
@@ -31,10 +35,16 @@ function ownColour(key: string): number {
 export function tagColors(keys: readonly string[]): number[] {
   const used = new Set<number>()
   return keys.map((key) => {
-    if (used.size === COLOURS) used.clear()
+    if (used.size === COLOR_COUNT) used.clear()
     let colour = ownColour(key)
-    while (used.has(colour)) colour = (colour % COLOURS) + 1
+    while (used.has(colour)) colour = (colour % COLOR_COUNT) + 1
     used.add(colour)
     return colour
   })
+}
+
+/** A game's Tags with their colours, in the game's Tag order: what every Tag chip renders from. */
+export function colorTags<T extends GameTag>(tags: readonly T[]): (T & { color: number })[] {
+  const colors = tagColors(tags.map(tag => tag.key))
+  return tags.map((tag, index) => ({ ...tag, color: colors[index]! }))
 }
