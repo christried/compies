@@ -78,16 +78,24 @@ function makeKit(exclusionSelector) {
 
   const flat = color => ({ color, image: 'none', stops: [] })
 
+  /** Whether an image paints anything at rest: a `background-size` of 0 in a direction (the footer links' highlight, which grows on hover) draws nothing. */
+  const drawn = size => size.split(/,(?![^(]*\))/).some(layer => !layer.trim().split(/\s+/).some(part => /^0(?:\.0+)?(?:px|%)?$/.test(part)))
+
   /** The layers one element paints, nearest first: the image over the background colour. */
   function layersOf(el) {
     const style = getComputedStyle(el)
     const color = toRgba(style.backgroundColor)
     const image = style.backgroundImage
     const layers = []
-    if (image !== 'none') {
+    if (image !== 'none' && !drawn(style.backgroundSize)) {
+      if (color[3] > 0) layers.push(flat(color))
+    }
+    else if (image !== 'none') {
       const stops = colourTokens(image).map(toRgba)
-      // The page texture (`tex-paper`, AppShell): its stops go with it, so the worst place counts instead of a skip.
-      if (el.matches('.tex-paper')) layers.push({ color, image: 'texture', stops })
+      // The page texture (`tex-paper`, AppShell) and a stroke over a transparent rest (the footer link's highlight on the
+      // current page): the stops go with the layer, so the text is judged on the flat colour and on every stop, the
+      // lowest ratio counting, instead of a skip.
+      if (el.matches('.tex-paper') || (!image.includes('url(') && stops.length > 1 && stops.some(stop => stop[3] === 0) && stops.some(stop => stop[3] > 0))) layers.push({ color, image: 'texture', stops })
       // A gradient of one colour is the `tint` utility (the hover tint): that colour as a layer of its own, no picture.
       else if (!image.includes('url(') && stops.length && stops.every(stop => stop.join() === stops[0].join())) {
         layers.push(flat(stops[0]))

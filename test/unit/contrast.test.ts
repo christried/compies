@@ -126,6 +126,15 @@ describe('judgeText', () => {
     expect(verdict.outcome).toBe('pass')
     expect(cut(verdict.ratio as number)).toBe('6.40')
   })
+
+  // The footer link on the current page (#407): its highlight is a gradient that is transparent over the upper part and
+  // the primary colour below. The text is judged on the surface and on that stroke, and the lower ratio counts.
+  it('scores a text over a highlight stroke by the lower of the surface and the stroke', () => {
+    const stroke = { color: [0, 0, 0, 0] as Rgba, image: 'texture' as const, stops: [[0, 0, 0, 0], c('#ffd23f')] as Rgba[] }
+    const verdict = judgeText(textOf({ color: c('#f7efe1'), behind: [stroke, flat('#221b2b')] }))
+    expect(verdict).toMatchObject({ outcome: 'fail', why: 'contrast', bg: '#ffd23f' })
+    expect(cut(verdict.ratio as number)).toBe('1.26')
+  })
 })
 
 describe('judgeBox', () => {
