@@ -1,13 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import rotateInvite from '../../server/api/e/[slug]/rotate.post'
-import previewInvite from '../../server/api/invite/[invite].get'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { pollSlots, pollVotes, eventMembers, events, users } from '../../server/db/schema'
+import { eventMembers, events } from '../../server/db/schema'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Rotating the Invite link (#16, ADR 0006): a new token, the same slug. The old Invite link stops
@@ -18,17 +14,11 @@ const newcomer = { provider: 'twitch', id: '3', name: 'Neu', email: 'neu@example
 
 describe('rotating the Invite link', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'POST /api/e/:slug/rotate': rotateInvite,
-      'GET /api/invite/:invite': previewInvite,
-      'POST /api/invite/:invite': joinInvite,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -37,11 +27,7 @@ describe('rotating the Invite link', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {

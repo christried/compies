@@ -1,16 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getMe from '../../server/api/me.get'
-import createEvent from '../../server/api/e/index.post'
-import getEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import downloadIcs from '../../server/api/e/[slug]/ics.get'
-import reopenSession from '../../server/api/e/[slug]/sessions/[id]/reopen.post'
-import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions } from '../../server/db/schema'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Reschedule and Reopen (#14, #1 § Domain rules). Slots and Dates are in 2090 so the "in the future"
@@ -21,20 +14,11 @@ const outsider = { provider: 'discord', id: '3', name: 'Fremd', email: 'outsider
 
 describe('reschedule and reopen', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'GET /api/me': getMe,
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': getEvent,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-      'POST /api/e/:slug/sessions/:id/reopen': reopenSession,
-      'GET /api/e/:slug/ics': downloadIcs,
-      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -43,11 +27,7 @@ describe('reschedule and reopen', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
