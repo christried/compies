@@ -1,28 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import readEvent from '../../server/api/e/[slug].get'
-import getActivity from '../../server/api/e/[slug]/activity.get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import putBackRound from '../../server/api/e/[slug]/rounds/[id].delete'
-import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
-import setRound from '../../server/api/e/[slug]/rounds/index.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import changeSettings from '../../server/api/e/[slug]/settings.patch'
-import createEvent from '../../server/api/e/index.post'
-import listGames from '../../server/api/games/index.get'
-import createGame from '../../server/api/games/index.post'
-import putImage from '../../server/api/games/[id]/image.put'
-import getImage from '../../server/api/images/[key].get'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { eventMembers, eventPoolGames, events, games, users } from '../../server/db/schema'
+import { eventMembers, eventPoolGames, events, users } from '../../server/db/schema'
 import { memoryImageStore } from '../../server/utils/image-store'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import type { GamePrice, GameView } from '../../shared/game'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { hostPutsBack, hostSets, startRunningSession } from './running-session'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { hostPutsBack, hostSets, startRunningSession } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The secrecy of the Pool preview (#225), the same promise as the Hidden wheel's (hidden-wheel.test.ts): with the
@@ -45,7 +31,7 @@ const VISIBLE_WHEEL = { ...TEST_SETTINGS, selectionMode: 'lucky_wheel', hiddenWh
 
 describe('Pool preview secrecy (#225)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const store = memoryImageStore()
   const notifier = memoryRoomNotifier()
   let hostCookie: string
@@ -53,23 +39,7 @@ describe('Pool preview secrecy (#225)', () => {
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'PATCH /api/e/:slug/settings': changeSettings,
-      'GET /api/e/:slug/activity': getActivity,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/rounds': setRound,
-      'DELETE /api/e/:slug/rounds/:id': putBackRound,
-      'PUT /api/e/:slug/rounds/:id/result': putResult,
-      'POST /api/invite/:invite': joinInvite,
-      'GET /api/games': listGames,
-      'POST /api/games': createGame,
-      'PUT /api/games/:id/image': putImage,
-      'GET /api/images/:key': getImage,
-    }, { imageStore: store, roomNotifier: notifier })
+    request = createTestApp(testDb.db, { imageStore: store, roomNotifier: notifier })
   })
 
   afterAll(async () => {
@@ -79,11 +49,7 @@ describe('Pool preview secrecy (#225)', () => {
   beforeEach(async () => {
     stubAuthEnv()
     setAllowlist({ hosts: 'discord:1', admins: 'discord:9' })
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
     store.clear()
     notifier.clear()
     hostCookie = (await signIn(testDb.db, host)).cookie
