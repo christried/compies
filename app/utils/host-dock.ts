@@ -5,21 +5,21 @@ import type { SetRejection, SpinRejection } from '~~/shared/rounds'
 import type { LastGameRejection } from '~~/shared/finish'
 import type { StartRejection } from '~~/shared/session-state'
 import type { EventView } from '~~/shared/event'
-import { eventPageState, type EventPageState } from './event-page'
+import { pageFacts, type PageFacts } from './event-page'
 
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, from the
-// Event read. It is the Event page's own state (eventPageState: one place decides what the Event is doing) plus the
+// Event read. It is the page's kind and session facts (pageFacts: one place decides what the Event is doing) plus the
 // Host's start rule, so the dock, its tests and the page agree. Once the Rounds with a Result reach the Game count and first
 // place is not shared, „Event abschließen“ is the primary in every state that plays (#277); with a Tie the primary is „Unentschieden
 // beenden“ and „Letztes Spiel hinzufügen“ sits next to it (#278), and a finished Event has „Siegerehrung starten“ (#309) and „Einladen“. In a running Session „Nächstes Spiel setzen“ is the
 // primary of Host pick; in the Lucky Wheel „Rad drehen“ is (#229), disabled with its reason, and „Nächstes Spiel setzen“ waits in „Mehr“.
 // The end is decided once, as `closing` (#285): the kinds that play take its primary over their own, and dockLayout lays it out on top of their layout.
 
-export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'ceremony' | 'end'> & { event: Pick<EventView['event'], 'phase'> }
+export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'end'> & { event: Pick<EventView['event'], 'phase'> }
 
 export interface HostDockState {
   /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between`, `done` or `finished`. */
-  kind: EventPageState['kind']
+  kind: PageFacts['kind']
   /** The one primary action, or null when there is none (`done` while the Event cannot be finished). A closing state's primary is its `closing`. */
   primary: 'setup' | 'setDate' | 'start' | 'setGame' | 'spin' | 'finish' | 'finishTie' | 'ceremony' | null
   /** What closes the Event from here (#285): `finish` once the Game count is reached and first place is not shared, `finishTie` in a Tie, null otherwise. A finished Event's primary („Siegerehrung starten“, #309) is not one: it closes nothing. */
@@ -40,12 +40,11 @@ export interface HostDockState {
 
 /** The dock's state for the Host. */
 export function hostDockState(input: DockInput): HostDockState {
-  // The dock is the Host's: the page state only needs `isHost` for the Members' Tie banner (#283), which the dock does not read.
-  const page = eventPageState({ ...input, event: { ...input.event, isHost: true } })
+  const page = pageFacts(input)
   // The Event can be finished: the Host's rule says so (null rejection) and the first place is not shared (#277).
   const finishable = input.end?.finish?.rejection === null && input.end.tie === null
   // The Host's rule passes for the outcome the Standings call for, which is „Unentschieden“ while a Tie stands (#278). Only a Session that
-  // started holds Results, so `teams` never gets here: the page's `tie` banner is listed in exactly these kinds (pageBlocks).
+  // started holds Results, so `teams` never gets here.
   const tied = input.end?.finish?.rejection === null && input.end.tie !== null
   // The one place that decides finish or tie (#285). The kinds that do not play (setup, poll, finished) carry no closing.
   const closing: HostDockState['closing'] = finishable ? 'finish' : tied ? 'finishTie' : null
@@ -56,7 +55,7 @@ export function hostDockState(input: DockInput): HostDockState {
 }
 
 /** The state of the page's kind as if nothing closed the Event: the Sessions and the Host's start rule decide it. */
-function unclosed(input: DockInput, page: EventPageState): HostDockState {
+function unclosed(input: DockInput, page: PageFacts): HostDockState {
   const base = { kind: page.kind, number: null, pollNumber: page.pollNumber, startRejection: null, setRejection: null, spinRejection: null, lastGameRejection: input.end?.lastGame?.rejection ?? null, closing: null }
   switch (page.kind) {
     case 'setup': return { ...base, primary: 'setup' }

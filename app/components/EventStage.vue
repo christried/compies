@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Lock } from '@lucide/vue'
-import { gamesToStart, seatNote, teamsStay, type EventPageState } from '~/utils/event-page'
+import { seatNote, teamsStay, type EventPageState } from '~/utils/event-page'
+import { gamesToStart } from '~/utils/event-stage'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import type { StandingsNews } from '~/utils/standings-news'
 import { REFLOW_CLASS, unwatched } from '~/utils/motion'
@@ -11,9 +12,9 @@ import { leadersOf } from '~~/shared/finish'
 import { settingsEditable } from '~~/shared/settings'
 
 // The stage of the Event page (#166, A4, #283): the group of blocks `eventPageState(...).blocks` lists, in its order, and the switch that
-// turns each block into its component. The page keeps the shell, the dock, the tabs and the Host's dialogs; what a block asks the dialogs for
-// goes up as an event. A block is listed only when its data is there (eventPageState, #256, #274), and the Tie banner only for who reads it
-// (#283), so nothing here checks the data again except `sessionNeeded`, which is the Host's notice. The group's enter, leave and move
+// turns each block into its component. The Stage module (event-stage.ts, #415) is the one that lists: a block is there only when its data is, for
+// who sees it (the Tie banner for Members, the Host's notices for the Host), so nothing here checks the data, the viewer or the order again. The page keeps the
+// shell, the dock, the tabs and the Host's dialogs; what a block asks the dialogs for goes up as an event. The group's enter, leave and move
 // motion is the page's one (04-motion): keep it on this TransitionGroup.
 const props = defineProps<{
   slug: string
@@ -104,7 +105,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         @replay="emit('replay')"
       />
 
-      <!-- A block is listed only when its data is there (eventPageState, #256, #274): the data props of the five below are not optional. -->
+      <!-- A block is listed only when its data is there (event-stage.ts, #256, #274): the data props of the five below are not optional. -->
       <PoolWarning
         v-else-if="block === 'pool'"
         :warning="view.setGame!.poolWarning!"
@@ -204,7 +205,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         :online="online"
       />
 
-      <!-- A Tie (#278): listed for everybody but the Host, who decides (pageBlocks, #283). -->
+      <!-- A Tie (#278): listed for everybody but the Host, who decides (event-stage.ts, #283). -->
       <NoticeBanner
         v-else-if="block === 'tie'"
         tone="info"
@@ -212,9 +213,9 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         {{ t('event.notice.tie') }}
       </NoticeBanner>
 
-      <!-- The last game needs a Session (#278): the Host only, for a Member the wrapper hides itself. The sheet is the Sessions card's (`openAdd`). `end` is there whenever the block is. -->
+      <!-- The last game needs a Session (#278): the Host's piece, so only the Host's list has it (#415). The sheet is the Sessions card's (`openAdd`). `end` is there whenever the block is. -->
       <EventSessionNotice
-        v-else-if="block === 'sessionNeeded' && view.event.isHost"
+        v-else-if="block === 'sessionNeeded'"
         :left="gamesToStart(view.end!, view.rounds.length)"
         @add="emit('add')"
       />
