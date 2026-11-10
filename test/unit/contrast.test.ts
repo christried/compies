@@ -237,6 +237,65 @@ describe('judgeSurface', () => {
   it('fails when fill, border and shadow all equal the backdrop', () => {
     expect(judgeSurface(surface({ fill: c('#17121d'), border: c('#17121d') }))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
   })
+
+  // A layer whose whole edge is the window or a bordered neighbour (the Award ceremony, #409).
+  describe('a framed layer', () => {
+    const LINE = c('#f7efe1')
+    const PAPER = c('#17121d')
+    const layer = (change: Record<string, unknown>) => surface({ kind: 'dialog', fill: PAPER, ...change })
+    const window4 = { top: 'window', right: 'window', bottom: 'window', left: 'window' }
+
+    it('passes a layer on the window\'s whole edge (phone)', () => {
+      expect(judgeSurface(layer({ frame: window4 }))).toMatchObject({ outcome: 'pass', why: null })
+    })
+
+    it('passes the ceremony at 1440: header above, side panel right, window left and below', () => {
+      const frame = { top: { border: LINE }, right: { border: LINE }, bottom: 'window', left: 'window' }
+      expect(judgeSurface(layer({ frame }))).toMatchObject({ outcome: 'pass', why: null })
+    })
+
+    it('keeps the same-as-behind pairing in the passing verdict', () => {
+      expect(judgeSurface(layer({ frame: window4 }))).toMatchObject({ fg: '#17121d', bg: '#17121d', ratio: 1 })
+    })
+
+    it('fails a bottom sheet with a bare side above it', () => {
+      const frame = { top: null, right: 'window', bottom: 'window', left: 'window' }
+      expect(judgeSurface(layer({ frame }))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
+    })
+
+    it('fails a centred dialog with four bare sides, and one without a frame', () => {
+      const bare = { top: null, right: null, bottom: null, left: null }
+      expect(judgeSurface(layer({ frame: bare }))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
+      expect(judgeSurface(layer({}))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
+      expect(judgeSurface(layer({ frame: null }))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
+    })
+
+    it('fails a neighbour border that stays under 3:1 on the fill', () => {
+      const frame = { top: { border: c('#221b2b') }, right: 'window', bottom: 'window', left: 'window' }
+      expect(judgeSurface(layer({ frame }))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
+    })
+
+    it('fails a translucent layer: the page shows through', () => {
+      expect(judgeSurface(layer({ fill: c('#17121d', 0.5), frame: window4 }))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
+    })
+
+    it('applies to a dialog only, not to a card or a menu', () => {
+      expect(judgeSurface(layer({ kind: 'card', frame: window4 }))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
+      expect(judgeSurface(layer({ kind: 'menu', frame: window4 }))).toMatchObject({ outcome: 'fail', why: 'same-as-behind' })
+    })
+
+    it('never changes a pass: a fill that differs keeps its own ratio', () => {
+      const verdict = judgeSurface(layer({ fill: c('#221b2b'), frame: window4 }))
+      expect(verdict.outcome).toBe('pass')
+      expect(cut(verdict.ratio as number)).toBe('1.10')
+    })
+
+    it('is a second way to pass, not a replacement for the border or the shadow', () => {
+      expect(judgeSurface(layer({ border: c('#17121d'), frame: window4 })).outcome).toBe('pass')
+      const open = { top: null, right: 'window', bottom: 'window', left: 'window' }
+      expect(judgeSurface(layer({ border: c('#17121d'), frame: open })).outcome).toBe('fail')
+    })
+  })
 })
 
 describe('lines', () => {

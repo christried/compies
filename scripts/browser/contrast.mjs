@@ -118,6 +118,20 @@ function edgeVerdict(layers, back) {
 }
 
 /**
+ * Whether a layer's edge is drawn by what surrounds it (#409): every side lies on the window's edge or meets a neighbour's
+ * border that reaches 3:1 against the opaque `fill`. A bare side (`null`), a weak border, a missing frame or a translucent
+ * fill is not framed: the page shows through there, so the layer has an edge nowhere.
+ */
+function framed(fill, frame) {
+  if (!frame || !fill || fill[3] !== 1) return false
+  return ['top', 'right', 'bottom', 'left'].every((side) => {
+    const meets = frame[side]
+    if (meets === 'window') return true
+    return Boolean(meets?.border) && ratio(over(meets.border, fill), fill) >= 3
+  })
+}
+
+/**
  * A control's edge: its border and its fill, each composited over what it sits on, are compared with it; 3:1 for the
  * higher of the two (WCAG 1.4.11 asks for one of them to show where the control is). `raw.group` is the border of the
  * `radiogroup` a radio sits in: a segmented control's options have no edge of their own, the boundary WCAG 1.4.11 asks for is
@@ -152,7 +166,9 @@ export function judgeRing(raw) {
 /**
  * A card, dialog or menu must stand off what it sits on: PASS when its fill, its border or its shadow, composited, is
  * another colour than the backdrop. No threshold: #398 says „differs“. `ratio` is the fill against the backdrop, for the
- * walk-through to read.
+ * walk-through to read. A dialog with none of the three still passes when its edge is drawn by what surrounds it: every side
+ * on the window's edge or against a neighbour's border of 3:1 (`raw.frame`, #409). The „differs“ rule is #398's, not WCAG
+ * 1.4.11's, and has no meaning for a layer with no edge of its own to set off. A frame never changes a pass.
  * @returns {Verdict}
  */
 export function judgeSurface(raw) {
@@ -162,9 +178,10 @@ export function judgeSurface(raw) {
   const composited = [raw.fill, raw.border, raw.shadow].map(layer => layer ? over(layer, ground) : null)
   const [fill] = composited
   const differs = composited.some(layer => layer && hex(layer) !== hex(ground))
+  const passes = differs || (raw.kind === 'dialog' && framed(raw.fill, raw.frame))
   return {
-    outcome: differs ? 'pass' : 'fail',
-    why: differs ? null : 'same-as-behind',
+    outcome: passes ? 'pass' : 'fail',
+    why: passes ? null : 'same-as-behind',
     fg: fill ? hex(fill) : null,
     bg: hex(ground),
     ratio: fill ? ratio(fill, ground) : null,

@@ -364,6 +364,34 @@ function readPage(kit) {
     })
   }
 
+  /** What each side of a layer's box meets: the window's edge, a neighbour's border, or nothing that draws an edge (#409). */
+  function frameOf(el, rect) {
+    const width = document.documentElement.clientWidth
+    const height = document.documentElement.clientHeight
+    const centre = { x: Math.min(Math.max((rect.left + rect.right) / 2, 0), width - 1), y: Math.min(Math.max((rect.top + rect.bottom) / 2, 0), height - 1) }
+    const sides = {
+      top: { edge: rect.top <= 0.5, at: [centre.x, rect.top - 1], facing: 'Bottom' },
+      right: { edge: rect.right >= width - 0.5, at: [rect.right + 1, centre.y], facing: 'Left' },
+      bottom: { edge: rect.bottom >= height - 0.5, at: [centre.x, rect.bottom + 1], facing: 'Top' },
+      left: { edge: rect.left <= 0.5, at: [rect.left - 1, centre.y], facing: 'Right' },
+    }
+    const frame = {}
+    for (const [side, { edge, at, facing }] of Object.entries(sides)) {
+      if (edge) {
+        frame[side] = 'window'
+        continue
+      }
+      // 1 px beyond the side's middle: the first element that is not the layer, nor in it, nor the document itself. A neighbour
+      // with pointer-events: none is not found and counts as bare, which fails safe (a FAIL, never a hidden one).
+      const next = document.elementsFromPoint(...at).find(e => !el.contains(e) && e !== document.documentElement && e !== document.body)
+      const style = next && getComputedStyle(next)
+      const drawn = style && parseFloat(style[`border${facing}Width`]) >= 2 && !['none', 'hidden'].includes(style[`border${facing}Style`])
+      const color = drawn ? toRgba(style[`border${facing}Color`]) : null
+      frame[side] = color && color[3] > 0 ? { border: color } : null
+    }
+    return frame
+  }
+
   // Surfaces: dialogs and sheets, menus, and cards.
   for (const el of document.body.querySelectorAll('*')) {
     const roleAttr = el.getAttribute('role')
@@ -388,7 +416,7 @@ function readPage(kit) {
     }
     if (!free(el, stack)) continue
     const shadow = colourTokens(style.boxShadow).map(toRgba)[0] ?? null
-    surfaces.push({ key: pathOf(el), role: role(el), text: squash(el.textContent ?? ''), behind: behindFrom(el.parentElement).behind, kind, fill: fill(style), border: border(style), shadow })
+    surfaces.push({ key: pathOf(el), role: role(el), text: squash(el.textContent ?? ''), behind: behindFrom(el.parentElement).behind, kind, fill: fill(style), border: border(style), shadow, frame: kind === 'dialog' ? frameOf(el, rect) : null })
   }
 
   window.scrollTo(0, 0)
