@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { draws, eventPoolGames, users } from '../../server/db/schema'
+import { draws, eventPoolGames, users, vetoes } from '../../server/db/schema'
 import type { ActivityPage } from '../../shared/activity'
 import type { EventView } from '../../shared/event'
 import de from '../../i18n/locales/de.json'
 import { WINDOW_MS } from '../draw-offsets'
 import { mountedRoutes } from './app'
-import { bodiesOf, getRoutes, hiddenWheelWorld, NOT_SWEPT, vetoRead, type SweptRoute } from './hidden-wheel-world'
+import { bodiesOf, EXPECTED_STATUS, expectStatuses, getRoutes, HOST, hiddenWheelWorld, NOT_SWEPT, OTHER_PARTY, OUTSIDER, PLAYER, vetoRead, type SweptRoute } from './hidden-wheel-world'
 import { clockToEnd, clockToStop, hostPutsBack, hostSets } from './scenario'
 import { signIn } from './sign-in'
 
@@ -407,11 +407,6 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Home's cards, the Invite preview and `me` are the surfaces a drawn game or a Veto can show on; the room carries no game data and
   // is no GET (the room tests above stay).
   describe('every GET route (#418)', () => {
-    const PLAYER = 'the Player'
-    const OUTSIDER = 'the non-Member'
-    const HOST = 'the Host'
-    const OTHER_PARTY = 'the other Party'
-
     it('sweeps every route that answers GET, the Share image, the .ics and Home among them, and names the ones it leaves out', () => {
       const routes = getRoutes().map(route => route.route)
 
@@ -419,6 +414,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(routes).toHaveLength(mountedRoutes().filter(route => route.method === 'get').length)
       // Each file left out answers every method and exists: a name that outlives its file is a finding too.
       for (const file of Object.keys(NOT_SWEPT)) expect(mountedRoutes().find(route => route.file === file)?.method, `${file} is no longer a route without a method`).toBeNull()
+      // Every GET route has its row of expected statuses, and every row names a GET route (#418).
+      for (const route of routes) expect(EXPECTED_STATUS, `${route} has no row in EXPECTED_STATUS`).toHaveProperty([route])
+      for (const route of Object.keys(EXPECTED_STATUS)) expect(routes, `EXPECTED_STATUS names ${route}, which is no GET route`).toContain(route)
     })
 
     const strangerCookie = async () => (await signIn(testDb.db, stranger)).cookie
@@ -443,6 +441,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       clock.set(new Date(stopAt - 1))
       const before = await sweep()
+      expectStatuses(before)
 
       // No trace of any game, on any route, for the Player or the non-Member. A picture is checked by its status: the image route
       // answers the Player a 404 here, and a 404 has a body to search.
@@ -459,6 +458,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       clock.set(new Date(stopAt))
       const after = await sweep()
+      expectStatuses(after, { seen: drawn.imageKey })
 
       // From the stop on the Player knows the drawn game, and still no other game of the pools, no notes or Tag of the drawn one.
       expect(Object.values(bodiesOf(after, PLAYER)).some(body => body.includes(drawn.name)), 'a body the Player reads names the drawn game').toBe(true)
@@ -480,15 +480,22 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(spun.status).toBe(200)
       const { drawId } = await spun.json() as { drawId: string }
       await clockToStop(stage(), drawId)
+      const [row] = await testDb.db.select().from(draws)
+      const drawn = [a, b].find(secret => secret.id === row!.gameId)!
+      const seen = drawn.imageKey
       const viewers = [{ who: HOST, cookie: hostCookie }, { who: OTHER_PARTY, cookie: secondCookie }, { who: OUTSIDER, cookie: await strangerCookie() }]
       const sweep = () => sweepGets({ viewers, event: { slug, inviteToken }, games: [a, b, c, e] })
       const playerRead = async () => (JSON.parse(await rawRead(playerCookie, slug)) as EventView).wheel!.vetoes.own
 
+      expect(await testDb.db.select().from(vetoes)).toHaveLength(0)
       const before = await sweep()
+      expectStatuses(before, { seen })
       expect(await playerRead()).toMatchObject({ team: 1, cast: false })
       const cast = await request(`/api/e/${slug}/draws/${drawId}/veto`, { method: 'POST', headers: { cookie: playerCookie } })
       expect(cast.status).toBe(200)
+      expect(await testDb.db.select().from(vetoes)).toHaveLength(1)
       const after = await sweep()
+      expectStatuses(after, { seen })
 
       expect(after.map(entry => entry.label)).toEqual(before.map(entry => entry.label))
       for (const [index, entry] of before.entries()) {
@@ -499,9 +506,12 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(okOf(before, HOST)).toContain('/api/e/:slug')
       expect(okOf(before, OTHER_PARTY)).toContain('/api/e/:slug')
       expect(okOf(before, OUTSIDER)).not.toContain('/api/e/:slug')
+      // The Members' 200s on the four Event routes; the non-Member's 404 there and 200 on Home are the table's (#418).
+      for (const route of ['/api/e', '/api/e/:slug', '/api/e/:slug/activity', '/api/e/:slug/ics']) for (const who of [HOST, OTHER_PARTY]) expect(statusOf(before, route, who), `${route} as ${who}`).toEqual([200])
       expect(await playerRead()).toMatchObject({ team: 1, cast: true })
       await clockToEnd(stage(), drawId)
       const revealed = await sweep()
+      expectStatuses(revealed, { seen })
       for (const who of [HOST, OTHER_PARTY]) {
         const sealedRead = before.find(entry => entry.route === '/api/e/:slug' && entry.who === who)
         const revealedRead = revealed.find(entry => entry.route === '/api/e/:slug' && entry.who === who)

@@ -81,6 +81,58 @@ const QUERIES: Readonly<Record<string, string>> = {
   '/api/e/:slug/share-image': '?format=wide',
 }
 
+// The viewers of the sweep: the keys of `EXPECTED_STATUS`.
+export const PLAYER = 'the Player'
+export const OUTSIDER = 'the non-Member'
+export const HOST = 'the Host'
+export const OTHER_PARTY = 'the other Party'
+
+const answers = (player: number, nonMember: number, host: number, otherParty = player) => ({ [PLAYER]: player, [OUTSIDER]: nonMember, [HOST]: host, [OTHER_PARTY]: otherParty })
+
+/**
+ * The status each viewer gets from each GET route, before and after a draw's stop, with no Veto cast (#418). Each row was checked
+ * against its handler, so a cell that a run answers differently is a finding, not a row to change.
+ */
+export const EXPECTED_STATUS: Readonly<Record<string, Readonly<Record<string, number>>>> = {
+  // Home lists the viewer's own Events, empty for a non-Member.
+  '/api/e': answers(200, 200, 200),
+  // ADR 0006: a non-Member gets the missing-route answer.
+  '/api/e/:slug': answers(200, 404, 200),
+  '/api/e/:slug/activity': answers(200, 404, 200),
+  '/api/e/:slug/ics': answers(200, 404, 200),
+  // A Member of a running Event gets `wrong_phase` (`beforeFinish`) before the format is read; a non-Member 404 from `loadEvent`.
+  '/api/e/:slug/share-image': answers(409, 404, 409),
+  // `requireLibraryViewer`: only Hosts and the Admin, the others get the missing-route answer.
+  '/api/games': answers(404, 404, 200),
+  '/api/games/:id': answers(404, 404, 200),
+  '/api/games/tags': answers(404, 404, 200),
+  // Reads `events`, no viewer.
+  '/api/health': answers(200, 200, 200),
+  // `canSeeImage`: the Host always; a Member only for a game a Round set or a draw stopped on (`seen`, below).
+  '/api/images/:key': answers(404, 404, 200),
+  // Needs a signed room call: every refusal is the same 401, whatever the cookie.
+  '/api/internal/deploy-check': answers(401, 401, 401),
+  // The signed-out Invite preview (name and Host only).
+  '/api/invite/:invite': answers(200, 200, 200),
+  // The viewer's own profile.
+  '/api/me': answers(200, 200, 200),
+}
+
+/**
+ * Every swept entry answers its row of `EXPECTED_STATUS`, so an unexpected status fails and not only a leaked body (#418). From the stop
+ * on, `seen` is the drawn game's image key: the Player and the other Party (Members) get its picture, and nothing else of that route.
+ */
+export function expectStatuses(sweep: readonly SweptRoute[], { seen }: { seen?: string } = {}): void {
+  for (const entry of sweep) {
+    const row = EXPECTED_STATUS[entry.route]
+    expect(row, `${entry.route} has no expected status: add a row to EXPECTED_STATUS`).toBeDefined()
+    expect(row?.[entry.who], `${entry.route} has no expected status for ${entry.who}`).toBeDefined()
+    const memberOfTheStop = entry.who === PLAYER || entry.who === OTHER_PARTY
+    const seenPicture = seen !== undefined && entry.route === '/api/images/:key' && memberOfTheStop && entry.path.endsWith(seen)
+    expect(entry.status, `${entry.label} as ${entry.who}`).toBe(seenPicture ? 200 : row![entry.who])
+  }
+}
+
 export interface SweptRoute {
   /** `GET /api/games/:id (id=...)`: the route as Nitro names it, and the value when a param takes several. */
   label: string
