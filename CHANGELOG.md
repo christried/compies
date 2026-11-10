@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-10 – Profil
+
+Deine eigene Profil-Seite: Dort änderst du deinen Anzeigenamen, schaltest den Ton und wählst die Darstellung, Hell, Dunkel oder System. Dazu tragen die Tags in der Bibliothek jetzt Farben.
+
 ### Neu
 
 - **Profil:** „Profil“ in der Navigation öffnet jetzt eine eigene Seite. Dort siehst du dein Bild und änderst deinen Anzeigenamen, so oft du willst: Nach „Speichern“ steht der neue Name sofort oben in deinem Menü, und die anderen sehen ihn beim nächsten Laden überall, auch bei allem, was schon gespielt ist. Abmelden kannst du dort auch. ([#399](https://github.com/christried/compies/issues/399))
