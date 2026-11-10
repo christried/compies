@@ -76,6 +76,7 @@ async function mountBoard(options: Options) {
       isHost: options.isHost ?? false,
       room: noRoom,
     },
+    attachTo: document.body,
   })
   return { page, words, resets }
 }
@@ -456,10 +457,11 @@ describe('the folded team name (#439)', () => {
   it('shows four 12-character words in full when folded, and one word folds too', async () => {
     const four = ['Aaaaaaaaaaaa', 'Bbbbbbbbbbbb', 'Cccccccccccc', 'Dddddddddddd']
     const members = [kitty.id, LARSI, SANNE, FOURTH].map((id, index) => member(id, `Player ${index}`, team(1), four[index]))
-    const { page } = await mountBoard({ members, teams: teamsNamed(four.join(' ')) })
+    const composed = four.join(' ')
+    const { page } = await mountBoard({ members, teams: teamsNamed(composed) })
 
-    for (const word of four) expect(zone(page, four[0]).text()).toContain(word)
-    expect(pencil(page, four[0]).exists()).toBe(true)
+    for (const word of four) expect(zone(page, composed).text()).toContain(word)
+    expect(pencil(page, composed).exists()).toBe(true)
 
     const single = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
     expect(pencil(single.page, 'Wilde').exists()).toBe(true)
@@ -474,7 +476,7 @@ describe('the folded team name (#439)', () => {
   })
 
   it('pops the composed name in dur-slow on ease-pop when a word arrives while it is folded', async () => {
-    const animate = vi.fn(() => ({ finished: Promise.resolve() }))
+    const animate = vi.fn((_frames: Keyframe[], _options?: KeyframeAnimationOptions) => ({ finished: Promise.resolve() }))
     Element.prototype.animate = animate as unknown as typeof Element.prototype.animate
     const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
     animate.mockClear()
