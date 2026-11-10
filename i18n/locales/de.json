@@ -1071,12 +1071,12 @@
   "settings": {
     "title": "Einstellungen",
     "soundHelp": "Clips starten mit Ton. Wird auf diesem Gerät gemerkt.",
-    "theme": "Darstellung",
-    "themeHelp": "Gilt auf allen deinen Geräten. System folgt deinem Gerät.",
+    "appearance": "Darstellung",
+    "appearanceHelp": "Gilt auf allen deinen Geräten. System folgt deinem Gerät.",
     "light": "Hell",
     "dark": "Dunkel",
     "system": "System",
-    "themeSaveFailed": "Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal."
+    "appearanceSaveFailed": "Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal."
   },
   "eventSettings": {
     "kicker": "Einstellungen",
