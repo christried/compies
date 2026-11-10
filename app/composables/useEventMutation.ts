@@ -1,4 +1,4 @@
-import { apiErrorKey, apiFailure, type ReasonPlace } from '~/utils/api-error'
+import { apiErrorKey, apiFailure, type ReasonScreen } from '~/utils/api-error'
 import type { ApiErrorCode } from '~~/shared/errors'
 import { SLOTS_MAX } from '~~/shared/event'
 
@@ -11,8 +11,8 @@ export interface SendOptions<Answer> {
   body?: Record<string, unknown>
   /** True while the request runs, e.g. a dialog's loading state. */
   busy?: Ref<boolean>
-  /** Where the refusal shows, for the words that differ there (ReasonPlace in app/utils/api-error.ts). */
-  place?: ReasonPlace
+  /** The screen the refusal shows on, for the words that differ there (ReasonScreen in app/utils/api-error.ts). */
+  screen?: ReasonScreen
   /** Runs with the server's answer when it took the change, before the refetch, e.g. to close a dialog. */
   done?: (answer: Answer) => void
   /** The toast copy for a refusal that has no copy of its own; `error.saveFailed` by default. */
@@ -32,7 +32,7 @@ export function useEventMutation(slug: MaybeRefOrGetter<string>, refresh: () => 
 
   /** Sends one change to `/api/e/<slug>/<path>` and resolves to whether the server took it. Never throws. `''` is the Event itself, `/api/e/<slug>` (#333). */
   async function send<Answer = unknown>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, options: SendOptions<Answer> = {}) {
-    const { body, busy, place, done, fallback = 'error.saveFailed', quiet, refused, refusalText } = options
+    const { body, busy, screen, done, fallback = 'error.saveFailed', quiet, refused, refusalText } = options
     if (busy) busy.value = true
     let taken = false
     try {
@@ -45,7 +45,7 @@ export function useEventMutation(slug: MaybeRefOrGetter<string>, refresh: () => 
       if (quiet?.includes(apiFailure(failure).code as ApiErrorCode)) return true
       refused?.(failure)
       // `{max}` is the one placeholder in the shared error copy (slots_max).
-      toast({ tone: 'error', text: refusalText?.(failure) ?? t(apiErrorKey(failure, fallback, place), { max: SLOTS_MAX }) })
+      toast({ tone: 'error', text: refusalText?.(failure) ?? t(apiErrorKey(failure, fallback, screen), { max: SLOTS_MAX }) })
     }
     finally {
       if (busy) busy.value = false

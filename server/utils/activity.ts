@@ -146,7 +146,7 @@ export async function readActivityPage(db: Db, eventId: string, before: string |
   const rows = await db
     .select()
     .from(activity)
-    .where(and(eq(activity.eventId, eventId), older,or(notInArray(activity.type, [...INSTANT_ACTIVITY_TYPES]), lte(activity.at, now))))
+    .where(and(eq(activity.eventId, eventId), older, or(notInArray(activity.type, [...INSTANT_ACTIVITY_TYPES]), lte(activity.at, now))))
     .orderBy(desc(activity.at), desc(activity.id))
     .limit(limit + 1)
   const page = rows.slice(0, limit)

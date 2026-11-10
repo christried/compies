@@ -17,6 +17,9 @@ const VETO_WINDOW_MS = 60_000
 /** The instants of a new Draw, as the columns store them (Dates). */
 export interface DrawInstants { spinStartAt: Date | null, stopAt: Date, vetoEndsAt: Date | null }
 
+/** What a reader needs of a Draw's window: its two instants, as a row, a view or `DrawInstants` carry them. */
+export interface DrawWindow { stopAt: Instant, vetoEndsAt: Instant | null }
+
 /** What a writer tells the timeline about a new Draw. */
 export interface NewDraw { kind: 'spin' | 'set', commitAt: Instant, windowOpens: boolean }
 
@@ -53,7 +56,7 @@ export function stopReached(draw: { stopAt: Instant }, now: Instant): boolean {
 }
 
 /** READER. The window is open for casts: from the stop (inclusive) to its end (exclusive). A draw without a window never is. */
-export function windowOpen(draw: { stopAt: Instant, vetoEndsAt: Instant | null }, now: Instant): boolean {
+export function windowOpen(draw: DrawWindow, now: Instant): boolean {
   if (draw.vetoEndsAt === null) return false
   const at = msOf(now)
   return msOf(draw.stopAt) <= at && at < msOf(draw.vetoEndsAt)
@@ -74,12 +77,12 @@ export function vetoesSealed(draw: { vetoEndsAt: Instant | null }, now: Instant)
 }
 
 /** READER. The instant the draw settles at: the end of its window, or the stop for a draw without one. */
-export function settleAt(draw: { stopAt: Instant, vetoEndsAt: Instant | null }): Date {
+export function settleAt(draw: DrawWindow): Date {
   return new Date(msOf(draw.vetoEndsAt ?? draw.stopAt))
 }
 
 /** @public JS twin of `dueDraws`, checked against it by the parity test (knip: no production caller; same wording as server/utils/clock.ts). */
-export function isDue(draw: { stopAt: Instant, vetoEndsAt: Instant | null, outcome: string | null }, now: Instant): boolean {
+export function isDue(draw: DrawWindow & { outcome: string | null }, now: Instant): boolean {
   return draw.outcome === null && settleAt(draw).getTime() <= msOf(now)
 }
 
@@ -87,7 +90,7 @@ export function isDue(draw: { stopAt: Instant, vetoEndsAt: Instant | null, outco
  * READER. How much of the window is left, from the Draw's own two instants: 1 at the stop, 0 at the end, clamped to 0..1 (before the
  * stop, and before the page has mounted and its clock is 0: 1). 0 for no window and for a zero-length one.
  */
-export function windowFraction(draw: { stopAt: Instant, vetoEndsAt: Instant | null }, now: Instant): number {
+export function windowFraction(draw: DrawWindow, now: Instant): number {
   if (draw.vetoEndsAt === null) return 0
   const end = msOf(draw.vetoEndsAt)
   const length = end - msOf(draw.stopAt)
