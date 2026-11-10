@@ -1,12 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import listGames from '../../server/api/games/index.get'
-import createGame from '../../server/api/games/index.post'
-import readGame from '../../server/api/games/[id].get'
-import editGame from '../../server/api/games/[id].patch'
-import listTags from '../../server/api/games/tags.get'
-import { games, users } from '../../server/db/schema'
 import type { GameList, GameView } from '../../shared/game'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
@@ -15,16 +10,10 @@ const admin = { provider: 'discord', id: '9', name: 'Admin', email: 'admin@examp
 
 describe('the Game library Tags (#365)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'GET /api/games': listGames,
-      'POST /api/games': createGame,
-      'GET /api/games/tags': listTags,
-      'GET /api/games/:id': readGame,
-      'PATCH /api/games/:id': editGame,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -34,8 +23,7 @@ describe('the Game library Tags (#365)', () => {
   beforeEach(async () => {
     stubAuthEnv()
     setAllowlist({ hosts: 'discord:1,discord:3', admins: 'discord:9' })
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {

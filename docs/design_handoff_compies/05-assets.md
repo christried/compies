@@ -39,7 +39,7 @@ Variants: head · bust · full · emote · tail (coin). Outline: light = hard sh
 | `icons/monochrome.svg` | silhouette for Android themed icons |
 | `icons/manifest.webmanifest` | name, colours, icons; paste into `pwa.manifest` if using `@vite-pwa/nuxt` |
 
-Theme colour: `#fff3df`, one `<meta name="theme-color">` without a media query, so the browser bar stays light on every device. The dark value (`#17121d`) returns with dark mode (#43). See `reference/docs/compibert-handoff.md` for the exact `app.head` block.
+Theme colour: the page background (`--cp-paper`) of the rendered Appearance, from `themeColorMetas` in `app/utils/appearance.ts` (#401): one `<meta name="theme-color">` with `#fff3df` for Hell, one with `#17121d` for Dunkel, and for System both, each with its `prefers-color-scheme` media query. The PWA manifest keeps the light colours. `reference/docs/compibert-handoff.md` shows the original static `app.head` block, which `app/plugins/appearance.ts` replaced.
 
 ## Construction assets [MVP] (new in Phase 5)
 

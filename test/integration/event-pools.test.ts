@@ -1,14 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import createGame from '../../server/api/games/index.post'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { eventMembers, eventPoolGames, events, games, users } from '../../server/db/schema'
+import { eventPoolGames, events } from '../../server/db/schema'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import type { GameView } from '../../shared/game'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Game pool of an Event (#146, ADR 0014, #286): the list under `pool`, created with the Event, read back by the Host in full,
@@ -20,17 +17,12 @@ const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@exam
 
 describe('the pool of an Event (#146, #286)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   let hostCookie: string
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'POST /api/games': createGame,
-      'POST /api/invite/:invite': joinInvite,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -40,11 +32,7 @@ describe('the pool of an Event (#146, #286)', () => {
   beforeEach(async () => {
     stubAuthEnv()
     setAllowlist({ hosts: 'discord:1', admins: 'discord:9' })
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
     hostCookie = (await signIn(testDb.db, host)).cookie
   })
 

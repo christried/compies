@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-10 – Profil
+
+Deine eigene Profil-Seite: Dort änderst du deinen Anzeigenamen, schaltest den Ton und wählst die Darstellung, Hell, Dunkel oder System. Dazu tragen die Tags in der Bibliothek jetzt Farben.
+
+### Neu
+
+- **Profil:** „Profil“ in der Navigation öffnet jetzt eine eigene Seite. Dort siehst du dein Bild und änderst deinen Anzeigenamen, so oft du willst: Nach „Speichern“ steht der neue Name sofort oben in deinem Menü, und die anderen sehen ihn beim nächsten Laden überall, auch bei allem, was schon gespielt ist. Abmelden kannst du dort auch. ([#399](https://github.com/christried/compies/issues/399))
+- **Darstellung:** Auf der Profil-Seite wählst du jetzt zwischen Hell, Dunkel und System. Die Seite wechselt sofort, und deine Wahl gilt auf jedem Gerät, auf dem du angemeldet bist, ab dem nächsten Laden. Mit System folgt Compies deinem Gerät, auch wenn es abends auf dunkel umschaltet. Wer nichts wählt, bleibt bei Hell. ([#404](https://github.com/christried/compies/issues/404))
+
+### Geändert
+
+- **Datenschutzerklärung:** Sie nennt jetzt, was bei Darstellung und Anzeigename gespeichert wird: Deine Darstellung (Hell, Dunkel oder System) liegt bei deinem Nutzerkonto, ein Cookie merkt sie auf dem Gerät, solange sie Dunkel oder System ist, und deinen Anzeigenamen kannst du jederzeit ändern. ([#405](https://github.com/christried/compies/issues/405))
+- Gibt es ein Team nicht mehr, weil der Host die Anzahl Teams gesenkt hat, sagt das Spielbrett jetzt „Dieses Team gibt es nicht mehr.“ Ohne laufende Session nennen „Nächstes Spiel setzen“ und „Rad drehen“ denselben Grund wie die Meldung: „Es läuft gerade keine Session.“ ([#421](https://github.com/christried/compies/issues/421))
+- **Tags in Farbe:** In der Bibliothek trägt jeder Tag eines Spiels jetzt eine eigene Farbe, auf der Spielkarte, auf der Seite des Spiels und im Formular. Derselbe Tag hat überall dieselbe Farbe; nur wenn zwei Tags eines Spiels dieselbe hätten, nimmt der spätere die nächste freie, so dass sich bis zu acht Tags eines Spiels nie eine Farbe teilen. ([#427](https://github.com/christried/compies/issues/427))
+
 ## [0.10.1] - 2026-11-09 – Partyhut
 
 Der Partyhut für das führende Team, schnellere lange Spielelisten und ein Countdown, der auf dem Handy nicht mehr aus dem Bild läuft, dazu Aufräumarbeiten nach dem Review von 0.10, die niemand sieht.

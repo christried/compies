@@ -1,22 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import castVeto from '../../server/api/e/[slug]/draws/[drawId]/veto.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import setGame from '../../server/api/e/[slug]/rounds/index.post'
-import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import createEvent from '../../server/api/e/index.post'
-import { bonusVetoes, draws, eventMembers, eventPoolGames, events, games, pollSlots, rounds, users, vetoes } from '../../server/db/schema'
+import { bonusVetoes, rounds, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { Place } from '../../shared/board'
-import type { EventView } from '../../shared/event'
-import { VETO_WINDOW_MS } from '../../shared/rounds'
-import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { SPIN, WINDOW_MS } from '../draw-offsets'
+import { createTestApp, sendVia, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { readEvent, setUpEvent, startRunningEvent, type Rig } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // The Host's pool warning (#234, spec #218 § Pool warning) through the Event read: it shows when the games left may not cover the
 // Game count less the Rounds started, plus every Party's Vetoes left (Bonus Vetoes included); it never blocks anything, and only the
@@ -30,29 +21,20 @@ const people = {
   four: { provider: 'twitch', id: '5', name: 'Vier', email: 'four@example.com', image: undefined },
 } as const
 
-const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
 const T0 = '2090-10-30T10:00:00.000Z'
-const LEAD = 1500
-const STOP = LEAD + 6000
+const { stop: STOP } = SPIN
 
 describe('the Host\'s pool warning (#234)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/rounds': setGame,
-      'POST /api/e/:slug/rounds/spin': spinWheel,
-      'POST /api/e/:slug/draws/:drawId/veto': castVeto,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -63,64 +45,31 @@ describe('the Host\'s pool warning (#234)', () => {
     stubAuthEnv()
     clock.set(T0)
     notifier.clear()
-    await testDb.db.delete(bonusVetoes)
-    await testDb.db.delete(draws)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  const team = (n: number): Place => ({ zone: 'team', team: n })
-
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   /**
    * An Event with two Parties of two (One and Two in team 1, Three and Four in team 2) and `poolSize` games in the Game pool. Under the
-   * Lucky Wheel the Veto allowance is `allowance` per Party; `start` runs the first Session (the Event is running only then).
+   * Lucky Wheel the Veto allowance is `allowance` per Party; `started` runs the first Session (the Event is running only then).
    */
-  async function event({ wheel = true, allowance = 0, gameCount = 10, poolSize = 4, start = true }: { wheel?: boolean, allowance?: number, gameCount?: number, poolSize?: number, start?: boolean } = {}) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies = {} as Record<keyof typeof people, string>
-    for (const [key, profile] of Object.entries(people)) cookies[key as keyof typeof people] = (await signIn(testDb.db, profile)).cookie
-    const created = await send('POST', '/api/e', hostCookie, {
-      name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS,
-      settings: { ...TEST_SETTINGS, teamSize: 2, gameCount, ...(wheel ? { selectionMode: 'lucky_wheel', vetoAllowance: allowance } : {}) },
+  async function event({ wheel = true, allowance = 0, gameCount = 10, poolSize = 4, started = true }: { wheel?: boolean, allowance?: number, gameCount?: number, poolSize?: number, started?: boolean } = {}) {
+    const make = started ? startRunningEvent : setUpEvent
+    const game = await make(rig, {
+      host, players: people, seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const,
+      settings: { teamSize: 2, gameCount, ...(wheel ? { selectionMode: 'lucky_wheel', vetoAllowance: allowance } : {}) },
+      games: Array.from({ length: poolSize }, (_, index) => ({ key: `spiel${index + 1}`, values: { name: `Spiel ${index + 1}` }, pool: true })),
     })
-    const { slug } = await created.json() as { slug: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const eventId = eventRow!.id
-    const ids = {} as Record<'host' | keyof typeof people, string>
-    for (const [key, profile] of Object.entries({ host, ...people })) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      ids[key as keyof typeof ids] = row!.id
+    return {
+      slug: game.slug, eventId: game.eventId, hostCookie: game.host.cookie,
+      cookies: { one: game.players.one.cookie, two: game.players.two.cookie, three: game.players.three.cookie, four: game.players.four.cookie },
+      ids: { host: game.host.id, one: game.players.one.id, two: game.players.two.id, three: game.players.three.id, four: game.players.four.id },
     }
-    for (const key of Object.keys(people) as (keyof typeof people)[]) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
-    const pool = await testDb.db.insert(games).values(Array.from({ length: poolSize }, (_, index) => ({ name: `Spiel ${index + 1}`, createdBy: ids.host }))).returning()
-    await testDb.db.insert(eventPoolGames).values(pool.map(game => ({ eventId, gameId: game.id })))
-
-    const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
-    for (const slotId of slotIds) expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId })).status).toBe(200)
-    const seats = [['one', team(1)], ['two', team(1)], ['three', team(2)], ['four', team(2)]] as const
-    for (const [key, to] of seats) expect((await send('POST', `/api/e/${slug}/move`, cookies[key], { userId: ids[key], to })).status).toBe(200)
-    const party = { slug, eventId, hostCookie, cookies, ids }
-    if (start) await startNow(party)
-    notifier.clear()
-    return party
   }
 
   type Party = Awaited<ReturnType<typeof event>>
@@ -129,7 +78,7 @@ describe('the Host\'s pool warning (#234)', () => {
     expect((await send('POST', `/api/e/${party.slug}/sessions/start`, party.hostCookie)).status).toBe(200)
   }
 
-  const read = async (party: Party, cookie = party.hostCookie) => await (await send('GET', `/api/e/${party.slug}`, cookie)).json() as EventView
+  const read = (party: Party, cookie = party.hostCookie) => readEvent(rig, cookie, party.slug)
   const warningOf = async (party: Party) => (await read(party)).setGame?.poolWarning
   const spin = (party: Party) => send('POST', `/api/e/${party.slug}/rounds/spin`, party.hostCookie)
   const cast = (party: Party, drawId: string, cookie: string) => send('POST', `/api/e/${party.slug}/draws/${drawId}/veto`, cookie)
@@ -164,7 +113,7 @@ describe('the Host\'s pool warning (#234)', () => {
   })
 
   it('shows the warning only while the Event runs: the setup hint covers the time before the first Session', async () => {
-    const party = await event({ allowance: 2, gameCount: 10, poolSize: 4, start: false })
+    const party = await event({ allowance: 2, gameCount: 10, poolSize: 4, started: false })
     expect(await warningOf(party)).toBeNull()
 
     await startNow(party)
@@ -188,7 +137,7 @@ describe('the Host\'s pool warning (#234)', () => {
     // Team 1 cast its Veto, sealed: the Host, outside the teams, still counts both Parties' Vetoes.
     expect(await warningOf(party)).toEqual({ needed: 3, have: 2 })
 
-    clock.advance(VETO_WINDOW_MS)
+    clock.advance(WINDOW_MS)
     const view = await read(party)
 
     // The draw is vetoed: its Round waits for a respin, so it needs its game again; the vetoed game stays out of the pool.

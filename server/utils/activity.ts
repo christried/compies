@@ -4,7 +4,7 @@ import { shownName } from '../../shared/auth'
 import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType, type InstantActivityType } from '../../shared/activity'
 import type { RoomMessage } from '../../shared/realtime'
 import type { Db } from './db'
-import { stoppedDraws } from './draws'
+import { stoppedDraws } from './draw-timeline'
 import { apiError } from './errors'
 
 // The Activity feed (#159, GLOSSARY: Activity feed). One home: every entry is written by recordActivity and every
@@ -141,6 +141,8 @@ export async function readActivityPage(db: Db, eventId: string, before: string |
   }
   // The comparison runs on the stored values: a JS Date would cut the microseconds `at` has.
   const older = before === undefined ? undefined : sql`(${activity.at}, ${activity.id}) < (select c.at, c.id from activity c where c.id = ${before})`
+  // `lte` is the timeline's stop edge, inclusive: a `game_drawn` entry's `at` is its draw's stopAt, so it shows from the stop on, as
+  // `drawGameKnown` and `stoppedDraws` say (shared/draw-timeline.ts); pinned against them in test/integration/draw-timeline.test.ts (#413).
   const rows = await db
     .select()
     .from(activity)

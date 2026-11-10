@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import me from '../../server/api/me.get'
 import devSignIn from '../../server/dev/sign-in'
 import { users } from '../../server/db/schema'
 import type { MeView } from '../../shared/auth'
 import { version as current } from '../../package.json'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp } from './app'
+import { createTestDb } from './harness'
 import { stubAuthEnv } from './sign-in'
 
 // The sign-in for `pnpm dev` (retro 1.3): a real Better Auth login session for a fixed Dev User.
@@ -16,7 +16,7 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
 
   async function signInAs(query: string, db?: Awaited<ReturnType<typeof createTestDb>>['db']) {
     const database = db ?? (await createTestDb()).db
-    const server = createTestServer(database, { 'GET /api/dev/sign-in': devSignIn, 'GET /api/me': me })
+    const server = createTestApp(database, {}, { 'GET /api/dev/sign-in': devSignIn })
     const response = await server(`/api/dev/sign-in${query}`, { redirect: 'manual' })
     const cookie = response.headers.getSetCookie().map(header => header.split(';')[0]).join('; ')
     const view = await (await server('/api/me', { headers: { cookie } })).json() as MeView
@@ -64,6 +64,60 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
     await signInAs('?as=host', db)
     const later = await signInAs('?as=host&news=unseen', db)
     expect(later.user).toMatchObject({ newsSeen: null })
+  })
+
+  // `?name=unset` stores no Display name, the one way to see Profile setup (#407): on the first sign-in and on one
+  // after a plain sign-in. A plain sign-in afterwards puts the dev name back, where there is none.
+  it('stores no Display name with `?name=unset`, on the first sign-in and on a later one', async () => {
+    const { db } = await createTestDb()
+    const first = await signInAs('?as=admin&name=unset', db)
+    expect(first.user).toMatchObject({ displayName: null })
+
+    await signInAs('?as=admin', db)
+    const later = await signInAs('?as=admin&name=unset', db)
+    expect(later.user).toMatchObject({ displayName: null })
+  })
+
+  it('puts the dev name back on a plain sign-in after `?name=unset`', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=admin&name=unset', db)
+
+    const { user } = await signInAs('?as=admin', db)
+
+    expect(user).toMatchObject({ displayName: 'Dev Admin' })
+  })
+
+  // A dev User renamed on the Profil page keeps the name: the sign-in sets it only where there is none (#398).
+  it('keeps a Display name the User changed over a plain sign-in', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=host', db)
+    await db.update(users).set({ displayName: 'Renamed' }).where(eq(users.email, 'host@dev.compies.invalid'))
+
+    const { user } = await signInAs('?as=host', db)
+
+    expect(user).toMatchObject({ displayName: 'Renamed' })
+  })
+
+  // `?appearance=` sets the dev User's Appearance on every sign-in, light without it, so a check starts from a known look (#401).
+  it.each(['dark', 'system'])('sets the Appearance to %s with `?appearance=`', async (appearance) => {
+    const { user } = await signInAs(`?as=host&appearance=${appearance}`)
+
+    expect(user).toMatchObject({ appearance })
+  })
+
+  it('resets the Appearance to light on a later sign-in without `?appearance=`', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=host&appearance=dark', db)
+
+    const { user } = await signInAs('?as=host', db)
+
+    expect(user).toMatchObject({ appearance: 'light' })
+  })
+
+  it('signs in light with an Appearance that is none', async () => {
+    const { user } = await signInAs('?as=host&appearance=sepia')
+
+    expect(user).toMatchObject({ appearance: 'light' })
   })
 
   it('lands on Home for a `to` outside the app', async () => {

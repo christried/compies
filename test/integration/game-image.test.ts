@@ -1,12 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createGame from '../../server/api/games/index.post'
-import readGame from '../../server/api/games/[id].get'
-import putImage from '../../server/api/games/[id]/image.put'
-import getImage from '../../server/api/images/[key].get'
-import { games, users } from '../../server/db/schema'
+import { games } from '../../server/db/schema'
 import { memoryImageStore } from '../../server/utils/image-store'
 import type { GameView } from '../../shared/game'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
@@ -25,17 +22,12 @@ const png = Uint8Array.from([0x89, ...ascii('PNG'), 0x0d, 0x0a, 0x1a, 0x0a, 0, 0
 
 describe('game images (#143)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const store = memoryImageStore()
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/games': createGame,
-      'GET /api/games/:id': readGame,
-      'PUT /api/games/:id/image': putImage,
-      'GET /api/images/:key': getImage,
-    }, { imageStore: store })
+    request = createTestApp(testDb.db, { imageStore: store })
   })
 
   afterAll(async () => {
@@ -45,8 +37,7 @@ describe('game images (#143)', () => {
   beforeEach(async () => {
     stubAuthEnv()
     setAllowlist({ hosts: 'discord:1,discord:3', admins: 'discord:9' })
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
     store.clear()
   })
 

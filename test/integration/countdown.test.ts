@@ -1,23 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import pauseCountdown from '../../server/api/e/[slug]/countdown/pause.post'
-import resetCountdown from '../../server/api/e/[slug]/countdown/reset.post'
-import startCountdown from '../../server/api/e/[slug]/countdown/start.post'
-import setCountdown from '../../server/api/e/[slug]/countdown/index.put'
-import endSession from '../../server/api/e/[slug]/sessions/end.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import { countdowns, draws, eventMembers, eventPoolGames, events, games, pollSlots, rounds, users } from '../../server/db/schema'
+import { countdowns } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { EventView } from '../../shared/event'
-import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { startRunningSession } from './running-session'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { readEvent, setUpEvent, startRunningEvent, type Rig } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // The Countdown (#236, spec #218 § Countdown): the Host sets it in minutes and seconds (5 s to 99:59), starts, pauses, resumes
 // and resets it, during a running Session only, through the HTTP API with a test clock and the in-memory room. Every Member reads
@@ -29,30 +18,20 @@ const players = {
   two: { provider: 'discord', id: '3', name: 'Zwei', email: 'two@example.com', image: undefined },
 } as const
 
-const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
 const T0 = '2090-10-30T10:00:00.000Z'
 const SECOND = 1000
 
 describe('Countdown', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/sessions/end': endSession,
-      'PUT /api/e/:slug/countdown': setCountdown,
-      'POST /api/e/:slug/countdown/start': startCountdown,
-      'POST /api/e/:slug/countdown/pause': pauseCountdown,
-      'POST /api/e/:slug/countdown/reset': resetCountdown,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -63,64 +42,32 @@ describe('Countdown', () => {
     stubAuthEnv()
     clock.set(T0)
     notifier.clear()
-    await testDb.db.delete(countdowns)
-    await testDb.db.delete(draws)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
-
-  async function errorOf(response: Response) {
-    return { status: response.status, code: (await response.json() as { statusMessage: string }).statusMessage }
-  }
+  const send = sendVia(() => request)
 
   /** An Event with a Host and two Members. `running` starts its first Session (both Members seated in a team each). */
   async function event({ running = true }: { running?: boolean } = {}) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies = {
-      one: (await signIn(testDb.db, players.one)).cookie,
-      two: (await signIn(testDb.db, players.two)).cookie,
-    }
-    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings: TEST_SETTINGS })
-    const { slug } = await created.json() as { slug: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    for (const profile of [players.one, players.two]) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: row!.id })
-    }
-    if (running) {
-      await startRunningSession(request, testDb.db, {
-        slug,
-        hostCookie,
-        seated: [{ cookie: cookies.one, email: players.one.email }, { cookie: cookies.two, email: players.two.email }],
-      })
-    }
-    notifier.clear()
-    return { slug, eventId: eventRow!.id, hostCookie, cookies }
+    const make = running ? startRunningEvent : setUpEvent
+    const ev = await make(rig, {
+      host,
+      players,
+      seats: running ? [['one', 1], ['two', 2]] : [],
+      confirmed: running ? 1 : 0,
+    })
+    return { slug: ev.slug, eventId: ev.eventId, hostCookie: ev.host.cookie, cookies: { one: ev.players.one.cookie, two: ev.players.two.cookie } }
   }
 
   type Event = Awaited<ReturnType<typeof event>>
 
   const setSeconds = (game: Event, seconds: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/countdown`, cookie, { seconds })
   const act = (game: Event, action: 'start' | 'pause' | 'reset', cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/countdown/${action}`, cookie)
-  const readCountdown = async (game: Event, cookie = game.hostCookie) => (await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView).countdown
+  const readCountdown = async (game: Event, cookie = game.hostCookie) => (await readEvent(rig, cookie, game.slug)).countdown
   const countdownRow = async (game: Event) => (await testDb.db.select().from(countdowns).where(eq(countdowns.eventId, game.eventId)))[0]
 
   describe('setting it', () => {

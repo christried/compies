@@ -1,11 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import listHome from '../../server/api/e/index.get'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import { games, pollSlots, pollVotes, eventMembers, events, rounds, sessions, users } from '../../server/db/schema'
+import { games, pollSlots, eventMembers, events, rounds, sessions, users } from '../../server/db/schema'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Poll Slots are far in the future so they stay votable. Dates that must be "past" are moved into
@@ -15,15 +13,11 @@ const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@exam
 
 describe('GET /api/e (Home)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e': listHome,
-      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -32,12 +26,7 @@ describe('GET /api/e (Home)', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {

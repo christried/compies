@@ -7,7 +7,17 @@
 @import "tailwindcss";
 @import "./compies-tokens.css";
 
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+/* Dunkel, and System on a device that asks for dark (#402). */
+@custom-variant dark {
+  &:where([data-theme=dark], [data-theme=dark] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme=system], [data-theme=system] *) {
+      @slot;
+    }
+  }
+}
 @custom-variant reduced (&:where([data-motion=reduced], [data-motion=reduced] *));
 
 /* mode-dependent → reference the variables */
@@ -203,8 +213,14 @@
 @utility tape-chip { background-image: repeating-linear-gradient(-45deg, #ff4f4f 0 3px, #fffdf8 3px 6px); border: 1.5px solid #151515; border-radius: 2px; }
 @utility fence-mesh { background-image: linear-gradient(color-mix(in srgb, var(--cp-line) 38%, transparent) 1.5px, transparent 1.5px), linear-gradient(90deg, color-mix(in srgb, var(--cp-line) 38%, transparent) 1.5px, transparent 1.5px); background-size: 12px 12px; }
 @utility hit-44 { position: relative; &::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%,-50%); } }
-/* Hover tint (#33): items inside a group, and the reduced-motion stand-in for the lift. Used as hover:tint. */
-@utility tint { background-image: linear-gradient(color-mix(in srgb, var(--cp-ink) 8%, transparent), color-mix(in srgb, var(--cp-ink) 8%, transparent)); }
+/* Hover tint (#33): items inside a group, and the reduced-motion stand-in for the lift. Used as hover:tint. Stronger on Dunkel (#406). */
+@utility tint {
+  background-image: linear-gradient(color-mix(in srgb, var(--cp-ink) 8%, transparent), color-mix(in srgb, var(--cp-ink) 8%, transparent));
+  /* Dunkel (and System on a dark device, through the variant): 8 % of cream on the dark surface read as faint (#43, finding 12, #406); 14 % reaches 1.49:1 against the resting surface where Hell has 1.18:1. */
+  @variant dark {
+    background-image: linear-gradient(color-mix(in srgb, var(--cp-ink) 14%, transparent), color-mix(in srgb, var(--cp-ink) 14%, transparent));
+  }
+}
 @utility aura {
   position: relative;
   isolation: isolate;

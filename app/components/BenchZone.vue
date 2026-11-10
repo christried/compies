@@ -38,9 +38,10 @@ const label = computed(() => t(props.zone === 'bench' ? 'board.bench' : 'board.s
     >
       <slot />
     </div>
+    <!-- The empty message is text for reading: in Dunkel it takes ink-2, since ink-3 is for disabled text and reads 3.24:1 on the surface (#409). -->
     <p
       v-else
-      class="m-0 rounded-md border-[2.5px] border-dashed border-ink-3 px-3 py-4 text-center text-[14px] text-ink-3"
+      class="m-0 rounded-md border-[2.5px] border-dashed border-ink-3 px-3 py-4 text-center text-[14px] text-ink-3 dark:text-ink-2"
     >
       {{ t(zone === 'bench' ? 'board.benchEmpty' : 'board.standsEmpty') }}
     </p>

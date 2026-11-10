@@ -102,6 +102,7 @@ Common rules for every component:
 - [`ReleaseNav`](#releasenav) [1.x] (ReleaseRail and ReleaseJumpStrip)
 - [`PageFooter`](#pagefooter) [1.x] (Impressum, Datenschutz, Version; in UserMenu below md)
 - [`NewChip`](#newchip) [1.x]
+- [`SettingsRow`](#settingsrow) [1.x]
 
 ## AppButton
 **Scope:** [MVP] · **Ref:** DS Basics
@@ -178,6 +179,7 @@ On/off settings (sound, push, reduced motion, hide wheel).
 - **Desktop / mobile:** Same.
 - **Accessibility:** `role="switch"` + `aria-checked`; label clickable.
 - **Motion:** knob `dur-base ease-snap`. Reduced: instant.
+- **As built (#400):** without `label`, the switch is the track alone, named and described from outside through `labelledby` and `describedby` (SettingsRow).
 
 ## RadioCardGroup
 **Scope:** [1.0] · **Ref:** App Vorbereitung 05
@@ -1233,4 +1235,16 @@ Small „Neu“ chip after the version number: the NewStamp's sibling, tilted �
 - **Desktop / mobile:** identical.
 - **Accessibility:** `aria-hidden="true"`; the link's name carries „neu“.
 - **Motion:** one entrance per mount (scale .5 → 1, fade in, 360 ms delay). No loop. Reduced motion: no entrance.
+
+## SettingsRow
+**Scope:** [1.x] · **Ref:** `App Bibliothek & Profil ?s=profile`, Einstellungen
+
+One setting on the Profil page's card „Einstellungen“ (#400): an icon tile, a title, a description and the control.
+
+- **Props / variants:** `icon: Component`, `title: string`, `description?: string`
+- **States:** — (the control carries its own)
+- **Slots:** default, the control, with `{ titleId, descriptionId }` to name and describe it (ToggleSwitch without `label` takes them as `labelledby` and `describedby`)
+- **Desktop / mobile:** one line: 40 px tile (radius 12, 2 px line, `paper-2`), title 15 px bold, description 12 px `ink-2`, control at the right. A control too wide for the text's 140 px minimum wraps to its own line, right-aligned. The card draws 1.5 px `line-soft` lines between rows.
+- **Accessibility:** the icon is decorative; the control's name is the title and its description the description, by id.
+- **Motion:** —
 

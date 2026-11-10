@@ -3,7 +3,8 @@ import { draws, eventMembers, eventPoolGames, events, games, rounds, vetoes } fr
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import { countSeats, type Place } from '../../shared/board'
 import type { RoundSpun, VetoCast } from '../../shared/stage'
-import { SPIN_DURATION_MS, SPIN_LEAD_MS, VETO_WINDOW_MS, gameTaken, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
+import { drawInstants, settleAt } from '../../shared/draw-timeline'
+import { gameTaken, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
 import { runningOf } from '../../shared/session-state'
 import { hasWheel, settingsFromRow } from '../../shared/settings'
 import { recordActivity } from './activity'
@@ -12,7 +13,8 @@ import { apiError } from './errors'
 import type { ChangeCore, EventChange, EventRow } from './event-access'
 import { readSeats } from './board'
 import { eventSessions, type SessionRow } from './sessions'
-import { dueDraws, settleDue } from './settle'
+import { dueDraws } from './draw-timeline'
+import { settleDue } from './settle'
 import { partyVetoesLeft, readBonusTeams, readVetoes } from './vetoes'
 
 // The Event's Rounds (GLOSSARY: Round, #228): the reads the rules and the Event read share, and the changes the Host
@@ -127,9 +129,10 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   const source = gamesLeft(pool, drawRows, roundRows).includes(game.id) ? 'pool' : 'library'
   // With a window the Round takes its game when the draw settles, so it stays without one (and without `setAt`) until then.
   const roundId = await roundForDraw(tx, eventRow.id, roundRows, drawRows, now, windowOpens ? {} : { gameId: game.id, setAt: now })
+  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens })
   const timing = windowOpens
-    ? { stopAt: now, vetoEndsAt: new Date(now.getTime() + VETO_WINDOW_MS) }
-    : { stopAt: now, outcome: 'set' as const, settledAt: now }
+    ? { stopAt: instants.stopAt, vetoEndsAt: instants.vetoEndsAt }
+    : { stopAt: instants.stopAt, outcome: 'set' as const, settledAt: settleAt(instants) }
   await insertDraw(tx, roundId, now, { gameId: game.id, source, kind: 'set', ...timing })
   await recordActivity(tx, publish, eventRow.id, { type: 'game_set', actorId: user.id, params: { roundId, gameId: game.id }, now })
   return { roundId }
@@ -137,9 +140,10 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
 
 /**
  * The Host spins the Lucky Wheel (#229, spec #218 § Drawing): the server draws one of the games left, uniformly. The Round is
- * being drawn (no game yet) and its `spin` draw is stored with everything a reload replays. The spin starts a lead after the
- * commit, so every client has the message and starts together, and stops after its duration. When some Party has a Veto left
- * at the commit (opensWindow), the draw gets a Veto window that ends VETO_WINDOW_MS after the stop (#231), and settles at its
+ * being drawn (no game yet) and its `spin` draw is stored with everything a reload replays. Its instants come from the Draw
+ * timeline (drawInstants): the spin starts a lead after the commit, so every client has the message and starts together, and
+ * stops after its duration. When some Party has a Veto left
+ * at the commit (opensWindow), the draw gets a Veto window that ends a window length after the stop (#231), and settles at its
  * end; otherwise it settles at the stop (settleDue). A Round that waits for a respin takes the draw itself; otherwise a Round
  * starts. The feed's entry waits for the stop (`at`, not published). The room hears `event.changed` only; the clients refetch the
  * Event read, which shows the wheel per viewer (#258). Refused with the reason of spinRejection.
@@ -154,24 +158,20 @@ export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore
   const vetoesLeft = partyVetoesLeft(eventRow, await readVetoes(tx, eventRow.id), await readBonusTeams(tx, eventRow.id))
 
   const spin = drawSpin(left, hidden ? WHEEL_PLACEHOLDERS : null, randomInt)
-  const spinStartAt = new Date(now.getTime() + SPIN_LEAD_MS)
-  const stopAt = new Date(spinStartAt.getTime() + SPIN_DURATION_MS)
+  const instants = drawInstants({ kind: 'spin', commitAt: now, windowOpens: opensWindow(vetoesLeft) })
   const gameId = spin.sliceGameIds[spin.resultIndex]!
-  const vetoEndsAt = opensWindow(vetoesLeft) ? new Date(stopAt.getTime() + VETO_WINDOW_MS) : null
   const roundId = await roundForDraw(tx, eventRow.id, roundRows, drawRows, now, {})
   const drawId = await insertDraw(tx, roundId, now, {
     gameId,
     source: 'pool',
     kind: 'spin',
-    spinStartAt,
-    stopAt,
-    vetoEndsAt,
+    ...instants,
     sliceGameIds: spin.sliceGameIds,
     sliceLabels: spin.sliceLabels,
     resultIndex: spin.resultIndex,
     resultOffset: spin.resultOffset,
   })
-  await recordActivity(tx, publish, eventRow.id, { type: 'game_drawn', actorId: null, params: { roundId, drawId, gameId }, at: stopAt })
+  await recordActivity(tx, publish, eventRow.id, { type: 'game_drawn', actorId: null, params: { roundId, drawId, gameId }, at: instants.stopAt })
   return { roundId, drawId }
 }
 

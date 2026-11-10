@@ -1,14 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineEventHandler } from 'h3'
-import createEvent from '../../server/api/e/index.post'
-import { eventMembers, events, pollSlots, users } from '../../server/db/schema'
+import { events, users } from '../../server/db/schema'
 import { apiError } from '../../server/utils/errors'
 import { changeEvent } from '../../server/utils/event-access'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { asRecord } from '../../shared/record'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // A send to named Users of an Event (#227): the named messages reach only those Users' sockets, the broadcast still
@@ -17,21 +17,20 @@ const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@examp
 
 describe('a send to named Users from a change', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const notifier = memoryRoomNotifier()
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      // A test-only change: named Users get a message, and `refuse` makes the rule refuse after it queued the send.
+    // A test-only change, served beside the tree: named Users get a message, and `refuse` makes the rule refuse after it queued the send.
+    request = createTestApp(testDb.db, { roomNotifier: notifier }, {
       'POST /api/e/:slug/named-send': defineEventHandler(event => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ body, publishTo }) => {
         const { to, refuse } = asRecord(body)
-        publishTo(Array.isArray(to) ? to.map(String) : [], { type: 'team.nameReset', team: 1 })
+        publishTo(Array.isArray(to) ? to.map(String) : [], { type: 'veto.cast', drawId: 'draw-1', team: 1 })
         if (refuse === true) throw apiError('wrong_phase')
         return { done: true }
       })),
-    }, { roomNotifier: notifier })
+    })
   })
 
   afterAll(async () => {
@@ -41,10 +40,7 @@ describe('a send to named Users from a change', () => {
   beforeEach(async () => {
     stubAuthEnv()
     notifier.clear()
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -82,7 +78,7 @@ describe('a send to named Users from a change', () => {
     expect(response.status).toBe(200)
     expect(notifier.sends(eventId)).toEqual([
       { to: null, messages: [expect.objectContaining({ type: 'event.changed', v: 1 })] },
-      { to: [hostId], messages: [expect.objectContaining({ type: 'team.nameReset', team: 1, v: 1 })] },
+      { to: [hostId], messages: [expect.objectContaining({ type: 'veto.cast', drawId: 'draw-1', team: 1, v: 1 })] },
     ])
   })
 

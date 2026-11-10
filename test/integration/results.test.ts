@@ -1,28 +1,15 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getActivity from '../../server/api/e/[slug]/activity.get'
-import castVeto from '../../server/api/e/[slug]/draws/[drawId]/veto.post'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
-import putBack from '../../server/api/e/[slug]/rounds/[id].delete'
-import setGame from '../../server/api/e/[slug]/rounds/index.post'
-import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
-import endSession from '../../server/api/e/[slug]/sessions/end.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import { activity, draws, eventMembers, eventPoolGames, events, games, pollSlots, roundPlaces, rounds, users, vetoes } from '../../server/db/schema'
+import { draws, eventMembers, events, roundPlaces, rounds } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { readEventRows } from '../../server/utils/event-read'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { ActivityPage } from '../../shared/activity'
-import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
-import { VETO_WINDOW_MS } from '../../shared/rounds'
-import { TEST_SETTINGS } from './fixtures'
-import { createInterleavingDb, createTestDb, createTestServer } from './harness'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { WINDOW_MS } from '../draw-offsets'
+import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
+import { createInterleavingDb, createTestDb, resetDatabase } from './harness'
+import { readEvent, readFeed, startRunningEvent, type Rig } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // Entering a Result on an open Round (#273, spec #272): `PUT /api/e/:slug/rounds/:id/result` through the HTTP API with the in-memory
 // room. What it stores, the number it gives, what the Event read shows afterwards, every refusal with its code and what it leaves
@@ -41,26 +28,15 @@ const T0 = '2090-10-30T10:00:00.000Z'
 
 describe('Results', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'GET /api/e/:slug/activity': getActivity,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/sessions/end': endSession,
-      'POST /api/e/:slug/rounds': setGame,
-      'POST /api/e/:slug/rounds/spin': spinWheel,
-      'PUT /api/e/:slug/rounds/:id/result': putResult,
-      'DELETE /api/e/:slug/rounds/:id': putBack,
-      'POST /api/e/:slug/draws/:drawId/veto': castVeto,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -71,33 +47,14 @@ describe('Results', () => {
     stubAuthEnv()
     clock.set(T0)
     notifier.clear()
-    await testDb.db.delete(vetoes)
-    await testDb.db.delete(draws)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
-
-  async function errorOf(response: Response) {
-    return { status: response.status, code: (await response.json() as { statusMessage: string }).statusMessage }
-  }
+  const send = sendVia(() => request)
 
   /**
    * A Running Session of an Event with `teams` Parties (2: two Players in each of teams 1 and 2; 3: one Player in each of teams 1 to 3)
@@ -105,57 +62,41 @@ describe('Results', () => {
    * a Veto allowance of `vetoAllowance` per Party. Every Round is set by the Host through the API.
    */
   async function running({ teams = 2, gameCount = 10, wheel = false, vetoAllowance = 0 }: { teams?: 2 | 3, gameCount?: number, wheel?: boolean, vetoAllowance?: number } = {}) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies: Partial<Record<keyof typeof players, string>> = {}
-    for (const [key, profile] of Object.entries(players)) cookies[key as keyof typeof players] = (await signIn(testDb.db, profile)).cookie
-    const pointsTable = { preset: 'linear' as const, values: teams === 2 ? [1, 0] : [2, 1, 0] }
-    const settings = { ...TEST_SETTINGS, teamCount: teams, teamSize: teams === 2 ? 2 : 1, gameCount, pointsTable, ...(wheel ? { selectionMode: 'lucky_wheel' as const, vetoAllowance } : {}) }
-    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings })
-    const { slug } = await created.json() as { slug: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const eventId = eventRow!.id
-    const ids = {} as Record<'host' | keyof typeof players, string>
-    for (const [key, profile] of Object.entries({ host, ...players })) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      ids[key as keyof typeof ids] = row!.id
-    }
-    const seated = teams === 2
+    const seats = teams === 2
       ? [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const
       : [['one', 1], ['two', 2], ['three', 3]] as const
-    for (const [key] of seated) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
-
-    const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo', createdBy: ids.host, priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') },
-      { name: 'Kart', createdBy: ids.host },
-      { name: 'Schach', createdBy: ids.host },
-    ]).returning()
-    const [halo, kart, schach] = inserted as [typeof inserted[number], typeof inserted[number], typeof inserted[number]]
-    await testDb.db.insert(eventPoolGames).values([
-      { eventId, gameId: halo.id },
-      { eventId, gameId: kart.id },
-    ])
-
-    const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
-    for (const slotId of slotIds) expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId })).status).toBe(200)
-    for (const [key, position] of seated) {
-      const to: Place = { zone: 'team', team: position }
-      expect((await send('POST', `/api/e/${slug}/move`, cookies[key], { userId: ids[key], to })).status).toBe(200)
-    }
-    expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
-    await testDb.db.delete(activity)
-    notifier.clear()
-    return { slug, eventId, hostCookie, cookies, ids, halo, kart, schach }
+    const seatedKeys = seats.map(([key]) => key)
+    const members = Object.fromEntries(seatedKeys.map(key => [key, players[key]])) as Record<typeof seatedKeys[number], typeof players[keyof typeof players]>
+    // Signed in, no Member: the Players the Event has no seat for.
+    const bystanders = Object.fromEntries(Object.entries(players).filter(([key]) => !(seatedKeys as string[]).includes(key)))
+    const ev = await startRunningEvent(rig, {
+      host,
+      players: members,
+      outsiders: bystanders,
+      seats,
+      slots: SLOTS,
+      settings: { teamCount: teams, teamSize: teams === 2 ? 2 : 1, gameCount, pointsTable: { preset: 'linear' as const, values: teams === 2 ? [1, 0] : [2, 1, 0] }, ...(wheel ? { selectionMode: 'lucky_wheel' as const, vetoAllowance } : {}) },
+      games: [
+        { key: 'halo', values: { name: 'Halo', priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') }, pool: true },
+        { key: 'kart', values: { name: 'Kart' }, pool: true },
+        { key: 'schach', values: { name: 'Schach' }, pool: false },
+      ],
+      quiet: 'room-and-feed',
+    })
+    const everyone: Record<string, { cookie: string, id: string }> = { ...ev.players, ...ev.outsiders }
+    const cookies: Partial<Record<keyof typeof players, string>> = Object.fromEntries(Object.entries(everyone).map(([key, signed]) => [key, signed.cookie]))
+    const ids = { host: ev.host.id, ...Object.fromEntries(Object.entries(everyone).map(([key, signed]) => [key, signed.id])) } as Record<'host' | keyof typeof players, string>
+    return { slug: ev.slug, eventId: ev.eventId, hostCookie: ev.host.cookie, cookies, ids, halo: ev.games.halo, kart: ev.games.kart, schach: ev.games.schach }
   }
 
   type Game = Awaited<ReturnType<typeof running>>
 
-  const read = async (game: Game, cookie = game.hostCookie) => await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView
+  const read = (game: Game, cookie = game.hostCookie) => readEvent(rig, cookie, game.slug)
   const set = (game: Game, gameId: string, vetoAllowed?: boolean) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, vetoAllowed === undefined ? { gameId } : { gameId, vetoAllowed })
   const enter = (game: Game, roundId: string, body: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/rounds/${roundId}/result`, cookie, body)
   const roundRows = (game: Game) => testDb.db.select().from(rounds).where(eq(rounds.eventId, game.eventId)).orderBy(rounds.startedAt, rounds.id)
   const placesOf = (roundId: string) => testDb.db.select().from(roundPlaces).where(eq(roundPlaces.roundId, roundId)).orderBy(roundPlaces.team)
-  const feedOf = async (game: Game, cookie = game.hostCookie) => (await (await send('GET', `/api/e/${game.slug}/activity`, cookie)).json() as ActivityPage).entries
+  const feedOf = (game: Game, cookie = game.hostCookie) => readFeed(rig, cookie, game.slug)
 
   /** Two Parties' Places and the Scores of a Result for two Parties: Party 1 wins, Party 2 is second. */
   const twoParties = [{ team: 1, place: 1, score: ' 16 ' }, { team: 2, place: 2, score: '' }]
@@ -247,7 +188,7 @@ describe('Results', () => {
 
       expect(await errorOf(await enter(game, windowed, { places: twoParties }))).toEqual({ status: 409, code: 'round_not_open' })
 
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       expect((await enter(game, windowed, { places: twoParties })).status).toBe(200)
       expect((await roundRows(game)).find(round => round.id === windowed)).toMatchObject({ gameId: game.halo.id, number: 1 })
     })
@@ -358,7 +299,7 @@ describe('Results', () => {
       const vetoed = (await (await set(game, game.halo.id, true)).json() as { roundId: string }).roundId
       const [draw] = await testDb.db.select().from(draws).where(eq(draws.roundId, vetoed))
       expect((await send('POST', `/api/e/${game.slug}/draws/${draw!.id}/veto`, game.cookies.one)).status).toBe(200)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       expect(await errorOf(await enter(game, vetoed, { places: twoParties }))).toEqual({ status: 409, code: 'round_not_open' })
     })
 
@@ -861,7 +802,7 @@ describe('Results', () => {
       const windowed = (await (await set(game, game.halo.id, true)).json() as { roundId: string }).roundId
       const [draw] = await testDb.db.select().from(draws).where(eq(draws.roundId, windowed))
       expect((await send('POST', `/api/e/${game.slug}/draws/${draw!.id}/veto`, game.cookies.one)).status).toBe(200)
-      clock.advance(VETO_WINDOW_MS)
+      clock.advance(WINDOW_MS)
       await set(game, game.kart.id)
       const put = (await (await set(game, game.schach.id)).json() as { roundId: string }).roundId
       expect((await send('DELETE', `/api/e/${game.slug}/rounds/${put}`, game.hostCookie)).status).toBe(200)

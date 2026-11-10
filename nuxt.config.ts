@@ -69,7 +69,6 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', sizes: '180x180', href: `${brand.iconDir}/apple-touch-icon.png` },
       ],
       meta: [
-        { name: 'theme-color', content: '#fff3df' },
         { name: 'apple-mobile-web-app-title', content: brand.appleTitle },
       ],
     },

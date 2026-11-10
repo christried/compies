@@ -100,7 +100,6 @@
       "teams_uneven": "Geht erst, wenn alle Teams gleich groß sind."
     },
     "setBlocked": {
-      "no_running_session": "Geht erst in einer laufenden Session.",
       "game_count_reached": "Alle Spiele dieses Events sind schon gestartet.",
       "round_being_drawn": "Gerade wird ein Spiel gezogen.",
       "no_wheel": "Geht nur mit dem Glücksrad.",
@@ -298,27 +297,12 @@
   "profile": {
     "title": "Profil",
     "avatar": "Profilbild",
-    "avatarHelp": "Standard ist dein Discord-Bild. JPG oder PNG, wird rund zugeschnitten.",
-    "avatarAlt": "Dein Profilbild",
-    "upload": "Hochladen",
-    "useDiscord": "Discord-Bild nutzen",
+    "avatarHelp": "Kommt von Discord oder Twitch. Ein neues Bild siehst du nach deiner nächsten Anmeldung.",
     "displayName": "Anzeigename",
-    "displayNameHelp": "Muss nicht eindeutig sein. Alle in der Lobby sehen ihn.",
+    "displayNameHelp": "Muss nicht eindeutig sein. Alle sehen ihn überall in Compies.",
     "displayNameEmpty": "Ohne Namen geht es nicht. Wie sollen dich die anderen nennen?",
-    "accounts": "Verbundene Konten",
-    "connectedAs": "Verbunden als {user}",
-    "connected": "Verbunden",
-    "notConnected": "Nicht verbunden",
-    "connect": "Verbinden",
-    "disconnect": "Trennen",
-    "lastAccount": "Ein Konto muss verbunden bleiben, sonst kannst du dich nicht mehr anmelden.",
-    "mySessions": "Meine Events",
-    "sessionState": {
-      "running": "Läuft",
-      "planned": "Geplant",
-      "poll": "Umfrage",
-      "archived": "Archiv"
-    }
+    "saved": "Gespeichert.",
+    "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal."
   },
   "setup": {
     "step": "Event erstellen, Schritt {n} von {total}",
@@ -799,8 +783,6 @@
     "kicker": "Fast geschafft",
     "title": "Wie sollen wir dich nennen?",
     "nameHint": "Muss nicht eindeutig sein. Max. 32 Zeichen.",
-    "avatarHint": "Kommt von Discord oder Twitch und bleibt dort aktuell.",
-    "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal.",
     "nameMissing": "Ohne Namen geht’s nicht.",
     "avatarFromProvider": "Bild von {provider} nehmen",
     "avatarUpload": "Eigenes Bild hochladen",
@@ -1086,11 +1068,14 @@
     "place": "Platz {n}"
   },
   "settings": {
-    "theme": "Darstellung",
+    "title": "Einstellungen",
+    "soundHelp": "Clips starten mit Ton. Wird auf diesem Gerät gemerkt.",
+    "appearance": "Darstellung",
+    "appearanceHelp": "Gilt auf allen deinen Geräten. System folgt deinem Gerät.",
     "light": "Hell",
     "dark": "Dunkel",
     "system": "System",
-    "language": "Sprache"
+    "appearanceSaveFailed": "Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal."
   },
   "eventSettings": {
     "kicker": "Einstellungen",
@@ -1233,7 +1218,7 @@
       },
       "signIn": {
         "heading": "6. Anmeldung über Discord oder Twitch und Anzeigename",
-        "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift Compies darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in Compies sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt.\n\nAußerdem speichern wir zu deinem Nutzerkonto, welche Version von Compies du unter „Was ist neu“ zuletzt gesehen hast, damit der Hinweis auf jedem Gerät nur einmal erscheint.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Events anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Events anlegen)."
+        "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift Compies darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in Compies sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt. Du kannst deinen Anzeigenamen jederzeit auf der Seite „Profil“ ändern. Der neue Name erscheint überall in Compies, auch in dem, was schon geschehen ist, etwa im Aktivitäts-Feed und in den Ergebnissen; einen früheren Anzeigenamen speichern wir nicht.\n\nAußerdem speichern wir zu deinem Nutzerkonto, welche Version von Compies du unter „Was ist neu“ zuletzt gesehen hast, damit der Hinweis auf jedem Gerät nur einmal erscheint.\n\nEbenso speichern wir zu deinem Nutzerkonto deine Darstellung: Hell, Dunkel oder System (System folgt der Einstellung deines Geräts). Du wählst sie auf der Seite „Profil“; solange du nichts wählst, ist es Hell. Die Wahl gilt auf jedem Gerät, auf dem du dich anmeldest. Wie ein Gerät sie für Seiten ohne Anmeldung behält, steht in Abschnitt 9.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Events anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Events anlegen)."
       },
       "avatar": {
         "heading": "7. Profilbild",
@@ -1245,7 +1230,7 @@
       },
       "cookies": {
         "heading": "9. Cookies und Speicher im Browser",
-        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Session, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nLokaler Speicher (compies.news.seen): merkt sich, solange du nicht angemeldet bist, welche Version von Compies du unter „Was ist neu“ zuletzt gesehen hast, damit der Hinweis nur einmal erscheint.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Events werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
+        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nCookie (compies-appearance): merkt sich auf diesem Gerät deine Darstellung, damit auch die Seiten ohne Anmeldung, etwa die Anmeldeseite, so aussehen, wie du es gewählt hast. Es enthält nur deine Wahl („dark“ oder „system“), keine Kennung und keine Angaben zu dir. Compies setzt es nur, wenn deine Darstellung Dunkel oder System ist: sobald du sie in deinem Profil so wählst und, auf einem anderen Gerät, sobald du dich dort anmeldest. Wählst du Hell, wird es entfernt. Es läuft nach einem Jahr ab. Für diese Einstellung, die du selbst gewählt hast, ist es technisch notwendig; eine Einwilligung ist dafür nicht nötig, deshalb fragen wir sie nicht ab.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Session, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nLokaler Speicher (compies.news.seen): merkt sich, solange du nicht angemeldet bist, welche Version von Compies du unter „Was ist neu“ zuletzt gesehen hast, damit der Hinweis nur einmal erscheint.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Events werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
       },
       "security": {
         "heading": "10. Sitzungs- und Sicherheitsdaten",
@@ -1405,11 +1390,6 @@
       "archiv": {
         "title": "Das Archiv wird noch gemauert.",
         "text": "Hier landen später alle Abende mit Tabelle, Chat und Siegerbild. Bis dahin zählt: einen Termin finden."
-      },
-      "profil": {
-        "title": "Profil? Der Bagger ist bestellt.",
-        "text": "Name und Bild kommen gerade von Discord oder Twitch. Hochladen und Einstellungen folgen in einer der nächsten Versionen.",
-        "logout": "Abmelden"
       },
       "admin": {
         "title": "Der Admin-Bereich hat noch keine Tür.",
@@ -1707,6 +1687,7 @@
     "sessionStarted": "Diese Session hat schon begonnen. Sie bleibt, wie sie ist.",
     "noRunningSession": "Es läuft gerade keine Session.",
     "memberNotFound": "Diese Person ist nicht mehr im Event.",
+    "noSuchTeam": "Dieses Team gibt es nicht mehr.",
     "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "gameCountBelowStarted": "So wenige geht nicht: Es sind schon mehr Spiele gestartet.",

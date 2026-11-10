@@ -1,21 +1,20 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import me from '../../server/api/me.get'
-import newsSeen from '../../server/api/me/news-seen.post'
 import { users } from '../../server/db/schema'
 import { version as current } from '../../package.json'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 import { signIn, stubAuthEnv } from './sign-in'
 
 // „Was ist neu“ is shown once per User, not once per device (#184): the newest Release a User has seen
 // lives on the User.
 describe('the Releases a User has seen', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, { 'GET /api/me': me, 'POST /api/me/news-seen': newsSeen })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -24,7 +23,7 @@ describe('the Releases a User has seen', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {

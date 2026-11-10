@@ -1,31 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import listHome from '../../server/api/e/index.get'
-import readEvent from '../../server/api/e/[slug].get'
-import deleteEvent from '../../server/api/e/[slug].delete'
-import getActivity from '../../server/api/e/[slug]/activity.get'
-import icsFile from '../../server/api/e/[slug]/ics.get'
-import openRoom from '../../server/api/e/[slug]/room.post'
-import rotateInvite from '../../server/api/e/[slug]/rotate.post'
-import changeSettings from '../../server/api/e/[slug]/settings.patch'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import endSession from '../../server/api/e/[slug]/sessions/end.post'
-import setGame from '../../server/api/e/[slug]/rounds/index.post'
-import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
-import finishEvent from '../../server/api/e/[slug]/finish.post'
-import previewInvite from '../../server/api/invite/[invite].get'
-import joinInvite from '../../server/api/invite/[invite].post'
-import deployCheck from '../../server/api/internal/deploy-check.get'
-import { activity, countdowns, draws, eventMembers, eventPoolGames, events, games, pollSlots, roundPlaces, rounds, sessions, users, vetoes } from '../../server/db/schema'
+import { activity, eventMembers, events, pollSlots, sessions, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall } from '../../shared/room-auth'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { createTestDb, resetDatabase } from './harness'
+import { hostEndsSession, hostEntersResult, hostFinishes, hostSets, setUpEvent, startRunningEvent, type Rig } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // Deleting an Event (#333, spec #332, GLOSSARY: Deleted Event): the Host's soft delete through `changeEvent`. It sets the deleted mark and
 // writes nothing else; every read of the Event, the invite routes, Home and the deploy check then ignore it (ADR 0006, ADR 0013).
@@ -49,33 +32,15 @@ type Phase = 'poll' | 'date_set' | 'between' | 'running' | 'finished'
 
 describe('deleting an Event', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e': listHome,
-      'GET /api/e/:slug': readEvent,
-      'DELETE /api/e/:slug': deleteEvent,
-      'GET /api/e/:slug/activity': getActivity,
-      'GET /api/e/:slug/ics': icsFile,
-      'POST /api/e/:slug/room': openRoom,
-      'POST /api/e/:slug/rotate': rotateInvite,
-      'PATCH /api/e/:slug/settings': changeSettings,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/sessions/end': endSession,
-      'POST /api/e/:slug/rounds': setGame,
-      'PUT /api/e/:slug/rounds/:id/result': putResult,
-      'POST /api/e/:slug/finish': finishEvent,
-      'GET /api/invite/:invite': previewInvite,
-      'POST /api/invite/:invite': joinInvite,
-      'GET /api/internal/deploy-check': deployCheck,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -86,32 +51,14 @@ describe('deleting an Event', () => {
     stubAuthEnv()
     clock.set(T0)
     notifier.clear()
-    await testDb.db.delete(countdowns)
-    await testDb.db.delete(vetoes)
-    await testDb.db.delete(draws)
-    await testDb.db.delete(roundPlaces)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(sessions)
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   async function idOf(email: string) {
     const [row] = await testDb.db.select().from(users).where(eq(users.email, email))
@@ -134,36 +81,36 @@ describe('deleting an Event', () => {
   }
 
   async function buildEvent(phase: Phase) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const memberCookie = (await signIn(testDb.db, member)).cookie
-    const secondCookie = (await signIn(testDb.db, second)).cookie
-    const strangerCookie = (await signIn(testDb.db, stranger)).cookie
-    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings: SETTINGS })
-    const { slug, inviteUrl } = await created.json() as { slug: string, inviteUrl: string }
-    const { id: eventId } = await eventRowOf(slug)
-    for (const profile of [member, second]) await testDb.db.insert(eventMembers).values({ eventId, userId: await idOf(profile.email) })
-    const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
-    const context = { slug, eventId, inviteUrl, hostCookie, memberCookie, secondCookie, strangerCookie, slotIds, host: await idOf(host.email) }
-    if (phase === 'poll') return context
-    expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId: slotIds[0] })).status).toBe(200)
-    if (phase === 'date_set') return context
-    expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId: slotIds[1] })).status).toBe(200)
-    expect((await send('POST', `/api/e/${slug}/move`, memberCookie, { userId: await idOf(member.email), to: { zone: 'team', team: 1 } })).status).toBe(200)
-    expect((await send('POST', `/api/e/${slug}/move`, secondCookie, { userId: await idOf(second.email), to: { zone: 'team', team: 2 } })).status).toBe(200)
-    expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
-    if (phase === 'running') return context
-    if (phase === 'finished') {
+    const started = phase === 'running' || phase === 'between' || phase === 'finished'
+    const make = started ? startRunningEvent : setUpEvent
+    const ev = await make(rig, {
+      host,
+      players: { member, second },
+      outsiders: { stranger },
+      seats: started ? [['member', 1], ['second', 2]] : [],
+      slots: SLOTS,
+      confirmed: phase === 'poll' ? 0 : phase === 'date_set' ? 1 : 2,
+      settings: SETTINGS,
       // A finished Event (#277): the Host sets one game in the running Session, enters team 1's win and finishes it.
-      const [halo] = await testDb.db.insert(games).values({ name: 'Halo', createdBy: context.host }).returning()
-      await testDb.db.insert(eventPoolGames).values({ eventId, gameId: halo!.id })
-      const round = (await (await send('POST', `/api/e/${slug}/rounds`, hostCookie, { gameId: halo!.id })).json() as { roundId: string }).roundId
-      expect((await send('PUT', `/api/e/${slug}/rounds/${round}/result`, hostCookie, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] })).status).toBe(200)
-      expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner', winners: [1] })).status).toBe(200)
-      return context
+      games: phase === 'finished' ? [{ key: 'halo', values: { name: 'Halo' }, pool: true }] : [],
+    })
+    if (phase === 'finished') {
+      const roundId = await hostSets(rig, ev, ev.games.halo.id)
+      await hostEntersResult(rig, ev, roundId, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
+      await hostFinishes(rig, ev, { outcome: 'winner', winners: [1] })
     }
-    expect((await send('POST', `/api/e/${slug}/sessions/end`, hostCookie)).status).toBe(200)
-    return context
+    if (phase === 'between') await hostEndsSession(rig, ev)
+    return {
+      slug: ev.slug,
+      eventId: ev.eventId,
+      inviteToken: ev.inviteToken,
+      hostCookie: ev.host.cookie,
+      memberCookie: ev.players.member.cookie,
+      secondCookie: ev.players.second.cookie,
+      strangerCookie: ev.outsiders.stranger.cookie,
+      slotIds: ev.slotIds,
+      host: ev.host.id,
+    }
   }
 
   /** The Host's delete, from the Event's slug. */
@@ -282,7 +229,7 @@ describe('deleting an Event', () => {
 
     it('answers the Invite link of a deleted Event 410 to a Member and 404 to a newcomer, who does not join', async () => {
       const game = await eventIn('date_set')
-      const invite = new URL(game.inviteUrl).pathname.slice('/e/'.length)
+      const invite = game.inviteToken
       expect((await remove(game.hostCookie, game.slug)).status).toBe(200)
 
       const memberJoin = await send('POST', `/api/invite/${invite}`, game.memberCookie)

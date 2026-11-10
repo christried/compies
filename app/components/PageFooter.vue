@@ -20,7 +20,9 @@ const unseen = computed(() => !!user.value && seen.value !== undefined && seen.v
 
 // Link look (10 § PageFooter): the marker is a highlighter that grows on hover and stays on
 // the current page; the 44 px hit area comes from the padding.
-const LINK = 'inline-block rounded-[8px] px-0.5 py-3 leading-5 font-bold whitespace-nowrap text-ink underline decoration-2 decoration-line-soft underline-offset-[5px] bg-[image:linear-gradient(transparent_55%,var(--cp-primary)_55%)] bg-no-repeat bg-origin-content bg-clip-content bg-[length:0%_100%] transition-[background-size,text-decoration-color] duration-(--cp-dur-base) ease-(--cp-ease-out) hover:bg-[length:100%_100%] hover:text-ink hover:decoration-line motion-reduce:transition-none reduced:transition-none aria-[current=page]:bg-[length:100%_100%] aria-[current=page]:font-extrabold aria-[current=page]:no-underline'
+// In Dunkel ink is cream, which reads 1.26:1 on the yellow, so the marker covers the whole line there and the text takes
+// on-primary (#431). In Hell the lower 45 % stays: ink reads on both halves of the letter.
+const LINK = 'inline-block rounded-[8px] px-0.5 py-3 leading-5 font-bold whitespace-nowrap text-ink underline decoration-2 decoration-line-soft underline-offset-[5px] bg-[image:linear-gradient(transparent_55%,var(--cp-primary)_55%)] dark:bg-[image:linear-gradient(var(--cp-primary),var(--cp-primary))] bg-no-repeat bg-origin-content bg-clip-content bg-[length:0%_100%] transition-[background-size,color,text-decoration-color] duration-(--cp-dur-base) ease-(--cp-ease-out) hover:bg-[length:100%_100%] hover:text-on-primary hover:decoration-line motion-reduce:transition-none reduced:transition-none aria-[current=page]:bg-[length:100%_100%] aria-[current=page]:font-extrabold aria-[current=page]:no-underline aria-[current=page]:text-on-primary'
 
 const items = computed(() => [
   { to: '/impressum', text: t('legal.links.impressum'), sep: null },

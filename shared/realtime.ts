@@ -19,8 +19,6 @@ export type RoomMessage
     | { type: 'activity.added', entry: ActivityEntry }
   /** A Member took a new place on the Game board; `by` moved them (#160). The board glides the avatar from `from` to `to`. */
     | { type: 'member.moved', userId: string, from: Place, to: Place, by: string }
-  /** A new Member joined through the Invite link (#160). */
-    | { type: 'member.joined', userId: string }
   /** Sent to a socket that just connected: every user who is online right now, the newcomer included (#162). */
     | { type: 'presence.sync', userIds: string[] }
   /** A user's first socket opened (#162). */
@@ -29,16 +27,6 @@ export type RoomMessage
     | { type: 'presence.leave', userId: string }
   /** The answer to a `clock.ping`, to the asking socket only: `t0` is the client's own, the envelope's `serverTime` is the server's (#162). */
     | { type: 'clock.pong', t0: number }
-  /** A Player in `team` set their Team word, or removed it (`word: null`) (#161). */
-    | { type: 'team.wordSet', team: number, userId: string, word: string | null }
-  /** The Host reset the Team name of `team` to its colour name (#161). */
-    | { type: 'team.nameReset', team: number }
-  /** The Host started a Session (#164). No game data. */
-    | { type: 'session.started', sessionId: string }
-  /** The Host ended the Running Session (#164). */
-    | { type: 'session.ended', sessionId: string }
-  /** The first Session started: every team's Team name is frozen (#164). */
-    | { type: 'team.nameFrozen' }
   /**
    * A Player of `team` cast a Veto on `drawId` (#231, spec #218 § Realtime room). Sent to the Users of that Party only (the named
    * send, #227), the Host only when the Host plays in it; never broadcast, so no other Party learns that someone vetoed.

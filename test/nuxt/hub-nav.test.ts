@@ -28,14 +28,12 @@ describe('HubNav', () => {
     expect(link(nav, 'Events').attributes('aria-current')).toBe('page')
   })
 
-  it('flags unbuilt areas as Baustelle, with a tape marker, and leaves Events and Bibliothek alone', async () => {
+  it('flags Archiv as Baustelle, with a tape marker, and leaves Events, Bibliothek and Profil alone (#399)', async () => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { canHost: true, isAdmin: false } }, route: '/' })
 
-    for (const label of ['Archiv', 'Profil']) {
-      expect(link(nav, label).attributes('aria-description')).toBe('Baustelle')
-      expect(link(nav, label).find('[title="Baustelle"]').exists()).toBe(true)
-    }
-    for (const label of ['Events', 'Bibliothek']) {
+    expect(link(nav, 'Archiv').attributes('aria-description')).toBe('Baustelle')
+    expect(link(nav, 'Archiv').find('[title="Baustelle"]').exists()).toBe(true)
+    for (const label of ['Events', 'Bibliothek', 'Profil']) {
       expect(link(nav, label).attributes('aria-description')).toBeUndefined()
       expect(link(nav, label).find('[title="Baustelle"]').exists()).toBe(false)
     }
@@ -45,6 +43,18 @@ describe('HubNav', () => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header' }, route: '/' })
 
     expect(labels(nav)).toEqual(['Events', 'Archiv', 'Profil'])
+  })
+
+  it('gives every item the hover tint, so the Dunkel fix of the utility reaches the nav (#406)', async () => {
+    const viewers = [undefined, { canHost: false, isAdmin: true }]
+    for (const layout of ['header', 'tabs'] as const) {
+      for (const viewer of viewers) {
+        const nav = await mountSuspended(HubNav, { props: { layout, viewer }, route: '/' })
+        const links = nav.findAll('a')
+        expect(links).toHaveLength(viewer ? 5 : 3)
+        for (const item of links) expect(item.classes(), `${layout}: ${item.text()}`).toContain('hover:tint')
+      }
+    }
   })
 
   it('shows Bibliothek, and not Admin, to a User with the Host permission', async () => {

@@ -1,18 +1,17 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import me from '../../server/api/me.get'
-import profileSetup from '../../server/api/profile/setup.post'
 import { authSessions, users } from '../../server/db/schema'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 describe('the signed-in User and profile setup', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, { 'GET /api/me': me, 'POST /api/profile/setup': profileSetup })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -21,7 +20,7 @@ describe('the signed-in User and profile setup', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -54,7 +53,7 @@ describe('the signed-in User and profile setup', () => {
 
       expect(user).toEqual({
         id: expect.any(String), name: 'Kitty', image: expect.any(String),
-        displayName: null, canHost: true, isAdmin: false, newsSeen: expect.any(String),
+        displayName: null, canHost: true, isAdmin: false, newsSeen: expect.any(String), appearance: 'light',
       })
     })
 
@@ -133,6 +132,51 @@ describe('the signed-in User and profile setup', () => {
 
       const [row] = await testDb.db.select().from(users)
       expect(row).toMatchObject({ name: 'Renamed', displayName: 'Kitty Kat' })
+    })
+  })
+
+  describe('renaming through POST /api/profile/setup (#399)', () => {
+    it('renames a User who already has a Display name and answers the User', async () => {
+      const { cookie } = await signIn(testDb.db, kitty)
+      await setup(cookie, 'Kitty Kat')
+
+      const response = await setup(cookie, '  Kater Karlo  ')
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).user).toMatchObject({
+        id: expect.any(String), name: 'Kitty', displayName: 'Kater Karlo', canHost: false, isAdmin: false,
+      })
+      const [row] = await testDb.db.select().from(users)
+      expect(row!.displayName).toBe('Kater Karlo')
+    })
+
+    it('renames as often as asked', async () => {
+      const { cookie } = await signIn(testDb.db, kitty)
+
+      for (const displayName of ['Kitty Kat', 'Kater Karlo', 'Kitty']) {
+        expect((await setup(cookie, displayName)).status).toBe(200)
+      }
+      const [row] = await testDb.db.select().from(users)
+      expect(row!.displayName).toBe('Kitty')
+    })
+
+    it('refuses what setup refuses and keeps the name', async () => {
+      const { cookie } = await signIn(testDb.db, kitty)
+      await setup(cookie, 'Kitty Kat')
+
+      for (const displayName of ['', '   ', 'x'.repeat(33), '👍🏽'.repeat(33), undefined, 42]) {
+        expect((await setup(cookie, displayName)).status).toBe(400)
+      }
+      const [row] = await testDb.db.select().from(users)
+      expect(row!.displayName).toBe('Kitty Kat')
+    })
+
+    it('lets two Users take the same name', async () => {
+      const first = await signIn(testDb.db, kitty)
+      const second = await signIn(testDb.db, { provider: 'twitch', id: '2', name: 'Bea', email: 'bea@example.com', image: undefined })
+
+      expect((await setup(first.cookie, 'Kitty')).status).toBe(200)
+      expect((await setup(second.cookie, 'Kitty')).status).toBe(200)
     })
   })
 })

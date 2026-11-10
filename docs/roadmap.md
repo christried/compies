@@ -1,10 +1,10 @@
 # Roadmap
 
-Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (the user's production-check notes (sorted here, then removed on 2026-11-09), #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings, § Später the ideas for after the roadmap. Terms follow `GLOSSARY.md`.
+Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (the user's production-check notes (sorted here, then removed on 2026-11-09), #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings; its ideas for after the roadmap were listed in § Später until 2026-11-10 and are Idea issues now (#452–#468). Detailed on 2026-11-09, in the grilling for „Profil“: § 0.11 holds its rules. Terms follow `GLOSSARY.md`.
 
 **Numbering.** Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the user declares ready (`docs/agents/release.md` § Semantic versioning). Before 0.5.1 they were numbered 1.x: 1.0.0 is 0.1.0, 1.1.x is 0.2.x, 1.2.0 is 0.3.0, 1.3.0 is 0.4.0 and 1.4.0 is 0.5.0. Older specs, issues, reviews, ADRs and code comments keep the old numbers; in them, the planned 1.5 „Glücksrad“ is 0.7, 1.6 „Punkte“ is 0.8 and 1.7 „Siegerehrung“ is 0.9.
 
-Each release is one spec and usable on its own. A release is grilled, specced and ticketed in one fresh session **while the release before it is being built**, once the code it builds on exists, never all releases up front: the specs name real modules and seams, and the first game night in the app will change what comes after. 0.9 „Siegerehrung“ was the minimum for the first Event in the app; since 0.10 the first Event gates nothing any more (decided 2026-11-08), and there is no date pressure. This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
+Each release is one spec and usable on its own. A release is grilled, specced and ticketed in one fresh session **while the release before it is being built**, once the code it builds on exists, never all releases up front: the specs name real modules and seams, and the first game night in the app will change what comes after. Besides this file, the grilling reads the open Idea issues (`docs/agents/issue-tracker.md` § Ideas): since 2026-11-10 an idea that isn't grilled yet lives there, not here. 0.9 „Siegerehrung“ was the minimum for the first Event in the app; since 0.10 the first Event gates nothing any more (decided 2026-11-08), and there is no date pressure. This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
 
 | Release | Name | Status |
 |---|---|---|
@@ -15,8 +15,8 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.7 | Glücksrad | released on 2026-11-02: [#218](https://github.com/christried/compies/issues/218), [#263](https://github.com/christried/compies/issues/263) |
 | 0.8 | Punkte | released on 2026-11-05: [#272](https://github.com/christried/compies/issues/272) |
 | 0.9 | Siegerehrung | released on 2026-11-08: [#308](https://github.com/christried/compies/issues/308); the minimum for the first Event |
-| 0.10 | Feinschliff | released on 2026-11-09: [#332](https://github.com/christried/compies/issues/332); the list that waited for the first Event, plus the production check |
-| 0.11 | Profil | next; grilled in its own session while 0.10 is built |
+| 0.10 | Feinschliff | released on 2026-11-09: [#332](https://github.com/christried/compies/issues/332); the list that waited for the first Event, plus the production check. 0.10.1 „Partyhut“ released on 2026-11-09: the review follow-ups, the Partyhut ([#38](https://github.com/christried/compies/issues/38)) and the Countdown fix ([#379](https://github.com/christried/compies/issues/379)) |
+| 0.11 | Profil | next; grilled on 2026-11-09: [#398](https://github.com/christried/compies/issues/398) |
 | 0.12 | Eventseite | the Event page findings of the production check; grilled in its own session |
 | 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled in its own session |
 | 1.0 | | when the user declares COMPIES ready |
@@ -229,13 +229,39 @@ The list that waited for the first Event, plus the party hat. Spec: [#332](https
 - **Countdown motion and graphics**: a _Claude Design hand-off_ (#339) for the card's four states, the last ten seconds, the zero moment, the Host's controls, reduced motion; no sound, no Compibert; the sheet stays. Built in #340 on the existing server-timed state.
 - **Party hat** (#38, idea from the first staging review): Compibert's header head wears a party hat on the Event pages, only for the Players in a **Leading Party** (first rank of the Standings with at least one Result, all of them when shared; the Winners on the finished page). Bench, Stands, trailing Parties, Home and the hub pages show the plain head. The hat is a _Claude Design hand-off_ (#341), an accessory on the head crop like the hard hat.
 - **#328**: the AwardCeremony refactor, as written, without a changelog line.
-- **Two human sweeps** (`ready-for-human`), once every other ticket is on the integration branch: mockup vs. live app (#342), then the wording sweep (#343). Small findings land in 0.10 before the version cut; a feature or a redesign goes to 0.11 or later.
+- **Three human sweeps** (`ready-for-human`), once every other ticket is on the integration branch: mockup vs. live app (#342), then the wording sweep (#343), then the animation sweep (#394, created 2026-11-09 under #332); all three are joint sessions paused until December 2026. Small findings land in 0.10 before the version cut; a feature or a redesign goes to 0.11 or later.
 - **Production check** (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09), sorted on #342): ten small fixes as tickets #347–#356 (Home card to the reference, Sheet motion, the Sessions card's menu, „Bald verfügbar“ without a chip, aligned picker buttons, „vollständig abgestimmt“ and CSV for Hosts, the back link, the wheel card without a count, anonymous Vetoes, the clip status in the Host's footer). The bigger findings are 0.12 and 0.13 below.
 - All other UI _own build_.
 
 ## 0.11 Profil
 
-Grilled in its own session while 0.10 is built. The Profil page (screen 25) replaces its Construction page: Display name, avatar from the provider, Ton, „Darstellung: Hell / Dunkel / System“ ([#43](https://github.com/christried/compies/issues/43), with the dark token set checked against every component built since #41), Abmelden. Second provider linking and avatar upload stay out.
+The Profil page (screen 25, trimmed) replaces its Construction page, and the app gets its dark look ([#43](https://github.com/christried/compies/issues/43)). Spec: [#398](https://github.com/christried/compies/issues/398). Grilled on 2026-11-09 (`GLOSSARY.md`: Display name, Appearance, Sound).
+
+- **The page:**
+  - One column (max 640 px) on every width: the h1 „Profil“, a card „Profil“ (the avatar with its hint, then Anzeigename), a card „Einstellungen“ (the rows Ton and Darstellung), and „Abmelden“ as a text button.
+  - A deviation from the artboard, noted in the hand-off folder: no tabs, no Meine Sessions, no Verbundene Konten.
+  - The profile menu stays as designed, without a link to Profil; the nav item loses its „Baustelle“ marker. First-time setup (`/einrichten`) stays as it is.
+- **Display name:**
+  - A User renames themselves as often as they like, under the rules of setup (1 to 32 characters, not unique), with a „Speichern“ button that is active only for a changed, valid name.
+  - Names are read live everywhere, so a new name shows at once in old Activity entries and in the Share image of finished Events too. No earlier name is kept.
+  - Nothing is pushed: others see it at their next load or the next refresh of their Event page.
+- **Avatar:** read-only, from the provider, refreshed at each sign-in; the hint says so, on the setup page too.
+- **Sound** (Ton): the row is the header's switch, per device, with the same state; the header toggle stays. Until 0.13 it only decides whether a Clip starts with sound, and the description says exactly that.
+- **Appearance** (Darstellung: Hell / Dunkel / System):
+  - Stored with the User, light unless they choose otherwise. A tap applies it at once and saves in the background; a failed save switches back with a notice. Other devices show it at their next page load.
+  - A cookie mirrors it for the signed-out pages. It exists only while the choice is Dunkel or System, stays after Abmelden, and gives way to the next User's own choice at sign-in. It gets a new name, never the old `nuxt-color-mode`.
+  - „System“ is CSS only: the dark tokens repeated under a `prefers-color-scheme` media query, kept in sync by a test; no script before first paint.
+  - The browser bar colour and the offline page get their dark variants back. The PWA manifest stays light.
+- **Dark in the app:**
+  - An agent pass over every page and Event state, the signed-out pages included. It measures text and control contrast (WCAG AA), a visible focus ring, borders and shadows that still separate surfaces, and light-only colours left on a themed surface; it fixes with the existing tokens. The faint hover tint on nav items and the „Termin festlegen?“ options (#43) is a named fix.
+  - Illustrations and stage pieces keep their colours in both modes (the Award ceremony, the Coin flip, Compibert, the construction tape); what surrounds them follows the Appearance. The Standings are plain UI and move to tokens.
+  - The Share image stays light for everyone; the sheet around it follows the Appearance.
+  - What needs a new drawing becomes a `Claude Design: …` ticket. It blocks 0.11 only if something is unreadable or broken in dark.
+- **Two walk-throughs** (`ready-for-human`, both before the version cut): the usual staging walk-through, and a „Dunkel walk-through“ as a joint session after the agent pass (each page and Event state in dark at 390 and 1440 px, and the sign-in round trip for Discord and Twitch with cancel, watching for a light flash).
+- **Datenschutzerklärung:** the Appearance stored with the User, the cookie and the renaming; its own `ready-for-human` ticket, and the user approves the wording.
+- **Changelog:** two lines, the Profil page with renaming and Darstellung. Ton gets none.
+- **Out:** second provider linking and Verbundene Konten, avatar upload, Push, Sprache, Weniger Bewegung (the OS setting already counts), Meine Sessions, the tabs, account deletion in the app, a dark Share image, an Appearance per Event, sound cues (0.13), Compibert on the page.
+- All UI _own build_; the settings row (icon tile, title, description, control) is the one new piece, shaped by the artboard.
 
 ## 0.12 Eventseite
 
@@ -260,27 +286,6 @@ The wheel, the clip and the Share image findings of the first production check, 
 - **Clips 10–120 s** (today 5–60), with start, end and length as inputs of which two suffice. From the user's later list, pulled here because the Veto window depends on it: a 120 s clip makes a 150 s window.
 - **The Share image without pills**: more text-based, graphic where it helps, no capsule for the Event name, no chips for the games. A _Claude Design hand-off_, [#357](https://github.com/christried/compies/issues/357) (`ready-for-human`), which blocks the build ticket of this Release.
 
-## Später
-
-The user's list for after the roadmap (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09)), one line each, not grilled:
-
-- A LICENSE for the public repository, chosen together with the user.
-- The Veto allowance stays hidden from Members until the Event starts, so nobody plans around it.
-- Game notes as rich text with an editor, up to 2000 characters.
-- The Game library is one per User, and every text in the app says so; later a game can be shared (a share view, a modal perhaps, with „zu meiner Bibliothek hinzufügen“). Contradicts `GLOSSARY.md` § Game library and the 0.6 rule of one note per game shared across Hosts.
-- „Noch eins hinzufügen“ after creating a game.
-- The game's image can be adjusted after upload (the visible crop).
-- Min and max players are optional and say so subtly; a minimum of 2 is not shown on the card, since no COMPIES game is for one person.
-- The project's folder structure for humans: sub-categorised folders instead of one components and one composables folder.
-- Last of all: a walkthrough tour for invited Players with Compibert (as the one with Topfbert in malkochen), a pop-up „du wurdest als Host freigeschaltet“ for new Hosts, and a second tour for the Host features.
-- The wording sweep (#343) as a throwaway app (`/prototype`): every text with where it appears, a field for the replacement, „so lassen“, „Alternativen“ for a second pass with alternatives, and a notes field for styling or position remarks.
-- Game notes split into general notes and notes for one Event.
-- Ctrl+Enter submits the game form.
-- One functional-review ticket that collects every staging walkthrough of every Release (all checkboxes), to repeat the whole check once.
-- Archive a game in the library (not playable any more, servers gone).
-- Age-restricted videos do not play embedded. Not fixable: YouTube requires a signed-in viewer on youtube.com for age-gated videos; such a game gets the card fallback the Glossary's Clip entry describes.
-- A pass over every use of the mono font: show each to the user and decide whether it stays.
-
 ## Out of scope for this roadmap
 
-Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound before 0.13; push notifications; Compibert states outside the ceremony (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and settings (T2b); Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05).
+Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound before 0.13; push notifications; Compibert states outside the ceremony (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and the settings 0.11 leaves out (Push, Sprache, Weniger Bewegung; T2b); account deletion in the app; Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05); age-restricted videos playing embedded (not fixable: YouTube requires a signed-in viewer on youtube.com for age-gated videos, so such a game gets the card fallback the Glossary's Clip entry describes; from the production check of 2026-11-09).

@@ -21,7 +21,7 @@ The platform-wide right to create Events and to see the Game library. Losing it 
 _Avoid_: Host role, canHost (that is a column, not the concept)
 
 **Display name**:
-The name a User picks for themselves, shown everywhere in the app; not unique, and independent of their Discord or Twitch name.
+The name a User picks for themselves and can change at any time, shown everywhere in the app; not unique, and independent of their Discord or Twitch name. A change shows in everything that already happened too: no earlier name is kept.
 _Avoid_: Username, nickname
 
 ## Events
@@ -297,6 +297,14 @@ _Avoid_: Poster, OG image, screenshot, share link
 **Construction page**:
 The placeholder shown for every area not built yet in the MVP (UI: Baustelle).
 _Avoid_: Coming soon page, placeholder
+
+**Appearance**:
+A User's choice between light, dark and the look their device asks for; light unless they choose otherwise. It belongs to the User, not to a device (UI: Darstellung, with Hell, Dunkel, System).
+_Avoid_: Theme, colour mode, dark mode
+
+**Sound**:
+Whether a device plays the app's sound. It belongs to the device, not to the User (UI: Ton).
+_Avoid_: Mute, volume
 
 **Game library**:
 The platform-wide collection of games that Hosts fill their Events from; only Users with the Host permission and the Platform admin see it (UI: Bibliothek).

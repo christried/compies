@@ -79,7 +79,7 @@ function confirm() {
             role="radio"
             :aria-checked="selected === option.id ? 'true' : 'false'"
             :data-slot="option.id"
-            class="hit-44 flex flex-none items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-left text-ink hover:tint"
+            class="group hit-44 flex flex-none items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-left text-ink hover:tint"
             :class="selected === option.id ? 'border-[3px] border-focus bg-[color-mix(in_srgb,var(--cp-focus)_14%,var(--cp-surface))]' : 'border-(length:--cp-bw) border-line bg-surface'"
             @click="chosen = option.id"
           >
@@ -93,7 +93,7 @@ function confirm() {
               />
             </span>
             <b class="flex-1">{{ t('mvp.set.slotLabel', { day: option.day, time: option.time }) }}</b>
-            <span class="text-[13px] text-ink-2">{{ option.yes }} {{ t('poll.yes') }}, {{ option.maybe }} {{ t('poll.maybe') }}</span>
+            <span class="text-[13px] text-ink-2 dark:group-hover:text-ink">{{ option.yes }} {{ t('poll.yes') }}, {{ option.maybe }} {{ t('poll.maybe') }}</span>
           </button>
           <NoteList
             :notes="option.notes"

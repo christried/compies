@@ -3,11 +3,16 @@
 // whole row is the switch, so the label is clickable; the optional help is its description. The knob slides with the
 // same ease as the other motion, and not at all with reduced motion. `disabled` (#225) keeps the switch where it is: it
 // is announced as disabled (aria-disabled, like the other disabled controls, so it stays focusable and its help, which
-// can say why, is still read), looks muted and asks for nothing when it is clicked.
+// can say why, is still read), looks muted and asks for nothing when it is clicked. Without a label it is the track alone,
+// named and described from outside (SettingsRow on the Profil page, #400).
 const props = defineProps<{
   modelValue: boolean
-  label: string
+  /** Shown next to the track and names the switch. Leave it out when `labelledby` names the switch from outside (SettingsRow, #400). */
+  label?: string
   help?: string
+  /** Without `label`: the id of the element outside that names the switch, and of the one that describes it (#400). */
+  labelledby?: string
+  describedby?: string
   disabled?: boolean
 }>()
 
@@ -28,9 +33,10 @@ const helpId = `${uid}-help`
     role="switch"
     :aria-checked="modelValue ? 'true' : 'false'"
     :aria-disabled="disabled ? 'true' : undefined"
-    :aria-labelledby="labelId"
-    :aria-describedby="help ? helpId : undefined"
-    class="flex min-h-11 w-full items-center gap-3 text-left focus-visible:focus-ring aria-disabled:cursor-not-allowed aria-disabled:text-ink-3"
+    :aria-labelledby="label ? labelId : labelledby"
+    :aria-describedby="label ? (help ? helpId : undefined) : describedby"
+    class="flex min-h-11 items-center focus-visible:focus-ring aria-disabled:cursor-not-allowed aria-disabled:text-ink-3"
+    :class="label ? 'w-full gap-3 text-left' : 'flex-none'"
     @click="toggle"
   >
     <span
@@ -43,7 +49,10 @@ const helpId = `${uid}-help`
         :class="[modelValue ? 'translate-x-[22px]' : '', disabled ? 'bg-ink-3' : modelValue ? 'bg-ink' : 'bg-surface']"
       />
     </span>
-    <span class="flex min-w-0 flex-1 flex-col leading-[1.3]">
+    <span
+      v-if="label"
+      class="flex min-w-0 flex-1 flex-col leading-[1.3]"
+    >
       <b
         :id="labelId"
         class="text-[15px]"

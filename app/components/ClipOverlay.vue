@@ -3,6 +3,7 @@ import { SkipForward, Volume2, VolumeX, X } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { YOUTUBE_HOST, YOUTUBE_PLAYING, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
 import { clipPosition } from '~~/shared/clip'
+import { clipEnded } from '~~/shared/draw-timeline'
 import type { ClipView } from '~~/shared/stage'
 
 // The synced clip (#230, 04-motion § Clip overlay and § Synchronised moments, 02-components § ClipPlayer): the game's YouTube excerpt
@@ -48,7 +49,7 @@ const endSecond = props.clip.game.clipStart + props.clip.game.clipLength
 // transition. The clip is not a countdown, and it ends at `endsAt` from the ticker without waiting for a refetch.
 const now = useServerTicker(() => props.serverNow(), { until: () => endsAt, every: TICK_MS })
 const closedByMe = ref(false)
-const ended = computed(() => now.value !== null && now.value >= endsAt)
+const ended = computed(() => now.value !== null && clipEnded({ endsAt }, now.value))
 const open = computed(() => !closedByMe.value && !ended.value)
 /** The player could not be made or cannot play the video: the game's card stands in for it. */
 const playerFailed = ref(false)

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { boolean, check, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { APPEARANCES } from '../../shared/auth'
 import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
 import { ZONES } from '../../shared/board'
@@ -29,7 +30,11 @@ export const users = pgTable('users', {
   isAdmin: boolean('is_admin').default(false).notNull(),
   // The newest Release the User has seen in „Was ist neu“ (#184); null for a User who has seen none.
   newsSeen: text('news_seen_version'),
-})
+  // The User's Appearance (#401, GLOSSARY): light unless they choose otherwise. Better Auth's insert gets the default (ADR 0004).
+  appearance: text('appearance', { enum: APPEARANCES }).default('light').notNull(),
+}, table => [
+  check('users_appearance_check', sql`${table.appearance} IN ('light', 'dark', 'system')`),
+])
 
 // Better Auth's login sessions, provider accounts and OAuth state, renamed so that a bare "session"
 // is free for the sittings of an Event (ADR 0004, ADR 0011). Columns as `npx auth generate` emits them, but timestamptz.

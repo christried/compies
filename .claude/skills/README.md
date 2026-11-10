@@ -1,6 +1,6 @@
 # Skills
 
-Every folder here except `thermo-nuclear-code-quality-review` and `implement-spec-max` is a copy of [mattpocock/skills](https://github.com/mattpocock/skills) **1.3.1** (commit `49dd158`): the skills its `.claude-plugin/plugin.json` ships, without the Codex-only `agents/openai.yaml` files.
+Every folder here except `thermo-nuclear-code-quality-review`, `implement-spec-max` and `capture-idea` (COMPIES's own: an Idea issue in two minutes, `docs/agents/issue-tracker.md` § Ideas) is a copy of [mattpocock/skills](https://github.com/mattpocock/skills) **1.3.1** (commit `49dd158`): the skills its `.claude-plugin/plugin.json` ships, without the Codex-only `agents/openai.yaml` files.
 
 They're committed because cloud sessions load a repo's `.claude/skills/` but no plugins. `.claude/settings.json` turns the `mattpocock-skills` plugin off in this repo, so local sessions load these copies too, under the same names. `code-review` here replaces Claude Code's built-in `/code-review`; the built-in stays reachable as `/review`.
 
@@ -8,12 +8,13 @@ They're committed because cloud sessions load a repo's `.claude/skills/` but no 
 
 Each patch is a paragraph starting with `**COMPIES:**` that points at the rules in `docs/agents/`. The rules live there; a patch stays a pointer. `grep -rn "COMPIES:" .claude/skills` lists them:
 
-- `code-review`: both sub-agents on `sonnet`, each in its own worktree
+- `code-review`: both sub-agents on `sonnet` at high effort, each in its own worktree
 - `implement-spec`: subagent rules, frontier tickets only, integration branch from and into `staging` (where `Closes #n` closes nothing), clean merges by the orchestrator, delivery, the 300k context limit with its handoff, the Release review in place of `code-review`, the worktree cleanup
 - `implement`: delivery
-- `implement-spec-max`: a copy of the patched `implement-spec` whose one extra paragraph, `**COMPIES (max):**`, puts every subagent on `opus` at `effort: "high"`. A change to `implement-spec` is mirrored here: `diff .claude/skills/implement-spec/SKILL.md .claude/skills/implement-spec-max/SKILL.md` shows only the name, the description and that paragraph.
-- `grill-with-docs`, `to-spec`, `to-tickets`: design hand-off flags and tickets; migration numbers, ADR citations, changelog groups and site counts come from the repo (retro 0.10)
+- `implement-spec-max`: a copy of the patched `implement-spec` whose extra paragraph, `**COMPIES (max):**`, and closing section, `## Model tiers`, put every subagent on `fable`, or on `opus` or `sonnet` at `effort: "high"`, by how hard its task is. A change to `implement-spec` is mirrored here: `diff .claude/skills/implement-spec/SKILL.md .claude/skills/implement-spec-max/SKILL.md` shows only the name, the description, that paragraph and that section.
+- `grill-with-docs`, `to-spec`, `to-tickets`: design hand-off flags and tickets; migration numbers, ADR citations, changelog groups and site counts come from the repo (retro 0.10); `to-tickets` also cuts finer tickets and writes a human sweep as a joint session
 - `handoff`: names the subagents still running
+- `retro`: the two kinds of finding the user declined in the 0.10 retro
 
 ## Updating to a new release
 
