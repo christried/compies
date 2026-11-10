@@ -1,4 +1,4 @@
-import { drawGameKnown, settleAt, windowEnded } from '~~/shared/draw-timeline'
+import { settleAt, stopReached, windowEnded } from '~~/shared/draw-timeline'
 import type { EventView } from '~~/shared/event'
 import { msOf } from '~~/shared/instant'
 
@@ -30,7 +30,7 @@ export function waitsForSettle(view: Pick<EventView, 'wheel'>, nowMs: number): b
   const wheel = view.wheel
   if (!wheel) return false
   const spin = wheel.spin
-  if (spin && drawGameKnown({ isHost: false, draw: spin, now: nowMs }) && spin.game === null) return true
+  if (spin && stopReached(spin, nowMs) && spin.game === null) return true
   const draw = wheel.vetoes.draw
   return draw !== null && windowEnded(draw, nowMs) && wheel.vetoes.revealed === null
 }

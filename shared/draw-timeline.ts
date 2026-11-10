@@ -40,7 +40,16 @@ export function drawInstants({ kind, commitAt, windowOpens }: NewDraw): DrawInst
  * nothing more: this is the only thing of the pool it ever shows. The SQL side is `stoppedDraws`.
  */
 export function drawGameKnown({ isHost, draw, now }: { isHost: boolean, draw: { stopAt: Instant }, now: Instant }): boolean {
-  return isHost || msOf(draw.stopAt) <= msOf(now)
+  return isHost || stopReached(draw, now)
+}
+
+/**
+ * READER. The draw's stop has been reached: `stopAt <= now`, inclusive. The same edge `drawGameKnown` has for a non-Host, for the
+ * client's own checks (the wheel has stopped, the read must carry the game): a copy of this comparison next to a component is the
+ * `<` that leaks (CODING_STANDARDS.md § Secrecy).
+ */
+export function stopReached(draw: { stopAt: Instant }, now: Instant): boolean {
+  return msOf(draw.stopAt) <= msOf(now)
 }
 
 /** READER. The window is open for casts: from the stop (inclusive) to its end (exclusive). A draw without a window never is. */
@@ -96,4 +105,9 @@ export function clipWindow(draw: { stopAt: Instant }, game: { clipLength: number
 export function clipRunning(clip: { startAt: Instant, endsAt: Instant }, now: Instant): boolean {
   const at = msOf(now)
   return msOf(clip.startAt) <= at && at < msOf(clip.endsAt)
+}
+
+/** CLIP. The clip has ended: from its end on, inclusive (the overlay closes at `endsAt` itself). Before its start it is neither running nor ended. */
+export function clipEnded(clip: { endsAt: Instant }, now: Instant): boolean {
+  return msOf(clip.endsAt) <= msOf(now)
 }

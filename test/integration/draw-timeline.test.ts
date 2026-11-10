@@ -1,6 +1,7 @@
 import { and, eq, exists, sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { draws, events, games, rounds, users } from '../../server/db/schema'
+import { activity, draws, events, games, rounds, users } from '../../server/db/schema'
+import { readActivityPage } from '../../server/utils/activity'
 import { dueDraws, stoppedDraws } from '../../server/utils/draw-timeline'
 import { drawGameKnown, drawInstants, isDue, settleAt } from '../../shared/draw-timeline'
 import { createTestDb } from './harness'
@@ -101,6 +102,23 @@ describe('the SQL twins agree with the JS predicates (#414)', () => {
         if (hit) known.push(row.id)
       }
       expect(known.sort(), `known at ${now.toISOString()}`).toEqual(ids(stored.filter(row => drawGameKnown({ isHost: false, draw: row, now }))))
+    }
+  })
+})
+
+describe('the Activity feed keeps the timeline\'s stop edge (#413)', () => {
+  // readActivityPage gates a `game_drawn` entry with its own `lte(activity.at, now)` (server/utils/activity.ts), not with
+  // `stoppedDraws`; this pins that comparison to `drawGameKnown` for a non-Host, so the two cannot drift apart.
+  it('shows a game_drawn entry, and names its game, from the stop on and not one ms before', async () => {
+    const draw = stored[0]!
+    await testDb.db.insert(activity).values({ eventId, type: 'game_drawn', actorId: null, params: { roundId: draw.roundId, drawId: draw.id, gameId: draw.gameId }, at: draw.stopAt })
+    for (const offset of [-1, 0, 1]) {
+      const now = new Date(draw.stopAt.getTime() + offset)
+      const page = await readActivityPage(testDb.db, eventId, undefined, 50, now)
+      const entry = page.entries.find(candidate => candidate.type === 'game_drawn')
+      const known = drawGameKnown({ isHost: false, draw, now })
+      expect(entry !== undefined, `entry listed at stop ${offset}`).toBe(known)
+      expect(entry !== undefined && Object.keys(entry.games).length > 0, `game named at stop ${offset}`).toBe(known)
     }
   })
 })
