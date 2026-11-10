@@ -76,8 +76,8 @@ export function useHostActions(
     /** The words of a rule's reason as a disabled action says them, or undefined while nothing refuses (reasonKey: app/utils/api-error.ts). */
     const reasonText = (rejection: ApiErrorCode | null, screen?: ReasonScreen) => (rejection === null ? undefined : t(reasonKey(rejection, screen)))
     const startReason = reasonText(state.startRejection)
-    const setReason = reasonText(state.setRejection, 'setGame')
-    const spinReason = reasonText(state.spinRejection, 'setGame')
+    const setReason = reasonText(state.setRejection)
+    const spinReason = reasonText(state.spinRejection)
     const lastGameReason = reasonText(state.lastGameRejection, 'lastGame')
     // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
     const coinReason = reasonText(coinRejectionAt(current, serverNow()))

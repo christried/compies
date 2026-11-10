@@ -17,7 +17,7 @@ export function apiFailure(failure: unknown): ApiFailure {
   return { status: error?.statusCode, code: error?.data?.statusMessage ?? error?.statusMessage, data: isRecord(data) ? data : undefined }
 }
 
-/** The shared words of every reason. `null` = no words on purpose: the caller's fallback shows (the ten codes at the end). The Record is total, so a new ApiErrorCode fails typecheck until it is worded or set to null here. */
+/** The shared words of every reason. `null` = no words on purpose: the caller's fallback shows (the nine codes at the end). The Record is total, so a new ApiErrorCode fails typecheck until it is worded or set to null here. */
 const SHARED: Record<ApiErrorCode, string | null> = {
   in_past: 'error.slotPast',
   slot_past: 'error.slotPast',
@@ -63,6 +63,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   host_only: 'board.reason.hostOnly',
   member_not_found: 'error.memberNotFound',
   already_there: 'board.reason.already',
+  no_such_team: 'error.noSuchTeam', // by a race only: the Host lowers the team count under an open board (#421)
   team_choice_closed: 'board.reason.pollLocked',
   teams_locked: 'board.reason.runningLocked',
   team_full: 'board.reason.full',
@@ -102,7 +103,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   ceremony_running: 'error.ceremonyRunning',
   round_not_open: 'error.roundNotOpen',
   invalid_result: 'error.resultInvalid',
-  // The ten codes without words, each an intended fallback to the caller's line (#417): none is reached by a normal click.
+  // The nine codes without words, each an intended fallback to the caller's line (#417): none is reached by a normal click.
   invalid_name: null, // create parser; the setup wizard validates the name first
   invalid_mode: null, // create parser; the wizard validates the date mode first
   invalid_slots: null, // create parser; the wizard validates the slots first
@@ -111,14 +112,11 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   invalid_settings: null, // the editor sends a complete draft
   wheel_options_without_wheel: null, // only a draft with wheel options in a mode without a wheel: a defensive refusal
   invalid_cursor: null, // the Activity feed's cursor is the id the client was given
-  no_such_team: null, // only by a race (the Host lowers the team count under an open board), then the generic line shows
   no_live_connection: null, // never copy: useEventRoom takes it as no live connection and polls
 }
 
 /** Words that differ from SHARED on one screen, as data. Each entry says where it shows. */
 const SCREENS = {
-  /** The dock's disabled reason of „Nächstes Spiel setzen“ and „Rad drehen“ only. The toast of a refused set/spin request keeps the shared words. */
-  setGame: { no_running_session: 'dock.setBlocked.no_running_session' },
   /** „Letztes Spiel hinzufügen“: its disabled reason and its toast (#278). */
   lastGame: { game_count_range: 'dock.lastGameBlocked.game_count_range' },
   /** „Event löschen“ (#333): its disabled reason and the toast of a refused delete. */
@@ -141,7 +139,7 @@ function words(code: string, screen?: ReasonScreen): string | null | undefined {
   return own[code as ApiErrorCode] ?? SHARED[code as ApiErrorCode] // undefined for a code the contract does not know
 }
 
-/** The i18n key of a rule's reason on a screen. A code without words answers 'error.saveFailed' (the ten nulls of SHARED). */
+/** The i18n key of a rule's reason on a screen. A code without words answers 'error.saveFailed' (the nine nulls of SHARED). */
 export function reasonKey(code: ApiErrorCode, screen?: ReasonScreen): string {
   return words(code, screen) ?? FALLBACK
 }
