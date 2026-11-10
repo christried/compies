@@ -113,12 +113,18 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-/* Light = hard shadow, dark = sticker rim, on the static `.cb-fig` group: no filter parameter is ever tweened. The head crop has none. */
+/* Light = hard shadow, dark = sticker rim, on the static `.cb-fig` group: no filter parameter is ever tweened. The head crop has none.
+   System twins under the dark media query (#402). */
 .compibert-rig {
   --cb-outline: var(--cb-hard);
 }
 [data-theme=dark] .compibert-rig {
   --cb-outline: var(--cb-sticker);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme=system] .compibert-rig {
+    --cb-outline: var(--cb-sticker);
+  }
 }
 .compibert-rig > svg {
   display: block;
@@ -139,5 +145,10 @@ onBeforeUnmount(() => {
 }
 [data-theme=dark] .compibert-rig--cheap {
   filter: none;
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme=system] .compibert-rig--cheap {
+    filter: none;
+  }
 }
 </style>

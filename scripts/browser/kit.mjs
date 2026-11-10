@@ -1,7 +1,7 @@
 // The COMPIES kit for browser checks (retro 1.4, split from the DevTools protocol in 0.6): the dev sign-in, JSON
 // requests with the account's cookie, the animation spy, the mouse and touch drag, the results log, and the helpers
 // the scenarios share (creating a game and an Event, joining by Invite link, a running Event with Results, clicking,
-// typing and pressing keys like a User, the theme, the settings switches, the stepper). The helpers the agents' own
+// typing and pressing keys like a User, the Appearance, the settings switches, the stepper). The helpers the agents' own
 // checks had copied from session to session in a temp folder live here since the 0.8 retro. The protocol itself
 // (launch, send/evaluate, resize, screenshot) is `chrome.mjs`.
 import { execFileSync } from 'node:child_process'
@@ -40,9 +40,11 @@ const HIDE_DEVTOOLS = `document.addEventListener('DOMContentLoaded', () => {
 /**
  * Signs in through the dev route as the tab's account and opens `path`, logging animations from the first frame on and
  * with the Nuxt devtools hidden. The dev sign-in marks the newest „Was ist neu“ seen, so its dialog never covers the
- * page; `news: true` leaves it unseen, to check the dialog itself.
+ * page; `news: true` leaves it unseen, to check the dialog itself. `appearance` (`'dark'`, `'system'`, `'light'`) sets the
+ * User's Appearance with the sign-in, light when absent (#401); `setup: true` signs in a User who has not set up yet
+ * (`name=unset`), for the setup page.
  */
-export async function open(tab, path, width, height, waitFor = 'body', { news = false } = {}) {
+export async function open(tab, path, width, height, waitFor = 'body', { news = false, appearance, setup = false } = {}) {
   await resize(tab, width, height)
   if (!tab.spying) {
     await tab.send('Page.addScriptToEvaluateOnNewDocument', { source: ANIMATION_SPY })
@@ -56,12 +58,37 @@ export async function open(tab, path, width, height, waitFor = 'body', { news = 
     await loaded(tab)
     tab.bypassed = true
   }
-  await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}` })
+  await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}${appearance ? `&appearance=${appearance}` : ''}${setup ? '&name=unset' : ''}` })
   await hydrated(tab, waitFor)
 }
 
+/**
+ * Opens `path` signed out the way a User gets there (#398: sign-out does not touch the Appearance cookie): signs in with
+ * `appearance`, loads a page (the server-side `GET /api/me` writes `compies-appearance` for Dunkel and System), signs
+ * out through the route the app's own button calls, and loads `path`. `plain` is a page without Nuxt (`/offline.html`).
+ * Returns how the sign-out went: `'route'`, or `'cookies'` when the route refused (on :3001 Better Auth may refuse the
+ * origin, `BETTER_AUTH_URL` is :3000) and every cookie but the Appearance's was deleted over the protocol instead.
+ */
+export async function openSignedOut(tab, path, width, height, waitFor = 'body', { appearance, plain = false } = {}) {
+  await open(tab, '/impressum', width, height, 'body', { appearance })
+  let how = 'route'
+  const { status } = await api(tab, 'POST', '/api/auth/sign-out', {})
+  if (status !== 200) {
+    how = 'cookies'
+    const { result } = await tab.send('Network.getCookies', { urls: [BASE] })
+    for (const cookie of result.cookies) {
+      if (cookie.name !== 'compies-appearance') await tab.send('Network.deleteCookies', { name: cookie.name, domain: cookie.domain, path: cookie.path })
+    }
+  }
+  await tab.send('Page.navigate', { url: `${BASE}${path}` })
+  await (plain ? loaded(tab) : hydrated(tab, waitFor))
+  const me = await api(tab, 'GET', '/api/me')
+  if (me.body?.user !== null) throw new Error(`${tab.account}: still signed in on ${path} after sign-out by ${how} (GET /api/me answered ${JSON.stringify(me.body)?.slice(0, 80)})`)
+  return how
+}
+
 /** Waits until the document has loaded (a plain page, no Nuxt). */
-async function loaded(tab) {
+export async function loaded(tab) {
   for (let i = 0; i < 40; i++) {
     await sleep(250)
     if (await tab.evaluate(`document.readyState === 'complete'`).catch(() => false)) return
@@ -140,19 +167,23 @@ const DEFAULT_SETTINGS = {
   poolPreview: true,
 }
 
-/** The Berlin wall-clock `YYYY-MM-DDTHH:mm` of 19:00, two weeks from now. */
-function inTwoWeeks() {
-  const day = new Date(Date.now() + 14 * 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' })
-  return `${day}T19:00`
+/** The Berlin wall-clock `YYYY-MM-DDTHH:mm` of `time` (default 19:00), `n` days from now. */
+export function inDays(n, time = '19:00') {
+  const day = new Date(Date.now() + n * 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' })
+  return `${day}T${time}`
 }
+
+const inTwoWeeks = () => inDays(14)
 
 /**
  * An Event of the tab's account (`POST /api/e`) with one direct Session: `settings` over the defaults, `pool` as
- * `[ids]`, `startsAt` as Berlin wall-clock `YYYY-MM-DDTHH:mm` (default: in two weeks).
+ * `[ids]`, `startsAt` as Berlin wall-clock `YYYY-MM-DDTHH:mm` (default: in two weeks). `slots` (an array of the same): a Date poll
+ * with those Slots for the one Session instead of the direct Date (#408).
  * Returns `{ slug, inviteUrl }`.
  */
-export async function createEvent(tab, { name, settings = {}, pool, startsAt = inTwoWeeks() }) {
-  const body = { name, sessions: 1, dateMode: 'direct', startsAt: [startsAt], settings: { ...DEFAULT_SETTINGS, ...settings }, ...(pool ? { pool } : {}) }
+export async function createEvent(tab, { name, settings = {}, pool, startsAt = inTwoWeeks(), slots }) {
+  const when = slots ? { dateMode: 'poll', slots } : { dateMode: 'direct', startsAt: [startsAt] }
+  const body = { name, sessions: 1, ...when, settings: { ...DEFAULT_SETTINGS, ...settings }, ...(pool ? { pool } : {}) }
   return ok(await api(tab, 'POST', '/api/e', body), 'POST /api/e')
 }
 
@@ -223,9 +254,6 @@ export const visibleButtons = tab => tab.evaluate(`${visible('button, a, [role=b
 /** @public For the agents' own checks (docs/agents/browser-frame.md). The `innerText` of the first element matching `selector`. */
 export const textOf = (tab, selector = 'body') => tab.evaluate(`document.querySelector(${JSON.stringify(selector)})?.innerText`)
 
-/** @public For the agents' own checks (docs/agents/browser-frame.md). Light or dark, as the theme switch sets it (`data-theme` on `<html>`). */
-export const theme = (tab, name) => tab.evaluate(`document.documentElement.setAttribute('data-theme', ${JSON.stringify(name)})`)
-
 /** The Event view the tab's account reads (`GET /api/e/:slug`). */
 export const eventView = (tab, slug) => ok(api(tab, 'GET', `/api/e/${slug}`), `GET /api/e/${slug}`)
 
@@ -247,12 +275,13 @@ export const enterResult = (host, slug, roundId, places) => ok(api(host, 'PUT', 
  * „<name> Spiel n“) and the Event; the other tabs join through its Invite link; each tab takes its own Party in order.
  * Then the first Session starts (unless `start` is false) and the first `set` pool games are set. `settings` go over a
  * Host pick with one person per Party and Points 5 : 0 (5 : 2 : 0 … for more Parties). Every tab must be signed in
- * (`open`). Returns `{ slug, games, roundIds }`.
+ * (`open`). `pool`: games of the library that exist already (their GameViews); none is created, `games` is then `pool.length` (#408:
+ * a check that makes many Events must not fill the library). Returns `{ slug, games, roundIds }`.
  */
-export async function runningEvent(tabs, { name, games = 5, gameNames = [], settings = {}, start = true, set = 0 }) {
+export async function runningEvent(tabs, { name, games = 5, gameNames = [], settings = {}, start = true, set = 0, pool: given }) {
   const [host, ...others] = tabs
-  const pool = []
-  for (let i = 0; i < games; i++) pool.push(await createGame(host, { name: gameNames[i] ?? `${name} Spiel ${i + 1}`, playersMin: 1, playersMax: 8 }))
+  const pool = given ? [...given] : []
+  for (let i = 0; i < (given ? 0 : games); i++) pool.push(await createGame(host, { name: gameNames[i] ?? `${name} Spiel ${i + 1}`, playersMin: 1, playersMax: 8 }))
   const values = tabs.length === 2 ? [5, 0] : [5, 2, ...Array.from({ length: tabs.length - 2 }, () => 0)]
   const { slug } = await createEvent(host, {
     name,
@@ -275,13 +304,13 @@ export async function runningEvent(tabs, { name, games = 5, gameNames = [], sett
  * A finished Event for a check (retro 0.9): `runningEvent` with `games` pool games, all set and with the Game count at
  * `games`, a Result for each that gives the `outcome`, and the Finish. `'winner'`: the first tab's Party wins every
  * Round. `'tie'`: the Parties take turns on Place 1, so `games` is rounded up to a multiple of the Party count and
- * every Party ends on the same points. Each 0.9 check rebuilt this by hand; on staging the same requests run as one
+ * every Party ends on the same points. `pool` (library games as `runningEvent` takes them) is the count then: pass a multiple of the Parties (#408). Each 0.9 check rebuilt this by hand; on staging the same requests run as one
  * `javascript_tool` call per account (`docs/agents/delivery.md` § Issues). Returns `{ slug, games, roundIds, winners }`.
  */
-export async function finishedEvent(tabs, { name, outcome = 'winner', games = tabs.length, settings = {} }) {
+export async function finishedEvent(tabs, { name, outcome = 'winner', games = tabs.length, settings = {}, pool }) {
   const teams = tabs.map((_, index) => index + 1)
-  const count = outcome === 'tie' ? Math.ceil(games / teams.length) * teams.length : games
-  const event = await runningEvent(tabs, { name, games: count, settings: { gameCount: count, ...settings }, set: count })
+  const count = pool ? pool.length : outcome === 'tie' ? Math.ceil(games / teams.length) * teams.length : games
+  const event = await runningEvent(tabs, { name, games: count, settings: { gameCount: count, ...settings }, set: count, pool })
   const [host] = tabs
   for (const [index, roundId] of event.roundIds.entries()) {
     const order = outcome === 'tie' ? teams.map((_, i) => teams[(i + index) % teams.length]) : teams

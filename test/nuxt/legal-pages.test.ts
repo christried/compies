@@ -83,7 +83,7 @@ describe('legal pages', () => {
     expect(events!.text()).toContain('Ist ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.')
   })
 
-  it('say what deleting an Event means: unreachable for every Member at once, data kept until removed on request, no automatic purge, and the new Stand (#334, spec #332)', async () => {
+  it('say what deleting an Event means: unreachable for every Member at once, data kept until removed on request, no automatic purge (#334, spec #332)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const sections = page.findAll('section')
     const events = sections.find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
@@ -92,8 +92,41 @@ describe('legal pages', () => {
     expect(events!.text()).toContain('Der Host kann ein Event jederzeit löschen, nur nicht, solange eine Session läuft. Ein gelöschtes Event ist für alle Mitglieder sofort nicht mehr erreichbar: nicht auf der Startseite, nicht über den Link zum Event und nicht über den Einladungslink. Dort steht dann nur, dass das Event gelöscht wurde.')
     expect(retention!.text()).toContain('Die Daten eines gelöschten Events bleiben zunächst gespeichert, als gelöscht markiert, aber in Compies für niemanden mehr abrufbar. Auf Anfrage an die unter Abschnitt 1 genannte Adresse entfernen wir sie aus der Datenbank. Eine automatische Löschung gibt es nicht.')
     expect(retention!.text()).toContain('bleiben gespeichert, solange das Event besteht.')
+  })
+
+  it('name the Appearance stored with the User and the changeable Display name in section 6 (#405, spec #398)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const section = page.findAll('section').find(s => s.get('h2').text() === '6. Anmeldung über Discord oder Twitch und Anzeigename')
+
+    expect(section).toBeDefined()
+    expect(section!.text()).toContain('Du kannst deinen Anzeigenamen jederzeit auf der Seite „Profil“ ändern. Der neue Name erscheint überall in Compies, auch in dem, was schon geschehen ist, etwa im Aktivitäts-Feed und in den Ergebnissen; einen früheren Anzeigenamen speichern wir nicht.')
+    expect(section!.text()).toContain('Ebenso speichern wir zu deinem Nutzerkonto deine Darstellung: Hell, Dunkel oder System (System folgt der Einstellung deines Geräts). Du wählst sie auf der Seite „Profil“; solange du nichts wählst, ist es Hell. Die Wahl gilt auf jedem Gerät, auf dem du dich anmeldest. Wie ein Gerät sie für Seiten ohne Anmeldung behält, steht in Abschnitt 9.')
+    expect(section!.findAll('p')).toHaveLength(7)
+  })
+
+  it('name the compies-appearance cookie in section 9 and move the Stand (#405, spec #398)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const section = page.findAll('section').find(s => s.get('h2').text() === '9. Cookies und Speicher im Browser')
+
+    expect(section).toBeDefined()
+    const text = section!.text()
+    const cookie = 'Cookie (compies-appearance): merkt sich auf diesem Gerät deine Darstellung, damit auch die Seiten ohne Anmeldung, etwa die Anmeldeseite, so aussehen, wie du es gewählt hast. Es enthält nur deine Wahl („dark“ oder „system“), keine Kennung und keine Angaben zu dir. Compies setzt es nur, wenn deine Darstellung Dunkel oder System ist: sobald du sie in deinem Profil so wählst und, auf einem anderen Gerät, sobald du dich dort anmeldest. Wählst du Hell, wird es entfernt. Es läuft nach einem Jahr ab. Für diese Einstellung, die du selbst gewählt hast, ist es technisch notwendig; eine Einwilligung ist dafür nicht nötig, deshalb fragen wir sie nicht ab.'
+    expect(text).toContain(cookie)
+    expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeGreaterThanOrEqual(0)
+    expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
+    expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
+    expect(section!.findAll('p')).toHaveLength(8)
+    // The one place the date is pinned: the day of the change, 9 November 2026.
     expect(page.get('main').text()).toContain('Stand: 9. November 2026.')
-    expect(page.get('main').text()).not.toContain('Stand: 8. November 2026.')
+  })
+
+  it('keep the Datenschutzerklärung\'s sections in order: the unnumbered intro, then 1 to 22 (#405)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const [intro, ...numbered] = page.findAll('section h2').map(h => h.text())
+
+    expect(intro).toBe('Worum es geht')
+    expect(numbered).toHaveLength(22)
+    numbered.forEach((heading, index) => expect(heading.startsWith(`${index + 1}. `)).toBe(true))
   })
 
   it('name the live connection to Cloudflare Workers, since the browser connects there itself (#156)', async () => {

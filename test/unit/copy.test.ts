@@ -54,13 +54,9 @@ describe('copy rules', () => {
     expect(hits).toEqual([])
   })
 
-  it('names no design cookie while the app is light only', () => {
+  it('never brings back the old nuxt-color-mode cookie', () => {
     const hits = entries.filter(e => /nuxt-color-mode|design-cookie/i.test(e.value)).map(e => e.key)
     expect(hits).toEqual([])
-  })
-
-  it('ships the offline page light only, whatever the system uses', () => {
-    expect(offlinePage).not.toMatch(/prefers-color-scheme:\s*dark/)
   })
 
   // The contact address (#221): the only email address in the copy is the operator's contact address on
@@ -124,6 +120,7 @@ const RETIRED: Record<string, string> = {
   'Admin-Wahl': 'Host-Wahl',
   'Passende Formate': 'Passt zu',
   'Tiebreaker': 'Unentschieden',
+  'Lobby': 'Event',
 }
 
 // The changelog lines that announce a removal name the removed feature by its old word, so they are the one place a retired word may stay: the

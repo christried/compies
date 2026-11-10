@@ -59,7 +59,6 @@ onMounted(() => {
             </template>
             {{ cta.label }}
           </AppButton>
-          <slot name="secondary" />
         </div>
       </div>
     </div>

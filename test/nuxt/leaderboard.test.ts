@@ -473,6 +473,15 @@ describe('the Standings in motion (#276)', () => {
       expect(options).toMatchObject({ duration: 480, delay: 520, easing: SNAP, fill: 'backwards' })
     })
 
+    it('draws the stamp with tokens: the yellow sticker, a border and ink that follow the Appearance (#406)', async () => {
+      await mount({ standings: BEFORE, celebrate: true, framed: true })
+
+      await receives(newsOf())
+
+      expect(stamps()).toHaveLength(1)
+      expect(stamps()[0]!.classes()).toEqual(expect.arrayContaining(['bg-primary', 'border-line', 'text-on-primary']))
+    })
+
     it('says „Spiel 2 gewonnen“ for a Correction', async () => {
       await mount({ standings: BEFORE, celebrate: true, framed: true })
 

@@ -7,9 +7,10 @@ Files: `tokens/compies-tokens.css` (all CSS variables, framework-agnostic) and `
 @import "./compies-theme.css";
 ```
 ```html
-<html lang="de" data-theme="light|dark" data-motion="full|reduced">
+<html lang="de" data-theme="light|dark|system" data-motion="full|reduced">
 ```
-- **Mode:** light only for now. The app ignores `prefers-color-scheme` and stores no theme cookie; nothing sets `data-theme="dark"`, so the light tokens apply everywhere. Later (#43): the user's choice (Hell / Dunkel / System) from settings, persisted in a cookie so SSR renders the right theme, with the dark token set kept in the CSS until then.
+- **Mode:** `data-theme` on `<html>`: `light` (or none) draws the light set, `dark` the dark set, `system` the dark set only under `@media (prefers-color-scheme: dark)`, with no script (#402). Every `[data-theme=dark]` rule has a `[data-theme=system]` twin under that media query, the dark token block included; `test/unit/system-appearance.test.ts` keeps the copies equal. The server renders the attribute from the User's Appearance (Hell / Dunkel / System, #398).
+- **Cookie:** `compies-appearance` mirrors the signed-in User's Appearance for the signed-out pages and exists only for Dunkel and System (`dark` or `system`, never `light`): the server sets it from the Appearance route and `GET /api/me`, removes it for Hell, and a page without a User renders it (#403).
 - **Motion:** `data-motion="reduced"` from the in-app toggle; the OS setting is covered by `@media (prefers-reduced-motion)` inside the token file. JS reads `getComputedStyle(document.documentElement).getPropertyValue('--cp-motion')` → `full | reduced`. Tailwind variant: `reduced:`.
 - **Fonts** (self-host in production): Lilita One 400 (display + timers), Bricolage Grotesque 400–800 with optical sizing (UI), Bungee 400 (scores), JetBrains Mono 500/700 (codes, links).
 

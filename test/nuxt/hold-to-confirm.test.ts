@@ -120,6 +120,19 @@ describe('HoldToConfirmButton', () => {
     expect(action).toHaveBeenCalledOnce()
   })
 
+  it.each([
+    ['hot', ['bg-hot', 'text-on-hot'], ['bg-primary', 'bg-surface', 'text-ink']],
+    ['primary', ['bg-primary', 'text-on-primary'], ['bg-hot', 'bg-surface', 'text-ink']],
+    ['secondary', ['bg-surface', 'text-ink'], ['bg-hot', 'bg-primary', 'text-on-hot', 'text-on-primary']],
+  ] as const)('colours the %s variant with its own background and a label that reads on it (#406)', async (variant, has, hasNot) => {
+    // `text-ink` (cream on Dunkel) on the hot orange is 2.72:1 at rest; `text-on-hot` is 5.93:1 and 6.65:1 on the 14 % hover.
+    const page = await mountSuspended(HoldToConfirmButton, { props: { label: 'Erneuern', variant } })
+
+    const classes = page.get('button').classes()
+    for (const name of has) expect(classes).toContain(name)
+    for (const name of hasNot) expect(classes).not.toContain(name)
+  })
+
   it('does not respond while disabled, and says why', async () => {
     const page = await mountSuspended(HoldToConfirmButton, {
       props: { label: 'Erneuern', disabled: true, disabledReason: 'Nur der Host' },

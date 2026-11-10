@@ -108,6 +108,14 @@ describe('Neuigkeiten', () => {
     vi.unstubAllGlobals()
   })
 
+  it('draws the copy-link icon in the on-primary colour wherever the button fills with primary (#431 class)', async () => {
+    // Hover and focus fill the button with the primary yellow; the base `text-ink` is cream on it in Dunkel (1.26:1).
+    const page = await mountSuspended(NeuigkeitenPage, { route: '/neuigkeiten' })
+
+    const button = page.get('button[aria-label="Link zu Version 1.1.0 kopieren"]')
+    expect(button.classes()).toEqual(expect.arrayContaining(['hover:bg-primary', 'hover:text-on-primary', 'focus-visible:bg-primary', 'focus-visible:text-on-primary']))
+  })
+
   it('jumps from the rail to a Release and marks it as the one in view', async () => {
     const page = await mountSuspended(NeuigkeitenPage, { route: '/neuigkeiten', attachTo: document.body })
     const rail = page.findAll('nav[aria-label="Versionen"]').find(nav => nav.text().startsWith('Versionen'))!

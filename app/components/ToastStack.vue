@@ -7,6 +7,8 @@ import { X } from '@lucide/vue'
 const { toasts, dismiss } = useToast()
 const { docked } = useHostDock()
 const { t } = useI18n()
+// A ring drawn inside the error toast lies on its fill, where Dunkel's --cp-focus is 1.48:1 (#409); --cp-on-error pairs with the fill (5.93:1). Hell keeps the ring it has.
+const RING_ON_ERROR = 'dark:focus-visible:outline-on-error'
 
 function run(toast: { id: number, action?: { run: () => void } }) {
   toast.action?.run()
@@ -31,6 +33,7 @@ function run(toast: { id: number, action?: { run: () => void } }) {
         v-if="toast.action"
         type="button"
         class="hit-44 font-extrabold underline"
+        :class="toast.tone === 'error' && RING_ON_ERROR"
         @click="run(toast)"
       >
         {{ toast.action.label }}
@@ -38,6 +41,7 @@ function run(toast: { id: number, action?: { run: () => void } }) {
       <button
         type="button"
         class="hit-44 grid place-items-center"
+        :class="toast.tone === 'error' && RING_ON_ERROR"
         :aria-label="t('common.close')"
         @click="dismiss(toast.id)"
       >

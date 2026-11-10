@@ -82,6 +82,12 @@ watch(() => props.accessory, (now, before) => {
 [data-theme=dark] .compibert {
   --cb-outline: var(--cb-sticker);
 }
+/* System twin under the dark media query (#402). */
+@media (prefers-color-scheme: dark) {
+  [data-theme=system] .compibert {
+    --cb-outline: var(--cb-sticker);
+  }
+}
 .compibert > svg {
   display: block;
   overflow: inherit;

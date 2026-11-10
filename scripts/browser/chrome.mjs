@@ -104,6 +104,11 @@ export async function resize(tab, width, height) {
   await tab.send('Emulation.setTouchEmulationEnabled', { enabled: width < 600 })
 }
 
+/** The device's colour scheme (`prefers-color-scheme`): `'dark'` or `'light'`, for every page the tab opens until it is set again. */
+export async function colorScheme(tab, value) {
+  await tab.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value }] })
+}
+
 /** A PNG of the element matching `selector` (or of the viewport) in `dir`; returns its path. */
 export async function shot(tab, name, selector, dir = OUT) {
   let clip

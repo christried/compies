@@ -4,7 +4,7 @@
 import type { AuthUser } from '~~/shared/auth'
 
 /** Hub areas still under construction; HubNav marks them with the tape chip. */
-export const HUB_SITES = ['archiv', 'profil', 'admin'] as const
+export const HUB_SITES = ['archiv', 'admin'] as const
 
 export type HubSite = typeof HUB_SITES[number]
 export type ConstructionArea = HubSite | 'generic'

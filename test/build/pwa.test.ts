@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -30,6 +30,19 @@ describe('PWA build', () => {
     expect(sw).toMatch(/url:\s*"offline\.html"/)
     expect(sw).toContain('/offline.html')
     expect(existsSync(resolve(PUBLIC, 'offline.html'))).toBe(true)
+  })
+
+  it('ships the offline page with its dark block, so it follows the device (#402)', () => {
+    const page = read('offline.html')
+
+    expect(page).toMatch(/@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root\s*\{[^}]*color-scheme:\s*dark;[^}]*--paper:\s*#17121d/)
+  })
+
+  // The production build minifies with lightningcss: the System twin of the dark tokens must survive it, inside its media query (#402).
+  it('keeps the System twin of the dark tokens in the minified app stylesheet (#402)', () => {
+    const styles = readdirSync(resolve(PUBLIC, '_nuxt')).filter(file => file.endsWith('.css')).map(file => read(`_nuxt/${file}`))
+
+    expect(styles.some(css => /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{[^@]*?\[data-theme="?system"?\]\s*\{[^}]*--cp-paper:\s*#17121d/.test(css))).toBe(true)
   })
 
   it('never caches API responses or the build manifest, and sends no push', () => {

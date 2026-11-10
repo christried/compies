@@ -66,6 +66,60 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
     expect(later.user).toMatchObject({ newsSeen: null })
   })
 
+  // `?name=unset` stores no Display name, the one way to see Profile setup (#407): on the first sign-in and on one
+  // after a plain sign-in. A plain sign-in afterwards puts the dev name back, where there is none.
+  it('stores no Display name with `?name=unset`, on the first sign-in and on a later one', async () => {
+    const { db } = await createTestDb()
+    const first = await signInAs('?as=admin&name=unset', db)
+    expect(first.user).toMatchObject({ displayName: null })
+
+    await signInAs('?as=admin', db)
+    const later = await signInAs('?as=admin&name=unset', db)
+    expect(later.user).toMatchObject({ displayName: null })
+  })
+
+  it('puts the dev name back on a plain sign-in after `?name=unset`', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=admin&name=unset', db)
+
+    const { user } = await signInAs('?as=admin', db)
+
+    expect(user).toMatchObject({ displayName: 'Dev Admin' })
+  })
+
+  // A dev User renamed on the Profil page keeps the name: the sign-in sets it only where there is none (#398).
+  it('keeps a Display name the User changed over a plain sign-in', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=host', db)
+    await db.update(users).set({ displayName: 'Renamed' }).where(eq(users.email, 'host@dev.compies.invalid'))
+
+    const { user } = await signInAs('?as=host', db)
+
+    expect(user).toMatchObject({ displayName: 'Renamed' })
+  })
+
+  // `?appearance=` sets the dev User's Appearance on every sign-in, light without it, so a check starts from a known look (#401).
+  it.each(['dark', 'system'])('sets the Appearance to %s with `?appearance=`', async (appearance) => {
+    const { user } = await signInAs(`?as=host&appearance=${appearance}`)
+
+    expect(user).toMatchObject({ appearance })
+  })
+
+  it('resets the Appearance to light on a later sign-in without `?appearance=`', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=host&appearance=dark', db)
+
+    const { user } = await signInAs('?as=host', db)
+
+    expect(user).toMatchObject({ appearance: 'light' })
+  })
+
+  it('signs in light with an Appearance that is none', async () => {
+    const { user } = await signInAs('?as=host&appearance=sepia')
+
+    expect(user).toMatchObject({ appearance: 'light' })
+  })
+
   it('lands on Home for a `to` outside the app', async () => {
     for (const to of ['https://example.org', '//example.org']) {
       const { response } = await signInAs(`?to=${encodeURIComponent(to)}`)
