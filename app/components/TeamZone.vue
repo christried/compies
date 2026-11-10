@@ -81,7 +81,7 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
           role="img"
           :aria-label="t(lockLabel === 'locked' ? 'board.lockedAria' : 'board.closedAria', { reason: lockReason })"
           :title="lockReason"
-          class="flex w-12 flex-col items-center gap-1 pt-1 text-[12px] font-semibold text-ink-3 md:w-[60px]"
+          class="flex w-12 flex-col items-center gap-1 pt-1 text-[12px] font-semibold text-ink-3 dark:text-ink-2 md:w-[60px]"
         >
           <span class="grid size-9 place-items-center rounded-pill border-[2.5px] border-dashed border-ink-3 md:size-11">
             <AppIcon
