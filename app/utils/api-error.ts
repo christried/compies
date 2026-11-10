@@ -117,8 +117,6 @@ const SHARED: Record<ApiErrorCode, string | null> = {
 
 /** Words that differ from SHARED on one screen, as data. Each entry says where it shows. */
 const SCREENS = {
-  /** The dock's disabled reason of „Nächstes Spiel setzen“ and „Rad drehen“ only. The toast of a refused set/spin request keeps the shared words. */
-  setGame: { no_running_session: 'dock.setBlocked.no_running_session' },
   /** „Letztes Spiel hinzufügen“: its disabled reason and its toast (#278). */
   lastGame: { game_count_range: 'dock.lastGameBlocked.game_count_range' },
   /** „Event löschen“ (#333): its disabled reason and the toast of a refused delete. */

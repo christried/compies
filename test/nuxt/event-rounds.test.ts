@@ -532,6 +532,8 @@ describe('„Nächstes Spiel setzen“', () => {
   it.each([
     ['game_count_reached', 'Alle Spiele dieses Events sind schon gestartet.'],
     ['round_being_drawn', 'Gerade wird ein Spiel gezogen.'],
+    // The toast's sentence, the one wording of this reason (#421).
+    ['no_running_session', 'Es läuft gerade keine Session.'],
   ] as const)('says %s in words', async (rejection, text) => {
     const { slug } = serveHostPick({ rejection, spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null })
     const stage = await mount(slug)
@@ -733,6 +735,15 @@ describe('the Lucky Wheel on the stage (#229)', () => {
 
     expect(shownToasts().map(toast => toast.text)).toEqual(['Auf dem Rad ist kein Spiel mehr. Mit „Nächstes Spiel setzen“ kannst du eines aus der Bibliothek setzen.'])
     expect(posted).toBe(0)
+  })
+
+  it('says no_running_session on the spin in the toast\'s words (#421)', async () => {
+    const { slug } = serveWheel({ host: true, setGame: { rejection: 'no_running_session', spinRejection: 'no_running_session', respin: false, left: [], poolWarning: null } })
+    const stage = await mount(slug)
+
+    const action = stage.findAll('[role="toolbar"] button')[0]!
+    expect(action.text()).toBe('Rad drehen')
+    expect(stage.get(`#${action.attributes('aria-describedby')}`).text()).toBe('Es läuft gerade keine Session.')
   })
 
   it('keeps Nächstes Spiel setzen in Mehr', async () => {
