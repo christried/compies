@@ -86,7 +86,7 @@ export interface PoolGame {
   playersMax: number | null
   /** The Suitabilities, in SUITABILITIES order; empty when none is set (#171). */
   suitabilities: Suitability[]
-  /** Game notes (#223); null = none. In a pool only the Host reads them (#224). */
+  /** Game notes (#223); null = none. In a pool only the Host reads them (#224); the Host's `hostGames` carries them for every game a tile shows (#443). */
   notes: string | null
   /** The game's Price (#337, #338); null when it has none. It travels with the name: wherever a Member may know the game's name they get it too. */
   price: GamePrice | null
@@ -115,11 +115,17 @@ export interface GameTag {
   label: string
 }
 
+/** What the Host's game dialog shows of a game beyond what its tile's game carries (#443). Only the Host's read has it. */
+export interface HostGameFacts { tags: GameTag[], notes: string | null }
+
+/** The game a tile and its dialog are given: the face, and the player count and Suitabilities where the read carries them (the Host's pool game, a RoundGame). */
+export type DialogGame = PoolGameFace & Partial<Pick<PoolGame, 'playersMin' | 'playersMax' | 'suitabilities'>>
+
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
 export interface GameView extends PoolGame {
   /**
-   * The game's Tags in the order the editor sent them (#335). Only the library carries them: PoolGame, PoolGameFace and
-   * RoundGame do not, so no Event read, feed entry or message can name one.
+   * The game's Tags in the order the editor sent them (#335). Only the library and the Host's `hostGames` (#443) carry them: PoolGame,
+   * PoolGameFace and RoundGame do not, so no Member's Event read, feed entry or message can name one.
    */
   tags: GameTag[]
   /** `name` is the display name if the User set one, like Event members. */
