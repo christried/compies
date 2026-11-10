@@ -132,8 +132,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       // 10. The Host starts the Session, sets a game that is in no pool and puts it back (event.changed, activity.added), then ends
       // the Session. That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
-      const e = await newGame('Epsilon Eck', 'eeeeeeeeeee')
-      const roundId = await hostSets(stage(), { slug, host: hostSigned }, e.id)
+      const epsilon = await newGame('Epsilon Eck', 'eeeeeeeeeee')
+      const roundId = await hostSets(stage(), { slug, host: hostSigned }, epsilon.id)
       await hostPutsBack(stage(), { slug, host: hostSigned }, roundId)
       // A library game that stays open: its Round gets its Result once the Session has ended (#273, between Sessions).
       const f = await newGame('Foxtrot Fest', 'fffffffffff')

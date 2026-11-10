@@ -165,7 +165,7 @@ export async function sweepGets(request: TestRequest, { viewers, event, games }:
   const swept: SweptRoute[] = []
   for (const { route, params } of getRoutes()) {
     let combinations: Record<string, string>[] = [{}]
-    for (const param of params) combinations = combinations.flatMap(so => valuesOf(param).map(value => ({ ...so, [param]: value })))
+    for (const param of params) combinations = combinations.flatMap(partial => valuesOf(param).map(value => ({ ...partial, [param]: value })))
     for (const filled of combinations) {
       const many = params.filter(param => valuesOf(param).length > 1)
       const path = Object.entries(filled).reduce((made, [param, value]) => made.replace(`:${param}`, value), route) + (QUERIES[route] ?? '')
@@ -272,7 +272,7 @@ export function hiddenWheelWorld() {
    * over HTTP with an image, so the builder stays here (#418).
    */
   async function runningEvent(settings: Record<string, unknown> = LOBBY, extraGames = 0) {
-    const [a, b, c, e] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
+    const [a, b, c, epsilon] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
     // More games for the Game pool, for a test that needs a wheel with many slices.
     const more = await Promise.all(Array.from({ length: extraGames }, (_, index) => newGame(`Zusatz ${index}`, `zzzzzzzzzz${index}`)))
     const created = await hostCreatesEvent(stage(), hostSigned, { sessions: 1, slots: ['2090-10-30T20:30'], settings, pool: [a.id, b.id, ...more.map(game => game.id)] })
@@ -281,7 +281,7 @@ export function hiddenWheelWorld() {
     await startRunningSession(stage(), { slug: created.slug, host: hostSigned }, [playerSigned, secondSigned])
     notifier.clear()
     const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, created.slug))
-    return { slug: created.slug, eventId: eventRow!.id, inviteToken: created.inviteToken, a, b, c, e, more, secondCookie: secondSigned.cookie }
+    return { slug: created.slug, eventId: eventRow!.id, inviteToken: created.inviteToken, a, b, c, epsilon, more, secondCookie: secondSigned.cookie }
   }
 
   const imageStatus = async (secret: Secret) => (await request(secret.imageUrl, { headers: { cookie: playerSigned.cookie } })).status
