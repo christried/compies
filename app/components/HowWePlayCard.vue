@@ -2,7 +2,7 @@
 import { EyeOff, Lock, Pencil } from '@lucide/vue'
 import { GAME_GRID } from '~/utils/game-grid'
 import { summaryRows } from '~/utils/settings-summary'
-import type { PoolGame, PoolGameFace } from '~~/shared/game'
+import type { HostGameFacts, PoolGame, PoolGameFace } from '~~/shared/game'
 import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/settings'
 
 // „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl (with the Vetos
@@ -10,7 +10,7 @@ import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/setti
 // decided this viewer may see (canSeePoolGames): the games, or null: nothing about the pool, not even how many (#222, #225).
 // This component shows what it is given and never asks for more. The Host gets the games with the Pool preview off or under
 // a Hidden wheel too, with a note that nobody else sees them. A Member's games come as picture and name; the Host's come
-// whole. Both show as tiles of picture and name (#435): the Host's Notes come back with the game dialog (#443). The pool shows
+// whole. Both show as tiles of picture and name (#435); the Host's tile opens the game dialog with its Tags and Notes from `hostGames` (#443), a Member's stays plain until #444. The pool shows
 // what the game carries, so no second check of who looks. The Host can edit the settings for
 // as long as the Event allows (`editTo` is the settings page, null when they cannot). From the first Session on, the rows
 // of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry a lock, for Members too.
@@ -24,7 +24,9 @@ const props = withDefaults(defineProps<{
   locked?: boolean
   /** The Host's name, for the Member who waits for the Event to be set up. */
   hostName?: string
-}>(), { editTo: null, locked: false, hostName: '' })
+  /** The Tags and Notes of the games, for the Host's game dialog (#443); null for every other Member. */
+  hostGames?: Record<string, HostGameFacts> | null
+}>(), { editTo: null, locked: false, hostName: '', hostGames: null })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -128,9 +130,10 @@ const rows = computed(() => (props.settings === null
                 v-for="game in pool"
                 :key="game.id"
               >
-                <GameCard
+                <GameTile
                   :game="game"
-                  layout="tile"
+                  :audience="isHost ? 'host' : 'member'"
+                  :facts="hostGames?.[game.id] ?? null"
                 />
               </li>
             </ul>

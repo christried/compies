@@ -199,8 +199,11 @@ export function pageFacts({ settings, sessions, missingDates, event }: Pick<Even
   return { ...common(kind), kind, running: null }
 }
 
-/** The state of the Event page: its facts and the blocks the Stage module lists for its kind. */
-export function eventPageState(input: PageInput): EventPageState {
+/**
+ * The state of the Event page: its facts and the blocks the Stage module lists for its kind, in the order of `now` (epoch ms, server time; the page's order clock, #441).
+ * null counts every moment: the server render, a hidden tab, a Host dock that only wants the facts.
+ */
+export function eventPageState(input: PageInput, now: number | null = null): EventPageState {
   const facts = pageFacts(input)
-  return { ...facts, blocks: stageBlocks(input, facts.kind) }
+  return { ...facts, blocks: stageBlocks(input, facts.kind, now) }
 }

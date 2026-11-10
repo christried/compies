@@ -3,7 +3,7 @@ import type { GameTag } from '../../shared/game'
 import { gameTags } from '../db/schema'
 import type { Db } from './db'
 
-// Tag persistence (#335, #365): the Tags a game carries, and the Tags in use. Only the Game library reads and writes them.
+// Tag persistence (#335, #365): the Tags a game carries, and the Tags in use. Only the Game library reads and writes them, and `readHostGameFacts` reads them for the Host's Event (#443).
 
 /** The Tags of the games `gameIds` (all games without it), each game's in position order (#335). A game without Tags is not in the map. */
 export async function loadTags(db: Db, gameIds?: string[]): Promise<Map<string, GameTag[]>> {

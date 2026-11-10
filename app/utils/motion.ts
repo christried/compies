@@ -70,6 +70,15 @@ export function fade(element: Element): void {
   element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: motionMs('--cp-dur-fast', '140ms'), easing: motionToken('--cp-ease-out', 'ease-out') })
 }
 
+/**
+ * What a stage block that rose gets under reduced motion instead of the glide (04-motion § UI enters: „Reduced: opacity only“, #441): a 0.14 s fade at its new place, held at 0
+ * until it starts. The caller decides whether it plays (reduced motion, a tab somebody watches): a hidden tab moves with no animation at all.
+ */
+export function riseFade(element: Element): void {
+  if (typeof element.animate !== 'function') return
+  element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: motionMs('--cp-dur-fast', '140ms'), easing: motionToken('--cp-ease-out', 'ease-out'), fill: 'backwards' })
+}
+
 // The Veto window (04-motion § Veto window, #231). Under reduced motion each of these is a 0.2 s fade at the same moment: no stagger, no delay (F10).
 // The Standings' pills and stamp (#276) follow the same rule.
 

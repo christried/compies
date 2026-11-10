@@ -3,8 +3,9 @@ import { flushPromises } from '@vue/test-utils'
 import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LuckyWheel from '~/components/LuckyWheel.vue'
-import { GAME_NAME_MAX, type RoundGame } from '~~/shared/game'
+import { GAME_NAME_MAX, type HostGameFacts, type RoundGame } from '~~/shared/game'
 import type { SpinView, WheelView } from '~~/shared/stage'
+import { kitty, signInAs } from './auth'
 import { stubInView } from './in-view'
 
 // The Lucky Wheel (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel): its rotation toward a fixed stop instant at a given
@@ -34,7 +35,7 @@ let serverMs = START - 1000
 const serverNow = vi.fn(() => serverMs)
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean } = {}) {
+async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean, hostGames?: Record<string, HostGameFacts> | null } = {}) {
   page = await mountSuspended(LuckyWheel, { props: { wheel, hidden: false, isHost: false, serverNow, ...props } })
   await flushPromises()
   return page
@@ -366,5 +367,54 @@ describe('a Hidden wheel', () => {
     await at(START + 3000)
 
     for (const name of ['Halo', 'Kart', 'Pong', 'Schach']) expect(text()).toContain(name)
+  })
+})
+
+// The Host's game dialog from the drawn game's tile (#443): the Tags and Notes come from `hostGames`; a Member's tile stays plain.
+describe('the drawn game\'s tile and its dialog (#443)', () => {
+  const hostGames = { 'g-halo': { tags: [{ key: 'koop', label: 'Koop' }, { key: 'retro', label: 'Retro' }], notes: 'Hausregel: keine Raketen' } }
+  const dialog = () => document.querySelector('[role="dialog"]') as HTMLElement | null
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    // The link to the library entry is for a Host who may see the library.
+    signInAs({ ...kitty, canHost: true })
+  })
+
+  it('opens the dialog of „Zuletzt gezogen“ for the Host with the game\'s Tags and Notes', async () => {
+    await mount(wheelOf(spinOf({ game: halo })), { isHost: true, hostGames })
+    await at(STOP + 100)
+
+    const tile = page!.get('button[aria-haspopup="dialog"]')
+    expect(tile.text()).toBe('Halo')
+    await tile.trigger('click')
+    await flushPromises()
+
+    expect(dialog()!.querySelector('h2')?.textContent).toBe('Halo')
+    expect(dialog()!.textContent).toContain('Koop')
+    expect(dialog()!.textContent).toContain('Retro')
+    expect(dialog()!.textContent).toContain('Hausregel: keine Raketen')
+    expect(dialog()!.querySelector('a')?.getAttribute('href')).toBe('/bibliothek/g-halo')
+  })
+
+  it('opens the dialog of a game whose facts are missing, without Tags and Notes', async () => {
+    await mount(wheelOf(spinOf({ game: halo })), { isHost: true })
+    await at(STOP + 100)
+
+    await page!.get('button[aria-haspopup="dialog"]').trigger('click')
+    await flushPromises()
+
+    expect(dialog()!.querySelector('h2')?.textContent).toBe('Halo')
+    expect(dialog()!.textContent).not.toContain('Notizen')
+  })
+
+  it('keeps a Member\'s tile plain: no button, and a click opens no dialog, though hostGames were handed in', async () => {
+    await mount(wheelOf(spinOf({ game: halo })), { hostGames })
+    await at(STOP + 100)
+
+    expect(page!.find('button[aria-haspopup]').exists()).toBe(false)
+    await page!.get('b').trigger('click')
+    await flushPromises()
+    expect(dialog()).toBeNull()
   })
 })

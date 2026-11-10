@@ -419,6 +419,8 @@ export const countdowns = pgTable('countdowns', {
   durationMs: integer('duration_ms').notNull(),
   remainingMs: integer('remaining_ms').notNull(),
   startedAt: timestamp('started_at', { withTimezone: true }),
+  // Last started or resumed (#441): the stage block of the Countdown rises at it. Pause, reset and zero leave it, so a paused Countdown keeps its place; nothing filters on it.
+  lastStartedAt: timestamp('last_started_at', { withTimezone: true }),
 }, table => [
   check('countdowns_duration_check', sql`${table.durationMs} BETWEEN 5000 AND 5999000`),
   check('countdowns_remaining_check', sql`${table.remainingMs} BETWEEN 0 AND ${table.durationMs}`),

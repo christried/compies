@@ -64,14 +64,14 @@ afterEach(() => {
 function serveSet(slug: string) {
   registerEndpoint(`/api/e/${slug}/countdown`, { method: 'PUT', handler: async (event) => {
     posted.push(await readBody(event))
-    return { durationMs: 90_000, remainingMs: 90_000, startedAt: null }
+    return { durationMs: 90_000, remainingMs: 90_000, startedAt: null, lastStartedAt: null }
   } })
 }
 
 describe('the Countdown on the stage', () => {
   it('shows its block between the open Rounds and the Game board, while a Session runs', async () => {
     const now = new Date().toISOString()
-    const { slug } = serveRunning({ host: false, startedAt: now, rounds: [round('r1', now)], countdown: { durationMs: 600_000, remainingMs: 600_000, startedAt: now } })
+    const { slug } = serveRunning({ host: false, startedAt: now, rounds: [round('r1', now)], countdown: { durationMs: 600_000, remainingMs: 600_000, startedAt: now, lastStartedAt: null } })
 
     const stage = await mount(slug)
 
@@ -90,7 +90,7 @@ describe('the Countdown on the stage', () => {
 
   it('shows a Member the same Countdown, without any control', async () => {
     const now = new Date().toISOString()
-    const { slug } = serveRunning({ host: false, startedAt: now, countdown: { durationMs: 600_000, remainingMs: 600_000, startedAt: now } })
+    const { slug } = serveRunning({ host: false, startedAt: now, countdown: { durationMs: 600_000, remainingMs: 600_000, startedAt: now, lastStartedAt: null } })
 
     const stage = await mount(slug)
 
@@ -155,7 +155,7 @@ describe('„Countdown stellen“ from the dock', () => {
 
   it('is disabled with „Der Countdown läuft schon.“ while one runs', async () => {
     const now = new Date().toISOString()
-    const { slug } = serveRunning({ host: true, startedAt: now, countdown: { durationMs: 600_000, remainingMs: 600_000, startedAt: now } })
+    const { slug } = serveRunning({ host: true, startedAt: now, countdown: { durationMs: 600_000, remainingMs: 600_000, startedAt: now, lastStartedAt: null } })
     const stage = await mount(slug)
 
     await clickHostAction(stage, 'Countdown')
@@ -169,7 +169,7 @@ describe('„Countdown stellen“ from the dock', () => {
 
   it('can set one again once the last one stands paused: no block of the old one stays in the way', async () => {
     const now = new Date().toISOString()
-    const { slug } = serveRunning({ host: true, startedAt: now, countdown: { durationMs: 600_000, remainingMs: 300_000, startedAt: null } })
+    const { slug } = serveRunning({ host: true, startedAt: now, countdown: { durationMs: 600_000, remainingMs: 300_000, startedAt: null, lastStartedAt: null } })
     serveSet(slug)
     const stage = await mount(slug)
     await clickHostAction(stage, 'Countdown')
