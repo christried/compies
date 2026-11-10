@@ -1,19 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import changeSettings from '../../server/api/e/[slug]/settings.patch'
-import setTeamWord from '../../server/api/e/[slug]/team-word.post'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { activity, eventMembers, events, users } from '../../server/db/schema'
+import { activity, eventMembers, events } from '../../server/db/schema'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
 import { settingsFromRow } from '../../shared/settings'
-import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { createTestApp, sendVia, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { readEvent, setUpEvent, type Rig } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // Settings follow the teams (#163, spec #153 § Game board rules, § API contracts): the Team size never goes below the
 // fullest team, and lowering the team count moves the Players of the removed teams to the Bench in the same transaction.
@@ -31,19 +26,14 @@ const LINEAR_2 = { preset: 'linear', values: [1, 0] }
 
 describe('settings follow the teams (#163)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let rig: Rig
   const notifier = memoryRoomNotifier()
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/team-word': setTeamWord,
-      'PATCH /api/e/:slug/settings': changeSettings,
-      'POST /api/invite/:invite': joinInvite,
-    }, { roomNotifier: notifier })
+    request = createTestApp(testDb.db, { roomNotifier: notifier })
+    rig = { request, db: testDb.db, notifier }
   })
 
   afterAll(async () => {
@@ -53,10 +43,7 @@ describe('settings follow the teams (#163)', () => {
   beforeEach(async () => {
     stubAuthEnv()
     notifier.clear()
-    await testDb.db.delete(activity)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -70,43 +57,27 @@ describe('settings follow the teams (#163)', () => {
 
   /** An Event of 4 teams of 3 (poll, no Date needed: the Host seats people), with every Player a Member on the Bench. */
   async function setup() {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies = {} as Record<keyof typeof players, string>
-    for (const key of Object.keys(players) as (keyof typeof players)[]) cookies[key] = (await signIn(testDb.db, players[key])).cookie
-    const created = await request('/api/e', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({
-        name: 'Freitags-Zocken',
-        dateMode: 'poll',
-        sessions: 1,
-        slots: ['2090-10-30T20:30'],
-        settings: { ...TEST_SETTINGS, teamCount: 4, teamSize: 3, pointsTable: LINEAR_4 },
-      }),
+    const event = await setUpEvent(rig, {
+      host,
+      players,
+      seats: [],
+      sessions: 1,
+      confirmed: 0,
+      settings: { teamCount: 4, teamSize: 3, pointsTable: LINEAR_4 },
     })
-    expect(created.status).toBe(200)
-    const { slug } = await created.json() as { slug: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const ids = {} as Record<Key, string>
-    for (const [key, profile] of Object.entries({ host, ...players })) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      ids[key as Key] = row!.id
+    const { one, two, three, four } = event.players
+    return {
+      slug: event.slug,
+      eventId: event.eventId,
+      hostCookie: event.host.cookie,
+      cookies: { one: one.cookie, two: two.cookie, three: three.cookie, four: four.cookie },
+      ids: { host: event.host.id, one: one.id, two: two.id, three: three.id, four: four.id },
     }
-    for (const key of Object.keys(players) as (keyof typeof players)[]) await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: ids[key] })
-    notifier.clear()
-    return { slug, eventId: eventRow!.id, hostCookie, cookies, ids }
   }
 
   type Game = Awaited<ReturnType<typeof setup>>
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   /** The Host seats a Member; the seating is not what these tests are about, so its messages and entries are cleared. */
   async function seat(game: Game, key: Key, to: Place) {
@@ -128,7 +99,7 @@ describe('settings follow the teams (#163)', () => {
   }
 
   async function read(game: Game): Promise<EventView> {
-    return await (await send('GET', `/api/e/${game.slug}`, game.hostCookie)).json() as EventView
+    return await readEvent(rig, game.hostCookie, game.slug)
   }
 
   async function seatsOf(game: Game) {

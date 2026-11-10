@@ -50,7 +50,7 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
    * Raises the Game count by one while the Standings are a Tie (#278); the dock button learns whether the server took it. A second press finds the count
    * incomplete (`results_missing`), which means the first one worked, so it is quiet and counts as taken. At the maximum the dock's own copy answers.
    */
-  const lastGame = () => send<LastGameAdded>('POST', 'last-game', { quiet: ['results_missing'], errorKeys: { game_count_range: 'dock.lastGameBlocked.game_count_range' } })
+  const lastGame = () => send<LastGameAdded>('POST', 'last-game', { quiet: ['results_missing'], screen: 'lastGame' })
 
   /** Withdraws one Session's Date and frees its Slot (#55). */
   const reopenSession = (sessionId: string) => send('POST', `sessions/${sessionId}/reopen`)

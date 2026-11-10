@@ -11,7 +11,7 @@ import { parseTeamWord } from '../../../../shared/team-word'
 
 // A Player sets their own Team word (#161, spec #153 § API contracts): `{ word }`, an empty word removes it. Only a
 // Player in a team has one. The Event row is locked, so a word and a move of the same Player queue up.
-export default defineEventHandler((event): Promise<TeamWordSet> => changeEvent(event, { lock: 'update' }, async ({ tx, eventRow, user, body, publish }) => {
+export default defineEventHandler((event): Promise<TeamWordSet> => changeEvent(event, { lock: 'update' }, async ({ tx, eventRow, user, body }) => {
   const seat = (await readSeats(tx, eventRow.id)).find(row => row.userId === user.id)
   if (seat?.place.zone !== 'team') throw apiError('not_in_team')
 
@@ -25,6 +25,5 @@ export default defineEventHandler((event): Promise<TeamWordSet> => changeEvent(e
     .update(eventMembers)
     .set({ teamWord: parsed.word })
     .where(and(eq(eventMembers.eventId, eventRow.id), eq(eventMembers.userId, user.id)))
-  publish({ type: 'team.wordSet', team: seat.place.team, userId: user.id, word: parsed.word })
   return { team: seat.place.team, word: parsed.word }
 }))

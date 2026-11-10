@@ -1,13 +1,10 @@
 import { asc, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import listGames from '../../server/api/games/index.get'
-import createGame from '../../server/api/games/index.post'
-import readGame from '../../server/api/games/[id].get'
-import editGame from '../../server/api/games/[id].patch'
 import { gameTags, games, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import type { GameList, GameView } from '../../shared/game'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
@@ -17,18 +14,13 @@ const otherHost = { provider: 'discord', id: '3', name: 'Zweiter', email: 'host2
 
 describe('the Game library API (#141)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   // The server's clock (#337): the Price's day is stamped with it. Moved by the Prices tests, back to its start before each.
   const clock = testClock('2026-11-03T10:00:00.000Z')
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'GET /api/games': listGames,
-      'POST /api/games': createGame,
-      'GET /api/games/:id': readGame,
-      'PATCH /api/games/:id': editGame,
-    }, { clock })
+    request = createTestApp(testDb.db, { clock })
   })
 
   afterAll(async () => {
@@ -38,8 +30,7 @@ describe('the Game library API (#141)', () => {
   beforeEach(async () => {
     stubAuthEnv()
     setAllowlist({ hosts: 'discord:1,discord:3', admins: 'discord:9' })
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {

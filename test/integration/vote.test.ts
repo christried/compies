@@ -1,11 +1,9 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Slots are far in the future so the "not past" rule holds without a fake clock. Past Slots are
@@ -16,15 +14,11 @@ const outsider = { provider: 'discord', id: '4', name: 'Fremd', email: 'outsider
 
 describe('poll votes and the Event read', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -33,11 +27,7 @@ describe('poll votes and the Event read', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -70,16 +60,14 @@ describe('poll votes and the Event read', () => {
     return { slug, eventId: event!.id, slotIdAt }
   }
 
+  const send = sendVia(() => request)
+
   function vote(cookie: string | undefined, slug: string, slotId: string, value: unknown) {
-    return request(`/api/e/${slug}/slots/${slotId}/vote`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
-      body: JSON.stringify({ value }),
-    })
+    return send('PUT', `/api/e/${slug}/slots/${slotId}/vote`, cookie, { value })
   }
 
   function read(cookie: string | undefined, slug: string) {
-    return request(`/api/e/${slug}`, { headers: cookie ? { cookie } : {} })
+    return send('GET', `/api/e/${slug}`, cookie)
   }
 
   describe('GET /api/e/:slug', () => {

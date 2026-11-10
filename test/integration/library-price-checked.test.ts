@@ -1,12 +1,10 @@
 import { asc, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createGame from '../../server/api/games/index.post'
-import readGame from '../../server/api/games/[id].get'
-import editGame from '../../server/api/games/[id].patch'
-import { gameTags, games, users } from '../../server/db/schema'
+import { gameTags, games } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import type { GameView } from '../../shared/game'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // „Preis stimmt noch“ sends only the flag (#360). The whole-game path that old tabs still send stays in library.test.ts.
@@ -18,7 +16,7 @@ const otherHost = { provider: 'discord', id: '3', name: 'Zweiter', email: 'host2
 
 describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const clock = testClock('2026-11-03T10:00:00.000Z')
   const T1 = '2026-11-03T10:00:00.000Z'
   const T2 = '2026-11-05T09:00:00.000Z'
@@ -26,11 +24,7 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/games': createGame,
-      'GET /api/games/:id': readGame,
-      'PATCH /api/games/:id': editGame,
-    }, { clock })
+    request = createTestApp(testDb.db, { clock })
   })
 
   afterAll(async () => {
@@ -41,8 +35,7 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
     stubAuthEnv()
     setAllowlist({ hosts: 'discord:1,discord:3', admins: 'discord:9' })
     clock.set(T1)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {

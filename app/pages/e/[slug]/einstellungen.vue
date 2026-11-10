@@ -93,7 +93,7 @@ async function save(sent: EventDraft) {
         :kicker="t('eventSettings.kicker')"
         :last-label="t('eventSettings.save')"
         :saving-label="t('common.saving')"
-        :error-copy="{ wrong_phase: 'eventSettings.wrongPhase' }"
+        error-screen="eventSettings"
         :submit="save"
       />
     </div>

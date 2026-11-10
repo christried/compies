@@ -34,6 +34,8 @@ interface Options {
   isHost?: boolean
   /** The server refuses every word with this code. */
   refuseWord?: string
+  /** The server refuses every reset with this code. */
+  refuseReset?: string
 }
 
 /** A board for one test, with endpoints that record the Team words and the resets posted. */
@@ -55,6 +57,7 @@ async function mountBoard(options: Options) {
     registerEndpoint(`/api/e/${slug}/teams/${position}/reset-name`, {
       method: 'POST',
       handler: () => {
+        if (options.refuseReset) throw createError({ statusCode: 400, statusMessage: options.refuseReset })
         resets.push(position)
         return { team: position }
       },
@@ -251,6 +254,17 @@ describe('Team names on the Game board', () => {
 
       expect(resets).toEqual([1])
       expect(shownToasts().map(toast => toast.text)).toContain('Name zurückgesetzt auf Team Rot.')
+    })
+
+    // The race of #421: the team count was lowered while this board was open.
+    it('says that the team is gone when the server refuses the reset with no_such_team', async () => {
+      const { page } = await mountBoard({ members: named, teams: teamsNamed('Wilde Gurken'), viewerId: SANNE, isHost: true, refuseReset: 'no_such_team' })
+
+      await clickButton(zone(page, 'Wilde Gurken').element, 'Name zurücksetzen')
+      await clickButton(dialog(), 'Zurücksetzen')
+      await settle()
+
+      expect(shownToasts().at(-1)).toMatchObject({ tone: 'error', text: 'Dieses Team gibt es nicht mehr.' })
     })
 
     it('does nothing when the Host cancels', async () => {

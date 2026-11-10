@@ -1,6 +1,6 @@
 # Merge job
 
-The brief of a merge job (`docs/agents/subagents.md` § Supervision, model `haiku`): one reviewed ticket branch whose merge conflicts into the integration branch, checked. A clean branch the orchestrator merges itself. The orchestrator's spawn prompt names both branches and the ticket number. One merge job runs at a time.
+The brief of a merge job (`docs/agents/subagents.md` § Supervision, on its ticket's model): one reviewed ticket branch whose merge conflicts into the integration branch, checked. A clean branch the orchestrator merges itself. The orchestrator's spawn prompt names both branches and the ticket number. One merge job runs at a time.
 
 - Work in the main checkout of the repo, the orchestrator's working directory (not a worktree under `.claude/worktrees/`), in Git Bash on Windows.
 - The orchestrator has already reviewed the diff. Change code only to resolve merge conflicts.

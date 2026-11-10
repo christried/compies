@@ -24,7 +24,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
   const viewer = { id: user.id, isHost: eventRow.hostId === user.id }
   await settleBeforeRead(db, eventRow, now)
 
-  const [rows, pool] = await Promise.all([readEventRows(db, eventRow), poolsSection(db, eventRow, viewer)])
+  const [rows, pool] = await Promise.all([readEventRows(db, eventRow), poolsSection(db, eventRow, viewer, now)])
   const fixed = {
     event: {
       slug: eventRow.slug,

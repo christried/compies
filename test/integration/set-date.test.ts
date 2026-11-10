@@ -1,15 +1,9 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getMe from '../../server/api/me.get'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import downloadIcs from '../../server/api/e/[slug]/ics.get'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
-import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, eventMembers, events, sessions } from '../../server/db/schema'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createInterleavingDb, createTestDb, createTestServer } from './harness'
+import { createInterleavingDb, createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Slots and Dates are in 2090 so the "in the future" rule holds without a fake clock.
@@ -19,19 +13,11 @@ const outsider = { provider: 'discord', id: '3', name: 'Fremd', email: 'outsider
 
 describe('setting the Dates from the shared Date poll', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'GET /api/me': getMe,
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'GET /api/e/:slug/ics': downloadIcs,
-      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -40,11 +26,7 @@ describe('setting the Dates from the shared Date poll', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -78,28 +60,22 @@ describe('setting the Dates from the shared Date poll', () => {
     await testDb.db.insert(eventMembers).values({ eventId, userId: await userId(cookie) })
   }
 
+  const send = sendVia(() => request)
+
   function confirm(cookie: string | undefined, slug: string, slotId: unknown) {
-    return request(`/api/e/${slug}/confirm`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
-      body: JSON.stringify({ slotId }),
-    })
+    return send('POST', `/api/e/${slug}/confirm`, cookie, { slotId })
   }
 
   function vote(cookie: string, slug: string, slotId: string, value: string) {
-    return request(`/api/e/${slug}/slots/${slotId}/vote`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ value }),
-    })
+    return send('PUT', `/api/e/${slug}/slots/${slotId}/vote`, cookie, { value })
   }
 
   function ics(cookie: string | undefined, slug: string) {
-    return request(`/api/e/${slug}/ics`, { headers: cookie ? { cookie } : {} })
+    return send('GET', `/api/e/${slug}/ics`, cookie)
   }
 
   function read(cookie: string, slug: string) {
-    return request(`/api/e/${slug}`, { headers: { cookie } })
+    return send('GET', `/api/e/${slug}`, cookie)
   }
 
   async function eventRow(eventId: string) {
@@ -280,7 +256,7 @@ describe('setting the Dates from the shared Date poll', () => {
         expect((await confirm(hostCookie, slug, slotIds[1])).status).toBe(200)
         votesWhenSet = await testDb.db.select().from(pollVotes)
       })
-      const racingRequest = createTestServer(racingDb, { 'PUT /api/e/:slug/slots/:slotId/vote': putVote })
+      const racingRequest = createTestApp(racingDb)
 
       const voted = await racingRequest(`/api/e/${slug}/slots/${slotIds[0]}/vote`, {
         method: 'PUT',
@@ -301,7 +277,7 @@ describe('setting the Dates from the shared Date poll', () => {
       const racingDb = createInterleavingDb(testDb.client, /update "sessions"/i, async () => {
         competitor = (await confirm(hostCookie, slug, slotIds[0])).status
       })
-      const racingRequest = createTestServer(racingDb, { 'POST /api/e/:slug/confirm': confirmDate })
+      const racingRequest = createTestApp(racingDb)
 
       const first = await racingRequest(`/api/e/${slug}/confirm`, {
         method: 'POST',

@@ -31,6 +31,5 @@ export default defineEventHandler((event): Promise<TeamNameReset> => changeEvent
       .where(and(eq(eventMembers.eventId, eventRow.id), eq(eventMembers.team, position)))
   }
   await recordActivity(tx, publish, eventRow.id, { type: 'team_name_reset', actorId: user.id, params: { team: position }, now })
-  publish({ type: 'team.nameReset', team: position })
   return { team: position }
 }))

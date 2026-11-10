@@ -1,9 +1,9 @@
 import { rmSync } from 'node:fs'
 import type { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import readEvent from '../../server/api/e/[slug].get'
 import type { EventView } from '../../shared/event'
-import { createTestDbBefore, createTestServer, migrateTo } from './harness'
+import { createTestApp } from './app'
+import { createTestDbBefore, migrateTo } from './harness'
 import { signIn, stubAuthEnv } from './sign-in'
 
 // The migration that adds the Pool preview (#225): Events that are set up keep what they showed (Host pick and a
@@ -75,7 +75,7 @@ describe('migration: Pool preview', () => {
   }
 
   async function memberRead(slug: string) {
-    const request = createTestServer(db, { 'GET /api/e/:slug': readEvent })
+    const request = createTestApp(db)
     const response = await request(`/api/e/${slug}`, { headers: { cookie: memberCookie } })
     expect(response.status).toBe(200)
     return await response.json() as EventView

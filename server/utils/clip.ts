@@ -1,11 +1,11 @@
 import { desc, eq } from 'drizzle-orm'
 import { draws, games, rounds } from '../db/schema'
 import { isoInstant } from '../../shared/activity'
-import { clipWindow } from '../../shared/clip'
+import { clipRunning, clipWindow } from '../../shared/draw-timeline'
 import type { ClipSkipped, ClipView } from '../../shared/stage'
 import { runningOf } from '../../shared/session-state'
 import type { Db } from './db'
-import { stoppedDraws } from './draws'
+import { stoppedDraws } from './draw-timeline'
 import { apiError } from './errors'
 import type { EventChange } from './event-access'
 import { roundGameView } from './library'
@@ -13,7 +13,7 @@ import { eventSessions, type SessionRow } from './sessions'
 
 // The synced clip (GLOSSARY: Clip; spec #218 § Clip, #230). A clip is a read of a draw's instants, not a row: no timer runs, and
 // the only thing stored is the Host's skip (`draws.clip_skipped_at`), so it reaches Members who join later. The rule is
-// shared/clip.ts; every instant comes from the request's clock (ADR 0013, amended 2026-10-31).
+// shared/clip.ts (the position) and shared/draw-timeline.ts (the window); every instant comes from the request's clock (ADR 0013, amended 2026-10-31).
 
 /** The clip that runs at `now` in a Running Session, the same for every Member, or null. */
 export async function readClip(db: Db, eventId: string, sessions: readonly SessionRow[], now: Date): Promise<ClipView | null> {
@@ -30,7 +30,7 @@ export async function readClip(db: Db, eventId: string, sessions: readonly Sessi
     .limit(1)
   if (!latest || latest.draw.clipSkippedAt !== null || latest.putBackAt !== null) return null
   const window = clipWindow(latest.draw, latest.game)
-  if (now.getTime() >= window.endsAt) return null
+  if (!clipRunning(window, now)) return null
   return { drawId: latest.draw.id, startAt: isoInstant(new Date(window.startAt)), endsAt: isoInstant(new Date(window.endsAt)), game: roundGameView(latest.game) }
 }
 

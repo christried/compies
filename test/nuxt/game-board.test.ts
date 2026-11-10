@@ -506,6 +506,18 @@ describe('GameBoard', () => {
       expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
     })
 
+    // The race of #421: the Host lowered the team count while this board was open.
+    it('says that the team is gone when the server refuses the move with no_such_team', async () => {
+      const { page } = await mountBoard({ answer: () => {
+        throw createError({ statusCode: 400, statusMessage: 'no_such_team' })
+      } })
+
+      await person(page, kitty.id).trigger('click')
+      menuItem('Nach Team Rot').click()
+
+      await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Dieses Team gibt es nicht mehr.'))
+    })
+
     it('a refused own move pops once on the drop and bounces home without a second pop (#208)', async () => {
       layOutBoard()
       const animate = vi.fn()
