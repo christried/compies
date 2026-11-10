@@ -932,6 +932,9 @@
     "loadMore": "Mehr laden",
     "shownOf": "{shown} von {total} Spielen"
   },
+  "gameNotes": {
+    "open": "Notizen ansehen"
+  },
   "gameEdit": {
     "kicker": "Bibliothek",
     "title": "Spiel anlegen",
