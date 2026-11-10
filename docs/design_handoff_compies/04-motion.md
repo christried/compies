@@ -148,6 +148,7 @@ Times from `round.determined`: `determinedAt`, `vetoEndsAt = determinedAt + 60 s
 
 ### Leaderboard [1.0]
 - Trigger: `result.saved` / `result.corrected`.
+- **Deviation (0.12, #425):** on the stage the Standings first rise to the top (11-event-seite § EventPage, 0.12 deviation), and the sequence below starts once the block has arrived; when it is already on top, after the same 0.5 s pause. The side panel's and the phone's Tabelle tab play it as before.
 - Rows: Flip reorder, 0.62 `EASE.spring`, stagger 0.04 (`lb-swap`). Points: CpNum count-up 0.6 `power2.out` (`lb-count`, max 15 ticks/s). Delta pill `scale .3→1.15→1` 0.42 pop, delay 0.3. Winner stamp `scale 2→.9→1, rotation 8` 0.48, delay 0.52. Mini celebration: 18 sticker confetti from the winner row + Compibert bust `cheer` beside it (4 s); last place → `sad`. `lb-winner`.
 - Reduced: rows reorder instantly with a 0.2 highlight; numbers jump; no confetti.
 

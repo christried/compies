@@ -542,6 +542,7 @@ Each member adds one word (≤ 12 chars) to the team name.
 - **Desktop / mobile:** Inline in the TeamZone header; mobile in the team sheet.
 - **Accessibility:** TextField rules; live region for the composed name.
 - **Motion:** new word pops in `dur-slow ease-pop`.
+- **Deviation (0.12, #425):** there is no `frozen` state. A Player changes their word at any time until the Finish, a Player the Host moved in after the start included. Once the team has its first word, the builder collapses to the name with a pencil button that opens the field again. The Host's reset to the colour name stays at any time and clears the team's words; the Host never types a word. The TeamZone shows no lock for the name.
 
 ## GameBoard
 **Scope:** [1.0] · **Ref:** DS People, App Lobby 09
@@ -554,6 +555,7 @@ The lobby: teams, bench, stands; drag and drop.
 - **Desktop / mobile:** Desktop grid of TeamZones (2–4 columns by container width) + bench + stands rows. Mobile: teams stacked, bench/stands as rows; drag = long-press 300 ms.
 - **Accessibility:** Every avatar: focus + Enter opens MoveToMenu („Verschieben nach …“). Drop zones announce „Team Rot, 1 von 2 frei“. Players can only move themselves; host moves everyone.
 - **Motion:** GSAP Draggable or pointer events; drop = Flip from old slot; refused = bounce-back.
+- **Deviation (0.12, #425):** the board has the teams and one zone, the Tribüne (`stands[]`); there is no `bench[]`. See § BenchZone / StandsZone.
 
 ## TeamZone
 **Scope:** [1.0] · **Ref:** DS People
@@ -578,6 +580,7 @@ Unlimited zones: substitutes (Bench) and spectators (Tribüne).
 - **Desktop / mobile:** Horizontal wrap; mobile rows.
 - **Accessibility:** as TeamZone.
 - **Motion:** as TeamZone.
+- **Deviation (0.12, #425):** Bench and Tribüne are one zone, the Tribüne, for every Member not in a team, whether they will play later or only watch. Arrivals through the Invite link and the Players of a removed team land there; from there Players move into the teams. No sub-line „Zuschauer, spielen nicht mit“, and no copy says Bench anywhere („Von der Tribüne nachziehen“). The reference artboards still show two zones.
 
 ## MoveToMenu
 **Scope:** [1.0] · **Ref:** DS People
@@ -825,6 +828,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Desktop / mobile:** —
 - **Accessibility:** Card is not a button unless selectable (then `aria-pressed`).
 - **Motion:** ban: stamp `scale 2.2→1, rotate −8°` 0.4 s; pick: slap into order strip (Flip).
+- **Deviation (0.12, #425):** on the Event page (Spielepool in „So wird gespielt“, „Zuletzt gezogen“ under the wheel, „Gerade dran“ on the open Rounds) a game is a tile with picture and name only, for the Host too; the pool's tiles sit side by side in a grid. A tap opens the game dialog (a sheet below md, a dialog from md up): the library entry, read-only. The Host sees players, Suitabilities, all Tags, the Price, the Notes and „In der Bibliothek öffnen“; a Member sees picture, name, players, Suitabilities and the Price, never Tags or Notes. No Clip in the dialog. On „Gerade dran“ the Host's Notes stay open under the tile. In the compact game browser (both pool pickers, „Nächstes Spiel setzen“) and on the chosen games of step „Spiele“, a game with Notes gets a Notes button that opens them in a popover from md up and a sheet below.
 
 ## LuckyWheel
 **Scope:** [1.0] · **Ref:** GameWheel, App Spielrunde 11
@@ -945,6 +949,7 @@ Live standings.
 - **Desktop / mobile:** Side panel tab „Tabelle“ + stage after each game; mobile tab.
 - **Accessibility:** Table semantics; rank changes announced politely.
 - **Motion:** see 04-motion § Leaderboard.
+- **Deviation (0.12, #425):** in a finished Event the Standings, the Spielverlauf and the Tabelle tab wait for the Award ceremony: until the Host first starts it, every Member, the Host included, sees a card saying the ceremony is pending in their place.
 
 ## GameHistory
 **Scope:** [1.0] · **Ref:** DS Scoring
