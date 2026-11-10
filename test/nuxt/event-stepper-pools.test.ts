@@ -447,6 +447,16 @@ describe('the pool steps', () => {
       expect(dialog()!.querySelector('form')).not.toBeNull()
     })
 
+    it('shows the Free-to-play hint of the game form in the sheet (#423)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+
+      await newGameButton(page).trigger('click')
+
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      expect(dialog()!.textContent).toContain('Ohne Preis bekommt das Spiel den Tag „Free-to-play“.')
+    })
+
     it('puts the new game in the pool, closes the sheet and keeps what the Host typed in the other steps', async () => {
       const page = await mountCreate()
       await toPoolStep(page)

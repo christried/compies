@@ -972,6 +972,7 @@
     "notesTooLong": "Höchstens {max} Zeichen.",
     "tags": "Tags",
     "tagsHelp": "Enter oder Komma fügt einen Tag hinzu.",
+    "tagsFreeToPlayHint": "Ohne Preis bekommt das Spiel den Tag „Free-to-play“.",
     "tagTooLong": "Höchstens {max} Zeichen",
     "tagsTooMany": "Höchstens {max} Tags",
     "tagRemove": "Tag „{label}“ entfernen",
