@@ -7,7 +7,7 @@ import type { CoinTossed } from '../../shared/stage'
 import { COIN_DURATION_MS, COIN_LEAD_MS } from '../../shared/coin'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, readFeed, setUpEvent, startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, setUpEvent, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The Coin flip (#235, spec #218 § Coin flip): the Host tosses a coin in a running Session, through the HTTP API with a test clock and
@@ -28,14 +28,14 @@ const LANDS = STARTS + COIN_DURATION_MS
 describe('the Coin flip (#235)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -58,7 +58,7 @@ describe('the Coin flip (#235)', () => {
   /** An Event with a Host and two Members. `running` starts its first Session (both Members seated in a team each). */
   async function event({ running = true }: { running?: boolean } = {}) {
     const make = running ? startRunningEvent : setUpEvent
-    const ev = await make(stage, {
+    const ev = await make(rig, {
       host,
       players,
       seats: running ? [['one', 1], ['two', 2]] : [],
@@ -70,7 +70,7 @@ describe('the Coin flip (#235)', () => {
   type Event = Awaited<ReturnType<typeof event>>
 
   const toss = (game: Event, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/coin`, cookie)
-  const readCoin = async (game: Event, cookie = game.hostCookie) => (await readEvent(stage, cookie, game.slug)).coin
+  const readCoin = async (game: Event, cookie = game.hostCookie) => (await readEvent(rig, cookie, game.slug)).coin
   const messagesOf = (game: Event) => notifier.messages(game.eventId)
 
   describe('tossing it', () => {
@@ -126,10 +126,10 @@ describe('the Coin flip (#235)', () => {
       const body = await (await toss(game)).json() as CoinTossed
 
       clock.set(new Date(LANDS - 1))
-      expect((await readFeed(stage, game.cookies.one, game.slug, 'limit=100')).map(entry => entry.type)).not.toContain('coin_tossed')
+      expect((await readFeed(rig, game.cookies.one, game.slug, 'limit=100')).map(entry => entry.type)).not.toContain('coin_tossed')
 
       clock.set(new Date(LANDS))
-      const entries = await readFeed(stage, game.cookies.one, game.slug, 'limit=100')
+      const entries = await readFeed(rig, game.cookies.one, game.slug, 'limit=100')
       expect(entries.find(entry => entry.type === 'coin_tossed')).toMatchObject({ type: 'coin_tossed', at: body.landsAt, params: { side: body.side } })
     })
 
@@ -182,7 +182,7 @@ describe('the Coin flip (#235)', () => {
       clock.advance(10 * 60_000)
       expect((await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)).status).toBe(200)
 
-      const view = await readEvent(stage, game.hostCookie, game.slug)
+      const view = await readEvent(rig, game.hostCookie, game.slug)
       const ended = view.sessions.find(session => session.endedAt !== null)
       expect(ended).toMatchObject({ startedAt: T0, endedAt: new Date(T0_MS + 10 * 60_000).toISOString() })
     })

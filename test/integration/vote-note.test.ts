@@ -4,7 +4,7 @@ import { pollSlots, pollVotes, events, sessions, users } from '../../server/db/s
 import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { readEventText, setUpEvent, type Stage } from './scenario'
+import { readEventText, setUpEvent, type Rig } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Note on a Vote (#102). Slots are far in the future; past Slots are made by moving their start into 2001.
@@ -14,12 +14,12 @@ const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@exam
 describe('Notes on Votes', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db)
-    stage = { request, db: testDb.db }
+    rig = { request, db: testDb.db }
   })
 
   afterAll(async () => {
@@ -45,7 +45,7 @@ describe('Notes on Votes', () => {
   /** A poll Event by the Host with three Slots; returns the Host, a Member and the Slot ids in time order. */
   async function setUp() {
     // One Session, so the poll stays open until a Date is set; the third Slot is one the poll offers beside the first two (`extraSlots`).
-    const event = await setUpEvent(stage, {
+    const event = await setUpEvent(rig, {
       host,
       players: { guest: member },
       seats: [],
@@ -67,7 +67,7 @@ describe('Notes on Votes', () => {
 
   /** The Event read untyped: the cases read `sessions[0].notes`, which `EventView` has on a Session with a Date only. */
   async function read(cookie: string, slug: string) {
-    return JSON.parse(await readEventText(stage, cookie, slug))
+    return JSON.parse(await readEventText(rig, cookie, slug))
   }
 
   async function storedNote(slotId: string, userId: string) {

@@ -16,7 +16,7 @@ import { hostPutsBack, hostSets, hostSpins, hostTossesCoin, playerVetoes, signIn
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
-  const { request, notifier, clock, newGame, rawRead, traces, second, stage, expectNone, LOBBY } = world
+  const { request, notifier, clock, newGame, rawRead, traces, second, rig, expectNone, LOBBY } = world
   let db: Db
   let hostSigned: Signed
   let hostCookie: string
@@ -82,7 +82,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const [eventRow] = await db.select().from(events).where(eq(events.slug, slug))
       const eventId = eventRow!.id
       const slotIds = (await db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
-      const secondSigned = await signInAs(stage(), second)
+      const secondSigned = await signInAs(rig(), second)
       const player2Cookie = secondSigned.cookie
       const ids = { player: world.playerSigned.id, player2: secondSigned.id }
 
@@ -133,23 +133,23 @@ describe('Hidden wheel secrecy (#148)', () => {
       // the Session. That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
       const epsilon = await newGame('Epsilon Eck', 'eeeeeeeeeee')
-      const roundId = await hostSets(stage(), { slug, host: hostSigned }, epsilon.id)
-      await hostPutsBack(stage(), { slug, host: hostSigned }, roundId)
+      const roundId = await hostSets(rig(), { slug, host: hostSigned }, epsilon.id)
+      await hostPutsBack(rig(), { slug, host: hostSigned }, roundId)
       // A library game that stays open: its Round gets its Result once the Session has ended (#273, between Sessions).
       const f = await newGame('Foxtrot Fest', 'fffffffffff')
-      const openRound = await hostSets(stage(), { slug, host: hostSigned }, f.id)
+      const openRound = await hostSets(rig(), { slug, host: hostSigned }, f.id)
       // The Host spins the wheel (event.changed; the feed entry game_drawn waits for the stop); the Session ends with that Round still being drawn.
-      const { drawId } = await hostSpins(stage(), { slug, host: hostSigned })
+      const { drawId } = await hostSpins(rig(), { slug, host: hostSigned })
       if (castVeto) {
         // The wheel stops (the clock moves past it) and Player 1 casts a Veto: veto.cast goes to Player 1's Party only (#231).
         clock.advance(SPIN.stop + 500)
-        await playerVetoes(stage(), { slug }, drawId, world.playerSigned)
+        await playerVetoes(rig(), { slug }, drawId, world.playerSigned)
       }
       // The Host sets a Countdown and starts it (event.changed, #236); ending the Session clears it.
       expect((await send('PUT', `/api/e/${slug}/countdown`, hostCookie, { seconds: 60 })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/countdown/start`, hostCookie)).status).toBe(200)
       // The Host tosses the coin (event.changed, #235); its feed entry waits for the landing, which the clock passes below.
-      await hostTossesCoin(stage(), { slug, host: hostSigned })
+      await hostTossesCoin(rig(), { slug, host: hostSigned })
       expect((await send('POST', `/api/e/${slug}/sessions/end`, hostCookie)).status).toBe(200)
       // Between Sessions the Host enters the Result of the open Round (#273): the feed names its game, and no game of the pools.
       expect((await send('PUT', `/api/e/${slug}/rounds/${openRound}/result`, hostCookie, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] })).status).toBe(200)

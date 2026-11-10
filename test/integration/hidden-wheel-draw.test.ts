@@ -24,7 +24,7 @@ vi.mock('node:crypto', async (importOriginal) => {
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
-  const { request, notifier, clock, rawRead, playerTraces, priceTrace, newGame, runningEvent, imageStatus, whatThePlayerGets, expectNone, NO_WINDOW, host, player, second, stranger, sweepGets, stage } = world
+  const { request, notifier, clock, rawRead, playerTraces, priceTrace, newGame, runningEvent, imageStatus, whatThePlayerGets, expectNone, NO_WINDOW, host, player, second, stranger, sweepGets, rig } = world
   let db: Db
   let hostSigned: Signed
   let hostCookie: string
@@ -58,7 +58,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     it('shows a Player exactly the game that is set, never its notes, and nothing else of the pools', async () => {
       const { slug, eventId, a, b, c, epsilon } = await runningEvent()
 
-      await hostSets(stage(), { slug, host: hostSigned }, a.id)
+      await hostSets(rig(), { slug, host: hostSigned }, a.id)
 
       const got = await whatThePlayerGets(slug, eventId)
       expect(got.event).toContain('Alpha Arena')
@@ -76,7 +76,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     it('shows a Player a game from the library when the Host sets it, and none of the pool\'s games', async () => {
       const { slug, eventId, a, b, c, epsilon } = await runningEvent()
 
-      await hostSets(stage(), { slug, host: hostSigned }, epsilon.id)
+      await hostSets(rig(), { slug, host: hostSigned }, epsilon.id)
 
       const got = await whatThePlayerGets(slug, eventId)
       expect((JSON.parse(got.event) as EventView).rounds).toMatchObject([{ game: { id: epsilon.id, name: 'Epsilon Eck' } }])
@@ -88,7 +88,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     it('carries no Tag in the Host\'s or a Player\'s read of a set game and of its Result, and the Price only of the set game for a Player (#335, #338)', async () => {
       const { slug, a, b, c, epsilon } = await runningEvent()
-      const roundId = await hostSets(stage(), { slug, host: hostSigned }, a.id)
+      const roundId = await hostSets(rig(), { slug, host: hostSigned }, a.id)
       // The Host sees the pool (Alpha, Beta) and the set game; the Player sees the set game only.
       const reads = async () => [await rawRead(hostCookie, slug), await rawRead(playerCookie, slug)]
       const expectPrices = (hostRaw: string, playerRaw: string) => {
@@ -131,7 +131,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     it('gives the Host the notes of the set game on its Round, and every game of the pools', async () => {
       const { slug, a } = await runningEvent()
-      await hostSets(stage(), { slug, host: hostSigned }, a.id)
+      await hostSets(rig(), { slug, host: hostSigned }, a.id)
 
       const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
 
@@ -141,9 +141,9 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     it('reveals nothing more when the Host puts the Round back: the pools stay hidden, the games not set stay unknown', async () => {
       const { slug, eventId, a, b, c, epsilon } = await runningEvent()
-      const roundId = await hostSets(stage(), { slug, host: hostSigned }, a.id)
+      const roundId = await hostSets(rig(), { slug, host: hostSigned }, a.id)
 
-      await hostPutsBack(stage(), { slug, host: hostSigned }, roundId)
+      await hostPutsBack(rig(), { slug, host: hostSigned }, roundId)
 
       const got = await whatThePlayerGets(slug, eventId)
       expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [] })
@@ -154,7 +154,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
     it('keeps the Player\'s read the same however many games the pools hold after a set, but for the wheel\'s own count', async () => {
       const { slug, eventId, a } = await runningEvent()
-      await hostSets(stage(), { slug, host: hostSigned }, a.id)
+      await hostSets(rig(), { slug, host: hostSigned }, a.id)
       const before = JSON.parse(await rawRead(playerCookie, slug)) as EventView
 
       const delta = await newGame('Delta Dart', 'ddddddddddd')
@@ -174,7 +174,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     /** A spin of a Running Session under a Hidden wheel, and the games on the wheel in the order of the draw. */
     async function spun() {
       const running = await runningEvent(NO_WINDOW)
-      await hostSpins(stage(), { slug: running.slug, host: hostSigned })
+      await hostSpins(rig(), { slug: running.slug, host: hostSigned })
       const [row] = await db.select().from(draws)
       const drawn = [running.a, running.b].find(secret => secret.id === row!.gameId)!
       const undrawn = [running.a, running.b].find(secret => secret.id !== row!.gameId)!
@@ -297,7 +297,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const poolOrder = before.wheel!.slices!.map(slice => slice.id)
       expect(poolOrder).toHaveLength(6)
 
-      await hostSpins(stage(), { slug: running.slug, host: hostSigned })
+      await hostSpins(rig(), { slug: running.slug, host: hostSigned })
 
       const [row] = await db.select().from(draws)
       expect(row!.sliceGameIds).not.toEqual(poolOrder)
@@ -325,11 +325,11 @@ describe('Hidden wheel secrecy (#148)', () => {
     /** A Running Session with a Veto allowance of 3; the wheel stopped, and Player 1 (team 1) cast the Veto. The room's record starts at the cast. */
     async function playerCasts() {
       const running = await runningEvent()
-      const { drawId } = await hostSpins(stage(), { slug: running.slug, host: hostSigned })
+      const { drawId } = await hostSpins(rig(), { slug: running.slug, host: hostSigned })
       const [row] = await db.select().from(draws)
       clock.set(row!.stopAt)
       notifier.clear()
-      await playerVetoes(stage(), { slug: running.slug }, drawId, world.playerSigned)
+      await playerVetoes(rig(), { slug: running.slug }, drawId, world.playerSigned)
       return { ...running, drawId, row: row!, playerId: await idOf(player.email), secondId: await idOf(second.email) }
     }
 
@@ -343,7 +343,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(await wheelOf(hostCookie, slug)).toMatchObject({ vetoes: { left: [3, 3], own: null, revealed: null } })
       for (const cookie of [hostCookie, (await signIn(db, second)).cookie]) {
         expect(JSON.stringify((JSON.parse(await rawRead(cookie, slug)) as EventView).wheel), 'the Event read').not.toContain(playerId)
-        expect((await readFeed(stage(), cookie, slug, 'limit=100')).map(entry => entry.type)).not.toContain('vetoes_revealed')
+        expect((await readFeed(rig(), cookie, slug, 'limit=100')).map(entry => entry.type)).not.toContain('vetoes_revealed')
       }
       // The Party's own Player sees it at once.
       expect((await wheelOf(playerCookie, slug)).vetoes).toEqual(vetoRead({ left: [2, 3], own: { team: 1, cast: true, rejection: 'veto_already_cast' } }))
@@ -357,7 +357,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const secondCookie = (await signIn(db, second)).cookie
       const hostId = await idOf(host.email)
       // The feed names Members in other entries (a move): only the Veto entry must hold no Player.
-      const feedText = async (cookie: string) => JSON.stringify((await readFeed(stage(), cookie, slug, 'limit=100')).filter(entry => entry.type === 'vetoes_revealed'))
+      const feedText = async (cookie: string) => JSON.stringify((await readFeed(rig(), cookie, slug, 'limit=100')).filter(entry => entry.type === 'vetoes_revealed'))
 
       const everyRead = async () => {
         for (const [who, cookie] of [['the Player', playerCookie], ['the Host', hostCookie], ['the other Party', secondCookie]] as const) {
@@ -424,7 +424,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     /** A spin of a Running Session under a Hidden wheel with no Veto window; the wheel holds Alpha, Beta and `extraGames` more. */
     async function spunWheel(extraGames: number) {
       const running = await runningEvent(NO_WINDOW, extraGames)
-      await hostSpins(stage(), { slug: running.slug, host: hostSigned })
+      await hostSpins(rig(), { slug: running.slug, host: hostSigned })
       const [row] = await db.select().from(draws)
       const pool = [running.a, running.b, ...running.more]
       const drawn = pool.find(secret => secret.id === row!.gameId)!
@@ -473,8 +473,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     // them. So a sealed cast changes nothing a viewer outside its Party can read, on any route: the bodies are byte-identical.
     it('changes no GET route for the Host, the other Party or a non-Member when a Party casts a Veto before the end of its window, and reveals it at the end (#231, #355)', async () => {
       const { slug, inviteToken, secondCookie, a, b, c, epsilon } = await runningEvent()
-      const { drawId } = await hostSpins(stage(), { slug, host: hostSigned })
-      await clockToStop(stage(), drawId)
+      const { drawId } = await hostSpins(rig(), { slug, host: hostSigned })
+      await clockToStop(rig(), drawId)
       const [row] = await db.select().from(draws)
       const drawn = [a, b].find(secret => secret.id === row!.gameId)!
       const seen = drawn.imageKey
@@ -486,7 +486,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const before = await sweep()
       expectStatuses(before, { seen })
       expect(await playerRead()).toMatchObject({ team: 1, cast: false })
-      await playerVetoes(stage(), { slug }, drawId, world.playerSigned)
+      await playerVetoes(rig(), { slug }, drawId, world.playerSigned)
       expect(await db.select().from(vetoes)).toHaveLength(1)
       const after = await sweep()
       expectStatuses(after, { seen })
@@ -503,7 +503,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       // The Members' 200s on the four Event routes; the non-Member's 404 there and 200 on Home are the table's (#418).
       for (const route of ['/api/e', '/api/e/:slug', '/api/e/:slug/activity', '/api/e/:slug/ics']) for (const who of [HOST, OTHER_PARTY]) expect(statusOf(before, route, who), `${route} as ${who}`).toEqual([200])
       expect(await playerRead()).toMatchObject({ team: 1, cast: true })
-      await clockToEnd(stage(), drawId)
+      await clockToEnd(rig(), drawId)
       const revealed = await sweep()
       expectStatuses(revealed, { seen })
       for (const who of [HOST, OTHER_PARTY]) {

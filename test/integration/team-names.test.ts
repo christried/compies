@@ -5,7 +5,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, setUpEvent, type Stage } from './scenario'
+import { readEvent, setUpEvent, type Rig } from './scenario'
 import { signIn, stubAuthEnv } from './sign-in'
 
 // Team names (#161, spec #153 stories 34-41): a Player in a team gives one word, the team's name is the words in the
@@ -18,13 +18,13 @@ const three = { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example
 describe('Team names', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier })
-    stage = { request, db: testDb.db, notifier }
+    rig = { request, db: testDb.db, notifier }
   })
 
   afterAll(async () => {
@@ -44,7 +44,7 @@ describe('Team names', () => {
   /** An Event with a set Date (Team choice open, 2 teams of 3) by the Host, with Players One, Two and Three on the Bench. */
   async function setup(settings: Record<string, unknown> = {}) {
     // One Session, two Slots: the second is a Slot the poll still offers, beside the Date (`extraSlots`).
-    const event = await setUpEvent(stage, {
+    const event = await setUpEvent(rig, {
       host,
       players: { one, two, three },
       seats: [],
@@ -82,7 +82,7 @@ describe('Team names', () => {
   }
 
   async function read(game: Game, cookie = game.hostCookie): Promise<EventView> {
-    return await readEvent(stage, cookie, game.slug)
+    return await readEvent(rig, cookie, game.slug)
   }
 
   async function names(game: Game) {

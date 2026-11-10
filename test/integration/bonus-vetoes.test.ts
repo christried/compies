@@ -8,7 +8,7 @@ import { BONUS_VETO_MAX } from '../../shared/rounds'
 import { SPIN } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, readFeed, setUpEvent, startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, setUpEvent, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Bonus Vetoes (#233, spec #218 § Bonus Vetoes): the Host grants a Party one, through the HTTP API with the in-memory room and a test
@@ -27,14 +27,14 @@ const { stop: STOP, end: END } = SPIN
 describe('Bonus Vetoes (#233)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -60,7 +60,7 @@ describe('Bonus Vetoes (#233)', () => {
    */
   async function event({ mode = 'lucky_wheel', allowance = 1, started = true }: { mode?: 'lucky_wheel' | 'admin_pick', allowance?: number, started?: boolean } = {}) {
     const make = started ? startRunningEvent : setUpEvent
-    const ev = await make(stage, {
+    const ev = await make(rig, {
       host,
       players,
       seats: started ? [['one', 1], ['two', 2]] : [],
@@ -75,7 +75,7 @@ describe('Bonus Vetoes (#233)', () => {
   type Party = Awaited<ReturnType<typeof event>>
 
   const grant = (party: Party, team: number, cookie = party.hostCookie) => send('POST', `/api/e/${party.slug}/bonus-vetoes`, cookie, { team })
-  const read = (party: Party, cookie = party.hostCookie) => readEvent(stage, cookie, party.slug)
+  const read = (party: Party, cookie = party.hostCookie) => readEvent(rig, cookie, party.slug)
   const spin = (party: Party) => send('POST', `/api/e/${party.slug}/rounds/spin`, party.hostCookie)
   const cast = (party: Party, drawId: string, cookie: string) => send('POST', `/api/e/${party.slug}/draws/${drawId}/veto`, cookie)
   const bonusRows = (party: Party) => testDb.db.select().from(bonusVetoes).where(eq(bonusVetoes.eventId, party.eventId))
@@ -161,7 +161,7 @@ describe('Bonus Vetoes (#233)', () => {
 
     expect((await grant(party, 2)).status).toBe(200)
 
-    const entries = await readFeed(stage, party.one, party.slug)
+    const entries = await readFeed(rig, party.one, party.slug)
     expect(entries.filter(entry => entry.type === 'bonus_veto_granted')).toMatchObject([{ type: 'bonus_veto_granted', params: { team: 2 }, actor: { name: 'Hostess' } }])
     expect(notifier.messages(party.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added'])
   })

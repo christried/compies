@@ -5,7 +5,7 @@ import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, setUpEvent, startRunningEvent, type Stage } from './scenario'
+import { readEvent, setUpEvent, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The Countdown (#236, spec #218 § Countdown): the Host sets it in minutes and seconds (5 s to 99:59), starts, pauses, resumes
@@ -24,14 +24,14 @@ const SECOND = 1000
 describe('Countdown', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -54,7 +54,7 @@ describe('Countdown', () => {
   /** An Event with a Host and two Members. `running` starts its first Session (both Members seated in a team each). */
   async function event({ running = true }: { running?: boolean } = {}) {
     const make = running ? startRunningEvent : setUpEvent
-    const ev = await make(stage, {
+    const ev = await make(rig, {
       host,
       players,
       seats: running ? [['one', 1], ['two', 2]] : [],
@@ -67,7 +67,7 @@ describe('Countdown', () => {
 
   const setSeconds = (game: Event, seconds: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/countdown`, cookie, { seconds })
   const act = (game: Event, action: 'start' | 'pause' | 'reset', cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/countdown/${action}`, cookie)
-  const readCountdown = async (game: Event, cookie = game.hostCookie) => (await readEvent(stage, cookie, game.slug)).countdown
+  const readCountdown = async (game: Event, cookie = game.hostCookie) => (await readEvent(rig, cookie, game.slug)).countdown
   const countdownRow = async (game: Event) => (await testDb.db.select().from(countdowns).where(eq(countdowns.eventId, game.eventId)))[0]
 
   describe('setting it', () => {

@@ -8,7 +8,7 @@ import type { EventView } from '../../shared/event'
 import { WINDOW_MS } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createInterleavingDb, createTestDb, resetDatabase } from './harness'
-import { readEvent, readFeed, startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Entering a Result on an open Round (#273, spec #272): `PUT /api/e/:slug/rounds/:id/result` through the HTTP API with the in-memory
@@ -29,14 +29,14 @@ const T0 = '2090-10-30T10:00:00.000Z'
 describe('Results', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -69,7 +69,7 @@ describe('Results', () => {
     const members = Object.fromEntries(seatedKeys.map(key => [key, players[key]])) as Record<typeof seatedKeys[number], typeof players[keyof typeof players]>
     // Signed in, no Member: the Players the Event has no seat for.
     const bystanders = Object.fromEntries(Object.entries(players).filter(([key]) => !(seatedKeys as string[]).includes(key)))
-    const ev = await startRunningEvent(stage, {
+    const ev = await startRunningEvent(rig, {
       host,
       players: members,
       outsiders: bystanders,
@@ -91,12 +91,12 @@ describe('Results', () => {
 
   type Game = Awaited<ReturnType<typeof running>>
 
-  const read = (game: Game, cookie = game.hostCookie) => readEvent(stage, cookie, game.slug)
+  const read = (game: Game, cookie = game.hostCookie) => readEvent(rig, cookie, game.slug)
   const set = (game: Game, gameId: string, vetoAllowed?: boolean) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, vetoAllowed === undefined ? { gameId } : { gameId, vetoAllowed })
   const enter = (game: Game, roundId: string, body: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/rounds/${roundId}/result`, cookie, body)
   const roundRows = (game: Game) => testDb.db.select().from(rounds).where(eq(rounds.eventId, game.eventId)).orderBy(rounds.startedAt, rounds.id)
   const placesOf = (roundId: string) => testDb.db.select().from(roundPlaces).where(eq(roundPlaces.roundId, roundId)).orderBy(roundPlaces.team)
-  const feedOf = (game: Game, cookie = game.hostCookie) => readFeed(stage, cookie, game.slug)
+  const feedOf = (game: Game, cookie = game.hostCookie) => readFeed(rig, cookie, game.slug)
 
   /** Two Parties' Places and the Scores of a Result for two Parties: Party 1 wins, Party 2 is second. */
   const twoParties = [{ team: 1, place: 1, score: ' 16 ' }, { team: 2, place: 2, score: '' }]

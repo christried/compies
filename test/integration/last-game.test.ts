@@ -7,7 +7,7 @@ import { GAME_COUNT_MAX } from '../../shared/settings'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, readFeed, startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, startRunningEvent, type Rig } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The last game (#278, spec #272): `POST /api/e/:slug/last-game` raises the Game count by one while the Standings hold a Tie. This file
@@ -29,14 +29,14 @@ const T0 = '2090-10-30T10:00:00.000Z'
 describe('The last game', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -61,7 +61,7 @@ describe('The last game', () => {
    * `confirmed` Slots have a Date. The first Session is started. Games: Halo and Kart in the Game pool, Schach in the library.
    */
   async function running({ gameCount = 2, sessions: sessionCount = 2, confirmed = sessionCount }: { gameCount?: number, sessions?: number, confirmed?: number } = {}) {
-    const ev = await startRunningEvent(stage, {
+    const ev = await startRunningEvent(rig, {
       host,
       players,
       seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]],
@@ -83,7 +83,7 @@ describe('The last game', () => {
 
   type Game = Awaited<ReturnType<typeof running>>
 
-  const read = (game: Game, cookie = game.hostCookie) => readEvent(stage, cookie, game.slug)
+  const read = (game: Game, cookie = game.hostCookie) => readEvent(rig, cookie, game.slug)
   const set = (game: Game, gameId: string) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, { gameId })
   const setRound = async (game: Game, gameId: string) => (await (await set(game, gameId)).json() as { roundId: string }).roundId
   const enter = (game: Game, roundId: string, body: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/rounds/${roundId}/result`, cookie, body)
@@ -145,7 +145,7 @@ describe('The last game', () => {
       expect(await response.json()).toEqual({ gameCount: 3 })
       expect(await eventRowOf(game.eventId)).toMatchObject({ gameCount: 3 })
       expect(await activityTypes(game.eventId)).toEqual([...activityBefore, 'game_count_changed'].sort())
-      expect((await readFeed(stage, game.hostCookie, game.slug))[0]).toMatchObject({ type: 'game_count_changed', actor: { id: game.ids.host }, params: { from: 2, to: 3 } })
+      expect((await readFeed(rig, game.hostCookie, game.slug))[0]).toMatchObject({ type: 'game_count_changed', actor: { id: game.ids.host }, params: { from: 2, to: 3 } })
       expect(types(game.eventId)).toEqual(['event.changed', 'activity.added'])
       expect((await read(game)).settings).toMatchObject({ gameCount: 3 })
       expect((await read(game)).end).toMatchObject({ played: 2, gameCount: 3, complete: false, tie: null })

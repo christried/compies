@@ -7,7 +7,7 @@ import type { ActivityPage } from '../../shared/activity'
 import { SPIN } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, readFeed, readFeedText, startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, readFeedText, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Setting the next game, several open Rounds and putting one back (#228, spec #218 § Rounds, „Nächstes Spiel setzen“): the
@@ -28,14 +28,14 @@ const T0 = '2090-10-30T10:00:00.000Z'
 describe('Rounds', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -62,7 +62,7 @@ describe('Rounds', () => {
    * unless `vetoAllowance` says otherwise: these tests are about the draw, the Veto window is vetoes.test.ts's).
    */
   async function running({ gameCount = 10, wheel = false, poolPreview, vetoAllowance = 0 }: { gameCount?: number, wheel?: boolean, poolPreview?: boolean, vetoAllowance?: number } = {}) {
-    const ev = await startRunningEvent(stage, {
+    const ev = await startRunningEvent(rig, {
       host,
       players,
       seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]],
@@ -82,7 +82,7 @@ describe('Rounds', () => {
 
   type Game = Awaited<ReturnType<typeof running>>
 
-  const read = (game: Game, cookie = game.hostCookie) => readEvent(stage, cookie, game.slug)
+  const read = (game: Game, cookie = game.hostCookie) => readEvent(rig, cookie, game.slug)
   const set = (game: Game, gameId: string, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/rounds`, cookie, { gameId })
   const putBackRound = (game: Game, roundId: string, cookie = game.hostCookie) => send('DELETE', `/api/e/${game.slug}/rounds/${roundId}`, cookie)
   const roundRows = (game: Game) => testDb.db.select().from(rounds).where(eq(rounds.eventId, game.eventId)).orderBy(rounds.startedAt)
@@ -189,7 +189,7 @@ describe('Rounds', () => {
       await set(game, game.halo.id)
 
       const [round] = await roundRows(game)
-      const page = JSON.parse(await readFeedText(stage, game.cookies.three, game.slug)) as ActivityPage
+      const page = JSON.parse(await readFeedText(rig, game.cookies.three, game.slug)) as ActivityPage
       expect(page.entries).toMatchObject([{ type: 'game_set', actor: { name: 'Hostess' }, params: { roundId: round!.id, gameId: game.halo.id }, games: { [game.halo.id]: 'Halo' } }])
       expect(JSON.stringify(page)).not.toContain('"price"')
       const messages = notifier.messages(game.eventId)
@@ -335,7 +335,7 @@ describe('Rounds', () => {
 
       await putBackRound(game, round!.id)
 
-      const page = JSON.parse(await readFeedText(stage, game.cookies.one, game.slug)) as ActivityPage
+      const page = JSON.parse(await readFeedText(rig, game.cookies.one, game.slug)) as ActivityPage
       expect(page.entries.map(entry => entry.type)).toEqual(['game_put_back', 'game_set'])
       expect(page.entries[0]).toMatchObject({ actor: { name: 'Hostess' }, params: { roundId: round!.id, gameId: game.halo.id }, games: { [game.halo.id]: 'Halo' } })
     })
@@ -447,7 +447,7 @@ describe('Rounds', () => {
     const { lead: LEAD, stop: STOP } = SPIN
     const iso = (offsetMs: number) => new Date(new Date(T0).getTime() + offsetMs).toISOString()
     const spin = (game: Game, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/rounds/spin`, cookie)
-    const feedOf = (game: Game, cookie: string) => readFeed(stage, cookie, game.slug)
+    const feedOf = (game: Game, cookie: string) => readFeed(rig, cookie, game.slug)
     const nameOf = (game: Game, id: string) => [game.halo, game.kart, game.schach].find(candidate => candidate.id === id)!.name
 
     /** Spins and answers the Round's and the draw's ids. */

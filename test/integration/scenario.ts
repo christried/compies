@@ -42,8 +42,8 @@ import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
 // Event whose games are created over HTTP with an image upload (hidden-wheel: the Host must be signed in first, so it goes through
 // `hostSignsIn` + the local `newGame` + `hostCreatesEvent({ pool })` + `playersJoin` + `startRunningSession`).
 
-/** Where the verbs run: the app (`createTestApp`), its database, and the doubles the test already owns. */
-export interface Stage {
+/** Where the verbs run: the app (`createTestApp`), its database, and the doubles the test already owns. A test rig, not the Event page's Stage (#415). */
+export interface Rig {
   request: TestRequest
   db: Db
   /** For `clockToStop` and `clockToEnd`: the clock the app was built with. */
@@ -105,7 +105,7 @@ export interface ScenarioEvent<Player extends string = string, Game extends stri
 /** What a verb on an Event needs: its slug, its ids and the Host's login. `ScenarioEvent` is one. */
 type EventRef = Pick<ScenarioEvent<string, string, string>, 'slug' | 'eventId' | 'inviteToken' | 'slotIds' | 'host'>
 
-const sendOf = (stage: Stage) => sendVia(() => stage.request)
+const sendOf = (rig: Rig) => sendVia(() => rig.request)
 
 /** The first two Slots every file used; more Sessions follow a day apart. */
 const DEFAULT_SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
@@ -119,9 +119,9 @@ async function expectOk(response: Response, what: string): Promise<Response> {
 // --- Sign-in --------------------------------------------------------------------------------------------------------------
 
 /** Signs the profile in through the OAuth round trip (Better Auth with the provider stubbed). */
-export async function signInAs(stage: Stage, profile: ProviderProfile): Promise<Signed> {
-  const { cookie } = await signIn(stage.db, profile)
-  const [account] = await stage.db.select({ userId: authAccounts.userId }).from(authAccounts)
+export async function signInAs(rig: Rig, profile: ProviderProfile): Promise<Signed> {
+  const { cookie } = await signIn(rig.db, profile)
+  const [account] = await rig.db.select({ userId: authAccounts.userId }).from(authAccounts)
     .where(eq(authAccounts.accountId, profile.id))
   expect(account, `${profile.provider}:${profile.id} has no user row after signing in`).toBeDefined()
   return { profile, cookie, id: account!.userId }
@@ -131,9 +131,9 @@ export async function signInAs(stage: Stage, profile: ProviderProfile): Promise<
  * Signs the Host in with the Host permission: it sets the allowlist to that one account (`HOST_PROVIDER_IDS`) first, and so overwrites
  * `ADMIN_PROVIDER_IDS` (empty). A test that needs an Admin calls `setAllowlist` (./sign-in) after this.
  */
-export async function hostSignsIn(stage: Stage, profile: ProviderProfile): Promise<Signed> {
+export async function hostSignsIn(rig: Rig, profile: ProviderProfile): Promise<Signed> {
   setAllowlist({ hosts: `${profile.provider}:${profile.id}` })
-  return await signInAs(stage, profile)
+  return await signInAs(rig, profile)
 }
 
 // --- Setting an Event up --------------------------------------------------------------------------------------------------
@@ -142,92 +142,92 @@ export async function hostSignsIn(stage: Stage, profile: ProviderProfile): Promi
  * The Host creates an Event with a poll (POST /api/e). `settings` go in as given (default `TEST_SETTINGS`), so a file whose settings omit
  * a key keeps omitting it; `pool` is a list of library game ids for the Game pool. `startRunningEvent` and `setUpEvent` call this first.
  */
-export async function hostCreatesEvent(stage: Stage, host: Signed, { name = 'Freitags-Zocken', sessions = 2, slots, settings = TEST_SETTINGS, pool }: {
+export async function hostCreatesEvent(rig: Rig, host: Signed, { name = 'Freitags-Zocken', sessions = 2, slots, settings = TEST_SETTINGS, pool }: {
   name?: string
   sessions?: number
   slots?: readonly string[]
   settings?: Record<string, unknown>
   pool?: readonly string[]
 } = {}): Promise<CreatedEvent> {
-  const created = await sendOf(stage)('POST', '/api/e', host.cookie, {
+  const created = await sendOf(rig)('POST', '/api/e', host.cookie, {
     name, dateMode: 'poll', sessions, slots: slots ?? defaultSlots(sessions), settings, ...(pool ? { pool } : {}),
   })
   await expectOk(created, 'POST /api/e')
   const { slug, inviteUrl } = await created.json() as { slug: string, inviteUrl: string }
-  const [eventRow] = await stage.db.select({ id: events.id }).from(events).where(eq(events.slug, slug))
-  const slotRows = await stage.db.select({ id: pollSlots.id }).from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)
+  const [eventRow] = await rig.db.select({ id: events.id }).from(events).where(eq(events.slug, slug))
+  const slotRows = await rig.db.select({ id: pollSlots.id }).from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)
   return { slug, eventId: eventRow!.id, inviteToken: new URL(inviteUrl).pathname.slice('/e/'.length), slotIds: slotRows.map(row => row.id) }
 }
 
 /** The signed-in Users join through the Invite link (POST /api/invite/:invite): Members on the Bench, with a `member_joined` entry and a room message each. */
-export async function playersJoin(stage: Stage, event: Pick<CreatedEvent, 'inviteToken'>, players: readonly Signed[]): Promise<void> {
-  for (const player of players) await expectOk(await sendOf(stage)('POST', `/api/invite/${event.inviteToken}`, player.cookie), `join as ${player.profile.name}`)
+export async function playersJoin(rig: Rig, event: Pick<CreatedEvent, 'inviteToken'>, players: readonly Signed[]): Promise<void> {
+  for (const player of players) await expectOk(await sendOf(rig)('POST', `/api/invite/${event.inviteToken}`, player.cookie), `join as ${player.profile.name}`)
 }
 
 /** The Host confirms the first `count` Slots (default all) as the Sessions' Dates, in Slot order. */
-export async function hostSetsDates(stage: Stage, event: Pick<EventRef, 'slug' | 'slotIds' | 'host'>, count: number = event.slotIds.length): Promise<void> {
+export async function hostSetsDates(rig: Rig, event: Pick<EventRef, 'slug' | 'slotIds' | 'host'>, count: number = event.slotIds.length): Promise<void> {
   for (const slotId of event.slotIds.slice(0, count)) {
-    await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/confirm`, event.host.cookie, { slotId }), 'confirm a Date')
+    await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/confirm`, event.host.cookie, { slotId }), 'confirm a Date')
   }
 }
 
 /** The Player moves THEMSELF to the seat (POST move with their own cookie). */
-async function takeSeat(stage: Stage, slug: string, player: Signed, seat: Seat): Promise<void> {
+async function takeSeat(rig: Rig, slug: string, player: Signed, seat: Seat): Promise<void> {
   const to = seat === 'stands' ? { zone: 'stands' } : { zone: 'team', team: seat }
-  await expectOk(await sendOf(stage)('POST', `/api/e/${slug}/move`, player.cookie, { userId: player.id, to }), `${player.profile.name} takes a seat`)
+  await expectOk(await sendOf(rig)('POST', `/api/e/${slug}/move`, player.cookie, { userId: player.id, to }), `${player.profile.name} takes a seat`)
 }
 
 /** Each Player moves THEMSELF to their seat; the Host moving a Player is a request a test sends itself. */
-export async function playersTakeSeats<Player extends string>(stage: Stage, event: { slug: string, players: Record<Player, Signed> }, seats: readonly (readonly [Player, Seat])[]): Promise<void> {
-  for (const [key, seat] of seats) await takeSeat(stage, event.slug, event.players[key], seat)
+export async function playersTakeSeats<Player extends string>(rig: Rig, event: { slug: string, players: Record<Player, Signed> }, seats: readonly (readonly [Player, Seat])[]): Promise<void> {
+  for (const [key, seat] of seats) await takeSeat(rig, event.slug, event.players[key], seat)
 }
 
 /** The Host starts the next Session. */
-export async function hostStartsSession(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>): Promise<void> {
-  await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/sessions/start`, event.host.cookie), 'start the Session')
+export async function hostStartsSession(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>): Promise<void> {
+  await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/sessions/start`, event.host.cookie), 'start the Session')
 }
 
 /** The Host ends the Running Session. */
-export async function hostEndsSession(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>): Promise<void> {
-  await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/sessions/end`, event.host.cookie), 'end the Session')
+export async function hostEndsSession(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>): Promise<void> {
+  await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/sessions/end`, event.host.cookie), 'end the Session')
 }
 
 /**
  * The whole set-up, in this order: sign in (Host, Players, outsiders), create the Event, make the Members, insert the games, set the
  * Dates, seat the Players, start the Session when `start` says so, then `quiet`. Every Player in `players` is a Member, seated or not.
  */
-async function buildEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: ScenarioEventOptions<Player, Game, Outsider>, start: boolean): Promise<ScenarioEvent<Player, Game, Outsider>> {
+async function buildEvent<Player extends string, Game extends string = never, Outsider extends string = never>(rig: Rig, options: ScenarioEventOptions<Player, Game, Outsider>, start: boolean): Promise<ScenarioEvent<Player, Game, Outsider>> {
   const { sessions = 2, confirmed = sessions, join = 'rows', quiet = 'room' } = options
   const dated = options.slots ?? defaultSlots(sessions)
   expect(dated, 'slots and sessions must have the same length').toHaveLength(sessions)
   const slots = [...dated, ...(options.extraSlots ?? [])]
 
-  const host = await hostSignsIn(stage, options.host)
+  const host = await hostSignsIn(rig, options.host)
   const players = {} as Record<Player, Signed>
-  for (const [key, profile] of Object.entries<ProviderProfile>(options.players)) players[key as Player] = await signInAs(stage, profile)
+  for (const [key, profile] of Object.entries<ProviderProfile>(options.players)) players[key as Player] = await signInAs(rig, profile)
   const outsiders = {} as Record<Outsider, Signed>
-  for (const [key, profile] of Object.entries<ProviderProfile>(options.outsiders ?? {})) outsiders[key as Outsider] = await signInAs(stage, profile)
+  for (const [key, profile] of Object.entries<ProviderProfile>(options.outsiders ?? {})) outsiders[key as Outsider] = await signInAs(rig, profile)
 
-  const created = await hostCreatesEvent(stage, host, { name: options.name, sessions, slots, settings: { ...TEST_SETTINGS, ...options.settings } })
+  const created = await hostCreatesEvent(rig, host, { name: options.name, sessions, slots, settings: { ...TEST_SETTINGS, ...options.settings } })
   const members = Object.values<Signed>(players)
-  if (join === 'invite') await playersJoin(stage, created, members)
-  else if (members.length > 0) await stage.db.insert(eventMembers).values(members.map(player => ({ eventId: created.eventId, userId: player.id })))
+  if (join === 'invite') await playersJoin(rig, created, members)
+  else if (members.length > 0) await rig.db.insert(eventMembers).values(members.map(player => ({ eventId: created.eventId, userId: player.id })))
 
   const seeded = {} as Record<Game, typeof games.$inferSelect>
   const seeds = options.games ?? []
   if (seeds.length > 0) {
-    const rows = await stage.db.insert(games).values(seeds.map(seed => ({ ...seed.values, createdBy: host.id }))).returning()
+    const rows = await rig.db.insert(games).values(seeds.map(seed => ({ ...seed.values, createdBy: host.id }))).returning()
     const pooled = rows.filter((_, index) => seeds[index]!.pool)
-    if (pooled.length > 0) await stage.db.insert(eventPoolGames).values(pooled.map(row => ({ eventId: created.eventId, gameId: row.id })))
+    if (pooled.length > 0) await rig.db.insert(eventPoolGames).values(pooled.map(row => ({ eventId: created.eventId, gameId: row.id })))
     for (const [index, seed] of seeds.entries()) seeded[seed.key] = rows[index]!
   }
 
   const event: ScenarioEvent<Player, Game, Outsider> = { ...created, host, players, outsiders, games: seeded }
-  await hostSetsDates(stage, event, confirmed)
-  await playersTakeSeats(stage, event, options.seats)
-  if (start) await hostStartsSession(stage, event)
-  if (quiet === 'room-and-feed') await stage.db.delete(activity)
-  if (quiet) stage.notifier?.clear()
+  await hostSetsDates(rig, event, confirmed)
+  await playersTakeSeats(rig, event, options.seats)
+  if (start) await hostStartsSession(rig, event)
+  if (quiet === 'room-and-feed') await rig.db.delete(activity)
+  if (quiet) rig.notifier?.clear()
   return event
 }
 
@@ -235,16 +235,16 @@ async function buildEvent<Player extends string, Game extends string = never, Ou
  * An Event with a Running Session: the Host and the Players signed in, the Event created, its Members, games, Dates (`confirmed`) and
  * seats, the Session started, then `quiet`.
  */
-export async function startRunningEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: ScenarioEventOptions<Player, Game, Outsider>): Promise<ScenarioEvent<Player, Game, Outsider>> {
-  return await buildEvent(stage, options, true)
+export async function startRunningEvent<Player extends string, Game extends string = never, Outsider extends string = never>(rig: Rig, options: ScenarioEventOptions<Player, Game, Outsider>): Promise<ScenarioEvent<Player, Game, Outsider>> {
+  return await buildEvent(rig, options, true)
 }
 
 /**
  * An Event that has no Running Session: the Host and the Players signed in, the Event created, its Members, games, Dates (`confirmed`)
  * and seats, then `quiet`; no Session start.
  */
-export async function setUpEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: ScenarioEventOptions<Player, Game, Outsider>): Promise<ScenarioEvent<Player, Game, Outsider>> {
-  return await buildEvent(stage, options, false)
+export async function setUpEvent<Player extends string, Game extends string = never, Outsider extends string = never>(rig: Rig, options: ScenarioEventOptions<Player, Game, Outsider>): Promise<ScenarioEvent<Player, Game, Outsider>> {
+  return await buildEvent(rig, options, false)
 }
 
 // --- During the Session ---------------------------------------------------------------------------------------------------
@@ -253,72 +253,72 @@ export async function setUpEvent<Player extends string, Game extends string = ne
  * Sets the first Session's Date, seats the Players in teams 1, 2, … (one each) and starts the Session: for an Event a file made itself
  * (`hostCreatesEvent`), so the first Slot is looked up by the slug.
  */
-export async function startRunningSession(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>, seated: readonly Signed[]): Promise<void> {
-  const [eventRow] = await stage.db.select().from(events).where(eq(events.slug, event.slug))
-  const [slot] = await stage.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)
-  await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/confirm`, event.host.cookie, { slotId: slot!.id }), 'confirm a Date')
-  for (const [index, player] of seated.entries()) await takeSeat(stage, event.slug, player, index + 1)
-  await hostStartsSession(stage, event)
+export async function startRunningSession(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>, seated: readonly Signed[]): Promise<void> {
+  const [eventRow] = await rig.db.select().from(events).where(eq(events.slug, event.slug))
+  const [slot] = await rig.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)
+  await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/confirm`, event.host.cookie, { slotId: slot!.id }), 'confirm a Date')
+  for (const [index, player] of seated.entries()) await takeSeat(rig, event.slug, player, index + 1)
+  await hostStartsSession(rig, event)
 }
 
 /** The Host sets a game in the Running Session; answers the Round's id. */
-export async function hostSets(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>, gameId: string): Promise<string> {
-  const response = await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/rounds`, event.host.cookie, { gameId }), 'set a game')
+export async function hostSets(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>, gameId: string): Promise<string> {
+  const response = await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/rounds`, event.host.cookie, { gameId }), 'set a game')
   return (await response.json() as { roundId: string }).roundId
 }
 
 /** The Host puts a Round back. */
-export async function hostPutsBack(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>, roundId: string): Promise<void> {
-  await expectOk(await sendOf(stage)('DELETE', `/api/e/${event.slug}/rounds/${roundId}`, event.host.cookie), 'put a Round back')
+export async function hostPutsBack(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>, roundId: string): Promise<void> {
+  await expectOk(await sendOf(rig)('DELETE', `/api/e/${event.slug}/rounds/${roundId}`, event.host.cookie), 'put a Round back')
 }
 
 /** The Host spins the Lucky Wheel; answers the Round's and the draw's ids. */
-export async function hostSpins(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>): Promise<{ roundId: string, drawId: string }> {
-  const response = await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/rounds/spin`, event.host.cookie), 'spin the wheel')
+export async function hostSpins(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>): Promise<{ roundId: string, drawId: string }> {
+  const response = await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/rounds/spin`, event.host.cookie), 'spin the wheel')
   return await response.json() as { roundId: string, drawId: string }
 }
 
 /** A Player casts a Veto against a draw (POST draws/:drawId/veto). */
-export async function playerVetoes(stage: Stage, event: Pick<EventRef, 'slug'>, drawId: string, player: Signed): Promise<void> {
-  await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/draws/${drawId}/veto`, player.cookie), `${player.profile.name} casts a Veto`)
+export async function playerVetoes(rig: Rig, event: Pick<EventRef, 'slug'>, drawId: string, player: Signed): Promise<void> {
+  await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/draws/${drawId}/veto`, player.cookie), `${player.profile.name} casts a Veto`)
 }
 
 /** The Host enters a Result on an open Round: one `{ team, place, score? }` per Party. Answers the Round's id and number. */
-export async function hostEntersResult(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>, roundId: string, places: readonly { team: number, place: number, score?: string }[]): Promise<{ roundId: string, number: number }> {
-  const response = await expectOk(await sendOf(stage)('PUT', `/api/e/${event.slug}/rounds/${roundId}/result`, event.host.cookie, { places }), 'enter a Result')
+export async function hostEntersResult(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>, roundId: string, places: readonly { team: number, place: number, score?: string }[]): Promise<{ roundId: string, number: number }> {
+  const response = await expectOk(await sendOf(rig)('PUT', `/api/e/${event.slug}/rounds/${roundId}/result`, event.host.cookie, { places }), 'enter a Result')
   return await response.json() as { roundId: string, number: number }
 }
 
 /** The Host finishes the Event with a winner or a tie. */
-export async function hostFinishes(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>, { outcome, winners }: { outcome: 'winner' | 'tie', winners: readonly number[] }): Promise<EventFinished> {
-  const response = await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/finish`, event.host.cookie, { outcome, winners }), 'finish the Event')
+export async function hostFinishes(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>, { outcome, winners }: { outcome: 'winner' | 'tie', winners: readonly number[] }): Promise<EventFinished> {
+  const response = await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/finish`, event.host.cookie, { outcome, winners }), 'finish the Event')
   return await response.json() as EventFinished
 }
 
 /** The Host tosses the Coin. */
-export async function hostTossesCoin(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>): Promise<CoinTossed> {
-  const response = await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/coin`, event.host.cookie), 'toss the Coin')
+export async function hostTossesCoin(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>): Promise<CoinTossed> {
+  const response = await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/coin`, event.host.cookie), 'toss the Coin')
   return await response.json() as CoinTossed
 }
 
 // --- The clock ------------------------------------------------------------------------------------------------------------
 
-async function drawRow(stage: Stage, drawId: string) {
-  if (!stage.clock) throw new Error('The stage has no clock: build the app with a testClock and pass it as `clock`')
-  const [row] = await stage.db.select().from(draws).where(eq(draws.id, drawId))
+async function drawRow(rig: Rig, drawId: string) {
+  if (!rig.clock) throw new Error('The rig has no clock: build the app with a testClock and pass it as `clock`')
+  const [row] = await rig.db.select().from(draws).where(eq(draws.id, drawId))
   expect(row, `no draw ${drawId}`).toBeDefined()
-  return { clock: stage.clock, row: row! }
+  return { clock: rig.clock, row: row! }
 }
 
 /** Moves the clock to the draw's stop: the wheel has landed, the Veto window opens (a set draw's stop is its commit). */
-export async function clockToStop(stage: Stage, drawId: string): Promise<void> {
-  const { clock, row } = await drawRow(stage, drawId)
+export async function clockToStop(rig: Rig, drawId: string): Promise<void> {
+  const { clock, row } = await drawRow(rig, drawId)
   clock.set(row.stopAt)
 }
 
 /** Moves the clock to the end of the draw's Veto window; throws when the draw has no window. */
-export async function clockToEnd(stage: Stage, drawId: string): Promise<void> {
-  const { clock, row } = await drawRow(stage, drawId)
+export async function clockToEnd(rig: Rig, drawId: string): Promise<void> {
+  const { clock, row } = await drawRow(rig, drawId)
   if (!row.vetoEndsAt) throw new Error(`The draw ${drawId} opened no Veto window`)
   clock.set(row.vetoEndsAt)
 }
@@ -326,22 +326,22 @@ export async function clockToEnd(stage: Stage, drawId: string): Promise<void> {
 // --- Reads ----------------------------------------------------------------------------------------------------------------
 
 /** The raw text of the Event read, for a secrecy check that searches the answer for a trace. */
-export async function readEventText(stage: Stage, cookie: string, slug: string): Promise<string> {
-  return await (await expectOk(await sendOf(stage)('GET', `/api/e/${slug}`, cookie), 'read the Event')).text()
+export async function readEventText(rig: Rig, cookie: string, slug: string): Promise<string> {
+  return await (await expectOk(await sendOf(rig)('GET', `/api/e/${slug}`, cookie), 'read the Event')).text()
 }
 
 /** The Event read (GET /api/e/:slug) as the User with `cookie` gets it. */
-export async function readEvent(stage: Stage, cookie: string, slug: string): Promise<EventView> {
-  return JSON.parse(await readEventText(stage, cookie, slug)) as EventView
+export async function readEvent(rig: Rig, cookie: string, slug: string): Promise<EventView> {
+  return JSON.parse(await readEventText(rig, cookie, slug)) as EventView
 }
 
 /** The raw text of the Activity feed; `query` is the query string, with or without the `?` (`'limit=100'`). */
-export async function readFeedText(stage: Stage, cookie: string, slug: string, query = ''): Promise<string> {
+export async function readFeedText(rig: Rig, cookie: string, slug: string, query = ''): Promise<string> {
   const search = query && !query.startsWith('?') ? `?${query}` : query
-  return await (await expectOk(await sendOf(stage)('GET', `/api/e/${slug}/activity${search}`, cookie), 'read the feed')).text()
+  return await (await expectOk(await sendOf(rig)('GET', `/api/e/${slug}/activity${search}`, cookie), 'read the feed')).text()
 }
 
 /** The entries of the Activity feed, newest first. */
-export async function readFeed(stage: Stage, cookie: string, slug: string, query = ''): Promise<ActivityEntry[]> {
-  return (JSON.parse(await readFeedText(stage, cookie, slug, query)) as ActivityPage).entries
+export async function readFeed(rig: Rig, cookie: string, slug: string, query = ''): Promise<ActivityEntry[]> {
+  return (JSON.parse(await readFeedText(rig, cookie, slug, query)) as ActivityPage).entries
 }

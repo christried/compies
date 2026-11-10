@@ -8,7 +8,7 @@ import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { hostEntersResult, hostFinishes, hostSets, startRunningEvent, type Stage } from './scenario'
+import { hostEntersResult, hostFinishes, hostSets, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // A finished Event is read-only for good (#277, spec #272): every write answers `wrong_phase`, and nothing it was asked to change changes.
@@ -30,14 +30,14 @@ const T0 = '2090-10-30T10:00:00.000Z'
 describe('a finished Event is read-only', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -62,7 +62,7 @@ describe('a finished Event is read-only', () => {
    * Players one and two sit in team 1, three and four in team 2. Returns the ids the table needs.
    */
   async function finishedWheel() {
-    const ev = await startRunningEvent(stage, {
+    const ev = await startRunningEvent(rig, {
       host,
       players,
       seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]],
@@ -79,9 +79,9 @@ describe('a finished Event is read-only', () => {
       ],
     })
     const session = (await testDb.db.select().from(sessions).where(eq(sessions.eventId, ev.eventId))).find(row => row.startedAt !== null)!.id
-    const round = await hostSets(stage, ev, ev.games.halo.id)
-    await hostEntersResult(stage, ev, round, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
-    await hostFinishes(stage, ev, { outcome: 'winner', winners: [1] })
+    const round = await hostSets(rig, ev, ev.games.halo.id)
+    await hostEntersResult(rig, ev, round, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
+    await hostFinishes(rig, ev, { outcome: 'winner', winners: [1] })
     notifier.clear()
     const cookies = { one: ev.players.one.cookie, two: ev.players.two.cookie, three: ev.players.three.cookie, four: ev.players.four.cookie }
     const ids = { host: ev.host.id, one: ev.players.one.id, two: ev.players.two.id, three: ev.players.three.id, four: ev.players.four.id }

@@ -8,7 +8,7 @@ import type { GamePrice, GameView } from '../../shared/game'
 import { createTestApp, mountedRoutes, type MountedRoute, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { hostCreatesEvent, playersJoin, readEventText, readFeedText, signInAs, startRunningSession, type Signed, type Stage } from './scenario'
+import { hostCreatesEvent, playersJoin, readEventText, readFeedText, signInAs, startRunningSession, type Signed, type Rig } from './scenario'
 import { setAllowlist, stubAuthEnv } from './sign-in'
 
 // What the Hidden wheel's secrecy tests share (#148, split in #418): the app with its doubles, the cast, the four games and the
@@ -216,8 +216,8 @@ export function hiddenWheelWorld() {
     await resetDatabase(testDb.db)
     store.clear()
     notifier.clear()
-    hostSigned = await signInAs(stage(), host)
-    playerSigned = await signInAs(stage(), player)
+    hostSigned = await signInAs(rig(), host)
+    playerSigned = await signInAs(rig(), player)
   })
 
   afterEach(() => {
@@ -226,8 +226,8 @@ export function hiddenWheelWorld() {
 
   // `app` exists only after `beforeAll`, and the files take `request` when their `describe` runs: the forwarder reads it when called.
   const request: TestRequest = (path, init) => app(path, init)
-  // The stage is made when used: the hooks assign `testDb`.
-  const stage = (): Stage => ({ request, db: testDb.db, clock, notifier })
+  // The rig is made when used: the hooks assign `testDb`.
+  const rig = (): Rig => ({ request, db: testDb.db, clock, notifier })
 
   async function newGame(name: string, videoId: string): Promise<Secret> {
     // Every game carries notes (#224): a Player must not get them under a Hidden wheel.
@@ -259,12 +259,12 @@ export function hiddenWheelWorld() {
     const a = await newGame('Alpha Arena', 'aaaaaaaaaaa')
     const b = await newGame('Beta Bowling', 'bbbbbbbbbbb')
     const c = await newGame('Gamma Garten', 'ccccccccccc')
-    const created = await hostCreatesEvent(stage(), hostSigned, { sessions: 1, slots: ['2090-10-30T20:30'], settings, pool: [a.id, b.id] })
-    await playersJoin(stage(), created, [playerSigned])
+    const created = await hostCreatesEvent(rig(), hostSigned, { sessions: 1, slots: ['2090-10-30T20:30'], settings, pool: [a.id, b.id] })
+    await playersJoin(rig(), created, [playerSigned])
     return { slug: created.slug, secrets: [a, b, c], a }
   }
 
-  const rawRead = (cookie: string, slug: string) => readEventText(stage(), cookie, slug)
+  const rawRead = (cookie: string, slug: string) => readEventText(rig(), cookie, slug)
 
   /**
    * A Running Session under a Hidden wheel: Alpha and Beta in the Game pool, Gamma and Epsilon only in the library. `more` are the
@@ -275,10 +275,10 @@ export function hiddenWheelWorld() {
     const [a, b, c, epsilon] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
     // More games for the Game pool, for a test that needs a wheel with many slices.
     const more = await Promise.all(Array.from({ length: extraGames }, (_, index) => newGame(`Zusatz ${index}`, `zzzzzzzzzz${index}`)))
-    const created = await hostCreatesEvent(stage(), hostSigned, { sessions: 1, slots: ['2090-10-30T20:30'], settings, pool: [a.id, b.id, ...more.map(game => game.id)] })
-    const secondSigned = await signInAs(stage(), second)
-    await playersJoin(stage(), created, [playerSigned, secondSigned])
-    await startRunningSession(stage(), { slug: created.slug, host: hostSigned }, [playerSigned, secondSigned])
+    const created = await hostCreatesEvent(rig(), hostSigned, { sessions: 1, slots: ['2090-10-30T20:30'], settings, pool: [a.id, b.id, ...more.map(game => game.id)] })
+    const secondSigned = await signInAs(rig(), second)
+    await playersJoin(rig(), created, [playerSigned, secondSigned])
+    await startRunningSession(rig(), { slug: created.slug, host: hostSigned }, [playerSigned, secondSigned])
     notifier.clear()
     const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, created.slug))
     return { slug: created.slug, eventId: eventRow!.id, inviteToken: created.inviteToken, a, b, c, epsilon, more, secondCookie: secondSigned.cookie }
@@ -288,14 +288,14 @@ export function hiddenWheelWorld() {
 
   /** Everything the Player can read: the Event read, the feed and the room. */
   async function whatThePlayerGets(slug: string, eventId: string) {
-    const feed = await readFeedText(stage(), playerSigned.cookie, slug, 'limit=100')
+    const feed = await readFeedText(rig(), playerSigned.cookie, slug, 'limit=100')
     return { event: await rawRead(playerSigned.cookie, slug), feed, room: JSON.stringify(notifier.messages(eventId)) }
   }
 
   return {
     get db() { return testDb.db },
     request,
-    stage,
+    rig,
     store,
     notifier,
     clock,

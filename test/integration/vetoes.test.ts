@@ -6,7 +6,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, readEventText, readFeed, startRunningEvent, type Signed, type Stage } from './scenario'
+import { readEvent, readEventText, readFeed, startRunningEvent, type Signed, type Rig } from './scenario'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { stubAuthEnv } from './sign-in'
 
@@ -35,14 +35,14 @@ function vetoRead({ left, own = null, revealed = null, draw = expect.objectConta
 describe('Vetoes', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -70,7 +70,7 @@ describe('Vetoes', () => {
    * `allowance` per Party, the Game count `gameCount`.
    */
   async function running({ allowance = 2, gameCount = 10, hiddenWheel = false }: { allowance?: number, gameCount?: number, hiddenWheel?: boolean } = {}) {
-    const event = await startRunningEvent(stage, {
+    const event = await startRunningEvent(rig, {
       host, players: people, outsiders: { outsider },
       seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2], ['stands', 'stands']] as const,
       settings: { teamSize: 2, gameCount, selectionMode: 'lucky_wheel', vetoAllowance: allowance, hiddenWheel },
@@ -93,7 +93,7 @@ describe('Vetoes', () => {
 
   type Party = Awaited<ReturnType<typeof running>>
 
-  const read = (party: Party, cookie = party.hostCookie) => readEvent(stage, cookie, party.slug)
+  const read = (party: Party, cookie = party.hostCookie) => readEvent(rig, cookie, party.slug)
   const spin = (party: Party, cookie = party.hostCookie) => send('POST', `/api/e/${party.slug}/rounds/spin`, cookie)
   const putBackRound = (party: Party, roundId: string) => send('DELETE', `/api/e/${party.slug}/rounds/${roundId}`, party.hostCookie)
   const set = (party: Party, gameId: string, vetoAllowed?: boolean) => send('POST', `/api/e/${party.slug}/rounds`, party.hostCookie, vetoAllowed === undefined ? { gameId } : { gameId, vetoAllowed })
@@ -101,7 +101,7 @@ describe('Vetoes', () => {
   const roundRows = (party: Party) => testDb.db.select().from(rounds).where(eq(rounds.eventId, party.eventId)).orderBy(rounds.startedAt)
   const drawRows = () => testDb.db.select().from(draws).orderBy(draws.committedAt)
   const vetoRows = () => testDb.db.select().from(vetoes)
-  const feedOf = (party: Party, cookie: string) => readFeed(stage, cookie, party.slug)
+  const feedOf = (party: Party, cookie: string) => readFeed(rig, cookie, party.slug)
 
   /** Spins and answers the Round's and the draw's ids. */
   async function spun(party: Party) {
@@ -323,7 +323,7 @@ describe('Vetoes', () => {
       const party = await running({ hiddenWheel: true })
       await setWithVeto(party)
 
-      const text = await readEventText(stage, party.cookies.one, party.slug)
+      const text = await readEventText(rig, party.cookies.one, party.slug)
       const view = JSON.parse(text) as EventView
 
       expect(view.wheel!.vetoes.draw).toMatchObject({ kind: 'set', game: { name: 'Halo' } })
