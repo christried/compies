@@ -98,6 +98,11 @@ async function onSaved(game: GameView) {
             layout="row"
           >
             <template #actions>
+              <GameNotesButton
+                :name="game.name"
+                :notes="game.notes"
+                :size="36"
+              />
               <IconButton
                 :icon="X"
                 :label="t('stepper.pool.remove', { name: game.name })"
@@ -136,6 +141,10 @@ async function onSaved(game: GameView) {
         </AppButton>
       </template>
       <template #card-actions="{ game }">
+        <GameNotesButton
+          :name="game.name"
+          :notes="game.notes"
+        />
         <IconButton
           v-if="pooled.has(game.id)"
           :icon="X"
