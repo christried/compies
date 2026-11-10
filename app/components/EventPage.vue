@@ -3,7 +3,7 @@ import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
-import { dateBlockedKey, eventPageState, headerPill, wearsPartyhat } from '~/utils/event-page'
+import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
@@ -86,8 +86,12 @@ const hostActions = useHostActions(
 // The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4) at the order clock's `now` (#441: a block that
 // something just happened in rises half a second after its moment). The clock lives here, not in the stage, so it survives a switch of the phone's tab; the stage
 // and the phone's Event tab read the same state.
+// A finished page waits for the Award ceremony (#445): until the Host has started it, and for a viewer who saw it waiting, until their run of the first start is over (useCeremonyHold).
+const { held, release } = useCeremonyHold(data)
 const { orderAt, counted, arrivals } = useStageOrder(() => data.value, serverClock.now)
-const pageState = computed(() => (data.value ? eventPageState(data.value, orderAt.value, counted.value) : null))
+const pageState = computed(() => (data.value ? eventPageState({ ...data.value, ceremonyHeld: held.value }, orderAt.value, counted.value) : null))
+/** What waits for the ceremony asks the page state, which the Stage module decides (waitsForCeremony): the Winners, the party hat, the Tabelle tab and the feed. */
+const waits = computed(() => (pageState.value ? waitsForCeremony(pageState.value) : false))
 /** The Standings' sequence waits while their block has not arrived on top (#442): false for a null clock (server render, reload, hidden tab) and for a view without a Result moment, which have no arrival. */
 const standingsHeld = computed(() => {
   const arrival = arrivals.value.standings
@@ -95,7 +99,7 @@ const standingsHeld = computed(() => {
 })
 
 // Compibert's header wears the party hat for a Player seated in a Leading Party (#38); no data (loading, error) is the plain head.
-const accessory = computed(() => (data.value && wearsPartyhat(data.value) ? 'partyhat' as const : undefined))
+const accessory = computed(() => (data.value && wearsPartyhat(data.value, waits.value) ? 'partyhat' as const : undefined))
 
 // The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
 const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
@@ -174,6 +178,7 @@ const { news } = useStandingsNews(data, slug)
             :next-number="feed.nextNumber"
             :refresh-tick="feedTick"
             :teams="data.teams"
+            :winners-hidden="waits"
           />
         </template>
         <!-- The tab scrolls inside the panel (#274): the panel is as tall as the window, a long history is not. -->
@@ -186,6 +191,7 @@ const { news } = useStandingsNews(data, slug)
               :view="data"
               :corrections="corrections"
               :news="news"
+              :waiting="waits"
             />
           </div>
         </template>
@@ -248,6 +254,7 @@ const { news } = useStandingsNews(data, slug)
         :view="data"
         :corrections="corrections"
         :news="news"
+        :waiting="waits"
       />
       <EventActivityView
         v-else
@@ -257,6 +264,7 @@ const { news } = useStandingsNews(data, slug)
         :next-number="feed.nextNumber"
         :refresh-tick="feedTick"
         :teams="data.teams"
+        :winners-hidden="waits"
       />
     </div>
 
@@ -307,6 +315,7 @@ const { news } = useStandingsNews(data, slug)
       :view="data"
       :server-now="serverClock.now"
       @share="shareOpen = true"
+      @over="release"
     />
 
     <EventHostDialogs

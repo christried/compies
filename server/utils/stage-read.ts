@@ -34,7 +34,7 @@ import { roundGameView } from './library'
 import { readClip } from './clip'
 import { countdownView, readCountdown } from './countdown'
 import { coinView } from './coin'
-import { ceremonyViewOf } from './ceremony'
+import { ceremonyShownOf, ceremonyViewOf } from './ceremony'
 import type { DrawRow } from './rounds'
 import { knownVetoRows } from './vetoes'
 
@@ -162,7 +162,7 @@ export async function resultsSection({ state, viewer, now }: { state: EventState
  * The Vetoes of the Lucky Wheel for one viewer (#231, spec #218 § Vetoes: sealed until the end of the window). A Veto cast on a
  * draw whose window still runs is the casting Party's own business: it counts toward `left` and shows as cast only for that
  * Party's Players. From `vetoEndsAt` on (the draw is settled by then, settleBeforeRead) every Party's Vetoes count and the
- * Vetoes of the window's draw are listed by Party. Which Player cast one never leaves the server (#355). Bench and Stands, and a Host outside the teams, get no own part.
+ * Vetoes of the window's draw are listed by Party. Which Player cast one never leaves the server (#355). The Stands, and a Host outside the teams, get no own part.
  * The window's draw (#232) is the Event's latest draw of any kind, a spin or a game the Host set, and only while it has a window
  * (wheelView picks it): a later draw without one takes the panel away. `game` is its card, already cut to what the viewer may know.
  * `left` is counted from the casts the viewer may know. `own.rejection` is the state's vetoReason: it depends on the viewer's own Party only (its cast
@@ -278,10 +278,10 @@ export async function coinSection({ state }: StageContext): Promise<Pick<EventVi
 }
 
 /** The Award ceremony (#309, spec #308): the latest start of a finished Event, identical for every viewer (nothing in it is secret); null before the first start. */
-export async function ceremonySection({ eventRow, state }: StageContext): Promise<Pick<EventView, 'ceremony'>> {
+export async function ceremonySection({ eventRow, state }: StageContext): Promise<Pick<EventView, 'ceremony' | 'ceremonyShown'>> {
   // The end of a run depends on how many Parties are on rank 1 (#315): the Standings of the Results, which a finished Event never changes.
   const winners = state.standing === null ? 0 : leadersOf(state.standing.standings).length
-  return { ceremony: ceremonyViewOf(eventRow, winners) }
+  return { ceremony: ceremonyViewOf(eventRow, winners), ceremonyShown: ceremonyShownOf(eventRow) }
 }
 
 /**

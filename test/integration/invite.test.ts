@@ -121,7 +121,7 @@ describe('invite links', () => {
       expect((await join(invite)).status).toBe(401)
     })
 
-    it('makes a signed-in User a Member on the Bench and answers with the Event link', async () => {
+    it('makes a signed-in User a Member on the Stands and answers with the Event link', async () => {
       const { slug, invite } = await createHostedEvent()
       const { cookie } = await signIn(testDb.db, member)
       const memberId = await userId('Gast')
@@ -130,7 +130,18 @@ describe('invite links', () => {
 
       expect(response.status).toBe(200)
       expect(await response.json()).toEqual({ slug, joined: true })
-      expect((await memberships()).find(row => row.userId === memberId)).toMatchObject({ zone: 'bench' })
+      expect((await memberships()).find(row => row.userId === memberId)).toMatchObject({ zone: 'stands', team: null })
+    })
+
+    it('seats the new Member on the Stands in the Event read, next to the Host who created the Event', async () => {
+      const { slug, invite } = await createHostedEvent()
+      const { cookie } = await signIn(testDb.db, member)
+      await join(invite, cookie)
+
+      const view = await (await request(`/api/e/${slug}`, { headers: { cookie } })).json() as { members: { zone: string, isHost: boolean }[] }
+
+      expect(view.members.map(row => [row.isHost, row.zone])).toEqual(expect.arrayContaining([[true, 'stands'], [false, 'stands']]))
+      expect(view.members).toHaveLength(2)
     })
 
     it('changes nothing when a Member joins a second time, keeping their zone', async () => {

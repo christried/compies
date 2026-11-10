@@ -11,7 +11,7 @@ import { standingsOf } from '~~/shared/results'
 // The Standings (#274, GLOSSARY: Standings; 03-screens 17, the calm state): a real table with a visually hidden head, one row per Party in the
 // order the Event read gives (the component sorts and ranks nothing), a shared rank printed twice, and the points read out with their noun.
 
-const named = (names: (string | null)[]): BoardTeam[] => names.map((name, index) => ({ position: index + 1, name, frozen: name !== null }))
+const named = (names: (string | null)[]): BoardTeam[] => names.map((name, index) => ({ position: index + 1, name }))
 const three = named(['Wilde Gurken', 'Die Füchse', null])
 const end = (played: number, gameCount = 6): EndView => ({ played, gameCount, complete: played >= gameCount, tie: null, finish: null, lastGame: null })
 const standing = (team: number, rank: number, points: number): StandingView => ({ team, rank, points })

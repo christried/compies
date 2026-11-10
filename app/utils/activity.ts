@@ -1,4 +1,4 @@
-import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Eye, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserPlus, Users } from '@lucide/vue'
+import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
 import type { BoardTeam } from '~~/shared/event'
@@ -20,11 +20,12 @@ const STRONG = new Set(['name', 'actor', 'team', 'date', 'game', 'list'])
 
 /**
  * The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. `teams` are the
- * Event's teams, whose frozen names a Result's sentence uses (#273); without them a team is named by its colour, as bonus_veto_granted does.
+ * Event's teams, whose Team names a Result's sentence uses (#273); without them a team is named by its colour, as bonus_veto_granted does.
+ * `winnersHidden`: the finished page waits for the Award ceremony, so the Event's end names nobody (#445).
  */
-export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTeam[] = []): { text: string, strong: boolean }[] | null {
+export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTeam[] = [], winnersHidden = false): { text: string, strong: boolean }[] | null {
   const marked: Translate = (key, named, plural) => t(key, named && Object.fromEntries(Object.entries(named).map(([name, value]) => [name, STRONG.has(name) ? OPEN + String(value) + CLOSE : value])), plural)
-  const text = sentence(entry, marked, teams)
+  const text = sentence(entry, marked, teams, winnersHidden)
   if (text === null) return null
   return text.split(OPEN).flatMap((chunk, index) => {
     if (index === 0) return chunk ? [{ text: chunk, strong: false }] : []
@@ -37,7 +38,7 @@ export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTe
 export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'primary' | 'surface' | 'success' } {
   switch (entry.type) {
     case 'member_joined': return { icon: UserPlus, tone: 'surface' }
-    case 'member_moved': return { icon: entry.params.to.zone === 'team' ? Users : entry.params.to.zone === 'bench' ? Armchair : Eye, tone: 'surface' }
+    case 'member_moved': return { icon: entry.params.to.zone === 'team' ? Users : Armchair, tone: 'surface' }
     case 'date_set': return { icon: CalendarCheck, tone: 'success' }
     case 'date_rescheduled': return { icon: CalendarClock, tone: 'surface' }
     case 'date_reopened': return { icon: CalendarX, tone: 'surface' }
@@ -63,7 +64,7 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
   }
 }
 
-function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): string | null {
+function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[], winnersHidden: boolean): string | null {
   const name = entry.actor?.name ?? ''
   switch (entry.type) {
     case 'member_joined':
@@ -123,7 +124,7 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     case 'bonus_veto_granted':
       return t('activity.bonusVeto', { name, team: teamName(entry.params.team, t) })
     // A Result names its game (from `games`, as a set game does) and every Party on Place 1 (#273). The winners are named by their
-    // frozen Team name when the feed has the teams, else by their colour; `count` picks the singular or the plural form.
+    // Team name when the feed has the teams, else by their colour; `count` picks the singular or the plural form.
     case 'result_entered': {
       const game = entry.games[entry.params.gameId]
       if (game === undefined) return null
@@ -140,6 +141,7 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     case 'event_finished': {
       const { winners } = entry.params
       if (winners.length === 0) return null
+      if (winnersHidden) return t('activity.eventFinishedPlain')
       const list = joinNames(winners.map(position => teamNameAt(teams, position, t)))
       return winners.length === 1 ? t('activity.eventFinished', { list, count: 1 }, 1) : t('activity.eventFinishedTie', { list })
     }
@@ -155,7 +157,8 @@ function gameSentence(entry: Extract<ActivityEntry, { type: 'game_set' | 'game_p
 /**
  * A move on the Game board (#160): a Member's own move says where they are now, a Host's move says who moved them. The
  * entry keeps the position, not a name, so a team is „Team“ and its colour: a Team name that changes later must not
- * rewrite history (#161).
+ * rewrite history (#161). Every place that is no team reads as the Tribüne (#437): the entries the Bench wrote before 0.12 still
+ * hold `{ zone: 'bench' }`, which the `Place` type no longer has, and they are not rewritten.
  */
 function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: Translate): string {
   const { userId, to } = entry.params
@@ -166,8 +169,7 @@ function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: T
     const team = teamName(to.team, t)
     return own ? t('activity.moveTeam', { name, team }) : t('activity.movedTeam', { actor, name, team })
   }
-  const key = to.zone === 'bench' ? 'Bench' : 'Stands'
-  return own ? t(`activity.move${key}`, { name }) : t(`activity.moved${key}`, { actor, name })
+  return own ? t('activity.moveStands', { name }) : t('activity.movedStands', { actor, name })
 }
 
 /** A Session that has started, as the feed's groups need it: its shown number (null for the only Session) and when it ran (ISO instants). */

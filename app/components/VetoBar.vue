@@ -8,7 +8,7 @@ import type { WheelView } from '~~/shared/stage'
 // The Veto bar (review 0.7, F4; 02-components § VetoWindow, 04-motion § Veto window, reference App Spielrunde „Clip + Veto-Fenster“,
 // „Eigenes Veto versiegelt“): the Veto window's action in a fixed layer above the clip, because the stage is long and the hold button
 // sat below the fold. A Player of a Party sees it while the window is open: the time left, what the Party may do, and the hold
-// button (VetoButton) or its locked pill. The Bench, the Stands and a Host outside the teams get no bar; the inline VetoWindow shows
+// button (VetoButton) or its locked pill. The Stands and a Host outside the teams get no bar; the inline VetoWindow shows
 // them the time. At the desktop width it is a pill that leaves the side panel free, on a phone it floats above the tab bar. With
 // the Host dock on the page it sits above the dock. It rises in with `animate-veto-in` and leaves with the fade the clip uses.
 const props = defineProps<{

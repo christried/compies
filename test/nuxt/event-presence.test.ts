@@ -7,7 +7,7 @@ import { kitty, signInAs } from './auth'
 import { LARSI, SANNE, view } from './event-page'
 
 // Who is online (#162, spec #153 § Online): the dots on the Game board follow the room's `presence.*` messages, and
-// there are none while the room is not open. The page names the state to a screen reader („Larsi, Bench, online“);
+// there are none while the room is not open. The page names the state to a screen reader („Larsi, Tribüne, online“);
 // the socket is a fake that the test opens, closes and sends messages on.
 const { sockets, createRoomSocket } = vi.hoisted(() => {
   const sockets: { options: RoomSocketOptions, close: ReturnType<typeof vi.fn>, reconnect: ReturnType<typeof vi.fn>, send: ReturnType<typeof vi.fn> }[] = []
@@ -42,7 +42,7 @@ const lastSocket = () => sockets[sockets.length - 1]!
 const say = (message: RoomMessage) => lastSocket().options.onMessage(JSON.stringify(envelope(message, Date.now())))
 const settle = () => new Promise(resolve => setTimeout(resolve))
 
-/** What the board's buttons say about each person, by name: „Larsi, Bench, online“. */
+/** What the board's buttons say about each person, by name: „Larsi, Tribüne, online“. */
 const people = (page: Awaited<ReturnType<typeof mountLive>>) =>
   Object.fromEntries(page.findAll('[data-user-id]').map(button => [button.attributes('data-user-id'), button.attributes('aria-label')]))
 
@@ -61,7 +61,7 @@ describe('the online dots on the Game board', () => {
   it('shows nobody as online or offline while the room is not open', async () => {
     const page = await mountLive()
 
-    expect(people(page)).toEqual({ [kitty.id]: 'Kitty, Bench', [LARSI]: 'Larsi, Bench', [SANNE]: 'Sanne, Bench' })
+    expect(people(page)).toEqual({ [kitty.id]: 'Kitty, Tribüne', [LARSI]: 'Larsi, Tribüne', [SANNE]: 'Sanne, Tribüne' })
     expect(page.findAll('[data-presence]')).toHaveLength(0)
   })
 
@@ -72,7 +72,7 @@ describe('the online dots on the Game board', () => {
     say({ type: 'presence.sync', userIds: [kitty.id, LARSI] })
     await settle()
 
-    expect(people(page)).toEqual({ [kitty.id]: 'Kitty, Bench, online', [LARSI]: 'Larsi, Bench, online', [SANNE]: 'Sanne, Bench, offline' })
+    expect(people(page)).toEqual({ [kitty.id]: 'Kitty, Tribüne, online', [LARSI]: 'Larsi, Tribüne, online', [SANNE]: 'Sanne, Tribüne, offline' })
     expect(page.findAll('[data-presence="online"]')).toHaveLength(2)
     expect(page.findAll('[data-presence="offline"]')).toHaveLength(1)
   })
@@ -84,13 +84,13 @@ describe('the online dots on the Game board', () => {
 
     say({ type: 'presence.join', userId: SANNE })
     await settle()
-    expect(people(page)[SANNE]).toBe('Sanne, Bench, online')
+    expect(people(page)[SANNE]).toBe('Sanne, Tribüne, online')
 
     say({ type: 'presence.leave', userId: SANNE })
     say({ type: 'presence.leave', userId: SANNE })
     await settle()
-    expect(people(page)[SANNE]).toBe('Sanne, Bench, offline')
-    expect(people(page)[kitty.id]).toBe('Kitty, Bench, online')
+    expect(people(page)[SANNE]).toBe('Sanne, Tribüne, offline')
+    expect(people(page)[kitty.id]).toBe('Kitty, Tribüne, online')
   })
 
   it('takes the dots away when the connection drops, and brings them back with the next presence.sync', async () => {
@@ -101,12 +101,12 @@ describe('the online dots on the Game board', () => {
     lastSocket().options.onClose()
     await settle()
     expect(page.findAll('[data-presence]')).toHaveLength(0)
-    expect(people(page)[LARSI]).toBe('Larsi, Bench')
+    expect(people(page)[LARSI]).toBe('Larsi, Tribüne')
 
     lastSocket().options.onOpen()
     say({ type: 'presence.sync', userIds: [kitty.id] })
     await settle()
-    expect(people(page)[LARSI]).toBe('Larsi, Bench, offline')
+    expect(people(page)[LARSI]).toBe('Larsi, Tribüne, offline')
   })
 
   it('ignores presence it hears before the connection is open', async () => {
@@ -139,6 +139,6 @@ describe('the online dots on the Game board', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(page.findAll('[data-presence]')).toHaveLength(0)
-    expect(people(page)[LARSI]).toBe('Larsi, Bench')
+    expect(people(page)[LARSI]).toBe('Larsi, Tribüne')
   })
 })

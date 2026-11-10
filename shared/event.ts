@@ -1,4 +1,4 @@
-import type { Place, Zone } from './board'
+import type { Place, PlaceZone } from './board'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
@@ -132,10 +132,10 @@ export interface TeamNameReset { team: number }
 
 /**
  * One team of the Game board (#160): its position, 1..team count, which is also its Team colour index. `name` is the
- * Team name composed from the words (or the frozen name), null when the team shows its colour's name (#161); `frozen`
- * says the name is frozen since the first Session started (#164): then `name` is the frozen name, null for the colour name.
+ * Team name composed from the words (a name stored in an Event finished before 0.12 is shown as it is, #438), null when
+ * the team shows its colour's name (#161).
  */
-export interface BoardTeam { position: number, name: string | null, frozen: boolean }
+export interface BoardTeam { position: number, name: string | null }
 
 /** A Member as the Event read lists them. `team` is set exactly when `zone` is `team` (#160). */
 export interface MemberView {
@@ -143,7 +143,7 @@ export interface MemberView {
   name: string
   image: string | null
   isHost: boolean
-  zone: Zone
+  zone: PlaceZone
   team: number | null
   /** The Member's Team word; null without one, and always null outside a team (#161). */
   teamWord: string | null
@@ -216,6 +216,8 @@ export interface EventView {
   coin: CoinView | null
   /** The Award ceremony (#309): the latest start of a finished Event, the same for every Member; null before the first start and for an Event that is not finished. */
   ceremony: CeremonyView | null
+  /** Whether the Award ceremony has been started at least once (#445): the finished page shows its result only from then on. The same for every Member; false before the Finish. */
+  ceremonyShown: boolean
   /** The Bonus Vetoes (#233): the Host gets them while the Event has a Lucky Wheel; null for everyone else and without the wheel. */
   bonusVetoes: BonusVetoView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */

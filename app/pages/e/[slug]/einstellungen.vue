@@ -28,7 +28,7 @@ const lockedReason = computed(() => (view.value && !notSetUp.value && settingsLo
 // A Host whose Host permission was revoked keeps the games in the pools but may not browse the library (#173).
 const user = useAuthUser()
 // The Players per saved team (#163): one entry per team the Event has now, so the Format step can count the Players a
-// lower team count would send to the Bench.
+// lower team count would send to the Stands.
 const teamPlayers = computed(() => playersPerTeam(countSeats((view.value?.members ?? []).map(member => placeOf(member))), view.value?.teams.length ?? 0))
 // „Rad verdecken“ and the Veto allowance are locked while a game is being drawn (#231, LOCKED_WHILE_DRAWN); the server refuses the change too (locked_while_drawn).
 const drawingReason = computed(() => (view.value?.roundBeingDrawn ? t('eventSettings.lockedDrawing') : undefined))

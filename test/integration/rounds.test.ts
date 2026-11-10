@@ -232,7 +232,7 @@ describe('Rounds', () => {
 
     it('refuses uneven teams with 409 teams_uneven, and the Event read says so', async () => {
       const game = await running()
-      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'teams_uneven' })
       expect(await roundRows(game)).toEqual([])
@@ -240,7 +240,7 @@ describe('Rounds', () => {
 
     it('refuses an empty team with 409 teams_empty', async () => {
       const game = await running()
-      for (const key of ['three', 'four'] as const) await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids[key], to: { zone: 'bench' } })
+      for (const key of ['three', 'four'] as const) await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids[key], to: { zone: 'stands' } })
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'teams_empty' })
     })
@@ -279,7 +279,7 @@ describe('Rounds', () => {
 
     it('writes and tells nothing when it refuses', async () => {
       const game = await running()
-      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
       notifier.clear()
       await testDb.db.delete(activity)
 
@@ -604,7 +604,7 @@ describe('Rounds', () => {
 
       it('answers 409 teams_uneven with uneven teams', async () => {
         const game = await running({ wheel: true })
-        await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+        await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
 
         expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'teams_uneven' })
       })
@@ -753,14 +753,14 @@ describe('Rounds', () => {
   // The stage sections (#256): each section returns all its fields in every case, so a section left out of the array
   // would show here as a missing key. The shape is asserted per field, not with toEqual, since the stage grows.
   describe('the stage sections of the Event read (#256)', () => {
-    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'ceremony', 'bonusVetoes', 'results', 'standings', 'end'] as const
+    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'ceremony', 'ceremonyShown', 'bonusVetoes', 'results', 'standings', 'end'] as const
 
     it('gives every stage field to the Host of a Host pick Event, the null ones as null', async () => {
       const game = await running()
       const view = await read(game)
 
       for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
-      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, ceremony: null, bonusVetoes: null })
+      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, ceremony: null, ceremonyShown: false, bonusVetoes: null })
     })
 
     it('gives the Host of a Lucky Wheel Event its wheel and the Bonus Vetoes', async () => {

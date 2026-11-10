@@ -60,6 +60,7 @@ function eventRow(fields: Partial<EventRow> = {}): EventRow {
     finishedAt: null,
     ceremonyStartsAt: null,
     ceremonyGag: null,
+    ceremonyShown: false,
     deletedAt: null,
     createdAt: at(-600),
     updatedAt: at(-600),
@@ -182,7 +183,7 @@ describe('setReason', () => {
   })
 
   it('wants every team to have a Player and the teams to be equally big', () => {
-    expect(setReason(state({ members: [member('host', 'stands'), member('a', 'bench')] }), true)).toBe('teams_empty')
+    expect(setReason(state({ members: [member('host', 'stands'), member('a', 'stands')] }), true)).toBe('teams_empty')
     expect(setReason(state({ members: [member('a', 'team', 1), member('b', 'team', 1), member('c', 'team', 2)] }), true)).toBe('teams_uneven')
   })
 
@@ -258,7 +259,7 @@ describe('vetoesLeftOf and vetoReason', () => {
 
   it('refuses a Host outside the teams and a Member on the Stands: not_a_player', () => {
     expect(vetoReason(withWindow(), 'host', windowDraw)).toBe('not_a_player')
-    expect(vetoReason(withWindow({ members: [member('x', 'bench')] }), 'x', windowDraw)).toBe('not_a_player')
+    expect(vetoReason(withWindow({ members: [member('x', 'stands')] }), 'x', windowDraw)).toBe('not_a_player')
     expect(vetoReason(withWindow(), 'stranger', windowDraw)).toBe('not_a_player')
   })
 
@@ -376,12 +377,12 @@ describe('coinReason', () => {
 
 describe('moveReason and the seats', () => {
   it('names a Member the Event does not have', () => {
-    expect(moveReason(state(), { actorId: 'host', userId: 'stranger', to: { zone: 'bench' } })).toBe('member_not_found')
+    expect(moveReason(state(), { actorId: 'host', userId: 'stranger', to: { zone: 'stands' } })).toBe('member_not_found')
   })
 
   it('lets a Player move only themselves, the Host anyone', () => {
-    expect(moveReason(state(), { actorId: 'a', userId: 'b', to: { zone: 'bench' } })).toBe('host_only')
-    expect(moveReason(state(), { actorId: 'host', userId: 'b', to: { zone: 'bench' } })).toBeNull()
+    expect(moveReason(state(), { actorId: 'a', userId: 'b', to: { zone: 'stands' } })).toBe('host_only')
+    expect(moveReason(state(), { actorId: 'host', userId: 'b', to: { zone: 'stands' } })).toBeNull()
   })
 
   it('refuses a move to the seat the Member is in, to a team that does not exist and into a full team', () => {
@@ -391,10 +392,10 @@ describe('moveReason and the seats', () => {
   })
 
   it('locks the teams for a Player once the first Session has started, and before Team choice opens', () => {
-    expect(moveReason(state(), { actorId: 'a', userId: 'a', to: { zone: 'bench' } })).toBe('teams_locked')
+    expect(moveReason(state(), { actorId: 'a', userId: 'a', to: { zone: 'stands' } })).toBe('teams_locked')
     const before = state({ sessions: [waiting('s2', at(60))] })
-    expect(moveReason(before, { actorId: 'a', userId: 'a', to: { zone: 'bench' } })).toBeNull()
-    expect(moveReason(state({ sessions: [waiting('s2', null)] }), { actorId: 'a', userId: 'a', to: { zone: 'bench' } })).toBe('team_choice_closed')
+    expect(moveReason(before, { actorId: 'a', userId: 'a', to: { zone: 'stands' } })).toBeNull()
+    expect(moveReason(state({ sessions: [waiting('s2', null)] }), { actorId: 'a', userId: 'a', to: { zone: 'stands' } })).toBe('team_choice_closed')
   })
 
   it('says whether Team choice is open and whether the first Session has started', () => {
@@ -428,7 +429,7 @@ describe('floorsOf', () => {
   })
 
   it('takes the Team size floor from the fullest team that remains', () => {
-    const members = [member('a', 'team', 1), member('b', 'team', 1), member('c', 'team', 1), member('d', 'team', 2), member('e', 'bench')]
+    const members = [member('a', 'team', 1), member('b', 'team', 1), member('c', 'team', 1), member('d', 'team', 2), member('e', 'stands')]
 
     expect(floorsOf(state({ members })).playersPerTeam).toEqual([3, 1])
   })
@@ -454,19 +455,39 @@ describe('roundBeingDrawnOf', () => {
 
 describe('teamNamesOf', () => {
   const words = [member('a', 'team', 1, { teamWord: 'Gurken', teamJoinedAt: at(-3) }), member('b', 'team', 1, { teamWord: 'Bande', teamJoinedAt: at(-2) }), member('c', 'team', 2)]
+  const finished = (fields: Partial<EventRow> = {}) => eventRow({ phase: 'finished', ...fields })
 
   it('composes the name from the words of the team in the order they joined, null without words', () => {
     expect(teamNamesOf(state({ members: words, teams: [] }))).toEqual([
-      { position: 1, name: 'Gurken Bande', frozen: false },
-      { position: 2, name: null, frozen: false },
+      { position: 1, name: 'Gurken Bande' },
+      { position: 2, name: null },
     ])
   })
 
-  it('takes the frozen name, null for the colour, whatever the words say', () => {
-    expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: 'Alt' }, { position: 2, frozenName: null }] }))).toEqual([
-      { position: 1, name: 'Alt', frozen: true },
-      { position: 2, name: null, frozen: true },
-    ])
+  it('composes in an Event that is not finished even when stored names exist: the previous deployment may still write them (#438)', () => {
+    const rows = [{ position: 1, frozenName: 'Alt' }, { position: 2, frozenName: null }]
+
+    for (const phase of ['running', 'date_set'] as const) {
+      expect(teamNamesOf(state({ members: words, teams: rows }, eventRow({ phase })))).toEqual([
+        { position: 1, name: 'Gurken Bande' },
+        { position: 2, name: null },
+      ])
+    }
+  })
+
+  it('shows the stored name of a finished Event, null for the colour whatever the words say', () => {
+    for (const phase of ['finished', 'archived'] as const) {
+      expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: 'Alt' }, { position: 2, frozenName: null }] }, eventRow({ phase })))).toEqual([
+        { position: 1, name: 'Alt' },
+        { position: 2, name: null },
+      ])
+    }
+    expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: null }] }, finished()))[0]).toEqual({ position: 1, name: null })
+  })
+
+  it('composes a finished Event without a row, and mixes a stored name with a composed one', () => {
+    expect(teamNamesOf(state({ members: words, teams: [] }, finished())).map(entry => entry.name)).toEqual(['Gurken Bande', null])
+    expect(teamNamesOf(state({ members: words, teams: [{ position: 2, frozenName: 'Die allerlängsten' }] }, finished())).map(entry => entry.name)).toEqual(['Gurken Bande', 'Die allerlängsten'])
   })
 
   it('lists as many teams as the settings say, none for an Event that is not set up', () => {
@@ -474,10 +495,11 @@ describe('teamNamesOf', () => {
     expect(teamNamesOf(state({ members: words }, eventRow(noSettings)))).toEqual([])
   })
 
-  it('mixes frozen and composed names: a frozen team keeps its name while another still follows its words', () => {
-    const names = teamNamesOf(state({ members: words, teams: [{ position: 2, frozenName: 'Die allerlängsten' }] }))
+  it('names a team by one word, two words or the longest word four times', () => {
+    const longest = 'Gurkenfreund'
+    const four = ['a', 'b', 'c', 'd'].map((id, index) => member(id, 'team', 1, { teamWord: longest, teamJoinedAt: at(-10 + index) }))
 
-    expect(names.map(entry => entry.name)).toEqual(['Gurken Bande', 'Die allerlängsten'])
-    expect(names.map(entry => entry.frozen)).toEqual([false, true])
+    expect(teamNamesOf(state({ members: [member('a', 'team', 1, { teamWord: 'Eins', teamJoinedAt: at(-3) })] }))[0]?.name).toBe('Eins')
+    expect(teamNamesOf(state({ members: four }))[0]?.name).toBe(Array(4).fill(longest).join(' '))
   })
 })

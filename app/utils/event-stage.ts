@@ -18,11 +18,12 @@ export type PageKind = 'setup' | 'poll' | 'teams' | 'running' | 'between' | 'don
  * `sessionNeeded`: the Host's notice that the last game needs a new Session. `setup`: the Event is not set up. `seat`: where the Host sits. `poll`: the Date poll. `pool`: the Host's live pool warning (#234).
  * `wheel`: the Lucky Wheel (#229). `rounds`: the open Rounds. `standings`: the Standings (#274). `history`: the Spielverlauf of the finished stage (#277). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235).
  * `board`: the Game board. `cards`: the Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions.
+ * `pending`: the finished stage's card that says the Award ceremony is still to come (#445).
  */
-export type Block = 'head' | 'reopen' | 'actions' | 'tie' | 'sessionNeeded' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'history' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay'
+export type Block = 'head' | 'reopen' | 'actions' | 'tie' | 'sessionNeeded' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'history' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay' | 'pending'
 
-// `end` is required: the page reads it for the Standings and the finish (#274, #288). `rounds` and `results` are optional: the Host dock has neither, and a missing list counts as none (#278, #441).
-export type StageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'end'> & Partial<Pick<EventView, 'rounds' | 'results'>> & { event: Pick<EventView['event'], 'phase' | 'isHost'> }
+// `end` is required: the page reads it for the Standings and the finish (#274, #288). `rounds` and `results` are optional: the Host dock has neither, and a missing list counts as none (#278, #441). `ceremonyShown` is optional too, and a view without it counts as shown (#445); `ceremonyHeld` is the viewer's own hold, set by the page only.
+export type StageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'end'> & Partial<Pick<EventView, 'rounds' | 'results' | 'ceremonyShown'>> & { ceremonyHeld?: boolean, event: Pick<EventView['event'], 'phase' | 'isHost'> }
 
 /** A block takes its new place this long after its moment (#441), so the news is on the page before the stage moves under the viewer. */
 export const RISE_DELAY_MS = 500
@@ -49,7 +50,7 @@ interface StagePiece {
   /** Something waits for this block to arrive on top (#442: the Standings' result sequence); `stageArrivals` lists its arrival. */
   arrives?: true
   /** Whether the view has the piece (a block that shows data is listed only while its data is there, #256); omitted = always. */
-  present?: (view: StageInput, ctx: { kind: PageKind, pollOpen: boolean }) => boolean
+  present?: (view: StageInput, ctx: { kind: PageKind, pollOpen: boolean, waiting: boolean }) => boolean
   /** The instants (server time, epoch ms) at which the page must read the Event again (ADR 0013); a piece with a deadline adds them here (#256). */
   instants?: (view: Partial<EventView>) => number[]
   /** Whether a read taken at `nowMs` still misses what an instant that has passed decides. */
@@ -75,7 +76,10 @@ const PIECES: StagePiece[] = [
   // The notices of reopened Dates; the notices of removed Sessions stay in a finished Event too (story 56).
   { block: 'reopen', at: { setup: 2, poll: 2, teams: 2, running: 2, between: 2, done: 2, finished: 2 }, pinned: true },
   // The finished stage's row of buttons (#313: Bild teilen; #314: Siegerehrung ansehen) is the news of the page: right under the Head, with the Result it shows. Bild teilen needs the Standings.
-  { block: 'actions', at: { finished: 3 }, pinned: true, present: played },
+  { block: 'actions', at: { finished: 3 }, pinned: true, present: (view, ctx) => played(view) && !ctx.waiting },
+  // The finished stage waits for the Award ceremony (#445): the card stands in the place of the actions, the Standings and the history until the Host has started it, and for a viewer who
+  // holds the first run until it is over. The Head, the notices and the cards stay. Nobody else asks why the page waits: the page asks `waitsForCeremony` (event-page.ts).
+  { block: 'pending', at: { finished: 3 }, pinned: true, present: (_view, ctx) => ctx.waiting },
   // A Tie (#278) is the news of the stage, right under the reopen notices, wherever the Host's dock offers „Unentschieden beenden“ (running, between, done) and not in a
   // finished Event, where nobody decides any more. For Members only: the Host decides and has the dock (#283). A Tie needs a started Session, so `teams` never has one.
   { block: 'tie', at: { running: 3, between: 3, done: 3 }, pinned: true, audience: 'members', present: view => view.end?.tie != null },
@@ -123,11 +127,11 @@ const PIECES: StagePiece[] = [
     block: 'standings',
     at: { running: 6, between: 5, done: 6, finished: 4 },
     arrives: true,
-    present: played,
+    present: (view, ctx) => played(view) && !ctx.waiting,
     moment: ({ results }) => latest(...(results ?? []).flatMap(result => [msOf(result.resultAt), result.correctedAt === null ? null : msOf(result.correctedAt)])),
   },
   // The Spielverlauf, the Rounds with their Results, on the finished stage only (#277). It needs the first Result, which a finished Event has.
-  { block: 'history', at: { finished: 5 }, present: played },
+  { block: 'history', at: { finished: 5 }, present: (view, ctx) => played(view) && !ctx.waiting },
   // The Host's pool warning (#234) comes after the drawn Round: wheel and open Rounds first (story 15, review 0.7 F12). The data decides who has it: the read sends it to the Host.
   { block: 'pool', at: { running: 7 }, present: view => Boolean(view.setGame?.poolWarning) },
   // The Countdown (#236), under the Rounds.
@@ -163,7 +167,8 @@ export type StageCounted = Partial<Record<Block, number>>
 
 /** The pieces whose block sits in the kind, that the viewer sees and the view has, with what the order reads of each. */
 function listed(view: StageInput, kind: PageKind): Listed[] {
-  const ctx = { kind, pollOpen: datePollOpen(view.event.phase, view.missingDates) }
+  // `waiting` is the finished kind's only (#445): a view without `ceremonyShown` counts as shown (other fixtures build one without it), and `ceremonyHeld` is the viewer's own hold (useCeremonyHold).
+  const ctx = { kind, pollOpen: datePollOpen(view.event.phase, view.missingDates), waiting: kind === 'finished' && (view.ceremonyShown === false || view.ceremonyHeld === true) }
   return PIECES.flatMap(({ block, at, audience, present, pinned, moment }) => {
     const rank = at?.[kind]
     if (!block || rank === undefined) return []

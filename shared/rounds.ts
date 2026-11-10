@@ -187,7 +187,7 @@ export function drawOutcome(vetoCount: number): DrawOutcome {
 export type VetoRejection = 'not_a_player' | 'no_running_session' | 'no_veto_window' | 'veto_window_closed' | 'veto_already_cast' | 'no_vetoes_left'
 
 export interface VetoInput {
-  /** The viewer's Party; null for the Bench, the Stands and a viewer without a Member. */
+  /** The viewer's Party; null for the Stands and a viewer without a Member. */
   viewerTeam: number | null
   /** The draw the Veto is for; null when the Event has none by that id. */
   draw: { stopAt: Instant, vetoEndsAt: Instant | null, outcome: DrawOutcome | null } | null

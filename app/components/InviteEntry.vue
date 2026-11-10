@@ -7,7 +7,7 @@ import { eventPath } from '~~/shared/links'
 
 // The Invite link `/e/<slug>-<token>` (#10, ADR 0006, screen 07 `App Einstieg ?s=open`). A signed-out
 // visitor sees the Event name and the Host's Display name and avatar, nothing else, and is sent to
-// sign-in with the link as the redirect. A signed-in User joins on the Bench and moves on to the
+// sign-in with the link as the redirect. A signed-in User joins on the Stands and moves on to the
 // Event link. Invalid and rotated links get the generic page; a former Member of a deleted
 // Event gets „Event gelöscht“.
 

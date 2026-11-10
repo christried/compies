@@ -132,7 +132,7 @@ export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase:
 
 /**
  * The Host's seat note (teams only, #160): where the Host sits does not change the dock, and the note says so. null for a Member,
- * on the Bench, or in a Team the note has no word for.
+ * or in a Team the note has no word for.
  */
 export function seatNote(view: Pick<EventView, 'members' | 'viewerId' | 'teams'> & { event: Pick<EventView['event'], 'isHost'> }, t: Translate): string | null {
   const me = view.members.find(member => member.id === view.viewerId)
@@ -144,12 +144,22 @@ export function seatNote(view: Pick<EventView, 'members' | 'viewerId' | 'teams'>
 
 /**
  * Whether Compibert's header wears the party hat for this viewer (#38): seated in a team that is a Leading Party (leadingTeams, from the
- * Standings and the Results the page holds). The Host is a Member here, and a Member on the Bench or in the Stands never wears it.
+ * Standings and the Results the page holds). The Host is a Member here, and a Member on the Stands never wears it.
  */
-export function wearsPartyhat(view: Pick<EventView, 'members' | 'viewerId' | 'standings' | 'results'> & { event: Pick<EventView['event'], 'phase'> }): boolean {
+export function wearsPartyhat(view: Pick<EventView, 'members' | 'viewerId' | 'standings' | 'results'> & { event: Pick<EventView['event'], 'phase'> }, waits = false): boolean {
+  // The hat is part of the result, which the finished page holds back until the Award ceremony (#445).
+  if (waits) return false
   const me = view.members.find(member => member.id === view.viewerId)
   if (!me || me.zone !== 'team' || me.team === null) return false
   return leadingTeams(view.standings ?? [], view.event.phase, view.results.length > 0).includes(me.team)
+}
+
+/**
+ * Whether the finished page waits for the Award ceremony (#445): its stage lists the `pending` card (the Stage module's rule: the ceremony has not been
+ * started, or this viewer holds the first run). The Standings, the Spielverlauf, the Winners, the party hat and the Tabelle tab ask this one question.
+ */
+export function waitsForCeremony(state: Pick<EventPageState, 'blocks'>): boolean {
+  return state.blocks.includes('pending')
 }
 
 /** What the Teams-bleiben notice names: the next Session by its number, or „der nächsten“ when it has none yet or is the only one. */

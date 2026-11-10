@@ -19,17 +19,17 @@ type SessionSpec = Parameters<typeof viewWithSessions>[1][number]
 const dated = (number: number | null, startsAt: string, times: { startedAt?: string, endedAt?: string } = {}): SessionSpec => ({ startsAt, number, ...times })
 const undated = (): SessionSpec => ({ startsAt: null, number: null })
 
-type Fields = Pick<EventOverrides, 'settings' | 'wheel' | 'countdown' | 'coin' | 'setGame' | 'end' | 'rounds' | 'results' | 'bonusVetoes'> & { phase?: string, isHost?: boolean }
+type Fields = Pick<EventOverrides, 'settings' | 'wheel' | 'countdown' | 'coin' | 'setGame' | 'end' | 'rounds' | 'results' | 'bonusVetoes' | 'ceremonyShown'> & { phase?: string, isHost?: boolean, ceremonyHeld?: boolean }
 
 /** The Event read of a page in this state, as the module takes it: the fixture types `phase` as a string. */
-function viewOf(sessions: SessionSpec[], { phase = 'poll', isHost = false, ...fields }: Fields = {}): StageInput {
+function viewOf(sessions: SessionSpec[], { phase = 'poll', isHost = false, ceremonyHeld: _held, ...fields }: Fields = {}): StageInput {
   const missing = sessions.filter(session => session.startsAt === null).length
   return viewWithSessions('stage', sessions, missing, { settings: defaultSettings(), event: { phase, isHost }, ...fields }) as unknown as StageInput
 }
 
 // The tests below this line read today's per-state order: `now` 0 lies before every moment of a fixture (#441), so none is counted and nothing lifts.
 // The moments and the lifted order are the last describes of the file.
-const blocks = (sessions: SessionSpec[], fields: Fields = {}) => eventPageState(viewOf(sessions, fields), 0).blocks
+const blocks = (sessions: SessionSpec[], fields: Fields = {}) => eventPageState({ ...viewOf(sessions, fields), ceremonyHeld: fields.ceremonyHeld }, 0).blocks
 
 const ONE_RUNNING = [dated(1, SAT, { startedAt: SAT }), undated()]
 const RUNNING: Fields = { phase: 'running' }
@@ -145,6 +145,47 @@ describe('the blocks of the stage', () => {
 
   it('lists the actions, the Standings and the history on the finished stage, with the Sessions card at the end (#277)', () => {
     expect(blocks([dated(1, SAT, ENDED)], FINISHED_END)).toEqual(['head', 'reopen', 'actions', 'standings', 'history', 'cards'])
+  })
+
+  // The finished page waits for the Award ceremony (#445): the card in the place of the actions, the Standings and the history; the Head, the notices and the cards stay.
+  describe('the finished page before the Award ceremony has been shown (#445)', () => {
+    const WAITING = ['head', 'reopen', 'pending', 'cards']
+    const SHOWN = ['head', 'reopen', 'actions', 'standings', 'history', 'cards']
+
+    it('lists the pending card instead of the actions, the Standings and the history while the ceremony has not been started', () => {
+      expect(blocks([dated(1, SAT, ENDED)], { ...FINISHED_END, ceremonyShown: false })).toEqual(WAITING)
+    })
+
+    it('lists today\'s page once the ceremony has been shown', () => {
+      expect(blocks([dated(1, SAT, ENDED)], { ...FINISHED_END, ceremonyShown: true })).toEqual(SHOWN)
+    })
+
+    it('counts a view without the field as shown', () => {
+      const view: Record<string, unknown> = { ...viewOf([dated(1, SAT, ENDED)], FINISHED_END) }
+      delete view.ceremonyShown
+      expect(eventPageState(view as unknown as StageInput).blocks).toEqual(SHOWN)
+    })
+
+    it('waits for a viewer who holds the first run, although the ceremony has been shown', () => {
+      expect(blocks([dated(1, SAT, ENDED)], { ...FINISHED_END, ceremonyShown: true, ceremonyHeld: true })).toEqual(WAITING)
+    })
+
+    it('lists the pending card without a Result too', () => {
+      expect(blocks([dated(1, SAT, ENDED)], { ...FINISHED, ceremonyShown: false })).toEqual(WAITING)
+    })
+
+    it('lists the same blocks for the Host and for a Member', () => {
+      const asHost = blocks([dated(1, SAT, ENDED)], { ...FINISHED_END, ceremonyShown: false, isHost: true })
+      expect(asHost).toEqual(blocks([dated(1, SAT, ENDED)], { ...FINISHED_END, ceremonyShown: false }))
+      expect(asHost).toEqual(WAITING)
+    })
+
+    it('changes nothing in the other kinds, whatever the hold says', () => {
+      const running = blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS })
+      expect(blocks(ONE_RUNNING, { ...RUNNING, ...STANDINGS, ceremonyHeld: true })).toEqual(running)
+      expect(running).toContain('standings')
+      expect(running).not.toContain('pending')
+    })
   })
 
   it('lists neither Standings nor history on the finished stage without a Result, and none of the live blocks in any case (#277)', () => {

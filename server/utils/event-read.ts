@@ -5,6 +5,7 @@ import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
 import { shownName } from '../../shared/auth'
+import { placeOf } from '../../shared/board'
 import { runningOf } from '../../shared/session-state'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
 import type { PoolGame, PoolGameFace } from '../../shared/game'
@@ -19,7 +20,7 @@ import { removedSessionNotices } from './sessions'
 
 // The Event read (`GET /api/e/:slug`) as section builders (#183). Each builder returns its slice of EventView and the
 // handler composes them. The facts the rules run on come from the Event state (event-state.ts, #416), read once in parts: the Sessions,
-// the Members, the frozen teams, the Rounds with their draws and Places (one statement: a draw is never read without its Round, and a Round is
+// the Members, the stored Team names, the Rounds with their draws and Places (one statement: a draw is never read without its Round, and a Round is
 // never read as open while its Result is already in, #274, Spec N6, #288), the Coin flip and, for the viewers who need them, the Vetoes, Bonus Vetoes
 // and the Game pool. What is no rule fact (the poll's Slots and Votes, the removed Sessions) is read next to it by readPollRows, and the pools need
 // nothing from the state, so the handler reads all three at the same time. The board (#160) is one such builder.
@@ -96,7 +97,7 @@ export function membersSection(state: EventState<'members'>): Pick<EventView, 'm
       name: shownName(row),
       image: row.image,
       isHost: row.id === state.eventRow.hostId,
-      zone: row.zone,
+      zone: placeOf(row).zone, // a stored legacy `bench` seat is sent as the Stands (#437)
       team: row.team,
       teamWord: row.teamWord,
     })),

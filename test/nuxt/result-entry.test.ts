@@ -16,7 +16,7 @@ import { dialog } from './event-page'
 // between neighbours, an optional Score, the points each row earns, and one save that sends the Places. Nothing goes out before the save.
 
 const game: RoundGame = { id: 'g-kart', name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
-const teams = (names: (string | null)[]): BoardTeam[] => names.map((name, index) => ({ position: index + 1, name, frozen: name !== null }))
+const teams = (names: (string | null)[]): BoardTeam[] => names.map((name, index) => ({ position: index + 1, name }))
 const three = teams(['Wilde Gurken', 'Die Füchse', null])
 const linear3: PointsTable = { preset: 'linear', values: [2, 1, 0] }
 

@@ -11,7 +11,7 @@ import { readEvent, setUpEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Settings follow the teams (#163, spec #153 § Game board rules, § API contracts): the Team size never goes below the
-// fullest team, and lowering the team count moves the Players of the removed teams to the Bench in the same transaction.
+// fullest team, and lowering the team count moves the Players of the removed teams to the Stands in the same transaction.
 // A refused update changes nothing. Four teams of three, Players One to Four and the Host.
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const players = {
@@ -50,12 +50,12 @@ describe('settings follow the teams (#163)', () => {
     vi.unstubAllEnvs()
   })
 
-  const BENCH: Place = { zone: 'bench' }
+  const STANDS: Place = { zone: 'stands' }
   const team = (n: number): Place => ({ zone: 'team', team: n })
 
   type Key = keyof typeof players | 'host'
 
-  /** An Event of 4 teams of 3 (poll, no Date needed: the Host seats people), with every Player a Member on the Bench. */
+  /** An Event of 4 teams of 3 (poll, no Date needed: the Host seats people), with every Player a Member on the Stands. */
   async function setup() {
     const event = await setUpEvent(rig, {
       host,
@@ -149,7 +149,7 @@ describe('settings follow the teams (#163)', () => {
   })
 
   describe('lowering the team count', () => {
-    it('moves exactly the Players of the removed teams to the Bench, and leaves the other teams alone', async () => {
+    it('moves exactly the Players of the removed teams to the Stands, and leaves the other teams alone', async () => {
       const game = await setup()
       await seatTeams(game)
 
@@ -160,9 +160,9 @@ describe('settings follow the teams (#163)', () => {
       expect(await seatsOf(game)).toEqual({
         [game.ids.one]: team(1),
         [game.ids.four]: team(1),
-        [game.ids.two]: BENCH,
-        [game.ids.three]: BENCH,
-        [game.ids.host]: BENCH,
+        [game.ids.two]: STANDS,
+        [game.ids.three]: STANDS,
+        [game.ids.host]: STANDS,
       })
       const moved = await testDb.db.select().from(eventMembers).where(eq(eventMembers.eventId, game.eventId))
       for (const row of moved.filter(member => member.userId === game.ids.two || member.userId === game.ids.three)) {
@@ -179,8 +179,8 @@ describe('settings follow the teams (#163)', () => {
       const entries = await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))
       expect(entries).toHaveLength(2)
       expect(entries).toEqual(expect.arrayContaining([
-        expect.objectContaining({ type: 'member_moved', actorId: game.ids.host, params: { userId: game.ids.two, from: team(3), to: BENCH } }),
-        expect.objectContaining({ type: 'member_moved', actorId: game.ids.host, params: { userId: game.ids.three, from: team(4), to: BENCH } }),
+        expect.objectContaining({ type: 'member_moved', actorId: game.ids.host, params: { userId: game.ids.two, from: team(3), to: STANDS } }),
+        expect.objectContaining({ type: 'member_moved', actorId: game.ids.host, params: { userId: game.ids.three, from: team(4), to: STANDS } }),
       ]))
     })
 
@@ -196,9 +196,39 @@ describe('settings follow the teams (#163)', () => {
       const moves = messages.filter(message => message.type === 'member.moved')
       expect(moves).toHaveLength(2)
       expect(moves).toEqual(expect.arrayContaining([
-        expect.objectContaining({ userId: game.ids.two, from: team(3), to: BENCH, by: game.ids.host }),
-        expect.objectContaining({ userId: game.ids.three, from: team(4), to: BENCH, by: game.ids.host }),
+        expect.objectContaining({ userId: game.ids.two, from: team(3), to: STANDS, by: game.ids.host }),
+        expect.objectContaining({ userId: game.ids.three, from: team(4), to: STANDS, by: game.ids.host }),
       ]))
+    })
+
+    it('moves nobody and writes nothing when the removed teams are empty (#437)', async () => {
+      const game = await setup()
+      await seat(game, 'one', team(1))
+      await seat(game, 'two', team(2))
+      await testDb.db.delete(activity)
+      notifier.clear()
+
+      expect((await patch(game, { settings: { teamCount: 2, pointsTable: LINEAR_2 } })).status).toBe(200)
+
+      expect(await seatsOf(game)).toMatchObject({ [game.ids.one]: team(1), [game.ids.two]: team(2), [game.ids.three]: STANDS })
+      expect(notifier.messages(game.eventId).filter(message => message.type === 'member.moved')).toEqual([])
+      expect(await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))).toEqual([])
+    })
+
+    it('writes no bench seat and no bench place anywhere, in a run of moves, a stale tab\'s request and a lowered team count (#437)', async () => {
+      const game = await setup()
+      await seatTeams(game)
+      await seat(game, 'one', { zone: 'bench' } as unknown as Place) // a stale 0.11 tab's „Auf die Bench“, sent by the Host here
+      await seat(game, 'one', team(2))
+      await seat(game, 'one', STANDS)
+      await patch(game, { settings: { teamCount: 2, pointsTable: LINEAR_2 } })
+
+      const { rows } = await testDb.client.query<{ count: number }>(`SELECT count(*)::int AS count FROM event_members WHERE zone = 'bench'`)
+      expect(rows).toEqual([{ count: 0 }])
+      const moves = (await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))).filter(entry => entry.type === 'member_moved')
+      expect(moves.length).toBeGreaterThan(0)
+      expect(JSON.stringify(moves.map(entry => entry.params))).not.toContain('bench')
+      expect(JSON.stringify(notifier.messages(game.eventId))).not.toContain('bench')
     })
 
     it('clears the Team words of the moved Players and keeps the words of the other teams (#161)', async () => {
@@ -264,9 +294,9 @@ describe('settings follow the teams (#163)', () => {
       expect(response.status).toBe(200)
       expect(await settingsOf(game)).toMatchObject({ teamCount: 2, teamSize: 2 })
       expect(await seatsOf(game)).toEqual({
-        [game.ids.one]: BENCH,
-        [game.ids.two]: BENCH,
-        [game.ids.three]: BENCH,
+        [game.ids.one]: STANDS,
+        [game.ids.two]: STANDS,
+        [game.ids.three]: STANDS,
         [game.ids.four]: team(1),
         [game.ids.host]: team(2),
       })
