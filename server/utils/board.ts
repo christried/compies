@@ -7,7 +7,7 @@ import type { EventChange } from './event-access'
 
 // The seats of the Game board (#160, GLOSSARY: Game board). One home: every change of a seat goes through seatMember,
 // so a rule that follows a seat change (#161: a seat change clears the Team word; #163: removed teams send their Players
-// to the Bench) has one place to live. The seats are read, and the rules that ask them answered, by the Event state
+// to the Stands) has one place to live. The seats are read, and the rules that ask them answered, by the Event state
 // (event-state.ts, #416). The Team word handlers write the word themselves (team-word.post.ts, reset-name.post.ts).
 
 /**
@@ -29,7 +29,7 @@ export async function seatMember(tx: Db, eventId: string, userId: string, to: Pl
 
 /**
  * One Member's seat change as the Game board makes it (#160, #163): the seat, its feed entry, and `member.moved` after the
- * commit. The move endpoint and the lowering of the team count (the removed teams' Players go to the Bench, in the Host's
+ * commit. The move endpoint and the lowering of the team count (the removed teams' Players go to the Stands, in the Host's
  * name) both end here, so a move reads the same wherever it came from. The rules that allow it are the caller's.
  */
 export async function moveMember(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, actorId: string, userId: string, from: Place, to: Place): Promise<void> {

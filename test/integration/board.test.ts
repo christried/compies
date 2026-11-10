@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { activity, eventMembers, events, pollSlots, sessions, users } from '../../server/db/schema'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
@@ -40,13 +40,12 @@ describe('the Game board', () => {
     vi.unstubAllEnvs()
   })
 
-  const BENCH: Place = { zone: 'bench' }
   const STANDS: Place = { zone: 'stands' }
   const team = (n: number): Place => ({ zone: 'team', team: n })
 
   /**
    * A poll Event (2 teams of `teamSize`, a Date still missing) by the Host, with Players One, Two and Three as Members
-   * on the Bench. `confirmDate` sets the Date, which opens Team choice.
+   * on the Stands. `confirmDate` sets the Date, which opens Team choice.
    */
   async function setup({ teamSize = 2, settings = true }: { teamSize?: number, settings?: boolean } = {}) {
     setAllowlist({ hosts: 'discord:1' })
@@ -137,13 +136,13 @@ describe('the Game board', () => {
 
       const messages = notifier.messages(game.eventId)
       expect(messages.map(message => message.type)).toEqual(['event.changed', 'activity.added', 'member.moved'])
-      expect(messages.find(message => message.type === 'member.moved')).toMatchObject({ userId: game.ids.one, from: BENCH, to: team(1), by: game.ids.one })
+      expect(messages.find(message => message.type === 'member.moved')).toMatchObject({ userId: game.ids.one, from: STANDS, to: team(1), by: game.ids.one })
       const entries = await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))
       expect(entries).toHaveLength(1)
-      expect(entries[0]).toMatchObject({ type: 'member_moved', actorId: game.ids.one, params: { userId: game.ids.one, from: BENCH, to: team(1) } })
+      expect(entries[0]).toMatchObject({ type: 'member_moved', actorId: game.ids.one, params: { userId: game.ids.one, from: STANDS, to: team(1) } })
     })
 
-    it('between teams, and out of a team onto the Bench or the Stands', async () => {
+    it('between teams, and out of a team onto the Stands', async () => {
       const game = await setup()
       await openTeamChoice(game)
 
@@ -163,19 +162,56 @@ describe('the Game board', () => {
 
       expect(response.status).toBe(409)
       expect((await response.json() as { statusMessage: string }).statusMessage).toBe('team_choice_closed')
-      expect(await placeOf(game.slug, game.hostCookie, game.ids.one)).toEqual({ zone: 'bench', team: null })
+      expect(await placeOf(game.slug, game.hostCookie, game.ids.one)).toEqual({ zone: 'stands', team: null })
       await expectNothingWritten(game)
     })
 
-    it('goes between the Bench and the Stands at any time, also in the poll and without settings', async () => {
+    it('has nowhere else to go than a team: a move to the Stands from the Stands is already_there, in the poll and without settings too', async () => {
       for (const settings of [true, false]) {
         const game = await setup({ settings })
 
-        expect((await move(game.slug, game.cookies.one, game.ids.one, STANDS)).status).toBe(200)
+        const response = await move(game.slug, game.cookies.one, game.ids.one, STANDS)
+
+        expect(response.status).toBe(409)
+        expect((await response.json() as { statusMessage: string }).statusMessage).toBe('already_there')
         expect(await placeOf(game.slug, game.hostCookie, game.ids.one)).toEqual({ zone: 'stands', team: null })
-        expect((await move(game.slug, game.cookies.one, game.ids.one, BENCH)).status).toBe(200)
-        expect(await placeOf(game.slug, game.hostCookie, game.ids.one)).toEqual({ zone: 'bench', team: null })
       }
+    })
+
+    it('answers a stale tab\'s move to the Bench as a move to the Stands, writes the Stands and publishes the Stands (switch-over, #437)', async () => {
+      const game = await setup()
+      await openTeamChoice(game)
+      await move(game.slug, game.cookies.one, game.ids.one, team(1))
+      await testDb.db.delete(activity)
+      notifier.clear()
+
+      // What the 0.11 browser tab posts for „Auf die Bench“.
+      const response = await move(game.slug, game.cookies.one, game.ids.one, { zone: 'bench' })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ userId: game.ids.one, to: STANDS })
+      const [row] = await testDb.db.select().from(eventMembers).where(eq(eventMembers.userId, game.ids.one))
+      expect(row).toMatchObject({ zone: 'stands', team: null })
+      expect(notifier.messages(game.eventId).find(message => message.type === 'member.moved')).toMatchObject({ from: team(1), to: STANDS })
+      const [entry] = await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))
+      expect(entry).toMatchObject({ type: 'member_moved', params: { userId: game.ids.one, from: team(1), to: STANDS } })
+    })
+
+    it('reads a legacy bench seat, written by the deployment before 0.12, as the Stands (#437)', async () => {
+      const game = await setup()
+      await openTeamChoice(game)
+      // The only way a `bench` row appears now: the old code, until the switch-over. Written by SQL here.
+      await testDb.db.execute(sql`UPDATE event_members SET zone = 'bench' WHERE user_id = ${game.ids.two}`)
+
+      expect(await placeOf(game.slug, game.hostCookie, game.ids.two)).toEqual({ zone: 'stands', team: null })
+      const already = await move(game.slug, game.hostCookie, game.ids.two, STANDS)
+      expect(already.status).toBe(409)
+      expect((await already.json() as { statusMessage: string }).statusMessage).toBe('already_there')
+      const intoTeam = await move(game.slug, game.cookies.two, game.ids.two, team(2))
+      expect(intoTeam.status).toBe(200)
+      expect(await placeOf(game.slug, game.hostCookie, game.ids.two)).toEqual({ zone: 'team', team: 2 })
+      const entries = await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))
+      expect(entries).toMatchObject([{ type: 'member_moved', params: { userId: game.ids.two, from: STANDS, to: team(2) } }])
     })
 
     it('stays in the team when a Reopen closes Team choice, and cannot leave it then', async () => {
@@ -187,7 +223,7 @@ describe('the Game board', () => {
 
       expect((await read(game.slug, game.cookies.one)).teamChoiceOpen).toBe(false)
       expect(await placeOf(game.slug, game.hostCookie, game.ids.one)).toEqual({ zone: 'team', team: 1 })
-      const response = await move(game.slug, game.cookies.one, game.ids.one, BENCH)
+      const response = await move(game.slug, game.cookies.one, game.ids.one, STANDS)
       expect((await response.json() as { statusMessage: string }).statusMessage).toBe('team_choice_closed')
     })
   })
@@ -201,7 +237,7 @@ describe('the Game board', () => {
 
       expect(response.status).toBe(403)
       expect((await response.json() as { statusMessage: string }).statusMessage).toBe('host_only')
-      expect(await placeOf(game.slug, game.hostCookie, game.ids.two)).toEqual({ zone: 'bench', team: null })
+      expect(await placeOf(game.slug, game.hostCookie, game.ids.two)).toEqual({ zone: 'stands', team: null })
       await expectNothingWritten(game)
     })
 
@@ -221,8 +257,8 @@ describe('the Game board', () => {
       const game = await setup()
       await move(game.slug, game.hostCookie, game.ids.two, team(1))
 
-      expect((await move(game.slug, game.hostCookie, game.ids.two, BENCH)).status).toBe(200)
-      expect(await placeOf(game.slug, game.hostCookie, game.ids.two)).toEqual({ zone: 'bench', team: null })
+      expect((await move(game.slug, game.hostCookie, game.ids.two, STANDS)).status).toBe(200)
+      expect(await placeOf(game.slug, game.hostCookie, game.ids.two)).toEqual({ zone: 'stands', team: null })
     })
 
     it('answers 404 member_not_found for a User who is no Member of the Event', async () => {
@@ -263,7 +299,7 @@ describe('the Game board', () => {
     it('refuses the place the Member is in, with 409 already_there', async () => {
       const game = await setup()
 
-      const response = await move(game.slug, game.cookies.one, game.ids.one, BENCH)
+      const response = await move(game.slug, game.cookies.one, game.ids.one, STANDS)
 
       expect(response.status).toBe(409)
       expect((await response.json() as { statusMessage: string }).statusMessage).toBe('already_there')
@@ -274,7 +310,7 @@ describe('the Game board', () => {
       const game = await setup()
       await openTeamChoice(game)
 
-      for (const body of [{ userId: game.ids.one }, { userId: game.ids.one, to: { zone: 'moon' } }, { userId: game.ids.one, to: { zone: 'team' } }, { userId: game.ids.one, to: { zone: 'team', team: '1' } }, { to: BENCH }, { userId: 'nobody', to: BENCH }]) {
+      for (const body of [{ userId: game.ids.one }, { userId: game.ids.one, to: { zone: 'moon' } }, { userId: game.ids.one, to: { zone: 'team' } }, { userId: game.ids.one, to: { zone: 'team', team: '1' } }, { to: STANDS }, { userId: 'nobody', to: STANDS }]) {
         const response = await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, body)
         expect(response.status).toBe(400)
         expect((await response.json() as { statusMessage: string }).statusMessage).toBe('invalid_value')
@@ -305,7 +341,7 @@ describe('the Game board', () => {
         expect(response.status).toBe(409)
         expect((await response.json() as { statusMessage: string }).statusMessage).toBe('team_full')
       }
-      expect(await placeOf(game.slug, game.hostCookie, game.ids.three)).toEqual({ zone: 'bench', team: null })
+      expect(await placeOf(game.slug, game.hostCookie, game.ids.three)).toEqual({ zone: 'stands', team: null })
       await expectNothingWritten(game)
     })
 
@@ -366,12 +402,12 @@ describe('the Game board', () => {
   })
 
   describe('the Event read', () => {
-    it('shows every Member on the Bench, the teams and a closed Team choice before the Date', async () => {
+    it('shows every Member on the Stands, the teams and a closed Team choice before the Date', async () => {
       const game = await setup()
 
       const view = await read(game.slug, game.cookies.one)
 
-      expect(view.members.map(member => [member.zone, member.team])).toEqual([['bench', null], ['bench', null], ['bench', null], ['bench', null]])
+      expect(view.members.map(member => [member.zone, member.team])).toEqual([['stands', null], ['stands', null], ['stands', null], ['stands', null]])
       expect(view.teams).toEqual([{ position: 1, name: null }, { position: 2, name: null }])
       expect(view.teamChoiceOpen).toBe(false)
     })

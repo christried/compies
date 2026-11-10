@@ -19,7 +19,7 @@ const people = {
   two: { provider: 'discord', id: '3', name: 'Zwei', email: 'two@example.com', image: undefined },
   three: { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example.com', image: undefined },
   four: { provider: 'twitch', id: '5', name: 'Vier', email: 'four@example.com', image: undefined },
-  bench: { provider: 'twitch', id: '6', name: 'Bank', email: 'bench@example.com', image: undefined },
+  unseated: { provider: 'twitch', id: '6', name: 'Bank', email: 'unseated@example.com', image: undefined },
   stands: { provider: 'twitch', id: '7', name: 'Tribuene', email: 'stands@example.com', image: undefined },
 } as const
 const outsider = { provider: 'discord', id: '8', name: 'Fremder', email: 'outsider@example.com', image: undefined } as const
@@ -66,7 +66,7 @@ describe('Vetoes', () => {
 
   /**
    * A Running Session of a Lucky Wheel Event with two Parties of two (One and Two in team 1, Three and Four in team 2), a Member
-   * on the Bench and one in the Stands, an outsider who is no Member, and four games in the Game pool. The Veto allowance is
+   * who took no seat and one on the Stands, an outsider who is no Member, and four games in the Game pool. The Veto allowance is
    * `allowance` per Party, the Game count `gameCount`.
    */
   async function running({ allowance = 2, gameCount = 10, hiddenWheel = false }: { allowance?: number, gameCount?: number, hiddenWheel?: boolean } = {}) {
@@ -300,7 +300,7 @@ describe('Vetoes', () => {
       const party = await running()
       const { drawId, gameId } = await setWithVeto(party)
 
-      for (const cookie of [party.hostCookie, party.cookies.three, party.cookies.bench, party.cookies.stands]) {
+      for (const cookie of [party.hostCookie, party.cookies.three, party.cookies.unseated, party.cookies.stands]) {
         const veto = (await read(party, cookie)).wheel!.vetoes
         expect(veto.draw).toMatchObject({ drawId, kind: 'set', game: { id: gameId } })
       }
@@ -510,11 +510,11 @@ describe('Vetoes', () => {
     })
 
     describe('the refusals', () => {
-      it('answers 403 not_a_player to a Member on the Bench, a Member in the Stands, and the Host who plays in no Party', async () => {
+      it('answers 403 not_a_player to a Member who took no seat, a Member on the Stands, and the Host who plays in no Party', async () => {
         const party = await running()
         const { drawId } = await windowOpen(party)
 
-        expect(await errorOf(await cast(party, drawId, party.cookies.bench))).toEqual({ status: 403, code: 'not_a_player' })
+        expect(await errorOf(await cast(party, drawId, party.cookies.unseated))).toEqual({ status: 403, code: 'not_a_player' })
         expect(await errorOf(await cast(party, drawId, party.cookies.stands))).toEqual({ status: 403, code: 'not_a_player' })
         expect(await errorOf(await cast(party, drawId, party.hostCookie))).toEqual({ status: 403, code: 'not_a_player' })
         expect(await vetoRows()).toEqual([])
@@ -619,7 +619,7 @@ describe('Vetoes', () => {
         const { drawId } = await windowOpen(party)
         notifier.clear()
 
-        await cast(party, drawId, party.cookies.bench)
+        await cast(party, drawId, party.cookies.unseated)
         await cast(party, 'nonsense', party.cookies.one)
 
         expect(await vetoRows()).toEqual([])
@@ -639,14 +639,14 @@ describe('Vetoes', () => {
         }
       })
 
-      it('shows the other Party, the Host, the Bench and the Stands nothing of it: not in the own part, nor in the numbers', async () => {
+      it('shows the other Party, the Host and the Stands nothing of it: not in the own part, nor in the numbers', async () => {
         const party = await running()
         const { drawId } = await windowOpen(party)
         await cast(party, drawId, party.cookies.one)
 
         const other = (await read(party, party.cookies.three)).wheel!.vetoes
         expect(other).toEqual({ left: [2, 2], own: { team: 2, cast: false, rejection: null }, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
-        for (const cookie of [party.hostCookie, party.cookies.bench, party.cookies.stands]) {
+        for (const cookie of [party.hostCookie, party.cookies.unseated, party.cookies.stands]) {
           expect((await read(party, cookie)).wheel!.vetoes).toEqual({ left: [2, 2], own: null, revealed: null, draw: expect.objectContaining({ kind: 'spin' }) })
         }
       })
@@ -685,7 +685,7 @@ describe('Vetoes', () => {
 
         clock.advance(WINDOW_MS)
 
-        for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three, party.cookies.bench, party.cookies.stands]) {
+        for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three, party.cookies.unseated, party.cookies.stands]) {
           const veto = (await read(party, cookie)).wheel!.vetoes
           expect(veto.revealed).toMatchObject([{ team: 1 }, { team: 2 }])
           expect(veto.left).toEqual([1, 1])
@@ -758,10 +758,10 @@ describe('Vetoes', () => {
 
     // A Veto belongs to the Party (#355): no client ever learns which Player cast it; only the `vetoes` row keeps it.
     describe('no caster in any payload (#355)', () => {
-      const viewers = ['host', 'one', 'two', 'three', 'bench', 'stands'] as const
+      const viewers = ['host', 'one', 'two', 'three', 'unseated', 'stands'] as const
       const cookieOf = (party: Party, who: typeof viewers[number]) => who === 'host' ? party.hostCookie : party.cookies[who]
 
-      /** The text holds no id of any User of the Party: caster, teammate, other Party, Host, Bench, Stands. */
+      /** The text holds no id of any User of the Party: caster, teammate, other Party, Host, Stands. */
       function expectNoUserId(party: Party, text: string, where: string) {
         for (const id of Object.values(party.ids)) expect(text, where).not.toContain(id)
       }

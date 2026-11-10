@@ -216,7 +216,7 @@ describe('starting a Session', () => {
 
     expect(started).toBe(0)
     expect(dialog()?.textContent).toContain('Los geht’s?')
-    expect(dialog()?.textContent).toContain('Mit dem Start werden die Teams gesperrt. Bench und Tribüne bleiben offen, nachziehen kannst du weiterhin.')
+    expect(dialog()?.textContent).toContain('Mit dem Start werden die Teams gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.')
     expect(dialog()?.textContent).toContain('2 Teams à 3, danach gesperrt')
     // The Team names stay open after the start (#438): the sheet no longer mentions them.
     expect(dialog()?.textContent).not.toContain('Namen')

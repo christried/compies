@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { Armchair, Users } from '@lucide/vue'
 import { activityIcon, activityParts, feedSessions, groupActivity, readEntry } from '../../app/utils/activity'
 import { formatActivityTime } from '../../app/utils/berlin-time'
 import de from '../../i18n/locales/de.json'
@@ -133,18 +134,28 @@ describe('the sentence of an entry', () => {
   it('says where a Member moved themselves, with the team named by its colour (#160)', () => {
     const own = { ...base, people: { u1: 'Sanne' } }
 
-    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 1 } } })).toBe('Sanne ist jetzt in Team Rot')
+    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'team', team: 1 } } })).toBe('Sanne ist jetzt in Team Rot')
     expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'team', team: 4 } } })).toBe('Sanne ist jetzt in Team Himmel')
-    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'bench' } } })).toBe('Sanne ist jetzt auf der Bench')
-    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } })).toBe('Sanne ist jetzt auf der Tribüne')
+    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'stands' } } })).toBe('Sanne ist jetzt auf der Tribüne')
+  })
+
+  it('reads an entry the Bench wrote before 0.12 as the Tribüne, own move and Host\'s move (#437)', () => {
+    const own = { ...base, people: { u1: 'Sanne' } }
+    const byHost = { ...base, actor: { id: 'h', name: 'Hostess' }, people: { u1: 'Sanne' } }
+    // Stored entries still hold { zone: 'bench' }, which the Place type no longer has: the feed is not rewritten and reads it as the Stands.
+    const old = (to: unknown) => ({ userId: 'u1', from: { zone: 'team', team: 1 }, to }) as never
+
+    expect(text({ ...own, type: 'member_moved', params: old({ zone: 'bench' }) })).toBe('Sanne ist jetzt auf der Tribüne')
+    expect(text({ ...byHost, type: 'member_moved', params: old({ zone: 'bench' }) })).toBe('Hostess hat Sanne auf die Tribüne verschoben')
+    expect(activityIcon({ ...own, type: 'member_moved', params: old({ zone: 'bench' }) }).icon).toBe(Armchair)
+    expect(activityIcon({ ...own, type: 'member_moved', params: old({ zone: 'team', team: 2 }) }).icon).toBe(Users)
   })
 
   it('says who moved a Member when the Host did (#160)', () => {
     const byHost = { ...base, actor: { id: 'h', name: 'Hostess' }, people: { u1: 'Sanne' } }
 
-    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } } })).toBe('Hostess hat Sanne nach Team Orange verschoben')
-    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 2 }, to: { zone: 'bench' } } })).toBe('Hostess hat Sanne auf die Bench verschoben')
-    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } })).toBe('Hostess hat Sanne auf die Tribüne verschoben')
+    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'team', team: 2 } } })).toBe('Hostess hat Sanne nach Team Orange verschoben')
+    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 2 }, to: { zone: 'stands' } } })).toBe('Hostess hat Sanne auf die Tribüne verschoben')
   })
 
   it('says who reset a Team name, with the colour name of the team (the entry stores the position)', () => {
@@ -351,7 +362,7 @@ describe('readEntry', () => {
 
 describe('activityParts', () => {
   it('sets the actor, the person and the team in bold, and the pieces read as one sentence', () => {
-    const moved: ActivityEntry = { ...base, actor: { id: 'u2', name: 'Hostess' }, people: { u1: 'Sanne' }, type: 'member_moved', params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } } }
+    const moved: ActivityEntry = { ...base, actor: { id: 'u2', name: 'Hostess' }, people: { u1: 'Sanne' }, type: 'member_moved', params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'team', team: 2 } } }
 
     expect(activityParts(moved, t)).toEqual([
       { text: 'Hostess', strong: true },
@@ -376,7 +387,7 @@ describe('activityParts', () => {
 
 describe('activityIcon', () => {
   it('gives every entry type an icon, the date set the success tone and a start the primary', () => {
-    const types = ACTIVITY_TYPES.map(type => ({ ...base, type, params: type === 'member_moved' ? { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'stands' } } : {} }) as unknown as ActivityEntry)
+    const types = ACTIVITY_TYPES.map(type => ({ ...base, type, params: type === 'member_moved' ? { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'stands' } } : {} }) as unknown as ActivityEntry)
 
     for (const entry of types) expect(activityIcon(entry).icon, entry.type).toBeDefined()
     expect(activityIcon(types.find(entry => entry.type === 'date_set')!).tone).toBe('success')

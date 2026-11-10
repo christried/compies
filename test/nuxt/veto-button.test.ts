@@ -81,7 +81,7 @@ describe('the hold-to-veto button', () => {
     expect(cast).not.toHaveBeenCalled()
   })
 
-  it('is absent for a Member who plays in no Party (the Bench, the Stands, a Host outside the teams)', async () => {
+  it('is absent for a Member who plays in no Party (the Stands, a Host outside the teams)', async () => {
     await mount({ own: null })
 
     expect(page!.find('button').exists()).toBe(false)

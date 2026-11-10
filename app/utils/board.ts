@@ -12,7 +12,7 @@ export function placeKey(place: Place): string {
 
 /** The place a `data-drop-zone` key stands for, or null for a key that is none. */
 export function placeFromKey(key: string | undefined): Place | null {
-  if (key === 'bench' || key === 'stands') return { zone: key }
+  if (key === 'stands') return { zone: 'stands' }
   const team = /^team-(\d+)$/.exec(key ?? '')
   return team ? { zone: 'team', team: Number(team[1]) } : null
 }

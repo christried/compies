@@ -45,7 +45,7 @@ describe('Team names', () => {
     vi.unstubAllEnvs()
   })
 
-  /** An Event with a set Date (Team choice open, 2 teams of 3) by the Host, with Players One, Two and Three on the Bench. */
+  /** An Event with a set Date (Team choice open, 2 teams of 3) by the Host, with Players One, Two and Three on the Stands. */
   async function setup(settings: Record<string, unknown> = {}) {
     // One Session, two Slots: the second is a Slot the poll still offers, beside the Date (`extraSlots`).
     const event = await setUpEvent(rig, {
@@ -109,17 +109,12 @@ describe('Team names', () => {
       expect(view.members.find(member => member.id === game.ids.two)?.teamWord).toBeNull()
     })
 
-    it('refuses a Player on the Bench and in the Stands with 409 not_in_team', async () => {
+    it('refuses a Player on the Stands with 409 not_in_team', async () => {
       const game = await setup()
 
-      const onBench = await word(game, game.cookies.one, 'Wilde')
-      expect(onBench.status).toBe(409)
-      expect(await codeOf(onBench)).toBe('not_in_team')
-
-      await send('POST', `/api/e/${game.slug}/move`, game.cookies.one, { userId: game.ids.one, to: { zone: 'stands' } })
-      const inStands = await word(game, game.cookies.one, 'Wilde')
-      expect(inStands.status).toBe(409)
-      expect(await codeOf(inStands)).toBe('not_in_team')
+      const onStands = await word(game, game.cookies.one, 'Wilde')
+      expect(onStands.status).toBe(409)
+      expect(await codeOf(onStands)).toBe('not_in_team')
     })
 
     it('answers 401 when signed out and 404 for a User who is no Member', async () => {
@@ -216,14 +211,14 @@ describe('Team names', () => {
       expect(await names(game)).toEqual(['Wilde Gurken', 'Rote'])
     })
 
-    it('drops a word when its Player leaves the team, to the Bench or to the Stands', async () => {
+    it('drops a word when its Player leaves the team, to the Stands', async () => {
       const game = await setup()
       await seat(game, 'one', 1)
       await seat(game, 'two', 1)
       await word(game, game.cookies.one, 'Wilde')
       await word(game, game.cookies.two, 'Gurken')
 
-      await send('POST', `/api/e/${game.slug}/move`, game.cookies.one, { userId: game.ids.one, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.cookies.one, { userId: game.ids.one, to: { zone: 'stands' } })
       expect(await names(game)).toEqual(['Gurken', null])
       expect((await read(game)).members.find(member => member.id === game.ids.one)?.teamWord).toBeNull()
 
@@ -337,7 +332,7 @@ describe('Team names', () => {
 
   // --- After the start (#438): the name follows the words until the Finish ---------------------------------------------------
 
-  /** A running Event, Session 1 started: One in team 1, Two in team 2 (teams of 2, one place free each), Three on the Bench; Session 2 still to come. */
+  /** A running Event, Session 1 started: One in team 1, Two in team 2 (teams of 2, one place free each), Three on the Stands; Session 2 still to come. */
   async function running() {
     const event = await startRunningEvent(rig, {
       host,
@@ -428,7 +423,7 @@ describe('Team names', () => {
       expect(await names(game)).toEqual(['Wilde', 'Blaue'])
     })
 
-    it('still refuses a Player on the Bench with 409 not_in_team', async () => {
+    it('still refuses a Player on the Stands with 409 not_in_team', async () => {
       const game = await running()
 
       expect(await errorOf(await word(game, game.cookies.three, 'Wilde'))).toEqual({ status: 409, code: 'not_in_team' })
@@ -460,7 +455,7 @@ describe('Team names', () => {
       await word(game, game.cookies.three, 'Gurken')
       expect(await names(game)).toEqual(['Wilde Gurken', null])
 
-      const out = await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.one, to: { zone: 'bench' } })
+      const out = await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.one, to: { zone: 'stands' } })
 
       expect(out.status).toBe(200)
       expect(await names(game)).toEqual(['Gurken', null])

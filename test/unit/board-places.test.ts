@@ -12,7 +12,7 @@ function t(key: string, named: Record<string, unknown> = {}): string {
 
 describe('placeKey and placeFromKey', () => {
   it('are each other\'s inverse for every place', () => {
-    for (const place of [{ zone: 'bench' }, { zone: 'stands' }, { zone: 'team', team: 1 }, { zone: 'team', team: 8 }] as const) {
+    for (const place of [{ zone: 'stands' }, { zone: 'team', team: 1 }, { zone: 'team', team: 8 }] as const) {
       expect(placeFromKey(placeKey(place))).toEqual(place)
     }
     expect(placeKey({ zone: 'team', team: 4 })).toBe('team-4')

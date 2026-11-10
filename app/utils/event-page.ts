@@ -132,7 +132,7 @@ export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase:
 
 /**
  * The Host's seat note (teams only, #160): where the Host sits does not change the dock, and the note says so. null for a Member,
- * on the Bench, or in a Team the note has no word for.
+ * or in a Team the note has no word for.
  */
 export function seatNote(view: Pick<EventView, 'members' | 'viewerId' | 'teams'> & { event: Pick<EventView['event'], 'isHost'> }, t: Translate): string | null {
   const me = view.members.find(member => member.id === view.viewerId)
@@ -144,7 +144,7 @@ export function seatNote(view: Pick<EventView, 'members' | 'viewerId' | 'teams'>
 
 /**
  * Whether Compibert's header wears the party hat for this viewer (#38): seated in a team that is a Leading Party (leadingTeams, from the
- * Standings and the Results the page holds). The Host is a Member here, and a Member on the Bench or in the Stands never wears it.
+ * Standings and the Results the page holds). The Host is a Member here, and a Member on the Stands never wears it.
  */
 export function wearsPartyhat(view: Pick<EventView, 'members' | 'viewerId' | 'standings' | 'results'> & { event: Pick<EventView['event'], 'phase'> }): boolean {
   const me = view.members.find(member => member.id === view.viewerId)
