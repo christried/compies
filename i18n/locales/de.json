@@ -1706,6 +1706,7 @@
     "sessionStarted": "Diese Session hat schon begonnen. Sie bleibt, wie sie ist.",
     "noRunningSession": "Es läuft gerade keine Session.",
     "memberNotFound": "Diese Person ist nicht mehr im Event.",
+    "noSuchTeam": "Dieses Team gibt es nicht mehr.",
     "teamSizeBelowFullest": "So klein geht nicht: Im vollsten Team sind schon mehr Leute.",
     "vetoAllowanceBelowSpent": "So wenige geht nicht: Eine Partei hat schon mehr Vetos eingesetzt.",
     "gameCountBelowStarted": "So wenige geht nicht: Es sind schon mehr Spiele gestartet.",
