@@ -7,7 +7,7 @@ import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, EventView } from '~~/shared/event'
 import type { EndView, RoundView, SetGameView } from '~~/shared/stage'
 import { formatShortDay } from '~/utils/berlin-time'
-import type { GameView, PoolGame } from '~~/shared/game'
+import { GAME_NAME_MAX, type GameView, type PoolGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, serve, shownToasts, viewWithSessions, type Mounted, type Wrapper } from './event-page'
@@ -68,7 +68,7 @@ afterEach(() => {
 })
 
 describe('the open Rounds on the stage', () => {
-  it('lists every open Round as a card with „wird gespielt“, above the Game board, in the order they started', async () => {
+  it('lists every open Round as a tile, above the Game board, in the order they started (#435)', async () => {
     const { slug } = serveRunning({ host: false, rounds: [round('r1', halo), round('r2', kart)] })
 
     const stage = await mount(slug)
@@ -76,16 +76,16 @@ describe('the open Rounds on the stage', () => {
     expect(regionHeadings(stage)).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     const cards = stage.get('[aria-label="Offene Spiele"]').findAll('li')
     expect(cards.map((card: Wrapper) => card.text())).toEqual([expect.stringContaining('Halo'), expect.stringContaining('Kart')])
-    for (const card of cards) expect(card.text()).toContain('wird gespielt')
+    for (const card of cards) expect(card.text()).not.toContain('wird gespielt')
   })
 
-  it('shows the player count of the game and no number on the Round', async () => {
+  it('shows the Round as a tile with no player count and no number on it (#435)', async () => {
     const { slug } = serveRunning({ host: false, rounds: [round('r1', halo)] })
 
     const stage = await mount(slug)
 
     const card = stage.get('[aria-label="Offene Spiele"] li')
-    expect(card.text()).toMatch(/2.?4/)
+    expect(card.text()).not.toMatch(/2.?4/)
     expect(card.text()).not.toMatch(/Spiel \d/)
   })
 
@@ -757,66 +757,82 @@ describe('the Lucky Wheel on the stage (#229)', () => {
   })
 })
 
-describe('the Price on the Round card (#338)', () => {
-  // The page reads the clock for the year of „Stand“, so the Price is checked today: the test expects the line for today.
+describe('the Round tile carries no Price (#435, was #338)', () => {
+  // The Price comes back in the game dialog (#444); the tile of a Round has picture and name only.
   const priced = (game: PoolGame, cents: number | null = 1999, source: 'steam' | 'free_to_play' = 'steam'): PoolGame => ({
     ...game,
     price: { cents: source === 'free_to_play' ? null : cents, source, checkedAt: new Date().toISOString() },
   })
-  /** The line a Price checked today shows, spelled out so the German words are pinned (#332: they come from de.json now). */
+  /** The line a Price checked today would show; the tile must not show it. */
   const stand = () => `Stand ${formatShortDay(new Date())}`
 
-  it('shows the Price line on the open Round card of a Member', async () => {
+  it('shows a Member the Round as a tile: the name, and no Price line', async () => {
     const game = priced(halo)
     const { slug } = serveRunning({ host: false, rounds: [round('r1', game)] })
 
     const stage = await mount(slug)
 
-    expect(stage.get('[aria-label="Offene Spiele"] li').text()).toContain(`19,99 € bei Steam · ${stand()}`)
+    const card = stage.get('[aria-label="Offene Spiele"] li')
+    expect(card.get('b').text()).toBe('Halo')
+    expect(card.text()).not.toContain('€')
+    expect(card.text()).not.toContain(stand())
+    expect(card.text()).toContain('Das Ergebnis trägt der Host ein')
   })
 
-  it('shows the Price line to the Host too, and the open Game notes still show', async () => {
+  it('shows the Host no Price line on the Round either, and the open Game notes still show', async () => {
     const game = priced(halo)
     const { slug } = serveRunning({ host: true, rounds: [round('r1', game, halo.notes!)] })
 
     const stage = await mount(slug)
 
     const rounds = stage.get('[aria-label="Offene Spiele"]')
-    expect(rounds.text()).toContain(`19,99 € bei Steam · ${stand()}`)
+    expect(rounds.get('li b').text()).toBe('Halo')
+    expect(rounds.text()).not.toContain('€')
+    expect(rounds.text()).not.toContain(stand())
     expect(rounds.text()).toContain('Hausregel: keine Raketen')
   })
 
-  it('shows no „Stand“ and no „€“ on the card of a Round whose game has no Price', async () => {
-    const { slug } = serveRunning({ host: false, rounds: [round('r1', kart)] })
-
-    const stage = await mount(slug)
-
-    const card = stage.get('[aria-label="Offene Spiele"] li')
-    expect(card.text()).toContain('Kart')
-    expect(card.text()).not.toContain('Stand')
-    expect(card.text()).not.toContain('€')
-  })
-
-  it('shows the Price line only on the card of the Round whose game has one, when two Rounds are open', async () => {
+  it('shows no Price line on the Round of a game without a Price, nor on the one whose game has a Price, when two Rounds are open', async () => {
     const { slug } = serveRunning({ host: false, rounds: [round('r1', priced(halo)), round('r2', kart)] })
 
     const stage = await mount(slug)
 
-    const [withPrice, withoutPrice] = stage.findAll('[aria-label="Offene Spiele"] > li')
-    expect(withPrice!.text()).toContain('Halo')
-    expect(withPrice!.text()).toContain('€')
-    expect(withoutPrice!.text()).toContain('Kart')
-    expect(withoutPrice!.text()).not.toContain('€')
+    const [first, second] = stage.findAll('[aria-label="Offene Spiele"] > li')
+    expect(first!.get('b').text()).toBe('Halo')
+    expect(second!.get('b').text()).toBe('Kart')
+    expect(stage.get('[aria-label="Offene Spiele"]').text()).not.toContain('€')
   })
 
-  it('shows a Free-to-play game with no amount on its card, as „Free-to-play · Stand …“', async () => {
+  it('shows no Free-to-play line on the tile of a game without an amount', async () => {
     const game = priced(halo, null, 'free_to_play')
     const { slug } = serveRunning({ host: false, rounds: [round('r1', game)] })
 
     const stage = await mount(slug)
 
     const card = stage.get('[aria-label="Offene Spiele"] li')
-    expect(card.text()).toContain(`Free-to-play · ${stand()}`)
+    expect(card.text()).not.toContain('Free-to-play')
     expect(card.text()).not.toContain('€')
+  })
+
+  it('shows the placeholder tile for a Round whose game has neither image nor Clip, with its name', async () => {
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', halo)] })
+
+    const stage = await mount(slug)
+
+    const card = stage.get('[aria-label="Offene Spiele"] li')
+    expect(card.get('[data-cover]').attributes('data-cover')).toBe('placeholder')
+    expect(card.get('b').text()).toBe('Halo')
+  })
+
+  it('shows the tile of a Round whose game has the longest name, the name wrapping at two lines', async () => {
+    const longName = 'M'.repeat(GAME_NAME_MAX)
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', { ...halo, name: longName })] })
+
+    const stage = await mount(slug)
+
+    const name = stage.get('[aria-label="Offene Spiele"] li b')
+    expect(name.text()).toBe(longName)
+    expect(name.classes()).toContain('break-words')
+    expect(name.classes()).toContain('line-clamp-2')
   })
 })
