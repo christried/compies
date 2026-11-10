@@ -22,6 +22,8 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 - **No-ops**: look for instructions in steering files that don't modify the agent's behavior. _Use when_ the steering files are large and unwieldy.
 - **Information access**: look for opportunities to increase the agent's access to information. Teeing dev server logs, readonly access to third-party services. _Use when_ a crucial piece of information was not available to the agent.
 
+**COMPIES:** leave out two kinds of finding the user declined in the 0.10 retro (2026-11-09). One only hardens the game-day rule: the user never merges into `main` on a game day without knowing an Event runs, so the guard's failure path needs no doc rule. The other treats the user's own parallel sessions as a process gap: a ticket or a PR that appears mid-run because the user worked elsewhere is an accepted cost.
+
 4. Present these candidates to the user, in order of severity.
 
 ## Reference
