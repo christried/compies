@@ -14,7 +14,7 @@ import { requireUser } from '../../../utils/user'
 
 // The Share image of a finished Event (#313, spec #308): a PNG of the Winner, the Standings and the played games, `?format=wide|square`.
 // Members only, and refused exactly as the Event read refuses (ADR 0006): a non-Member and an unknown slug get the same 404, a former
-// Member of a deleted Event the 410. Every Member may have it, Spectators and the Bench too; no Host check. Before the Finish it answers
+// Member of a deleted Event the 410. Every Member may have it, a Member on the Stands too; no Host check. Before the Finish it answers
 // `wrong_phase`, and before the Host first started the Award ceremony `ceremony_pending` (#445: the result waits for it); the format is checked
 // after both, so a non-Member never learns whether it was valid.
 // The picture is made on every request from the Event read's own section builders and stores nothing: no file, no cache of finished PNGs

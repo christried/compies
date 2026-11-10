@@ -130,7 +130,7 @@ export const API_ERROR_STATUS = {
   round_not_open: 409,
   /** The Places are no Result of the Event: a Party missing, doubled or out of range, a Place that skips, or a Score too long (#273). */
   invalid_result: 400,
-  /** The Veto is for a viewer who plays in no Party: on the Bench, in the Stands, or without a team (#231). */
+  /** The Veto is for a viewer who plays in no Party: on the Stands or without a team (#231). */
   not_a_player: 403,
   /** The draw has no Veto window (no Party had a Veto left when it was drawn, or the Host set it), or the Event has no such draw (#231). */
   no_veto_window: 409,

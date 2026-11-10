@@ -262,7 +262,7 @@ describe('when a Round leaves the open Rounds (#276)', () => {
 })
 
 describe('entering a Result (#273)', () => {
-  const pair: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
+  const pair: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: null }]
   const enterButtons = (stage: Awaited<ReturnType<typeof mount>>) => stage.get('[aria-label="Offene Spiele"]').findAll('button').filter((button: Wrapper) => button.text() === 'Ergebnis eintragen')
   const HOST_ENTERS = 'Das Ergebnis trägt der Host ein'
 
@@ -775,7 +775,7 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
     const stage = await mount(slug)
 
     const card = stage.get('[aria-label="Offene Spiele"] li')
-    expect(card.get('b').text()).toBe('Halo')
+    expect(card.get('button').text()).toBe('Halo')
     expect(card.text()).not.toContain('€')
     expect(card.text()).not.toContain(stand())
     expect(card.text()).toContain('Das Ergebnis trägt der Host ein')
@@ -801,8 +801,8 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
     const stage = await mount(slug)
 
     const [first, second] = stage.findAll('[aria-label="Offene Spiele"] > li')
-    expect(first!.get('b').text()).toBe('Halo')
-    expect(second!.get('b').text()).toBe('Kart')
+    expect(first!.get('button').text()).toBe('Halo')
+    expect(second!.get('button').text()).toBe('Kart')
     expect(stage.get('[aria-label="Offene Spiele"]').text()).not.toContain('€')
   })
 
@@ -824,7 +824,7 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
 
     const card = stage.get('[aria-label="Offene Spiele"] li')
     expect(card.get('[data-cover]').attributes('data-cover')).toBe('placeholder')
-    expect(card.get('b').text()).toBe('Halo')
+    expect(card.get('button').text()).toBe('Halo')
   })
 
   it('shows the tile of a Round whose game has the longest name, the name wrapping at two lines', async () => {
@@ -833,15 +833,16 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
 
     const stage = await mount(slug)
 
-    const name = stage.get('[aria-label="Offene Spiele"] li b')
+    const name = stage.get('[aria-label="Offene Spiele"] li button')
     expect(name.text()).toBe(longName)
     expect(name.classes()).toContain('break-words')
     expect(name.classes()).toContain('line-clamp-2')
   })
 })
 
-// The Host's game dialog from „Gerade dran“ (#443): the Tags and Notes of a Round's game come from `hostGames`, the Round's own Notes stay open under the tile.
-describe('the game dialog from the Round tiles (#443)', () => {
+// The game dialog from „Gerade dran“ (#443, #444): the Host's has the Tags and Notes of a Round's game from `hostGames`, the Round's own Notes stay open under the tile;
+// a Member's has the facts and never those.
+describe('the game dialog from the Round tiles (#443, #444)', () => {
   const hostGames = {
     'g-halo': { tags: [{ key: 'koop', label: 'Koop' }], notes: halo.notes },
     'g-schach': { tags: [{ key: 'denken', label: 'Denken' }], notes: 'Schach-Notizen' },
@@ -880,14 +881,27 @@ describe('the game dialog from the Round tiles (#443)', () => {
     expect(rounds.text()).toContain('Schach-Notizen')
   })
 
-  it('shows a Member\'s Round tile as no button, and a click opens no dialog', async () => {
-    const { slug } = serveRunning({ host: false, rounds: [round('r1', halo)] })
+  it('opens a Member\'s Round tile as a dialog with the facts and without Tags and Notes, though hostGames were handed in (#444)', async () => {
+    const game: PoolGame = { ...halo, suitabilities: ['teams'], price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', game, halo.notes!)], hostGames })
     const stage = await mount(slug)
 
     const rounds = stage.get('[aria-label="Offene Spiele"]')
-    expect(rounds.find('[aria-haspopup]').exists()).toBe(false)
-    await rounds.get('li b').trigger('click')
-    await flushPromises()
+    const tile = rounds.get('li button[aria-haspopup="dialog"]')
+    expect(tile.text()).toBe('Halo')
     expect(opened()).toBeNull()
+    await tile.trigger('click')
+    await flushPromises()
+
+    expect(opened()!.querySelector('h2')?.textContent).toBe('Halo')
+    expect(opened()!.textContent).toContain('2 bis 4')
+    expect(opened()!.textContent).toContain('Teams')
+    expect(opened()!.textContent).toContain('Stand')
+    for (const hidden of ['Koop', 'Hausregel: keine Raketen', 'Notizen']) expect(opened()!.textContent).not.toContain(hidden)
+    expect(opened()!.querySelector('a')).toBeNull()
+    expect(opened()!.querySelector('footer')).toBeNull()
+    // The Round's Host-only parts stay absent for a Member.
+    expect(rounds.text()).not.toContain('Zurücklegen')
+    expect(rounds.text()).not.toContain('Ergebnis eintragen')
   })
 })

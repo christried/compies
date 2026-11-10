@@ -10,7 +10,7 @@ import type { JoinedEvent } from '../../../shared/event'
 import type { RoomMessage } from '../../../shared/realtime'
 
 // Join an Event through its Invite link (#10, ADR 0006): the signed-in User becomes a Member on
-// the Bench. Joining again changes nothing and keeps the zone. The answer names the Event link
+// the Stands. Joining again changes nothing and keeps the zone. The answer names the Event link
 // the page moves on to, and whether this call added the Member.
 export default defineEventHandler(async (event): Promise<JoinedEvent> => {
   const user = await requireUser(event)

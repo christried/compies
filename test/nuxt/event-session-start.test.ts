@@ -216,8 +216,11 @@ describe('starting a Session', () => {
 
     expect(started).toBe(0)
     expect(dialog()?.textContent).toContain('Los geht’s?')
-    expect(dialog()?.textContent).toContain('Mit dem Start werden Teams und Teamnamen gesperrt. Bench und Tribüne bleiben offen, nachziehen kannst du weiterhin.')
-    expect(dialog()?.textContent).toContain('2 Teams à 3, Namen werden eingefroren')
+    expect(dialog()?.textContent).toContain('Mit dem Start werden die Teams gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.')
+    expect(dialog()?.textContent).toContain('2 Teams à 3, danach gesperrt')
+    // The Team names stay open after the start (#438): the sheet no longer mentions them.
+    expect(dialog()?.textContent).not.toContain('Namen')
+    expect(dialog()?.textContent).not.toContain('eingefroren')
 
     await clickButton(dialog(), 'Session 1 starten')
 
@@ -251,8 +254,8 @@ describe('starting a Session', () => {
     await clickHostAction(page, 'Session 2 starten')
 
     expect(dialog()?.textContent).toContain('Die Teams bleiben, wie sie sind.')
-    expect(dialog()?.textContent).not.toContain('Namen werden eingefroren')
-    expect(dialog()?.textContent).not.toContain('Mit dem Start werden Teams')
+    expect(dialog()?.textContent).not.toContain('danach gesperrt')
+    expect(dialog()?.textContent).not.toContain('Mit dem Start werden die Teams')
   })
 })
 
@@ -432,7 +435,7 @@ describe('a Tie at the end', () => {
   const ENDED_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }]
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
   const running = (slug: string, end: NonNullable<Overrides['end']> = tied) => hostView(slug, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 1, points: 2 }], end })
-  const teams = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
+  const teams = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: null }]
   const button = (page: Awaited<ReturnType<typeof mountSuspended>>, label: string) => page.findAll('[role="toolbar"] button').find((item: { text: () => string }) => item.text().startsWith(label))!
 
   beforeEach(() => {

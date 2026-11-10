@@ -58,7 +58,7 @@ const ceremonyAt = (startsAt: number, parties = 2, gag: CeremonyGag = 'trip', wi
 })
 /** The Standings of `parties` Parties, the first `winners` of them on rank 1. */
 const standingsOf = (parties: number, winners = 1) => Array.from({ length: parties }, (_, index) => ({ team: index + 1, rank: index < winners ? 1 : index + 1, points: index < winners ? 9 : Math.max(9 - index, 1) }))
-const team = (position: number, name: string | null = null): BoardTeam => ({ position, name, frozen: true })
+const team = (position: number, name: string | null = null): BoardTeam => ({ position, name })
 const player = (id: string, name: string, teamPosition: number): MemberView => memberView({ id, name, zone: 'team', team: teamPosition })
 const people = (count: number, teamPosition: number): MemberView[] => Array.from({ length: count }, (_, index) => player(`p${teamPosition}-${index}`, `Leute ${teamPosition}-${index + 1}`, teamPosition))
 

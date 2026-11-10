@@ -342,7 +342,13 @@ function readPage(kit) {
         }
       }
     }
-    if (!edge && !paint) continue
+    // A text button or a link may have no edge of its own (WCAG 1.4.11 asks for the boundary only where it is the sign of a
+    // control); a field may not, so it goes on to `judgeBox` without one and fails there (#398). Not read, on purpose: hidden
+    // inputs, the native checkbox, radio and file inputs of a custom control (BOX leaves them out: the visible part is read on
+    // its own) and a text field that is visually hidden (1 px, `sr-only`).
+    const field = el.matches(FIELD)
+    if (field && (rect.width <= 1 || rect.height <= 1)) continue
+    if (!edge && !paint && !field) continue
     const stack = reach(el, () => el.getBoundingClientRect())
     if (!stack) {
       unseen.push(`${pathOf(el)} (box)`)

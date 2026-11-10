@@ -10,10 +10,13 @@ import { shownToasts } from './event-page'
 
 const mount = () => mountSuspended(ProfilePage, { route: '/profil' })
 const input = (page: Awaited<ReturnType<typeof mount>>) => page.get('input').element as HTMLInputElement
+// Every Discord and Twitch account has a picture, so the page is tested with one (CODING_STANDARDS § Tests).
+const withPicture = { ...kitty, image: 'https://example.com/kitty_tv.png' }
+const cardPicture = (page: Awaited<ReturnType<typeof mount>>) => page.find('section[aria-labelledby="profile-card-title"] img')
 
 describe('the Profil page', () => {
   beforeEach(() => {
-    signInAs(kitty)
+    signInAs(withPicture)
     useState('toasts').value = []
   })
 
@@ -25,6 +28,16 @@ describe('the Profil page', () => {
     expect(input(page).value).toBe('Kitty')
     expect(page.text()).toContain('5/32')
     expect(page.get('#display-name-help').text()).toBe('Muss nicht eindeutig sein. Alle sehen ihn überall in Compies.')
+    expect(cardPicture(page).attributes('src')).toBe(withPicture.image)
+  })
+
+  it('shows the initial of the Display name when the User has no picture', async () => {
+    signInAs(kitty)
+
+    const page = await mount()
+
+    expect(cardPicture(page).exists()).toBe(false)
+    expect(page.get('section[aria-labelledby="profile-card-title"]').text()).toContain('K')
   })
 
   it('keeps „Speichern“ inactive for an unchanged name, also when only spaces are added', async () => {
@@ -129,6 +142,79 @@ describe('the Profil page', () => {
     expect(input(page).value).toBe('Kitty Kat')
     expect(useAuthUser().value?.displayName).toBe('Kitty')
     expect(shownToasts()).not.toContainEqual(expect.objectContaining({ tone: 'success' }))
+  })
+
+  describe('a name save and an Appearance choice on the same page (#404)', () => {
+    const appearanceOf = (page: Awaited<ReturnType<typeof mount>>) => page.get('main [role="radiogroup"]').findAll('[role="radio"]')
+      .filter(r => r.attributes('aria-checked') === 'true').map(r => r.text())
+    const gateNamed = () => {
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      return { gate, release }
+    }
+
+    it('keeps the Appearance just chosen when the name\'s answer still carries the old one', async () => {
+      const name = gateNamed()
+      registerEndpoint('/api/profile/setup', {
+        method: 'POST',
+        handler: async (event) => {
+          const { displayName } = await readBody(event)
+          await name.gate
+          return { user: { ...kitty, displayName } }
+        },
+      })
+      const appearanceSaved = vi.fn()
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: async (event) => {
+          const { appearance } = await readBody(event)
+          appearanceSaved(appearance)
+          return { appearance }
+        },
+      })
+      const page = await mount()
+      await page.get('input').setValue('Kitty Kat')
+      await page.get('form').trigger('submit')
+
+      await page.get('main [role="radiogroup"]').findAll('[role="radio"]').find(r => r.text() === 'Dunkel')!.trigger('click')
+      await vi.waitFor(() => expect(appearanceSaved).toHaveBeenCalledWith('dark'))
+      name.release()
+
+      await vi.waitFor(() => expect(useAuthUser().value?.displayName).toBe('Kitty Kat'))
+      await flushPromises()
+      expect(appearanceOf(page)).toEqual(['Dunkel'])
+      expect(useAuthUser().value?.appearance).toBe('dark')
+      expect(appearanceSaved).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the Appearance as chosen when the name save fails, and shows the name\'s error', async () => {
+      const name = gateNamed()
+      registerEndpoint('/api/profile/setup', {
+        method: 'POST',
+        handler: async () => {
+          await name.gate
+          throw createError({ statusCode: 500 })
+        },
+      })
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: async event => ({ appearance: (await readBody(event)).appearance }),
+      })
+      const page = await mount()
+      await page.get('input').setValue('Kitty Kat')
+      await page.get('form').trigger('submit')
+
+      await page.get('main [role="radiogroup"]').findAll('[role="radio"]').find(r => r.text() === 'Dunkel')!.trigger('click')
+      await flushPromises()
+      name.release()
+
+      await vi.waitFor(() => expect(page.find('[role="alert"]').exists()).toBe(true))
+      expect(page.get('[role="alert"]').text()).toBe('Speichern hat nicht geklappt. Versuch’s nochmal.')
+      expect(appearanceOf(page)).toEqual(['Dunkel'])
+      expect(useAuthUser().value?.displayName).toBe('Kitty')
+    })
   })
 
   it('signs out with Abmelden', async () => {

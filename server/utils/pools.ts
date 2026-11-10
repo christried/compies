@@ -21,7 +21,7 @@ export function assertNoOldPools(body: Record<string, unknown>): void {
 /**
  * The Game pool of an Event, sorted by name. The caller decides whether the viewer may see it (canSeePoolGames) and
  * does not call this otherwise, so nothing about the pool is selected for a viewer who may not see it (#148, #222, #225).
- * Only the Host gets the games whole; every other Member gets picture, name and Price (#224, #338).
+ * Only the Host gets the games whole; every other Member gets picture, name, Price, players and Suitabilities (#224, #338, #444).
  */
 export async function eventPool(db: Db, eventId: string, isHost: boolean): Promise<(PoolGame | PoolGameFace)[]> {
   const rows = await db

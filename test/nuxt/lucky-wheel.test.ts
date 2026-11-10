@@ -370,8 +370,8 @@ describe('a Hidden wheel', () => {
   })
 })
 
-// The Host's game dialog from the drawn game's tile (#443): the Tags and Notes come from `hostGames`; a Member's tile stays plain.
-describe('the drawn game\'s tile and its dialog (#443)', () => {
+// The game dialog from the drawn game's tile (#443, #444): the Host's has the Tags and Notes from `hostGames`; a Member's has the facts and never those.
+describe('the drawn game\'s tile and its dialog (#443, #444)', () => {
   const hostGames = { 'g-halo': { tags: [{ key: 'koop', label: 'Koop' }, { key: 'retro', label: 'Retro' }], notes: 'Hausregel: keine Raketen' } }
   const dialog = () => document.querySelector('[role="dialog"]') as HTMLElement | null
 
@@ -408,13 +408,23 @@ describe('the drawn game\'s tile and its dialog (#443)', () => {
     expect(dialog()!.textContent).not.toContain('Notizen')
   })
 
-  it('keeps a Member\'s tile plain: no button, and a click opens no dialog, though hostGames were handed in', async () => {
-    await mount(wheelOf(spinOf({ game: halo })), { hostGames })
+  it('opens a Member\'s „Zuletzt gezogen“ tile as a dialog with the facts and without Tags and Notes, though hostGames were handed in (#444)', async () => {
+    const drawn: RoundGame = { ...halo, suitabilities: ['teams'], price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
+    await mount(wheelOf(spinOf({ game: drawn })), { hostGames })
     await at(STOP + 100)
 
-    expect(page!.find('button[aria-haspopup]').exists()).toBe(false)
-    await page!.get('b').trigger('click')
-    await flushPromises()
+    const tile = page!.get('button[aria-haspopup="dialog"]')
+    expect(tile.text()).toBe('Halo')
     expect(dialog()).toBeNull()
+    await tile.trigger('click')
+    await flushPromises()
+
+    expect(dialog()!.querySelector('h2')?.textContent).toBe('Halo')
+    expect(dialog()!.textContent).toContain('2 bis 4')
+    expect(dialog()!.textContent).toContain('Teams')
+    expect(dialog()!.textContent).toContain('Stand')
+    for (const hidden of ['Koop', 'Retro', 'Hausregel: keine Raketen', 'Notizen']) expect(dialog()!.textContent).not.toContain(hidden)
+    expect(dialog()!.querySelector('a')).toBeNull()
+    expect(dialog()!.querySelector('footer')).toBeNull()
   })
 })

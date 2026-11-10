@@ -35,9 +35,9 @@ const players = {
   two: { provider: 'discord', id: '3', name: 'Zwei', email: 'two@example.com', image: undefined },
   three: { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example.com', image: undefined },
   four: { provider: 'twitch', id: '5', name: 'Vier', email: 'four@example.com', image: undefined },
-  // Not on a team: one Member on the Stands (a Spectator), one on the Bench.
+  // Not on a team: one Member who moved to the Stands, one who took no seat (both on the Stands).
   spectator: { provider: 'twitch', id: '6', name: 'Zuschauer', email: 'spectator@example.com', image: undefined },
-  bench: { provider: 'twitch', id: '7', name: 'Bank', email: 'bench@example.com', image: undefined },
+  unseated: { provider: 'twitch', id: '7', name: 'Bank', email: 'unseated@example.com', image: undefined },
 } as const
 const outsider = { provider: 'twitch', id: '8', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
@@ -76,7 +76,7 @@ describe('the Share image route', () => {
   const send = sendVia(() => request)
 
   /**
-   * An Event with one Session, two Parties of two Players, a Spectator and a Bench Member, and a pool of two games of which only Halo is
+   * An Event with one Session, two Parties of two Players, a Member on the Stands and one who took no seat, and a pool of two games of which only Halo is
    * played (Kart stays in the pool). `finish: false` leaves it running with its result in; the Host's cookie, the Members' and an outsider's come back.
    */
   async function event({ finish = true, tie = false, ceremony = true }: { finish?: boolean, tie?: boolean, ceremony?: boolean } = {}) {
@@ -94,7 +94,7 @@ describe('the Share image route', () => {
     notifier.clear()
     const cookies = {
       one: game.players.one.cookie, two: game.players.two.cookie, three: game.players.three.cookie, four: game.players.four.cookie,
-      spectator: game.players.spectator.cookie, bench: game.players.bench.cookie, outsider: game.outsiders.outsider.cookie,
+      spectator: game.players.spectator.cookie, unseated: game.players.unseated.cookie, outsider: game.outsiders.outsider.cookie,
     }
     return { slug: game.slug, eventId: game.eventId, hostCookie: game.host.cookie, cookies }
   }
@@ -118,10 +118,10 @@ describe('the Share image route', () => {
       expect(sizeOf(new Uint8Array(await response.arrayBuffer()))).toEqual({ signature: PNG_SIGNATURE, width, height })
     }, 30_000)
 
-    it('gives one to every kind of Member: a Player, the Host, a Spectator and a Bench Member', async () => {
+    it('gives one to every kind of Member: a Player, the Host and a Member on the Stands', async () => {
       const { slug, cookies, hostCookie } = await event()
 
-      for (const cookie of [cookies.one, cookies.three, hostCookie, cookies.spectator, cookies.bench]) {
+      for (const cookie of [cookies.one, cookies.three, hostCookie, cookies.spectator, cookies.unseated]) {
         const response = await image(slug, cookie)
         expect(response.status).toBe(200)
         expect(sizeOf(new Uint8Array(await response.arrayBuffer())).signature).toEqual(PNG_SIGNATURE)

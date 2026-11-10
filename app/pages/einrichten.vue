@@ -1,43 +1,20 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
 import { safeRedirect } from '~/utils/auth-guard'
-import { DISPLAY_NAME_MAX, type SavedProfile } from '~~/shared/auth'
+import { DISPLAY_NAME_MAX } from '~~/shared/auth'
 import { cutToCharacters } from '~~/shared/text'
 
 // Profile setup (screen 03), once after the first sign-in: the Display name, prefilled from the
-// provider. The avatar is the provider image in the MVP; upload arrives with T2b.
+// provider (the form is useDisplayNameForm's, as on Profil). The avatar is the provider image in the MVP; upload arrives with T2b.
 
 const route = useRoute()
 const { t } = useI18n()
 useHead({ title: () => t('onboarding.title') })
 const user = useAuthUser()
 
-const displayName = ref(cutToCharacters(user.value?.name ?? '', DISPLAY_NAME_MAX))
-const missing = computed(() => displayName.value.trim() === '')
-const saving = ref(false)
-const saveFailed = ref(false)
-const field = useTemplateRef('field')
+const { displayName, missing, saving, saveFailed, save: saveName } = useDisplayNameForm({ initial: cutToCharacters(user.value?.name ?? '', DISPLAY_NAME_MAX) })
 
-async function save() {
-  if (missing.value) {
-    field.value?.focus()
-    return
-  }
-  if (saving.value) return
-  saving.value = true
-  saveFailed.value = false
-  try {
-    const response = await $fetch<SavedProfile>('/api/profile/setup', { method: 'POST', body: { displayName: displayName.value } })
-    user.value = response.user
-    await navigateTo(safeRedirect(route.query.redirect), { replace: true })
-  }
-  catch {
-    saveFailed.value = true
-  }
-  finally {
-    saving.value = false
-  }
-}
+const save = () => saveName(() => navigateTo(safeRedirect(route.query.redirect), { replace: true }))
 </script>
 
 <template>
@@ -94,7 +71,7 @@ async function save() {
           v-if="saveFailed"
           tone="critical"
         >
-          {{ t('onboarding.saveFailed') }}
+          {{ t('profile.saveFailed') }}
         </NoticeBanner>
 
         <AppButton

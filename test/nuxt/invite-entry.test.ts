@@ -83,7 +83,7 @@ describe('the Invite link, signed in', () => {
 
     await vi.waitFor(() => expect(joined).toHaveBeenCalledTimes(1))
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe('/e/freitags-zocken-k7q2'))
-    expect(useToast().toasts.value.map(toast => toast.text)).toContain('Du bist drin! Du sitzt erstmal auf der Bench.')
+    expect(useToast().toasts.value.map(toast => toast.text)).toContain('Du bist drin! Du sitzt erstmal auf der Tribüne.')
   })
 
   it('titles the tab Einladung while joining, not sign-in', async () => {

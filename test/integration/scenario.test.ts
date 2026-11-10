@@ -65,7 +65,7 @@ describe('the Event scenario', () => {
       expect((await readEvent(rig, ev.outsiders.outsider.cookie, ev.slug)).members.map(member => member.id)).toContain(ev.outsiders.outsider.id)
     })
 
-    it('seats a Player on the Stands, and leaves a Player who is not listed on the Bench', async () => {
+    it('seats a Player on the Stands, and leaves a Player who is not listed on the Stands too', async () => {
       const three = { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example.com' } as const
       const cast = { ...base, players: { ...players, three } }
       const zoneOf = async (ev: { host: Signed, slug: string }, id: string) => (await readEvent(rig, ev.host.cookie, ev.slug)).members.find(member => member.id === id)
@@ -74,8 +74,8 @@ describe('the Event scenario', () => {
       expect(await zoneOf(onStands, onStands.players.three.id)).toMatchObject({ zone: 'stands', team: null })
 
       await resetDatabase(testDb.db)
-      const onBench = await startRunningEvent(rig, { ...cast, seats: [['one', 1], ['two', 2]] })
-      expect(await zoneOf(onBench, onBench.players.three.id)).toMatchObject({ zone: 'bench', team: null })
+      const unlisted = await startRunningEvent(rig, { ...cast, seats: [['one', 1], ['two', 2]] })
+      expect(await zoneOf(unlisted, unlisted.players.three.id)).toMatchObject({ zone: 'stands', team: null })
     })
   })
 

@@ -232,7 +232,7 @@ describe('Rounds', () => {
 
     it('refuses uneven teams with 409 teams_uneven, and the Event read says so', async () => {
       const game = await running()
-      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'teams_uneven' })
       expect(await roundRows(game)).toEqual([])
@@ -240,7 +240,7 @@ describe('Rounds', () => {
 
     it('refuses an empty team with 409 teams_empty', async () => {
       const game = await running()
-      for (const key of ['three', 'four'] as const) await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids[key], to: { zone: 'bench' } })
+      for (const key of ['three', 'four'] as const) await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids[key], to: { zone: 'stands' } })
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'teams_empty' })
     })
@@ -279,7 +279,7 @@ describe('Rounds', () => {
 
     it('writes and tells nothing when it refuses', async () => {
       const game = await running()
-      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
       notifier.clear()
       await testDb.db.delete(activity)
 
@@ -604,7 +604,7 @@ describe('Rounds', () => {
 
       it('answers 409 teams_uneven with uneven teams', async () => {
         const game = await running({ wheel: true })
-        await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+        await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
 
         expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'teams_uneven' })
       })

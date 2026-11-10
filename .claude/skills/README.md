@@ -1,6 +1,6 @@
 # Skills
 
-Every folder here except `thermo-nuclear-code-quality-review` and `implement-spec-max` is a copy of [mattpocock/skills](https://github.com/mattpocock/skills) **1.3.1** (commit `49dd158`): the skills its `.claude-plugin/plugin.json` ships, without the Codex-only `agents/openai.yaml` files.
+Every folder here except `thermo-nuclear-code-quality-review`, `implement-spec-max` and `capture-idea` (COMPIES's own: an Idea issue in two minutes, `docs/agents/issue-tracker.md` § Ideas) is a copy of [mattpocock/skills](https://github.com/mattpocock/skills) **1.3.1** (commit `49dd158`): the skills its `.claude-plugin/plugin.json` ships, without the Codex-only `agents/openai.yaml` files.
 
 They're committed because cloud sessions load a repo's `.claude/skills/` but no plugins. `.claude/settings.json` turns the `mattpocock-skills` plugin off in this repo, so local sessions load these copies too, under the same names. `code-review` here replaces Claude Code's built-in `/code-review`; the built-in stays reachable as `/review`.
 

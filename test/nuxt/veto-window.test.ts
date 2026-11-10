@@ -13,7 +13,7 @@ const STOP = Date.parse('2090-10-30T20:00:10.000Z')
 const END = STOP + WINDOW_MS
 const iso = (ms: number) => new Date(ms).toISOString()
 const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
-const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
+const teams = [{ position: 1, name: null }, { position: 2, name: null }]
 
 const spin = (fields: Partial<SpinView> = {}): SpinView => ({
   roundId: 'r1', drawId: 'd1', spinStartAt: iso(STOP - 6000), stopAt: iso(STOP), slices: 4, resultIndex: 0, resultOffset: 0.5,
@@ -124,10 +124,10 @@ describe('the Veto window', () => {
     expect(text()).toContain('Veto von Team Rot und Team Orange. Halo fliegt vom Rad, es wird neu gedreht.')
   })
 
-  it('names a Party by its frozen Team name, in the tile and in the sentence, also the longest one (#355)', async () => {
+  it('names a Party by its Team name, in the tile and in the sentence, also the longest one (#355)', async () => {
     serverMs = END + 100
     const longest = 'Abcdefghijkl Bcdefghijklm Cdefghijklmn'
-    await mount(wheelOf({ left: [1, 2], own: null, revealed: [{ team: 1 }] }), [{ position: 1, name: longest, frozen: true }, teams[1]!])
+    await mount(wheelOf({ left: [1, 2], own: null, revealed: [{ team: 1 }] }), [{ position: 1, name: longest }, teams[1]!])
 
     expect(page!.findAll('[data-testid="veto-tile"]')[0]!.text()).toContain(longest)
     expect(text()).toContain(`Veto von ${longest}. Halo fliegt vom Rad`)

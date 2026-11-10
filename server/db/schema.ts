@@ -103,7 +103,7 @@ export const events = pgTable('events', {
   // 0025 (#309): the Award ceremony's latest start (the request's clock plus the lead, ADR 0013) and its gag. The run's end is not stored: shared/ceremony.ts derives it. A restart overwrites both.
   ceremonyStartsAt: timestamp('ceremony_starts_at', { withTimezone: true }),
   ceremonyGag: ceremonyGag('ceremony_gag'),
-  // 0031 (#445): true once the Host has started the Award ceremony at least once; ceremonyShownOf also counts a stored start (the previous deployment writes only the start). A restart changes nothing.
+  // 0033 (#445): true once the Host has started the Award ceremony at least once; ceremonyShownOf also counts a stored start (the previous deployment writes only the start). A restart changes nothing.
   ceremonyShown: boolean('ceremony_shown').default(false).notNull(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
@@ -137,9 +137,10 @@ export const sessions = pgTable('sessions', {
   uniqueIndex('sessions_one_running_per_event_idx').on(table.eventId).where(sql`${table.startedAt} IS NOT NULL AND ${table.endedAt} IS NULL AND ${table.removedAt} IS NULL`),
 ])
 
-// The teams of an Event from its first Session start on (#164): one row per team position, written once. `frozenName`
-// is the Team name frozen at that start; null means the Team colour's name (also after the Host reset it). An Event
-// that has not started has no rows, and its Team names are composed from the Team words.
+// The names the first Session start froze (#164), read only in an Event finished before 0.12 (#438): one row per team
+// position. `frozenName` null means the Team colour's name. A Team name is composed from the Team words otherwise; the
+// previous deployment may still write rows during the switch-over (ADR 0007), the new code ignores them until the
+// Finish, which deletes them.
 export const eventTeams = pgTable('event_teams', {
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   position: integer('position').notNull(),
@@ -155,7 +156,8 @@ export const eventMembers = pgTable('event_members', {
   eventId: uuid('event_id').notNull().references(() => events.id),
   userId: uuid('user_id').notNull().references(() => users.id),
   joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
-  zone: memberZone('zone').default('bench').notNull(),
+  /** `bench` is legacy: only the deployment before 0.12 writes it (ADR 0007 switch-over, #437); the code reads it as the Stands. */
+  zone: memberZone('zone').default('stands').notNull(),
   /** The team position (1..team count) while the zone is `team`, else null (#160). */
   team: integer('team'),
   /** When the Member took this team seat; the latest one wins the race for a last place (#160). Null outside a team. */

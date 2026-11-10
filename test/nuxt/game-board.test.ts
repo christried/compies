@@ -15,17 +15,17 @@ import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page
 // the reasons, the own move that shows at once and comes back with a toast, the Host's uneven notice, and the glide of
 // somebody else's move. The room is a fake the test plays messages on; the move endpoint records what is posted.
 const settings: EventSettings = { ...defaultSettings(), teamCount: 2, teamSize: 2 }
-const teams: BoardTeam[] = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
-const BENCH: Place = { zone: 'bench' }
+const teams: BoardTeam[] = [{ position: 1, name: null }, { position: 2, name: null }]
+const STANDS: Place = { zone: 'stands' }
 const team = (n: number): Place => ({ zone: 'team', team: n })
 
-function member(id: string, name: string, place: Place = BENCH, isHost = false): MemberView {
+function member(id: string, name: string, place: Place = STANDS, isHost = false): MemberView {
   return memberView({ id, name, isHost, zone: place.zone, team: place.zone === 'team' ? place.team : null })
 }
 
-const kittyAt = (place: Place = BENCH) => member(kitty.id, 'Kitty', place)
-const larsiAt = (place: Place = BENCH) => member(LARSI, 'Larsi', place)
-const sanneAt = (place: Place = BENCH) => member(SANNE, 'Sanne', place, true)
+const kittyAt = (place: Place = STANDS) => member(kitty.id, 'Kitty', place)
+const larsiAt = (place: Place = STANDS) => member(LARSI, 'Larsi', place)
+const sanneAt = (place: Place = STANDS) => member(SANNE, 'Sanne', place, true)
 
 function fakeRoom() {
   const handlers = new Map<string, ((message: unknown) => void)[]>()
@@ -48,7 +48,7 @@ interface Options {
   members?: MemberView[]
   settings?: EventSettings | null
   teamChoiceOpen?: boolean
-  /** The first Session has started (#164): the board is locked and the teams are frozen. */
+  /** The first Session has started (#164): the board is locked; the Team names stay open (#438). */
   started?: boolean
   viewerId?: string
   isHost?: boolean
@@ -77,7 +77,7 @@ async function mountBoard(options: Options = {}) {
     props: {
       slug,
       members: options.members ?? [kittyAt(), larsiAt(), sanneAt()],
-      teams: resolvedSettings ? (options.started ? teams.map(entry => ({ ...entry, frozen: true })) : teams) : [],
+      teams: resolvedSettings ? teams : [],
       settings: resolvedSettings,
       teamChoiceOpen: options.started ? false : (options.teamChoiceOpen ?? true),
       pageKind: options.pageKind ?? (options.started ? 'running' : 'teams'),
@@ -97,12 +97,11 @@ const group = (page: Board, label: string) => page.get(`[role="group"][aria-labe
 const menu = () => document.querySelector<HTMLElement>('[role="menu"]')
 const menuItem = (label: string) => [...(menu()?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])].find(item => item.textContent?.includes(label))!
 
-/** Where each zone sits on the page, for the drop: team 1 at the left, team 2 in the middle, Bench and Stands below. */
+/** Where each zone sits on the page, for the drop: team 1 at the left, team 2 in the middle, the Tribüne below. */
 const ZONES: Record<string, { left: number, top: number }> = {
   'team-1': { left: 0, top: 0 },
   'team-2': { left: 300, top: 0 },
-  'bench': { left: 0, top: 300 },
-  'stands': { left: 300, top: 300 },
+  'stands': { left: 0, top: 300 },
 }
 
 function rectAt(left: number, top: number, size = 200): DOMRect {
@@ -139,19 +138,33 @@ describe('GameBoard', () => {
   })
 
   describe('the phases', () => {
-    it('shows only the Bench and the Stands, and says why, for an Event that was never set up', async () => {
-      const { page } = await mountBoard({ settings: null, teamChoiceOpen: false })
+    it('shows only the Tribüne, and says why, for an Event that was never set up', async () => {
+      const { page } = await mountBoard({ settings: null, teamChoiceOpen: false, members: [kittyAt(), larsiAt(), sanneAt()] })
 
-      expect(page.text()).toContain('Teams gibt es, sobald das Event eingerichtet ist. Bis dahin: Bench oder Tribüne.')
-      expect(group(page, 'Bench').text()).toContain('Larsi')
+      expect(page.text()).toContain('Teams gibt es, sobald das Event eingerichtet ist. Bis dahin bleibst du auf der Tribüne.')
+      expect(group(page, 'Tribüne').text()).toContain('Larsi')
+      expect(page.findAll('[role="group"]').map(element => element.attributes('aria-label'))).toEqual(['Tribüne'])
+    })
+
+    it('draws one zone, the Tribüne, with its sub-line, and no Bench and no Zuschauer', async () => {
+      const { page } = await mountBoard()
+
+      expect(page.findAll('[data-drop-zone="stands"]')).toHaveLength(1)
+      expect(page.findAll('[data-drop-zone="bench"]')).toHaveLength(0)
+      expect(group(page, 'Tribüne').text()).toContain('Noch ohne Team, unbegrenzt')
+      expect(page.text()).not.toMatch(/Bench|Zuschauer|spielen nicht mit/)
+    })
+
+    it('says the Tribüne is empty when everybody sits in a team', async () => {
+      const { page } = await mountBoard({ members: [kittyAt(team(1)), larsiAt(team(2)), sanneAt(team(1))] })
+
       expect(group(page, 'Tribüne').text()).toContain('Die Tribüne ist leer.')
-      expect(page.findAll('[role="group"]').map(element => element.attributes('aria-label'))).toEqual(['Bench', 'Tribüne'])
     })
 
     it('locks the free slots with the reason for a Player while no Session has a Date', async () => {
       const { page } = await mountBoard({ teamChoiceOpen: false })
 
-      expect(page.text()).toContain('Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench oder Tribüne.')
+      expect(page.text()).toContain('Teamwahl öffnet, sobald der Termin steht. Bis dahin bleibst du auf der Tribüne.')
       const locked = page.findAll('[role="img"]')
       expect(locked).toHaveLength(4)
       expect(locked[0]!.attributes('aria-label')).toBe('Zu. Teamwahl öffnet, sobald der Termin steht.')
@@ -217,13 +230,13 @@ describe('GameBoard', () => {
 
     it('tells the Host, a Player in a team and everyone else what is locked', async () => {
       const host = await running({ viewerId: SANNE, isHost: true })
-      expect(host.page.text()).toContain('Event läuft: nur du kannst noch tauschen. Name eingefroren.')
+      expect(host.page.text()).toContain('Event läuft: nur du kannst noch tauschen.')
 
       const player = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
-      expect(player.page.text()).toContain('Gesperrt seit dem Start. Name eingefroren.')
+      expect(player.page.text()).toContain('Gesperrt seit dem Start. Dein Teamwort kannst du weiter ändern.')
 
       const other = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
-      expect(other.page.text()).toContain('Das Event läuft. Zwischen Bench und Tribüne kannst du frei wechseln.')
+      expect(other.page.text()).toContain('Das Event läuft. Die Teams sind gesperrt, nur der Host setzt dich noch in ein Team.')
     })
 
     it('does not tell the Host about uneven teams any more: the start is over', async () => {
@@ -232,23 +245,23 @@ describe('GameBoard', () => {
       expect(page.text()).not.toContain('Die Session startet erst')
     })
 
-    it('refuses a Player on the Bench a team in the MoveToMenu with the reason, but keeps the Stands open', async () => {
+    it('refuses a Player on the Tribüne a team in the MoveToMenu with the reason', async () => {
       const { page } = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
 
       await person(page, kitty.id).trigger('click')
 
-      expect(menuItem('Auf die Tribüne').getAttribute('aria-disabled')).not.toBe('true')
+      expect(menuItem('Auf die Tribüne').textContent).toContain('Ist schon hier.')
       expect(menuItem('Nach Team Orange').getAttribute('aria-disabled')).toBe('true')
       expect(menuItem('Nach Team Orange').textContent).toContain('Teams sind gesperrt, das Event läuft.')
     })
 
-    it('refuses a Player in a team the way out, even to the Bench, with the same reason', async () => {
+    it('refuses a Player in a team the way out, even to the Tribüne, with the same reason', async () => {
       const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
 
       await person(page, kitty.id).trigger('click')
 
-      expect(menuItem('Auf die Bench').getAttribute('aria-disabled')).toBe('true')
-      expect(menuItem('Auf die Bench').textContent).toContain('Teams sind gesperrt, das Event läuft.')
+      expect(menuItem('Auf die Tribüne').getAttribute('aria-disabled')).toBe('true')
+      expect(menuItem('Auf die Tribüne').textContent).toContain('Teams sind gesperrt, das Event läuft.')
     })
 
     it('lets the Host move a Player into a team', async () => {
@@ -262,20 +275,20 @@ describe('GameBoard', () => {
       expect(posted).toEqual([{ userId: kitty.id, to: team(2) }])
     })
 
-    it('marks every team as frozen with a lock in its count pill, not beside the name', async () => {
-      const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+    it('puts no lock in a team\'s count pill: the Team name stays open after the start (#438)', async () => {
+      const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()], viewerId: SANNE, isHost: true })
 
-      const locks = page.findAll('[aria-label="Eingefroren seit dem Start."]')
-      expect(locks).toHaveLength(2)
-      expect(locks.map(lock => lock.element.parentElement!.textContent!.trim())).toEqual(['1/2', '0/2'])
-      expect(locks.map(lock => lock.attributes('title'))).toEqual(['Eingefroren seit dem Start.', 'Eingefroren seit dem Start.'])
-      for (const heading of page.findAll('h3')) expect(heading.find('[role="img"]').exists()).toBe(false)
+      const pills = page.findAll('[data-drop-zone^="team-"] > header .num-ui')
+      expect(pills.map(pill => pill.text())).toEqual(['1/2', '0/2'])
+      for (const pill of pills) expect(pill.find('[role="img"]').exists()).toBe(false)
+      expect(page.text()).not.toContain('Eingefroren seit dem Start.')
     })
 
-    it('shows no lock on a team name before the start', async () => {
-      const { page } = await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+    it('keeps the lock on the free places for a Player, none in the count pill', async () => {
+      const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
 
-      expect(page.findAll('[aria-label="Eingefroren seit dem Start."]')).toHaveLength(0)
+      expect(page.findAll('[role="img"][aria-label^="Gesperrt"]')).toHaveLength(3)
+      expect(page.text()).not.toContain('Eingefroren')
     })
   })
 
@@ -297,8 +310,8 @@ describe('GameBoard', () => {
       expect(menu()).toBeNull()
     })
 
-    it('moves to the Stands the same way', async () => {
-      const { page, posted } = await mountBoard()
+    it('moves to the Tribüne the same way', async () => {
+      const { page, posted } = await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
 
       await person(page, kitty.id).trigger('click')
       menuItem('Auf die Tribüne').click()
@@ -316,21 +329,31 @@ describe('GameBoard', () => {
       const full = menuItem('Nach Team Rot')
       expect(full.getAttribute('aria-disabled')).toBe('true')
       expect(full.textContent).toContain('Team ist voll.')
-      expect(menuItem('Auf die Bench').textContent).toContain('Ist schon hier.')
+      expect(menuItem('Auf die Tribüne').textContent).toContain('Ist schon hier.')
       expect(menuItem('Nach Team Orange').getAttribute('aria-disabled')).toBeNull()
       full.click()
       await settle()
       expect(posted).toEqual([])
     })
 
-    it('disables the teams in the poll with the reason but keeps the Stands open', async () => {
+    it('disables the teams in the poll with the reason, and the Tribüne where the Player already is', async () => {
       const { page } = await mountBoard({ teamChoiceOpen: false })
 
       await person(page, kitty.id).trigger('click')
 
       expect(menuItem('Nach Team Rot').getAttribute('aria-disabled')).toBe('true')
       expect(menuItem('Nach Team Rot').textContent).toContain('Teamwahl öffnet, sobald der Termin steht.')
-      expect(menuItem('Auf die Tribüne').getAttribute('aria-disabled')).toBeNull()
+      expect(menuItem('Auf die Tribüne').textContent).toContain('Ist schon hier.')
+    })
+
+    it('offers the teams and "Auf die Tribüne" and nothing else', async () => {
+      const { page } = await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+
+      await person(page, kitty.id).trigger('click')
+
+      const items = [...menu()!.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      expect(items.map(item => item.textContent?.trim().split('\n')[0])).toEqual([expect.stringContaining('Team Rot'), expect.stringContaining('Team Orange'), expect.stringContaining('Auf die Tribüne')])
+      expect(menu()!.textContent).not.toContain('Bench')
     })
 
     it('lets a Player see that only the Host moves somebody else', async () => {
@@ -340,7 +363,7 @@ describe('GameBoard', () => {
 
       expect(document.body.textContent).toContain('Wohin, Larsi?')
       const items = [...menu()!.querySelectorAll<HTMLElement>('[role="menuitem"]')]
-      expect(items).toHaveLength(4)
+      expect(items).toHaveLength(3)
       expect(items.every(item => item.getAttribute('aria-disabled') === 'true')).toBe(true)
       expect(items[0]!.textContent).toContain('Nur der Host kann andere verschieben.')
     })
@@ -372,6 +395,20 @@ describe('GameBoard', () => {
       await vi.waitFor(() => expect(posted).toEqual([{ userId: kitty.id, to: team(2) }]))
     })
 
+    it('moves a Player who drops their own avatar from a team on the Tribüne, and lights it up on the way', async () => {
+      layOutBoard()
+      const { page, posted } = await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+
+      await person(page, kitty.id).trigger('pointerdown', { button: 0, pointerId: 1, pointerType: 'mouse', clientX: 20, clientY: 20 })
+      pointer('pointermove', 50, 340)
+      await nextTick()
+
+      expect(page.get('[data-drop-zone="stands"]').classes()).toContain('border-focus')
+      pointer('pointerup', 50, 340)
+
+      await vi.waitFor(() => expect(posted).toEqual([{ userId: kitty.id, to: STANDS }]))
+    })
+
     it('does not move anyone who lets go over a place that does not take them', async () => {
       layOutBoard()
       const { page, posted } = await mountBoard({ members: [kittyAt(), larsiAt(team(1)), sanneAt(team(1))] })
@@ -382,7 +419,7 @@ describe('GameBoard', () => {
       await settle()
 
       expect(posted).toEqual([])
-      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
+      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Tribüne')
     })
 
     it('does not let a Player pick somebody else up, but the Host may', async () => {
@@ -503,7 +540,7 @@ describe('GameBoard', () => {
       menuItem('Nach Team Rot').click()
 
       await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Teamwahl öffnet, sobald der Termin steht.'))
-      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
+      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Tribüne')
     })
 
     // The race of #421: the Host lowered the team count while this board was open.
@@ -531,7 +568,7 @@ describe('GameBoard', () => {
       menuItem('Nach Team Rot').click()
 
       await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Teamwahl öffnet, sobald der Termin steht.'))
-      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
+      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Tribüne')
       expect(landingsOf(animate)).toHaveLength(1)
       expect(animate.mock.calls.some(([, options]) => (options as { easing: string }).easing === 'cubic-bezier(.5,1.8,.4,.8)')).toBe(true)
     })
@@ -555,16 +592,16 @@ describe('GameBoard', () => {
       refuse()
 
       await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Larsi war schneller. Der letzte Platz in Team Rot ist weg.'))
-      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
+      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Tribüne')
     })
   })
 
   describe('somebody else\'s move', () => {
     it('moves their avatar as soon as the room says so', async () => {
       const { page, send } = await mountBoard()
-      expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Bench')
+      expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Tribüne')
 
-      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
       await nextTick()
 
       expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
@@ -576,7 +613,7 @@ describe('GameBoard', () => {
       const { page, send } = await mountBoard()
       const before = vi.getTimerCount()
 
-      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
       expect(vi.getTimerCount()).toBe(before + 1)
       page.unmount()
 
@@ -590,7 +627,7 @@ describe('GameBoard', () => {
       vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
       const { page, send } = await mountBoard()
 
-      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
       await nextTick()
       await nextTick()
 
@@ -609,7 +646,7 @@ describe('GameBoard', () => {
       vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
       const { page, send } = await mountBoard()
 
-      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
       await nextTick()
       await nextTick()
 
@@ -623,21 +660,21 @@ describe('GameBoard', () => {
       vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
       const { page, send } = await mountBoard({ members: [kittyAt(team(2)), larsiAt(), sanneAt()] })
 
-      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
       await nextTick()
       await nextTick()
 
       expect(landingsOf(animate)).toEqual([person(page, LARSI).element.firstElementChild])
     })
 
-    it('a move between the Bench and the Stands glides and lands (#208)', async () => {
+    it('a move between a team and the Tribüne glides and lands (#208)', async () => {
       layOutBoard()
       const animate = vi.fn()
       Element.prototype.animate = animate
       vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'full' : '') } as CSSStyleDeclaration)
-      const { page, send } = await mountBoard()
+      const { page, send } = await mountBoard({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
 
-      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: { zone: 'stands' }, by: LARSI })
+      send({ type: 'member.moved', userId: LARSI, from: team(1), to: STANDS, by: LARSI })
       await nextTick()
       await nextTick()
 
@@ -654,7 +691,7 @@ describe('GameBoard', () => {
       vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : name === '--cp-dur-fast' ? '140ms' : '') } as CSSStyleDeclaration)
       const { page, send } = await mountBoard()
 
-      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
       await nextTick()
       await nextTick()
 
@@ -673,7 +710,7 @@ describe('GameBoard', () => {
       vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : '') } as CSSStyleDeclaration)
       const { page, send } = await mountBoard({ members: [kittyAt(team(2)), larsiAt(), sanneAt()] })
 
-      send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+      send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
       await nextTick()
       await nextTick()
 
@@ -694,11 +731,11 @@ describe('GameBoard', () => {
 
       await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Teamwahl öffnet, sobald der Termin steht.'))
       await nextTick()
-      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Bench')
+      expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Tribüne')
       // Once for the move that showed at once, once for the way back.
       expect(animate).toHaveBeenCalledTimes(2)
-      // Each zone draws its own element, so the first fade ran on the one in the team and the second on the one back on the Bench.
-      expect((animate.mock.contexts as Element[]).map(element => element.getAttribute('aria-label'))).toEqual(['Kitty, Team Rot', 'Kitty, Bench'])
+      // Each zone draws its own element, so the first fade ran on the one in the team and the second on the one back on the Tribüne.
+      expect((animate.mock.contexts as Element[]).map(element => element.getAttribute('aria-label'))).toEqual(['Kitty, Team Rot', 'Kitty, Tribüne'])
       expect(animate.mock.contexts[1]).toBe(person(page, kitty.id).element)
     })
 
@@ -713,7 +750,7 @@ describe('GameBoard', () => {
         vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
         const { page, send } = await mountBoard()
 
-        send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+        send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
         await nextTick()
         await nextTick()
         expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
@@ -728,7 +765,7 @@ describe('GameBoard', () => {
         await nextTick()
         await nextTick()
 
-        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Bench')
+        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Tribüne')
         const glides = animate.mock.calls.filter(([keyframes]) => (keyframes as { transform: string }[])[0]?.transform.startsWith('translate('))
         expect(glides).toHaveLength(1)
         expect((glides[0]![0] as { transform: string }[])[0]!.transform).toBe('translate(300px, -300px)')
@@ -744,7 +781,7 @@ describe('GameBoard', () => {
         vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
         const { page, send } = await mountBoard()
 
-        send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+        send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
         await nextTick()
         await nextTick()
         animate.mockClear()
@@ -753,7 +790,7 @@ describe('GameBoard', () => {
         await nextTick()
         await nextTick()
 
-        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Bench')
+        expect(person(page, LARSI).attributes('aria-label')).toBe('Larsi, Tribüne')
         expect(animate).toHaveBeenCalledTimes(1)
         expect(animate.mock.contexts[0]).toBe(person(page, LARSI).element)
         expect((animate.mock.calls[0]![0] as { opacity?: number }[]).map(frame => frame.opacity)).toEqual([0, 1])
@@ -763,7 +800,7 @@ describe('GameBoard', () => {
         vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
         const { page, send } = await mountBoard()
 
-        send({ type: 'member.moved', userId: LARSI, from: BENCH, to: team(2), by: SANNE })
+        send({ type: 'member.moved', userId: LARSI, from: STANDS, to: team(2), by: SANNE })
         await nextTick()
         await page.setProps({ members: [kittyAt(), larsiAt(team(2)), sanneAt()] })
         vi.advanceTimersByTime(HEARD_MS * 2)
@@ -789,7 +826,7 @@ describe('GameBoard', () => {
       expect(page.text()).toContain('Spielbrett')
       expect(page.text()).not.toContain('Spielbrett im Rohbau')
       expect(page.get('[role="group"][aria-label="Team Rot, 1 von 2 frei"]').text()).toContain('Larsi')
-      expect(page.get('[role="group"][aria-label="Bench"]').text()).toContain('Sanne')
+      expect(page.get('[role="group"][aria-label="Tribüne"]').text()).toContain('Sanne')
     })
   })
 

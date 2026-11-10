@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { eventPoolGames, events, users } from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
 import type { CreatedEvent, EventView } from '../../shared/event'
-import { hiddenWheelWorld, HIDDEN_WHEEL, stranger, webp, type Secret } from './hidden-wheel-world'
+import { expectNoGameFacts, hiddenWheelWorld, HIDDEN_WHEEL, playersTraces, stranger, webp, type Secret } from './hidden-wheel-world'
 import { signIn } from './sign-in'
 
 // THE secrecy test of release 1.3 (#148): under a Hidden wheel nobody but the Host learns which games are in the
@@ -37,6 +37,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     expect((JSON.parse(raw) as EventView).pool).toBeNull()
     expect((JSON.parse(raw) as EventView).hostGames).toBeNull()
     for (const trace of secrets.flatMap(playerTraces)) expect(raw).not.toContain(trace)
+    // No game fact key either: no player count, no Suitabilities (#444).
+    expectNoGameFacts(raw)
     expect(raw).not.toMatch(/api\/images/)
   })
 
@@ -52,6 +54,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     // The control: the Host sees the new game, so the insert really changed the pools.
     expect(await rawRead(hostCookie, slug)).toContain('Delta Dart')
     expect(after).toBe(before)
+    expectNoGameFacts(before, after)
   })
 
   it('gives the Host the games under a Hidden wheel', async () => {
@@ -98,14 +101,21 @@ describe('Hidden wheel secrecy (#148)', () => {
     const open = await rawRead(playerCookie, slug)
     expect((JSON.parse(open) as EventView).pool).toMatchObject([{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }])
     expect((JSON.parse(open) as EventView).hostGames).toBeNull()
-    // A Player gets picture and name only (#224): everything but the notes.
+    // A Player gets picture, name, players, Suitabilities and Price (#224, #444): everything but the notes.
     for (const trace of secrets.slice(0, 2).flatMap(traces).filter(trace => !secrets.some(secret => secret.notes === trace))) expect(open).toContain(trace)
+    expect((JSON.parse(open) as EventView).pool).toMatchObject([
+      { name: 'Alpha Arena', playersMin: secrets[0]!.playersMin, playersMax: secrets[0]!.playersMax, suitabilities: ['teams'] },
+      { name: 'Beta Bowling', playersMin: secrets[1]!.playersMin, playersMax: secrets[1]!.playersMax, suitabilities: ['teams'] },
+    ])
+    // Gamma is in the library only: its players are in no read (#444).
+    for (const trace of playersTraces(secrets[2]!)) expect(open).not.toContain(trace)
     for (const secret of secrets) expect(open).not.toContain(secret.notes)
     for (const secret of secrets) expect(open).not.toContain(secret.tag)
 
     await setWheelHidden(true)
     const closed = await rawRead(playerCookie, slug)
     for (const trace of secrets.flatMap(playerTraces)) expect(closed).not.toContain(trace)
+    expectNoGameFacts(closed)
     expect((JSON.parse(closed) as EventView).pool).toBeNull()
     expect((JSON.parse(closed) as EventView).hostGames).toBeNull()
   })
@@ -149,12 +159,17 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(playerRaw).toContain('"checkedAt"')
       expect(playerRaw).toContain(priceTrace(alpha))
       expect(playerRaw).toContain(priceTrace(beta))
+      // The player count and the Suitabilities travel with the face, where the pool shows it (#444).
+      expect(playerRaw).toContain('"suitabilities"')
+      for (const secret of [alpha, beta]) for (const trace of playersTraces(secret)) expect(playerRaw).toContain(trace)
     }
     else {
       expect(playerRaw).not.toContain('"price"')
       expect(playerRaw).not.toContain('"checkedAt"')
       for (const secret of secrets) expect(playerRaw).not.toContain(priceTrace(secret))
+      expectNoGameFacts(playerRaw)
     }
+    for (const trace of playersTraces(gamma)) expect(playerRaw).not.toContain(trace)
     expect(playerRaw).not.toContain(priceTrace(gamma))
     // The control: the library does carry them.
     const library = await request('/api/games', { headers: { cookie: hostCookie } })

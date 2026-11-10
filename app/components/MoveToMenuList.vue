@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-// The list of places inside the MoveToMenu (#160): every team, the Bench and the Stands. A place the person cannot
+// The list of places inside the MoveToMenu (#160): every team and the Stands. A place the person cannot
 // go to stays in the list, dimmed, with the reason under it (`aria-disabled`, so it keeps its focus and is read out).
 // The Session rows' „Mehr“ menu (#349) reuses it for actions: a target with `hold` is a one second hold inside the menu.
 export interface MoveTarget {

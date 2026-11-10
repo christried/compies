@@ -11,7 +11,7 @@ import { floorsOf, readEventState, roundBeingDrawnOf, seatOf, type EventState } 
 import { assertGamesExist, assertNoOldPools } from './pools'
 import { asRecord } from '../../shared/record'
 
-const BENCH: Place = { zone: 'bench' }
+const STANDS: Place = { zone: 'stands' }
 
 /**
  * The Event's settings for a rule that needs them (#288): an Event that is not set up cannot be running, so the rule's order
@@ -29,7 +29,7 @@ export function requireSettings(eventRow: EventRow): EventSettings {
  * up); the Game pool's list, when it is given, replaces the pool (#279). The floors are read here, under the lock. A refusal throws and
  * leaves settings and pools as they were. Returns the settings before and after (`before` is null for an Event that
  * was not set up), so a caller can name what changed (changedKeys). A lowered team count moves the Players of the
- * removed teams to the Bench (#163), in the Host's name, so `publish` and the Host's id come with the change.
+ * removed teams to the Stands (#163), in the Host's name, so `publish` and the Host's id come with the change.
  */
 export async function applySettingsChange(
   tx: Db,
@@ -70,17 +70,17 @@ export async function applySettingsChange(
     if (pool.length > 0) await tx.insert(eventPoolGames).values(pool.map(gameId => ({ eventId: eventRow.id, gameId })))
   }
   // A lowered team count only comes with a change of the settings, so the state above has the Members.
-  if (state && before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, now, eventRow.id, after.teamCount, hostId, state)
+  if (state && before !== null && after.teamCount < before.teamCount) await standsRemovedTeams(tx, publish, now, eventRow.id, after.teamCount, hostId, state)
   return { before, after }
 }
 
 /**
- * Every Player seated in a team the lowered team count removes goes to the Bench (#163). Each one is a move made by the
+ * Every Player seated in a team the lowered team count removes goes to the Stands (#163). Each one is a move made by the
  * Host, written the way the move endpoint writes it (moveMember). The Players come from the Members the state read before the change (#416).
  */
-async function benchRemovedTeams(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, teamCount: number, hostId: string, state: EventState<'members'>): Promise<void> {
+async function standsRemovedTeams(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, teamCount: number, hostId: string, state: EventState<'members'>): Promise<void> {
   for (const { id } of state.members) {
     const place = seatOf(state, id)
-    if (place?.zone === 'team' && place.team > teamCount) await moveMember(tx, publish, now, eventId, hostId, id, place, BENCH)
+    if (place?.zone === 'team' && place.team > teamCount) await moveMember(tx, publish, now, eventId, hostId, id, place, STANDS)
   }
 }

@@ -100,6 +100,22 @@ describe('ActivityFeed', () => {
     expect(shown[2]).toContain('Termin für Session 1 steht: Mo 30.10. 20:30')
   })
 
+  it('reads an entry the Bench wrote before 0.12 as the Tribüne, and a team move as before (#437)', async () => {
+    // Stored entries still hold { zone: 'bench' }, a place the type no longer has: the feed is not rewritten, it reads it as the Tribüne.
+    const legacy = { userId: 'u-larsi', from: { zone: 'team', team: 1 }, to: { zone: 'bench' } } as never
+    const { wrapper } = await mountFeed([
+      entry('a', 3, { type: 'member_moved', actor: { id: 'u-larsi', name: 'Larsi' }, people: { 'u-larsi': 'Larsi' }, params: legacy }),
+      entry('b', 2, { type: 'member_moved', people: { 'u-larsi': 'Larsi' }, params: legacy }),
+      entry('c', 1, { type: 'member_moved', people: { 'u-larsi': 'Larsi' }, params: { userId: 'u-larsi', from: { zone: 'stands' }, to: { zone: 'team', team: 2 } } }),
+    ])
+
+    const shown = lines(wrapper)
+    expect(shown[0]).toContain('Larsi ist jetzt auf der Tribüne')
+    expect(shown[1]).toContain('Sanne hat Larsi auf die Tribüne verschoben')
+    expect(shown[2]).toContain('Sanne hat Larsi nach Team Orange verschoben')
+    expect(wrapper.text()).not.toContain('Bench')
+  })
+
   it('puts a header over each stretch: before the start, the Session, and before the next one (#164)', async () => {
     const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
     const sessions: FeedSession[] = [{ id: 's1', number: 1, startedAt: at(50), endedAt: at(20) }]
@@ -207,7 +223,7 @@ describe('ActivityFeed', () => {
   describe('the end of the Event (#277)', () => {
     const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
     const sessions: FeedSession[] = [{ id: 's1', number: 2, startedAt: at(50), endedAt: at(20) }]
-    const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]
+    const teams = [{ position: 1, name: null }, { position: 2, name: 'Wilde Gurken' }]
 
     it('says who won, in bold, under „Nach Session n“ with the medal', async () => {
       const finished = entry('f', 10, { type: 'event_finished', params: { winners: [2] } })
@@ -236,9 +252,9 @@ describe('ActivityFeed', () => {
 
   describe('a Result (#273)', () => {
     const result = entry('r', 1, { type: 'result_entered', params: { roundId: 'r1', number: 3, gameId: 'g1', first: [2] }, games: { g1: 'Mario Kart' } })
-    const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]
+    const teams = [{ position: 1, name: null }, { position: 2, name: 'Wilde Gurken' }]
 
-    it('names the winner by the frozen Team name when the feed has the teams', async () => {
+    it('names the winner by the Team name when the feed has the teams', async () => {
       const feed = serveFeed([result])
       const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, teams } })
       await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
