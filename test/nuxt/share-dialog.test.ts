@@ -42,7 +42,7 @@ function finished(slug: string): EventView {
   return view(slug, [], {
     event: { phase: 'finished' },
     standings: [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 3 }],
-    teams: [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: 'Nacht Eulen', frozen: true }],
+    teams: [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: 'Nacht Eulen' }],
   }) as unknown as EventView
 }
 

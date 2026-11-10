@@ -6,18 +6,14 @@ import { changeEvent } from '../../../utils/event-access'
 import { readEventState, seatOf } from '../../../utils/event-state'
 import type { TeamWordSet } from '../../../../shared/event'
 import { asRecord } from '../../../../shared/record'
-import { hasStarted } from '../../../../shared/session-state'
 import { parseTeamWord } from '../../../../shared/team-word'
 
 // A Player sets their own Team word (#161, spec #153 § API contracts): `{ word }`, an empty word removes it. Only a
-// Player in a team has one. The Event row is locked, so a word and a move of the same Player queue up.
+// Player in a team has one, in every Phase until the Finish (#438; changeEvent refuses a finished Event). The Event row is locked, so a word and a move of the same Player queue up.
 export default defineEventHandler((event): Promise<TeamWordSet> => changeEvent(event, { lock: 'update' }, async ({ tx, eventRow, user, body, now }) => {
-  const state = await readEventState(tx, eventRow, now, ['members', 'sessions'])
+  const state = await readEventState(tx, eventRow, now, ['members'])
   const seat = seatOf(state, user.id)
   if (seat?.zone !== 'team') throw apiError('not_in_team')
-
-  // After the first Session start (#164) the Team names are frozen, so a word changes nothing any more.
-  if (hasStarted(state.sessions)) throw apiError('teams_locked')
 
   const parsed = parseTeamWord(asRecord(body).word)
   if (!parsed.ok) throw apiError(parsed.error)

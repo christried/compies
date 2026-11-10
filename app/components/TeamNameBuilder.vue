@@ -8,11 +8,11 @@ import { hasSpace, stripSpaces, TEAM_WORD_MAX } from '~~/shared/team-word'
 // The Team word field and the Host's reset in the band under a team's header (#161, 02-components § TeamNameBuilder,
 // App Lobby 09 „Teamwahl offen + Teamwort“). A Player in this team sees „Dein Wort“ with a counter: spaces are stripped
 // as they type with a hint, Enter or leaving the field saves, an empty save removes the word. The Host sees a reset
-// when the team has a name from words; it asks first (screen 10 „Teamnamen zurücksetzen?“). Once the first Session
-// has started (#164) the name is frozen: there is no word field, and the Host's reset gives the colour name while the
-// words stay. A polite live region announces the composed name when it changes. Everyone else sees only the name, in
-// the header. The refetch after a save brings the truth.
-const props = withDefaults(defineProps<{
+// when the team has a name from words; it asks first (screen 10 „Teamnamen zurücksetzen?“) and deletes the words. The
+// name follows the words until the Finish (#438): the field is there in every Phase. A polite live region announces
+// the composed name when it changes. Everyone else sees only the name, in the header. The refetch after a save brings
+// the truth.
+const props = defineProps<{
   slug: string
   /** The team's position, which is its Team colour index. */
   team: number
@@ -22,15 +22,13 @@ const props = withDefaults(defineProps<{
   named: boolean
   /** The viewer is a Player in this team and gives a word. */
   mine: boolean
-  /** The name is frozen since the first Session started (#164): no word field, and a reset keeps the words. */
-  frozen?: boolean
   /** The viewer's saved word. */
   myWord: string | null
   /** The viewer is the Host. */
   isHost: boolean
   /** Who gave a word, for the reset's question. */
   authors: string[]
-}>(), { frozen: false })
+}>()
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -101,10 +99,10 @@ async function reset() {
 
 <template>
   <div
-    v-if="(mine && !frozen) || canReset"
+    v-if="mine || canReset"
     class="flex flex-wrap items-center gap-x-2 gap-y-1 border-b-2 border-line-soft bg-surface-2 px-2.5 py-2"
   >
-    <template v-if="mine && !frozen">
+    <template v-if="mine">
       <label
         :for="fieldId"
         class="flex-[1_0_100%] text-[12px] font-extrabold text-ink-2"
@@ -164,7 +162,7 @@ async function reset() {
   >
     <p class="m-0">
       {{ t('team.word.resetText', { name, color: teamName(team, t) }) }}
-      <template v-if="authors.length > 0 && !frozen">
+      <template v-if="authors.length > 0">
         {{ t('team.word.resetWords', { people: authorList }) }}
       </template>
     </p>

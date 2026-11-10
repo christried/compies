@@ -189,8 +189,17 @@ describe('statements under the Event row lock (#416)', () => {
       const ev = await notStarted()
       return () => send('POST', `/api/e/${ev.slug}/team-word`, ev.players.a.cookie, { word: 'Gurken' })
     }],
+    // The word and the reset work in a running Event too (#438), where the Event state has the most to read.
+    ['POST team-word (running Event)', async () => {
+      const { ev } = await rich()
+      return () => send('POST', `/api/e/${ev.slug}/team-word`, ev.players.a.cookie, { word: 'Gurken' })
+    }],
     ['POST teams/:position/reset-name', async () => {
       const ev = await notStarted()
+      return () => send('POST', `/api/e/${ev.slug}/teams/1/reset-name`, ev.host.cookie)
+    }],
+    ['POST teams/:position/reset-name (running Event)', async () => {
+      const { ev } = await rich()
       return () => send('POST', `/api/e/${ev.slug}/teams/1/reset-name`, ev.host.cookie)
     }],
     ['POST finish', async () => {

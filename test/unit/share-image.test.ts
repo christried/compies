@@ -52,7 +52,7 @@ interface Options {
 }
 
 function source({ points = [17, 9], names = {}, event = 'Freitags-Zocken', sessions = [session('2026-10-24T18:00:00Z')], members = [], games = [{ name: 'Rocket League', firsts: [1] }] }: Options = {}): ShareImageSource {
-  const teams: BoardTeam[] = points.map((_, index) => ({ position: index + 1, name: names[index + 1] ?? null, frozen: true }))
+  const teams: BoardTeam[] = points.map((_, index) => ({ position: index + 1, name: names[index + 1] ?? null }))
   return {
     event: { slug: 'abc', name: event, phase: 'finished', isHost: false },
     sessions,

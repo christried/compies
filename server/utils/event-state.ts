@@ -20,6 +20,7 @@ import {
   type SpinRejection,
   type VetoRejection,
 } from '../../shared/rounds'
+import { beforeFinish } from '../../shared/phase'
 import { hasStarted, nextSession, runningOf, startRejection, type StartRejection } from '../../shared/session-state'
 import { playersPerTeam, settingsFromRow, type EventSettings, type FloorFacts } from '../../shared/settings'
 import type { CoinRow } from './coin'
@@ -53,7 +54,7 @@ export interface ResultEntry { round: RoundRow, game: GameRow | null, places: { 
 interface PartFacts {
   sessions: { sessions: SessionRow[] }
   members: { members: MemberRow[] }
-  /** The frozen teams (#164): none before the first Session start. A null name is the Team colour's name. */
+  /** The stored Team names (#164), read only in an Event finished before 0.12 (#438; the previous deployment may still write rows). A null name is the Team colour's name. */
   teams: { teams: { position: number, frozenName: string | null }[] }
   rounds: {
     /** Every Round in start order with its game (null while it is being drawn), the put-back ones too (#228). */
@@ -425,13 +426,16 @@ export function roundBeingDrawnOf(state: EventState<'rounds'>): boolean {
 }
 
 /**
- * The Team names (#161, #164) of the teams the settings call for: composed from the words of the team's Players in the order they joined it, until the
- * first Session starts; from then on the frozen name, null for the colour's name. The one composition of a Team name. Parts: members, teams.
+ * The Team names (#161, #438) of the teams the settings call for: composed from the words of the team's Players in the order they joined it, null for
+ * no words (the colour's name). The one composition of a Team name. A stored name (event_teams, read only in an Event finished before 0.12; the
+ * previous deployment may still write rows) counts only in a finished Event and only for a team that has a row: null there is the colour's name
+ * even when words exist. Parts: members, teams.
  */
-export function teamNamesOf(state: EventState<'members' | 'teams'>): { position: number, name: string | null, frozen: boolean }[] {
+export function teamNamesOf(state: EventState<'members' | 'teams'>): { position: number, name: string | null }[] {
+  const stored = !beforeFinish(state.eventRow.phase)
   return Array.from({ length: state.settings?.teamCount ?? 0 }, (_, index) => {
     const position = index + 1
-    const frozen = state.teams.find(row => row.position === position)
-    return { position, name: composeTeamName(state.members, position, frozen?.frozenName), frozen: frozen !== undefined }
+    const row = stored ? state.teams.find(team => team.position === position) : undefined
+    return { position, name: composeTeamName(state.members, position, row?.frozenName) }
   })
 }

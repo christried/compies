@@ -20,7 +20,7 @@ const t: Translate = (key, named = {}, plural) => {
 }
 
 const CEREMONY: CeremonyView = { startsAt: '2090-10-30T20:00:01.500Z', endsAt: '2090-10-30T20:00:06.550Z', gag: 'trip' }
-const team = (position: number, name: string | null = null): BoardTeam => ({ position, name, frozen: true })
+const team = (position: number, name: string | null = null): BoardTeam => ({ position, name })
 const player = (id: string, teamPosition: number, overrides: Partial<MemberView> = {}): MemberView => ({
   id, name: `Spieler ${id}`, image: `https://example.com/${id}.png`, isHost: false, zone: 'team', team: teamPosition, teamWord: null, ...overrides,
 })
