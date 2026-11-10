@@ -33,6 +33,7 @@ A brief aims under 25 KB. A drafter whose brief would run longer proposes a spli
 - Name the ADRs the change must respect (`docs/adr/`). The 1.4 brief for #202 missed ADR 0005, and the user had to decide mid-build.
 - A ticket where something moves names its entry in `docs/design_handoff_compies/04-motion.md`: curve, duration, landing.
 - A data migration names what the old code writes while the build migrates: the previous deployment serves until the switch-over (`CODING_STANDARDS.md` § Database). The 0.5.1 brief for #220 missed it (#242).
+- A ticket that swaps a text class on a fill (a Dunkel contrast fix, `text-ink` to `text-on-<fill>`, a hover or focus fill) names `test/unit/on-colour.test.ts` as its failing-first test, not a test of token values: add the broken string as a case of the rule function (`checkClassString`), so the test is red before the swap, and the scan over `app/` stays green after it. The 0.11 fix tickets pinned colour values in the stylesheet and passed before the fix (review S6, Q7; #481).
 
 Around the brief goes the frame, `docs/agents/implementer-frame.md`: worktree base, commits, changelog line, checks and report. A new worktree starts from `main`, where a frame changed on `staging` isn't yet, so the spawn prompt names it as `git show origin/<integration branch>:docs/agents/implementer-frame.md`. A merge job gets `docs/agents/merger.md`. Run at most three implementers at a time and one merge job at a time; more overloads the machine (session 6 of 1.4).
 
