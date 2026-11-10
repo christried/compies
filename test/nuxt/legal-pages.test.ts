@@ -52,11 +52,11 @@ describe('legal pages', () => {
     expect(text).not.toContain('solange das Rad nicht verdeckt ist')
   })
 
-  it('say in the events section that only Hosts, the Host of the Event whose pool holds the game, and admins read a game\'s notes (#224, #280)', async () => {
+  it('say in the events section that only Hosts, the Host of the Event whose pool holds the game or where it is or was played, and admins read a game\'s notes (#224, #280, #446)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
 
     const text = page.get('main').text()
-    expect(text).toContain('Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält.')
+    expect(text).toContain('Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält oder in dem es gespielt wird oder wurde.')
     expect(text).not.toContain('das Spiel enthält, solange sie die Spiele dieses Pools sehen')
   })
 
@@ -72,15 +72,33 @@ describe('legal pages', () => {
     expect(events!.text()).toContain('Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat.')
     expect(events!.text()).toContain('und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, welches Team ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.')
     expect(events!.text()).toContain('das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Dass ein Team ein Veto eingelegt hat, sieht bis zum Aufdecken nur dieses Team; welcher Spieler es war, erfährt niemand.')
-    expect(retention!.text()).toContain('Plätze, Teamwörter, eingefrorene Teamnamen, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht.')
+    expect(retention!.text()).toContain('Plätze, Teamwörter, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht.')
     expect(page.get('main').text()).not.toContain('Tiebreaker')
   })
 
-  it('name the result picture of a finished Event: what it shows, that it is not stored, and the share target (#313, spec #308)', async () => {
+  it('keep the Tribüne and the open Team names of the 0.12 storage: the feed holds each Team name, a Teamwort stays in its entries, no name is frozen (#446, ADR 0016)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const sections = page.findAll('section')
+    const events = sections.find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
+    const retention = sections.find(s => s.get('h2').text() === '16. Speicherdauer')
+    const live = sections.find(s => s.get('h2').text().includes('Live-Verbindung'))
+
+    expect(events!.text()).toContain('wo du sitzt (Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst.')
+    expect(events!.text()).toContain('Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat. Zu jeder Runde')
+    expect(events!.text()).toContain('Zu jedem Eintrag, der ein Team nennt, speichert der Feed den Namen, den das Team in diesem Moment hatte, und damit die Teamwörter darin. Dein Teamwort bleibt in diesen Einträgen deshalb stehen, solange das Event besteht, auch wenn du dein Team verlässt oder dein Teamwort änderst.')
+    expect(retention!.text()).toContain('Ein Teamwort wird gelöscht, sobald du dein Team verlässt; im aktuellen Namen des Teams steht es dann nicht mehr. Ausgenommen sind die Einträge des Aktivitäts-Feeds: Sie behalten den Teamnamen von damals, das Wort bleibt dort, solange das Event besteht (Abschnitt 11).')
+    expect(live!.text()).toContain('das Zurücksetzen von Teamnamen, Start und Ende einer Session')
+    const text = page.get('main').text()
+    expect(text).not.toContain('Bench')
+    expect(text).not.toContain('eingefroren')
+    expect(text).not.toContain('Einfrieren')
+  })
+
+  it('name the result picture of a finished Event: what it shows, that it is not stored, and the share target (#313, spec #308, #445, #446)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const events = page.findAll('section').find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
 
-    expect(events!.text()).toContain('Ist ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.')
+    expect(events!.text()).toContain('Ist ein Event abgeschlossen und die Siegerehrung gestartet, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.')
   })
 
   it('say what deleting an Event means: unreachable for every Member at once, data kept until removed on request, no automatic purge (#334, spec #332)', async () => {
@@ -116,8 +134,8 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
     expect(section!.findAll('p')).toHaveLength(8)
-    // The one place the date is pinned: the day of the change, 9 November 2026.
-    expect(page.get('main').text()).toContain('Stand: 9. November 2026.')
+    // The one place the date is pinned: the day of the change, 10 November 2026.
+    expect(page.get('main').text()).toContain('Stand: 10. November 2026.')
   })
 
   it('keep the Datenschutzerklärung\'s sections in order: the unnumbered intro, then 1 to 22 (#405)', async () => {
