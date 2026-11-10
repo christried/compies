@@ -16,7 +16,7 @@ const descriptionId = computed(() => (props.description ? `${uid}-description` :
 </script>
 
 <template>
-  <div class="flex min-h-[72px] flex-wrap items-center gap-x-3.5 gap-y-2 px-[18px] py-2.5">
+  <div class="flex min-h-[72px] flex-wrap items-center gap-x-3.5 gap-y-2 px-4 py-2.5">
     <span class="grid size-10 flex-none place-items-center rounded-[12px] border-2 border-line bg-paper-2">
       <AppIcon
         :icon="icon"

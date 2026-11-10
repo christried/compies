@@ -11,6 +11,12 @@ const theme = () => document.documentElement.getAttribute('data-theme')
 const themeColors = () => [...document.head.querySelectorAll('meta[name="theme-color"]')]
   .map(meta => ({ content: meta.getAttribute('content'), media: meta.getAttribute('media') }))
 
+// Hell and Dunkel give both media one colour, System one each; always two metas in this order (#404).
+const LIGHT_MEDIA = '(prefers-color-scheme: light)'
+const DARK_MEDIA = '(prefers-color-scheme: dark)'
+const bothMedia = (content: string) => [{ content, media: LIGHT_MEDIA }, { content, media: DARK_MEDIA }]
+const systemBar = [{ content: '#fff3df', media: LIGHT_MEDIA }, { content: '#17121d', media: DARK_MEDIA }]
+
 describe('Appearance on the page', () => {
   it('draws a User on Dunkel dark, with the dark browser bar', async () => {
     signInAs({ ...kitty, appearance: 'dark' })
@@ -19,7 +25,7 @@ describe('Appearance on the page', () => {
 
     await vi.waitFor(() => {
       expect(theme()).toBe('dark')
-      expect(themeColors()).toEqual([{ content: '#17121d', media: null }])
+      expect(themeColors()).toEqual(bothMedia('#17121d'))
     })
   })
 
@@ -30,12 +36,7 @@ describe('Appearance on the page', () => {
 
     await vi.waitFor(() => {
       expect(theme()).toBe('system')
-      // In any order: the media pick the colour, and unhead keeps an element it already placed where it is.
-      expect(themeColors()).toHaveLength(2)
-      expect(themeColors()).toEqual(expect.arrayContaining([
-        { content: '#fff3df', media: '(prefers-color-scheme: light)' },
-        { content: '#17121d', media: '(prefers-color-scheme: dark)' },
-      ]))
+      expect(themeColors()).toEqual(systemBar)
     })
   })
 
@@ -46,7 +47,7 @@ describe('Appearance on the page', () => {
 
     await vi.waitFor(() => {
       expect(theme()).toBe('light')
-      expect(themeColors()).toEqual([{ content: '#fff3df', media: null }])
+      expect(themeColors()).toEqual(bothMedia('#fff3df'))
     })
   })
 
@@ -60,7 +61,82 @@ describe('Appearance on the page', () => {
 
     await vi.waitFor(() => {
       expect(theme()).toBe('dark')
-      expect(themeColors()).toEqual([{ content: '#17121d', media: null }])
+      expect(themeColors()).toEqual(bothMedia('#17121d'))
+    })
+  })
+})
+
+// A choice made on the open page (#404): the server rendered the head for the Appearance the page loaded with, and the browser
+// bar must follow the User's next choice. Unhead places a client tag by matching it to the elements already in <head>, so the
+// start here is the head as the server renders it (plain `<meta>` elements, no `data-hid`), adopted by a fresh render.
+describe('the browser bar after a choice on the open page', () => {
+  const serverRenderedHead = (metas: { content: string, media?: string }[]) => {
+    for (const meta of document.head.querySelectorAll('meta[name="theme-color"]')) meta.remove()
+    for (const { content, media } of metas) {
+      const element = document.createElement('meta')
+      element.setAttribute('name', 'theme-color')
+      element.setAttribute('content', content)
+      if (media) element.setAttribute('media', media)
+      document.head.append(element)
+    }
+    // Forget what the client head placed itself, so it meets these elements the way it meets a server-rendered head on load.
+    const head = injectHead() as unknown as { _dom?: unknown, dirty: boolean }
+    head._dom = undefined
+    head.dirty = true
+  }
+  it('turns the bar dark when a User loaded on Hell chooses Dunkel', async () => {
+    signInAs(kitty)
+    await mountSuspended(ImpressumPage)
+    await vi.waitFor(() => expect(theme()).toBe('light'))
+    serverRenderedHead([{ content: '#fff3df' }])
+
+    useAuthUser().value = { ...kitty, appearance: 'dark' }
+
+    await vi.waitFor(() => {
+      expect(theme()).toBe('dark')
+      expect(themeColors()).toEqual(bothMedia('#17121d'))
+    })
+  })
+
+  it('turns the bar light when a User loaded on Dunkel chooses Hell', async () => {
+    signInAs({ ...kitty, appearance: 'dark' })
+    await mountSuspended(ImpressumPage)
+    await vi.waitFor(() => expect(theme()).toBe('dark'))
+    serverRenderedHead([{ content: '#17121d' }])
+
+    useAuthUser().value = { ...kitty, appearance: 'light' }
+
+    await vi.waitFor(() => {
+      expect(theme()).toBe('light')
+      expect(themeColors()).toEqual(bothMedia('#fff3df'))
+    })
+  })
+
+  it('gives the bar both looks by their media when a User loaded on Hell chooses System', async () => {
+    signInAs(kitty)
+    await mountSuspended(ImpressumPage)
+    await vi.waitFor(() => expect(theme()).toBe('light'))
+    serverRenderedHead([{ content: '#fff3df' }])
+
+    useAuthUser().value = { ...kitty, appearance: 'system' }
+
+    await vi.waitFor(() => {
+      expect(theme()).toBe('system')
+      expect(themeColors()).toEqual(systemBar)
+    })
+  })
+
+  it('turns a System bar dark when the User chooses Dunkel', async () => {
+    signInAs({ ...kitty, appearance: 'system' })
+    await mountSuspended(ImpressumPage)
+    await vi.waitFor(() => expect(theme()).toBe('system'))
+    serverRenderedHead(systemBar)
+
+    useAuthUser().value = { ...kitty, appearance: 'dark' }
+
+    await vi.waitFor(() => {
+      expect(theme()).toBe('dark')
+      expect(themeColors()).toEqual(bothMedia('#17121d'))
     })
   })
 })
@@ -92,7 +168,7 @@ describe('Appearance on a signed-out page', () => {
 
     await vi.waitFor(() => {
       expect(theme()).toBe('dark')
-      expect(themeColors()).toEqual([{ content: '#17121d', media: null }])
+      expect(themeColors()).toEqual(bothMedia('#17121d'))
     })
   })
 
@@ -103,7 +179,7 @@ describe('Appearance on a signed-out page', () => {
 
     await vi.waitFor(() => {
       expect(theme()).toBe('system')
-      expect(themeColors()).toHaveLength(2)
+      expect(themeColors()).toEqual(systemBar)
     })
   })
 
@@ -136,6 +212,6 @@ describe('Appearance on a signed-out page', () => {
     await settled()
 
     expect(theme()).toBe('dark')
-    expect(themeColors()).toEqual([{ content: '#17121d', media: null }])
+    expect(themeColors()).toEqual(bothMedia('#17121d'))
   })
 })

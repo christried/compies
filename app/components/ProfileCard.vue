@@ -55,14 +55,14 @@ async function save() {
       {{ t('profile.title') }}
     </h2>
 
-    <div class="flex flex-wrap items-center gap-4">
+    <div class="flex items-center gap-4">
       <!-- The initial follows the saved name, not the typing. -->
       <UserAvatar
         :name="saved"
         :image="user?.image"
         :size="80"
       />
-      <div class="flex flex-col gap-1">
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
         <b class="text-[14px]">{{ t('profile.avatar') }}</b>
         <span class="text-small text-ink-2">{{ t('profile.avatarHelp') }}</span>
       </div>

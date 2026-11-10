@@ -76,18 +76,28 @@ describe('the Appearance cookie', () => {
 })
 
 describe('themeColorMetas', () => {
-  it('gives Hell one light meta', () => {
-    expect(themeColorMetas('light')).toEqual([{ key: 'theme-color-light', name: 'theme-color', content: '#fff3df' }])
+  // Two metas for every Appearance, in this order, so a change of Appearance only changes `content` (#404).
+  const LIGHT = '(prefers-color-scheme: light)'
+  const DARK = '(prefers-color-scheme: dark)'
+
+  it('gives Hell the light colour on both media', () => {
+    expect(themeColorMetas('light')).toEqual([
+      { name: 'theme-color', content: '#fff3df', media: LIGHT },
+      { name: 'theme-color', content: '#fff3df', media: DARK },
+    ])
   })
 
-  it('gives Dunkel one dark meta', () => {
-    expect(themeColorMetas('dark')).toEqual([{ key: 'theme-color-dark', name: 'theme-color', content: '#17121d' }])
+  it('gives Dunkel the dark colour on both media', () => {
+    expect(themeColorMetas('dark')).toEqual([
+      { name: 'theme-color', content: '#17121d', media: LIGHT },
+      { name: 'theme-color', content: '#17121d', media: DARK },
+    ])
   })
 
-  it('gives System both, each with its media and its own key', () => {
+  it('gives System each medium its own colour', () => {
     expect(themeColorMetas('system')).toEqual([
-      { key: 'theme-color-light', name: 'theme-color', content: '#fff3df', media: '(prefers-color-scheme: light)' },
-      { key: 'theme-color-dark', name: 'theme-color', content: '#17121d', media: '(prefers-color-scheme: dark)' },
+      { name: 'theme-color', content: '#fff3df', media: LIGHT },
+      { name: 'theme-color', content: '#17121d', media: DARK },
     ])
   })
 })
