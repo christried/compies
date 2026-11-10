@@ -216,7 +216,7 @@ describe('starting a Session', () => {
 
     expect(started).toBe(0)
     expect(dialog()?.textContent).toContain('Los geht’s?')
-    expect(dialog()?.textContent).toContain('Mit dem Start werden Teams und Teamnamen gesperrt. Bench und Tribüne bleiben offen, nachziehen kannst du weiterhin.')
+    expect(dialog()?.textContent).toContain('Mit dem Start werden Teams und Teamnamen gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.')
     expect(dialog()?.textContent).toContain('2 Teams à 3, Namen werden eingefroren')
 
     await clickButton(dialog(), 'Session 1 starten')

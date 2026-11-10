@@ -22,7 +22,7 @@ const hat = (page: { get: (selector: string) => { find: (selector: string) => { 
 /** The hat's art group calls, the only Web Animations this file counts (the rest of the page animates too). */
 const hatCalls = () => calls.filter(call => call.el.classList.contains('compibert-hat-art'))
 
-/** A running Event with the Standings and Result of `overrides`, Kitty seated as `seat` (default: on the Bench). */
+/** A running Event with the Standings and Result of `overrides`, Kitty seated as `seat` (default: on the Tribüne). */
 function runningWith(overrides: EventOverrides, seat: Parameters<typeof members>[0] = {}) {
   return serveState({ sessions: [RUNNING], missing: 0, phase: 'running', running: 0, overrides: { ...overrides, members: members(seat) } })
 }
@@ -59,8 +59,7 @@ describe('the party hat in the Event header, per viewer', () => {
     expect(hat(await mount(slug))).toBe(false)
   })
 
-  it('is off for a Player on the Bench and in the Stands', async () => {
-    expect(hat(await mount(runningWith(afterResult, { kitty: { zone: 'bench' } }).slug))).toBe(false)
+  it('is off for a Player on the Stands', async () => {
     expect(hat(await mount(runningWith(afterResult, { kitty: { zone: 'stands' } }).slug))).toBe(false)
   })
 
@@ -85,7 +84,7 @@ describe('the party hat in the Event header, per viewer', () => {
     expect(hat(await mount(runningWith(shared, { kitty: { zone: 'team', team: 2 } }).slug))).toBe(true)
   })
 
-  it('is on for the Host seated in the Leading Party, and off for the Host on the Bench', async () => {
+  it('is on for the Host seated in the Leading Party, and off for the Host on the Stands', async () => {
     const hostRead = (sanne: Seat) => serve(slug => ({
       ...viewWithSessions(slug, [RUNNING], 0, {
         event: { phase: 'running', isHost: true },
@@ -100,7 +99,7 @@ describe('the party hat in the Event header, per viewer', () => {
     signInAs({ ...kitty, id: SANNE, displayName: 'Sanne', canHost: true })
 
     expect(hat(await mount(hostRead({ zone: 'team', team: 2 }).slug))).toBe(true)
-    expect(hat(await mount(hostRead({ zone: 'bench' }).slug))).toBe(false)
+    expect(hat(await mount(hostRead({ zone: 'stands' }).slug))).toBe(false)
   })
 
   it('is on for the Winners\' Players on the finished page, and off for a trailing Party', async () => {
@@ -161,7 +160,7 @@ describe('the party hat in the Event header, per viewer', () => {
 
   it('appears without an animation under reduced motion, on the same flip', async () => {
     motion('reduced')
-    const served = runningWith(afterResult, { kitty: { zone: 'bench' } })
+    const served = runningWith(afterResult, { kitty: { zone: 'stands' } })
     const page = await mount(served.slug)
     expect(hat(page)).toBe(false)
 

@@ -212,10 +212,6 @@ describe('seatNote', () => {
       .toBe('event.notice.seatTeam(team=team.defaultName(color=team.colors.2))')
   })
 
-  it('is null for a Host on the Bench', () => {
-    expect(seatNote(hostView({ zone: 'bench' }), fakeT)).toBeNull()
-  })
-
   it('is null when the viewer is not among the Members', () => {
     expect(seatNote({ ...hostView({ zone: 'stands' }), viewerId: 'nobody' }, fakeT)).toBeNull()
   })
@@ -242,8 +238,7 @@ describe('wearsPartyhat', () => {
     expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1)], points: [1, 3, 2] }))).toBe(false)
   })
 
-  it('is no for a Player on the Bench, and in the Stands', () => {
-    expect(wearsPartyhat(partyView({ members: [seated(ME, 'bench')], points: [1, 3, 2] }))).toBe(false)
+  it('is no for a Player on the Stands', () => {
     expect(wearsPartyhat(partyView({ members: [seated(ME, 'stands')], points: [1, 3, 2] }))).toBe(false)
   })
 
@@ -263,9 +258,9 @@ describe('wearsPartyhat', () => {
     expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1)], points: [3, 1, 0], phase: 'finished' }))).toBe(true)
   })
 
-  it('is yes for the Host seated in the Leading Party, and no for the Host on the Bench', () => {
+  it('is yes for the Host seated in the Leading Party, and no for the Host on the Stands', () => {
     expect(wearsPartyhat(partyView({ members: [seated(HOST, 'team', 2, true)], points: [1, 3, 2], viewerId: HOST }))).toBe(true)
-    expect(wearsPartyhat(partyView({ members: [seated(HOST, 'bench', null, true)], points: [1, 3, 2], viewerId: HOST }))).toBe(false)
+    expect(wearsPartyhat(partyView({ members: [seated(HOST, 'stands', null, true)], points: [1, 3, 2], viewerId: HOST }))).toBe(false)
   })
 
   it('is yes for a Player in either Party that shares the first rank', () => {

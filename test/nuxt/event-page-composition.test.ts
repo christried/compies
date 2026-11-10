@@ -140,14 +140,13 @@ describe('the stage of the Event page', () => {
     const notices = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('[role="status"]').map(element => element.text())
     const has = (page: Awaited<ReturnType<typeof mount>>, text: string) => notices(page).some(notice => notice.includes(text))
 
-    it('tells the Host in a team that the dock stays the same, and the Host on the Tribüne too, and nothing on the Bench', async () => {
+    it('tells the Host in a team that the dock stays the same, and the Host on the Tribüne too, without „spielst nicht mit“', async () => {
       const inTeam = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: { members: members({ kitty: { zone: 'team', team: 2 } }) } })
       const onStands = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: { members: members({ kitty: { zone: 'stands' } }) } })
-      const onBench = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true })
 
       expect(has(await mount(inTeam.slug), 'Du spielst mit, in Team Orange. Das Host-Dock bleibt genau gleich.')).toBe(true)
-      expect(has(await mount(onStands.slug), 'Du sitzt auf der Tribüne und spielst nicht mit. Das Host-Dock bleibt genau gleich.')).toBe(true)
-      expect(has(await mount(onBench.slug), 'Das Host-Dock bleibt genau gleich')).toBe(false)
+      expect(has(await mount(onStands.slug), 'Du sitzt auf der Tribüne. Das Host-Dock bleibt genau gleich.')).toBe(true)
+      expect(has(await mount(onStands.slug), 'spielst nicht mit')).toBe(false)
     })
 
     it('shows the seat note only to the Host, with their role badge, and lets them close it', async () => {
@@ -186,15 +185,15 @@ describe('the stage of the Event page', () => {
 
       const betweenPage = await mount(between.slug)
       expect(has(betweenPage, 'Das Event läuft.')).toBe(false)
-      expect(has(betweenPage, 'Die Teams bleiben fürs ganze Event. Wenn du bei Session 2 nicht kannst, setz dich auf die Bench.')).toBe(true)
+      expect(has(betweenPage, 'Die Teams bleiben fürs ganze Event. Wenn du bei Session 2 nicht kannst, setz dich auf die Tribüne.')).toBe(true)
     })
 
     it('tells the Host who replaces whom between two Sessions, and says „der nächsten“ while that Session has no Date', async () => {
       const dated = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED }), SESSION(2, SECOND)], missing: 0, host: true, phase: 'running' })
       const waiting = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED }), SESSION(2, null)], missing: 1, host: true, phase: 'running' })
 
-      expect(has(await mount(dated.slug), 'Die Teams bleiben fürs ganze Event. Wer bei Session 2 fehlt, ersetzt du von der Bench.')).toBe(true)
-      expect(has(await mount(waiting.slug), 'Wer bei der nächsten Session fehlt, ersetzt du von der Bench.')).toBe(true)
+      expect(has(await mount(dated.slug), 'Die Teams bleiben fürs ganze Event. Wer bei Session 2 fehlt, ersetzt du von der Tribüne.')).toBe(true)
+      expect(has(await mount(waiting.slug), 'Wer bei der nächsten Session fehlt, ersetzt du von der Tribüne.')).toBe(true)
     })
 
     it('keeps telling the Host about uneven teams between two Sessions, because the next start is blocked again', async () => {
@@ -225,7 +224,7 @@ describe('the stage of the Event page', () => {
     it('tells a Member the Host sets the Event up, by the Host\'s name', async () => {
       const { slug } = serveState({ sessions: [SESSION(1, null)], missing: 1, settings: false })
 
-      expect(has(await mount(slug), 'Sanne richtet das Event noch ein. Bis dahin: Bench oder Tribüne.')).toBe(true)
+      expect(has(await mount(slug), 'Sanne richtet das Event noch ein. Bis dahin bleibst du auf der Tribüne.')).toBe(true)
     })
   })
 

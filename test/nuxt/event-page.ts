@@ -28,7 +28,7 @@ function defaultStart(slug: string, startsAt: string | null, setUp: boolean): St
 
 /**
  * A Member as the Event read sends them: with a picture, as every Discord and Twitch account has one (#207). A test
- * gives the id, the name and whatever it asserts on; everything else is the Bench of an ordinary Member.
+ * gives the id, the name and whatever it asserts on; everything else is the Tribüne of an ordinary Member.
  */
 export function memberView(overrides: Partial<MemberView> & Pick<MemberView, 'id' | 'name'>): MemberView {
   return { image: `https://example.com/${overrides.name}.png`, isHost: false, zone: 'stands', team: null, teamWord: null, ...overrides }
@@ -55,11 +55,11 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
       { id: 'old', startsAt: '2026-10-20T18:00:00.000Z', past: true },
     ],
     votes: votes.map(vote => ({ note: null, ...vote })),
-    // Everyone on the Bench, no teams and Team choice closed, unless a test says otherwise (#160).
+    // Everyone on the Tribüne, no teams and Team choice closed, unless a test says otherwise (#160).
     members: overrides.members ?? [
-      memberView({ id: kitty.id, name: 'Kitty', zone: 'bench' }),
-      memberView({ id: LARSI, name: 'Larsi', zone: 'bench' }),
-      memberView({ id: SANNE, name: 'Sanne', isHost: true, zone: 'bench' }),
+      memberView({ id: kitty.id, name: 'Kitty', zone: 'stands' }),
+      memberView({ id: LARSI, name: 'Larsi', zone: 'stands' }),
+      memberView({ id: SANNE, name: 'Sanne', isHost: true, zone: 'stands' }),
     ],
     teams: overrides.teams ?? [] as BoardTeam[],
     teamChoiceOpen: overrides.teamChoiceOpen ?? false,

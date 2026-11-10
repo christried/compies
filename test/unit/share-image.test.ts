@@ -29,7 +29,7 @@ const session = (startsAt: string | null, startedAt: string | null = startsAt, n
 const player = (id: string, teamPosition: number): MemberView => ({
   id, name: `Spieler ${id}`, image: null, isHost: false, zone: 'team', team: teamPosition, teamWord: null,
 })
-const bench = (id: string): MemberView => ({ id, name: `Spieler ${id}`, image: null, isHost: false, zone: 'bench', team: null, teamWord: null })
+const onStands = (id: string): MemberView => ({ id, name: `Spieler ${id}`, image: null, isHost: false, zone: 'stands', team: null, teamWord: null })
 
 const result = (number: number, name: string, firsts: number[], teamCount: number): ResultView => ({
   roundId: `r${number}`,
@@ -215,8 +215,8 @@ describe('shareImageModel', () => {
       expect(model.people).toBe(text)
     })
 
-    it('counts only the Players, not the Bench or the Stands', () => {
-      const model = wide({ members: [player('a', 1), player('b', 2), bench('c'), { ...bench('d'), zone: 'stands' }] })
+    it('counts only the Players, not those on the Stands', () => {
+      const model = wide({ members: [player('a', 1), player('b', 2), onStands('c'), onStands('d')] })
       expect(model.people).toBe('2 Leute')
     })
   })

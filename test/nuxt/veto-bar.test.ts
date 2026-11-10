@@ -89,7 +89,7 @@ describe('who gets the bar and when', () => {
     expect(page!.emitted('shown')?.at(-1)).toEqual([false])
   })
 
-  it('gives the Bench, the Stands and a Host outside the teams no bar: they have no own Party', async () => {
+  it('gives the Stands and a Host outside the teams no bar: they have no own Party', async () => {
     await mount(wheelOf({ own: null }))
 
     expect(bar().exists()).toBe(false)
