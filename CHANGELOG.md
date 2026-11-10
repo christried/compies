@@ -9,6 +9,7 @@
 - **Notizen im Spiele-Picker:** Beim Füllen des Spielepools und bei „Nächstes Spiel setzen“ hat ein Spiel mit Notizen jetzt einen Knopf „Notizen ansehen“. Er zeigt die Notizen, ohne dass du die Auswahl verlässt: am Desktop neben dem Spiel, auf dem Handy als Sheet von unten. ([#436](https://github.com/christried/compies/issues/436))
 - **Free-to-play-Tag:** Ein Spiel ohne Preis oder mit dem Preis Free-to-play trägt in der Bibliothek jetzt von selbst den Tag „Free-to-play“, bei jedem Speichern. Bekommt es einen anderen Preis, fällt der Tag weg. ([#423](https://github.com/christried/compies/issues/423))
 - **Spiel-Dialog für den Host:** Tippst du als Host auf ein Spiel auf der Eventseite, öffnet sich sein Dialog: Bild, Name, Spielerzahl, „Passt zu“, alle Tags, der Preis und deine Notizen, dazu „In der Bibliothek öffnen“. Das geht im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“, ohne dass du das Event verlässt. ([#443](https://github.com/christried/compies/issues/443))
+- **Spiel-Dialog für Mitglieder:** Tippst du als Mitglied auf ein Spiel auf der Eventseite, öffnet sich sein Dialog, auf dem Handy als Sheet von unten: Bild, Name, Spielerzahl, „Passt zu“ und der Preis mit seinem Stand. Das geht im Spielepool, sobald der Host ihn zeigt, bei „Zuletzt gezogen“ und bei „Gerade dran“, ohne dass du das Event verlässt. Tags und Notizen siehst du dort nicht, und ein Spiel zeigt sich dir nie früher als bisher. ([#444](https://github.com/christried/compies/issues/444))
 
 ### Geändert
 
